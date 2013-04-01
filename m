@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759252Ab3DAKlg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 06:41:36 -0400
-Received: from relay.parallels.com ([195.214.232.42]:54898 "EHLO
+	id S1759273Ab3DAKlp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 06:41:45 -0400
+Received: from relay.parallels.com ([195.214.232.42]:54935 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab3DAKld (ORCPT
+	with ESMTP id S1751846Ab3DAKln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 06:41:33 -0400
-Subject: [PATCH 09/14] fuse: Implement writepages and write_begin/write_end
- callbacks - v3
+	Mon, 1 Apr 2013 06:41:43 -0400
+Subject: [PATCH 10/14] fuse: fuse_writepage_locked() should wait on writeback
 To: miklos@szeredi.hu
 From: "Maxim V. Patlasov" <MPatlasov@parallels.com>
 Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
         linux-kernel@vger.kernel.org, jbottomley@parallels.com,
         viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
         devel@openvz.org
-Date: Mon, 01 Apr 2013 14:42:09 +0400
-Message-ID: <20130401104202.19027.99619.stgit@maximpc.sw.ru>
+Date: Mon, 01 Apr 2013 14:42:18 +0400
+Message-ID: <20130401104214.19027.30729.stgit@maximpc.sw.ru>
 In-Reply-To: <20130401103749.19027.89833.stgit@maximpc.sw.ru>
 References: <20130401103749.19027.89833.stgit@maximpc.sw.ru>
 User-Agent: StGit/0.15
@@ -27,408 +26,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The .writepages one is required to make each writeback request carry more than
-one page on it.
+fuse_writepage_locked() should never submit new i/o for given page->index
+if there is another one 'in progress' already. In most cases it's safe to
+wait on page writeback. But if it was called due to memory shortage
+(WB_SYNC_NONE), we should redirty page rather than blocking caller.
 
-Changed in v2:
- - fixed fuse_prepare_write() to avoid reads beyond EOF
- - fixed fuse_prepare_write() to zero uninitialized part of page
-
-Changed in v3:
- - moved common part of fuse_readpage() and fuse_prepare_write() to
-   __fuse_readpage().
-
-Original patch by: Pavel Emelyanov <xemul@openvz.org>
-Signed-off-by: Maxim V. Patlasov <MPatlasov@parallels.com>
+Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
 ---
- fs/fuse/file.c |  322 +++++++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 files changed, 303 insertions(+), 19 deletions(-)
+ fs/fuse/file.c |   18 +++++++++++++++---
+ 1 files changed, 15 insertions(+), 3 deletions(-)
 
 diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 5509c0b..6ceffdf 100644
+index 6ceffdf..2409654 100644
 --- a/fs/fuse/file.c
 +++ b/fs/fuse/file.c
-@@ -588,20 +588,13 @@ static void fuse_short_read(struct fuse_req *req, struct inode *inode,
- 	}
+@@ -1472,7 +1472,8 @@ static struct fuse_file *fuse_write_file(struct fuse_conn *fc,
+ 	return ff;
  }
  
--static int fuse_readpage(struct file *file, struct page *page)
-+static int __fuse_readpage(struct file *file, struct page *page, size_t count,
-+			   int *err, struct fuse_req **req_pp, u64 *attr_ver_p)
+-static int fuse_writepage_locked(struct page *page)
++static int fuse_writepage_locked(struct page *page,
++				 struct writeback_control *wbc)
  {
- 	struct inode *inode = page->mapping->host;
- 	struct fuse_conn *fc = get_fuse_conn(inode);
+ 	struct address_space *mapping = page->mapping;
+ 	struct inode *inode = mapping->host;
+@@ -1481,6 +1482,14 @@ static int fuse_writepage_locked(struct page *page)
  	struct fuse_req *req;
- 	size_t num_read;
--	loff_t pos = page_offset(page);
--	size_t count = PAGE_CACHE_SIZE;
--	u64 attr_ver;
--	int err;
--
--	err = -EIO;
--	if (is_bad_inode(inode))
--		goto out;
+ 	struct page *tmp_page;
  
- 	/*
- 	 * Page writeback can extend beyond the lifetime of the
-@@ -611,20 +604,45 @@ static int fuse_readpage(struct file *file, struct page *page)
- 	fuse_wait_on_page_writeback(inode, page->index);
- 
- 	req = fuse_get_req(fc, 1);
--	err = PTR_ERR(req);
-+	*err = PTR_ERR(req);
- 	if (IS_ERR(req))
--		goto out;
-+		return 0;
- 
--	attr_ver = fuse_get_attr_version(fc);
-+	if (attr_ver_p)
-+		*attr_ver_p = fuse_get_attr_version(fc);
- 
- 	req->out.page_zeroing = 1;
- 	req->out.argpages = 1;
- 	req->num_pages = 1;
- 	req->pages[0] = page;
- 	req->page_descs[0].length = count;
--	num_read = fuse_send_read(req, file, pos, count, NULL);
--	err = req->out.h.error;
- 
-+	num_read = fuse_send_read(req, file, page_offset(page), count, NULL);
-+	*err = req->out.h.error;
-+
-+	if (*err)
-+		fuse_put_request(fc, req);
-+	else
-+		*req_pp = req;
-+
-+	return num_read;
-+}
-+
-+static int fuse_readpage(struct file *file, struct page *page)
-+{
-+	struct inode *inode = page->mapping->host;
-+	struct fuse_conn *fc = get_fuse_conn(inode);
-+	struct fuse_req *req = NULL;
-+	size_t num_read;
-+	size_t count = PAGE_CACHE_SIZE;
-+	u64 attr_ver;
-+	int err;
-+
-+	err = -EIO;
-+	if (is_bad_inode(inode))
-+		goto out;
-+
-+	num_read = __fuse_readpage(file, page, count, &err, &req, &attr_ver);
- 	if (!err) {
- 		/*
- 		 * Short read means EOF.  If file size is larger, truncate it
-@@ -634,10 +652,11 @@ static int fuse_readpage(struct file *file, struct page *page)
- 
- 		SetPageUptodate(page);
- 	}
--
--	fuse_put_request(fc, req);
--	fuse_invalidate_attr(inode); /* atime changed */
-- out:
-+	if (req) {
-+		fuse_put_request(fc, req);
-+		fuse_invalidate_attr(inode); /* atime changed */
-+	}
-+out:
- 	unlock_page(page);
- 	return err;
- }
-@@ -702,7 +721,10 @@ static void fuse_send_readpages(struct fuse_req *req, struct file *file)
- 
- struct fuse_fill_data {
- 	struct fuse_req *req;
--	struct file *file;
-+	union {
-+		struct file *file;
-+		struct fuse_file *ff;
-+	};
- 	struct inode *inode;
- 	unsigned nr_pages;
- };
-@@ -1511,6 +1533,265 @@ static int fuse_writepage(struct page *page, struct writeback_control *wbc)
- 	return err;
- }
- 
-+static int fuse_send_writepages(struct fuse_fill_data *data)
-+{
-+	int i, all_ok = 1;
-+	struct fuse_req *req = data->req;
-+	struct inode *inode = data->inode;
-+	struct backing_dev_info *bdi = inode->i_mapping->backing_dev_info;
-+	struct fuse_conn *fc = get_fuse_conn(inode);
-+	struct fuse_inode *fi = get_fuse_inode(inode);
-+	loff_t off = -1;
-+
-+	if (!data->ff)
-+		data->ff = fuse_write_file(fc, fi);
-+
-+	if (!data->ff) {
-+		for (i = 0; i < req->num_pages; i++)
-+			end_page_writeback(req->pages[i]);
-+		return -EIO;
-+	}
-+
-+	req->inode = inode;
-+	req->misc.write.in.offset = page_offset(req->pages[0]);
-+
-+	spin_lock(&fc->lock);
-+	list_add(&req->writepages_entry, &fi->writepages);
-+	spin_unlock(&fc->lock);
-+
-+	for (i = 0; i < req->num_pages; i++) {
-+		struct page *page = req->pages[i];
-+		struct page *tmp_page;
-+
-+		tmp_page = alloc_page(GFP_NOFS | __GFP_HIGHMEM);
-+		if (tmp_page) {
-+			copy_highpage(tmp_page, page);
-+			inc_bdi_stat(bdi, BDI_WRITEBACK);
-+			inc_zone_page_state(tmp_page, NR_WRITEBACK_TEMP);
-+		} else
-+			all_ok = 0;
-+		req->pages[i] = tmp_page;
-+		if (i == 0)
-+			off = page_offset(page);
-+
-+		end_page_writeback(page);
-+	}
-+
-+	if (!all_ok) {
-+		for (i = 0; i < req->num_pages; i++) {
-+			struct page *page = req->pages[i];
-+			if (page) {
-+				dec_bdi_stat(bdi, BDI_WRITEBACK);
-+				dec_zone_page_state(page, NR_WRITEBACK_TEMP);
-+				__free_page(page);
-+				req->pages[i] = NULL;
-+			}
-+		}
-+
-+		spin_lock(&fc->lock);
-+		list_del(&req->writepages_entry);
-+		wake_up(&fi->page_waitq);
-+		spin_unlock(&fc->lock);
-+		return -ENOMEM;
-+	}
-+
-+	req->ff = fuse_file_get(data->ff);
-+	fuse_write_fill(req, data->ff, off, 0);
-+
-+	req->misc.write.in.write_flags |= FUSE_WRITE_CACHE;
-+	req->in.argpages = 1;
-+	fuse_page_descs_length_init(req, 0, req->num_pages);
-+	req->end = fuse_writepage_end;
-+
-+	spin_lock(&fc->lock);
-+	list_add_tail(&req->list, &fi->queued_writes);
-+	fuse_flush_writepages(data->inode);
-+	spin_unlock(&fc->lock);
-+
-+	return 0;
-+}
-+
-+static int fuse_writepages_fill(struct page *page,
-+		struct writeback_control *wbc, void *_data)
-+{
-+	struct fuse_fill_data *data = _data;
-+	struct fuse_req *req = data->req;
-+	struct inode *inode = data->inode;
-+	struct fuse_conn *fc = get_fuse_conn(inode);
-+
 +	if (fuse_page_is_writeback(inode, page->index)) {
 +		if (wbc->sync_mode != WB_SYNC_ALL) {
 +			redirty_page_for_writepage(wbc, page);
-+			unlock_page(page);
 +			return 0;
 +		}
 +		fuse_wait_on_page_writeback(inode, page->index);
 +	}
 +
-+	if (req->num_pages &&
-+	    (req->num_pages == FUSE_MAX_PAGES_PER_REQ ||
-+	     (req->num_pages + 1) * PAGE_CACHE_SIZE > fc->max_write ||
-+	     req->pages[req->num_pages - 1]->index + 1 != page->index)) {
-+		int err;
-+
-+		err = fuse_send_writepages(data);
-+		if (err) {
-+			unlock_page(page);
-+			return err;
-+		}
-+
-+		data->req = req =
-+			fuse_request_alloc_nofs(FUSE_MAX_PAGES_PER_REQ);
-+		if (!req) {
-+			unlock_page(page);
-+			return -ENOMEM;
-+		}
-+	}
-+
-+	req->pages[req->num_pages] = page;
-+	req->num_pages++;
-+
-+	if (test_set_page_writeback(page))
-+		BUG();
-+
-+	unlock_page(page);
-+
-+	return 0;
-+}
-+
-+static int fuse_writepages(struct address_space *mapping,
-+			   struct writeback_control *wbc)
-+{
-+	struct inode *inode = mapping->host;
-+	struct fuse_conn *fc = get_fuse_conn(inode);
-+	struct fuse_fill_data data;
-+	int err;
-+
-+	if (!fc->writeback_cache)
-+		return generic_writepages(mapping, wbc);
-+
-+	err = -EIO;
-+	if (is_bad_inode(inode))
-+		goto out;
-+
-+	data.ff = NULL;
-+	data.inode = inode;
-+	data.req = fuse_request_alloc_nofs(FUSE_MAX_PAGES_PER_REQ);
-+	err = -ENOMEM;
-+	if (!data.req)
-+		goto out_put;
-+
-+	err = write_cache_pages(mapping, wbc, fuse_writepages_fill, &data);
-+	if (data.req) {
-+		if (!err && data.req->num_pages) {
-+			err = fuse_send_writepages(&data);
-+			if (err)
-+				fuse_put_request(fc, data.req);
-+		} else
-+			fuse_put_request(fc, data.req);
-+	}
-+out_put:
-+	if (data.ff)
-+		fuse_file_put(data.ff, false);
-+out:
-+	return err;
-+}
-+
-+/*
-+ * Determine the number of bytes of data the page contains
-+ */
-+static inline unsigned fuse_page_length(struct page *page)
-+{
-+	loff_t i_size = i_size_read(page_file_mapping(page)->host);
-+
-+	if (i_size > 0) {
-+		pgoff_t page_index = page_file_index(page);
-+		pgoff_t end_index = (i_size - 1) >> PAGE_CACHE_SHIFT;
-+		if (page_index < end_index)
-+			return PAGE_CACHE_SIZE;
-+		if (page_index == end_index)
-+			return ((i_size - 1) & ~PAGE_CACHE_MASK) + 1;
-+	}
-+	return 0;
-+}
-+
-+static int fuse_prepare_write(struct fuse_conn *fc, struct file *file,
-+		struct page *page, loff_t pos, unsigned len)
-+{
-+	struct fuse_req *req = NULL;
-+	unsigned num_read;
-+	unsigned page_len;
-+	int err;
-+
-+	if (PageUptodate(page) || (len == PAGE_CACHE_SIZE))
-+		return 0;
-+
-+	page_len = fuse_page_length(page);
-+	if (!page_len) {
-+		zero_user(page, 0, PAGE_CACHE_SIZE);
-+		return 0;
-+	}
-+
-+	num_read = __fuse_readpage(file, page, page_len, &err, &req, NULL);
-+	if (req)
-+		fuse_put_request(fc, req);
-+	if (err) {
-+		unlock_page(page);
-+		page_cache_release(page);
-+	} else if (num_read != PAGE_CACHE_SIZE) {
-+		zero_user_segment(page, num_read, PAGE_CACHE_SIZE);
-+	}
-+	return err;
-+}
-+
-+/*
-+ * It's worthy to make sure that space is reserved on disk for the write,
-+ * but how to implement it without killing performance need more thinking.
-+ */
-+static int fuse_write_begin(struct file *file, struct address_space *mapping,
-+		loff_t pos, unsigned len, unsigned flags,
-+		struct page **pagep, void **fsdata)
-+{
-+	pgoff_t index = pos >> PAGE_CACHE_SHIFT;
-+	struct fuse_conn *fc = get_fuse_conn(file->f_dentry->d_inode);
-+
-+	BUG_ON(!fc->writeback_cache);
-+
-+	*pagep = grab_cache_page_write_begin(mapping, index, flags);
-+	if (!*pagep)
-+		return -ENOMEM;
-+
-+	return fuse_prepare_write(fc, file, *pagep, pos, len);
-+}
-+
-+static int fuse_commit_write(struct file *file, struct page *page,
-+		unsigned from, unsigned to)
-+{
-+	struct inode *inode = page->mapping->host;
-+	loff_t pos = ((loff_t)page->index << PAGE_CACHE_SHIFT) + to;
-+
-+	if (!PageUptodate(page))
-+		SetPageUptodate(page);
-+
-+	fuse_write_update_size(inode, pos);
-+	set_page_dirty(page);
-+	return 0;
-+}
-+
-+static int fuse_write_end(struct file *file, struct address_space *mapping,
-+		loff_t pos, unsigned len, unsigned copied,
-+		struct page *page, void *fsdata)
-+{
-+	unsigned from = pos & (PAGE_CACHE_SIZE - 1);
-+
-+	fuse_commit_write(file, page, from, from+copied);
-+
-+	unlock_page(page);
-+	page_cache_release(page);
-+
-+	return copied;
-+}
-+
- static int fuse_launder_page(struct page *page)
- {
- 	int err = 0;
-@@ -2419,11 +2700,14 @@ static const struct file_operations fuse_direct_io_file_operations = {
- static const struct address_space_operations fuse_file_aops  = {
- 	.readpage	= fuse_readpage,
- 	.writepage	= fuse_writepage,
-+	.writepages	= fuse_writepages,
- 	.launder_page	= fuse_launder_page,
- 	.readpages	= fuse_readpages,
- 	.set_page_dirty	= __set_page_dirty_nobuffers,
- 	.bmap		= fuse_bmap,
- 	.direct_IO	= fuse_direct_IO,
-+	.write_begin	= fuse_write_begin,
-+	.write_end	= fuse_write_end,
- };
+ 	set_page_writeback(page);
  
- void fuse_init_file_inode(struct inode *inode)
+ 	req = fuse_request_alloc_nofs(1);
+@@ -1527,7 +1536,7 @@ static int fuse_writepage(struct page *page, struct writeback_control *wbc)
+ {
+ 	int err;
+ 
+-	err = fuse_writepage_locked(page);
++	err = fuse_writepage_locked(page, wbc);
+ 	unlock_page(page);
+ 
+ 	return err;
+@@ -1797,7 +1806,10 @@ static int fuse_launder_page(struct page *page)
+ 	int err = 0;
+ 	if (clear_page_dirty_for_io(page)) {
+ 		struct inode *inode = page->mapping->host;
+-		err = fuse_writepage_locked(page);
++		struct writeback_control wbc = {
++			.sync_mode = WB_SYNC_ALL,
++		};
++		err = fuse_writepage_locked(page, &wbc);
+ 		if (!err)
+ 			fuse_wait_on_page_writeback(inode, page->index);
+ 	}
 
