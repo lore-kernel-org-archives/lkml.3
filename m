@@ -1,92 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758964Ab3DASdi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 14:33:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43564 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758062Ab3DASdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 14:33:37 -0400
-Message-ID: <5159D2E9.7080707@zytor.com>
-Date: Mon, 01 Apr 2013 11:33:13 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1759056Ab3DASgU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 14:36:20 -0400
+Received: from ihemail4.lucent.com ([135.245.0.39]:45699 "EHLO
+	ihemail4.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758607Ab3DASgT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 14:36:19 -0400
+X-Greylist: delayed 1230 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Apr 2013 14:36:19 EDT
+Date: Mon, 1 Apr 2013 13:14:50 -0500 (CDT)
+From: Ilija Hadzic <ihadzic@research.bell-labs.com>
+X-X-Sender: ihadzic@umail
+To: Michal Hocko <mhocko@suse.cz>
+cc: Ilija Hadzic <ilijahadzic@gmail.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Marco Munderloh <munderl@tnt.uni-hannover.de>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm: fix i_mapping and f_mapping initialization in
+ drm_open in error path
+In-Reply-To: <20130331103418.GA18476@dhcp22.suse.cz>
+Message-ID: <Pine.GSO.4.64.1304011249370.27674@umail>
+References: <20130326195601.GA5124@dhcp22.suse.cz>
+ <CA+4h6Hnhm-Ox_5dRdBH3C9Lh_qVNac8_oL=3ruy75jBX7xp9OQ@mail.gmail.com>
+ <20130331103418.GA18476@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH] kexec: use Crash kernel for Crash kernel low
-References: <20130320163131.GE2273@redhat.com> <1363807329-24975-1-git-send-email-yinghai@kernel.org> <20130325194245.GA7357@redhat.com> <CAE9FiQU6bGSAODX_-Vir6D-LyY-9Sm84rYzq=gNhDZ5whbia_w@mail.gmail.com> <20130326181418.GA6775@redhat.com> <20130401133428.GA13499@redhat.com>
-In-Reply-To: <20130401133428.GA13499@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="-559023410-851401618-1364840090=:14318"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2013 06:34 AM, Vivek Goyal wrote:
-> On Tue, Mar 26, 2013 at 02:14:18PM -0400, Vivek Goyal wrote:
->> On Mon, Mar 25, 2013 at 02:50:18PM -0700, Yinghai Lu wrote:
->>> On Mon, Mar 25, 2013 at 12:42 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
->>>> So it is a forgone conclusion that these new kernel changes to
->>>> crashkernel=X in 3.9 are incompatible with older kexec-tools and one
->>>> needs to upgrade kexec-tools.
->>>
->>> I thought that you and hpa all agreed that user need to update kexec-tools with
->>> new kernel v3.9. It that still right?
->>
->> I can update kexec-tools and I don't have problems with that. I am only
->> concerned about some xyz user complaining that new kernel stopped working
->> with old kexec-tools and then possibly face the rant from Linus about
->> breaking user space. :-)
->>
->> To me we could maintain backward compatibility by retaining the existing
->> behavior of crashkernle=X. That is  look for specificied memory below
->> 896M first and then go higher.
->>
->> And hide new semantics behind new kernel parameters or by extending
->> existing parameter (say crashkernel=X:search_high_first) to specify how
->> to search for reserved memory.
->>
->> In both the cases we should probably retain the logic of auto reserving
->> low memory for software iotlb and let user opt out if there is no need.
->>
->> So we don't have a strong reason that why we should break existing
->> kexec-tools. So I would prefer not to break it.
->>
->> But I think this is hpa's decision.
-> 
-> hpa,
-> 
-> ping. Any thoughts on this?
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Pardon me while I retch.  The whole kdump dependency mess is making me
-sick to my stomach.
+---559023410-851401618-1364840090=:14318
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 
-The fundamental problem you have is that the user has to take an action
-that doesn't make any sense, because there isn't any sane method to
-backflow the requirements from the crashkernel to the command line.
 
-The only way I can think how to deal with that in a sane way that
-doesn't require that the user has to understand a whole bunch of things
-about their system that no user should ever have to be burdened with is
-to have the packaging system feed back information about the crashkernel
-and kexec-tools that will be used.  That interface probably needs
-serious architecting.
 
-I wouldn't object to crashkernel=<size>,<option>,<option>... being the
-format for that and it has the plus that it doesn't break less.  So
-something like "crashkernel=800M,high" (:search_high_first is
-inconsistent with other options and completely pointlessly wordy... this
-isn't Multics, and the command line space is a limited resource) would
-make sense.
+On Sun, 31 Mar 2013, Michal Hocko wrote:
 
-However, I really strongly suggest you work on a mechanism to take the
-information about the crashkernel and utilities that the kernel can't
-know and feed it into the bootloader configuration.  This can be as
-simple as a set of scripts.
+> On Sat 30-03-13 18:26:53, Ilija Hadzic wrote:
+>> This looks a bit like a hack and it doesn't look right,
+>> conceptually. If the call fails, it should restore things as if
+>> nothing has ever happened and overwriting old_mapping is not going to
+>> do the trick.
+>
+> OK, I thought this is what the patch does as it falls back to
+> &inode->i_data which is the default mapping for all inodes or it uses
+> what used to be in device mapping.
+>
+> I am obviously not familiar with the drm code but it feels a bit strange
+> that the device mapping can be different than inode's resp. file's one
 
-	-hpa
+The reason for this is explained in commit message associated with
+949c4a34.
 
+In summary, the device's mapping is that of the inode associated with the
+first opener. Before 949c4a34, subsequent openers would have to come in
+through exactly the same inode that the first opener came in (otherwise 
+the open call would fail). So if a user did something like: start X, 
+remove /dev/dri/cardN file, mknod the same file again, the applications 
+started after such an action would stop working. Also, using the GPU from 
+chroot-ed environment was not possible if there was another opener from 
+different root.
+
+The 949c4a34, removed this restriction, but introduced a problem with 
+VmWare GPU drivers, which fdb40a08. However, fdb40a08 introduced the bug 
+that you have reported.
+
+The problem that I have with your proposed fix is that if the first opener 
+fails, it can set the device's mapping to that of the inode that was never 
+used and never opened (and could even be removed later down the road).
+
+> and even more confusing that inode and file are saved separately.
+>
+
+I was trying to quickly get out the patch that was safe in terms of 
+introducing new breakage. So the "conservative" thing to do (without 
+having to think through all possible scenarios) was to restore each of the 
+three pointers from their own temporary variable. Thinking about it, you 
+are probably right that file descriptor's and inode's mapping pointer are 
+equal when open call is entered so we could use one variable. However, you 
+still need a separate variable to store the device's mapping pointer 
+because that one can be different.
+
+Attached is a v2 of the patch, for reference. I would appreciate if the 
+original reporter or you tested it in lieu of your proposed patch and let 
+me know if it fixes your issue.
+
+-- Ilija
+
+---559023410-851401618-1364840090=:14318
+Content-Type: TEXT/PLAIN; charset=US-ASCII; name=0001-drm-correctly-restore-mappings-if-drm_open-fails.patch
+Content-Transfer-Encoding: BASE64
+Content-ID: <Pine.GSO.4.64.1304011314500.14318@umail>
+Content-Description: 
+Content-Disposition: attachment; filename=0001-drm-correctly-restore-mappings-if-drm_open-fails.patch
+
+RnJvbSA3ZTNjODMyMTU4ZTI1NTJlNWUxMDZhNTg4ZTJiOWU2MWMzNWI2OGYy
+IE1vbiBTZXAgMTcgMDA6MDA6MDAgMjAwMQ0KRnJvbTogSWxpamEgSGFkemlj
+IDxpaGFkemljQHJlc2VhcmNoLmJlbGwtbGFicy5jb20+DQpEYXRlOiBTYXQs
+IDMwIE1hciAyMDEzIDE4OjIwOjM1IC0wNDAwDQpTdWJqZWN0OiBbUEFUQ0hd
+IGRybTogY29ycmVjdGx5IHJlc3RvcmUgbWFwcGluZ3MgaWYgZHJtX29wZW4g
+ZmFpbHMNCg0KSWYgZmlyc3QgZHJtX29wZW4gZmFpbHMsIHRoZSBlcnJvci1o
+YW5kbGluZyBwYXRoIHdpbGwNCmluY29ycmVjdGx5IHJlc3RvcmUgaW5vZGUn
+cyBtYXBwaW5nIHRvIE5VTEwuIFRoaXMgY2FuDQpjYXVzZSB0aGUgY3Jhc2gg
+bGF0ZXIgb24uIEZpeCBieSBzZXBhcmF0ZWx5IHN0b3JpbmcNCmF3YXkgbWFw
+cGluZyBwb2ludGVycyB0aGF0IGRybV9vcGVuIGNhbiB0b3VjaCBhbmQNCnJl
+c3RvcmUgZWFjaCBmcm9tIGl0cyBvd24gcmVzcGVjdGl2ZSB2YXJpYWJsZSBp
+ZiB0aGUNCmNhbGwgZmFpbHMuDQoNClJlZmVyZW5jZToNCmh0dHA6Ly9saXN0
+cy5mcmVlZGVza3RvcC5vcmcvYXJjaGl2ZXMvZHJpLWRldmVsLzIwMTMtTWFy
+Y2gvMDM2NTY0Lmh0bWwNCg0KdjI6IHVzZSBvbmUgdmFyaWFibGUgdG8gc3Rv
+cmUgZmlsZSBhbmQgaW5vZGUgbWFwcGluZw0KICAgIHNpbmNlIHRoZXkgYXJl
+IHRoZSBzYW1lIGF0IHRoZSBmdW5jdGlvbiBlbnRyeTsgYWxzbw0KICAgIGZp
+eCBzcGVsbGluZyBtaXN0YWtlcyBpbiBjb21taXQgbWVzc2FnZS4NCg0KUmVw
+b3J0ZWQtYnk6IE1hcmNvIE11bmRlcmxvaCA8bXVuZGVybEB0bnQudW5pLWhh
+bm5vdmVyLmRlPg0KU2lnbmVkLW9mZi1ieTogSWxpamEgSGFkemljIDxpaGFk
+emljQHJlc2VhcmNoLmJlbGwtbGFicy5jb20+DQpDYzogTWljaGFsIEhvY2tv
+IDxtaG9ja29Ac3VzZS5jej4NCkNjOiBzdGFibGVAdmdlci5rZXJuZWwub3Jn
+DQoNClNpZ25lZC1vZmYtYnk6IElsaWphIEhhZHppYyA8aWhhZHppY0ByZXNl
+YXJjaC5iZWxsLWxhYnMuY29tPg0KLS0tDQogZHJpdmVycy9ncHUvZHJtL2Ry
+bV9mb3BzLmMgfCAgICA2ICsrKystLQ0KIDEgZmlsZXMgY2hhbmdlZCwgNCBp
+bnNlcnRpb25zKCspLCAyIGRlbGV0aW9ucygtKQ0KDQpkaWZmIC0tZ2l0IGEv
+ZHJpdmVycy9ncHUvZHJtL2RybV9mb3BzLmMgYi9kcml2ZXJzL2dwdS9kcm0v
+ZHJtX2ZvcHMuYw0KaW5kZXggMTNmZGNkMS4uNDI5ZTA3ZCAxMDA2NDQNCi0t
+LSBhL2RyaXZlcnMvZ3B1L2RybS9kcm1fZm9wcy5jDQorKysgYi9kcml2ZXJz
+L2dwdS9kcm0vZHJtX2ZvcHMuYw0KQEAgLTEyMyw2ICsxMjMsNyBAQCBpbnQg
+ZHJtX29wZW4oc3RydWN0IGlub2RlICppbm9kZSwgc3RydWN0IGZpbGUgKmZp
+bHApDQogCWludCByZXRjb2RlID0gMDsNCiAJaW50IG5lZWRfc2V0dXAgPSAw
+Ow0KIAlzdHJ1Y3QgYWRkcmVzc19zcGFjZSAqb2xkX21hcHBpbmc7DQorCXN0
+cnVjdCBhZGRyZXNzX3NwYWNlICpvbGRfaW1hcHBpbmc7DQogDQogCW1pbm9y
+ID0gaWRyX2ZpbmQoJmRybV9taW5vcnNfaWRyLCBtaW5vcl9pZCk7DQogCWlm
+ICghbWlub3IpDQpAQCAtMTM3LDYgKzEzOCw3IEBAIGludCBkcm1fb3Blbihz
+dHJ1Y3QgaW5vZGUgKmlub2RlLCBzdHJ1Y3QgZmlsZSAqZmlscCkNCiAJaWYg
+KCFkZXYtPm9wZW5fY291bnQrKykNCiAJCW5lZWRfc2V0dXAgPSAxOw0KIAlt
+dXRleF9sb2NrKCZkZXYtPnN0cnVjdF9tdXRleCk7DQorCW9sZF9pbWFwcGlu
+ZyA9IGlub2RlLT5pX21hcHBpbmc7DQogCW9sZF9tYXBwaW5nID0gZGV2LT5k
+ZXZfbWFwcGluZzsNCiAJaWYgKG9sZF9tYXBwaW5nID09IE5VTEwpDQogCQlk
+ZXYtPmRldl9tYXBwaW5nID0gJmlub2RlLT5pX2RhdGE7DQpAQCAtMTU5LDgg
+KzE2MSw4IEBAIGludCBkcm1fb3BlbihzdHJ1Y3QgaW5vZGUgKmlub2RlLCBz
+dHJ1Y3QgZmlsZSAqZmlscCkNCiANCiBlcnJfdW5kbzoNCiAJbXV0ZXhfbG9j
+aygmZGV2LT5zdHJ1Y3RfbXV0ZXgpOw0KLQlmaWxwLT5mX21hcHBpbmcgPSBv
+bGRfbWFwcGluZzsNCi0JaW5vZGUtPmlfbWFwcGluZyA9IG9sZF9tYXBwaW5n
+Ow0KKwlmaWxwLT5mX21hcHBpbmcgPSBvbGRfaW1hcHBpbmc7DQorCWlub2Rl
+LT5pX21hcHBpbmcgPSBvbGRfaW1hcHBpbmc7DQogCWlwdXQoY29udGFpbmVy
+X29mKGRldi0+ZGV2X21hcHBpbmcsIHN0cnVjdCBpbm9kZSwgaV9kYXRhKSk7
+DQogCWRldi0+ZGV2X21hcHBpbmcgPSBvbGRfbWFwcGluZzsNCiAJbXV0ZXhf
+dW5sb2NrKCZkZXYtPnN0cnVjdF9tdXRleCk7DQotLSANCjEuNy40LjENCg0K
+
+---559023410-851401618-1364840090=:14318--
