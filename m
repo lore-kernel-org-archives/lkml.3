@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758353Ab3DAV3N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 17:29:13 -0400
-Received: from smtp.opengridcomputing.com ([72.48.136.20]:49936 "EHLO
+	id S1758382Ab3DAV3s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 17:29:48 -0400
+Received: from smtp.opengridcomputing.com ([72.48.136.20]:49946 "EHLO
 	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757739Ab3DAV3M (ORCPT
+	by vger.kernel.org with ESMTP id S1755972Ab3DAV3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 17:29:12 -0400
-Message-ID: <5159FC3B.9010705@opengridcomputing.com>
-Date: Mon, 01 Apr 2013 16:29:31 -0500
+	Mon, 1 Apr 2013 17:29:46 -0400
+Message-ID: <5159FC5D.9090805@opengridcomputing.com>
+Date: Mon, 01 Apr 2013 16:30:05 -0500
 From: Steve Wise <swise@opengridcomputing.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
@@ -19,12 +19,16 @@ CC: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org,
         Hal Rosenstock <hal.rosenstock@gmail.com>,
         Vipul Pandya <vipul@chelsio.com>
 Subject: Re: [PATCH] cxgb4: fix SQ allocation when On-Chip SQ is disabled
-References: <1364847219-26078-1-git-send-email-cascardo@linux.vnet.ibm.com>
-In-Reply-To: <1364847219-26078-1-git-send-email-cascardo@linux.vnet.ibm.com>
+References: <1364847219-26078-1-git-send-email-cascardo@linux.vnet.ibm.com> <5159FC3B.9010705@opengridcomputing.com>
+In-Reply-To: <5159FC3B.9010705@opengridcomputing.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Steve Wise <swise@opengridcomputing.com>
+On 4/1/2013 4:29 PM, Steve Wise wrote:
+> Acked-by: Steve Wise <swise@opengridcomputing.com>
+
+And thanks!
+
