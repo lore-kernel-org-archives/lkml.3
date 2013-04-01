@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759322Ab3DATFk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 15:05:40 -0400
-Received: from mga09.intel.com ([134.134.136.24]:38690 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759233Ab3DATFi convert rfc822-to-8bit (ORCPT
+	id S1759346Ab3DATOQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 15:14:16 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:60836 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759311Ab3DATOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 15:05:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,387,1363158000"; 
-   d="scan'208";a="287807247"
-From: "Love, Robert W" <robert.w.love@intel.com>
-To: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
-CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "fcoe-devel@open-fcoe.org" <fcoe-devel@open-fcoe.org>,
-        "Bhanu (Venkata Bhanu Prakash) Gollapudi" <bprakash@broadcom.com>
-Subject: fcoe pull-request 3.9-rc5
-Thread-Topic: fcoe pull-request 3.9-rc5
-Thread-Index: AQHOLwvj4ZshInu/i0CLktU3g5QSSw==
-Date: Mon, 1 Apr 2013 19:05:35 +0000
-Message-ID: <5159DA7E.7070606@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308
- Thunderbird/17.0.4
-x-originating-ip: [10.19.9.42]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <B3EB16E883FD214CB27E7F87404176F4@intel.com>
-Content-Transfer-Encoding: 7BIT
+	Mon, 1 Apr 2013 15:14:14 -0400
+Message-ID: <5159DC82.3050804@gmail.com>
+Date: Mon, 01 Apr 2013 14:14:10 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>
+CC: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Rob Herring <rob.herring@calxeda.com>,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH] of_net.h: Provide dummy functions if OF_NET is not configured
+References: <1364840349-10696-1-git-send-email-linux@roeck-us.net> <5159D588.5070603@gmail.com> <20130401190100.GA1042@roeck-us.net>
+In-Reply-To: <20130401190100.GA1042@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 8bb9660418e05bb1845ac1a2428444d78e322cc7:
+On 04/01/2013 02:01 PM, Guenter Roeck wrote:
+> On Mon, Apr 01, 2013 at 01:44:24PM -0500, Rob Herring wrote:
+>> On 04/01/2013 01:19 PM, Guenter Roeck wrote:
+>>> of_get_mac_address() and of_get_phy_mode() are only provided if OF_NET
+>>> is configured. While most callers check for the define, not all do, and those
+>>> who do require #ifdef around the code. For those who don't, the missing check
+>>> can result in errors such as
+>>
+>> How about removing the ifdef from those callers?
+>>
+> That would be the next step, after/if this one is accepted.
+> If not, it doesn't make sense to waste my time.
 
-   Linux 3.9-rc4 (2013-03-23 16:52:44 -0700)
+Assuming that is done:
 
-are available in the git repository at:
+Acked-by: Rob Herring <rob.herring@calxeda.com>
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/rwlove/fcoe.git 
-tags/for-3.9-rc
+Presumably with the follow-on patches, this can go in thru the net tree.
 
-for you to fetch changes up to 0db0e377ab5be5d507a2fca3d78215cd2e83b974:
+Rob
 
-   libfcoe: Fix fcoe_sysfs VN2VN mode (2013-03-25 16:04:22 -0700)
-
-----------------------------------------------------------------
-Critical patches to fix FCoE VN2VN mode with new interfaces targeting 3.9-rc
-
-----------------------------------------------------------------
-Robert Love (5):
-       bnx2fc: Make the fcoe_cltr the SCSI host parent
-       fcoe: Fix deadlock between create and destroy paths
-       libfc, fcoe, bnx2fc: Always use fcoe_disc_init for discovery 
-layer initialization
-       libfc, fcoe, bnx2fc: Split fc_disc_init into fc_disc_{init, config}
-       libfcoe: Fix fcoe_sysfs VN2VN mode
-
-  drivers/scsi/bnx2fc/bnx2fc_fcoe.c |    6 ++--
-  drivers/scsi/fcoe/fcoe.c          |   15 +++++++---
-  drivers/scsi/fcoe/fcoe_ctlr.c     |   60 
-++++++++++++++++++++++++++++---------
-  drivers/scsi/libfc/fc_disc.c      |   26 +++++++++++-----
-  include/scsi/libfc.h              |    3 +-
-  5 files changed, 80 insertions(+), 30 deletions(-)
+> Thanks,
+> Guenter
+> 
+>> Rob
+>>
+>>>
+>>> arch/powerpc/sysdev/tsi108_dev.c:107:3: error: implicit declaration of
+>>> 	function 'of_get_mac_address' [-Werror=implicit-function-declaration]
+>>> arch/powerpc/sysdev/mv64x60_dev.c:253:2: error: implicit declaration of
+>>> 	function 'of_get_mac_address' [-Werror=implicit-function-declaration]
+>>>
+>>> Provide dummy function declarations if OF_NET is not configured. This is safe
+>>> because all callers do check the return values. If desired, at least some of
+>>> the #ifdefs in the code can subsequently be removed.
+>>>
+>>> Cc: David Daney <david.daney@cavium.com>
+>>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>>> ---
+>>>  include/linux/of_net.h |   10 ++++++++++
+>>>  1 file changed, 10 insertions(+)
+>>>
+>>> diff --git a/include/linux/of_net.h b/include/linux/of_net.h
+>>> index f474641..61bf53b 100644
+>>> --- a/include/linux/of_net.h
+>>> +++ b/include/linux/of_net.h
+>>> @@ -11,6 +11,16 @@
+>>>  #include <linux/of.h>
+>>>  extern const int of_get_phy_mode(struct device_node *np);
+>>>  extern const void *of_get_mac_address(struct device_node *np);
+>>> +#else
+>>> +static inline const int of_get_phy_mode(struct device_node *np)
+>>> +{
+>>> +	return -ENODEV;
+>>> +}
+>>> +
+>>> +static inline const void *of_get_mac_address(struct device_node *np)
+>>> +{
+>>> +	return NULL;
+>>> +}
+>>>  #endif
+>>>  
+>>>  #endif /* __LINUX_OF_NET_H */
+>>>
+>>
+>>
 
