@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759623Ab3DATWx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 15:22:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45033 "EHLO mx1.redhat.com"
+	id S1759581Ab3DATWw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 15:22:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24700 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759370Ab3DATVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759507Ab3DATVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Apr 2013 15:21:36 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 24/27] kbuild: Introduce KCONFIG_AUTOCONFIGDEP variable for conf tool
-Date: Mon,  1 Apr 2013 21:18:47 +0200
-Message-Id: <1364843930-17974-25-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1364843930-17974-1-git-send-email-jolsa@redhat.com>
-References: <1364843930-17974-1-git-send-email-jolsa@redhat.com>
+Date: Mon, 1 Apr 2013 15:21:33 -0400
+From: "davej@redhat.com" <davej@redhat.com>
+To: "Sun, Yi" <yi.sun@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Fail to build trinity
+Message-ID: <20130401192133.GB30182@redhat.com>
+Mail-Followup-To: "davej@redhat.com" <davej@redhat.com>,
+	"Sun, Yi" <yi.sun@intel.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <D9F66AA509623343B6A9A3D4502D5A520FF21B43@SHSMSX102.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <D9F66AA509623343B6A9A3D4502D5A520FF21B43@SHSMSX102.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introducing KCONFIG_AUTOCONFIGDEP variable for conf tool
-allowing to specify custom auto.conf.cmd file.
+On Mon, Apr 01, 2013 at 03:09:09AM +0000, Sun, Yi wrote:
+ > Hi Dave,
+ > 
+ > I'm a newer for trinity. Apologize for my foolish question. :)
+ > 
+ > But I got the source with command: "git clone git://git.codemonkey.org.uk/trinity". While running ./configure.sh, got following failure:
+ > [root@x-ivb8 trinity]# ./configure.sh
+ > [*] Checking system headers.
+ > [*] Checking if pppox can use pppol2tpin6..  [NO]
+ > [*] Checking if pppox can use pppol2tv3..  [NO]
+ > [*] Checking if pppox can use pptp..  [NO]
+ > [*] Checking if llc can use LLC_OPT_PKTINFO..  [YES]
+ > [*] Checking if glibc headers provide termios2..  [NO]
+ > [*] Checking linux/caif/caif_socket.h exists...  [YES]
+ > [*] Checking linux/if_alg.h exists...  [YES]
+ > [*] Checking linux/rds.h exists...  [YES]
+ > [*] Checking linux/vfio.h exists...  [NO]
+ > [*] Checking linux/btrfs.h exists...  [NO]
+ > [*] Checking drm/exynos_drm.h exists...  [NO]
+ > [*] Checking sound/compress_offload.h exists...  [NO]
+ > [*] Checking linux/vhost.h exists...  [YES]
+ > 
+ > It seems I'm missing dozens of header files. So could you please guide me how to get those header files or some other libraries?
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org
-Cc: Stephane Eranian <eranian@google.com>
----
- scripts/kconfig/confdata.c | 11 ++++++++++-
- scripts/kconfig/lkc.h      |  1 +
- 2 files changed, 11 insertions(+), 1 deletion(-)
+They aren't actually failures.
 
-diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-index 13ddf11..435c361 100644
---- a/scripts/kconfig/confdata.c
-+++ b/scripts/kconfig/confdata.c
-@@ -75,6 +75,14 @@ const char *conf_get_autoconfig_name(void)
- 	return name ? name : "include/config/auto.conf";
- }
- 
-+const char *conf_get_autoconfigdep_name(void)
-+{
-+	char *name = getenv("KCONFIG_AUTOCONFIGDEP");
-+
-+	return name ? name : "include/config/auto.conf.cmd";
-+}
-+
-+
- static char *conf_expand_value(const char *in)
- {
- 	struct symbol *sym;
-@@ -948,7 +956,8 @@ int conf_write_autoconf(void)
- 
- 	sym_clear_all_valid();
- 
--	file_write_dep("include/config/auto.conf.cmd");
-+	name = conf_get_autoconfigdep_name();
-+	file_write_dep(name);
- 
- 	if (conf_split_config())
- 		return 1;
-diff --git a/scripts/kconfig/lkc.h b/scripts/kconfig/lkc.h
-index f8aee5f..5e370b1 100644
---- a/scripts/kconfig/lkc.h
-+++ b/scripts/kconfig/lkc.h
-@@ -83,6 +83,7 @@ const char *zconf_curname(void);
- /* confdata.c */
- const char *conf_get_configname(void);
- const char *conf_get_autoconfig_name(void);
-+const char *conf_get_autoconfigdep_name(void);
- char *conf_get_default_confname(void);
- void sym_set_change_count(int count);
- void sym_add_change_count(int count);
--- 
-1.7.11.7
+It should still compile even though it doesn't find all the headers.
+You just won't be able to fuzz those specific functions because your
+headers your distro puts in /usr/include don't have definitions for them.
+
+ > BTW, the mailing list linux-kernel@vger.kernel.org<mailto:linux-kernel@vger.kernel.org> doesn't work.
+
+Did you mean trinity@vger.kernel.org ? it seems to be working fine for others.
+
+	Dave
 
