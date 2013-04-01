@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053Ab3DANny (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 09:43:54 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49484 "EHLO
+	id S1757838Ab3DANqR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 09:46:17 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49501 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757595Ab3DANnx (ORCPT
+	by vger.kernel.org with ESMTP id S1757106Ab3DANqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 09:43:53 -0400
-Date: Mon, 1 Apr 2013 14:43:51 +0100
+	Mon, 1 Apr 2013 09:46:16 -0400
+Date: Mon, 1 Apr 2013 14:46:13 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Wenyou Yang <wenyou.yang@atmel.com>
 Cc: linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
         richard.genoud@gmail.com, plagnioj@jcrosoft.com,
         nicolas.ferre@atmel.com, JM.Lin@atmel.com,
         spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 05/14] spi/spi-atmel: status information passed
- through controller data
-Message-ID: <20130401134350.GX18636@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH v7 06/14] spi/spi-atmel: add flag to controller data for
+ lock operations
+Message-ID: <20130401134613.GY18636@opensource.wolfsonmicro.com>
 References: <1363678866-3567-1-git-send-email-wenyou.yang@atmel.com>
- <1363679101-3834-1-git-send-email-wenyou.yang@atmel.com>
+ <1363679163-3897-1-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NAuYj0K7Umiq33rm"
+	protocol="application/pgp-signature"; boundary="Z8pjODCYYz+3zRe3"
 Content-Disposition: inline
-In-Reply-To: <1363679101-3834-1-git-send-email-wenyou.yang@atmel.com>
+In-Reply-To: <1363679163-3897-1-git-send-email-wenyou.yang@atmel.com>
 X-Cookie: You will be awarded some great honor.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,40 +31,49 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---NAuYj0K7Umiq33rm
+--Z8pjODCYYz+3zRe3
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Mar 19, 2013 at 03:45:01PM +0800, Wenyou Yang wrote:
-> From: Nicolas Ferre <nicolas.ferre@atmel.com>
->=20
-> The status of transfer is stored in controller data structure
-> so that it can be used not only by atmel_spi_msg_done() function.
-> This will be useful for upcoming dmaengine enabled driver.
+On Tue, Mar 19, 2013 at 03:46:03PM +0800, Wenyou Yang wrote:
 
-Applied, thanks.
+> +static void atmel_spi_lock(struct atmel_spi *as)
+> +{
+> +		spin_lock_irqsave(&as->lock, as->flags);
+> +}
 
---NAuYj0K7Umiq33rm
+Coding style.
+
+> -	spin_unlock(&as->lock);
+> +	atmel_spi_unlock(as);
+>  	msg->complete(msg->context);
+> -	spin_lock(&as->lock);
+> +	atmel_spi_lock(as);
+
+This replaces non-irqsave versions with irqsave versions of the lock.
+Is this safe/correct?  If it is I'd have expected some sort of mention
+of it in the commit log.
+
+--Z8pjODCYYz+3zRe3
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRWY8QAAoJELSic+t+oim9Wz8P/jrlA/TjQ8b92bZhLp7rESwP
-CzmjmFfXO+DPHT4DtaqRWDyH8PkEUAvn1LXWWOsE82JjbnmDRjXSsLUV16dYAmXX
-Hl3StmCL2boDG0scyZEjlWkWvg//QMljy9iotWRMjqjyceSqXkFC7UmqsvLTw8/f
-iRo3C1cmwLPkeMIfJHno+//0bFdWaQGcEjl1BDzs+0ouxT7D5HjPpbXDsTxpxN5w
-PgZqHQTkaS6ifl/82ZnXraML1eauHFSi38CDBfXS23ulwCfx5T4h4K2aOy3A3ehX
-rpLAEBPaRRaIosBngqCbftLgB9TKUxocMp3k7GoVQLzL5rTX0yMAFBiSrLvGA8dv
-w1pCafpBD7bO9gT/KH5vV/rLWIDHgtNVoazOR/Ul5b1aHrqyxkC00iW1rhXSi0/Q
-4Q/SyiOW8kr3CIRuMIKqfZKAoahrOUZ1Iq+e/5P8eBF7KjEx88OPw5IHmL5kx/8Y
-Kdc4s++uiCa5hfS9W5Qa4GXv/d1mgCidJeQKQ4CcQGLvZzDIAcHUmQm4S4wInfaX
-v0NLAqxOjVtjegghEcmq6GRAHIkcjAVXneX+ane9q/l/WxxxA52K9+1XbrxXRtAl
-963n4Q/WXBfFUbRrB6nuUBlATuPdi/oyh05PY/6dVWQLZ23nfkPVCXJE4uRobTal
-yYZtTv3geXJXwtO9xaun
-=Hwth
+iQIcBAEBAgAGBQJRWY+fAAoJELSic+t+oim9RncP/0xjOvN+as2WaphlQBQHm+WI
+ztDo6ZQXCheZ2Xxm7pWMRQp7xlWl9osMsy4AyXUViUcjnJnVJ41yaJFRc1vsFKqC
+Dp17ncfaBag3YpX8yhicXHXMbckjy8GFcPVLJ262Es58BR+ZCClw4GFd30IjoGt/
+hmovNlz2h5+wrn51uuF1lRcELxvDx1mbecsj5ExwDNCWOp6JBdyoAn4PzhQ3RCWs
+JHgy0FFBJ8agqZMH9StxeRJJAhnnAMFTIts010LyYosJyPQCAe3I/arMyse6WY2y
+RkeP/X6NaNjqaSq/k+EWIuzvHbh6cWZf1THlKk6oKoJhHkhiRmH3foRAWBBOKJSJ
+BMewxiPl50fERxt6jU2u33rTDqSvybAX/zGKPF00ksqgeRQ6zAZl+1ZQ3NO3Yopq
+JD2yx0MOKa+7a2s38/aqbJhEW6ycshcmEVN8Z9SRFAcRIH0CO7uL7cG/gKKMcZnJ
+tUt6v1l+i3ZRohwT/ULZAmJDiyqB9bm9Mtam+7fQGr4EeqUCa6JH+D2urp0gVmLy
+DFpBmI5Kt3BS0ie+2wAEle/UmzPr3x4xH9yKTGJub2meRfgXEqqOx6JGLODtgi/E
+IWcwqvAqQdZSWnKbo+8AOhB84x4oEHzVneA9Ctg2OeoSNz7v2KtkPRFQ1NyUzb5b
+ckX4Rbw2RGBqx2M3g8DL
+=NYp+
 -----END PGP SIGNATURE-----
 
---NAuYj0K7Umiq33rm--
+--Z8pjODCYYz+3zRe3--
