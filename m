@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756478Ab3DACiH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 22:38:07 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:30584 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755385Ab3DACiF (ORCPT
+	id S1756492Ab3DACja (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 22:39:30 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:59999 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754834Ab3DACj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 22:38:05 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: akpm@linux-foundation.org
-Cc: riel@surriel.com, davidlohr.bueso@hp.com, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] ipc,sem: prevent releasing RCU read lock twice in semctl_main
-Date: Sun, 31 Mar 2013 22:36:44 -0400
-Message-Id: <1364783804-28415-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.1.5
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Sun, 31 Mar 2013 22:39:29 -0400
+Message-ID: <5158F344.9020509@huawei.com>
+Date: Mon, 1 Apr 2013 10:39:00 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Glauber Costa <glommer@parallels.com>
+CC: Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] memcg: avoid accessing memcg after releasing reference
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We will release RCU read lock twice if the sem id passed from userspace is
-not within the legal range in semctl_main.
+This might cause use-after-free bug.
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- ipc/sem.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/ipc/sem.c b/ipc/sem.c
-index 6e109ef..ac36671 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -1333,8 +1333,10 @@ static int semctl_main(struct ipc_namespace *ns, int semid, int semnum,
- 	/* GETVAL, GETPID, GETNCTN, GETZCNT: fall-through */
- 	}
- 	err = -EINVAL;
--	if(semnum < 0 || semnum >= nsems)
--		goto out_unlock;
-+	if(semnum < 0 || semnum >= nsems) {
-+		rcu_read_unlock();
-+		goto out_wakeup;
-+	}
+found when reading the code.
+
+---
+ mm/memcontrol.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 8ec501c..6391046 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3186,12 +3186,12 @@ void memcg_release_cache(struct kmem_cache *s)
  
- 	sem_lock(sma, NULL, -1);
- 	curr = &sma->sem_base[semnum];
+ 	root = s->memcg_params->root_cache;
+ 	root->memcg_params->memcg_caches[id] = NULL;
+-	mem_cgroup_put(memcg);
+ 
+ 	mutex_lock(&memcg->slab_caches_mutex);
+ 	list_del(&s->memcg_params->list);
+ 	mutex_unlock(&memcg->slab_caches_mutex);
+ 
++	mem_cgroup_put(memcg);
+ out:
+ 	kfree(s->memcg_params);
+ }
 -- 
-1.8.1.5
-
+1.8.0.2
