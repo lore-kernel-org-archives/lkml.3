@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759365Ab3DAWxY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 18:53:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50354 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759332Ab3DAWxW (ORCPT
+	id S1759444Ab3DAWxq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 18:53:46 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:46801 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759421Ab3DAWxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 18:53:22 -0400
-Message-ID: <515A01D3.6070601@infradead.org>
-Date: Mon, 01 Apr 2013 14:53:23 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Mon, 1 Apr 2013 18:53:43 -0400
+Message-ID: <515A0E69.2040604@gmail.com>
+Date: Mon, 01 Apr 2013 16:47:05 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Andy King <acking@vmware.com>,
-        Dmitry Torokhov <dtor@vmware.com>
-Subject: Re: [PATCH] misc/vmw_vmci: VMWARE_VMCI depends on NET
-References: <1364791439-28396-1-git-send-email-linux@roeck-us.net> <20130401192939.GA31983@kroah.com> <20130401200235.GA14969@roeck-us.net> <20130401201152.GA29283@kroah.com> <20130401221730.GA28799@roeck-us.net>
-In-Reply-To: <20130401221730.GA28799@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: John Stultz <john.stultz@linaro.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] timekeeping: Add tracepoints for xtime changes - v2
+References: <1363710477-4203-1-git-send-email-dsahern@gmail.com> <CANcMJZCJK_8r6y0MbhhgyTkk=7dMOFZO-KkeVy4MLE5PZxEZqg@mail.gmail.com> <515A0317.1070800@gmail.com> <515A072A.3080307@linaro.org>
+In-Reply-To: <515A072A.3080307@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/13 15:17, Guenter Roeck wrote:
-> On Mon, Apr 01, 2013 at 01:11:52PM -0700, Greg Kroah-Hartman wrote:
->> On Mon, Apr 01, 2013 at 01:02:35PM -0700, Guenter Roeck wrote:
->>> On Mon, Apr 01, 2013 at 12:29:39PM -0700, Greg Kroah-Hartman wrote:
->>>> On Sun, Mar 31, 2013 at 09:43:59PM -0700, Guenter Roeck wrote:
->>>>> Fix:
->>>>>
->>>>> ERROR: "memcpy_toiovec" [drivers/misc/vmw_vmci/vmw_vmci.ko] undefined!
->>>>> ERROR: "memcpy_fromiovec" [drivers/misc/vmw_vmci/vmw_vmci.ko] undefined!
->>>>>
->>>>> Both functions are defined in the core networking code.
->>>>
->>>> This is already in linux-next, thanks.
->>>>
->>> Uuh ... and I submitted it. Sorry for the noise.
->>>
->>> Any chance to apply this to 3.9-rc ? It causes a bunch of unnecessary
->>> nightly build errors for me.
->>
->> As it's a configuration that no "real" user would ever hit, it's not
->> really 3.9 material, sorry.
->>
-> Fair enough.
-> 
-> On the other side, value of "make randconfig" has been reduced significantly
-> compared to earlier times, when patches like this tended to be accepted into
-> release candidates. Until a few releases ago, "make randconfig" usually passed
-> at least for main targets by the time a kernel was relased. With this no longer
-> the case, fewer and fewer people will look into nightly or per-rc build results
-> and provide patches. This in turn will likely reduce reliability, as real
-> problems are more and more hidden among all the "unreal" build errors.
-> In addition to that, more and more people will end up with non-buildable
-> configurations and have to spend time trying to figure out why exactly
-> a build failed.
-> 
-> But maybe this is all my imagination, so feel free to just ignore my ranting ;).
+On 4/1/13 4:16 PM, John Stultz wrote:
+> I guess what I'm getting at is: What ABI are we creating here?  Can
+> these tracepoints come and go without any consequence? Or would changing
+> them in the future cause application breakage?
+>
+> I'm somewhat worried even trace_tod_update() is maybe too vague (again
+> not that the name specifically is critical, but that the semantics we're
+> specifying are clear). In other words, I think you're wanting a
+> tracepoint at any time CLOCK_REALTIME is updated by anything other then
+> the normal progression of time? Is that right?
 
+yes. essentially everywhere timekeeping_update() is called except 
+update_wall_time().
 
-My experiences have been that Linus is not opposed to taking such
-build fixes at almost any time.  IOW, I think that Greg is being more
-strict than Linus would be, but Greg is the misc/ maintainer, so it's
-his call.
+>
+> You may want to also include the leapsecond modification in the tracing
+> as well.
 
+I thought those were covered as well. hmm... maybe not if it triggers in 
+update_wall_time.
 
-
--- 
-~Randy
+David
