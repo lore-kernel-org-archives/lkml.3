@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758305Ab3DAOmX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 10:42:23 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:51878 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab3DAOmW (ORCPT
+	id S1758422Ab3DAOmi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 10:42:38 -0400
+Received: from sapphire.tuxdriver.com ([70.61.120.61]:60475 "EHLO
+	Linville-X1.hq.tuxdriver.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758132Ab3DAOmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 10:42:22 -0400
-X-IronPort-AV: E=Sophos;i="4.87,387,1363132800"; 
-   d="scan'208";a="15895864"
-Date: Mon, 1 Apr 2013 15:42:18 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Rob Herring <robherring2@gmail.com>
-CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 2/2] arm: prefer PSCI for SMP bringup
-In-Reply-To: <5155EC28.8050608@gmail.com>
-Message-ID: <alpine.DEB.2.02.1304011541010.5078@kaball.uk.xensource.com>
-References: <1364575371-8926-2-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.LFD.2.03.1303291320580.1372@syhkavp.arg> <alpine.DEB.2.02.1303291735080.4430@kaball.uk.xensource.com> <alpine.LFD.2.03.1303291349150.1372@syhkavp.arg>
- <5155EC28.8050608@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 1 Apr 2013 10:42:35 -0400
+Date: Mon, 1 Apr 2013 10:42:25 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: phaber@broadcom.com, arend@broadcom.com, pieterpg@broadcom.com,
+        meuleman@broadcom.com, LKML <linux-kernel@vger.kernel.org>,
+        brudley@broadcom.com, frankyl@broadcom.com,
+        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        netdev@vger.kernel.org
+Subject: Re: [v3.8, v3.9] [Regression] brcmsmac: move PHY functions
+Message-ID: <20130401144225.GC21859@tuxdriver.com>
+References: <5155F107.6050408@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5155F107.6050408@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 29 Mar 2013, Rob Herring wrote:
-> On 03/29/2013 12:53 PM, Nicolas Pitre wrote:
-> > On Fri, 29 Mar 2013, Stefano Stabellini wrote:
-> > 
-> >> On Fri, 29 Mar 2013, Nicolas Pitre wrote:
-> >>> On Fri, 29 Mar 2013, Stefano Stabellini wrote:
-> >>>
-> >>>> If PSCI initializes correctly and PSCI SMP operations are available, use them.
-> >>>> This is required for SMP support in Dom0 on Xen.
-> >>>>
-> >>>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> >>>> CC: will.deacon@arm.com
-> >>>> CC: arnd@arndb.de
-> >>>> CC: marc.zyngier@arm.com
-> >>>> CC: linux@arm.linux.org.uk
-> >>>> CC: nico@linaro.org
-> >>>
-> >>> I'd suggest you also include in your series the patch I posted earlier 
-> >>> providing a runtime mdesc->smp_init method as well.
-> >>
-> >> OK.
-> >>
-> >>
-> >>> This way the 
-> >>> priority order would be:
-> >>>
-> >>> - If mdesc->smp_init is non null then use that.
-> >>>
-> >>> - Otherwise, if PSCI is available then use that.
-> >>>
-> >>> - Otherwise use mdesc->smp.
-> >>>
-> >>> This way, if the PSCI default has to be overriden (like in the MCPM case 
-> >>> because it needs to wrap PSCI itself, or to cover Rob's concern) then 
-> >>> this can be achieved at run time on a per mdesc basis.
-> >>
-> >> Actually that's not a bad idea, it could make everybody happy.
-> >> What about the following, in this precise order:
-> >>
-> >> - if a xen hypervisor node is present on device tree, use PSCI;
-> >> - otherwise if mdesc->smp_init is non null then use it;
-> >> - otherwise if PSCI is available then use it;
-> >> - otherwise use mdesc->smp.
-> >>
-> >> It's the most practical solution to satisfy everybody's needs.
-> > 
-> > Maybe I'm missing something obvious, but why can't xen declare a mdesc 
-> > of its own?  Given it is going to tweak the DT passed to the kernel 
-> > anyway that shouldn't be a problem.
+On Fri, Mar 29, 2013 at 03:52:39PM -0400, Joseph Salisbury wrote:
+> Hi Piotr,
 > 
-> Xen does have it's own mdesc. It is (or will be) mach-virt, but that is
-> only for DomU guests. For Dom0, you still need all the platform specific
-> code except smp_ops. However, I'm doubtful this would work without other
-> changes on more complicated platforms like OMAP.
+> A bug was opened against the Ubuntu kernel[0].  After a kernel
+> bisect, it was found that reverting the following commit resolved
+> this bug:
 > 
-> I would say wait to add this until you have platforms that actually need
-> the first case.
+> commit b83576341664957978e125f5f5db2f15496980b1
+> Author: Piotr Haber <phaber@broadcom.com>
+> Date:   Wed Nov 28 21:44:09 2012 +0100
+> 
+>     brcmsmac: move PHY functions
+> 
+> The regression was introduced as of v3.8-rc1.  The regression still
+> exists in v3.9-rc4.
+> 
+> I see that you are the author of this patch, so I wanted to run this
+> by you.  I was thinking of requesting a revert for v3.9, but I
+> wanted to get your feedback first.
+> 
+> 
+> Thanks,
+> 
+> Joe
+> 
+> [0] http://pad.lv/1131914
 
-OK, that is not unreasonable.
+I recently reverted b6fc28a1, which is the follow-on to that patch.
+The revert is _not_ in 3.9-rc5.
 
-What are the platforms that are going to use smp_init? Do we know how do
-they intend to use it?
+Could you try reverting that patch instead?  Does that fix the issue
+for you?
+
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
