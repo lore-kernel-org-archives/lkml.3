@@ -1,205 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759451Ab3DATe5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 15:34:57 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:39040 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758729Ab3DATey (ORCPT
+	id S1759449Ab3DAThY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 15:37:24 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:57103 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758763Ab3DAThX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 15:34:54 -0400
-Message-ID: <5159E157.6000800@gmail.com>
-Date: Mon, 01 Apr 2013 21:34:47 +0200
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+	Mon, 1 Apr 2013 15:37:23 -0400
+Date: Mon, 1 Apr 2013 12:37:21 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: jhovold@gmail.com, Jiri Slaby <jslaby@suse.cz>, mferrell@uplogix.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: USB: mos7840: looping issue: avoid the return value overriden by
+ looping
+Message-ID: <20130401193721.GA13712@kroah.com>
+References: <5158F689.5040406@asianux.com>
+ <20130401030555.GA21113@kroah.com>
+ <5159041F.7020608@asianux.com>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: balbi@ti.com, gregkh@linuxfoundation.org, arnd@arndb.de,
-        akpm@linux-foundation.org, rob@landley.net, swarren@wwwdotorg.org,
-        davem@davemloft.net, cesarb@cesarb.net, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tony@atomide.com, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        b-cousson@ti.com, linux@arm.linux.org.uk, eballetbo@gmail.com,
-        javier@dowhile0.org, mchehab@redhat.com, santosh.shilimkar@ti.com,
-        broonie@opensource.wolfsonmicro.com, swarren@nvidia.com,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/6] drivers: phy: add generic PHY framework
-References: <1364449408-9510-1-git-send-email-kishon@ti.com> <1364449408-9510-2-git-send-email-kishon@ti.com>
-In-Reply-To: <1364449408-9510-2-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5159041F.7020608@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just couple minor comments...
-
-On 03/28/2013 06:43 AM, Kishon Vijay Abraham I wrote:
-> The PHY framework provides a set of APIs for the PHY drivers to
-> create/destroy a PHY and APIs for the PHY users to obtain a reference to the
-> PHY with or without using phandle. To obtain a reference to the PHY without
-> using phandle, the platform specfic intialization code (say from board file)
-> should have already called phy_bind with the binding information. The binding
-> information consists of phy's device name, phy user device name and an index.
-> The index is used when the same phy user binds to mulitple phys.
->
-> PHY drivers should create the PHY by passing phy_descriptor that has
-> describes the PHY (label, type etc..) and ops like init, exit, suspend, resume,
-> poweron, shutdown.
->
-> The documentation for the generic PHY framework is added in
-> Documentation/phy.txt and the documentation for the sysfs entry is added
-> in Documentation/ABI/testing/sysfs-class-phy and the documentation for
-> dt binding is can be found at
-> Documentation/devicetree/bindings/phy/phy-bindings.txt
->
-> Signed-off-by: Kishon Vijay Abraham I<kishon@ti.com>
+On Mon, Apr 01, 2013 at 11:50:55AM +0800, Chen Gang wrote:
+> 
+>   inside the 'for' looping:
+>     the return value 'rv' may override if not have a check in time.
+> 
+>   next checking, outside the 'for' looping:
+>     can not find failure which generated during the 'for' looping
+> 
+>   so need let outside know about the failure.
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 > ---
-[...]
-> +/**
-> + * phy_put - release the PHY
+>  drivers/usb/serial/mos7840.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+> index a0d5ea5..13aae1e 100644
+> --- a/drivers/usb/serial/mos7840.c
+> +++ b/drivers/usb/serial/mos7840.c
+> @@ -651,7 +651,9 @@ static void mos7840_interrupt_callback(struct urb *urb)
+>  					wreg = MODEM_STATUS_REGISTER;
+>  					break;
+>  				}
+> -				rv = mos7840_get_reg(mos7840_port, wval, wreg, &Data);
+> +				if (mos7840_get_reg(mos7840_port, wval,
+> +				    wreg, &Data) < 0)
+> +					rv = -1;
 
-nit: According to kernel-doc documentation function names should have
-parentheses appended to the name. So it would need to be
+Please use a "real" error value, or even better yet, use the error value
+returned from the call here.
 
-+ * phy_put() - release the PHY
+And please identify the driver you are modifying in the Subject: line,
+like I have changed this one to.
 
-in this case and it applies to multiple places elsewhere in this patch.
+thanks,
 
-> + * @phy: the phy returned by phy_get()
-> + *
-> + * Releases a refcount the caller received from phy_get().
-> + */
-> +void phy_put(struct phy *phy)
-> +{
-> +	if (phy) {
-> +		module_put(phy->ops->owner);
-> +		put_device(&phy->dev);
-> +	}
-> +}
-> +EXPORT_SYMBOL_GPL(phy_put);
-[...]
-> +/**
-> + * devm_of_phy_get_byname - lookup and obtain a reference to a phy by name
-> + * @dev: device that requests this phy
-> + * @string - the phy name as given in the dt data
-
-s/ -/:
-
-> + *
-> + * Calls devm_of_phy_get (which associates the device with the phy using devres
-> + * on successful phy get) and passes on the return value of devm_of_phy_get.
-> + */
-> +struct phy *devm_of_phy_get_byname(struct device *dev, const char *string)
-> +{
-> +	int index;
-> +
-> +	if (!dev->of_node) {
-> +		dev_dbg(dev, "device does not have a device node entry\n");
-> +		return ERR_PTR(-EINVAL);
-> +	}
-> +
-> +	index = of_property_match_string(dev->of_node, "phy-names", string);
-> +
-> +	return devm_of_phy_get(dev, index);
-> +}
-> +EXPORT_SYMBOL_GPL(devm_of_phy_get_byname);
-> +
-> +/**
-> + * phy_get - lookup and obtain a reference to a phy.
-> + * @dev: device that requests this phy
-> + * @index: the index of the phy
-> + *
-> + * Returns the phy driver, after getting a refcount to it; or
-> + * -ENODEV if there is no such phy.  The caller is responsible for
-> + * calling phy_put() to release that count.
-> + */
-> +struct phy *phy_get(struct device *dev, int index)
-> +{
-> +	struct phy *phy = NULL;
-
-Unneeded initialization.
-
-> +	phy = phy_lookup(dev, index);
-> +	if (IS_ERR(phy)) {
-> +		dev_err(dev, "unable to find phy\n");
-> +		goto err0;
-
-Wouldn't it be better to just do:
-
-		return phy;
-> +	}
-> +
-> +	if (!try_module_get(phy->ops->owner)) {
-> +		phy = ERR_PTR(-EPROBE_DEFER);
-
-and
-		return ERR_PTR(-EPROBE_DEFER);
-
-> +		goto err0;
-
-and to drop this goto and the label below ?
-
-> +	}
-> +
-> +	get_device(&phy->dev);
-> +
-> +err0:
-> +	return phy;
-> +}
-> +EXPORT_SYMBOL_GPL(phy_get);
-
-> diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-> new file mode 100644
-> index 0000000..0cb2298
-> --- /dev/null
-> +++ b/include/linux/phy/phy.h
-> @@ -0,0 +1,237 @@
-> +/*
-> + * phy.h -- generic phy header file
-[...]
-> +#ifndef __DRIVERS_PHY_H
-> +#define __DRIVERS_PHY_H
-> +
-> +#include<linux/err.h>
-> +#include<linux/of.h>
-> +
-> +struct phy
-
-I think you also need to add either
-
-#include <linux/device.h>
-
-or
-
-struct device;
-
-struct device * is used further in this file.
-
-> +/**
-> + * struct phy_ops - set of function pointers for performing phy operations
-> + * @init: operation to be performed for initializing phy
-> + * @exit: operation to be performed while exiting
-> + * @suspend: suspending the phy
-> + * @resume: resuming the phy
-
-> + * @poweron: powering on the phy
-> + * @shutdown: shutting down the phy
-
-Could these be named power_on/power_off ? Looks a bit more symmetric
-to me that way.
-
-> + * @owner: the module owner containing the ops
-> + */
-> +struct phy_ops {
-> +	int	(*init)(struct phy *phy);
-> +	int	(*exit)(struct phy *phy);
-> +	int	(*suspend)(struct phy *phy);
-> +	int	(*resume)(struct phy *phy);
-> +	int	(*poweron)(struct phy *phy);
-> +	int	(*shutdown)(struct phy *phy);
-> +	struct module *owner;
-> +};
-
-Thanks,
-Sylwester
+greg k-h
