@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759059Ab3DAVxM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 17:53:12 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:37405 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753929Ab3DAVxK (ORCPT
+	id S1759163Ab3DAVye (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 17:54:34 -0400
+Received: from mail-da0-f50.google.com ([209.85.210.50]:60373 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753929Ab3DAVyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 17:53:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <1363618233-6375-2-git-send-email-nschichan@freebox.fr>
-References: <1363618233-6375-1-git-send-email-nschichan@freebox.fr>
-	<1363618233-6375-2-git-send-email-nschichan@freebox.fr>
-Date: Mon, 1 Apr 2013 14:53:09 -0700
-X-Google-Sender-Auth: RdjL7wsmZj5eQRVhG64VfSJxOuQ
-Message-ID: <CAGXu5j+jpXrcLDyAV+p81pjapaQeKQTMz4+JXjKj03DV-yoC=w@mail.gmail.com>
-Subject: Re: [PATCH V2 1/3] seccomp: add generic code for jitted seccomp filters.
-From: Kees Cook <keescook@chromium.org>
-To: Nicolas Schichan <nschichan@freebox.fr>
-Cc: Will Drewry <wad@chromium.org>, Mircea Gherzan <mgherzan@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 1 Apr 2013 17:54:33 -0400
+Subject: Re: [PATCH 03/27] perf tools: Move arch check into config/Makefile
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Borislav Petkov <bp@alien8.de>, Stephane Eranian <eranian@google.com>
+In-Reply-To: <1364843930-17974-4-git-send-email-jolsa@redhat.com>
+References: <1364843930-17974-1-git-send-email-jolsa@redhat.com>
+	 <1364843930-17974-4-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 02 Apr 2013 06:54:26 +0900
+Message-ID: <1364853266.1728.6.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 7:50 AM, Nicolas Schichan <nschichan@freebox.fr> wrote:
-> Architecture must select HAVE_SECCOMP_FILTER_JIT and implement
-> seccomp_jit_compile() and seccomp_jit_free() if they intend to support
-> jitted seccomp filters.
->
-> struct seccomp_filter has been moved to <linux/seccomp.h> to make its
-> content available to the jit compilation code.
->
-> In a way similar to the net BPF, the jit compilation code is expected
-> to updates struct seccomp_filter.bpf_func pointer to the generated
-> code.
->
-> Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
+Hi, Jiri
 
-Acked-by: Kees Cook <keescook@chromium.org>
+2013-04-01 (월), 21:18 +0200, Jiri Olsa:
+> Moving arch check into config/Makefile.
 
-I'd love to see this for x86 too. I suspect it'd be a small change
-after this series lands.
+[SNIP]
+
+> +ifeq ($(filter clean tags,$(MAKECMDGOALS)),)
+> +include config/Makefile
+>  endif
+
+Problem with this approach is that people (including me) sometimes give
+multiple targets in one go - like "make clean all".
 
 Thanks,
+Namhyung
 
--Kees
 
--- 
-Kees Cook
-Chrome OS Security
