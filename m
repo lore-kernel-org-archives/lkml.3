@@ -1,115 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758681Ab3DAN6F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 09:58:05 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:57893 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758529Ab3DAN6A (ORCPT
+	id S1758701Ab3DAN6Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 09:58:16 -0400
+Received: from alvesta.synopsys.com ([198.182.60.77]:56255 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758647Ab3DAN6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 09:58:00 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-01-51599266fefe
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, balbi@ti.com,
-        stern@rowland.harvard.edu, sarah.a.sharp@linux.intel.com,
-        rob.herring@calxeda.com, kgene.kim@samsung.com, kishon@ti.com,
-        dianders@chromium.org, t.figa@samsung.com, p.paneri@samsung.com
-Subject: [PATCH v3 05/11] usb: dwc3: exynos: Enable runtime power management
-Date: Mon, 01 Apr 2013 19:24:04 +0530
-Message-id: <1364824448-14732-6-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.6.5
-In-reply-to: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com>
-References: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGIsWRmVeSWpSXmKPExsWyRsSkWjdtUmSgwbl3NhYH79dbnF12kM2i
-	efF6NoveBVfZLC487WGzuLxrDpvF7CX9LBYzzu9jsli0rJXZ4vyWTiaLwysOMFk0nzjFbDHh
-	9wU2i/UzXrM48Hks+HyF3WN2w0UWj3knAz32z10D5N39wejRt2UVo8fxG9uZPD5vkgvgiOKy
-	SUnNySxLLdK3S+DKOPJuInNBL2/Fvzk32BoYu7i7GDk5JARMJO5cPMwEYYtJXLi3nq2LkYtD
-	SGApo8TFjlvsMEWTr89lhEgsYpTYOXcNlDOFSWLNoWNsIFVsAroSTW93ASU4OEQE4iQ2TxAG
-	CTMLdDFJLD0qDmILC/hI/Ph1Emwoi4CqxO57z8BaeQU8JE6+/coKsUxB4s3tZ8wgNqeAp8SH
-	rYvBrhMCqmm/eoIVZK+EwCN2iadzfzJBDBKQ+Db5EAvIXgkBWYlNB5gh5khKHFxxg2UCo/AC
-	RoZVjKKpBckFxUnpRcZ6xYm5xaV56XrJ+bmbGIFxdPrfs/4djHcPWB9iTAYaN5FZSjQ5HxiH
-	eSXxhsZmRhamJqbGRuaWZqQJK4nzqrVYBwoJpCeWpGanphakFsUXleakFh9iZOLglGpglN1w
-	asaXuxmRZ0TSHLZEbbn6UVre9tX+9qe/pxgedVmXsLJ8+9QlLrH8ttcUp2+2eia1LsWwx8+Y
-	9fqaC3Z2sxusDW1X7lBoPj5/dsqrNK1t9dyhjCadLiliX5Zf+iK5zvr9gg86d5Zk6YrcTr18
-	50fCpZ9PDyxUedb48Xwqd8r5F0/+LDr3KlKJpTgj0VCLuag4EQB+FOnnuQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmleLIzCtJLcpLzFFi42I5/e+xgG7apMhAg3fHjC0O3q+3OLvsIJtF
-	8+L1bBa9C66yWVx42sNmcXnXHDaL2Uv6WSxmnN/HZLFoWSuzxfktnUwWh1ccYLJoPnGK2WLC
-	7wtsFutnvGZx4PNY8PkKu8fshossHvNOBnrsn7sGyLv7g9Gjb8sqRo/jN7YzeXzeJBfAEdXA
-	aJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDdLeSQlli
-	TilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMePIu4nMBb28Ff/m3GBrYOzi7mLk
-	5JAQMJGYfH0uI4QtJnHh3nq2LkYuDiGBRYwSO+euYYRwpjBJrDl0jA2kik1AV6Lp7S6gBAeH
-	iECcxOYJwiBhZoEuJomlR8VBbGEBH4kfv06yg9gsAqoSu+89A2vlFfCQOPn2KyvEMgWJN7ef
-	MYPYnAKeEh+2LmYCsYWAatqvnmCdwMi7gJFhFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZw
-	lD6T2sG4ssHiEKMAB6MSD2/EhYhAIdbEsuLK3EOMEhzMSiK8KzIjA4V4UxIrq1KL8uOLSnNS
-	iw8xJgNdNZFZSjQ5H5hA8kriDY1NzE2NTS1NLEzMLEkTVhLnPdBqHSgkkJ5YkpqdmlqQWgSz
-	hYmDU6qB0U0rNvZ9yj2/WXn/mVt350afTutV/qPFLzLZ/Pltk7vhYiKuCnaHyuYdmfymaMvC
-	Y2s+H5rLEGBTxNG0XMuuWc7rr/A3vRcVPyU9vQ2/5qR8rhTeyXhoeV1RQ8LJlh3X+8XK6nge
-	MkqutLFfE6rN0HXBSvP5xC/HN945H3zYZ9LMT+2qqjwsSizFGYmGWsxFxYkA5VvHAxYDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 1 Apr 2013 09:58:04 -0400
+Message-ID: <5159925B.5050806@synopsys.com>
+Date: Mon, 1 Apr 2013 19:27:47 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+Newsgroups: gmane.linux.serial,gmane.linux.kernel
+To: lkml <linux-kernel@vger.kernel.org>
+CC: <linux-serial@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        "Peter Zijlstra" <peterz@infradead.org>, Jiri Slaby <jslaby@suse.cz>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: Re: n_tty_write() going into schedule but NOT coming out
+References: <5156DC21.20901@synopsys.com>
+In-Reply-To: <5156DC21.20901@synopsys.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.41]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enabling runtime power management on dwc3-exynos
-letting dwc3 controller to be autosuspended on exynos
-platform when not in use.
+Hi,
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
----
- drivers/usb/dwc3/dwc3-exynos.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+Any thoughts: I observe the same issue even with CONFIG_PREEMPT and
+CONFIG_PREEMPT_COUNT
 
-diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exynos.c
-index 1ea7bd8..1ae81a0 100644
---- a/drivers/usb/dwc3/dwc3-exynos.c
-+++ b/drivers/usb/dwc3/dwc3-exynos.c
-@@ -19,6 +19,7 @@
- #include <linux/platform_data/dwc3-exynos.h>
- #include <linux/dma-mapping.h>
- #include <linux/clk.h>
-+#include <linux/pm_runtime.h>
- #include <linux/usb/otg.h>
- #include <linux/usb/nop-usb-xceiv.h>
- #include <linux/of.h>
-@@ -138,6 +139,11 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
- 	exynos->dev	= dev;
- 	exynos->clk	= clk;
- 
-+	pm_runtime_set_active(dev);
-+	pm_runtime_enable(dev);
-+	pm_runtime_get_sync(dev);
-+	pm_runtime_forbid(dev);
-+
- 	clk_prepare_enable(exynos->clk);
- 
- 	if (node) {
-@@ -152,10 +158,14 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
- 		goto err2;
- 	}
- 
-+	pm_runtime_put_sync(dev);
-+	pm_runtime_allow(dev);
-+
- 	return 0;
- 
- err2:
- 	clk_disable_unprepare(clk);
-+	pm_runtime_disable(dev);
- err1:
- 	return ret;
- }
-@@ -164,6 +174,8 @@ static int dwc3_exynos_remove(struct platform_device *pdev)
- {
- 	struct dwc3_exynos	*exynos = platform_get_drvdata(pdev);
- 
-+	pm_runtime_disable(&pdev->dev);
-+
- 	platform_device_unregister(exynos->usb2_phy);
- 	platform_device_unregister(exynos->usb3_phy);
- 	device_for_each_child(&pdev->dev, NULL, dwc3_exynos_remove_child);
--- 
-1.7.6.5
+-Vineet
+
+On 03/30/2013 06:05 PM, Vineet Gupta wrote:
+> Hi,
+> 
+> I've been stress testing ARC Linux 3.8 (same happens for 3.9-rc3 as well). The
+> setup has 3 telnet sessions, each running find . -name "*" in a loop.
+> The platform is a FPGA @ 80 MHz, running a single core ARC700 so kernel .config
+> has !SMP and PREEMPT_NONE.
+> 
+> After ~10 mins of run, I see that one of the telnet session gets stuck (and later
+> the 2nd one as well), while system is still alive, 3rd telnet is running find merrily.
+> 
+> [ARCLinux]$ ps
+> ....
+>     7 root       0:00 inetd
+>    62 root       0:00 -/bin/sh
+>    64 root       1:34 telnetd -i -l /bin/sh
+>    65 root       0:00 /bin/sh
+>    75 root       1:47 telnetd -i -l /bin/sh
+>    76 root       0:00 /bin/sh
+>    79 root       0:53 telnetd -i -l /bin/sh
+>    80 root       0:00 /bin/sh
+>   281 root       0:00 find / -name *	<--- stuck
+>   358 root       0:03 find / -name *	<--- stuck
+>   377 root       0:00 find / -name *
+>   378 root       0:00 ps
+> 
+> Hung find task is sitting in the schedule() call in n_tty_write()
+> 
+> [ARCLinux]$ cat /proc/281/stack
+> [<8065945e>] n_tty_write+0x23a/0x424
+> [<80655cd4>] tty_write+0x1ac/0x2d4
+> [<805976ba>] vfs_write+0x92/0x110
+> [<80597816>] sys_write+0x4e/0x88
+> [<8050e780>] ret_from_system_call+0x0/0x4
+> 
+> This task never resumes out of schedule() - verified by putting a hardware
+> breakpoint on next insn - using a JTAG host debugger.
+> 
+> Attached are .config, /proc/281/sched, /proc/schedstat, /proc/sched_debug
+> 
+> My knowledge of schedular is close to none, hence any tips to debug this further
+> would be much appreciated.
+> 
+> 
+> TIA,
+> -Vineet
+> 
 
