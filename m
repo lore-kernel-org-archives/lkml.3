@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757772Ab3DARzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 13:55:51 -0400
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:62075 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752740Ab3DARzu (ORCPT
+	id S1758349Ab3DAR4f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 13:56:35 -0400
+Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:60126 "EHLO
+	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756799Ab3DAR4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 13:55:50 -0400
-Message-ID: <1364838943.21627.60.camel@x61.thuisdomein>
-Subject: [PATCH 0/8] do not export kernel integer types to userspace
+	Mon, 1 Apr 2013 13:56:34 -0400
+Message-ID: <1364838992.21627.61.camel@x61.thuisdomein>
+Subject: [PATCH 1/8] virtio_net: do not export "u16" to userspace
 From: Paul Bolle <pebolle@tiscali.nl>
 To: Jason Wang <jasowang@redhat.com>, Krishna Kumar <krkumar2@in.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Amit Shah <amit.shah@redhat.com>, Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: virtualization@lists.linux-foundation.org, linux-btrfs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-cris-kernel@axis.com,
-        linux-kernel@vger.kernel.org
-Date: Mon, 01 Apr 2013 19:55:43 +0200
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 01 Apr 2013 19:56:32 +0200
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Apr 2013 17:55:43.0535 (UTC) FILETIME=[214B5BF0:01CE2F02]
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 01 Apr 2013 17:56:32.0863 (UTC) FILETIME=[3EB236F0:01CE2F02]
 X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This short series was triggered by a compile error I ran into when trying to
-build the lguest tool (see PATCH 1/8). After fixing that error I decided to attempt to
-solve all related problems.
+Building the lguest (userspace) tool fails with this error:
+    In file included from lguest.c:46:0:
+    /usr/include/linux/virtio_net.h:188:2: error: unknown type name ‘u16’
+    make: *** [lguest] Error 1
 
-Paul Bolle (8):
-  virtio_net: do not export "u16" to userspace
-  headers_check: add check for kernel integer types
-  virtio: do not export "u16" and "u64" to userspace
-  headers_check: check kernel types inside #define
-  btrfs: do not export "u64" to userspace
-  nfsd4: do not export "u64" to userspace
-  virtio: do not export "u32" to userspace
-  cris: do not export "u8" and friends to userspace
+virtio_net.h exports "u16" to userspace. Use "__u16" instead of "u16".
 
- arch/cris/include/uapi/arch-v10/arch/sv_addr_ag.h | 20 ++++++++++----------
- include/uapi/linux/btrfs.h                        |  2 +-
- include/uapi/linux/nfs4.h                         |  2 +-
- include/uapi/linux/virtio_balloon.h               |  4 ++--
- include/uapi/linux/virtio_console.h               |  2 +-
- include/uapi/linux/virtio_net.h                   |  2 +-
- scripts/headers_check.pl                          | 21 +++++++++++++++++++++
- 7 files changed, 37 insertions(+), 16 deletions(-)
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+"u16" was added here in commit 986a4f4d452dec004697f667439d27c3fda9c928
+("virtio_net: multiqueue support"). That commit was shipped in v3.8. So
+if this patch ends up in the tree it should also be sent to stable.
 
+ include/uapi/linux/virtio_net.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/uapi/linux/virtio_net.h b/include/uapi/linux/virtio_net.h
+index a5a8c88..c520203 100644
+--- a/include/uapi/linux/virtio_net.h
++++ b/include/uapi/linux/virtio_net.h
+@@ -191,7 +191,7 @@ struct virtio_net_ctrl_mac {
+  * specified.
+  */
+ struct virtio_net_ctrl_mq {
+-	u16 virtqueue_pairs;
++	__u16 virtqueue_pairs;
+ };
+ 
+ #define VIRTIO_NET_CTRL_MQ   4
 -- 
 1.7.11.7
 
