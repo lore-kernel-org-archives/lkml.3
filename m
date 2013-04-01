@@ -1,73 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758774Ab3DASUS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 14:20:18 -0400
-Received: from mx12.netapp.com ([216.240.18.77]:30726 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755170Ab3DASUQ convert rfc822-to-8bit (ORCPT
+	id S1758796Ab3DASUt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 14:20:49 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:61782 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756501Ab3DASUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 14:20:16 -0400
-X-IronPort-AV: E=Sophos;i="4.87,387,1363158000"; 
-   d="scan'208";a="36005897"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/8] nfsd4: do not export "u64" to userspace
-Thread-Topic: [PATCH 6/8] nfsd4: do not export "u64" to userspace
-Thread-Index: AQHOLwMAnhsmpPPzKUWIsgTmCPfda5jCImsA
-Date: Mon, 1 Apr 2013 18:20:13 +0000
-Message-ID: <1364840412.8165.5.camel@leira.trondhjem.org>
-References: <1364839315.21627.69.camel@x61.thuisdomein>
-In-Reply-To: <1364839315.21627.69.camel@x61.thuisdomein>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.114]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <AF3C271A330F6441A8B314591EF724F0@tahoe.netapp.com>
-Content-Transfer-Encoding: 7BIT
+	Mon, 1 Apr 2013 14:20:48 -0400
+Date: Mon, 1 Apr 2013 14:20:44 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+cc: Rob Herring <robherring2@gmail.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 2/2] arm: prefer PSCI for SMP bringup
+In-Reply-To: <alpine.DEB.2.02.1304011541010.5078@kaball.uk.xensource.com>
+Message-ID: <alpine.LFD.2.03.1304011412030.1171@syhkavp.arg>
+References: <1364575371-8926-2-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.LFD.2.03.1303291320580.1372@syhkavp.arg> <alpine.DEB.2.02.1303291735080.4430@kaball.uk.xensource.com> <alpine.LFD.2.03.1303291349150.1372@syhkavp.arg> <5155EC28.8050608@gmail.com>
+ <alpine.DEB.2.02.1304011541010.5078@kaball.uk.xensource.com>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-01 at 20:01 +0200, Paul Bolle wrote:
-> nfs4.h exports "u64" to userspace. Use "__u64" instead.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> 0) Tested with a kernel build.
-> 
-> 1) I'm guessing userspace doesn't actually use NFS4_MAX_UINT64.
-> 
->  include/uapi/linux/nfs4.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/include/uapi/linux/nfs4.h b/include/uapi/linux/nfs4.h
-> index 788128e..35f5f4c 100644
-> --- a/include/uapi/linux/nfs4.h
-> +++ b/include/uapi/linux/nfs4.h
-> @@ -150,7 +150,7 @@
->  #define NFS4_SECINFO_STYLE4_CURRENT_FH	0
->  #define NFS4_SECINFO_STYLE4_PARENT	1
->  
-> -#define NFS4_MAX_UINT64	(~(u64)0)
-> +#define NFS4_MAX_UINT64	(~(__u64)0)
->  
->  /* An NFS4 sessions server must support at least NFS4_MAX_OPS operations.
->   * If a compound requires more operations, adjust NFS4_MAX_OPS accordingly.
+On Mon, 1 Apr 2013, Stefano Stabellini wrote:
 
-Please just move it into include/linux/nfs4.h. As you said above, there
-is no reason to export this to userland at all.
+> On Fri, 29 Mar 2013, Rob Herring wrote:
+> > On 03/29/2013 12:53 PM, Nicolas Pitre wrote:
+> > > On Fri, 29 Mar 2013, Stefano Stabellini wrote:
+> > > 
+> > >> On Fri, 29 Mar 2013, Nicolas Pitre wrote:
+> > >>> On Fri, 29 Mar 2013, Stefano Stabellini wrote:
+> > >>>
+> > >>>> If PSCI initializes correctly and PSCI SMP operations are available, use them.
+> > >>>> This is required for SMP support in Dom0 on Xen.
+> > >>>>
+> > >>>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > >>>> CC: will.deacon@arm.com
+> > >>>> CC: arnd@arndb.de
+> > >>>> CC: marc.zyngier@arm.com
+> > >>>> CC: linux@arm.linux.org.uk
+> > >>>> CC: nico@linaro.org
+> > >>>
+> > >>> I'd suggest you also include in your series the patch I posted earlier 
+> > >>> providing a runtime mdesc->smp_init method as well.
+> > >>
+> > >> OK.
+> > >>
+> > >>
+> > >>> This way the 
+> > >>> priority order would be:
+> > >>>
+> > >>> - If mdesc->smp_init is non null then use that.
+> > >>>
+> > >>> - Otherwise, if PSCI is available then use that.
+> > >>>
+> > >>> - Otherwise use mdesc->smp.
+> > >>>
+> > >>> This way, if the PSCI default has to be overriden (like in the MCPM case 
+> > >>> because it needs to wrap PSCI itself, or to cover Rob's concern) then 
+> > >>> this can be achieved at run time on a per mdesc basis.
+> > >>
+> > >> Actually that's not a bad idea, it could make everybody happy.
+> > >> What about the following, in this precise order:
+> > >>
+> > >> - if a xen hypervisor node is present on device tree, use PSCI;
+> > >> - otherwise if mdesc->smp_init is non null then use it;
+> > >> - otherwise if PSCI is available then use it;
+> > >> - otherwise use mdesc->smp.
+> > >>
+> > >> It's the most practical solution to satisfy everybody's needs.
+> > > 
+> > > Maybe I'm missing something obvious, but why can't xen declare a mdesc 
+> > > of its own?  Given it is going to tweak the DT passed to the kernel 
+> > > anyway that shouldn't be a problem.
+> > 
+> > Xen does have it's own mdesc. It is (or will be) mach-virt, but that is
+> > only for DomU guests. For Dom0, you still need all the platform specific
+> > code except smp_ops. However, I'm doubtful this would work without other
+> > changes on more complicated platforms like OMAP.
+> > 
+> > I would say wait to add this until you have platforms that actually need
+> > the first case.
+> 
+> OK, that is not unreasonable.
+> 
+> What are the platforms that are going to use smp_init? Do we know how do
+> they intend to use it?
 
-Thanks
-  Trond
--- 
-Trond Myklebust
-Linux NFS client maintainer
+VExpress for one.  When booting on a big.LITTLE system such as TC2 on 
+VExpress, the MCPM layer needs to arbitrate power management operations 
+on a per cluster basis.  In that case there is a MCPM specific set of 
+SMP ops to be used, even if it may end up calling into PSCI.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+But the important point is that we don't know beforehand what to use, 
+especially with a kernel that can boot on multiple different VExpress 
+configurations.  The decision has to be made at run time, and therefore 
+a static default or mdesc->smp ops doesn't cut it.
+
+
+Nicolas
