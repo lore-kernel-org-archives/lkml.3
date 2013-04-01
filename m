@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759509Ab3DATUg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 15:20:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38736 "EHLO mx1.redhat.com"
+	id S1759530Ab3DATUq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 15:20:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24947 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759370Ab3DATUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 15:20:33 -0400
+	id S1759370Ab3DATUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 15:20:43 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -16,16 +16,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 12/27] perf tools: Move libperl check config into config/Makefile
-Date: Mon,  1 Apr 2013 21:18:35 +0200
-Message-Id: <1364843930-17974-13-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 15/27] perf tools: Move stdlib check config into config/Makefile
+Date: Mon,  1 Apr 2013 21:18:38 +0200
+Message-Id: <1364843930-17974-16-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1364843930-17974-1-git-send-email-jolsa@redhat.com>
 References: <1364843930-17974-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving libperl check config into config/Makefile.
+Moving stdlib check config into config/Makefile.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -38,69 +38,64 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile        | 20 +++-----------------
- tools/perf/config/Makefile | 21 +++++++++++++++++++++
- 2 files changed, 24 insertions(+), 17 deletions(-)
+ tools/perf/Makefile        | 18 ------------------
+ tools/perf/config/Makefile | 18 ++++++++++++++++++
+ 2 files changed, 18 insertions(+), 18 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 8d3dd8e..972aa94 100644
+index 09ac64a..ad826b5 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -518,23 +518,9 @@ ifndef NO_GTK2
- 	LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
+@@ -532,24 +532,6 @@ ifeq ($(NO_PERF_REGS),0)
+ 	endif
  endif
  
--ifdef NO_LIBPERL
--	BASIC_CFLAGS += -DNO_LIBPERL
--else
--       PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
--       PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
--       PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
--	PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
--	FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
--
--	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED),perl),y)
--		BASIC_CFLAGS += -DNO_LIBPERL
--	else
--               ALL_LDFLAGS += $(PERL_EMBED_LDFLAGS)
--               EXTLIBS += $(PERL_EMBED_LIBADD)
--		LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
--		LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
+-ifndef NO_STRLCPY
+-	ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
+-		BASIC_CFLAGS += -DHAVE_STRLCPY
 -	endif
-+ifndef NO_LIBPERL
-+	LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
-+	LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
- endif
- 
- disable-python = $(eval $(disable-python_code))
+-endif
+-
+-ifndef NO_ON_EXIT
+-	ifeq ($(call try-cc,$(SOURCE_ON_EXIT),,-DHAVE_ON_EXIT),y)
+-		BASIC_CFLAGS += -DHAVE_ON_EXIT
+-	endif
+-endif
+-
+-ifndef NO_BACKTRACE
+-       ifeq ($(call try-cc,$(SOURCE_BACKTRACE),,-DBACKTRACE_SUPPORT),y)
+-               BASIC_CFLAGS += -DBACKTRACE_SUPPORT
+-       endif
+-endif
+-
+ ifndef NO_LIBNUMA
+ 	FLAGS_LIBNUMA = $(ALL_CFLAGS) $(ALL_LDFLAGS) -lnuma
+ 	ifneq ($(call try-cc,$(SOURCE_LIBNUMA),$(FLAGS_LIBNUMA),libnuma),y)
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 6fc2089..2c9e0a5 100644
+index 68c6a2b..8c832f7 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -240,3 +240,24 @@ ifndef NO_GTK2
- 		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
+@@ -361,3 +361,21 @@ else
+ 		endif
  	endif
  endif
 +
-+grep-libs  = $(filter -l%,$(1))
-+strip-libs = $(filter-out -l%,$(1))
-+
-+ifdef NO_LIBPERL
-+	BASIC_CFLAGS += -DNO_LIBPERL
-+else
-+	PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
-+	PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
-+	PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
-+	PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
-+	FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
-+
-+	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED),perl),y)
-+		BASIC_CFLAGS += -DNO_LIBPERL
-+		NO_LIBPERL := 1
-+	else
-+		ALL_LDFLAGS += $(PERL_EMBED_LDFLAGS)
-+		EXTLIBS += $(PERL_EMBED_LIBADD)
++ifndef NO_STRLCPY
++	ifeq ($(call try-cc,$(SOURCE_STRLCPY),,-DHAVE_STRLCPY),y)
++		BASIC_CFLAGS += -DHAVE_STRLCPY
 +	endif
++endif
++
++ifndef NO_ON_EXIT
++	ifeq ($(call try-cc,$(SOURCE_ON_EXIT),,-DHAVE_ON_EXIT),y)
++		BASIC_CFLAGS += -DHAVE_ON_EXIT
++	endif
++endif
++
++ifndef NO_BACKTRACE
++       ifeq ($(call try-cc,$(SOURCE_BACKTRACE),,-DBACKTRACE_SUPPORT),y)
++		BASIC_CFLAGS += -DBACKTRACE_SUPPORT
++       endif
 +endif
 -- 
 1.7.11.7
