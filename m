@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759168Ab3DAQtq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 12:49:46 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:40354 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758988Ab3DAQtp (ORCPT
+	id S1759250Ab3DAQt5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 12:49:57 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:54930 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759208Ab3DAQtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 12:49:45 -0400
-Message-ID: <5159BAA6.50706@wwwdotorg.org>
-Date: Mon, 01 Apr 2013 10:49:42 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 1 Apr 2013 12:49:55 -0400
 MIME-Version: 1.0
-To: Tony Prisk <linux@prisktech.co.nz>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com, arnd@arndb.de,
-        olof@lixom.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 1/6] of: Add support for reading a u32 from a multi-value
- property.
-References: <1364451049-2981-1-git-send-email-linux@prisktech.co.nz> <1364451049-2981-2-git-send-email-linux@prisktech.co.nz>
-In-Reply-To: <1364451049-2981-2-git-send-email-linux@prisktech.co.nz>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130401162800.GB21522@ZenIV.linux.org.uk>
+References: <1364817485-19676-1-git-send-email-anatol.pomozov@gmail.com>
+	<20130401162800.GB21522@ZenIV.linux.org.uk>
+Date: Mon, 1 Apr 2013 09:49:54 -0700
+Message-ID: <CAOMFOmWC48MycYCd+Q_4JG-9GGc08F1RNnc0phJgVzi41dRy1A@mail.gmail.com>
+Subject: Re: [PATCH] loop: prevent bdev freeing while device in use
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        sqazi@google.com, Guo Chao <yan@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2013 12:10 AM, Tony Prisk wrote:
-> This patch adds an of_property_read_u32_index() function to allow
-> reading a single indexed u32 value from a property containing multiple
-> u32 values.
+Hi
 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
+On Mon, Apr 1, 2013 at 9:28 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Mon, Apr 01, 2013 at 04:58:05AM -0700, Anatol Pomozov wrote:
+>>               lo->lo_flags |= LO_FLAGS_PARTSCAN;
+>>       if (lo->lo_flags & LO_FLAGS_PARTSCAN)
+>>               ioctl_by_bdev(bdev, BLKRRPART, 0);
+>> +
+>> +     /* bdev lifecycle is defined by its bd_inode (see
+>> +      * struct bdev_inode usage). In case of loop device we need to make
+>> +      * sure that bdev deallocation will not happen between loop_set_fd()
+>> +      * and loop_clr_fd() invocations. To do this we need to hold
+>> +      * bdev inode here and put it later in loop_clr_fd().
+>> +      */
+>> +     ihold(bdev->bd_inode);
+>
+> That's open-coded bdgrab()
 
-> +int of_property_read_u32_index(const struct device_node *np,
+Done. It also requires EXPORTING bdgrab.
 
-> +	if ((index * sizeof(*out_value)) > prop->length)
-> +		return -EOVERFLOW;
+The test still passes.
 
-I think that if should be:
-
-	if (((index + 1) * sizeof(*out_value)) > prop->length)
-
-since the code should check if the last byte of the u32 is out-of-range,
-not whether the first byte is.
-
-Aside from that, this patch,
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
+>
+>> +     if (bdev) {
+>> +             BUG_ON(atomic_read(&bdev->bd_inode->i_count) < 2);
+>> +             iput(bdev->bd_inode);
+>
+> ... and that - bdput() (I'd drop that BUG_ON())
