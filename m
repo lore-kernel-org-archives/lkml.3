@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758971Ab3DAWVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 18:21:07 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:36981 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755281Ab3DAWVF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 18:21:05 -0400
-Date: Tue, 2 Apr 2013 00:20:48 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 2/7] r8169: Update PHY settings of RTL8111G
-Message-ID: <20130401222048.GA19335@electric-eye.fr.zoreil.com>
-References: <1364824539-4156-1-git-send-email-hayeswang@realtek.com>
- <1364824539-4156-2-git-send-email-hayeswang@realtek.com>
+	id S1758699Ab3DAWVE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 18:21:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46096 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755281Ab3DAWVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 18:21:01 -0400
+Message-ID: <515A083B.7050508@zytor.com>
+Date: Mon, 01 Apr 2013 15:20:43 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364824539-4156-2-git-send-email-hayeswang@realtek.com>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Vivek Goyal <vgoyal@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kexec: use Crash kernel for Crash kernel low
+References: <20130320163131.GE2273@redhat.com> <1363807329-24975-1-git-send-email-yinghai@kernel.org> <20130325194245.GA7357@redhat.com> <CAE9FiQU6bGSAODX_-Vir6D-LyY-9Sm84rYzq=gNhDZ5whbia_w@mail.gmail.com> <20130326181418.GA6775@redhat.com> <20130401133428.GA13499@redhat.com> <5159D2E9.7080707@zytor.com> <20130401192606.GA17951@redhat.com> <5159F27E.7060300@zytor.com> <CAE9FiQXikU8-FkYYULHx50qP_ME2bRSzCC=8ZH8iDyUr2ug66g@mail.gmail.com> <515A03DB.6040107@zytor.com> <CAE9FiQWNFbFgXafJBvORRax+GNU_uf0KFnqZ5NQit0BeZZx9LA@mail.gmail.com>
+In-Reply-To: <CAE9FiQWNFbFgXafJBvORRax+GNU_uf0KFnqZ5NQit0BeZZx9LA@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hayes Wang <hayeswang@realtek.com> :
-> - Replace the current settings with rtl_writephy and rtl_readphy.
->   For the hardware, the settings are same with previous ones. This
->   make the setting method like the previous chips.
-> - Add new PHY settings.
-
-Would you mind spliting it in two ?
-
-On closer inspection the settings do not look the same.
-
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
-> ---
->  drivers/net/ethernet/realtek/r8169.c | 72 +++++++++++++++++++++++++-----------
->  1 file changed, 51 insertions(+), 21 deletions(-)
+On 04/01/2013 03:17 PM, Yinghai Lu wrote:
 > 
-> diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-> index d36aa76..b8b59a9 100644
-> --- a/drivers/net/ethernet/realtek/r8169.c
-> +++ b/drivers/net/ethernet/realtek/r8169.c
-[...]
-> @@ -3370,23 +3362,61 @@ static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
->  {
->  	rtl_apply_firmware(tp);
->  
-> -	if (r8168_phy_ocp_read(tp, 0xa460) & 0x0100)
-> -		rtl_w1w0_phy_ocp(tp, 0xbcc4, 0x0000, 0x8000);
-> -	else
-> -		rtl_w1w0_phy_ocp(tp, 0xbcc4, 0x8000, 0x0000);
-> +	rtl_writephy(tp, 0x1f, 0x0a46);
-> +	if (rtl_readphy(tp, 0x10) & 0x0100) {
-> +		rtl_writephy(tp, 0x1f, 0x0bcc);
-> +		rtl_w1w0_phy(tp, 0x12, 0x0000, 0x8000);
-> +	} else {
-> +		rtl_writephy(tp, 0x1f, 0x0bcc);
-> +		rtl_w1w0_phy(tp, 0x12, 0x8000, 0x0000);
-> +	}
->  
-> -	if (r8168_phy_ocp_read(tp, 0xa466) & 0x0100)
-> -		rtl_w1w0_phy_ocp(tp, 0xc41a, 0x0002, 0x0000);
-> -	else
-> -		rtl_w1w0_phy_ocp(tp, 0xbcc4, 0x0000, 0x0002);
-                                     ^^^^^^
-This one was not right, was it ?
+> And his last suggestion is just as his old second suggestion.
+> 
+> I just check the code again, it looks it is easy to change it to support:
+> 1. crashkernel=XM
+> 2. crashkernel_high=XM
+> 3. crashkernel_high=XM crashkernel_low=YM
+> 
 
-> +	rtl_writephy(tp, 0x1f, 0x0a46);
-> +	if (rtl_readphy(tp, 0x13) & 0x0100) {
-> +		rtl_writephy(tp, 0x1f, 0x0c41);
-> +		rtl_w1w0_phy(tp, 0x15, 0x0002, 0x0000);
-> +	} else {
-> +		rtl_writephy(tp, 0x1f, 0x0c41);
-> +		rtl_w1w0_phy(tp, 0x15, 0x0000, 0x0002);
-> +	}
+Yes... my objections that you are giving the user the headache of
+dealing with this very much remains, but I don't think we have any good
+options.  However, the <size>,<options>.... syntax is at least
+extensible, which the above syntax is not.
 
--- 
-Ueimor
+	-hpa
+
+
