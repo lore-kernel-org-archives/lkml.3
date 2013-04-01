@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758254Ab3DAN42 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 09:56:28 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:38814 "EHLO
+	id S1758328Ab3DAN4f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 09:56:35 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:38821 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757966Ab3DAN40 (ORCPT
+	with ESMTP id S1758215Ab3DAN4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 09:56:26 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r31DuL2X009600, This message is released by code: ctlocs8528
+	Mon, 1 Apr 2013 09:56:33 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r31DuSOA009630, This message is released by code: ctlocs8528
 From: Hayes Wang <hayeswang@realtek.com>
 To: <romieu@fr.zoreil.com>
 CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 3/7] r8169: Modify the method for setting firmware
-Date: Mon, 1 Apr 2013 21:55:35 +0800
-Message-ID: <1364824539-4156-3-git-send-email-hayeswang@realtek.com>
+Subject: [PATCH net-next 6/7] r8169: add a new chip for RTL8106E
+Date: Mon, 1 Apr 2013 21:55:38 +0800
+Message-ID: <1364824539-4156-6-git-send-email-hayeswang@realtek.com>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1364824539-4156-1-git-send-email-hayeswang@realtek.com>
 References: <1364824539-4156-1-git-send-email-hayeswang@realtek.com>
@@ -24,130 +24,156 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove useless action PHY_READ_EFUSE, PHY_READ_MAC_BYTE, PHY_WRITE_MAC_BYTE,
-PHY_WRITE_ERI_WORD. And define the new action PHY_MDIO_CHG.
-
-PHY_MDIO_CHG is used to modify the mdio operation. By the way, the
-firmware could support setting mac ocp.
+- add a new chip for RTL8106E series.
+- move rtl_set_rx_tx_desc_registers to avoid the tx/rx are enabled
+  before setting desc registers.
 
 Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
- drivers/net/ethernet/realtek/r8169.c | 45 +++++++++++++++++++++++++-----------
- 1 file changed, 32 insertions(+), 13 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c | 25 +++++++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index b8b59a9..e7e7d37 100644
+index 8d41508..876e088 100644
 --- a/drivers/net/ethernet/realtek/r8169.c
 +++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -1069,6 +1069,21 @@ static int r8168g_mdio_read(struct rtl8169_private *tp, int reg)
- 	return r8168_phy_ocp_read(tp, tp->ocp_base + reg * 2);
- }
+@@ -49,6 +49,7 @@
+ #define FIRMWARE_8106E_1	"rtl_nic/rtl8106e-1.fw"
+ #define FIRMWARE_8168G_2	"rtl_nic/rtl8168g-2.fw"
+ #define FIRMWARE_8168G_3	"rtl_nic/rtl8168g-3.fw"
++#define FIRMWARE_8106E_2	"rtl_nic/rtl8106e-2.fw"
  
-+static void mac_mcu_write(struct rtl8169_private *tp, int reg, int value)
-+{
-+	if (reg == 0x1f) {
-+		tp->ocp_base = value << 4;
-+		return;
-+	}
-+
-+	r8168_mac_ocp_write(tp, tp->ocp_base + reg, value);
-+}
-+
-+static int mac_mcu_read(struct rtl8169_private *tp, int reg)
-+{
-+	return r8168_mac_ocp_read(tp, tp->ocp_base + reg);
-+}
-+
- DECLARE_RTL_COND(rtl_phyar_cond)
+ #ifdef RTL8169_DEBUG
+ #define assert(expr) \
+@@ -142,6 +143,7 @@ enum mac_version {
+ 	RTL_GIGA_MAC_VER_40,
+ 	RTL_GIGA_MAC_VER_41,
+ 	RTL_GIGA_MAC_VER_42,
++	RTL_GIGA_MAC_VER_43,
+ 	RTL_GIGA_MAC_NONE   = 0xff,
+ };
+ 
+@@ -271,6 +273,9 @@ static const struct {
+ 	[RTL_GIGA_MAC_VER_42] =
+ 		_R("RTL8168g/8111g",	RTL_TD_1, FIRMWARE_8168G_3,
+ 							JUMBO_9K, false),
++	[RTL_GIGA_MAC_VER_43] =
++		_R("RTL8106e",		RTL_TD_1, FIRMWARE_8106E_2,
++							JUMBO_1K, true),
+ };
+ #undef _R
+ 
+@@ -824,6 +829,7 @@ MODULE_FIRMWARE(FIRMWARE_8411_1);
+ MODULE_FIRMWARE(FIRMWARE_8106E_1);
+ MODULE_FIRMWARE(FIRMWARE_8168G_2);
+ MODULE_FIRMWARE(FIRMWARE_8168G_3);
++MODULE_FIRMWARE(FIRMWARE_8106E_2);
+ 
+ static void rtl_lock_work(struct rtl8169_private *tp)
  {
- 	void __iomem *ioaddr = tp->mmio_addr;
-@@ -2134,9 +2149,7 @@ static void rtl_writephy_batch(struct rtl8169_private *tp,
- #define PHY_DATA_OR		0x10000000
- #define PHY_DATA_AND		0x20000000
- #define PHY_BJMPN		0x30000000
--#define PHY_READ_EFUSE		0x40000000
--#define PHY_READ_MAC_BYTE	0x50000000
--#define PHY_WRITE_MAC_BYTE	0x60000000
-+#define PHY_MDIO_CHG		0x40000000
- #define PHY_CLEAR_READCOUNT	0x70000000
- #define PHY_WRITE		0x80000000
- #define PHY_READCOUNT_EQ_SKIP	0x90000000
-@@ -2145,7 +2158,6 @@ static void rtl_writephy_batch(struct rtl8169_private *tp,
- #define PHY_WRITE_PREVIOUS	0xc0000000
- #define PHY_SKIPN		0xd0000000
- #define PHY_DELAY_MS		0xe0000000
--#define PHY_WRITE_ERI_WORD	0xf0000000
- 
- struct fw_info {
- 	u32	magic;
-@@ -2222,7 +2234,7 @@ static bool rtl_fw_data_ok(struct rtl8169_private *tp, struct net_device *dev,
- 		case PHY_READ:
- 		case PHY_DATA_OR:
- 		case PHY_DATA_AND:
--		case PHY_READ_EFUSE:
-+		case PHY_MDIO_CHG:
- 		case PHY_CLEAR_READCOUNT:
- 		case PHY_WRITE:
- 		case PHY_WRITE_PREVIOUS:
-@@ -2253,9 +2265,6 @@ static bool rtl_fw_data_ok(struct rtl8169_private *tp, struct net_device *dev,
- 			}
- 			break;
- 
--		case PHY_READ_MAC_BYTE:
--		case PHY_WRITE_MAC_BYTE:
--		case PHY_WRITE_ERI_WORD:
- 		default:
- 			netif_err(tp, ifup, tp->dev,
- 				  "Invalid action 0x%08x\n", action);
-@@ -2286,10 +2295,13 @@ out:
- static void rtl_phy_write_fw(struct rtl8169_private *tp, struct rtl_fw *rtl_fw)
- {
- 	struct rtl_fw_phy_action *pa = &rtl_fw->phy_action;
-+	struct mdio_ops org, *ops = &tp->mdio_ops;
- 	u32 predata, count;
- 	size_t index;
- 
- 	predata = count = 0;
-+	org.write = ops->write;
-+	org.read = ops->read;
- 
- 	for (index = 0; index < pa->size; ) {
- 		u32 action = le32_to_cpu(pa->code[index]);
-@@ -2316,8 +2328,15 @@ static void rtl_phy_write_fw(struct rtl8169_private *tp, struct rtl_fw *rtl_fw)
- 		case PHY_BJMPN:
- 			index -= regno;
- 			break;
--		case PHY_READ_EFUSE:
--			predata = rtl8168d_efuse_read(tp, regno);
-+		case PHY_MDIO_CHG:
-+			if (data == 0) {
-+				ops->write = org.write;
-+				ops->read = org.read;
-+			} else if (data == 1) {
-+				ops->write = mac_mcu_write;
-+				ops->read = mac_mcu_read;
-+			}
-+
- 			index++;
- 			break;
- 		case PHY_CLEAR_READCOUNT:
-@@ -2353,13 +2372,13 @@ static void rtl_phy_write_fw(struct rtl8169_private *tp, struct rtl_fw *rtl_fw)
- 			index++;
- 			break;
- 
--		case PHY_READ_MAC_BYTE:
--		case PHY_WRITE_MAC_BYTE:
--		case PHY_WRITE_ERI_WORD:
- 		default:
- 			BUG();
- 		}
+@@ -2133,6 +2139,10 @@ static void rtl8169_get_mac_version(struct rtl8169_private *tp,
+ 		netif_notice(tp, probe, dev,
+ 			     "unknown MAC, using family default\n");
+ 		tp->mac_version = default_version;
++	} else if (tp->mac_version == RTL_GIGA_MAC_VER_42) {
++		tp->mac_version = tp->mii.supports_gmii ?
++				  RTL_GIGA_MAC_VER_42 :
++				  RTL_GIGA_MAC_VER_43;
  	}
-+
-+	ops->write = org.write;
-+	ops->read = org.read;
  }
  
- static void rtl_release_firmware(struct rtl8169_private *tp)
+@@ -3709,6 +3719,7 @@ static void rtl_hw_phy_config(struct net_device *dev)
+ 		rtl8168g_1_hw_phy_config(tp);
+ 		break;
+ 	case RTL_GIGA_MAC_VER_42:
++	case RTL_GIGA_MAC_VER_43:
+ 		rtl8168g_2_hw_phy_config(tp);
+ 		break;
+ 
+@@ -3920,6 +3931,7 @@ static void rtl_init_mdio_ops(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_40:
+ 	case RTL_GIGA_MAC_VER_41:
+ 	case RTL_GIGA_MAC_VER_42:
++	case RTL_GIGA_MAC_VER_43:
+ 		ops->write	= r8168g_mdio_write;
+ 		ops->read	= r8168g_mdio_read;
+ 		break;
+@@ -3948,6 +3960,7 @@ static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_40:
+ 	case RTL_GIGA_MAC_VER_41:
+ 	case RTL_GIGA_MAC_VER_42:
++	case RTL_GIGA_MAC_VER_43:
+ 		RTL_W32(RxConfig, RTL_R32(RxConfig) |
+ 			AcceptBroadcast | AcceptMulticast | AcceptMyPhys);
+ 		break;
+@@ -4183,6 +4196,7 @@ static void rtl_init_pll_power_ops(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_30:
+ 	case RTL_GIGA_MAC_VER_37:
+ 	case RTL_GIGA_MAC_VER_39:
++	case RTL_GIGA_MAC_VER_43:
+ 		ops->down	= r810x_pll_power_down;
+ 		ops->up		= r810x_pll_power_up;
+ 		break;
+@@ -4256,6 +4270,7 @@ static void rtl_init_rxcfg(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_40:
+ 	case RTL_GIGA_MAC_VER_41:
+ 	case RTL_GIGA_MAC_VER_42:
++	case RTL_GIGA_MAC_VER_43:
+ 		RTL_W32(RxConfig, RX128_INT_EN | RX_DMA_BURST | RX_EARLY_OFF);
+ 		break;
+ 	default:
+@@ -4415,6 +4430,7 @@ static void rtl_init_jumbo_ops(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_40:
+ 	case RTL_GIGA_MAC_VER_41:
+ 	case RTL_GIGA_MAC_VER_42:
++	case RTL_GIGA_MAC_VER_43:
+ 	default:
+ 		ops->disable	= NULL;
+ 		ops->enable	= NULL;
+@@ -4523,6 +4539,7 @@ static void rtl8169_hw_reset(struct rtl8169_private *tp)
+ 	           tp->mac_version == RTL_GIGA_MAC_VER_40 ||
+ 	           tp->mac_version == RTL_GIGA_MAC_VER_41 ||
+ 	           tp->mac_version == RTL_GIGA_MAC_VER_42 ||
++	           tp->mac_version == RTL_GIGA_MAC_VER_43 ||
+ 	           tp->mac_version == RTL_GIGA_MAC_VER_38) {
+ 		RTL_W8(ChipCmd, RTL_R8(ChipCmd) | StopReq);
+ 		rtl_udelay_loop_wait_high(tp, &rtl_txcfg_empty_cond, 100, 666);
+@@ -5560,6 +5577,8 @@ static void rtl_hw_start_8101(struct net_device *dev)
+ 
+ 	RTL_W8(Cfg9346, Cfg9346_Unlock);
+ 
++	rtl_set_rx_tx_desc_registers(tp, ioaddr);
++
+ 	switch (tp->mac_version) {
+ 	case RTL_GIGA_MAC_VER_07:
+ 		rtl_hw_start_8102e_1(tp);
+@@ -5587,6 +5606,9 @@ static void rtl_hw_start_8101(struct net_device *dev)
+ 	case RTL_GIGA_MAC_VER_39:
+ 		rtl_hw_start_8106(tp);
+ 		break;
++	case RTL_GIGA_MAC_VER_43:
++		rtl_hw_start_8168g_2(tp);
++		break;
+ 	}
+ 
+ 	RTL_W8(Cfg9346, Cfg9346_Lock);
+@@ -5600,8 +5622,6 @@ static void rtl_hw_start_8101(struct net_device *dev)
+ 
+ 	RTL_W16(IntrMitigate, 0x0000);
+ 
+-	rtl_set_rx_tx_desc_registers(tp, ioaddr);
+-
+ 	RTL_W8(ChipCmd, CmdTxEnb | CmdRxEnb);
+ 	rtl_set_rx_tx_config_registers(tp);
+ 
+@@ -6881,6 +6901,7 @@ static void rtl_hw_initialize(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_40:
+ 	case RTL_GIGA_MAC_VER_41:
+ 	case RTL_GIGA_MAC_VER_42:
++	case RTL_GIGA_MAC_VER_43:
+ 		rtl_hw_init_8168g(tp);
+ 		break;
+ 
 -- 
 1.8.1
 
