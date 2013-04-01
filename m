@@ -1,45 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758047Ab3DAG6L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 02:58:11 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:45882 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757979Ab3DAG5B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757977Ab3DAG5B (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 1 Apr 2013 02:57:01 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-a3-51592fb9d897
+Received: from mailout1.samsung.com ([203.254.224.24]:62386 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757369Ab3DAG46 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 02:56:58 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-97-51592fb8598f
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 7/9] f2fs: allocate remained free segments in the LFS mode
-Date: Mon, 01 Apr 2013 15:55:58 +0900
-Message-id: <1364799360-23145-7-git-send-email-jaegeuk.kim@samsung.com>
+Subject: [PATCH 1/9] f2fs: do not use duplicate names in a macro
+Date: Mon, 01 Apr 2013 15:55:52 +0900
+Message-id: <1364799360-23145-1-git-send-email-jaegeuk.kim@samsung.com>
 X-Mailer: git-send-email 1.8.1.3.566.gaa39828
-In-reply-to: <1364799360-23145-1-git-send-email-jaegeuk.kim@samsung.com>
-References: <1364799360-23145-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsVy+t8zfd2d+pGBBqcWKVpc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXH84gXGgkvcFXsm
-	3mduYDzO2cXIySEhYCLx7NwCNghbTOLCvfVANheHkMAyRomm47fZYIpenv0GlVjEKHF5yTZm
-	CKeNSWLFhfvsXYwcHGwC2hKb9xuANIgIMEssmHqeEaSGWWACo8T/Re9ZQGqEBbwkZjz3A6lh
-	EVCV+PS+kwnE5hVwl1i58iQLxDJdidX/n7OD2JwCHhKf2z6CxYWAak7tWw110Hc2iXO3TSHm
-	CEh8m3wIbLyEgKzEpgPMECWSEgdX3GCZwCi8gJFhFaNoakFyQXFSepGxXnFibnFpXrpecn7u
-	JkZIwPbvYLx7wPoQYzLQuInMUqLJ+cCAzyuJNzQ2M7IwNTE1NjK3NCNNWEmcV63FOlBIID2x
-	JDU7NbUgtSi+qDQntfgQIxMHp1QD4wnTFwavZxgYS/1ncjYpjV/ErXdiLn+2SsCVeU+b9WJW
-	plRM9HK2KQhWiDmrVVi69o6mh4fa9h92njIS6Yw7/1suUd6iwh9cwdNWKiJzaWPguoOfyplF
-	HN996F7QvuiEEd/3R7nyKo8ir5tMKxO807f+ygVeuacx5v8Do7+fMD260WLrp2+2SizFGYmG
-	WsxFxYkAyMOFBW4CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t9jAd2d+pGBBp0rZC2u7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
-	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
-	JAiux8gADSSsY8w4fvECY8El7oo9E+8zNzAe5+xi5OSQEDCReHn2GxuELSZx4d56IJuLQ0hg
-	EaPE5SXbmCGcNiaJFRfus3cxcnCwCWhLbN5vANIgIsAssWDqeUaQGmaBCYwS/xe9ZwGpERbw
-	kpjx3A+khkVAVeLT+04mEJtXwF1i5cqTLBDLdCVW/3/ODmJzCnhIfG77CBYXAqo5tW812wRG
-	3gWMDKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgiPimfQOxlUNFocYBTgYlXh4Iy5EBAqx
-	JpYVV+YeYpTgYFYS4fX5BhTiTUmsrEotyo8vKs1JLT7EmAx01URmKdHkfGC05pXEGxqbmBlZ
-	GplZGJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QD4+JP3VYK5e/kn00LiXJPWmzX
-	pPP1LIOCyArzSZeflb1337OB/fG8WqP+w7GBd3W3ur24zyVz5KXIlQvXApPmmT88zH+8TT4k
-	w/dkz/ynOf0RN3Wn7LlTk59stf15J6doc+jnY7Mm3uG29dCYUfLS6tme1bWO4p7l0lURNtf2
-	x4Q2cy7JfFXSrsRSnJFoqMVcVJwIAHuTb+bMAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zfd0d+pGBBlP2W1lc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlfF96Vy2gp1cFR8P
+	rmFpYLzM0cXIySEhYCLx5PgZZghbTOLCvfVsXYxcHEICyxglTl59zNjFyAFWtOiMPUR8EaPE
+	z4m97BBOG5PEpaub2ECK2AS0JTbvNwAZJCLALLFg6nlGkBpmgQmMEv8XvWcBSQgLOEhMbfjI
+	BGKzCKhK/JrRzgZi8wq4S7z+/JcR4gpdidX/n4MtkBB4zCZxrvUfM0SDgMS3yYdYIC6Sldh0
+	AOpqSYmDK26wTGAUXMDIsIpRNLUguaA4Kb3IWK84Mbe4NC9dLzk/dxMjJAT7dzDePWB9iDEZ
+	aNxEZinR5HxgCOeVxBsamxlZmJqYGhuZW5qRJqwkzqvWYh0oJJCeWJKanZpakFoUX1Sak1p8
+	iJGJg1OqgbHJkpeL4bb5q5JELttjuX/0V3A0fDohq33W3JNpesnE9gn/7T54nzTj9m3ymLd/
+	bZzD+m0s2blLjUKatm04ZDZ9/6wpTmIXFwdK9L59oR1Sn1SbGLvfIE8y+uasvQcWvLRevGvz
+	WvuEfFMJF2bj0+3VsdP9rGbf4T17z1/H2sxwg5vW+31r/iixFGckGmoxFxUnAgCvuIQkVwIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jAd0d+pGBBqvvmVpc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
+	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
+	SBBcj5EBGkhYx5jxfelctoKdXBUfD65haWC8zNHFyMEhIWAiseiMfRcjJ5ApJnHh3nq2LkYu
+	DiGBRYwSPyf2skM4bUwSl65uYgNpYBPQlti83wCkQUSAWWLB1POMIDXMAhMYJf4ves8CkhAW
+	cJCY2vCRCcRmEVCV+DWjnQ3E5hVwl3j9+S8jxDZdidX/n7NPYORewMiwilE0tSC5oDgpPddI
+	rzgxt7g0L10vOT93EyM4wJ9J72Bc1WBxiFGAg1GJhzfiQkSgEGtiWXFl7iFGCQ5mJRFen29A
+	Id6UxMqq1KL8+KLSnNTiQ4zJQNsnMkuJJucDoy+vJN7Q2MTMyNLIzMLIxNycNGElcd6DrdaB
+	QgLpiSWp2ampBalFMFuYODilGhjXbDt0+9HpM4seirtYvfmQqOXmG3fi4bR7HvN/7HkrsDRD
+	7tGB47Ud14zE6795Kvs2GnmEWUy3bXsQ/7OHxdTS/Itq2vWOTo09DpcKSo10Uz4tlVx57U5a
+	ScjFTdoaDyv37OqQfuLm/XZCpl1BYMa5qJ2vxGp7Wx6sy7occNp2br3st8XKTolKLMUZiYZa
+	zEXFiQCdqZIjtAIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -48,47 +45,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new condition that allocates free segments in the current
-active section even if SSR is needed.
-Otherwise, f2fs cannot allocate remained free segments in the section since
-SSR finds dirty segments only.
+A macro should not use duplicate parameter names.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/segment.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ fs/f2fs/segment.h | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index d5244f6..fe520d3 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -347,6 +347,17 @@ next:
- 	return NULL_SEGNO;
- }
+diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
+index e399bd4..c0d7740 100644
+--- a/fs/f2fs/segment.h
++++ b/fs/f2fs/segment.h
+@@ -23,13 +23,13 @@
+ 	((t == CURSEG_HOT_NODE) || (t == CURSEG_COLD_NODE) ||		\
+ 	(t == CURSEG_WARM_NODE))
  
-+static int is_next_segment_free(struct f2fs_sb_info *sbi, int type)
-+{
-+	struct curseg_info *curseg = CURSEG_I(sbi, type);
-+	unsigned int segno = curseg->segno;
-+	struct free_segmap_info *free_i = FREE_I(sbi);
-+
-+	if (segno + 1 < TOTAL_SEGS(sbi) && (segno + 1) % sbi->segs_per_sec)
-+		return !test_bit(segno + 1, free_i->free_segmap);
-+	return 0;
-+}
-+
- /*
-  * Find a new segment from the free segments bitmap to right order
-  * This function should be returned with success, otherwise BUG
-@@ -580,6 +591,8 @@ static void allocate_segment_by_default(struct f2fs_sb_info *sbi,
- 		change_curseg(sbi, type, false);
- 	else if (type == CURSEG_WARM_NODE)
- 		new_curseg(sbi, type, false);
-+	else if (curseg->alloc_type == LFS && is_next_segment_free(sbi, type))
-+		new_curseg(sbi, type, false);
- 	else if (need_SSR(sbi) && get_ssr_segment(sbi, type))
- 		change_curseg(sbi, type, true);
- 	else
+-#define IS_CURSEG(sbi, segno)						\
+-	((segno == CURSEG_I(sbi, CURSEG_HOT_DATA)->segno) ||	\
+-	 (segno == CURSEG_I(sbi, CURSEG_WARM_DATA)->segno) ||	\
+-	 (segno == CURSEG_I(sbi, CURSEG_COLD_DATA)->segno) ||	\
+-	 (segno == CURSEG_I(sbi, CURSEG_HOT_NODE)->segno) ||	\
+-	 (segno == CURSEG_I(sbi, CURSEG_WARM_NODE)->segno) ||	\
+-	 (segno == CURSEG_I(sbi, CURSEG_COLD_NODE)->segno))
++#define IS_CURSEG(sbi, seg)						\
++	((seg == CURSEG_I(sbi, CURSEG_HOT_DATA)->segno) ||	\
++	 (seg == CURSEG_I(sbi, CURSEG_WARM_DATA)->segno) ||	\
++	 (seg == CURSEG_I(sbi, CURSEG_COLD_DATA)->segno) ||	\
++	 (seg == CURSEG_I(sbi, CURSEG_HOT_NODE)->segno) ||	\
++	 (seg == CURSEG_I(sbi, CURSEG_WARM_NODE)->segno) ||	\
++	 (seg == CURSEG_I(sbi, CURSEG_COLD_NODE)->segno))
+ 
+ #define IS_CURSEC(sbi, secno)						\
+ 	((secno == CURSEG_I(sbi, CURSEG_HOT_DATA)->segno /		\
 -- 
 1.8.1.3.566.gaa39828
 
