@@ -1,49 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757478Ab3DAUL4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 16:11:56 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:38112 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757078Ab3DAULy (ORCPT
+	id S1756625Ab3DAUOB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 16:14:01 -0400
+Received: from e24smtp05.br.ibm.com ([32.104.18.26]:51800 "EHLO
+	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753180Ab3DAUN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 16:11:54 -0400
-Date: Mon, 1 Apr 2013 13:11:52 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, Andy King <acking@vmware.com>,
-        Dmitry Torokhov <dtor@vmware.com>
-Subject: Re: [PATCH] misc/vmw_vmci: VMWARE_VMCI depends on NET
-Message-ID: <20130401201152.GA29283@kroah.com>
-References: <1364791439-28396-1-git-send-email-linux@roeck-us.net>
- <20130401192939.GA31983@kroah.com>
- <20130401200235.GA14969@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130401200235.GA14969@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 1 Apr 2013 16:13:58 -0400
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-rdma@vger.kernel.org,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        Emil Goode <emilgoode@gmail.com>, Steve Wise <swise@chelsio.com>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>
+Subject: [PATCH] cxgb4: fix SQ allocation when On-Chip SQ is disabled
+Date: Mon,  1 Apr 2013 17:13:39 -0300
+Message-Id: <1364847219-26078-1-git-send-email-cascardo@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040120-2362-0000-0000-00000A325232
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 01, 2013 at 01:02:35PM -0700, Guenter Roeck wrote:
-> On Mon, Apr 01, 2013 at 12:29:39PM -0700, Greg Kroah-Hartman wrote:
-> > On Sun, Mar 31, 2013 at 09:43:59PM -0700, Guenter Roeck wrote:
-> > > Fix:
-> > > 
-> > > ERROR: "memcpy_toiovec" [drivers/misc/vmw_vmci/vmw_vmci.ko] undefined!
-> > > ERROR: "memcpy_fromiovec" [drivers/misc/vmw_vmci/vmw_vmci.ko] undefined!
-> > > 
-> > > Both functions are defined in the core networking code.
-> > 
-> > This is already in linux-next, thanks.
-> > 
-> Uuh ... and I submitted it. Sorry for the noise.
-> 
-> Any chance to apply this to 3.9-rc ? It causes a bunch of unnecessary
-> nightly build errors for me.
+"RDMA/cxgb4: Fix error handling in create_qp()"
+(c079c28714e4d1a0b7cad120f84217e0fcde09a6) broke SQ allocation. Instead
+of fallbacking to host allocation when On-Chip allocation fails, it
+tries to allocate both. And when it does, and we try to free the address
+from the genpool using the host address, we hit a BUG and the system
+crashes as below.
 
-As it's a configuration that no "real" user would ever hit, it's not
-really 3.9 material, sorry.
+We create a new function that has the previous behavior and properly
+propagate the error, as intended.
 
-greg k0h
+kernel BUG at /usr/src/packages/BUILD/kernel-ppc64-3.0.68/linux-3.0/lib/genalloc.c:340!
+Oops: Exception in kernel mode, sig: 5 [#1]
+SMP NR_CPUS=1024 NUMA pSeries
+Modules linked in: rdma_ucm rdma_cm ib_addr ib_cm iw_cm ib_sa ib_mad ib_uverbs iw_cxgb4 ib_core ip6t_LOG xt_tcpudp xt_pkttype ipt_LOG xt_limit ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_raw xt_NOTRACK ipt_REJECT xt_state iptable_raw iptable_filter ip6table_mangle nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 ip_tables ip6table_filter ip6_tables x_tables fuse loop dm_mod ipv6 ipv6_lib sr_mod cdrom ibmveth(X) cxgb4 sg ext3 jbd mbcache sd_mod crc_t10dif scsi_dh_emc scsi_dh_hp_sw scsi_dh_alua scsi_dh_rdac scsi_dh ibmvscsic(X) scsi_transport_srp scsi_tgt scsi_mod
+Supported: Yes
+NIP: c00000000037d41c LR: d000000003913824 CTR: c00000000037d3b0
+REGS: c0000001f350ae50 TRAP: 0700   Tainted: G            X  (3.0.68-0.9-ppc64)
+MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 24042482  XER: 00000001
+TASK = c0000001f6f2a840[3616] 'rping' THREAD: c0000001f3508000 CPU: 0
+GPR00: c0000001f6e875c8 c0000001f350b0d0 c000000000fc9690 c0000001f6e875c0
+GPR04: 00000000000c0000 0000000000010000 0000000000000000 c0000000009d482a
+GPR08: 000000006a170000 0000000000100000 c0000001f350b140 c0000001f6e875c8
+GPR12: d000000003915dd0 c000000003f40000 000000003e3ecfa8 c0000001f350bea0
+GPR16: c0000001f350bcd0 00000000003c0000 0000000000040100 c0000001f6e74a80
+GPR20: d00000000399a898 c0000001f6e74ac8 c0000001fad91600 c0000001f6e74ab0
+GPR24: c0000001f7d23f80 0000000000000000 0000000000000002 000000006a170000
+GPR28: 000000000000000c c0000001f584c8d0 d000000003925180 c0000001f6e875c8
+NIP [c00000000037d41c] .gen_pool_free+0x6c/0xf8
+LR [d000000003913824] .c4iw_ocqp_pool_free+0x8c/0xd8 [iw_cxgb4]
+Call Trace:
+[c0000001f350b0d0] [c0000001f350b180] 0xc0000001f350b180 (unreliable)
+[c0000001f350b170] [d000000003913824] .c4iw_ocqp_pool_free+0x8c/0xd8 [iw_cxgb4]
+[c0000001f350b210] [d00000000390fd70] .dealloc_sq+0x90/0xb0 [iw_cxgb4]
+[c0000001f350b280] [d00000000390fe08] .destroy_qp+0x78/0xf8 [iw_cxgb4]
+[c0000001f350b310] [d000000003912738] .c4iw_destroy_qp+0x208/0x2d0 [iw_cxgb4]
+[c0000001f350b460] [d000000003861874] .ib_destroy_qp+0x5c/0x130 [ib_core]
+[c0000001f350b510] [d0000000039911bc] .ib_uverbs_cleanup_ucontext+0x174/0x4f8 [ib_uverbs]
+[c0000001f350b5f0] [d000000003991568] .ib_uverbs_close+0x28/0x70 [ib_uverbs]
+[c0000001f350b670] [c0000000001e7b2c] .__fput+0xdc/0x278
+[c0000001f350b720] [c0000000001a9590] .remove_vma+0x68/0xd8
+[c0000001f350b7b0] [c0000000001a9720] .exit_mmap+0x120/0x160
+[c0000001f350b8d0] [c0000000000af330] .mmput+0x80/0x160
+[c0000001f350b960] [c0000000000b5d0c] .exit_mm+0x1ac/0x1e8
+[c0000001f350ba10] [c0000000000b8154] .do_exit+0x1b4/0x4b8
+[c0000001f350bad0] [c0000000000b84b0] .do_group_exit+0x58/0xf8
+[c0000001f350bb60] [c0000000000ce9f4] .get_signal_to_deliver+0x2f4/0x5d0
+[c0000001f350bc60] [c000000000017ee4] .do_signal_pending+0x6c/0x3e0
+[c0000001f350bdb0] [c0000000000182cc] .do_signal+0x74/0x78
+[c0000001f350be30] [c000000000009e74] do_work+0x24/0x28
+
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Cc: Emil Goode <emilgoode@gmail.com>
+Cc: Steve Wise <swise@chelsio.com>
+Cc: Roland Dreier <roland@kernel.org>
+Cc: Sean Hefty <sean.hefty@intel.com>
+Cc: Hal Rosenstock <hal.rosenstock@gmail.com>
+---
+ drivers/infiniband/hw/cxgb4/qp.c |   25 +++++++++++++------------
+ 1 files changed, 13 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/infiniband/hw/cxgb4/qp.c b/drivers/infiniband/hw/cxgb4/qp.c
+index 70b1808..ed49ab3 100644
+--- a/drivers/infiniband/hw/cxgb4/qp.c
++++ b/drivers/infiniband/hw/cxgb4/qp.c
+@@ -100,6 +100,16 @@ static int alloc_host_sq(struct c4iw_rdev *rdev, struct t4_sq *sq)
+ 	return 0;
+ }
+ 
++static int alloc_sq(struct c4iw_rdev *rdev, struct t4_sq *sq, int user)
++{
++	int ret = -ENOSYS;
++	if (user)
++		ret = alloc_oc_sq(rdev, sq);
++	if (ret)
++		ret = alloc_host_sq(rdev, sq);
++	return ret;
++}
++
+ static int destroy_qp(struct c4iw_rdev *rdev, struct t4_wq *wq,
+ 		      struct c4iw_dev_ucontext *uctx)
+ {
+@@ -168,18 +178,9 @@ static int create_qp(struct c4iw_rdev *rdev, struct t4_wq *wq,
+ 		goto free_sw_rq;
+ 	}
+ 
+-	if (user) {
+-		ret = alloc_oc_sq(rdev, &wq->sq);
+-		if (ret)
+-			goto free_hwaddr;
+-
+-		ret = alloc_host_sq(rdev, &wq->sq);
+-		if (ret)
+-			goto free_sq;
+-	} else
+-		ret = alloc_host_sq(rdev, &wq->sq);
+-		if (ret)
+-			goto free_hwaddr;
++	ret = alloc_sq(rdev, &wq->sq, user);
++	if (ret)
++		goto free_hwaddr;
+ 	memset(wq->sq.queue, 0, wq->sq.memsize);
+ 	dma_unmap_addr_set(&wq->sq, mapping, wq->sq.dma_addr);
+ 
+-- 
+1.7.1
+
