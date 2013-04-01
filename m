@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758153Ab3DAVok (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 17:44:40 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:43310 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754579Ab3DAVoi (ORCPT
+	id S1758524Ab3DAVpn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 17:45:43 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3878 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754579Ab3DAVpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 17:44:38 -0400
-Date: Mon, 1 Apr 2013 14:44:36 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Yet another pipe related oops.
-Message-ID: <20130401214436.GA5786@kroah.com>
-References: <CA+55aFyPUYiFoiLrMCzeHpbAgAignCe_awU7SbvPh+T6eHeqng@mail.gmail.com>
- <20130312194353.GI21522@ZenIV.linux.org.uk>
- <CA+55aFx-8TrSSJZM-WTDN4Hc3pESLXBsGC9x3xVaxuwxnGKqpA@mail.gmail.com>
- <20130327135127.GB1738@redhat.com>
- <20130327152030.GY21522@ZenIV.linux.org.uk>
- <CA+55aFx=BPQ2empEahqCs2hQ=sRaw3OjJotrS6OMT3e6tUVMLQ@mail.gmail.com>
- <20130327174506.GZ21522@ZenIV.linux.org.uk>
- <20130401203445.GA20862@ZenIV.linux.org.uk>
- <20130401210029.GA3245@kroah.com>
- <20130401212142.GD21522@ZenIV.linux.org.uk>
+	Mon, 1 Apr 2013 17:45:42 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 01 Apr 2013 14:45:00 -0700
+From: Rhyland Klein <rklein@nvidia.com>
+To: Anton Vorontsov <cbou@mail.ru>, Grant Likely <grant.likely@secretlab.ca>
+CC: David Woodhouse <dwmw2@infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-tegra@vger.kernel.org>,
+        Rhyland Klein <rklein@nvidia.com>
+Subject: [PATCH V2 0/3] Add DT Binding for Power-Supply power-supplies property
+Date: Mon, 1 Apr 2013 17:45:52 -0400
+Message-ID: <1364852755-17425-1-git-send-email-rklein@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130401212142.GD21522@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 01, 2013 at 10:21:42PM +0100, Al Viro wrote:
-> On Mon, Apr 01, 2013 at 02:00:29PM -0700, Greg Kroah-Hartman wrote:
-> 
-> > > IOW, how do we deal with a race between attempt to open a debugfs file and
-> > > its removal on driver unload?  Greg?
-> > 
-> > Hm, I thought the i_fop->owner thing would be the needed protection, but
-> 
-> It will be, if you manage to fetch it...
+This series defines a common way for devicetree initialized
+power_supplies to define their relationships between chargers and
+supplicants.
 
-I agree.
+This series adds a supplied_from array to complement the supplied_to
+array and to allow supplies to define the list of supplies which
+supply them.
 
-> > I guess you are right, it will not.  I guess we need to do what
-> > character devices do and have an "intermediate" fops in order to protect
-> > this.  Would that work?
-> 
-> You mean, with reassigning ->f_op in ->open()?  That'll work, as long as
-> we have exclusion between removal and fetching the sucker in primary
-> ->open()...  Where would you prefer to stash fops?
+Then once this property is supported, we can use a new property for
+devicetree to define the relationships between nodes, and read in this
+property to generate the supplied_from list.
 
-Ick, that's not going to work as the current api just uses a fops and
-debugfs doesn't keep anything else hanging around that referes to
-something "before" that, like 'struct cdev' does.
+With this logic in place, all drivers need to do to add support for
+this mechanism, is to store their device tree node in the power_supply
+struct. They should also handle EPROBE_DEFER properly.
 
-And, it's even worse, look at the use of DEFINE_SIMPLE_ATTRIBUTE(),
-those take a pointer from a random module to read/write from, and use
-the fops for the debugfs module.  Hopefully no other user of that macro
-has the same problem, and at first glance, I think that's true, but I
-might be wrong...
+Changes since:
+v2:
+ - Changed __power_supply_is_supplied_by to a boolean function and
+   corrected return paths around it
+ - took loop invariant tests out of loops
+ - Fixed multiline comment style
+ - fixed up return paths around power_supplies_check_supplies
 
-Am I allowed to "punt" and say, "removing a module that uses debugfs is
-not recommended?" :)
+RFC v2:
+ - Changed to official Patch set rather than RFC
+ - defined supplied_from char ** array rather than complicated
+   struct device_node related array
 
-greg k-h
+RFC v1:
+ - Inverted the logic so that supplies (batteries) contain a list of
+   the supplies (chargers) which supply them.
+
+Rhyland Klein (3):
+  power_supply: Define Binding for power-supplies
+  power: power_supply: Add core support for supplied_from
+  power: power_supply_core: Add support for supplied_from
+
+ .../bindings/power_supply/power_supply.txt         |   23 +++
+ drivers/power/power_supply_core.c                  |  187 ++++++++++++++++++--
+ include/linux/power_supply.h                       |    6 +
+ 3 files changed, 203 insertions(+), 13 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power_supply/power_supply.txt
+
+-- 
+1.7.9.5
+
