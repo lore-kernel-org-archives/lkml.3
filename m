@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758878Ab3DAJqv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 05:46:51 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:20287 "EHLO
+	id S1758896Ab3DAJrK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 05:47:10 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:20330 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758109Ab3DAJqt (ORCPT
+	with ESMTP id S1758113Ab3DAJrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 05:46:49 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-06-51595788b77c
+	Mon, 1 Apr 2013 05:47:08 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-a6-5159579a3f77
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <000c01ce2ebd$2a1307f0$7e3917d0$%han@samsung.com>
 In-reply-to: <000c01ce2ebd$2a1307f0$7e3917d0$%han@samsung.com>
-Subject: [PATCH 14/27] rtc: rtc-msm6242: use devm_*() functions
-Date: Mon, 01 Apr 2013 18:46:48 +0900
-Message-id: <001901ce2ebd$d412c6a0$7c3853e0$%han@samsung.com>
+Subject: [PATCH 15/27] rtc: rtc-nuc900: use devm_*() functions
+Date: Mon, 01 Apr 2013 18:47:06 +0900
+Message-id: <001a01ce2ebd$df133e40$9d39bac0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4uvSmu8Ej3RSKpRZmzfFm2iz9KEwAAJ5UQ
+Thread-index: Ac4uvSmu8Ej3RSKpRZmzfFm2iz9KEwAAKsNQ
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t8zY92O8MhAgzOH1CyWXLzKbjFn/Ro2
-	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjeKySUnNySxL
-	LdK3S+DKeNGzgr1gtWBFd38TSwPjJr4uRk4OCQETifVXrzJC2GISF+6tZwOxhQSWMUrcnhoO
-	U3Pr/l+gOBdQfBGjxM0Ff9ghnF+MEouefGEFqWITUJP48uUwUIKDQ0RAX6KtRQOkhlmgl1Hi
-	TO9udoipthI/zn5nBrE5Bewk3iycB7ZZWMBe4uffZjCbRUBV4nvPNBYQmxeovn3TSSYIW1Di
-	x+R7YHFmAS2J9TuPM0HY8hKb17xlBtkrIaAu8eivLkhYRMBI4teL74wQJSIS+168YwS5R0Lg
-	HrvE9U2XWSB2CUh8m3yIBaJXVmLTAWaIhyUlDq64wTKBUWIWks2zkGyehWTzLCQrFjCyrGIU
-	TS1ILihOSi8y1itOzC0uzUvXS87P3cQIidT+HYx3D1gfYkwGWj+RWUo0OR8Y6Xkl8YbGZkYW
-	piamxkbmlmakCSuJ86q1WAcKCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYEw83GZyT2Rn6pfZ
-	YqcYw/+ldLQ/c94fY17txDvrpMC0iuSpshrKTfOOX++8bSr2oe3oNG1rC8a9Bk9CGs+5rfVv
-	MDgo9fJnWsIhozBP8TDDyyrybfPP3ODk9NZd5TJDU8Zz5k3rbMNyfg1735gnHTd3HZa0sbh7
-	q3BJV/Tq5soOwSzDqK8HlViKMxINtZiLihMB8pc9ReoCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKKsWRmVeSWpSXmKPExsVy+t9jAd2O8MhAg00blCyWXLzKbjFn/Ro2
-	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjWpgtMlITUxJ
-	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
-	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzHjRs4K9YLVgRXd/E0sD4ya+LkZODgkBE4lb
-	9/+yQdhiEhfurQeyuTiEBBYxStxc8IcdwvnFKLHoyRdWkCo2ATWJL18OAyU4OEQE9CXaWjRA
-	apgFehklzvTuZgepERKwlfhx9jsziM0pYCfxZuE8RhBbWMBe4uffZjCbRUBV4nvPNBYQmxeo
-	vn3TSSYIW1Dix+R7YHFmAS2J9TuPM0HY8hKb17xlBtkrIaAu8eivLkhYRMBI4teL74wQJSIS
-	+168Y5zAKDQLyaRZSCbNQjJpFpKWBYwsqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCE8Ez
-	6R2MqxosDjEKcDAq8fBGXIgIFGJNLCuuzD3EKMHBrCTC6/MNKMSbklhZlVqUH19UmpNafIgx
-	GejRicxSosn5wCSVVxJvaGxiZmRpZGZhZGJuTpqwkjjvwVbrQCGB9MSS1OzU1ILUIpgtTByc
-	Ug2M7h0HghbxmgQ88XcWmsC1n1ntgeSsGm6J+gIzw0XmxpIPT4krl4r1q6XJ9ezbvN3lLteN
-	vLnzXXeEy/t++hcQqKYx53/xfZO8sGTjjkaxp25KlvotvznZzhtb9e9ZfunR16k8uvlm2o1N
-	dSwsxnn/PV69lDZ8qOeheP69VMuUazOlIu4HlSixFGckGmoxFxUnAgD1x4UKSAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t8zI91Z4ZGBBqvWWlksuXiV3WLO+jVs
+	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGsVlk5Kak1mW
+	WqRvl8CV0b93E0vBEcmKi20P2RoYN4l2MXJwSAiYSEx/q97FyAlkiklcuLeeDcQWEljGKDHn
+	qhlE3ERi56xm1i5GLqD4IkaJ2x/+M0E4vxglll1cwQxSxSagJvHly2F2kKEiAvoSbS0aIDXM
+	Ar2MEmd6d7NDTLWV+HH2O1g9p4CdxJuF8xhB6oWB7FUzS0HCLAKqEhuvNLOA2LxA5Yd3fICy
+	BSV+TL4HZjMLaEms33mcCcKWl9i85i0zxC/qEo/+6oKERQSMJF53rIUqEZHY9+IdI8g5EgK3
+	2CUOLLvIBrFLQOLb5EMsEL2yEpsOMEP8KylxcMUNlgmMErOQbJ6FZPMsJJtnIVmxgJFlFaNo
+	akFyQXFSepGxXnFibnFpXrpecn7uJkZIlPbvYLx7wPoQYzLQ+onMUqLJ+cAozyuJNzQ2M7Iw
+	NTE1NjK3NCNNWEmcV63FOlBIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDo4eDjfiEwMtHnqyZ
+	8aSw4fA1pZUXT0keOZDl1hUi8eDiDVZm/0dd69b/uiM05YfsDZW9Zn6z5BQTlxTq2NcnfxC7
+	1/goO/iBae7zk4blv9YKS4bd8zRYeMr3YDHHTrb9k85y5J9+Pi/H2ezUJYG5/z/JV896L3B/
+	45LDHzLTGCY6rdYyuML0JkiJpTgj0VCLuag4EQAVRCbO6AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jAd1Z4ZGBBmu/mlosuXiV3WLO+jVs
+	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
+	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
+	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmNG/dxNLwRHJiottD9kaGDeJdjFyckgImEjs
+	nNXMCmGLSVy4t56ti5GLQ0hgEaPE7Q//mSCcX4wSyy6uYAapYhNQk/jy5TB7FyMHh4iAvkRb
+	iwZIDbNAL6PEmd7d7CA1QgK2Ej/Ofger5xSwk3izcB4jSL0wkL1qZilImEVAVWLjlWYWEJsX
+	qPzwjg9QtqDEj8n3wGxmAS2J9TuPM0HY8hKb17xlBhkjIaAu8eivLkhYRMBI4nXHWqgSEYl9
+	L94xTmAUmoVk0iwkk2YhmTQLScsCRpZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMFp4Jn0
+	DsZVDRaHGAU4GJV4eCMuRAQKsSaWFVfmHmKU4GBWEuH1+QYU4k1JrKxKLcqPLyrNSS0+xJgM
+	9OhEZinR5HxgisoriTc0NjEzsjQyszAyMTcnTVhJnPdgq3WgkEB6YklqdmpqQWoRzBYmDk6p
+	BkbLRT+cC3feC5oQpJl1/smPT9VGnGx2bH/sRKdyrRLofbUyUM7rqU/qJEGO5uxXXqG2DEob
+	XY9eFf3yPrebrUdnVUVZ1qS7b45pfJWr65vdflsm0sjS1fPU1/7a1nV8Buv8HjDH9GfmCU34
+	lt0R9/yr2czbL6oezqh8l+CmcG+ih1WU2unig0osxRmJhlrMRcWJAAqu9MpHAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,76 +59,103 @@ Use devm_*() functions to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-msm6242.c |   32 +++++++++++---------------------
- 1 files changed, 11 insertions(+), 21 deletions(-)
+ drivers/rtc/rtc-nuc900.c |   53 +++++++++------------------------------------
+ 1 files changed, 11 insertions(+), 42 deletions(-)
 
-diff --git a/drivers/rtc/rtc-msm6242.c b/drivers/rtc/rtc-msm6242.c
-index 3ac1e8e..771f86a 100644
---- a/drivers/rtc/rtc-msm6242.c
-+++ b/drivers/rtc/rtc-msm6242.c
-@@ -194,30 +194,28 @@ static const struct rtc_class_ops msm6242_rtc_ops = {
- 	.set_time	= msm6242_set_time,
- };
- 
--static int __init msm6242_rtc_probe(struct platform_device *dev)
-+static int __init msm6242_rtc_probe(struct platform_device *pdev)
+diff --git a/drivers/rtc/rtc-nuc900.c b/drivers/rtc/rtc-nuc900.c
+index 4d9525c..f5dfb6e 100644
+--- a/drivers/rtc/rtc-nuc900.c
++++ b/drivers/rtc/rtc-nuc900.c
+@@ -226,9 +226,9 @@ static int __init nuc900_rtc_probe(struct platform_device *pdev)
  {
  	struct resource *res;
- 	struct msm6242_priv *priv;
- 	struct rtc_device *rtc;
- 	int error;
+ 	struct nuc900_rtc *nuc900_rtc;
+-	int err = 0;
  
--	res = platform_get_resource(dev, IORESOURCE_MEM, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res)
- 		return -ENODEV;
- 
--	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-+	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
- 	if (!priv)
+-	nuc900_rtc = kzalloc(sizeof(struct nuc900_rtc), GFP_KERNEL);
++	nuc900_rtc = devm_kzalloc(&pdev->dev, sizeof(struct nuc900_rtc),
++				GFP_KERNEL);
+ 	if (!nuc900_rtc) {
+ 		dev_err(&pdev->dev, "kzalloc nuc900_rtc failed\n");
  		return -ENOMEM;
+@@ -236,68 +236,37 @@ static int __init nuc900_rtc_probe(struct platform_device *pdev)
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+ 		dev_err(&pdev->dev, "platform_get_resource failed\n");
+-		err = -ENXIO;
+-		goto fail1;
++		return -ENXIO;
+ 	}
  
--	priv->regs = ioremap(res->start, resource_size(res));
--	if (!priv->regs) {
--		error = -ENOMEM;
--		goto out_free_priv;
+-	if (!request_mem_region(res->start, resource_size(res),
+-				pdev->name)) {
+-		dev_err(&pdev->dev, "request_mem_region failed\n");
+-		err = -EBUSY;
+-		goto fail1;
 -	}
--	platform_set_drvdata(dev, priv);
-+	priv->regs = devm_ioremap(&pdev->dev, res->start, resource_size(res));
-+	if (!priv->regs)
-+		return -ENOMEM;
-+	platform_set_drvdata(pdev, priv);
- 
--	rtc = rtc_device_register("rtc-msm6242", &dev->dev, &msm6242_rtc_ops,
--				  THIS_MODULE);
-+	rtc = devm_rtc_device_register(&pdev->dev, "rtc-msm6242",
-+				&msm6242_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(rtc)) {
- 		error = PTR_ERR(rtc);
- 		goto out_unmap;
-@@ -227,20 +225,12 @@ static int __init msm6242_rtc_probe(struct platform_device *dev)
- 	return 0;
- 
- out_unmap:
--	platform_set_drvdata(dev, NULL);
--	iounmap(priv->regs);
--out_free_priv:
--	kfree(priv);
-+	platform_set_drvdata(pdev, NULL);
- 	return error;
- }
- 
--static int __exit msm6242_rtc_remove(struct platform_device *dev)
-+static int __exit msm6242_rtc_remove(struct platform_device *pdev)
- {
--	struct msm6242_priv *priv = platform_get_drvdata(dev);
 -
--	rtc_device_unregister(priv->rtc);
--	iounmap(priv->regs);
--	kfree(priv);
+-	nuc900_rtc->rtc_reg = ioremap(res->start, resource_size(res));
+-	if (!nuc900_rtc->rtc_reg) {
+-		dev_err(&pdev->dev, "ioremap rtc_reg failed\n");
+-		err = -ENOMEM;
+-		goto fail2;
+-	}
++	nuc900_rtc->rtc_reg = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(nuc900_rtc->rtc_reg))
++		return PTR_ERR(nuc900_rtc->rtc_reg);
+ 
+ 	platform_set_drvdata(pdev, nuc900_rtc);
+ 
+-	nuc900_rtc->rtcdev = rtc_device_register(pdev->name, &pdev->dev,
++	nuc900_rtc->rtcdev = devm_rtc_device_register(&pdev->dev, pdev->name,
+ 						&nuc900_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(nuc900_rtc->rtcdev)) {
+ 		dev_err(&pdev->dev, "rtc device register failed\n");
+-		err = PTR_ERR(nuc900_rtc->rtcdev);
+-		goto fail3;
++		return PTR_ERR(nuc900_rtc->rtcdev);
+ 	}
+ 
+ 	__raw_writel(__raw_readl(nuc900_rtc->rtc_reg + REG_RTC_TSSR) | MODE24,
+ 					nuc900_rtc->rtc_reg + REG_RTC_TSSR);
+ 
+ 	nuc900_rtc->irq_num = platform_get_irq(pdev, 0);
+-	if (request_irq(nuc900_rtc->irq_num, nuc900_rtc_interrupt,
+-				0, "nuc900rtc", nuc900_rtc)) {
++	if (devm_request_irq(&pdev->dev, nuc900_rtc->irq_num,
++			nuc900_rtc_interrupt, 0, "nuc900rtc", nuc900_rtc)) {
+ 		dev_err(&pdev->dev, "NUC900 RTC request irq failed\n");
+-		err = -EBUSY;
+-		goto fail4;
++		return -EBUSY;
+ 	}
+ 
  	return 0;
+-
+-fail4:	rtc_device_unregister(nuc900_rtc->rtcdev);
+-fail3:	iounmap(nuc900_rtc->rtc_reg);
+-fail2:	release_mem_region(res->start, resource_size(res));
+-fail1:	kfree(nuc900_rtc);
+-	return err;
  }
  
+ static int __exit nuc900_rtc_remove(struct platform_device *pdev)
+ {
+-	struct nuc900_rtc *nuc900_rtc = platform_get_drvdata(pdev);
+-	struct resource *res;
+-
+-	free_irq(nuc900_rtc->irq_num, nuc900_rtc);
+-	rtc_device_unregister(nuc900_rtc->rtcdev);
+-	iounmap(nuc900_rtc->rtc_reg);
+-
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	release_mem_region(res->start, resource_size(res));
+-
+-	kfree(nuc900_rtc);
+-
+ 	platform_set_drvdata(pdev, NULL);
+ 
+ 	return 0;
 -- 
 1.7.2.5
 
