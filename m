@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756789Ab3DADv0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 23:51:26 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:62038 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756242Ab3DADvZ (ORCPT
+	id S1756900Ab3DADyK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 23:54:10 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:46301 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756242Ab3DADyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 23:51:25 -0400
-X-Spam-Score: -100.8
-Message-ID: <5159041F.7020608@asianux.com>
-Date: Mon, 01 Apr 2013 11:50:55 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: jhovold@gmail.com, Jiri Slaby <jslaby@suse.cz>, mferrell@uplogix.com,
+	Sun, 31 Mar 2013 23:54:09 -0400
+Date: Mon, 1 Apr 2013 09:22:10 +0530
+From: Shiraz Hashim <shiraz.hashim@st.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drivers/usb/serial: looping issue: avoid the return value
- overriden by looping
-References: <5158F689.5040406@asianux.com> <20130401030555.GA21113@kroah.com>
-In-Reply-To: <20130401030555.GA21113@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 2/2] pwm: mxs: Remove unused *dev from struct
+ spear_pwm_chip
+Message-ID: <20130401035210.GB21313@localhost.localdomain>
+References: <1364784493.7725.1.camel@phoenix>
+ <1364784565.7725.2.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1364784565.7725.2.camel@phoenix>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Axel,
 
-  inside the 'for' looping:
-    the return value 'rv' may override if not have a check in time.
+Perhaps you meant pwm: spear: (instead of pwm: mxs) in the subject
+line.
 
-  next checking, outside the 'for' looping:
-    can not find failure which generated during the 'for' looping
+On Mon, Apr 01, 2013 at 10:49:25AM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+>  drivers/pwm/pwm-spear.c |    3 ---
+>  1 file changed, 3 deletions(-)
+> 
+> diff --git a/drivers/pwm/pwm-spear.c b/drivers/pwm/pwm-spear.c
+> index 3223b57..9563599 100644
+> --- a/drivers/pwm/pwm-spear.c
+> +++ b/drivers/pwm/pwm-spear.c
+> @@ -49,13 +49,11 @@
+>   * @mmio_base: base address of pwm chip
+>   * @clk: pointer to clk structure of pwm chip
+>   * @chip: linux pwm chip representation
+> - * @dev: pointer to device structure of pwm chip
+>   */
+>  struct spear_pwm_chip {
+>  	void __iomem *mmio_base;
+>  	struct clk *clk;
+>  	struct pwm_chip chip;
+> -	struct device *dev;
+>  };
+>  
+>  static inline struct spear_pwm_chip *to_spear_pwm_chip(struct pwm_chip *chip)
+> @@ -200,7 +198,6 @@ static int spear_pwm_probe(struct platform_device *pdev)
+>  	if (IS_ERR(pc->clk))
+>  		return PTR_ERR(pc->clk);
+>  
+> -	pc->dev = &pdev->dev;
+>  	platform_set_drvdata(pdev, pc);
+>  
+>  	pc->chip.dev = &pdev->dev;
+> -- 
+> 1.7.10.4
 
-  so need let outside know about the failure.
 
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- drivers/usb/serial/mos7840.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
-index a0d5ea5..13aae1e 100644
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -651,7 +651,9 @@ static void mos7840_interrupt_callback(struct urb *urb)
- 					wreg = MODEM_STATUS_REGISTER;
- 					break;
- 				}
--				rv = mos7840_get_reg(mos7840_port, wval, wreg, &Data);
-+				if (mos7840_get_reg(mos7840_port, wval,
-+				    wreg, &Data) < 0)
-+					rv = -1;
- 			}
- 		}
- 	}
--- 
-1.7.7.6
+otherwise,
+Acked-by: Shiraz Hashim <shiraz.hashim@st.com>
