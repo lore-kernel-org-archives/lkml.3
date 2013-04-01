@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759383Ab3DATTf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 15:19:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19689 "EHLO mx1.redhat.com"
+	id S1759408Ab3DATTs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 15:19:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50631 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759311Ab3DATTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 15:19:33 -0400
+	id S1759390Ab3DATTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 15:19:46 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -16,19 +16,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 02/27] perf tools: Fix tab vs spaces issue in Makefile ifdef/endif
-Date: Mon,  1 Apr 2013 21:18:25 +0200
-Message-Id: <1364843930-17974-3-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 03/27] perf tools: Move arch check into config/Makefile
+Date: Mon,  1 Apr 2013 21:18:26 +0200
+Message-Id: <1364843930-17974-4-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1364843930-17974-1-git-send-email-jolsa@redhat.com>
 References: <1364843930-17974-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unmatched spaces/tabs Makefile indentation could make the
-Makefile fails. While the tabed line could be considered
-sometimes as follow up for rule command, the mixed space
-tab meses up with makefile if conditions.
+Moving arch check into config/Makefile.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -41,35 +38,103 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ tools/perf/Makefile        | 31 ++-----------------------------
+ tools/perf/config/Makefile | 34 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 36 insertions(+), 29 deletions(-)
+ create mode 100644 tools/perf/config/Makefile
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index b0f164b..c8fb0fd 100644
+index c8fb0fd..032e099 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -90,7 +90,7 @@ endif
+@@ -55,37 +55,11 @@ include config/utilities.mak
+ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
  
- # Treat warnings as errors unless directed not to
- ifneq ($(WERROR),0)
--	CFLAGS_WERROR := -Werror
-+  CFLAGS_WERROR := -Werror
+-uname_M := $(shell uname -m 2>/dev/null || echo not)
+-
+-ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+-				  -e s/arm.*/arm/ -e s/sa110/arm/ \
+-				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
+-				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+-				  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
+-NO_PERF_REGS := 1
+-
+ CC = $(CROSS_COMPILE)gcc
+ AR = $(CROSS_COMPILE)ar
+ 
+-# Additional ARCH settings for x86
+-ifeq ($(ARCH),i386)
+-	override ARCH := x86
+-	NO_PERF_REGS := 0
+-	LIBUNWIND_LIBS = -lunwind -lunwind-x86
+-endif
+-ifeq ($(ARCH),x86_64)
+-	override ARCH := x86
+-	IS_X86_64 := 0
+-	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
+-		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
+-	endif
+-	ifeq (${IS_X86_64}, 1)
+-		RAW_ARCH := x86_64
+-		ARCH_CFLAGS := -DARCH_X86_64
+-		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
+-	endif
+-	NO_PERF_REGS := 0
+-	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
++ifeq ($(filter clean tags,$(MAKECMDGOALS)),)
++include config/Makefile
  endif
  
- ifeq ("$(origin DEBUG)", "command line")
-@@ -819,10 +819,10 @@ endif
- ifdef NO_DEMANGLE
- 	BASIC_CFLAGS += -DNO_DEMANGLE
- else
--        ifdef HAVE_CPLUS_DEMANGLE
-+	ifdef HAVE_CPLUS_DEMANGLE
- 		EXTLIBS += -liberty
- 		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
--        else
-+	else
- 		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
- 		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
- 		ifeq ($(has_bfd),y)
+ # Treat warnings as errors unless directed not to
+@@ -857,7 +831,6 @@ ifeq ($(NO_PERF_REGS),0)
+ 	ifeq ($(ARCH),x86)
+ 		LIB_H += arch/x86/include/perf_regs.h
+ 	endif
+-	BASIC_CFLAGS += -DHAVE_PERF_REGS
+ endif
+ 
+ ifndef NO_STRLCPY
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+new file mode 100644
+index 0000000..fe317c2
+--- /dev/null
++++ b/tools/perf/config/Makefile
+@@ -0,0 +1,34 @@
++uname_M := $(shell uname -m 2>/dev/null || echo not)
++
++ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
++				  -e s/arm.*/arm/ -e s/sa110/arm/ \
++				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
++				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
++				  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
++NO_PERF_REGS := 1
++
++# Additional ARCH settings for x86
++ifeq ($(ARCH),i386)
++	override ARCH := x86
++	NO_PERF_REGS := 0
++	LIBUNWIND_LIBS = -lunwind -lunwind-x86
++endif
++
++ifeq ($(ARCH),x86_64)
++	override ARCH := x86
++	IS_X86_64 := 0
++	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
++		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
++	endif
++	ifeq (${IS_X86_64}, 1)
++		RAW_ARCH := x86_64
++		ARCH_CFLAGS := -DARCH_X86_64
++		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
++	endif
++	NO_PERF_REGS := 0
++	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
++endif
++
++ifeq ($(NO_PERF_REGS),0)
++        BASIC_CFLAGS += -DHAVE_PERF_REGS
++endif
 -- 
 1.7.11.7
 
