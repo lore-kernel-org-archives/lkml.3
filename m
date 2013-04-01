@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757613Ab3DALGs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 07:06:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39029 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751294Ab3DALGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 07:06:47 -0400
-Subject: Re: gpio-ucb1400
-From: Jean Delvare <jdelvare@suse.de>
-To: Marek Vasut <marek.vasut@gmail.com>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-In-Reply-To: <201303311919.06030.marek.vasut@gmail.com>
-References: <1364586399.4216.312.camel@amber.site>
-	 <201303302020.44584.marek.vasut@gmail.com>
-	 <20130330232559.GA12864@roeck-us.net>
-	 <201303311919.06030.marek.vasut@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Mon, 01 Apr 2013 13:06:43 +0200
-Message-ID: <1364814403.4943.7.camel@amber.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1755165Ab3DALO0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 07:14:26 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:7989 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729Ab3DALOZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 07:14:25 -0400
+From: Libin <huawei.libin@huawei.com>
+To: <peterz@infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <mingo@redhat.com>,
+        Libin <huawei.libin@huawei.com>
+Subject: [PATCH] sched: Fix comment of function rebalance_domains
+Date: Mon, 1 Apr 2013 19:14:01 +0800
+Message-ID: <1364814841-49156-1-git-send-email-huawei.libin@huawei.com>
+X-Mailer: git-send-email 1.8.1.msysgit.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.135.74.57]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 31 mars 2013 à 19:19 +0200, Marek Vasut a écrit :
-> Dear Guenter Roeck,
-> > Jean is absolutely right - it should get fixed, or the driver should be
-> > dropped if no one is using it anyway.
-> 
-> I think ARM/palmtc was using this.
+The comment of function rebalance_domains mentions arch_init_sched_domains,
+but this function don't exist. The proper function is init_sched_domains.
 
-My point was, the upstream gpio-ucb1400 driver in its current form is
-unusable (on top of being ugly.) I have no doubt that someone used that
-driver successfully in some external kernel tree, but the code that was
-merged upstream is incomplete and no good.
+Signed-off-by: Libin <huawei.libin@huawei.com>
+---
+ kernel/sched/fair.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7a33e59..3a0d40b 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5468,7 +5468,7 @@ void update_max_interval(void)
+  * It checks each scheduling domain to see if it is due to be balanced,
+  * and initiates a balancing operation if so.
+  *
+- * Balancing parameters are set up in arch_init_sched_domains.
++ * Balancing parameters are set up in init_sched_domains.
+  */
+ static void rebalance_domains(int cpu, enum cpu_idle_type idle)
+ {
 -- 
-Jean Delvare
-Suse L3
+1.6.0.2
+
 
