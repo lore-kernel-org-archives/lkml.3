@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757468Ab3DAHA0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 03:00:26 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:26259 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860Ab3DAHAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 03:00:25 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: viro@zeniv.linux.org.uk, eparis@redhat.com,
-        Dmitry Monakhov <dmonakhov@openvz.org>
-Subject: [PATCH] audit: destroy filename correctly
-Date: Mon,  1 Apr 2013 11:00:00 +0400
-Message-Id: <1364799600-10338-1-git-send-email-dmonakhov@openvz.org>
-X-Mailer: git-send-email 1.7.7.6
+	id S1758102Ab3DAHJA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 03:09:00 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:54246 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757058Ab3DAHI7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 03:08:59 -0400
+Message-ID: <5159320C.4050903@linux.vnet.ibm.com>
+Date: Mon, 01 Apr 2013 12:36:52 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH 4/5] sched: don't consider upper se in sched_slice()
+References: <1364457537-15114-1-git-send-email-iamjoonsoo.kim@lge.com> <1364457537-15114-5-git-send-email-iamjoonsoo.kim@lge.com> <51553EF5.90702@linux.vnet.ibm.com> <20130401040820.GA12015@lge.com>
+In-Reply-To: <20130401040820.GA12015@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 13040107-0260-0000-0000-000002BEC9BA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-filename should be destroyed via final_putname() instead of __putname()
-Otherwise this result in following BUGON() in case of long names:
-  kernel BUG at mm/slab.c:3006!
-  Call Trace:
-  kmem_cache_free+0x1c1/0x850
-  audit_putname+0x88/0x90
-  putname+0x73/0x80
-  sys_symlinkat+0x120/0x150
-  sys_symlink+0x16/0x20
-  system_call_fastpath+0x16/0x1b
+Hi Joonsoo,
 
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
----
- kernel/auditsc.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+On 04/01/2013 09:38 AM, Joonsoo Kim wrote:
+> Hello, Preeti.
+> 
 
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index a371f85..bfe7ca6 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -1010,7 +1010,7 @@ static inline void audit_free_names(struct audit_context *context)
- 	list_for_each_entry_safe(n, next, &context->names_list, list) {
- 		list_del(&n->list);
- 		if (n->name && n->name_put)
--			__putname(n->name);
-+			final_putname(n->name);
- 		if (n->should_free)
- 			kfree(n);
- 	}
-@@ -2036,7 +2036,7 @@ void audit_putname(struct filename *name)
- 	BUG_ON(!context);
- 	if (!context->in_syscall) {
- #if AUDIT_DEBUG == 2
--		printk(KERN_ERR "%s:%d(:%d): __putname(%p)\n",
-+		printk(KERN_ERR "%s:%d(:%d): final_putname(%p)\n",
- 		       __FILE__, __LINE__, context->serial, name);
- 		if (context->name_count) {
- 			struct audit_names *n;
-@@ -2047,7 +2047,7 @@ void audit_putname(struct filename *name)
- 				       n->name, n->name->name ?: "(null)");
- 			}
- #endif
--		__putname(name);
-+		final_putname(name);
- 	}
- #if AUDIT_DEBUG
- 	else {
--- 
-1.7.1
+>>
+>> Ideally the children's cpu share must add upto the parent's share.
+>>
+> 
+> I don't think so.
+> 
+> We should schedule out the parent tg if 5ms is over. As we do so, we can
+> fairly distribute time slice to every tg within short term. If we add
+> the children's cpu share upto the parent's, the parent tg may have
+> large time slice, so it cannot be preempted easily. There may be a latency
+> problem if there are many tgs.
+
+In the case where the #running < sched_nr_latency, the children's
+sched_slices add up to the parent's.
+
+A rq with two tgs,each with 3 tasks.
+
+Each of these tasks have a sched slice of
+[(sysctl_sched_latency / 3) / 2] as of the present implementation.
+
+The sum of the above sched_slice of all tasks of a tg will lead to the
+sched_slice of its parent: sysctl_sched_latency / 2
+
+This breaks when the nr_running on each tg > sched_nr_latency. However I
+don't know if this is a good thing or a bad thing.
+
+Regards
+Preeti U Murthy
 
