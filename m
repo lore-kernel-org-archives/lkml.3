@@ -1,92 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab3DAB0a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 21:26:30 -0400
-Received: from mga03.intel.com ([143.182.124.21]:43008 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754652Ab3DAB02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 21:26:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,384,1363158000"; 
-   d="scan'208";a="221113647"
-Message-ID: <5158E28D.6040403@intel.com>
-Date: Mon, 01 Apr 2013 09:27:41 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1755655Ab3DAB4x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 21:56:53 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:61446 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752907Ab3DAB4v convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Mar 2013 21:56:51 -0400
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH] ACPI / I2C: Use parent's ACPI_HANDLE() in acpi_i2c_register_devices()
-References: <2966020.zlpeyGGUDW@vostro.rjw.lan>
-In-Reply-To: <2966020.zlpeyGGUDW@vostro.rjw.lan>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5158C9B8.3070208@linaro.org>
+References: <1364549049-29278-1-git-send-email-ning.n.jiang@gmail.com>
+	<5158C9B8.3070208@linaro.org>
+Date: Mon, 1 Apr 2013 09:56:50 +0800
+Message-ID: <CAH3Oq6SZHjjMDLbYNrgzZazsBXW61Z8_MjCoG7nwYNOe=eerPw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: timer: Shutdown clock event device when stopping
+ local timer
+From: Ning Jiang <ning.n.jiang@gmail.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux@arm.linux.org.uk, kgene.kim@samsung.com, davidb@codeaurora.org,
+        dwalker@fifo99.com, bryanh@codeaurora.org, john.stultz@linaro.org,
+        tglx@linutronix.de, linus.walleij@linaro.org, shawn.guo@linaro.org,
+        rob.herring@calxeda.com, arnd@arndb.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2013 08:25 AM, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> The ACPI handle of struct i2c_adapter's dev member should not be
-> set, because this causes that struct i2c_adapter to be associated
-> with the ACPI device node corresponding to its parent as the
-> second "physical_device", which is incorrect (this happens during
-> the registration of struct i2c_adapter).  Consequently,
-> acpi_i2c_register_devices() should use the ACPI handle of the
-> parent of the struct i2c_adapter it is called for rather than the
-> struct i2c_adapter's ACPI handle (which should be NULL).
-> 
-> Make that happen and modify the i2c-designware-platdrv driver,
-> which currently is the only driver for ACPI-enumerated I2C
-> controller chips, not to set the ACPI handle for the
-> struct i2c_adapter it creates.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+2013/4/1 Daniel Lezcano <daniel.lezcano@linaro.org>:
+> On 03/29/2013 10:24 AM, ning.n.jiang@gmail.com wrote:
+>> From: Ning Jiang <ning.n.jiang@gmail.com>
+>>
+>> Currently there are two problems when we try to stop local timer.
+>> First, it calls set_mode function directly so mode state is not
+>> updated for the clock event device. Second, it makes the device
+>> unused instead of shutdown.
+>>
+>> A subtle error will happen because of it. When a cpu is plugged out
+>> it will stop the local timer. It will call tick_nohz_idle_enter()
+>> in idle thread afterwards. It will cancel the sched timer and try
+>> to reprogram the next event. This is wrong since the local timer
+>> is supposed to be stopped.
+>>
+>> The right way to stop the local timer is to shutdown it by calling
+>> clockevents_set_mode(). Thus when we try to reprogram the clock
+>> event device, it will return directly without doing anything since
+>> the clock mode is CLOCK_EVT_MODE_SHUTDOWN.
+>>
+>> Signed-off-by: Ning Jiang <ning.n.jiang@gmail.com>
+>> ---
+>>  arch/arm/kernel/smp_twd.c                |    2 +-
+>>  arch/arm/mach-exynos/mct.c               |    2 +-
+>>  arch/arm/mach-msm/timer.c                |    2 +-
+>>  drivers/clocksource/arm_arch_timer.c     |    2 +-
+>>  drivers/clocksource/time-armada-370-xp.c |    2 +-
+>>  5 files changed, 5 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
+>> index 3f25650..c1d4ab4 100644
+>> --- a/arch/arm/kernel/smp_twd.c
+>> +++ b/arch/arm/kernel/smp_twd.c
+>> @@ -92,7 +92,7 @@ static int twd_timer_ack(void)
+>>
+>>  static void twd_timer_stop(struct clock_event_device *clk)
+>>  {
+>> -     twd_set_mode(CLOCK_EVT_MODE_UNUSED, clk);
+>> +     clockevents_set_mode(clk, CLOCK_EVT_MODE_SHUTDOWN);
+>>       disable_percpu_irq(clk->irq);
+>
+> Wouldn't be clockevents_shutdown more adequate here ? The next event
+> will be also set.
 
-Reviewed-by: Aaron Lu <aaron.lu@intel.com>
+You're right. clockevents_shutdown seems more appropriate here. I'll
+submit a revised patch for it.
 
-Thanks,
-Aaron
-
-> ---
->  drivers/acpi/acpi_i2c.c                     |    2 +-
->  drivers/i2c/busses/i2c-designware-platdrv.c |    1 -
->  2 files changed, 1 insertion(+), 2 deletions(-)
-> 
-> Index: linux-pm/drivers/acpi/acpi_i2c.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/acpi_i2c.c
-> +++ linux-pm/drivers/acpi/acpi_i2c.c
-> @@ -90,7 +90,7 @@ void acpi_i2c_register_devices(struct i2
->  	acpi_handle handle;
->  	acpi_status status;
->  
-> -	handle = ACPI_HANDLE(&adapter->dev);
-> +	handle = ACPI_HANDLE(adapter->dev.parent);
->  	if (!handle)
->  		return;
->  
-> Index: linux-pm/drivers/i2c/busses/i2c-designware-platdrv.c
-> ===================================================================
-> --- linux-pm.orig/drivers/i2c/busses/i2c-designware-platdrv.c
-> +++ linux-pm/drivers/i2c/busses/i2c-designware-platdrv.c
-> @@ -182,7 +182,6 @@ static int dw_i2c_probe(struct platform_
->  	adap->algo = &i2c_dw_algo;
->  	adap->dev.parent = &pdev->dev;
->  	adap->dev.of_node = pdev->dev.of_node;
-> -	ACPI_HANDLE_SET(&adap->dev, ACPI_HANDLE(&pdev->dev));
->  
->  	r = i2c_add_numbered_adapter(adap);
->  	if (r) {
-> 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+>  <http://www.linaro.org/> Linaro.org  Open source software for ARM SoCs
+>
+> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+> <http://twitter.com/#!/linaroorg> Twitter |
+> <http://www.linaro.org/linaro-blog/> Blog
+>
