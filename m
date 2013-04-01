@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758626Ab3DAJ2o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 05:28:44 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:35923 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757948Ab3DAJ2m (ORCPT
+	id S1758675Ab3DAJjc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 05:39:32 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:59693 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758660Ab3DAJjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 05:28:42 -0400
-Message-ID: <5159534A.1070500@googlemail.com>
-Date: Mon, 01 Apr 2013 10:28:42 +0100
-From: Chris Clayton <chris2553@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130312 Thunderbird/17.0.4
+	Mon, 1 Apr 2013 05:39:31 -0400
+Date: Mon, 1 Apr 2013 11:39:27 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] memcg: avoid accessing memcg after releasing reference
+Message-ID: <20130401093927.GB30749@dhcp22.suse.cz>
+References: <5158F344.9020509@huawei.com>
 MIME-Version: 1.0
-To: linux-kbuild@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, mmarek@suse.cz
-Subject: Re: linux-3.9.0-rc1+: Output from "make kernelrelease"contains incorrect
- data
-References: <513B8FA7.9040200@googlemail.com>
-In-Reply-To: <513B8FA7.9040200@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5158F344.9020509@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping!
+On Mon 01-04-13 10:39:00, Li Zefan wrote:
+> This might cause use-after-free bug.
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-This is still happening with 3.9-rc5.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-[chris:~/kernel/linux]$ make bzImage
-...
-Kernel: arch/x86/boot/bzImage is ready  (#14)
-[chris:~/kernel/linux]$ make kernelrelease
-scripts/kconfig/conf --silentoldconfig Kconfig
-3.9.0-rc5
-[chris:~/kernel/linux]$ make kernelrelease
-3.9.0-rc5
+> ---
+> 
+> found when reading the code.
+> 
+> ---
+>  mm/memcontrol.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 8ec501c..6391046 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3186,12 +3186,12 @@ void memcg_release_cache(struct kmem_cache *s)
+>  
+>  	root = s->memcg_params->root_cache;
+>  	root->memcg_params->memcg_caches[id] = NULL;
+> -	mem_cgroup_put(memcg);
+>  
+>  	mutex_lock(&memcg->slab_caches_mutex);
+>  	list_del(&s->memcg_params->list);
+>  	mutex_unlock(&memcg->slab_caches_mutex);
+>  
+> +	mem_cgroup_put(memcg);
+>  out:
+>  	kfree(s->memcg_params);
+>  }
+> -- 
+> 1.8.0.2
 
-I'm assuming that the output from 'make kernelrelease' should be the 
-string that represents the kernel release and only that string.
-
-Chris
-
-
-On 03/09/13 19:38, Chris Clayton wrote:
-> In Linus' current tree, the first time the command "make kernelrelease"
-> is run after building a kernel, the output contains some unwanted text.
-> Subsequent uses of the command produce the expected output. This appears
-> to be a regression - 3.8.2 does not have this problem.
->
-> This is easily demonstrated from the command line by the following:
->
-> <build the kernel>
-> ...
-> System is 2311 kB
-> CRC a4e38b86
-> Kernel: arch/x86/boot/bzImage is ready  (#186)
-> $ make kernelrelease
-> scripts/kconfig/conf --silentoldconfig Kconfig 3.9.0-rc1+
-> $ make kernelrelease
-> 3.9.0-rc1+
->
-> Happy to test the fix.
->
-> Chris
->
->
->
+-- 
+Michal Hocko
+SUSE Labs
