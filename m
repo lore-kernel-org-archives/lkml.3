@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758077Ab3DAU6K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 16:58:10 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:49606 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757584Ab3DAU6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 16:58:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/9] CPUFreq Updates & Fixes for 3.10
-Date: Mon, 01 Apr 2013 23:05:43 +0200
-Message-ID: <1893788.IlN605kbG3@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <cover.1364820620.git.viresh.kumar@linaro.org>
-References: <cover.1364820620.git.viresh.kumar@linaro.org>
+	id S1758159Ab3DAVAd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 17:00:33 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:54372 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757630Ab3DAVAc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 17:00:32 -0400
+Date: Mon, 1 Apr 2013 14:00:29 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Yet another pipe related oops.
+Message-ID: <20130401210029.GA3245@kroah.com>
+References: <20130311180543.GF21522@ZenIV.linux.org.uk>
+ <20130312130614.GA32237@ZenIV.linux.org.uk>
+ <CA+55aFyPUYiFoiLrMCzeHpbAgAignCe_awU7SbvPh+T6eHeqng@mail.gmail.com>
+ <20130312194353.GI21522@ZenIV.linux.org.uk>
+ <CA+55aFx-8TrSSJZM-WTDN4Hc3pESLXBsGC9x3xVaxuwxnGKqpA@mail.gmail.com>
+ <20130327135127.GB1738@redhat.com>
+ <20130327152030.GY21522@ZenIV.linux.org.uk>
+ <CA+55aFx=BPQ2empEahqCs2hQ=sRaw3OjJotrS6OMT3e6tUVMLQ@mail.gmail.com>
+ <20130327174506.GZ21522@ZenIV.linux.org.uk>
+ <20130401203445.GA20862@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130401203445.GA20862@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 01, 2013 06:27:40 PM Viresh Kumar wrote:
-> Hi Rafael,
+On Mon, Apr 01, 2013 at 09:34:46PM +0100, Al Viro wrote:
+> On Wed, Mar 27, 2013 at 05:45:06PM +0000, Al Viro wrote:
+> > We shouldn't, at least not for something that has been successfully
+> > opened.  I've a patch series cleaning that up a bit in the local
+> > queue; will check for bitrot and throw into for-next.
 > 
-> These are fixes and updates that are sent and reviewed as separate patchsets
-> earlier. They are all now combined as part of a single patchset for you to apply
-> in your linux-next branch.
+> Egads...  OK, that has gone more than slightly out of control - right now
+> vfs.git#for-next is at 106 commits, -3.6KLoC balance and *still* hadn't
+> reached the ->f_op part of that work ;-/  OTOH, procfs-related code got
+> a lot cleaner and we actually have a chance to make the guts of proc_dir_entry
+> private to fs/proc now...  I'll cull the outright bug fixes into for-linus
+> and push it your way...
 > 
-> All have got reviews earlier and got fixups mailed and applied.
+> The thing that really worries me is debugfs; that fscker sets whatever
+> file_operations it's got from the driver that registered a file there
+> and sticks that into ->i_fop.  When we try to open() that, we get
+> try_module_get() ->i_fop->owner; so far, so good, but what if the driver
+> has just been removed *and* file_operations instance we are looking at
+> has already been freed?
 > 
-> The remaining patches: "Move Cpufreq drivers to drivers/cpufreq" are awaiting
-> few more Acks before I send them to you.
-> 
-> I wanted to have another patch as part of this patchset, but I am awaiting Ack
-> for it:
-> tools: cpufreq: Fix cpufreq-info print messages for affected[related]_cpus
-> 
-> That can be applied separately once it receives an Ack.
-> 
-> Thanks
-> Viresh
-> 
-> Viresh Kumar (9):
->   cpufreq: cpu0: Fix mistake in Documentation example
->   cpufreq: Documentation: Fix cpufreq_frequency_table name
->   cpufreq: cpufreq-cpu0: No need to check cpu number in init()
->   cpufreq: cpufreq-cpu0: Call CPUFREQ_POSTCHANGE notifier for failure
->     cases too
->   cpufreq: Notify all policy->cpus in cpufreq_notify_transition()
->   cpufreq: Don't check if cpu is online/offline for cpufreq callbacks
->   cpufreq: drivers: don't check range of target freq in .target()
->   cpufreq: drivers: Remove unnecessary assignments of policy-> members
->   cpufreq: ARM big LITTLE: Add generic cpufreq driver and its DT glue
+> IOW, how do we deal with a race between attempt to open a debugfs file and
+> its removal on driver unload?  Greg?
 
-Thanks!
+Hm, I thought the i_fop->owner thing would be the needed protection, but
+I guess you are right, it will not.  I guess we need to do what
+character devices do and have an "intermediate" fops in order to protect
+this.  Would that work?
 
-The [5/9] seems to be missing.  Care to send?
+As module removal never happens unless an admin does it by hand, it's
+not a "real" issue that can be triggered by anyone easily, thankfully.
 
-Rafael
+thanks,
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+greg k-h
