@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757571Ab3DAM6Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 08:58:24 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:61492 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757487Ab3DAM6U (ORCPT
+	id S1757739Ab3DAM6f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 08:58:35 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:63534 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756788Ab3DAM6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 08:58:20 -0400
+	Mon, 1 Apr 2013 08:58:32 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 2/9] cpufreq: Documentation: Fix cpufreq_frequency_table name
-Date: Mon,  1 Apr 2013 18:27:42 +0530
-Message-Id: <314fe583405b207f3ce66273a8496e23e51b150c.1364820620.git.viresh.kumar@linaro.org>
+Subject: [PATCH 4/9] cpufreq: cpufreq-cpu0: Call CPUFREQ_POSTCHANGE notifier for failure cases too
+Date: Mon,  1 Apr 2013 18:27:44 +0530
+Message-Id: <905a002107e37c1a20ea14f758e68f335578b00f.1364820620.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1364820620.git.viresh.kumar@linaro.org>
 References: <cover.1364820620.git.viresh.kumar@linaro.org>
@@ -23,31 +23,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At few places in documentation cpufreq_frequency_table is written as
-cpufreq_freq_table. Fix these.
+Currently we are simply returning from target() if we encounter some error after
+broadcasting CPUFREQ_PRECHANGE notifier. Which looks to be wrong as others might
+depend on POSTCHANGE notifier for their functioning.
+
+So, better broadcast CPUFREQ_POSTCHANGE notifier for these failure cases too,
+but with old frequency.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 ---
- Documentation/cpu-freq/cpu-drivers.txt | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/cpufreq/cpufreq-cpu0.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
-index 72f70b1..7c7721d 100644
---- a/Documentation/cpu-freq/cpu-drivers.txt
-+++ b/Documentation/cpu-freq/cpu-drivers.txt
-@@ -184,10 +184,10 @@ the reference implementation in drivers/cpufreq/longrun.c
- As most cpufreq processors only allow for being set to a few specific
- frequencies, a "frequency table" with some functions might assist in
- some work of the processor driver. Such a "frequency table" consists
--of an array of struct cpufreq_freq_table entries, with any value in
-+of an array of struct cpufreq_frequency_table entries, with any value in
- "index" you want to use, and the corresponding frequency in
- "frequency". At the end of the table, you need to add a
--cpufreq_freq_table entry with frequency set to CPUFREQ_TABLE_END. And
-+cpufreq_frequency_table entry with frequency set to CPUFREQ_TABLE_END. And
- if you want to skip one entry in the table, set the frequency to 
- CPUFREQ_ENTRY_INVALID. The entries don't need to be in ascending
- order.
+diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+index 4c5a4cf..a7e51bd 100644
+--- a/drivers/cpufreq/cpufreq-cpu0.c
++++ b/drivers/cpufreq/cpufreq-cpu0.c
+@@ -77,7 +77,9 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
+ 		if (IS_ERR(opp)) {
+ 			rcu_read_unlock();
+ 			pr_err("failed to find OPP for %ld\n", freq_Hz);
+-			return PTR_ERR(opp);
++			freqs.new = freqs.old;
++			ret = PTR_ERR(opp);
++			goto post_notify;
+ 		}
+ 		volt = opp_get_voltage(opp);
+ 		rcu_read_unlock();
+@@ -95,7 +97,7 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
+ 		if (ret) {
+ 			pr_err("failed to scale voltage up: %d\n", ret);
+ 			freqs.new = freqs.old;
+-			return ret;
++			goto post_notify;
+ 		}
+ 	}
+ 
+@@ -104,7 +106,8 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
+ 		pr_err("failed to set clock rate: %d\n", ret);
+ 		if (cpu_reg)
+ 			regulator_set_voltage_tol(cpu_reg, volt_old, tol);
+-		return ret;
++		freqs.new = freqs.old;
++		goto post_notify;
+ 	}
+ 
+ 	/* scaling down?  scale voltage after frequency */
+@@ -114,16 +117,16 @@ static int cpu0_set_target(struct cpufreq_policy *policy,
+ 			pr_err("failed to scale voltage down: %d\n", ret);
+ 			clk_set_rate(cpu_clk, freqs.old * 1000);
+ 			freqs.new = freqs.old;
+-			return ret;
+ 		}
+ 	}
+ 
++post_notify:
+ 	for_each_online_cpu(cpu) {
+ 		freqs.cpu = cpu;
+ 		cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
+ 	}
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static int cpu0_cpufreq_init(struct cpufreq_policy *policy)
 -- 
 1.7.12.rc2.18.g61b472e
 
