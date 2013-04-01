@@ -1,84 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759413Ab3DAXSb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 19:18:31 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:49144 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757586Ab3DAXS3 (ORCPT
+	id S1759401Ab3DAXWt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 19:22:49 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59040 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757248Ab3DAXWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 19:18:29 -0400
-Date: Mon, 1 Apr 2013 16:18:24 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Tim Hockin <thockin@hockin.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Paul Menage <paul@paulmenage.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
-        Daniel J Walsh <dwalsh@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Max Kellermann <mk@cm4all.com>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v8
-Message-ID: <20130401231824.GC2487@htj.dyndns.org>
-References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
- <CAAAKZwv9=NFmt6xj1KF2va1i6=UCvka0YkmdOY9JNUMHDOWpGw@mail.gmail.com>
- <20130401184617.GB31435@htj.dyndns.org>
- <CAAAKZwvemKDLeuKr6wWMUSVczkRVDZKSzYrXXEMcZ8qvcFR0zQ@mail.gmail.com>
- <20130401202943.GC31435@htj.dyndns.org>
- <CAAAKZwuZwN68vtk1qO08GXB_OnQNVtqqp+v_NQfP27W0P_aWZw@mail.gmail.com>
- <20130401220309.GA2487@htj.dyndns.org>
- <CAAAKZwuev7Y58ZQNtG+XdFRt0=NedD7zbYTAZbJ95ahBKLVhKA@mail.gmail.com>
- <20130401223500.GB2487@htj.dyndns.org>
- <CAAAKZwvdMUAZ+N5d-cdCJbKUq=t9M6BbCxzOTWnVQQBrg55vhw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAAKZwvdMUAZ+N5d-cdCJbKUq=t9M6BbCxzOTWnVQQBrg55vhw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 1 Apr 2013 19:22:47 -0400
+Date: Tue, 2 Apr 2013 10:22:36 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kent Overstreet <koverstreet@google.com>
+Subject: Re: linux-next: build failure after merge of the final tree (block
+ tree related)
+Message-Id: <20130402102236.9a597c047fbf8d09038bc989@canb.auug.org.au>
+In-Reply-To: <20130326173159.09dad51a1b8825a264f3171f@canb.auug.org.au>
+References: <20130326173159.09dad51a1b8825a264f3171f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__2_Apr_2013_10_22_36_+1100_RdaSoNRo_H_auoFA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--Signature=_Tue__2_Apr_2013_10_22_36_+1100_RdaSoNRo_H_auoFA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Apr 01, 2013 at 03:57:46PM -0700, Tim Hockin wrote:
-> I am not limited by kernel memory, I am limited by PIDs, and I need to
-> be able to manage them.  memory.kmem.usage_in_bytes seems to be far
-> too noisy to be useful for this purpose.  It may work fine for "just
-> stop a fork bomb" but not for any sort of finer-grained control.
+Hi Jens,
 
-So, why are you limited by PIDs other than the arcane / weird
-limitation that you have whereever that limitation is?
+On Tue, 26 Mar 2013 17:31:59 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> After merging the final tree, today's linux-next build (powerpc allyescon=
+fig)
+> failed like this:
+>=20
+> drivers/built-in.o: In function `bio_alloc_pages':
+> (.opd+0x2364a8): multiple definition of `bio_alloc_pages'
+> fs/built-in.o:(.opd+0x7188): first defined here
+>=20
+> Caused by an interaction between commits a07876064a0b ("block: Add
+> bio_alloc_pages()") and commit cafe56359144 ("bcache: A block layer
+> cache") from the block tree.
+>=20
+> I have applied the following fix patch (this should have happened in
+> merge commit 12f45f28441e "Merge branch 'for-3.10/drivers' into
+> for-next"):
+>=20
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Tue, 26 Mar 2013 17:26:45 +1100
+> Subject: [PATCH] block: remove the extra copy of bio_alloc_pages
+>=20
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  drivers/md/bcache/util.c | 18 ------------------
+>  drivers/md/bcache/util.h |  2 --
+>  2 files changed, 20 deletions(-)
+>=20
+> diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
+> index dcec2e4..671a55d 100644
+> --- a/drivers/md/bcache/util.c
+> +++ b/drivers/md/bcache/util.c
+> @@ -237,24 +237,6 @@ start:		bv->bv_len	=3D min_t(size_t, PAGE_SIZE - bv-=
+>bv_offset,
+>  }
+>  EXPORT_SYMBOL_GPL(bio_map);
+> =20
+> -int bio_alloc_pages(struct bio *bio, gfp_t gfp)
+> -{
+> -	int i;
+> -	struct bio_vec *bv;
+> -
+> -	bio_for_each_segment(bv, bio, i) {
+> -		bv->bv_page =3D alloc_page(gfp);
+> -		if (!bv->bv_page) {
+> -			while (bv-- !=3D bio->bi_io_vec + bio->bi_idx)
+> -				__free_page(bv->bv_page);
+> -			return -ENOMEM;
+> -		}
+> -	}
+> -
+> -	return 0;
+> -}
+> -EXPORT_SYMBOL_GPL(bio_alloc_pages);
+> -
+>  /*
+>   * Portions Copyright (c) 1996-2001, PostgreSQL Global Development Group=
+ (Any
+>   * use permitted, subject to terms of PostgreSQL license; see.)
+> diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
+> index 56705fd..499d746 100644
+> --- a/drivers/md/bcache/util.h
+> +++ b/drivers/md/bcache/util.h
+> @@ -570,8 +570,6 @@ static inline unsigned fract_exp_two(unsigned x, unsi=
+gned fract_bits)
+> =20
+>  void bio_map(struct bio *bio, void *base);
+> =20
+> -int bio_alloc_pages(struct bio *bio, gfp_t gfp);
+> -
+>  static inline sector_t bdev_sectors(struct block_device *bdev)
+>  {
+>  	return bdev->bd_inode->i_size >> 9;
+> --=20
+> 1.8.1
 
-> > If you think you can tilt it the other way, please feel free to try.
-> 
-> Just because others caved, doesn't make it less of a hack.  And I will
-> cave, too, because I don't have time to bang my head against a wall,
-> especially when I can see the remnants of other people who have tried.
-> 
-> We'll work around it, or we'll hack around it, or we'll carry this
-> patch in our own tree and just grumble about ridiculous hacks every
-> time we have to forward port it.
-> 
-> I was just hoping that things had worked themselves out in the last year.
+Ping?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-It's kinda weird getting this response, as I don't think it has been
-particularly walley.  The arguments were pretty sound from what I
-recall and Frederic's use case was actually better covered by kmemcg,
-so where's the said wall?  And I asked you why your use case is
-different and the only reason you gave me is some arbitrary PID
-limitation on whatever thing you're using, which you gotta agree is a
-pretty hard sell.  So, if you think you have a valid case, please just
-explain it.  Why go passive agressive on it?  If you don't have a
-valid case for pushing it, yes, you'll have to hack around it - carry
-the patches in your tree, whatever, or better, fix the weird PID
-problem.
+--Signature=_Tue__2_Apr_2013_10_22_36_+1100_RdaSoNRo_H_auoFA
+Content-Type: application/pgp-signature
 
--- 
-tejun
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRWha8AAoJEECxmPOUX5FEEGEP/Re050H6OsZMocEbnbqpI6qP
+4zIkJFaJ98Yfz2jjXGUxd0vTshntITg8weCkIrDfQlTNCuSowYW+uSg/2npsQw07
+iboMemhcFpR1qXNuBeC3IHjPin3rfIWQJ91Z6+z5Y2GMLqbnTox5/nUDDQTTn73l
+b8IN4LGE+GMOkLyJiunrD1R4Wamyi7EW77zYcD4V2et9rqgS6wfUMO/mEwSbCsoL
+0cacFwmPdp/iX67hbsX2M32x7pTBEMdLqcaX7Jyj6XJfpYsq7MHHE3SFaDk2CGAU
+oPvL/gLswD0XLwloA49yjZD/tCbyMoiNXOBaZ/t67u3Ux3P0h/p+K+qN9Bf1HIJ7
+ZdLrhC259F+aWqvggrJnIdoJhkt+E2bQ8JPVCuMEqulVSafZjYY7zobLkjh36gGo
+5ZjhB5SXfADMjgIYXhiNuYoMGhMCeJMAFQ/D0N3KhDu07yjw6V21hoRFtzhcm1iH
+/ttx/14tNAZfnTv777ydJJZiuNGH81KTYjWyIeS/K7nNi6HQawn1hj3JUuK7ysIw
+pmBkc48CV/VWPlO3jQ2Jq/kWuYcINubphahZBOUC55GLYDr2FqS4i/xA2RWbM3Am
+OkyirM5Ji5SrOrVX4ZEDUMkQt2PcAObhJ1cZNfBIxBabI4rND/KAVDqdqv1hj5kK
+k7kWGlli7fjAoz3/OEZM
+=kuhw
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__2_Apr_2013_10_22_36_+1100_RdaSoNRo_H_auoFA--
