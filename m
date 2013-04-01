@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758277Ab3DAOXj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 10:23:39 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49557 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758212Ab3DAOXi (ORCPT
+	id S1758148Ab3DAO0e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 10:26:34 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:23910 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751995Ab3DAO0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 10:23:38 -0400
-Date: Mon, 1 Apr 2013 16:23:36 +0200
-From: Pavel Machek <pavel@denx.de>
-To: sr@denx.de, w.sang@pengutronix.de, magnus.damm@gmail.com,
-        hjk@linutronix.de, Greg KH <greg@kroah.com>,
-        kernel list <linux-kernel@vger.kernel.org>, dzu@denx.de
-Subject: UIO device tree bindings.
-Message-ID: <20130401142336.GA18034@amd.pavel.ucw.cz>
+	Mon, 1 Apr 2013 10:26:33 -0400
+Message-ID: <51599918.4040706@tilera.com>
+Date: Mon, 1 Apr 2013 10:26:32 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/tile fix for v3.9
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Linus,
 
-I'd like to get uio device tree bindings to work -- with recent FPGA
-parts it will be important. Latest version I see is 
+Please pull the following change for 3.9 from:
 
-https://lists.ozlabs.org/pipermail/linuxppc-dev/2009-June/073087.html
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git stable
 
-... Is there anything newer?
+This change allows newer Tilera boot tools to work correctly with current
+(and stable) kernels by using the right filename to get the initramfs from
+the Tilera hypervisor filesystem.
 
-I red the discussion, and main problem seems to be the "tell kernel to
-drive this device tree device", right?
+Chris Metcalf (1):
+      tile: expect new initramfs name from hypervisor file system
 
-Also I feel like there will be some fun testing it. Does anyone have
-ideas?
+ arch/tile/kernel/setup.c |   25 ++++++++++++-------------
+ 1 file changed, 12 insertions(+), 13 deletions(-)
 
-Thanks,
-									Pavel
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
