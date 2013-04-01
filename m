@@ -1,71 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758142Ab3DAN4N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 09:56:13 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:38808 "EHLO
+	id S1758202Ab3DAN4X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 09:56:23 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:38811 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757595Ab3DAN4L (ORCPT
+	with ESMTP id S1757966Ab3DAN4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 09:56:11 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r31Du3SO009564, This message is released by code: ctlocs8528
+	Mon, 1 Apr 2013 09:56:20 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r31DuFQQ009586, This message is released by code: ctlocs8528
 From: Hayes Wang <hayeswang@realtek.com>
 To: <romieu@fr.zoreil.com>
 CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 1/7] r8169: Remove firmware code
-Date: Mon, 1 Apr 2013 21:55:33 +0800
-Message-ID: <1364824539-4156-1-git-send-email-hayeswang@realtek.com>
+Subject: [PATCH net-next 2/7] r8169: Update PHY settings of RTL8111G
+Date: Mon, 1 Apr 2013 21:55:34 +0800
+Message-ID: <1364824539-4156-2-git-send-email-hayeswang@realtek.com>
 X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1364824539-4156-1-git-send-email-hayeswang@realtek.com>
+References: <1364824539-4156-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some codes are belong to binary codes and should be removed.
+- Replace the current settings with rtl_writephy and rtl_readphy.
+  For the hardware, the settings are same with previous ones. This
+  make the setting method like the previous chips.
+- Add new PHY settings.
 
 Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
- drivers/net/ethernet/realtek/r8169.c | 26 --------------------------
- 1 file changed, 26 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c | 72 +++++++++++++++++++++++++-----------
+ 1 file changed, 51 insertions(+), 21 deletions(-)
 
 diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 28fb50a..d36aa76 100644
+index d36aa76..b8b59a9 100644
 --- a/drivers/net/ethernet/realtek/r8169.c
 +++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -3368,32 +3368,6 @@ static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
+@@ -1024,14 +1024,6 @@ static u16 r8168_phy_ocp_read(struct rtl8169_private *tp, u32 reg)
+ 		(RTL_R32(GPHY_OCP) & 0xffff) : ~0;
+ }
  
- static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
+-static void rtl_w1w0_phy_ocp(struct rtl8169_private *tp, int reg, int p, int m)
+-{
+-	int val;
+-
+-	val = r8168_phy_ocp_read(tp, reg);
+-	r8168_phy_ocp_write(tp, reg, (val | p) & ~m);
+-}
+-
+ static void r8168_mac_ocp_write(struct rtl8169_private *tp, u32 reg, u32 data)
  {
--	static const u16 mac_ocp_patch[] = {
--		0xe008, 0xe01b, 0xe01d, 0xe01f,
--		0xe021, 0xe023, 0xe025, 0xe027,
--		0x49d2, 0xf10d, 0x766c, 0x49e2,
--		0xf00a, 0x1ec0, 0x8ee1, 0xc60a,
--
--		0x77c0, 0x4870, 0x9fc0, 0x1ea0,
--		0xc707, 0x8ee1, 0x9d6c, 0xc603,
--		0xbe00, 0xb416, 0x0076, 0xe86c,
--		0xc602, 0xbe00, 0x0000, 0xc602,
--
--		0xbe00, 0x0000, 0xc602, 0xbe00,
--		0x0000, 0xc602, 0xbe00, 0x0000,
--		0xc602, 0xbe00, 0x0000, 0xc602,
--		0xbe00, 0x0000, 0xc602, 0xbe00,
--
--		0x0000, 0x0000, 0x0000, 0x0000
--	};
--	u32 i;
--
--	/* Patch code for GPHY reset */
--	for (i = 0; i < ARRAY_SIZE(mac_ocp_patch); i++)
--		r8168_mac_ocp_write(tp, 0xf800 + 2*i, mac_ocp_patch[i]);
--	r8168_mac_ocp_write(tp, 0xfc26, 0x8000);
--	r8168_mac_ocp_write(tp, 0xfc28, 0x0075);
--
+ 	void __iomem *ioaddr = tp->mmio_addr;
+@@ -3370,23 +3362,61 @@ static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
+ {
  	rtl_apply_firmware(tp);
  
- 	if (r8168_phy_ocp_read(tp, 0xa460) & 0x0100)
+-	if (r8168_phy_ocp_read(tp, 0xa460) & 0x0100)
+-		rtl_w1w0_phy_ocp(tp, 0xbcc4, 0x0000, 0x8000);
+-	else
+-		rtl_w1w0_phy_ocp(tp, 0xbcc4, 0x8000, 0x0000);
++	rtl_writephy(tp, 0x1f, 0x0a46);
++	if (rtl_readphy(tp, 0x10) & 0x0100) {
++		rtl_writephy(tp, 0x1f, 0x0bcc);
++		rtl_w1w0_phy(tp, 0x12, 0x0000, 0x8000);
++	} else {
++		rtl_writephy(tp, 0x1f, 0x0bcc);
++		rtl_w1w0_phy(tp, 0x12, 0x8000, 0x0000);
++	}
+ 
+-	if (r8168_phy_ocp_read(tp, 0xa466) & 0x0100)
+-		rtl_w1w0_phy_ocp(tp, 0xc41a, 0x0002, 0x0000);
+-	else
+-		rtl_w1w0_phy_ocp(tp, 0xbcc4, 0x0000, 0x0002);
++	rtl_writephy(tp, 0x1f, 0x0a46);
++	if (rtl_readphy(tp, 0x13) & 0x0100) {
++		rtl_writephy(tp, 0x1f, 0x0c41);
++		rtl_w1w0_phy(tp, 0x15, 0x0002, 0x0000);
++	} else {
++		rtl_writephy(tp, 0x1f, 0x0c41);
++		rtl_w1w0_phy(tp, 0x15, 0x0000, 0x0002);
++	}
+ 
+-	rtl_w1w0_phy_ocp(tp, 0xa442, 0x000c, 0x0000);
+-	rtl_w1w0_phy_ocp(tp, 0xa4b2, 0x0004, 0x0000);
++	/* Enable PHY auto speed down */
++	rtl_writephy(tp, 0x1f, 0x0a44);
++	rtl_w1w0_phy(tp, 0x11, 0x000c, 0x0000);
++
++	rtl_writephy(tp, 0x1f, 0x0bcc);
++	rtl_w1w0_phy(tp, 0x14, 0x0100, 0x0000);
++	rtl_writephy(tp, 0x1f, 0x0a44);
++	rtl_w1w0_phy(tp, 0x11, 0x00c0, 0x0000);
++	rtl_writephy(tp, 0x1f, 0x0a43);
++	rtl_writephy(tp, 0x13, 0x8084);
++	rtl_w1w0_phy(tp, 0x14, 0x0000, 0x6000);
++	rtl_w1w0_phy(tp, 0x10, 0x1003, 0x0000);
++
++	/* EEE auto-fallback function */
++	rtl_writephy(tp, 0x1f, 0x0a4b);
++	rtl_w1w0_phy(tp, 0x11, 0x0004, 0x0000);
++
++	/* Enable UC LPF tune function */
++	rtl_writephy(tp, 0x1f, 0x0a43);
++	rtl_writephy(tp, 0x13, 0x8012);
++	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
++
++	rtl_writephy(tp, 0x1f, 0x0c42);
++	rtl_w1w0_phy(tp, 0x11, 0x4000, 0x2000);
+ 
+-	r8168_phy_ocp_write(tp, 0xa436, 0x8012);
+-	rtl_w1w0_phy_ocp(tp, 0xa438, 0x8000, 0x0000);
++	/* Improve SWR Efficiency */
++	rtl_writephy(tp, 0x1f, 0x0bcd);
++	rtl_writephy(tp, 0x14, 0x5065);
++	rtl_writephy(tp, 0x14, 0xd065);
++	rtl_writephy(tp, 0x1f, 0x0bc8);
++	rtl_writephy(tp, 0x11, 0x5655);
++	rtl_writephy(tp, 0x1f, 0x0bcd);
++	rtl_writephy(tp, 0x14, 0x1065);
++	rtl_writephy(tp, 0x14, 0x9065);
++	rtl_writephy(tp, 0x14, 0x1065);
+ 
+-	rtl_w1w0_phy_ocp(tp, 0xc422, 0x4000, 0x2000);
++	rtl_writephy(tp, 0x1f, 0x0000);
+ }
+ 
+ static void rtl8102e_hw_phy_config(struct rtl8169_private *tp)
 -- 
 1.8.1
 
