@@ -1,386 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758906Ab3DAPmu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 11:42:50 -0400
-Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:54034 "EHLO
-	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756728Ab3DAPmt (ORCPT
+	id S1758926Ab3DAPnF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 11:43:05 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51897 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758726Ab3DAPnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 11:42:49 -0400
-X-Greylist: delayed 598 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Apr 2013 11:42:48 EDT
-Date: Mon, 1 Apr 2013 15:32:43 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>, Pekka Enberg <penberg@kernel.org>
-Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
- unfreeze_partials() code.
-In-Reply-To: <CAP=VYLr4i=39ywFCrmG-XuvUFmmXpyj6dYgG44JJoUJhpN6uuQ@mail.gmail.com>
-Message-ID: <0000013dc63a9086-7d10c4a8-748c-4e19-829a-856d8d42c8eb-000000@email.amazonses.com>
-References: <1364010673.6345.156.camel@gandalf.local.home> <0000013da1f93be3-c3d42ae8-ff34-4c63-8094-77a83291ea19-000000@email.amazonses.com> <1364227073.6345.182.camel@gandalf.local.home> <1364228039.6345.183.camel@gandalf.local.home>
- <0000013da2ace21a-9e87fe8a-75c2-4b7c-b5e1-37ad196ce012-000000@email.amazonses.com> <1364234613.6345.184.camel@gandalf.local.home> <0000013da2ce20f8-0e3a64ef-67ed-4ab4-9f20-b77980c876c3-000000@email.amazonses.com> <1364236355.6345.185.camel@gandalf.local.home>
- <20130327025957.GA17125@lge.com> <1364355032.6345.200.camel@gandalf.local.home> <20130327061351.GB17125@lge.com> <alpine.DEB.2.02.1303281227520.16200@gentwo.org> <0000013db20ca149-0064fbb8-2f81-4323-9095-a38f6abb79c5-000000@email.amazonses.com>
- <CAP=VYLr4i=39ywFCrmG-XuvUFmmXpyj6dYgG44JJoUJhpN6uuQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 54.240.9.58
+	Mon, 1 Apr 2013 11:43:03 -0400
+Message-ID: <1364830967.3557.90.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 1/2] efi: Determine how much space is used by boot
+ services-only variables
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: matt.fleming@intel.com, jwboyer@redhat.com, linux-efi@vger.kernel.org,
+        seth.forshee@canonical.com, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Date: Mon, 01 Apr 2013 16:42:47 +0100
+In-Reply-To: <1364829240-26475-1-git-send-email-matthew.garrett@nebula.com>
+References: <515150EC.7040203@redhat.com>
+	 <1364829240-26475-1-git-send-email-matthew.garrett@nebula.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-Axxx66Hgs5PL/rHcoQYJ"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:8b3:8e02:718c:5f0d
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 28 Mar 2013, Paul Gortmaker wrote:
 
-> > Index: linux/init/Kconfig
-> > ===================================================================
-> > --- linux.orig/init/Kconfig     2013-03-28 12:14:26.958358688 -0500
-> > +++ linux/init/Kconfig  2013-03-28 12:19:46.275866639 -0500
-> > @@ -1514,6 +1514,14 @@ config SLOB
-> >
-> >  endchoice
-> >
-> > +config SLUB_CPU_PARTIAL
-> > +       depends on SLUB
-> > +       bool "SLUB per cpu partial cache"
-> > +       help
-> > +         Per cpu partial caches accellerate freeing of objects at the
-> > +         price of more indeterminism in the latency of the free.
-> > +         Typically one would choose no for a realtime system.
->
-> Is "batch" a better description than "accelerate" ?  Something like
+--=-Axxx66Hgs5PL/rHcoQYJ
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Its not a batching but a cache that is going to be mainly used for new
-allocations on the same processor.
+On Mon, 2013-04-01 at 11:13 -0400, Matthew Garrett wrote:
+> EFI variables can be flagged as being accessible only within boot service=
+s.
+> This makes it awkward for us to figure out how much space they use at
+> runtime. In theory we could figure this out by simply comparing the resul=
+ts
+> from QueryVariableInfo() to the space used by all of our variables, but
+> that fails if the platform doesn't garbage collect on every boot. Thankfu=
+lly,
+> calling QueryVariableInfo() while still inside boot services gives a more
+> reliable answer. This patch passes that information from the EFI boot stu=
+b
+> up to the efivars code, letting us calculate a reasonably accurate value.
 
->      Per cpu partial caches allows batch freeing of objects to maximize
->      throughput.  However, this can increase the length of time spent
->      holding key locks, which can increase latency spikes with respect
->      to responsiveness.  Select yes unless you are tuning for a realtime
->      oriented system.
->
-> Also, I believe this will cause a behaviour change for people who
-> just run "make oldconfig" -- since there is no default line.  Meaning
-> that it used to be unconditionally on, but now I think it will be off
-> by default, if people just mindlessly hold down Enter key.
+Good thinking.
 
-Ok.
->
-> For RT, we'll want default N if RT_FULL (RT_BASE?) but for mainline,
-> I expect you'll want default Y in order to be consistent with previous
-> behaviour?
+> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+> ---
+[...]
+> --- a/arch/x86/platform/efi/efi.c
+> +++ b/arch/x86/platform/efi/efi.c
+> @@ -71,6 +71,10 @@ static efi_system_table_t efi_systab __initdata;
+> =20
+>  unsigned long x86_efi_facility;
+> =20
+> +u64 efi_var_store_size;
+> +u64 efi_var_remaining_size;
+> +u64 efi_var_max_var_size;
+[...]
+> --- a/drivers/firmware/efivars.c
+> +++ b/drivers/firmware/efivars.c
+[...]
+> @@ -2133,6 +2158,10 @@ efivars_init(void)
+>  	ops.get_next_variable =3D efi.get_next_variable;
+>  	ops.query_variable_info =3D efi.query_variable_info;
+> =20
+> +#ifdef CONFIG_X86
+> +	boot_used_size =3D efi_var_store_size - efi_var_remaining_size;
+> +#endif
 
-I was not sure exactly how to handle that one yet for realtime. So I need
-two different patches?
+efivars can be built as a module, but these aren't exported.
 
-> I've not built/booted yet, but I'll follow up if I see anything else in doing
-> that.
+Ben.
 
-Here is an updated patch. I will also send an updated fixup patch.
+>  	error =3D register_efivars(&__efivars, &ops, efi_kobj);
+>  	if (error)
+>  		goto err_put;
 
+--=20
+Ben Hutchings
+DNRC Motto:  I can please only one person per day.
+Today is not your day.  Tomorrow isn't looking good either.
 
-Subject: slub: Make cpu partial slab support configurable V2
+--=-Axxx66Hgs5PL/rHcoQYJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-cpu partial support can introduce level of indeterminism that is not wanted
-in certain context (like a realtime kernel). Make it configurable.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+iQIVAwUAUVmq9+e/yOyVhhEJAQpZTg/+J0pfOg26xDd8udCaG3lzcp4ESRmdTImZ
+YxCKkP24f1xnLSJWgB6THAmLSAnIFJAxm0hvt+pMo4vMCtaC/o1Or/Z3xzRdaqJo
+nYzl8eY7U4cv4rMhwN/BvVCanJi4HqPlEA8fcB59kjeJMUpQkVW23MojsvuNEZ5S
+T9UjLbtnxxcs8ZH0xNxgDCFyFWTzKL1wPHcUvLgpzA2RFz/72ikSKdUmAXvdzXZx
+omMP9ogg4U+/WahFhNq8qTIAV+tGvu3YiVPoH+iwoZlgLwna9uTb3tOv1emkUReD
+r2AcgW6W3FWgL/BvbAGaq8gtj0CW6xqqkcCVuTQt5NxEfs19oEM6/dUaLWFeWlcA
+P4c6zwv2WQ8tIm3PqTuB4tHxOaDLnXJ8ajAn6WTxtnUkgxS+npM5sBBQayp4RcYV
+P/ftjwszkm/3HVSRZOraIVJF4v8Gsx34lIe7BQZbd6XUSYvQ9jpDBnF4dKKSIvnm
+ufnJrFqBjx9n/NHneBgyGiQvXj7rxBerd7qNxgS0H+PmYk+1W02/r5/t4zpXt1Of
+p8sIsaht4c+bU5a91vgpb2kJwryovrJl5Pe+xUTEvYGSqNR8Lh+bbWv7ecR/OtDF
+NQfoB6rw3LR6ZzFe+kpOmZfWwHQANzjnp4KBrWl5u3hBxtmzlZKKdC4S7NtfQcds
+Abfn4W1764U=
+=BTKV
+-----END PGP SIGNATURE-----
 
-Index: linux/include/linux/slub_def.h
-===================================================================
---- linux.orig/include/linux/slub_def.h	2013-04-01 10:27:05.908964674 -0500
-+++ linux/include/linux/slub_def.h	2013-04-01 10:27:19.905178531 -0500
-@@ -47,7 +47,9 @@ struct kmem_cache_cpu {
- 	void **freelist;	/* Pointer to next available object */
- 	unsigned long tid;	/* Globally unique transaction id */
- 	struct page *page;	/* The slab from which we are allocating */
-+#ifdef CONFIG_SLUB_CPU_PARTIAL
- 	struct page *partial;	/* Partially allocated frozen slabs */
-+#endif
- #ifdef CONFIG_SLUB_STATS
- 	unsigned stat[NR_SLUB_STAT_ITEMS];
- #endif
-@@ -84,7 +86,9 @@ struct kmem_cache {
- 	int size;		/* The size of an object including meta data */
- 	int object_size;	/* The size of an object without meta data */
- 	int offset;		/* Free pointer offset. */
-+#ifdef CONFIG_SLUB_CPU_PARTIAL
- 	int cpu_partial;	/* Number of per cpu partial objects to keep around */
-+#endif
- 	struct kmem_cache_order_objects oo;
-
- 	/* Allocation and freeing of slabs */
-Index: linux/mm/slub.c
-===================================================================
---- linux.orig/mm/slub.c	2013-04-01 10:27:05.908964674 -0500
-+++ linux/mm/slub.c	2013-04-01 10:27:19.905178531 -0500
-@@ -1531,7 +1531,9 @@ static inline void *acquire_slab(struct
- 	return freelist;
- }
-
-+#ifdef CONFIG_SLUB_CPU_PARTIAL
- static int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain);
-+#endif
- static inline bool pfmemalloc_match(struct page *page, gfp_t gfpflags);
-
- /*
-@@ -1570,10 +1572,20 @@ static void *get_partial_node(struct kme
- 			object = t;
- 			available =  page->objects - (unsigned long)page->lru.next;
- 		} else {
-+#ifdef CONFIG_SLUB_CPU_PARTIAL
- 			available = put_cpu_partial(s, page, 0);
- 			stat(s, CPU_PARTIAL_NODE);
-+#else
-+			BUG();
-+#endif
- 		}
--		if (kmem_cache_debug(s) || available > s->cpu_partial / 2)
-+		if (kmem_cache_debug(s) ||
-+#ifdef CONFIG_SLUB_CPU_PARTIAL
-+			available > s->cpu_partial / 2
-+#else
-+			available > 0
-+#endif
-+			)
- 			break;
-
- 	}
-@@ -1874,6 +1886,7 @@ redo:
- 	}
- }
-
-+#ifdef CONFIG_SLUB_CPU_PARTIAL
- /*
-  * Unfreeze all the cpu partial slabs.
-  *
-@@ -1989,6 +2002,7 @@ static int put_cpu_partial(struct kmem_c
- 	} while (this_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
- 	return pobjects;
- }
-+#endif
-
- static inline void flush_slab(struct kmem_cache *s, struct kmem_cache_cpu *c)
- {
-@@ -2013,7 +2027,9 @@ static inline void __flush_cpu_slab(stru
- 		if (c->page)
- 			flush_slab(s, c);
-
-+#ifdef CONFIG_SLUB_CPU_PARTIAL
- 		unfreeze_partials(s, c);
-+#endif
- 	}
- }
-
-@@ -2029,7 +2045,11 @@ static bool has_cpu_slab(int cpu, void *
- 	struct kmem_cache *s = info;
- 	struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu_slab, cpu);
-
-+#ifdef CONFIG_SLUB_CPU_PARTIAL
- 	return c->page || c->partial;
-+#else
-+	return c->page;
-+#endif
- }
-
- static void flush_all(struct kmem_cache *s)
-@@ -2225,7 +2245,10 @@ static void *__slab_alloc(struct kmem_ca
- 	page = c->page;
- 	if (!page)
- 		goto new_slab;
-+
-+#ifdef CONFIG_SLUB_CPU_PARTIAL
- redo:
-+#endif
-
- 	if (unlikely(!node_match(page, node))) {
- 		stat(s, ALLOC_NODE_MISMATCH);
-@@ -2278,6 +2301,7 @@ load_freelist:
-
- new_slab:
-
-+#ifdef CONFIG_SLUB_CPU_PARTIAL
- 	if (c->partial) {
- 		page = c->page = c->partial;
- 		c->partial = page->next;
-@@ -2285,6 +2309,7 @@ new_slab:
- 		c->freelist = NULL;
- 		goto redo;
- 	}
-+#endif
-
- 	freelist = new_slab_objects(s, gfpflags, node, &c);
-
-@@ -2491,6 +2516,7 @@ static void __slab_free(struct kmem_cach
- 		new.inuse--;
- 		if ((!new.inuse || !prior) && !was_frozen) {
-
-+#ifdef CONFIG_SLUB_CPU_PARTIAL
- 			if (!kmem_cache_debug(s) && !prior)
-
- 				/*
-@@ -2499,7 +2525,9 @@ static void __slab_free(struct kmem_cach
- 				 */
- 				new.frozen = 1;
-
--			else { /* Needs to be taken off a list */
-+			else
-+#endif
-+		       		{ /* Needs to be taken off a list */
-
- 	                        n = get_node(s, page_to_nid(page));
- 				/*
-@@ -2521,6 +2549,7 @@ static void __slab_free(struct kmem_cach
- 		"__slab_free"));
-
- 	if (likely(!n)) {
-+#ifdef CONFIG_SLUB_CPU_PARTIAL
-
- 		/*
- 		 * If we just froze the page then put it onto the
-@@ -2530,6 +2559,7 @@ static void __slab_free(struct kmem_cach
- 			put_cpu_partial(s, page, 1);
- 			stat(s, CPU_PARTIAL_FREE);
- 		}
-+#endif
- 		/*
- 		 * The list lock was not taken therefore no list
- 		 * activity can be necessary.
-@@ -3036,7 +3066,7 @@ static int kmem_cache_open(struct kmem_c
- 	 * list to avoid pounding the page allocator excessively.
- 	 */
- 	set_min_partial(s, ilog2(s->size) / 2);
--
-+#ifdef CONFIG_SLUB_CPU_PARTIAL
- 	/*
- 	 * cpu_partial determined the maximum number of objects kept in the
- 	 * per cpu partial lists of a processor.
-@@ -3064,6 +3094,7 @@ static int kmem_cache_open(struct kmem_c
- 		s->cpu_partial = 13;
- 	else
- 		s->cpu_partial = 30;
-+#endif
-
- #ifdef CONFIG_NUMA
- 	s->remote_node_defrag_ratio = 1000;
-@@ -4424,13 +4455,14 @@ static ssize_t show_slab_objects(struct
- 			total += x;
- 			nodes[node] += x;
-
-+#ifdef CONFIG_SLUB_CPU_PARTIAL
- 			page = ACCESS_ONCE(c->partial);
- 			if (page) {
- 				x = page->pobjects;
- 				total += x;
- 				nodes[node] += x;
- 			}
--
-+#endif
- 			per_cpu[node]++;
- 		}
- 	}
-@@ -4583,6 +4615,7 @@ static ssize_t min_partial_store(struct
- }
- SLAB_ATTR(min_partial);
-
-+#ifdef CONFIG_CPU_PARTIAL
- static ssize_t cpu_partial_show(struct kmem_cache *s, char *buf)
- {
- 	return sprintf(buf, "%u\n", s->cpu_partial);
-@@ -4605,6 +4638,7 @@ static ssize_t cpu_partial_store(struct
- 	return length;
- }
- SLAB_ATTR(cpu_partial);
-+#endif
-
- static ssize_t ctor_show(struct kmem_cache *s, char *buf)
- {
-@@ -4644,6 +4678,7 @@ static ssize_t objects_partial_show(stru
- }
- SLAB_ATTR_RO(objects_partial);
-
-+#ifdef CONFIG_SLUB_CPU_PARTIAL
- static ssize_t slabs_cpu_partial_show(struct kmem_cache *s, char *buf)
- {
- 	int objects = 0;
-@@ -4674,6 +4709,7 @@ static ssize_t slabs_cpu_partial_show(st
- 	return len + sprintf(buf + len, "\n");
- }
- SLAB_ATTR_RO(slabs_cpu_partial);
-+#endif
-
- static ssize_t reclaim_account_show(struct kmem_cache *s, char *buf)
- {
-@@ -4997,11 +5033,13 @@ STAT_ATTR(DEACTIVATE_BYPASS, deactivate_
- STAT_ATTR(ORDER_FALLBACK, order_fallback);
- STAT_ATTR(CMPXCHG_DOUBLE_CPU_FAIL, cmpxchg_double_cpu_fail);
- STAT_ATTR(CMPXCHG_DOUBLE_FAIL, cmpxchg_double_fail);
-+#ifdef CONFIG_CPU_PARTIAL
- STAT_ATTR(CPU_PARTIAL_ALLOC, cpu_partial_alloc);
- STAT_ATTR(CPU_PARTIAL_FREE, cpu_partial_free);
- STAT_ATTR(CPU_PARTIAL_NODE, cpu_partial_node);
- STAT_ATTR(CPU_PARTIAL_DRAIN, cpu_partial_drain);
- #endif
-+#endif
-
- static struct attribute *slab_attrs[] = {
- 	&slab_size_attr.attr,
-@@ -5009,7 +5047,9 @@ static struct attribute *slab_attrs[] =
- 	&objs_per_slab_attr.attr,
- 	&order_attr.attr,
- 	&min_partial_attr.attr,
-+#ifdef CONFIG_CPU_PARTIAL
- 	&cpu_partial_attr.attr,
-+#endif
- 	&objects_attr.attr,
- 	&objects_partial_attr.attr,
- 	&partial_attr.attr,
-@@ -5022,7 +5062,9 @@ static struct attribute *slab_attrs[] =
- 	&destroy_by_rcu_attr.attr,
- 	&shrink_attr.attr,
- 	&reserved_attr.attr,
-+#ifdef CONFIG_SLUB_CPU_PARTIAL
- 	&slabs_cpu_partial_attr.attr,
-+#endif
- #ifdef CONFIG_SLUB_DEBUG
- 	&total_objects_attr.attr,
- 	&slabs_attr.attr,
-@@ -5064,11 +5106,13 @@ static struct attribute *slab_attrs[] =
- 	&order_fallback_attr.attr,
- 	&cmpxchg_double_fail_attr.attr,
- 	&cmpxchg_double_cpu_fail_attr.attr,
-+#ifdef CONFIG_SLUB_CPU_PARTIAL
- 	&cpu_partial_alloc_attr.attr,
- 	&cpu_partial_free_attr.attr,
- 	&cpu_partial_node_attr.attr,
- 	&cpu_partial_drain_attr.attr,
- #endif
-+#endif
- #ifdef CONFIG_FAILSLAB
- 	&failslab_attr.attr,
- #endif
-Index: linux/init/Kconfig
-===================================================================
---- linux.orig/init/Kconfig	2013-04-01 10:27:05.908964674 -0500
-+++ linux/init/Kconfig	2013-04-01 10:31:46.497863625 -0500
-@@ -1514,6 +1514,17 @@ config SLOB
-
- endchoice
-
-+config SLUB_CPU_PARTIAL
-+	default y
-+	depends on SLUB
-+	bool "SLUB per cpu partial cache"
-+	help
-+	  Per cpu partial caches accellerate objects allocation and freeing
-+	  that is local to a processor at the price of more indeterminism
-+	  in the latency of the free. On overflow these caches will be cleared
-+	  which requires the taking of locks that may cause latency spikes.
-+	  Typically one would choose no for a realtime system.
-+
- config MMAP_ALLOW_UNINITIALIZED
- 	bool "Allow mmapped anonymous memory to be uninitialized"
- 	depends on EXPERT && !MMU
+--=-Axxx66Hgs5PL/rHcoQYJ--
