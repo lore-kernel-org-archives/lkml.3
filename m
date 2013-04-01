@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab3DAEpT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 00:45:19 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50007 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756553Ab3DAEpS (ORCPT
+	id S1756943Ab3DAEsf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 00:48:35 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:33994 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756882Ab3DAEse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 00:45:18 -0400
-X-AuditID: 9c93016f-b7b6aae000000e9c-f5-515910da1d65
-Date: Mon, 1 Apr 2013 13:45:14 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH] THP: Use explicit memory barrier
-Message-ID: <20130401044514.GC26497@blaptop>
-References: <1364773535-26264-1-git-send-email-minchan@kernel.org>
- <5158DC7D.2040607@jp.fujitsu.com>
+	Mon, 1 Apr 2013 00:48:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5158DC7D.2040607@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1364784565.7725.2.camel@phoenix>
+References: <1364784493.7725.1.camel@phoenix>
+	<1364784565.7725.2.camel@phoenix>
+Date: Mon, 1 Apr 2013 10:18:33 +0530
+Message-ID: <CAKohponR=1=nobZYJAG5BNCme5K2wZ7j3=zvFs1E_mK_cupU0w@mail.gmail.com>
+Subject: Re: [PATCH 2/2] pwm: mxs: Remove unused *dev from struct spear_pwm_chip
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Shiraz Hashim <shiraz.hashim@st.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Kame,
+On 1 April 2013 08:19, Axel Lin <axel.lin@ingics.com> wrote:
 
-On Mon, Apr 01, 2013 at 10:01:49AM +0900, Kamezawa Hiroyuki wrote:
-> (2013/04/01 8:45), Minchan Kim wrote:
-> > __do_huge_pmd_anonymous_page depends on page_add_new_anon_rmap's
-> > spinlock for making sure that clear_huge_page write become visible
-> > after set set_pmd_at() write.
-> > 
-> > But lru_cache_add_lru uses pagevec so it could miss spinlock
-> > easily so above rule was broken so user may see inconsistent data.
-> > This patch fixes it with using explict barrier rather than depending
-> > on lru spinlock.
-> > 
-> 
-> Hmm...how about do_anonymous_page() ? there are no comments/locks/barriers.
-> Users can see non-zero value after page fault in theory ?
+Apart from fixing subject you need to write something in logs too..
 
-Maybe, but as you know well, we didn't see any report about that until now
-so I'm not sure. Ccing people in this thread could have clear answer rather
-than me.
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+>  drivers/pwm/pwm-spear.c |    3 ---
+>  1 file changed, 3 deletions(-)
+>
+> diff --git a/drivers/pwm/pwm-spear.c b/drivers/pwm/pwm-spear.c
+> index 3223b57..9563599 100644
+> --- a/drivers/pwm/pwm-spear.c
+> +++ b/drivers/pwm/pwm-spear.c
+> @@ -49,13 +49,11 @@
+>   * @mmio_base: base address of pwm chip
+>   * @clk: pointer to clk structure of pwm chip
+>   * @chip: linux pwm chip representation
+> - * @dev: pointer to device structure of pwm chip
+>   */
+>  struct spear_pwm_chip {
+>         void __iomem *mmio_base;
+>         struct clk *clk;
+>         struct pwm_chip chip;
+> -       struct device *dev;
+>  };
+>
+>  static inline struct spear_pwm_chip *to_spear_pwm_chip(struct pwm_chip *chip)
+> @@ -200,7 +198,6 @@ static int spear_pwm_probe(struct platform_device *pdev)
+>         if (IS_ERR(pc->clk))
+>                 return PTR_ERR(pc->clk);
+>
+> -       pc->dev = &pdev->dev;
+>         platform_set_drvdata(pdev, pc);
+>
+>         pc->chip.dev = &pdev->dev;
 
-In THP, I just found inconsistency between Andrea's comment and code.
-That's why I sent a patch.
-
-If your concern turns out truth, Ya, you might find ancient bug. :)
-Thanks.
-
-> 
-> Thanks,
-> -Kame
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
