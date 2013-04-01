@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757602Ab3DAGOq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 02:14:46 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:59474 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757222Ab3DAGOp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 02:14:45 -0400
-X-Greylist: delayed 111420 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Apr 2013 02:14:45 EDT
-Date: Sun, 31 Mar 2013 23:10:47 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'David Woodhouse'" <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] power: abx500_chargalg: use module_platform_driver()
- macro
-Message-ID: <20130401061044.GD25376@lizard>
-References: <007001ce1e21$df084be0$9d18e3a0$%han@samsung.com>
+	id S1757618Ab3DAGR1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 02:17:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:45437 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757034Ab3DAGR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 02:17:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,385,1363158000"; 
+   d="scan'208";a="310361857"
+Message-ID: <51592662.7020300@intel.com>
+Date: Mon, 01 Apr 2013 14:17:06 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <007001ce1e21$df084be0$9d18e3a0$%han@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v6 0/21] sched: power aware scheduling
+References: <1364654108-16307-1-git-send-email-alex.shi@intel.com> <5159157F.7060605@linux.vnet.ibm.com>
+In-Reply-To: <5159157F.7060605@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 03:30:06PM +0900, Jingoo Han wrote:
-> This patch uses module_platform_driver() macro which makes
-> the code smaller and simpler.
+On 04/01/2013 01:05 PM, Michael Wang wrote:
 > 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
+> For the performance one, a bit win here and a bit lost there, well,
+> since little float is there, I think at least, no regression.
+> 
+> But the powersaving one suffered some regression in low-end, is that the
+> sacrifice we supposed to do for power saving?
 
-Similar change was in a "big ab8500 sync"..
+Thanks for testing!
+Yes, depends on different benchmark, powersaving policy may lose some
+performance.
 
-commit 1ee26af028a46cf911f844c062b3c810bac34366
-Author: srinidhi kasagar <srinidhi.kasagar@stericsson.com>
-Date:   Thu Oct 11 14:38:28 2012 +0530
 
-    abx500-chargalg: Use module_platform_driver() rather
-
-Thanks,
-
-Anton
+-- 
+Thanks Alex
