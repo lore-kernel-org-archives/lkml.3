@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757822Ab3DANd3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 09:33:29 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34704 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757717Ab3DANd2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 09:33:28 -0400
-Date: Mon, 1 Apr 2013 14:33:26 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: spi: Use PTR_RET function
-Message-ID: <20130401133326.GR18636@opensource.wolfsonmicro.com>
-References: <1363252698-29500-1-git-send-email-gheorghiuandru@gmail.com>
+	id S1757783Ab3DANen (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 09:34:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36544 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757172Ab3DANem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 09:34:42 -0400
+Date: Mon, 1 Apr 2013 09:34:28 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH] kexec: use Crash kernel for Crash kernel low
+Message-ID: <20130401133428.GA13499@redhat.com>
+References: <20130320163131.GE2273@redhat.com>
+ <1363807329-24975-1-git-send-email-yinghai@kernel.org>
+ <20130325194245.GA7357@redhat.com>
+ <CAE9FiQU6bGSAODX_-Vir6D-LyY-9Sm84rYzq=gNhDZ5whbia_w@mail.gmail.com>
+ <20130326181418.GA6775@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GDLQamdgIxhPcIwq"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363252698-29500-1-git-send-email-gheorghiuandru@gmail.com>
-X-Cookie: You will be awarded some great honor.
+In-Reply-To: <20130326181418.GA6775@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 26, 2013 at 02:14:18PM -0400, Vivek Goyal wrote:
+> On Mon, Mar 25, 2013 at 02:50:18PM -0700, Yinghai Lu wrote:
+> > On Mon, Mar 25, 2013 at 12:42 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > > So it is a forgone conclusion that these new kernel changes to
+> > > crashkernel=X in 3.9 are incompatible with older kexec-tools and one
+> > > needs to upgrade kexec-tools.
+> > 
+> > I thought that you and hpa all agreed that user need to update kexec-tools with
+> > new kernel v3.9. It that still right?
+> 
+> I can update kexec-tools and I don't have problems with that. I am only
+> concerned about some xyz user complaining that new kernel stopped working
+> with old kexec-tools and then possibly face the rant from Linus about
+> breaking user space. :-)
+> 
+> To me we could maintain backward compatibility by retaining the existing
+> behavior of crashkernle=X. That is  look for specificied memory below
+> 896M first and then go higher.
+> 
+> And hide new semantics behind new kernel parameters or by extending
+> existing parameter (say crashkernel=X:search_high_first) to specify how
+> to search for reserved memory.
+> 
+> In both the cases we should probably retain the logic of auto reserving
+> low memory for software iotlb and let user opt out if there is no need.
+> 
+> So we don't have a strong reason that why we should break existing
+> kexec-tools. So I would prefer not to break it.
+> 
+> But I think this is hpa's decision.
 
---GDLQamdgIxhPcIwq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+hpa,
 
-On Thu, Mar 14, 2013 at 11:18:18AM +0200, Alexandru Gheorghiu wrote:
-> Replaced calls to IS_ERR and PTR_ERR with PTR_RET function.
-> Patch found using coccinelle.
+ping. Any thoughts on this?
 
-Applied, but please always use subject lines appropraite for the=20
-subsystem.
-
---GDLQamdgIxhPcIwq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRWYygAAoJELSic+t+oim9a74QAIO+adbsA4QYPNlHiAonA7i5
-npZlTxjGHxZhhafT5RQlkOGQupEdEe2eMoNdg08f9Tkf4zZK8upTeWhlZ5pT4Mc2
-5TXMMw5cfXIlBTPRLf8G5XUwl52wT41V/BqjqNCg6RqbRifIcTYqNk/rXvfBYUaI
-OgQgtrNDEJ/B3G4w7td7tXKF+mQYeeKvha+OeEBeDl1+O/xHtNK5fvPQMgr8jxFu
-zRNIPLIH1YfnLDxbwT6L+IvN8Wls774A4Py2kBU7vQC9MOaL48Q+LNJDZwi7WrP0
-Qu4mGqBW8URwxkfaiXAwE1AZ7S16S3s3KLUOzBkkHrkOFEMZKw34QsRnqor4gyG7
-Qsws1rqjF6BHiH6fyrFYk4Cnh9l/wCf8oe+LZsKa17Icx2ohrcbvLkVxuepEp2J4
-UDJSHpH2fjM5PYpw+ZJbQTsZleR5o5PtHXS5JczhuJlXuNdUGfznXh5/IssIpeMf
-HQZLvYM7SrO/jNGSr6dsw4nWsnNoIYPhpeLKxjfazPEqi5hgz4JHluZxpOwkuYLh
-5p+KZa/MKizDWPkvC3+DO9yrHcXGt+GUmzIWCtml/b8bYvc9PLJC7KQpXI/jmHPc
-QHc6efGL7sZikJZmPZBhFt1nboD77yyeyFG/GNQoc6Sr/CJNX4R0BAQt6NpFstpq
-dW8i2uMFqjXx+EVUyB6f
-=65m8
------END PGP SIGNATURE-----
-
---GDLQamdgIxhPcIwq--
+Thanks
+Vivek
