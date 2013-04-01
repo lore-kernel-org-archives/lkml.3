@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759408Ab3DATTs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 15:19:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50631 "EHLO mx1.redhat.com"
+	id S1759426Ab3DATTv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 15:19:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5146 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759390Ab3DATTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 15:19:46 -0400
+	id S1759390Ab3DATTt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 15:19:49 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -16,16 +16,16 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 03/27] perf tools: Move arch check into config/Makefile
-Date: Mon,  1 Apr 2013 21:18:26 +0200
-Message-Id: <1364843930-17974-4-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 06/27] perf tools: Move libelf check config into config/Makefile
+Date: Mon,  1 Apr 2013 21:18:29 +0200
+Message-Id: <1364843930-17974-7-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1364843930-17974-1-git-send-email-jolsa@redhat.com>
 References: <1364843930-17974-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving arch check into config/Makefile.
+Moving libelf check config into config/Makefile.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -38,103 +38,129 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile        | 31 ++-----------------------------
- tools/perf/config/Makefile | 34 ++++++++++++++++++++++++++++++++++
- 2 files changed, 36 insertions(+), 29 deletions(-)
- create mode 100644 tools/perf/config/Makefile
+ tools/perf/Makefile        | 46 ---------------------------------------------
+ tools/perf/config/Makefile | 47 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 47 insertions(+), 46 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index c8fb0fd..032e099 100644
+index dcae71b..0ea3359 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -55,37 +55,11 @@ include config/utilities.mak
- $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+@@ -461,45 +461,6 @@ ifneq ($(MAKECMDGOALS),tags)
+ # because maintaining the nesting to match is a pain.  If
+ # we had "elif" things would have been much nicer...
  
--uname_M := $(shell uname -m 2>/dev/null || echo not)
+-ifdef NO_LIBELF
+-	NO_DWARF := 1
+-	NO_DEMANGLE := 1
+-	NO_LIBUNWIND := 1
+-else
+-FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
+-ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF),libelf),y)
+-	FLAGS_GLIBC=$(ALL_CFLAGS) $(ALL_LDFLAGS)
+-	ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC),glibc),y)
+-		LIBC_SUPPORT := 1
+-	endif
+-	ifeq ($(BIONIC),1)
+-		LIBC_SUPPORT := 1
+-	endif
+-	ifeq ($(LIBC_SUPPORT),1)
+-		msg := $(warning No libelf found, disables 'probe' tool, please install elfutils-libelf-devel/libelf-dev);
 -
--ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
--				  -e s/arm.*/arm/ -e s/sa110/arm/ \
--				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
--				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
--				  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
--NO_PERF_REGS := 1
+-		NO_LIBELF := 1
+-		NO_DWARF := 1
+-		NO_DEMANGLE := 1
+-	else
+-		msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
+-	endif
+-else
+-	# for linking with debug library, run like:
+-	# make DEBUG=1 LIBDW_DIR=/opt/libdw/
+-	ifdef LIBDW_DIR
+-		LIBDW_CFLAGS  := -I$(LIBDW_DIR)/include
+-		LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
+-	endif
 -
- CC = $(CROSS_COMPILE)gcc
- AR = $(CROSS_COMPILE)ar
+-	FLAGS_DWARF=$(ALL_CFLAGS) $(LIBDW_CFLAGS) -ldw -lelf $(LIBDW_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
+-	ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
+-		msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
+-		NO_DWARF := 1
+-	endif # Dwarf support
+-endif # SOURCE_LIBELF
+-endif # NO_LIBELF
+-
+ # There's only x86 (both 32 and 64) support for CFI unwind so far
+ ifneq ($(ARCH),x86)
+ 	NO_LIBUNWIND := 1
+@@ -541,13 +502,6 @@ BUILTIN_OBJS := $(filter-out $(OUTPUT)builtin-probe.o,$(BUILTIN_OBJS))
+ LIB_OBJS += $(OUTPUT)util/symbol-minimal.o
  
--# Additional ARCH settings for x86
--ifeq ($(ARCH),i386)
--	override ARCH := x86
--	NO_PERF_REGS := 0
--	LIBUNWIND_LIBS = -lunwind -lunwind-x86
+ else # NO_LIBELF
+-BASIC_CFLAGS += -DLIBELF_SUPPORT
+-
+-FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
+-ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
+-	BASIC_CFLAGS += -DLIBELF_MMAP
 -endif
--ifeq ($(ARCH),x86_64)
--	override ARCH := x86
--	IS_X86_64 := 0
--	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
--		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
--	endif
--	ifeq (${IS_X86_64}, 1)
--		RAW_ARCH := x86_64
--		ARCH_CFLAGS := -DARCH_X86_64
--		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
--	endif
--	NO_PERF_REGS := 0
--	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
-+ifeq ($(filter clean tags,$(MAKECMDGOALS)),)
-+include config/Makefile
- endif
- 
- # Treat warnings as errors unless directed not to
-@@ -857,7 +831,6 @@ ifeq ($(NO_PERF_REGS),0)
- 	ifeq ($(ARCH),x86)
- 		LIB_H += arch/x86/include/perf_regs.h
- 	endif
--	BASIC_CFLAGS += -DHAVE_PERF_REGS
- endif
- 
- ifndef NO_STRLCPY
+-
+ ifndef NO_DWARF
+ ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
+ 	msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-new file mode 100644
-index 0000000..fe317c2
---- /dev/null
+index 9ce522a..ef09d6c 100644
+--- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -0,0 +1,34 @@
-+uname_M := $(shell uname -m 2>/dev/null || echo not)
+@@ -108,3 +108,50 @@ ifeq ($(call try-cc,$(SOURCE_BIONIC),$(CFLAGS),bionic),y)
+ 	EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
+ 	BASIC_CFLAGS += -I.
+ endif
 +
-+ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
-+				  -e s/arm.*/arm/ -e s/sa110/arm/ \
-+				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
-+				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
-+				  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
-+NO_PERF_REGS := 1
-+
-+# Additional ARCH settings for x86
-+ifeq ($(ARCH),i386)
-+	override ARCH := x86
-+	NO_PERF_REGS := 0
-+	LIBUNWIND_LIBS = -lunwind -lunwind-x86
-+endif
-+
-+ifeq ($(ARCH),x86_64)
-+	override ARCH := x86
-+	IS_X86_64 := 0
-+	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
-+		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
++ifdef NO_LIBELF
++	NO_DWARF := 1
++	NO_DEMANGLE := 1
++	NO_LIBUNWIND := 1
++else
++FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
++ifneq ($(call try-cc,$(SOURCE_LIBELF),$(FLAGS_LIBELF),libelf),y)
++	FLAGS_GLIBC=$(ALL_CFLAGS) $(ALL_LDFLAGS)
++	ifeq ($(call try-cc,$(SOURCE_GLIBC),$(FLAGS_GLIBC),glibc),y)
++		LIBC_SUPPORT := 1
 +	endif
-+	ifeq (${IS_X86_64}, 1)
-+		RAW_ARCH := x86_64
-+		ARCH_CFLAGS := -DARCH_X86_64
-+		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
++	ifeq ($(BIONIC),1)
++		LIBC_SUPPORT := 1
 +	endif
-+	NO_PERF_REGS := 0
-+	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
-+endif
++	ifeq ($(LIBC_SUPPORT),1)
++		msg := $(warning No libelf found, disables 'probe' tool, please install elfutils-libelf-devel/libelf-dev);
 +
-+ifeq ($(NO_PERF_REGS),0)
-+        BASIC_CFLAGS += -DHAVE_PERF_REGS
++		NO_LIBELF := 1
++		NO_DWARF := 1
++		NO_DEMANGLE := 1
++	else
++		msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
++	endif
++else
++	# for linking with debug library, run like:
++	# make DEBUG=1 LIBDW_DIR=/opt/libdw/
++	ifdef LIBDW_DIR
++		LIBDW_CFLAGS  := -I$(LIBDW_DIR)/include
++		LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
++	endif
++
++	FLAGS_DWARF=$(ALL_CFLAGS) $(LIBDW_CFLAGS) -ldw -lelf $(LIBDW_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
++	ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
++		msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
++		NO_DWARF := 1
++	endif # Dwarf support
++endif # SOURCE_LIBELF
++endif # NO_LIBELF
++
++ifndef NO_LIBELF
++BASIC_CFLAGS += -DLIBELF_SUPPORT
++FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
++ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
++	BASIC_CFLAGS += -DLIBELF_MMAP
 +endif
++endif # NO_LIBELF
 -- 
 1.7.11.7
 
