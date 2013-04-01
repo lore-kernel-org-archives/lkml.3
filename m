@@ -1,791 +1,966 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758831Ab3DAPdM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 11:33:12 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:58956 "EHLO relay.sgi.com"
+	id S1758795Ab3DAPfI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 11:35:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34528 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757463Ab3DAPdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 11:33:09 -0400
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: viresh.kumar@linaro.org, rjw@sisk.pl
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Nathan Zimmer <nzimmer@sgi.com>
-Subject: [PATCH v5] cpufreq: split the cpufreq_driver_lock and use the rcu (was cpufreq: cpufreq_driver_lock is hot on large systems)
-Date: Mon,  1 Apr 2013 10:33:02 -0500
-Message-Id: <1364830382-1271-1-git-send-email-nzimmer@sgi.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <5140E6A1.20107@sgi.com>
-References: <5140E6A1.20107@sgi.com>
+	id S1751970Ab3DAPfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 11:35:06 -0400
+Message-ID: <5159A9F8.1090407@redhat.com>
+Date: Mon, 01 Apr 2013 17:38:32 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: John McMaster <johndmcmaster@gmail.com>
+CC: mchehab@redhat.com, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH] [media] gspca_touptek: Add support for ToupTek UCMOS
+ series USB cameras
+References: <1364777633-10769-1-git-send-email-johndmcmaster@gmail.com>
+In-Reply-To: <1364777633-10769-1-git-send-email-johndmcmaster@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpufreq_driver_lock is hot with some configs.
-This lock covers both cpufreq_driver and cpufreq_cpu_data so part one of the
-proposed fix is to split up the lock abit.
-cpufreq_cpu_data is now covered by the cpufreq_data_lock.
-cpufreq_driver is now covered by the cpufreq_driver lock and the rcu.
+Hi John,
 
-This means that the cpufreq_driver_lock is no longer hot.
-There remains some measurable heat on the cpufreq_data_lock it is significantly 
-less then previous measured though. 
+Thanks for the new driver! Unfortunately the driver is still
+using gspca's own/deprecated control mechanism rather then
+the new v4l2-control framework which all drivers now a days
+use.
 
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
----
- drivers/cpufreq/cpufreq.c | 305 +++++++++++++++++++++++++++++++++-------------
- 1 file changed, 222 insertions(+), 83 deletions(-)
+And we've just finished converting all the gspca sub-drivers
+to using this new control framework, and removing gspca's
+own custom control code.
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index b02824d..387a5f8 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -39,13 +39,15 @@
-  * level driver of CPUFreq support, and its spinlock. This lock
-  * also protects the cpufreq_cpu_data array.
-  */
--static struct cpufreq_driver *cpufreq_driver;
-+static struct cpufreq_driver __rcu *cpufreq_driver;
-+static DEFINE_SPINLOCK(cpufreq_driver_lock);
-+
-+static DEFINE_SPINLOCK(cpufreq_data_lock);
- static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data);
- #ifdef CONFIG_HOTPLUG_CPU
- /* This one keeps track of the previously set governor of a removed CPU */
- static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
- #endif
--static DEFINE_SPINLOCK(cpufreq_driver_lock);
- 
- /*
-  * cpu_policy_rwsem is a per CPU reader-writer semaphore designed to cure
-@@ -131,22 +133,24 @@ static DEFINE_MUTEX(cpufreq_governor_mutex);
- static struct cpufreq_policy *__cpufreq_cpu_get(unsigned int cpu, bool sysfs)
- {
- 	struct cpufreq_policy *data;
-+	struct cpufreq_driver *driver;
- 	unsigned long flags;
- 
- 	if (cpu >= nr_cpu_ids)
- 		goto err_out;
- 
- 	/* get the cpufreq driver */
--	spin_lock_irqsave(&cpufreq_driver_lock, flags);
-+	rcu_read_lock();
-+	driver = rcu_dereference(cpufreq_driver);
- 
--	if (!cpufreq_driver)
-+	if (!driver)
- 		goto err_out_unlock;
- 
--	if (!try_module_get(cpufreq_driver->owner))
-+	if (!try_module_get(driver->owner))
- 		goto err_out_unlock;
- 
--
- 	/* get the CPU */
-+	spin_lock_irqsave(&cpufreq_data_lock, flags);
- 	data = per_cpu(cpufreq_cpu_data, cpu);
- 
- 	if (!data)
-@@ -155,13 +159,15 @@ static struct cpufreq_policy *__cpufreq_cpu_get(unsigned int cpu, bool sysfs)
- 	if (!sysfs && !kobject_get(&data->kobj))
- 		goto err_out_put_module;
- 
--	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+	spin_unlock_irqrestore(&cpufreq_data_lock, flags);
-+	rcu_read_unlock();
- 	return data;
- 
- err_out_put_module:
--	module_put(cpufreq_driver->owner);
-+	module_put(driver->owner);
-+	spin_unlock_irqrestore(&cpufreq_data_lock, flags);
- err_out_unlock:
--	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+	rcu_read_unlock();
- err_out:
- 	return NULL;
- }
-@@ -184,7 +190,9 @@ static void __cpufreq_cpu_put(struct cpufreq_policy *data, bool sysfs)
- {
- 	if (!sysfs)
- 		kobject_put(&data->kobj);
--	module_put(cpufreq_driver->owner);
-+	rcu_read_lock();
-+	module_put(rcu_dereference(cpufreq_driver)->owner);
-+	rcu_read_unlock();
- }
- 
- void cpufreq_cpu_put(struct cpufreq_policy *data)
-@@ -262,13 +270,15 @@ void cpufreq_notify_transition(struct cpufreq_freqs *freqs, unsigned int state)
- 	if (cpufreq_disabled())
- 		return;
- 
--	freqs->flags = cpufreq_driver->flags;
-+	rcu_read_lock();
-+	freqs->flags = rcu_dereference(cpufreq_driver)->flags;
-+	rcu_read_unlock();
- 	pr_debug("notification %u of frequency transition to %u kHz\n",
- 		state, freqs->new);
- 
--	spin_lock_irqsave(&cpufreq_driver_lock, flags);
-+	spin_lock_irqsave(&cpufreq_data_lock, flags);
- 	policy = per_cpu(cpufreq_cpu_data, freqs->cpu);
--	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+	spin_unlock_irqrestore(&cpufreq_data_lock, flags);
- 
- 	switch (state) {
- 
-@@ -277,7 +287,7 @@ void cpufreq_notify_transition(struct cpufreq_freqs *freqs, unsigned int state)
- 		 * which is not equal to what the cpufreq core thinks is
- 		 * "old frequency".
- 		 */
--		if (!(cpufreq_driver->flags & CPUFREQ_CONST_LOOPS)) {
-+		if (!(freqs->flags & CPUFREQ_CONST_LOOPS)) {
- 			if ((policy) && (policy->cpu == freqs->cpu) &&
- 			    (policy->cur) && (policy->cur != freqs->old)) {
- 				pr_debug("Warning: CPU frequency is"
-@@ -329,11 +339,23 @@ static int cpufreq_parse_governor(char *str_governor, unsigned int *policy,
- 				struct cpufreq_governor **governor)
- {
- 	int err = -EINVAL;
--
--	if (!cpufreq_driver)
-+	struct cpufreq_driver *driver;
-+	int (*setpolicy)(struct cpufreq_policy *policy);
-+	int (*target)(struct cpufreq_policy *policy,
-+		      unsigned int target_freq,
-+		      unsigned int relation);
-+
-+	rcu_read_lock();
-+	driver = rcu_dereference(cpufreq_driver);
-+	if (!driver) {
-+		rcu_read_unlock();
- 		goto out;
-+	}
-+	setpolicy = driver->setpolicy;
-+	target = driver->target;
-+	rcu_read_unlock();
- 
--	if (cpufreq_driver->setpolicy) {
-+	if (setpolicy) {
- 		if (!strnicmp(str_governor, "performance", CPUFREQ_NAME_LEN)) {
- 			*policy = CPUFREQ_POLICY_PERFORMANCE;
- 			err = 0;
-@@ -342,7 +364,7 @@ static int cpufreq_parse_governor(char *str_governor, unsigned int *policy,
- 			*policy = CPUFREQ_POLICY_POWERSAVE;
- 			err = 0;
- 		}
--	} else if (cpufreq_driver->target) {
-+	} else if (target) {
- 		struct cpufreq_governor *t;
- 
- 		mutex_lock(&cpufreq_governor_mutex);
-@@ -493,7 +515,11 @@ static ssize_t store_scaling_governor(struct cpufreq_policy *policy,
-  */
- static ssize_t show_scaling_driver(struct cpufreq_policy *policy, char *buf)
- {
--	return scnprintf(buf, CPUFREQ_NAME_PLEN, "%s\n", cpufreq_driver->name);
-+	char *name;
-+	rcu_read_lock();
-+	name = rcu_dereference(cpufreq_driver)->name;
-+	rcu_read_unlock();
-+	return scnprintf(buf, CPUFREQ_NAME_PLEN, "%s\n", name);
- }
- 
- /**
-@@ -505,10 +531,13 @@ static ssize_t show_scaling_available_governors(struct cpufreq_policy *policy,
- 	ssize_t i = 0;
- 	struct cpufreq_governor *t;
- 
--	if (!cpufreq_driver->target) {
-+	rcu_read_lock();
-+	if (!rcu_dereference(cpufreq_driver)->target) {
- 		i += sprintf(buf, "performance powersave");
-+		rcu_read_unlock();
- 		goto out;
- 	}
-+	rcu_read_unlock();
- 
- 	list_for_each_entry(t, &cpufreq_governor_list, governor_list) {
- 		if (i >= (ssize_t) ((PAGE_SIZE / sizeof(char))
-@@ -586,9 +615,15 @@ static ssize_t show_scaling_setspeed(struct cpufreq_policy *policy, char *buf)
- static ssize_t show_bios_limit(struct cpufreq_policy *policy, char *buf)
- {
- 	unsigned int limit;
-+	int (*bios_limit)(int cpu, unsigned int *limit);
- 	int ret;
--	if (cpufreq_driver->bios_limit) {
--		ret = cpufreq_driver->bios_limit(policy->cpu, &limit);
-+
-+	rcu_read_lock();
-+	bios_limit = rcu_dereference(cpufreq_driver)->bios_limit;
-+	rcu_read_unlock();
-+
-+	if (bios_limit) {
-+		ret = bios_limit(policy->cpu, &limit);
- 		if (!ret)
- 			return sprintf(buf, "%u\n", limit);
- 	}
-@@ -731,6 +766,8 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
- {
- 	struct cpufreq_policy new_policy;
- 	struct freq_attr **drv_attr;
-+	struct cpufreq_driver *driver;
-+	int (*exit)(struct cpufreq_policy *policy);
- 	unsigned long flags;
- 	int ret = 0;
- 	unsigned int j;
-@@ -742,35 +779,38 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
- 		return ret;
- 
- 	/* set up files for this cpu device */
--	drv_attr = cpufreq_driver->attr;
-+	rcu_read_lock();
-+	driver = rcu_dereference(cpufreq_driver);
-+	drv_attr = driver->attr;
- 	while ((drv_attr) && (*drv_attr)) {
- 		ret = sysfs_create_file(&policy->kobj, &((*drv_attr)->attr));
- 		if (ret)
--			goto err_out_kobj_put;
-+			goto err_out_unlock;
- 		drv_attr++;
- 	}
--	if (cpufreq_driver->get) {
-+	if (driver->get) {
- 		ret = sysfs_create_file(&policy->kobj, &cpuinfo_cur_freq.attr);
- 		if (ret)
--			goto err_out_kobj_put;
-+			goto err_out_unlock;
- 	}
--	if (cpufreq_driver->target) {
-+	if (driver->target) {
- 		ret = sysfs_create_file(&policy->kobj, &scaling_cur_freq.attr);
- 		if (ret)
--			goto err_out_kobj_put;
-+			goto err_out_unlock;
- 	}
--	if (cpufreq_driver->bios_limit) {
-+	if (driver->bios_limit) {
- 		ret = sysfs_create_file(&policy->kobj, &bios_limit.attr);
- 		if (ret)
--			goto err_out_kobj_put;
-+			goto err_out_unlock;
- 	}
-+	rcu_read_unlock();
- 
--	spin_lock_irqsave(&cpufreq_driver_lock, flags);
-+	spin_lock_irqsave(&cpufreq_data_lock, flags);
- 	for_each_cpu(j, policy->cpus) {
- 		per_cpu(cpufreq_cpu_data, j) = policy;
- 		per_cpu(cpufreq_policy_cpu, j) = policy->cpu;
- 	}
--	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+	spin_unlock_irqrestore(&cpufreq_data_lock, flags);
- 
- 	ret = cpufreq_add_dev_symlink(cpu, policy);
- 	if (ret)
-@@ -787,11 +827,17 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
- 
- 	if (ret) {
- 		pr_debug("setting policy failed\n");
--		if (cpufreq_driver->exit)
--			cpufreq_driver->exit(policy);
-+		rcu_read_lock();
-+		exit = rcu_dereference(cpufreq_driver)->exit;
-+		if (exit)
-+			exit(policy);
-+		rcu_read_unlock();
-+
- 	}
- 	return ret;
- 
-+err_out_unlock:
-+	rcu_read_unlock();
- err_out_kobj_put:
- 	kobject_put(&policy->kobj);
- 	wait_for_completion(&policy->kobj_unregister);
-@@ -813,12 +859,12 @@ static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
- 
- 	lock_policy_rwsem_write(sibling);
- 
--	spin_lock_irqsave(&cpufreq_driver_lock, flags);
-+	spin_lock_irqsave(&cpufreq_data_lock, flags);
- 
- 	cpumask_set_cpu(cpu, policy->cpus);
- 	per_cpu(cpufreq_policy_cpu, cpu) = policy->cpu;
- 	per_cpu(cpufreq_cpu_data, cpu) = policy;
--	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+	spin_unlock_irqrestore(&cpufreq_data_lock, flags);
- 
- 	unlock_policy_rwsem_write(sibling);
- 
-@@ -849,6 +895,8 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 	unsigned int j, cpu = dev->id;
- 	int ret = -ENOMEM;
- 	struct cpufreq_policy *policy;
-+	struct cpufreq_driver *driver;
-+	int (*init)(struct cpufreq_policy *policy);
- 	unsigned long flags;
- #ifdef CONFIG_HOTPLUG_CPU
- 	struct cpufreq_governor *gov;
-@@ -871,22 +919,27 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 
- #ifdef CONFIG_HOTPLUG_CPU
- 	/* Check if this cpu was hot-unplugged earlier and has siblings */
--	spin_lock_irqsave(&cpufreq_driver_lock, flags);
-+	spin_lock_irqsave(&cpufreq_data_lock, flags);
- 	for_each_online_cpu(sibling) {
- 		struct cpufreq_policy *cp = per_cpu(cpufreq_cpu_data, sibling);
- 		if (cp && cpumask_test_cpu(cpu, cp->related_cpus)) {
--			spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+			spin_unlock_irqrestore(&cpufreq_data_lock, flags);
- 			return cpufreq_add_policy_cpu(cpu, sibling, dev);
- 		}
- 	}
--	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+	spin_unlock_irqrestore(&cpufreq_data_lock, flags);
- #endif
- #endif
- 
--	if (!try_module_get(cpufreq_driver->owner)) {
-+	rcu_read_lock();
-+	driver = rcu_dereference(cpufreq_driver);
-+	if (!try_module_get(driver->owner)) {
-+		rcu_read_unlock();
- 		ret = -EINVAL;
- 		goto module_out;
- 	}
-+	init = driver->init;
-+	rcu_read_unlock();
- 
- 	policy = kzalloc(sizeof(struct cpufreq_policy), GFP_KERNEL);
- 	if (!policy)
-@@ -911,7 +964,7 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 	/* call driver. From then on the cpufreq must be able
- 	 * to accept all calls to ->verify and ->setpolicy for this CPU
- 	 */
--	ret = cpufreq_driver->init(policy);
-+	ret = init(policy);
- 	if (ret) {
- 		pr_debug("initialization failed\n");
- 		goto err_set_policy_cpu;
-@@ -946,16 +999,18 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 		goto err_out_unregister;
- 
- 	kobject_uevent(&policy->kobj, KOBJ_ADD);
--	module_put(cpufreq_driver->owner);
-+	rcu_read_lock();
-+	module_put(rcu_dereference(cpufreq_driver)->owner);
-+	rcu_read_unlock();
- 	pr_debug("initialization complete\n");
- 
- 	return 0;
- 
- err_out_unregister:
--	spin_lock_irqsave(&cpufreq_driver_lock, flags);
-+	spin_lock_irqsave(&cpufreq_data_lock, flags);
- 	for_each_cpu(j, policy->cpus)
- 		per_cpu(cpufreq_cpu_data, j) = NULL;
--	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+	spin_unlock_irqrestore(&cpufreq_data_lock, flags);
- 
- 	kobject_put(&policy->kobj);
- 	wait_for_completion(&policy->kobj_unregister);
-@@ -968,7 +1023,9 @@ err_free_cpumask:
- err_free_policy:
- 	kfree(policy);
- nomem_out:
--	module_put(cpufreq_driver->owner);
-+	rcu_read_lock();
-+	module_put(rcu_dereference(cpufreq_driver)->owner);
-+	rcu_read_unlock();
- module_out:
- 	return ret;
- }
-@@ -1002,32 +1059,42 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
- 	unsigned int cpu = dev->id, ret, cpus;
- 	unsigned long flags;
- 	struct cpufreq_policy *data;
-+	struct cpufreq_driver *driver;
- 	struct kobject *kobj;
- 	struct completion *cmp;
- 	struct device *cpu_dev;
-+	int (*target)(struct cpufreq_policy *policy,
-+		       unsigned int target_freq,
-+		       unsigned int relation);
-+	int (*exit)(struct cpufreq_policy *policy);
- 
- 	pr_debug("%s: unregistering CPU %u\n", __func__, cpu);
- 
--	spin_lock_irqsave(&cpufreq_driver_lock, flags);
-+	spin_lock_irqsave(&cpufreq_data_lock, flags);
- 
- 	data = per_cpu(cpufreq_cpu_data, cpu);
- 	per_cpu(cpufreq_cpu_data, cpu) = NULL;
- 
--	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+	spin_unlock_irqrestore(&cpufreq_data_lock, flags);
- 
- 	if (!data) {
- 		pr_debug("%s: No cpu_data found\n", __func__);
- 		return -EINVAL;
- 	}
- 
--	if (cpufreq_driver->target)
-+	rcu_read_lock();
-+	driver = rcu_dereference(cpufreq_driver);
-+	target = driver->target;
-+	exit = driver->exit;
-+	if (target)
- 		__cpufreq_governor(data, CPUFREQ_GOV_STOP);
- 
- #ifdef CONFIG_HOTPLUG_CPU
--	if (!cpufreq_driver->setpolicy)
-+	if (!driver->setpolicy)
- 		strncpy(per_cpu(cpufreq_cpu_governor, cpu),
- 			data->governor->name, CPUFREQ_NAME_LEN);
- #endif
-+	rcu_read_unlock();
- 
- 	WARN_ON(lock_policy_rwsem_write(cpu));
- 	cpus = cpumask_weight(data->cpus);
-@@ -1047,9 +1114,9 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
- 			WARN_ON(lock_policy_rwsem_write(cpu));
- 			cpumask_set_cpu(cpu, data->cpus);
- 
--			spin_lock_irqsave(&cpufreq_driver_lock, flags);
-+			spin_lock_irqsave(&cpufreq_data_lock, flags);
- 			per_cpu(cpufreq_cpu_data, cpu) = data;
--			spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+			spin_unlock_irqrestore(&cpufreq_data_lock, flags);
- 
- 			unlock_policy_rwsem_write(cpu);
- 
-@@ -1084,13 +1151,13 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
- 		wait_for_completion(cmp);
- 		pr_debug("wait complete\n");
- 
--		if (cpufreq_driver->exit)
--			cpufreq_driver->exit(data);
-+		if (exit)
-+			exit(data);
- 
- 		free_cpumask_var(data->related_cpus);
- 		free_cpumask_var(data->cpus);
- 		kfree(data);
--	} else if (cpufreq_driver->target) {
-+	} else if (target) {
- 		__cpufreq_governor(data, CPUFREQ_GOV_START);
- 		__cpufreq_governor(data, CPUFREQ_GOV_LIMITS);
- 	}
-@@ -1157,10 +1224,18 @@ static void cpufreq_out_of_sync(unsigned int cpu, unsigned int old_freq,
- unsigned int cpufreq_quick_get(unsigned int cpu)
- {
- 	struct cpufreq_policy *policy;
-+	struct cpufreq_driver *driver;
-+	unsigned int (*get)(unsigned int cpu);
- 	unsigned int ret_freq = 0;
- 
--	if (cpufreq_driver && cpufreq_driver->setpolicy && cpufreq_driver->get)
--		return cpufreq_driver->get(cpu);
-+	rcu_read_lock();
-+	driver = rcu_dereference(cpufreq_driver);
-+	if (driver && driver->setpolicy && driver->get) {
-+		get = driver->get;
-+		rcu_read_unlock();
-+		return get(cpu);
-+	}
-+	rcu_read_unlock();
- 
- 	policy = cpufreq_cpu_get(cpu);
- 	if (policy) {
-@@ -1196,15 +1271,26 @@ EXPORT_SYMBOL(cpufreq_quick_get_max);
- static unsigned int __cpufreq_get(unsigned int cpu)
- {
- 	struct cpufreq_policy *policy = per_cpu(cpufreq_cpu_data, cpu);
-+	struct cpufreq_driver *driver;
-+	unsigned int (*get)(unsigned int cpu);
- 	unsigned int ret_freq = 0;
-+	u8 flags;
-+
- 
--	if (!cpufreq_driver->get)
-+	rcu_read_lock();
-+	driver = rcu_dereference(cpufreq_driver);
-+	if (!driver->get) {
-+		rcu_read_unlock();
- 		return ret_freq;
-+	}
-+	flags = driver->flags;
-+	get = driver->get;
-+	rcu_read_unlock();
- 
--	ret_freq = cpufreq_driver->get(cpu);
-+	ret_freq = get(cpu);
- 
- 	if (ret_freq && policy->cur &&
--		!(cpufreq_driver->flags & CPUFREQ_CONST_LOOPS)) {
-+		!(flags & CPUFREQ_CONST_LOOPS)) {
- 		/* verify no discrepancy between actual and
- 					saved value exists */
- 		if (unlikely(ret_freq != policy->cur)) {
-@@ -1260,6 +1346,7 @@ static struct subsys_interface cpufreq_interface = {
-  */
- static int cpufreq_bp_suspend(void)
- {
-+	int (*suspend)(struct cpufreq_policy *policy);
- 	int ret = 0;
- 
- 	int cpu = smp_processor_id();
-@@ -1272,8 +1359,11 @@ static int cpufreq_bp_suspend(void)
- 	if (!cpu_policy)
- 		return 0;
- 
--	if (cpufreq_driver->suspend) {
--		ret = cpufreq_driver->suspend(cpu_policy);
-+	rcu_read_lock();
-+	suspend = rcu_dereference(cpufreq_driver)->suspend;
-+	rcu_read_unlock();
-+	if (suspend) {
-+		ret = suspend(cpu_policy);
- 		if (ret)
- 			printk(KERN_ERR "cpufreq: suspend failed in ->suspend "
- 					"step on CPU %u\n", cpu_policy->cpu);
-@@ -1299,6 +1389,7 @@ static int cpufreq_bp_suspend(void)
- static void cpufreq_bp_resume(void)
- {
- 	int ret = 0;
-+	int (*resume)(struct cpufreq_policy *policy);
- 
- 	int cpu = smp_processor_id();
- 	struct cpufreq_policy *cpu_policy;
-@@ -1310,8 +1401,12 @@ static void cpufreq_bp_resume(void)
- 	if (!cpu_policy)
- 		return;
- 
--	if (cpufreq_driver->resume) {
--		ret = cpufreq_driver->resume(cpu_policy);
-+	rcu_read_lock();
-+	resume = rcu_dereference(cpufreq_driver)->resume;
-+	rcu_read_unlock();
-+
-+	if (resume) {
-+		ret = resume(cpu_policy);
- 		if (ret) {
- 			printk(KERN_ERR "cpufreq: resume failed in ->resume "
- 					"step on CPU %u\n", cpu_policy->cpu);
-@@ -1338,10 +1433,14 @@ static struct syscore_ops cpufreq_syscore_ops = {
-  */
- const char *cpufreq_get_current_driver(void)
- {
--	if (cpufreq_driver)
--		return cpufreq_driver->name;
--
--	return NULL;
-+	struct cpufreq_driver *driver;
-+	const char *name = NULL;
-+	rcu_read_lock();
-+	driver = rcu_dereference(cpufreq_driver);
-+	if (driver)
-+		name = driver->name;
-+	rcu_read_unlock();
-+	return name;
- }
- EXPORT_SYMBOL_GPL(cpufreq_get_current_driver);
- 
-@@ -1435,6 +1534,9 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
- {
- 	int retval = -EINVAL;
- 	unsigned int old_target_freq = target_freq;
-+	int (*target)(struct cpufreq_policy *policy,
-+		      unsigned int target_freq,
-+		      unsigned int relation);
- 
- 	if (cpufreq_disabled())
- 		return -ENODEV;
-@@ -1451,8 +1553,11 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
- 	if (target_freq == policy->cur)
- 		return 0;
- 
--	if (cpufreq_driver->target)
--		retval = cpufreq_driver->target(policy, target_freq, relation);
-+	rcu_read_lock();
-+	target = rcu_dereference(cpufreq_driver)->target;
-+	rcu_read_unlock();
-+	if (target)
-+		retval = target(policy, target_freq, relation);
- 
- 	return retval;
- }
-@@ -1485,18 +1590,24 @@ EXPORT_SYMBOL_GPL(cpufreq_driver_target);
- int __cpufreq_driver_getavg(struct cpufreq_policy *policy, unsigned int cpu)
- {
- 	int ret = 0;
-+	unsigned int (*getavg)(struct cpufreq_policy *policy,
-+			       unsigned int cpu);
- 
- 	if (cpufreq_disabled())
- 		return ret;
- 
--	if (!cpufreq_driver->getavg)
-+	rcu_read_lock();
-+	getavg = rcu_dereference(cpufreq_driver)->getavg;
-+	rcu_read_unlock();
-+
-+	if (!getavg)
- 		return 0;
- 
- 	policy = cpufreq_cpu_get(policy->cpu);
- 	if (!policy)
- 		return -EINVAL;
- 
--	ret = cpufreq_driver->getavg(policy, cpu);
-+	ret = getavg(policy, cpu);
- 
- 	cpufreq_cpu_put(policy);
- 	return ret;
-@@ -1652,6 +1763,9 @@ static int __cpufreq_set_policy(struct cpufreq_policy *data,
- 				struct cpufreq_policy *policy)
- {
- 	int ret = 0;
-+	struct cpufreq_driver *driver;
-+	int (*verify)(struct cpufreq_policy *policy);
-+	int (*setpolicy)(struct cpufreq_policy *policy);
- 
- 	pr_debug("setting new policy for CPU %u: %u - %u kHz\n", policy->cpu,
- 		policy->min, policy->max);
-@@ -1665,7 +1779,13 @@ static int __cpufreq_set_policy(struct cpufreq_policy *data,
- 	}
- 
- 	/* verify the cpu speed can be set within this limit */
--	ret = cpufreq_driver->verify(policy);
-+	rcu_read_lock();
-+	driver = rcu_dereference(cpufreq_driver);
-+	verify = driver->verify;
-+	setpolicy = driver->setpolicy;
-+	rcu_read_unlock();
-+
-+	ret = verify(policy);
- 	if (ret)
- 		goto error_out;
- 
-@@ -1679,7 +1799,7 @@ static int __cpufreq_set_policy(struct cpufreq_policy *data,
- 
- 	/* verify the cpu speed can be set within this limit,
- 	   which might be different to the first one */
--	ret = cpufreq_driver->verify(policy);
-+	ret = verify(policy);
- 	if (ret)
- 		goto error_out;
- 
-@@ -1693,10 +1813,10 @@ static int __cpufreq_set_policy(struct cpufreq_policy *data,
- 	pr_debug("new min and max freqs are %u - %u kHz\n",
- 					data->min, data->max);
- 
--	if (cpufreq_driver->setpolicy) {
-+	if (setpolicy) {
- 		data->policy = policy->policy;
- 		pr_debug("setting range\n");
--		ret = cpufreq_driver->setpolicy(policy);
-+		ret = setpolicy(policy);
- 	} else {
- 		if (policy->governor != data->governor) {
- 			/* save old, working values */
-@@ -1743,6 +1863,11 @@ int cpufreq_update_policy(unsigned int cpu)
- {
- 	struct cpufreq_policy *data = cpufreq_cpu_get(cpu);
- 	struct cpufreq_policy policy;
-+	struct cpufreq_driver *driver;
-+	unsigned int (*get)(unsigned int cpu);
-+	int (*target)(struct cpufreq_policy *policy,
-+		      unsigned int target_freq,
-+		      unsigned int relation);
- 	int ret;
- 
- 	if (!data) {
-@@ -1764,13 +1889,18 @@ int cpufreq_update_policy(unsigned int cpu)
- 
- 	/* BIOS might change freq behind our back
- 	  -> ask driver for current freq and notify governors about a change */
--	if (cpufreq_driver->get) {
--		policy.cur = cpufreq_driver->get(cpu);
-+	rcu_read_lock();
-+	driver = rcu_access_pointer(cpufreq_driver);
-+	get = driver->get;
-+	target = driver->target;
-+	rcu_read_unlock();
-+	if (get) {
-+		policy.cur = get(cpu);
- 		if (!data->cur) {
- 			pr_debug("Driver did not initialize current freq");
- 			data->cur = policy.cur;
- 		} else {
--			if (data->cur != policy.cur && cpufreq_driver->target)
-+			if (data->cur != policy.cur && target)
- 				cpufreq_out_of_sync(cpu, data->cur,
- 								policy.cur);
- 		}
-@@ -1849,18 +1979,19 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
- 		driver_data->flags |= CPUFREQ_CONST_LOOPS;
- 
- 	spin_lock_irqsave(&cpufreq_driver_lock, flags);
--	if (cpufreq_driver) {
-+	if (rcu_access_pointer(cpufreq_driver)) {
- 		spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
- 		return -EBUSY;
- 	}
--	cpufreq_driver = driver_data;
-+	rcu_assign_pointer(cpufreq_driver, driver_data);
- 	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+	synchronize_rcu();
- 
- 	ret = subsys_interface_register(&cpufreq_interface);
- 	if (ret)
- 		goto err_null_driver;
- 
--	if (!(cpufreq_driver->flags & CPUFREQ_STICKY)) {
-+	if (!(driver_data->flags & CPUFREQ_STICKY)) {
- 		int i;
- 		ret = -ENODEV;
- 
-@@ -1887,8 +2018,9 @@ err_if_unreg:
- 	subsys_interface_unregister(&cpufreq_interface);
- err_null_driver:
- 	spin_lock_irqsave(&cpufreq_driver_lock, flags);
--	cpufreq_driver = NULL;
-+	rcu_assign_pointer(cpufreq_driver, NULL);
- 	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+	synchronize_rcu();
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(cpufreq_register_driver);
-@@ -1905,9 +2037,15 @@ EXPORT_SYMBOL_GPL(cpufreq_register_driver);
- int cpufreq_unregister_driver(struct cpufreq_driver *driver)
- {
- 	unsigned long flags;
-+	struct cpufreq_driver *old_driver;
- 
--	if (!cpufreq_driver || (driver != cpufreq_driver))
-+	rcu_read_lock();
-+	old_driver = rcu_access_pointer(cpufreq_driver);
-+	if (!old_driver || (driver != old_driver)) {
-+		rcu_read_unlock();
- 		return -EINVAL;
-+	}
-+	rcu_read_unlock();
- 
- 	pr_debug("unregistering driver %s\n", driver->name);
- 
-@@ -1917,6 +2055,7 @@ int cpufreq_unregister_driver(struct cpufreq_driver *driver)
- 	spin_lock_irqsave(&cpufreq_driver_lock, flags);
- 	cpufreq_driver = NULL;
- 	spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+	synchronize_rcu();
- 
- 	return 0;
- }
--- 
-1.8.1.2
+Can you please convert the driver to use the new control code
+(see other gspca drivers for examples how to do that, ie:
+http://git.linuxtv.org/hgoede/gspca.git/commitdiff/4e02a3cd647940be6a9b4b71dfa88dbcb6fe1af9
+http://git.linuxtv.org/hgoede/gspca.git/commitdiff/77f509f09754f46bcad35e13f1e6c95c1b8defdc
+http://git.linuxtv.org/hgoede/gspca.git/commitdiff/c535784016480ef17778c285915492b581fa6a5f
 
+And then resubmit the converted driver?
+
+Thanks & Regards,
+
+Hans
+
+
+On 04/01/2013 02:53 AM, John McMaster wrote:
+> Adds support for AmScope MU800 / ToupTek UCMOS08000KPB USB microscope camera.
+>
+> Signed-off-by: John McMaster <johndmcmaster@gmail.com>
+> ---
+>   drivers/media/usb/gspca/Kconfig   |   10 +
+>   drivers/media/usb/gspca/Makefile  |    2 +
+>   drivers/media/usb/gspca/touptek.c |  857 +++++++++++++++++++++++++++++++++++++
+>   3 files changed, 869 insertions(+)
+>   create mode 100644 drivers/media/usb/gspca/touptek.c
+>
+> diff --git a/drivers/media/usb/gspca/Kconfig b/drivers/media/usb/gspca/Kconfig
+> index 6345f93..113f181 100644
+> --- a/drivers/media/usb/gspca/Kconfig
+> +++ b/drivers/media/usb/gspca/Kconfig
+> @@ -376,6 +376,16 @@ config USB_GSPCA_TOPRO
+>   	  To compile this driver as a module, choose M here: the
+>   	  module will be called gspca_topro.
+>
+> +config USB_GSPCA_TOUPTEK
+> +	tristate "Touptek USB Camera Driver"
+> +	depends on VIDEO_V4L2 && USB_GSPCA
+> +	help
+> +	  Say Y here if you want support for cameras based on the ToupTek UCMOS
+> +	  / AmScope MU series camera.
+> +
+> +	  To compile this driver as a module, choose M here: the
+> +	  module will be called gspca_touptek.
+> +
+>   config USB_GSPCA_TV8532
+>   	tristate "TV8532 USB Camera Driver"
+>   	depends on VIDEO_V4L2 && USB_GSPCA
+> diff --git a/drivers/media/usb/gspca/Makefile b/drivers/media/usb/gspca/Makefile
+> index c901da0..5f18e7f 100644
+> --- a/drivers/media/usb/gspca/Makefile
+> +++ b/drivers/media/usb/gspca/Makefile
+> @@ -37,6 +37,7 @@ obj-$(CONFIG_USB_GSPCA_STK014)   += gspca_stk014.o
+>   obj-$(CONFIG_USB_GSPCA_STV0680)  += gspca_stv0680.o
+>   obj-$(CONFIG_USB_GSPCA_T613)     += gspca_t613.o
+>   obj-$(CONFIG_USB_GSPCA_TOPRO)    += gspca_topro.o
+> +obj-$(CONFIG_USB_GSPCA_TOUPTEK)  += gspca_touptek.o
+>   obj-$(CONFIG_USB_GSPCA_TV8532)   += gspca_tv8532.o
+>   obj-$(CONFIG_USB_GSPCA_VC032X)   += gspca_vc032x.o
+>   obj-$(CONFIG_USB_GSPCA_VICAM)    += gspca_vicam.o
+> @@ -82,6 +83,7 @@ gspca_stv0680-objs  := stv0680.o
+>   gspca_sunplus-objs  := sunplus.o
+>   gspca_t613-objs     := t613.o
+>   gspca_topro-objs    := topro.o
+> +gspca_touptek-objs  := touptek.o
+>   gspca_tv8532-objs   := tv8532.o
+>   gspca_vc032x-objs   := vc032x.o
+>   gspca_vicam-objs    := vicam.o
+> diff --git a/drivers/media/usb/gspca/touptek.c b/drivers/media/usb/gspca/touptek.c
+> new file mode 100644
+> index 0000000..9ce31f0
+> --- /dev/null
+> +++ b/drivers/media/usb/gspca/touptek.c
+> @@ -0,0 +1,857 @@
+> +/*
+> + * ToupTek UCMOS / AmScope MU series camera driver
+> + * TODO: contrast with ScopeTek / AmScope MDC cameras
+> + *
+> + * Copyright (C) 2012 John McMaster <JohnDMcMaster@gmail.com>
+> + *
+> + * Special thanks to Bushing for helping with the decrypt algorithm and
+> + * Sean O'Sullivan / the Rensselaer Center for Open Source
+> + * Software (RCOS) for helping me learn kernel development
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+> + */
+> +
+> +#include "gspca.h"
+> +
+> +#define MODULE_NAME "touptek"
+> +
+> +MODULE_AUTHOR("John McMaster");
+> +MODULE_DESCRIPTION("ToupTek UCMOS / Amscope MU microscope camera driver");
+> +MODULE_LICENSE("GPL");
+> +
+> +/*
+> +Register value is linear with exposure time
+> +Exposure (sec), E (reg)
+> +0.000400, 0x0002
+> +0.001000, 0x0005
+> +0.005000, 0x0019
+> +0.020000, 0x0064
+> +0.080000, 0x0190
+> +0.400000, 0x07D0
+> +1.000000, 0x1388
+> +2.000000, 0x2710
+> +*/
+> +#define INDEX_EXPOSURE		0x3012
+> +#define INDEX_WIDTH		0x034C
+> +#define INDEX_HEIGHT		0x034E
+> +
+> +/*
+> +Gain does not vary with resolution (checked 640x480 vs 1600x1200)
+> +Range 0x1000 (nothing) to 0x11FF (highest)
+> +However, there appear to be gaps
+> +
+> +Suspect three gain stages
+> +0x1000: master channel enable bit
+> +0x007F: low gain bits
+> +0x0080: medium gain bit
+> +0x0100: high gain bit
+> +
+> +gain = enable * (1 + regH) * (1 + regM) * z * regL
+> +
+> +zR = 0.0069605943152454778
+> +	about 3/431 = 0.0069605568445475635
+> +zB = 0.0095695970695970703
+> +	about 6/627 = 0.0095693779904306216
+> +zG = 0.010889328063241107
+> +	about 6/551 = 0.010889292196007259
+> +about 10 bits for constant + 7 bits for value => at least 17 bit intermediate
+> +with 32 bit ints should be fine for overflow etc
+> +Essentially gains are in range 0-0x001FF
+> +
+> +However, V4L expects a main gain channel + R and B balance
+> +To keep things simple for now saturate the values of balance is too high/low
+> +This isn't really ideal but easy way to fit the Linux model
+> +
+> +Raw data:
+> +Gain,   GTOP,   B,	  R,	  GBOT
+> +1.00,   0x105C, 0x1068, 0x10C8, 0x105C
+> +1.20,   0x106E, 0x107E, 0x10D6, 0x106E
+> +1.40,   0x10C0, 0x10CA, 0x10E5, 0x10C0
+> +1.60,   0x10C9, 0x10D4, 0x10F3, 0x10C9
+> +1.80,   0x10D2, 0x10DE, 0x11C1, 0x10D2
+> +2.00,   0x10DC, 0x10E9, 0x11C8, 0x10DC
+> +2.20,   0x10E5, 0x10F3, 0x11CF, 0x10E5
+> +2.40,   0x10EE, 0x10FE, 0x11D7, 0x10EE
+> +2.60,   0x10F7, 0x11C4, 0x11DE, 0x10F7
+> +2.80,   0x11C0, 0x11CA, 0x11E5, 0x11C0
+> +3.00,   0x11C5, 0x11CF, 0x11ED, 0x11C5
+> +
+> +Converted using gain model turns out to be quite linear:
+> +Gain, GTOP, B, R, GBOT
+> +1.00, 92, 104, 144, 92
+> +1.20, 110, 126, 172, 110
+> +1.40, 128, 148, 202, 128
+> +1.60, 146, 168, 230, 146
+> +1.80, 164, 188, 260, 164
+> +2.00, 184, 210, 288, 184
+> +2.20, 202, 230, 316, 202
+> +2.40, 220, 252, 348, 220
+> +2.60, 238, 272, 376, 238
+> +2.80, 256, 296, 404, 256
+> +3.00, 276, 316, 436, 276
+> +*/
+> +#define GAIN_BASE		0x1000
+> +/*
+> +Maximum gain is 0x7FF * 2 * 2 => 0x1FFC (8188)
+> +or about 13 effective bits of gain
+> +The highest the commercial driver goes in my setup 436
+> +However, because could potentially damage circuits
+> +limit the gain until have a reason to go higher
+> +*/
+> +#define GAIN_MAX		511
+> +#define BAL_MAX			511
+> +#define INDEX_GAIN_GTOP		0x3056
+> +#define INDEX_GAIN_B		0x3058
+> +#define INDEX_GAIN_R		0x305A
+> +#define INDEX_GAIN_GBOT		0x305C
+> +
+> +#define EXPOSURE_DEFAULT	350
+> +/*
+> +Gain implementation
+> +Goal: simple conversion for default gain at 1.00
+> +Want to do something similar to mt9v011.c's set_balance
+> +Problem: can lead to gains higher than possible
+> +When this happens the gain is clipped and a debug warning is emitted
+> +
+> +green_gain = sd->global_gain
+> +blue_gain = sd->global_gain +
+> +	((uint32_t)sd->global_gain) * sd->blue_bal / GAIN_MAX;
+> +red_gain = sd->global_gain +
+> +	((uint32_t)sd->global_gain) * sd->blue_bal / GAIN_MAX;
+> +
+> +Want initial gain of 1.4 (since it works well for me ;) ):
+> +-G: 128 => global_gain = 128
+> +-B: 148 => blue_bal = 80
+> +	148 = 128 + 128 * blue_bal / 511
+> +-R: 202 => red_bal = 295
+> +	202 = 128 + 128 * red_bal / 511
+> +*/
+> +#define GAIN_DEFAULT 128
+> +#define BLUE_DEFAULT 80
+> +#define RED_DEFAULT 295
+> +
+> +/* specific webcam descriptor */
+> +struct sd {
+> +	struct gspca_dev gspca_dev;	/* !! must be the first item */
+> +	/* How many bytes this frame */
+> +	unsigned int this_f;
+> +
+> +	/*
+> +	Device has separate gains for each Bayer quadrant
+> +	V4L supports master gain which is referenced to G1/G2 and supplies
+> +	individual balance controls for R/B
+> +	*/
+> +	u16 global_gain, red_bal, blue_bal;
+> +	/* In ms */
+> +	unsigned int exposure;
+> +};
+> +
+> +/* Used to simplify reg write error handling */
+> +struct cmd {
+> +	u16 value;
+> +	u16 index;
+> +};
+> +
+> +static const struct v4l2_pix_format vga_mode[] = {
+> +	{800, 600,
+> +		V4L2_PIX_FMT_SGRBG8,
+> +		V4L2_FIELD_NONE,
+> +		.bytesperline = 800,
+> +		.sizeimage = 800 * 600,
+> +		.colorspace = V4L2_COLORSPACE_SRGB},
+> +	{1600, 1200,
+> +		V4L2_PIX_FMT_SGRBG8,
+> +		V4L2_FIELD_NONE,
+> +		.bytesperline = 1600,
+> +		.sizeimage = 1600 * 1200,
+> +		.colorspace = V4L2_COLORSPACE_SRGB},
+> +	{3264, 2448,
+> +		V4L2_PIX_FMT_SGRBG8,
+> +		V4L2_FIELD_NONE,
+> +		.bytesperline = 3264,
+> +		.sizeimage = 3264 * 2448,
+> +		.colorspace = V4L2_COLORSPACE_SRGB},
+> +};
+> +
+> +/*
+> +As theres no (known) frame sync, the only way to keep synced is to try hard
+> +to never miss any packets
+> +*/
+> +#if MAX_NURBS < 4
+> +#error "Not enough URBs in the gspca table"
+> +#endif
+> +
+> +static int val_reply(const char *reply, int rc)
+> +{
+> +	if (rc < 0) {
+> +		pr_warn("reply has error %d", rc);
+> +		return -EIO;
+> +	}
+> +	if (rc != 1) {
+> +		pr_warn("Bad reply size %d", rc);
+> +		return -EIO;
+> +	}
+> +	if (reply[0] != 0x08) {
+> +		pr_warn("Bad reply 0x%02X", reply[0]);
+> +		return -EIO;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int reg_w(struct gspca_dev *gspca_dev, u16 value, u16 index)
+> +{
+> +	char buff[1];
+> +	int rc;
+> +
+> +	pr_devel("bReq=0x0B, bReqT=0xC0, wVal=0x%04X, wInd=0x%04X",
+> +		value, index);
+> +	rc = usb_control_msg(gspca_dev->dev, usb_rcvctrlpipe(gspca_dev->dev, 0),
+> +		0x0B, 0xC0, value, index, buff, 1, 500);
+> +	pr_devel("rc=%d, ret={0x%02X}", rc, buff[0]);
+> +	if (rc < 0) {
+> +		pr_warn("Failed reg_w(0x0B, 0xC0, 0x%04X, 0x%04X) w/ rc %d",
+> +			value, index, rc);
+> +		return rc;
+> +	}
+> +	if (val_reply(buff, rc)) {
+> +		pr_warn("Bad reply to reg_w(0x0B, 0xC0, 0x%04X, 0x%04X\n",
+> +			value, index);
+> +		return -EIO;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int reg_w_buf(struct gspca_dev *gspca_dev,
+> +		const struct cmd *p, int l)
+> +{
+> +	do {
+> +		int rc = reg_w(gspca_dev, p->value, p->index);
+> +
+> +		if (rc < 0)
+> +			return rc;
+> +		p++;
+> +	} while (--l > 0);
+> +	return 0;
+> +}
+> +
+> +static int sd_getexposure(struct gspca_dev *gspca_dev, s32 *val)
+> +{
+> +	struct sd *sd = (struct sd *) gspca_dev;
+> +
+> +	*val = sd->exposure;
+> +	return 0;
+> +}
+> +
+> +static int set_exposure(struct gspca_dev *gspca_dev)
+> +{
+> +	int rc;
+> +	struct sd *sd = container_of(gspca_dev, struct sd, gspca_dev);
+> +	uint16_t value;
+> +	unsigned int w = gspca_dev->cam.cam_mode->width;
+> +
+> +	if (w == 800)
+> +		value = sd->exposure * 5;
+> +	else if (w == 1600)
+> +		value = sd->exposure * 3;
+> +	else if (w == 3264)
+> +		value = sd->exposure * 3 / 2;
+> +	else {
+> +		pr_devel("Invalid width %u", w);
+> +		return -EINVAL;
+> +	}
+> +	pr_devel("exposure: 0x%04X", value);
+> +	/* Wonder if theres a good reason for sending it twice */
+> +	rc = reg_w(gspca_dev, value, INDEX_EXPOSURE);
+> +	if (rc)
+> +		return rc;
+> +	rc = reg_w(gspca_dev, value, INDEX_EXPOSURE);
+> +	if (rc)
+> +		return rc;
+> +
+> +	return 0;
+> +}
+> +
+> +static int sd_setexposure(struct gspca_dev *gspca_dev, s32 val)
+> +{
+> +	struct sd *sd = (struct sd *) gspca_dev;
+> +
+> +	sd->exposure = val;
+> +	if (gspca_dev->streaming)
+> +		return set_exposure(gspca_dev);
+> +	return 0;
+> +}
+> +
+> +
+> +static int gainify(int in)
+> +{
+> +	/*
+> +	TODO: check if there are any issues with corner cases
+> +	0x000 (0):0x07F (127): regL
+> +	0x080 (128) - 0x0FF (255): regM, regL
+> +	0x100 (256) - max: regH, regM, regL
+> +	*/
+> +	if (in <= 0x7F)
+> +		return 0x1000 | in;
+> +	else if (in <= 0xFF)
+> +		return 0x1080 | in / 2;
+> +	else
+> +		return 0x1180 | in / 4;
+> +}
+> +
+> +static int set_gain(struct gspca_dev *gspca_dev, int set)
+> +{
+> +	struct sd *sd = container_of(gspca_dev, struct sd, gspca_dev);
+> +	u16 green_gain, blue_gain, red_gain;
+> +	int rc;
+> +
+> +	green_gain = gainify(sd->global_gain);
+> +	pr_devel("gain G1/G2 (0x%04X): 0x%04X (src 0x%04X, def: 0x%04X)",
+> +		 INDEX_GAIN_GTOP,
+> +		 green_gain, sd->global_gain, GAIN_DEFAULT);
+> +
+> +	blue_gain = sd->global_gain +
+> +		((uint32_t)sd->global_gain) * sd->blue_bal / GAIN_MAX;
+> +	if (blue_gain > GAIN_MAX) {
+> +		pr_devel("Truncating blue 0x%04X w/ value 0x%04X",
+> +			 GAIN_MAX, blue_gain);
+> +		blue_gain = GAIN_MAX;
+> +	}
+> +	blue_gain = gainify(blue_gain);
+> +	pr_devel("gain B (0x%04X): 0x%04X w/ source 0x%04X, default 0x%04X",
+> +		 INDEX_GAIN_B, blue_gain, sd->blue_bal, BLUE_DEFAULT);
+> +
+> +	red_gain = sd->global_gain +
+> +		((uint32_t)sd->global_gain) * sd->red_bal / GAIN_MAX;
+> +	if (red_gain > GAIN_MAX) {
+> +		pr_devel("Truncating gain 0x%04X w/ value 0x%04X",
+> +			 GAIN_MAX, red_gain);
+> +		red_gain = GAIN_MAX;
+> +	}
+> +	red_gain = gainify(red_gain);
+> +	pr_devel("gain R (0x%04X): 0x%04X w / source 0x%04X, default 0x%04X",
+> +		 INDEX_GAIN_R, red_gain, sd->red_bal, RED_DEFAULT);
+> +
+> +	if (set) {
+> +		rc = reg_w(gspca_dev, green_gain, INDEX_GAIN_GTOP);
+> +		if (rc)
+> +			return rc;
+> +		rc = reg_w(gspca_dev, blue_gain, INDEX_GAIN_B);
+> +		if (rc)
+> +			return rc;
+> +		rc = reg_w(gspca_dev, red_gain, INDEX_GAIN_R);
+> +		if (rc)
+> +			return rc;
+> +		rc = reg_w(gspca_dev, green_gain, INDEX_GAIN_GBOT);
+> +		if (rc)
+> +			return rc;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int sd_setgain(struct gspca_dev *gspca_dev, s32 val)
+> +{
+> +	struct sd *sd = (struct sd *) gspca_dev;
+> +
+> +	sd->global_gain = val;
+> +	if (gspca_dev->streaming)
+> +		return set_gain(gspca_dev, 1);
+> +	return 0;
+> +}
+> +
+> +static int sd_getgain(struct gspca_dev *gspca_dev, s32 *val)
+> +{
+> +	struct sd *sd = (struct sd *) gspca_dev;
+> +
+> +	*val = sd->global_gain;
+> +	return 0;
+> +}
+> +
+> +static int sd_setredbalance(struct gspca_dev *gspca_dev, s32 val)
+> +{
+> +	struct sd *sd = (struct sd *) gspca_dev;
+> +
+> +	sd->red_bal = val;
+> +	if (gspca_dev->streaming)
+> +		return set_gain(gspca_dev, 1);
+> +	return 0;
+> +}
+> +
+> +static int sd_getredbalance(struct gspca_dev *gspca_dev, s32 *val)
+> +{
+> +	struct sd *sd = (struct sd *) gspca_dev;
+> +
+> +	*val = sd->red_bal;
+> +	return 0;
+> +}
+> +
+> +static int sd_setbluebalance(struct gspca_dev *gspca_dev, s32 val)
+> +{
+> +	struct sd *sd = (struct sd *) gspca_dev;
+> +
+> +	sd->blue_bal = val;
+> +	if (gspca_dev->streaming)
+> +		return set_gain(gspca_dev, 1);
+> +	return 0;
+> +}
+> +
+> +static int sd_getbluebalance(struct gspca_dev *gspca_dev, s32 *val)
+> +{
+> +	struct sd *sd = (struct sd *) gspca_dev;
+> +	*val = sd->blue_bal;
+> +	return 0;
+> +}
+> +
+> +static int configure_wh(struct gspca_dev *gspca_dev)
+> +{
+> +	unsigned int rc;
+> +	int w = gspca_dev->cam.cam_mode->width;
+> +
+> +	if (w == 800) {
+> +		static const struct cmd reg_init_res[] = {
+> +			{0x0060, 0x0344},
+> +			{0x0CD9, 0x0348},
+> +			{0x0036, 0x0346},
+> +			{0x098F, 0x034A},
+> +			{0x07C7, 0x3040},
+> +		};
+> +
+> +		rc = reg_w_buf(gspca_dev,
+> +			       reg_init_res, ARRAY_SIZE(reg_init_res));
+> +		if (rc < 0)
+> +			return rc;
+> +	} else if (w == 1600) {
+> +		static const struct cmd reg_init_res[] = {
+> +			{0x009C, 0x0344},
+> +			{0x0D19, 0x0348},
+> +			{0x0068, 0x0346},
+> +			{0x09C5, 0x034A},
+> +			{0x06C3, 0x3040},
+> +		};
+> +
+> +		rc = reg_w_buf(gspca_dev,
+> +			       reg_init_res, ARRAY_SIZE(reg_init_res));
+> +		if (rc < 0)
+> +			return rc;
+> +	} else if (w == 3264) {
+> +		static const struct cmd reg_init_res[] = {
+> +			{0x00E8, 0x0344},
+> +			{0x0DA7, 0x0348},
+> +			{0x009E, 0x0346},
+> +			{0x0A2D, 0x034A},
+> +			{0x0241, 0x3040},
+> +		};
+> +
+> +		rc = reg_w_buf(gspca_dev,
+> +			       reg_init_res, ARRAY_SIZE(reg_init_res));
+> +		if (rc < 0)
+> +			return rc;
+> +	} else {
+> +		pr_devel("bad width %u", w);
+> +		return -EINVAL;
+> +	}
+> +
+> +	rc = reg_w(gspca_dev, 0x0000, 0x0400);
+> +	if (rc)
+> +		return rc;
+> +	rc = reg_w(gspca_dev, 0x0010, 0x0404);
+> +	if (rc)
+> +		return rc;
+> +	rc = reg_w(gspca_dev, w, INDEX_WIDTH);
+> +	if (rc)
+> +		return rc;
+> +	rc = reg_w(gspca_dev, gspca_dev->cam.cam_mode->height, INDEX_HEIGHT);
+> +	if (rc)
+> +		return rc;
+> +
+> +	if (w == 800) {
+> +		rc = reg_w(gspca_dev, 0x0384, 0x300A);
+> +		if (rc)
+> +			return rc;
+> +		rc = reg_w(gspca_dev, 0x0960, 0x300C);
+> +		if (rc)
+> +			return rc;
+> +	} else if (w == 1600) {
+> +		rc = reg_w(gspca_dev, 0x0640, 0x300A);
+> +		if (rc)
+> +			return rc;
+> +		rc = reg_w(gspca_dev, 0x0FA0, 0x300C);
+> +		if (rc)
+> +			return rc;
+> +	} else if (w == 3264) {
+> +		rc = reg_w(gspca_dev, 0x0B4B, 0x300A);
+> +		if (rc)
+> +			return rc;
+> +		rc = reg_w(gspca_dev, 0x1F40, 0x300C);
+> +		if (rc)
+> +			return rc;
+> +	} else {
+> +		pr_devel("bad width %u", w);
+> +		return -EINVAL;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/* Packets that were encrypted, no idea if the grouping is significant */
+> +static int configure_encrypted(struct gspca_dev *gspca_dev)
+> +{
+> +	unsigned int rc;
+> +	static const struct cmd reg_init_begin[] = {
+> +		{0x0100, 0x0103},
+> +		{0x0000, 0x0100},
+> +		{0x0100, 0x0104},
+> +		{0x0004, 0x0300},
+> +		{0x0001, 0x0302},
+> +		{0x0008, 0x0308},
+> +		{0x0001, 0x030A},
+> +		{0x0004, 0x0304},
+> +		{0x0040, 0x0306},
+> +		{0x0000, 0x0104},
+> +		{0x0100, 0x0104},
+> +	};
+> +	static const struct cmd reg_init_end[] = {
+> +		{0x0000, 0x0104},
+> +		{0x0301, 0x31AE},
+> +		{0x0805, 0x3064},
+> +		{0x0071, 0x3170},
+> +		{0x10DE, 0x301A},
+> +		{0x0000, 0x0100},
+> +		{0x0010, 0x0306},
+> +		{0x0100, 0x0100},
+> +	};
+> +
+> +	pr_devel("Encrypted begin, w = %u", gspca_dev->cam.cam_mode->width);
+> +	rc = reg_w_buf(gspca_dev, reg_init_begin, ARRAY_SIZE(reg_init_begin));
+> +	if (rc < 0)
+> +		return rc;
+> +	rc = configure_wh(gspca_dev);
+> +	if (rc < 0)
+> +		return rc;
+> +	rc = reg_w_buf(gspca_dev, reg_init_end, ARRAY_SIZE(reg_init_end));
+> +	if (rc < 0)
+> +		return rc;
+> +
+> +	pr_devel("Setting exposure");
+> +	rc = set_exposure(gspca_dev);
+> +	if (rc) {
+> +		pr_devel("Failed to set exposure");
+> +		return rc;
+> +	}
+> +
+> +	rc = reg_w(gspca_dev, 0x0100, 0x0104);
+> +	if (rc)
+> +		return rc;
+> +
+> +	pr_devel("Setting gain");
+> +	rc = set_gain(gspca_dev, 1);
+> +	if (rc) {
+> +		pr_devel("Failed to set gain");
+> +		return rc;
+> +	}
+> +
+> +	rc = reg_w(gspca_dev, 0x0000, 0x0104);
+> +	if (rc)
+> +		return rc;
+> +
+> +	pr_devel("Encrypted end");
+> +	return 0;
+> +}
+> +
+> +static int configure(struct gspca_dev *gspca_dev)
+> +{
+> +	uint8_t buff[4];
+> +	unsigned int rc;
+> +
+> +	pr_devel("Beginning configure");
+> +
+> +	/*
+> +	First driver sets a sort of encryption key
+> +	A number of futur requests of this type have wValue and wIndex encrypted
+> +	as follows:
+> +	-Compute key = this wValue rotate left by 4 bits
+> +		(decrypt.py rotates right because we are decrypting)
+> +	-Later packets encrypt packets by XOR'ing with key
+> +		XOR encrypt/decrypt is symmetrical
+> +		wValue, and wIndex are encrypted
+> +		bRequest is not and bRequestType is always 0xC0
+> +			This allows resyncing if key is unknown?
+> +	By setting 0 we XOR with 0 and the shifting and XOR drops out
+> +	*/
+> +	rc = usb_control_msg(gspca_dev->dev, usb_rcvctrlpipe(gspca_dev->dev, 0),
+> +			0x16, 0xC0, 0x0000, 0x0000, buff, 2, 500);
+> +	if (val_reply(buff, rc)) {
+> +		pr_warn("failed key req");
+> +		return -EIO;
+> +	}
+> +
+> +	/*
+> +	Next does some sort of 2 packet challenge / response
+> +	(to make sure its not cloned hardware?)
+> +	Ignore: I want to work with their hardware, not clone it
+> +	16 bytes out challenge, requestType: 0x40
+> +	16 bytes in response, requestType: 0xC0
+> +	*/
+> +
+> +	rc = usb_control_msg(gspca_dev->dev, usb_sndctrlpipe(gspca_dev->dev, 0),
+> +			0x01, 0x40, 0x0001, 0x000F, NULL, 0, 500);
+> +	if (rc < 0) {
+> +		pr_warn("failed to replay packet 176 w/ rc %d\n", rc);
+> +		return rc;
+> +	}
+> +
+> +	rc = usb_control_msg(gspca_dev->dev, usb_sndctrlpipe(gspca_dev->dev, 0),
+> +			0x01, 0x40, 0x0000, 0x000F, NULL, 0, 500);
+> +	if (rc < 0) {
+> +		pr_warn("failed to replay packet 178 w/ rc %d\n", rc);
+> +		return rc;
+> +	}
+> +
+> +	rc = usb_control_msg(gspca_dev->dev, usb_sndctrlpipe(gspca_dev->dev, 0),
+> +			0x01, 0x40, 0x0001, 0x000F, NULL, 0, 500);
+> +	if (rc < 0) {
+> +		pr_warn("failed to replay packet 180 w/ rc %d\n", rc);
+> +		return rc;
+> +	}
+> +
+> +	rc = usb_control_msg(gspca_dev->dev, usb_rcvctrlpipe(gspca_dev->dev, 0),
+> +			0x20, 0xC0, 0x0000, 0x0000, buff, 4, 500);
+> +	if (rc != 4 || memcmp((char[]){0xE6, 0x0D, 0x00, 0x00}, buff, 4)) {
+> +		pr_warn("failed to replay packet 182 w/ rc %d\n", rc);
+> +		if (rc < 0)
+> +			return rc;
+> +		return -EIO;
+> +	}
+> +
+> +	/* Large (EEPROM?) read, skip it since no idea what to do with it */
+> +
+> +	rc = configure_encrypted(gspca_dev);
+> +	if (rc)
+> +		return rc;
+> +
+> +	/* Omitted this by accident, does not work without it */
+> +	rc = usb_control_msg(gspca_dev->dev, usb_sndctrlpipe(gspca_dev->dev, 0),
+> +			0x01, 0x40, 0x0003, 0x000F, NULL, 0, 500);
+> +
+> +	pr_devel("Configure complete");
+> +	return 0;
+> +}
+> +
+> +static int sd_config(struct gspca_dev *gspca_dev,
+> +			const struct usb_device_id *id)
+> +{
+> +	pr_devel("sd_config start");
+> +	gspca_dev->cam.cam_mode = vga_mode;
+> +	gspca_dev->cam.nmodes = ARRAY_SIZE(vga_mode);
+> +	pr_devel("cam modes size: %d", gspca_dev->cam.nmodes);
+> +
+> +	pr_devel("Input flags: 0x%08X", gspca_dev->cam.input_flags);
+> +	/* Yes we want URBs and we want them now! */
+> +	gspca_dev->cam.no_urb_create = 0;
+> +	/*
+> +	TODO: considering increasing much higher
+> +	Without frame sync we need to make sure we never drop
+> +	*/
+> +	pr_devel("Max nurbs: %d", MAX_NURBS);
+> +	gspca_dev->cam.bulk_nurbs = 4;
+> +	/* Largest size the windows driver uses */
+> +	gspca_dev->cam.bulk_size = 0x4000;
+> +	/* Def need to use bulk transfers */
+> +	gspca_dev->cam.bulk = 1;
+> +
+> +	pr_devel("sd_config end");
+> +	return 0;
+> +}
+> +
+> +static int sd_start(struct gspca_dev *gspca_dev)
+> +{
+> +	struct sd *sd = container_of(gspca_dev, struct sd, gspca_dev);
+> +	int rc;
+> +
+> +	pr_devel("sd_start() begin");
+> +	sd->this_f = 0;
+> +
+> +	rc = configure(gspca_dev);
+> +	if (rc < 0) {
+> +		pr_warn("Failed configure");
+> +		return rc;
+> +	}
+> +	/* First two frames have messed up gains
+> +	Drop them to avoid special cases in user apps? */
+> +	rc = gspca_dev->cam.cam_mode->sizeimage;
+> +	if (rc < 0) {
+> +		pr_devel("Failed size");
+> +		return rc;
+> +	}
+> +
+> +	pr_devel("sd_start() end, status %d", gspca_dev->usb_err);
+> +	return gspca_dev->usb_err;
+> +}
+> +
+> +static void sd_pkt_scan(struct gspca_dev *gspca_dev,
+> +			u8 *data,		/* isoc packet */
+> +			int len)		/* iso packet length */
+> +{
+> +	struct sd *sd = container_of(gspca_dev, struct sd, gspca_dev);
+> +	size_t frame_sz;
+> +
+> +	frame_sz = gspca_dev->cam.cam_mode->sizeimage;
+> +
+> +	/* can we finish a frame? */
+> +	if (sd->this_f + len >= frame_sz) {
+> +		unsigned int remainder = frame_sz - sd->this_f;
+> +		gspca_frame_add(gspca_dev, LAST_PACKET,
+> +				data, remainder);
+> +		len -= remainder;
+> +		data += remainder;
+> +		sd->this_f = 0;
+> +	}
+> +	/* in theory even if finished a frame could have part of next,
+> +	   not sure if it ever happens though */
+> +	if (len > 0) {
+> +		if (sd->this_f == 0)
+> +			gspca_frame_add(gspca_dev, FIRST_PACKET, data, len);
+> +		else
+> +			gspca_frame_add(gspca_dev, INTER_PACKET, data, len);
+> +		sd->this_f += len;
+> +	}
+> +}
+> +
+> +static int sd_init(struct gspca_dev *gspca_dev)
+> +{
+> +	struct sd *sd = container_of(gspca_dev, struct sd, gspca_dev);
+> +
+> +	pr_devel("sd_init");
+> +	/* Setting at init allows one app to adjust and another take pictures */
+> +	sd->exposure = EXPOSURE_DEFAULT;
+> +	sd->global_gain = GAIN_DEFAULT;
+> +	sd->red_bal = RED_DEFAULT;
+> +	sd->blue_bal = BLUE_DEFAULT;
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct ctrl sd_ctrls[] = {
+> +	{
+> +		{
+> +			.id	  = V4L2_CID_EXPOSURE,
+> +			.type	= V4L2_CTRL_TYPE_INTEGER,
+> +			.name	= "Exposure",
+> +			.minimum = 0,
+> +			/* Mostly limited by URB timeouts */
+> +			.maximum = 800,
+> +			.step	= 1,
+> +			.default_value = EXPOSURE_DEFAULT,
+> +		},
+> +		.set = sd_setexposure,
+> +		.get = sd_getexposure,
+> +	},
+> +	{
+> +		{
+> +			.id	 = V4L2_CID_GAIN,
+> +			.type	 = V4L2_CTRL_TYPE_INTEGER,
+> +			.name	 = "Gain",
+> +			.minimum = 0,
+> +			.maximum = GAIN_MAX,
+> +			.step	 = 1,
+> +			.default_value = GAIN_DEFAULT,
+> +		},
+> +		.set = sd_setgain,
+> +		.get = sd_getgain,
+> +	},
+> +	{
+> +		{
+> +			.id	 = V4L2_CID_BLUE_BALANCE,
+> +			.type	 = V4L2_CTRL_TYPE_INTEGER,
+> +			.name	 = "Blue Balance",
+> +			.minimum = 0,
+> +			.maximum = BAL_MAX,
+> +			.step	 = 1,
+> +			.default_value = BLUE_DEFAULT,
+> +		},
+> +		.set = sd_setbluebalance,
+> +		.get = sd_getbluebalance,
+> +	},
+> +	{
+> +		{
+> +			.id	 = V4L2_CID_RED_BALANCE,
+> +			.type	 = V4L2_CTRL_TYPE_INTEGER,
+> +			.name	 = "Red Balance",
+> +			.minimum = 0,
+> +			.maximum = BAL_MAX,
+> +			.step	 = 1,
+> +			.default_value = RED_DEFAULT,
+> +		},
+> +		.set = sd_setredbalance,
+> +		.get = sd_getredbalance,
+> +	},
+> +};
+> +
+> +static const struct sd_desc sd_desc = {
+> +	.name = MODULE_NAME,
+> +	.ctrls = sd_ctrls,
+> +	.nctrls = ARRAY_SIZE(sd_ctrls),
+> +	.config = sd_config,
+> +	.init = sd_init,
+> +	.start = sd_start,
+> +	.pkt_scan = sd_pkt_scan,
+> +};
+> +
+> +/* TODO: should add the untested devices? */
+> +static const struct usb_device_id device_table[] = {
+> +	{ USB_DEVICE(0x0547, 0x6801) }, /* UCMOS08000KPB */
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(usb, device_table);
+> +
+> +static int sd_probe(struct usb_interface *intf,
+> +			const struct usb_device_id *id)
+> +{
+> +	int rc = 0;
+> +	pr_devel("sd_probe start, alt 0x%p", intf->cur_altsetting);
+> +	rc = gspca_dev_probe(intf, id, &sd_desc, sizeof(struct sd),
+> +				THIS_MODULE);
+> +	pr_devel("sd_probe done, rc %d", rc);
+> +	return rc;
+> +}
+> +
+> +static struct usb_driver sd_driver = {
+> +	.name = MODULE_NAME,
+> +	.id_table = device_table,
+> +	.probe = sd_probe,
+> +	.disconnect = gspca_disconnect,
+> +#ifdef CONFIG_PM
+> +	.suspend = gspca_suspend,
+> +	.resume = gspca_resume,
+> +#endif
+> +};
+> +
+> +static int __init sd_mod_init(void)
+> +{
+> +	int ret;
+> +
+> +	ret = usb_register(&sd_driver);
+> +	if (ret < 0)
+> +		return ret;
+> +	return 0;
+> +}
+> +static void __exit sd_mod_exit(void)
+> +{
+> +	usb_deregister(&sd_driver);
+> +}
+> +
+> +module_init(sd_mod_init);
+> +module_exit(sd_mod_exit);
+> +
+>
