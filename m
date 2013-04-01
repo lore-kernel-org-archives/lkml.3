@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758702Ab3DAJnL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 05:43:11 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:19722 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757983Ab3DAJnJ (ORCPT
+	id S1758715Ab3DAJnc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 05:43:32 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:34778 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757488Ab3DAJna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 05:43:09 -0400
-X-AuditID: cbfee68d-b7f786d000005188-cd-515956ac1872
+	Mon, 1 Apr 2013 05:43:30 -0400
+X-AuditID: cbfee68d-b7f786d000005188-a0-515956c03ee6
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <000c01ce2ebd$2a1307f0$7e3917d0$%han@samsung.com>
 In-reply-to: <000c01ce2ebd$2a1307f0$7e3917d0$%han@samsung.com>
-Subject: [PATCH 03/27] rtc: rtc-bfin: use devm_*() functions
-Date: Mon, 01 Apr 2013 18:43:08 +0900
-Message-id: <000e01ce2ebd$50eae0f0$f2c0a2d0$%han@samsung.com>
+Subject: [PATCH 04/27] rtc: rtc-bq4802: use devm_*() functions
+Date: Mon, 01 Apr 2013 18:43:28 +0900
+Message-id: <000f01ce2ebd$5cdeb940$169c2bc0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4uvSmu8Ej3RSKpRZmzfFm2iz9KEwAABktQ
+Thread-index: Ac4uvSmu8Ej3RSKpRZmzfFm2iz9KEwAACgVw
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t8zY901YZGBBjeeSVksuXiV3WLO+jVs
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t8zY90DYZGBBk/m6lssuXiV3WLO+jVs
 	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGsVlk5Kak1mW
-	WqRvl8CVsXdhK1NBn0DFrlUODYy9vF2MHBwSAiYSM0+UdjFyApliEhfurWfrYuTiEBJYxijx
-	71APO0zN2Q3+EPFFjBK31/5mgXB+MUpc3LOWCaSbTUBN4suXw2ANIgL6Em0tGiA1zAK9jBJn
-	enezg9QICdhK/Dj7nRnE5hSwk3izcB4jiC0sYCOxcOV0MJtFQFXi1eznbCA2L1D9nI0boWxB
-	iR+T77GA2MwCWhLrdx5ngrDlJTavecsMcai6xKO/uiBhEQEjiY+NJ1khSkQk9r14xwhyj4TA
-	PXaJvZ8h7mEREJD4NvkQC0SvrMSmA8yQgJCUOLjiBssERolZSDbPQrJ5FpLNs5CsWMDIsopR
-	NLUguaA4Kb3IUK84Mbe4NC9dLzk/dxMjJEp7dzDePmB9iDEZaP1EZinR5HxglOeVxBsamxlZ
-	mJqYGhuZW5qRJqwkzqvWYh0oJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgTE6mPtr5sefd7dI
-	nDv7ZcONOXbzV8zTTAxRbjf6t6nk0v1PH8SuVtysf5L5Z8tzjd5yv7gntXdDfny2/V97VprJ
-	LaKNaZZwadQ0TYkV01NO3Od+ccRUQl2j6o7gmyhHFiU+Cd9XQZfLW+VOrgrgbD3uUzFx4nK2
-	P1dXz0pd4FJ4p9Hsq763/wIlluKMREMt5qLiRAC3rAQX6AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t9jAd01YZGBBofniFksuXiV3WLO+jVs
+	WqRvl8CV8fbKJaaCUwIVF9d8YG9gnMDbxcjJISFgIrFwzQx2CFtM4sK99WxdjFwcQgLLGCVa
+	J7SwwBQdW/ObGSIxnVFiU/9hVgjnF6PEnmXL2ECq2ATUJL58OQw0ioNDREBfoq1FA6SGWaCX
+	UeJM726wFUICthI/zn5nBrE5Bewk3iycxwhiCwPZ87qOg9ksAqoSzw68AavnBap/v/I6K4Qt
+	KPFj8j2wi5gFtCTW7zzOBGHLS2xe85YZZK+EgLrEo7+6IGERASOJ+S+bWCFKRCT2vXjHCHKP
+	hMAjdomVcyBuZhEQkPg2+RALRK+sxKYDzBAPS0ocXHGDZQKjxCwkm2ch2TwLyeZZSFYsYGRZ
+	xSiaWpBcUJyUXmSoV5yYW1yal66XnJ+7iRESq707GG8fsD7EmAy0fiKzlGhyPjDW80riDY3N
+	jCxMTUyNjcwtzUgTVhLnVWuxDhQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAOEfZa9rlv0Id
+	+i8zu/L4vra0//j+Zr6LfUth/J2GzTuLr++4762l2Xa/wihc9DnPjV3fJLIkPtatfx8yb7aY
+	c/eS8Np70evUF0vOOGzxPqy45teFJ3qCHLuE8zc3LJHwW/Mm3TvlY3j9AVUfLc2WlZPWmy89
+	nu40T6zt+ApL52sJ2mrXd/L/VGIpzkg01GIuKk4EAN8HBGfrAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKKsWRmVeSWpSXmKPExsVy+t9jQd0DYZGBBruXaVksuXiV3WLO+jVs
 	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
 	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
-	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmLF3YStTQZ9Axa5VDg2MvbxdjBwcEgImEmc3
-	+HcxcgKZYhIX7q1n62Lk4hASWMQocXvtbxYI5xejxMU9a5lAqtgE1CS+fDnMDtIsIqAv0dai
-	AVLDLNDLKHGmdzc7SI2QgK3Ej7PfmUFsTgE7iTcL5zGC2MICNhILV04Hs1kEVCVezX7OBmLz
-	AtXP2bgRyhaU+DH5HguIzSygJbF+53EmCFteYvOat8wQR6tLPPqrCxIWETCS+Nh4khWiRERi
-	34t3jBMYhWYhmTQLyaRZSCbNQtKygJFlFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwEngm
-	vYNxVYPFIUYBDkYlHt6ICxGBQqyJZcWVuYcYJTiYlUR4fb4BhXhTEiurUovy44tKc1KLDzEm
-	Az06kVlKNDkfmKDySuINjU3MjCyNzCyMTMzNSRNWEuc92GodKCSQnliSmp2aWpBaBLOFiYNT
-	qoFRb+KMrgsWiw5kJmQUGB9kyiy8JtWWHci/MbArZ5H52qNvzD79WRrBceH+PRcu919zfzO9
-	OhL0/09ywvdjz1K2mt/bGG+SUqjcu2Vjv7bawsalt0yZsyqO8b1d7bam6qNHpM1V6cd7rSVZ
-	W3eINK77NseFRe6xzJruJzH7DVO/rjMxeCrD0u6pxFKckWioxVxUnAgAJsuW30YDAAA=
+	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmPH2yiWmglMCFRfXfGBvYJzA28XIySEhYCJx
+	bM1vZghbTOLCvfVsXYxcHEIC0xklNvUfZoVwfjFK7Fm2jA2kik1ATeLLl8PsXYwcHCIC+hJt
+	LRogNcwCvYwSZ3p3s4PUCAnYSvw4+x1sKqeAncSbhfMYQWxhIHte13Ewm0VAVeLZgTdg9bxA
+	9e9XXmeFsAUlfky+xwJiMwtoSazfeZwJwpaX2LzmLTPIXgkBdYlHf3VBwiICRhLzXzaxQpSI
+	SOx78Y5xAqPQLCSTZiGZNAvJpFlIWhYwsqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECE4E
+	z6R3MK5qsDjEKMDBqMTDG3EhIlCINbGsuDL3EKMEB7OSCK/PN6AQb0piZVVqUX58UWlOavEh
+	xmSgRycyS4km5wOTVF5JvKGxiZmRpZGZhZGJuTlpwkrivAdbrQOFBNITS1KzU1MLUotgtjBx
+	cEo1MFqf6NySNlun4pOJhPTPxEue/VtLy95Nvrfr4kN/8Q9mH95zRATxpn62+MX+Lvpb9R0J
+	DnEd3oS6FxL5ohPLRGJl5Ofn7Xlh+yjduP83u2TP658W7aHHL69h/s19If/QVdld65Z9KHv9
+	wnK1/F2jOzoTlnUFbbxdznfkRbLJSv/ZN5k/yyQa71ZiKc5INNRiLipOBAAwC2WOSAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,67 +59,84 @@ Use devm_*() functions to make cleanup paths simpler.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-bfin.c |   16 +++++-----------
- 1 files changed, 5 insertions(+), 11 deletions(-)
+ drivers/rtc/rtc-bq4802.c |   29 ++++++++---------------------
+ 1 files changed, 8 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/rtc/rtc-bfin.c b/drivers/rtc/rtc-bfin.c
-index 4ec614b..d8b06f5 100644
---- a/drivers/rtc/rtc-bfin.c
-+++ b/drivers/rtc/rtc-bfin.c
-@@ -352,14 +352,14 @@ static int bfin_rtc_probe(struct platform_device *pdev)
- 	dev_dbg_stamp(dev);
+diff --git a/drivers/rtc/rtc-bq4802.c b/drivers/rtc/rtc-bq4802.c
+index 693be71..af28867 100644
+--- a/drivers/rtc/rtc-bq4802.c
++++ b/drivers/rtc/rtc-bq4802.c
+@@ -142,7 +142,7 @@ static const struct rtc_class_ops bq4802_ops = {
  
- 	/* Allocate memory for our RTC struct */
--	rtc = kzalloc(sizeof(*rtc), GFP_KERNEL);
-+	rtc = devm_kzalloc(dev, sizeof(*rtc), GFP_KERNEL);
- 	if (unlikely(!rtc))
- 		return -ENOMEM;
- 	platform_set_drvdata(pdev, rtc);
- 	device_init_wakeup(dev, 1);
+ static int bq4802_probe(struct platform_device *pdev)
+ {
+-	struct bq4802 *p = kzalloc(sizeof(*p), GFP_KERNEL);
++	struct bq4802 *p = devm_kzalloc(&pdev->dev, sizeof(*p), GFP_KERNEL);
+ 	int err = -ENOMEM;
  
- 	/* Register our RTC with the RTC framework */
--	rtc->rtc_dev = rtc_device_register(pdev->name, dev, &bfin_rtc_ops,
-+	rtc->rtc_dev = devm_rtc_device_register(dev, pdev->name, &bfin_rtc_ops,
- 						THIS_MODULE);
- 	if (unlikely(IS_ERR(rtc->rtc_dev))) {
- 		ret = PTR_ERR(rtc->rtc_dev);
-@@ -367,9 +367,10 @@ static int bfin_rtc_probe(struct platform_device *pdev)
+ 	if (!p)
+@@ -155,54 +155,41 @@ static int bq4802_probe(struct platform_device *pdev)
+ 		p->r = platform_get_resource(pdev, IORESOURCE_IO, 0);
+ 		err = -EINVAL;
+ 		if (!p->r)
+-			goto out_free;
++			goto out;
+ 	}
+ 	if (p->r->flags & IORESOURCE_IO) {
+ 		p->ioport = p->r->start;
+ 		p->read = bq4802_read_io;
+ 		p->write = bq4802_write_io;
+ 	} else if (p->r->flags & IORESOURCE_MEM) {
+-		p->regs = ioremap(p->r->start, resource_size(p->r));
++		p->regs = devm_ioremap(&pdev->dev, p->r->start,
++					resource_size(p->r));
+ 		p->read = bq4802_read_mem;
+ 		p->write = bq4802_write_mem;
+ 	} else {
+ 		err = -EINVAL;
+-		goto out_free;
++		goto out;
  	}
  
- 	/* Grab the IRQ and init the hardware */
--	ret = request_irq(IRQ_RTC, bfin_rtc_interrupt, 0, pdev->name, dev);
-+	ret = devm_request_irq(dev, IRQ_RTC, bfin_rtc_interrupt, 0,
-+				pdev->name, dev);
- 	if (unlikely(ret))
--		goto err_reg;
-+		goto err;
- 	/* sometimes the bootloader touched things, but the write complete was not
- 	 * enabled, so let's just do a quick timeout here since the IRQ will not fire ...
- 	 */
-@@ -381,23 +382,16 @@ static int bfin_rtc_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, p);
  
- 	return 0;
+-	p->rtc = rtc_device_register("bq4802", &pdev->dev,
+-				     &bq4802_ops, THIS_MODULE);
++	p->rtc = devm_rtc_device_register(&pdev->dev, "bq4802",
++					&bq4802_ops, THIS_MODULE);
+ 	if (IS_ERR(p->rtc)) {
+ 		err = PTR_ERR(p->rtc);
+-		goto out_iounmap;
++		goto out;
+ 	}
  
--err_reg:
--	rtc_device_unregister(rtc->rtc_dev);
- err:
--	kfree(rtc);
- 	return ret;
+ 	err = 0;
+ out:
+ 	return err;
+ 
+-out_iounmap:
+-	if (p->r->flags & IORESOURCE_MEM)
+-		iounmap(p->regs);
+-out_free:
+-	kfree(p);
+-	goto out;
  }
  
- static int bfin_rtc_remove(struct platform_device *pdev)
+ static int bq4802_remove(struct platform_device *pdev)
  {
--	struct bfin_rtc *rtc = platform_get_drvdata(pdev);
- 	struct device *dev = &pdev->dev;
- 
- 	bfin_rtc_reset(dev, 0);
--	free_irq(IRQ_RTC, dev);
--	rtc_device_unregister(rtc->rtc_dev);
+-	struct bq4802 *p = platform_get_drvdata(pdev);
+-
+-	rtc_device_unregister(p->rtc);
+-	if (p->r->flags & IORESOURCE_MEM)
+-		iounmap(p->regs);
+-
  	platform_set_drvdata(pdev, NULL);
--	kfree(rtc);
  
+-	kfree(p);
+-
  	return 0;
  }
+ 
 -- 
 1.7.2.5
 
