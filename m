@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757631Ab3DARa1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 13:30:27 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47078 "EHLO
+	id S1758148Ab3DARas (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 13:30:48 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47080 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757468Ab3DAR2U (ORCPT
+	by vger.kernel.org with ESMTP id S1756900Ab3DAR2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 13:28:20 -0400
+	Mon, 1 Apr 2013 13:28:19 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 08/15] mfd: arizona: Fully support the use of MCLK1 as the 32kHz clock source
-Date: Mon,  1 Apr 2013 18:28:05 +0100
-Message-Id: <1364837292-30191-8-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 04/15] mfd: arizona: Allow GPIO to be specified for IRQ line
+Date: Mon,  1 Apr 2013 18:28:01 +0100
+Message-Id: <1364837292-30191-4-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1364837292-30191-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 References: <20130401172748.GG18636@opensource.wolfsonmicro.com>
@@ -22,61 +22,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MCLK1 is not in the AoD power domain so if it is used as the 32kHz clock
-source we need to hold a runtime PM reference to keep the device from going
-into low power mode.
+If a GPIO is specified for the chip IRQ line then request it. This
+improves support for systems that do not put pins into input mode when
+used as interrupts.
+
+Also use this GPIO when the primary IRQ is in edge triggered mode to
+detect if we have handled pending interrupts in order to improve
+robustness.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/arizona-core.c |   21 +++++++++++++++++++--
- 1 file changed, 19 insertions(+), 2 deletions(-)
+ drivers/mfd/arizona-irq.c         |   66 +++++++++++++++++++++++++++++--------
+ include/linux/mfd/arizona/pdata.h |    3 ++
+ 2 files changed, 56 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index c9df7be..f8ffc3e 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -39,11 +39,21 @@ int arizona_clk32k_enable(struct arizona *arizona)
+diff --git a/drivers/mfd/arizona-irq.c b/drivers/mfd/arizona-irq.c
+index aa25468..f761cc1 100644
+--- a/drivers/mfd/arizona-irq.c
++++ b/drivers/mfd/arizona-irq.c
+@@ -94,6 +94,7 @@ static irqreturn_t arizona_ctrlif_err(int irq, void *data)
+ static irqreturn_t arizona_irq_thread(int irq, void *data)
+ {
+ 	struct arizona *arizona = data;
++	bool poll;
+ 	unsigned int val;
+ 	int ret;
  
- 	arizona->clk32k_ref++;
+@@ -103,20 +104,39 @@ static irqreturn_t arizona_irq_thread(int irq, void *data)
+ 		return IRQ_NONE;
+ 	}
  
--	if (arizona->clk32k_ref == 1)
-+	if (arizona->clk32k_ref == 1) {
-+		switch (arizona->pdata.clk32k_src) {
-+		case ARIZONA_32KZ_MCLK1:
-+			ret = pm_runtime_get_sync(arizona->dev);
-+			if (ret != 0)
-+				goto out;
+-	/* Always handle the AoD domain */
+-	handle_nested_irq(irq_find_mapping(arizona->virq, 0));
++	do {
++		poll = false;
++
++		/* Always handle the AoD domain */
++		handle_nested_irq(irq_find_mapping(arizona->virq, 0));
++
++		/*
++		 * Check if one of the main interrupts is asserted and only
++		 * check that domain if it is.
++		 */
++		ret = regmap_read(arizona->regmap, ARIZONA_IRQ_PIN_STATUS,
++				  &val);
++		if (ret == 0 && val & ARIZONA_IRQ1_STS) {
++			handle_nested_irq(irq_find_mapping(arizona->virq, 1));
++		} else if (ret != 0) {
++			dev_err(arizona->dev,
++				"Failed to read main IRQ status: %d\n", ret);
++		}
+ 
+-	/*
+-	 * Check if one of the main interrupts is asserted and only
+-	 * check that domain if it is.
+-	 */
+-	ret = regmap_read(arizona->regmap, ARIZONA_IRQ_PIN_STATUS, &val);
+-	if (ret == 0 && val & ARIZONA_IRQ1_STS) {
+-		handle_nested_irq(irq_find_mapping(arizona->virq, 1));
+-	} else if (ret != 0) {
+-		dev_err(arizona->dev, "Failed to read main IRQ status: %d\n",
+-			ret);
+-	}
++		/*
++		 * Poll the IRQ pin status to see if we're really done
++		 * if the interrupt controller can't do it for us.
++		 */
++		if (!arizona->pdata.irq_gpio) {
 +			break;
++		} else if (arizona->pdata.irq_flags & IRQF_TRIGGER_RISING &&
++			   gpio_get_value_cansleep(arizona->pdata.irq_gpio)) {
++			poll = true;
++		} else if (arizona->pdata.irq_flags & IRQF_TRIGGER_FALLING &&
++			   !gpio_get_value_cansleep(arizona->pdata.irq_gpio)) {
++			poll = true;
++		}
++	} while (poll);
+ 
+ 	pm_runtime_mark_last_busy(arizona->dev);
+ 	pm_runtime_put_autosuspend(arizona->dev);
+@@ -262,6 +282,26 @@ int arizona_irq_init(struct arizona *arizona)
+ 		}
+ 	}
+ 
++	/* Used to emulate edge trigger and to work around broken pinmux */
++	if (arizona->pdata.irq_gpio) {
++		if (gpio_to_irq(arizona->pdata.irq_gpio) != arizona->irq) {
++			dev_warn(arizona->dev, "IRQ %d is not GPIO %d (%d)\n",
++				 arizona->irq, arizona->pdata.irq_gpio,
++				 gpio_to_irq(arizona->pdata.irq_gpio));
++			arizona->irq = gpio_to_irq(arizona->pdata.irq_gpio);
 +		}
 +
- 		ret = regmap_update_bits(arizona->regmap, ARIZONA_CLOCK_32K_1,
- 					 ARIZONA_CLK_32K_ENA,
- 					 ARIZONA_CLK_32K_ENA);
-+	}
- 
-+out:
- 	if (ret != 0)
- 		arizona->clk32k_ref--;
- 
-@@ -63,10 +73,17 @@ int arizona_clk32k_disable(struct arizona *arizona)
- 
- 	arizona->clk32k_ref--;
- 
--	if (arizona->clk32k_ref == 0)
-+	if (arizona->clk32k_ref == 0) {
- 		regmap_update_bits(arizona->regmap, ARIZONA_CLOCK_32K_1,
- 				   ARIZONA_CLK_32K_ENA, 0);
- 
-+		switch (arizona->pdata.clk32k_src) {
-+		case ARIZONA_32KZ_MCLK1:
-+			pm_runtime_put_sync(arizona->dev);
-+			break;
++		ret = devm_gpio_request_one(arizona->dev,
++					    arizona->pdata.irq_gpio,
++					    GPIOF_IN, "arizona IRQ");
++		if (ret != 0) {
++			dev_err(arizona->dev,
++				"Failed to request IRQ GPIO %d:: %d\n",
++				arizona->pdata.irq_gpio, ret);
++			arizona->pdata.irq_gpio = 0;
 +		}
 +	}
 +
- 	mutex_unlock(&arizona->clk_lock);
+ 	ret = request_threaded_irq(arizona->irq, NULL, arizona_irq_thread,
+ 				   flags, "arizona", arizona);
  
- 	return ret;
+diff --git a/include/linux/mfd/arizona/pdata.h b/include/linux/mfd/arizona/pdata.h
+index 84fefed..8755dd0 100644
+--- a/include/linux/mfd/arizona/pdata.h
++++ b/include/linux/mfd/arizona/pdata.h
+@@ -163,6 +163,9 @@ struct arizona_pdata {
+ 
+ 	/** Haptic actuator type */
+ 	unsigned int hap_act;
++
++	/** GPIO for primary IRQ (used for edge triggered emulation) */
++	int irq_gpio;
+ };
+ 
+ #endif
 -- 
 1.7.10.4
 
