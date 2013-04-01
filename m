@@ -1,107 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758483Ab3DAN5A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 09:57:00 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:12132 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758427Ab3DAN4z (ORCPT
+	id S1758555Ab3DAN5n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 09:57:43 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:38819 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757966Ab3DAN4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 09:56:55 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-ac-51599225902c
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, balbi@ti.com,
-        stern@rowland.harvard.edu, sarah.a.sharp@linux.intel.com,
-        rob.herring@calxeda.com, kgene.kim@samsung.com, kishon@ti.com,
-        dianders@chromium.org, t.figa@samsung.com, p.paneri@samsung.com
-Subject: [PATCH v3 00/11] usb: dwc3/xhci/phy: Enable runtime power management
-Date: Mon, 01 Apr 2013 19:23:59 +0530
-Message-id: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.6.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42JZI2JSpas6KTLQoKdL2uLg/XqLs8sOslk0
-	L17PZtG74CqbxYWnPWwWl3fNYbOYvaSfxWLG+X1MFouWtTJbnN/SyWRxeMUBJovmE6eYLSb8
-	vsBmsX7GaxYHPo8Fn6+we8xuuMjiMe9koMf+uWuAvLs/GD36tqxi9Dh+YzuTx+dNcgEcUVw2
-	Kak5mWWpRfp2CVwZDV0fWQoOClc8Ov2QpYHxEH8XIyeHhICJROOtA4wQtpjEhXvr2boYuTiE
-	BJYySjxbtZcJpujQqnfsEIlFjBIPVnxjgnCmMEn8XzaBHaSKTUBXountLqBRHBwiAnESmycI
-	g4SZBbqYJJYeFQexhQV8JX5N2Aa2jUVAVeL8luVsIDavgIfEtc5PLBDLFCTe3H7GDDJfQuAU
-	u8SDLS0sEA0CEt8mH2IBmS8hICux6QAzRL2kxMEVN1gmMAouYGRYxSiaWpBcUJyUXmSsV5yY
-	W1yal66XnJ+7iREYF6f/PevfwXj3gPUhxmSgcROZpUST84FxlVcSb2hsZmRhamJqbGRuaUaa
-	sJI4r1qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxm5Fiwi3tq5nzqkdh+6o2jAUaFw1
-	WnSr9eja/c+PKVVVxC8Sumf4t2sd785XHnKygrc+9Ab9U3PNn1v6RuDRpLVXKvr+Os/YqufB
-	cfl544mOe1/CbvaxaGzIOWDlPV9Z+emGnTc63RbOvZT60/rypcc3Hglu+/JN1eNnkmzh2bmr
-	jaeFRH/g/KPEUpyRaKjFXFScCACi5hJYoQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsVy+t9jAV3VSZGBBg33BSwO3q+3OLvsIJtF
-	8+L1bBa9C66yWVx42sNmcXnXHDaL2Uv6WSxmnN/HZLFoWSuzxfktnUwWh1ccYLJoPnGK2WLC
-	7wtsFutnvGZx4PNY8PkKu8fshossHvNOBnrsn7sGyLv7g9Gjb8sqRo/jN7YzeXzeJBfAEdXA
-	aJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDdLeSQlli
-	TilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMaOh6yNLwUHhikenH7I0MB7i72Lk
-	5JAQMJE4tOodO4QtJnHh3nq2LkYuDiGBRYwSD1Z8Y4JwpjBJ/F82AayKTUBXountLsYuRg4O
-	EYE4ic0ThEHCzAJdTBJLj4qD2MICvhK/JmxjBLFZBFQlzm9ZzgZi8wp4SFzr/MQCsUxB4s3t
-	Z8wTGLkXMDKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiOumdSOxhXNlgcYhTgYFTi4Y24
-	EBEoxJpYVlyZe4hRgoNZSYR3RWZkoBBvSmJlVWpRfnxRaU5q8SHGZKDtE5mlRJPzgQkhryTe
-	0NjE3NTY1NLEwsTMkjRhJXHeA63WgUIC6YklqdmpqQWpRTBbmDg4pRoYo9/e1dVUO7zOWTrB
-	YFFapcYRkQ6L60cefDFMOLRe5/aqyF9rVIplpjzpUl7Kf+vG7M3rKu5ohRVVnjb+bcfMWTNf
-	4mrjg36bde0p3+fPs3PjM6pdLWT3e7WM4Y8b78V0PNjm5UjuObrMiO3u53Wts/kZbvDeqvvw
-	J7lnneK0F55q/y/VvfKtVGIpzkg01GIuKk4EAKSi8jP+AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 1 Apr 2013 09:56:30 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r31DuQnf009620, This message is released by code: ctlocs8528
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next 5/7] r8169: add a new chip for RTL8111G
+Date: Mon, 1 Apr 2013 21:55:37 +0800
+Message-ID: <1364824539-4156-5-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1364824539-4156-1-git-send-email-hayeswang@realtek.com>
+References: <1364824539-4156-1-git-send-email-hayeswang@realtek.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-series enables runtime power management on xhci-plat,
-dwc3-core, dwc3-exynos as well as on Samsung's USB 2.0 type and
-USB 3.0 type PHYs.
+Add a new chip for RTL8111G series.
 
-Based on 'next' branch of Felipe Balbi's USB tree.
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/ethernet/realtek/r8169.c | 115 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 115 insertions(+)
 
-Changes from v2:
- - Using separate functions for USB PHY runtime power management, instead of
-   using macros.
- - Adding 'pm_runtime_set_suspended()' api call in dwc3 core layer before
-   enabling runtime pm. (Ideally, we should be explicitly make device
-   'suspended' or 'active' before enabling runtime pm on it).
- - Checking return code for 'put_sync' and 'get_sync' of USB-PHYs when
-   waking up or suspending them from dwc3 core's runtime_pm callbacks.
- - Removed buggy pm_runtime_put() calls from driver's (xhci, dwc3 and PHY)
-   remove functions.
- - Adding a patch to enable runtime power management of Samsung's USB 2.0 PHY
-   (usb: phy: samsung: Enable runtime power management on usb2phy)
-
-Changes from v1:
- - Adding required PHY APIs to handle runtime power management
-   instead of directly twiddling with phy->dev.
- - Handling runtime power management of usb PHYs in dwc3 core
-   driver instead of in any glue layer.
- - Splitting the patch:
-   [PATCH 4/4] usb: phy: samsung: Enable runtime power management on samsung-usb
-   into required number to bifurcate functionality.
-
-Vivek Gautam (11):
-  usb: phy: Add APIs for runtime power management
-  USB: dwc3: Adjust runtime pm to allow autosuspend
-  usb: dwc3: Enable runtime pm only after PHYs are initialized
-  usb: dwc3: Add runtime power management callbacks
-  usb: dwc3: exynos: Enable runtime power management
-  usb: xhci: Enable runtime pm in xhci-plat
-  usb: phy: samsung: Enable runtime power management on usb2phy
-  usb: phy: samsung: Enable runtime power management on usb3phy
-  usb: phy: samsung: Add support for external reference clock
-  usb: phy: samsung: Add support for PHY ref_clk gpio
-  usb: phy: samsung: Add support for PHY refclk switching
-
- drivers/usb/dwc3/core.c            |   59 ++++++++++++++--
- drivers/usb/dwc3/dwc3-exynos.c     |   12 +++
- drivers/usb/host/xhci-plat.c       |    6 ++
- drivers/usb/phy/phy-samsung-usb.c  |   26 +++++++
- drivers/usb/phy/phy-samsung-usb.h  |    1 +
- drivers/usb/phy/phy-samsung-usb2.c |    5 ++
- drivers/usb/phy/phy-samsung-usb3.c |  119 +++++++++++++++++++++++++++++--
- include/linux/usb/phy.h            |  141 ++++++++++++++++++++++++++++++++++++
- 8 files changed, 358 insertions(+), 11 deletions(-)
-
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 0211836..8d41508 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -48,6 +48,7 @@
+ #define FIRMWARE_8411_1		"rtl_nic/rtl8411-1.fw"
+ #define FIRMWARE_8106E_1	"rtl_nic/rtl8106e-1.fw"
+ #define FIRMWARE_8168G_2	"rtl_nic/rtl8168g-2.fw"
++#define FIRMWARE_8168G_3	"rtl_nic/rtl8168g-3.fw"
+ 
+ #ifdef RTL8169_DEBUG
+ #define assert(expr) \
+@@ -140,6 +141,7 @@ enum mac_version {
+ 	RTL_GIGA_MAC_VER_39,
+ 	RTL_GIGA_MAC_VER_40,
+ 	RTL_GIGA_MAC_VER_41,
++	RTL_GIGA_MAC_VER_42,
+ 	RTL_GIGA_MAC_NONE   = 0xff,
+ };
+ 
+@@ -266,6 +268,9 @@ static const struct {
+ 							JUMBO_9K, false),
+ 	[RTL_GIGA_MAC_VER_41] =
+ 		_R("RTL8168g/8111g",	RTL_TD_1, NULL, JUMBO_9K, false),
++	[RTL_GIGA_MAC_VER_42] =
++		_R("RTL8168g/8111g",	RTL_TD_1, FIRMWARE_8168G_3,
++							JUMBO_9K, false),
+ };
+ #undef _R
+ 
+@@ -514,6 +519,7 @@ enum rtl_register_content {
+ 	PMEnable	= (1 << 0),	/* Power Management Enable */
+ 
+ 	/* Config2 register p. 25 */
++	ClkReqEn	= (1 << 7),	/* Clock Request Enable */
+ 	MSIEnable	= (1 << 5),	/* 8169 only. Reserved in the 8168. */
+ 	PCI_Clock_66MHz = 0x01,
+ 	PCI_Clock_33MHz = 0x00,
+@@ -534,6 +540,7 @@ enum rtl_register_content {
+ 	Spi_en		= (1 << 3),
+ 	LanWake		= (1 << 1),	/* LanWake enable/disable */
+ 	PMEStatus	= (1 << 0),	/* PME status can be reset by PCI RST# */
++	ASPM_en		= (1 << 0),	/* ASPM enable */
+ 
+ 	/* TBICSR p.28 */
+ 	TBIReset	= 0x80000000,
+@@ -816,6 +823,7 @@ MODULE_FIRMWARE(FIRMWARE_8402_1);
+ MODULE_FIRMWARE(FIRMWARE_8411_1);
+ MODULE_FIRMWARE(FIRMWARE_8106E_1);
+ MODULE_FIRMWARE(FIRMWARE_8168G_2);
++MODULE_FIRMWARE(FIRMWARE_8168G_3);
+ 
+ static void rtl_lock_work(struct rtl8169_private *tp)
+ {
+@@ -2036,6 +2044,7 @@ static void rtl8169_get_mac_version(struct rtl8169_private *tp,
+ 		int mac_version;
+ 	} mac_info[] = {
+ 		/* 8168G family. */
++		{ 0x7cf00000, 0x50900000,	RTL_GIGA_MAC_VER_42 },
+ 		{ 0x7cf00000, 0x4c100000,	RTL_GIGA_MAC_VER_41 },
+ 		{ 0x7cf00000, 0x4c000000,	RTL_GIGA_MAC_VER_40 },
+ 
+@@ -3439,6 +3448,81 @@ static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy(tp, 0x1f, 0x0000);
+ }
+ 
++static void rtl8168g_2_hw_phy_config(struct rtl8169_private *tp)
++{
++	rtl_apply_firmware(tp);
++
++	rtl_writephy(tp, 0x1f, 0x0bcc);
++	rtl_w1w0_phy(tp, 0x14, 0x0000, 0x0100);
++	rtl_writephy(tp, 0x1f, 0x0a44);
++	rtl_w1w0_phy(tp, 0x11, 0x00c0, 0x0000);
++	rtl_writephy(tp, 0x1f, 0x0a43);
++	rtl_writephy(tp, 0x13, 0x8084);
++	rtl_w1w0_phy(tp, 0x14, 0x0000, 0x6000);
++	rtl_w1w0_phy(tp, 0x10, 0x1003, 0x0000);
++
++	/* Enable UC LPF tune function */
++	rtl_writephy(tp, 0x1f, 0x0a43);
++	rtl_writephy(tp, 0x13, 0x8012);
++	rtl_w1w0_phy(tp, 0x14, 0x8000, 0x0000);
++
++	rtl_writephy(tp, 0x1f, 0x0bce);
++	rtl_writephy(tp, 0x12, 0x8860);
++
++	/* Channel Estimation: master */
++	rtl_writephy(tp, 0x1f, 0x0a43);
++	rtl_writephy(tp, 0x13, 0x80f3);
++	rtl_w1w0_phy(tp, 0x14, 0x8b00, 0x7400);
++	rtl_writephy(tp, 0x13, 0x80f0);
++	rtl_w1w0_phy(tp, 0x14, 0x3a00, 0xc500);
++	rtl_writephy(tp, 0x13, 0x80ef);
++	rtl_w1w0_phy(tp, 0x14, 0x0500, 0xfa00);
++	rtl_writephy(tp, 0x13, 0x80f6);
++	rtl_w1w0_phy(tp, 0x14, 0x6e00, 0x9100);
++	rtl_writephy(tp, 0x13, 0x80ec);
++	rtl_w1w0_phy(tp, 0x14, 0x6800, 0x9700);
++	rtl_writephy(tp, 0x13, 0x80ed);
++	rtl_w1w0_phy(tp, 0x14, 0x7c00, 0x8300);
++	rtl_writephy(tp, 0x13, 0x80f2);
++	rtl_w1w0_phy(tp, 0x14, 0xf400, 0x0b00);
++	rtl_writephy(tp, 0x13, 0x80f4);
++	rtl_w1w0_phy(tp, 0x14, 0x8500, 0x7a00);
++
++	/* Channel Estimation: slave */
++	rtl_writephy(tp, 0x1f, 0x0a43);
++	rtl_writephy(tp, 0x13, 0x8110);
++	rtl_w1w0_phy(tp, 0x14, 0xa800, 0x5700);
++	rtl_writephy(tp, 0x13, 0x810f);
++	rtl_w1w0_phy(tp, 0x14, 0x1d00, 0xe200);
++	rtl_writephy(tp, 0x13, 0x8111);
++	rtl_w1w0_phy(tp, 0x14, 0xf500, 0x0a00);
++	rtl_writephy(tp, 0x13, 0x8113);
++	rtl_w1w0_phy(tp, 0x14, 0x6100, 0x9e00);
++	rtl_writephy(tp, 0x13, 0x8115);
++	rtl_w1w0_phy(tp, 0x14, 0x9200, 0x6d00);
++	rtl_writephy(tp, 0x13, 0x810e);
++	rtl_w1w0_phy(tp, 0x14, 0x0400, 0xfb00);
++	rtl_writephy(tp, 0x13, 0x810c);
++	rtl_w1w0_phy(tp, 0x14, 0x7c00, 0x8300);
++	rtl_writephy(tp, 0x13, 0x810b);
++	rtl_w1w0_phy(tp, 0x14, 0x5a00, 0xa500);
++
++	/* Channel Estimation: 100 */
++	rtl_writephy(tp, 0x1f, 0x0a43);
++	rtl_writephy(tp, 0x13, 0x80d1);
++	rtl_w1w0_phy(tp, 0x14, 0xff00, 0x0000);
++	rtl_writephy(tp, 0x13, 0x80cd);
++	rtl_w1w0_phy(tp, 0x14, 0x9e00, 0x6100);
++	rtl_writephy(tp, 0x13, 0x80d3);
++	rtl_w1w0_phy(tp, 0x14, 0x0e00, 0xf100);
++	rtl_writephy(tp, 0x13, 0x80d5);
++	rtl_w1w0_phy(tp, 0x14, 0xca00, 0x3500);
++	rtl_writephy(tp, 0x13, 0x80d7);
++	rtl_w1w0_phy(tp, 0x14, 0x8400, 0x7b00);
++
++	rtl_writephy(tp, 0x1f, 0x0000);
++}
++
+ static void rtl8102e_hw_phy_config(struct rtl8169_private *tp)
+ {
+ 	static const struct phy_reg phy_reg_init[] = {
+@@ -3624,6 +3708,9 @@ static void rtl_hw_phy_config(struct net_device *dev)
+ 	case RTL_GIGA_MAC_VER_40:
+ 		rtl8168g_1_hw_phy_config(tp);
+ 		break;
++	case RTL_GIGA_MAC_VER_42:
++		rtl8168g_2_hw_phy_config(tp);
++		break;
+ 
+ 	case RTL_GIGA_MAC_VER_41:
+ 	default:
+@@ -3832,6 +3919,7 @@ static void rtl_init_mdio_ops(struct rtl8169_private *tp)
+ 		break;
+ 	case RTL_GIGA_MAC_VER_40:
+ 	case RTL_GIGA_MAC_VER_41:
++	case RTL_GIGA_MAC_VER_42:
+ 		ops->write	= r8168g_mdio_write;
+ 		ops->read	= r8168g_mdio_read;
+ 		break;
+@@ -3859,6 +3947,7 @@ static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_39:
+ 	case RTL_GIGA_MAC_VER_40:
+ 	case RTL_GIGA_MAC_VER_41:
++	case RTL_GIGA_MAC_VER_42:
+ 		RTL_W32(RxConfig, RTL_R32(RxConfig) |
+ 			AcceptBroadcast | AcceptMulticast | AcceptMyPhys);
+ 		break;
+@@ -4121,6 +4210,7 @@ static void rtl_init_pll_power_ops(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_38:
+ 	case RTL_GIGA_MAC_VER_40:
+ 	case RTL_GIGA_MAC_VER_41:
++	case RTL_GIGA_MAC_VER_42:
+ 		ops->down	= r8168_pll_power_down;
+ 		ops->up		= r8168_pll_power_up;
+ 		break;
+@@ -4165,6 +4255,7 @@ static void rtl_init_rxcfg(struct rtl8169_private *tp)
+ 		break;
+ 	case RTL_GIGA_MAC_VER_40:
+ 	case RTL_GIGA_MAC_VER_41:
++	case RTL_GIGA_MAC_VER_42:
+ 		RTL_W32(RxConfig, RX128_INT_EN | RX_DMA_BURST | RX_EARLY_OFF);
+ 		break;
+ 	default:
+@@ -4323,6 +4414,7 @@ static void rtl_init_jumbo_ops(struct rtl8169_private *tp)
+ 	 */
+ 	case RTL_GIGA_MAC_VER_40:
+ 	case RTL_GIGA_MAC_VER_41:
++	case RTL_GIGA_MAC_VER_42:
+ 	default:
+ 		ops->disable	= NULL;
+ 		ops->enable	= NULL;
+@@ -4430,6 +4522,7 @@ static void rtl8169_hw_reset(struct rtl8169_private *tp)
+ 	           tp->mac_version == RTL_GIGA_MAC_VER_37 ||
+ 	           tp->mac_version == RTL_GIGA_MAC_VER_40 ||
+ 	           tp->mac_version == RTL_GIGA_MAC_VER_41 ||
++	           tp->mac_version == RTL_GIGA_MAC_VER_42 ||
+ 	           tp->mac_version == RTL_GIGA_MAC_VER_38) {
+ 		RTL_W8(ChipCmd, RTL_R8(ChipCmd) | StopReq);
+ 		rtl_udelay_loop_wait_high(tp, &rtl_txcfg_empty_cond, 100, 666);
+@@ -5174,6 +5267,24 @@ static void rtl_hw_start_8168g_1(struct rtl8169_private *tp)
+ 	rtl_w1w0_eri(tp, 0x1b0, ERIAR_MASK_0011, 0x0000, 0x1000, ERIAR_EXGMAC);
+ }
+ 
++static void rtl_hw_start_8168g_2(struct rtl8169_private *tp)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
++	static const struct ephy_info e_info_8168g_2[] = {
++		{ 0x00, 0x0000,	0x0008 },
++		{ 0x0c, 0x3df0,	0x0200 },
++		{ 0x19, 0xffff,	0xfc00 },
++		{ 0x1e, 0xffff,	0x20eb }
++	};
++
++	rtl_hw_start_8168g_1(tp);
++
++	/* disable aspm and clock request before access ephy */
++	RTL_W8(Config2, RTL_R8(Config2) & ~ClkReqEn);
++	RTL_W8(Config5, RTL_R8(Config5) & ~ASPM_en);
++	rtl_ephy_init(tp, e_info_8168g_2, ARRAY_SIZE(e_info_8168g_2));
++}
++
+ static void rtl_hw_start_8168(struct net_device *dev)
+ {
+ 	struct rtl8169_private *tp = netdev_priv(dev);
+@@ -5279,6 +5390,9 @@ static void rtl_hw_start_8168(struct net_device *dev)
+ 	case RTL_GIGA_MAC_VER_41:
+ 		rtl_hw_start_8168g_1(tp);
+ 		break;
++	case RTL_GIGA_MAC_VER_42:
++		rtl_hw_start_8168g_2(tp);
++		break;
+ 
+ 	default:
+ 		printk(KERN_ERR PFX "%s: unknown chipset (mac_version = %d).\n",
+@@ -6766,6 +6880,7 @@ static void rtl_hw_initialize(struct rtl8169_private *tp)
+ 	switch (tp->mac_version) {
+ 	case RTL_GIGA_MAC_VER_40:
+ 	case RTL_GIGA_MAC_VER_41:
++	case RTL_GIGA_MAC_VER_42:
+ 		rtl_hw_init_8168g(tp);
+ 		break;
+ 
 -- 
-1.7.6.5
+1.8.1
 
