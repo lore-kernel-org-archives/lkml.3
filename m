@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759444Ab3DAXM5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 19:12:57 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:49668 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759407Ab3DAXMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 19:12:54 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Zheng Yan <zheng.z.yan@intel.com>
-Subject: Re: [Update][PATCH] PCI / PM: Disable runtime PM of PCIe ports
-Date: Tue, 02 Apr 2013 01:20:27 +0200
-Message-ID: <1676539.jiMCqtbGtq@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <25773480.yrESpQY9Iv@vostro.rjw.lan>
-References: <2282655.IicBMMa6jN@vostro.rjw.lan> <CAErSpo5iyziiGDKiy-416UQ2xr+2hvcHz6do+ueMmnPM5oy6Cw@mail.gmail.com> <25773480.yrESpQY9Iv@vostro.rjw.lan>
+	id S1759413Ab3DAXSb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 19:18:31 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:49144 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757586Ab3DAXS3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 19:18:29 -0400
+Date: Mon, 1 Apr 2013 16:18:24 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Tim Hockin <thockin@hockin.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <paul@paulmenage.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
+        Daniel J Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Max Kellermann <mk@cm4all.com>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v8
+Message-ID: <20130401231824.GC2487@htj.dyndns.org>
+References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
+ <CAAAKZwv9=NFmt6xj1KF2va1i6=UCvka0YkmdOY9JNUMHDOWpGw@mail.gmail.com>
+ <20130401184617.GB31435@htj.dyndns.org>
+ <CAAAKZwvemKDLeuKr6wWMUSVczkRVDZKSzYrXXEMcZ8qvcFR0zQ@mail.gmail.com>
+ <20130401202943.GC31435@htj.dyndns.org>
+ <CAAAKZwuZwN68vtk1qO08GXB_OnQNVtqqp+v_NQfP27W0P_aWZw@mail.gmail.com>
+ <20130401220309.GA2487@htj.dyndns.org>
+ <CAAAKZwuev7Y58ZQNtG+XdFRt0=NedD7zbYTAZbJ95ahBKLVhKA@mail.gmail.com>
+ <20130401223500.GB2487@htj.dyndns.org>
+ <CAAAKZwvdMUAZ+N5d-cdCJbKUq=t9M6BbCxzOTWnVQQBrg55vhw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAAKZwvdMUAZ+N5d-cdCJbKUq=t9M6BbCxzOTWnVQQBrg55vhw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 01, 2013 11:24:37 PM Rafael J. Wysocki wrote:
-> On Monday, April 01, 2013 02:53:12 PM Bjorn Helgaas wrote:
-> > On Mon, Apr 1, 2013 at 2:51 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > On Monday, April 01, 2013 11:34:46 AM Bjorn Helgaas wrote:
-> > >> [+cc Zheng, who added this with 71a83bd727]
-> > >>
-> > >> On Sat, Mar 30, 2013 at 4:38 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > >> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > >> >
-> > >> > The runtime PM of PCIe ports turns out to be quite fragile, as in
-> > >> > some cases things work while in some other cases they don't and we
-> > >> > don't seem to have a good way to determine whether or not they are
-> > >> > going to work in advance.
-> > >>
-> > >> Do you have any references to problems encountered when enabling
-> > >> runtime PM for PCIe ports?  That information will be useful to anybody
-> > >> who wants to take another crack at getting this working.
-> > >
-> > > Well, bug 53811 is one example and problems recently reported by
-> > > Martin are another.  Do you want me to dig deeper?
-> > 
-> > OK, I got this one:
-> > 
-> >   https://bugzilla.kernel.org/show_bug.cgi?id=53811
-> > 
-> > Martin has reported a lot of problems lately, and I don't know which
-> > are related to runtime PM for PCIe ports.  I was hoping for a couple
-> > URLs to put in the changelog so that when somebody gets the itch to
-> > make this work, they have some useful info to start from.  If you
-> > point me at a specific message, I'll dig up an archive URL for it.
+Hello,
+
+On Mon, Apr 01, 2013 at 03:57:46PM -0700, Tim Hockin wrote:
+> I am not limited by kernel memory, I am limited by PIDs, and I need to
+> be able to manage them.  memory.kmem.usage_in_bytes seems to be far
+> too noisy to be useful for this purpose.  It may work fine for "just
+> stop a fork bomb" but not for any sort of finer-grained control.
+
+So, why are you limited by PIDs other than the arcane / weird
+limitation that you have whereever that limitation is?
+
+> > If you think you can tilt it the other way, please feel free to try.
 > 
-> This is the message in which Martin confirmed that the previous version of
-> the $subject patch made insert/removal of devices into xHCI ports on his
-> system work again.
+> Just because others caved, doesn't make it less of a hack.  And I will
+> cave, too, because I don't have time to bang my head against a wall,
+> especially when I can see the remnants of other people who have tried.
 > 
-> > Otherwise, I'm afraid we'll just oscillate between "enable PM, find
-> > bug, disable PM, enable PM, find same bug, disable PM, etc..."
+> We'll work around it, or we'll hack around it, or we'll carry this
+> patch in our own tree and just grumble about ridiculous hacks every
+> time we have to forward port it.
 > 
-> That's a valid concern, but I think we have an idea about what kind of problems
-> the runtime PM of PCIe ports may cause to happen (generally, PME and hotplug
-> notifications may not work as expected).
+> I was just hoping that things had worked themselves out in the last year.
 
-I was thinking about this one in particular:
-
-http://marc.info/?l=linux-acpi&m=136460903910718&w=2
-
-Thanks,
-Rafael
-
+It's kinda weird getting this response, as I don't think it has been
+particularly walley.  The arguments were pretty sound from what I
+recall and Frederic's use case was actually better covered by kmemcg,
+so where's the said wall?  And I asked you why your use case is
+different and the only reason you gave me is some arbitrary PID
+limitation on whatever thing you're using, which you gotta agree is a
+pretty hard sell.  So, if you think you have a valid case, please just
+explain it.  Why go passive agressive on it?  If you don't have a
+valid case for pushing it, yes, you'll have to hack around it - carry
+the patches in your tree, whatever, or better, fix the weird PID
+problem.
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+tejun
