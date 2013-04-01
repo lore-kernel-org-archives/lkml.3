@@ -1,79 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757615Ab3DAUbj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 16:31:39 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34619 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757454Ab3DAUbi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 16:31:38 -0400
-Date: Mon, 1 Apr 2013 22:31:36 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: John Stultz <john.stultz@linaro.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Feng Tang <feng.tang@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        x86@kernel.org, Len Brown <lenb@kernel.org>,
+	id S1757647Ab3DAUdz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 16:33:55 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:49583 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757085Ab3DAUdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 16:33:53 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: viresh.kumar@linaro.org, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/5] Add support for S3 non-stop TSC support.
-Message-ID: <20130401203136.GA2543@amd.pavel.ucw.cz>
-References: <1358750325-21217-1-git-send-email-feng.tang@intel.com>
- <50FD48B6.9010202@intel.com>
- <20130330181451.GF28947@amd.pavel.ucw.cz>
- <5159C4AE.2050504@linaro.org>
+Subject: Re: [PATCH v6 2/2] cpufreq: covert the cpufreq_data_lock to a spinlock
+Date: Mon, 01 Apr 2013 22:41:27 +0200
+Message-ID: <1479737.lmOfIzUVqh@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1364847069-2887-3-git-send-email-nzimmer@sgi.com>
+References: <5159C147.70800@sgi.com> <1364847069-2887-1-git-send-email-nzimmer@sgi.com> <1364847069-2887-3-git-send-email-nzimmer@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5159C4AE.2050504@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Monday, April 01, 2013 03:11:09 PM Nathan Zimmer wrote:
+> This eliminates the rest of the contention found in __cpufreq_cpu_get.
+> I am not seeing a way to use the rcu so we will have to make due with a
+> rwlock for now.
+> 
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
 
-> >>>On some new Intel Atom processors (Penwell and Cloverview), there is
-> >>>a feature that the TSC won't stop S3, say the TSC value won't be
-> >>>reset to 0 after resume. This feature makes TSC a more reliable
-> >>>clocksource and could benefit the timekeeping code during system
-> >>>suspend/resume cycles.
-> >>>
-> >>>The enabling efforts include adding new flags for this feature,
-> >>>modifying clocksource.c and timekeeping.c to support and utilizing
-> >>>it.
-> >>>
-> >>>One remaining question is inside the timekeeping_resume(), we don't
-> >>>know if it is called by resuming from suspend(s2ram) or from
-> >>>hibernate(s2disk), as there is no easy way to check it currently.
-> >>>But it doesn't hurt as these Penwell/Cloverview platforms only have
-> >>>S3 state, and no S4.
-> >>>
-> >>>Please help to review them, thanks!
-> >>The patches look reasonable to me.
-> >Not sure... what are advantages? TSC is high resolution, but not
-> >exactly precise time source... and this only makes resume more
-> >complex.
-> Providing sub-second granularity for suspend time measurement is a
-> pretty compelling use, which greatly reduces time error across
-> suspend/resume.
+I've already applied this one.
 
-Certainly for short sleeps. Is TSC actually precise enough to keep
-precise time for hours? I thought TSC sucked at precision.
+Can you please check if the version in my tree is OK?
 
-> I agree that the code logic is more complex, but the TSC path should
-> be a good bit faster then hitting the CMOS.
+Rafael
 
-You are right here.
 
-> There is the open concern that given their history, x86 designers
-> will find yet another way to break the TSC in some future chip and
-> we'll end up with non-stop TSCs that run at different frequencies in
-> suspend or some other such nonsense. But we'll just have to detect
-> that and disable functionality where appropriate, much as we do with
-> the TSC now.
-
-Ok.
-									Pavel
+> ---
+>  drivers/cpufreq/cpufreq.c | 38 +++++++++++++++++++-------------------
+>  1 file changed, 19 insertions(+), 19 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 5139eab..7438c34 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -42,7 +42,7 @@
+>  static struct cpufreq_driver __rcu *cpufreq_driver;
+>  static DEFINE_SPINLOCK(cpufreq_driver_lock);
+>  
+> -static DEFINE_SPINLOCK(cpufreq_data_lock);
+> +static DEFINE_RWLOCK(cpufreq_data_lock);
+>  static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data);
+>  #ifdef CONFIG_HOTPLUG_CPU
+>  /* This one keeps track of the previously set governor of a removed CPU */
+> @@ -150,7 +150,7 @@ static struct cpufreq_policy *__cpufreq_cpu_get(unsigned int cpu, bool sysfs)
+>  		goto err_out_unlock;
+>  
+>  	/* get the CPU */
+> -	spin_lock_irqsave(&cpufreq_data_lock, flags);
+> +	read_lock_irqsave(&cpufreq_data_lock, flags);
+>  	data = per_cpu(cpufreq_cpu_data, cpu);
+>  
+>  	if (!data)
+> @@ -159,13 +159,13 @@ static struct cpufreq_policy *__cpufreq_cpu_get(unsigned int cpu, bool sysfs)
+>  	if (!sysfs && !kobject_get(&data->kobj))
+>  		goto err_out_put_module;
+>  
+> -	spin_unlock_irqrestore(&cpufreq_data_lock, flags);
+> +	read_unlock_irqrestore(&cpufreq_data_lock, flags);
+>  	rcu_read_unlock();
+>  	return data;
+>  
+>  err_out_put_module:
+>  	module_put(driver->owner);
+> -	spin_unlock_irqrestore(&cpufreq_data_lock, flags);
+> +	read_unlock_irqrestore(&cpufreq_data_lock, flags);
+>  err_out_unlock:
+>  	rcu_read_unlock();
+>  err_out:
+> @@ -276,9 +276,9 @@ void cpufreq_notify_transition(struct cpufreq_freqs *freqs, unsigned int state)
+>  	pr_debug("notification %u of frequency transition to %u kHz\n",
+>  		state, freqs->new);
+>  
+> -	spin_lock_irqsave(&cpufreq_data_lock, flags);
+> +	read_lock_irqsave(&cpufreq_data_lock, flags);
+>  	policy = per_cpu(cpufreq_cpu_data, freqs->cpu);
+> -	spin_unlock_irqrestore(&cpufreq_data_lock, flags);
+> +	read_unlock_irqrestore(&cpufreq_data_lock, flags);
+>  
+>  	switch (state) {
+>  
+> @@ -802,12 +802,12 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
+>  	}
+>  	rcu_read_unlock();
+>  
+> -	spin_lock_irqsave(&cpufreq_data_lock, flags);
+> +	write_lock_irqsave(&cpufreq_data_lock, flags);
+>  	for_each_cpu(j, policy->cpus) {
+>  		per_cpu(cpufreq_cpu_data, j) = policy;
+>  		per_cpu(cpufreq_policy_cpu, j) = policy->cpu;
+>  	}
+> -	spin_unlock_irqrestore(&cpufreq_data_lock, flags);
+> +	write_unlock_irqrestore(&cpufreq_data_lock, flags);
+>  
+>  	ret = cpufreq_add_dev_symlink(cpu, policy);
+>  	if (ret)
+> @@ -858,12 +858,12 @@ static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
+>  
+>  	lock_policy_rwsem_write(sibling);
+>  
+> -	spin_lock_irqsave(&cpufreq_data_lock, flags);
+> +	write_lock_irqsave(&cpufreq_data_lock, flags);
+>  
+>  	cpumask_set_cpu(cpu, policy->cpus);
+>  	per_cpu(cpufreq_policy_cpu, cpu) = policy->cpu;
+>  	per_cpu(cpufreq_cpu_data, cpu) = policy;
+> -	spin_unlock_irqrestore(&cpufreq_data_lock, flags);
+> +	write_unlock_irqrestore(&cpufreq_data_lock, flags);
+>  
+>  	unlock_policy_rwsem_write(sibling);
+>  
+> @@ -918,15 +918,15 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
+>  
+>  #ifdef CONFIG_HOTPLUG_CPU
+>  	/* Check if this cpu was hot-unplugged earlier and has siblings */
+> -	spin_lock_irqsave(&cpufreq_data_lock, flags);
+> +	read_lock_irqsave(&cpufreq_data_lock, flags);
+>  	for_each_online_cpu(sibling) {
+>  		struct cpufreq_policy *cp = per_cpu(cpufreq_cpu_data, sibling);
+>  		if (cp && cpumask_test_cpu(cpu, cp->related_cpus)) {
+> -			spin_unlock_irqrestore(&cpufreq_data_lock, flags);
+> +			read_unlock_irqrestore(&cpufreq_data_lock, flags);
+>  			return cpufreq_add_policy_cpu(cpu, sibling, dev);
+>  		}
+>  	}
+> -	spin_unlock_irqrestore(&cpufreq_data_lock, flags);
+> +	read_unlock_irqrestore(&cpufreq_data_lock, flags);
+>  #endif
+>  #endif
+>  
+> @@ -1006,10 +1006,10 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
+>  	return 0;
+>  
+>  err_out_unregister:
+> -	spin_lock_irqsave(&cpufreq_data_lock, flags);
+> +	write_lock_irqsave(&cpufreq_data_lock, flags);
+>  	for_each_cpu(j, policy->cpus)
+>  		per_cpu(cpufreq_cpu_data, j) = NULL;
+> -	spin_unlock_irqrestore(&cpufreq_data_lock, flags);
+> +	write_unlock_irqrestore(&cpufreq_data_lock, flags);
+>  
+>  	kobject_put(&policy->kobj);
+>  	wait_for_completion(&policy->kobj_unregister);
+> @@ -1067,12 +1067,12 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
+>  
+>  	pr_debug("%s: unregistering CPU %u\n", __func__, cpu);
+>  
+> -	spin_lock_irqsave(&cpufreq_data_lock, flags);
+> +	write_lock_irqsave(&cpufreq_data_lock, flags);
+>  
+>  	data = per_cpu(cpufreq_cpu_data, cpu);
+>  	per_cpu(cpufreq_cpu_data, cpu) = NULL;
+>  
+> -	spin_unlock_irqrestore(&cpufreq_data_lock, flags);
+> +	write_unlock_irqrestore(&cpufreq_data_lock, flags);
+>  
+>  	if (!data) {
+>  		pr_debug("%s: No cpu_data found\n", __func__);
+> @@ -1111,9 +1111,9 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
+>  			WARN_ON(lock_policy_rwsem_write(cpu));
+>  			cpumask_set_cpu(cpu, data->cpus);
+>  
+> -			spin_lock_irqsave(&cpufreq_data_lock, flags);
+> +			write_lock_irqsave(&cpufreq_data_lock, flags);
+>  			per_cpu(cpufreq_cpu_data, cpu) = data;
+> -			spin_unlock_irqrestore(&cpufreq_data_lock, flags);
+> +			write_unlock_irqrestore(&cpufreq_data_lock, flags);
+>  
+>  			unlock_policy_rwsem_write(cpu);
+>  
+> 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
