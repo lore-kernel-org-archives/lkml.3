@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759562Ab3DATxU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 15:53:20 -0400
-Received: from smtp.snhosting.dk ([87.238.248.203]:19097 "EHLO
+	id S1759567Ab3DATyt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 15:54:49 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:42162 "EHLO
 	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758439Ab3DATxT (ORCPT
+	with ESMTP id S1758689Ab3DATys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 15:53:19 -0400
-Date: Mon, 1 Apr 2013 21:53:18 +0200
+	Mon, 1 Apr 2013 15:54:48 -0400
+Date: Mon, 1 Apr 2013 21:54:46 +0200
 From: Sam Ravnborg <sam@ravnborg.org>
 To: Jiri Olsa <jolsa@redhat.com>
 Cc: linux-kernel@vger.kernel.org,
@@ -18,78 +18,104 @@ Cc: linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
         Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 01/27] perf tools: Add automated make test suite
-Message-ID: <20130401195318.GB5744@merkur.ravnborg.org>
-References: <1364843930-17974-1-git-send-email-jolsa@redhat.com> <1364843930-17974-2-git-send-email-jolsa@redhat.com>
+Subject: Re: [PATCH 03/27] perf tools: Move arch check into config/Makefile
+Message-ID: <20130401195446.GC5744@merkur.ravnborg.org>
+References: <1364843930-17974-1-git-send-email-jolsa@redhat.com> <1364843930-17974-4-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1364843930-17974-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1364843930-17974-4-git-send-email-jolsa@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 01, 2013 at 09:18:24PM +0200, Jiri Olsa wrote:
-> Adding automatd test for testing the build process.
-> To run it you needto be in perf directory or specify
-> one with PERF variable. It's also possible to specify
-> optional Makefile to test via MK variable.
+On Mon, Apr 01, 2013 at 09:18:26PM +0200, Jiri Olsa wrote:
+> Moving arch check into config/Makefile.
 > 
-> Whole suite is executed twice, the second time with
-> O=/tmp/xxx option added.
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Borislav Petkov <bp@alien8.de>
+> Cc: Stephane Eranian <eranian@google.com>
+> ---
+>  tools/perf/Makefile        | 31 ++-----------------------------
+>  tools/perf/config/Makefile | 34 ++++++++++++++++++++++++++++++++++
+>  2 files changed, 36 insertions(+), 29 deletions(-)
+>  create mode 100644 tools/perf/config/Makefile
 > 
-> To run the whole suite:
->   $ make -f tests/make
->   MAKE_PURE: cd . && make -f Makefile
->   TEST: test -x ./perf
->   MAKE_DEBUG: cd . && make -f Makefile DEBUG=1
->   TEST: test -x ./perf
->   ...
-> 
-> You see command line for 'MAKE_PURE' test right away,
-> and the output is stored into MAKE_PURE file.
-> 
-> To run simple test:
->   $ make -f tests/make MAKE_DEBUG
->   MAKE_DEBUG: cd . && make -f Makefile DEBUG=1
->   TEST: test -x ./perf
-> 
-> At this moment tests checks for succesfull build
-> and for existence of several built files. Additional
-> after-build checks could be added.
-
-Some nit-picks.
-I did not try to find out how this works.
-
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index c8fb0fd..032e099 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -55,37 +55,11 @@ include config/utilities.mak
+>  $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+>  	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+>  
+> -uname_M := $(shell uname -m 2>/dev/null || echo not)
+> -
+> -ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+> -				  -e s/arm.*/arm/ -e s/sa110/arm/ \
+> -				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
+> -				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+> -				  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
+> -NO_PERF_REGS := 1
+> -
+>  CC = $(CROSS_COMPILE)gcc
+>  AR = $(CROSS_COMPILE)ar
+>  
+> -# Additional ARCH settings for x86
+> -ifeq ($(ARCH),i386)
+> -	override ARCH := x86
+> -	NO_PERF_REGS := 0
+> -	LIBUNWIND_LIBS = -lunwind -lunwind-x86
+> -endif
+> -ifeq ($(ARCH),x86_64)
+> -	override ARCH := x86
+> -	IS_X86_64 := 0
+> -	ifeq (, $(findstring m32,$(EXTRA_CFLAGS)))
+> -		IS_X86_64 := $(shell echo __x86_64__ | ${CC} -E -x c - | tail -n 1)
+> -	endif
+> -	ifeq (${IS_X86_64}, 1)
+> -		RAW_ARCH := x86_64
+> -		ARCH_CFLAGS := -DARCH_X86_64
+> -		ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
+> -	endif
+> -	NO_PERF_REGS := 0
+> -	LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
+> +ifeq ($(filter clean tags,$(MAKECMDGOALS)),)
+> +include config/Makefile
+>  endif
+>  
+>  # Treat warnings as errors unless directed not to
+> @@ -857,7 +831,6 @@ ifeq ($(NO_PERF_REGS),0)
+>  	ifeq ($(ARCH),x86)
+>  		LIB_H += arch/x86/include/perf_regs.h
+>  	endif
+> -	BASIC_CFLAGS += -DHAVE_PERF_REGS
+>  endif
+>  
+>  ifndef NO_STRLCPY
+> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+> new file mode 100644
+> index 0000000..fe317c2
+> --- /dev/null
+> +++ b/tools/perf/config/Makefile
+> @@ -0,0 +1,34 @@
+> +uname_M := $(shell uname -m 2>/dev/null || echo not)
 > +
-> +MAKE_DEBUG          := DEBUG=1
-> +MAKE_NO_LIBPERL     := NO_LIBPERL=1
+> +ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+> +				  -e s/arm.*/arm/ -e s/sa110/arm/ \
+> +				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
+> +				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+> +				  -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
 
-Why all these ugly UPPERCASE names?
-In kbuild files the unwritten rule is that variables
-with global scope are upper-case.
-And variables with local scope are lower case.
-
-You can find many examples where this is not followed - but this
-is the general approach.
-
-> +MAKE_MINIMAL        := NO_LIBPERL=1 NO_LIBPYTHON=1 NO_NEWT=1 NO_GTK2=1 NO_DEMANGLE=1 NO_LIBELF=1 NO_LIBUNWIND=1 NO_BACKTRACE=1 NO_LIBNUMA=1 NO_LIBAUDIT=1 NO_LIBBIONIC=1
-
-Keeping lines less than 120 chars long is good.
-Some people swer to 80 chars.
-
-> +RUN := \
-> +	MAKE_PURE \
-> +	MAKE_DEBUG \
-> +	MAKE_NO_LIBPERL \
-
-RUN += MAKE_PURE
-RUN += MAKE_DEBUG
-RUN += MAKE_NO_LIBPERL
-
-Is so much more readable.
-As a general rule - use \
-to continue lines only when you really have to.
+this is shared with the top-level kernel Makefile.
+Could we find a way to share this?
 
 	Sam
