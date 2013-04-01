@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab3DAAIb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 31 Mar 2013 20:08:31 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:14323 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756041Ab3DAAIa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 31 Mar 2013 20:08:30 -0400
-X-Spam-Score: -100.7
-Message-ID: <5158CFDF.4060700@asianux.com>
-Date: Mon, 01 Apr 2013 08:07:59 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1756328Ab3DAANg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 31 Mar 2013 20:13:36 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:49019 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756188Ab3DAANf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 31 Mar 2013 20:13:35 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        grant.likely@secretlab.ca, broonie@opensource.wolfsonmicro.com
+Subject: [PATCH] ACPI / SPI: Use parent's ACPI_HANDLE() in acpi_register_spi_devices()
+Date: Mon, 01 Apr 2013 02:21:08 +0200
+Message-ID: <2747891.0orCNBJG8v@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 1/3] posix-timers: Correctly get dying task time sample
- in posix_cpu_timer_schedule()
-References: <1364649331-30940-1-git-send-email-fweisbec@gmail.com> <1364649331-30940-2-git-send-email-fweisbec@gmail.com>
-In-Reply-To: <1364649331-30940-2-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013Äê03ÔÂ30ÈÕ 21:15, Frederic Weisbecker wrote:
-> In order to arm the next timer to schedule, we take a sample of the
-> current process or thread cputime.
-> 
-> If the task is dying though, we don't arm anything but we
-> cache the remaining timer expiration delta for further reads.
-> 
-> Something similar is performed in posix_cpu_timer_get() but
-> here we forget to take the process wide cputime sample
-> before caching it.
-> 
-> As a result we are storing random stack content, leading
-> every further reads of that timer to return junk values.
-> 
-> Fix this by taking the appropriate sample in the case of
-> process wide timers.
-> 
-> Reported-by: Andrew Morton <akpm@linux-foundation.org>
-> Reported-by: Chen Gang <gang.chen@asianux.com>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Stanislaw Gruszka <sgruszka@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Chen Gang <gang.chen@asianux.com>
-> ---
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-  thank you for mark me as reported by, although I reported too late
-(Andrew Morton is the first reporter).
+The ACPI handle of struct spi_master's dev member should not be
+set, because this causes that struct spi_master to be associated
+with the ACPI device node corresponding to its parent as the
+second "physical_device", which is incorrect (this happens during
+the registration of struct spi_master).  Consequently,
+acpi_register_spi_devices() should use the ACPI handle of the
+parent of the struct spi_master it is called for rather than that
+struct spi_master's ACPI handle (which should be NULL).
 
-  next, I should continue to try to find another issues about kernel.
+Make that happen and modify the spi-pxa2xx driver, which currently is
+the only driver for ACPI-enumerated SPI controller chips, not to set
+the ACPI handle for the struct spi_master it creates.
 
-  :-)
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/spi/spi-pxa2xx.c |    1 -
+ drivers/spi/spi.c        |    2 +-
+ 2 files changed, 1 insertion(+), 2 deletions(-)
 
--- 
-Chen Gang
+Index: linux-pm/drivers/spi/spi.c
+===================================================================
+--- linux-pm.orig/drivers/spi/spi.c
++++ linux-pm/drivers/spi/spi.c
+@@ -984,7 +984,7 @@ static void acpi_register_spi_devices(st
+ 	acpi_status status;
+ 	acpi_handle handle;
+ 
+-	handle = ACPI_HANDLE(&master->dev);
++	handle = ACPI_HANDLE(master->dev.parent);
+ 	if (!handle)
+ 		return;
+ 
+Index: linux-pm/drivers/spi/spi-pxa2xx.c
+===================================================================
+--- linux-pm.orig/drivers/spi/spi-pxa2xx.c
++++ linux-pm/drivers/spi/spi-pxa2xx.c
+@@ -1168,7 +1168,6 @@ static int pxa2xx_spi_probe(struct platf
+ 
+ 	master->dev.parent = &pdev->dev;
+ 	master->dev.of_node = pdev->dev.of_node;
+-	ACPI_HANDLE_SET(&master->dev, ACPI_HANDLE(&pdev->dev));
+ 	/* the spi->mode bits understood by this driver: */
+ 	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH | SPI_LOOP;
+ 
 
-Asianux Corporation
