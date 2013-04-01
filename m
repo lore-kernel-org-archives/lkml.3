@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab3DAMYq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 08:24:46 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52421 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753180Ab3DAMYp (ORCPT
+	id S1756976Ab3DAM2q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 08:28:46 -0400
+Received: from us01smtp2.synopsys.com ([198.182.44.80]:59197 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753180Ab3DAM2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 08:24:45 -0400
-Date: Mon, 1 Apr 2013 13:24:40 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 18/33] regulator: ab8500: Use
- regulator_list_voltage_table()
-Message-ID: <20130401122440.GE18636@opensource.wolfsonmicro.com>
-References: <1364487093-19551-1-git-send-email-lee.jones@linaro.org>
- <1364487093-19551-19-git-send-email-lee.jones@linaro.org>
+	Mon, 1 Apr 2013 08:28:44 -0400
+Message-ID: <51597D69.5090008@synopsys.com>
+Date: Mon, 1 Apr 2013 17:58:25 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Yb+qhiCg54lqZFXW"
-Content-Disposition: inline
-In-Reply-To: <1364487093-19551-19-git-send-email-lee.jones@linaro.org>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Newsgroups: gmane.linux.kernel.cross-arch,gmane.linux.kbuild.devel,gmane.linux.kernel
+To: Sam Ravnborg <sam@ravnborg.org>
+CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Subject: Re: host gcc 4.7 warning when generating defconfig
+References: <514AADAD.1060503@synopsys.com> <20130401121218.GA4409@merkur.ravnborg.org>
+In-Reply-To: <20130401121218.GA4409@merkur.ravnborg.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.41]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Sam,
 
---Yb+qhiCg54lqZFXW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 04/01/2013 05:42 PM, Sam Ravnborg wrote:
+> On Thu, Mar 21, 2013 at 12:20:21PM +0530, Vineet Gupta wrote:
+>> Hi,
+>>
+>> We do cross compile builds for ARC Linux. To avoid the env var set, we have a
+>> defconfig entry for CONFIG_CROSS_COMPILE.
+>> This worked fine so far (host gcc 4.4 i.e.). When switched to a new host distro
+>> (gcc 4.7), a defconfig build spews out the warning.
+>>
+>> ------------------->8--------------------------
+>> mymake defconfig
+>> gcc: error: unrecognized command line option '-marc600'
+>> gcc: error: unrecognized command line option '-mA7'
+>> gcc: error: unrecognized command line option '-mno-sdata'
+>> gcc: error: unrecognized command line option '-mno-mpy'
+>> *** Default configuration is based on 'fpga_defconfig'
+>> #
+>> # configuration written to .config
+>> ------------------->8--------------------------
+>>
+>> While the following trivial fix seems to fix this, it seems that the spew is
+>> coming due to LIBGCC definition line, which is strange to be called for defconfig
+>> generation. Any thoughts ?
+>>
+>> ---------------->
+>> diff --git a/arch/arc/Makefile b/arch/arc/Makefile
+>> index 4232d4e..97e6c20 100644
+>> --- a/arch/arc/Makefile
+>> +++ b/arch/arc/Makefile
+>> @@ -8,6 +8,10 @@
+>>  
+>>  UTS_MACHINE := arc
+>>  
+>> +ifeq ($(CROSS_COMPILE),)
+>> +#CROSS_COMPILE := arc-elf32-
+>> +endif
+>> +
+>>  KBUILD_DEFCONFIG := fpga_defconfig
+> 
+> 
+> You could try to use LIBGCC = $(shell ... for assignment.
+> Use "=" and not ":=".
+> 
+> Like this:
+> 
+> -LIBGCC := $(shell $(CC) $(ARC_LIBGCC) $(cflags-y) --print-libgcc-file-name)
+> +LIBGCC = $(shell $(CC) $(ARC_LIBGCC) $(cflags-y) --print-libgcc-file-name)
+> 
+> This would defer the evaluation until we actually reference the variable,
+> and thus I think it will not trigger for a defconfig build.
+> 
+> I could not reproduce the problem here so I am not sure this has any effect though...
 
-On Thu, Mar 28, 2013 at 04:11:18PM +0000, Lee Jones wrote:
-> Following a recent move to regulator_list_voltage_table() for
-> all previous abx500 related platforms this converts all recent
-> platform updates over too.
+Indeed the defconfig is fixed with your suggestion.
+However make ARCH=arc {clean,distclean} still show the same spew !
 
-Applied everything up to here except "regulator: ab8500-ext: Add support
-for AB9540 regulators", thanks.
-
---Yb+qhiCg54lqZFXW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRWXx3AAoJELSic+t+oim9cXwP/2T0iVNJ1IrG0Gzanfos3yDt
-j5xZeakliiqiquIlaWXBNYm+Xdlq/QgFiXjH6qi91q2xECSya1edB3J5nUpTWqFj
-0YNP+gDCz1DAW76CIW3sZNNhJ4ZFZ2WbjayGcoTVb7ZHqmEY/mU/lvKwPj9NJQfR
-YYHvilpVlmjrNLvFi2LHbE9r4/WVoxBKtmGJ+6o9Bnd6TGSPudPHDTS05XRQzFpC
-74KNwbdHo1x22HkgFdK0VbiHZ/64+JGAR1mgIO/qiv4UASq+EU6X1l9eHqiQJJvd
-CdKKB48XPBjxaLWfYbbPDtWy9YKtD1VmQtk3DTLk1gWHitFmB6zgxUZH7ulu8A88
-h00M5lJ8pJaOTXWypvydu9MUfxNpJdTIrDCydCevxUktpoXEohTBjZHnjEMVe3ej
-91DQ8ZqRU0D4Zg5JLLFlCr+YxpuuJ5iW4bvzshqsxMFX/Ya0rbWj2XzERxXSVdRy
-cmZ/GdaQhNZoAvqv6We6pZdew21T+F45tlFVDq4hnjX65LewfkzXjiSIQU5rv/B4
-VoAnvdjJxyjzrUpfvqBkO2vobW7bC4gs0CjJC1iw3kE4/dWZUpXmqjYAYHr9lbWf
-Ls7w5DeJx1zf6xRTQ9OSZN9FPlMMqcMldv6WAPdFCsoG5UGUWu9kdySCjA8M6DjQ
-OpcRDVOf8h6+hoTjX0ls
-=5CZo
------END PGP SIGNATURE-----
-
---Yb+qhiCg54lqZFXW--
+Thx,
+-Vineet
