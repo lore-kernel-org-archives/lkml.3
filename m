@@ -1,169 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757938Ab3DAG4R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 02:56:17 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:50597 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757402Ab3DAG4O (ORCPT
+	id S1757955Ab3DAG4g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 02:56:36 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:37467 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757369Ab3DAG4d convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 02:56:14 -0400
-Message-ID: <51592EF1.4090302@linux.vnet.ibm.com>
-Date: Mon, 01 Apr 2013 12:23:37 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Mon, 1 Apr 2013 02:56:33 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: CAI Qian <caiqian@redhat.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
+        linux-ext4@vger.kernel.org
+Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591!
+In-Reply-To: <1211053180.322948.1364797847717.JavaMail.root@redhat.com>
+References: <2133129347.8273339.1364549222854.JavaMail.root@redhat.com> <87ip46ss0o.fsf@openvz.org> <1211053180.322948.1364797847717.JavaMail.root@redhat.com>
+User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+Date: Mon, 01 Apr 2013 10:56:27 +0400
+Message-ID: <87fvzaspr8.fsf@openvz.org>
 MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] sparc: Use generic idle loop
-References: <20130321214930.752934102@linutronix.de> <20130329161905.GC6201@merkur.ravnborg.org> <20130329202926.GA9484@merkur.ravnborg.org>
-In-Reply-To: <20130329202926.GA9484@merkur.ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040106-2000-0000-0000-00000B901A32
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2013 01:59 AM, Sam Ravnborg wrote:
-> Add generic cpu_idle support
+On Mon, 1 Apr 2013 02:30:47 -0400 (EDT), CAI Qian <caiqian@redhat.com> wrote:
 > 
-> sparc32:
-> - replace call to cpu_idle() with cpu_startup_entry()
-> - add arch_cpu_idle()
 > 
-> sparc64:
-> - smp_callin() includes cpu_startup_entry() call so we can
->   skip calling cpu_idle from assembler
-> - add arch_cpu_idle_enter() and arch_cpu_idle_dead()
+> ----- Original Message -----
+> > From: "Dmitry Monakhov" <dmonakhov@openvz.org>
+> > To: "CAI Qian" <caiqian@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>
+> > Cc: "LKML" <linux-kernel@vger.kernel.org>, "linux-s390" <linux-s390@vger.kernel.org>, "Steve Best"
+> > <sbest@redhat.com>, linux-ext4@vger.kernel.org
+> > Sent: Monday, April 1, 2013 2:07:35 PM
+> > Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591!
+> > 
+> > On Fri, 29 Mar 2013 05:27:02 -0400 (EDT), CAI Qian <caiqian@redhat.com>
+> > wrote:
+> > > 
+> > I've spent a half of weekend by trying to create s390x guest image,
+> > without any success. Can you please share it.
+> Well, do you have something like IBM system-Z?
+> http://en.wikipedia.org/wiki/IBM_System_z10
 > 
-> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-> Cc: David S. Miller <davem@davemloft.net>
+> Also can be reproduced on system-p,
+> http://en.wikipedia.org/wiki/IBM_System_p
 > 
-> ---
-> This patch is on top of smp/testing in the tip tree.
-> It is build tested on sparc32 + sparc64
-> 
-> 	Sam
-> 
-[...]
-> 
-> diff --git a/arch/sparc/kernel/process_32.c b/arch/sparc/kernel/process_32.c
-> index 62eede1..ec92959 100644
-> --- a/arch/sparc/kernel/process_32.c
-> +++ b/arch/sparc/kernel/process_32.c
-> @@ -64,23 +64,13 @@ extern void fpsave(unsigned long *, unsigned long *, void *, unsigned long *);
->  struct task_struct *last_task_used_math = NULL;
->  struct thread_info *current_set[NR_CPUS];
-> 
-> -/*
-> - * the idle loop on a Sparc... ;)
-> - */
-> -void cpu_idle(void)
-> +/* the idle loop on a Sparc... ;) */
-> +void arch_cpu_idle(void)
->  {
-> -	set_thread_flag(TIF_POLLING_NRFLAG);
-> -
-> -	/* endless idle loop with no priority at all */
-> -	for (;;) {
-> -		while (!need_resched()) {
-> -			if (sparc_idle)
-> -				(*sparc_idle)();
-> -			else
-> -				cpu_relax();
-> -		}
-> -		schedule_preempt_disabled();
-> -	}
-> +	if (sparc_idle)
-> +		(*sparc_idle)();
-> +	else
-> +		cpu_relax();
->  }
-
-You need to enable interrupts when coming out in the 'else' case,
-because we enter with interrupts disabled and expect to come out
-of arch_cpu_idle() with interrupts enabled. (Otherwise you'll hit
-that WARN_ON() in the generic code). Thomas has handled a similar
-case in the mips patch.
-
-> 
->  /* XXX cli/sti -> local_irq_xxx here, check this works once SMP is fixed. */
-> diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
-> index cdb80b2..5ed6b02 100644
-> --- a/arch/sparc/kernel/process_64.c
-> +++ b/arch/sparc/kernel/process_64.c
-> @@ -52,8 +52,13 @@
-> 
->  #include "kstack.h"
-> 
-> -static void sparc64_yield(int cpu)
-> +/* The idle loop on sparc64. */
-> +void arch_cpu_idle_enter()
->  {
-> +	int cpu;
-> +
-> +	cpu = smp_processor_id();
-> +
->  	if (tlb_type != hypervisor) {
->  		touch_nmi_watchdog();
->  		return;
-> @@ -88,31 +93,10 @@ static void sparc64_yield(int cpu)
->  	set_thread_flag(TIF_POLLING_NRFLAG);
->  }
-> 
-
-Hmm, this looks weird. The contents of this function should have
-been inside arch_cpu_idle() (not arch_cpu_idle_enter). And it is
-unnecessary to set/clear POLLING flags here, since they are handled
-in the generic code. (Same is the case with the need_resched and
-the cpu_is_offline check).
-
-I agree that the naming is a little subtle, but in the current
-scheme of things in this patchset, arch_cpu_idle_enter() is what
-you call to do initialization _before_ you perform cpu idle, whereas
-arch_cpu_idle() is the function that is supposed to do the actual
-arch-specific idling.
-
-Regards,
-Srivatsa S. Bhat
-
-> -/* The idle loop on sparc64. */
-> -void cpu_idle(void)
-> +void arch_cpu_idle_dead()
->  {
-> -	int cpu = smp_processor_id();
-> -
-> -	set_thread_flag(TIF_POLLING_NRFLAG);
-> -
-> -	while(1) {
-> -		tick_nohz_idle_enter();
-> -		rcu_idle_enter();
-> -
-> -		while (!need_resched() && !cpu_is_offline(cpu))
-> -			sparc64_yield(cpu);
-> -
-> -		rcu_idle_exit();
-> -		tick_nohz_idle_exit();
-> -
-> -#ifdef CONFIG_HOTPLUG_CPU
-> -		if (cpu_is_offline(cpu)) {
-> -			sched_preempt_enable_no_resched();
-> -			cpu_play_dead();
-> -		}
-> -#endif
-> -		schedule_preempt_disabled();
-> -	}
-> +	sched_preempt_enable_no_resched();
-> +	cpu_play_dead();
->  }
-
+Ohh... So you are lucky user of this black rocks and you
+are the only person who can help to reproduce the issue.
+BTW: Have you run kernel with the patch i've sent you?
+> Never seen it on x86 so far though.
+> CAI Qian
+> > > 
+> > > ----- Original Message -----
+> > > > From: "Theodore Ts'o" <tytso@mit.edu>
+> > > > To: "CAI Qian" <caiqian@redhat.com>
+> > > > Cc: "LKML" <linux-kernel@vger.kernel.org>, "linux-s390"
+> > > > <linux-s390@vger.kernel.org>, "Steve Best"
+> > > > <sbest@redhat.com>, linux-ext4@vger.kernel.org
+> > > > Sent: Thursday, March 28, 2013 8:05:17 PM
+> > > > Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591!
+> > > > 
+> > > > On Thu, Mar 28, 2013 at 02:40:33AM -0400, CAI Qian wrote:
+> > > > > System hung when running xfstests-dev 013 test case on an s390x
+> > > > > guest. Never saw
+> > > > > this on 3.9-rc3 before but need to double-check. Any idea?
+> > > > > 
+> > > > > Ý 1113.795759¨ ------------Ý cut here ¨------------
+> > > > > Ý 1113.795771¨ kernel BUG at fs/ext4/inode.c:1591!
+> > > > 
+> > > > thanks for the report.  What kernel version did this come from?  Was
+> > > > it 3.9-rc4?  (line 1591 for 3.9-rc3 doesn't contain a BUG_ON).
+> > > Yes, the lastest mainline.
+> > > > 
+> > > > If it is indeed 3.9-rc4, it would be helpful, since you can reproduce
+> > > > the problem, to insert a debugging printk which fires when
+> > > > bh->b_blocknr != pblock before the BUG_ON, and have it print the
+> > > > b_blocknr and pblock values.
+> > > bh->b_blocknr=100346
+> > > pblock=66797
+> > > 
+> > > Bisecting results so far,
+> > > git bisect start
+> > > # good: [a937536b868b8369b98967929045f1df54234323] Linux 3.9-rc3
+> > > git bisect good a937536b868b8369b98967929045f1df54234323
+> > > # bad: [9064171268d838b8f283fe111ef086b9479d059a] Merge tag 'for-linus' of
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/sfr/next-fixes
+> > > git bisect bad 9064171268d838b8f283fe111ef086b9479d059a
+> > > # bad: [38d78e587d4960d0db94add518d27ee74bad2301] mqueue: sys_mq_open: do
+> > > not call mnt_drop_write() if read-only
+> > > git bisect bad 38d78e587d4960d0db94add518d27ee74bad2301
+> > > # good: [e7489622d3603b7d161b484dcd340d9f678b0c7a] Merge tag 'arm64-fixes'
+> > > of git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64
+> > > git bisect good e7489622d3603b7d161b484dcd340d9f678b0c7a
+> > > # good: [172a271b5e090da7468c66b9ccbcdb3d929eed75] Merge branch 'drm-fixes'
+> > > of git://people.freedesktop.org/~airlied/linux
+> > > git bisect good 172a271b5e090da7468c66b9ccbcdb3d929eed75
+> > > # good: [0a7e453103b9718d357688b83bb968ee108cc874] Merge branch 'next' of
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux
+> > > git bisect good 0a7e453103b9718d357688b83bb968ee108cc874
+> > > # bad: [0e401101db49959f5783f6ee9e676124b5a183ac] ext4: fix memory leakage
+> > > in mext_check_coverage
+> > > git bisect bad 0e401101db49959f5783f6ee9e676124b5a183ac
+> > > CAI Qian
+> > > > 
+> > > > Thanks,
+> > > > 
+> > > > 						- Ted
+> > > > 
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
