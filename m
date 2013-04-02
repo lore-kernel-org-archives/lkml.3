@@ -1,161 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761049Ab3DBJpZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:45:25 -0400
-Received: from smtp-out-090.synserver.de ([212.40.185.90]:1050 "EHLO
-	smtp-out-090.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760998Ab3DBJpX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:45:23 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 11288
-Message-ID: <515AB694.7090403@metafoo.de>
-Date: Tue, 02 Apr 2013 12:44:36 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S1761713Ab3DBJpc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:45:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57870 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761070Ab3DBJp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 05:45:27 -0400
+Date: Tue, 2 Apr 2013 11:45:24 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/10] soft-offline: use migrate_pages() instead of
+ migrate_huge_page()
+Message-ID: <20130402094524.GF24345@dhcp22.suse.cz>
+References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1363983835-20184-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <87boa69z6j.fsf@linux.vnet.ibm.com>
+ <20130327135250.GI16579@dhcp22.suse.cz>
+ <874nfqesut.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: padma.v@samsung.com
-CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Jon Hunter <jon-hunter@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] dma: pl330: Use the generic of_dma_xlate_by_chan_id
-References: <26789240.182151364893959039.JavaMail.weblogic@epv6ml02>
-In-Reply-To: <26789240.182151364893959039.JavaMail.weblogic@epv6ml02>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <874nfqesut.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2013 11:12 AM, PADMAVATHI VENNA wrote:
-> Hi Lars,
+On Mon 01-04-13 10:43:14, Aneesh Kumar K.V wrote:
+> Michal Hocko <mhocko@suse.cz> writes:
 > 
-> ------- Original Message -------
-> Sender : Lars-Peter Clausen<lars@metafoo.de>
-> Date : Apr 02, 2013 16:33 (GMT+09:00)
-> Title : Re: [PATCH 2/2] dma: pl330: Use the generic of_dma_xlate_by_chan_id
+> > On Tue 26-03-13 16:59:40, Aneesh Kumar K.V wrote:
+> >> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
+> > [...]
+> >> > diff --git v3.9-rc3.orig/mm/memory-failure.c v3.9-rc3/mm/memory-failure.c
+> >> > index df0694c..4e01082 100644
+> >> > --- v3.9-rc3.orig/mm/memory-failure.c
+> >> > +++ v3.9-rc3/mm/memory-failure.c
+> >> > @@ -1467,6 +1467,7 @@ static int soft_offline_huge_page(struct page *page, int flags)
+> >> >  	int ret;
+> >> >  	unsigned long pfn = page_to_pfn(page);
+> >> >  	struct page *hpage = compound_head(page);
+> >> > +	LIST_HEAD(pagelist);
+> >> >
+> >> >  	/*
+> >> >  	 * This double-check of PageHWPoison is to avoid the race with
+> >> > @@ -1482,12 +1483,20 @@ static int soft_offline_huge_page(struct page *page, int flags)
+> >> >  	unlock_page(hpage);
+> >> >
+> >> >  	/* Keep page count to indicate a given hugepage is isolated. */
+> >> > -	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL,
+> >> > -				MIGRATE_SYNC);
+> >> > -	put_page(hpage);
+> >> > +	list_move(&hpage->lru, &pagelist);
+> >> 
+> >> we use hpage->lru to add the hpage to h->hugepage_activelist. This will
+> >> break a hugetlb cgroup removal isn't it ?
+> >
+> > This particular part will not break removal because
+> > hugetlb_cgroup_css_offline loops until hugetlb_cgroup_have_usage is 0.
+> >
 > 
-> On 04/02/2013 08:27 AM, PADMAVATHI VENNA wrote:
->>
->> Hi,
->> ------- Original Message -------
->> Sender : Lars-Peter Clausen
->> Date : Mar 25, 2013 22:16 (GMT+09:00)
->> Title : [PATCH 2/2] dma: pl330: Use the generic of_dma_xlate_by_chan_id
->>
->> Use the generic of_dma_xlate_by_chan_id xlate callback instead of a custom
->> implementation.
->>
->> There is one minor difference between the generic of_dma_xlate_by_chan_id
->> function and the pl330 specific one. of_dma_xlate_by_chan_id only sets the
->> DMA_SLAVE capability for the channel capability mask, while the pl330 driver
->> additionally sets the DMA_CYCLIC capability. But since all pl330 channels which
->> have the DMA_SLAVE capability set also have DMA_CYCLIC capability set both
->> functions will have the same result.
->>
->> I am not clear about the dma capabilities. Is it mentioned some where that if we set DMA_SLAVE capability
->> will that also set DMA_CYCLIC capability?
->>
-> 
-> Well DMA_SLAVE won't automatically set DMA_CYCLIC. But the driver sets both.
-> 
-> I tested your patches, it's woking for audio. But I need some clarification related to capabilities.
-> As per my understanding, controller driver registers the available capabilities in the probe and 
-> client drivers requests for a particular capability. In both the cases, in the dmaengine it checks
-> if the requested capability is satisfied.
-> If we don't set the DMA_CYCLIC, how __dma_device_satisfies_mask works?
-> 
->  Please correct me if I am wrong.
-> 
-> Thanks
-> Padma
+> But we still need to hold hugetlb_lock around that right ?
 
-Hi,
-
-Well, DMA_SLAVE | DMA_CYCLIC is a more restrictive mask than DMA_SLAVE. So
-any channel that matches DMA_SLAVE | DMA_CYCLIC will also match DMA_SLAVE.
-
-- Lars
-
-> - Lars
-> 
->> Signed-off-by: Lars-Peter Clausen 
->> ---
->> drivers/dma/pl330.c | 41 +----------------------------------------
->> 1 file changed, 1 insertion(+), 40 deletions(-)
->>
->> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
->> index 345e2a1..ea48de7 100644
->> --- a/drivers/dma/pl330.c
->> +++ b/drivers/dma/pl330.c
->> @@ -608,11 +608,6 @@ struct dma_pl330_desc {
->> struct dma_pl330_chan *pchan;
->> };
->>
->> -struct dma_pl330_filter_args {
->> - struct dma_pl330_dmac *pdmac;
->> - unsigned int chan_id;
->> -};
->> -
->> static inline void _callback(struct pl330_req *r, enum pl330_op_err err)
->> {
->> if (r && r->xfer_cb)
->> @@ -2358,16 +2353,6 @@ static void dma_pl330_rqcb(void *token, enum pl330_op_err err)
->> tasklet_schedule(&pch->task);
->> }
->>
->> -static bool pl330_dt_filter(struct dma_chan *chan, void *param)
->> -{
->> - struct dma_pl330_filter_args *fargs = param;
->> -
->> - if (chan->device != &fargs->pdmac->ddma)
->> - return false;
->> -
->> - return (chan->chan_id == fargs->chan_id);
->> -}
->> -
->> bool pl330_filter(struct dma_chan *chan, void *param)
->> {
->> u8 *peri_id;
->> @@ -2380,30 +2365,6 @@ bool pl330_filter(struct dma_chan *chan, void *param)
->> }
->> EXPORT_SYMBOL(pl330_filter);
->>
->> -static struct dma_chan *of_dma_pl330_xlate(struct of_phandle_args *dma_spec,
->> - struct of_dma *ofdma)
->> -{
->> - int count = dma_spec->args_count;
->> - struct dma_pl330_dmac *pdmac = ofdma->of_dma_data;
->> - struct dma_pl330_filter_args fargs;
->> - dma_cap_mask_t cap;
->> -
->> - if (!pdmac)
->> - return NULL;
->> -
->> - if (count != 1)
->> - return NULL;
->> -
->> - fargs.pdmac = pdmac;
->> - fargs.chan_id = dma_spec->args[0];
->> -
->> - dma_cap_zero(cap);
->> - dma_cap_set(DMA_SLAVE, cap);
->> - dma_cap_set(DMA_CYCLIC, cap);
->> -
->> - return dma_request_channel(cap, pl330_dt_filter, &fargs);
->> -}
->> -
->> static int pl330_alloc_chan_resources(struct dma_chan *chan)
->> {
->> struct dma_pl330_chan *pch = to_pchan(chan);
->> @@ -2996,7 +2957,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
->> pi->pcfg.num_peri, pi->pcfg.num_events);
->>
->> ret = of_dma_controller_register(adev->dev.of_node,
->> - of_dma_pl330_xlate, pdmac);
->> + of_dma_xlate_by_chan_id, pd);
->> if (ret) {
->> dev_err(&adev->dev,
->> "unable to register DMA to the generic DT DMA helpers\n");
-
+Right. Racing hugetlb_cgroup_move_parent and hugetlb_cgroup_migrate could
+lead to newpage pointing to NULL cgroup. That could be fixed by checking
+old page cgroup for NULL inside hugetlb_lock and using
+list_for_each_safe in hugetlb_cgroup_css_offline no?
+-- 
+Michal Hocko
+SUSE Labs
