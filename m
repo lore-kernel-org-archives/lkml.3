@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933176Ab3DBUE7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 16:04:59 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:38306 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932549Ab3DBUE6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 16:04:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130402190924.GA31760@redhat.com>
-References: <1364923183-316-1-git-send-email-yinghai@kernel.org>
-	<1364923183-316-4-git-send-email-yinghai@kernel.org>
-	<20130402180606.GI29506@redhat.com>
-	<CAE9FiQUKqv_t-99JN_t=EGop2-Wbjd4Yb9vYvU_SbbNctG6Yeg@mail.gmail.com>
-	<20130402190924.GA31760@redhat.com>
-Date: Tue, 2 Apr 2013 13:04:58 -0700
-X-Google-Sender-Auth: iLrFu7WFfVfg6orwPEZ3Ne0ns10
-Message-ID: <CAE9FiQWWa+nm5_DC_aLMz0ZjdF0DerxqqnZgSvxZrPgM_xrnNA@mail.gmail.com>
-Subject: Re: [PATCH 3/4] x86, kdump: Retore crashkernel= to allocate low
-From: Yinghai Lu <yinghai@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933133Ab3DBUGo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 16:06:44 -0400
+Received: from [66.162.12.4] ([66.162.12.4]:44519 "EHLO hancock.steeleye.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1761092Ab3DBUGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 16:06:42 -0400
+X-Greylist: delayed 1521 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Apr 2013 16:06:42 EDT
+From: Paul Clements <paul.clements@steeleye.com>
+Subject: [PATCH] nbd: increase default and max request sizes
+To: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <belczyk@bsd.krakow.pl>
+X-Mailer: mail (GNU Mailutils 2.2)
+Message-Id: <20130402194120.54043222C0@clements>
+Date: Tue,  2 Apr 2013 15:41:20 -0400 (EDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 2, 2013 at 12:09 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
->>
->> Actually we still support only one region that is could be high or low,
->> and that extra low is just for workaround
->> buggy system that does not support iommu with kdump.
->
-> Well, crashkernel=X;high crashkernel=Y;low will reserve two ranges (one
-> high and one low). So in some cases we are supporting 2 and in some
-> cases we are supporting 1 range.
+This patch raises the default max request size for nbd to 128KB (from 127KB)
+to get it 4KB aligned. This patch also allows the max request size to be
+increased (via /sys/block/nbd<x>/queue/max_sectors_kb) to 32MB.
 
-when you have more 4G ram or not.
+The patch makes nbd network traffic more efficient by:
+- reducing request fragmentation (4KB alignment)
+- reducing the number of requests (fewer round trips, less network overhead)
 
-and when we have two ranges, low range actually is not for second kernel to
-be loaded. and it is only for swiotlb in case.
+Especially in high latency networks, larger request size can make a dramatic
+difference in performance.
 
->
-> So I still think that let us stick to old behavior of supporting one
-> crashkernel= option. Last crashkernel= option on command line will be
-> acted upon.
+From: Michal Belczyk <belczyk@bsd.krakow.pl>
+Signed-off-by: Paul Clements <paul.clements@steeleye.com>
+---
 
-Yes, only one crashkernel=;high and one crashkernel=;low is honored.
+ nbd.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index 7fecc78..037288e 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -856,6 +856,8 @@ static int __init nbd_init(void)
+ 		disk->queue->limits.discard_granularity = 512;
+ 		disk->queue->limits.max_discard_sectors = UINT_MAX;
+ 		disk->queue->limits.discard_zeroes_data = 0;
++		blk_queue_max_hw_sectors(disk->queue, 65536);
++		disk->queue->limits.max_sectors = 256;
+ 	}
+ 
+ 	if (register_blkdev(NBD_MAJOR, "nbd")) {
