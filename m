@@ -1,93 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759513Ab3DBAHn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 20:07:43 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:59417 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759431Ab3DBAHm (ORCPT
+	id S1759540Ab3DBAIN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 20:08:13 -0400
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:62114 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759293Ab3DBAIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 20:07:42 -0400
-X-Originating-IP: 108.223.40.66
-Date: Mon, 1 Apr 2013 17:07:41 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Tony Chung <tonychung00@gmail.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] watchdog: fix w83627hf_wdt  clear timeout expired
-Message-ID: <20130402000741.GA4077@roeck-us.net>
-References: <1364795972-8649-1-git-send-email-tonychung00@gmail.com>
- <1364795972-8649-2-git-send-email-tonychung00@gmail.com>
+	Mon, 1 Apr 2013 20:08:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364795972-8649-2-git-send-email-tonychung00@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130401231824.GC2487@htj.dyndns.org>
+References: <1328067470-5980-1-git-send-email-fweisbec@gmail.com>
+ <CAAAKZwv9=NFmt6xj1KF2va1i6=UCvka0YkmdOY9JNUMHDOWpGw@mail.gmail.com>
+ <20130401184617.GB31435@htj.dyndns.org> <CAAAKZwvemKDLeuKr6wWMUSVczkRVDZKSzYrXXEMcZ8qvcFR0zQ@mail.gmail.com>
+ <20130401202943.GC31435@htj.dyndns.org> <CAAAKZwuZwN68vtk1qO08GXB_OnQNVtqqp+v_NQfP27W0P_aWZw@mail.gmail.com>
+ <20130401220309.GA2487@htj.dyndns.org> <CAAAKZwuev7Y58ZQNtG+XdFRt0=NedD7zbYTAZbJ95ahBKLVhKA@mail.gmail.com>
+ <20130401223500.GB2487@htj.dyndns.org> <CAAAKZwvdMUAZ+N5d-cdCJbKUq=t9M6BbCxzOTWnVQQBrg55vhw@mail.gmail.com>
+ <20130401231824.GC2487@htj.dyndns.org>
+From: Tim Hockin <thockin@hockin.org>
+Date: Mon, 1 Apr 2013 17:07:49 -0700
+X-Google-Sender-Auth: at8QXbQseb46e0ib6bSiJoXZVi8
+Message-ID: <CAAAKZwt+7w67Kft+MbCXqtCQpOU5B6+6PAdZTCDyAGQQPCGz=w@mail.gmail.com>
+Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v8
+To: Tejun Heo <tj@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <paul@paulmenage.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
+        Daniel J Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Max Kellermann <mk@cm4all.com>,
+        Mandeep Singh Baines <msb@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 31, 2013 at 10:59:32PM -0700, Tony Chung wrote:
-> Observed that the w83627hf watchdog timer start counting during reboot.
-> If the system load the driver after 5  minutes, it rebooted immediately because of timer expired.
-> For example, fsck took more than 5 minutes to run, then the computer reboot as soon as the driver was loaded.
-> 
-Thinking about it, I wonder if that really solves your problem.
+On Mon, Apr 1, 2013 at 4:18 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> On Mon, Apr 01, 2013 at 03:57:46PM -0700, Tim Hockin wrote:
+>> I am not limited by kernel memory, I am limited by PIDs, and I need to
+>> be able to manage them.  memory.kmem.usage_in_bytes seems to be far
+>> too noisy to be useful for this purpose.  It may work fine for "just
+>> stop a fork bomb" but not for any sort of finer-grained control.
+>
+> So, why are you limited by PIDs other than the arcane / weird
+> limitation that you have whereever that limitation is?
 
-If the watchdog driver is built into the kernel, and if the watchdog is already
-running, you still may have the problem that it may time out again and trigger
-(again) before the watchdog application can be loaded. Ultimately, in such a
-situation, the watchdog application, or at least a primitive one, should really
-be started from initramfs and possibly be replaced later on by the "real" watchdog
-application. The watchdog package includes a small binary for that purpose,
-though I have no idea if is is loaded in initramfs or only later.
+Does anyone anywhere actually set PID_MAX > 64K?  As far as I can
+tell, distros default it to 32K or 64K because there's a lot of stuff
+out there that assumes this to be true.  This is the problem we have -
+deep down in the bowels of code that is taking literally years to
+overhaul, we have identified a bad assumption that PIDs are always 5
+characters long.  I can't fix it any faster.  That said, we also
+identified other software that make similar assumptions, though they
+are less critical to us.
 
-Ultimately, that also applies to the original problem you tried to solve with
-the longer timeout. It doesn't seem correct to have to set a long timeout to
-address excessive boot times; in a way that defeats the purpose of a watchdog.
-A cleaner solution for that problem would be to make sure that a small watchdog
-application is started early in the boot process.
+>> > If you think you can tilt it the other way, please feel free to try.
+>>
+>> Just because others caved, doesn't make it less of a hack.  And I will
+>> cave, too, because I don't have time to bang my head against a wall,
+>> especially when I can see the remnants of other people who have tried.
+>>
+>> We'll work around it, or we'll hack around it, or we'll carry this
+>> patch in our own tree and just grumble about ridiculous hacks every
+>> time we have to forward port it.
+>>
+>> I was just hoping that things had worked themselves out in the last year.
+>
+> It's kinda weird getting this response, as I don't think it has been
+> particularly walley.  The arguments were pretty sound from what I
+> recall and Frederic's use case was actually better covered by kmemcg,
+> so where's the said wall?  And I asked you why your use case is
+> different and the only reason you gave me is some arbitrary PID
+> limitation on whatever thing you're using, which you gotta agree is a
+> pretty hard sell.  So, if you think you have a valid case, please just
+> explain it.  Why go passive agressive on it?  If you don't have a
+> valid case for pushing it, yes, you'll have to hack around it - carry
+> the patches in your tree, whatever, or better, fix the weird PID
+> problem.
 
-> Signed-off-by: Tony Chung <tonychung00@gmail.com>
-> ---
->  drivers/watchdog/w83627hf_wdt.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/watchdog/w83627hf_wdt.c b/drivers/watchdog/w83627hf_wdt.c
-> index 8f1111d..7eaa226 100644
-> --- a/drivers/watchdog/w83627hf_wdt.c
-> +++ b/drivers/watchdog/w83627hf_wdt.c
-> @@ -168,14 +168,16 @@ static void w83627hf_init(void)
->  		pr_info("Watchdog already running. Resetting timeout to %d sec\n",
->  			wdt_get_timeout_secs(timeout));
->  		outb_p(timeout, WDT_EFDR);    /* Write back to CRF6 */
-> +	} else {
-> +		outb_p(0, WDT_EFDR);    /* disable to prevent reboot */
->  	}
-Did I miss that earlier, or did yo add it in this version ?
+Sorry Tejun, you're being very reasonable, I was not.  The history of
+this patch is what makes me frustrated.  It seems like such an obvious
+thing to support that it blows my mind that people argue it.
 
-Reading the counter register just returned 0, so what are the benefits
-of writing 0 into it ?
+You know our environment.  Users can use their memory budgets however
+they like - kernel or userspace.  We have good accounting, but we are
+PID limited.  We've even implemented some hacks of our own to make
+that hurt less because the previously-mentioned assumptions are just
+NOT going away any time soon.  I literally have user bugs every week
+on this.  Hopefully the hacks we have put in place will make the users
+stop hurting.  But we're left with some residual problems, some of
+which are because the only limits we can apply are per-user rather
+than per-container.
 
-Thanks,
-Guenter
+>From our POV building the cluster, cgroups are strictly superior to
+most other control interfaces because they work at the same
+granularity that we do.  I want more things to support cgroup control.
+ This particular one was double-tasty because the ability to set the
+limit to 0 would actually solve a different problem we have in
+teardown.  But as I said, we can mostly work around that.
 
->  
->  	w83627hf_setup_crf5();
->  
->  	outb_p(0xF7, WDT_EFER); /* Select CRF7 */
->  	t = inb_p(WDT_EFDR);      /* read CRF7 */
-> -	t &= ~0xC0;               /* disable keyboard & mouse turning off
-> -				    watchdog */
-> +	t &= ~0xD0;               /* clear timeout occurred and disable keyboard
-> +				     & mouse turning off watchdog */
->  	outb_p(t, WDT_EFDR);    /* Write back to CRF7 */
->  
->  	w83627hf_unselect_wd_register();
-> -- 
-> 1.7.0.4
-> 
+So I am frustrated because I don't think my use case will convince you
+(at the root of it, it is a problem of our own making, but it LONG
+predates me), despite my belief that it is obviously a good feature.
+I find myself hoping that someone else comes along and says "me too"
+rather than using a totally different hack for this.
+
+Oh well.  Thanks for the update.  Off to do our own thing again.
+
+
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> tejun
