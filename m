@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759703Ab3DBXEe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:04:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33922 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758033Ab3DBWub (ORCPT
+	id S1759765Ab3DBXEl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:04:41 -0400
+Received: from mail-da0-f43.google.com ([209.85.210.43]:45928 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758629Ab3DBXEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:50:31 -0400
+	Tue, 2 Apr 2013 19:04:38 -0400
+Date: Tue, 2 Apr 2013 16:04:35 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fusionio.com>
-Subject: [ 17/56] Btrfs: limit the global reserve to 512mb
-Date: Tue,  2 Apr 2013 15:49:44 -0700
-Message-Id: <20130402224713.876193901@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
-References: <20130402224711.840825715@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Platform Driver <platform-driver-x86@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH 1/1] Introduce Intel RAPL cooling device driver
+Message-ID: <20130402230435.GA9462@kroah.com>
+References: <1364940936-20846-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
+ <515B51F7.6070901@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515B51F7.6070901@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Apr 02, 2013 at 02:47:35PM -0700, Randy Dunlap wrote:
+> On 04/02/13 15:15, Jacob Pan wrote:
+> > diff --git a/drivers/platform/x86/intel_rapl.c b/drivers/platform/x86/intel_rapl.c
+> > new file mode 100644
+> > index 0000000..56ee928
+> > --- /dev/null
+> > +++ b/drivers/platform/x86/intel_rapl.c
+> > @@ -0,0 +1,1323 @@
+> > +/*
+> > + *  intel_rapl.c - Intel Running Average Power Limit Driver for MSR based
+> > + *                 RAPL interface
+> > + *
+> > + *  Copyright (c) 2013, Intel Corporation.
+> > + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> > +#include <linux/sysfs.h>
+> > +
+> 
+> > +#include "../../../fs/sysfs/sysfs.h"
+> 
+> 
+> What does this driver need from ^^^^^^ that file, which says:
+> 
+>  * fs/sysfs/sysfs.h - sysfs internal header file
+> 
+> and should that be moved to include/linux/sysfs.h ?
 
-------------------
+See my other complain about this already, I beat you to it :)
 
-From: Josef Bacik <jbacik@fusionio.com>
-
-commit fdf30d1c1b386e1b73116cc7e0fb14e962b763b0 upstream.
-
-A user reported a problem where he was getting early ENOSPC with hundreds of
-gigs of free data space and 6 gigs of free metadata space.  This is because the
-global block reserve was taking up the entire free metadata space.  This is
-ridiculous, we have infrastructure in place to throttle if we start using too
-much of the global reserve, so instead of letting it get this huge just limit it
-to 512mb so that users can still get work done.  This allowed the user to
-complete his rsync without issues.  Thanks
-
-Reported-and-tested-by: Stefan Priebe <s.priebe@profihost.ag>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/btrfs/extent-tree.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -3786,7 +3786,7 @@ static void update_global_block_rsv(stru
- 	spin_lock(&block_rsv->lock);
- 	spin_lock(&sinfo->lock);
- 
--	block_rsv->size = num_bytes;
-+	block_rsv->size = min_t(u64, num_bytes, 512 * 1024 * 1024);
- 
- 	num_bytes = sinfo->bytes_used + sinfo->bytes_pinned +
- 		    sinfo->bytes_reserved + sinfo->bytes_readonly +
-
-
+greg k-h
