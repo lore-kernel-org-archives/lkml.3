@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759657Ab3DBBzU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 21:55:20 -0400
-Received: from mail-da0-f41.google.com ([209.85.210.41]:39473 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757201Ab3DBBzT (ORCPT
+	id S1759766Ab3DBB4l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 21:56:41 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51339 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758981Ab3DBB4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 21:55:19 -0400
-Date: Mon, 1 Apr 2013 18:55:16 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Yet another pipe related oops.
-Message-ID: <20130402015516.GA28619@kroah.com>
-References: <20130327135127.GB1738@redhat.com>
- <20130327152030.GY21522@ZenIV.linux.org.uk>
- <CA+55aFx=BPQ2empEahqCs2hQ=sRaw3OjJotrS6OMT3e6tUVMLQ@mail.gmail.com>
- <20130327174506.GZ21522@ZenIV.linux.org.uk>
- <20130401203445.GA20862@ZenIV.linux.org.uk>
- <20130401210029.GA3245@kroah.com>
- <20130401212142.GD21522@ZenIV.linux.org.uk>
- <20130401214436.GA5786@kroah.com>
- <20130401232718.GE21522@ZenIV.linux.org.uk>
- <20130402002204.GF21522@ZenIV.linux.org.uk>
+	Mon, 1 Apr 2013 21:56:40 -0400
+X-AuditID: 9c930197-b7c9dae000006959-95-515a3ad356fd
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 5/9] perf sort: Separate out memory-specific sort keys
+References: <1364816125-12212-1-git-send-email-namhyung@kernel.org>
+	<1364816125-12212-6-git-send-email-namhyung@kernel.org>
+	<20130401202937.GA1022@krava.redhat.com>
+Date: Tue, 02 Apr 2013 10:56:35 +0900
+In-Reply-To: <20130401202937.GA1022@krava.redhat.com> (Jiri Olsa's message of
+	"Mon, 1 Apr 2013 22:29:37 +0200")
+Message-ID: <871uathezw.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130402002204.GF21522@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 01:22:04AM +0100, Al Viro wrote:
-> On Tue, Apr 02, 2013 at 12:27:18AM +0100, Al Viro wrote:
-> > On Mon, Apr 01, 2013 at 02:44:36PM -0700, Greg Kroah-Hartman wrote:
-> > > > > I guess you are right, it will not.  I guess we need to do what
-> > > > > character devices do and have an "intermediate" fops in order to protect
-> > > > > this.  Would that work?
-> > > > 
-> > > > You mean, with reassigning ->f_op in ->open()?  That'll work, as long as
-> > > > we have exclusion between removal and fetching the sucker in primary
-> > > > ->open()...  Where would you prefer to stash fops?
-> > > 
-> > > Ick, that's not going to work as the current api just uses a fops and
-> > > debugfs doesn't keep anything else hanging around that referes to
-> > > something "before" that, like 'struct cdev' does.
-> > 
-> > Er?  How about just sticking it into dentry->d_fsdata and letting
-> > debugfs_remove() zero that out?  What am I missing here?
+On Mon, 1 Apr 2013 22:29:37 +0200, Jiri Olsa wrote:
+> On Mon, Apr 01, 2013 at 08:35:21PM +0900, Namhyung Kim wrote:
+>
+> SNIP
+>
+>> +
+>>  int sort_dimension__add(const char *tok)
+>>  {
+>>  	unsigned int i;
+>> @@ -964,6 +971,33 @@ int sort_dimension__add(const char *tok)
+>>  		return 0;
+>>  	}
+>>  
+>> +	for (i = 0; i < ARRAY_SIZE(memory_sort_dimensions); i++) {
+>> +		struct sort_dimension *sd = &memory_sort_dimensions[i];
+>> +
+>> +		if (strncasecmp(tok, sd->name, strlen(tok)))
+>> +			continue;
+>> +
+>> +		if (sort__mode != SORT_MODE__MEMORY)
+>> +			return -EINVAL;
+>> +
+>> +		if (sd->entry == &sort_mem_daddr_sym)
+>> +			sort__has_sym = 1;
+>> +
+>> +		if (sd->taken)
+>> +			return 0;
+>> +
+>> +		if (sd->entry->se_collapse)
+>> +			sort__need_collapse = 1;
+>> +
+>> +		if (list_empty(&hist_entry__sort_list))
+>> +			sort__first_dimension = i + __SORT_MEMORY_MODE;
+>> +
+>> +		list_add_tail(&sd->entry->list, &hist_entry__sort_list);
+>> +		sd->taken = 1;
+>> +
+>> +		return 0;
+>
+> nice idea, I wonder some of the above code be put into function
+> and used also in previous loop, no big deal though
 
-Nothing, you are right, that would work just fine.  Want me to fix it
-up, or do you want to?
+Hmm.. okay.  I'll try. :)
 
-> Hrm...  For what it's worth, how do debugfs entries associated with
-> dynamic objects deal with debugfs_remove() vs. method calls?  I don't
-> see _anything_ in {,__}debugfs_remove() that would looks like "wait
-> for ongoing write(2) attempts to complete".  IOW, forget rmmod - WTF
-> protects us from access-after-free for any kind of data that isn't
-> permanently allocated?
-
-Nothing protects you from that, that's what I was trying to get at with
-the dynamic attributes comment.
-
-greg k-h
+Thanks,
+Namhyung
