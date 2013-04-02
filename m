@@ -1,64 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070Ab3DBNAo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 09:00:44 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:44598 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760480Ab3DBNAn (ORCPT
+	id S932100Ab3DBNFr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 09:05:47 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:34954 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1760846Ab3DBNFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 09:00:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <1363031174-22525-1-git-send-email-gheorghiuandru@gmail.com>
-References: <1363031174-22525-1-git-send-email-gheorghiuandru@gmail.com>
-Date: Tue, 2 Apr 2013 15:00:42 +0200
-Message-ID: <CAMeQTsbGKaeG68vKRmpPiKEXZF_E7BYsdNwa2A-CyjuQK8Y2JA@mail.gmail.com>
-Subject: Re: [PATCH] drivers: gpu: drm: gma500: Replaced calls kzalloc &
- memcpy with kmemdup
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, Alan Cox <alan@linux.intel.com>,
+	Tue, 2 Apr 2013 09:05:46 -0400
+Date: Tue, 2 Apr 2013 09:05:42 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: linux-kernel@vger.kernel.org,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: [PATCH] wfcqueue: add function for unsynchronized prepend
+Message-ID: <20130402130541.GC11621@Krystal>
+References: <20130311213602.GB9829@Krystal> <20130329081016.GA15979@dcvr.yhbt.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130329081016.GA15979@dcvr.yhbt.net>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 11, 2013 at 8:46 PM, Alexandru Gheorghiu
-<gheorghiuandru@gmail.com> wrote:
-> Replaced calls kzalloc followed by memcpy with call to kmemdup.
-> Patch found using coccinelle.
->
-> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+* Eric Wong (normalperson@yhbt.net) wrote:
+> In some situations, it is necessary to prepend a node to a queue.
+> For epoll, this is necessary for two rare conditions:
+> 
+> * when the user triggers -EFAULT
+> * when reinjecting elements from the ovflist (implemented as a stack)
+
+This approach makes sense.
+
+In terms of API naming, I wonder if "prepend" is the good counterpart
+for "enqueue". Maybe "enqueue_first" or "enqueue_head" could be better
+suited ?
+
+Currently, we have an "append" function used internally, but it's not
+exposed by the API.
+
+Just for fun, I tried making your "prepend" wait-free (thus not
+requiring a mutex), but it's really not obvious, because of its impact
+on splice operation and dequeue-last-node operation.
+
+Thoughts ?
+
+Thanks,
+
+Mathieu
+
+> 
+> Signed-off-by: Eric Wong <normalperson@yhbt.net>
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 > ---
->  drivers/gpu/drm/gma500/intel_bios.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
->
-> diff --git a/drivers/gpu/drm/gma500/intel_bios.c b/drivers/gpu/drm/gma500/intel_bios.c
-> index 403fffb..d349734 100644
-> --- a/drivers/gpu/drm/gma500/intel_bios.c
-> +++ b/drivers/gpu/drm/gma500/intel_bios.c
-> @@ -218,12 +218,11 @@ static void parse_backlight_data(struct drm_psb_private *dev_priv,
->         bl_start = find_section(bdb, BDB_LVDS_BACKLIGHT);
->         vbt_lvds_bl = (struct bdb_lvds_backlight *)(bl_start + 1) + p_type;
->
-> -       lvds_bl = kzalloc(sizeof(*vbt_lvds_bl), GFP_KERNEL);
-> +       lvds_bl = kmemdup(vbt_lvds_bl, sizeof(*vbt_lvds_bl), GFP_KERNEL);
->         if (!lvds_bl) {
->                 dev_err(dev_priv->dev->dev, "out of memory for backlight data\n");
->                 return;
->         }
-> -       memcpy(lvds_bl, vbt_lvds_bl, sizeof(*vbt_lvds_bl));
->         dev_priv->lvds_bl = lvds_bl;
+>  This is on top of my other patch to implement __wfcq_enqueue
+> 
+>  include/linux/wfcqueue.h | 35 +++++++++++++++++++++++++++--------
+>  1 file changed, 27 insertions(+), 8 deletions(-)
+> 
+> diff --git a/include/linux/wfcqueue.h b/include/linux/wfcqueue.h
+> index a452ab9..4cb8f22 100644
+> --- a/include/linux/wfcqueue.h
+> +++ b/include/linux/wfcqueue.h
+> @@ -56,15 +56,17 @@
+>   * [5] __wfcq_first
+>   * [6] __wfcq_next
+>   * [7] __wfcq_enqueue
+> + * [8] __wfcq_prepend
+>   *
+> - *     [1] [2] [3] [4] [5] [6] [7]
+> - * [1]  -   -   -   -   -   -   X
+> - * [2]  -   -   -   -   -   -   X
+> - * [3]  -   -   X   X   X   X   X
+> - * [4]  -   -   X   -   X   X   X
+> - * [5]  -   -   X   X   -   -   X
+> - * [6]  -   -   X   X   -   -   X
+> - * [7]  X   X   X   X   X   X   X
+> + *     [1] [2] [3] [4] [5] [6] [7] [8]
+> + * [1]  -   -   -   -   -   -   X   X
+> + * [2]  -   -   -   -   -   -   X   X
+> + * [3]  -   -   X   X   X   X   X   X
+> + * [4]  -   -   X   -   X   X   X   X
+> + * [5]  -   -   X   X   -   -   X   X
+> + * [6]  -   -   X   X   -   -   X   X
+> + * [7]  X   X   X   X   X   X   X   X
+> + * [8]  X   X   X   X   X   X   X   X
+>   *
+>   * Besides locking, mutual exclusion of dequeue, splice and iteration
+>   * can be ensured by performing all of those operations from a single
+> @@ -441,6 +443,23 @@ static inline enum wfcq_ret __wfcq_splice(
 >  }
->
-> --
-> 1.7.9.5
->
-> --
+>  
+>  /*
+> + * __wfcq_prepend: prepend a node into a queue, requiring mutual exclusion.
+> + *
+> + * No memory barriers are issued.  Mutual exclusion is the responsibility
+> + * of the caller.
+> + */
+> +static inline void __wfcq_prepend(struct wfcq_head *head,
+> +				struct wfcq_tail *tail, struct wfcq_node *node)
+> +{
+> +	node->next = head->node.next;
+> +	head->node.next = node;
+> +
+> +	/* if the queue was empty before, it is no longer empty now */
+> +	if (tail->p == &head->node)
+> +		tail->p = node;
+> +}
+> +
+> +/*
+>   * __wfcq_for_each: Iterate over all nodes in a queue,
+>   * without dequeuing them.
+>   * @head: head of the queue (struct wfcq_head pointer).
+> -- 
+> Eric Wong
+> 
 
-Your patch has been applied to:
-https://github.com/patjak/drm-gma500.git gma500-next
-
-Thanks
-Patrik Jakobsson
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
