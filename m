@@ -1,78 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760673Ab3DBFuG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 01:50:06 -0400
-Received: from nasmtp02.atmel.com ([204.2.163.16]:44999 "EHLO
-	nasmtp02.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760042Ab3DBFuE (ORCPT
+	id S1760701Ab3DBFvE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 01:51:04 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:47375 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760070Ab3DBFvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 01:50:04 -0400
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "richard.genoud@gmail.com" <richard.genoud@gmail.com>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "Lin, JM" <JM.Lin@atmel.com>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v7 03/14] spi/spi-atmel: add physical base address
-Thread-Topic: [PATCH v7 03/14] spi/spi-atmel: add physical base address
-Thread-Index: AQHOJHXx8mQi9R5DskWA68i2eZE0h5jA7keAgAGT0mA=
-Date: Tue, 2 Apr 2013 05:49:50 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A24364150E8B33C@penmbx01>
-References: <1363678866-3567-1-git-send-email-wenyou.yang@atmel.com>
- <1363679016-3761-1-git-send-email-wenyou.yang@atmel.com>
- <20130401134147.GV18636@opensource.wolfsonmicro.com>
-In-Reply-To: <20130401134147.GV18636@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
+	Tue, 2 Apr 2013 01:51:02 -0400
+From: "Edward O'Callaghan" <victoredwardocallaghan@gmail.com>
+To: ath9k-devel@venema.h4ckr.net
+Cc: linux-kernel@vger.kernel.org,
+        "Edward O'Callaghan" <victoredwardocallaghan@gmail.com>
+Subject: [PATCH] Trivial fix for ath9k dmesg typo.
+Date: Tue,  2 Apr 2013 16:50:51 +1100
+Message-Id: <1364881851-21872-1-git-send-email-victoredwardocallaghan@gmail.com>
+X-Mailer: git-send-email 1.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r325o940015432
 
-Hi, Mark,
+Signed-off-by: Edward O'Callaghan <victoredwardocallaghan@gmail.com>
+---
+ drivers/net/wireless/ath/ath9k/hw.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
-> Sent: 2013Äê4ÔÂ1ÈÕ 21:42
-> To: Yang, Wenyou
-> Cc: linux-arm-kernel@lists.infradead.org; grant.likely@secretlab.ca;
-> richard.genoud@gmail.com; plagnioj@jcrosoft.com; Ferre, Nicolas; Lin, JM;
-> spi-devel-general@lists.sourceforge.net; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v7 03/14] spi/spi-atmel: add physical base address
-> 
-> On Tue, Mar 19, 2013 at 03:43:36PM +0800, Wenyou Yang wrote:
-> 
-> > +++ b/drivers/spi/spi-atmel.c
-> > @@ -196,6 +196,7 @@ struct atmel_spi_caps {  struct atmel_spi {
-> >  	spinlock_t		lock;
-> >
-> > +	resource_size_t		phybase;
-> >  	void __iomem		*regs;
-> >  	int			irq;
-> >  	struct clk		*clk;
-> 
-> This looks like the wrong type?
+diff --git a/drivers/net/wireless/ath/ath9k/hw.c b/drivers/net/wireless/ath/ath9k/hw.c
+index 07e2526..76da544 100644
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -778,7 +778,7 @@ u32 ar9003_get_pll_sqsum_dvc(struct ath_hw *ah)
+ 		udelay(100);
+ 
+ 		if (WARN_ON_ONCE(i >= 100)) {
+-			ath_err(common, "PLL4 meaurement not done\n");
++			ath_err(common, "PLL4 measurement not done\n");
+ 			break;
+ 		}
+ 
+-- 
+1.8.2
 
-I double checked.
-
-The type ' resource_size_t ' is defined in include/linux/ types.h as below,
-
-typedef phys_addr_t resource_size_t;
-
-I think it is OK.
-
-Best Regards,
-Wenyou Yang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
