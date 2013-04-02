@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933666Ab3DBWON (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:14:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33397 "EHLO
+	id S933740Ab3DBW3p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:29:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33437 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932690Ab3DBWOE (ORCPT
+	with ESMTP id S933658Ab3DBWOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:04 -0400
+	Tue, 2 Apr 2013 18:14:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 07/68] Bluetooth: Add support for Dell[QCA 0cf3:817a]
-Date: Tue,  2 Apr 2013 15:12:56 -0700
-Message-Id: <20130402221330.764378824@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>,
+        Oded Horovitz <oded@privatecore.com>,
+        Brad Spengler <spender@grsecurity.net>,
+        Matt Carlson <mcarlson@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 18/68] tg3: fix length overflow in VPD firmware parsing
+Date: Tue,  2 Apr 2013 15:13:07 -0700
+Message-Id: <20130402221332.045800853@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
@@ -27,76 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit ebaf5795ef57a70a042ea259448a465024e2821d upstream.
+commit 715230a44310a8cf66fbfb5a46f9a62a9b2de424 upstream.
 
-Add support for the AR9462 chip
+Commit 184b89044fb6e2a74611dafa69b1dce0d98612c6 ("tg3: Use VPD fw version
+when present") introduced VPD parsing that contained a potential length
+overflow.
 
-T:  Bus=03 Lev=01 Prnt=01 Port=08 Cnt=01 Dev#=  5 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0cf3 ProdID=817a Rev= 0.02
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+Limit the hardware's reported firmware string length (max 255 bytes) to
+stay inside the driver's firmware string length (32 bytes). On overflow,
+truncate the formatted firmware string instead of potentially overwriting
+portions of the tg3 struct.
 
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-Cc: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+http://cansecwest.com/slides/2013/PrivateCore%20CSW%202013.pdf
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: Oded Horovitz <oded@privatecore.com>
+Reported-by: Brad Spengler <spender@grsecurity.net>
+Cc: Matt Carlson <mcarlson@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/ath3k.c |    2 ++
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 3 insertions(+)
+ drivers/net/ethernet/broadcom/tg3.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -75,6 +75,7 @@ static struct usb_device_id ath3k_table[
- 	{ USB_DEVICE(0x0CF3, 0x0036) },
- 	{ USB_DEVICE(0x0CF3, 0x3004) },
- 	{ USB_DEVICE(0x0CF3, 0x311D) },
-+	{ USB_DEVICE(0x0CF3, 0x817a) },
- 	{ USB_DEVICE(0x13d3, 0x3375) },
- 	{ USB_DEVICE(0x04CA, 0x3005) },
- 	{ USB_DEVICE(0x13d3, 0x3362) },
-@@ -97,6 +98,7 @@ static struct usb_device_id ath3k_blist_
- 	{ USB_DEVICE(0x0CF3, 0x0036), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0CF3, 0x817a), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -139,6 +139,7 @@ static struct usb_device_id blacklist_ta
- 	{ USB_DEVICE(0x0cf3, 0x0036), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0x817a), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -13590,8 +13590,11 @@ static void __devinit tg3_read_vpd(struc
+ 		if (j + len > block_end)
+ 			goto partno;
+ 
+-		memcpy(tp->fw_ver, &vpd_data[j], len);
+-		strncat(tp->fw_ver, " bc ", vpdlen - len - 1);
++		if (len >= sizeof(tp->fw_ver))
++			len = sizeof(tp->fw_ver) - 1;
++		memset(tp->fw_ver, 0, sizeof(tp->fw_ver));
++		snprintf(tp->fw_ver, sizeof(tp->fw_ver), "%.*s bc ", len,
++			 &vpd_data[j]);
+ 	}
+ 
+ partno:
 
 
