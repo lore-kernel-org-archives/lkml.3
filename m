@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757632Ab3DBWoO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:44:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33147 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933405Ab3DBWMw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933406Ab3DBWMw (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 2 Apr 2013 18:12:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33094 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760573Ab3DBWMp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:12:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Sterba <dsterba@suse.cz>, Josef Bacik <jbacik@fusionio.com>,
-        Lingzhu Xiang <lxiang@redhat.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 091/124] Btrfs: fix space leak when we fail to reserve metadata space
-Date: Tue,  2 Apr 2013 15:11:13 -0700
-Message-Id: <20130402221114.673877345@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 072/124] USB: f81232: fix use-after-free in TIOCMIWAIT
+Date: Tue,  2 Apr 2013 15:10:54 -0700
+Message-Id: <20130402221112.533613748@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -27,87 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit f4881bc7a83eff263789dd524b7c269d138d4af5 upstream.
+commit 508f940f1407656076a2e7d8f7fa059b567ecac2 upstream.
 
-Dave reported a warning when running xfstest 275.  We have been leaking delalloc
-metadata space when our reservations fail.  This is because we were improperly
-calculating how much space to free for our checksum reservations.  The problem
-is we would sometimes free up space that had already been freed in another
-thread and we would end up with negative usage for the delalloc space.  This
-patch fixes the problem by calculating how much space the other threads would
-have already freed, and then calculate how much space we need to free had we not
-done the reservation at all, and then freeing any excess space.  This makes
-xfstests 275 no longer have leaked space.  Thanks
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
 
-Reported-by: David Sterba <dsterba@suse.cz>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
-Reviewed-by: CAI Qian <caiqian@redhat.com>
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/extent-tree.c |   47 +++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 41 insertions(+), 6 deletions(-)
+ drivers/usb/serial/f81232.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -4601,14 +4601,49 @@ int btrfs_delalloc_reserve_metadata(stru
- 		 * If the inodes csum_bytes is the same as the original
- 		 * csum_bytes then we know we haven't raced with any free()ers
- 		 * so we can just reduce our inodes csum bytes and carry on.
--		 * Otherwise we have to do the normal free thing to account for
--		 * the case that the free side didn't free up its reserve
--		 * because of this outstanding reservation.
- 		 */
--		if (BTRFS_I(inode)->csum_bytes == csum_bytes)
-+		if (BTRFS_I(inode)->csum_bytes == csum_bytes) {
- 			calc_csum_metadata_size(inode, num_bytes, 0);
--		else
--			to_free = calc_csum_metadata_size(inode, num_bytes, 0);
-+		} else {
-+			u64 orig_csum_bytes = BTRFS_I(inode)->csum_bytes;
-+			u64 bytes;
+--- a/drivers/usb/serial/f81232.c
++++ b/drivers/usb/serial/f81232.c
+@@ -47,7 +47,6 @@ MODULE_DEVICE_TABLE(usb, id_table);
+ 
+ struct f81232_private {
+ 	spinlock_t lock;
+-	wait_queue_head_t delta_msr_wait;
+ 	u8 line_control;
+ 	u8 line_status;
+ };
+@@ -112,7 +111,7 @@ static void f81232_process_read_urb(stru
+ 	line_status = priv->line_status;
+ 	priv->line_status &= ~UART_STATE_TRANSIENT_MASK;
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+-	wake_up_interruptible(&priv->delta_msr_wait);
++	wake_up_interruptible(&port->delta_msr_wait);
+ 
+ 	if (!urb->actual_length)
+ 		return;
+@@ -261,11 +260,14 @@ static int wait_modem_info(struct usb_se
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 
+ 	while (1) {
+-		interruptible_sleep_on(&priv->delta_msr_wait);
++		interruptible_sleep_on(&port->delta_msr_wait);
+ 		/* see if a signal did it */
+ 		if (signal_pending(current))
+ 			return -ERESTARTSYS;
+ 
++		if (port->serial->disconnected)
++			return -EIO;
 +
-+			/*
-+			 * This is tricky, but first we need to figure out how much we
-+			 * free'd from any free-ers that occured during this
-+			 * reservation, so we reset ->csum_bytes to the csum_bytes
-+			 * before we dropped our lock, and then call the free for the
-+			 * number of bytes that were freed while we were trying our
-+			 * reservation.
-+			 */
-+			bytes = csum_bytes - BTRFS_I(inode)->csum_bytes;
-+			BTRFS_I(inode)->csum_bytes = csum_bytes;
-+			to_free = calc_csum_metadata_size(inode, bytes, 0);
-+
-+
-+			/*
-+			 * Now we need to see how much we would have freed had we not
-+			 * been making this reservation and our ->csum_bytes were not
-+			 * artificially inflated.
-+			 */
-+			BTRFS_I(inode)->csum_bytes = csum_bytes - num_bytes;
-+			bytes = csum_bytes - orig_csum_bytes;
-+			bytes = calc_csum_metadata_size(inode, bytes, 0);
-+
-+			/*
-+			 * Now reset ->csum_bytes to what it should be.  If bytes is
-+			 * more than to_free then we would have free'd more space had we
-+			 * not had an artificially high ->csum_bytes, so we need to free
-+			 * the remainder.  If bytes is the same or less then we don't
-+			 * need to do anything, the other free-ers did the correct
-+			 * thing.
-+			 */
-+			BTRFS_I(inode)->csum_bytes = orig_csum_bytes - num_bytes;
-+			if (bytes > to_free)
-+				to_free = bytes - to_free;
-+			else
-+				to_free = 0;
-+		}
- 		spin_unlock(&BTRFS_I(inode)->lock);
- 		if (dropped)
- 			to_free += btrfs_calc_trans_metadata_size(root, dropped);
+ 		spin_lock_irqsave(&priv->lock, flags);
+ 		status = priv->line_status;
+ 		spin_unlock_irqrestore(&priv->lock, flags);
+@@ -327,7 +329,6 @@ static int f81232_port_probe(struct usb_
+ 		return -ENOMEM;
+ 
+ 	spin_lock_init(&priv->lock);
+-	init_waitqueue_head(&priv->delta_msr_wait);
+ 
+ 	usb_set_serial_port_data(port, priv);
+ 
 
 
