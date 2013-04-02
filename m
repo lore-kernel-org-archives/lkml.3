@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933721Ab3DBW3H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:29:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33453 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932690Ab3DBWON (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933666Ab3DBWON (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 2 Apr 2013 18:14:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33397 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932690Ab3DBWOE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:14:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 20/68] xen/blkback: correctly respond to unknown, non-native requests
-Date: Tue,  2 Apr 2013 15:13:09 -0700
-Message-Id: <20130402221332.306254323@linuxfoundation.org>
+        Ming Lei <ming.lei@canonical.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 07/68] Bluetooth: Add support for Dell[QCA 0cf3:817a]
+Date: Tue,  2 Apr 2013 15:12:56 -0700
+Message-Id: <20130402221330.764378824@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
@@ -27,177 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Ming Lei <ming.lei@canonical.com>
 
-commit 0e367ae46503cfe7791460c8ba8434a5d60b2bd5 upstream.
+commit ebaf5795ef57a70a042ea259448a465024e2821d upstream.
 
-If the frontend is using a non-native protocol (e.g., a 64-bit
-frontend with a 32-bit backend) and it sent an unrecognized request,
-the request was not translated and the response would have the
-incorrect ID.  This may cause the frontend driver to behave
-incorrectly or crash.
+Add support for the AR9462 chip
 
-Since the ID field in the request is always in the same place,
-regardless of the request type we can get the correct ID and make a
-valid response (which will report BLKIF_RSP_EOPNOTSUPP).
+T:  Bus=03 Lev=01 Prnt=01 Port=08 Cnt=01 Dev#=  5 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0cf3 ProdID=817a Rev= 0.02
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-This bug affected 64-bit SLES 11 guests when using a 32-bit backend.
-This guest does a BLKIF_OP_RESERVED_1 (BLKIF_OP_PACKET in the SLES
-source) and would crash in blkif_int() as the ID in the response would
-be invalid.
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Cc: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/xen-blkback/blkback.c |   31 +++++++++++++++++++++++++++----
- drivers/block/xen-blkback/common.h  |   25 +++++++++++++++++++++++++
- include/xen/interface/io/blkif.h    |   10 ++++++++++
- 3 files changed, 62 insertions(+), 4 deletions(-)
+ drivers/bluetooth/ath3k.c |    2 ++
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 3 insertions(+)
 
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -422,6 +422,16 @@ static int dispatch_discard_io(struct xe
- 	return err;
- }
- 
-+static int dispatch_other_io(struct xen_blkif *blkif,
-+			     struct blkif_request *req,
-+			     struct pending_req *pending_req)
-+{
-+	free_req(pending_req);
-+	make_response(blkif, req->u.other.id, req->operation,
-+		      BLKIF_RSP_EOPNOTSUPP);
-+	return -EIO;
-+}
-+
- static void xen_blk_drain_io(struct xen_blkif *blkif)
- {
- 	atomic_set(&blkif->drain, 1);
-@@ -543,17 +553,30 @@ __do_block_io_op(struct xen_blkif *blkif
- 
- 		/* Apply all sanity checks to /private copy/ of request. */
- 		barrier();
--		if (unlikely(req.operation == BLKIF_OP_DISCARD)) {
-+
-+		switch (req.operation) {
-+		case BLKIF_OP_READ:
-+		case BLKIF_OP_WRITE:
-+		case BLKIF_OP_WRITE_BARRIER:
-+		case BLKIF_OP_FLUSH_DISKCACHE:
-+			if (dispatch_rw_block_io(blkif, &req, pending_req))
-+				goto done;
-+			break;
-+		case BLKIF_OP_DISCARD:
- 			free_req(pending_req);
- 			if (dispatch_discard_io(blkif, &req))
--				break;
--		} else if (dispatch_rw_block_io(blkif, &req, pending_req))
-+				goto done;
- 			break;
-+		default:
-+			if (dispatch_other_io(blkif, &req, pending_req))
-+				goto done;
-+			break;
-+		}
- 
- 		/* Yield point for this unbounded loop. */
- 		cond_resched();
- 	}
--
-+done:
- 	return more_to_do;
- }
- 
---- a/drivers/block/xen-blkback/common.h
-+++ b/drivers/block/xen-blkback/common.h
-@@ -76,11 +76,18 @@ struct blkif_x86_32_request_discard {
- 	uint64_t       nr_sectors;
- } __attribute__((__packed__));
- 
-+struct blkif_x86_32_request_other {
-+	uint8_t        _pad1;
-+	blkif_vdev_t   _pad2;
-+	uint64_t       id;           /* private guest value, echoed in resp  */
-+} __attribute__((__packed__));
-+
- struct blkif_x86_32_request {
- 	uint8_t        operation;    /* BLKIF_OP_???                         */
- 	union {
- 		struct blkif_x86_32_request_rw rw;
- 		struct blkif_x86_32_request_discard discard;
-+		struct blkif_x86_32_request_other other;
- 	} u;
- } __attribute__((__packed__));
- 
-@@ -112,11 +119,19 @@ struct blkif_x86_64_request_discard {
- 	uint64_t       nr_sectors;
- } __attribute__((__packed__));
- 
-+struct blkif_x86_64_request_other {
-+	uint8_t        _pad1;
-+	blkif_vdev_t   _pad2;
-+	uint32_t       _pad3;        /* offsetof(blkif_..,u.discard.id)==8   */
-+	uint64_t       id;           /* private guest value, echoed in resp  */
-+} __attribute__((__packed__));
-+
- struct blkif_x86_64_request {
- 	uint8_t        operation;    /* BLKIF_OP_???                         */
- 	union {
- 		struct blkif_x86_64_request_rw rw;
- 		struct blkif_x86_64_request_discard discard;
-+		struct blkif_x86_64_request_other other;
- 	} u;
- } __attribute__((__packed__));
- 
-@@ -262,6 +277,11 @@ static inline void blkif_get_x86_32_req(
- 		dst->u.discard.nr_sectors = src->u.discard.nr_sectors;
- 		break;
- 	default:
-+		/*
-+		 * Don't know how to translate this op. Only get the
-+		 * ID so failure can be reported to the frontend.
-+		 */
-+		dst->u.other.id = src->u.other.id;
- 		break;
- 	}
- }
-@@ -293,6 +313,11 @@ static inline void blkif_get_x86_64_req(
- 		dst->u.discard.nr_sectors = src->u.discard.nr_sectors;
- 		break;
- 	default:
-+		/*
-+		 * Don't know how to translate this op. Only get the
-+		 * ID so failure can be reported to the frontend.
-+		 */
-+		dst->u.other.id = src->u.other.id;
- 		break;
- 	}
- }
---- a/include/xen/interface/io/blkif.h
-+++ b/include/xen/interface/io/blkif.h
-@@ -138,11 +138,21 @@ struct blkif_request_discard {
- 	uint8_t        _pad3;
- } __attribute__((__packed__));
- 
-+struct blkif_request_other {
-+	uint8_t      _pad1;
-+	blkif_vdev_t _pad2;        /* only for read/write requests         */
-+#ifdef CONFIG_X86_64
-+	uint32_t     _pad3;        /* offsetof(blkif_req..,u.other.id)==8*/
-+#endif
-+	uint64_t     id;           /* private guest value, echoed in resp  */
-+} __attribute__((__packed__));
-+
- struct blkif_request {
- 	uint8_t        operation;    /* BLKIF_OP_???                         */
- 	union {
- 		struct blkif_request_rw rw;
- 		struct blkif_request_discard discard;
-+		struct blkif_request_other other;
- 	} u;
- } __attribute__((__packed__));
- 
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -75,6 +75,7 @@ static struct usb_device_id ath3k_table[
+ 	{ USB_DEVICE(0x0CF3, 0x0036) },
+ 	{ USB_DEVICE(0x0CF3, 0x3004) },
+ 	{ USB_DEVICE(0x0CF3, 0x311D) },
++	{ USB_DEVICE(0x0CF3, 0x817a) },
+ 	{ USB_DEVICE(0x13d3, 0x3375) },
+ 	{ USB_DEVICE(0x04CA, 0x3005) },
+ 	{ USB_DEVICE(0x13d3, 0x3362) },
+@@ -97,6 +98,7 @@ static struct usb_device_id ath3k_blist_
+ 	{ USB_DEVICE(0x0CF3, 0x0036), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0CF3, 0x817a), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -139,6 +139,7 @@ static struct usb_device_id blacklist_ta
+ 	{ USB_DEVICE(0x0cf3, 0x0036), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0x817a), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
 
 
