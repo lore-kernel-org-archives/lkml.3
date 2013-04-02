@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760555Ab3DBD6L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 23:58:11 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:55887 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760532Ab3DBDzW (ORCPT
+	id S1760512Ab3DBDzR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 23:55:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50964 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760501Ab3DBDzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 23:55:22 -0400
+	Mon, 1 Apr 2013 23:55:12 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: David Ahern <dsahern@gmail.com>, Borislav Petkov <bp@alien8.de>,
@@ -15,9 +15,9 @@ Cc: David Ahern <dsahern@gmail.com>, Borislav Petkov <bp@alien8.de>,
         Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 14/23] perf: make backtrace support based on CONFIG_BACKTRACE
-Date: Mon,  1 Apr 2013 21:54:28 -0600
-Message-Id: <1364874877-5618-15-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 10/23] perf: make demangle support based on CONFIG_DEMANGLE
+Date: Mon,  1 Apr 2013 21:54:24 -0600
+Message-Id: <1364874877-5618-11-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1364874877-5618-1-git-send-email-dsahern@gmail.com>
 References: <1364874877-5618-1-git-send-email-dsahern@gmail.com>
@@ -35,87 +35,143 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile                 |   10 ++++------
- tools/perf/Pconfig                  |    3 +++
- tools/perf/config/feature-tests.mak |    2 +-
- tools/perf/util/util.c              |    5 +++--
- 4 files changed, 11 insertions(+), 9 deletions(-)
+ tools/perf/Makefile      |   70 ++++++++++++++++++++++------------------------
+ tools/perf/Pconfig       |    4 +++
+ tools/perf/util/symbol.h |    3 +-
+ 3 files changed, 39 insertions(+), 38 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 3ada6e7..0baa19b 100644
+index 5c060c8..65283e6 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -31,8 +31,6 @@ include config/utilities.mak
- # Define EXTRA_CFLAGS=-m64 or EXTRA_CFLAGS=-m32 as appropriate for cross-builds.
+@@ -34,8 +34,6 @@ include config/utilities.mak
  #
  # Define WERROR=0 to disable treating any warnings as errors.
+ #
+-# Define NO_DEMANGLE if you do not want C++ symbol demangling.
 -#
--# Define NO_BACKTRACE if you do not want stack backtrace debug feature
- 
- $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
-@@ -829,10 +827,10 @@ ifndef NO_ON_EXIT
+ # Define NO_BACKTRACE if you do not want stack backtrace debug feature
+ #
+ # Define NO_LIBNUMA if you do not want numa perf benchmark
+@@ -571,7 +569,9 @@ ifdef CONFIG_LIBELF
  	endif
+ else
+     NO_DWARF := 1
+-    NO_DEMANGLE := 1
++    ifdef CONFIG_DEMANGLE
++        $(error CONFIG_DEMANGLE depends on LIBELF)
++    endif
+     ifdef CONFIG_LIBUNWIND
+         $(error CONFIG_LIBUNWIND depends on LIBELF)
+     endif
+@@ -775,41 +775,37 @@ ifdef CONFIG_LIBPYTHON
+     LANG_BINDINGS += $(OUTPUT)python/perf.so
  endif
  
--ifndef NO_BACKTRACE
--       ifeq ($(call try-cc,$(SOURCE_BACKTRACE),,-DBACKTRACE_SUPPORT),y)
--               BASIC_CFLAGS += -DBACKTRACE_SUPPORT
--       endif
-+ifdef CONFIG_BACKTRACE
-+    ifneq ($(call try-cc,$(SOURCE_BACKTRACE),,-DBACKTRACE_SUPPORT),y)
-+        $(error backtrace not supported. Unset CONFIG_BACKTRACE)
-+   endif
+-ifdef NO_DEMANGLE
+-	BASIC_CFLAGS += -DNO_DEMANGLE
+-else
+-        ifdef HAVE_CPLUS_DEMANGLE
+-		EXTLIBS += -liberty
+-		BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
++ifdef CONFIG_DEMANGLE
++    ifdef HAVE_CPLUS_DEMANGLE
++        EXTLIBS += -liberty
++        BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
++    else
++        FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
++        has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
++        ifeq ($(has_bfd),y)
++            EXTLIBS += -lbfd
+         else
+-		FLAGS_BFD=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -DPACKAGE='perf' -lbfd
+-		has_bfd := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD),libbfd)
+-		ifeq ($(has_bfd),y)
+-			EXTLIBS += -lbfd
+-		else
+-			FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
+-			has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
+-			ifeq ($(has_bfd_iberty),y)
+-				EXTLIBS += -lbfd -liberty
+-			else
+-				FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
+-				has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z),libz)
+-				ifeq ($(has_bfd_iberty_z),y)
+-					EXTLIBS += -lbfd -liberty -lz
+-				else
+-					FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
+-					has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
+-					ifeq ($(has_cplus_demangle),y)
+-						EXTLIBS += -liberty
+-						BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
+-					else
+-						msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
+-						BASIC_CFLAGS += -DNO_DEMANGLE
+-					endif
+-				endif
+-			endif
+-		endif
+-	endif
++            FLAGS_BFD_IBERTY=$(FLAGS_BFD) -liberty
++            has_bfd_iberty := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY),liberty)
++            ifeq ($(has_bfd_iberty),y)
++                EXTLIBS += -lbfd -liberty
++            else
++                FLAGS_BFD_IBERTY_Z=$(FLAGS_BFD_IBERTY) -lz
++                has_bfd_iberty_z := $(call try-cc,$(SOURCE_BFD),$(FLAGS_BFD_IBERTY_Z),libz)
++                ifeq ($(has_bfd_iberty_z),y)
++                    EXTLIBS += -lbfd -liberty -lz
++                else
++                    FLAGS_CPLUS_DEMANGLE=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -liberty
++                    has_cplus_demangle := $(call try-cc,$(SOURCE_CPLUS_DEMANGLE),$(FLAGS_CPLUS_DEMANGLE),demangle)
++                    ifeq ($(has_cplus_demangle),y)
++                        EXTLIBS += -liberty
++                        BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
++                    endif
++                    $(error No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling or unset CONFIG_DEMANGLE)
++                endif
++            endif
++        endif
++    endif
  endif
  
- ifdef CONFIG_LIBNUMA
+ ifeq ($(NO_PERF_REGS),0)
 diff --git a/tools/perf/Pconfig b/tools/perf/Pconfig
-index c4e20cc..b03881c 100644
+index d6e067e..dc0fc36 100644
 --- a/tools/perf/Pconfig
 +++ b/tools/perf/Pconfig
-@@ -49,3 +49,6 @@ config LIBNUMA
-     bool "Enable support for libnuma"
-     help
-         Used for 'perf bench numa mem' benchmark
+@@ -26,6 +26,10 @@ config LIBUNWIND
+     bool "Enable support for libunwind"
+     depends on HAVE_CFI_UNWIND_SUPPORT && LIBELF
+ 
++ config DEMANGLE
++    bool "Enable support for demangle"
++    depends on LIBELF
 +
-+config BACKTRACE
-+    bool "Enable support for stack backtrace debugging"
-diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index 7873e6d..1d16481 100644
---- a/tools/perf/config/feature-tests.mak
-+++ b/tools/perf/config/feature-tests.mak
-@@ -192,7 +192,7 @@ int main(void)
- endef
- endif
+ config LIBPERL
+     bool "Enable support for perl scripting engine"
  
--ifndef NO_BACKTRACE
-+ifdef CONFIG_BACKTRACE
- define SOURCE_BACKTRACE
- #include <execinfo.h>
- #include <stdio.h>
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 805d1f5..fa2916d 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -1,7 +1,8 @@
- #include "../perf.h"
- #include "util.h"
- #include <sys/mman.h>
--#ifdef BACKTRACE_SUPPORT
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index b62ca37..cd284dc 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -12,6 +12,7 @@
+ #include <byteswap.h>
+ #include <libgen.h>
+ #include "build-id.h"
 +#include <linux/kconfig.h>
-+#ifdef CONFIG_BACKTRACE
- #include <execinfo.h>
- #endif
- #include <stdio.h>
-@@ -202,7 +203,7 @@ int hex2u64(const char *ptr, u64 *long_val)
- }
  
- /* Obtain a backtrace and print it to stdout. */
--#ifdef BACKTRACE_SUPPORT
-+#ifdef CONFIG_BACKTRACE
- void dump_stack(void)
- {
- 	void *array[16];
+ #ifdef LIBELF_SUPPORT
+ #include <libelf.h>
+@@ -29,7 +30,7 @@ static inline char *bfd_demangle(void __maybe_unused *v, const char *c, int i)
+ 	return cplus_demangle(c, i);
+ }
+ #else
+-#ifdef NO_DEMANGLE
++#ifndef CONFIG_DEMANGLE
+ static inline char *bfd_demangle(void __maybe_unused *v,
+ 				 const char __maybe_unused *c,
+ 				 int __maybe_unused i)
 -- 
 1.7.10.1
 
