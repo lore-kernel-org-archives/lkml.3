@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143Ab3DBO23 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 10:28:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47008 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761319Ab3DBO20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 10:28:26 -0400
-Date: Tue, 2 Apr 2013 16:28:25 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] memcg: don't do cleanup manually if
- mem_cgroup_css_online() fails
-Message-ID: <20130402142825.GA32520@dhcp22.suse.cz>
-References: <515A8A40.6020406@huawei.com>
- <20130402121600.GK24345@dhcp22.suse.cz>
- <20130402141646.GQ24345@dhcp22.suse.cz>
- <515AE948.1000704@parallels.com>
+	id S932232Ab3DBOav (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 10:30:51 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:58362 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761170Ab3DBOau (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 10:30:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515AE948.1000704@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1364654108-16307-4-git-send-email-alex.shi@intel.com>
+References: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
+	<1364654108-16307-4-git-send-email-alex.shi@intel.com>
+Date: Tue, 2 Apr 2013 16:30:48 +0200
+Message-ID: <CAKfTPtArivjSsVn=Xc_421oqo+mXUfMaXhfyATK+s=xXO+P3eA@mail.gmail.com>
+Subject: Re: [patch v6 03/21] sched: only count runnable avg on cfs_rq's nr_running
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, Paul Turner <pjt@google.com>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        gregkh@linuxfoundation.org,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 02-04-13 18:20:56, Glauber Costa wrote:
-> On 04/02/2013 06:16 PM, Michal Hocko wrote:
-> >  mem_cgroup_css_online
-> >       memcg_init_kmem
-> >         mem_cgroup_get		# refcnt = 2
-> >           memcg_update_all_caches
-> >             memcg_update_cache_size	# fails with ENOMEM
-> 
-> Here is the thing: this one in kmem only happens for kmem enabled
-> memcgs. For those, we tend to do a get once, and put only when the last
-> kmem reference is gone.
-> 
-> For non-kmem memcgs, refcnt will be 1 here, and will be balanced out by
-> the mem_cgroup_put() in css_free.
+On 30 March 2013 15:34, Alex Shi <alex.shi@intel.com> wrote:
+> Old function count the runnable avg on rq's nr_running even there is
+> only rt task in rq. That is incorrect, so correct it to cfs_rq's
+> nr_running.
+>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/fair.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 2881d42..026e959 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -2829,7 +2829,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>         }
+>
+>         if (!se) {
+> -               update_rq_runnable_avg(rq, rq->nr_running);
+> +               update_rq_runnable_avg(rq, rq->cfs.nr_running);
 
-So we need this, right?
----
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f608546..2ef875d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5306,6 +5306,8 @@ static int memcg_propagate_kmem(struct mem_cgroup *memcg)
- 	ret = memcg_update_cache_sizes(memcg);
- 	mutex_unlock(&set_limit_mutex);
- out:
-+	if (ret)
-+		mem_cgroup_put(memcg);
- 	return ret;
- }
- #endif /* CONFIG_MEMCG_KMEM */
-@@ -6417,16 +6419,6 @@ mem_cgroup_css_online(struct cgroup *cont)
- 
- 	error = memcg_init_kmem(memcg, &mem_cgroup_subsys);
- 	mutex_unlock(&memcg_create_mutex);
--	if (error) {
--		/*
--		 * We call put now because our (and parent's) refcnts
--		 * are already in place. mem_cgroup_put() will internally
--		 * call __mem_cgroup_free, so return directly
--		 */
--		mem_cgroup_put(memcg);
--		if (parent->use_hierarchy)
--			mem_cgroup_put(parent);
--	}
- 	return error;
- }
- 
--- 
-Michal Hocko
-SUSE Labs
+A RT task that preempts your CFS task will be accounted in the
+runnable_avg fields. So whatever you do, RT task will impact your
+runnable_avg statistics. Instead of trying to get only CFS tasks, you
+should take into account all tasks activity in the rq.
+
+Vincent
+>                 inc_nr_running(rq);
+>         }
+>         hrtick_update(rq);
+> --
+> 1.7.12
+>
