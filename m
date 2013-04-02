@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761673Ab3DBQ17 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 12:27:59 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:58405 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757258Ab3DBQ15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 12:27:57 -0400
-Date: Tue, 2 Apr 2013 12:27:38 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Subject: Re: [PATCH 23/33] generic dynamic per cpu refcounting
-Message-ID: <20130402162738.GG31577@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Kent Overstreet <koverstreet@google.com>,
-	linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-	akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
-	Felipe Balbi <balbi@ti.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-	Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-	Asai Thambi S P <asamymuthupa@micron.com>,
-	Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-	Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-	Benjamin LaHaise <bcrl@kvack.org>
-References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
- <1363883754-27966-24-git-send-email-koverstreet@google.com>
+	id S1761801Ab3DBQ2S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 12:28:18 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:37957 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761761Ab3DBQ2N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 12:28:13 -0400
+Message-ID: <515B0718.3060305@atmel.com>
+Date: Tue, 2 Apr 2013 18:28:08 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363883754-27966-24-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: <dgilbert@interlog.com>, <jhovold@gmail.com>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] rtc: rtc-at91rm9200: manage IMR depending on revision
+References: <1364573029-19346-5-git-send-email-jhovold@gmail.com> <1364908007-5150-1-git-send-email-nicolas.ferre@atmel.com> <515AFA0B.7020509@interlog.com>
+In-Reply-To: <515AFA0B.7020509@interlog.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
+On 04/02/2013 05:32 PM, Douglas Gilbert :
+> On 13-04-02 09:06 AM, Nicolas Ferre wrote:
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> ---
+>> Hi all,
+>>
+>> The funny thing is that I was writing exactly the same code as Johan's
+>> when he posted his series.
+>>
+>> So, here is my single patch, with the comment about the readback
+>> stolen from
+>> Johan's, but without the way to determine with IP is buggy and which
+>> one is
+>> not...
+>> After having dug the possibility to read the IP revision, I discovered
+>> that it
+>> is not possible to use this information ("version" register offset
+>> changing
+>> according to... IP version number: well done!).
+>> In conclusion, I guess that the only way to determine if we need the
+>> workaround
+>> is to use the DT.
+>> One remark though: if we use the compatibility string for this
+>> purpose, I fear
+>> that we would twist the meaning of this information: SoC using an
+>> "atmel,at91sam9x5-rtc" compatible RTC will not necessarily be touched
+>> by the
+>> "non responding IMR" bug: at91sam9n12 or upcoming sama5d3 are not
+>> affected for
+>> instance, and we need to cling to "atmel,at91rm9200-rtc" for them...
+>> I think that we can use this method for the moment and move to another
+>> compatibility string later if it is needed.
+> 
+> Rather than have so many people working on rtc-at91rm9200.c,
+> how about someone bring its "RTT" sibling into the DT
+> world. I'm talking about drivers/rtc/rtc-at91sam9.c ...
 
-> +		v = atomic64_add_return(1 + (1ULL << PCPU_COUNT_BITS),
-> +					&ref->count);
-> +
-> +		if (!(v >> PCPU_COUNT_BITS) &&
-> +		    REF_STATUS(pcpu_count) == PCPU_REF_NONE && alloc)
-> +			percpu_ref_alloc(ref, pcpu_count);
+I am currently trying to fix the issue that I have created by pushing a
+boggus fix to Andrew's patch series (and "stable" incidentally).
+So I am trying to find the best way to address this and:
+- a correct
+- a smallest possible
+path or patch series (I admit that I prefer a single patch).
 
-This assumes that the kernel is compiled with -fno-strict-overflow.
-Which we do, and this is not the only place int the kernel where we
-depend on this, so while I was nervous before, I'm okay with it now.
-Could we at least have a comment saying that we're depending on
--fno-strict-overflow, though?
+So, I am still posting rtc-at91rm9200.c patches and hoping from a
+feedback. Once we have a good solution I will try to include it in 3.9
+and the stable trees affected.
 
-
+Best regards,
+-- 
+Nicolas Ferre
