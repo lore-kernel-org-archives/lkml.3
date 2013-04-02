@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759822Ab3DBCAv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 22:00:51 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58536 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757907Ab3DBCAu (ORCPT
+	id S1759855Ab3DBCCR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 22:02:17 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:58909 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758738Ab3DBCCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 22:00:50 -0400
-Date: Tue, 2 Apr 2013 13:00:44 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: linux-next: manual merge of the net-next tree with the wireless
- tree
-Message-Id: <20130402130044.ddacc1c990698bd416e4c808@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__2_Apr_2013_13_00_44_+1100_n7=e+wvFFUabKbTr"
+	Mon, 1 Apr 2013 22:02:15 -0400
+Date: Tue, 2 Apr 2013 10:01:37 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: airlied@linux.ie
+Cc: lars@metafoo.de, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: [PATCH]gpu:drm: Add missing dependency on DRM KMS/FB CMA helper
+Message-ID: <20130402020137.GA32592@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>, airlied@linux.ie,
+	lars@metafoo.de, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__2_Apr_2013_13_00_44_+1100_n7=e+wvFFUabKbTr
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit 2e3b3c42f06ff6801b3d7839757bbdb231619083
+(Add DRM KMS/FB CMA helper) add a kbuild entry,
+config DRM_KMS_CMA_HELPER, in DRM's Kconfig without
+dependence on DRM, it cause DRM's kconfig can't
+be show in a submenu.
 
-Hi all,
+This patch fix it.
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/nfc/microread/mei.c between commit 9593b0b1179c ("NFC: microread:
-Fix build failure due to a new MEI bus API") from the wireless tree and
-commit 63cd353c34a0 ("NFC: microread: Fix MEI build failure") from the
-net-next tree.
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+---
+ drivers/gpu/drm/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-I fixed it up (using the wireless tree version) and can carry the fix as
-necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__2_Apr_2013_13_00_44_+1100_n7=e+wvFFUabKbTr
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRWjvMAAoJEECxmPOUX5FEYecP/RWmvNmN63kf5X/6ZfzZj1aw
-RccbsO9QE2oZ0ROjy2SAFFv1v0XCZm6ekavdwrmdVnGzaHmYOjzBCZHYm5JI6SP2
-3X9URm7ATbLiXMbIZB5XOkRUbx2X8s49M/ZPJ5Nwd49xNvizi/kn6q369Feds9v/
-2RQ955B/Cvp7CgoUCAv1TsTELnwgWowyFZ3TXv4UKxMsYF1mYzruD9R2n4TJ18mg
-BQPJdlO8nU3bkLIPByMmRDLFqFJQZPHTgPyHBP25g3nPT01KrCHc2104gHM/GOR3
-zIcOcrstIMg2CgjPGuBqktMFsVCMLCMpeSXMi8m8dYi8/7DrrXrnDjfsyjRS9HCL
-D7XL8mEXyOBL37HKXC/t7vS9/1D2/fGN3HiYIB/ZHcqQyp45AvyQiRQ9+wYlGWBC
-k9q+USQSGkNUiUSHjnyHur3Ao0S1dGRGmYC0WBnKqjEwJ+ouReovziDg4ifzBU5X
-lEAVODT0O++rJAirTjyRDsVKJpwKlL18/FAdD5jYUdZvWgIY+KC4/lJ3fUzYRqko
-7kHaw8qtqLhzxd3X16oHnOI8OUkn5PfywrZwNsLUCDVX3pXFAarzUh2xSTzSboq4
-Yk0JhO0cl3A+EjMbq3hlkJcEjMZUfLXOVQJ/NIGoeKeqB+ECIklY5enGgsQycT7S
-27Et7rNfZ0cZ6oI0vzdq
-=ABY3
------END PGP SIGNATURE-----
-
---Signature=_Tue__2_Apr_2013_13_00_44_+1100_n7=e+wvFFUabKbTr--
+diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
+index 1e82882..28e3cb4 100644
+--- a/drivers/gpu/drm/Kconfig
++++ b/drivers/gpu/drm/Kconfig
+@@ -63,6 +63,7 @@ config DRM_GEM_CMA_HELPER
+ 
+ config DRM_KMS_CMA_HELPER
+ 	bool
++	depends on DRM
+ 	select DRM_GEM_CMA_HELPER
+ 	select FB_SYS_FILLRECT
+ 	select FB_SYS_COPYAREA
+-- 
+1.7.12.4.dirty
