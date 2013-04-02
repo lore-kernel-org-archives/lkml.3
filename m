@@ -1,59 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759831Ab3DBJSE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:18:04 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:63890 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab3DBJSB (ORCPT
+	id S1760540Ab3DBJVv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:21:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50485 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755864Ab3DBJVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:18:01 -0400
-From: Kefeng Wang <wangkefeng.wang@huawei.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Hanjun Guo <guohanjun@huawei.com>, <linux-kernel@vger.kernel.org>,
-        Kefeng Wang <wangkefeng.wang@huawei.com>
-Subject: [PATCH] irq: fix comment typo on irq_thread_check_affinity
-Date: Tue, 2 Apr 2013 17:15:17 +0800
-Message-ID: <1364894117-10800-1-git-send-email-wangkefeng.wang@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	Tue, 2 Apr 2013 05:21:49 -0400
+Date: Tue, 2 Apr 2013 02:21:24 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-62baca8aed636eb10f9274761aa1dcbfd48a7caa@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@kernel.org
+In-Reply-To: <1363686376-29525-1-git-send-email-namhyung@kernel.org>
+References: <1363686376-29525-1-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools:
+  Get rid of redundant _FILE_OFFSET_BITS definition
+Git-Commit-ID: 62baca8aed636eb10f9274761aa1dcbfd48a7caa
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.68.221]
-X-CFilter-Loop: Reflected
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 02:21:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CONFIG CPU_MASK_OFFSTACK mentioned should be CPUMASK_OFFSTACK,
-and fix a misspelling.
+Commit-ID:  62baca8aed636eb10f9274761aa1dcbfd48a7caa
+Gitweb:     http://git.kernel.org/tip/62baca8aed636eb10f9274761aa1dcbfd48a7caa
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Tue, 19 Mar 2013 18:46:16 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 21 Mar 2013 13:04:00 -0300
 
-Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
+perf tools: Get rid of redundant _FILE_OFFSET_BITS definition
+
+We define it in the Makefile so no need to duplicate it.
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1363686376-29525-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- kernel/irq/manage.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/builtin-record.c        | 2 --
+ tools/perf/util/header.c           | 2 --
+ tools/perf/util/session.c          | 2 --
+ tools/perf/util/trace-event-read.c | 2 --
+ tools/perf/util/util.h             | 2 --
+ 5 files changed, 10 deletions(-)
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index fa17855..78c6d0f 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -727,7 +727,7 @@ out_unlock:
- 
- #ifdef CONFIG_SMP
- /*
-- * Check whether we need to chasnge the affinity of the interrupt thread.
-+ * Check whether we need to change the affinity of the interrupt thread.
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 9f2344a..78a41fd 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -5,8 +5,6 @@
+  * (or a CPU, or a PID) into the perf.data output file - for
+  * later analysis via perf report.
   */
- static void
- irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
-@@ -750,7 +750,7 @@ irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
- 	raw_spin_lock_irq(&desc->lock);
- 	/*
- 	 * This code is triggered unconditionally. Check the affinity
--	 * mask pointer. For CPU_MASK_OFFSTACK=n this is optimized out.
-+	 * mask pointer. For CPUMASK_OFFSTACK=n this is optimized out.
- 	 */
- 	if (desc->irq_data.affinity)
- 		cpumask_copy(mask, desc->irq_data.affinity);
--- 
-1.6.0.2
-
-
+-#define _FILE_OFFSET_BITS 64
+-
+ #include "builtin.h"
+ 
+ #include "perf.h"
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index a9b7349..79e48c72 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1,5 +1,3 @@
+-#define _FILE_OFFSET_BITS 64
+-
+ #include "util.h"
+ #include <sys/types.h>
+ #include <byteswap.h>
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index ab265c2..c8ba120 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1,5 +1,3 @@
+-#define _FILE_OFFSET_BITS 64
+-
+ #include <linux/kernel.h>
+ 
+ #include <byteswap.h>
+diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
+index 7cb2463..8c8181a 100644
+--- a/tools/perf/util/trace-event-read.c
++++ b/tools/perf/util/trace-event-read.c
+@@ -18,8 +18,6 @@
+  *
+  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  */
+-#define _FILE_OFFSET_BITS 64
+-
+ #include <dirent.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 6a0781c..a45710b 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -1,8 +1,6 @@
+ #ifndef GIT_COMPAT_UTIL_H
+ #define GIT_COMPAT_UTIL_H
+ 
+-#define _FILE_OFFSET_BITS 64
+-
+ #ifndef FLEX_ARRAY
+ /*
+  * See if our compiler is known to support flexible array members.
