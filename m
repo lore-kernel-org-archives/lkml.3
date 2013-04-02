@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760982Ab3DBNPY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 09:15:24 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:33129 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760953Ab3DBNPU (ORCPT
+	id S932222Ab3DBNPb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 09:15:31 -0400
+Received: from mail-da0-f53.google.com ([209.85.210.53]:45079 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760987Ab3DBNP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 09:15:20 -0400
+	Tue, 2 Apr 2013 09:15:26 -0400
 From: Prabhakar lad <prabhakar.csengg@gmail.com>
 To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         LAK <linux-arm-kernel@lists.infradead.org>,
         Sekhar Nori <nsekhar@ti.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v7 1/2] ARM: davinci: dm355: add support for v4l2 video display
-Date: Tue,  2 Apr 2013 18:45:03 +0530
-Message-Id: <1364908504-14232-2-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH v7 2/2] ARM: davinci: dm355 EVM: add support for VPBE display
+Date: Tue,  2 Apr 2013 18:45:04 +0530
+Message-Id: <1364908504-14232-3-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1364908504-14232-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1364908504-14232-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -25,267 +25,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-Create platform devices for various video modules like venc,osd,
-vpbe and v4l2 driver for dm355.
+add support for V4L2 video display to DM355 EVM.
+Support for SD modes is provided, along with Composite
+output
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- arch/arm/mach-davinci/board-dm355-evm.c |    4 +-
- arch/arm/mach-davinci/davinci.h         |    3 +-
- arch/arm/mach-davinci/dm355.c           |  173 ++++++++++++++++++++++++++++++-
- 3 files changed, 172 insertions(+), 8 deletions(-)
+ arch/arm/mach-davinci/board-dm355-evm.c |   69 ++++++++++++++++++++++++++++++-
+ 1 files changed, 68 insertions(+), 1 deletions(-)
 
 diff --git a/arch/arm/mach-davinci/board-dm355-evm.c b/arch/arm/mach-davinci/board-dm355-evm.c
-index 147b8e1..37d12cc 100644
+index 37d12cc..1043506 100644
 --- a/arch/arm/mach-davinci/board-dm355-evm.c
 +++ b/arch/arm/mach-davinci/board-dm355-evm.c
-@@ -253,8 +253,6 @@ static struct davinci_uart_config uart_config __initdata = {
+@@ -242,6 +242,73 @@ static struct vpfe_config vpfe_cfg = {
+ 	.ccdc = "DM355 CCDC",
+ };
  
- static void __init dm355_evm_map_io(void)
- {
--	/* setup input configuration for VPFE input devices */
--	dm355_set_vpfe_config(&vpfe_cfg);
- 	dm355_init();
- }
- 
-@@ -344,6 +342,8 @@ static __init void dm355_evm_init(void)
++/* venc standards timings */
++static struct vpbe_enc_mode_info dm355evm_enc_preset_timing[] = {
++	{
++		.name		= "ntsc",
++		.timings_type	= VPBE_ENC_STD,
++		.std_id		= V4L2_STD_525_60,
++		.interlaced	= 1,
++		.xres		= 720,
++		.yres		= 480,
++		.aspect		= {11, 10},
++		.fps		= {30000, 1001},
++		.left_margin	= 0x79,
++		.upper_margin	= 0x10,
++	},
++	{
++		.name		= "pal",
++		.timings_type	= VPBE_ENC_STD,
++		.std_id		= V4L2_STD_625_50,
++		.interlaced	= 1,
++		.xres		= 720,
++		.yres		= 576,
++		.aspect		= {54, 59},
++		.fps		= {25, 1},
++		.left_margin	= 0x7E,
++		.upper_margin	= 0x16
++	},
++};
++
++#define VENC_STD_ALL	(V4L2_STD_NTSC | V4L2_STD_PAL)
++
++/*
++ * The outputs available from VPBE + ecnoders. Keep the
++ * the order same as that of encoders. First those from venc followed by that
++ * from encoders. Index in the output refers to index on a particular encoder.
++ * Driver uses this index to pass it to encoder when it supports more than
++ * one output. Application uses index of the array to set an output.
++ */
++static struct vpbe_output dm355evm_vpbe_outputs[] = {
++	{
++		.output		= {
++			.index		= 0,
++			.name		= "Composite",
++			.type		= V4L2_OUTPUT_TYPE_ANALOG,
++			.std		= VENC_STD_ALL,
++			.capabilities	= V4L2_OUT_CAP_STD,
++		},
++		.subdev_name	= DM355_VPBE_VENC_SUBDEV_NAME,
++		.default_mode	= "ntsc",
++		.num_modes	= ARRAY_SIZE(dm355evm_enc_preset_timing),
++		.modes		= dm355evm_enc_preset_timing,
++		.if_params	= V4L2_MBUS_FMT_FIXED,
++	},
++};
++
++static struct vpbe_config dm355evm_display_cfg = {
++	.module_name	= "dm355-vpbe-display",
++	.i2c_adapter_id	= 1,
++	.osd		= {
++		.module_name	= DM355_VPBE_OSD_SUBDEV_NAME,
++	},
++	.venc		= {
++		.module_name	= DM355_VPBE_VENC_SUBDEV_NAME,
++	},
++	.num_outputs	= ARRAY_SIZE(dm355evm_vpbe_outputs),
++	.outputs	= dm355evm_vpbe_outputs,
++};
++
+ static struct platform_device *davinci_evm_devices[] __initdata = {
+ 	&dm355evm_dm9000,
+ 	&davinci_nand_device,
+@@ -342,7 +409,7 @@ static __init void dm355_evm_init(void)
  	davinci_setup_mmc(0, &dm355evm_mmc_config);
  	davinci_setup_mmc(1, &dm355evm_mmc_config);
  
-+	dm355_init_video(&vpfe_cfg, NULL);
-+
+-	dm355_init_video(&vpfe_cfg, NULL);
++	dm355_init_video(&vpfe_cfg, &dm355evm_display_cfg);
+ 
  	dm355_init_spi0(BIT(0), dm355_evm_spi_info,
  			ARRAY_SIZE(dm355_evm_spi_info));
- 
-diff --git a/arch/arm/mach-davinci/davinci.h b/arch/arm/mach-davinci/davinci.h
-index a9de512..5402592 100644
---- a/arch/arm/mach-davinci/davinci.h
-+++ b/arch/arm/mach-davinci/davinci.h
-@@ -39,6 +39,7 @@
- #define SYSMOD_VDAC_CONFIG		0x2c
- #define SYSMOD_VIDCLKCTL		0x38
- #define SYSMOD_VPSS_CLKCTL		0x44
-+#define VPSS_MUXSEL_EXTCLK_ENABLE	BIT(1)
- #define VPSS_VENCCLKEN_ENABLE		BIT(3)
- #define VPSS_DACCLKEN_ENABLE		BIT(4)
- #define VPSS_PLLC2SYSCLK5_ENABLE	BIT(5)
-@@ -79,7 +80,7 @@ void __init dm355_init(void);
- void dm355_init_spi0(unsigned chipselect_mask,
- 		const struct spi_board_info *info, unsigned len);
- void __init dm355_init_asp1(u32 evt_enable, struct snd_platform_data *pdata);
--void dm355_set_vpfe_config(struct vpfe_config *cfg);
-+int __init dm355_init_video(struct vpfe_config *, struct vpbe_config *);
- 
- /* DM365 function declarations */
- void __init dm365_init(void);
-diff --git a/arch/arm/mach-davinci/dm355.c b/arch/arm/mach-davinci/dm355.c
-index 8e98bb0..174ad02 100644
---- a/arch/arm/mach-davinci/dm355.c
-+++ b/arch/arm/mach-davinci/dm355.c
-@@ -36,6 +36,10 @@
- 
- #define DM355_UART2_BASE	(IO_PHYS + 0x206000)
- 
-+#define DM355_OSD_BASE			0x01c70200
-+
-+#define DM355_VENC_BASE			0x01c70400
-+
- /*
-  * Device specific clocks
-  */
-@@ -744,11 +748,150 @@ static struct platform_device vpfe_capture_dev = {
- 	},
- };
- 
--void dm355_set_vpfe_config(struct vpfe_config *cfg)
-+static struct resource dm355_osd_resources[] = {
-+	{
-+		.start	= DM355_OSD_BASE,
-+		.end	= DM355_OSD_BASE + 0x17f,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+static struct platform_device dm355_osd_dev = {
-+	.name		= DM355_VPBE_OSD_SUBDEV_NAME,
-+	.id		= -1,
-+	.num_resources	= ARRAY_SIZE(dm355_osd_resources),
-+	.resource	= dm355_osd_resources,
-+	.dev		= {
-+		.dma_mask		= &vpfe_capture_dma_mask,
-+		.coherent_dma_mask	= DMA_BIT_MASK(32),
-+	},
-+};
-+
-+static struct resource dm355_venc_resources[] = {
-+	{
-+		.start	= IRQ_VENCINT,
-+		.end	= IRQ_VENCINT,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+	/* venc registers io space */
-+	{
-+		.start	= DM355_VENC_BASE,
-+		.end	= DM355_VENC_BASE + 0x17f,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	/* VDAC config register io space */
-+	{
-+		.start	= DAVINCI_SYSTEM_MODULE_BASE + SYSMOD_VDAC_CONFIG,
-+		.end	= DAVINCI_SYSTEM_MODULE_BASE + SYSMOD_VDAC_CONFIG + 3,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+static struct resource dm355_v4l2_disp_resources[] = {
-+	{
-+		.start	= IRQ_VENCINT,
-+		.end	= IRQ_VENCINT,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+	/* venc registers io space */
-+	{
-+		.start	= DM355_VENC_BASE,
-+		.end	= DM355_VENC_BASE + 0x17f,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+static int dm355_vpbe_setup_pinmux(enum v4l2_mbus_pixelcode if_type,
-+			    int field)
- {
--	vpfe_capture_dev.dev.platform_data = cfg;
-+	switch (if_type) {
-+	case V4L2_MBUS_FMT_SGRBG8_1X8:
-+		davinci_cfg_reg(DM355_VOUT_FIELD_G70);
-+		break;
-+
-+	case V4L2_MBUS_FMT_YUYV10_1X20:
-+		if (field)
-+			davinci_cfg_reg(DM355_VOUT_FIELD);
-+		else
-+			davinci_cfg_reg(DM355_VOUT_FIELD_G70);
-+		break;
-+
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	davinci_cfg_reg(DM355_VOUT_COUTL_EN);
-+	davinci_cfg_reg(DM355_VOUT_COUTH_EN);
-+
-+	return 0;
-+}
-+
-+static int dm355_venc_setup_clock(enum vpbe_enc_timings_type type,
-+				   unsigned int pclock)
-+{
-+	void __iomem *vpss_clk_ctrl_reg;
-+
-+	vpss_clk_ctrl_reg = DAVINCI_SYSMOD_VIRT(SYSMOD_VPSS_CLKCTL);
-+
-+	switch (type) {
-+	case VPBE_ENC_STD:
-+		writel(VPSS_DACCLKEN_ENABLE |
-+		       VPSS_VENCCLKEN_ENABLE, vpss_clk_ctrl_reg);
-+		break;
-+
-+	case VPBE_ENC_DV_TIMINGS:
-+		if (pclock > 27000000)
-+			/*
-+			 * For HD, use external clock source since we cannot
-+			 * support HD mode with internal clocks.
-+			 */
-+			writel(VPSS_MUXSEL_EXTCLK_ENABLE, vpss_clk_ctrl_reg);
-+		break;
-+
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
- }
- 
-+static struct platform_device dm355_vpbe_display = {
-+	.name		= "vpbe-v4l2",
-+	.id		= -1,
-+	.num_resources	= ARRAY_SIZE(dm355_v4l2_disp_resources),
-+	.resource	= dm355_v4l2_disp_resources,
-+	.dev		= {
-+		.dma_mask		= &vpfe_capture_dma_mask,
-+		.coherent_dma_mask	= DMA_BIT_MASK(32),
-+	},
-+};
-+
-+struct venc_platform_data dm355_venc_pdata = {
-+	.setup_pinmux	= dm355_vpbe_setup_pinmux,
-+	.setup_clock	= dm355_venc_setup_clock,
-+};
-+
-+static struct platform_device dm355_venc_dev = {
-+	.name		= DM355_VPBE_VENC_SUBDEV_NAME,
-+	.id		= -1,
-+	.num_resources	= ARRAY_SIZE(dm355_venc_resources),
-+	.resource	= dm355_venc_resources,
-+	.dev		= {
-+		.dma_mask		= &vpfe_capture_dma_mask,
-+		.coherent_dma_mask	= DMA_BIT_MASK(32),
-+		.platform_data		= (void *)&dm355_venc_pdata,
-+	},
-+};
-+
-+static struct platform_device dm355_vpbe_dev = {
-+	.name		= "vpbe_controller",
-+	.id		= -1,
-+	.dev		= {
-+		.dma_mask		= &vpfe_capture_dma_mask,
-+		.coherent_dma_mask	= DMA_BIT_MASK(32),
-+	},
-+};
-+
- /*----------------------------------------------------------------------*/
- 
- static struct map_desc dm355_io_desc[] = {
-@@ -868,6 +1011,29 @@ void __init dm355_init(void)
- 	davinci_map_sysmod();
- }
- 
-+int __init dm355_init_video(struct vpfe_config *vpfe_cfg,
-+				struct vpbe_config *vpbe_cfg)
-+{
-+	if (vpfe_cfg || vpbe_cfg)
-+		platform_device_register(&dm355_vpss_device);
-+
-+	if (vpfe_cfg) {
-+		vpfe_capture_dev.dev.platform_data = vpfe_cfg;
-+		platform_device_register(&dm355_ccdc_dev);
-+		platform_device_register(&vpfe_capture_dev);
-+	}
-+
-+	if (vpbe_cfg) {
-+		dm355_vpbe_dev.dev.platform_data = vpbe_cfg;
-+		platform_device_register(&dm355_osd_dev);
-+		platform_device_register(&dm355_venc_dev);
-+		platform_device_register(&dm355_vpbe_dev);
-+		platform_device_register(&dm355_vpbe_display);
-+	}
-+
-+	return 0;
-+}
-+
- static int __init dm355_init_devices(void)
- {
- 	if (!cpu_is_davinci_dm355())
-@@ -875,9 +1041,6 @@ static int __init dm355_init_devices(void)
- 
- 	davinci_cfg_reg(DM355_INT_EDMA_CC);
- 	platform_device_register(&dm355_edma_device);
--	platform_device_register(&dm355_vpss_device);
--	platform_device_register(&dm355_ccdc_dev);
--	platform_device_register(&vpfe_capture_dev);
- 
- 	return 0;
- }
 -- 
 1.7.4.1
 
