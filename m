@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759758Ab3DBB6i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 21:58:38 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:58011 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758279Ab3DBB6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 21:58:37 -0400
-Date: Mon, 1 Apr 2013 21:58:23 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Subject: Re: [PATCH 14/33] aio: make aio_read_evt() more efficient, convert
- to hrtimers
-Message-ID: <20130402015823.GC30122@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Kent Overstreet <koverstreet@google.com>,
-	linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-	akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
-	Felipe Balbi <balbi@ti.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-	Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-	Asai Thambi S P <asamymuthupa@micron.com>,
-	Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-	Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-	Benjamin LaHaise <bcrl@kvack.org>
-References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
- <1363883754-27966-15-git-send-email-koverstreet@google.com>
+	id S1759786Ab3DBB7m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 21:59:42 -0400
+Received: from toro.web-alm.net ([62.245.132.31]:42690 "EHLO toro.web-alm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759046Ab3DBB7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 21:59:40 -0400
+X-Greylist: delayed 1104 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Apr 2013 21:59:40 EDT
+Message-ID: <515A364B.7070100@osadl.org>
+Date: Tue, 02 Apr 2013 03:37:15 +0200
+From: Carsten Emde <C.Emde@osadl.org>
+Organization: Open Source Automation Development Lab (OSADL)
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363883754-27966-15-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.6.11.1-rt32
+References: <1364527527.10629.10.camel@gandalf.local.home>
+In-Reply-To: <1364527527.10629.10.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 09:35:35AM -0700, Kent Overstreet wrote:
-> Previously, aio_read_event() pulled a single completion off the ringbuffer
-> at a time, locking and unlocking each time.  Change it to pull off as many
-> events as it can at a time, and copy them directly to userspace.
-> 
-> This also fixes a bug where if copying the event to userspace failed,
-> we'd lose the event.
-> 
-> Also convert it to wait_event_interruptible_hrtimeout(), which
-> simplifies it quite a bit.
+Steven,
 
-Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
+> I'm pleased to announce the 3.6.11.1-rt32 stable release.
+Thank you.
+
+Your patch-3.6.11.1 additionally needs 
+23d3b8bfb8eb20e7d96afa09991e6a5ed1c83164 (net: qdisc busylock needs 
+lockdep annotations) to avoid the compile error
+drivers/net/ppp/ppp_generic.c: In function ‘ppp_dev_init’:
+drivers/net/ppp/ppp_generic.c:1027:5: error: ‘struct net_device’ has no 
+member named ‘qdisc_tx_busylock’
+
+And since you apparently decided to backport 
+303c07db487be59ae9fda10600ea65ca11c21497 (ppp: set qdisc_tx_busylock to 
+avoid LOCKDEP splat), you probably should also backport the related 
+changes in bonding and team:
+- 49ee49202b4ac4be95d05e4bf24a9ac8b54c5528 (bonding: set 
+qdisc_tx_busylock to avoid LOCKDEP splat)
+- b3c581d5d7130fc7f2eab9ab14c8de8882b42380 (team: set qdisc_tx_busylock 
+to avoid LOCKDEP splat)
+
+	-Carsten.
