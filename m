@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760420Ab3DBDy4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 23:54:56 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52797 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760402Ab3DBDyx (ORCPT
+	id S1752357Ab3DBEAu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 00:00:50 -0400
+Received: from mail-da0-f54.google.com ([209.85.210.54]:47531 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760391Ab3DBDyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 23:54:53 -0400
+	Mon, 1 Apr 2013 23:54:51 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: David Ahern <dsahern@gmail.com>, Borislav Petkov <bp@alien8.de>,
@@ -15,9 +15,9 @@ Cc: David Ahern <dsahern@gmail.com>, Borislav Petkov <bp@alien8.de>,
         Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 03/23] perf: make python support based on CONFIG_LIBPYTHON
-Date: Mon,  1 Apr 2013 21:54:17 -0600
-Message-Id: <1364874877-5618-4-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 02/23] perf: make perl support based on CONFIG_LIBPERL
+Date: Mon,  1 Apr 2013 21:54:16 -0600
+Message-Id: <1364874877-5618-3-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1364874877-5618-1-git-send-email-dsahern@gmail.com>
 References: <1364874877-5618-1-git-send-email-dsahern@gmail.com>
@@ -35,222 +35,156 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile                     |  105 +++++++++++++++----------------
- tools/perf/Pconfig                      |    3 +
- tools/perf/builtin-script.c             |    2 +-
- tools/perf/config/feature-tests.mak     |    2 +-
- tools/perf/util/trace-event-scripting.c |   17 +++--
- 5 files changed, 61 insertions(+), 68 deletions(-)
+ tools/perf/Makefile                     |   34 ++++++++++++++-----------------
+ tools/perf/Pconfig                      |    2 ++
+ tools/perf/builtin-script.c             |    3 ++-
+ tools/perf/config/feature-tests.mak     |    4 ++--
+ tools/perf/util/trace-event-scripting.c |   13 ++++++------
+ 5 files changed, 28 insertions(+), 28 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index af7b746..2225c3d 100644
+index 4e54d05..af7b746 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
 @@ -16,8 +16,6 @@ include config/utilities.mak
  #
  # Define CROSS_COMPILE as prefix name of compiler if you want cross-builds.
  #
--# Define NO_LIBPYTHON to disable python script extension.
+-# Define NO_LIBPERL to disable perl script extension.
 -#
- # Define PYTHON to point to the python binary if the default
- # `python' is not correct; for example: PYTHON=python2
+ # Define NO_LIBPYTHON to disable python script extension.
  #
-@@ -733,69 +731,64 @@ ifdef CONFIG_LIBPERL
-     LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
+ # Define PYTHON to point to the python binary if the default
+@@ -718,23 +716,21 @@ ifndef NO_GTK2
+ 	endif
  endif
  
--disable-python = $(eval $(disable-python_code))
--define disable-python_code
--  BASIC_CFLAGS += -DNO_LIBPYTHON
--  $(if $(1),$(warning No $(1) was found))
--  $(warning Python support will not be built)
--endef
-+ifdef CONFIG_LIBPYTHON
-+    override PYTHON := \
-+        $(call get-executable-or-default,PYTHON,python)
- 
--override PYTHON := \
--  $(call get-executable-or-default,PYTHON,python)
-+    ifndef PYTHON
-+        $(error python interpreter not found. Install it or unset CONFIG_LIBPYTHON to continue.)
-+    endif
- 
--ifndef PYTHON
--  $(call disable-python,python interpreter)
+-ifdef NO_LIBPERL
+-	BASIC_CFLAGS += -DNO_LIBPERL
 -else
-+    PYTHON_WORD := $(call shell-wordify,$(PYTHON))
- 
--  PYTHON_WORD := $(call shell-wordify,$(PYTHON))
-+    # python extension build directories
-+    PYTHON_EXTBUILD     := $(OUTPUT)python_ext_build/
-+    PYTHON_EXTBUILD_LIB := $(PYTHON_EXTBUILD)lib/
-+    PYTHON_EXTBUILD_TMP := $(PYTHON_EXTBUILD)tmp/
-+    export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
- 
--  ifdef NO_LIBPYTHON
--    $(call disable-python)
--  else
-+    python-clean := rm -rf $(PYTHON_EXTBUILD) $(OUTPUT)python/perf.so
- 
-     override PYTHON_CONFIG := \
--      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
-+        $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
- 
-     ifndef PYTHON_CONFIG
--      $(call disable-python,python-config tool)
--    else
+-       PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
+-       PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
+-       PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
+-	PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
+-	FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
 -
--      PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
--
--      PYTHON_EMBED_LDOPTS := $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
--      PYTHON_EMBED_LDFLAGS := $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
--      PYTHON_EMBED_LIBADD := $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
--      PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
--      FLAGS_PYTHON_EMBED := $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
--
--      ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED),python),y)
--        $(call disable-python,Python.h (for Python 2.x))
--      else
--
--        ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED),python version),y)
--          $(warning Python 3 is not yet supported; please set)
--          $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
--          $(warning If you also have Python 2 installed, then)
--          $(warning try something like:)
--          $(warning $(and ,))
--          $(warning $(and ,)  make PYTHON=python2)
--          $(warning $(and ,))
--          $(warning Otherwise, disable Python support entirely:)
--          $(warning $(and ,))
--          $(warning $(and ,)  make NO_LIBPYTHON=1)
--          $(warning $(and ,))
--          $(error   $(and ,))
--        else
--          ALL_LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
--          EXTLIBS += $(PYTHON_EMBED_LIBADD)
--          LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
--          LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
--          LANG_BINDINGS += $(OUTPUT)python/perf.so
--        endif
--
--      endif
-+        $(error python-config not found. Install it or unset CONFIG_LIBPYTHON to continue.)
-     endif
--  endif
+-	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED),perl),y)
+-		BASIC_CFLAGS += -DNO_LIBPERL
+-	else
+-               ALL_LDFLAGS += $(PERL_EMBED_LDFLAGS)
+-               EXTLIBS += $(PERL_EMBED_LIBADD)
+-		LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
+-		LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
+-	endif
++ifdef CONFIG_LIBPERL
++    PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
++    PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
++    PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
++    PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
++    FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
 +
-+    PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
-+
-+    PYTHON_EMBED_LDOPTS := $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
-+    PYTHON_EMBED_LDFLAGS := $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
-+    PYTHON_EMBED_LIBADD := $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
-+    PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
-+    FLAGS_PYTHON_EMBED := $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
-+
-+    ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED)),y)
-+        $(warning Failed to detect python development kit.)
-+        $(warning Install it or unset CONFIG_LIBPYTHON to continue.)
-+        $(warning e.g., apt-get install python-dev (ubuntu).)
-+        $(warning       yum install python-devel (Fedora).)
-+        $(error )
++    ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED)),y)
++        $(error perl module ExtUtils::Embed not installed. Install it or unset CONFIG_LIBPERL to continue)
 +    endif
 +
-+    ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED),python version),y)
-+        $(warning Python 3 is not yet supported; please set)
-+        $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
-+        $(warning If you also have Python 2 installed, then)
-+        $(warning try something like:)
-+        $(warning $(and ,))
-+        $(warning $(and ,)  make PYTHON=python2)
-+        $(warning $(and ,))
-+        $(warning Otherwise, disable Python support entirely by unsetting CONFIG_LIBPYTHON.)
-+        $(error   $(and ,))
-+    endif
-+
-+    ALL_LDFLAGS   += $(PYTHON_EMBED_LDFLAGS)
-+    EXTLIBS       += $(PYTHON_EMBED_LIBADD)
-+    LIB_OBJS      += $(OUTPUT)util/scripting-engines/trace-event-python.o
-+    LIB_OBJS      += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
-+    LANG_BINDINGS += $(OUTPUT)python/perf.so
++    ALL_LDFLAGS += $(PERL_EMBED_LDFLAGS)
++    EXTLIBS += $(PERL_EMBED_LIBADD)
++    LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
++    LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
  endif
  
- ifdef NO_DEMANGLE
+ disable-python = $(eval $(disable-python_code))
 diff --git a/tools/perf/Pconfig b/tools/perf/Pconfig
-index a636af3..67ae110 100644
+index e69de29..a636af3 100644
 --- a/tools/perf/Pconfig
 +++ b/tools/perf/Pconfig
-@@ -1,2 +1,5 @@
- config LIBPERL
-     bool "Enable support for perl scripting engine"
-+
-+config LIBPYTHON
-+    bool "Enable support for python scripting engine"
+@@ -0,0 +1,2 @@
++config LIBPERL
++    bool "Enable support for perl scripting engine"
 diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 7841533..e57b87d 100644
+index 92d4658..7841533 100644
 --- a/tools/perf/builtin-script.c
 +++ b/tools/perf/builtin-script.c
-@@ -1115,7 +1115,7 @@ int find_scripts(char **scripts_array, char **scripts_path_array)
+@@ -16,6 +16,7 @@
+ #include "util/evsel.h"
+ #include "util/sort.h"
+ #include <linux/bitmap.h>
++#include <linux/kconfig.h>
+ 
+ static char const		*script_name;
+ static char const		*generate_script_lang;
+@@ -1110,7 +1111,7 @@ int find_scripts(char **scripts_array, char **scripts_path_array)
+ 	for_each_lang(scripts_path, scripts_dir, lang_dirent, lang_next) {
+ 		snprintf(lang_path, MAXPATHLEN, "%s/%s", scripts_path,
+ 			 lang_dirent.d_name);
+-#ifdef NO_LIBPERL
++#ifndef CONFIG_LIBPERL
  		if (strstr(lang_path, "perl"))
  			continue;
  #endif
--#ifdef NO_LIBPYTHON
-+#ifndef CONFIG_LIBPYTHON
- 		if (strstr(lang_path, "python"))
- 			continue;
- #endif
 diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index 1222b33..2a2fa3b 100644
+index b4eabb4..1222b33 100644
 --- a/tools/perf/config/feature-tests.mak
 +++ b/tools/perf/config/feature-tests.mak
-@@ -115,7 +115,7 @@ return 0;
+@@ -102,7 +102,7 @@ int main(void)
  endef
  endif
  
--ifndef NO_LIBPYTHON
-+ifdef CONFIG_LIBPYTHON
- define SOURCE_PYTHON_VERSION
- #include <Python.h>
- #if PY_VERSION_HEX >= 0x03000000
+-ifndef NO_LIBPERL
++ifdef CONFIG_LIBPERL
+ define SOURCE_PERL_EMBED
+ #include <EXTERN.h>
+ #include <perl.h>
+@@ -235,4 +235,4 @@ int main(void)
+ 	numa_available();
+ 	return 0;
+ }
+-endef
+\ No newline at end of file
++endef
 diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
-index 3343d97..932d480 100644
+index 8715a10..3343d97 100644
 --- a/tools/perf/util/trace-event-scripting.c
 +++ b/tools/perf/util/trace-event-scripting.c
-@@ -46,11 +46,8 @@ static void process_event_unsupported(union perf_event *event __maybe_unused,
+@@ -27,6 +27,7 @@
+ #include "../perf.h"
+ #include "util.h"
+ #include "trace-event.h"
++#include <linux/kconfig.h>
  
- static void print_python_unsupported_msg(void)
+ struct scripting_context *scripting_context;
+ 
+@@ -110,7 +111,7 @@ void setup_python_scripting(void)
+ static void print_perl_unsupported_msg(void)
  {
--	fprintf(stderr, "Python scripting not supported."
--		"  Install libpython and rebuild perf to enable it.\n"
--		"For example:\n  # apt-get install python-dev (ubuntu)"
--		"\n  # yum install python-devel (Fedora)"
--		"\n  etc.\n");
-+	fprintf(stderr, "Python scripting not supported.\n"
-+		"Enable CONFIG_LIBPYTHON and rebuild perf to enable it.\n");
- }
- 
- static int python_start_script_unsupported(const char *script __maybe_unused,
-@@ -94,17 +91,17 @@ static void register_python_scripting(struct scripting_ops *scripting_ops)
+ 	fprintf(stderr, "Perl scripting not supported."
+-		"  Install libperl and rebuild perf to enable it.\n"
++		"  Enable CONFIG_LIBPERL and rebuild perf.\n"
+ 		"For example:\n  # apt-get install libperl-dev (ubuntu)"
+ 		"\n  # yum install 'perl(ExtUtils::Embed)' (Fedora)"
+ 		"\n  etc.\n");
+@@ -156,16 +157,16 @@ static void register_perl_scripting(struct scripting_ops *scripting_ops)
  	scripting_context = malloc(sizeof(struct scripting_context));
  }
  
--#ifdef NO_LIBPYTHON
-+#ifdef CONFIG_LIBPYTHON
-+extern struct scripting_ops python_scripting_ops;
+-#ifdef NO_LIBPERL
++#ifdef CONFIG_LIBPERL
++extern struct scripting_ops perl_scripting_ops;
 +
- void setup_python_scripting(void)
+ void setup_perl_scripting(void)
  {
--	register_python_scripting(&python_scripting_unsupported_ops);
-+	register_python_scripting(&python_scripting_ops);
+-	register_perl_scripting(&perl_scripting_unsupported_ops);
++	register_perl_scripting(&perl_scripting_ops);
  }
  #else
--extern struct scripting_ops python_scripting_ops;
+-extern struct scripting_ops perl_scripting_ops;
 -
- void setup_python_scripting(void)
+ void setup_perl_scripting(void)
  {
--	register_python_scripting(&python_scripting_ops);
-+	register_python_scripting(&python_scripting_unsupported_ops);
+-	register_perl_scripting(&perl_scripting_ops);
++	register_perl_scripting(&perl_scripting_unsupported_ops);
  }
  #endif
- 
 -- 
 1.7.10.1
 
