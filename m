@@ -1,158 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596Ab3DBPE2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 11:04:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49054 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932122Ab3DBPEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 11:04:25 -0400
-Date: Tue, 2 Apr 2013 17:04:22 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: [PATCH -v2] memcg: don't do cleanup manually if
- mem_cgroup_css_online() fails
-Message-ID: <20130402150422.GB32520@dhcp22.suse.cz>
-References: <515A8A40.6020406@huawei.com>
- <20130402121600.GK24345@dhcp22.suse.cz>
- <20130402141646.GQ24345@dhcp22.suse.cz>
- <515AE948.1000704@parallels.com>
- <20130402142825.GA32520@dhcp22.suse.cz>
- <515AEC3A.2030401@parallels.com>
+	id S932599Ab3DBPFU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 11:05:20 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:58799 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932122Ab3DBPFT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 11:05:19 -0400
+Date: Tue, 2 Apr 2013 12:05:11 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCHSET 0/9] perf tools: Bug fix and cleanup for sort keys
+Message-ID: <20130402150511.GE1952@ghostprotocols.net>
+References: <1364816125-12212-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <515AEC3A.2030401@parallels.com>
+In-Reply-To: <1364816125-12212-1-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 02-04-13 18:33:30, Glauber Costa wrote:
-> On 04/02/2013 06:28 PM, Michal Hocko wrote:
-> > On Tue 02-04-13 18:20:56, Glauber Costa wrote:
-> >> On 04/02/2013 06:16 PM, Michal Hocko wrote:
-> >>>  mem_cgroup_css_online
-> >>>       memcg_init_kmem
-> >>>         mem_cgroup_get		# refcnt = 2
-> >>>           memcg_update_all_caches
-> >>>             memcg_update_cache_size	# fails with ENOMEM
-> >>
-> >> Here is the thing: this one in kmem only happens for kmem enabled
-> >> memcgs. For those, we tend to do a get once, and put only when the last
-> >> kmem reference is gone.
-> >>
-> >> For non-kmem memcgs, refcnt will be 1 here, and will be balanced out by
-> >> the mem_cgroup_put() in css_free.
-> > 
-> > So we need this, right?
-> > ---
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index f608546..2ef875d 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -5306,6 +5306,8 @@ static int memcg_propagate_kmem(struct mem_cgroup *memcg)
-> >  	ret = memcg_update_cache_sizes(memcg);
-> >  	mutex_unlock(&set_limit_mutex);
-> >  out:
-> > +	if (ret)
-> > +		mem_cgroup_put(memcg);
-> >  	return ret;
-> >  }
-> >  #endif /* CONFIG_MEMCG_KMEM */
-> > @@ -6417,16 +6419,6 @@ mem_cgroup_css_online(struct cgroup *cont)
-> >  
-> >  	error = memcg_init_kmem(memcg, &mem_cgroup_subsys);
-> >  	mutex_unlock(&memcg_create_mutex);
-> > -	if (error) {
-> > -		/*
-> > -		 * We call put now because our (and parent's) refcnts
-> > -		 * are already in place. mem_cgroup_put() will internally
-> > -		 * call __mem_cgroup_free, so return directly
-> > -		 */
-> > -		mem_cgroup_put(memcg);
-> > -		if (parent->use_hierarchy)
-> > -			mem_cgroup_put(parent);
-> > -	}
-> >  	return error;
-> >  }
-> >  
-> > 
-> Yes, indeed you are very right - and thanks for looking at such depth.
+Em Mon, Apr 01, 2013 at 08:35:16PM +0900, Namhyung Kim escreveu:
+> This is a couple of bugfix, cleanup and enhancement for sort keys.
 
-So what about the patch bellow? It seems that I provoked all this mess
-but my brain managed to push it away so I do not remember why I thought
-the parent needs reference drop... It is "only" 3.9 thing fortunately.
----
->From 3aff5d958f1d0717795018f7d0d6b63d53ad1dd3 Mon Sep 17 00:00:00 2001
-From: Li Zefan <lizefan@huawei.com>
-Date: Tue, 2 Apr 2013 16:37:39 +0200
-Subject: [PATCH] memcg: don't do cleanup manually if mem_cgroup_css_online()
- fails
+Applied 1-4.
 
-mem_cgroup_css_online is called with memcg with refcnt = 1 and it
-expects that mem_cgroup_css_free will drop this last reference.
-This doesn't hold when memcg_init_kmem fails though and a reference is
-dropped for both memcg and its parent explicitly if it returns with an
-error.
-
-This is not correct for two reasons. Firstly mem_cgroup_put on parent is
-excessive because mem_cgroup_put is hierarchy aware and secondly only
-memcg_propagate_kmem takes an additional reference.
-
-The first one is a real use-after-free bug introduced by e4715f01
-(memcg: avoid dangling reference count in creation failure)
-
-The later one is non-issue right now because the only implementation
-of init_cgroup seems to be tcp_init_cgroup which doesn't fail
-but it is better to make the error handling saner and move the
-mem_cgroup_put(memcg) to memcg_propagate_kmem where it belongs.
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/memcontrol.c |   13 +++----------
- 1 file changed, 3 insertions(+), 10 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index f608546..cf9ba7e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5306,6 +5306,8 @@ static int memcg_propagate_kmem(struct mem_cgroup *memcg)
- 	ret = memcg_update_cache_sizes(memcg);
- 	mutex_unlock(&set_limit_mutex);
- out:
-+	if (ret)
-+		mem_cgroup_put(memcg);
- 	return ret;
- }
- #endif /* CONFIG_MEMCG_KMEM */
-@@ -6417,16 +6419,7 @@ mem_cgroup_css_online(struct cgroup *cont)
- 
- 	error = memcg_init_kmem(memcg, &mem_cgroup_subsys);
- 	mutex_unlock(&memcg_create_mutex);
--	if (error) {
--		/*
--		 * We call put now because our (and parent's) refcnts
--		 * are already in place. mem_cgroup_put() will internally
--		 * call __mem_cgroup_free, so return directly
--		 */
--		mem_cgroup_put(memcg);
--		if (parent->use_hierarchy)
--			mem_cgroup_put(parent);
--	}
-+
- 	return error;
- }
- 
--- 
-1.7.10.4
-
--- 
-1.7.10.4
--- 
-Michal Hocko
-SUSE Labs
+- Arnaldo
