@@ -1,24 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933908Ab3DBWTF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:19:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33649 "EHLO
+	id S1761959Ab3DBWTc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:19:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33642 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933842Ab3DBWOm (ORCPT
+	with ESMTP id S933702Ab3DBWOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:42 -0400
+	Tue, 2 Apr 2013 18:14:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joseph CHANG <josright123@gmail.com>,
+        rebelyouth <rebelyouth.hacklab@gmail.com>,
+        "Huang, Xiong" <xiong@qca.qualcomm.com>,
+        =?UTF-8?q?Christian=20S=FCnkenberg?= 
+	<christian.suenkenberg@student.kit.edu>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 61/68] DM9000B: driver initialization upgrade
-Date: Tue,  2 Apr 2013 15:13:50 -0700
-Message-Id: <20130402221337.029837495@linuxfoundation.org>
+Subject: [ 60/68] atl1e: drop pci-msi support because of packet corruption
+Date: Tue,  2 Apr 2013 15:13:49 -0700
+Message-Id: <20130402221336.908404375@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,301 +35,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Joseph CHANG <josright123@gmail.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 6741f40d198c6a5feb23653a1efd4ca47f93d83d ]
+[ Upstream commit 188ab1b105c96656f6bcfb49d0d8bb1b1936b632 ]
 
-Fix bug for DM9000 revision B which contain a DSP PHY
+Usage of pci-msi results in corrupted dma packet transfers to the host.
 
-DM9000B use DSP PHY instead previouse DM9000 revisions' analog PHY,
-So need extra change in initialization, For
-explicity PHY Reset and PHY init parameter, and
-first DM9000_NCR reset need NCR_MAC_LBK bit by dm9000_probe().
-
-Following DM9000_NCR reset cause by dm9000_open() clear the
-NCR_MAC_LBK bit.
-
-Without this fix, Power-up FIFO pointers error happen around 2%
-rate among Davicom's customers' boards. With this fix, All above
-cases can be solved.
-
-Signed-off-by: Joseph CHANG <josright123@gmail.com>
+Reported-by: rebelyouth <rebelyouth.hacklab@gmail.com>
+Cc: Huang, Xiong <xiong@qca.qualcomm.com>
+Tested-by: Christian Sünkenberg <christian.suenkenberg@student.kit.edu>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/davicom/dm9000.c |  214 +++++++++++++++++-----------------
- drivers/net/ethernet/davicom/dm9000.h |   11 +
- 2 files changed, 120 insertions(+), 105 deletions(-)
+ drivers/net/ethernet/atheros/atl1e/atl1e.h      |    1 -
+ drivers/net/ethernet/atheros/atl1e/atl1e_main.c |   22 ++--------------------
+ 2 files changed, 2 insertions(+), 21 deletions(-)
 
---- a/drivers/net/ethernet/davicom/dm9000.c
-+++ b/drivers/net/ethernet/davicom/dm9000.c
-@@ -257,6 +257,107 @@ static void dm9000_dumpblk_32bit(void __
- 		tmp = readl(reg);
+--- a/drivers/net/ethernet/atheros/atl1e/atl1e.h
++++ b/drivers/net/ethernet/atheros/atl1e/atl1e.h
+@@ -438,7 +438,6 @@ struct atl1e_adapter {
+ 	struct atl1e_hw        hw;
+ 	struct atl1e_hw_stats  hw_stats;
+ 
+-	bool have_msi;
+ 	u32 wol;
+ 	u16 link_speed;
+ 	u16 link_duplex;
+--- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
++++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+@@ -1870,37 +1870,19 @@ static void atl1e_free_irq(struct atl1e_
+ 	struct net_device *netdev = adapter->netdev;
+ 
+ 	free_irq(adapter->pdev->irq, netdev);
+-
+-	if (adapter->have_msi)
+-		pci_disable_msi(adapter->pdev);
  }
  
-+/*
-+ * Sleep, either by using msleep() or if we are suspending, then
-+ * use mdelay() to sleep.
-+ */
-+static void dm9000_msleep(board_info_t *db, unsigned int ms)
-+{
-+	if (db->in_suspend)
-+		mdelay(ms);
-+	else
-+		msleep(ms);
-+}
-+
-+/* Read a word from phyxcer */
-+static int
-+dm9000_phy_read(struct net_device *dev, int phy_reg_unused, int reg)
-+{
-+	board_info_t *db = netdev_priv(dev);
-+	unsigned long flags;
-+	unsigned int reg_save;
-+	int ret;
-+
-+	mutex_lock(&db->addr_lock);
-+
-+	spin_lock_irqsave(&db->lock, flags);
-+
-+	/* Save previous register address */
-+	reg_save = readb(db->io_addr);
-+
-+	/* Fill the phyxcer register into REG_0C */
-+	iow(db, DM9000_EPAR, DM9000_PHY | reg);
-+
-+	/* Issue phyxcer read command */
-+	iow(db, DM9000_EPCR, EPCR_ERPRR | EPCR_EPOS);
-+
-+	writeb(reg_save, db->io_addr);
-+	spin_unlock_irqrestore(&db->lock, flags);
-+
-+	dm9000_msleep(db, 1);		/* Wait read complete */
-+
-+	spin_lock_irqsave(&db->lock, flags);
-+	reg_save = readb(db->io_addr);
-+
-+	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer read command */
-+
-+	/* The read data keeps on REG_0D & REG_0E */
-+	ret = (ior(db, DM9000_EPDRH) << 8) | ior(db, DM9000_EPDRL);
-+
-+	/* restore the previous address */
-+	writeb(reg_save, db->io_addr);
-+	spin_unlock_irqrestore(&db->lock, flags);
-+
-+	mutex_unlock(&db->addr_lock);
-+
-+	dm9000_dbg(db, 5, "phy_read[%02x] -> %04x\n", reg, ret);
-+	return ret;
-+}
-+
-+/* Write a word to phyxcer */
-+static void
-+dm9000_phy_write(struct net_device *dev,
-+		 int phyaddr_unused, int reg, int value)
-+{
-+	board_info_t *db = netdev_priv(dev);
-+	unsigned long flags;
-+	unsigned long reg_save;
-+
-+	dm9000_dbg(db, 5, "phy_write[%02x] = %04x\n", reg, value);
-+	mutex_lock(&db->addr_lock);
-+
-+	spin_lock_irqsave(&db->lock, flags);
-+
-+	/* Save previous register address */
-+	reg_save = readb(db->io_addr);
-+
-+	/* Fill the phyxcer register into REG_0C */
-+	iow(db, DM9000_EPAR, DM9000_PHY | reg);
-+
-+	/* Fill the written data into REG_0D & REG_0E */
-+	iow(db, DM9000_EPDRL, value);
-+	iow(db, DM9000_EPDRH, value >> 8);
-+
-+	/* Issue phyxcer write command */
-+	iow(db, DM9000_EPCR, EPCR_EPOS | EPCR_ERPRW);
-+
-+	writeb(reg_save, db->io_addr);
-+	spin_unlock_irqrestore(&db->lock, flags);
-+
-+	dm9000_msleep(db, 1);		/* Wait write complete */
-+
-+	spin_lock_irqsave(&db->lock, flags);
-+	reg_save = readb(db->io_addr);
-+
-+	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer write command */
-+
-+	/* restore the previous address */
-+	writeb(reg_save, db->io_addr);
-+
-+	spin_unlock_irqrestore(&db->lock, flags);
-+	mutex_unlock(&db->addr_lock);
-+}
-+
- /* dm9000_set_io
-  *
-  * select the specified set of io routines to use with the
-@@ -794,6 +895,9 @@ dm9000_init_dm9000(struct net_device *de
- 
- 	iow(db, DM9000_GPCR, GPCR_GEP_CNTL);	/* Let GPIO0 output */
- 
-+	dm9000_phy_write(dev, 0, MII_BMCR, BMCR_RESET); /* PHY RESET */
-+	dm9000_phy_write(dev, 0, MII_DM_DSPCR, DSPCR_INIT_PARAM); /* Init */
-+
- 	ncr = (db->flags & DM9000_PLATF_EXT_PHY) ? NCR_EXT_PHY : 0;
- 
- 	/* if wol is needed, then always set NCR_WAKEEN otherwise we end
-@@ -1200,109 +1304,6 @@ dm9000_open(struct net_device *dev)
- 	return 0;
- }
- 
--/*
-- * Sleep, either by using msleep() or if we are suspending, then
-- * use mdelay() to sleep.
-- */
--static void dm9000_msleep(board_info_t *db, unsigned int ms)
--{
--	if (db->in_suspend)
--		mdelay(ms);
--	else
--		msleep(ms);
--}
--
--/*
-- *   Read a word from phyxcer
-- */
--static int
--dm9000_phy_read(struct net_device *dev, int phy_reg_unused, int reg)
--{
--	board_info_t *db = netdev_priv(dev);
--	unsigned long flags;
--	unsigned int reg_save;
--	int ret;
--
--	mutex_lock(&db->addr_lock);
--
--	spin_lock_irqsave(&db->lock,flags);
--
--	/* Save previous register address */
--	reg_save = readb(db->io_addr);
--
--	/* Fill the phyxcer register into REG_0C */
--	iow(db, DM9000_EPAR, DM9000_PHY | reg);
--
--	iow(db, DM9000_EPCR, EPCR_ERPRR | EPCR_EPOS);	/* Issue phyxcer read command */
--
--	writeb(reg_save, db->io_addr);
--	spin_unlock_irqrestore(&db->lock,flags);
--
--	dm9000_msleep(db, 1);		/* Wait read complete */
--
--	spin_lock_irqsave(&db->lock,flags);
--	reg_save = readb(db->io_addr);
--
--	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer read command */
--
--	/* The read data keeps on REG_0D & REG_0E */
--	ret = (ior(db, DM9000_EPDRH) << 8) | ior(db, DM9000_EPDRL);
--
--	/* restore the previous address */
--	writeb(reg_save, db->io_addr);
--	spin_unlock_irqrestore(&db->lock,flags);
--
--	mutex_unlock(&db->addr_lock);
--
--	dm9000_dbg(db, 5, "phy_read[%02x] -> %04x\n", reg, ret);
--	return ret;
--}
--
--/*
-- *   Write a word to phyxcer
-- */
--static void
--dm9000_phy_write(struct net_device *dev,
--		 int phyaddr_unused, int reg, int value)
--{
--	board_info_t *db = netdev_priv(dev);
--	unsigned long flags;
--	unsigned long reg_save;
--
--	dm9000_dbg(db, 5, "phy_write[%02x] = %04x\n", reg, value);
--	mutex_lock(&db->addr_lock);
--
--	spin_lock_irqsave(&db->lock,flags);
--
--	/* Save previous register address */
--	reg_save = readb(db->io_addr);
--
--	/* Fill the phyxcer register into REG_0C */
--	iow(db, DM9000_EPAR, DM9000_PHY | reg);
--
--	/* Fill the written data into REG_0D & REG_0E */
--	iow(db, DM9000_EPDRL, value);
--	iow(db, DM9000_EPDRH, value >> 8);
--
--	iow(db, DM9000_EPCR, EPCR_EPOS | EPCR_ERPRW);	/* Issue phyxcer write command */
--
--	writeb(reg_save, db->io_addr);
--	spin_unlock_irqrestore(&db->lock, flags);
--
--	dm9000_msleep(db, 1);		/* Wait write complete */
--
--	spin_lock_irqsave(&db->lock,flags);
--	reg_save = readb(db->io_addr);
--
--	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer write command */
--
--	/* restore the previous address */
--	writeb(reg_save, db->io_addr);
--
--	spin_unlock_irqrestore(&db->lock, flags);
--	mutex_unlock(&db->addr_lock);
--}
--
- static void
- dm9000_shutdown(struct net_device *dev)
+ static int atl1e_request_irq(struct atl1e_adapter *adapter)
  {
-@@ -1501,7 +1502,12 @@ dm9000_probe(struct platform_device *pde
- 	db->flags |= DM9000_PLATF_SIMPLE_PHY;
- #endif
+ 	struct pci_dev    *pdev   = adapter->pdev;
+ 	struct net_device *netdev = adapter->netdev;
+-	int flags = 0;
+ 	int err = 0;
  
--	dm9000_reset(db);
-+	/* Fixing bug on dm9000_probe, takeover dm9000_reset(db),
-+	 * Need 'NCR_MAC_LBK' bit to indeed stable our DM9000 fifo
-+	 * while probe stage.
-+	 */
-+
-+	iow(db, DM9000_NCR, NCR_MAC_LBK | NCR_RST);
- 
- 	/* try multiple times, DM9000 sometimes gets the read wrong */
- 	for (i = 0; i < 8; i++) {
---- a/drivers/net/ethernet/davicom/dm9000.h
-+++ b/drivers/net/ethernet/davicom/dm9000.h
-@@ -69,7 +69,9 @@
- #define NCR_WAKEEN          (1<<6)
- #define NCR_FCOL            (1<<4)
- #define NCR_FDX             (1<<3)
--#define NCR_LBK             (3<<1)
-+
-+#define NCR_RESERVED        (3<<1)
-+#define NCR_MAC_LBK         (1<<1)
- #define NCR_RST	            (1<<0)
- 
- #define NSR_SPEED           (1<<7)
-@@ -167,5 +169,12 @@
- #define ISR_LNKCHNG		(1<<5)
- #define ISR_UNDERRUN		(1<<4)
- 
-+/* Davicom MII registers.
-+ */
-+
-+#define MII_DM_DSPCR		0x1b    /* DSP Control Register */
-+
-+#define DSPCR_INIT_PARAM	0xE100	/* DSP init parameter */
-+
- #endif /* _DM9000X_H_ */
- 
+-	adapter->have_msi = true;
+-	err = pci_enable_msi(adapter->pdev);
+-	if (err) {
+-		netdev_dbg(adapter->netdev,
+-			   "Unable to allocate MSI interrupt Error: %d\n", err);
+-		adapter->have_msi = false;
+-	} else
+-		netdev->irq = pdev->irq;
+-
+-
+-	if (!adapter->have_msi)
+-		flags |= IRQF_SHARED;
+-	err = request_irq(adapter->pdev->irq, atl1e_intr, flags,
+-			netdev->name, netdev);
++	err = request_irq(pdev->irq, atl1e_intr, IRQF_SHARED,
++			  netdev->name, netdev);
+ 	if (err) {
+ 		netdev_dbg(adapter->netdev,
+ 			   "Unable to allocate interrupt Error: %d\n", err);
+-		if (adapter->have_msi)
+-			pci_disable_msi(adapter->pdev);
+ 		return err;
+ 	}
+ 	netdev_dbg(adapter->netdev, "atl1e_request_irq OK\n");
 
 
