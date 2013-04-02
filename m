@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758807Ab3DBXQv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:16:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32870 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932877Ab3DBWMJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:09 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Beulich <jbeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 028/124] xen-blkback: fix dispatch_rw_block_io() error path
-Date: Tue,  2 Apr 2013 15:10:10 -0700
-Message-Id: <20130402221107.436304571@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
-References: <20130402221104.163133110@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1759692Ab3DBXRF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:17:05 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58685 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758877Ab3DBXRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 19:17:00 -0400
+Date: Tue, 2 Apr 2013 19:16:13 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Mel Gorman <mgorman@suse.de>
+Cc: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Excessive stall times on ext4 in 3.9-rc2
+Message-ID: <20130402231613.GA4946@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+	Jiri Slaby <jslaby@suse.cz>
+References: <20130402142717.GH32241@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130402142717.GH32241@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+I've tried doing some quick timing, and if it is a performance
+regression, it's not a recent one --- or I haven't been able to
+reproduce what Mel is seeing.  I tried the following commands while
+booted into 3.2, 3.8, and 3.9-rc3 kernels:
 
-------------------
+time git clone ...
+rm .git/index ; time git reset
 
-From: Jan Beulich <JBeulich@suse.com>
+I did this a number of git repo's; including one that was freshly
+cloned, and one that had around 3 dozen patches applied via git am (so
+there were a bunch of loose objects).  And I tried doing this on an
+SSD and a 5400rpm HDD, and I did it with all of the in-memory cache
+flushed via "git 3 > /proc/sys/vm/drop_caches".  The worst case was
+doing a "time git reset" after deleting the .git/index file after
+applying all of Kent Overstreet's recent AIO patches that had been
+sent out for review.  It took around 55 seconds, on 3.2, 3.8 and
+3.9-rc3.  That is pretty horrible, but for me that's the reason why I
+use SSD's.
 
-commit 0e5e098ac22dae38f957e951b70d3cf73beff0f7 upstream.
+Mel, how bad is various git commands that you are trying?  Have you
+tried using time to get estimates of how long a git clone or other git
+operation is taking?
 
-Commit 7708992 ("xen/blkback: Seperate the bio allocation and the bio
-submission") consolidated the pendcnt updates to just a single write,
-neglecting the fact that the error path relied on it getting set to 1
-up front (such that the decrement in __end_block_io_op() would actually
-drop the count to zero, triggering the necessary cleanup actions).
-
-Also remove a misleading and a stale (after said commit) comment.
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/block/xen-blkback/blkback.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
-
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -1001,13 +1001,7 @@ static int dispatch_rw_block_io(struct x
- 		bio->bi_end_io  = end_block_io_op;
- 	}
- 
--	/*
--	 * We set it one so that the last submit_bio does not have to call
--	 * atomic_inc.
--	 */
- 	atomic_set(&pending_req->pendcnt, nbio);
--
--	/* Get a reference count for the disk queue and start sending I/O */
- 	blk_start_plug(&plug);
- 
- 	for (i = 0; i < nbio; i++)
-@@ -1035,6 +1029,7 @@ static int dispatch_rw_block_io(struct x
-  fail_put_bio:
- 	for (i = 0; i < nbio; i++)
- 		bio_put(biolist[i]);
-+	atomic_set(&pending_req->pendcnt, 1);
- 	__end_block_io_op(pending_req, -EINVAL);
- 	msleep(1); /* back off a bit */
- 	return -EIO;
-
-
+						- Ted
