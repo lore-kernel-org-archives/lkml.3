@@ -1,113 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760708Ab3DBMtq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 08:49:46 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50435 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759896Ab3DBMtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 08:49:43 -0400
-Date: Tue, 2 Apr 2013 14:49:40 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Jacob Shin <jacob.shin@amd.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH V2 2/2] cpufreq: AMD "frequency sensitivity feedback"
- powersave bias for ondemand governor
-Message-ID: <20130402124940.GB5488@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Thomas Renninger <trenn@suse.de>, Jacob Shin <jacob.shin@amd.com>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-	linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Viresh Kumar <viresh.kumar@linaro.org>
-References: <1364495057-14939-1-git-send-email-jacob.shin@amd.com>
- <1364495057-14939-3-git-send-email-jacob.shin@amd.com>
- <4985234.c9GFoGKqo8@skinner.arch.suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4985234.c9GFoGKqo8@skinner.arch.suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760594Ab3DBMuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 08:50:44 -0400
+Received: from smarthost02.mail.zen.net.uk ([212.23.1.2]:47954 "EHLO
+	smarthost02.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757921Ab3DBMun (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 08:50:43 -0400
+X-Greylist: delayed 5475 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Apr 2013 08:50:43 EDT
+Message-ID: <1364907037.3650.54.camel@linaro1.home>
+Subject: Re: RFC: right way to conditional-ize some macros for LTO
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: Tim Bird <tim.bird@am.sony.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Kleen, Andi" <andi.kleen@intel.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Russell King <rmk@arm.linux.org.uk>
+Date: Tue, 02 Apr 2013 13:50:37 +0100
+In-Reply-To: <5155E28A.30509@am.sony.com>
+References: <5155E28A.30509@am.sony.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-Smarthost02-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 01:40:13PM +0200, Thomas Renninger wrote:
-> On Thursday, March 28, 2013 01:24:17 PM Jacob Shin wrote:
-> > Future AMD processors, starting with Family 16h, can provide software
-> > with feedback on how the workload may respond to frequency change --
-> > memory-bound workloads will not benefit from higher frequency, where
-> > as compute-bound workloads will. This patch enables this "frequency
-> > sensitivity feedback" to aid the ondemand governor to make better
-> > frequency change decisions by hooking into the powersave bias.
-> If I read this correctly, nothing changes even if the driver is loaded,
-> unless user modifies:
-> /sys/devices/system/cpu/cpufreq/ondemand/powersave_bias
-> is this correct?
+On Fri, 2013-03-29 at 11:50 -0700, Tim Bird wrote:
+> Hi all,
 > 
-> I wonder who should modify:
-> /sys/devices/system/cpu/cpufreq/ondemand/powersave_bias
-> Even cpupower is not aware of this very specific tunable.
+> A while ago I was working on supporting link-time optimization
+> for ARM, and I'm just now getting around to submitting some of
+> the patches from my work.  I'll explain more below, but the
+> executive summary is this: Andi Kleen's LTO patches for Linux
+> almost work on ARM.  I ran into one issue in
+> arch/arm/include/asm/unified.h where various 'it'-related
+> macros are expanding multiple times, in C context, and causing
+> build errors.
 > 
-> Also, are you sure cpufreq subsystem will be the only user
-> of this one?
-> Or could cpuidle or others also make use of this somewhen in the future?
-
-Yeah, I don't think this is supposed to work like that - more likely,
-you want to use the freq sensitivity thing by default if the hardware
-supports it.
-
-So I think the od_tuners->powersave_bias check needs to be augmented
-with a freq_sensitivity cpuid bit check...
-
-> Then this could more be done like:
-> drivers/cpufreq/mperf.c
-> And scheduler, cpuidle, cpufreq or whatever could use this as well.
+> As near as I can tell, these macros are not used except by
+> arch/arm/kernel/kprobes-test-thumb.c (and most are not used
+> at all).
 > 
-> Just some thinking:
-> I wonder how one could check/verify that the right thing is done
-> (by CPU and kernel). Ideally it would be nice to have the CPU register
-> appended to a cpufreq or cpuidle event trace.
-> But this very (AMD or X86 only?) specific data would not look nice there.
-> An arch placeholder value would be needed or similar?
-
-I actually wonder whether this should be a separate module but I
-guess this is maybe the most agreeable way for adding vendor-specific
-functionality to cpufreq.
-
+> When compiling with CONFIG_LTO=y, in Andi's 3.7.0 tree with LTO
+> patches, I got the messages below:
+> -----------------------------------------------
 > ...
-> > +}
-> > +
-> > +static int __init amd_freq_sensitivity_init(void)
-> > +{
-> > +	int i;
-> > +	u32 eax, edx, dummy;
-> > +
-> > +	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
-> > +		return -ENODEV;
-> > +
-> > +	cpuid(0x80000007, &eax, &dummy, &dummy, &edx);
-> If this really should be a separate module:
-> Does/will Intel have the same (feature/cpuid bit)?
-> Anyway, this should get a general AMD or X86 CPU capability flag.
+>   LD      drivers/tty/built-in.o
+>   LD      drivers/built-in.o
+>   LINK    vmlinux
+>   GEN     .version
+>   CHK     include/generated/compile.h
+>   UPD     include/generated/compile.h
+>   CC      init/version.o
+>   LD      init/built-in.o
+>   LDFINAL vmlinux.o
+> [Leaving LTRANS /tmp/ccsIMbQT.args]
+> [Leaving LTRANS vmlinux.o.ltrans.out]
+> In file included from /a/home/tbird/work/auto-reduce/lto-work/linux-misc-andi-kleen/include/uapi/linux/swab.h:269:0,
+>                  from :872:
+> /a/home/tbird/work/auto-reduce/lto-work/linux-misc-andi-kleen/crypto/wp512.c: In function 'wp512_process_buffer':
+> /a/home/tbird/work/auto-reduce/lto-work/linux-misc-andi-kleen/crypto/wp512.c:987:1: warning: the frame size of 1160 bytes is larger than 1024 bytes [-Wframe-larger-than=]
+> vmlinux.o.ltrans0.s: Assembler messages:
+> vmlinux.o.ltrans0.s:408: Error: Macro `it' was already defined
+> vmlinux.o.ltrans0.s:410: Error: Macro `itt' was already defined
+> vmlinux.o.ltrans0.s:412: Error: Macro `ite' was already defined
+> vmlinux.o.ltrans0.s:414: Error: Macro `ittt' was already defined
+> vmlinux.o.ltrans0.s:416: Error: Macro `itte' was already defined
+> vmlinux.o.ltrans0.s:418: Error: Macro `itet' was already defined
+> vmlinux.o.ltrans0.s:420: Error: Macro `itee' was already defined
+> vmlinux.o.ltrans0.s:422: Error: Macro `itttt' was already defined
+> vmlinux.o.ltrans0.s:424: Error: Macro `ittte' was already defined
+> vmlinux.o.ltrans0.s:426: Error: Macro `ittet' was already defined
+> vmlinux.o.ltrans0.s:428: Error: Macro `ittee' was already defined
+> vmlinux.o.ltrans0.s:430: Error: Macro `itett' was already defined
+> vmlinux.o.ltrans0.s:432: Error: Macro `itete' was already defined
+> vmlinux.o.ltrans0.s:434: Error: Macro `iteet' was already defined
+> vmlinux.o.ltrans0.s:436: Error: Macro `iteee' was already defined
+> vmlinux.o.ltrans0.s:968: Error: Macro `it' was already defined
+> vmlinux.o.ltrans0.s:970: Error: Macro `itt' was already defined
+> vmlinux.o.ltrans0.s:972: Error: Macro `ite' was already defined
+> vmlinux.o.ltrans0.s:974: Error: Macro `ittt' was already defined
+> vmlinux.o.ltrans0.s:976: Error: Macro `itte' was already defined
+> ...
+> [Leaving LTRANS vmlinux.o.ltrans30.ltrans.o]
+> [Leaving LTRANS vmlinux.o.ltrans31.o]
+> [Leaving LTRANS vmlinux.o.ltrans31.ltrans.o]
+> /a/home/tbird/work/auto-reduce/sony-yocto/lto-build2/tmp/sysroots/x86_64-linux/usr/libexec/armv5te-sony-linux-gnueabi/gcc/arm-sony-linux-gnueabi/4.7.3/arm-sony-linux-gnueabi-ld: lto-wrapper failed
+> collect2: error: ld returned 1 exit status
+> make[1]: *** [vmlinux] Error 1
+> make: *** [sub-make] Error 2
 > 
-> Then you can also autoload this driver similar to how it's done in acpi-
-> cpufreq:
-> static const struct x86_cpu_id acpi_cpufreq_ids[] = {
->         X86_FEATURE_MATCH(X86_FEATURE_ACPI),
->         X86_FEATURE_MATCH(X86_FEATURE_HW_PSTATE),
->         {}
-> };
-> MODULE_DEVICE_TABLE(x86cpu, acpi_cpufreq_ids);
+> Error: Bad result 512, running "make -j 8 KALLSYMS_EXTRA_PASS=1 bzImage": (output follows)
+> Error:
+> ---------------------------------------------
+> 
+> The messages are repeated thousands of times (I'm guessing for every object
+> file after the first that included arch/arm/include/asm/unified.h)
+> 
+> Recognizing that LTO is currently incompatible with kprobes, and (so far)
+> finding that only kprobes appeared to use these macros, I did the following hack:
+> 
+> diff --git a/arch/arm/include/asm/unified.h b/arch/arm/include/asm/unified.h
+> index f5989f4..5179c13 100644
+> --- a/arch/arm/include/asm/unified.h
+> +++ b/arch/arm/include/asm/unified.h
+> @@ -92,6 +92,7 @@
+>  	.macro	iteee, cond
+>  	.endm
+>  #else	/* !__ASSEMBLY__ */
+> +#ifndef CONFIG_LTO
+>  __asm__(
+>  "	.macro	it, cond\n"
+>  "	.endm\n"
+> @@ -123,6 +124,7 @@ __asm__(
+>  "	.endm\n"
+>  "	.macro	iteee, cond\n"
+>  "	.endm\n");
+> +#endif  /* ! CONFIG_LTO */
+>  #endif	/* __ASSEMBLY__ */
+> 
+>  #endif	/* CONFIG_ARM_ASM_UNIFIED */
+> 
+> This the macros thus removed, I had no problems building the kernel
+> and running it on target.
+> 
+> While this works to remove the build error, it doesn't seem robust and I'd
+> like to either 1) find a better way to make these macro definitions conditional,
+> or 2) eliminate them completely.
+> 
+> The macros themselves seem empty.  Can someone tell me what they do?
+> What is the status of these macros?  Are they even needed?
 
-Yes, this needs to be a cpu feature bit in cpufeature.h and be loaded
-automatically.
+The names of the macros are for Thumb2 instructions which are redundant
+when building for the ARM instruction set. Newer toolchains which
+support the unified assembler syntax will effectively ignore them and I
+guess these empty macros are there so people can write assembler which
+will compile with older toolchains.
 
-Thanks.
+> Could they be
+> made conditional on something like NEED_IT_MACROS, and then have that set only
+> in the arch/arm/kernel/kprobes-test-thumb.c, before the unified.h is included?
+
+That file needs the real Thumb2 instructions, not empty macros, and
+indeed it doesn't use them, because it is only compiled when
+CONFIG_THUMB2_KERNEL=y and that selects CONFIG_ARM_ASM_UNIFIED and those
+'it' macro's are guarded by #ifndef CONFIG_ARM_ASM_UNIFIED.
+
+Note, there are other files which use the 'it' instructions, e.g.
+arch/arm/include/asm/futex.h.
+
+> I would like get this minor issue resolved in mainline, to make it easier for Andi
+> to get his LTO work upstream and have it work with ARM.
+> 
+> Any suggestions are welcome.
+
+If your toolchain supports the unified assembler syntax, you could try
+enabling CONFIG_ARM_ASM_UNIFIED in ARM builds.
 
 -- 
-Regards/Gruss,
-    Boris.
+Tixy
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+
+
