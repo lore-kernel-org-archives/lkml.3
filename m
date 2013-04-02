@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760867Ab3DBGs0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 02:48:26 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:63685 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760817Ab3DBGsV (ORCPT
+	id S1760853Ab3DBGsY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 02:48:24 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:41934 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760636Ab3DBGsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Apr 2013 02:48:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130402004217.GA16699@lge.com>
-References: <0000013da2ce20f8-0e3a64ef-67ed-4ab4-9f20-b77980c876c3-000000@email.amazonses.com>
-	<1364236355.6345.185.camel@gandalf.local.home>
-	<20130327025957.GA17125@lge.com>
-	<1364355032.6345.200.camel@gandalf.local.home>
-	<20130327061351.GB17125@lge.com>
-	<alpine.DEB.2.02.1303281227520.16200@gentwo.org>
-	<0000013db20ca149-0064fbb8-2f81-4323-9095-a38f6abb79c5-000000@email.amazonses.com>
-	<CAP=VYLr4i=39ywFCrmG-XuvUFmmXpyj6dYgG44JJoUJhpN6uuQ@mail.gmail.com>
-	<alpine.DEB.2.02.1304011025550.12690@gentwo.org>
-	<0000013dc63b3a87-6ce88b75-d011-407e-8dde-da73c3a7f5fd-000000@email.amazonses.com>
-	<20130402004217.GA16699@lge.com>
-Date: Tue, 2 Apr 2013 09:48:20 +0300
-X-Google-Sender-Auth: 2qmaRqu_KujUEIfJiDAV5o00R1Y
-Message-ID: <CAOJsxLG8WT08URRzCLQ5VYBXx54PX3c=v5_-tJmC_H=FwtvjnA@mail.gmail.com>
-Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
- unfreeze_partials() code.
-From: Pekka Enberg <penberg@kernel.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Tue, 2 Apr 2013 08:48:08 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mingo@redhat.com, x86@kernel.org, rth@twiddle.net,
+        linux@arm.linux.org.uk, msalter@redhat.com, starvik@axis.com,
+        dhowells@redhat.com, tony.luck@intel.com, benh@kernel.crashing.org,
+        takata@linux-m32r.org, geert@linux-m68k.org, james.hogan@imgtec.com,
+        monstr@monstr.eu, ralf@linux-mips.org, jonas@southpole.se,
+        rkuo@codeaurora.org, liqin.chen@sunplusct.com, davem@davemloft.net,
+        lethal@linux-sh.org, vgupta@synopsys.com, chris@zankel.net,
+        cmetcalf@tilera.com, ysato@users.sourceforge.jp, gxt@mprc.pku.edu.cn,
+        jdike@addtoit.com, linux-s390@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org
+Subject: Re: [PATCH 3/5] dump_stack: consolidate dump_stack()
+ implementations and unify their behaviors
+Message-ID: <20130402084808.0c6d61f8@mschwide>
+In-Reply-To: <20130330114534.GA5404@osiris>
+References: <1364610428-2074-1-git-send-email-tj@kernel.org>
+	<1364610428-2074-4-git-send-email-tj@kernel.org>
+	<20130330114534.GA5404@osiris>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040206-1948-0000-0000-000004B4CD55
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 2, 2013 at 3:42 AM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
->> I have a vague memory that Joonsoo also ran into this issue awhile back.
->
-> Yes. I sent a patch for this two month ago. :)
+On Sat, 30 Mar 2013 12:45:35 +0100
+Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
 
-It's applied now.
+> On Fri, Mar 29, 2013 at 07:27:06PM -0700, Tejun Heo wrote:
+> > Both dump_stack() and show_stack() are currently implemented by each
+> > architecture.  show_stack(NULL, NULL) dumps the backtrace for the
+> > current task as does dump_stack().  On some archs, dump_stack() prints
+> > extra information - pid, utsname and so on - in addition to the
+> > backtrace while the two are identical on other archs.
+> 
+> [...]
+> 
+> > This patch expands the dummy fallback dump_stack() implementation in
+> > lib/dump_stack.c such that it prints out debug information (taken from
+> > x86) and invokes show_stack(NULL, NULL) and drops arch-specific
+> > dump_stack() implementations in all archs except blackfin and s390.
+> > Blackfin's dump_stack() does something wonky that I don't understand
+> > and s390 prints its own debug information which includes fields which
+> > aren't accessible from arch-indepdent code.
+> 
+> The couple of extra fields aren't worth an s390 version of dump_stack()
+> that differs from all other architectures.
+> Please drop the s390 version as well. Thanks!
 
-                       Pekka
+Hmm, we would lose task_thread_info(current)->cpu and current->thread.ksp,
+I don't care much about the kernel stack pointer which has been stored at
+the last call to __switch_to but the cpu number might be interesting.
+Could we add the cpu number to the generic dump_stack version?
+
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
