@@ -1,110 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761775Ab3DBJry (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:47:54 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:52437 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757780Ab3DBJru (ORCPT
+	id S932085Ab3DBJs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:48:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50995 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759846Ab3DBJs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:47:50 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: Christian Kujau <lists@nerdbynature.de>, CAI Qian <caiqian@redhat.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
-        linux-ext4@vger.kernel.org
-Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591! (powerpc too!)
-In-Reply-To: <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org>
-References: <2133129347.8273339.1364549222854.JavaMail.root@redhat.com> <87ip46ss0o.fsf@openvz.org> <1211053180.322948.1364797847717.JavaMail.root@redhat.com> <87fvzaspr8.fsf@openvz.org> <874841142.414482.1364875584266.JavaMail.root@redhat.com> <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Tue, 02 Apr 2013 13:47:44 +0400
-Message-ID: <877gkls1q7.fsf@openvz.org>
+	Tue, 2 Apr 2013 05:48:26 -0400
+Date: Tue, 2 Apr 2013 02:48:14 -0700
+From: tip-bot for Stephane Eranian <tipbot@zytor.com>
+Message-ID: <tip-2fe85427e3bf65d791700d065132772fc26e4d75@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, tglx@linutronix.de
+In-Reply-To: <1359040242-8269-16-git-send-email-eranian@google.com>
+References: <1359040242-8269-16-git-send-email-eranian@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf:
+  Add PERF_RECORD_MISC_MMAP_DATA to RECORD_MMAP
+Git-Commit-ID: 2fe85427e3bf65d791700d065132772fc26e4d75
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 02:48:19 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
+Commit-ID:  2fe85427e3bf65d791700d065132772fc26e4d75
+Gitweb:     http://git.kernel.org/tip/2fe85427e3bf65d791700d065132772fc26e4d75
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Thu, 24 Jan 2013 16:10:39 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 1 Apr 2013 12:19:02 -0300
 
-On Mon, 1 Apr 2013 23:15:07 -0700 (PDT), Christian Kujau <lists@nerdbynature.de> wrote:
-> Hi,
-> 
-> my machine (PowerBook G4) just crashed and the only thing netconsole was 
-> able to transmit was:
-> 
->   ------------[ cut here ]------------
->   kernel BUG at /usr/local/src/linux-git/fs/ext4/inode.c:1591!
-> 
-> But (unfortunately) nothing more. I have no clear way to reproduce this, 
-> but I have some kind of a (longish) backstory to this, see below. The 
-> system is running 3.9-rc4, its .config and dmesg:
-> 
->   http://nerdbynature.de/bits/3.9.0-rc1/config.gz (oldconfig'ed to -rc4)
->   http://nerdbynature.de/bits/3.9.0-rc1/dmesg.txt (w/o the calltrace at the end)
-> 
-> 
-> I was having trouble all day downloading a file via bittorrent to an 
-> ext4 filesystem. It came always back as corrupted, though I won't be able 
-> to point out the corruption, as don't know the contents of the source 
-> file. The ext4 filesystem sits on top of a dm-crypt LUKS device:
-> 
->  /dev/mapper/wdc0 on /mnt/data type ext4 (rw,nosuid,nodev,noexec,relatime,data=ordered)
-> 
-> While looking around as to why the file would be corrupt, the internet 
-> suggested "bad memory" or "bad disk" or "kernel bugs". I have dismissed 
-> the first two, as the system is rock-stable otherwise and dmesg has no 
-> kernel messages suggesting disk or filesystem problems.
-Unfortunately it is like a regression which we missed
-due to s390x and ppc is not well tested.
-> 
-> The file in question is ~800 MB in size. Not getting any further on a 
-> solution to my corrupted file, I decided to download a 4.3GB Fedora 
-> installation image via bittorrent to the same filesystem and that's when 
-> the machine crashed, leaving only the single BUG message as a hint.
-Ohh that is sad. Unfortunately I can't reproduce this on my own
-environment. I have power mac pro G5 but w/o graphics card, so i cant
-install linux on it. If you know how to do that w/o monitor please let
-me know.
+perf: Add PERF_RECORD_MISC_MMAP_DATA to RECORD_MMAP
 
-So you just do bunch of writes/mmap to fallocated area.
-The only guess I have is that some bug in extent status tree
+Type of mapping was lost and made it hard for a tool
+to distinguish code vs. data mmaps. Perf has the ability
+to distinguish the two.
 
-Please run test with a patch which was posted here:
-http://marc.info/?l=linux-kernel&m=136455173926544&w=2
-This patch enable sanity checks for extent_status tree.
-Also please try following patch. It voluntary disable es_lookup functionality.
+Use a bit in the header->misc bitmask to keep track of
+the mmap type. If PERF_RECORD_MISC_MMAP_DATA is set then
+the mapping is not executable (!VM_EXEC). If not set, then
+the mapping is executable.
 
---=-=-=
-Content-Type: text/x-patch
-Content-Disposition: inline; filename=disable-es_lookup_extent.patch
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: peterz@infradead.org
+Cc: ak@linux.intel.com
+Cc: acme@redhat.com
+Cc: jolsa@redhat.com
+Cc: namhyung.kim@lge.com
+Link: http://lkml.kernel.org/r/1359040242-8269-16-git-send-email-eranian@google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ include/uapi/linux/perf_event.h | 1 +
+ kernel/events/core.c            | 3 +++
+ 2 files changed, 4 insertions(+)
 
-diff --git a/fs/ext4/extents_status.c b/fs/ext4/extents_status.c
-index fe3337a..95d27cd 100644
---- a/fs/ext4/extents_status.c
-+++ b/fs/ext4/extents_status.c
-@@ -689,6 +689,7 @@ int ext4_es_lookup_extent(struct inode *inode, ext4_lblk_t lblk,
- 	trace_ext4_es_lookup_extent_enter(inode, lblk);
- 	es_debug("lookup extent in block %u\n", lblk);
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 5b57620..964a450 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -445,6 +445,7 @@ struct perf_event_mmap_page {
+ #define PERF_RECORD_MISC_GUEST_KERNEL		(4 << 0)
+ #define PERF_RECORD_MISC_GUEST_USER		(5 << 0)
  
-+	return 0;
- 	tree = &EXT4_I(inode)->i_es_tree;
- 	read_lock(&EXT4_I(inode)->i_es_lock);
++#define PERF_RECORD_MISC_MMAP_DATA		(1 << 13)
+ /*
+  * Indicates that the content of PERF_SAMPLE_IP points to
+  * the actual instruction that triggered the event. See also
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 77c96d1..98c0845 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4791,6 +4791,9 @@ got_name:
+ 	mmap_event->file_name = name;
+ 	mmap_event->file_size = size;
  
-
---=-=-=
-
-> 
-> The system is back now, e2fsck-1.42.5 came back with no errors.
-> 
-> Thanks for reading,
-> Christian.
-> 
-> PS: somewhat off-topic, but: is there a way to have BUG_ON print only
->     fs/ext4/inode.c:1591! instead of the full pathname? Is there are
->     config option for this?
-> -- 
-> BOFH excuse #339:
-> 
-> manager in the cable duct
-
---=-=-=--
++	if (!(vma->vm_flags & VM_EXEC))
++		mmap_event->event_id.header.misc |= PERF_RECORD_MISC_MMAP_DATA;
++
+ 	mmap_event->event_id.header.size = sizeof(mmap_event->event_id) + size;
+ 
+ 	rcu_read_lock();
