@@ -1,31 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758791Ab3DBWxI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:53:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34107 "EHLO
+	id S1758775Ab3DBWxo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:53:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34087 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714Ab3DBWu7 (ORCPT
+	with ESMTP id S1758629Ab3DBWu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:50:59 -0400
+	Tue, 2 Apr 2013 18:50:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        rebelyouth <rebelyouth.hacklab@gmail.com>,
-        "Huang, Xiong" <xiong@qca.qualcomm.com>,
-        =?UTF-8?q?Christian=20S=FCnkenberg?= 
-	<christian.suenkenberg@student.kit.edu>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Jan Stancek <jan.stancek@gmail.com>, Paul Moore <pmoore@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 50/56] atl1e: drop pci-msi support because of packet corruption
-Date: Tue,  2 Apr 2013 15:50:17 -0700
-Message-Id: <20130402224717.618904463@linuxfoundation.org>
+Subject: [ 47/56] unix: fix a race condition in unix_release()
+Date: Tue,  2 Apr 2013 15:50:14 -0700
+Message-Id: <20130402224717.275336942@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,74 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Mugunthan V N <mugunthanvnm@ti.com>
+From: Paul Moore <pmoore@redhat.com>
 
-[ Upstream commit 188ab1b105c96656f6bcfb49d0d8bb1b1936b632 ]
+[ Upstream commit ded34e0fe8fe8c2d595bfa30626654e4b87621e0 ]
 
-Usage of pci-msi results in corrupted dma packet transfers to the host.
+As reported by Jan, and others over the past few years, there is a
+race condition caused by unix_release setting the sock->sk pointer
+to NULL before properly marking the socket as dead/orphaned.  This
+can cause a problem with the LSM hook security_unix_may_send() if
+there is another socket attempting to write to this partially
+released socket in between when sock->sk is set to NULL and it is
+marked as dead/orphaned.  This patch fixes this by only setting
+sock->sk to NULL after the socket has been marked as dead; I also
+take the opportunity to make unix_release_sock() a void function
+as it only ever returned 0/success.
 
-Reported-by: rebelyouth <rebelyouth.hacklab@gmail.com>
-Cc: Huang, Xiong <xiong@qca.qualcomm.com>
-Tested-by: Christian Sünkenberg <christian.suenkenberg@student.kit.edu>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Dave, I think this one should go on the -stable pile.
+
+Special thanks to Jan for coming up with a reproducer for this
+problem.
+
+Reported-by: Jan Stancek <jan.stancek@gmail.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/atl1e/atl1e.h      |    1 -
- drivers/net/atl1e/atl1e_main.c |   22 ++--------------------
- 2 files changed, 2 insertions(+), 21 deletions(-)
+ net/unix/af_unix.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/net/atl1e/atl1e.h
-+++ b/drivers/net/atl1e/atl1e.h
-@@ -439,7 +439,6 @@ struct atl1e_adapter {
- 	struct atl1e_hw        hw;
- 	struct atl1e_hw_stats  hw_stats;
- 
--	bool have_msi;
- 	u32 wol;
- 	u16 link_speed;
- 	u16 link_duplex;
---- a/drivers/net/atl1e/atl1e_main.c
-+++ b/drivers/net/atl1e/atl1e_main.c
-@@ -1848,37 +1848,19 @@ static void atl1e_free_irq(struct atl1e_
- 	struct net_device *netdev = adapter->netdev;
- 
- 	free_irq(adapter->pdev->irq, netdev);
--
--	if (adapter->have_msi)
--		pci_disable_msi(adapter->pdev);
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -371,7 +371,7 @@ static void unix_sock_destructor(struct
+ #endif
  }
  
- static int atl1e_request_irq(struct atl1e_adapter *adapter)
+-static int unix_release_sock(struct sock *sk, int embrion)
++static void unix_release_sock(struct sock *sk, int embrion)
  {
- 	struct pci_dev    *pdev   = adapter->pdev;
- 	struct net_device *netdev = adapter->netdev;
--	int flags = 0;
- 	int err = 0;
+ 	struct unix_sock *u = unix_sk(sk);
+ 	struct dentry *dentry;
+@@ -444,8 +444,6 @@ static int unix_release_sock(struct sock
  
--	adapter->have_msi = true;
--	err = pci_enable_msi(adapter->pdev);
--	if (err) {
--		netdev_dbg(adapter->netdev,
--			   "Unable to allocate MSI interrupt Error: %d\n", err);
--		adapter->have_msi = false;
--	} else
--		netdev->irq = pdev->irq;
+ 	if (unix_tot_inflight)
+ 		unix_gc();		/* Garbage collect fds */
 -
--
--	if (!adapter->have_msi)
--		flags |= IRQF_SHARED;
--	err = request_irq(adapter->pdev->irq, atl1e_intr, flags,
--			netdev->name, netdev);
-+	err = request_irq(pdev->irq, atl1e_intr, IRQF_SHARED,
-+			  netdev->name, netdev);
- 	if (err) {
- 		netdev_dbg(adapter->netdev,
- 			   "Unable to allocate interrupt Error: %d\n", err);
--		if (adapter->have_msi)
--			pci_disable_msi(adapter->pdev);
- 		return err;
- 	}
- 	netdev_dbg(adapter->netdev, "atl1e_request_irq OK\n");
+-	return 0;
+ }
+ 
+ static void init_peercred(struct sock *sk)
+@@ -682,9 +680,10 @@ static int unix_release(struct socket *s
+ 	if (!sk)
+ 		return 0;
+ 
++	unix_release_sock(sk, 0);
+ 	sock->sk = NULL;
+ 
+-	return unix_release_sock(sk, 0);
++	return 0;
+ }
+ 
+ static int unix_autobind(struct socket *sock)
 
 
