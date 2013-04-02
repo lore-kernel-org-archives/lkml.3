@@ -1,35 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759877Ab3DBCir (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 22:38:47 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59780 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759396Ab3DBCip (ORCPT
+	id S1759970Ab3DBCjf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 22:39:35 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:33216 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759806Ab3DBCje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 22:38:45 -0400
-Message-ID: <515A44B4.7070903@wwwdotorg.org>
-Date: Mon, 01 Apr 2013 20:38:44 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Mon, 1 Apr 2013 22:39:34 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r322dRYm023592, This message is released by code: ctlocs8528
+From: hayeswang <hayeswang@realtek.com>
+To: "'Francois Romieu'" <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <1364824539-4156-1-git-send-email-hayeswang@realtek.com> <1364824539-4156-5-git-send-email-hayeswang@realtek.com> <20130401222235.GB19335@electric-eye.fr.zoreil.com>
+Subject: RE: [PATCH net-next 5/7] r8169: add a new chip for RTL8111G
+Date: Tue, 2 Apr 2013 10:39:31 +0800
+Message-ID: <2808A1ABA9A5470C8CB9534309588984@realtek.com.tw>
 MIME-Version: 1.0
-To: Lubomir Rintel <lkundrak@v3.sk>
-CC: linux-kernel@vger.kernel.org, linux-rpi-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] bcm2835: Add Broadcom BCM2835 RNG to the device tree
-References: <1364135511-26970-1-git-send-email-lkundrak@v3.sk> <1364451124-5039-1-git-send-email-lkundrak@v3.sk>
-In-Reply-To: <1364451124-5039-1-git-send-email-lkundrak@v3.sk>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: Ac4vJ2u41mrrZaqqRu+TrbCu3ovk2AAIr3kg
+In-Reply-To: <20130401222235.GB19335@electric-eye.fr.zoreil.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/28/2013 12:12 AM, Lubomir Rintel wrote:
-> This adds a device tree binding for random number generator present on Broadcom
-> BCM2835 SoC, used in Raspberry Pi and Roku 2 devices.
+Francois Romieu [mailto:romieu@fr.zoreil.com] 
+> Sent: Tuesday, April 02, 2013 6:23 AM
+> To: Hayeswang
+> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH net-next 5/7] r8169: add a new chip for RTL8111G
+> 
+[..]
+> There is close to zero added value for this stuff in the kernel.
+> You may as well move it completely into the firmware.
 
-FYI, I intend to apply this patch to the bcm2835 tree whenever the RNG
-driver itself is applied to the hw_random tree. If you could ping me
-when that happens to jog my memory, that'd be great. Thanks.
+Do you mean all of the phy settings? I have checked these settings with our hw
+engineers. These are not firmware. 
+
+Best Regards,
+Hayes
+
