@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761463Ab3DBImP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 04:42:15 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:55335 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761447Ab3DBImL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 04:42:11 -0400
-Message-ID: <515A9A0C.7030503@parallels.com>
-Date: Tue, 2 Apr 2013 12:42:52 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S932122Ab3DBImt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 04:42:49 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:60848 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760756Ab3DBIl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 04:41:58 -0400
+Date: Tue, 2 Apr 2013 11:41:39 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Felipe Balbi <balbi@ti.com>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Greg KH <greg@kroah.com>
+Subject: Re: linux-next: manual merge of the usb-gadget tree with the  tree
+Message-ID: <20130402084139.GK30286@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130402171143.ba5dc16d004310542d611b79@canb.auug.org.au>
 MIME-Version: 1.0
-To: Li Zefan <lizefan@huawei.com>
-CC: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [PATCH] memcg: don't do cleanup manually if mem_cgroup_css_online()
- fails
-References: <515A8A40.6020406@huawei.com> <515A90ED.7010208@huawei.com> <515A91B4.3090607@parallels.com> <515A9819.5090603@huawei.com>
-In-Reply-To: <515A9819.5090603@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="opg8F0UgoHELSI+9"
+Content-Disposition: inline
+In-Reply-To: <20130402171143.ba5dc16d004310542d611b79@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2013 12:34 PM, Li Zefan wrote:
-> On 2013/4/2 16:07, Glauber Costa wrote:
->> On 04/02/2013 12:03 PM, Li Zefan wrote:
->>> On 2013/4/2 15:35, Li Zefan wrote:
->>>> If memcg_init_kmem() returns -errno when a memcg is being created,
->>>> mem_cgroup_css_online() will decrement memcg and its parent's refcnt,
->>>
->>>> (but strangely there's no mem_cgroup_put() for mem_cgroup_get() called
->>>> in memcg_propagate_kmem()).
->>>
->>> The comment in memcg_propagate_kmem() suggests it knows mem_cgroup_css_free()
->>> will be called in failure, while mem_cgroup_css_online() doesn't know.
->>>
->> This is a bit suspicious. At first your analysis seems fair, but I've
->> extensively tested memcg teardown process with kmemcg (and even
->> uncovered some bugs at that), and it works when and how expected.
->>
-> 
-> Because this bug is in a failure path, and seems the only way to get into
-> this path is -ENOMEM.
-> 
-Yes, but I tend to test that with manually introduced error codes.
+--opg8F0UgoHELSI+9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-For what is worth, I just did it. And indeed, by ignoring kmemcg
-initialization and failing with ENOMEM here triggers a bug. Your patch
-fixes it. I tested both failing all non-root, and letting the first
-succeed and failing the second if the parent is use_hierarchy. Both
-cases have a bug initially that you fix.
+Hi,
 
-If that is allowed to proceed, kmemcg initialization and teardown works
-as expected.
+On Tue, Apr 02, 2013 at 05:11:43PM +1100, Stephen Rothwell wrote:
+> Hi Felipe,
+>=20
+> Today's linux-next merge of the usb-gadget tree got a conflict in
+> drivers/usb/chipidea/udc.c between commit adf0f735e61a ("usb: chipidea:
+> move debug files creation/removal to the core") from the usb tree and
+> commit dc9e2873b740 ("usb: chipidea: let udc-core manage gadget->dev")
+> from the usb-gadget tree.
+>=20
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
->> Also, note that this teardown code long predates kmemcg.
->>
-> 
-> Maybe this bug was introduced when ss->create() was changed to ss->css_alloc()
-> and ss->css_online(), and before that change ss->destroy() won't be called
-> if ss->create() failed.
-> 
-Yes, this is possible,
+looks alright to me, thank you.
 
+--=20
+balbi
+
+--opg8F0UgoHELSI+9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRWpnDAAoJEIaOsuA1yqREZE4P/iDX2KHjHKVmsxPV4VXDqllP
+m/EuYX7UQOvR1W2FgzI94TN+ypgpVejLti4cXmxb39BC1ueb2U9DE2Q5fNWC2lJ8
+d8f3g7oc995GY27yByGS8504j2hR38Kp1lDrXGZXRwv0Qlp17ljj4jT0MsInKMuD
+XsOyqLI352A+Bs96qTxdVHDgQ1ebVnhaFWsDtJ8a6AAvY1GY1cwJmQr3VgFvXeU+
+CxOS2Glf8VaefJBNZwTdtC9bdHvIcog9J4j6ro06xWwpSl0JUwl9UyuPbpmWmFoF
+zbaQ/7HE7bWcnhUZR2I1R4HsyDSt3PD07BfP9H4PVu4lu4s1MSgakz+v3LRTGBpE
+L9zWA3/nGLaAIZe/LmxZDE3DWHyfHvX2p2ixEVIwUyBKZnJJ99XWylSVitfTXt3j
+UiNEUa/sSTaSpZQFj5sYR3okz8xHAWqMVSjxZQ322U1ZiLgSi5Uci/0Rdhok/k8r
+eLNERbFGhQq5hinfrcEIhhQy86fvKsBEOXa51J4OCrB3KAPUwvmgP1IpbXlGJmAV
+HcpDcg4f4tjs2bEgAgKf/u8Z43d21JldJeZDOwgQ3O2oOlD6PWEOn0nh49tQaxgh
+4fUHba3I0oqTr3/Djn5KTr844Nr/jVQ1yigy8YZOwDAg13DaLe2JBTLV5bNHAff+
+Fmqe8sNPnhWy6hNsWnM2
+=IHHg
+-----END PGP SIGNATURE-----
+
+--opg8F0UgoHELSI+9--
