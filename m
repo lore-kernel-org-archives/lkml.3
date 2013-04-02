@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758152Ab3DBWuf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:50:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33903 "EHLO
+	id S1759547Ab3DBXCH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:02:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33951 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755073Ab3DBWu1 (ORCPT
+	with ESMTP id S1755073Ab3DBWuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:50:27 -0400
+	Tue, 2 Apr 2013 18:50:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 03/56] SUNRPC: Add barriers to ensure read ordering in rpc_wake_up_task_queue_locked
-Date: Tue,  2 Apr 2013 15:49:30 -0700
-Message-Id: <20130402224712.243370421@linuxfoundation.org>
+        Marco Cesarano <marco@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 14/56] mwifiex: cancel cmd timer and free curr_cmd in shutdown process
+Date: Tue,  2 Apr 2013 15:49:41 -0700
+Message-Id: <20130402224713.540410031@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
@@ -26,47 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit 1166fde6a923c30f4351515b6a9a1efc513e7d00 upstream.
+commit 084c7189acb3f969c855536166042e27f5dd703f upstream.
 
-We need to be careful when testing task->tk_waitqueue in
-rpc_wake_up_task_queue_locked, because it can be changed while we
-are holding the queue->lock.
-By adding appropriate memory barriers, we can ensure that it is safe to
-test task->tk_waitqueue for equality if the RPC_TASK_QUEUED bit is set.
+curr_cmd points to the command that is in processing or waiting
+for its command response from firmware. If the function shutdown
+happens to occur at this time we should cancel the cmd timer and
+put the command back to free queue.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Tested-by: Marco Cesarano <marco@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/sched.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/net/wireless/mwifiex/init.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -135,6 +135,8 @@ static void __rpc_add_wait_queue(struct
- 		list_add_tail(&task->u.tk_wait.list, &queue->tasks[0]);
- 	task->tk_waitqueue = queue;
- 	queue->qlen++;
-+	/* barrier matches the read in rpc_wake_up_task_queue_locked() */
-+	smp_wmb();
- 	rpc_set_queued(task);
+--- a/drivers/net/wireless/mwifiex/init.c
++++ b/drivers/net/wireless/mwifiex/init.c
+@@ -561,6 +561,14 @@ mwifiex_shutdown_drv(struct mwifiex_adap
+ 		return ret;
+ 	}
  
- 	dprintk("RPC: %5u added to queue %p \"%s\"\n",
-@@ -369,8 +371,11 @@ static void __rpc_do_wake_up_task(struct
-  */
- static void rpc_wake_up_task_queue_locked(struct rpc_wait_queue *queue, struct rpc_task *task)
- {
--	if (RPC_IS_QUEUED(task) && task->tk_waitqueue == queue)
--		__rpc_do_wake_up_task(queue, task);
-+	if (RPC_IS_QUEUED(task)) {
-+		smp_rmb();
-+		if (task->tk_waitqueue == queue)
-+			__rpc_do_wake_up_task(queue, task);
++	/* cancel current command */
++	if (adapter->curr_cmd) {
++		dev_warn(adapter->dev, "curr_cmd is still in processing\n");
++		del_timer(&adapter->cmd_timer);
++		mwifiex_insert_cmd_to_free_q(adapter, adapter->curr_cmd);
++		adapter->curr_cmd = NULL;
 +	}
- }
++
+ 	/* shut down mwifiex */
+ 	dev_dbg(adapter->dev, "info: shutdown mwifiex...\n");
  
- /*
 
 
