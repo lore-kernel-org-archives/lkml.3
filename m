@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761576Ab3DBJYs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:24:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56385 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754319Ab3DBJYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:24:44 -0400
-Date: Tue, 2 Apr 2013 11:24:41 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        stable@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] hugetlbfs: add swap entry check in
- follow_hugetlb_page()
-Message-ID: <20130402092441.GE24345@dhcp22.suse.cz>
-References: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1364485358-8745-3-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130329135730.GB21879@dhcp22.suse.cz>
- <1364577818-615ipxeo-mutt-n-horiguchi@ah.jp.nec.com>
+	id S1761588Ab3DBJY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:24:56 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:48314 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754081Ab3DBJYx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 05:24:53 -0400
+Date: Tue, 2 Apr 2013 10:24:46 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: ux500: update V-INTCORE constraints
+Message-ID: <20130402092446.GB4375@gmail.com>
+References: <1364397694-14126-1-git-send-email-fabio.baltieri@linaro.org>
+ <CACRpkdYgCxf9R1aU2QdPUBxErhK=E2tM=6L-yMLA_L3+ntj3nQ@mail.gmail.com>
+ <20130402083829.GB23065@opensource.wolfsonmicro.com>
+ <20130402084446.GA6850@balto.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1364577818-615ipxeo-mutt-n-horiguchi@ah.jp.nec.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130402084446.GA6850@balto.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 29-03-13 13:23:38, Naoya Horiguchi wrote:
-> Hi,
-> 
-> On Fri, Mar 29, 2013 at 02:57:30PM +0100, Michal Hocko wrote:
-> > On Thu 28-03-13 11:42:38, Naoya Horiguchi wrote:
-> > [...]
-> > > @@ -2968,7 +2968,8 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
-> > >  		 * first, for the page indexing below to work.
-> > >  		 */
-> > >  		pte = huge_pte_offset(mm, vaddr & huge_page_mask(h));
-> > > -		absent = !pte || huge_pte_none(huge_ptep_get(pte));
-> > > +		absent = !pte || huge_pte_none(huge_ptep_get(pte)) ||
-> > > +			is_swap_pte(huge_ptep_get(pte));
+> > > I know that Lee's been sending off a large set of regulator patches
+> > > lately, some include alterations to this platform config.
 > > 
-> > is_swap_pte doesn't seem right. Shouldn't you use is_hugetlb_entry_hwpoisoned
-> > instead?
+> > > Maybe it's better to take this patch into the regulator tree if these
+> > > machine configs will come in that way? Also like Lee to have a
+> > > look at this...
+> > 
+> > If it's touching the board constraints it's likely to have conflicts
+> > with Lee's stuff, yes.
 > 
-> I tested only hwpoisoned hugepage, but the same can happen for hugepages
-> under migration. So I intended to filter out all types of swap entries.
-> The local variable 'absent' seems to mean whether data on the address
-> is immediately available, so swap type entry isn't included in it.
+> Lee's patches are on -next
 
-OK, I didn't consider huge pages under migration and I was merely worried
-that is_hugetlb_entry_hwpoisoned sounds more appropriate than
-is_swap_pte.
+Not all of them are on -next, but all are on the MLs.
 
-Could you add a comment which would clarify that is_swap_pte covers both
-migration and hwpoison pages, please? Something like:
+I'm currently fixing up some of Mark's review comments in order to
+re-submit the remainder.
 
-		/*
-		 * is_swap_pte test covers both is_hugetlb_entry_hwpoisoned
-		 * and hugepages under migration in which case
-		 * hugetlb_fault waits for the migration and bails out
-		 * properly for HWPosined pages.
-		 */
-		 absent = !pte || huge_pte_none(huge_ptep_get(pte)) ||
-		 	 is_swap_pte(huge_ptep_get(pte));
+> and should not conflict with this one
+> (tested again on today's tree), but it may be nice anyway to have this
+> in the regulator framework with the others.
 
-Other than that feel free to add
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> Mark, would you consider taking this one in your tree?
 
-Thanks.
 -- 
-Michal Hocko
-SUSE Labs
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
