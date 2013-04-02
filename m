@@ -1,135 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932310Ab3DBOg2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 10:36:28 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:30821 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932082Ab3DBOg0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 10:36:26 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(zz98dI103dK1432Izz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-X-WSS-ID: 0MKMTVK-01-FSW-02
-X-M-MSG: 
-Date: Tue, 2 Apr 2013 09:35:43 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH V2 1/2] cpufreq: ondemand: allow custom
- powersave_bias_target function to be registered
-Message-ID: <20130402143543.GB19613@jshin-Toonie>
-References: <1364495057-14939-1-git-send-email-jacob.shin@amd.com>
- <1364495057-14939-2-git-send-email-jacob.shin@amd.com>
- <20130402124332.GA5488@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+	id S932328Ab3DBOhb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 10:37:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24750 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932082Ab3DBOh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 10:37:29 -0400
+Date: Tue, 02 Apr 2013 10:35:50 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        stable@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <1364913350-hwvx480l-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130402092441.GE24345@dhcp22.suse.cz>
+References: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1364485358-8745-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130329135730.GB21879@dhcp22.suse.cz>
+ <1364577818-615ipxeo-mutt-n-horiguchi@ah.jp.nec.com>
+ <20130402092441.GE24345@dhcp22.suse.cz>
+Subject: Re: [PATCH 2/2] hugetlbfs: add swap entry check in
+ follow_hugetlb_page()
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20130402124332.GA5488@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+X-Mutt-References: <20130402092441.GE24345@dhcp22.suse.cz>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 02:43:32PM +0200, Borislav Petkov wrote:
-> On Thu, Mar 28, 2013 at 01:24:16PM -0500, Jacob Shin wrote:
-> > This allows for another [arch specific] driver to hook into existing
-> > powersave bias function of the ondemand governor. i.e. This allows AMD
-> > specific powersave bias function (in a separate AMD specific driver)
-> > to aid ondemand governor's frequency transition deicisions.
+On Tue, Apr 02, 2013 at 11:24:41AM +0200, Michal Hocko wrote:
+> On Fri 29-03-13 13:23:38, Naoya Horiguchi wrote:
+> > Hi,
 > > 
-> > Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-> > ---
-> >  drivers/cpufreq/cpufreq_governor.h |    3 +++
-> >  drivers/cpufreq/cpufreq_ondemand.c |   22 +++++++++++++++++++---
-> >  2 files changed, 22 insertions(+), 3 deletions(-)
+> > On Fri, Mar 29, 2013 at 02:57:30PM +0100, Michal Hocko wrote:
+> > > On Thu 28-03-13 11:42:38, Naoya Horiguchi wrote:
+> > > [...]
+> > > > @@ -2968,7 +2968,8 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
+> > > >  		 * first, for the page indexing below to work.
+> > > >  		 */
+> > > >  		pte = huge_pte_offset(mm, vaddr & huge_page_mask(h));
+> > > > -		absent = !pte || huge_pte_none(huge_ptep_get(pte));
+> > > > +		absent = !pte || huge_pte_none(huge_ptep_get(pte)) ||
+> > > > +			is_swap_pte(huge_ptep_get(pte));
+> > > 
+> > > is_swap_pte doesn't seem right. Shouldn't you use is_hugetlb_entry_hwpoisoned
+> > > instead?
 > > 
-> > diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
-> > index c83cabf..4b6808f 100644
-> > --- a/drivers/cpufreq/cpufreq_governor.h
-> > +++ b/drivers/cpufreq/cpufreq_governor.h
-> > @@ -262,4 +262,7 @@ bool need_load_eval(struct cpu_dbs_common_info *cdbs,
-> >  		unsigned int sampling_rate);
-> >  int cpufreq_governor_dbs(struct cpufreq_policy *policy,
-> >  		struct common_dbs_data *cdata, unsigned int event);
-> > +void od_register_powersave_bias_function(unsigned int (*f)
-> > +		(struct cpufreq_policy *, unsigned int, unsigned int));
-> > +void od_unregister_powersave_bias_function(void);
+> > I tested only hwpoisoned hugepage, but the same can happen for hugepages
+> > under migration. So I intended to filter out all types of swap entries.
+> > The local variable 'absent' seems to mean whether data on the address
+> > is immediately available, so swap type entry isn't included in it.
 > 
-> We generally call those a "callback" or a "handler". I.e.,
-> od_register_powersave_bias_handler or something.
+> OK, I didn't consider huge pages under migration and I was merely worried
+> that is_hugetlb_entry_hwpoisoned sounds more appropriate than
+> is_swap_pte.
+> 
+> Could you add a comment which would clarify that is_swap_pte covers both
+> migration and hwpoison pages, please? Something like:
+> 
+> 		/*
+> 		 * is_swap_pte test covers both is_hugetlb_entry_hwpoisoned
+> 		 * and hugepages under migration in which case
+> 		 * hugetlb_fault waits for the migration and bails out
+> 		 * properly for HWPosined pages.
+> 		 */
+> 		 absent = !pte || huge_pte_none(huge_ptep_get(pte)) ||
+> 		 	 is_swap_pte(huge_ptep_get(pte));
 
-Okay, will change.
+OK, I'll add this.
 
-> 
-> >  #endif /* _CPUFREQ_GOVERNER_H */
-> > diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-> > index 15e80ee..36f0798 100644
-> > --- a/drivers/cpufreq/cpufreq_ondemand.c
-> > +++ b/drivers/cpufreq/cpufreq_ondemand.c
-> > @@ -40,6 +40,8 @@
-> >  
-> >  static DEFINE_PER_CPU(struct od_cpu_dbs_info_s, od_cpu_dbs_info);
-> >  
-> > +static struct od_ops od_ops;
-> > +
-> >  #ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND
-> >  static struct cpufreq_governor cpufreq_gov_ondemand;
-> >  #endif
-> > @@ -145,7 +147,8 @@ static void dbs_freq_increase(struct cpufreq_policy *p, unsigned int freq)
-> >  	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
-> >  
-> >  	if (od_tuners->powersave_bias)
-> > -		freq = powersave_bias_target(p, freq, CPUFREQ_RELATION_H);
-> > +		freq = od_ops.powersave_bias_target(p, freq,
-> > +				CPUFREQ_RELATION_H);
-> >  	else if (p->cur == p->max)
-> >  		return;
-> >  
-> > @@ -206,8 +209,8 @@ static void od_check_cpu(int cpu, unsigned int load_freq)
-> >  			__cpufreq_driver_target(policy, freq_next,
-> >  					CPUFREQ_RELATION_L);
-> >  		} else {
-> > -			int freq = powersave_bias_target(policy, freq_next,
-> > -					CPUFREQ_RELATION_L);
-> > +			int freq = od_ops.powersave_bias_target(policy,
-> > +					freq_next, CPUFREQ_RELATION_L);
-> >  			__cpufreq_driver_target(policy, freq,
-> >  					CPUFREQ_RELATION_L);
-> >  		}
-> > @@ -565,6 +568,19 @@ static struct common_dbs_data od_dbs_cdata = {
-> >  	.exit = od_exit,
-> >  };
-> >  
-> > +void od_register_powersave_bias_function(unsigned int (*f)
-> > +		(struct cpufreq_policy *, unsigned int, unsigned int))
-> > +{
-> > +	od_ops.powersave_bias_target = f;
-> > +}
-> > +EXPORT_SYMBOL_GPL(od_register_powersave_bias_function);
-> > +
-> > +void od_unregister_powersave_bias_function(void)
-> > +{
-> > +	od_ops.powersave_bias_target = powersave_bias_target;
-> 
-> This is very confusing: we have ->powersave_bias_target and the default
-> powersave_bias_target in the ondemand governor. Can we call the default
-> one generic_powersave_bias_target or default_* or whatever.
+> Other than that feel free to add
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-Okay, will do.
-
-Thanks!
-
-> 
-> Thanks.
-> 
-> -- 
-> Regards/Gruss,
->     Boris.
-> 
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
-> 
-
+Thank you!
+Naoya
