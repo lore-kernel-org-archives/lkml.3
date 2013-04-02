@@ -1,255 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932957Ab3DBQXz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 12:23:55 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:53580 "EHLO
+	id S932939Ab3DBQXy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 12:23:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:52941 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932919Ab3DBQXu (ORCPT
+	with ESMTP id S932839Ab3DBQXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 12:23:50 -0400
+	Tue, 2 Apr 2013 12:23:49 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Greg KH <greg@kroah.com>
 Cc: linux-usb@vger.kernel.org, Manjunath Goudar <manjunath.goudar@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH V5 5/6] USB: EHCI: make ehci-msm a separate driver
-Date: Tue,  2 Apr 2013 18:24:03 +0200
-Message-Id: <1364919844-1726-6-git-send-email-arnd@arndb.de>
+Subject: [PATCH V5 6/6] USB: OHCI: avoid conflicting platform drivers
+Date: Tue,  2 Apr 2013 18:24:04 +0200
+Message-Id: <1364919844-1726-7-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1364919844-1726-1-git-send-email-arnd@arndb.de>
 References: <1364919844-1726-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:QxR5QLczzS9oMECpFJ6XVp8FXCQlzRyRWq/k7C4USJW
- tDTk6hP/oBJqF8nkMVjctZAcvwzxd8wr/lPqE72PZsre/n5eku
- 38SJVipCzoFqFhh114NXYp7iv8w+7cc91FlL0voupVpxTjMMEN
- TRuzPsBDmHGHFllvzeXg4HcwP6hPKMbDscHIls6lgV5ggbdr+t
- jl3bdTurbFJkL0nZK3g+CW98TvUsPbgmjhdyvgDRQZfbNqkqkX
- 8+RpjFqrCndvANQnsxbROrccmEzBpkwkhfEmNFG5KUFeRdlc18
- W1KRy3gJ3cJmSXfS5MQaUQrug/z2ACpxT6YfIwkJs7fC7aBM83
- SLPssJpy+5/yamA6ychcEoXcRuuH9mUc6BFJH5uG4
+X-Provags-ID: V02:K0:owwBlnzWJeAteOqWR3BW/WB5awy7OjfFRHbpW8LkdjM
+ lint6pUFKhzuK0D9IAQXQ/fbVaaWvRVSRYx9htpc1/FNyvcbNP
+ QBdWZpmRwXACapFvyecJwpXvBKOCplAQGkh+m6jCS8+QQ4pKle
+ EiJ1FZpX30HoY/C+bLwkTL6BoeZC8nc9zbhYCUszO6EBozYEle
+ UhOkdbq5eHPxJRUiLoE2i13SWe6p5jvk4yVn0u5+zV/TmfNDQX
+ hMfAzuNWem8zeTUi9nlxizL0Bpo4U7A1MNkQH9Y+Zsk30xmZnO
+ TVKcu4DnnfNudeHD1JADe7Q5apx+aAJ9Diq9PUH7qa7LJ9sO9l
+ 4gvWyymt6aCC3PMoADaYVbdzjjTaqRv5qGO2z3xwq
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Manjunath Goudar <manjunath.goudar@linaro.org>
+Like the EHCI driver, OHCI supports a large number of different platform
+glue drivers by directly including them, which causes problems with
+conflicting macro definitions in some cases. As more ARM architecture
+specific back-ends are required to coexist in a single build, we should
+split those out into separate drivers. Unfortunately, the infrastructure
+for that is still under development, so to give us more time, this uses
+a separate *_PLATFORM_DRIVER macro for each ARM specific OHCI backend,
+just like we already do on PowerPC and some of the other ARM platforms.
 
-Separate the  Qualcomm QSD/MSM on-chip host controller driver from
-ehci-hcd host code so that it can be built as a separate driver module.
-This work is part of enabling multi-platform kernels on ARM;
-however, note that other changes are still needed before Qualcomm QSD/MSM
-can be booted with a multi-platform kernel, which is not expected before
-3.11.
+In linux-3.10, only the SPEAr and CNS3xxx back-ends would actually conflict
+without this patch, but over time we would get more of them, so this
+is a way to avoid having to patch the driver every time it breaks. We
+should still split out all back-ends into separate loadable modules,
+but that work is only needed to improve code size and cleanliness after
+this patch, not for correctness.
 
-With the infrastructure added by Alan Stern in patch 3e0232039
-"USB: EHCI: prepare to make ehci-hcd a library module", we can
-avoid this problem by turning a bus glue into a separate
-module, as we do here for the msm bus glue.
+While we're here, this fixes the incorrectly sorted error path
+for the OMAP1 and OMAP3 backends to ensure we always unregister
+the exact set of drivers that were registered before erroring out.
 
-In V5 (arnd):
- - add FIXME about missing usb_add_hcd() or usb_remove_hcd() calls
-
-In V3:
- - Detailed commit message added here describing why this patch is required.
- - Arranged  #include's in alphabetical order.
- - driver.name initialized hcd_name[] = "ehci-msm" in platform_driver
-   structure initialization instead of "msm-ehci", which was the reason
-   why it broke in EHCI USB testing
-
-In V2:
-Tegra patch related changes removed from this patch.
-
-Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Acked-by: David Brown <davidb@codeaurora.org>
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/usb/host/Kconfig    |  2 +-
- drivers/usb/host/Makefile   |  1 +
- drivers/usb/host/ehci-hcd.c |  6 +--
- drivers/usb/host/ehci-msm.c | 89 +++++++++++++++++++++------------------------
- 4 files changed, 44 insertions(+), 54 deletions(-)
+ drivers/usb/host/ohci-hcd.c | 136 ++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 118 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index f6f7872..b9cdbbb 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -191,7 +191,7 @@ config USB_EHCI_HCD_AT91
-           Atmel chips.
+diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
+index 180a2b0..9e6de95 100644
+--- a/drivers/usb/host/ohci-hcd.c
++++ b/drivers/usb/host/ohci-hcd.c
+@@ -1102,12 +1102,12 @@ MODULE_LICENSE ("GPL");
  
- config USB_EHCI_MSM
--	bool "Support for MSM on-chip EHCI USB controller"
-+	tristate "Support for Qualcomm QSD/MSM on-chip EHCI USB controller"
- 	depends on USB_EHCI_HCD && ARCH_MSM
- 	select USB_EHCI_ROOT_HUB_TT
- 	select USB_MSM_OTG
-diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index 368d3eb..4fb73c1 100644
---- a/drivers/usb/host/Makefile
-+++ b/drivers/usb/host/Makefile
-@@ -32,6 +32,7 @@ obj-$(CONFIG_USB_EHCI_HCD_ORION)	+= ehci-orion.o
- obj-$(CONFIG_USB_EHCI_HCD_SPEAR)	+= ehci-spear.o
- obj-$(CONFIG_USB_EHCI_S5P)	+= ehci-s5p.o
- obj-$(CONFIG_USB_EHCI_HCD_AT91) += ehci-atmel.o
-+obj-$(CONFIG_USB_EHCI_MSM)	+= ehci-msm.o
- 
- obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
- obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index ccc78ab..2e0c2bd 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1259,11 +1259,6 @@ MODULE_LICENSE ("GPL");
- #define PLATFORM_DRIVER		ehci_octeon_driver
+ #if defined(CONFIG_ARCH_S3C24XX) || defined(CONFIG_ARCH_S3C64XX)
+ #include "ohci-s3c2410.c"
+-#define PLATFORM_DRIVER		ohci_hcd_s3c2410_driver
++#define S3C2410_PLATFORM_DRIVER	ohci_hcd_s3c2410_driver
  #endif
  
--#ifdef CONFIG_USB_EHCI_MSM
--#include "ehci-msm.c"
--#define PLATFORM_DRIVER		ehci_msm_driver
--#endif
+ #ifdef CONFIG_USB_OHCI_EXYNOS
+ #include "ohci-exynos.c"
+-#define PLATFORM_DRIVER		exynos_ohci_driver
++#define EXYNOS_PLATFORM_DRIVER	exynos_ohci_driver
+ #endif
+ 
+ #ifdef CONFIG_USB_OHCI_HCD_OMAP1
+@@ -1127,25 +1127,24 @@ MODULE_LICENSE ("GPL");
+ 
+ #ifdef CONFIG_ARCH_EP93XX
+ #include "ohci-ep93xx.c"
+-#define PLATFORM_DRIVER		ohci_hcd_ep93xx_driver
++#define EP93XX_PLATFORM_DRIVER	ohci_hcd_ep93xx_driver
+ #endif
+ 
+ #ifdef CONFIG_ARCH_AT91
+ #include "ohci-at91.c"
+-#define PLATFORM_DRIVER		ohci_hcd_at91_driver
++#define AT91_PLATFORM_DRIVER	ohci_hcd_at91_driver
+ #endif
+ 
+ #ifdef CONFIG_ARCH_LPC32XX
+ #include "ohci-nxp.c"
+-#define PLATFORM_DRIVER		usb_hcd_nxp_driver
++#define NXP_PLATFORM_DRIVER	usb_hcd_nxp_driver
+ #endif
+ 
+ #ifdef CONFIG_ARCH_DAVINCI_DA8XX
+ #include "ohci-da8xx.c"
+-#define PLATFORM_DRIVER		ohci_hcd_da8xx_driver
++#define DAVINCI_PLATFORM_DRIVER	ohci_hcd_da8xx_driver
+ #endif
+ 
 -
- #ifdef CONFIG_TILE_USB
- #include "ehci-tilegx.c"
- #define	PLATFORM_DRIVER		ehci_hcd_tilegx_driver
-@@ -1303,6 +1298,7 @@ MODULE_LICENSE ("GPL");
- 	!IS_ENABLED(CONFIG_USB_EHCI_HCD_SPEAR) && \
- 	!IS_ENABLED(CONFIG_USB_EHCI_S5P) && \
- 	!IS_ENABLED(CONFIG_USB_EHCI_HCD_AT91) && \
-+	!IS_ENABLED(CONFIG_USB_EHCI_MSM) && \
- 	!defined(PLATFORM_DRIVER) && \
+ #ifdef CONFIG_USB_OHCI_HCD_PPC_OF
+ #include "ohci-ppc-of.c"
+ #define OF_PLATFORM_DRIVER	ohci_hcd_ppc_of_driver
+@@ -1153,7 +1152,7 @@ MODULE_LICENSE ("GPL");
+ 
+ #ifdef CONFIG_PLAT_SPEAR
+ #include "ohci-spear.c"
+-#define PLATFORM_DRIVER		spear_ohci_hcd_driver
++#define SPEAR_PLATFORM_DRIVER	spear_ohci_hcd_driver
+ #endif
+ 
+ #ifdef CONFIG_PPC_PS3
+@@ -1199,7 +1198,14 @@ MODULE_LICENSE ("GPL");
+ 	!defined(SA1111_DRIVER) &&	\
  	!defined(PS3_SYSTEM_BUS_DRIVER) && \
- 	!defined(OF_PLATFORM_DRIVER) && \
-diff --git a/drivers/usb/host/ehci-msm.c b/drivers/usb/host/ehci-msm.c
-index 88a49c8..93f062c 100644
---- a/drivers/usb/host/ehci-msm.c
-+++ b/drivers/usb/host/ehci-msm.c
-@@ -22,16 +22,26 @@
-  * along with this program; if not, you can find it at http://www.fsf.org
-  */
+ 	!defined(SM501_OHCI_DRIVER) && \
+-	!defined(TMIO_OHCI_DRIVER)
++	!defined(TMIO_OHCI_DRIVER) && \
++	!defined(S3C2410_PLATFORM_DRIVER) && \
++	!defined(EXYNOS_PLATFORM_DRIVER) && \
++	!defined(EP93XX_PLATFORM_DRIVER) && \
++	!defined(AT91_PLATFORM_DRIVER) && \
++	!defined(NXP_PLATFORM_DRIVER) && \
++	!defined(DAVINCI_PLATFORM_DRIVER) && \
++	!defined(SPEAR_PLATFORM_DRIVER)
+ #error "missing bus glue for ohci-hcd"
+ #endif
  
--#include <linux/platform_device.h>
- #include <linux/clk.h>
- #include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
- #include <linux/pm_runtime.h>
--
- #include <linux/usb/otg.h>
- #include <linux/usb/msm_hsusb_hw.h>
-+#include <linux/usb.h>
-+#include <linux/usb/hcd.h>
+@@ -1277,9 +1283,79 @@ static int __init ohci_hcd_mod_init(void)
+ 		goto error_tmio;
+ #endif
+ 
++#ifdef S3C2410_PLATFORM_DRIVER
++	retval = platform_driver_register(&S3C2410_PLATFORM_DRIVER);
++	if (retval < 0)
++		goto error_s3c2410;
++#endif
 +
-+#include "ehci.h"
- 
- #define MSM_USB_BASE (hcd->regs)
- 
-+#define DRIVER_DESC "Qualcomm On-Chip EHCI Host Controller"
++#ifdef EXYNOS_PLATFORM_DRIVER
++	retval = platform_driver_register(&EXYNOS_PLATFORM_DRIVER);
++	if (retval < 0)
++		goto error_exynos;
++#endif
 +
-+static const char hcd_name[] = "ehci-msm";
-+static struct hc_driver __read_mostly msm_hc_driver;
- static struct usb_phy *phy;
++#ifdef EP93XX_PLATFORM_DRIVER
++	retval = platform_driver_register(&EP93XX_PLATFORM_DRIVER);
++	if (retval < 0)
++		goto error_ep93xx;
++#endif
++
++#ifdef AT91_PLATFORM_DRIVER
++	retval = platform_driver_register(&AT91_PLATFORM_DRIVER);
++	if (retval < 0)
++		goto error_at91;
++#endif
++
++#ifdef NXP_PLATFORM_DRIVER
++	retval = platform_driver_register(&NXP_PLATFORM_DRIVER);
++	if (retval < 0)
++		goto error_nxp;
++#endif
++
++#ifdef DAVINCI_PLATFORM_DRIVER
++	retval = platform_driver_register(&DAVINCI_PLATFORM_DRIVER);
++	if (retval < 0)
++		goto error_davinci;
++#endif
++
++#ifdef SPEAR_PLATFORM_DRIVER
++	retval = platform_driver_register(&SPEAR_PLATFORM_DRIVER);
++	if (retval < 0)
++		goto error_spear;
++#endif
++
+ 	return retval;
  
- static int ehci_msm_reset(struct usb_hcd *hcd)
-@@ -56,52 +66,6 @@ static int ehci_msm_reset(struct usb_hcd *hcd)
- 	return 0;
- }
+ 	/* Error path */
++#ifdef SPEAR_PLATFORM_DRIVER
++	platform_driver_unregister(&SPEAR_PLATFORM_DRIVER);
++ error_spear:
++#endif
++#ifdef DAVINCI_PLATFORM_DRIVER
++	platform_driver_unregister(&DAVINCI_PLATFORM_DRIVER);
++ error_davinci:
++#endif
++#ifdef NXP_PLATFORM_DRIVER
++	platform_driver_unregister(&NXP_PLATFORM_DRIVER);
++ error_nxp:
++#endif
++#ifdef AT91_PLATFORM_DRIVER
++	platform_driver_unregister(&AT91_PLATFORM_DRIVER);
++ error_at91:
++#endif
++#ifdef EP93XX_PLATFORM_DRIVER
++	platform_driver_unregister(&EP93XX_PLATFORM_DRIVER);
++ error_ep93xx:
++#endif
++#ifdef EXYNOS_PLATFORM_DRIVER
++	platform_driver_unregister(&EXYNOS_PLATFORM_DRIVER);
++ error_exynos:
++#endif
++#ifdef S3C2410_PLATFORM_DRIVER
++	platform_driver_unregister(&S3C2410_PLATFORM_DRIVER);
++ error_s3c2410:
++#endif
+ #ifdef TMIO_OHCI_DRIVER
+ 	platform_driver_unregister(&TMIO_OHCI_DRIVER);
+  error_tmio:
+@@ -1300,17 +1376,17 @@ static int __init ohci_hcd_mod_init(void)
+ 	platform_driver_unregister(&OF_PLATFORM_DRIVER);
+  error_of_platform:
+ #endif
+-#ifdef PLATFORM_DRIVER
+-	platform_driver_unregister(&PLATFORM_DRIVER);
+- error_platform:
++#ifdef OMAP3_PLATFORM_DRIVER
++	platform_driver_unregister(&OMAP3_PLATFORM_DRIVER);
++ error_omap3_platform:
+ #endif
+ #ifdef OMAP1_PLATFORM_DRIVER
+ 	platform_driver_unregister(&OMAP1_PLATFORM_DRIVER);
+  error_omap1_platform:
+ #endif
+-#ifdef OMAP3_PLATFORM_DRIVER
+-	platform_driver_unregister(&OMAP3_PLATFORM_DRIVER);
+- error_omap3_platform:
++#ifdef PLATFORM_DRIVER
++	platform_driver_unregister(&PLATFORM_DRIVER);
++ error_platform:
+ #endif
+ #ifdef PS3_SYSTEM_BUS_DRIVER
+ 	ps3_ohci_driver_unregister(&PS3_SYSTEM_BUS_DRIVER);
+@@ -1329,6 +1405,27 @@ module_init(ohci_hcd_mod_init);
  
--static struct hc_driver msm_hc_driver = {
--	.description		= hcd_name,
--	.product_desc		= "Qualcomm On-Chip EHCI Host Controller",
--	.hcd_priv_size		= sizeof(struct ehci_hcd),
--
--	/*
--	 * generic hardware linkage
--	 */
--	.irq			= ehci_irq,
--	.flags			= HCD_USB2 | HCD_MEMORY,
--
--	.reset			= ehci_msm_reset,
--	.start			= ehci_run,
--
--	.stop			= ehci_stop,
--	.shutdown		= ehci_shutdown,
--
--	/*
--	 * managing i/o requests and associated device resources
--	 */
--	.urb_enqueue		= ehci_urb_enqueue,
--	.urb_dequeue		= ehci_urb_dequeue,
--	.endpoint_disable	= ehci_endpoint_disable,
--	.endpoint_reset		= ehci_endpoint_reset,
--	.clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
--
--	/*
--	 * scheduling support
--	 */
--	.get_frame_number	= ehci_get_frame,
--
--	/*
--	 * root hub support
--	 */
--	.hub_status_data	= ehci_hub_status_data,
--	.hub_control		= ehci_hub_control,
--	.relinquish_port	= ehci_relinquish_port,
--	.port_handed_over	= ehci_port_handed_over,
--
--	/*
--	 * PM support
--	 */
--	.bus_suspend		= ehci_bus_suspend,
--	.bus_resume		= ehci_bus_resume,
--};
--
- static int ehci_msm_probe(struct platform_device *pdev)
+ static void __exit ohci_hcd_mod_exit(void)
  {
- 	struct usb_hcd *hcd;
-@@ -165,6 +129,8 @@ static int ehci_msm_probe(struct platform_device *pdev)
- 	pm_runtime_no_callbacks(&pdev->dev);
- 	pm_runtime_enable(&pdev->dev);
- 
-+	/* FIXME: need to call usb_add_hcd() here? */
-+
- 	return 0;
- 
- put_hcd:
-@@ -183,6 +149,8 @@ static int ehci_msm_remove(struct platform_device *pdev)
- 
- 	otg_set_host(phy->otg, NULL);
- 
-+	/* FIXME: need to call usb_remove_hcd() here? */
-+
- 	usb_put_hcd(hcd);
- 
- 	return 0;
-@@ -226,3 +194,28 @@ static struct platform_driver ehci_msm_driver = {
- 		   .pm = &ehci_msm_dev_pm_ops,
- 	},
- };
-+
-+static const struct ehci_driver_overrides msm_overrides __initdata = {
-+	.reset = ehci_msm_reset,
-+};
-+
-+static int __init ehci_msm_init(void)
-+{
-+	if (usb_disabled())
-+		return -ENODEV;
-+
-+	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
-+	ehci_init_driver(&msm_hc_driver, &msm_overrides);
-+	return platform_driver_register(&ehci_msm_driver);
-+}
-+module_init(ehci_msm_init);
-+
-+static void __exit ehci_msm_cleanup(void)
-+{
-+	platform_driver_unregister(&ehci_msm_driver);
-+}
-+module_exit(ehci_msm_cleanup);
-+
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_ALIAS("platform:msm-ehci");
-+MODULE_LICENSE("GPL");
++#ifdef SPEAR_PLATFORM_DRIVER
++	platform_driver_unregister(&SPEAR_PLATFORM_DRIVER);
++#endif
++#ifdef DAVINCI_PLATFORM_DRIVER
++	platform_driver_unregister(&DAVINCI_PLATFORM_DRIVER);
++#endif
++#ifdef NXP_PLATFORM_DRIVER
++	platform_driver_unregister(&NXP_PLATFORM_DRIVER);
++#endif
++#ifdef AT91_PLATFORM_DRIVER
++	platform_driver_unregister(&AT91_PLATFORM_DRIVER);
++#endif
++#ifdef EP93XX_PLATFORM_DRIVER
++	platform_driver_unregister(&EP93XX_PLATFORM_DRIVER);
++#endif
++#ifdef EXYNOS_PLATFORM_DRIVER
++	platform_driver_unregister(&EXYNOS_PLATFORM_DRIVER);
++#endif
++#ifdef S3C2410_PLATFORM_DRIVER
++	platform_driver_unregister(&S3C2410_PLATFORM_DRIVER);
++#endif
+ #ifdef TMIO_OHCI_DRIVER
+ 	platform_driver_unregister(&TMIO_OHCI_DRIVER);
+ #endif
+@@ -1344,12 +1441,15 @@ static void __exit ohci_hcd_mod_exit(void)
+ #ifdef OF_PLATFORM_DRIVER
+ 	platform_driver_unregister(&OF_PLATFORM_DRIVER);
+ #endif
+-#ifdef PLATFORM_DRIVER
+-	platform_driver_unregister(&PLATFORM_DRIVER);
+-#endif
+ #ifdef OMAP3_PLATFORM_DRIVER
+ 	platform_driver_unregister(&OMAP3_PLATFORM_DRIVER);
+ #endif
++#ifdef OMAP1_PLATFORM_DRIVER
++	platform_driver_unregister(&OMAP1_PLATFORM_DRIVER);
++#endif
++#ifdef PLATFORM_DRIVER
++	platform_driver_unregister(&PLATFORM_DRIVER);
++#endif
+ #ifdef PS3_SYSTEM_BUS_DRIVER
+ 	ps3_ohci_driver_unregister(&PS3_SYSTEM_BUS_DRIVER);
+ #endif
 -- 
 1.8.1.2
 
