@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933633Ab3DBWOi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:14:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33517 "EHLO
+	id S933918Ab3DBWOu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:14:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33692 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933728Ab3DBWOY (ORCPT
+	with ESMTP id S933732Ab3DBWOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:24 -0400
+	Tue, 2 Apr 2013 18:14:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Toralf=20F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 35/68] nfsd4: reject "negative" acl lengths
-Date: Tue,  2 Apr 2013 15:13:24 -0700
-Message-Id: <20130402221334.009995941@linuxfoundation.org>
+        Max Nekludov <Max.Nekludov@us.elster.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 65/68] ks8851: Fix interpretation of rxlen field.
+Date: Tue,  2 Apr 2013 15:13:54 -0700
+Message-Id: <20130402221337.512357699@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,34 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 64a817cfbded8674f345d1117b117f942a351a69 upstream.
+From: "Max.Nekludov@us.elster.com" <Max.Nekludov@us.elster.com>
 
-Since we only enforce an upper bound, not a lower bound, a "negative"
-length can get through here.
+[ Upstream commit 14bc435ea54cb888409efb54fc6b76c13ef530e9 ]
 
-The symptom seen was a warning when we attempt to a kmalloc with an
-excessive size.
+According to the Datasheet (page 52):
+15-12 Reserved
+11-0 RXBC Receive Byte Count
+This field indicates the present received frame byte size.
 
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+The code has a bug:
+                 rxh = ks8851_rdreg32(ks, KS_RXFHSR);
+                 rxstat = rxh & 0xffff;
+                 rxlen = rxh >> 16; // BUG!!! 0xFFF mask should be applied
+
+Signed-off-by: Max Nekludov <Max.Nekludov@us.elster.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/nfsd/nfs4xdr.c |    2 +-
+ drivers/net/ethernet/micrel/ks8851.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -263,7 +263,7 @@ nfsd4_decode_fattr(struct nfsd4_compound
- 		iattr->ia_valid |= ATTR_SIZE;
- 	}
- 	if (bmval[0] & FATTR4_WORD0_ACL) {
--		int nace;
-+		u32 nace;
- 		struct nfs4_ace *ace;
+--- a/drivers/net/ethernet/micrel/ks8851.c
++++ b/drivers/net/ethernet/micrel/ks8851.c
+@@ -547,7 +547,7 @@ static void ks8851_rx_pkts(struct ks8851
+ 	for (; rxfc != 0; rxfc--) {
+ 		rxh = ks8851_rdreg32(ks, KS_RXFHSR);
+ 		rxstat = rxh & 0xffff;
+-		rxlen = rxh >> 16;
++		rxlen = (rxh >> 16) & 0xfff;
  
- 		READ_BUF(4); len += 4;
+ 		netif_dbg(ks, rx_status, ks->netdev,
+ 			  "rx: stat 0x%04x, len 0x%04x\n", rxstat, rxlen);
 
 
