@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761469Ab3DBLv7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 07:51:59 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43968 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761453Ab3DBLvx (ORCPT
+	id S932111Ab3DBLy7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 07:54:59 -0400
+Received: from mail-da0-f43.google.com ([209.85.210.43]:48158 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761389Ab3DBLy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 07:51:53 -0400
-Date: Tue, 2 Apr 2013 13:51:51 +0200
-From: Pavel Machek <pavel@denx.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: sr@denx.de, w.sang@pengutronix.de, magnus.damm@gmail.com,
-        hjk@linutronix.de, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, dzu@denx.de
-Subject: Re: UIO device tree bindings.
-Message-ID: <20130402115151.GA9052@amd.pavel.ucw.cz>
-References: <20130401142336.GA18034@amd.pavel.ucw.cz>
- <20130401154008.GA20963@amd.pavel.ucw.cz>
- <20130402024212.GA19431@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130402024212.GA19431@roeck-us.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 2 Apr 2013 07:54:58 -0400
+From: Prabhakar lad <prabhakar.csengg@gmail.com>
+To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Sekhar Nori <nsekhar@ti.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v8 0/2] ARM: davinci: add support for dm365 vpbe display
+Date: Tue,  2 Apr 2013 17:24:39 +0530
+Message-Id: <1364903681-13914-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2013-04-01 19:42:12, Guenter Roeck wrote:
-> On Mon, Apr 01, 2013 at 05:40:08PM +0200, Pavel Machek wrote:
-> > On Mon 2013-04-01 16:23:36, Pavel Machek wrote:
-> > > Hi!
-> > > 
-> > > I'd like to get uio device tree bindings to work -- with recent FPGA
-> > > parts it will be important. Latest version I see is 
-> > > 
-> > > https://lists.ozlabs.org/pipermail/linuxppc-dev/2009-June/073087.html
-> > > 
-> > > ... Is there anything newer?
-> > > 
-> > > I red the discussion, and main problem seems to be the "tell kernel to
-> > > drive this device tree device", right?
-> > 
-> Problem seems to be the notion that the proposed devicetree entry would not
-> describe the hardware, but its use. Not really sure I understand the problem,
-> as I would see the hardware description to be "A hardware device which is
-> compatible to and managed by the generic-uio driver". I would argue that
-> this _is_ a hardware description (if not, what is ?), but I am not the one
-> to make the call.
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-Well... one could argue that having "generic-uio" in board's device
-tree _is_ wrong, but having driver that binds to "generic-uio" is
-not. Hmm?
+This patch series enables VPBE display driver on DM365.
 
-Or maybe we can do some magic with module parameter. That should be
-enough for expected use.
+Changes for v8:
+1: Fixed nits pointed by Sekhar.
 
-> > So... here's the port to recent kernels. Not for mainline.
-> > 
-> > Signed-off-by: Pavel Machek <pavel@denx.de>
-> > 
-> Turns out this is exactly what I need, and your post saves me the time
-> I would have spent writing essentially the same code and submitting it,
-> only to have it rejected.
-> 
-> Thanks a lot for digging this up!
+Changes for v7:
+1: Fixed nits pointed by Sekhar.
 
-You are welcome :-). Thanks for helping with testing ;-).
-									Pavel
+Changes for v6:
+1: Fixed review comments pointed by Sekhar.
+
+Changes for v5:
+1: pass different platform names to handle different ip's.
+2: Fixed review comments pointed by Sekhar.
+
+Changes for v4:
+1: Replaced the obsolete preset API by timings API.
+
+Changes for v3:
+1: Removed VPSS clock alias for master and slave which was
+   sent for VPSS driver. since this patch was dependent on
+   patch[1]. I will revist this patch once MC(captrure driver)
+   goes into mainline.
+[1] http://www.spinics.net/lists/linux-media/msg50562.html
+
+Changes for v2:
+1: Added VPSS clock so that capture and display
+   can work independent.
+
+Lad, Prabhakar (2):
+  ARM: davinci: dm365: add support for v4l2 video display
+  ARM: davinci: dm365 EVM: add support for VPBE display
+
+ arch/arm/mach-davinci/board-dm365-evm.c |  166 +++++++++++++++++++++++++++-
+ arch/arm/mach-davinci/davinci.h         |    7 +-
+ arch/arm/mach-davinci/dm365.c           |  185 +++++++++++++++++++++++++++++--
+ 3 files changed, 346 insertions(+), 12 deletions(-)
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.4.1
+
