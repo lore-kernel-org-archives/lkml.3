@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759763Ab3DBDHa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 23:07:30 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:65342 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758545Ab3DBDH2 (ORCPT
+	id S1760127Ab3DBDJp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 23:09:45 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:38687 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759451Ab3DBDJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 23:07:28 -0400
-Message-ID: <515A4B6C.2080805@lwfinger.net>
-Date: Mon, 01 Apr 2013 22:07:24 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Mon, 1 Apr 2013 23:09:44 -0400
+Date: Mon, 1 Apr 2013 20:09:33 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Fengguang Wu <fengguang.wu@intel.com>, Jeff Moyer <jmoyer@redhat.com>
+Subject: [GIT PULL] writeback: convert writeback to unbound workqueue
+Message-ID: <20130402030933.GB6255@htj.dyndns.org>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the wireless-next tree
-References: <20130402133400.017b4ec5cd37725b32aa8079@canb.auug.org.au>
-In-Reply-To: <20130402133400.017b4ec5cd37725b32aa8079@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2013 09:34 PM, Stephen Rothwell wrote:
-> Hi John,
->
-> After merging the wireless-next tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->
-> drivers/net/wireless/rtlwifi/rtl8188ee/dm.c:30:18: fatal error: wifi.h: No such file or directory
->
-> Caused by commit f0eb856e0b6c ("rtlwifi: rtl8188ee: Add new driver").
-> Forgot a file?
->
-> I have used the wireless-next tree from next-20130328 for today.
+Hello, Jens.
 
-Stephen,
+This is the pull request for the earlier patchset[1] with the same
+name.  It's only three patches (the first one was committed to
+workqueue tree) but the merge strategy is a bit involved due to the
+dependencies.
 
-I do not understand. File wifi.h is definitely there and is in 
-drivers/net/wireless/rtlwifi/. Use of that directory as a source of include 
-files is handled by "ccflags-y += -I drivers/net/wireless/rtlwifi 
--D__CHECK_ENDIAN__" in the Makefile for rtl8188ee. In fact, it builds just fine 
-here.
+* Because the conversion needs features from wq/for-3.10,
+  block/for-3.10/core is based on rc3, and wq/for-3.10 has conflicts
+  with rc3, I pulled mainline (rc5) into wq/for-3.10 to prevent those
+  workqueue conflicts from flaring up in block tree.
 
-What am I missing?
+* Resolving the issue that Jan and Dave raised about debugging
+  requires arch-wide changes.  The patchset is being worked on[2] but
+  it'll have to go through -mm after these changes show up in -next,
+  and not included in this pull request.
 
-Larry
+The three commits are located in the following git branch.
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git writeback-workqueue
 
+Pulling it into block/for-3.10/core produces a conflict in
+drivers/md/raid5.c between the following two commits.
+
+  e3620a3ad5 ("MD RAID5: Avoid accessing gendisk or queue structs when not available")
+  2f6db2a707 ("raid5: use bio_reset()")
+
+The conflict is trivial - one removes an "if ()" conditional while the
+other removes "rbi->bi_next = NULL" right above it.  We just need to
+remove both.  The merged branch is available at
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git block-test-merge
+
+so that you can use it for verification.  The test merge commit has
+proper merge description.
+
+While these changes are a bit of pain to route, they make code simpler
+and even have, while minute, measureable performance gain[3] even on a
+workload which isn't particularly favorable to showing the benefits of
+this conversion.
+
+Thanks.
+
+-- 
+tejun
+
+[1] http://thread.gmane.org/gmane.linux.kernel/1453006
+[2] https://lkml.org/lkml/2013/3/29/354
+[3] https://lkml.org/lkml/2013/3/28/67
