@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932479Ab3DBTah (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 15:30:37 -0400
-Received: from mail-da0-f49.google.com ([209.85.210.49]:65042 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760406Ab3DBTag (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 15:30:36 -0400
-Date: Tue, 2 Apr 2013 12:30:15 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Minchan Kim <minchan@kernel.org>
-cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] THP: Use explicit memory barrier
-In-Reply-To: <20130402003746.GA30444@blaptop>
-Message-ID: <alpine.LNX.2.00.1304021221240.5808@eggly.anvils>
-References: <1364773535-26264-1-git-send-email-minchan@kernel.org> <alpine.DEB.2.02.1304011634530.21603@chino.kir.corp.google.com> <20130402003746.GA30444@blaptop>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1762182Ab3DBTcp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 15:32:45 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42008 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761551Ab3DBTcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 15:32:43 -0400
+Date: Tue, 2 Apr 2013 21:32:40 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: suravee.suthikulpanit@amd.com, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] iommu/amd: Add logic to decode AMD IOMMU event flag
+Message-ID: <20130402193240.GF17675@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Joerg Roedel <joro@8bytes.org>, suravee.suthikulpanit@amd.com,
+	iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+References: <1364428283-2548-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <20130402143335.GB15687@8bytes.org>
+ <20130402144037.GE5488@pd.tnic>
+ <20130402150302.GF15687@8bytes.org>
+ <20130402152956.GE4391@pd.tnic>
+ <20130402160400.GP30540@8bytes.org>
+ <20130402161757.GC17519@pd.tnic>
+ <20130402163318.GS30540@8bytes.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130402163318.GS30540@8bytes.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Apr 2013, Minchan Kim wrote:
-> On Mon, Apr 01, 2013 at 04:35:38PM -0700, David Rientjes wrote:
-> > On Mon, 1 Apr 2013, Minchan Kim wrote:
-> > 
-> > > __do_huge_pmd_anonymous_page depends on page_add_new_anon_rmap's
-> > > spinlock for making sure that clear_huge_page write become visible
-> > > after set set_pmd_at() write.
-> > > 
-> > > But lru_cache_add_lru uses pagevec so it could miss spinlock
-> > > easily so above rule was broken so user may see inconsistent data.
-> > > 
-> > > This patch fixes it with using explict barrier rather than depending
-> > > on lru spinlock.
-> > > 
-> > 
-> > Is this the same issue that Andrea responded to in the "thp and memory 
-> > barrier assumptions" thread at http://marc.info/?t=134333512700004 ?
+On Tue, Apr 02, 2013 at 06:33:18PM +0200, Joerg Roedel wrote:
+> I can't find out in the driver whether the fix works or not. It will
+> be noticed later when the x86 code tries to setup the timers and finds
+> out that they don't work, which causes a kernel panic.
+>
+> Okay, in theory I could implement a feedback loop between timer-setup
+> and intremap code and try fixups until it works. But that seems not to
+> be worth it to work around a buggy BIOS.
+
+Yeah, same here. It's not like we really need intremap to work - we're
+only trying to fix the annoying error message currently. :-)
+
+> What I actually thought about was providing an IVRS-override on the
+> kernel command line. So that you can specify the IOAPIC_ID->DEVID
+> mapping there and make it work this way. What do you think?
+
+I guess that is workable. I can imagine people wanting this if they want
+to do the intremap thing on such b0rked BIOSen. So how do I specify this
+IOAPIC_ID->DEVID mapping on the cmdline exactly?
+
+> > And yes, I'm very sceptical about having a WARN_ON and it starts
+> > screaming on machines all over the place. Good luck explaining to
+> > people that you actually wanted to prod BIOS vendors to fix their
+> > monkey-on-crack code but they weren't listening in the first place.
 > 
-> Yes and Peter pointed out further step.
-> Thanks for pointing out.
-> Not that I know that Andrea alreay noticed it, I don't care about this
-> patch.
-> 
-> Remaining question is Kame's one.
-> > Hmm...how about do_anonymous_page() ? there are no comments/locks/barriers.
-> > Users can see non-zero value after page fault in theory ?
-> Isn't there anyone could answer it?
+> Yeah, that's my fear too. So we leave it better as it is...
 
-See Nick's 2008 0ed361dec "mm: fix PageUptodate data race", which gave us
+Hohumm.
 
-static inline void __SetPageUptodate(struct page *page)
-{
-	smp_wmb();
-	__set_bit(PG_uptodate, &(page)->flags);
-}
+-- 
+Regards/Gruss,
+    Boris.
 
-So both do_anonymous_page() and __do_huge_pmd_anonymous_page() look safe
-to me already, though the huge_memory one could do with a fixed comment.
-
-Hugh
+Sent from a fat crate under my desk. Formatting is fine.
+--
