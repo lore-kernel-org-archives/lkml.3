@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759520Ab3DBAUs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 20:20:48 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:65475 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759485Ab3DBAUo (ORCPT
+	id S1759487Ab3DBAWL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 20:22:11 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40398 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758444Ab3DBAWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 20:20:44 -0400
-Message-ID: <1364862038.15806.1.camel@phoenix>
-Subject: [PATCH] regulator: ab8500: Staticize
- ab8500_ext_regulator_[init|exit] if !CONFIG_REGULATOR_AB8500_EXT
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Tue, 02 Apr 2013 08:20:38 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Apr 2013 20:22:09 -0400
+Date: Tue, 2 Apr 2013 01:22:04 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Yet another pipe related oops.
+Message-ID: <20130402002204.GF21522@ZenIV.linux.org.uk>
+References: <CA+55aFx-8TrSSJZM-WTDN4Hc3pESLXBsGC9x3xVaxuwxnGKqpA@mail.gmail.com>
+ <20130327135127.GB1738@redhat.com>
+ <20130327152030.GY21522@ZenIV.linux.org.uk>
+ <CA+55aFx=BPQ2empEahqCs2hQ=sRaw3OjJotrS6OMT3e6tUVMLQ@mail.gmail.com>
+ <20130327174506.GZ21522@ZenIV.linux.org.uk>
+ <20130401203445.GA20862@ZenIV.linux.org.uk>
+ <20130401210029.GA3245@kroah.com>
+ <20130401212142.GD21522@ZenIV.linux.org.uk>
+ <20130401214436.GA5786@kroah.com>
+ <20130401232718.GE21522@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130401232718.GE21522@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix below build errors:
+On Tue, Apr 02, 2013 at 12:27:18AM +0100, Al Viro wrote:
+> On Mon, Apr 01, 2013 at 02:44:36PM -0700, Greg Kroah-Hartman wrote:
+> > > > I guess you are right, it will not.  I guess we need to do what
+> > > > character devices do and have an "intermediate" fops in order to protect
+> > > > this.  Would that work?
+> > > 
+> > > You mean, with reassigning ->f_op in ->open()?  That'll work, as long as
+> > > we have exclusion between removal and fetching the sucker in primary
+> > > ->open()...  Where would you prefer to stash fops?
+> > 
+> > Ick, that's not going to work as the current api just uses a fops and
+> > debugfs doesn't keep anything else hanging around that referes to
+> > something "before" that, like 'struct cdev' does.
+> 
+> Er?  How about just sticking it into dentry->d_fsdata and letting
+> debugfs_remove() zero that out?  What am I missing here?
 
-  LD      arch/arm/mach-ux500/built-in.o
-arch/arm/mach-ux500/board-mop500-regulators.o: In function `ab8500_ext_regulator_init':
-include/linux/regulator/ab8500.h:331: multiple definition of `ab8500_ext_regulator_init'
-arch/arm/mach-ux500/board-mop500.o:/home/axel/repos/git/regulator/include/linux/regulator/ab8500.h:331: first defined here
-arch/arm/mach-ux500/board-mop500-regulators.o: In function `ab8500_ext_regulator_exit':
-include/linux/regulator/ab8500.h:335: multiple definition of `ab8500_ext_regulator_exit'
-arch/arm/mach-ux500/board-mop500.o:/home/axel/repos/git/regulator/include/linux/regulator/ab8500.h:335: first defined here
-make[1]: *** [arch/arm/mach-ux500/built-in.o] Error 1
-make: *** [arch/arm/mach-ux500] Error 2
-
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- include/linux/regulator/ab8500.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/regulator/ab8500.h b/include/linux/regulator/ab8500.h
-index bb0140c..1790059 100644
---- a/include/linux/regulator/ab8500.h
-+++ b/include/linux/regulator/ab8500.h
-@@ -325,11 +325,11 @@ struct ab8500_regulator_platform_data {
- int ab8500_ext_regulator_init(struct platform_device *pdev);
- int ab8500_ext_regulator_exit(struct platform_device *pdev);
- #else
--inline int ab8500_ext_regulator_init(struct platform_device *pdev)
-+static inline int ab8500_ext_regulator_init(struct platform_device *pdev)
- {
- 	return 0;
- }
--inline int ab8500_ext_regulator_exit(struct platform_device *pdev)
-+static inline int ab8500_ext_regulator_exit(struct platform_device *pdev)
- {
- 	return 0;
- }
--- 
-1.7.10.4
-
-
-
+Hrm...  For what it's worth, how do debugfs entries associated with
+dynamic objects deal with debugfs_remove() vs. method calls?  I don't
+see _anything_ in {,__}debugfs_remove() that would looks like "wait
+for ongoing write(2) attempts to complete".  IOW, forget rmmod - WTF
+protects us from access-after-free for any kind of data that isn't
+permanently allocated?
