@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760103Ab3DBDDZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 23:03:25 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:58075 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758159Ab3DBDDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 23:03:24 -0400
-Date: Mon, 1 Apr 2013 23:03:13 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Subject: Re: [PATCH 18/33] aio: kill batch allocation
-Message-ID: <20130402030313.GG30122@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Kent Overstreet <koverstreet@google.com>,
-	linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-	akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
-	Felipe Balbi <balbi@ti.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-	Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-	Asai Thambi S P <asamymuthupa@micron.com>,
-	Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-	Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-	Benjamin LaHaise <bcrl@kvack.org>
-References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
- <1363883754-27966-19-git-send-email-koverstreet@google.com>
+	id S1759763Ab3DBDHa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 23:07:30 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:65342 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758545Ab3DBDH2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 23:07:28 -0400
+Message-ID: <515A4B6C.2080805@lwfinger.net>
+Date: Mon, 01 Apr 2013 22:07:24 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363883754-27966-19-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the wireless-next tree
+References: <20130402133400.017b4ec5cd37725b32aa8079@canb.auug.org.au>
+In-Reply-To: <20130402133400.017b4ec5cd37725b32aa8079@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 09:35:39AM -0700, Kent Overstreet wrote:
-> Previously, allocating a kiocb required touching quite a few global (well,
-> per kioctx) cachelines...  so batching up allocation to amortize those was
-> worthwhile.  But we've gotten rid of some of those, and in another couple
-> of patches kiocb allocation won't require writing to any shared
-> cachelines, so that means we can just rip this code out.
+On 04/01/2013 09:34 PM, Stephen Rothwell wrote:
+> Hi John,
+>
+> After merging the wireless-next tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>
+> drivers/net/wireless/rtlwifi/rtl8188ee/dm.c:30:18: fatal error: wifi.h: No such file or directory
+>
+> Caused by commit f0eb856e0b6c ("rtlwifi: rtl8188ee: Add new driver").
+> Forgot a file?
+>
+> I have used the wireless-next tree from next-20130328 for today.
 
-Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
+Stephen,
+
+I do not understand. File wifi.h is definitely there and is in 
+drivers/net/wireless/rtlwifi/. Use of that directory as a source of include 
+files is handled by "ccflags-y += -I drivers/net/wireless/rtlwifi 
+-D__CHECK_ENDIAN__" in the Makefile for rtl8188ee. In fact, it builds just fine 
+here.
+
+What am I missing?
+
+Larry
+
 
