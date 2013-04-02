@@ -1,122 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760421Ab3DBMng (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 08:43:36 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55655 "EHLO mail.skyhub.de"
+	id S1760495Ab3DBMoQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 08:44:16 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:50071 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758098Ab3DBMne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 08:43:34 -0400
-Date: Tue, 2 Apr 2013 14:43:32 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH V2 1/2] cpufreq: ondemand: allow custom
- powersave_bias_target function to be registered
-Message-ID: <20130402124332.GA5488@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Jacob Shin <jacob.shin@amd.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-	cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Viresh Kumar <viresh.kumar@linaro.org>
-References: <1364495057-14939-1-git-send-email-jacob.shin@amd.com>
- <1364495057-14939-2-git-send-email-jacob.shin@amd.com>
+	id S1759725Ab3DBMoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 08:44:14 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/9] CPUFreq Updates & Fixes for 3.10
+Date: Tue, 02 Apr 2013 14:51:49 +0200
+Message-ID: <3027411.cHP1ssyQqr@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAKohpoku_SbdzC+iC33ad6bQvFLW128BfXM_3x3x8_v9MgwUhA@mail.gmail.com>
+References: <cover.1364820620.git.viresh.kumar@linaro.org> <1893788.IlN605kbG3@vostro.rjw.lan> <CAKohpoku_SbdzC+iC33ad6bQvFLW128BfXM_3x3x8_v9MgwUhA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1364495057-14939-2-git-send-email-jacob.shin@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 01:24:16PM -0500, Jacob Shin wrote:
-> This allows for another [arch specific] driver to hook into existing
-> powersave bias function of the ondemand governor. i.e. This allows AMD
-> specific powersave bias function (in a separate AMD specific driver)
-> to aid ondemand governor's frequency transition deicisions.
+On Tuesday, April 02, 2013 06:13:48 AM Viresh Kumar wrote:
+> On 2 April 2013 02:35, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > The [5/9] seems to be missing.  Care to send?
 > 
-> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-> ---
->  drivers/cpufreq/cpufreq_governor.h |    3 +++
->  drivers/cpufreq/cpufreq_ondemand.c |   22 +++++++++++++++++++---
->  2 files changed, 22 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
-> index c83cabf..4b6808f 100644
-> --- a/drivers/cpufreq/cpufreq_governor.h
-> +++ b/drivers/cpufreq/cpufreq_governor.h
-> @@ -262,4 +262,7 @@ bool need_load_eval(struct cpu_dbs_common_info *cdbs,
->  		unsigned int sampling_rate);
->  int cpufreq_governor_dbs(struct cpufreq_policy *policy,
->  		struct common_dbs_data *cdata, unsigned int event);
-> +void od_register_powersave_bias_function(unsigned int (*f)
-> +		(struct cpufreq_policy *, unsigned int, unsigned int));
-> +void od_unregister_powersave_bias_function(void);
+> That shouldn't happen. I received it on my other email id which
+> got it through LKML and you were in to field of that too..
 
-We generally call those a "callback" or a "handler". I.e.,
-od_register_powersave_bias_handler or something.
+Well, if you go to https://patchwork.kernel.org/project/linux-pm/list/,
+it's not there.  Moreover, it's not in my mailbox, although I'm subscribed
+to the LKML, linux-pm and cpufreq.
 
->  #endif /* _CPUFREQ_GOVERNER_H */
-> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-> index 15e80ee..36f0798 100644
-> --- a/drivers/cpufreq/cpufreq_ondemand.c
-> +++ b/drivers/cpufreq/cpufreq_ondemand.c
-> @@ -40,6 +40,8 @@
->  
->  static DEFINE_PER_CPU(struct od_cpu_dbs_info_s, od_cpu_dbs_info);
->  
-> +static struct od_ops od_ops;
-> +
->  #ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND
->  static struct cpufreq_governor cpufreq_gov_ondemand;
->  #endif
-> @@ -145,7 +147,8 @@ static void dbs_freq_increase(struct cpufreq_policy *p, unsigned int freq)
->  	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
->  
->  	if (od_tuners->powersave_bias)
-> -		freq = powersave_bias_target(p, freq, CPUFREQ_RELATION_H);
-> +		freq = od_ops.powersave_bias_target(p, freq,
-> +				CPUFREQ_RELATION_H);
->  	else if (p->cur == p->max)
->  		return;
->  
-> @@ -206,8 +209,8 @@ static void od_check_cpu(int cpu, unsigned int load_freq)
->  			__cpufreq_driver_target(policy, freq_next,
->  					CPUFREQ_RELATION_L);
->  		} else {
-> -			int freq = powersave_bias_target(policy, freq_next,
-> -					CPUFREQ_RELATION_L);
-> +			int freq = od_ops.powersave_bias_target(policy,
-> +					freq_next, CPUFREQ_RELATION_L);
->  			__cpufreq_driver_target(policy, freq,
->  					CPUFREQ_RELATION_L);
->  		}
-> @@ -565,6 +568,19 @@ static struct common_dbs_data od_dbs_cdata = {
->  	.exit = od_exit,
->  };
->  
-> +void od_register_powersave_bias_function(unsigned int (*f)
-> +		(struct cpufreq_policy *, unsigned int, unsigned int))
-> +{
-> +	od_ops.powersave_bias_target = f;
-> +}
-> +EXPORT_SYMBOL_GPL(od_register_powersave_bias_function);
-> +
-> +void od_unregister_powersave_bias_function(void)
-> +{
-> +	od_ops.powersave_bias_target = powersave_bias_target;
+> Anyway, if you want i can resend it but don't really want to spam
+> LKML with same patch again. So its attached for you.
 
-This is very confusing: we have ->powersave_bias_target and the default
-powersave_bias_target in the ondemand governor. Can we call the default
-one generic_powersave_bias_target or default_* or whatever.
+Thanks!
 
-Thanks.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
