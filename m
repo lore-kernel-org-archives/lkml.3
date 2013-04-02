@@ -1,217 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761765Ab3DBJrU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:47:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50973 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760743Ab3DBJrS (ORCPT
+	id S1761775Ab3DBJry (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:47:54 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:52437 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757780Ab3DBJru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:47:18 -0400
-Date: Tue, 2 Apr 2013 02:47:00 -0700
-From: tip-bot for Stephane Eranian <tipbot@zytor.com>
-Message-ID: <tip-9ad64c0f481c37a63dd39842a0fd264bee44a097@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, tglx@linutronix.de
-In-Reply-To: <1359040242-8269-11-git-send-email-eranian@google.com>
-References: <1359040242-8269-11-git-send-email-eranian@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86: Add support for PEBS Precise Store
-Git-Commit-ID: 9ad64c0f481c37a63dd39842a0fd264bee44a097
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 2 Apr 2013 05:47:50 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: Christian Kujau <lists@nerdbynature.de>, CAI Qian <caiqian@redhat.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
+        linux-ext4@vger.kernel.org
+Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591! (powerpc too!)
+In-Reply-To: <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org>
+References: <2133129347.8273339.1364549222854.JavaMail.root@redhat.com> <87ip46ss0o.fsf@openvz.org> <1211053180.322948.1364797847717.JavaMail.root@redhat.com> <87fvzaspr8.fsf@openvz.org> <874841142.414482.1364875584266.JavaMail.root@redhat.com> <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org>
+User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+Date: Tue, 02 Apr 2013 13:47:44 +0400
+Message-ID: <877gkls1q7.fsf@openvz.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 02:47:06 -0700 (PDT)
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9ad64c0f481c37a63dd39842a0fd264bee44a097
-Gitweb:     http://git.kernel.org/tip/9ad64c0f481c37a63dd39842a0fd264bee44a097
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Thu, 24 Jan 2013 16:10:34 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 1 Apr 2013 12:17:06 -0300
+--=-=-=
 
-perf/x86: Add support for PEBS Precise Store
+On Mon, 1 Apr 2013 23:15:07 -0700 (PDT), Christian Kujau <lists@nerdbynature.de> wrote:
+> Hi,
+> 
+> my machine (PowerBook G4) just crashed and the only thing netconsole was 
+> able to transmit was:
+> 
+>   ------------[ cut here ]------------
+>   kernel BUG at /usr/local/src/linux-git/fs/ext4/inode.c:1591!
+> 
+> But (unfortunately) nothing more. I have no clear way to reproduce this, 
+> but I have some kind of a (longish) backstory to this, see below. The 
+> system is running 3.9-rc4, its .config and dmesg:
+> 
+>   http://nerdbynature.de/bits/3.9.0-rc1/config.gz (oldconfig'ed to -rc4)
+>   http://nerdbynature.de/bits/3.9.0-rc1/dmesg.txt (w/o the calltrace at the end)
+> 
+> 
+> I was having trouble all day downloading a file via bittorrent to an 
+> ext4 filesystem. It came always back as corrupted, though I won't be able 
+> to point out the corruption, as don't know the contents of the source 
+> file. The ext4 filesystem sits on top of a dm-crypt LUKS device:
+> 
+>  /dev/mapper/wdc0 on /mnt/data type ext4 (rw,nosuid,nodev,noexec,relatime,data=ordered)
+> 
+> While looking around as to why the file would be corrupt, the internet 
+> suggested "bad memory" or "bad disk" or "kernel bugs". I have dismissed 
+> the first two, as the system is rock-stable otherwise and dmesg has no 
+> kernel messages suggesting disk or filesystem problems.
+Unfortunately it is like a regression which we missed
+due to s390x and ppc is not well tested.
+> 
+> The file in question is ~800 MB in size. Not getting any further on a 
+> solution to my corrupted file, I decided to download a 4.3GB Fedora 
+> installation image via bittorrent to the same filesystem and that's when 
+> the machine crashed, leaving only the single BUG message as a hint.
+Ohh that is sad. Unfortunately I can't reproduce this on my own
+environment. I have power mac pro G5 but w/o graphics card, so i cant
+install linux on it. If you know how to do that w/o monitor please let
+me know.
 
-This patch adds support for PEBS Precise Store
-which is available on Intel Sandy Bridge and
-Ivy Bridge processors.
+So you just do bunch of writes/mmap to fallocated area.
+The only guess I have is that some bug in extent status tree
 
-To use Precise store, the proper PEBS event
-must be used: mem_trans_retired:precise_stores.
-For the perf tool, the generic mem-stores event
-exported via sysfs can be used directly.
+Please run test with a patch which was posted here:
+http://marc.info/?l=linux-kernel&m=136455173926544&w=2
+This patch enable sanity checks for extent_status tree.
+Also please try following patch. It voluntary disable es_lookup functionality.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Cc: peterz@infradead.org
-Cc: ak@linux.intel.com
-Cc: acme@redhat.com
-Cc: jolsa@redhat.com
-Cc: namhyung.kim@lge.com
-Link: http://lkml.kernel.org/r/1359040242-8269-11-git-send-email-eranian@google.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- arch/x86/kernel/cpu/perf_event.h          |  5 ++++
- arch/x86/kernel/cpu/perf_event_intel.c    |  2 ++
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 49 +++++++++++++++++++++++++++++--
- 3 files changed, 54 insertions(+), 2 deletions(-)
+--=-=-=
+Content-Type: text/x-patch
+Content-Disposition: inline; filename=disable-es_lookup_extent.patch
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index f3a9a94..ba9aadf 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -66,6 +66,7 @@ struct event_constraint {
-  * struct event_constraint flags
-  */
- #define PERF_X86_EVENT_PEBS_LDLAT	0x1 /* ld+ldlat data address sampling */
-+#define PERF_X86_EVENT_PEBS_ST		0x2 /* st data address sampling */
+diff --git a/fs/ext4/extents_status.c b/fs/ext4/extents_status.c
+index fe3337a..95d27cd 100644
+--- a/fs/ext4/extents_status.c
++++ b/fs/ext4/extents_status.c
+@@ -689,6 +689,7 @@ int ext4_es_lookup_extent(struct inode *inode, ext4_lblk_t lblk,
+ 	trace_ext4_es_lookup_extent_enter(inode, lblk);
+ 	es_debug("lookup extent in block %u\n", lblk);
  
- struct amd_nb {
- 	int nb_id;  /* NorthBridge id */
-@@ -242,6 +243,10 @@ struct cpu_hw_events {
- 	__EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
- 			   HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_LDLAT)
++	return 0;
+ 	tree = &EXT4_I(inode)->i_es_tree;
+ 	read_lock(&EXT4_I(inode)->i_es_lock);
  
-+#define INTEL_PST_CONSTRAINT(c, n)	\
-+	__EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
-+			  HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_ST)
-+
- #define EVENT_CONSTRAINT_END		\
- 	EVENT_CONSTRAINT(0, 0, 0)
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index ae6096b..e84c4ba 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -163,6 +163,7 @@ static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
- 
- EVENT_ATTR_STR(mem-loads, mem_ld_nhm, "event=0x0b,umask=0x10,ldlat=3");
- EVENT_ATTR_STR(mem-loads, mem_ld_snb, "event=0xcd,umask=0x1,ldlat=3");
-+EVENT_ATTR_STR(mem-stores, mem_st_snb, "event=0xcd,umask=0x2");
- 
- struct attribute *nhm_events_attrs[] = {
- 	EVENT_PTR(mem_ld_nhm),
-@@ -171,6 +172,7 @@ struct attribute *nhm_events_attrs[] = {
- 
- struct attribute *snb_events_attrs[] = {
- 	EVENT_PTR(mem_ld_snb),
-+	EVENT_PTR(mem_st_snb),
- 	NULL,
- };
- 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index a6400bd..36dc13d 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -69,6 +69,44 @@ static const u64 pebs_data_source[] = {
- 	OP_LH | P(LVL, UNC) | P(SNOOP, NONE), /* 0x0f: uncached */
- };
- 
-+static u64 precise_store_data(u64 status)
-+{
-+	union intel_x86_pebs_dse dse;
-+	u64 val = P(OP, STORE) | P(SNOOP, NA) | P(LVL, L1) | P(TLB, L2);
-+
-+	dse.val = status;
-+
-+	/*
-+	 * bit 4: TLB access
-+	 * 1 = stored missed 2nd level TLB
-+	 *
-+	 * so it either hit the walker or the OS
-+	 * otherwise hit 2nd level TLB
-+	 */
-+	if (dse.st_stlb_miss)
-+		val |= P(TLB, MISS);
-+	else
-+		val |= P(TLB, HIT);
-+
-+	/*
-+	 * bit 0: hit L1 data cache
-+	 * if not set, then all we know is that
-+	 * it missed L1D
-+	 */
-+	if (dse.st_l1d_hit)
-+		val |= P(LVL, HIT);
-+	else
-+		val |= P(LVL, MISS);
-+
-+	/*
-+	 * bit 5: Locked prefix
-+	 */
-+	if (dse.st_locked)
-+		val |= P(LOCK, LOCKED);
-+
-+	return val;
-+}
-+
- static u64 load_latency_data(u64 status)
- {
- 	union intel_x86_pebs_dse dse;
-@@ -486,6 +524,7 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
- 	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
- 	INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
- 	INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
-+	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
- 	INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
- 	INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
- 	INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-@@ -500,6 +539,7 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
-         INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-         INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
-         INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
-+	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
-         INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
-         INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
-         INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
-@@ -537,6 +577,8 @@ void intel_pmu_pebs_enable(struct perf_event *event)
- 
- 	if (event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT)
- 		cpuc->pebs_enabled |= 1ULL << (hwc->idx + 32);
-+	else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST)
-+		cpuc->pebs_enabled |= 1ULL << 63;
- }
- 
- void intel_pmu_pebs_disable(struct perf_event *event)
-@@ -657,12 +699,13 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	struct perf_sample_data data;
- 	struct pt_regs regs;
- 	u64 sample_type;
--	int fll;
-+	int fll, fst;
- 
- 	if (!intel_pmu_save_and_restart(event))
- 		return;
- 
- 	fll = event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT;
-+	fst = event->hw.flags & PERF_X86_EVENT_PEBS_ST;
- 
- 	perf_sample_data_init(&data, 0, event->hw.last_period);
- 
-@@ -672,7 +715,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 	/*
- 	 * if PEBS-LL or PreciseStore
- 	 */
--	if (fll) {
-+	if (fll || fst) {
- 		if (sample_type & PERF_SAMPLE_ADDR)
- 			data.addr = pebs->dla;
- 
-@@ -688,6 +731,8 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 		if (sample_type & PERF_SAMPLE_DATA_SRC) {
- 			if (fll)
- 				data.data_src.val = load_latency_data(pebs->dse);
-+			else
-+				data.data_src.val = precise_store_data(pebs->dse);
- 		}
- 	}
- 
+
+--=-=-=
+
+> 
+> The system is back now, e2fsck-1.42.5 came back with no errors.
+> 
+> Thanks for reading,
+> Christian.
+> 
+> PS: somewhat off-topic, but: is there a way to have BUG_ON print only
+>     fs/ext4/inode.c:1591! instead of the full pathname? Is there are
+>     config option for this?
+> -- 
+> BOFH excuse #339:
+> 
+> manager in the cable duct
+
+--=-=-=--
