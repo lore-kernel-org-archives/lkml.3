@@ -1,104 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761185Ab3DBJa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:30:59 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:43686 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760410Ab3DBJaz (ORCPT
+	id S1761260Ab3DBJbN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:31:13 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:58480 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760918Ab3DBJbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:30:55 -0400
-X-AuditID: cbfee68e-b7f946d000001e37-da-515aa542f11f
-From: Jonghwan Choi <jhbird.choi@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, "'Liam Girdwood'" <lrg@ti.com>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
-        "'Russ Dill'" <Russ.Dill@ti.com>
-Subject: [PATCH 3.8-stable] regulator: core: Log when a device causes a voltage
-Date: Tue, 02 Apr 2013 18:30:42 +0900
-Message-id: <009001ce2f84$beb22ea0$3c168be0$%choi@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPog==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t8zQ12npVGBBi+b9S3+zT7FZnF51xw2
-	i6btE9gtpl4/ymSxYOMjRgdWj5cTf7N5HL+xncnj8ya5AOYoLpuU1JzMstQifbsErozWqaeY
-	C15wV9w994G9gfE1ZxcjJ4eEgInE1huNLBC2mMSFe+vZuhi5OIQEljFKXFz9jh2m6NHM/8wQ
-	iUWMEm/6z7NDOH8ZJb7dnsgMUsUmoCtxbP0WVhBbREBBYnPvM1aQImaBCYwSH7a9BSsSFvCX
-	WHByESOIzSKgKnHrSycbiM0rYCdx53QnI4QtKPFj8j2wm5gFtCTW7zzOBGHLS2xeAzKHA+gk
-	dYlHf3UhdulJzHw5FapERGLfi3eMIHslBLaxS3zd9YYNYpeAxLfJh1ggemUlNh1ghvhMUuLg
-	ihssExjFZiHZPAvJ5llINs9CsmIBI8sqRtHUguSC4qT0IiO94sTc4tK8dL3k/NxNjJBI69vB
-	ePOA9SHGZKD1E5mlRJPzgZGaVxJvaGxmZGFqYmpsZG5pRpqwkjivWot1oJBAemJJanZqakFq
-	UXxRaU5q8SFGJg5OqQZGc59D+2oXNfvEzF7it/+rr4PPKkb/+L98OqXm2ssS9/JOTz5zpnIN
-	67NZ4THy/3PZuLsq15TvOue7MUn7hVE1ww+jmoeW/9I22l/2r1m6X/2t883be8KYN7z9cddu
-	SY3QQZupcvO+e7Qeyl85tTexWk3u1PUHi8qvva2rj2ZqKDnF2nLC7ss+JZbijERDLeai4kQA
-	+wXaG8oCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCKsWRmVeSWpSXmKPExsVy+t9jAV2npVGBBmdva1n8m32KzeLyrjls
-	Fk3bJ7BbTL1+lMliwcZHjA6sHi8n/mbzOH5jO5PH501yAcxRDYw2GamJKalFCql5yfkpmXnp
-	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
-	WsA0Ruj6hgTB9RgZoIGEdYwZrVNPMRe84K64e+4DewPja84uRk4OCQETiUcz/zND2GISF+6t
-	Z+ti5OIQEljEKPGm/zw7hPOXUeLb7YlgVWwCuhLH1m9hBbFFBBQkNvc+YwUpYhaYwCjxYdtb
-	sCJhAX+JBScXMYLYLAKqEre+dLKB2LwCdhJ3TncyQtiCEj8m32MBsZkFtCTW7zzOBGHLS2xe
-	AzKHA+gkdYlHf3UhdulJzHw5FapERGLfi3eMExgFZiGZNAvJpFlIJs1C0rKAkWUVo2hqQXJB
-	cVJ6rqFecWJucWleul5yfu4mRnAcP5PawbiyweIQowAHoxIPr8OcyEAh1sSy4srcQ4wSHMxK
-	IrxbdaMChXhTEiurUovy44tKc1KLDzEmAz06kVlKNDkfmGLySuINjU3MjCyNzCyMTMzNSRNW
-	Euc90GodKCSQnliSmp2aWpBaBLOFiYNTqoHR6NpJsd/P/oYIX3hx/qT9ytQVKgeNI7cc2zBR
-	Id19jab3KbUVjxqTNs7b9+abmWPCyemLpkh/MZGoT9r49Jmtgc3BnneKrUYHp7tubjbKPuS0
-	2sPTKs2JI1/sLP8E3dv6ZvMctov6iHxYw+60/e6zpLctzSkKVzfOrw7q46m2TE90PrzDg1lJ
-	iaU4I9FQi7moOBEAtT+eJCcDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 2 Apr 2013 05:31:09 -0400
+Date: Tue, 2 Apr 2013 05:31:06 -0400 (EDT)
+From: CAI Qian <caiqian@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Dave Chinner <david@fromorbit.com>, xfs@oss.sgi.com,
+        LKML <linux-kernel@vger.kernel.org>
+Message-ID: <985125161.581860.1364895066584.JavaMail.root@redhat.com>
+In-Reply-To: <20130402090047.GF3670@kernel.dk>
+References: <1462091996.435156.1364882416199.JavaMail.root@redhat.com> <247719576.438259.1364882929749.JavaMail.root@redhat.com> <20130402070537.GP6369@dastard> <20130402071937.GC3670@kernel.dk> <20130402073035.GD3670@kernel.dk> <14055702.547701.1364891947331.JavaMail.root@redhat.com> <20130402090047.GF3670@kernel.dk>
+Subject: Re: Loopback device hung [was Re: xfs deadlock on 3.9-rc5 running
+ xfstests case #78]
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.11]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF19 (Linux)/8.0.3_GA_5664)
+Thread-Topic: Loopback device hung [was Re: xfs deadlock on 3.9-rc5 running xfstests case #78]
+Thread-Index: VFaXVt88xXrJyY97wdDxyGpExk9LwQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let us know.
 
-------------------
 
-From: "Russ Dill <Russ.Dill@ti.com>"
-
-commit 6e45eb12fd1c741d556bf264ee98853b5f3104e5 upstream.
-
-commit dd8004af: 'regulator: core: Log when a device causes a voltage
-constraint fail', tried to print out some information about the
-check consumer min/max uV fixup, however, it uses a garbage pointer
-left over from list_for_each_entry leading to boot messages in the
-form:
-
-'[    2.079890] <RANDOM ASCII>: Restricting voltage,
-3735899821-4294967295uV'
-
-Because it references regulator->dev, it could potentially read memory from
-anywhere causing a panic.
-
-This patch instead uses rdev and the updated min/max uV values.
-
-Signed-off-by: Russ Dill <Russ.Dill@ti.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
----
- drivers/regulator/core.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 2785843..5a0f54a 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -200,8 +200,8 @@ static int regulator_check_consumers(struct
-regulator_dev *rdev,
- 	}
- 
- 	if (*min_uV > *max_uV) {
--		dev_err(regulator->dev, "Restricting voltage, %u-%uuV\n",
--			regulator->min_uV, regulator->max_uV);
-+		rdev_err(rdev, "Restricting voltage, %u-%uuV\n",
-+			*min_uV, *max_uV);
- 		return -EINVAL;
- 	}
- 
--- 
-1.7.9.5
-
+----- Original Message -----
+> From: "Jens Axboe" <axboe@kernel.dk>
+> To: "CAI Qian" <caiqian@redhat.com>
+> Cc: "Dave Chinner" <david@fromorbit.com>, xfs@oss.sgi.com, "LKML" <linux-kernel@vger.kernel.org>
+> Sent: Tuesday, April 2, 2013 5:00:47 PM
+> Subject: Re: Loopback device hung [was Re: xfs deadlock on 3.9-rc5 running xfstests case #78]
+> 
+> On Tue, Apr 02 2013, CAI Qian wrote:
+> > 
+> > 
+> > ----- Original Message -----
+> > > From: "Jens Axboe" <axboe@kernel.dk>
+> > > To: "Dave Chinner" <david@fromorbit.com>
+> > > Cc: "CAI Qian" <caiqian@redhat.com>, xfs@oss.sgi.com, "LKML"
+> > > <linux-kernel@vger.kernel.org>
+> > > Sent: Tuesday, April 2, 2013 3:30:35 PM
+> > > Subject: Re: Loopback device hung [was Re: xfs deadlock on 3.9-rc5
+> > > running xfstests case #78]
+> > > 
+> > > On Tue, Apr 02 2013, Jens Axboe wrote:
+> > > > On Tue, Apr 02 2013, Dave Chinner wrote:
+> > > > > [Added jens Axboe to CC]
+> > > > > 
+> > > > > On Tue, Apr 02, 2013 at 02:08:49AM -0400, CAI Qian wrote:
+> > > > > > Saw on almost all the servers range from x64, ppc64 and s390x with
+> > > > > > kernel
+> > > > > > 3.9-rc5 and xfsprogs-3.1.10. Never caught this in 3.9-rc4, so looks
+> > > > > > like
+> > > > > > something new broke this. Log is here with sysrq debug info.
+> > > > > > http://people.redhat.com/qcai/stable/log
+> > > > 
+> > > > CAI Qian, can you try and back the below out and test again?
+> > > 
+> > > Nevermind, it's clearly that one. The below should improve the
+> > > situation, but it's not pretty. A better fix would be to allow
+> > > auto-deletion even if PART_NO_SCAN is set.
+> > Jens, when compiled the mainline (up to fefcdbe) with this patch,
+> > it error-ed out,
+> 
+> Looks like I sent the wrong one, updated below.
+The patch works well. Thanks!
+CAI Qian
+> 
+> diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+> index fe5f640..faa3afa 100644
+> --- a/drivers/block/loop.c
+> +++ b/drivers/block/loop.c
+> @@ -1057,14 +1057,15 @@ static int loop_clr_fd(struct loop_device *lo)
+>  		struct disk_part_iter piter;
+>  		struct hd_struct *part;
+>  
+> -		mutex_lock_nested(&bdev->bd_mutex, 1);
+> -		invalidate_partition(bdev->bd_disk, 0);
+> -		disk_part_iter_init(&piter, bdev->bd_disk,
+> -					DISK_PITER_INCL_EMPTY);
+> -		while ((part = disk_part_iter_next(&piter)))
+> -			delete_partition(bdev->bd_disk, part->partno);
+> -		disk_part_iter_exit(&piter);
+> -		mutex_unlock(&bdev->bd_mutex);
+> +		if (mutex_trylock(&bdev->bd_mutex)) {
+> +			invalidate_partition(bdev->bd_disk, 0);
+> +			disk_part_iter_init(&piter, bdev->bd_disk,
+> +						DISK_PITER_INCL_EMPTY);
+> +			while ((part = disk_part_iter_next(&piter)))
+> +				delete_partition(bdev->bd_disk, part->partno);
+> +			disk_part_iter_exit(&piter);
+> +			mutex_unlock(&bdev->bd_mutex);
+> +		}
+>  	}
+>  
+>  	/*
+> 
+> --
+> Jens Axboe
+> 
+> 
