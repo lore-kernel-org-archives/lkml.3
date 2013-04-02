@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760206Ab3DBXVY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:21:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32854 "EHLO
+	id S1759902Ab3DBXVW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:21:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32859 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932645Ab3DBWL6 (ORCPT
+	with ESMTP id S932648Ab3DBWL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:11:58 -0400
+	Tue, 2 Apr 2013 18:11:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
+        Parag Warudkar <parag.lkml@gmail.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 013/124] ath9k: limit tx path hang check to normal data queues
-Date: Tue,  2 Apr 2013 15:09:55 -0700
-Message-Id: <20130402221105.735566880@linuxfoundation.org>
+Subject: [ 014/124] ath9k: avoid queueing hw check work when suspended
+Date: Tue,  2 Apr 2013 15:09:56 -0700
+Message-Id: <20130402221105.861465537@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -27,59 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
-commit 01d4ab96d2e7fceaad204e5a8710ce34e229b8c5 upstream.
+commit 7fc0357479eeff4ca808c4d8c09bc7631f576b8d upstream.
 
-The beacon and multicast-buffer queues are managed by the beacon
-tasklet, and the generic tx path hang check does not help in any way
-here. Running it on those queues anyway can introduce some race
-conditions leading to unnecessary chip resets.
+The following issue was reported.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+WARNING: at net/mac80211/util.c:599 ieee80211_can_queue_work.isra.7+0x32/0x40 [mac80211]()
+Hardware name: iMac12,1
+queueing ieee80211 work while going to suspend
+Pid: 0, comm: swapper/0 Tainted: PF          O 3.8.2-206.fc18.x86_64 #1
+Call Trace: Mar 16 09:39:17 Parags-iMac kernel: [ 3993.642992]  <IRQ>
+[<ffffffff8105e61f>] warn_slowpath_common+0x7f/0xc0
+[<ffffffffa0581420>] ? ath_start_rx_poll+0x70/0x70 [ath9k]
+<ffffffff8105e716>] warn_slowpath_fmt+0x46/0x50
+[<ffffffffa045b542>] ieee80211_can_queue_work.isra.7+0x32/0x40
+
+Fix this by avoiding to queue the work if our device has
+already been marked as suspended or stopped.
+
+Reported-by: Parag Warudkar <parag.lkml@gmail.com>
+Tested-by: Parag Warudkar <parag.lkml@gmail.com>
+Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/link.c |   26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ drivers/net/wireless/ath/ath9k/link.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 --- a/drivers/net/wireless/ath/ath9k/link.c
 +++ b/drivers/net/wireless/ath/ath9k/link.c
-@@ -28,21 +28,21 @@ void ath_tx_complete_poll_work(struct wo
- 	int i;
- 	bool needreset = false;
+@@ -170,7 +170,8 @@ void ath_rx_poll(unsigned long data)
+ {
+ 	struct ath_softc *sc = (struct ath_softc *)data;
  
--	for (i = 0; i < ATH9K_NUM_TX_QUEUES; i++)
--		if (ATH_TXQ_SETUP(sc, i)) {
--			txq = &sc->tx.txq[i];
--			ath_txq_lock(sc, txq);
--			if (txq->axq_depth) {
--				if (txq->axq_tx_inprogress) {
--					needreset = true;
--					ath_txq_unlock(sc, txq);
--					break;
--				} else {
--					txq->axq_tx_inprogress = true;
--				}
-+	for (i = 0; i < IEEE80211_NUM_ACS; i++) {
-+		txq = sc->tx.txq_map[i];
-+
-+		ath_txq_lock(sc, txq);
-+		if (txq->axq_depth) {
-+			if (txq->axq_tx_inprogress) {
-+				needreset = true;
-+				ath_txq_unlock(sc, txq);
-+				break;
-+			} else {
-+				txq->axq_tx_inprogress = true;
- 			}
--			ath_txq_unlock_complete(sc, txq);
- 		}
-+		ath_txq_unlock_complete(sc, txq);
-+	}
+-	ieee80211_queue_work(sc->hw, &sc->hw_check_work);
++	if (!test_bit(SC_OP_INVALID, &sc->sc_flags))
++		ieee80211_queue_work(sc->hw, &sc->hw_check_work);
+ }
  
- 	if (needreset) {
- 		ath_dbg(ath9k_hw_common(sc->sc_ah), RESET,
+ /*
 
 
