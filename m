@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933041Ab3DBSsO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 14:48:14 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58830 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932891Ab3DBSsL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 14:48:11 -0400
-X-Sasl-enc: 8dD9IeU2guZ95j5t1NXaGo/Pm3WRuO/VqBjnWrvP5L7F 1364928491
-From: Alan Ott <alan@signal11.us>
-To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Ott <alan@signal11.us>
-Subject: [PATCH 1/6] mac802154: Immediately retry sending failed packets
-Date: Tue,  2 Apr 2013 14:47:56 -0400
-Message-Id: <1364928481-1813-2-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1364928481-1813-1-git-send-email-alan@signal11.us>
-References: <1364928481-1813-1-git-send-email-alan@signal11.us>
+	id S933195Ab3DBSt4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 14:49:56 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53580 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933109Ab3DBStx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 14:49:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,394,1363158000"; 
+   d="scan'208";a="311319347"
+From: Huzefa Kankroliwala <huzefa.nomanx.kankroliwala@intel.com>
+To: jkosina@suse.cz
+Cc: benjamin.tissoires@gmail.com, mika.westerberg@intel.com,
+        linux-kernel@vger.kernel.org,
+        Huzefa Kankroliwala <huzefa.nomanx.kankroliwala@intel.com>
+Subject: [PATCH] i2c-hid: fix length for set/get report in i2c hid
+Date: Tue,  2 Apr 2013 03:52:47 -0700
+Message-Id: <1364899967-18118-1-git-send-email-huzefa.nomanx.kankroliwala@intel.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When ops->xmit() fails, immediately retry. Previously the packet was sent
-to the back of the workqueue.
+With the current i2c hid driver set/get report does not work
+as expected, for e.g sensor hub properties like power state,
+frequency etc is not set properly on the device as a result
+we do not get events.
+The problem is that i2c hid driver in function i2c_hid_request
+sets length equal to default buffer size for which the sensor
+hub does not respond on get/set commands. Use report length
+and calculate it based on report size and id.
 
-Signed-off-by: Alan Ott <alan@signal11.us>
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Huzefa Kankroliwala <huzefa.nomanx.kankroliwala@intel.com>
 ---
- net/mac802154/tx.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+ drivers/hid/i2c-hid/i2c-hid.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/net/mac802154/tx.c b/net/mac802154/tx.c
-index 4e09d07..fbf937c 100644
---- a/net/mac802154/tx.c
-+++ b/net/mac802154/tx.c
-@@ -59,19 +59,18 @@ static void mac802154_xmit_worker(struct work_struct *work)
- 		}
+diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+index 935f387..c8cd0c0 100644
+--- a/drivers/hid/i2c-hid/i2c-hid.c
++++ b/drivers/hid/i2c-hid/i2c-hid.c
+@@ -567,18 +567,18 @@ static void i2c_hid_request(struct hid_device *hid, struct hid_report *rep,
+ 		int reqtype)
+ {
+ 	struct i2c_client *client = hid->driver_data;
+-	struct i2c_hid *ihid = i2c_get_clientdata(client);
+ 	char *buf;
+ 	int ret;
++	int len = i2c_hid_get_report_length(rep) - 2;
+ 
+-	buf = kzalloc(ihid->bufsize, GFP_KERNEL);
++	buf = kzalloc(len, GFP_KERNEL);
+ 	if (!buf)
+ 		return;
+ 
+ 	switch (reqtype) {
+ 	case HID_REQ_GET_REPORT:
+-		ret = i2c_hid_get_raw_report(hid, rep->id, buf, ihid->bufsize,
+-					     rep->type);
++		ret = i2c_hid_get_raw_report(hid, rep->id, buf, len,
++							rep->type);
+ 		if (ret < 0)
+ 			dev_err(&client->dev, "%s: unable to get report: %d\n",
+ 				__func__, ret);
+@@ -587,7 +587,7 @@ static void i2c_hid_request(struct hid_device *hid, struct hid_report *rep,
+ 		break;
+ 	case HID_REQ_SET_REPORT:
+ 		hid_output_report(rep, buf);
+-		i2c_hid_output_raw_report(hid, buf, ihid->bufsize, rep->type);
++		i2c_hid_output_raw_report(hid, buf, len, rep->type);
+ 		break;
  	}
  
--	res = xw->priv->ops->xmit(&xw->priv->hw, xw->skb);
-+	do {
-+		res = xw->priv->ops->xmit(&xw->priv->hw, xw->skb);
-+		if (res && ++xw->xmit_attempts >= MAC802154_MAX_XMIT_ATTEMPTS) {
-+			pr_debug("transmission failed for %d times",
-+				 MAC802154_MAX_XMIT_ATTEMPTS);
-+			break;
-+		}
-+	} while (res);
- 
- out:
- 	mutex_unlock(&xw->priv->phy->pib_lock);
- 
--	if (res) {
--		if (xw->xmit_attempts++ < MAC802154_MAX_XMIT_ATTEMPTS) {
--			queue_work(xw->priv->dev_workqueue, &xw->work);
--			return;
--		} else
--			pr_debug("transmission failed for %d times",
--				 MAC802154_MAX_XMIT_ATTEMPTS);
--	}
- 
- 	dev_kfree_skb(xw->skb);
- 
 -- 
-1.7.11.2
+1.7.4.1
 
