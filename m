@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760433Ab3DBQrJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 12:47:09 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54627 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755747Ab3DBQrH (ORCPT
+	id S1761183Ab3DBQtr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 12:49:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:60760 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759070Ab3DBQtp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 12:47:07 -0400
-Date: Tue, 2 Apr 2013 17:46:38 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+	Tue, 2 Apr 2013 12:49:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,394,1363158000"; 
+   d="scan'208";a="311267525"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Yijing Wang <wangyijing@huawei.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "nico@linaro.org" <nico@linaro.org>
-Subject: Re: [PATCH v5 1/3] arm: introduce psci_smp_ops
-Message-ID: <20130402164638.GG6608@mudshark.cambridge.arm.com>
-References: <alpine.DEB.2.02.1304021700380.5078@kaball.uk.xensource.com>
- <1364919374-7836-1-git-send-email-stefano.stabellini@eu.citrix.com>
+        Hanjun Guo <guohanjun@huawei.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>
+Subject: RE: [PATCH 2/2] PCI/IA64: fix pci_dev->enable_cnt balance when
+ doing pci hotplug
+Thread-Topic: [PATCH 2/2] PCI/IA64: fix pci_dev->enable_cnt balance when
+ doing pci hotplug
+Thread-Index: AQHOLrUMFFEjeq7TGE6qhHVop7NyBpjB8KlQgADCqwCAAHF7QA==
+Date: Tue, 2 Apr 2013 16:49:32 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F1E096762@ORSMSX108.amr.corp.intel.com>
+References: <1364805775-12396-1-git-send-email-wangyijing@huawei.com>
+ <1364805775-12396-2-git-send-email-wangyijing@huawei.com>
+ <3908561D78D1C84285E8C5FCA982C28F1E096033@ORSMSX108.amr.corp.intel.com>
+ <515A48E8.60605@huawei.com>
+In-Reply-To: <515A48E8.60605@huawei.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364919374-7836-1-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 05:16:12PM +0100, Stefano Stabellini wrote:
-> Rename virt_smp_ops to psci_smp_ops and move them to arch/arm/kernel/psci_smp.c.
-> Remove mach-virt/platsmp.c, now unused.
-> Compile psci_smp if CONFIG_ARM_PSCI and CONFIG_SMP.
-> 
-> Add a cpu_die smp_op based on psci_ops.cpu_off.
-> 
-> Initialize PSCI before setting smp_ops in setup_arch.
-> Use psci_smp_ops if the platform doesn't provide its own smp_ops.
-> 
-> 
-> Changes in v5:
-> - document psci_operations;
-> - psci_init returns NULL.
-> 
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Acked-by: Nicolas Pitre <nico@linaro.org>
-> Acked-by: Rob Herring <rob.herring@calxeda.com>
-> 
-> CC: will.deacon@arm.com
-> CC: arnd@arndb.de
-> CC: marc.zyngier@arm.com
-> CC: linux@arm.linux.org.uk
-> CC: nico@linaro.org
-> ---
->  arch/arm/include/asm/psci.h  |   29 ++++++++++++++++++
->  arch/arm/kernel/Makefile     |    5 ++-
->  arch/arm/kernel/psci.c       |    7 ++--
->  arch/arm/kernel/psci_smp.c   |   67 ++++++++++++++++++++++++++++++++++++++++++
->  arch/arm/kernel/setup.c      |    7 ++++-
->  arch/arm/mach-virt/Makefile  |    1 -
->  arch/arm/mach-virt/platsmp.c |   58 ------------------------------------
->  arch/arm/mach-virt/virt.c    |    3 --
->  8 files changed, 109 insertions(+), 68 deletions(-)
->  create mode 100644 arch/arm/kernel/psci_smp.c
->  delete mode 100644 arch/arm/mach-virt/platsmp.c
+> But this patch mainly to fix the unbalanced dev->enable_cnt in IA64 which will print WARNING Calltrace
+> in dmesg.
+Thanks for the explanation.
 
-Reviewed-by: Will Deacon <will.deacon@arm.com>
+> If you think it is valuable, I will try to improve resource assignment in IA64 like other arch (eg arm, m68k, mips and sh..)
+> in another patch.
 
-Will
+Making the ia64 code more like the x86 code might help avoid such problems in the future (lots
+more people look at x86 than ia64 - if ours is the same, or very similar, then it is likely that changes
+made to x86 will be correct for ia64 too).
+
+Only you can decide how much this is worth to you and your company - perhaps there will be no more
+changes that break ia64 even with the code differences. Or perhaps it will be easier for you to just
+fix things as they break than to undertake a restructure of the code.
+
+-Tony
