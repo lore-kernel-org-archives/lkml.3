@@ -1,85 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760991Ab3DBJDA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:03:00 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50604 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276Ab3DBJC5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:02:57 -0400
-X-AuditID: 9c930179-b7b2aae000000518-37-515a9ebec9ef
-From: Namhyung Kim <namhyung@kernel.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, efault@gmx.de, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch v6 10/21] sched: get rq potential maximum utilization
-References: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
-	<1364654108-16307-11-git-send-email-alex.shi@intel.com>
-Date: Tue, 02 Apr 2013 18:02:54 +0900
-In-Reply-To: <1364654108-16307-11-git-send-email-alex.shi@intel.com> (Alex
-	Shi's message of "Sat, 30 Mar 2013 22:34:57 +0800")
-Message-ID: <87a9phfgox.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1760895Ab3DBJC4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:02:56 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:4223 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753276Ab3DBJCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 05:02:54 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Message-ID: <515A9EAF.4010005@broadcom.com>
+Date: Tue, 2 Apr 2013 11:02:39 +0200
+From: "Piotr Haber" <phaber@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US;
+ rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: "Joseph Salisbury" <joseph.salisbury@canonical.com>
+cc: "John W. Linville" <linville@tuxdriver.com>, arend@broadcom.com,
+        pieterpg@broadcom.com, meuleman@broadcom.com,
+        LKML <linux-kernel@vger.kernel.org>, brudley@broadcom.com,
+        frankyl@broadcom.com, linux-wireless@vger.kernel.org,
+        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org
+Subject: Re: [v3.8, v3.9] [Regression] brcmsmac: move PHY functions
+References: <5155F107.6050408@canonical.com>
+ <20130401144225.GC21859@tuxdriver.com> <5159A559.4000808@canonical.com>
+In-Reply-To: <5159A559.4000808@canonical.com>
+X-Enigmail-Version: 1.1.1
+X-WSS-ID: 7D4441802ZC1468487-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+On 04/01/13 17:18, Joseph Salisbury wrote:
+> On 04/01/2013 10:42 AM, John W. Linville wrote:
+>> On Fri, Mar 29, 2013 at 03:52:39PM -0400, Joseph Salisbury wrote:
+>>> Hi Piotr,
+>>>
+>>> A bug was opened against the Ubuntu kernel[0].  After a kernel
+>>> bisect, it was found that reverting the following commit resolved
+>>> this bug:
+>>>
+>>> commit b83576341664957978e125f5f5db2f15496980b1
+>>> Author: Piotr Haber <phaber@broadcom.com>
+>>> Date:   Wed Nov 28 21:44:09 2012 +0100
+>>>
+>>>      brcmsmac: move PHY functions
+>>>
+>>> The regression was introduced as of v3.8-rc1.  The regression still
+>>> exists in v3.9-rc4.
+>>>
+>>> I see that you are the author of this patch, so I wanted to run this
+>>> by you.  I was thinking of requesting a revert for v3.9, but I
+>>> wanted to get your feedback first.
+>>>
+>>>
+>>> Thanks,
+>>>
+>>> Joe
+>>>
+>>> [0] http://pad.lv/1131914
+>> I recently reverted b6fc28a1, which is the follow-on to that patch.
+>> The revert is _not_ in 3.9-rc5.
+>>
+>> Could you try reverting that patch instead?  Does that fix the issue
+>> for you?
+>>
+>> John
+> 
+> Hi John,
+> 
+> Thanks for the response.
+> 
+> Yes, reverting commit b6fc28a1 does resolve this bug.  That is the appropriate fix for this issue. 
+> Thanks for the assistance.
+> 
+> Thanks,
+> 
+> Joe
+> 
+> 
+> 
+> 
+Hi Joe,
+could you elaborate a little bit on your failure scenario?
+In bug report you say it happens after suspend/resume, are there any other scenarios you see this
+behaviour? (like disassociation/association without suspend)
+Also you mention it comes back after some time - what is the time needed?
+We had reports of problems on 4313 with this patch (that's why the revert was done) but so far i
+assumed it was a total breakdown, in your case this seem like a transient issue.
 
-On Sat, 30 Mar 2013 22:34:57 +0800, Alex Shi wrote:
-> Since the rt task priority is higher than fair tasks, cfs_rq utilization
-> is just the left of rt utilization.
->
-> When there are some cfs tasks in queue, the potential utilization may
-> be yielded, so mulitiplying cfs task number to get max potential
-> utilization of cfs. Then the rq utilization is sum of rt util and cfs
-> util.
->
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  kernel/sched/fair.c | 16 ++++++++++++++++
->  1 file changed, 16 insertions(+)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index ae87dab..0feeaee 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -3350,6 +3350,22 @@ struct sg_lb_stats {
->  	unsigned int group_util;	/* sum utilization of group */
->  };
->  
-> +static unsigned long scale_rt_util(int cpu);
-> +
-> +static unsigned int max_rq_util(int cpu)
-> +{
-> +	struct rq *rq = cpu_rq(cpu);
-> +	unsigned int rt_util = scale_rt_util(cpu);
-> +	unsigned int cfs_util;
-> +	unsigned int nr_running;
-> +
-> +	cfs_util = (FULL_UTIL - rt_util) > rq->util ? rq->util
-> +			: (FULL_UTIL - rt_util);
-> +	nr_running = rq->nr_running ? rq->nr_running : 1;
+One more thing, could you provide info about your hardware by sending me contents of:
+<debugfs_mount>/brcmsmac/bcma0:0/hardware
 
-This can be cleaned up with proper min/max().
+Kind regards
+Piotr
 
-> +
-> +	return rt_util + cfs_util * nr_running;
 
-Should this nr_running consider tasks in cfs_rq only?  Also it seems
-there's no upper bound so that it can possibly exceed FULL_UTIL.
-
-Thanks,
-Namhyung
-
-> +}
-> +
->  /*
->   * sched_balance_self: balance the current task (running on cpu) in domains
->   * that have the 'flag' flag set. In practice, this is SD_BALANCE_FORK and
