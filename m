@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759009Ab3DBWzx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:55:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34042 "EHLO
+	id S1759070Ab3DBW4R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:56:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34050 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758501Ab3DBWux (ORCPT
+	with ESMTP id S1758208Ab3DBWuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:50:53 -0400
+	Tue, 2 Apr 2013 18:50:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mirko Lindner <mlindner@marvell.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 41/56] sky2: Receive Overflows not counted
-Date: Tue,  2 Apr 2013 15:50:08 -0700
-Message-Id: <20130402224716.629101336@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>,
+        Lingzhu Xiang <lxiang@redhat.com>, CAI Qian <caiqian@redhat.com>
+Subject: [ 39/56] tracing: Protect tracer flags with trace_types_lock
+Date: Tue,  2 Apr 2013 15:50:06 -0700
+Message-Id: <20130402224716.401935996@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
@@ -28,37 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-From: Mirko Lindner <mlindner@marvell.com>
+commit 69d34da2984c95b33ea21518227e1f9470f11d95 upstream.
 
-[ Upstream commit 9cfe8b156c21cf340b3a10ecb3022fbbc1c39185 ]
+Seems that the tracer flags have never been protected from
+synchronous writes. Luckily, admins don't usually modify the
+tracing flags via two different tasks. But if scripts were to
+be used to modify them, then they could get corrupted.
 
-The sky2 driver doesn't count the Receive Overflows because the MAC
-interrupt for this event is not set in the MAC's interrupt mask.
-The MAC's interrupt mask is set only for Transmit FIFO Underruns.
+Move the trace_types_lock that protects against tracers changing
+to also protect the flags being set.
 
-Fix: The correct setting should be (GM_IS_TX_FF_UR | GM_IS_RX_FF_OR)
-Otherwise the Receive Overflow event will not generate any interrupt.
-The  Receive Overflow interrupt is handled correctly
+[Backported for 3.4, 3.0-stable. Moved return to after unlock.]
 
-Signed-off-by: Mirko Lindner <mlindner@marvell.com>
-Acked-by: Stephen Hemminger <stephen@networkplumber.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
+Reviewed-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/sky2.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/sky2.h
-+++ b/drivers/net/sky2.h
-@@ -2064,7 +2064,7 @@ enum {
- 	GM_IS_RX_FF_OR	= 1<<1,	/* Receive FIFO Overrun */
- 	GM_IS_RX_COMPL	= 1<<0,	/* Frame Reception Complete */
+---
+ kernel/trace/trace.c |   19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
+
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2552,7 +2552,7 @@ tracing_trace_options_write(struct file
+ 	char buf[64];
+ 	char *cmp;
+ 	int neg = 0;
+-	int ret;
++	int ret = 0;
+ 	int i;
  
--#define GMAC_DEF_MSK     GM_IS_TX_FF_UR
-+#define GMAC_DEF_MSK     (GM_IS_TX_FF_UR | GM_IS_RX_FF_OR)
- };
+ 	if (cnt >= sizeof(buf))
+@@ -2569,6 +2569,8 @@ tracing_trace_options_write(struct file
+ 		cmp += 2;
+ 	}
  
- /*	GMAC_LINK_CTRL	16 bit	GMAC Link Control Reg (YUKON only) */
++	mutex_lock(&trace_types_lock);
++
+ 	for (i = 0; trace_options[i]; i++) {
+ 		if (strcmp(cmp, trace_options[i]) == 0) {
+ 			set_tracer_flags(1 << i, !neg);
+@@ -2577,13 +2579,13 @@ tracing_trace_options_write(struct file
+ 	}
+ 
+ 	/* If no option could be set, test the specific tracer options */
+-	if (!trace_options[i]) {
+-		mutex_lock(&trace_types_lock);
++	if (!trace_options[i])
+ 		ret = set_tracer_option(current_trace, cmp, neg);
+-		mutex_unlock(&trace_types_lock);
+-		if (ret)
+-			return ret;
+-	}
++
++	mutex_unlock(&trace_types_lock);
++
++	if (ret)
++		return ret;
+ 
+ 	*ppos += cnt;
+ 
+@@ -4180,7 +4182,10 @@ trace_options_core_write(struct file *fi
+ 
+ 	if (val != 0 && val != 1)
+ 		return -EINVAL;
++
++	mutex_lock(&trace_types_lock);
+ 	set_tracer_flags(1 << index, val);
++	mutex_unlock(&trace_types_lock);
+ 
+ 	*ppos += cnt;
+ 
 
 
