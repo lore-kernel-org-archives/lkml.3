@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760495Ab3DBMoQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 08:44:16 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:50071 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759725Ab3DBMoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 08:44:14 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/9] CPUFreq Updates & Fixes for 3.10
-Date: Tue, 02 Apr 2013 14:51:49 +0200
-Message-ID: <3027411.cHP1ssyQqr@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpoku_SbdzC+iC33ad6bQvFLW128BfXM_3x3x8_v9MgwUhA@mail.gmail.com>
-References: <cover.1364820620.git.viresh.kumar@linaro.org> <1893788.IlN605kbG3@vostro.rjw.lan> <CAKohpoku_SbdzC+iC33ad6bQvFLW128BfXM_3x3x8_v9MgwUhA@mail.gmail.com>
+	id S1760584Ab3DBMpc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 08:45:32 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:42265 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760452Ab3DBMpa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 08:45:30 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <m2ip48d62f.fsf@igel.home>
+References: <CA+V-a8vYsBLVH-3Bm35Sv9K9ZMTcMB4_P_V3kBjyuEKDozPi5w@mail.gmail.com>
+ <1363949290.3528.37.camel@linaro1.home> <m2ip48d62f.fsf@igel.home>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Tue, 2 Apr 2013 18:15:09 +0530
+Message-ID: <CA+V-a8s+Wrt7756gd44e4BtqtHymPN2bFbow0brnEcOWVA1yBQ@mail.gmail.com>
+Subject: Re: [BUG] mod/file2alias: build error in devicetable-offsets.c [was:
+ asm/types.h Header file wont get generated while building uImage ?]
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 02, 2013 06:13:48 AM Viresh Kumar wrote:
-> On 2 April 2013 02:35, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > The [5/9] seems to be missing.  Care to send?
-> 
-> That shouldn't happen. I received it on my other email id which
-> got it through LKML and you were in to field of that too..
+Hi Andreas,
 
-Well, if you go to https://patchwork.kernel.org/project/linux-pm/list/,
-it's not there.  Moreover, it's not in my mailbox, although I'm subscribed
-to the LKML, linux-pm and cpufreq.
+On Sun, Mar 31, 2013 at 1:16 AM, Andreas Schwab <schwab@linux-m68k.org> wrote:
+> "Jon Medhurst (Tixy)" <tixy@linaro.org> writes:
+>
+>> For builds which succeed I see this order:
+>>
+>>   WRAP    arch/arm/include/generated/asm/types.h
+>>   [...]
+>>   GEN     include/generated/asm-offsets.h
+>>
+>> and for those which fail:
+>>
+>>   CC      scripts/mod/devicetable-offsets.s
+>>   In file included from include/linux/types.h:5:0,
+>>                    from include/linux/mod_devicetable.h:11,
+>>                    from scripts/mod/devicetable-offsets.c:2:
+>>   include/uapi/linux/types.h:4:23: fatal error: asm/types.h: No such file or directory
+>>   [...]
+>>   WRAP    arch/arm/include/generated/asm/types.h
+>
+> Does that help?
+>
+> diff --git a/Makefile b/Makefile
+> index a5f3203..2a484db 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -512,7 +512,8 @@ ifeq ($(KBUILD_EXTMOD),)
+>  # Carefully list dependencies so we do not try to build scripts twice
+>  # in parallel
+>  PHONY += scripts
+> -scripts: scripts_basic include/config/auto.conf include/config/tristate.conf
+> +scripts: scripts_basic include/config/auto.conf include/config/tristate.conf \
+> +        asm-generic
+>         $(Q)$(MAKE) $(build)=$(@)
+>
+>  # Objects we will link into vmlinux / subdirs we need to visit
+>
+This works thanks for the patch!
 
-> Anyway, if you want i can resend it but don't really want to spam
-> LKML with same patch again. So its attached for you.
+Reported-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Tested-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-Thanks!
+Regards,
+--Prabhakar
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> Andreas.
+>
+> --
+> Andreas Schwab, schwab@linux-m68k.org
+> GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+> "And now for something completely different."
