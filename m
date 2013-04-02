@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761496Ab3DBK34 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 06:29:56 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:40337
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760189Ab3DBK3z (ORCPT
+	id S1762034Ab3DBKeF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 06:34:05 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:55733 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761062Ab3DBKeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 06:29:55 -0400
-Message-ID: <1364898582.18374.17.camel@laptop>
-Subject: Re: [PATCH 2/5] sched: factor out code to should_we_balance()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Date: Tue, 02 Apr 2013 12:29:42 +0200
-In-Reply-To: <1364896813.18374.0.camel@laptop>
-References: <1364457537-15114-1-git-send-email-iamjoonsoo.kim@lge.com>
-	 <1364457537-15114-3-git-send-email-iamjoonsoo.kim@lge.com>
-	 <1364890206.16858.6.camel@laptop> <20130402095034.GG16699@lge.com>
-	 <1364896813.18374.0.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Apr 2013 06:34:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130402082342.GF30286@arwen.pp.htv.fi>
+References: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com>
+	<1364824448-14732-2-git-send-email-gautam.vivek@samsung.com>
+	<20130402082342.GF30286@arwen.pp.htv.fi>
+Date: Tue, 2 Apr 2013 16:04:01 +0530
+Message-ID: <CAFp+6iFW9-fOCgCfpfQzS9PZyjb9_NahjSxzbrS0AhVeNngyXw@mail.gmail.com>
+Subject: Re: [PATCH v3 01/11] usb: phy: Add APIs for runtime power management
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: balbi@ti.com
+Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        stern@rowland.harvard.edu, sarah.a.sharp@linux.intel.com,
+        rob.herring@calxeda.com, kgene.kim@samsung.com, kishon@ti.com,
+        dianders@chromium.org, t.figa@samsung.com, p.paneri@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-02 at 12:00 +0200, Peter Zijlstra wrote:
-> On Tue, 2013-04-02 at 18:50 +0900, Joonsoo Kim wrote:
-> > 
-> > It seems that there is some misunderstanding about this patch.
-> > In this patch, we don't iterate all groups. Instead, we iterate on
-> > cpus of local sched_group only. So there is no penalty you mentioned.
-> 
-> OK, I'll go stare at it again..
+Hi,
 
-Ah, I see, you're doing should_we_balance() _before_
-find_busiest_group() and instead you're doing another for_each_cpu() in
-there.
 
-I'd write the thing like:
+On Tue, Apr 2, 2013 at 1:53 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Mon, Apr 01, 2013 at 07:24:00PM +0530, Vivek Gautam wrote:
+>> Adding  APIs to handle runtime power management on PHY
+>> devices. PHY consumers may need to wake-up/suspend PHYs
+>> when they work across autosuspend.
+>>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> ---
+>>  include/linux/usb/phy.h |  141 +++++++++++++++++++++++++++++++++++++++++++++++
+>>  1 files changed, 141 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
+>> index 6b5978f..01bf9c1 100644
+>> --- a/include/linux/usb/phy.h
+>> +++ b/include/linux/usb/phy.h
+>> @@ -297,4 +297,145 @@ static inline const char *usb_phy_type_string(enum usb_phy_type type)
+>>               return "UNKNOWN PHY TYPE";
+>>       }
+>>  }
+>> +
+>> +static inline void usb_phy_autopm_enable(struct usb_phy *x)
+>> +{
+>> +     if (!x || !x->dev) {
+>> +             dev_err(x->dev, "no PHY or attached device available\n");
+>> +             return;
+>> +             }
+>
+> wrong indentation, also, I'm not sure we should allow calls with NULL
+> pointers. Perhaps a WARN() so we get API offenders early enough ?
 
-static bool should_we_balance(struct lb_env *env)
-{
-	struct sched_group *sg = env->sd->groups;
-	struct cpumask *sg_cpus, *sg_mask;
-	int cpu, balance_cpu = -1;
+True, bad coding style :-(
+We should be handling dev_err with a NULL pointer.
+Will just keep here:
+if (WARN_ON(!x->dev))
+      return .... ;
 
-	if (env->idle == CPU_NEWLY_IDLE)
-		return true;
 
-	sg_cpus = sched_group_cpus(sg);
-	sg_mask = sched_group_mask(sg);
 
-	for_each_cpu_and(cpu, sg_cpus, env->cpus) {
-		if (!cpumask_test_cpu(cpu, sg_mask))
-			continue;
-
-		if (!idle_cpu(cpu))
-			continue;
-
-		balance_cpu = cpu;
-		break;
-	}
-
-	if (balance_cpu == -1)
-		balance_cpu = group_balance_cpu(sg);
-
-	return balance_cpu == env->dst_cpu;
-}
-
-I also considered doing the group_balance_cpu() first to avoid having
-to do the idle_cpu() scan, but that's a slight behavioural change
-afaict.
-
+-- 
+Thanks & Regards
+Vivek
