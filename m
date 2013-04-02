@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761057Ab3DBRvK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 13:51:10 -0400
-Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:56493
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758307Ab3DBRvI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 13:51:08 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(z551biz98dI9371I542I1432Id799hzz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ahbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: Yoder Stuart-B08248 <B08248@freescale.com>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        Bhushan Bharat-R65777 <R65777@freescale.com>
-Subject: RE: [PATCH 0/5 v11] iommu/fsl: Freescale PAMU driver and IOMMU API
- implementation.
-Thread-Topic: [PATCH 0/5 v11] iommu/fsl: Freescale PAMU driver and IOMMU API
- implementation.
-Thread-Index: AQHOK+8bPbDn+BJThEe8QO8hqmo88pjDJN8AgAAVX7A=
-Date: Tue, 2 Apr 2013 17:50:50 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D44E415@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1364500442-20927-1-git-send-email-Varun.Sethi@freescale.com>
- <20130402162310.GJ15687@8bytes.org>
-In-Reply-To: <20130402162310.GJ15687@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [182.64.44.154]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1761191Ab3DBRwR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 13:52:17 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:47422 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758317Ab3DBRwQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 13:52:16 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+In-Reply-To: <515B026B.1040901@oracle.com>
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>
+	<20130321141058.76e028e492f98f6ee6e60353@linux-foundation.org>
+	<20130326192852.GA25899@redhat.com>
+	<20130326124309.077e21a9f59aaa3f3355e09b@linux-foundation.org>
+	<20130329161746.GA8391@redhat.com>
+	<CA+55aFwA6CpODkJwHFd59EbNxOrP-FHM+xG8Xcgeni2DBotGPA@mail.gmail.com>
+	<20130329190642.GC23893@redhat.com>
+	<CA+55aFyj2zfumVUJ7JMhJkQY_LiyQYX+tK4Cu4Jg=g72-amC2g@mail.gmail.com>
+	<1364585774.31320.9.camel@thor.lan>
+	<515B026B.1040901@oracle.com>
+Date: Tue, 2 Apr 2013 10:52:15 -0700
+X-Google-Sender-Auth: 21PLgDKL9FCTg2AwB49YlUX5pmc
+Message-ID: <CA+55aFz-0J3uhJC-00AJ0R-4TVOYqFGJk0h5x0HmaX+JR6_MYQ@mail.gmail.com>
+Subject: Re: ipc,sem: sysv semaphore scalability
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@surriel.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        hhuang@redhat.com, "Low, Jason" <jason.low2@hp.com>,
+        Michel Lespinasse <walken@google.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        "Vinod, Chegu" <chegu_vinod@hp.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 2, 2013 at 9:08 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>
+> By just playing with the 'msgsz' parameter with MSG_COPY set.
 
+Hmm. Looking closer, I suspect you're testing without commit
+88b9e456b164 ("ipc: don't allocate a copy larger than max"). That
+should limit the size passed in to prepare_copy -> load_copy to
+msg_ctlmax.
 
-> -----Original Message-----
-> From: Joerg Roedel [mailto:joro@8bytes.org]
-> Sent: Tuesday, April 02, 2013 9:53 PM
-> To: Sethi Varun-B16395
-> Cc: Yoder Stuart-B08248; Wood Scott-B07421; iommu@lists.linux-
-> foundation.org; linuxppc-dev@lists.ozlabs.org; linux-
-> kernel@vger.kernel.org; galak@kernel.crashing.org;
-> benh@kernel.crashing.org
-> Subject: Re: [PATCH 0/5 v11] iommu/fsl: Freescale PAMU driver and IOMMU
-> API implementation.
-> 
-> On Fri, Mar 29, 2013 at 01:23:57AM +0530, Varun Sethi wrote:
-> > This patchset provides the Freescale PAMU (Peripheral Access
-> > Management Unit) driver and the corresponding IOMMU API
-> > implementation. PAMU is the IOMMU present on Freescale QorIQ
-> > platforms. PAMU can authorize memory access, remap the memory address,
-> and remap the I/O transaction type.
-> >
-> > This set consists of the following patches:
-> > 1.  Make iova dma_addr_t in the iommu_iova_to_phys API.
-> > 2. Addition of new field in the device (powerpc) archdata structure for
-> storing iommu domain information
-> >    pointer.
-> > 3. Add window permission flags in the iommu_domain_window_enable API.
-> > 4. Add domain attributes for FSL PAMU driver.
-> > 5. PAMU driver and IOMMU API implementation.
-> 
-> Okay, I am about to apply patches 1 and 3 to a new ppc/pamu branch in my
-> tree.
-> 
-> As a general question, how did you test the IOMMU driver and what will
-> you do in the future to avoid regressions?
-> 
-I use a kernel module for testing the iommu_api support. The module allows for dynamic creation and deletion of iommu domains for the devices in the device tree. Also, the vfio support (under development) for Freescale SOCs with APMU hardware would depend on the PAMU driver.
+Now, I think it's possibly still a good idea to limit bufsz to INT_MAX
+regardless, but as far as I can see that prepare_copy -> load_copy
+path is the only place that can get confused. Everybody else uses
+size_t (or "long" in the case of r_maxsize) as far as I can tell.
 
--Varun
-
-
+        Linus
