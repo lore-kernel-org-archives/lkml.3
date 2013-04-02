@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494Ab3DBTY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 15:24:28 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49873 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752780Ab3DBTYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 15:24:24 -0400
-Date: Tue, 2 Apr 2013 21:24:17 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH V3 1/2] cpufreq: ondemand: allow custom
- powersave_bias_target handler to be registered
-Message-ID: <20130402192417.GD17675@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Jacob Shin <jacob.shin@amd.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-	cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Viresh Kumar <viresh.kumar@linaro.org>,
-	Thomas Renninger <trenn@suse.de>
-References: <1364926304-1799-1-git-send-email-jacob.shin@amd.com>
- <1364926304-1799-2-git-send-email-jacob.shin@amd.com>
+	id S932479Ab3DBTah (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 15:30:37 -0400
+Received: from mail-da0-f49.google.com ([209.85.210.49]:65042 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760406Ab3DBTag (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 15:30:36 -0400
+Date: Tue, 2 Apr 2013 12:30:15 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Minchan Kim <minchan@kernel.org>
+cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] THP: Use explicit memory barrier
+In-Reply-To: <20130402003746.GA30444@blaptop>
+Message-ID: <alpine.LNX.2.00.1304021221240.5808@eggly.anvils>
+References: <1364773535-26264-1-git-send-email-minchan@kernel.org> <alpine.DEB.2.02.1304011634530.21603@chino.kir.corp.google.com> <20130402003746.GA30444@blaptop>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1364926304-1799-2-git-send-email-jacob.shin@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 01:11:43PM -0500, Jacob Shin wrote:
-> This allows for another [arch specific] driver to hook into existing
-> powersave bias function of the ondemand governor. i.e. This allows AMD
-> specific powersave bias function (in a separate AMD specific driver)
-> to aid ondemand governor's frequency transition deicisions.
+On Tue, 2 Apr 2013, Minchan Kim wrote:
+> On Mon, Apr 01, 2013 at 04:35:38PM -0700, David Rientjes wrote:
+> > On Mon, 1 Apr 2013, Minchan Kim wrote:
+> > 
+> > > __do_huge_pmd_anonymous_page depends on page_add_new_anon_rmap's
+> > > spinlock for making sure that clear_huge_page write become visible
+> > > after set set_pmd_at() write.
+> > > 
+> > > But lru_cache_add_lru uses pagevec so it could miss spinlock
+> > > easily so above rule was broken so user may see inconsistent data.
+> > > 
+> > > This patch fixes it with using explict barrier rather than depending
+> > > on lru spinlock.
+> > > 
+> > 
+> > Is this the same issue that Andrea responded to in the "thp and memory 
+> > barrier assumptions" thread at http://marc.info/?t=134333512700004 ?
 > 
-> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+> Yes and Peter pointed out further step.
+> Thanks for pointing out.
+> Not that I know that Andrea alreay noticed it, I don't care about this
+> patch.
+> 
+> Remaining question is Kame's one.
+> > Hmm...how about do_anonymous_page() ? there are no comments/locks/barriers.
+> > Users can see non-zero value after page fault in theory ?
+> Isn't there anyone could answer it?
 
-Acked-by: Borislav Petkov <bp@suse.de>
+See Nick's 2008 0ed361dec "mm: fix PageUptodate data race", which gave us
 
--- 
-Regards/Gruss,
-    Boris.
+static inline void __SetPageUptodate(struct page *page)
+{
+	smp_wmb();
+	__set_bit(PG_uptodate, &(page)->flags);
+}
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+So both do_anonymous_page() and __do_huge_pmd_anonymous_page() look safe
+to me already, though the huge_memory one could do with a fixed comment.
+
+Hugh
