@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761572Ab3DBQkq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 12:40:46 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:54810 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758662Ab3DBQkp (ORCPT
+	id S1761525Ab3DBQmc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 12:42:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:60898 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752238Ab3DBQma convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 12:40:45 -0400
-Date: Tue, 2 Apr 2013 09:40:42 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, arm@kernel.org
-Subject: Re: [PATCH 1/1] irqchip: irq-gic: Fix checkpatch errors
-Message-ID: <20130402164042.GB25867@quad.lixom.net>
-References: <1363167315-12753-1-git-send-email-sachin.kamat@linaro.org>
+	Tue, 2 Apr 2013 12:42:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,394,1363158000"; 
+   d="scan'208";a="288304982"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Al Viro <viro@ZenIV.linux.org.uk>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>
+Subject: RE: linux-next: manual merge of the vfs tree with the ia64 tree
+Thread-Topic: linux-next: manual merge of the vfs tree with the ia64 tree
+Thread-Index: AQHOLzfwQtaoNcttC0yqLGbbYmtjpJjDH4gA
+Date: Tue, 2 Apr 2013 16:42:27 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F1E09672C@ORSMSX108.amr.corp.intel.com>
+References: <20130402112017.8c5e288cbbd31f93788df9d5@canb.auug.org.au>
+In-Reply-To: <20130402112017.8c5e288cbbd31f93788df9d5@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363167315-12753-1-git-send-email-sachin.kamat@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 03:05:15PM +0530, Sachin Kamat wrote:
-> Fixes the following errors:
-> ERROR: do not initialise statics to 0 or NULL
-> ERROR: space required after that ',' (ctx:VxV)
-> 
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> ---
-> Compile tested and based on linux-next tree (20130313).
+> Today's linux-next merge of the vfs tree got a conflict in
+> arch/ia64/kernel/palinfo.c between commit 40c275bd92b8 ("[IA64] Fix stack
+> overflow in create_palinfo_proc_entries") from the ia64 tree and commit
+> d8e904861a28 ("palinfo fixes") from the vfs tree.
+>
+> I fixed it up (arbitrarily choosing the vfs tree version) and can carry
+> the fix as necessary (no action is required).
 
-I haven't seen this show up in linux-next through Thomas, so I've applied it to
-our next/cleanup branch.
+It looks like you picked the version from the ia64 tree - but it would have
+been better to pick Al's version. He wastes less space on the stack by only
+declaring cpustr[3+4+1] instead of cpustr[32], but more importantly he
+checks the return value from proc_mkdir().
 
-Thanks.
+I'll drop 40c275bd92b8 out of my tree so Al's can go in without a conflict.
 
-
--Olof
-
+-Tony
