@@ -1,136 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760814Ab3DBIsZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 04:48:25 -0400
-Received: from ams-iport-3.cisco.com ([144.254.224.146]:26947 "EHLO
-	ams-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754165Ab3DBIsX (ORCPT
+	id S1760456Ab3DBIwW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 04:52:22 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36851 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759851Ab3DBIwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 04:48:23 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgEFAIWaWlGQ/khM/2dsb2JhbABDhlu8I4EBFnSCHwEBBAEjBFIQCxUDAgImAgIhNgYBEogCAwkGrmWCQIYkDYlbgSOLNoJGCweCLYETA5ULgWCJc4F9hRuDDTo
-X-IronPort-AV: E=Sophos;i="4.87,392,1363132800"; 
-   d="scan'208";a="12566313"
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Prabhakar lad <prabhakar.csengg@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCH v2] davinci: vpif: add pm_runtime support
-Date: Tue, 2 Apr 2013 10:47:58 +0200
-User-Agent: KMail/1.13.7 (Linux/3.7-7.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LMML <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>, Sekhar Nori <nsekhar@ti.com>
-References: <1364798210-31517-1-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1364798210-31517-1-git-send-email-prabhakar.csengg@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304021047.58951.hverkuil@xs4all.nl>
+	Tue, 2 Apr 2013 04:52:19 -0400
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH RESEND] ARM: ux500: update V-INTCORE constraints
+Date: Tue,  2 Apr 2013 10:51:56 +0200
+Message-Id: <1364892716-25505-1-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <20130402084658.GD23065@opensource.wolfsonmicro.com>
+References: <20130402084658.GD23065@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 1 April 2013 08:36:50 Prabhakar lad wrote:
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> 
-> Add pm_runtime support to the TI Davinci VPIF driver.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Sakari Ailus <sakari.ailus@iki.fi>
-> Cc: Sekhar Nori <nsekhar@ti.com>
-> ---
->  Changes for v2:
->  1: Removed use of clk API as pointed by Laurent and Sekhar.
-> 
->  drivers/media/platform/davinci/vpif.c |   24 +++++++-----------------
->  1 files changed, 7 insertions(+), 17 deletions(-)
-> 
-> diff --git a/drivers/media/platform/davinci/vpif.c b/drivers/media/platform/davinci/vpif.c
-> index 28638a8..599cabb 100644
-> --- a/drivers/media/platform/davinci/vpif.c
-> +++ b/drivers/media/platform/davinci/vpif.c
-> @@ -23,8 +23,8 @@
->  #include <linux/spinlock.h>
->  #include <linux/kernel.h>
->  #include <linux/io.h>
-> -#include <linux/clk.h>
->  #include <linux/err.h>
-> +#include <linux/pm_runtime.h>
->  #include <linux/v4l2-dv-timings.h>
->  
->  #include <mach/hardware.h>
-> @@ -44,7 +44,6 @@ static struct resource	*res;
->  spinlock_t vpif_lock;
->  
->  void __iomem *vpif_base;
-> -struct clk *vpif_clk;
->  
->  /**
->   * ch_params: video standard configuration parameters for vpif
-> @@ -439,19 +438,15 @@ static int vpif_probe(struct platform_device *pdev)
->  		goto fail;
->  	}
->  
-> -	vpif_clk = clk_get(&pdev->dev, "vpif");
-> -	if (IS_ERR(vpif_clk)) {
-> -		status = PTR_ERR(vpif_clk);
-> -		goto clk_fail;
-> -	}
-> -	clk_prepare_enable(vpif_clk);
-> +	pm_runtime_enable(&pdev->dev);
-> +	pm_runtime_resume(&pdev->dev);
-> +
-> +	pm_runtime_get(&pdev->dev);
+Update V-INTCORE regulator constraints to allow voltage and
+configuration changes from consumer drivers.
 
-pm_runtime_get() calls pm_runtime_resume() if needed, so is the call to resume()
-really necessary?
+Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+---
+ arch/arm/mach-ux500/board-mop500-regulators.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-Regards,
+diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
+index 2a17bc5..0a428db 100644
+--- a/arch/arm/mach-ux500/board-mop500-regulators.c
++++ b/arch/arm/mach-ux500/board-mop500-regulators.c
+@@ -392,7 +392,15 @@ struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
+ 	[AB8500_LDO_INTCORE] = {
+ 		.constraints = {
+ 			.name = "V-INTCORE",
+-			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
++			.min_uV = 1250000,
++			.max_uV = 1350000,
++			.input_uV = 1800000,
++			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
++					  REGULATOR_CHANGE_STATUS |
++					  REGULATOR_CHANGE_MODE |
++					  REGULATOR_CHANGE_DRMS,
++			.valid_modes_mask = REGULATOR_MODE_NORMAL |
++					    REGULATOR_MODE_IDLE,
+ 		},
+ 		.num_consumer_supplies = ARRAY_SIZE(ab8500_vintcore_consumers),
+ 		.consumer_supplies = ab8500_vintcore_consumers,
+-- 
+1.8.1.3
 
-	Hans
-
->  
->  	spin_lock_init(&vpif_lock);
->  	dev_info(&pdev->dev, "vpif probe success\n");
->  	return 0;
->  
-> -clk_fail:
-> -	iounmap(vpif_base);
->  fail:
->  	release_mem_region(res->start, res_len);
->  	return status;
-> @@ -459,11 +454,6 @@ fail:
->  
->  static int vpif_remove(struct platform_device *pdev)
->  {
-> -	if (vpif_clk) {
-> -		clk_disable_unprepare(vpif_clk);
-> -		clk_put(vpif_clk);
-> -	}
-> -
->  	iounmap(vpif_base);
->  	release_mem_region(res->start, res_len);
->  	return 0;
-> @@ -472,13 +462,13 @@ static int vpif_remove(struct platform_device *pdev)
->  #ifdef CONFIG_PM
->  static int vpif_suspend(struct device *dev)
->  {
-> -	clk_disable_unprepare(vpif_clk);
-> +	pm_runtime_put(dev);
->  	return 0;
->  }
->  
->  static int vpif_resume(struct device *dev)
->  {
-> -	clk_prepare_enable(vpif_clk);
-> +	pm_runtime_get(dev);
->  	return 0;
->  }
->  
-> 
