@@ -1,77 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761458Ab3DBJiD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:38:03 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52837 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761355Ab3DBJh2 (ORCPT
+	id S1761504Ab3DBJim (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:38:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50838 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761475Ab3DBJik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:37:28 -0400
-Date: Tue, 2 Apr 2013 11:37:24 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] pwm: imx: Remove enabled field from struct imx_chip
-Message-ID: <20130402093721.GC4416@avionic-0098.mockup.avionic-design.de>
-References: <1364741987.3834.2.camel@phoenix>
+	Tue, 2 Apr 2013 05:38:40 -0400
+Date: Tue, 2 Apr 2013 02:38:27 -0700
+From: tip-bot for Andi Kleen <tipbot@zytor.com>
+Message-ID: <tip-1a6461b12872e9622c231928e1620504d741cc79@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, ak@linux.intel.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, ak@linux.intel.com,
+        tglx@linutronix.de
+In-Reply-To: <1359040242-8269-2-git-send-email-eranian@google.com>
+References: <1359040242-8269-2-git-send-email-eranian@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86: Support CPU specific sysfs events
+Git-Commit-ID: 1a6461b12872e9622c231928e1620504d741cc79
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dkEUBIird37B8yKS"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1364741987.3834.2.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:4CnVb5hWapTVRUK5R0qtyPlHJdiQe93xqeCVUCIVmUf
- 7P0jzVfWnoQxElzuFsaBNSpplGkxwgZIoSgvo3UzldtyO4I2FZ
- IxhdY+D90QmdH/1KgqSb0MU/dtOR8InloxXTjX8E0tx1vzz4Yz
- 4/Mx6Wo5cih4HnGPJ2EiXR5xVUgeSCzE1lFaQqmqQiukiTgGhd
- A2ill0v3TVDnAriu52ab49Ib6Y1V4QSm6gaaBpqrevEtlhFi/i
- bpyfzTsMuJ6ZLnPmIsK10Rq0xdqelbUYstOo1gRuZwVp71H0p1
- 8FSRl10HF+5Mubb+NB1i7BL8CyxzP607VZ9huBWO0No5WLBB0V
- +U8iLE6dIUpr3d2b+BrOKLSUnRmK8gm3xKP9157fwBY6xCJ/dp
- DMwMmWqxcyepfYxE5Nwq7dOprr6/O3Cbv+aNcLDWO9MTVtdCgg
- kgy4z
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 02:38:32 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  1a6461b12872e9622c231928e1620504d741cc79
+Gitweb:     http://git.kernel.org/tip/1a6461b12872e9622c231928e1620504d741cc79
+Author:     Andi Kleen <ak@linux.intel.com>
+AuthorDate: Thu, 24 Jan 2013 16:10:25 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 26 Mar 2013 16:50:23 -0300
 
---dkEUBIird37B8yKS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+perf/x86: Support CPU specific sysfs events
 
-On Sun, Mar 31, 2013 at 10:59:47PM +0800, Axel Lin wrote:
-> We can test PWMF_ENABLED bit to know if pwm is enabled or not.
-> Thus remove enabled field from struct imx_chip.
->=20
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  drivers/pwm/pwm-imx.c |    6 +-----
->  1 file changed, 1 insertion(+), 5 deletions(-)
+Add a way for the CPU initialization code to register additional
+events, and merge them into the events attribute directory. Used
+in the next patch.
 
-All 3 patches applied, thanks.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: peterz@infradead.org
+Cc: acme@redhat.com
+Cc: jolsa@redhat.com
+Cc: namhyung.kim@lge.com
+Link: http://lkml.kernel.org/r/1359040242-8269-2-git-send-email-eranian@google.com
+[ small cleanups ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[ merge_attr returns a **, not just * ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ arch/x86/kernel/cpu/perf_event.c | 34 ++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event.h |  1 +
+ 2 files changed, 35 insertions(+)
 
-Thierry
-
---dkEUBIird37B8yKS
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRWqbRAAoJEN0jrNd/PrOhRUoQAJsNVDpMZUe3PApMZCtNjpvi
-RfAw9GnPT038wIGhgUdHJScA1WJDxTubhKlECQwjtFdK/XMw1Ae/0j6zmE9CoVKB
-YqDfbzwgZ2u/P97ZWWgS92SJsYZa+WlwiZNgLO2M1+U3hLk3kydlFIt6LYDr2adO
-xSC1kgm1IuKoT/Aj/aNwFoypfDRdCI6ooCAfO5mzea3kM4BN1SKGcF+NjH6KMtPk
-pTM+MBEJeldh2M+7BCRZ15II4tcVMTYm3UeZdHTC9nChvWzD99Hk51/axS4JhXBA
-O5sus5plR9WgziCzwrDPQUNJRq3hRWyWTaRkhtcnDbm1zQQfx6bejgd2Ko8BLCrP
-aHNoYPWlIUJa2LYM8OvH4hS7Ssr4PJgpdKfEB1adh15Kef3jB0T4A6knZumib68E
-1DQCI82QAwPz2Ah48WbSu2mhaWvzecgPeVyOqKtzF7nz1jHtzWnI5TwRqBKMcokT
-vjJXSGmmAjctUMmiBjFKT3kiSLERxd20vWBqx8EVx1GuW4bo5QhuN12fsQTt1DMg
-beBv0aO71yjnkhCGP08WpSUTK73TTpu1/2AfU8lXxE2zQKa2+w7NRfidEAKz958h
-QGHGgpyWFeOAN+nr65Ypp4d4RDfPEoWiTrM61Vi8Oldp7MgFFlQq/dHvQbg/QPfk
-XK3ulOEXUfaStu7JqtdJ
-=EvG/
------END PGP SIGNATURE-----
-
---dkEUBIird37B8yKS--
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index bf0f01a..c886dc8 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1330,6 +1330,32 @@ static void __init filter_events(struct attribute **attrs)
+ 	}
+ }
+ 
++/* Merge two pointer arrays */
++static __init struct attribute **merge_attr(struct attribute **a, struct attribute **b)
++{
++	struct attribute **new;
++	int j, i;
++
++	for (j = 0; a[j]; j++)
++		;
++	for (i = 0; b[i]; i++)
++		j++;
++	j++;
++
++	new = kmalloc(sizeof(struct attribute *) * j, GFP_KERNEL);
++	if (!new)
++		return NULL;
++
++	j = 0;
++	for (i = 0; a[i]; i++)
++		new[j++] = a[i];
++	for (i = 0; b[i]; i++)
++		new[j++] = b[i];
++	new[j] = NULL;
++
++	return new;
++}
++
+ static ssize_t events_sysfs_show(struct device *dev, struct device_attribute *attr,
+ 			  char *page)
+ {
+@@ -1469,6 +1495,14 @@ static int __init init_hw_perf_events(void)
+ 	else
+ 		filter_events(x86_pmu_events_group.attrs);
+ 
++	if (x86_pmu.cpu_events) {
++		struct attribute **tmp;
++
++		tmp = merge_attr(x86_pmu_events_group.attrs, x86_pmu.cpu_events);
++		if (!WARN_ON(!tmp))
++			x86_pmu_events_group.attrs = tmp;
++	}
++
+ 	pr_info("... version:                %d\n",     x86_pmu.version);
+ 	pr_info("... bit width:              %d\n",     x86_pmu.cntval_bits);
+ 	pr_info("... generic registers:      %d\n",     x86_pmu.num_counters);
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 7f5c75c..95152c1 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -357,6 +357,7 @@ struct x86_pmu {
+ 	struct attribute **format_attrs;
+ 
+ 	ssize_t		(*events_sysfs_show)(char *page, u64 config);
++	struct attribute **cpu_events;
+ 
+ 	/*
+ 	 * CPU Hotplug hooks
