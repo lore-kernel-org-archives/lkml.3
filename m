@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761606Ab3DBQR0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 12:17:26 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:24355 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1761097Ab3DBQRZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 12:17:25 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/f9ou493/x4PA9GQz60XWA
-Date: Tue, 2 Apr 2013 09:17:14 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>
-Cc: pali.rohar@gmail.com, juha.yrjola@solidboot.com, linux@arm.linux.org.uk,
-        mpm@selenic.com, herbert@gondor.hengli.com.au,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] OMAP3 ROM Random Number Generator support
-Message-ID: <20130402161713.GR10155@atomide.com>
-References: <414980284.76676.1364848631348.JavaMail.apache@mail82.abv.bg>
+	id S932772Ab3DBQSF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 12:18:05 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52198 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761097Ab3DBQSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 12:18:03 -0400
+Date: Tue, 2 Apr 2013 18:17:57 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: suravee.suthikulpanit@amd.com, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] iommu/amd: Add logic to decode AMD IOMMU event flag
+Message-ID: <20130402161757.GC17519@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Joerg Roedel <joro@8bytes.org>, suravee.suthikulpanit@amd.com,
+	iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+References: <1364428283-2548-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <20130402143335.GB15687@8bytes.org>
+ <20130402144037.GE5488@pd.tnic>
+ <20130402150302.GF15687@8bytes.org>
+ <20130402152956.GE4391@pd.tnic>
+ <20130402160400.GP30540@8bytes.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <414980284.76676.1364848631348.JavaMail.apache@mail82.abv.bg>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130402160400.GP30540@8bytes.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ивайло Димитров <freemangordon@abv.bg> [130401 13:41]:
->  It could be that I am misreading something, but RX51 is OMAP3.
+On Tue, Apr 02, 2013 at 06:04:00PM +0200, Joerg Roedel wrote:
+> I can certainly write a patch that works around your particular BIOS
+> bug. The problem is that such a fix will most certainly break other
+> systems.
+>
+> Unfortunatly there is no reliable way to fixup the IO-APIC-ID->DEVID
+> mapping at runtime when the BIOS messed it up. The only thing I can do
+> is to check for potential problems and disable the intremap feature
+> then, so that the system will at least boot.
 
-Yes the FIQs are only accessible in the secure mode starting with
-omap2. So that also means omap3, 4, 5.
+Yeah, that could work:
 
-Regards,
+* do not issue message but try to fixup the mapping
+* if it works, fine
+* if it doesn't, then give up and disable intremap.
 
-Tony
+And yes, I'm very sceptical about having a WARN_ON and it starts
+screaming on machines all over the place. Good luck explaining to
+people that you actually wanted to prod BIOS vendors to fix their
+monkey-on-crack code but they weren't listening in the first place.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
