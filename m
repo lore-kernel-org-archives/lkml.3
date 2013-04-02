@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760589Ab3DBFqU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 01:46:20 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:51426 "EHLO
+	id S1760647Ab3DBFrQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 01:47:16 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:51614 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759398Ab3DBFqT (ORCPT
+	with ESMTP id S1760605Ab3DBFrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 01:46:19 -0400
+	Tue, 2 Apr 2013 01:47:15 -0400
 From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 CC: "linux-arm-kernel@lists.infradead.org" 
@@ -19,17 +19,17 @@ CC: "linux-arm-kernel@lists.infradead.org"
         "spi-devel-general@lists.sourceforge.net" 
 	<spi-devel-general@lists.sourceforge.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v7 08/14] spi/spi-atmel: fix spi-atmel driver to adapt
- to slave_config changes
-Thread-Topic: [PATCH v7 08/14] spi/spi-atmel: fix spi-atmel driver to adapt
- to slave_config changes
-Thread-Index: AQHOJHZ4XYMPApy8HEK0K/M7YbB+ZJjA8N4AgAGPfxA=
-Date: Tue, 2 Apr 2013 05:45:48 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A24364150E8A2ED@penmbx01>
+Subject: RE: [PATCH v7 10/14] spi/spi-atmel: correct 16 bits transfers with
+ DMA
+Thread-Topic: [PATCH v7 10/14] spi/spi-atmel: correct 16 bits transfers with
+ DMA
+Thread-Index: AQHOJHaxQs/SML/7SEOeFaTON5hcTZjA8a6AgAGQGgA=
+Date: Tue, 2 Apr 2013 05:46:50 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A24364150E8B304@penmbx01>
 References: <1363678866-3567-1-git-send-email-wenyou.yang@atmel.com>
- <1363679236-3973-1-git-send-email-wenyou.yang@atmel.com>
- <20130401135104.GZ18636@opensource.wolfsonmicro.com>
-In-Reply-To: <20130401135104.GZ18636@opensource.wolfsonmicro.com>
+ <1363679341-4087-1-git-send-email-wenyou.yang@atmel.com>
+ <20130401135359.GB18636@opensource.wolfsonmicro.com>
+In-Reply-To: <20130401135359.GB18636@opensource.wolfsonmicro.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -41,31 +41,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r325kNN3015406
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r325lF0l015413
 
 Hi, Mark,
 
 > -----Original Message-----
 > From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
-> Sent: 2013年4月1日 21:51
+> Sent: 2013年4月1日 21:54
 > To: Yang, Wenyou
 > Cc: linux-arm-kernel@lists.infradead.org; grant.likely@secretlab.ca;
 > richard.genoud@gmail.com; plagnioj@jcrosoft.com; Ferre, Nicolas; Lin, JM;
 > spi-devel-general@lists.sourceforge.net; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v7 08/14] spi/spi-atmel: fix spi-atmel driver to adapt to
-> slave_config changes
+> Subject: Re: [PATCH v7 10/14] spi/spi-atmel: correct 16 bits transfers with DMA
 > 
-> On Tue, Mar 19, 2013 at 03:47:16PM +0800, Wenyou Yang wrote:
+> On Tue, Mar 19, 2013 at 03:49:01PM +0800, Wenyou Yang wrote:
 > > From: Richard Genoud <richard.genoud@gmail.com>
 > >
-> > This is the following of the patch
-> > e2b35f3dbfc080f15b72834d08f04f0269dbe9be
+> > Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+> > Cc: spi-devel-general@lists.sourceforge.net
+> > Cc: linux-kernel@vger.kernel.org
+> > [wenyou.yang@atmel.com: submit the patch]
+> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 > 
-> What is this patch actually doing, shouldn't it be part of the previous commit?
-> The changelog really ought to have a plain text version of the commit
-> description too.
-You are right, it isn't the part of the previous commit.
-I will squash it into the dmaengine patch.
+> Shouldn't this be squashed into the dmaengine patch?
+OK, I will squash it into the dmaengine patch
 
 Best Regards,
 Wenyou Yang
