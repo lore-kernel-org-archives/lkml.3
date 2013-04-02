@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933784Ab3DBWfW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:35:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33287 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933511Ab3DBWNL (ORCPT
+	id S933826Ab3DBWfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:35:37 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48712 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933511Ab3DBWfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:13:11 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Max Nekludov <Max.Nekludov@us.elster.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 118/124] ks8851: Fix interpretation of rxlen field.
-Date: Tue,  2 Apr 2013 15:11:40 -0700
-Message-Id: <20130402221117.852660420@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
-References: <20130402221104.163133110@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 2 Apr 2013 18:35:31 -0400
+X-Sasl-enc: z9rfeb8dLdvZxryD2/fK/FV+Cb/H2tZPZcpww74HlcuP 1364942130
+Message-ID: <515B5D34.4000407@signal11.us>
+Date: Tue, 02 Apr 2013 18:35:32 -0400
+From: Alan Ott <alan@signal11.us>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>
+CC: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-zigbee-devel <linux-zigbee-devel@lists.sourceforge.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] mac802154: Immediately retry sending failed packets
+References: <1364928481-1813-1-git-send-email-alan@signal11.us> <1364928481-1813-2-git-send-email-alan@signal11.us> <CAJmB2rCr5ds11+iN=W5GCKsUgdfb57uKg+mH4NY4CWw6EFCTbg@mail.gmail.com> <515B3F78.2020301@signal11.us> <515B4D79.40805@signal11.us>
+In-Reply-To: <515B4D79.40805@signal11.us>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On 04/02/2013 05:28 PM, Alan Ott wrote:
 
-------------------
+> According to 7.5.6.5 of IEEE 802.15.4-2003, if the retransmission fails
+> more than aMaxFrameRetries (3) times, it is assumed that it has failed.
+> Since some transceivers (and I would assume most if not all) do this in
+> hardware, it's now my opinion that we should _not_ try to retransmit at
+> all in mac802154/tx.c.
+> 
+> For a driver for a device which _doesn't_ do retransmission in hardware,
+> maybe it should be handled by that driver then.
 
 
-From: "Max.Nekludov@us.elster.com" <Max.Nekludov@us.elster.com>
+It's worth noting that the mrf24j40, the at86rf230, and the cc2420
+support retransmission in hardware (the first two are the only two in
+mainline).
 
-[ Upstream commit 14bc435ea54cb888409efb54fc6b76c13ef530e9 ]
-
-According to the Datasheet (page 52):
-15-12 Reserved
-11-0 RXBC Receive Byte Count
-This field indicates the present received frame byte size.
-
-The code has a bug:
-                 rxh = ks8851_rdreg32(ks, KS_RXFHSR);
-                 rxstat = rxh & 0xffff;
-                 rxlen = rxh >> 16; // BUG!!! 0xFFF mask should be applied
-
-Signed-off-by: Max Nekludov <Max.Nekludov@us.elster.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/micrel/ks8851.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/net/ethernet/micrel/ks8851.c
-+++ b/drivers/net/ethernet/micrel/ks8851.c
-@@ -547,7 +547,7 @@ static void ks8851_rx_pkts(struct ks8851
- 	for (; rxfc != 0; rxfc--) {
- 		rxh = ks8851_rdreg32(ks, KS_RXFHSR);
- 		rxstat = rxh & 0xffff;
--		rxlen = rxh >> 16;
-+		rxlen = (rxh >> 16) & 0xfff;
- 
- 		netif_dbg(ks, rx_status, ks->netdev,
- 			  "rx: stat 0x%04x, len 0x%04x\n", rxstat, rxlen);
-
+Alan.
 
