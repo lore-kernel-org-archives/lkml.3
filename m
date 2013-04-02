@@ -1,92 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759899Ab3DBCMj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 22:12:39 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:39357 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758587Ab3DBCMh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 22:12:37 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Ming Lei <ming.lei@canonical.com>, <stable@vger.kernel.org>
-Subject: [PATCH] sysfs: fix use after free in case of concurrent read/write and readdir
-Date: Tue,  2 Apr 2013 10:12:26 +0800
-Message-Id: <1364868746-5405-1-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1759928Ab3DBCMv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 22:12:51 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58028 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758587Ab3DBCMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 22:12:43 -0400
+Date: Mon, 1 Apr 2013 22:12:29 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: Re: [PATCH 15/33] aio: use flush_dcache_page()
+Message-ID: <20130402021229.GD30122@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Kent Overstreet <koverstreet@google.com>,
+	linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+	akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+	Felipe Balbi <balbi@ti.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+	Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+	Asai Thambi S P <asamymuthupa@micron.com>,
+	Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+	Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+	Benjamin LaHaise <bcrl@kvack.org>
+References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
+ <1363883754-27966-16-git-send-email-koverstreet@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363883754-27966-16-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The inode->i_mutex isn't hold when updating filp->f_pos
-in read()/write(), so the filp->f_pos might be read as
-0 or 1 in readdir() when there is concurrent read()/write()
-on this same file, then may cause use after free in readdir().
+The commit description needs to explain why flush_dcache_page() is
+needed now, but wasn't needed before.
 
-The bug can be reproduced with Li Zefan's test code on the
-link:
-
-	https://patchwork.kernel.org/patch/2160771/
-
-This patch fixes the use after free under this situation.
-
-Cc: <stable@vger.kernel.org>
-Reported-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- fs/sysfs/dir.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
-
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index 79a0fd2..484f25e 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -1022,6 +1022,7 @@ static int sysfs_readdir(struct file * filp, void * dirent, filldir_t filldir)
- 	enum kobj_ns_type type;
- 	const void *ns;
- 	ino_t ino;
-+	loff_t off;
- 
- 	type = sysfs_ns_type(parent_sd);
- 	ns = sysfs_info(dentry->d_sb)->ns[type];
-@@ -1044,6 +1045,7 @@ static int sysfs_readdir(struct file * filp, void * dirent, filldir_t filldir)
- 			return 0;
- 	}
- 	mutex_lock(&sysfs_mutex);
-+	off = filp->f_pos;
- 	for (pos = sysfs_dir_pos(ns, parent_sd, filp->f_pos, pos);
- 	     pos;
- 	     pos = sysfs_dir_next_pos(ns, parent_sd, filp->f_pos, pos)) {
-@@ -1055,19 +1057,24 @@ static int sysfs_readdir(struct file * filp, void * dirent, filldir_t filldir)
- 		len = strlen(name);
- 		ino = pos->s_ino;
- 		type = dt_type(pos);
--		filp->f_pos = pos->s_hash;
-+		off = filp->f_pos = pos->s_hash;
- 		filp->private_data = sysfs_get(pos);
- 
- 		mutex_unlock(&sysfs_mutex);
--		ret = filldir(dirent, name, len, filp->f_pos, ino, type);
-+		ret = filldir(dirent, name, len, off, ino, type);
- 		mutex_lock(&sysfs_mutex);
- 		if (ret < 0)
- 			break;
- 	}
- 	mutex_unlock(&sysfs_mutex);
--	if ((filp->f_pos > 1) && !pos) { /* EOF */
--		filp->f_pos = INT_MAX;
-+
-+	/* don't reference last entry if its refcount is dropped */
-+	if (!pos) {
- 		filp->private_data = NULL;
-+
-+		/* EOF and not changed as 0 or 1 in read/write path */
-+		if (off == filp->f_pos && off > 1)
-+			filp->f_pos = INT_MAX;
- 	}
- 	return 0;
- }
--- 
-1.7.9.5
-
+					- Ted
