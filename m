@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359Ab3DBJ3A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:29:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50649 "EHLO
+	id S1760231Ab3DBJaa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:30:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50682 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932164Ab3DBJ27 (ORCPT
+	with ESMTP id S1753244Ab3DBJa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:28:59 -0400
-Date: Tue, 2 Apr 2013 02:28:43 -0700
+	Tue, 2 Apr 2013 05:30:28 -0400
+Date: Tue, 2 Apr 2013 02:29:56 -0700
 From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-a4c983670e0f4285fe115cb2ad697c978c7950b6@git.kernel.org>
+Message-ID: <tip-4a31e56599d42c5ac17b280228349948dee352c7@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
         namhyung.kim@lge.com, namhyung@kernel.org, fweisbec@gmail.com,
@@ -18,12 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
         namhyung.kim@lge.com, namhyung@kernel.org, fweisbec@gmail.com,
         rostedt@goodmis.org, tglx@linutronix.de
-In-Reply-To: <1363850332-25297-7-git-send-email-namhyung@kernel.org>
-References: <1363850332-25297-7-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1363850332-25297-8-git-send-email-namhyung@kernel.org>
+References: <1363850332-25297-8-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Get rid of malloc_or_die()
+Subject: [tip:perf/core] perf tools: Get rid of read_or_die()
   in trace-event-read.c
-Git-Commit-ID: a4c983670e0f4285fe115cb2ad697c978c7950b6
+Git-Commit-ID: 4a31e56599d42c5ac17b280228349948dee352c7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,22 +32,22 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 02:28:48 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 02:30:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a4c983670e0f4285fe115cb2ad697c978c7950b6
-Gitweb:     http://git.kernel.org/tip/a4c983670e0f4285fe115cb2ad697c978c7950b6
+Commit-ID:  4a31e56599d42c5ac17b280228349948dee352c7
+Gitweb:     http://git.kernel.org/tip/4a31e56599d42c5ac17b280228349948dee352c7
 Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Thu, 21 Mar 2013 16:18:49 +0900
+AuthorDate: Thu, 21 Mar 2013 16:18:50 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 21 Mar 2013 13:32:46 -0300
+CommitDate: Thu, 21 Mar 2013 13:34:13 -0300
 
-perf tools: Get rid of malloc_or_die() in trace-event-read.c
+perf tools: Get rid of read_or_die() in trace-event-read.c
 
-Check return value of malloc() and fail if error.  Now read_string()
-can return NULL also check its return value and bail out.
+Rename it to do_read and original do_read to __do_read, and check
+their return value.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -55,238 +55,230 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1363850332-25297-7-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1363850332-25297-8-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/trace-event-read.c | 100 +++++++++++++++++++++++++------------
- 1 file changed, 67 insertions(+), 33 deletions(-)
+ tools/perf/util/trace-event-read.c | 80 +++++++++++++++++++++++++++-----------
+ 1 file changed, 57 insertions(+), 23 deletions(-)
 
 diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
-index ba752d7..22ded80 100644
+index 22ded80..877706b 100644
 --- a/tools/perf/util/trace-event-read.c
 +++ b/tools/perf/util/trace-event-read.c
-@@ -46,16 +46,6 @@ static int long_size;
+@@ -46,7 +46,7 @@ static int long_size;
  static ssize_t calc_data_size;
  static bool repipe;
  
--static void *malloc_or_die(int size)
--{
--	void *ret;
--
--	ret = malloc(size);
--	if (!ret)
--		die("malloc");
--	return ret;
--}
--
- static int do_read(int fd, void *buf, int size)
+-static int do_read(int fd, void *buf, int size)
++static int __do_read(int fd, void *buf, int size)
  {
  	int rsize = size;
-@@ -156,48 +146,57 @@ static char *read_string(void)
- 	if (calc_data_size)
- 		calc_data_size += size;
  
--	str = malloc_or_die(size);
--	memcpy(str, buf, size);
-+	str = malloc(size);
-+	if (str)
-+		memcpy(str, buf, size);
+@@ -59,8 +59,10 @@ static int do_read(int fd, void *buf, int size)
+ 		if (repipe) {
+ 			int retw = write(STDOUT_FILENO, buf, ret);
  
- 	return str;
+-			if (retw <= 0 || retw != ret)
+-				die("repiping input file");
++			if (retw <= 0 || retw != ret) {
++				pr_debug("repiping input file");
++				return -1;
++			}
+ 		}
+ 
+ 		size -= ret;
+@@ -70,14 +72,16 @@ static int do_read(int fd, void *buf, int size)
+ 	return rsize;
  }
  
--static void read_proc_kallsyms(struct pevent *pevent)
-+static int read_proc_kallsyms(struct pevent *pevent)
+-static int read_or_die(void *data, int size)
++static int do_read(void *data, int size)
  {
- 	unsigned int size;
- 	char *buf;
+ 	int r;
  
- 	size = read4(pevent);
- 	if (!size)
--		return;
-+		return 0;
-+
-+	buf = malloc(size + 1);
-+	if (buf == NULL)
+-	r = do_read(input_fd, data, size);
+-	if (r <= 0)
+-		die("reading input file (size expected=%d received=%d)",
+-		    size, r);
++	r = __do_read(input_fd, data, size);
++	if (r <= 0) {
++		pr_debug("reading input file (size expected=%d received=%d)",
++			 size, r);
 +		return -1;
++	}
  
--	buf = malloc_or_die(size + 1);
- 	read_or_die(buf, size);
+ 	if (calc_data_size)
+ 		calc_data_size += r;
+@@ -93,7 +97,7 @@ static void skip(int size)
+ 
+ 	while (size) {
+ 		r = size > BUFSIZ ? BUFSIZ : size;
+-		read_or_die(buf, r);
++		do_read(buf, r);
+ 		size -= r;
+ 	};
+ }
+@@ -102,7 +106,8 @@ static unsigned int read4(struct pevent *pevent)
+ {
+ 	unsigned int data;
+ 
+-	read_or_die(&data, 4);
++	if (do_read(&data, 4) < 0)
++		return 0;
+ 	return __data2host4(pevent, data);
+ }
+ 
+@@ -110,7 +115,8 @@ static unsigned long long read8(struct pevent *pevent)
+ {
+ 	unsigned long long data;
+ 
+-	read_or_die(&data, 8);
++	if (do_read(&data, 8) < 0)
++		return 0;
+ 	return __data2host8(pevent, data);
+ }
+ 
+@@ -166,7 +172,10 @@ static int read_proc_kallsyms(struct pevent *pevent)
+ 	if (buf == NULL)
+ 		return -1;
+ 
+-	read_or_die(buf, size);
++	if (do_read(buf, size) < 0) {
++		free(buf);
++		return -1;
++	}
  	buf[size] = '\0';
  
  	parse_proc_kallsyms(pevent, buf, size);
- 
- 	free(buf);
-+	return 0;
- }
- 
--static void read_ftrace_printk(struct pevent *pevent)
-+static int read_ftrace_printk(struct pevent *pevent)
- {
+@@ -180,6 +189,7 @@ static int read_ftrace_printk(struct pevent *pevent)
  	unsigned int size;
  	char *buf;
  
++	/* it can have 0 size */
  	size = read4(pevent);
  	if (!size)
--		return;
-+		return 0;
-+
-+	buf = malloc(size);
-+	if (buf == NULL)
-+		return -1;
+ 		return 0;
+@@ -188,7 +198,10 @@ static int read_ftrace_printk(struct pevent *pevent)
+ 	if (buf == NULL)
+ 		return -1;
  
--	buf = malloc_or_die(size);
- 	read_or_die(buf, size);
+-	read_or_die(buf, size);
++	if (do_read(buf, size) < 0) {
++		free(buf);
++		return -1;
++	}
  
  	parse_ftrace_printk(pevent, buf, size);
  
- 	free(buf);
-+	return 0;
- }
- 
--static void read_header_files(struct pevent *pevent)
-+static int read_header_files(struct pevent *pevent)
- {
+@@ -201,8 +214,10 @@ static int read_header_files(struct pevent *pevent)
  	unsigned long long size;
  	char *header_event;
-@@ -222,65 +221,87 @@ static void read_header_files(struct pevent *pevent)
+ 	char buf[BUFSIZ];
++	int ret = 0;
+ 
+-	read_or_die(buf, 12);
++	if (do_read(buf, 12) < 0)
++		return -1;
+ 
+ 	if (memcmp(buf, "header_page", 12) != 0)
+ 		die("did not read header page");
+@@ -216,7 +231,9 @@ static int read_header_files(struct pevent *pevent)
+ 	 */
+ 	long_size = header_page_size_size;
+ 
+-	read_or_die(buf, 13);
++	if (do_read(buf, 13) < 0)
++		return -1;
++
+ 	if (memcmp(buf, "header_event", 13) != 0)
  		die("did not read header event");
  
- 	size = read8(pevent);
--	header_event = malloc_or_die(size);
-+	header_event = malloc(size);
-+	if (header_event == NULL)
-+		return -1;
+@@ -225,9 +242,11 @@ static int read_header_files(struct pevent *pevent)
+ 	if (header_event == NULL)
+ 		return -1;
+ 
+-	read_or_die(header_event, size);
++	if (do_read(header_event, size) < 0)
++		ret = -1;
 +
- 	read_or_die(header_event, size);
  	free(header_event);
-+	return 0;
+-	return 0;
++	return ret;
  }
  
--static void read_ftrace_file(struct pevent *pevent, unsigned long long size)
-+static int read_ftrace_file(struct pevent *pevent, unsigned long long size)
- {
- 	char *buf;
+ static int read_ftrace_file(struct pevent *pevent, unsigned long long size)
+@@ -238,7 +257,11 @@ static int read_ftrace_file(struct pevent *pevent, unsigned long long size)
+ 	if (buf == NULL)
+ 		return -1;
  
--	buf = malloc_or_die(size);
-+	buf = malloc(size);
-+	if (buf == NULL)
+-	read_or_die(buf, size);
++	if (do_read(buf, size) < 0) {
++		free(buf);
 +		return -1;
++	}
 +
- 	read_or_die(buf, size);
  	parse_ftrace_file(pevent, buf, size);
  	free(buf);
-+	return 0;
- }
+ 	return 0;
+@@ -253,7 +276,11 @@ static int read_event_file(struct pevent *pevent, char *sys,
+ 	if (buf == NULL)
+ 		return -1;
  
--static void read_event_file(struct pevent *pevent, char *sys,
-+static int read_event_file(struct pevent *pevent, char *sys,
- 			    unsigned long long size)
- {
- 	char *buf;
- 
--	buf = malloc_or_die(size);
-+	buf = malloc(size);
-+	if (buf == NULL)
+-	read_or_die(buf, size);
++	if (do_read(buf, size) < 0) {
++		free(buf);
 +		return -1;
++	}
 +
- 	read_or_die(buf, size);
  	parse_event_file(pevent, buf, size, sys);
  	free(buf);
-+	return 0;
- }
- 
--static void read_ftrace_files(struct pevent *pevent)
-+static int read_ftrace_files(struct pevent *pevent)
- {
- 	unsigned long long size;
- 	int count;
- 	int i;
-+	int ret;
- 
- 	count = read4(pevent);
- 
- 	for (i = 0; i < count; i++) {
- 		size = read8(pevent);
--		read_ftrace_file(pevent, size);
-+		ret = read_ftrace_file(pevent, size);
-+		if (ret)
-+			return ret;
- 	}
-+	return 0;
- }
- 
--static void read_event_files(struct pevent *pevent)
-+static int read_event_files(struct pevent *pevent)
- {
- 	unsigned long long size;
- 	char *sys;
- 	int systems;
- 	int count;
- 	int i,x;
-+	int ret;
- 
- 	systems = read4(pevent);
- 
- 	for (i = 0; i < systems; i++) {
- 		sys = read_string();
-+		if (sys == NULL)
-+			return -1;
+ 	return 0;
+@@ -294,6 +321,7 @@ static int read_event_files(struct pevent *pevent)
+ 			return -1;
  
  		count = read4(pevent);
++
  		for (x=0; x < count; x++) {
  			size = read8(pevent);
--			read_event_file(pevent, sys, size);
-+			ret = read_event_file(pevent, sys, size);
-+			if (ret)
-+				return ret;
- 		}
- 	}
-+	return 0;
- }
+ 			ret = read_event_file(pevent, sys, size);
+@@ -323,11 +351,13 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
  
- ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
-@@ -293,6 +314,7 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
- 	int show_printk = 0;
- 	ssize_t size = -1;
- 	struct pevent *pevent;
-+	int err;
+ 	input_fd = fd;
  
- 	*ppevent = NULL;
+-	read_or_die(buf, 3);
++	if (do_read(buf, 3) < 0)
++		return -1;
+ 	if (memcmp(buf, test, 3) != 0)
+ 		die("no trace data in the file");
  
-@@ -310,6 +332,8 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+-	read_or_die(buf, 7);
++	if (do_read(buf, 7) < 0)
++		return -1;
+ 	if (memcmp(buf, "tracing", 7) != 0)
  		die("not a trace file (missing 'tracing' tag)");
  
- 	version = read_string();
-+	if (version == NULL)
-+		return -1;
- 	if (show_version)
+@@ -338,7 +368,8 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
  		printf("version = %s\n", version);
  	free(version);
-@@ -329,11 +353,21 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+ 
+-	read_or_die(buf, 1);
++	if (do_read(buf, 1) < 0)
++		return -1;
+ 	file_bigendian = buf[0];
+ 	host_bigendian = bigendian();
+ 
+@@ -348,10 +379,13 @@ ssize_t trace_report(int fd, struct pevent **ppevent, bool __repipe)
+ 		goto out;
+ 	}
+ 
+-	read_or_die(buf, 1);
++	if (do_read(buf, 1) < 0)
++		goto out;
+ 	long_size = buf[0];
  
  	page_size = read4(pevent);
- 
--	read_header_files(pevent);
--	read_ftrace_files(pevent);
--	read_event_files(pevent);
--	read_proc_kallsyms(pevent);
--	read_ftrace_printk(pevent);
-+	err = read_header_files(pevent);
-+	if (err)
-+		goto out;
-+	err = read_ftrace_files(pevent);
-+	if (err)
-+		goto out;
-+	err = read_event_files(pevent);
-+	if (err)
-+		goto out;
-+	err = read_proc_kallsyms(pevent);
-+	if (err)
-+		goto out;
-+	err = read_ftrace_printk(pevent);
-+	if (err)
++	if (!page_size)
 +		goto out;
  
- 	size = calc_data_size - 1;
- 	calc_data_size = 0;
+ 	err = read_header_files(pevent);
+ 	if (err)
