@@ -1,25 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760251Ab3DBDZS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 23:25:18 -0400
-Received: from mx2.getgoin.net ([208.73.196.197]:57384 "EHLO mx2.getgoin.net"
+	id S1760212Ab3DBDYw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 23:24:52 -0400
+Received: from mga09.intel.com ([134.134.136.24]:45848 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755073Ab3DBDZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 23:25:14 -0400
-Date: Mon, 1 Apr 2013 23:18:54 -0500 (CDT)
-Message-Id: <201304020418.r324Is7v082801@mars.uplync.com>
-To: linux-kernel@vger.kernel.org
-Subject: Private Assignment
-From: <info@privateassignment.com>
-Reply-To: kamara.william147@gmail.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1759543Ab3DBDYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 23:24:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,391,1363158000"; 
+   d="scan'208";a="310928533"
+From: Alex Shi <alex.shi@intel.com>
+To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com
+Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, alex.shi@intel.com, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
+        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
+        riel@redhat.com
+Subject: [patch v3 3/8] sched: only count runnable avg on cfs_rq's nr_running
+Date: Tue,  2 Apr 2013 11:23:23 +0800
+Message-Id: <1364873008-3169-4-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1364873008-3169-1-git-send-email-alex.shi@intel.com>
+References: <1364873008-3169-1-git-send-email-alex.shi@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- need a Personal Representative to work in your area on part time and i will pay six hundred dollars per week. Kindly send your name & location for more info.
+Old function count the runnable avg on rq's nr_running even there is
+only rt task in rq. That is incorrect, so correct it to cfs_rq's
+nr_running.
 
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ kernel/sched/fair.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 2881d42..026e959 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2829,7 +2829,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ 	}
+ 
+ 	if (!se) {
+-		update_rq_runnable_avg(rq, rq->nr_running);
++		update_rq_runnable_avg(rq, rq->cfs.nr_running);
+ 		inc_nr_running(rq);
+ 	}
+ 	hrtick_update(rq);
+-- 
+1.7.12
 
