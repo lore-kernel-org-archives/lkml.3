@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760885Ab3DBWLw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:11:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32808 "EHLO
+	id S1760350Ab3DBXX1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:23:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32817 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752238Ab3DBWLu (ORCPT
+	with ESMTP id S1760780Ab3DBWLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:11:50 -0400
+	Tue, 2 Apr 2013 18:11:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 001/124] SUNRPC: Add barriers to ensure read ordering in rpc_wake_up_task_queue_locked
-Date: Tue,  2 Apr 2013 15:09:43 -0700
-Message-Id: <20130402221104.379893358@linuxfoundation.org>
+        Ming Lei <ming.lei@canonical.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 004/124] Bluetooth: Add support for Dell[QCA 0cf3:0036]
+Date: Tue,  2 Apr 2013 15:09:46 -0700
+Message-Id: <20130402221104.741481899@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -26,47 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Ming Lei <ming.lei@canonical.com>
 
-commit 1166fde6a923c30f4351515b6a9a1efc513e7d00 upstream.
+commit d66629c1325399cf080ba8b2fb086c10e5439cdd upstream.
 
-We need to be careful when testing task->tk_waitqueue in
-rpc_wake_up_task_queue_locked, because it can be changed while we
-are holding the queue->lock.
-By adding appropriate memory barriers, we can ensure that it is safe to
-test task->tk_waitqueue for equality if the RPC_TASK_QUEUED bit is set.
+Add support for the AR9462 chip
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+T:  Bus=03 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#=  3 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0cf3 ProdID=0036 Rev= 0.02
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+A:  FirstIf#= 0 IfCount= 2 Cls=e0(wlcon) Sub=01 Prot=01
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Cc: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/sched.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/bluetooth/ath3k.c |    2 ++
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 3 insertions(+)
 
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -180,6 +180,8 @@ static void __rpc_add_wait_queue(struct
- 		list_add_tail(&task->u.tk_wait.list, &queue->tasks[0]);
- 	task->tk_waitqueue = queue;
- 	queue->qlen++;
-+	/* barrier matches the read in rpc_wake_up_task_queue_locked() */
-+	smp_wmb();
- 	rpc_set_queued(task);
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -73,6 +73,7 @@ static struct usb_device_id ath3k_table[
+ 	{ USB_DEVICE(0x03F0, 0x311D) },
  
- 	dprintk("RPC: %5u added to queue %p \"%s\"\n",
-@@ -430,8 +432,11 @@ static void __rpc_do_wake_up_task(struct
-  */
- static void rpc_wake_up_task_queue_locked(struct rpc_wait_queue *queue, struct rpc_task *task)
- {
--	if (RPC_IS_QUEUED(task) && task->tk_waitqueue == queue)
--		__rpc_do_wake_up_task(queue, task);
-+	if (RPC_IS_QUEUED(task)) {
-+		smp_rmb();
-+		if (task->tk_waitqueue == queue)
-+			__rpc_do_wake_up_task(queue, task);
-+	}
- }
+ 	/* Atheros AR3012 with sflash firmware*/
++	{ USB_DEVICE(0x0CF3, 0x0036) },
+ 	{ USB_DEVICE(0x0CF3, 0x3004) },
+ 	{ USB_DEVICE(0x0CF3, 0x311D) },
+ 	{ USB_DEVICE(0x13d3, 0x3375) },
+@@ -105,6 +106,7 @@ MODULE_DEVICE_TABLE(usb, ath3k_table);
+ static struct usb_device_id ath3k_blist_tbl[] = {
  
- /*
+ 	/* Atheros AR3012 with sflash firmware*/
++	{ USB_DEVICE(0x0CF3, 0x0036), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -131,6 +131,7 @@ static struct usb_device_id blacklist_ta
+ 	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
+ 
+ 	/* Atheros 3012 with sflash firmware */
++	{ USB_DEVICE(0x0cf3, 0x0036), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
 
 
