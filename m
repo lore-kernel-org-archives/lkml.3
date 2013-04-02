@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933886Ab3DBWOq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:14:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33541 "EHLO
+	id S933922Ab3DBWPg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:15:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33684 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933732Ab3DBWO1 (ORCPT
+	with ESMTP id S933879Ab3DBWOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:27 -0400
+	Tue, 2 Apr 2013 18:14:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lukas Czerner <lczerner@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
-        CAI Qian <caiqian@redhat.com>, Lingzhu Xiang <lxiang@redhat.com>
-Subject: [ 40/68] ext4: convert number of blocks to clusters properly
-Date: Tue,  2 Apr 2013 15:13:29 -0700
-Message-Id: <20130402221334.560608388@linuxfoundation.org>
+        Veaceslav Falico <vfalico@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 67/68] pch_gbe: fix ip_summed checksum reporting on rx
+Date: Tue,  2 Apr 2013 15:13:56 -0700
+Message-Id: <20130402221337.711571938@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
@@ -27,99 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lukas Czerner <lczerner@redhat.com>
 
-commit 810da240f221d64bf90020f25941b05b378186fe upstream.
+From: Veaceslav Falico <vfalico@redhat.com>
 
-We're using macro EXT4_B2C() to convert number of blocks to number of
-clusters for bigalloc file systems.  However, we should be using
-EXT4_NUM_B2C().
+[ Upstream commit 76a0e68129d7d24eb995a6871ab47081bbfa0acc ]
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
-Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
+skb->ip_summed should be CHECKSUM_UNNECESSARY when the driver reports that
+checksums were correct and CHECKSUM_NONE in any other case. They're
+currently placed vice versa, which breaks the forwarding scenario. Fix it
+by placing them as described above.
+
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/ext4/balloc.c  |    2 +-
- fs/ext4/mballoc.c |    8 ++++----
- fs/ext4/resize.c  |    6 +++---
- 3 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/balloc.c
-+++ b/fs/ext4/balloc.c
-@@ -600,7 +600,7 @@ ext4_fsblk_t ext4_count_free_clusters(st
- 	brelse(bitmap_bh);
- 	printk(KERN_DEBUG "ext4_count_free_clusters: stored = %llu"
- 	       ", computed = %llu, %llu\n",
--	       EXT4_B2C(EXT4_SB(sb), ext4_free_blocks_count(es)),
-+	       EXT4_NUM_B2C(EXT4_SB(sb), ext4_free_blocks_count(es)),
- 	       desc_count, bitmap_count);
- 	return bitmap_count;
- #else
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -3433,7 +3433,7 @@ ext4_mb_new_inode_pa(struct ext4_allocat
- 			win = offs;
+--- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
++++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+@@ -1740,9 +1740,9 @@ pch_gbe_clean_rx(struct pch_gbe_adapter
  
- 		ac->ac_b_ex.fe_logical = ac->ac_o_ex.fe_logical -
--			EXT4_B2C(sbi, win);
-+			EXT4_NUM_B2C(sbi, win);
- 		BUG_ON(ac->ac_o_ex.fe_logical < ac->ac_b_ex.fe_logical);
- 		BUG_ON(ac->ac_o_ex.fe_len > ac->ac_b_ex.fe_len);
- 	}
-@@ -4577,7 +4577,7 @@ do_more:
- 			EXT4_BLOCKS_PER_GROUP(sb);
- 		count -= overflow;
- 	}
--	count_clusters = EXT4_B2C(sbi, count);
-+	count_clusters = EXT4_NUM_B2C(sbi, count);
- 	bitmap_bh = ext4_read_block_bitmap(sb, block_group);
- 	if (!bitmap_bh) {
- 		err = -EIO;
-@@ -4808,11 +4808,11 @@ int ext4_group_add_blocks(handle_t *hand
- 	desc->bg_checksum = ext4_group_desc_csum(sbi, block_group, desc);
- 	ext4_unlock_group(sb, block_group);
- 	percpu_counter_add(&sbi->s_freeclusters_counter,
--			   EXT4_B2C(sbi, blocks_freed));
-+			   EXT4_NUM_B2C(sbi, blocks_freed));
+ 			skb->protocol = eth_type_trans(skb, netdev);
+ 			if (tcp_ip_status & PCH_GBE_RXD_ACC_STAT_TCPIPOK)
+-				skb->ip_summed = CHECKSUM_NONE;
+-			else
+ 				skb->ip_summed = CHECKSUM_UNNECESSARY;
++			else
++				skb->ip_summed = CHECKSUM_NONE;
  
- 	if (sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group = ext4_flex_group(sbi, block_group);
--		atomic_add(EXT4_B2C(sbi, blocks_freed),
-+		atomic_add(EXT4_NUM_B2C(sbi, blocks_freed),
- 			   &sbi->s_flex_groups[flex_group].free_clusters);
- 	}
- 
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -1112,7 +1112,7 @@ static int ext4_setup_new_descs(handle_t
- 		ext4_inode_bitmap_set(sb, gdp, group_data->inode_bitmap);
- 		ext4_inode_table_set(sb, gdp, group_data->inode_table);
- 		ext4_free_group_clusters_set(sb, gdp,
--					     EXT4_B2C(sbi, group_data->free_blocks_count));
-+			EXT4_NUM_B2C(sbi, group_data->free_blocks_count));
- 		ext4_free_inodes_set(sb, gdp, EXT4_INODES_PER_GROUP(sb));
- 		gdp->bg_flags = cpu_to_le16(*bg_flags);
- 		gdp->bg_checksum = ext4_group_desc_csum(sbi, group, gdp);
-@@ -1210,7 +1210,7 @@ static void ext4_update_super(struct sup
- 
- 	/* Update the free space counts */
- 	percpu_counter_add(&sbi->s_freeclusters_counter,
--			   EXT4_B2C(sbi, free_blocks));
-+			   EXT4_NUM_B2C(sbi, free_blocks));
- 	percpu_counter_add(&sbi->s_freeinodes_counter,
- 			   EXT4_INODES_PER_GROUP(sb) * flex_gd->count);
- 
-@@ -1219,7 +1219,7 @@ static void ext4_update_super(struct sup
- 	    sbi->s_log_groups_per_flex) {
- 		ext4_group_t flex_group;
- 		flex_group = ext4_flex_group(sbi, group_data[0].group);
--		atomic_add(EXT4_B2C(sbi, free_blocks),
-+		atomic_add(EXT4_NUM_B2C(sbi, free_blocks),
- 			   &sbi->s_flex_groups[flex_group].free_clusters);
- 		atomic_add(EXT4_INODES_PER_GROUP(sb) * flex_gd->count,
- 			   &sbi->s_flex_groups[flex_group].free_inodes);
+ 			napi_gro_receive(&adapter->napi, skb);
+ 			(*work_done)++;
 
 
