@@ -1,90 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933841Ab3DBWhe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:37:34 -0400
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:3710
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933488Ab3DBWh2 (ORCPT
+	id S933718Ab3DBWiD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:38:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33254 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933471Ab3DBWNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:37:28 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2fh95h668h839hd24hf0ah119dh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah906i1155h)
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Mike Turquette <mturquette@linaro.org>
-CC: Shawn Guo <shawn.guo@linaro.org>, Rajendra Nayak <rnayak@ti.com>,
-        Andrew Lunn <andrew@lunn.ch>, James Hogan <james.hogan@imgtec.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH] clk: divider: Introduce CLK_DIVIDER_ALLOW_ZERO flag
-Date: Tue, 2 Apr 2013 15:36:56 -0700
-X-Mailer: git-send-email 1.8.2
-X-RCIS-Action: ALLOW
+	Tue, 2 Apr 2013 18:13:07 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        rebelyouth <rebelyouth.hacklab@gmail.com>,
+        "Huang, Xiong" <xiong@qca.qualcomm.com>,
+        =?UTF-8?q?Christian=20S=FCnkenberg?= 
+	<christian.suenkenberg@student.kit.edu>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 112/124] atl1e: drop pci-msi support because of packet corruption
+Date: Tue,  2 Apr 2013 15:11:34 -0700
+Message-Id: <20130402221117.168064279@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
+References: <20130402221104.163133110@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 MIME-Version: 1.0
-Content-Type: text/plain
-Message-ID: <397e02df-e5d1-4211-8a44-2ee15cf4188f@DB3EHSMHS005.ehs.local>
-X-OriginatorOrg: xilinx.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dividers which have CLK_DIVIDER_ONE_BASED set have a redundant state,
-being a divider value of zero. Some hardware implementations allow a
-zero divider which simply doesn't alter the frequency. I.e. it acts like
-a divide by one or bypassing the divider.
-This flag is used to handle such HW in the clk-divider model.
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+------------------
+
+
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+
+[ Upstream commit 188ab1b105c96656f6bcfb49d0d8bb1b1936b632 ]
+
+Usage of pci-msi results in corrupted dma packet transfers to the host.
+
+Reported-by: rebelyouth <rebelyouth.hacklab@gmail.com>
+Cc: Huang, Xiong <xiong@qca.qualcomm.com>
+Tested-by: Christian Sünkenberg <christian.suenkenberg@student.kit.edu>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/clk/clk-divider.c    | 5 +++--
- include/linux/clk-provider.h | 8 +++++++-
- 2 files changed, 10 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/atheros/atl1e/atl1e.h      |    1 -
+ drivers/net/ethernet/atheros/atl1e/atl1e_main.c |   19 ++-----------------
+ 2 files changed, 2 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
-index 68b4021..6d96741 100644
---- a/drivers/clk/clk-divider.c
-+++ b/drivers/clk/clk-divider.c
-@@ -109,8 +109,9 @@ static unsigned long clk_divider_recalc_rate(struct clk_hw *hw,
+--- a/drivers/net/ethernet/atheros/atl1e/atl1e.h
++++ b/drivers/net/ethernet/atheros/atl1e/atl1e.h
+@@ -438,7 +438,6 @@ struct atl1e_adapter {
+ 	struct atl1e_hw        hw;
+ 	struct atl1e_hw_stats  hw_stats;
  
- 	div = _get_div(divider, val);
- 	if (!div) {
--		WARN(1, "%s: Invalid divisor for clock %s\n", __func__,
--						__clk_get_name(hw->clk));
-+		WARN(!(divider->flags & CLK_DIVIDER_ALLOW_ZERO),
-+			"%s: Zero divisor and CLK_DIVIDER_ALLOW_ZERO not set\n",
-+			__clk_get_name(hw->clk));
- 		return parent_rate;
+-	bool have_msi;
+ 	u32 wol;
+ 	u16 link_speed;
+ 	u16 link_duplex;
+--- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
++++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+@@ -1851,34 +1851,19 @@ static void atl1e_free_irq(struct atl1e_
+ 	struct net_device *netdev = adapter->netdev;
+ 
+ 	free_irq(adapter->pdev->irq, netdev);
+-
+-	if (adapter->have_msi)
+-		pci_disable_msi(adapter->pdev);
+ }
+ 
+ static int atl1e_request_irq(struct atl1e_adapter *adapter)
+ {
+ 	struct pci_dev    *pdev   = adapter->pdev;
+ 	struct net_device *netdev = adapter->netdev;
+-	int flags = 0;
+ 	int err = 0;
+ 
+-	adapter->have_msi = true;
+-	err = pci_enable_msi(pdev);
+-	if (err) {
+-		netdev_dbg(netdev,
+-			   "Unable to allocate MSI interrupt Error: %d\n", err);
+-		adapter->have_msi = false;
+-	}
+-
+-	if (!adapter->have_msi)
+-		flags |= IRQF_SHARED;
+-	err = request_irq(pdev->irq, atl1e_intr, flags, netdev->name, netdev);
++	err = request_irq(pdev->irq, atl1e_intr, IRQF_SHARED, netdev->name,
++			  netdev);
+ 	if (err) {
+ 		netdev_dbg(adapter->netdev,
+ 			   "Unable to allocate interrupt Error: %d\n", err);
+-		if (adapter->have_msi)
+-			pci_disable_msi(pdev);
+ 		return err;
  	}
- 
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 7f197d7..811426d 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -239,9 +239,14 @@ struct clk_div_table {
-  * CLK_DIVIDER_ONE_BASED - by default the divisor is the value read from the
-  * 	register plus one.  If CLK_DIVIDER_ONE_BASED is set then the divider is
-  * 	the raw value read from the register, with the value of zero considered
-- * 	invalid
-+ *	invalid, unless CLK_DIVIDER_ALLOW_ZERO is set.
-  * CLK_DIVIDER_POWER_OF_TWO - clock divisor is 2 raised to the value read from
-  * 	the hardware register
-+ * CLK_DIVIDER_ALLOW_ZERO - Allow zero divisors.  For dividers which have
-+ *	CLK_DIVIDER_ONE_BASED set, it is possible to end up with a zero divisor.
-+ *	Some hardware implementations gracefully handle this case and allow a
-+ *	zero divisor by not modifying their input clock
-+ *	(divide by one / bypass).
-  */
- struct clk_divider {
- 	struct clk_hw	hw;
-@@ -255,6 +260,7 @@ struct clk_divider {
- 
- #define CLK_DIVIDER_ONE_BASED		BIT(0)
- #define CLK_DIVIDER_POWER_OF_TWO	BIT(1)
-+#define CLK_DIVIDER_ALLOW_ZERO		BIT(2)
- 
- extern const struct clk_ops clk_divider_ops;
- struct clk *clk_register_divider(struct device *dev, const char *name,
--- 
-1.8.2
+ 	netdev_dbg(netdev, "atl1e_request_irq OK\n");
 
 
