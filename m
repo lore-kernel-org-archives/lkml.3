@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760775Ab3DBLes (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 07:34:48 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46568 "EHLO
+	id S1760268Ab3DBLdC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 07:33:02 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46542 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760053Ab3DBLdD (ORCPT
+	by vger.kernel.org with ESMTP id S1760053Ab3DBLc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 07:33:03 -0400
+	Tue, 2 Apr 2013 07:32:59 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         MyungJoo Ham <myungjoo.ham@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>
 Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 10/16] extcon: arizona: Retry HPDET identification for high impedance
-Date: Tue,  2 Apr 2013 12:32:42 +0100
-Message-Id: <1364902368-1123-10-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 02/16] extcon: arizona: Attempt more microphone measurements
+Date: Tue,  2 Apr 2013 12:32:34 +0100
+Message-Id: <1364902368-1123-2-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1364902368-1123-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 References: <20130402113157.GJ23065@opensource.wolfsonmicro.com>
@@ -24,80 +24,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes we can trigger measurements early if contacts are shorted during
-a slow insertion. As well as debouncing add further robustness by retrying
-if we get a high impedance measurement for headphones as this can indicate
-that the headphones were not yet connected.
+In some pathological use cases users may insert an accessory very slowly
+causing multiple indeterminate measurements. Handle this by retrying many
+measurements before we give up and declare a headphone.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/extcon/extcon-arizona.c |   18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+ drivers/extcon/extcon-arizona.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index 5344f43..c18cf14 100644
+index b289279..4bb0e9a 100644
 --- a/drivers/extcon/extcon-arizona.c
 +++ b/drivers/extcon/extcon-arizona.c
-@@ -39,6 +39,8 @@
- #define ARIZONA_ACCDET_MODE_HPL 1
- #define ARIZONA_ACCDET_MODE_HPR 2
- 
-+#define ARIZONA_HPDET_MAX 10000
-+
- #define HPDET_DEBOUNCE 500
- 
- struct arizona_extcon_info {
-@@ -64,6 +66,7 @@ struct arizona_extcon_info {
- 
- 	bool hpdet_active;
- 	bool hpdet_done;
-+	bool hpdet_retried;
- 
- 	int num_hpdet_res;
- 	unsigned int hpdet_res[3];
-@@ -112,6 +115,8 @@ static const char *arizona_cable[] = {
- 	NULL,
- };
- 
-+static void arizona_start_hpdet_acc_id(struct arizona_extcon_info *info);
-+
- static void arizona_extcon_do_magic(struct arizona_extcon_info *info,
- 				    unsigned int magic)
+@@ -153,6 +153,8 @@ static void arizona_extcon_set_mode(struct arizona_extcon_info *info, int mode)
  {
-@@ -393,7 +398,7 @@ static int arizona_hpdet_read(struct arizona_extcon_info *info)
- 		/* If we go out of range report top of range */
- 		if (val < 100 || val > 0x3fb) {
- 			dev_dbg(arizona->dev, "Measurement out of range\n");
--			return 10000;
-+			return ARIZONA_HPDET_MAX;
- 		}
+ 	struct arizona *arizona = info->arizona;
  
- 		dev_dbg(arizona->dev, "HPDET read %d in range %d\n",
-@@ -518,6 +523,16 @@ static int arizona_hpdet_do_id(struct arizona_extcon_info *info, int *reading)
- 		/* Take the headphone impedance for the main report */
- 		*reading = info->hpdet_res[0];
- 
-+		/* Sometimes we get false readings due to slow insert */
-+		if (*reading >= ARIZONA_HPDET_MAX && !info->hpdet_retried) {
-+			dev_dbg(arizona->dev, "Retrying high impedance\n");
-+			info->num_hpdet_res = 0;
-+			info->hpdet_retried = true;
-+			arizona_start_hpdet_acc_id(info);
-+			pm_runtime_put(info->dev);
-+			return -EAGAIN;
-+		}
++	mode %= info->num_micd_modes;
 +
- 		/*
- 		 * Either the two grounds measure differently or we
- 		 * measure the mic as high impedance.
-@@ -953,6 +968,7 @@ static irqreturn_t arizona_jackdet(int irq, void *data)
- 			info->hpdet_res[i] = 0;
- 		info->mic = false;
- 		info->hpdet_done = false;
-+		info->hpdet_retried = false;
+ 	if (arizona->pdata.micd_pol_gpio > 0)
+ 		gpio_set_value_cansleep(arizona->pdata.micd_pol_gpio,
+ 					info->micd_modes[mode].gpio);
+@@ -783,7 +785,7 @@ static irqreturn_t arizona_micdet(int irq, void *data)
+ 	 * impedence then give up and report headphones.
+ 	 */
+ 	if (info->detecting && (val & 0x3f8)) {
+-		if (info->jack_flips >= info->micd_num_modes) {
++		if (info->jack_flips >= info->micd_num_modes * 10) {
+ 			dev_dbg(arizona->dev, "Detected HP/line\n");
+ 			arizona_identify_headphone(info);
  
- 		for (i = 0; i < info->num_micd_ranges; i++)
- 			input_report_key(info->input,
 -- 
 1.7.10.4
 
