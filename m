@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759871Ab3DBXHz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:07:55 -0400
+	id S1759983Ab3DBXIT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:08:19 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:33030 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933240Ab3DBWMd (ORCPT
+	with ESMTP id S933226Ab3DBWMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:33 -0400
+	Tue, 2 Apr 2013 18:12:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Schmidt <list.btrfs@jan-o-sch.net>,
-        Josef Bacik <jbacik@fusionio.com>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: [ 055/124] Btrfs: fix locking on ROOT_REPLACE operations in tree mod log
-Date: Tue,  2 Apr 2013 15:10:37 -0700
-Message-Id: <20130402221110.607071298@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 061/124] USB: quatech2: fix use-after-free in TIOCMIWAIT
+Date: Tue,  2 Apr 2013 15:10:43 -0700
+Message-Id: <20130402221111.266512673@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -28,138 +26,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Schmidt <list.btrfs@jan-o-sch.net>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit d9abbf1c3131b679379762700201ae69367f3f62 upstream.
+commit 69f87f40d2b98e8b4ab82a121fd2bd584690b887 upstream.
 
-To resolve backrefs, ROOT_REPLACE operations in the tree mod log are
-required to be tied to at least one KEY_REMOVE_WHILE_FREEING operation.
-Therefore, those operations must be enclosed by tree_mod_log_write_lock()
-and tree_mod_log_write_unlock() calls.
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
 
-Those calls are private to the tree_mod_log_* functions, which means that
-removal of the elements of an old root node must be logged from
-tree_mod_log_insert_root. This partly reverts and corrects commit ba1bfbd5
-(Btrfs: fix a tree mod logging issue for root replacement operations).
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
 
-This fixes the brand-new version of xfstest 276 as of commit cfe73f71.
-
-Signed-off-by: Jan Schmidt <list.btrfs@jan-o-sch.net>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/ctree.c |   30 ++++++++++++++++++++----------
- 1 file changed, 20 insertions(+), 10 deletions(-)
+ drivers/usb/serial/quatech2.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/fs/btrfs/ctree.c
-+++ b/fs/btrfs/ctree.c
-@@ -651,6 +651,8 @@ tree_mod_log_insert_root(struct btrfs_fs
- 	if (tree_mod_dont_log(fs_info, NULL))
- 		return 0;
+--- a/drivers/usb/serial/quatech2.c
++++ b/drivers/usb/serial/quatech2.c
+@@ -128,7 +128,6 @@ struct qt2_port_private {
+ 	u8          shadowLSR;
+ 	u8          shadowMSR;
  
-+	__tree_mod_log_free_eb(fs_info, old_root);
+-	wait_queue_head_t   delta_msr_wait; /* Used for TIOCMIWAIT */
+ 	struct async_icount icount;
+ 
+ 	struct usb_serial_port *port;
+@@ -506,8 +505,9 @@ static int wait_modem_info(struct usb_se
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 
+ 	while (1) {
+-		wait_event_interruptible(priv->delta_msr_wait,
+-					 ((priv->icount.rng != prev.rng) ||
++		wait_event_interruptible(port->delta_msr_wait,
++					 (port->serial->disconnected ||
++					  (priv->icount.rng != prev.rng) ||
+ 					  (priv->icount.dsr != prev.dsr) ||
+ 					  (priv->icount.dcd != prev.dcd) ||
+ 					  (priv->icount.cts != prev.cts)));
+@@ -515,6 +515,9 @@ static int wait_modem_info(struct usb_se
+ 		if (signal_pending(current))
+ 			return -ERESTARTSYS;
+ 
++		if (port->serial->disconnected)
++			return -EIO;
 +
- 	ret = tree_mod_alloc(fs_info, flags, &tm);
- 	if (ret < 0)
- 		goto out;
-@@ -736,7 +738,7 @@ tree_mod_log_search(struct btrfs_fs_info
- static noinline void
- tree_mod_log_eb_copy(struct btrfs_fs_info *fs_info, struct extent_buffer *dst,
- 		     struct extent_buffer *src, unsigned long dst_offset,
--		     unsigned long src_offset, int nr_items)
-+		     unsigned long src_offset, int nr_items, int log_removal)
- {
- 	int ret;
- 	int i;
-@@ -750,10 +752,12 @@ tree_mod_log_eb_copy(struct btrfs_fs_inf
+ 		spin_lock_irqsave(&priv->lock, flags);
+ 		cur = priv->icount;
+ 		spin_unlock_irqrestore(&priv->lock, flags);
+@@ -841,7 +844,6 @@ static int qt2_port_probe(struct usb_ser
+ 
+ 	spin_lock_init(&port_priv->lock);
+ 	spin_lock_init(&port_priv->urb_lock);
+-	init_waitqueue_head(&port_priv->delta_msr_wait);
+ 	port_priv->port = port;
+ 
+ 	port_priv->write_urb = usb_alloc_urb(0, GFP_KERNEL);
+@@ -984,7 +986,7 @@ static void qt2_update_msr(struct usb_se
+ 		if (newMSR & UART_MSR_TERI)
+ 			port_priv->icount.rng++;
+ 
+-		wake_up_interruptible(&port_priv->delta_msr_wait);
++		wake_up_interruptible(&port->delta_msr_wait);
  	}
+ }
  
- 	for (i = 0; i < nr_items; i++) {
--		ret = tree_mod_log_insert_key_locked(fs_info, src,
--						     i + src_offset,
--						     MOD_LOG_KEY_REMOVE);
--		BUG_ON(ret < 0);
-+		if (log_removal) {
-+			ret = tree_mod_log_insert_key_locked(fs_info, src,
-+							i + src_offset,
-+							MOD_LOG_KEY_REMOVE);
-+			BUG_ON(ret < 0);
-+		}
- 		ret = tree_mod_log_insert_key_locked(fs_info, dst,
- 						     i + dst_offset,
- 						     MOD_LOG_KEY_ADD);
-@@ -927,7 +931,6 @@ static noinline int update_ref_for_cow(s
- 			ret = btrfs_dec_ref(trans, root, buf, 1, 1);
- 			BUG_ON(ret); /* -ENOMEM */
- 		}
--		tree_mod_log_free_eb(root->fs_info, buf);
- 		clean_tree_block(trans, root, buf);
- 		*last_ref = 1;
- 	}
-@@ -1046,6 +1049,7 @@ static noinline int __btrfs_cow_block(st
- 		btrfs_set_node_ptr_generation(parent, parent_slot,
- 					      trans->transid);
- 		btrfs_mark_buffer_dirty(parent);
-+		tree_mod_log_free_eb(root->fs_info, buf);
- 		btrfs_free_tree_block(trans, root, buf, parent_start,
- 				      last_ref);
- 	}
-@@ -1755,7 +1759,6 @@ static noinline int balance_level(struct
- 			goto enospc;
- 		}
- 
--		tree_mod_log_free_eb(root->fs_info, root->node);
- 		tree_mod_log_set_root_pointer(root, child);
- 		rcu_assign_pointer(root->node, child);
- 
-@@ -3000,7 +3003,7 @@ static int push_node_left(struct btrfs_t
- 		push_items = min(src_nritems - 8, push_items);
- 
- 	tree_mod_log_eb_copy(root->fs_info, dst, src, dst_nritems, 0,
--			     push_items);
-+			     push_items, 1);
- 	copy_extent_buffer(dst, src,
- 			   btrfs_node_key_ptr_offset(dst_nritems),
- 			   btrfs_node_key_ptr_offset(0),
-@@ -3071,7 +3074,7 @@ static int balance_node_right(struct btr
- 				      sizeof(struct btrfs_key_ptr));
- 
- 	tree_mod_log_eb_copy(root->fs_info, dst, src, 0,
--			     src_nritems - push_items, push_items);
-+			     src_nritems - push_items, push_items, 1);
- 	copy_extent_buffer(dst, src,
- 			   btrfs_node_key_ptr_offset(0),
- 			   btrfs_node_key_ptr_offset(src_nritems - push_items),
-@@ -3223,12 +3226,18 @@ static noinline int split_node(struct bt
- 	int mid;
- 	int ret;
- 	u32 c_nritems;
-+	int tree_mod_log_removal = 1;
- 
- 	c = path->nodes[level];
- 	WARN_ON(btrfs_header_generation(c) != trans->transid);
- 	if (c == root->node) {
- 		/* trying to split the root, lets make a new one */
- 		ret = insert_new_root(trans, root, path, level + 1);
-+		/*
-+		 * removal of root nodes has been logged by
-+		 * tree_mod_log_set_root_pointer due to locking
-+		 */
-+		tree_mod_log_removal = 0;
- 		if (ret)
- 			return ret;
- 	} else {
-@@ -3266,7 +3275,8 @@ static noinline int split_node(struct bt
- 			    (unsigned long)btrfs_header_chunk_tree_uuid(split),
- 			    BTRFS_UUID_SIZE);
- 
--	tree_mod_log_eb_copy(root->fs_info, split, c, 0, mid, c_nritems - mid);
-+	tree_mod_log_eb_copy(root->fs_info, split, c, 0, mid, c_nritems - mid,
-+			     tree_mod_log_removal);
- 	copy_extent_buffer(split, c,
- 			   btrfs_node_key_ptr_offset(0),
- 			   btrfs_node_key_ptr_offset(mid),
 
 
