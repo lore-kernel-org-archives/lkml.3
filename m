@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991Ab3DBFOY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 01:14:24 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:56093 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952Ab3DBFOW (ORCPT
+	id S1760297Ab3DBF2v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 01:28:51 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:48914 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235Ab3DBF2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 01:14:22 -0400
-Date: Mon, 1 Apr 2013 22:13:58 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Minchan Kim <minchan@kernel.org>
-cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Shaohua Li <shli@kernel.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Bob Liu <bob.liu@oracle.com>
-Subject: Re: [RFC] mm: remove swapcache page early
-In-Reply-To: <20130402020429.GD30444@blaptop>
-Message-ID: <alpine.LNX.2.00.1304012147440.5037@eggly.anvils>
-References: <1364350932-12853-1-git-send-email-minchan@kernel.org> <alpine.LNX.2.00.1303271230210.29687@eggly.anvils> <433aaa17-7547-4e39-b472-7060ee15e85f@default> <20130328010706.GB22908@blaptop> <5f1504e7-8b07-4109-8271-b214b496ca61@default>
- <20130329011801.GA32245@blaptop> <alpine.LNX.2.00.1303291250160.3741@eggly.anvils> <20130402020429.GD30444@blaptop>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Tue, 2 Apr 2013 01:28:48 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <3943547.m5K1tfygWn@vostro.rjw.lan>
+References: <2282655.IicBMMa6jN@vostro.rjw.lan>
+	<1378320.ernsY1JWPv@vostro.rjw.lan>
+	<CAErSpo7kGBNEkLOftJ1J7ivaxZL-yVWyAwmoiQ1=NADpmJ67XA@mail.gmail.com>
+	<3943547.m5K1tfygWn@vostro.rjw.lan>
+Date: Tue, 2 Apr 2013 13:28:46 +0800
+Message-ID: <CAC=cRTPyC0rrDeRaMop3GF17qa3i2mfQ3XyHgNaEmiKNOE1Auw@mail.gmail.com>
+Subject: Re: [Update][PATCH] PCI / PM: Disable runtime PM of PCIe ports
+From: huang ying <huang.ying.caritas@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Zheng Yan <zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Apr 2013, Minchan Kim wrote:
-> On Fri, Mar 29, 2013 at 01:01:14PM -0700, Hugh Dickins wrote:
-> > On Fri, 29 Mar 2013, Minchan Kim wrote:
-> > > On Thu, Mar 28, 2013 at 11:19:12AM -0700, Dan Magenheimer wrote:
-> > > > 
-> > > > I wonder if something like this would have a similar result for zram?
-> > > > (Completely untested... snippet stolen from swap_entry_free with
-> > > > SetPageDirty added... doesn't compile yet, but should give you the idea.)
-> > 
-> > Be careful, although Dan is right that something like this can be
-> > done for zram, I believe you will find that it needs a little more:
-> > either a separate new entry point (not my preference) or a flags arg
-> > (or boolean) added to swap_slot_free_notify.
-> > 
-> > Because this is a different operation: end_swap_bio_read() wants
-> > to free up zram's compressed copy of the page, but the swp_entry_t
-> > must remain valid until swap_entry_free() can clear up the rest.
-> > Precisely how much of the work each should do, you will discover.
-> 
-> First of all, Thanks for noticing it for me!
-> 
-> If I parse your concern correctly, you are concerning about
-> different semantic on two functions.
-> (end_swap_bio_read's swap_slot_free_notify VS swap_entry_free's one).
-> 
-> But current implementatoin on zram_slot_free_notify could cover both cases
-> properly with luck.
-> 
-> zram_free_page caused by end_swap_bio_read will free compressed copy
-> of the page and zram_free_page caused by swap_entry_free later won't find
-> right index from zram->table and just return.
-> So I think there is no problem.
-> 
-> Remained problem is zram->stats.notify_free, which could be counted
-> redundantly but not sure it's valuable to count exactly.
-> 
-> If I miss your point, please pinpoint your concern. :)
+On Tue, Apr 2, 2013 at 4:51 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>
+> On Monday, April 01, 2013 11:34:46 AM Bjorn Helgaas wrote:
+> > [+cc Zheng, who added this with 71a83bd727]
+> >
+> > On Sat, Mar 30, 2013 at 4:38 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > >
+> > > The runtime PM of PCIe ports turns out to be quite fragile, as in
+> > > some cases things work while in some other cases they don't and we
+> > > don't seem to have a good way to determine whether or not they are
+> > > going to work in advance.
+> >
+> > Do you have any references to problems encountered when enabling
+> > runtime PM for PCIe ports?  That information will be useful to anybody
+> > who wants to take another crack at getting this working.
+>
+> Well, bug 53811 is one example and problems recently reported by
+> Martin are another.  Do you want me to dig deeper?
 
-Looking at it again, I do believe you and Dan are perfectly correct,
-and I was again the confused one.  Though I'd be happier if I could
-see just how I was misreading it: makes me wonder if I had a great
-insight that I can no longer grasp hold of!  I think I was paranoid
-about a swp_entry_t getting recycled prematurely: but swap_entry_free
-remains in control of that - freeing a swap entry is no part of what
-notify_free gets up to.  Sorry for wasting your time.
+For bug 53811, I have a debug patch posted in bugzilla to disable
+runtime PM for PCIe port with hotplug capability.  It appears that
+patch resolved the issue for the reporter.  Do think that patch can
+solve the hotplug issue.
 
-Hugh
+Best Regards,
+Huang Ying
