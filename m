@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761873Ab3DBRKE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 13:10:04 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:31332 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760849Ab3DBRKC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 13:10:02 -0400
-Message-ID: <515B10D4.8090906@oracle.com>
-Date: Tue, 02 Apr 2013 13:09:40 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130310 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>
-CC: williams@redhat.com, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] rtmutex-tester: set correct permissions on sysfs files
-References: <1363795105-5884-1-git-send-email-sasha.levin@oracle.com>
-In-Reply-To: <1363795105-5884-1-git-send-email-sasha.levin@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1761991Ab3DBRKo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 13:10:44 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:51944 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760973Ab3DBRKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 13:10:43 -0400
+From: Florian Fainelli <florian@openwrt.org>
+To: stern@rowland.harvard.edu
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>
+Subject: [PATCH 0/5 v2] USB: Kconfig cleanups
+Date: Tue,  2 Apr 2013 19:10:21 +0200
+Message-Id: <1364922626-32407-1-git-send-email-florian@openwrt.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1364321177-12146-1-git-send-email-florian@openwrt.org>
+References: <1364321177-12146-1-git-send-email-florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping?
+Hello Alan, Greg,
 
-On 03/20/2013 11:58 AM, Sasha Levin wrote:
-> sysfs started complaining about cases where permissions don't
-> match what's in the sysfs ops structure (such as allowing read
-> without a "show" callback).
-> 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  kernel/rtmutex-tester.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/rtmutex-tester.c b/kernel/rtmutex-tester.c
-> index 7890b10..1d96dd0 100644
-> --- a/kernel/rtmutex-tester.c
-> +++ b/kernel/rtmutex-tester.c
-> @@ -14,6 +14,7 @@
->  #include <linux/spinlock.h>
->  #include <linux/timer.h>
->  #include <linux/freezer.h>
-> +#include <linux/stat.h>
->  
->  #include "rtmutex.h"
->  
-> @@ -366,8 +367,8 @@ static ssize_t sysfs_test_status(struct device *dev, struct device_attribute *at
->  	return curr - buf;
->  }
->  
-> -static DEVICE_ATTR(status, 0600, sysfs_test_status, NULL);
-> -static DEVICE_ATTR(command, 0600, NULL, sysfs_test_command);
-> +static DEVICE_ATTR(status, S_IRUSR, sysfs_test_status, NULL);
-> +static DEVICE_ATTR(command, S_IWUSR, NULL, sysfs_test_command);
->  
->  static struct bus_type rttest_subsys = {
->  	.name = "rttest",
-> 
+These 5 patches contain my Kconfig cleanup on which I based the removal
+of the USB_ARCH_HAS_* patches. They have been suggested by Alan Stern
+as part of an earlier conversations.
+
+Let me know what you think about it so I can post subsequent work based
+on it. This time I dropped the RFC from the subject.
+
+Thanks!
+
+Florian Fainelli (5):
+  USB: regroup all depends on USB within an if USB block
+  USB: remove USB_EHCI_BIG_ENDIAN_{DESC,MMIO} depends on architecture
+    symbol
+  USB: enclose EHCI HCD drivers within an if USB_EHCI_HCD block
+  USB: enclose all depends on USB_OHCI_HCD within an if USB_OHCI_HCD
+    block
+  USB: enclose USB_XHCI_HCD related symbols within a if USB_XHCI_HCD
+    block
+
+ arch/arm/Kconfig                    |    2 +
+ arch/mips/Kconfig                   |    3 +
+ arch/powerpc/platforms/44x/Kconfig  |    2 +
+ arch/powerpc/platforms/512x/Kconfig |    2 +
+ arch/sparc/Kconfig                  |    2 +
+ drivers/usb/Kconfig                 |   23 +++--
+ drivers/usb/atm/Kconfig             |    2 +-
+ drivers/usb/class/Kconfig           |    6 +-
+ drivers/usb/core/Kconfig            |    6 --
+ drivers/usb/host/Kconfig            |  164 +++++++++++++++++------------------
+ drivers/usb/image/Kconfig           |    4 +-
+ drivers/usb/misc/Kconfig            |   21 -----
+ drivers/usb/misc/sisusbvga/Kconfig  |    2 +-
+ drivers/usb/mon/Kconfig             |    1 -
+ drivers/usb/musb/Kconfig            |    1 -
+ drivers/usb/renesas_usbhs/Kconfig   |    2 +-
+ drivers/usb/serial/Kconfig          |    2 +-
+ drivers/usb/storage/Kconfig         |    7 +-
+ drivers/usb/wusbcore/Kconfig        |    2 -
+ 19 files changed, 113 insertions(+), 141 deletions(-)
+
+-- 
+1.7.10.4
 
