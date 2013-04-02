@@ -1,31 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933718Ab3DBWiD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:38:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33254 "EHLO
+	id S933814Ab3DBWiY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:38:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33244 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933471Ab3DBWNH (ORCPT
+	with ESMTP id S933351Ab3DBWNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:13:07 -0400
+	Tue, 2 Apr 2013 18:13:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        rebelyouth <rebelyouth.hacklab@gmail.com>,
-        "Huang, Xiong" <xiong@qca.qualcomm.com>,
-        =?UTF-8?q?Christian=20S=FCnkenberg?= 
-	<christian.suenkenberg@student.kit.edu>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 112/124] atl1e: drop pci-msi support because of packet corruption
-Date: Tue,  2 Apr 2013 15:11:34 -0700
-Message-Id: <20130402221117.168064279@linuxfoundation.org>
+        Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Andrey Vagin <avagin@openvz.org>
+Subject: [ 110/124] net: fix *_DIAG_MAX constants
+Date: Tue,  2 Apr 2013 15:11:32 -0700
+Message-Id: <20130402221116.952615014@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,71 +31,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Andrey Vagin <avagin@openvz.org>
 
-[ Upstream commit 188ab1b105c96656f6bcfb49d0d8bb1b1936b632 ]
+[ Upstream commit ae5fc98728c8bbbd6d7cab0b9781671fc4419c1b ]
 
-Usage of pci-msi results in corrupted dma packet transfers to the host.
+Follow the common pattern and define *_DIAG_MAX like:
 
-Reported-by: rebelyouth <rebelyouth.hacklab@gmail.com>
-Cc: Huang, Xiong <xiong@qca.qualcomm.com>
-Tested-by: Christian Sünkenberg <christian.suenkenberg@student.kit.edu>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+        [...]
+        __XXX_DIAG_MAX,
+};
+
+Because everyone is used to do:
+
+        struct nlattr *attrs[XXX_DIAG_MAX+1];
+
+        nla_parse([...], XXX_DIAG_MAX, [...]
+
+Reported-by: Thomas Graf <tgraf@suug.ch>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/atheros/atl1e/atl1e.h      |    1 -
- drivers/net/ethernet/atheros/atl1e/atl1e_main.c |   19 ++-----------------
- 2 files changed, 2 insertions(+), 18 deletions(-)
+ include/uapi/linux/packet_diag.h |    4 +++-
+ include/uapi/linux/unix_diag.h   |    4 +++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/atheros/atl1e/atl1e.h
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e.h
-@@ -438,7 +438,6 @@ struct atl1e_adapter {
- 	struct atl1e_hw        hw;
- 	struct atl1e_hw_stats  hw_stats;
+--- a/include/uapi/linux/packet_diag.h
++++ b/include/uapi/linux/packet_diag.h
+@@ -33,9 +33,11 @@ enum {
+ 	PACKET_DIAG_TX_RING,
+ 	PACKET_DIAG_FANOUT,
  
--	bool have_msi;
- 	u32 wol;
- 	u16 link_speed;
- 	u16 link_duplex;
---- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-@@ -1851,34 +1851,19 @@ static void atl1e_free_irq(struct atl1e_
- 	struct net_device *netdev = adapter->netdev;
+-	PACKET_DIAG_MAX,
++	__PACKET_DIAG_MAX,
+ };
  
- 	free_irq(adapter->pdev->irq, netdev);
--
--	if (adapter->have_msi)
--		pci_disable_msi(adapter->pdev);
- }
++#define PACKET_DIAG_MAX (__PACKET_DIAG_MAX - 1)
++
+ struct packet_diag_info {
+ 	__u32	pdi_index;
+ 	__u32	pdi_version;
+--- a/include/uapi/linux/unix_diag.h
++++ b/include/uapi/linux/unix_diag.h
+@@ -39,9 +39,11 @@ enum {
+ 	UNIX_DIAG_MEMINFO,
+ 	UNIX_DIAG_SHUTDOWN,
  
- static int atl1e_request_irq(struct atl1e_adapter *adapter)
- {
- 	struct pci_dev    *pdev   = adapter->pdev;
- 	struct net_device *netdev = adapter->netdev;
--	int flags = 0;
- 	int err = 0;
+-	UNIX_DIAG_MAX,
++	__UNIX_DIAG_MAX,
+ };
  
--	adapter->have_msi = true;
--	err = pci_enable_msi(pdev);
--	if (err) {
--		netdev_dbg(netdev,
--			   "Unable to allocate MSI interrupt Error: %d\n", err);
--		adapter->have_msi = false;
--	}
--
--	if (!adapter->have_msi)
--		flags |= IRQF_SHARED;
--	err = request_irq(pdev->irq, atl1e_intr, flags, netdev->name, netdev);
-+	err = request_irq(pdev->irq, atl1e_intr, IRQF_SHARED, netdev->name,
-+			  netdev);
- 	if (err) {
- 		netdev_dbg(adapter->netdev,
- 			   "Unable to allocate interrupt Error: %d\n", err);
--		if (adapter->have_msi)
--			pci_disable_msi(pdev);
- 		return err;
- 	}
- 	netdev_dbg(netdev, "atl1e_request_irq OK\n");
++#define UNIX_DIAG_MAX (__UNIX_DIAG_MAX - 1)
++
+ struct unix_diag_vfs {
+ 	__u32	udiag_vfs_ino;
+ 	__u32	udiag_vfs_dev;
 
 
