@@ -1,53 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab3DBHyp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 03:54:45 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:39752
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759947Ab3DBHyn (ORCPT
+	id S1760647Ab3DBH57 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 03:57:59 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34824 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754233Ab3DBH55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 03:54:43 -0400
-Message-ID: <1364889256.16858.1.camel@laptop>
-Subject: Re: [RFC] perf: need to expose sched_clock to correlate user
- samples with kernel samples
-From: Peter Zijlstra <peterz@infradead.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: David Ahern <dsahern@gmail.com>, Pawel Moll <pawel.moll@arm.com>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Robert Richter <robert.richter@amd.com>
-Date: Tue, 02 Apr 2013 09:54:16 +0200
-In-Reply-To: <5159D221.70304@linaro.org>
-References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>
-	  <1350408232.2336.42.camel@laptop>	<1359728280.8360.15.camel@hornet>
-	  <CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com>
-	  <51118797.9080800@linaro.org>	<alpine.LFD.2.02.1302182132230.22263@ionos>
-	  <5123C3AF.8060100@linaro.org>	<1361356160.10155.22.camel@laptop>
-	  <51285BF1.2090208@linaro.org>	<1361801441.4007.40.camel@laptop>
-	  <CABPqkBS4TELhoUGrO+moca2fPUoqGjiYCdHJc=H8CjLomPWWDQ@mail.gmail.com>
-	 <1363291021.3100.144.camel@hornet> <51586315.7080006@gmail.com>
-	 <5159D221.70304@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+	Tue, 2 Apr 2013 03:57:57 -0400
+Date: Tue, 2 Apr 2013 18:57:47 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chanho Min <chanho.min@lge.com>
+Subject: linux-next: build failure after merge of the final tree (tty tree
+ related)
+Message-Id: <20130402185747.c4d8c60880025b242953da63@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__2_Apr_2013_18_57_47_+1100_3gPegBl4i9VQ9bkI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-01 at 11:29 -0700, John Stultz wrote:
-> I'm still not sold on the CLOCK_PERF posix clock. The semantics are 
-> still too hand-wavy and implementation specific.
+--Signature=_Tue__2_Apr_2013_18_57_47_+1100_3gPegBl4i9VQ9bkI
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-How about we define the semantics as: match whatever comes out of perf
-(and preferably ftrace by default) stuff?
+Hi all,
 
-Since that stuff is already exposed to userspace, doesn't it make sense
-to have a user accessible time source that generates the same time-line
-so that people can create logs that can be properly interleaved?
+After merging the final tree, today's linux-next build (arm defconfig)
+failed like this:
 
+drivers/tty/serial/amba-pl011.c: In function 'pl011_rx_chars':
+drivers/tty/serial/amba-pl011.c:1199:11: error: 'struct uart_amba_port' has=
+ no member named 'dmarx'
+drivers/tty/serial/amba-pl011.c:1200:8: error: 'struct uart_amba_port' has =
+no member named 'dmarx'
+drivers/tty/serial/amba-pl011.c:1201:8: error: 'struct uart_amba_port' has =
+no member named 'dmarx'
+drivers/tty/serial/amba-pl011.c:1201:31: error: 'PL011_DMA_BUFFER_SIZE' und=
+eclared (first use in this function)
+drivers/tty/serial/amba-pl011.c:1201:31: note: each undeclared identifier i=
+s reported only once for each function it appears in
+drivers/tty/serial/amba-pl011.c:1202:19: error: 'struct uart_amba_port' has=
+ no member named 'dmarx'
+drivers/tty/serial/amba-pl011.c:1204:26: error: 'struct uart_amba_port' has=
+ no member named 'dmarx'
+drivers/tty/serial/amba-pl011.c: In function 'pl011_set_termios':
+drivers/tty/serial/amba-pl011.c:1671:9: error: 'struct uart_amba_port' has =
+no member named 'dmarx'
+drivers/tty/serial/amba-pl011.c:1672:6: error: 'struct uart_amba_port' has =
+no member named 'dmarx'
+
+Caused by commit cb06ff102e2d ("ARM: PL011: Add support for Rx DMA buffer
+polling").  This build does not have CONFIG_DMA_ENGINE set.
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__2_Apr_2013_18_57_47_+1100_3gPegBl4i9VQ9bkI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRWo97AAoJEECxmPOUX5FEkdsQAJpX0mNm7n4Qnc/7GRBH0HcO
+1MlnUE4WPda2VarJVhN80vjzidzaSMV6deQK9wjqXcyAOgpjeNBJ+PJ4FtgWloOU
+Dsd1AeWBDVNgo1u95MPC/Sc7zcDS/wSuuAhwJ1zGoeZli95GANnSk//rtNuvRC4z
+/E5d4p75NKFlMxYbrzrtWAM8XMJdNRBtSGypBkE4SIFjKl36LNspbnLSN6v/XXZK
+faigIfWFPi3Ei9C9gCIu4V/+OJC1l9SE7iSNzQbtil2sPGnWnJ3Cpi8XDrCLAaw5
+RWA0CeFy+Mt4rQJKm8hekCyIcuN2lPb/vNsS+fccV2QAAOb831/yL0wed68l2TDe
+fEf3bN3uzLDsVexAVhXD6OF2jLmu2UeVfg9lsO4EZxKBGw7NqouJxyMthKHzw+vC
+IkBnzII8LEyROrOZ+BiMPT0Os8RbiPHjOv6s5rmHUN9KPhPOIFBK1KhSO5tWAggT
+vgo1yAYQ7VchiSSaLx9vlap9KBvhdAcKjhAcZEXpfy18aNVKSPFn9Dfjm17bGZ6X
+3560YQn+KYYzjHodPhycHPTIIn4WN3QZJVPP13CtQS1au0GXsB3yLXYfCuhcFlPi
+43BVBOzL+tdLUuTCsNXVapblBAEgNUHx81KDlc9eqSxlESr3LP8UwgsD/UVT4l9+
+KyN+4CXsDHU2r6M4ISgI
+=FTI4
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__2_Apr_2013_18_57_47_+1100_3gPegBl4i9VQ9bkI--
