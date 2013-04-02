@@ -1,145 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761849Ab3DBVWQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 17:22:16 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:58090 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758931Ab3DBVWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 17:22:15 -0400
-Date: Tue, 2 Apr 2013 14:22:05 -0700
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-To: benh@kernel.crashing.org
-Cc: Ryan Arnold <ryanarn@us.ibm.com>, Steve Munroe <sjmunroe@us.ibm.com>,
-        michaele@au1.ibm.com, paulus@samba.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] powerpc: Add HWCAP2 aux entry
-Message-ID: <20130402212204.GA30438@linux.vnet.ibm.com>
+	id S1761883Ab3DBVXA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 17:23:00 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:36120 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760045Ab3DBVW7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 17:22:59 -0400
+Message-ID: <515B4BE3.7060606@cogentembedded.com>
+Date: Wed, 03 Apr 2013 01:21:39 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Operating-System: Linux 3.5.0-26-generic (x86_64)
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040221-5806-0000-0000-00002091D1B6
+To: Alan Ott <alan@signal11.us>
+CC: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] mac802154: Use netif flow control
+References: <1364928481-1813-1-git-send-email-alan@signal11.us> <1364928481-1813-4-git-send-email-alan@signal11.us>
+In-Reply-To: <1364928481-1813-4-git-send-email-alan@signal11.us>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Neuling <michael.neuling@au1.ibm.com>
+Hello.
 
-We are currently out of free bits in AT_HWCAP. With POWER8, we have
-several hardware features that we need to advertise. Tested on POWER and
-x86.
+On 04/02/2013 10:47 PM, Alan Ott wrote:
 
-Signed-off-by: Michael Neuling <michael.neuling@au1.ibm.com>
-Signed-off-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+> Use netif_stop_queue() and netif_wake_queue() to control the flow of
+> packets to mac802154 devices.  Since many IEEE 802.15.4 devices have no
+> output buffer, and since the mac802154 xmit() function is designed to
+> block, netif_stop_queue() is called after each packet.
+>
+> Signed-off-by: Alan Ott <alan@signal11.us>
+> ---
+>   net/mac802154/tx.c | 16 ++++++++++++++++
+>   1 file changed, 16 insertions(+)
+>
+> diff --git a/net/mac802154/tx.c b/net/mac802154/tx.c
+> index a248246..fe3e02c 100644
+> --- a/net/mac802154/tx.c
+> +++ b/net/mac802154/tx.c
+[...]
+> @@ -71,6 +73,12 @@ static void mac802154_xmit_worker(struct work_struct *work)
+>   out:
+>   	mutex_unlock(&xw->priv->phy->pib_lock);
+>   
+> +	/* Restart the netif queue on each sub_if_data object. */
+> +	rcu_read_lock();
+> +	list_for_each_entry_rcu(sdata, &xw->priv->slaves, list) {
+> +		netif_wake_queue(sdata->dev);
+> +	}
 
-diff --git a/arch/powerpc/include/asm/cputable.h b/arch/powerpc/include/asm/cputable.h
-index fb3245e..ccadad6 100644
---- a/arch/powerpc/include/asm/cputable.h
-+++ b/arch/powerpc/include/asm/cputable.h
-@@ -52,6 +52,7 @@ struct cpu_spec {
- 	char		*cpu_name;
- 	unsigned long	cpu_features;		/* Kernel features */
- 	unsigned int	cpu_user_features;	/* Userland features */
-+	unsigned int	cpu_user_features2;	/* Userland features v2 */
- 	unsigned int	mmu_features;		/* MMU features */
- 
- 	/* cache line sizes */
-diff --git a/arch/powerpc/include/asm/elf.h b/arch/powerpc/include/asm/elf.h
-index ac9790f..cc0655a 100644
---- a/arch/powerpc/include/asm/elf.h
-+++ b/arch/powerpc/include/asm/elf.h
-@@ -61,6 +61,7 @@ typedef elf_vrregset_t elf_fpxregset_t;
-    instruction set this cpu supports.  This could be done in userspace,
-    but it's not easy, and we've already done it here.  */
- # define ELF_HWCAP	(cur_cpu_spec->cpu_user_features)
-+# define ELF_HWCAP2	(cur_cpu_spec->cpu_user_features2)
- 
- /* This yields a string that ld.so will use to load implementation
-    specific libraries for optimization.  This is more specific in
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index 3939829..51adc23 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -140,6 +140,13 @@ static int padzero(unsigned long elf_bss)
- #define ELF_BASE_PLATFORM NULL
- #endif
- 
-+/*
-+ * Most archs don't need this
-+ */
-+#ifndef ELF_HWCAP2
-+#define ELF_HWCAP2 (0)
-+#endif
-+
- static int
- create_elf_tables(struct linux_binprm *bprm, struct elfhdr *exec,
- 		unsigned long load_addr, unsigned long interp_load_addr)
-@@ -240,6 +247,7 @@ create_elf_tables(struct linux_binprm *bprm, struct elfhdr *exec,
- 	NEW_AUX_ENT(AT_EGID, from_kgid_munged(cred->user_ns, cred->egid));
-  	NEW_AUX_ENT(AT_SECURE, security_bprm_secureexec(bprm));
- 	NEW_AUX_ENT(AT_RANDOM, (elf_addr_t)(unsigned long)u_rand_bytes);
-+	NEW_AUX_ENT(AT_HWCAP2, ELF_HWCAP2);
- 	NEW_AUX_ENT(AT_EXECFN, bprm->exec);
- 	if (k_platform) {
- 		NEW_AUX_ENT(AT_PLATFORM,
-diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
-index 9c13e02..0b553d3 100644
---- a/fs/binfmt_elf_fdpic.c
-+++ b/fs/binfmt_elf_fdpic.c
-@@ -469,6 +469,13 @@ error_kill:
- #endif
- 
- /*
-+ * Most archs don't need this
-+ */
-+#ifndef ELF_HWCAP2
-+#define ELF_HWCAP2 (0)
-+#endif
-+
-+/*
-  * present useful information to the program by shovelling it onto the new
-  * process's stack
-  */
-@@ -483,7 +490,6 @@ static int create_elf_fdpic_tables(struct linux_binprm *bprm,
- 	size_t platform_len = 0, len;
- 	char *k_platform, *k_base_platform;
- 	char __user *u_platform, *u_base_platform, *p;
--	long hwcap;
- 	int loop;
- 	int nr;	/* reset for each csp adjustment */
- 
-@@ -502,8 +508,6 @@ static int create_elf_fdpic_tables(struct linux_binprm *bprm,
- 		return -EFAULT;
- #endif
- 
--	hwcap = ELF_HWCAP;
--
- 	/*
- 	 * If this architecture has a platform capability string, copy it
- 	 * to userspace.  In some cases (Sparc), this info is impossible
-@@ -617,7 +621,8 @@ static int create_elf_fdpic_tables(struct linux_binprm *bprm,
- 
- 	nr = 0;
- 	csp -= DLINFO_ITEMS * 2 * sizeof(unsigned long);
--	NEW_AUX_ENT(AT_HWCAP,	hwcap);
-+	NEW_AUX_ENT(AT_HWCAP,	ELF_HWCAP);
-+	NEW_AUX_ENT(AT_HWCAP2,	ELF_HWCAP2);
- 	NEW_AUX_ENT(AT_PAGESZ,	PAGE_SIZE);
- 	NEW_AUX_ENT(AT_CLKTCK,	CLOCKS_PER_SEC);
- 	NEW_AUX_ENT(AT_PHDR,	exec_params->ph_addr);
-diff --git a/include/uapi/linux/auxvec.h b/include/uapi/linux/auxvec.h
-index 61594d5..835c065 100644
---- a/include/uapi/linux/auxvec.h
-+++ b/include/uapi/linux/auxvec.h
-@@ -28,6 +28,7 @@
- #define AT_BASE_PLATFORM 24	/* string identifying real platform, may
- 				 * differ from AT_PLATFORM. */
- #define AT_RANDOM 25	/* address of 16 random bytes */
-+#define AT_HWCAP2 26	/* extension of AT_HWCAP */
- 
- #define AT_EXECFN  31	/* filename of program */
- 
+
+    Are {} really necessary here?
+
+> @@ -108,6 +117,13 @@ netdev_tx_t mac802154_tx(struct mac802154_priv *priv, struct sk_buff *skb,
+>   		return NETDEV_TX_BUSY;
+>   	}
+>   
+> +	/* Stop the netif queue on each sub_if_data object. */
+> +	rcu_read_lock();
+> +	list_for_each_entry_rcu(sdata, &priv->slaves, list) {
+> +		netif_stop_queue(sdata->dev);
+> +	}
+
+    And here?
+
+WBR, Sergei
 
