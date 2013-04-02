@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933903Ab3DBWOs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:14:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33618 "EHLO
+	id S933886Ab3DBWOq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:14:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33541 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933815Ab3DBWOi (ORCPT
+	with ESMTP id S933732Ab3DBWO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:38 -0400
+	Tue, 2 Apr 2013 18:14:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 55/68] bonding: fix disabling of arp_interval and miimon
-Date: Tue,  2 Apr 2013 15:13:44 -0700
-Message-Id: <20130402221336.356151349@linuxfoundation.org>
+        Lukas Czerner <lczerner@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
+        CAI Qian <caiqian@redhat.com>, Lingzhu Xiang <lxiang@redhat.com>
+Subject: [ 40/68] ext4: convert number of blocks to clusters properly
+Date: Tue,  2 Apr 2013 15:13:29 -0700
+Message-Id: <20130402221334.560608388@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
@@ -27,164 +27,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Lukas Czerner <lczerner@redhat.com>
 
-From: "nikolay@redhat.com" <nikolay@redhat.com>
+commit 810da240f221d64bf90020f25941b05b378186fe upstream.
 
-[ Upstream commit 1bc7db16782c2a581fb4d53ca853631050f31611 ]
+We're using macro EXT4_B2C() to convert number of blocks to number of
+clusters for bigalloc file systems.  However, we should be using
+EXT4_NUM_B2C().
 
-Currently if either arp_interval or miimon is disabled, they both get
-disabled, and upon disabling they get executed once more which is not
-the proper behaviour. Also when doing a no-op and disabling an already
-disabled one, the other again gets disabled.
-Also fix the error messages with the proper valid ranges, and a small
-typo fix in the up delay error message (outputting "down delay", instead
-of "up delay").
-
-Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/bonding/bond_sysfs.c |   92 ++++++++++++++++++++-------------------
- 1 file changed, 48 insertions(+), 44 deletions(-)
 
---- a/drivers/net/bonding/bond_sysfs.c
-+++ b/drivers/net/bonding/bond_sysfs.c
-@@ -527,7 +527,7 @@ static ssize_t bonding_store_arp_interva
- 		goto out;
+---
+ fs/ext4/balloc.c  |    2 +-
+ fs/ext4/mballoc.c |    8 ++++----
+ fs/ext4/resize.c  |    6 +++---
+ 3 files changed, 8 insertions(+), 8 deletions(-)
+
+--- a/fs/ext4/balloc.c
++++ b/fs/ext4/balloc.c
+@@ -600,7 +600,7 @@ ext4_fsblk_t ext4_count_free_clusters(st
+ 	brelse(bitmap_bh);
+ 	printk(KERN_DEBUG "ext4_count_free_clusters: stored = %llu"
+ 	       ", computed = %llu, %llu\n",
+-	       EXT4_B2C(EXT4_SB(sb), ext4_free_blocks_count(es)),
++	       EXT4_NUM_B2C(EXT4_SB(sb), ext4_free_blocks_count(es)),
+ 	       desc_count, bitmap_count);
+ 	return bitmap_count;
+ #else
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -3433,7 +3433,7 @@ ext4_mb_new_inode_pa(struct ext4_allocat
+ 			win = offs;
+ 
+ 		ac->ac_b_ex.fe_logical = ac->ac_o_ex.fe_logical -
+-			EXT4_B2C(sbi, win);
++			EXT4_NUM_B2C(sbi, win);
+ 		BUG_ON(ac->ac_o_ex.fe_logical < ac->ac_b_ex.fe_logical);
+ 		BUG_ON(ac->ac_o_ex.fe_len > ac->ac_b_ex.fe_len);
  	}
- 	if (new_value < 0) {
--		pr_err("%s: Invalid arp_interval value %d not in range 1-%d; rejected.\n",
-+		pr_err("%s: Invalid arp_interval value %d not in range 0-%d; rejected.\n",
- 		       bond->dev->name, new_value, INT_MAX);
- 		ret = -EINVAL;
- 		goto out;
-@@ -542,14 +542,15 @@ static ssize_t bonding_store_arp_interva
- 	pr_info("%s: Setting ARP monitoring interval to %d.\n",
- 		bond->dev->name, new_value);
- 	bond->params.arp_interval = new_value;
--	if (bond->params.miimon) {
--		pr_info("%s: ARP monitoring cannot be used with MII monitoring. %s Disabling MII monitoring.\n",
--			bond->dev->name, bond->dev->name);
--		bond->params.miimon = 0;
--	}
--	if (!bond->params.arp_targets[0]) {
--		pr_info("%s: ARP monitoring has been set up, but no ARP targets have been specified.\n",
--			bond->dev->name);
-+	if (new_value) {
-+		if (bond->params.miimon) {
-+			pr_info("%s: ARP monitoring cannot be used with MII monitoring. %s Disabling MII monitoring.\n",
-+				bond->dev->name, bond->dev->name);
-+			bond->params.miimon = 0;
-+		}
-+		if (!bond->params.arp_targets[0])
-+			pr_info("%s: ARP monitoring has been set up, but no ARP targets have been specified.\n",
-+				bond->dev->name);
+@@ -4577,7 +4577,7 @@ do_more:
+ 			EXT4_BLOCKS_PER_GROUP(sb);
+ 		count -= overflow;
  	}
- 	if (bond->dev->flags & IFF_UP) {
- 		/* If the interface is up, we may need to fire off
-@@ -557,10 +558,13 @@ static ssize_t bonding_store_arp_interva
- 		 * timer will get fired off when the open function
- 		 * is called.
- 		 */
--		cancel_delayed_work_sync(&bond->mii_work);
--		queue_delayed_work(bond->wq, &bond->arp_work, 0);
-+		if (!new_value) {
-+			cancel_delayed_work_sync(&bond->arp_work);
-+		} else {
-+			cancel_delayed_work_sync(&bond->mii_work);
-+			queue_delayed_work(bond->wq, &bond->arp_work, 0);
-+		}
+-	count_clusters = EXT4_B2C(sbi, count);
++	count_clusters = EXT4_NUM_B2C(sbi, count);
+ 	bitmap_bh = ext4_read_block_bitmap(sb, block_group);
+ 	if (!bitmap_bh) {
+ 		err = -EIO;
+@@ -4808,11 +4808,11 @@ int ext4_group_add_blocks(handle_t *hand
+ 	desc->bg_checksum = ext4_group_desc_csum(sbi, block_group, desc);
+ 	ext4_unlock_group(sb, block_group);
+ 	percpu_counter_add(&sbi->s_freeclusters_counter,
+-			   EXT4_B2C(sbi, blocks_freed));
++			   EXT4_NUM_B2C(sbi, blocks_freed));
+ 
+ 	if (sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group = ext4_flex_group(sbi, block_group);
+-		atomic_add(EXT4_B2C(sbi, blocks_freed),
++		atomic_add(EXT4_NUM_B2C(sbi, blocks_freed),
+ 			   &sbi->s_flex_groups[flex_group].free_clusters);
  	}
--
- out:
- 	rtnl_unlock();
- 	return ret;
-@@ -702,7 +706,7 @@ static ssize_t bonding_store_downdelay(s
- 	}
- 	if (new_value < 0) {
- 		pr_err("%s: Invalid down delay value %d not in range %d-%d; rejected.\n",
--		       bond->dev->name, new_value, 1, INT_MAX);
-+		       bond->dev->name, new_value, 0, INT_MAX);
- 		ret = -EINVAL;
- 		goto out;
- 	} else {
-@@ -757,8 +761,8 @@ static ssize_t bonding_store_updelay(str
- 		goto out;
- 	}
- 	if (new_value < 0) {
--		pr_err("%s: Invalid down delay value %d not in range %d-%d; rejected.\n",
--		       bond->dev->name, new_value, 1, INT_MAX);
-+		pr_err("%s: Invalid up delay value %d not in range %d-%d; rejected.\n",
-+		       bond->dev->name, new_value, 0, INT_MAX);
- 		ret = -EINVAL;
- 		goto out;
- 	} else {
-@@ -968,37 +972,37 @@ static ssize_t bonding_store_miimon(stru
- 	}
- 	if (new_value < 0) {
- 		pr_err("%s: Invalid miimon value %d not in range %d-%d; rejected.\n",
--		       bond->dev->name, new_value, 1, INT_MAX);
-+		       bond->dev->name, new_value, 0, INT_MAX);
- 		ret = -EINVAL;
- 		goto out;
--	} else {
--		pr_info("%s: Setting MII monitoring interval to %d.\n",
--			bond->dev->name, new_value);
--		bond->params.miimon = new_value;
--		if (bond->params.updelay)
--			pr_info("%s: Note: Updating updelay (to %d) since it is a multiple of the miimon value.\n",
--				bond->dev->name,
--				bond->params.updelay * bond->params.miimon);
--		if (bond->params.downdelay)
--			pr_info("%s: Note: Updating downdelay (to %d) since it is a multiple of the miimon value.\n",
--				bond->dev->name,
--				bond->params.downdelay * bond->params.miimon);
--		if (bond->params.arp_interval) {
--			pr_info("%s: MII monitoring cannot be used with ARP monitoring. Disabling ARP monitoring...\n",
--				bond->dev->name);
--			bond->params.arp_interval = 0;
--			if (bond->params.arp_validate) {
--				bond->params.arp_validate =
--					BOND_ARP_VALIDATE_NONE;
--			}
--		}
--
--		if (bond->dev->flags & IFF_UP) {
--			/* If the interface is up, we may need to fire off
--			 * the MII timer. If the interface is down, the
--			 * timer will get fired off when the open function
--			 * is called.
--			 */
-+	}
-+	pr_info("%s: Setting MII monitoring interval to %d.\n",
-+		bond->dev->name, new_value);
-+	bond->params.miimon = new_value;
-+	if (bond->params.updelay)
-+		pr_info("%s: Note: Updating updelay (to %d) since it is a multiple of the miimon value.\n",
-+			bond->dev->name,
-+			bond->params.updelay * bond->params.miimon);
-+	if (bond->params.downdelay)
-+		pr_info("%s: Note: Updating downdelay (to %d) since it is a multiple of the miimon value.\n",
-+			bond->dev->name,
-+			bond->params.downdelay * bond->params.miimon);
-+	if (new_value && bond->params.arp_interval) {
-+		pr_info("%s: MII monitoring cannot be used with ARP monitoring. Disabling ARP monitoring...\n",
-+			bond->dev->name);
-+		bond->params.arp_interval = 0;
-+		if (bond->params.arp_validate)
-+			bond->params.arp_validate = BOND_ARP_VALIDATE_NONE;
-+	}
-+	if (bond->dev->flags & IFF_UP) {
-+		/* If the interface is up, we may need to fire off
-+		 * the MII timer. If the interface is down, the
-+		 * timer will get fired off when the open function
-+		 * is called.
-+		 */
-+		if (!new_value) {
-+			cancel_delayed_work_sync(&bond->mii_work);
-+		} else {
- 			cancel_delayed_work_sync(&bond->arp_work);
- 			queue_delayed_work(bond->wq, &bond->mii_work, 0);
- 		}
+ 
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -1112,7 +1112,7 @@ static int ext4_setup_new_descs(handle_t
+ 		ext4_inode_bitmap_set(sb, gdp, group_data->inode_bitmap);
+ 		ext4_inode_table_set(sb, gdp, group_data->inode_table);
+ 		ext4_free_group_clusters_set(sb, gdp,
+-					     EXT4_B2C(sbi, group_data->free_blocks_count));
++			EXT4_NUM_B2C(sbi, group_data->free_blocks_count));
+ 		ext4_free_inodes_set(sb, gdp, EXT4_INODES_PER_GROUP(sb));
+ 		gdp->bg_flags = cpu_to_le16(*bg_flags);
+ 		gdp->bg_checksum = ext4_group_desc_csum(sbi, group, gdp);
+@@ -1210,7 +1210,7 @@ static void ext4_update_super(struct sup
+ 
+ 	/* Update the free space counts */
+ 	percpu_counter_add(&sbi->s_freeclusters_counter,
+-			   EXT4_B2C(sbi, free_blocks));
++			   EXT4_NUM_B2C(sbi, free_blocks));
+ 	percpu_counter_add(&sbi->s_freeinodes_counter,
+ 			   EXT4_INODES_PER_GROUP(sb) * flex_gd->count);
+ 
+@@ -1219,7 +1219,7 @@ static void ext4_update_super(struct sup
+ 	    sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group;
+ 		flex_group = ext4_flex_group(sbi, group_data[0].group);
+-		atomic_add(EXT4_B2C(sbi, free_blocks),
++		atomic_add(EXT4_NUM_B2C(sbi, free_blocks),
+ 			   &sbi->s_flex_groups[flex_group].free_clusters);
+ 		atomic_add(EXT4_INODES_PER_GROUP(sb) * flex_gd->count,
+ 			   &sbi->s_flex_groups[flex_group].free_inodes);
 
 
