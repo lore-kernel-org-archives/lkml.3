@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759487Ab3DBAWL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 20:22:11 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40398 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758444Ab3DBAWJ (ORCPT
+	id S1759543Ab3DBA0b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 20:26:31 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47789 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758444Ab3DBA02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 20:22:09 -0400
-Date: Tue, 2 Apr 2013 01:22:04 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Yet another pipe related oops.
-Message-ID: <20130402002204.GF21522@ZenIV.linux.org.uk>
-References: <CA+55aFx-8TrSSJZM-WTDN4Hc3pESLXBsGC9x3xVaxuwxnGKqpA@mail.gmail.com>
- <20130327135127.GB1738@redhat.com>
- <20130327152030.GY21522@ZenIV.linux.org.uk>
- <CA+55aFx=BPQ2empEahqCs2hQ=sRaw3OjJotrS6OMT3e6tUVMLQ@mail.gmail.com>
- <20130327174506.GZ21522@ZenIV.linux.org.uk>
- <20130401203445.GA20862@ZenIV.linux.org.uk>
- <20130401210029.GA3245@kroah.com>
- <20130401212142.GD21522@ZenIV.linux.org.uk>
- <20130401214436.GA5786@kroah.com>
- <20130401232718.GE21522@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130401232718.GE21522@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 1 Apr 2013 20:26:28 -0400
+Date: Tue, 2 Apr 2013 11:26:27 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the vfs tree
+Message-Id: <20130402112627.223048680be1397ad59cdcec@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__2_Apr_2013_11_26_27_+1100_SZq5CFA.y7qgc_2s"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 12:27:18AM +0100, Al Viro wrote:
-> On Mon, Apr 01, 2013 at 02:44:36PM -0700, Greg Kroah-Hartman wrote:
-> > > > I guess you are right, it will not.  I guess we need to do what
-> > > > character devices do and have an "intermediate" fops in order to protect
-> > > > this.  Would that work?
-> > > 
-> > > You mean, with reassigning ->f_op in ->open()?  That'll work, as long as
-> > > we have exclusion between removal and fetching the sucker in primary
-> > > ->open()...  Where would you prefer to stash fops?
-> > 
-> > Ick, that's not going to work as the current api just uses a fops and
-> > debugfs doesn't keep anything else hanging around that referes to
-> > something "before" that, like 'struct cdev' does.
-> 
-> Er?  How about just sticking it into dentry->d_fsdata and letting
-> debugfs_remove() zero that out?  What am I missing here?
+--Signature=_Tue__2_Apr_2013_11_26_27_+1100_SZq5CFA.y7qgc_2s
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hrm...  For what it's worth, how do debugfs entries associated with
-dynamic objects deal with debugfs_remove() vs. method calls?  I don't
-see _anything_ in {,__}debugfs_remove() that would looks like "wait
-for ongoing write(2) attempts to complete".  IOW, forget rmmod - WTF
-protects us from access-after-free for any kind of data that isn't
-permanently allocated?
+Hi Al,
+
+After merging the vfs tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
+
+arch/powerpc/kernel/lparcfg.c:44:31: error: 'proc_ppc64_lparcfg' defined bu=
+t not used [-Werror=3Dunused-variable]
+cc1: all warnings being treated as errors
+
+Caused by commit dfda3a48f2e7 ("lparcfg: don't bother saving pointer to
+proc_dir_entry").
+
+I have used the vfs tree form next-20130328 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__2_Apr_2013_11_26_27_+1100_SZq5CFA.y7qgc_2s
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRWiWzAAoJEECxmPOUX5FEmg0P/3cEKgmDuhbHJZkYQRGXNxz9
+CN0m9+YF375u5gEgyQBOl8KBYL4rIDH3IuTz2yTkjE/sg8THuGp0NDaYugF9Nd8M
+i1Lsc23O70QMtlDa/J1Wyk0EbVZh6ngqX4IJ7Rm0nsXPs1rJcTwLi4SYXnkvp6tY
+Wd8jBs8864Hs/6cM6c7mjwZiDVIrcqqmnjNg2CyYWBdnN98bZFDzNTM2hc1ZPCtk
+FI1jb+LOIh96MQAy58GWD4DZH0p36hcf+BizgSktbp9EmjAoQaPtODAgY3SzYiVj
+YzcSRp+nAKqKgA8GPQhamKCiyjTNuOITetIpzgfInmYYpCkDtArZEcO0rPOyGLHu
+J2NlLDxLIdgusgK30FLBFvBZNmm8Z9NJ8C2vYZ41FDTRWbueqBXtbFjtuj07RP6c
+C6JAsrRQ7/ubGtpN1TrXHx5Lwj2ssVLpzca5dPUV5YU8mkIvFaqLWqq3dUEv7Q87
+j9taUAe0WUNDFzqxeysN2KomWc/MdYGmJKnlfOqqxaWYdyH41TTeCZOk+4lsuUhN
+b06Gwqe0EK4kfXF/5CHszbuKOqHGRNFuuLTRHPwwC+Mth/w1g2UlYPpgZqB9wKdP
+DWWNiP14fk895Hwtw8zgw1hxJEwRIH9Cudu3u+qzaMabrBpc8jZMfEzLYeMqaKVB
+nMaKlqgEJBRYcsWigFPi
+=tUag
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__2_Apr_2013_11_26_27_+1100_SZq5CFA.y7qgc_2s--
