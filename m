@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760527Ab3DBDzT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 23:55:19 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:61138 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759873Ab3DBDzO (ORCPT
+	id S1760564Ab3DBDza (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 23:55:30 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:39069 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760549Ab3DBDz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 23:55:14 -0400
+	Mon, 1 Apr 2013 23:55:26 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: David Ahern <dsahern@gmail.com>, Borislav Petkov <bp@alien8.de>,
@@ -15,9 +15,9 @@ Cc: David Ahern <dsahern@gmail.com>, Borislav Petkov <bp@alien8.de>,
         Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 11/23] perf: make dwarf support based on CONFIG_DWARF
-Date: Mon,  1 Apr 2013 21:54:25 -0600
-Message-Id: <1364874877-5618-12-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 15/23] perf: make libaudit support based on CONFIG_LIBAUDIT
+Date: Mon,  1 Apr 2013 21:54:29 -0600
+Message-Id: <1364874877-5618-16-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1364874877-5618-1-git-send-email-dsahern@gmail.com>
 References: <1364874877-5618-1-git-send-email-dsahern@gmail.com>
@@ -35,160 +35,89 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile                 |   22 ++++++++++++----------
- tools/perf/Pconfig                  |    4 ++++
- tools/perf/arch/arm/Makefile        |    2 +-
- tools/perf/arch/powerpc/Makefile    |    2 +-
- tools/perf/arch/s390/Makefile       |    2 +-
- tools/perf/arch/sh/Makefile         |    2 +-
- tools/perf/arch/sparc/Makefile      |    2 +-
- tools/perf/arch/x86/Makefile        |    2 +-
+ tools/perf/Makefile                 |   16 +++++++---------
+ tools/perf/Pconfig                  |    5 +++++
  tools/perf/config/feature-tests.mak |    2 +-
- 9 files changed, 23 insertions(+), 17 deletions(-)
+ tools/perf/perf.c                   |    3 ++-
+ 4 files changed, 15 insertions(+), 11 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 65283e6..d2707ee 100644
+index 0baa19b..62c10b8 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -30,8 +30,6 @@ include config/utilities.mak
- #
- # Define EXTRA_CFLAGS=-m64 or EXTRA_CFLAGS=-m32 as appropriate for cross-builds.
- #
--# Define NO_DWARF if you do not want debug-info analysis feature at all.
--#
- # Define WERROR=0 to disable treating any warnings as errors.
- #
- # Define NO_BACKTRACE if you do not want stack backtrace debug feature
-@@ -562,13 +560,17 @@ ifdef CONFIG_LIBELF
- 	endif
+@@ -644,15 +644,13 @@ ifdef CONFIG_LIBUNWIND
+ 	LIB_OBJS += $(OUTPUT)util/unwind.o
+ endif
  
-     # libelf supported - what about dwarf?
--	FLAGS_DWARF=$(ALL_CFLAGS) $(LIBDW_CFLAGS) -ldw -lelf $(LIBDW_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
--	ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
--		msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
--		NO_DWARF := 1
+-ifndef NO_LIBAUDIT
+-	FLAGS_LIBAUDIT = $(ALL_CFLAGS) $(ALL_LDFLAGS) -laudit
+-	ifneq ($(call try-cc,$(SOURCE_LIBAUDIT),$(FLAGS_LIBAUDIT),libaudit),y)
+-		msg := $(warning No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev);
+-	else
+-		BASIC_CFLAGS += -DLIBAUDIT_SUPPORT
+-		BUILTIN_OBJS += $(OUTPUT)builtin-trace.o
+-		EXTLIBS += -laudit
 -	endif
-+    ifdef CONFIG_DWARF
-+        FLAGS_DWARF=$(ALL_CFLAGS) $(LIBDW_CFLAGS) -ldw -lelf $(LIBDW_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
-+        ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
-+            $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138.ables dwarf support.)
-+            $(error Please install new elfutils-devel/libdw-dev or disable CONFIG_DWARF);
-+        endif
++ifdef CONFIG_LIBAUDIT
++    FLAGS_LIBAUDIT = $(ALL_CFLAGS) $(ALL_LDFLAGS) -laudit
++    ifneq ($(call try-cc,$(SOURCE_LIBAUDIT),$(FLAGS_LIBAUDIT),libaudit),y)
++        $(error No libaudit.h found, please install audit-libs-devel or libaudit-dev or disable CONFIG_LIBAUDIT)
 +    endif
- else
--    NO_DWARF := 1
-+    ifdef CONFIG_DWARF
-+        $(error CONFIG_DWARF depends on LIBELF)
-+    endif
-     ifdef CONFIG_DEMANGLE
-         $(error CONFIG_DEMANGLE depends on LIBELF)
-     endif
-@@ -612,7 +614,7 @@ ifdef CONFIG_LIBELF
- 	    BASIC_CFLAGS += -DLIBELF_MMAP
-     endif
++    BUILTIN_OBJS += $(OUTPUT)builtin-trace.o
++    EXTLIBS += -laudit
+ endif
  
--    ifndef NO_DWARF
-+    ifdef CONFIG_DWARF
-         ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
- 	        msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
-         else
-@@ -622,7 +624,7 @@ ifdef CONFIG_LIBELF
-             LIB_OBJS += $(OUTPUT)util/probe-finder.o
-             LIB_OBJS += $(OUTPUT)util/dwarf-aux.o
-         endif # PERF_HAVE_DWARF_REGS
--    endif # NO_DWARF
-+    endif
- 
- else
-     EXTLIBS := $(filter-out -lelf,$(EXTLIBS))
+ ifdef CONFIG_NEWT
 diff --git a/tools/perf/Pconfig b/tools/perf/Pconfig
-index dc0fc36..f744b7b 100644
+index b03881c..4cfccf3 100644
 --- a/tools/perf/Pconfig
 +++ b/tools/perf/Pconfig
-@@ -26,6 +26,10 @@ config LIBUNWIND
-     bool "Enable support for libunwind"
-     depends on HAVE_CFI_UNWIND_SUPPORT && LIBELF
+@@ -45,6 +45,11 @@ config LIBPERL
+ config LIBPYTHON
+     bool "Enable support for python scripting engine"
  
-+config DWARF
-+    bool "Enable support for dwarf"
-+    depends on LIBELF
++config LIBAUDIT
++    bool "Enable support for libaudit"
++    help
++        Used for perf trace tool.
 +
-  config DEMANGLE
-     bool "Enable support for demangle"
-     depends on LIBELF
-diff --git a/tools/perf/arch/arm/Makefile b/tools/perf/arch/arm/Makefile
-index 15130b5..6d630e3 100644
---- a/tools/perf/arch/arm/Makefile
-+++ b/tools/perf/arch/arm/Makefile
-@@ -1,4 +1,4 @@
--ifndef NO_DWARF
-+ifdef CONFIG_DWARF
- PERF_HAVE_DWARF_REGS := 1
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
- endif
-diff --git a/tools/perf/arch/powerpc/Makefile b/tools/perf/arch/powerpc/Makefile
-index 744e629..d01408e 100644
---- a/tools/perf/arch/powerpc/Makefile
-+++ b/tools/perf/arch/powerpc/Makefile
-@@ -1,4 +1,4 @@
--ifndef NO_DWARF
-+ifdef CONFIG_DWARF
- PERF_HAVE_DWARF_REGS := 1
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
- endif
-diff --git a/tools/perf/arch/s390/Makefile b/tools/perf/arch/s390/Makefile
-index 15130b5..6d630e3 100644
---- a/tools/perf/arch/s390/Makefile
-+++ b/tools/perf/arch/s390/Makefile
-@@ -1,4 +1,4 @@
--ifndef NO_DWARF
-+ifdef CONFIG_DWARF
- PERF_HAVE_DWARF_REGS := 1
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
- endif
-diff --git a/tools/perf/arch/sh/Makefile b/tools/perf/arch/sh/Makefile
-index 15130b5..6d630e3 100644
---- a/tools/perf/arch/sh/Makefile
-+++ b/tools/perf/arch/sh/Makefile
-@@ -1,4 +1,4 @@
--ifndef NO_DWARF
-+ifdef CONFIG_DWARF
- PERF_HAVE_DWARF_REGS := 1
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
- endif
-diff --git a/tools/perf/arch/sparc/Makefile b/tools/perf/arch/sparc/Makefile
-index 15130b5..6d630e3 100644
---- a/tools/perf/arch/sparc/Makefile
-+++ b/tools/perf/arch/sparc/Makefile
-@@ -1,4 +1,4 @@
--ifndef NO_DWARF
-+ifdef CONFIG_DWARF
- PERF_HAVE_DWARF_REGS := 1
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
- endif
-diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
-index 3a6dc3d..8d18b74 100644
---- a/tools/perf/arch/x86/Makefile
-+++ b/tools/perf/arch/x86/Makefile
-@@ -1,4 +1,4 @@
--ifndef NO_DWARF
-+ifdef CONFIG_DWARF
- PERF_HAVE_DWARF_REGS := 1
- LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
- endif
+ config LIBNUMA
+     bool "Enable support for libnuma"
+     help
 diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index b0c28b2..7873e6d 100644
+index 1d16481..6e3ba0f 100644
 --- a/tools/perf/config/feature-tests.mak
 +++ b/tools/perf/config/feature-tests.mak
-@@ -6,7 +6,7 @@ int main(void)
- }
+@@ -206,7 +206,7 @@ int main(void)
  endef
+ endif
  
--ifndef NO_DWARF
-+ifdef CONFIG_DWARF
- define SOURCE_DWARF
- #include <dwarf.h>
- #include <elfutils/libdw.h>
+-ifndef NO_LIBAUDIT
++ifdef CONFIG_LIBAUDIT
+ define SOURCE_LIBAUDIT
+ #include <libaudit.h>
+ 
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 095b882..f7fcf78 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -14,6 +14,7 @@
+ #include "util/run-command.h"
+ #include "util/parse-events.h"
+ #include "util/debugfs.h"
++#include <linux/kconfig.h>
+ #include <pthread.h>
+ 
+ const char perf_usage_string[] =
+@@ -56,7 +57,7 @@ static struct cmd_struct commands[] = {
+ 	{ "lock",	cmd_lock,	0 },
+ 	{ "kvm",	cmd_kvm,	0 },
+ 	{ "test",	cmd_test,	0 },
+-#ifdef LIBAUDIT_SUPPORT
++#ifdef CONFIG_LIBAUDIT
+ 	{ "trace",	cmd_trace,	0 },
+ #endif
+ 	{ "inject",	cmd_inject,	0 },
 -- 
 1.7.10.1
 
