@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759840Ab3DBXW2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:22:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32841 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932468Ab3DBWL4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932444Ab3DBWL4 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 2 Apr 2013 18:11:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32825 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761095Ab3DBWLy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:11:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Ming Lei <ming.lei@canonical.com>
-Subject: [ 010/124] sysfs: handle failure path correctly for readdir()
-Date: Tue,  2 Apr 2013 15:09:52 -0700
-Message-Id: <20130402221105.396122810@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 006/124] staging: comedi: s626: fix continuous acquisition
+Date: Tue,  2 Apr 2013 15:09:48 -0700
+Message-Id: <20130402221104.951928261@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -27,47 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit e5110f411d2ee35bf8d202ccca2e89c633060dca upstream.
+commit e4317ce877a31dbb9d96375391c1c4ad2210d637 upstream.
 
-In case of 'if (filp->f_pos ==  0 or 1)' of sysfs_readdir(),
-the failure from filldir() isn't handled, and the reference counter
-of the sysfs_dirent object pointed by filp->private_data will be
-released without clearing filp->private_data, so use after free
-bug will be triggered later.
+For the s626 driver, there is a bug in the handling of asynchronous
+commands on the AI subdevice when the stop source is `TRIG_NONE`.  The
+command should run continuously until cancelled, but the interrupt
+handler stops the command running after the first scan.
 
-This patch returns immeadiately under the situation for fixing the bug,
-and it is reasonable to return from readdir() when filldir() fails.
+The command set-up function `s626_ai_cmd()` contains this code:
 
-Reported-by: Dave Jones <davej@redhat.com>
-Tested-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
+	switch (cmd->stop_src) {
+	case TRIG_COUNT:
+		/*  data arrives as one packet */
+		devpriv->ai_sample_count = cmd->stop_arg;
+		devpriv->ai_continous = 0;
+		break;
+	case TRIG_NONE:
+		/*  continous acquisition */
+		devpriv->ai_continous = 1;
+		devpriv->ai_sample_count = 0;
+		break;
+	}
+
+The interrupt handler `s626_irq_handler()` contains this code:
+
+		if (!(devpriv->ai_continous))
+			devpriv->ai_sample_count--;
+		if (devpriv->ai_sample_count <= 0) {
+			devpriv->ai_cmd_running = 0;
+			/* ... */
+		}
+
+So `devpriv->ai_sample_count` is only decremented for the `TRIG_COUNT`
+case, but `devpriv->ai_cmd_running` is set to 0 (and the command
+stopped) regardless.
+
+Fix this in `s626_ai_cmd()` by setting `devpriv->ai_sample_count = 1`
+for the `TRIG_NONE` case.  The interrupt handler will not decrement it
+so it will remain greater than 0 and the check for stopping the
+acquisition will fail.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/sysfs/dir.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/staging/comedi/drivers/s626.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -1020,6 +1020,8 @@ static int sysfs_readdir(struct file * f
- 		ino = parent_sd->s_ino;
- 		if (filldir(dirent, ".", 1, filp->f_pos, ino, DT_DIR) == 0)
- 			filp->f_pos++;
-+		else
-+			return 0;
+--- a/drivers/staging/comedi/drivers/s626.c
++++ b/drivers/staging/comedi/drivers/s626.c
+@@ -1482,7 +1482,7 @@ static int s626_ai_cmd(struct comedi_dev
+ 	case TRIG_NONE:
+ 		/*  continous acquisition */
+ 		devpriv->ai_continous = 1;
+-		devpriv->ai_sample_count = 0;
++		devpriv->ai_sample_count = 1;
+ 		break;
  	}
- 	if (filp->f_pos == 1) {
- 		if (parent_sd->s_parent)
-@@ -1028,6 +1030,8 @@ static int sysfs_readdir(struct file * f
- 			ino = parent_sd->s_ino;
- 		if (filldir(dirent, "..", 2, filp->f_pos, ino, DT_DIR) == 0)
- 			filp->f_pos++;
-+		else
-+			return 0;
- 	}
- 	mutex_lock(&sysfs_mutex);
- 	for (pos = sysfs_dir_pos(ns, parent_sd, filp->f_pos, pos);
+ 
 
 
