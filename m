@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760116Ab3DBXKs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:10:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33006 "EHLO
+	id S1760086Ab3DBXKq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:10:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33008 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933152Ab3DBWM0 (ORCPT
+	with ESMTP id S933174Ab3DBWM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:26 -0400
+	Tue, 2 Apr 2013 18:12:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [ 053/124] userns: Restrict when proc and sysfs can be mounted
-Date: Tue,  2 Apr 2013 15:10:35 -0700
-Message-Id: <20130402221110.364453287@linuxfoundation.org>
+        Josef Bacik <jbacik@fusionio.com>
+Subject: [ 054/124] Btrfs: use set_nlink if our i_nlink is 0
+Date: Tue,  2 Apr 2013 15:10:36 -0700
+Message-Id: <20130402221110.485998030@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -27,148 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Josef Bacik <jbacik@fusionio.com>
 
-commit 87a8ebd637dafc255070f503909a053cf0d98d3f upstream.
+commit 9bf7a4890518186238d2579be16ecc5190a707c0 upstream.
 
-Only allow unprivileged mounts of proc and sysfs if they are already
-mounted when the user namespace is created.
+We need to inc the nlink of deleted entries when running replay so we can do the
+unlink on the fs_root and get everything cleaned up and then have the orphan
+cleanup do the right thing.  The problem is inc_nlink complains about this, even
+thought it still does the right thing.  So use set_nlink() if our i_nlink is 0
+to keep users from seeing the warnings during log replay.  Thanks,
 
-proc and sysfs are interesting because they have content that is
-per namespace, and so fresh mounts are needed when new namespaces
-are created while at the same time proc and sysfs have content that
-is shared between every instance.
-
-Respect the policy of who may see the shared content of proc and sysfs
-by only allowing new mounts if there was an existing mount at the time
-the user namespace was created.
-
-In practice there are only two interesting cases: proc and sysfs are
-mounted at their usual places, proc and sysfs are not mounted at all
-(some form of mount namespace jail).
-
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namespace.c                 |   21 +++++++++++++++++++++
- fs/proc/root.c                 |    4 ++++
- fs/sysfs/mount.c               |    4 ++++
- include/linux/user_namespace.h |    4 ++++
- kernel/user.c                  |    2 ++
- kernel/user_namespace.c        |    2 ++
- 6 files changed, 37 insertions(+)
+ fs/btrfs/tree-log.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -2789,6 +2789,27 @@ bool current_chrooted(void)
- 	return chrooted;
- }
+--- a/fs/btrfs/tree-log.c
++++ b/fs/btrfs/tree-log.c
+@@ -1384,7 +1384,10 @@ static noinline int link_to_fixup_dir(st
  
-+void update_mnt_policy(struct user_namespace *userns)
-+{
-+	struct mnt_namespace *ns = current->nsproxy->mnt_ns;
-+	struct mount *mnt;
-+
-+	down_read(&namespace_sem);
-+	list_for_each_entry(mnt, &ns->list, mnt_list) {
-+		switch (mnt->mnt.mnt_sb->s_magic) {
-+		case SYSFS_MAGIC:
-+			userns->may_mount_sysfs = true;
-+			break;
-+		case PROC_SUPER_MAGIC:
-+			userns->may_mount_proc = true;
-+			break;
-+		}
-+		if (userns->may_mount_sysfs && userns->may_mount_proc)
-+			break;
-+	}
-+	up_read(&namespace_sem);
-+}
-+
- static void *mntns_get(struct task_struct *task)
- {
- 	struct mnt_namespace *ns = NULL;
---- a/fs/proc/root.c
-+++ b/fs/proc/root.c
-@@ -16,6 +16,7 @@
- #include <linux/sched.h>
- #include <linux/module.h>
- #include <linux/bitops.h>
-+#include <linux/user_namespace.h>
- #include <linux/mount.h>
- #include <linux/pid_namespace.h>
- #include <linux/parser.h>
-@@ -108,6 +109,9 @@ static struct dentry *proc_mount(struct
- 	} else {
- 		ns = task_active_pid_ns(current);
- 		options = data;
-+
-+		if (!current_user_ns()->may_mount_proc)
-+			return ERR_PTR(-EPERM);
- 	}
- 
- 	sb = sget(fs_type, proc_test_super, proc_set_super, flags, ns);
---- a/fs/sysfs/mount.c
-+++ b/fs/sysfs/mount.c
-@@ -19,6 +19,7 @@
- #include <linux/module.h>
- #include <linux/magic.h>
- #include <linux/slab.h>
-+#include <linux/user_namespace.h>
- 
- #include "sysfs.h"
- 
-@@ -111,6 +112,9 @@ static struct dentry *sysfs_mount(struct
- 	struct super_block *sb;
- 	int error;
- 
-+	if (!(flags & MS_KERNMOUNT) && !current_user_ns()->may_mount_sysfs)
-+		return ERR_PTR(-EPERM);
-+
- 	info = kzalloc(sizeof(*info), GFP_KERNEL);
- 	if (!info)
- 		return ERR_PTR(-ENOMEM);
---- a/include/linux/user_namespace.h
-+++ b/include/linux/user_namespace.h
-@@ -26,6 +26,8 @@ struct user_namespace {
- 	kuid_t			owner;
- 	kgid_t			group;
- 	unsigned int		proc_inum;
-+	bool			may_mount_sysfs;
-+	bool			may_mount_proc;
- };
- 
- extern struct user_namespace init_user_ns;
-@@ -82,4 +84,6 @@ static inline void put_user_ns(struct us
- 
- #endif
- 
-+void update_mnt_policy(struct user_namespace *userns);
-+
- #endif /* _LINUX_USER_H */
---- a/kernel/user.c
-+++ b/kernel/user.c
-@@ -53,6 +53,8 @@ struct user_namespace init_user_ns = {
- 	.owner = GLOBAL_ROOT_UID,
- 	.group = GLOBAL_ROOT_GID,
- 	.proc_inum = PROC_USER_INIT_INO,
-+	.may_mount_sysfs = true,
-+	.may_mount_proc = true,
- };
- EXPORT_SYMBOL_GPL(init_user_ns);
- 
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -96,6 +96,8 @@ int create_user_ns(struct cred *new)
- 
- 	set_cred_user_ns(new, ns);
- 
-+	update_mnt_policy(ns);
-+
- 	return 0;
- }
- 
+ 	btrfs_release_path(path);
+ 	if (ret == 0) {
+-		btrfs_inc_nlink(inode);
++		if (!inode->i_nlink)
++			set_nlink(inode, 1);
++		else
++			btrfs_inc_nlink(inode);
+ 		ret = btrfs_update_inode(trans, root, inode);
+ 	} else if (ret == -EEXIST) {
+ 		ret = 0;
 
 
