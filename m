@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762251Ab3DBThA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 15:37:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57405 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753681Ab3DBTg5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 15:36:57 -0400
-Date: Tue, 2 Apr 2013 12:36:03 -0700
-From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-c5b41a67505cc3c9744d8f105c63a3bf3c443a01@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bp@suse.de
-In-Reply-To: <1363788448-31325-5-git-send-email-bp@alien8.de>
-References: <1363788448-31325-5-git-send-email-bp@alien8.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86, cpu: Convert Cyrix coma bug detection
-Git-Commit-ID: c5b41a67505cc3c9744d8f105c63a3bf3c443a01
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1762264Ab3DBThT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 15:37:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:17053 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752331Ab3DBThP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 15:37:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,394,1363158000"; 
+   d="scan'208";a="311336735"
+Date: Tue, 2 Apr 2013 12:37:15 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] xhci: Rename SEGMENT_SIZE and SEGMENT_SHIFT as the
+ former is used in a.out.h
+Message-ID: <20130402193715.GA3693@xanatos>
+References: <20130329001048.GK5995@xanatos>
+ <20130328201505.GC5995@xanatos>
+ <20130328184827.29679.62426.stgit@warthog.procyon.org.uk>
+ <20130328184835.29679.62285.stgit@warthog.procyon.org.uk>
+ <32349.1364509973@warthog.procyon.org.uk>
+ <20541.1364926056@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 12:36:08 -0700 (PDT)
+In-Reply-To: <20541.1364926056@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c5b41a67505cc3c9744d8f105c63a3bf3c443a01
-Gitweb:     http://git.kernel.org/tip/c5b41a67505cc3c9744d8f105c63a3bf3c443a01
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Wed, 20 Mar 2013 15:07:26 +0100
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Tue, 2 Apr 2013 10:12:54 -0700
+On Tue, Apr 02, 2013 at 07:07:36PM +0100, David Howells wrote:
+> Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
+> 
+> > I guess my question is a deeper one: do we need to rename all the xHCI
+> > macros to have the XHCI_ prefix, in order to avoid future collision?
+> > For example, one of the macros is MAX_HC_PORTS, which could possibly be
+> > used by other host drivers in the future.
+> 
+> Hmmm...
+> 
+> I suspect the question is whether your symbols are likely to collide with
+> core symbols rather than symbols of unrelated drivers - after all, you're
+> unlikely to be #including the headers of those drivers.
+> 
+> I personally prefer to prefix the names of symbols in drivers with something
+> consistent for that driver to reduce namespace collisions - but I know not
+> everyone cares about that.  Linux doesn't have much of a policy in this area
+> though.  I also like it because it makes tags easier to use (fewer definitions
+> of the same symbol).
+> 
+> Whether you should go back and rename existing xHCI functions, I don't know.
+> I'd be tempted to leave it for now unless there's some collision.  However,
+> things like MAX_HC_PORTS does seem a little generic.  Further #define
+> collisions go unnoticed under some circumstances.  Two obvious cases are (a)
+> redefinition of a symbol because it happens to be the same value and (b) where
+> the second one is accidentally suppressed because it is wrapped in a
+> conditional.
 
-x86, cpu: Convert Cyrix coma bug detection
+Hmm, yeah, I think it doesn't make sense to change all the macros now.
+If I were starting a new driver, I think I would use a common prefix.
+I'll add the macro renaming to my todo list and see if I can get some
+newbie to take it on. 8)
 
-... to the new facility.
+> Perhaps we should move to C++ and use namespaces;-)
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1363788448-31325-5-git-send-email-bp@alien8.de
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/include/asm/cpufeature.h | 1 +
- arch/x86/include/asm/processor.h  | 1 -
- arch/x86/kernel/cpu/cyrix.c       | 5 +++--
- arch/x86/kernel/cpu/proc.c        | 2 +-
- 4 files changed, 5 insertions(+), 4 deletions(-)
+Hah!
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 25eb948..a2b65c1 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -224,6 +224,7 @@
- 
- #define X86_BUG_F00F		X86_BUG(0) /* Intel F00F */
- #define X86_BUG_FDIV		X86_BUG(1) /* FPU FDIV */
-+#define X86_BUG_COMA		X86_BUG(2) /* Cyrix 6x86 coma */
- 
- #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
- 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index ea22dfa..4e2fa28 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -91,7 +91,6 @@ struct cpuinfo_x86 {
- 	/* Problems on some 486Dx4's and old 386's: */
- 	char			hard_math;
- 	char			rfu;
--	char			coma_bug;
- 	char			pad0;
- #else
- 	/* Number of 4K pages in DTLB/ITLB combined(in pages): */
-diff --git a/arch/x86/kernel/cpu/cyrix.c b/arch/x86/kernel/cpu/cyrix.c
-index 4fbd384..d048d5c 100644
---- a/arch/x86/kernel/cpu/cyrix.c
-+++ b/arch/x86/kernel/cpu/cyrix.c
-@@ -249,7 +249,7 @@ static void __cpuinit init_cyrix(struct cpuinfo_x86 *c)
- 		/* Emulate MTRRs using Cyrix's ARRs. */
- 		set_cpu_cap(c, X86_FEATURE_CYRIX_ARR);
- 		/* 6x86's contain this bug */
--		c->coma_bug = 1;
-+		set_cpu_bug(c, X86_BUG_COMA);
- 		break;
- 
- 	case 4: /* MediaGX/GXm or Geode GXM/GXLV/GX1 */
-@@ -317,7 +317,8 @@ static void __cpuinit init_cyrix(struct cpuinfo_x86 *c)
- 			/* Enable MMX extensions (App note 108) */
- 			setCx86_old(CX86_CCR7, getCx86_old(CX86_CCR7)|1);
- 		} else {
--			c->coma_bug = 1;      /* 6x86MX, it has the bug. */
-+			/* A 6x86MX - it has the bug. */
-+			set_cpu_bug(c, X86_BUG_COMA);
- 		}
- 		tmp = (!(dir0_lsn & 7) || dir0_lsn & 1) ? 2 : 0;
- 		Cx86_cb[tmp] = cyrix_model_mult2[dir0_lsn & 7];
-diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
-index 5dfb6c6..37a198b 100644
---- a/arch/x86/kernel/cpu/proc.c
-+++ b/arch/x86/kernel/cpu/proc.c
-@@ -36,7 +36,7 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
- 		   "wp\t\t: %s\n",
- 		   static_cpu_has_bug(X86_BUG_FDIV) ? "yes" : "no",
- 		   static_cpu_has_bug(X86_BUG_F00F) ? "yes" : "no",
--		   c->coma_bug ? "yes" : "no",
-+		   static_cpu_has_bug(X86_BUG_COMA) ? "yes" : "no",
- 		   c->hard_math ? "yes" : "no",
- 		   c->hard_math ? "yes" : "no",
- 		   c->cpuid_level,
+Sarah Sharp
