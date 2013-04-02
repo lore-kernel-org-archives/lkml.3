@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933684Ab3DBWOP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:14:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33404 "EHLO
+	id S933724Ab3DBW2b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:28:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33464 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932800Ab3DBWOG (ORCPT
+	with ESMTP id S933679Ab3DBWOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:06 -0400
+	Tue, 2 Apr 2013 18:14:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 08/68] staging: comedi: s626: fix continuous acquisition
-Date: Tue,  2 Apr 2013 15:12:57 -0700
-Message-Id: <20130402221330.883556372@linuxfoundation.org>
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 14/68] rtlwifi: usb: add missing freeing of skbuff
+Date: Tue,  2 Apr 2013 15:13:03 -0700
+Message-Id: <20130402221331.589452697@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
@@ -26,65 +28,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
 
-commit e4317ce877a31dbb9d96375391c1c4ad2210d637 upstream.
+commit 36ef0b473fbf43d5db23eea4616cc1d18cec245f upstream.
 
-For the s626 driver, there is a bug in the handling of asynchronous
-commands on the AI subdevice when the stop source is `TRIG_NONE`.  The
-command should run continuously until cancelled, but the interrupt
-handler stops the command running after the first scan.
-
-The command set-up function `s626_ai_cmd()` contains this code:
-
-	switch (cmd->stop_src) {
-	case TRIG_COUNT:
-		/*  data arrives as one packet */
-		devpriv->ai_sample_count = cmd->stop_arg;
-		devpriv->ai_continous = 0;
-		break;
-	case TRIG_NONE:
-		/*  continous acquisition */
-		devpriv->ai_continous = 1;
-		devpriv->ai_sample_count = 0;
-		break;
-	}
-
-The interrupt handler `s626_irq_handler()` contains this code:
-
-		if (!(devpriv->ai_continous))
-			devpriv->ai_sample_count--;
-		if (devpriv->ai_sample_count <= 0) {
-			devpriv->ai_cmd_running = 0;
-			/* ... */
-		}
-
-So `devpriv->ai_sample_count` is only decremented for the `TRIG_COUNT`
-case, but `devpriv->ai_cmd_running` is set to 0 (and the command
-stopped) regardless.
-
-Fix this in `s626_ai_cmd()` by setting `devpriv->ai_sample_count = 1`
-for the `TRIG_NONE` case.  The interrupt handler will not decrement it
-so it will remain greater than 0 and the check for stopping the
-acquisition will fail.
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/s626.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rtlwifi/usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/staging/comedi/drivers/s626.c
-+++ b/drivers/staging/comedi/drivers/s626.c
-@@ -1882,7 +1882,7 @@ static int s626_ai_cmd(struct comedi_dev
- 	case TRIG_NONE:
- 		/*  continous acquisition */
- 		devpriv->ai_continous = 1;
--		devpriv->ai_sample_count = 0;
-+		devpriv->ai_sample_count = 1;
- 		break;
+--- a/drivers/net/wireless/rtlwifi/usb.c
++++ b/drivers/net/wireless/rtlwifi/usb.c
+@@ -853,6 +853,7 @@ static void _rtl_usb_transmit(struct iee
+ 	if (unlikely(!_urb)) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 			 "Can't allocate urb. Drop skb!\n");
++		kfree_skb(skb);
+ 		return;
  	}
- 
+ 	urb_list = &rtlusb->tx_pending[ep_num];
 
 
