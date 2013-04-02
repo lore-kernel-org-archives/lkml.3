@@ -1,118 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932579Ab3DBTfN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 15:35:13 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:59294 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762204Ab3DBTfJ (ORCPT
+	id S1762251Ab3DBThA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 15:37:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57405 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753681Ab3DBTg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 15:35:09 -0400
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Tue, 02 Apr 2013 14:35:07 -0500
-X-Originating-IP: 108.223.40.66
-From: Guenter Roeck <linux@roeck-us.net>
-To: "David S. Miller" <davem@davemloft.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        David Daney <david.daney@cavium.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3/5] net/cadence/macb: Simplify OF dependencies
-Date: Tue,  2 Apr 2013 12:35:09 -0700
-Message-Id: <1364931311-30603-4-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
-In-Reply-To: <1364931311-30603-1-git-send-email-linux@roeck-us.net>
-References: <1364931311-30603-1-git-send-email-linux@roeck-us.net>
+	Tue, 2 Apr 2013 15:36:57 -0400
+Date: Tue, 2 Apr 2013 12:36:03 -0700
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-c5b41a67505cc3c9744d8f105c63a3bf3c443a01@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, bp@suse.de
+In-Reply-To: <1363788448-31325-5-git-send-email-bp@alien8.de>
+References: <1363788448-31325-5-git-send-email-bp@alien8.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpu] x86, cpu: Convert Cyrix coma bug detection
+Git-Commit-ID: c5b41a67505cc3c9744d8f105c63a3bf3c443a01
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 12:36:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With of_get_mac_address() and of_get_phy_mode() now defined as dummy
-functions if OF_NET is not configured, it is no longer necessary to
-provide OF dependent functions as front-end. Also, the two functions
-depend on OF_NET, not on OF, so the conditional code was not correct
-anyway.
+Commit-ID:  c5b41a67505cc3c9744d8f105c63a3bf3c443a01
+Gitweb:     http://git.kernel.org/tip/c5b41a67505cc3c9744d8f105c63a3bf3c443a01
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Wed, 20 Mar 2013 15:07:26 +0100
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Tue, 2 Apr 2013 10:12:54 -0700
 
-Drop the front-end functions and call of_get_mac_address() and
-of_get_phy_mode() directly instead.
+x86, cpu: Convert Cyrix coma bug detection
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+... to the new facility.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1363788448-31325-5-git-send-email-bp@alien8.de
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- drivers/net/ethernet/cadence/macb.c |   43 +++++------------------------------
- 1 file changed, 6 insertions(+), 37 deletions(-)
+ arch/x86/include/asm/cpufeature.h | 1 +
+ arch/x86/include/asm/processor.h  | 1 -
+ arch/x86/kernel/cpu/cyrix.c       | 5 +++--
+ arch/x86/kernel/cpu/proc.c        | 2 +-
+ 4 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 7903943..b2a9d20 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -1472,41 +1472,7 @@ static const struct of_device_id macb_dt_ids[] = {
- 	{ .compatible = "cdns,gem" },
- 	{ /* sentinel */ }
- };
--
- MODULE_DEVICE_TABLE(of, macb_dt_ids);
--
--static int macb_get_phy_mode_dt(struct platform_device *pdev)
--{
--	struct device_node *np = pdev->dev.of_node;
--
--	if (np)
--		return of_get_phy_mode(np);
--
--	return -ENODEV;
--}
--
--static int macb_get_hwaddr_dt(struct macb *bp)
--{
--	struct device_node *np = bp->pdev->dev.of_node;
--	if (np) {
--		const char *mac = of_get_mac_address(np);
--		if (mac) {
--			memcpy(bp->dev->dev_addr, mac, ETH_ALEN);
--			return 0;
--		}
--	}
--
--	return -ENODEV;
--}
--#else
--static int macb_get_phy_mode_dt(struct platform_device *pdev)
--{
--	return -ENODEV;
--}
--static int macb_get_hwaddr_dt(struct macb *bp)
--{
--	return -ENODEV;
--}
- #endif
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 25eb948..a2b65c1 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -224,6 +224,7 @@
  
- static int __init macb_probe(struct platform_device *pdev)
-@@ -1519,6 +1485,7 @@ static int __init macb_probe(struct platform_device *pdev)
- 	u32 config;
- 	int err = -ENXIO;
- 	struct pinctrl *pinctrl;
-+	const char *mac;
+ #define X86_BUG_F00F		X86_BUG(0) /* Intel F00F */
+ #define X86_BUG_FDIV		X86_BUG(1) /* FPU FDIV */
++#define X86_BUG_COMA		X86_BUG(2) /* Cyrix 6x86 coma */
  
- 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!regs) {
-@@ -1592,11 +1559,13 @@ static int __init macb_probe(struct platform_device *pdev)
- 	config |= macb_dbw(bp);
- 	macb_writel(bp, NCFGR, config);
+ #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
  
--	err = macb_get_hwaddr_dt(bp);
--	if (err < 0)
-+	mac = of_get_mac_address(pdev->dev.of_node);
-+	if (mac)
-+		memcpy(bp->dev->dev_addr, mac, ETH_ALEN);
-+	else
- 		macb_get_hwaddr(bp);
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index ea22dfa..4e2fa28 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -91,7 +91,6 @@ struct cpuinfo_x86 {
+ 	/* Problems on some 486Dx4's and old 386's: */
+ 	char			hard_math;
+ 	char			rfu;
+-	char			coma_bug;
+ 	char			pad0;
+ #else
+ 	/* Number of 4K pages in DTLB/ITLB combined(in pages): */
+diff --git a/arch/x86/kernel/cpu/cyrix.c b/arch/x86/kernel/cpu/cyrix.c
+index 4fbd384..d048d5c 100644
+--- a/arch/x86/kernel/cpu/cyrix.c
++++ b/arch/x86/kernel/cpu/cyrix.c
+@@ -249,7 +249,7 @@ static void __cpuinit init_cyrix(struct cpuinfo_x86 *c)
+ 		/* Emulate MTRRs using Cyrix's ARRs. */
+ 		set_cpu_cap(c, X86_FEATURE_CYRIX_ARR);
+ 		/* 6x86's contain this bug */
+-		c->coma_bug = 1;
++		set_cpu_bug(c, X86_BUG_COMA);
+ 		break;
  
--	err = macb_get_phy_mode_dt(pdev);
-+	err = of_get_phy_mode(pdev->dev.of_node);
- 	if (err < 0) {
- 		pdata = pdev->dev.platform_data;
- 		if (pdata && pdata->is_rmii)
--- 
-1.7.9.7
-
+ 	case 4: /* MediaGX/GXm or Geode GXM/GXLV/GX1 */
+@@ -317,7 +317,8 @@ static void __cpuinit init_cyrix(struct cpuinfo_x86 *c)
+ 			/* Enable MMX extensions (App note 108) */
+ 			setCx86_old(CX86_CCR7, getCx86_old(CX86_CCR7)|1);
+ 		} else {
+-			c->coma_bug = 1;      /* 6x86MX, it has the bug. */
++			/* A 6x86MX - it has the bug. */
++			set_cpu_bug(c, X86_BUG_COMA);
+ 		}
+ 		tmp = (!(dir0_lsn & 7) || dir0_lsn & 1) ? 2 : 0;
+ 		Cx86_cb[tmp] = cyrix_model_mult2[dir0_lsn & 7];
+diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
+index 5dfb6c6..37a198b 100644
+--- a/arch/x86/kernel/cpu/proc.c
++++ b/arch/x86/kernel/cpu/proc.c
+@@ -36,7 +36,7 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
+ 		   "wp\t\t: %s\n",
+ 		   static_cpu_has_bug(X86_BUG_FDIV) ? "yes" : "no",
+ 		   static_cpu_has_bug(X86_BUG_F00F) ? "yes" : "no",
+-		   c->coma_bug ? "yes" : "no",
++		   static_cpu_has_bug(X86_BUG_COMA) ? "yes" : "no",
+ 		   c->hard_math ? "yes" : "no",
+ 		   c->hard_math ? "yes" : "no",
+ 		   c->cpuid_level,
