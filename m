@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964782Ab3DBWRk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:17:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33671 "EHLO
+	id S933979Ab3DBWSO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:18:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33659 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933864Ab3DBWOo (ORCPT
+	with ESMTP id S933729Ab3DBWOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:44 -0400
+	Tue, 2 Apr 2013 18:14:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Franke <dan.franke@schneider-electric.com>,
-        Sriramakrishnan A G <srk@ti.com>, Mugunthan V N <mugunthanvnm@ti.com>,
-        Eric Dumazet <edumazet@google.com>,
+        Hong Zhiguo <honkiko@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 56/68] drivers: net: ethernet: davinci_emac: use netif_wake_queue() while restarting tx queue
-Date: Tue,  2 Apr 2013 15:13:45 -0700
-Message-Id: <20130402221336.452379651@linuxfoundation.org>
+Subject: [ 63/68] ipv6: fix bad free of addrconf_init_net
+Date: Tue,  2 Apr 2013 15:13:52 -0700
+Message-Id: <20130402221337.259268786@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
@@ -30,30 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-To restart tx queue use netif_wake_queue() intead of netif_start_queue()
-so that net schedule will restart transmission immediately which will
-increase network performance while doing huge data transfers.
+From: Hong Zhiguo <honkiko@gmail.com>
 
-Reported-by: Dan Franke <dan.franke@schneider-electric.com>
-Suggested-by: Sriramakrishnan A G <srk@ti.com>
-Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+[ Upstream commit a79ca223e029aa4f09abb337accf1812c900a800 ]
+
+Signed-off-by: Hong Zhiguo <honkiko@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/ti/davinci_emac.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv6/addrconf.c |   26 ++++++++++----------------
+ 1 file changed, 10 insertions(+), 16 deletions(-)
 
---- a/drivers/net/ethernet/ti/davinci_emac.c
-+++ b/drivers/net/ethernet/ti/davinci_emac.c
-@@ -1052,7 +1052,7 @@ static void emac_tx_handler(void *token,
- 	atomic_dec(&priv->cur_tx);
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -4686,26 +4686,20 @@ static void addrconf_sysctl_unregister(s
  
- 	if (unlikely(netif_queue_stopped(ndev)))
--		netif_start_queue(ndev);
-+		netif_wake_queue(ndev);
- 	ndev->stats.tx_packets++;
- 	ndev->stats.tx_bytes += len;
- 	dev_kfree_skb_any(skb);
+ static int __net_init addrconf_init_net(struct net *net)
+ {
+-	int err;
++	int err = -ENOMEM;
+ 	struct ipv6_devconf *all, *dflt;
+ 
+-	err = -ENOMEM;
+-	all = &ipv6_devconf;
+-	dflt = &ipv6_devconf_dflt;
++	all = kmemdup(&ipv6_devconf, sizeof(ipv6_devconf), GFP_KERNEL);
++	if (all == NULL)
++		goto err_alloc_all;
+ 
+-	if (!net_eq(net, &init_net)) {
+-		all = kmemdup(all, sizeof(ipv6_devconf), GFP_KERNEL);
+-		if (all == NULL)
+-			goto err_alloc_all;
++	dflt = kmemdup(&ipv6_devconf_dflt, sizeof(ipv6_devconf_dflt), GFP_KERNEL);
++	if (dflt == NULL)
++		goto err_alloc_dflt;
+ 
+-		dflt = kmemdup(dflt, sizeof(ipv6_devconf_dflt), GFP_KERNEL);
+-		if (dflt == NULL)
+-			goto err_alloc_dflt;
+-	} else {
+-		/* these will be inherited by all namespaces */
+-		dflt->autoconf = ipv6_defaults.autoconf;
+-		dflt->disable_ipv6 = ipv6_defaults.disable_ipv6;
+-	}
++	/* these will be inherited by all namespaces */
++	dflt->autoconf = ipv6_defaults.autoconf;
++	dflt->disable_ipv6 = ipv6_defaults.disable_ipv6;
+ 
+ 	net->ipv6.devconf_all = all;
+ 	net->ipv6.devconf_dflt = dflt;
 
 
