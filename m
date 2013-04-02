@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759749Ab3DBL1n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 07:27:43 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55175 "EHLO
+	id S1760051Ab3DBLcC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 07:32:02 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46523 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759646Ab3DBL1m (ORCPT
+	by vger.kernel.org with ESMTP id S1759941Ab3DBLcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 07:27:42 -0400
-Date: Tue, 2 Apr 2013 12:27:40 +0100
+	Tue, 2 Apr 2013 07:32:00 -0400
+Date: Tue, 2 Apr 2013 12:31:57 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: ab8500: Staticize
- ab8500_ext_regulator_[init|exit] if !CONFIG_REGULATOR_AB8500_EXT
-Message-ID: <20130402112740.GI23065@opensource.wolfsonmicro.com>
-References: <1364862038.15806.1.camel@phoenix>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: [PATCH 0/16] extcon: arizona: Updates for v3.10
+Message-ID: <20130402113157.GJ23065@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QxIEt88oQPsT6QmF"
+	protocol="application/pgp-signature"; boundary="cy9Nn4fUvYST66Pl"
 Content-Disposition: inline
-In-Reply-To: <1364862038.15806.1.camel@phoenix>
 X-Cookie: Today is what happened to yesterday.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,40 +26,81 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---QxIEt88oQPsT6QmF
+--cy9Nn4fUvYST66Pl
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Apr 02, 2013 at 08:20:38AM +0800, Axel Lin wrote:
-> Fix below build errors:
->=20
->   LD      arch/arm/mach-ux500/built-in.o
-> arch/arm/mach-ux500/board-mop500-regulators.o: In function `ab8500_ext_re=
-gulator_init':
+The following changes since commit df8c3dbee9e6f19ddb0ae8e05cdf76eb2d3b7f00:
 
-Lee?
+  extcon: arizona: Fix interaction between headphone outputs and identification (2013-03-26 15:45:26 +0000)
 
---QxIEt88oQPsT6QmF
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git tags/extcon-arizona-v3.10
+
+for you to fetch changes up to 7abd4e2a8f1c3e534da44c35e2d3d6353573e51f:
+
+  extcon: arizona: Make mic detection timeout configurable (2013-04-02 11:54:07 +0100)
+
+----------------------------------------------------------------
+extcon: arizona: Updates for v3.10
+
+There's a bunch of different things in this series, I can split them out
+if need be:
+
+ - Support for configuring the button detection circuit to reflect the
+   accessories supplied with the system.
+ - Improvements in the HPDET based detection scheme.
+ - Additional robustness against more pathological use cases.
+ - A few small standalone fixes.
+
+----------------------------------------------------------------
+Charles Keepax (1):
+      extcon: arizona: Check we report a valid impedance
+
+Mark Brown (15):
+      mfd: wm5102: Add registers for microphone detection level configuration
+      extcon: arizona: Attempt more microphone measurements
+      extcon: arizona: Allow configuration of button detection
+      extcon: arizona: Don't pulse MICBIAS for HPDET identification
+      extcon: arizona: Allow pull to be disabled on GPIO5 when used for JACKET
+      extcon: arizona: Raise minimum microphone impedance for HPDET method
+      extcon: arizona: Suppress duplicate JACKDET reports
+      extcon: arizona: Tune up HPDET debounce
+      extcon: arizona: Retry HPDET identification for high impedance
+      extcon: arizona: Don't ground flip when using HPDET identification
+      extcon: arizona: Simplify HPDET based identification
+      extcon: arizona: Time out if MICDET fails to report
+      extcon: arizona: Clear existing button reports before reporting new one
+      extcon: arizona: Allow additional debounce during microphone detection
+      extcon: arizona: Make mic detection timeout configurable
+
+ drivers/extcon/extcon-arizona.c       |  391 ++++++++++++++++++++++++---------
+ drivers/mfd/wm5102-tables.c           |    8 +
+ include/linux/mfd/arizona/pdata.h     |   21 ++
+ include/linux/mfd/arizona/registers.h |    4 +
+ 4 files changed, 320 insertions(+), 104 deletions(-)
+
+--cy9Nn4fUvYST66Pl
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRWsB8AAoJELSic+t+oim9u0IP/3WqaZhU0i4gSavb2FIBIT1V
-0IicliWgjs9sH6MhX6+wkRBDiU1VuFpLGOmhUDAohD0bQ58YW52zyOjdt3q/cB+Q
-l5SXRcNt5Me/UuFnQLVP99E8NgHnx2WINy+2S4kZ9+IuFF4hCLDuyCl/7JQoe+NI
-1Q+IdA6EtVPQ8HKSA2sTztHNaxATAeqTG7RHj1qO/cUwNB5z42+gpCkeXbE+TDNH
-lhTTLkD6yLWZo4eHB+ftlhwRxSLCutJt7zU/R+aNQZRJ7VCln9K6x/aj2oxQjhOu
-L9sVLgU4X/O8chVeAF2jhhSt/cfqh5yuKS72MXPkqWbwBu6JtaGZWiRtW5yIWnxt
-e957NOSsCxijJCr+G2JKMV8+w3sJwfae23ZeCfwFbZ7QPK+G5QoLbpEeU1SiZ6Nm
-Zm+Nmyq9zHp843DZLjC+XnY/9QfhbVNl5oQi52h4NFlxjVU592aWc5Po5Tkxi93i
-N8Mb2twr+Dn0PtKZT2H4/AEB3NAvMLXY5Oxvcj0/yDMSUhyJO/r3A2GIGGergSnW
-JKcU4v8ZAp/pDs7yGIDBSqOPL6OXtItN105oP0p0Gs4OpRF6kWFWduWINtajHw6N
-/cvamgNYGu8e4PWo0l1jVE22tKiDG9OlBeVO+bLTDYC3baqsRA1i8O9b4n4kTaur
-zysm1lVNehPBD6wSY6C9
-=F7S2
+iQIcBAEBAgAGBQJRWsGgAAoJELSic+t+oim9O4UP/148Yc5/J/mUNIm1Vm0eYoYU
+7FdmSi4xTcF9n4+sh4O1roovRTF8VyYMmutzph3IoO1J+w4093gPbfgiEn45UwBD
+ywQw3thXQyDgt010LOInz2ytxiJGXXzdoIo3XBR396b61ZR499JjegtIHBWFOtfZ
+u6hwq81VK2VC6B1js+BYhH95wIlhVJtfVf8aVXt9OA7+tOlr8IfqREIoUfIbIVFL
+kCKI31POGoxhN70j9OUdjFbC5EUtWWjTw+jF66J1oKXPGORYaIDosRHXrBVXq9cG
+vLCWvh7XiNf3XvW0oiK1tQ+84WzVRI4v6GBPDp6wz+SDKckHv/jrDFuQhSwMj7rm
+KhcQ+QuLlbFK/a2+gXBDsQEPdyBy1OzqY2dqwcILm9rsRPLCCS/rH4HXc2VRvwKp
+HrushXQgSLoW9h0oEghHwzmN4nDmyNHW6gPmA9w8AYvAzEc98vmL7r4etMRmJEWH
+N3ZtQne/1CKGcp4ZUbLDqvl15xHQGiPPVEGT4ScRRJ+cydWUp49l+CREL3OZjBqf
+103Yms2kN9PaNClvYZIx6uOFdIAu1ZEciqlE9OCQ3iLwN+Pxblw3xR8PRaAw58Y1
+S1oK/fX8+M9d91iWjBke+OiaLJmWRahBucOAlpKZ5Lvn/az6uBz/BLewra/Vd5dI
+0jH5EWOmd4DXmXjzFkYl
+=vg5G
 -----END PGP SIGNATURE-----
 
---QxIEt88oQPsT6QmF--
+--cy9Nn4fUvYST66Pl--
