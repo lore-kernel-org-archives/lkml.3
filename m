@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757387Ab3DBWnj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:43:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33154 "EHLO
+	id S1757585Ab3DBWny (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:43:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33149 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761705Ab3DBWMy (ORCPT
+	with ESMTP id S1760573Ab3DBWMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:54 -0400
+	Tue, 2 Apr 2013 18:12:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Lingzhu Xiang <lxiang@redhat.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 093/124] tracing: Prevent buffer overwrite disabled for latency tracers
-Date: Tue,  2 Apr 2013 15:11:15 -0700
-Message-Id: <20130402221114.920642315@linuxfoundation.org>
+Subject: [ 092/124] xen/events: avoid race with raising an event in unmask_evtchn()
+Date: Tue,  2 Apr 2013 15:11:14 -0700
+Message-Id: <20130402221114.806326162@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -27,286 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit 613f04a0f51e6e68ac6fe571ab79da3c0a5eb4da upstream.
+commit c26377e62f4e6bfb4d99ef88526047209701a83f upstream.
 
-The latency tracers require the buffers to be in overwrite mode,
-otherwise they get screwed up. Force the buffers to stay in overwrite
-mode when latency tracers are enabled.
+In unmask_evtchn(), when the mask bit is cleared after testing for
+pending and the event becomes pending between the test and clear, then
+the upcall will not become pending and the event may be lost or
+delayed.
 
-Added a flag_changed() method to the tracer structure to allow
-the tracers to see what flags are being changed, and also be able
-to prevent the change from happing.
+Avoid this by always clearing the mask bit before checking for
+pending.  If a hypercall is needed, remask the event as
+EVTCHNOP_unmask will only retrigger pending events if they were
+masked.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+This fixes a regression introduced in 3.7 by
+b5e579232d635b79a3da052964cb357ccda8d9ea (xen/events: fix
+unmask_evtchn for PV on HVM guests) which reordered the clear mask and
+check pending operations.
+
+Changes in v2:
+- set mask before hypercall.
+
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
 Reviewed-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace.c              |   38 ++++++++++++++++++++++++++++++++------
- kernel/trace/trace.h              |    6 ++++++
- kernel/trace/trace_irqsoff.c      |   19 ++++++++++++++-----
- kernel/trace/trace_sched_wakeup.c |   18 +++++++++++++-----
- 4 files changed, 65 insertions(+), 16 deletions(-)
+ drivers/xen/events.c |   20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2836,11 +2836,25 @@ static int set_tracer_option(struct trac
- 	return -EINVAL;
- }
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -388,11 +388,23 @@ static void unmask_evtchn(int port)
  
--static void set_tracer_flags(unsigned int mask, int enabled)
-+/* Some tracers require overwrite to stay enabled */
-+int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set)
-+{
-+	if (tracer->enabled && (mask & TRACE_ITER_OVERWRITE) && !set)
-+		return -1;
-+
-+	return 0;
-+}
-+
-+int set_tracer_flag(unsigned int mask, int enabled)
- {
- 	/* do nothing if flag is already set */
- 	if (!!(trace_flags & mask) == !!enabled)
--		return;
-+		return 0;
-+
-+	/* Give the tracer a chance to approve the change */
-+	if (current_trace->flag_changed)
-+		if (current_trace->flag_changed(current_trace, mask, !!enabled))
-+			return -EINVAL;
+ 	if (unlikely((cpu != cpu_from_evtchn(port))))
+ 		do_hypercall = 1;
+-	else
++	else {
++		/*
++		 * Need to clear the mask before checking pending to
++		 * avoid a race with an event becoming pending.
++		 *
++		 * EVTCHNOP_unmask will only trigger an upcall if the
++		 * mask bit was set, so if a hypercall is needed
++		 * remask the event.
++		 */
++		sync_clear_bit(port, &s->evtchn_mask[0]);
+ 		evtchn_pending = sync_test_bit(port, &s->evtchn_pending[0]);
  
- 	if (enabled)
- 		trace_flags |= mask;
-@@ -2859,13 +2873,15 @@ static void set_tracer_flags(unsigned in
+-	if (unlikely(evtchn_pending && xen_hvm_domain()))
+-		do_hypercall = 1;
++		if (unlikely(evtchn_pending && xen_hvm_domain())) {
++			sync_set_bit(port, &s->evtchn_mask[0]);
++			do_hypercall = 1;
++		}
++	}
  
- 	if (mask == TRACE_ITER_PRINTK)
- 		trace_printk_start_stop_comm(enabled);
-+
-+	return 0;
- }
+ 	/* Slow path (hypercall) if this is a non-local port or if this is
+ 	 * an hvm domain and an event is pending (hvm domains don't have
+@@ -403,8 +415,6 @@ static void unmask_evtchn(int port)
+ 	} else {
+ 		struct vcpu_info *vcpu_info = __this_cpu_read(xen_vcpu);
  
- static int trace_set_options(char *option)
- {
- 	char *cmp;
- 	int neg = 0;
--	int ret = 0;
-+	int ret = -ENODEV;
- 	int i;
- 
- 	cmp = strstrip(option);
-@@ -2879,7 +2895,7 @@ static int trace_set_options(char *optio
- 
- 	for (i = 0; trace_options[i]; i++) {
- 		if (strcmp(cmp, trace_options[i]) == 0) {
--			set_tracer_flags(1 << i, !neg);
-+			ret = set_tracer_flag(1 << i, !neg);
- 			break;
- 		}
- 	}
-@@ -2898,6 +2914,7 @@ tracing_trace_options_write(struct file
- 			size_t cnt, loff_t *ppos)
- {
- 	char buf[64];
-+	int ret;
- 
- 	if (cnt >= sizeof(buf))
- 		return -EINVAL;
-@@ -2907,7 +2924,9 @@ tracing_trace_options_write(struct file
- 
- 	buf[cnt] = 0;
- 
--	trace_set_options(buf);
-+	ret = trace_set_options(buf);
-+	if (ret < 0)
-+		return ret;
- 
- 	*ppos += cnt;
- 
-@@ -3213,6 +3232,9 @@ static int tracing_set_tracer(const char
- 		goto out;
- 
- 	trace_branch_disable();
-+
-+	current_trace->enabled = false;
-+
- 	if (current_trace && current_trace->reset)
- 		current_trace->reset(tr);
- 	if (current_trace && current_trace->use_max_tr) {
-@@ -3244,6 +3266,7 @@ static int tracing_set_tracer(const char
- 	}
- 
- 	current_trace = t;
-+	current_trace->enabled = true;
- 	trace_branch_enable(tr);
-  out:
- 	mutex_unlock(&trace_types_lock);
-@@ -4648,9 +4671,12 @@ trace_options_core_write(struct file *fi
- 		return -EINVAL;
- 
- 	mutex_lock(&trace_types_lock);
--	set_tracer_flags(1 << index, val);
-+	ret = set_tracer_flag(1 << index, val);
- 	mutex_unlock(&trace_types_lock);
- 
-+	if (ret < 0)
-+		return ret;
-+
- 	*ppos += cnt;
- 
- 	return cnt;
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -283,10 +283,14 @@ struct tracer {
- 	enum print_line_t	(*print_line)(struct trace_iterator *iter);
- 	/* If you handled the flag setting, return 0 */
- 	int			(*set_flag)(u32 old_flags, u32 bit, int set);
-+	/* Return 0 if OK with change, else return non-zero */
-+	int			(*flag_changed)(struct tracer *tracer,
-+						u32 mask, int set);
- 	struct tracer		*next;
- 	struct tracer_flags	*flags;
- 	bool			print_max;
- 	bool			use_max_tr;
-+	bool			enabled;
- };
- 
- 
-@@ -835,6 +839,8 @@ extern const char *__stop___trace_bprint
- 
- void trace_printk_init_buffers(void);
- void trace_printk_start_comm(void);
-+int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set);
-+int set_tracer_flag(unsigned int mask, int enabled);
- 
- #undef FTRACE_ENTRY
- #define FTRACE_ENTRY(call, struct_name, id, tstruct, print, filter)	\
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -32,7 +32,7 @@ enum {
- 
- static int trace_type __read_mostly;
- 
--static int save_lat_flag;
-+static int save_flags;
- 
- static void stop_irqsoff_tracer(struct trace_array *tr, int graph);
- static int start_irqsoff_tracer(struct trace_array *tr, int graph);
-@@ -558,8 +558,11 @@ static void stop_irqsoff_tracer(struct t
- 
- static void __irqsoff_tracer_init(struct trace_array *tr)
- {
--	save_lat_flag = trace_flags & TRACE_ITER_LATENCY_FMT;
--	trace_flags |= TRACE_ITER_LATENCY_FMT;
-+	save_flags = trace_flags;
-+
-+	/* non overwrite screws up the latency tracers */
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, 1);
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, 1);
- 
- 	tracing_max_latency = 0;
- 	irqsoff_trace = tr;
-@@ -573,10 +576,13 @@ static void __irqsoff_tracer_init(struct
- 
- static void irqsoff_tracer_reset(struct trace_array *tr)
- {
-+	int lat_flag = save_flags & TRACE_ITER_LATENCY_FMT;
-+	int overwrite_flag = save_flags & TRACE_ITER_OVERWRITE;
-+
- 	stop_irqsoff_tracer(tr, is_graph());
- 
--	if (!save_lat_flag)
--		trace_flags &= ~TRACE_ITER_LATENCY_FMT;
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, lat_flag);
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, overwrite_flag);
- }
- 
- static void irqsoff_tracer_start(struct trace_array *tr)
-@@ -609,6 +615,7 @@ static struct tracer irqsoff_tracer __re
- 	.print_line     = irqsoff_print_line,
- 	.flags		= &tracer_flags,
- 	.set_flag	= irqsoff_set_flag,
-+	.flag_changed	= trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_irqsoff,
- #endif
-@@ -642,6 +649,7 @@ static struct tracer preemptoff_tracer _
- 	.print_line     = irqsoff_print_line,
- 	.flags		= &tracer_flags,
- 	.set_flag	= irqsoff_set_flag,
-+	.flag_changed	= trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_preemptoff,
- #endif
-@@ -677,6 +685,7 @@ static struct tracer preemptirqsoff_trac
- 	.print_line     = irqsoff_print_line,
- 	.flags		= &tracer_flags,
- 	.set_flag	= irqsoff_set_flag,
-+	.flag_changed	= trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_preemptirqsoff,
- #endif
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -36,7 +36,7 @@ static void __wakeup_reset(struct trace_
- static int wakeup_graph_entry(struct ftrace_graph_ent *trace);
- static void wakeup_graph_return(struct ftrace_graph_ret *trace);
- 
--static int save_lat_flag;
-+static int save_flags;
- 
- #define TRACE_DISPLAY_GRAPH     1
- 
-@@ -540,8 +540,11 @@ static void stop_wakeup_tracer(struct tr
- 
- static int __wakeup_tracer_init(struct trace_array *tr)
- {
--	save_lat_flag = trace_flags & TRACE_ITER_LATENCY_FMT;
--	trace_flags |= TRACE_ITER_LATENCY_FMT;
-+	save_flags = trace_flags;
-+
-+	/* non overwrite screws up the latency tracers */
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, 1);
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, 1);
- 
- 	tracing_max_latency = 0;
- 	wakeup_trace = tr;
-@@ -563,12 +566,15 @@ static int wakeup_rt_tracer_init(struct
- 
- static void wakeup_tracer_reset(struct trace_array *tr)
- {
-+	int lat_flag = save_flags & TRACE_ITER_LATENCY_FMT;
-+	int overwrite_flag = save_flags & TRACE_ITER_OVERWRITE;
-+
- 	stop_wakeup_tracer(tr);
- 	/* make sure we put back any tasks we are tracing */
- 	wakeup_reset(tr);
- 
--	if (!save_lat_flag)
--		trace_flags &= ~TRACE_ITER_LATENCY_FMT;
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, lat_flag);
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, overwrite_flag);
- }
- 
- static void wakeup_tracer_start(struct trace_array *tr)
-@@ -594,6 +600,7 @@ static struct tracer wakeup_tracer __rea
- 	.print_line	= wakeup_print_line,
- 	.flags		= &tracer_flags,
- 	.set_flag	= wakeup_set_flag,
-+	.flag_changed	= trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_wakeup,
- #endif
-@@ -615,6 +622,7 @@ static struct tracer wakeup_rt_tracer __
- 	.print_line	= wakeup_print_line,
- 	.flags		= &tracer_flags,
- 	.set_flag	= wakeup_set_flag,
-+	.flag_changed	= trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_wakeup,
- #endif
+-		sync_clear_bit(port, &s->evtchn_mask[0]);
+-
+ 		/*
+ 		 * The following is basically the equivalent of
+ 		 * 'hw_resend_irq'. Just like a real IO-APIC we 'lose
 
 
