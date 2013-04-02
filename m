@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759543Ab3DBA0b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 20:26:31 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47789 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758444Ab3DBA02 (ORCPT
+	id S1758344Ab3DBAhu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 20:37:50 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52563 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab3DBAhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 20:26:28 -0400
-Date: Tue, 2 Apr 2013 11:26:27 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the vfs tree
-Message-Id: <20130402112627.223048680be1397ad59cdcec@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__2_Apr_2013_11_26_27_+1100_SZq5CFA.y7qgc_2s"
+	Mon, 1 Apr 2013 20:37:48 -0400
+X-AuditID: 9c930197-b7c9dae000006959-e6-515a285a5b21
+Date: Tue, 2 Apr 2013 09:37:46 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH] THP: Use explicit memory barrier
+Message-ID: <20130402003746.GA30444@blaptop>
+References: <1364773535-26264-1-git-send-email-minchan@kernel.org>
+ <alpine.DEB.2.02.1304011634530.21603@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1304011634530.21603@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__2_Apr_2013_11_26_27_+1100_SZq5CFA.y7qgc_2s
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Apr 01, 2013 at 04:35:38PM -0700, David Rientjes wrote:
+> On Mon, 1 Apr 2013, Minchan Kim wrote:
+> 
+> > __do_huge_pmd_anonymous_page depends on page_add_new_anon_rmap's
+> > spinlock for making sure that clear_huge_page write become visible
+> > after set set_pmd_at() write.
+> > 
+> > But lru_cache_add_lru uses pagevec so it could miss spinlock
+> > easily so above rule was broken so user may see inconsistent data.
+> > 
+> > This patch fixes it with using explict barrier rather than depending
+> > on lru spinlock.
+> > 
+> 
+> Is this the same issue that Andrea responded to in the "thp and memory 
+> barrier assumptions" thread at http://marc.info/?t=134333512700004 ?
 
-Hi Al,
+Yes and Peter pointed out further step.
+Thanks for pointing out.
+Not that I know that Andrea alreay noticed it, I don't care about this
+patch.
 
-After merging the vfs tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Remaining question is Kame's one.
+Isn't there anyone could answer it?
 
-arch/powerpc/kernel/lparcfg.c:44:31: error: 'proc_ppc64_lparcfg' defined bu=
-t not used [-Werror=3Dunused-variable]
-cc1: all warnings being treated as errors
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Caused by commit dfda3a48f2e7 ("lparcfg: don't bother saving pointer to
-proc_dir_entry").
-
-I have used the vfs tree form next-20130328 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__2_Apr_2013_11_26_27_+1100_SZq5CFA.y7qgc_2s
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRWiWzAAoJEECxmPOUX5FEmg0P/3cEKgmDuhbHJZkYQRGXNxz9
-CN0m9+YF375u5gEgyQBOl8KBYL4rIDH3IuTz2yTkjE/sg8THuGp0NDaYugF9Nd8M
-i1Lsc23O70QMtlDa/J1Wyk0EbVZh6ngqX4IJ7Rm0nsXPs1rJcTwLi4SYXnkvp6tY
-Wd8jBs8864Hs/6cM6c7mjwZiDVIrcqqmnjNg2CyYWBdnN98bZFDzNTM2hc1ZPCtk
-FI1jb+LOIh96MQAy58GWD4DZH0p36hcf+BizgSktbp9EmjAoQaPtODAgY3SzYiVj
-YzcSRp+nAKqKgA8GPQhamKCiyjTNuOITetIpzgfInmYYpCkDtArZEcO0rPOyGLHu
-J2NlLDxLIdgusgK30FLBFvBZNmm8Z9NJ8C2vYZ41FDTRWbueqBXtbFjtuj07RP6c
-C6JAsrRQ7/ubGtpN1TrXHx5Lwj2ssVLpzca5dPUV5YU8mkIvFaqLWqq3dUEv7Q87
-j9taUAe0WUNDFzqxeysN2KomWc/MdYGmJKnlfOqqxaWYdyH41TTeCZOk+4lsuUhN
-b06Gwqe0EK4kfXF/5CHszbuKOqHGRNFuuLTRHPwwC+Mth/w1g2UlYPpgZqB9wKdP
-DWWNiP14fk895Hwtw8zgw1hxJEwRIH9Cudu3u+qzaMabrBpc8jZMfEzLYeMqaKVB
-nMaKlqgEJBRYcsWigFPi
-=tUag
------END PGP SIGNATURE-----
-
---Signature=_Tue__2_Apr_2013_11_26_27_+1100_SZq5CFA.y7qgc_2s--
+-- 
+Kind regards,
+Minchan Kim
