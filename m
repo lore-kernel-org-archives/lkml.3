@@ -1,237 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762124Ab3DBSWZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 14:22:25 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:60745 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762076Ab3DBSUe (ORCPT
+	id S1762055Ab3DBSXt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 14:23:49 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:52624 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758373Ab3DBSXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 14:20:34 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: tomi.valkeinen@ti.com
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-arm-kernel@lists.infradead.org, plagnioj@jcrosoft.com,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCHv3 4/6] drivers/video/wm8505fb.c: use devm_ functions
-Date: Wed,  3 Apr 2013 07:20:36 +1300
-Message-Id: <1364926838-6721-5-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1364926838-6721-1-git-send-email-linux@prisktech.co.nz>
-References: <1364926838-6721-1-git-send-email-linux@prisktech.co.nz>
+	Tue, 2 Apr 2013 14:23:48 -0400
+X-Greylist: delayed 2142 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Apr 2013 14:23:47 EDT
+Date: Tue, 2 Apr 2013 11:23:44 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: irq: Call irqchit_init if no init_irq function
+ is specified
+Message-ID: <20130402182344.GK25867@quad.lixom.net>
+References: <1364503606-10597-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1364503606-10597-2-git-send-email-maxime.ripard@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364503606-10597-2-git-send-email-maxime.ripard@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Thu, Mar 28, 2013 at 09:46:44PM +0100, Maxime Ripard wrote:
+> More and more sub-architectures are using only the irqchip_init
+> function. Make the core code call this function if no init_irq field is
+> provided in the machine description to remove some boilerplate code.
+> 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-The various devm_ functions allocate memory that is released when a driver
-detaches.  This patch uses these functions for data that is allocated in
-the probe function of a platform device and is only freed in the remove
-function.
+Applied to next/cleanup (fixed the typo in the subject though :).
 
-The patch makes some other cleanups.  First, the original code used
-devm_kzalloc, but kfree.  This would lead to a double free.  The problem
-was found using the following semantic match (http://coccinelle.lip6.fr/):
+I'm trying to figure out how to best apply 2/2 without causing a lot of
+merge conflicts. It might make sense to either do it late in the merge
+window or stage it at the base of 3.11 cleanup. I'll revisit after I've
+dealt with the rest of the pull request queue.
 
-// <smpl>
-@@
-expression x,e;
-@@
-x = devm_kzalloc(...)
-... when != x = e
-?-kfree(x,...);
-// </smpl>
 
-The error-handing code of devm_request_and_ioremap does not print any
-warning message, because devm_request_and_ioremap does this.
-
-The call to dma_alloc_coherent is converted to its devm equivalent,
-dmam_alloc_coherent.  This implicitly introduces a call to
-dmam_free_coherent, which was completly missing in the original code.
-
-A semicolon is removed at the end of the error-handling code for the call
-to dma_alloc_coherent.
-
-The block of code calling fb_alloc_cmap is moved below the block of code
-calling wm8505fb_set_par, so that the error-handing code of the call to
-wm8505fb_set_par can just return ret.  This way there is only one block of
-error-handling code that needs to call fb_dealloc_cmap, and so this is
-moved up to the place where it is needed, eliminating the need for all
-gotos and labels in the function.  This was suggested by Tony Prisk.
-
-The initializations of fbi and ret at the beginning of the function are not
-necessary and are removed.  The call platform_set_drvdata(pdev, NULL); at
-the end of the function is also removed.
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
- drivers/video/wm8505fb.c |   79 +++++++++++-----------------------------------
- 1 file changed, 19 insertions(+), 60 deletions(-)
-
-diff --git a/drivers/video/wm8505fb.c b/drivers/video/wm8505fb.c
-index fe9afd6..020df1d 100644
---- a/drivers/video/wm8505fb.c
-+++ b/drivers/video/wm8505fb.c
-@@ -272,15 +272,11 @@ static int wm8505fb_probe(struct platform_device *pdev)
- 	unsigned long fb_mem_len;
- 	void *fb_mem_virt;
- 
--	ret = -ENOMEM;
--	fbi = NULL;
--
- 	fbi = devm_kzalloc(&pdev->dev, sizeof(struct wm8505fb_info) +
- 			sizeof(u32) * 16, GFP_KERNEL);
- 	if (!fbi) {
- 		dev_err(&pdev->dev, "Failed to initialize framebuffer device\n");
--		ret = -ENOMEM;
--		goto failed;
-+		return -ENOMEM;
- 	}
- 
- 	strcpy(fbi->fb.fix.id, DRIVER_NAME);
-@@ -306,31 +302,14 @@ static int wm8505fb_probe(struct platform_device *pdev)
- 	fbi->fb.pseudo_palette	= addr;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (res == NULL) {
--		dev_err(&pdev->dev, "no I/O memory resource defined\n");
--		ret = -ENODEV;
--		goto failed_fbi;
--	}
--
--	res = request_mem_region(res->start, resource_size(res), DRIVER_NAME);
--	if (res == NULL) {
--		dev_err(&pdev->dev, "failed to request I/O memory\n");
--		ret = -EBUSY;
--		goto failed_fbi;
--	}
--
--	fbi->regbase = ioremap(res->start, resource_size(res));
--	if (fbi->regbase == NULL) {
--		dev_err(&pdev->dev, "failed to map I/O memory\n");
--		ret = -EBUSY;
--		goto failed_free_res;
--	}
-+	fbi->regbase = devm_request_and_ioremap(&pdev->dev, res);
-+	if (fbi->regbase == NULL)
-+		return -EBUSY;
- 
- 	np = of_parse_phandle(pdev->dev.of_node, "default-mode", 0);
- 	if (!np) {
- 		pr_err("%s: No display description in Device Tree\n", __func__);
--		ret = -EINVAL;
--		goto failed_free_res;
-+		return -EINVAL;
- 	}
- 
- 	/*
-@@ -349,7 +328,7 @@ static int wm8505fb_probe(struct platform_device *pdev)
- 	ret |= of_property_read_u32(np, "bpp", &bpp);
- 	if (ret) {
- 		pr_err("%s: Unable to read display properties\n", __func__);
--		goto failed_free_res;
-+		return -EINVAL;
- 	}
- 
- 	of_mode.vmode = FB_VMODE_NONINTERLACED;
-@@ -363,12 +342,12 @@ static int wm8505fb_probe(struct platform_device *pdev)
- 
- 	/* try allocating the framebuffer */
- 	fb_mem_len = of_mode.xres * of_mode.yres * 2 * (bpp / 8);
--	fb_mem_virt = dma_alloc_coherent(&pdev->dev, fb_mem_len, &fb_mem_phys,
-+	fb_mem_virt = dmam_alloc_coherent(&pdev->dev, fb_mem_len, &fb_mem_phys,
- 				GFP_KERNEL);
- 	if (!fb_mem_virt) {
- 		pr_err("%s: Failed to allocate framebuffer\n", __func__);
- 		return -ENOMEM;
--	};
-+	}
- 
- 	fbi->fb.var.xres_virtual	= of_mode.xres;
- 	fbi->fb.var.yres_virtual	= of_mode.yres * 2;
-@@ -379,28 +358,29 @@ static int wm8505fb_probe(struct platform_device *pdev)
- 	fbi->fb.screen_base		= fb_mem_virt;
- 	fbi->fb.screen_size		= fb_mem_len;
- 
--	if (fb_alloc_cmap(&fbi->fb.cmap, 256, 0) < 0) {
--		dev_err(&pdev->dev, "Failed to allocate color map\n");
--		ret = -ENOMEM;
--		goto failed_free_io;
--	}
--
--	wm8505fb_init_hw(&fbi->fb);
--
- 	fbi->contrast = 0x80;
- 	ret = wm8505fb_set_par(&fbi->fb);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to set parameters\n");
--		goto failed_free_cmap;
-+		return ret;
- 	}
- 
-+	if (fb_alloc_cmap(&fbi->fb.cmap, 256, 0) < 0) {
-+		dev_err(&pdev->dev, "Failed to allocate color map\n");
-+		return -ENOMEM;
-+	}
-+
-+	wm8505fb_init_hw(&fbi->fb);
-+
- 	platform_set_drvdata(pdev, fbi);
- 
- 	ret = register_framebuffer(&fbi->fb);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev,
- 			"Failed to register framebuffer device: %d\n", ret);
--		goto failed_free_cmap;
-+		if (fbi->fb.cmap.len)
-+			fb_dealloc_cmap(&fbi->fb.cmap);
-+		return ret;
- 	}
- 
- 	ret = device_create_file(&pdev->dev, &dev_attr_contrast);
-@@ -414,25 +394,11 @@ static int wm8505fb_probe(struct platform_device *pdev)
- 	       fbi->fb.fix.smem_start + fbi->fb.fix.smem_len - 1);
- 
- 	return 0;
--
--failed_free_cmap:
--	if (fbi->fb.cmap.len)
--		fb_dealloc_cmap(&fbi->fb.cmap);
--failed_free_io:
--	iounmap(fbi->regbase);
--failed_free_res:
--	release_mem_region(res->start, resource_size(res));
--failed_fbi:
--	platform_set_drvdata(pdev, NULL);
--	kfree(fbi);
--failed:
--	return ret;
- }
- 
- static int wm8505fb_remove(struct platform_device *pdev)
- {
- 	struct wm8505fb_info *fbi = platform_get_drvdata(pdev);
--	struct resource *res;
- 
- 	device_remove_file(&pdev->dev, &dev_attr_contrast);
- 
-@@ -443,13 +409,6 @@ static int wm8505fb_remove(struct platform_device *pdev)
- 	if (fbi->fb.cmap.len)
- 		fb_dealloc_cmap(&fbi->fb.cmap);
- 
--	iounmap(fbi->regbase);
--
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	release_mem_region(res->start, resource_size(res));
--
--	kfree(fbi);
--
- 	return 0;
- }
- 
--- 
-1.7.9.5
-
+-Olof
