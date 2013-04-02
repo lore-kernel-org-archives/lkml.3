@@ -1,77 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760909Ab3DBJg2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:36:28 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:57401 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760330Ab3DBJg1 (ORCPT
+	id S1760962Ab3DBJgg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:36:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50798 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760555Ab3DBJgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:36:27 -0400
-Date: Tue, 2 Apr 2013 11:36:22 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Arun R Murthy <arun.murthy@stericsson.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] pwm: ab8500: Add .owner to struct pwm_ops
-Message-ID: <20130402093622.GB4416@avionic-0098.mockup.avionic-design.de>
-References: <1364699642.7876.1.camel@phoenix>
+	Tue, 2 Apr 2013 05:36:33 -0400
+Date: Tue, 2 Apr 2013 02:36:01 -0700
+From: tip-bot for Stephane Eranian <tipbot@zytor.com>
+Message-ID: <tip-12c08a9f591aeda57fb3b05897169e7da5439a79@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        namhyung.kim@lge.com, eranian@gmail.com, jolsa@redhat.com,
+        ak@linux.intel.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        namhyung.kim@lge.com, eranian@gmail.com, jolsa@redhat.com,
+        ak@linux.intel.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1360846649-6411-4-git-send-email-eranian@google.com>
+References: <1360846649-6411-4-git-send-email-eranian@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf stat: Add per-core aggregation
+Git-Commit-ID: 12c08a9f591aeda57fb3b05897169e7da5439a79
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FkmkrVfFsRoUs1wW"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1364699642.7876.1.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:4T311GBQ6uDnglTziT0d9OJQamB45dzNxCLqI4th4z8
- M1Afe5vLMboE9TX0PHCHdopd3H7Wxjp+kluCVxf5xU6pOKwYOY
- M+bAEFbZQO3PPStgYoSqBcXdCeJP+JZgVwmhMpsBgRo4YR4Qt6
- Nc7uIZkz1bUx0y2Hh9F68+EbGVks9M/SAfJtshg8Pu2wBtvxV2
- 8QDsCkNC6MMXa/VBTQUmW4NNtK+D0hWVgBd8qZHb7Z3xu0kmQb
- 5wnTQ0BkZnFsentn9Cd7TercGLzjOAkZjSWTvcqvJmozssXGx8
- 5IchsoujL465cbWCgnqcGuuKJ2yIFZSQa7xo5f+aEvSnBSknBJ
- nGj0ba/VoHxp45f6b69m7xWVsefiQljp/BGJnncVQUkhkjYFtq
- v/RlxedpoQ6d0bcTEZTcWudGC+v9pPgV/GPH62HTllYbgXFLGS
- R7gX5
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 02:36:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  12c08a9f591aeda57fb3b05897169e7da5439a79
+Gitweb:     http://git.kernel.org/tip/12c08a9f591aeda57fb3b05897169e7da5439a79
+Author:     Stephane Eranian <eranian@gmail.com>
+AuthorDate: Thu, 14 Feb 2013 13:57:29 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 25 Mar 2013 16:13:26 -0300
 
---FkmkrVfFsRoUs1wW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+perf stat: Add per-core aggregation
 
-On Sun, Mar 31, 2013 at 11:14:02AM +0800, Axel Lin wrote:
-> Add missing .owner of struct pwm_ops. This prevents the module from being
-> removed from underneath its users.
->=20
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  drivers/pwm/pwm-ab8500.c |    1 +
->  1 file changed, 1 insertion(+)
+This patch adds the --per-core option to perf stat.
 
-All 4 patches applied, thanks.
+This option is used to aggregate system-wide counts
+on a per physical core basis. On processors with
+hyperthreading, this means counts of all HT threads
+running on a physical core are aggregated.
 
-Thierry
+This mode is useful to find imblance between physical
+cores running an uniform workload. Cores are identified
+by socket: S0-C1, means physical core 1 on socket 0. Note
+that cores are identified using their physical core id,
+thus their numbering may not be continuous.
 
---FkmkrVfFsRoUs1wW
-Content-Type: application/pgp-signature
+Per core aggregation can be combined with interval printing:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+ # perf stat -a --per-core -I 1000 -e cycles sleep 1000
+ #           time core         cpus             counts events
+      1.000090030 S0-C0           1          4,765,747 cycles
+      1.000090030 S0-C1           1          5,580,647 cycles
+      1.000090030 S0-C2           1            221,181 cycles
+      1.000090030 S0-C3           1            266,092 cycles
 
-iQIcBAEBAgAGBQJRWqaWAAoJEN0jrNd/PrOh37UP/iuaiYR/0wIzlgfexE46DpSC
-X0wGkPfL8YsVfBbA+uId3M65zfk/ELdGjcWR1ab3CTn6irr4CkXluLs/Du+xxGgK
-G3+eGtakJh4qXTk9O6U+WikfJoOgTx9UjBIsGstYk+w0HBgaryWWDhdrC3pVMh00
-Bee9OHPD8rsQ0jucIRHJ3K7YobyybjlUfl/PudcXCoKhkufwy6VKoI+bx0SEFwi4
-+hiFO4PTSVFmrm/MDlkmHWT0iwsFis52EdffM7bv8Pi1HP2xEIvzaNnlHH3vnV8Y
-yucfyG/2RGW7e2D+sml2oPG0Q+nm8WBsaayVTija4URAKO0tpri+exb8Vv8rHMfE
-finYcTZ64HVi36w8pPjVtQwzvm36JO6vVlCsTNGzJamfDJhE1i1sDWosldckycTd
-BGHKpGb740MxdAP30LGRY/aqyXN1qfKhwxXQf2+A2JxOGdmdsH5sW3U3KGyJCdAV
-pC3mLigqqombIjeV6gS+x0EeLtTHQewhclV7tgEfi3t2B+HQUHoovCX9qspDQIQR
-DfS/SjzeFada5xEq+u3zt15rMmoPvnO7ss4v5jKfhRFCyU/SiYQsMO7ZQZNUOP3y
-+nK5MPisemggHfaCi1cWyeXYZ7h1L+eZYWLBkoRrD0rFkz4Uym0AuxM10UbpRVIx
-RpFHyWjqxUGOa9IfA8i9
-=Dz41
------END PGP SIGNATURE-----
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1360846649-6411-4-git-send-email-eranian@google.com
+[ committer note: Remove parts already applied on 86ee6e1 to keep bisectability ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Documentation/perf-stat.txt |  6 +++++
+ tools/perf/builtin-stat.c              | 31 ++++++++++++++++++++---
+ tools/perf/util/cpumap.c               | 46 ++++++++++++++++++++++++++++++++++
+ tools/perf/util/cpumap.h               | 12 +++++++++
+ 4 files changed, 92 insertions(+), 3 deletions(-)
 
---FkmkrVfFsRoUs1wW--
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index 46027e1..2fe87fb 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -126,6 +126,12 @@ use --per-socket in addition to -a. (system-wide).  The output includes the
+ socket number and the number of online processors on that socket. This is
+ useful to gauge the amount of aggregation.
+ 
++--per-core::
++Aggregate counts per physical processor for system-wide mode measurements.  This
++is a useful mode to detect imbalance between physical cores.  To enable this mode,
++use --per-core in addition to -a. (system-wide).  The output includes the
++core number and the number of online logical processors on that physical processor.
++
+ EXAMPLES
+ --------
+ 
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 6f6ea931..7e910ba 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -80,6 +80,7 @@ enum aggr_mode {
+ 	AGGR_NONE,
+ 	AGGR_GLOBAL,
+ 	AGGR_SOCKET,
++	AGGR_CORE,
+ };
+ 
+ static int			run_count			=  1;
+@@ -384,6 +385,9 @@ static void print_interval(void)
+ 		case AGGR_SOCKET:
+ 			fprintf(output, "#           time socket cpus             counts events\n");
+ 			break;
++		case AGGR_CORE:
++			fprintf(output, "#           time core         cpus             counts events\n");
++			break;
+ 		case AGGR_NONE:
+ 			fprintf(output, "#           time CPU                 counts events\n");
+ 			break;
+@@ -397,6 +401,7 @@ static void print_interval(void)
+ 		num_print_interval = 0;
+ 
+ 	switch (aggr_mode) {
++	case AGGR_CORE:
+ 	case AGGR_SOCKET:
+ 		print_aggr(prefix);
+ 		break;
+@@ -566,13 +571,23 @@ static void print_noise(struct perf_evsel *evsel, double avg)
+ 	print_noise_pct(stddev_stats(&ps->res_stats[0]), avg);
+ }
+ 
+-static void aggr_printout(struct perf_evsel *evsel, int cpu, int nr)
++static void aggr_printout(struct perf_evsel *evsel, int id, int nr)
+ {
+ 	switch (aggr_mode) {
++	case AGGR_CORE:
++		fprintf(output, "S%d-C%*d%s%*d%s",
++			cpu_map__id_to_socket(id),
++			csv_output ? 0 : -8,
++			cpu_map__id_to_cpu(id),
++			csv_sep,
++			csv_output ? 0 : 4,
++			nr,
++			csv_sep);
++		break;
+ 	case AGGR_SOCKET:
+ 		fprintf(output, "S%*d%s%*d%s",
+ 			csv_output ? 0 : -5,
+-			cpu,
++			id,
+ 			csv_sep,
+ 			csv_output ? 0 : 4,
+ 			nr,
+@@ -581,7 +596,7 @@ static void aggr_printout(struct perf_evsel *evsel, int cpu, int nr)
+ 	case AGGR_NONE:
+ 		fprintf(output, "CPU%*d%s",
+ 			csv_output ? 0 : -4,
+-			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
++			perf_evsel__cpus(evsel)->map[id], csv_sep);
+ 		break;
+ 	case AGGR_GLOBAL:
+ 	default:
+@@ -1095,6 +1110,7 @@ static void print_stat(int argc, const char **argv)
+ 	}
+ 
+ 	switch (aggr_mode) {
++	case AGGR_CORE:
+ 	case AGGR_SOCKET:
+ 		print_aggr(NULL);
+ 		break;
+@@ -1163,6 +1179,13 @@ static int perf_stat_init_aggr_mode(void)
+ 		}
+ 		aggr_get_id = cpu_map__get_socket;
+ 		break;
++	case AGGR_CORE:
++		if (cpu_map__build_core_map(evsel_list->cpus, &aggr_map)) {
++			perror("cannot build core map");
++			return -1;
++		}
++		aggr_get_id = cpu_map__get_core;
++		break;
+ 	case AGGR_NONE:
+ 	case AGGR_GLOBAL:
+ 	default:
+@@ -1372,6 +1395,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "print counts at regular interval in ms (>= 100)"),
+ 	OPT_SET_UINT(0, "per-socket", &aggr_mode,
+ 		     "aggregate counts per processor socket", AGGR_SOCKET),
++	OPT_SET_UINT(0, "per-core", &aggr_mode,
++		     "aggregate counts per physical processor core", AGGR_CORE),
+ 	OPT_END()
+ 	};
+ 	const char * const stat_usage[] = {
+diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+index 7bb8e87..beb8cf9 100644
+--- a/tools/perf/util/cpumap.c
++++ b/tools/perf/util/cpumap.c
+@@ -267,7 +267,53 @@ static int cpu_map__build_map(struct cpu_map *cpus, struct cpu_map **res,
+ 	return 0;
+ }
+ 
++int cpu_map__get_core(struct cpu_map *map, int idx)
++{
++	FILE *fp;
++	const char *mnt;
++	char path[PATH_MAX];
++	int cpu, ret, s;
++
++	if (idx > map->nr)
++		return -1;
++
++	cpu = map->map[idx];
++
++	mnt = sysfs_find_mountpoint();
++	if (!mnt)
++		return -1;
++
++	snprintf(path, PATH_MAX,
++		"%s/devices/system/cpu/cpu%d/topology/core_id",
++		mnt, cpu);
++
++	fp = fopen(path, "r");
++	if (!fp)
++		return -1;
++	ret = fscanf(fp, "%d", &cpu);
++	fclose(fp);
++	if (ret != 1)
++		return -1;
++
++	s = cpu_map__get_socket(map, idx);
++	if (s == -1)
++		return -1;
++
++	/*
++	 * encode socket in upper 16 bits
++	 * core_id is relative to socket, and
++	 * we need a global id. So we combine
++	 * socket+ core id
++	 */
++	return (s << 16) | (cpu & 0xffff);
++}
++
+ int cpu_map__build_socket_map(struct cpu_map *cpus, struct cpu_map **sockp)
+ {
+ 	return cpu_map__build_map(cpus, sockp, cpu_map__get_socket);
+ }
++
++int cpu_map__build_core_map(struct cpu_map *cpus, struct cpu_map **corep)
++{
++	return cpu_map__build_map(cpus, corep, cpu_map__get_core);
++}
+diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+index 161b007..9bed02e 100644
+--- a/tools/perf/util/cpumap.h
++++ b/tools/perf/util/cpumap.h
+@@ -15,7 +15,9 @@ void cpu_map__delete(struct cpu_map *map);
+ struct cpu_map *cpu_map__read(FILE *file);
+ size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp);
+ int cpu_map__get_socket(struct cpu_map *map, int idx);
++int cpu_map__get_core(struct cpu_map *map, int idx);
+ int cpu_map__build_socket_map(struct cpu_map *cpus, struct cpu_map **sockp);
++int cpu_map__build_core_map(struct cpu_map *cpus, struct cpu_map **corep);
+ 
+ static inline int cpu_map__socket(struct cpu_map *sock, int s)
+ {
+@@ -24,6 +26,16 @@ static inline int cpu_map__socket(struct cpu_map *sock, int s)
+ 	return sock->map[s];
+ }
+ 
++static inline int cpu_map__id_to_socket(int id)
++{
++	return id >> 16;
++}
++
++static inline int cpu_map__id_to_cpu(int id)
++{
++	return id & 0xffff;
++}
++
+ static inline int cpu_map__nr(const struct cpu_map *map)
+ {
+ 	return map ? map->nr : 1;
