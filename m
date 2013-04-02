@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932638Ab3DBWL6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:11:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32823 "EHLO
+	id S933262Ab3DBWMe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:12:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32964 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752238Ab3DBWLx (ORCPT
+	with ESMTP id S933068Ab3DBWMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:11:53 -0400
+	Tue, 2 Apr 2013 18:12:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 005/124] Bluetooth: Add support for Dell[QCA 0cf3:817a]
-Date: Tue,  2 Apr 2013 15:09:47 -0700
-Message-Id: <20130402221104.840774634@linuxfoundation.org>
+        Jeff Leung <jleung@curriegrad2004.ca>, Christoph Hellwig <hch@lst.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 044/124] target: Fix RESERVATION_CONFLICT status regression for iscsi-target special case
+Date: Tue,  2 Apr 2013 15:10:26 -0700
+Message-Id: <20130402221109.332976937@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -27,76 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit ebaf5795ef57a70a042ea259448a465024e2821d upstream.
+commit f85eda8d75d37a3796cee7f5a906e50e3f13d9e1 upstream.
 
-Add support for the AR9462 chip
+This patch fixes a regression introduced in v3.8-rc1 code where a failed
+target_check_reservation() check in target_setup_cmd_from_cdb() was causing
+an incorrect SAM_STAT_GOOD status to be returned during a WRITE operation
+performed by an unregistered / unreserved iscsi initiator port.
 
-T:  Bus=03 Lev=01 Prnt=01 Port=08 Cnt=01 Dev#=  5 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0cf3 ProdID=817a Rev= 0.02
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+This regression is only effecting iscsi-target due to a special case check
+for TCM_RESERVATION_CONFLICT within iscsi_target_erl1.c:iscsit_execute_cmd(),
+and was still correctly disallowing WRITE commands from backend submission
+for unregistered / unreserved initiator ports, while returning the incorrect
+SAM_STAT_GOOD status due to the missing SAM_STAT_RESERVATION_CONFLICT
+assignment.
 
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-Cc: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+This regression was first introduced with:
+
+commit de103c93aff0bed0ae984274e5dc8b95899badab
+Author: Christoph Hellwig <hch@lst.de>
+Date:   Tue Nov 6 12:24:09 2012 -0800
+
+    target: pass sense_reason as a return value
+
+Go ahead and re-add the missing SAM_STAT_RESERVATION_CONFLICT assignment
+during a target_check_reservation() failure, so that iscsi-target code
+sends the correct SCSI status.
+
+All other fabrics using target_submit_cmd_*() with a RESERVATION_CONFLICT
+call to transport_generic_request_failure() are not effected by this bug.
+
+Reported-by: Jeff Leung <jleung@curriegrad2004.ca>
+Cc: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/ath3k.c |    2 ++
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 3 insertions(+)
+ drivers/target/target_core_transport.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -76,6 +76,7 @@ static struct usb_device_id ath3k_table[
- 	{ USB_DEVICE(0x0CF3, 0x0036) },
- 	{ USB_DEVICE(0x0CF3, 0x3004) },
- 	{ USB_DEVICE(0x0CF3, 0x311D) },
-+	{ USB_DEVICE(0x0CF3, 0x817a) },
- 	{ USB_DEVICE(0x13d3, 0x3375) },
- 	{ USB_DEVICE(0x04CA, 0x3005) },
- 	{ USB_DEVICE(0x04CA, 0x3006) },
-@@ -109,6 +110,7 @@ static struct usb_device_id ath3k_blist_
- 	{ USB_DEVICE(0x0CF3, 0x0036), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0CF3, 0x817a), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -134,6 +134,7 @@ static struct usb_device_id blacklist_ta
- 	{ USB_DEVICE(0x0cf3, 0x0036), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0cf3, 0x817a), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -1136,8 +1136,10 @@ target_setup_cmd_from_cdb(struct se_cmd
+ 		return ret;
+ 
+ 	ret = target_check_reservation(cmd);
+-	if (ret)
++	if (ret) {
++		cmd->scsi_status = SAM_STAT_RESERVATION_CONFLICT;
+ 		return ret;
++	}
+ 
+ 	ret = dev->transport->parse_cdb(cmd);
+ 	if (ret)
 
 
