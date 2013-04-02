@@ -1,60 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760297Ab3DBF2v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 01:28:51 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:48914 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753235Ab3DBF2s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 01:28:48 -0400
+	id S1760352Ab3DBF3p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 01:29:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7766 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759996Ab3DBF3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 01:29:44 -0400
+Date: Tue, 2 Apr 2013 10:59:35 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the virtio tree with the rr-fixes
+ tree
+Message-ID: <20130402052935.GB15084@amit.redhat.com>
+References: <20130402141739.0d0b45f519be505a7da471ac@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <3943547.m5K1tfygWn@vostro.rjw.lan>
-References: <2282655.IicBMMa6jN@vostro.rjw.lan>
-	<1378320.ernsY1JWPv@vostro.rjw.lan>
-	<CAErSpo7kGBNEkLOftJ1J7ivaxZL-yVWyAwmoiQ1=NADpmJ67XA@mail.gmail.com>
-	<3943547.m5K1tfygWn@vostro.rjw.lan>
-Date: Tue, 2 Apr 2013 13:28:46 +0800
-Message-ID: <CAC=cRTPyC0rrDeRaMop3GF17qa3i2mfQ3XyHgNaEmiKNOE1Auw@mail.gmail.com>
-Subject: Re: [Update][PATCH] PCI / PM: Disable runtime PM of PCIe ports
-From: huang ying <huang.ying.caritas@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Zheng Yan <zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130402141739.0d0b45f519be505a7da471ac@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 2, 2013 at 4:51 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->
-> On Monday, April 01, 2013 11:34:46 AM Bjorn Helgaas wrote:
-> > [+cc Zheng, who added this with 71a83bd727]
-> >
-> > On Sat, Mar 30, 2013 at 4:38 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > >
-> > > The runtime PM of PCIe ports turns out to be quite fragile, as in
-> > > some cases things work while in some other cases they don't and we
-> > > don't seem to have a good way to determine whether or not they are
-> > > going to work in advance.
-> >
-> > Do you have any references to problems encountered when enabling
-> > runtime PM for PCIe ports?  That information will be useful to anybody
-> > who wants to take another crack at getting this working.
->
-> Well, bug 53811 is one example and problems recently reported by
-> Martin are another.  Do you want me to dig deeper?
+On (Tue) 02 Apr 2013 [14:17:39], Stephen Rothwell wrote:
+> Hi Rusty,
+> 
+> Today's linux-next merge of the virtio tree got a conflict in
+> drivers/char/virtio_console.c between commit 9ba5c80b1aea ("virtio:
+> console: add locking around c_ovq operations") from the rr-fixes tree and
+> commit 6797999d9958 ("virtio_console: use simplified virtqueue
+> accessors") from the virtio tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-For bug 53811, I have a debug patch posted in bugzilla to disable
-runtime PM for PCIe port with hotplug capability.  It appears that
-patch resolved the issue for the reporter.  Do think that patch can
-solve the hotplug issue.
+Looks OK, just a context change.
 
-Best Regards,
-Huang Ying
+Thanks,
+
+		Amit
