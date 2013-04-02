@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762199Ab3DBTdZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 15:33:25 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57345 "EHLO
+	id S1762207Ab3DBTee (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 15:34:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57358 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761551Ab3DBTdX (ORCPT
+	with ESMTP id S1762153Ab3DBTec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 15:33:23 -0400
-Date: Tue, 2 Apr 2013 12:32:27 -0700
+	Tue, 2 Apr 2013 15:34:32 -0400
+Date: Tue, 2 Apr 2013 12:33:39 -0700
 From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-65fc985b37dc241c4db7cd32adcbc989193fe3c8@git.kernel.org>
+Message-ID: <tip-e2604b49e8a8827e8bc5b61bc0c5a889e028fdad@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         tglx@linutronix.de, bp@suse.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         tglx@linutronix.de, bp@suse.de
-In-Reply-To: <1363788448-31325-2-git-send-email-bp@alien8.de>
-References: <1363788448-31325-2-git-send-email-bp@alien8.de>
+In-Reply-To: <1363788448-31325-3-git-send-email-bp@alien8.de>
+References: <1363788448-31325-3-git-send-email-bp@alien8.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86, cpu:
-  Expand cpufeature facility to include cpu bugs
-Git-Commit-ID: 65fc985b37dc241c4db7cd32adcbc989193fe3c8
+Subject: [tip:x86/cpu] x86, cpu: Convert F00F bug detection
+Git-Commit-ID: e2604b49e8a8827e8bc5b61bc0c5a889e028fdad
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,110 +27,99 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 12:32:33 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 12:33:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  65fc985b37dc241c4db7cd32adcbc989193fe3c8
-Gitweb:     http://git.kernel.org/tip/65fc985b37dc241c4db7cd32adcbc989193fe3c8
+Commit-ID:  e2604b49e8a8827e8bc5b61bc0c5a889e028fdad
+Gitweb:     http://git.kernel.org/tip/e2604b49e8a8827e8bc5b61bc0c5a889e028fdad
 Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Wed, 20 Mar 2013 15:07:23 +0100
+AuthorDate: Wed, 20 Mar 2013 15:07:24 +0100
 Committer:  H. Peter Anvin <hpa@zytor.com>
 CommitDate: Tue, 2 Apr 2013 10:12:52 -0700
 
-x86, cpu: Expand cpufeature facility to include cpu bugs
+x86, cpu: Convert F00F bug detection
 
-We add another 32-bit vector at the end of the ->x86_capability
-bitvector which collects bugs present in CPUs. After all, a CPU bug is a
-kind of a capability, albeit a strange one.
+... to using the new facility and drop the cpuinfo_x86 member.
 
 Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1363788448-31325-2-git-send-email-bp@alien8.de
+Link: http://lkml.kernel.org/r/1363788448-31325-3-git-send-email-bp@alien8.de
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- arch/x86/include/asm/cpufeature.h | 13 +++++++++++++
- arch/x86/include/asm/processor.h  |  2 +-
- arch/x86/kernel/alternative.c     |  2 +-
- arch/x86/kernel/cpu/common.c      |  4 ++++
- 4 files changed, 19 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/cpufeature.h | 2 ++
+ arch/x86/include/asm/processor.h  | 1 -
+ arch/x86/kernel/cpu/intel.c       | 4 ++--
+ arch/x86/kernel/cpu/proc.c        | 2 +-
+ arch/x86/mm/fault.c               | 2 +-
+ 5 files changed, 6 insertions(+), 5 deletions(-)
 
 diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 93fe929..16190ab 100644
+index 16190ab..c0ad7e7 100644
 --- a/arch/x86/include/asm/cpufeature.h
 +++ b/arch/x86/include/asm/cpufeature.h
-@@ -9,6 +9,7 @@
- #endif
+@@ -222,6 +222,8 @@
+  */
+ #define X86_BUG(x)		(NCAPINTS*32 + (x))
  
- #define NCAPINTS	10	/* N 32-bit words worth of info */
-+#define NBUGINTS	1	/* N 32-bit bug flags */
- 
- /*
-  * Note: If the comment begins with a quoted string, that string is used
-@@ -216,6 +217,11 @@
- #define X86_FEATURE_ADX		(9*32+19) /* The ADCX and ADOX instructions */
- #define X86_FEATURE_SMAP	(9*32+20) /* Supervisor Mode Access Prevention */
- 
-+/*
-+ * BUG word(s)
-+ */
-+#define X86_BUG(x)		(NCAPINTS*32 + (x))
++#define X86_BUG_F00F		X86_BUG(0) /* Intel F00F */
 +
  #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
  
  #include <asm/asm.h>
-@@ -401,6 +407,13 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
- #define static_cpu_has(bit) boot_cpu_has(bit)
- #endif
- 
-+#define cpu_has_bug(c, bit)	cpu_has(c, (bit))
-+#define set_cpu_bug(c, bit)	set_cpu_cap(c, (bit))
-+#define clear_cpu_bug(c, bit)	clear_cpu_cap(c, (bit));
-+
-+#define static_cpu_has_bug(bit)	static_cpu_has((bit))
-+#define boot_cpu_has_bug(bit)	cpu_has_bug(&boot_cpu_data, (bit))
-+
- #endif /* defined(__KERNEL__) && !defined(__ASSEMBLY__) */
- 
- #endif /* _ASM_X86_CPUFEATURE_H */
 diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 3270116..23c8081 100644
+index 23c8081..1e55e2d 100644
 --- a/arch/x86/include/asm/processor.h
 +++ b/arch/x86/include/asm/processor.h
-@@ -107,7 +107,7 @@ struct cpuinfo_x86 {
- 	__u32			extended_cpuid_level;
- 	/* Maximum supported CPUID level, -1=no CPUID: */
- 	int			cpuid_level;
--	__u32			x86_capability[NCAPINTS];
-+	__u32			x86_capability[NCAPINTS + NBUGINTS];
- 	char			x86_vendor_id[16];
- 	char			x86_model_id[64];
- 	/* in KB - valid for CPUS which support this call: */
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index ef5ccca..c15cf9a 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -271,7 +271,7 @@ void __init_or_module apply_alternatives(struct alt_instr *start,
- 		replacement = (u8 *)&a->repl_offset + a->repl_offset;
- 		BUG_ON(a->replacementlen > a->instrlen);
- 		BUG_ON(a->instrlen > sizeof(insnbuf));
--		BUG_ON(a->cpuid >= NCAPINTS*32);
-+		BUG_ON(a->cpuid >= (NCAPINTS + NBUGINTS) * 32);
- 		if (!boot_cpu_has(a->cpuid))
- 			continue;
+@@ -92,7 +92,6 @@ struct cpuinfo_x86 {
+ 	char			hard_math;
+ 	char			rfu;
+ 	char			fdiv_bug;
+-	char			f00f_bug;
+ 	char			coma_bug;
+ 	char			pad0;
+ #else
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 1905ce9..1acdd42 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -209,11 +209,11 @@ static void __cpuinit intel_workarounds(struct cpuinfo_x86 *c)
+ 	 * system.
+ 	 * Note that the workaround only should be initialized once...
+ 	 */
+-	c->f00f_bug = 0;
++	clear_cpu_bug(c, X86_BUG_F00F);
+ 	if (!paravirt_enabled() && c->x86 == 5) {
+ 		static int f00f_workaround_enabled;
  
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index d814772..22018f7 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -920,6 +920,10 @@ static void __cpuinit identify_cpu(struct cpuinfo_x86 *c)
- 		/* AND the already accumulated flags with these */
- 		for (i = 0; i < NCAPINTS; i++)
- 			boot_cpu_data.x86_capability[i] &= c->x86_capability[i];
-+
-+		/* OR, i.e. replicate the bug flags */
-+		for (i = NCAPINTS; i < NCAPINTS + NBUGINTS; i++)
-+			c->x86_capability[i] |= boot_cpu_data.x86_capability[i];
- 	}
+-		c->f00f_bug = 1;
++		set_cpu_bug(c, X86_BUG_F00F);
+ 		if (!f00f_workaround_enabled) {
+ 			trap_init_f00f_bug();
+ 			printk(KERN_NOTICE "Intel Pentium with F0 0F bug - workaround enabled.\n");
+diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
+index e280253..2d60b2b 100644
+--- a/arch/x86/kernel/cpu/proc.c
++++ b/arch/x86/kernel/cpu/proc.c
+@@ -35,7 +35,7 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
+ 		   "cpuid level\t: %d\n"
+ 		   "wp\t\t: %s\n",
+ 		   c->fdiv_bug ? "yes" : "no",
+-		   c->f00f_bug ? "yes" : "no",
++		   static_cpu_has_bug(X86_BUG_F00F) ? "yes" : "no",
+ 		   c->coma_bug ? "yes" : "no",
+ 		   c->hard_math ? "yes" : "no",
+ 		   c->hard_math ? "yes" : "no",
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 2b97525..a1ce1fa 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -555,7 +555,7 @@ static int is_f00f_bug(struct pt_regs *regs, unsigned long address)
+ 	/*
+ 	 * Pentium F0 0F C7 C8 bug workaround:
+ 	 */
+-	if (boot_cpu_data.f00f_bug) {
++	if (boot_cpu_has_bug(X86_BUG_F00F)) {
+ 		nr = (address - idt_descr.address) >> 3;
  
- 	/* Init Machine Check Exception if available. */
+ 		if (nr == 6) {
