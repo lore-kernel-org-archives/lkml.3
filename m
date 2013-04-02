@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761719Ab3DBQbn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 12:31:43 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:60228 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756980Ab3DBQbm (ORCPT
+	id S1761852Ab3DBQcJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 12:32:09 -0400
+Received: from [65.55.88.13] ([65.55.88.13]:10235 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1759241Ab3DBQcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 12:31:42 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18av9TRJeIZb83dTrsxDhHk
-Date: Tue, 2 Apr 2013 09:31:38 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: Sebastian Reichel <sre@debian.org>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: Re: [PATCH] RX-51: Fix probe order of SPI devices
-Message-ID: <20130402163138.GS10155@atomide.com>
-References: <1364724561-18045-1-git-send-email-pali.rohar@gmail.com>
- <20130331105222.GA22426@earth.universe>
- <201303311318.41846@pali>
+	Tue, 2 Apr 2013 12:32:07 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+From: Fabio Estevam <fabio.estevam@freescale.com>
+To: <shawn.guo@linaro.org>
+CC: <tglx@linutronix.de>, <john.stultz@linaro.org>,
+        <linux-kernel@vger.kernel.org>, <festevam@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] clocksource: mxs_timer: Add semicolon at end of line
+Date: Tue, 2 Apr 2013 13:30:32 -0300
+Message-ID: <1364920232-9604-1-git-send-email-fabio.estevam@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201303311318.41846@pali>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pali Rohár <pali.rohar@gmail.com> [130331 04:23]:
-> On Sunday 31 March 2013 12:52:23 Sebastian Reichel wrote:
-> > On Sun, Mar 31, 2013 at 12:09:21PM +0200, Pali Rohár wrote:
-> > > From: Joni Lapilainen <joni.lapilainen@gmail.com>
-> > > 
-> > > Without this patch LCD panel on Nokia RX-51 is still black
-> > > 
-> > > Signed-off-by: Joni Lapilainen <joni.lapilainen@gmail.com>
-> > > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> > 
-> > Tested-by: Sebastian Reichel <sre@debian.org>
-> > 
-> > Please note, that this patch has actually been proposed by
-> > Aaro Koskinen <aaro.koskinen@iki.fi> quite some time ago [0].
-> > 
-> > [0]
-> > http://permalink.gmane.org/gmane.linux.ports.arm.omap/81729
-> > 
-> > -- Sebastian
-> 
-> CCing Aaro.
+Fix the following build error:
 
-Any ideas why this is happening?
+drivers/clocksource/mxs_timer.c:304:1: error: expected ',' or ';' at end of input
 
-Is the touch screen controller somehow pulling one of the SPI
-lines before it's reset? I don't think there's any other connection
-between the LCD and touch controller besides the SPI lines?
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+ drivers/clocksource/mxs_timer.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-In any case there should be something in the description why
-this is needed..
+diff --git a/drivers/clocksource/mxs_timer.c b/drivers/clocksource/mxs_timer.c
+index a4d469b..02af420 100644
+--- a/drivers/clocksource/mxs_timer.c
++++ b/drivers/clocksource/mxs_timer.c
+@@ -301,4 +301,4 @@ static void __init mxs_timer_init(struct device_node *np)
+ 	irq = irq_of_parse_and_map(np, 0);
+ 	setup_irq(irq, &mxs_timer_irq);
+ }
+-CLOCKSOURCE_OF_DECLARE(mxs, "fsl,timrot", mxs_timer_init)
++CLOCKSOURCE_OF_DECLARE(mxs, "fsl,timrot", mxs_timer_init);
+-- 
+1.7.9.5
 
-Regards,
 
-Tony
