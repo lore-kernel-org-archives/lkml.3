@@ -1,48 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761920Ab3DBNpK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 09:45:10 -0400
-Received: from mail.yazoocity.k12.ms.us ([68.153.119.253]:59404 "EHLO
-	fc5.yazoocity.k12.ms.us" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1760984Ab3DBNpI (ORCPT
+	id S1761088Ab3DBNqs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 09:46:48 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56090 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759483Ab3DBNqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 09:45:08 -0400
-X-Greylist: delayed 12948 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Apr 2013 09:45:08 EDT
-Message-ID: <7f885cd568980e69cd3bd94a388f62ea.squirrel@www.yazoocity.k12.ms.us>
-Date: Tue, 2 Apr 2013 04:27:17 -0500
-Subject: Re-confirm
-From: support@yazoocity.k12.ms.us
-Reply-To: bayfordfaily2004@hotmail.com
-User-Agent: SquirrelMail/1.4.21
+	Tue, 2 Apr 2013 09:46:47 -0400
+Date: Tue, 2 Apr 2013 15:46:45 +0200
+From: Pavel Machek <pavel@denx.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: sr@denx.de, w.sang@pengutronix.de, magnus.damm@gmail.com,
+        hjk@linutronix.de, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, dzu@denx.de
+Subject: Re: UIO device tree bindings.
+Message-ID: <20130402134645.GB9975@amd.pavel.ucw.cz>
+References: <20130401142336.GA18034@amd.pavel.ucw.cz>
+ <20130401154008.GA20963@amd.pavel.ucw.cz>
+ <20130402024212.GA19431@roeck-us.net>
+ <20130402115151.GA9052@amd.pavel.ucw.cz>
+ <20130402125149.GA7216@roeck-us.net>
+ <20130402131951.GA9975@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Synonym: Copied by Synonym (http://www.modulo.ro/synonym) to: archive
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130402131951.GA9975@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
+> > > Or maybe we can do some magic with module parameter. That should be
+> > > enough for expected use.
+> > > 
+> > I don't think that would make a difference. I mean, just take ns16550 as another
+> > example. No one has problems declaring some block of hardware addresses to be
+> > compatible with "ns16550", even though it can be anything including a memory
+> > block on one of the FPGAs or ASICs we are talking about here, it can be anything
+> > but a NS16550, and many of the actual "compatible" strings are not defined
+> > anythere either.
+> > 
+> > So there is no problem with "ata-generic" and "ns16550", and no one cares if
+> > "fsl,mpc8349emitx-pata" or "xlnx,xps-uart16550-2.00.b" is defined or not, but
+> > "generic-uio" together with "ptx,c64fpga001" is unacceptable.
+> > 
+> > I think it has more to do with the uio driver not being an actual driver, but
+> > the kernel part of a user-space driver, though that is just a wild guess.
+> 
+> Well, it turned out that adding module parameter was not that much
+> work... and yes I believe it is a tiny bit cleaner.
+> 
+> Here's updated patch, if you can please test this one.
+> 
+> [You can just pass "uio_of_genirq.of_id=generic-uio" to get previous
+> behaviour. But don't tell anyone :-)]
 
+Actually, looking at it some more, perhaps even solution is possible?
+(This will need uio_pdrv_genirq.of_id=generic-uio .)
 
-This is a personal email directed to you. I am Adrian Bayford,I and my
-wife won a Jackpot Lottery of 148 million pounds  in the latest
-Euromillion Lottery result that was announced recently. If you get this
-mail, I want you to consider yourself lucky.Kindly provide the requried
-details of yours for claims(click reply )
+Unfortunately, I don't have easy way to test this :-(. So feedback is
+essential.
 
-NAME-----
+Signed-off-by: Pavel Machek <pavel@denx.de>
 
-ADDRESS------
+diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+index 4a50ead..64b6dac 100644
+--- a/drivers/uio/uio_pdrv_genirq.c
++++ b/drivers/uio/uio_pdrv_genirq.c
+@@ -271,9 +273,13 @@ static const struct dev_pm_ops uio_pdrv_genirq_dev_pm_ops = {
+ 
+ #ifdef CONFIG_OF
+ static const struct of_device_id uio_of_genirq_match[] = {
+-	{ /* empty for now */ },
++	{ /* This is filled with module_parm */ },
++	{ /* Sentinel */ },
+ };
+ MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
++
++module_param_string(of_id, uio_of_genirq_match[0].compatible, 128, 0);
++MODULE_PARM_DESC(of_id, "Openfirmware id of the device to be handled by uio");
+ #else
+ # define uio_of_genirq_match NULL
+ #endif
 
-MOBILE-----------
-
-AGE------------
-
-
-KINDLY VIEW LINK FOR PROPER
-UNDERSTANDING(http://www.bbc.co.uk/news/uk-england-19254228) We await your
-response in this regards
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
