@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757792Ab3DBWrQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:47:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33080 "EHLO
+	id S1757732Ab3DBWrP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:47:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33084 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933328Ab3DBWMn (ORCPT
+	with ESMTP id S933336Ab3DBWMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:43 -0400
+	Tue, 2 Apr 2013 18:12:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>
-Subject: [ 077/124] usb: gadget: udc-core: fix a regression during gadget driver unbinding
-Date: Tue,  2 Apr 2013 15:10:59 -0700
-Message-Id: <20130402221113.099976242@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 078/124] signal: Define __ARCH_HAS_SA_RESTORER so we know whether to clear sa_restorer
+Date: Tue,  2 Apr 2013 15:11:00 -0700
+Message-Id: <20130402221113.204099415@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -26,40 +26,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 511f3c5326eabe1ece35202a404c24c0aeacc246 upstream.
+Vaguely based on upstream commit 574c4866e33d 'consolidate kernel-side
+struct sigaction declarations'.
 
-This patch (as1666) fixes a regression in the UDC core.  The core
-takes care of unbinding gadget drivers, and it does the unbinding
-before telling the UDC driver to turn off the controller hardware.
-When the call to the udc_stop callback is made, the gadget no longer
-has a driver.  The callback routine should not be invoked with a
-pointer to the old driver; doing so can cause problems (such as
-use-after-free accesses in net2280).
+flush_signal_handlers() needs to know whether sigaction::sa_restorer
+is defined, not whether SA_RESTORER is defined.  Define the
+__ARCH_HAS_SA_RESTORER macro to indicate this.
 
-This patch should be applied, with appropriate context changes, to all
-the stable kernels going back to 3.1.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/usb/gadget/udc-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/include/asm/signal.h     |    1 +
+ arch/avr32/include/asm/signal.h   |    1 +
+ arch/cris/include/asm/signal.h    |    1 +
+ arch/h8300/include/asm/signal.h   |    1 +
+ arch/m32r/include/asm/signal.h    |    1 +
+ arch/m68k/include/asm/signal.h    |    1 +
+ arch/mn10300/include/asm/signal.h |    1 +
+ arch/powerpc/include/asm/signal.h |    1 +
+ arch/s390/include/asm/signal.h    |    1 +
+ arch/sparc/include/asm/signal.h   |    2 ++
+ arch/x86/include/asm/signal.h     |    3 +++
+ arch/xtensa/include/asm/signal.h  |    1 +
+ include/uapi/asm-generic/signal.h |    4 ++++
+ 13 files changed, 19 insertions(+)
 
---- a/drivers/usb/gadget/udc-core.c
-+++ b/drivers/usb/gadget/udc-core.c
-@@ -265,7 +265,7 @@ static void usb_gadget_remove_driver(str
- 		usb_gadget_disconnect(udc->gadget);
- 		udc->driver->disconnect(udc->gadget);
- 		udc->driver->unbind(udc->gadget);
--		usb_gadget_udc_stop(udc->gadget, udc->driver);
-+		usb_gadget_udc_stop(udc->gadget, NULL);
- 	} else {
- 		usb_gadget_stop(udc->gadget, udc->driver);
- 	}
+--- a/arch/arm/include/asm/signal.h
++++ b/arch/arm/include/asm/signal.h
+@@ -29,6 +29,7 @@ struct sigaction {
+ 	__sigrestore_t sa_restorer;
+ 	sigset_t sa_mask;		/* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ struct k_sigaction {
+ 	struct sigaction sa;
+--- a/arch/avr32/include/asm/signal.h
++++ b/arch/avr32/include/asm/signal.h
+@@ -29,6 +29,7 @@ struct sigaction {
+ 	__sigrestore_t sa_restorer;
+ 	sigset_t sa_mask;		/* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ struct k_sigaction {
+ 	struct sigaction sa;
+--- a/arch/cris/include/asm/signal.h
++++ b/arch/cris/include/asm/signal.h
+@@ -29,6 +29,7 @@ struct sigaction {
+ 	void (*sa_restorer)(void);
+ 	sigset_t sa_mask;		/* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ struct k_sigaction {
+ 	struct sigaction sa;
+--- a/arch/h8300/include/asm/signal.h
++++ b/arch/h8300/include/asm/signal.h
+@@ -29,6 +29,7 @@ struct sigaction {
+ 	void (*sa_restorer)(void);
+ 	sigset_t sa_mask;		/* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ struct k_sigaction {
+ 	struct sigaction sa;
+--- a/arch/m32r/include/asm/signal.h
++++ b/arch/m32r/include/asm/signal.h
+@@ -22,6 +22,7 @@ struct sigaction {
+ 	__sigrestore_t sa_restorer;
+ 	sigset_t sa_mask;		/* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ struct k_sigaction {
+ 	struct sigaction sa;
+--- a/arch/m68k/include/asm/signal.h
++++ b/arch/m68k/include/asm/signal.h
+@@ -29,6 +29,7 @@ struct sigaction {
+ 	__sigrestore_t sa_restorer;
+ 	sigset_t sa_mask;		/* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ struct k_sigaction {
+ 	struct sigaction sa;
+--- a/arch/mn10300/include/asm/signal.h
++++ b/arch/mn10300/include/asm/signal.h
+@@ -39,6 +39,7 @@ struct sigaction {
+ 	__sigrestore_t sa_restorer;
+ 	sigset_t sa_mask;		/* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ struct k_sigaction {
+ 	struct sigaction sa;
+--- a/arch/powerpc/include/asm/signal.h
++++ b/arch/powerpc/include/asm/signal.h
+@@ -1,6 +1,7 @@
+ #ifndef _ASM_POWERPC_SIGNAL_H
+ #define _ASM_POWERPC_SIGNAL_H
+ 
++#define __ARCH_HAS_SA_RESTORER
+ #include <uapi/asm/signal.h>
+ 
+ #endif /* _ASM_POWERPC_SIGNAL_H */
+--- a/arch/s390/include/asm/signal.h
++++ b/arch/s390/include/asm/signal.h
+@@ -34,6 +34,7 @@ struct sigaction {
+         void (*sa_restorer)(void);
+         sigset_t sa_mask;               /* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ struct k_sigaction {
+         struct sigaction sa;
+--- a/arch/sparc/include/asm/signal.h
++++ b/arch/sparc/include/asm/signal.h
+@@ -26,5 +26,7 @@ struct k_sigaction {
+ 	void			__user *ka_restorer;
+ };
+ 
++#define __ARCH_HAS_SA_RESTORER
++
+ #endif /* !(__ASSEMBLY__) */
+ #endif /* !(__SPARC_SIGNAL_H) */
+--- a/arch/x86/include/asm/signal.h
++++ b/arch/x86/include/asm/signal.h
+@@ -31,6 +31,9 @@ typedef sigset_t compat_sigset_t;
+ #include <uapi/asm/signal.h>
+ #ifndef __ASSEMBLY__
+ extern void do_notify_resume(struct pt_regs *, void *, __u32);
++
++#define __ARCH_HAS_SA_RESTORER
++
+ #ifdef __i386__
+ struct old_sigaction {
+ 	__sighandler_t sa_handler;
+--- a/arch/xtensa/include/asm/signal.h
++++ b/arch/xtensa/include/asm/signal.h
+@@ -21,6 +21,7 @@ struct sigaction {
+ 	void (*sa_restorer)(void);
+ 	sigset_t sa_mask;		/* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ struct k_sigaction {
+ 	struct sigaction sa;
+--- a/include/uapi/asm-generic/signal.h
++++ b/include/uapi/asm-generic/signal.h
+@@ -93,6 +93,10 @@ typedef unsigned long old_sigset_t;
+ 
+ #include <asm-generic/signal-defs.h>
+ 
++#ifdef SA_RESTORER
++#define __ARCH_HAS_SA_RESTORER
++#endif
++
+ struct sigaction {
+ 	__sighandler_t sa_handler;
+ 	unsigned long sa_flags;
 
 
