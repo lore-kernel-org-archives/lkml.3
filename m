@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757704Ab3DBWoy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:44:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33139 "EHLO
+	id S933387Ab3DBWMu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:12:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33104 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760939Ab3DBWMv (ORCPT
+	with ESMTP id S1761137Ab3DBWMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:51 -0400
+	Tue, 2 Apr 2013 18:12:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 080/124] loop: prevent bdev freeing while device in use
-Date: Tue,  2 Apr 2013 15:11:02 -0700
-Message-Id: <20130402221113.417233666@linuxfoundation.org>
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [ 082/124] ARM: imx: fix sync issue between imx_cpu_die and imx_cpu_kill
+Date: Tue,  2 Apr 2013 15:11:04 -0700
+Message-Id: <20130402221113.638589471@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -28,99 +26,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
+From: Shawn Guo <shawn.guo@linaro.org>
 
-commit c1681bf8a7b1b98edee8b862a42c19c4e53205fd upstream.
+commit 2f3edfd7e27ad4206acbc2ae99c9df5f46353024 upstream.
 
-struct block_device lifecycle is defined by its inode (see fs/block_dev.c) -
-block_device allocated first time we access /dev/loopXX and deallocated on
-bdev_destroy_inode. When we create the device "losetup /dev/loopXX afile"
-we want that block_device stay alive until we destroy the loop device
-with "losetup -d".
+There is a sync issue with hotplug operation.  It's possible that when
+imx_cpu_kill gets running on primary core, the imx_cpu_die execution
+on the core which is to be killed hasn't been finished yet.  The problem
+will very likely be hit when running suspend without no_console_suspend
+setting on kernel cmdline.
 
-But because we do not hold /dev/loopXX inode its counter goes 0, and
-inode/bdev can be destroyed at any moment. Usually it happens at memory
-pressure or when user drops inode cache (like in the test below). When later in
-loop_clr_fd() we want to use bdev we have use-after-free error with following
-stack:
+It uses cpu jumping argument register to sync imx_cpu_die and
+imx_cpu_kill.  The register will be set in imx_cpu_die and imx_cpu_kill
+will wait for the register being cleared to actually kill the cpu.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000280
-  bd_set_size+0x10/0xa0
-  loop_clr_fd+0x1f8/0x420 [loop]
-  lo_ioctl+0x200/0x7e0 [loop]
-  lo_compat_ioctl+0x47/0xe0 [loop]
-  compat_blkdev_ioctl+0x341/0x1290
-  do_filp_open+0x42/0xa0
-  compat_sys_ioctl+0xc1/0xf20
-  do_sys_open+0x16e/0x1d0
-  sysenter_dispatch+0x7/0x1a
-
-To prevent use-after-free we need to grab the device in loop_set_fd()
-and put it later in loop_clr_fd().
-
-The issue is reprodusible on current Linus head and v3.3. Here is the test:
-
-  dd if=/dev/zero of=loop.file bs=1M count=1
-  while [ true ]; do
-    losetup /dev/loop0 loop.file
-    echo 2 > /proc/sys/vm/drop_caches
-    losetup -d /dev/loop0
-  done
-
-[ Doing bdgrab/bput in loop_set_fd/loop_clr_fd is safe, because every
-  time we call loop_set_fd() we check that loop_device->lo_state is
-  Lo_unbound and set it to Lo_bound If somebody will try to set_fd again
-  it will get EBUSY.  And if we try to loop_clr_fd() on unbound loop
-  device we'll get ENXIO.
-
-  loop_set_fd/loop_clr_fd (and any other loop ioctl) is called under
-  loop_device->lo_ctl_mutex. ]
-
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/loop.c |    9 ++++++++-
- fs/block_dev.c       |    1 +
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ arch/arm/mach-imx/common.h  |    2 ++
+ arch/arm/mach-imx/hotplug.c |   12 ++++++++++++
+ arch/arm/mach-imx/src.c     |   12 ++++++++++++
+ 3 files changed, 26 insertions(+)
 
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -917,6 +917,11 @@ static int loop_set_fd(struct loop_devic
- 		lo->lo_flags |= LO_FLAGS_PARTSCAN;
- 	if (lo->lo_flags & LO_FLAGS_PARTSCAN)
- 		ioctl_by_bdev(bdev, BLKRRPART, 0);
-+
-+	/* Grab the block_device to prevent its destruction after we
-+	 * put /dev/loopXX inode. Later in loop_clr_fd() we bdput(bdev).
-+	 */
-+	bdgrab(bdev);
- 	return 0;
+--- a/arch/arm/mach-imx/common.h
++++ b/arch/arm/mach-imx/common.h
+@@ -116,6 +116,8 @@ void tzic_handle_irq(struct pt_regs *);
  
- out_clr:
-@@ -1026,8 +1031,10 @@ static int loop_clr_fd(struct loop_devic
- 	memset(lo->lo_encrypt_key, 0, LO_KEY_SIZE);
- 	memset(lo->lo_crypt_name, 0, LO_NAME_SIZE);
- 	memset(lo->lo_file_name, 0, LO_NAME_SIZE);
--	if (bdev)
-+	if (bdev) {
-+		bdput(bdev);
- 		invalidate_bdev(bdev);
-+	}
- 	set_capacity(lo->lo_disk, 0);
- 	loop_sysfs_exit(lo);
- 	if (bdev) {
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -551,6 +551,7 @@ struct block_device *bdgrab(struct block
- 	ihold(bdev->bd_inode);
- 	return bdev;
- }
-+EXPORT_SYMBOL(bdgrab);
- 
- long nr_blockdev_pages(void)
+ extern void imx_enable_cpu(int cpu, bool enable);
+ extern void imx_set_cpu_jump(int cpu, void *jump_addr);
++extern u32 imx_get_cpu_arg(int cpu);
++extern void imx_set_cpu_arg(int cpu, u32 arg);
+ #ifdef CONFIG_DEBUG_LL
+ extern void imx_lluart_map_io(void);
+ #else
+--- a/arch/arm/mach-imx/hotplug.c
++++ b/arch/arm/mach-imx/hotplug.c
+@@ -46,11 +46,23 @@ static inline void cpu_enter_lowpower(vo
+ void imx_cpu_die(unsigned int cpu)
  {
+ 	cpu_enter_lowpower();
++	/*
++	 * We use the cpu jumping argument register to sync with
++	 * imx_cpu_kill() which is running on cpu0 and waiting for
++	 * the register being cleared to kill the cpu.
++	 */
++	imx_set_cpu_arg(cpu, ~0);
+ 	cpu_do_idle();
+ }
+ 
+ int imx_cpu_kill(unsigned int cpu)
+ {
++	unsigned long timeout = jiffies + msecs_to_jiffies(50);
++
++	while (imx_get_cpu_arg(cpu) == 0)
++		if (time_after(jiffies, timeout))
++			return 0;
+ 	imx_enable_cpu(cpu, false);
++	imx_set_cpu_arg(cpu, 0);
+ 	return 1;
+ }
+--- a/arch/arm/mach-imx/src.c
++++ b/arch/arm/mach-imx/src.c
+@@ -43,6 +43,18 @@ void imx_set_cpu_jump(int cpu, void *jum
+ 		       src_base + SRC_GPR1 + cpu * 8);
+ }
+ 
++u32 imx_get_cpu_arg(int cpu)
++{
++	cpu = cpu_logical_map(cpu);
++	return readl_relaxed(src_base + SRC_GPR1 + cpu * 8 + 4);
++}
++
++void imx_set_cpu_arg(int cpu, u32 arg)
++{
++	cpu = cpu_logical_map(cpu);
++	writel_relaxed(arg, src_base + SRC_GPR1 + cpu * 8 + 4);
++}
++
+ void imx_src_prepare_restart(void)
+ {
+ 	u32 val;
 
 
