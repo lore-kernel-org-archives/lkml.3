@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762186Ab3DBTYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 15:24:05 -0400
-Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:53119 "EHLO
-	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761237Ab3DBTYB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 15:24:01 -0400
-X-Greylist: delayed 370 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Apr 2013 15:24:01 EDT
-Date: Tue, 2 Apr 2013 19:17:49 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Pekka Enberg <penberg@kernel.org>
-cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] slub: correct to calculate num of acquired objects
- in get_partial_node()
-In-Reply-To: <CAOJsxLH7Vhi1ady+uu5Vn-o5bW4rd6MiJZ1Okjqo2nX-JjgXAQ@mail.gmail.com>
-Message-ID: <0000013dcc2f1037-3e5332ff-5a67-4db8-bcbe-c1c163ef2914-000000@email.amazonses.com>
-References: <1358755287-3899-1-git-send-email-iamjoonsoo.kim@lge.com> <20130319051045.GB8858@lge.com> <CAOJsxLH7Vhi1ady+uu5Vn-o5bW4rd6MiJZ1Okjqo2nX-JjgXAQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932494Ab3DBTY2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 15:24:28 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49873 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752780Ab3DBTYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 15:24:24 -0400
+Date: Tue, 2 Apr 2013 21:24:17 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH V3 1/2] cpufreq: ondemand: allow custom
+ powersave_bias_target handler to be registered
+Message-ID: <20130402192417.GD17675@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jacob Shin <jacob.shin@amd.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+	cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Viresh Kumar <viresh.kumar@linaro.org>,
+	Thomas Renninger <trenn@suse.de>
+References: <1364926304-1799-1-git-send-email-jacob.shin@amd.com>
+ <1364926304-1799-2-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 54.240.9.42
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1364926304-1799-2-git-send-email-jacob.shin@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Apr 2013, Pekka Enberg wrote:
+On Tue, Apr 02, 2013 at 01:11:43PM -0500, Jacob Shin wrote:
+> This allows for another [arch specific] driver to hook into existing
+> powersave bias function of the ondemand governor. i.e. This allows AMD
+> specific powersave bias function (in a separate AMD specific driver)
+> to aid ondemand governor's frequency transition deicisions.
+> 
+> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 
-> On Tue, Mar 19, 2013 at 7:10 AM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> > Could you pick up 1/3, 3/3?
-> > These are already acked by Christoph.
-> > 2/3 is same effect as Glauber's "slub: correctly bootstrap boot caches",
-> > so should skip it.
->
-> Applied, thanks!
+Acked-by: Borislav Petkov <bp@suse.de>
 
-Could you also put in
+-- 
+Regards/Gruss,
+    Boris.
 
-1. The fixes for the hotpath using preempt/enable/disable that were
-discussed with the RT folks a couple of months ago.
-
-2. The fixes from the slab next branch.
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
