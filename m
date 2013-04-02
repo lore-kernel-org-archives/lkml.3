@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760647Ab3DBFrQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 01:47:16 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:51614 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760605Ab3DBFrP (ORCPT
+	id S1760673Ab3DBFuG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 01:50:06 -0400
+Received: from nasmtp02.atmel.com ([204.2.163.16]:44999 "EHLO
+	nasmtp02.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760042Ab3DBFuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 01:47:15 -0400
+	Tue, 2 Apr 2013 01:50:04 -0400
 From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 CC: "linux-arm-kernel@lists.infradead.org" 
@@ -19,17 +19,15 @@ CC: "linux-arm-kernel@lists.infradead.org"
         "spi-devel-general@lists.sourceforge.net" 
 	<spi-devel-general@lists.sourceforge.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v7 10/14] spi/spi-atmel: correct 16 bits transfers with
- DMA
-Thread-Topic: [PATCH v7 10/14] spi/spi-atmel: correct 16 bits transfers with
- DMA
-Thread-Index: AQHOJHaxQs/SML/7SEOeFaTON5hcTZjA8a6AgAGQGgA=
-Date: Tue, 2 Apr 2013 05:46:50 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A24364150E8B304@penmbx01>
+Subject: RE: [PATCH v7 03/14] spi/spi-atmel: add physical base address
+Thread-Topic: [PATCH v7 03/14] spi/spi-atmel: add physical base address
+Thread-Index: AQHOJHXx8mQi9R5DskWA68i2eZE0h5jA7keAgAGT0mA=
+Date: Tue, 2 Apr 2013 05:49:50 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A24364150E8B33C@penmbx01>
 References: <1363678866-3567-1-git-send-email-wenyou.yang@atmel.com>
- <1363679341-4087-1-git-send-email-wenyou.yang@atmel.com>
- <20130401135359.GB18636@opensource.wolfsonmicro.com>
-In-Reply-To: <20130401135359.GB18636@opensource.wolfsonmicro.com>
+ <1363679016-3761-1-git-send-email-wenyou.yang@atmel.com>
+ <20130401134147.GV18636@opensource.wolfsonmicro.com>
+In-Reply-To: <20130401134147.GV18636@opensource.wolfsonmicro.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -41,30 +39,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r325lF0l015413
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r325o940015432
 
 Hi, Mark,
 
 > -----Original Message-----
 > From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
-> Sent: 2013年4月1日 21:54
+> Sent: 2013年4月1日 21:42
 > To: Yang, Wenyou
 > Cc: linux-arm-kernel@lists.infradead.org; grant.likely@secretlab.ca;
 > richard.genoud@gmail.com; plagnioj@jcrosoft.com; Ferre, Nicolas; Lin, JM;
 > spi-devel-general@lists.sourceforge.net; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v7 10/14] spi/spi-atmel: correct 16 bits transfers with DMA
+> Subject: Re: [PATCH v7 03/14] spi/spi-atmel: add physical base address
 > 
-> On Tue, Mar 19, 2013 at 03:49:01PM +0800, Wenyou Yang wrote:
-> > From: Richard Genoud <richard.genoud@gmail.com>
+> On Tue, Mar 19, 2013 at 03:43:36PM +0800, Wenyou Yang wrote:
+> 
+> > +++ b/drivers/spi/spi-atmel.c
+> > @@ -196,6 +196,7 @@ struct atmel_spi_caps {  struct atmel_spi {
+> >  	spinlock_t		lock;
 > >
-> > Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-> > Cc: spi-devel-general@lists.sourceforge.net
-> > Cc: linux-kernel@vger.kernel.org
-> > [wenyou.yang@atmel.com: submit the patch]
-> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> > +	resource_size_t		phybase;
+> >  	void __iomem		*regs;
+> >  	int			irq;
+> >  	struct clk		*clk;
 > 
-> Shouldn't this be squashed into the dmaengine patch?
-OK, I will squash it into the dmaengine patch
+> This looks like the wrong type?
+
+I double checked.
+
+The type ' resource_size_t ' is defined in include/linux/ types.h as below,
+
+typedef phys_addr_t resource_size_t;
+
+I think it is OK.
 
 Best Regards,
 Wenyou Yang
