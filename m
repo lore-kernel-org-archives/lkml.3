@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761541Ab3DBQQK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 12:16:10 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:2764 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761063Ab3DBQQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 12:16:08 -0400
+	id S1761581Ab3DBQQW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 12:16:22 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:65366 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761063Ab3DBQQT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 12:16:19 -0400
 X-IronPort-AV: E=Sophos;i="4.87,394,1363132800"; 
-   d="scan'208";a="16163716"
-Date: Tue, 2 Apr 2013 17:16:03 +0100
+   d="scan'208";a="16163837"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
 To: <xen-devel@lists.xensource.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        <rob.herring@calxeda.com>
-Subject: [PATCH 0/3 v5] arm: introduce psci_smp_ops and use them on Xen
-Message-ID: <alpine.DEB.2.02.1304021700380.5078@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+        <will.deacon@arm.com>, <arnd@arndb.de>, <nicolas.pitre@linaro.org>,
+        <Stefano.Stabellini@eu.citrix.com>, <rob.herring@calxeda.com>,
+        Jon Medhurst <tixy@linaro.org>
+Subject: [PATCH v5 2/3] ARM: Enable selection of SMP operations at boot time
+Date: Tue, 2 Apr 2013 17:16:13 +0100
+Message-ID: <1364919374-7836-2-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1304021700380.5078@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1304021700380.5078@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this is the fifth version of the patch series to move virt_smp_ops out of
-mach-virt and make it a generic set of reusable PSCI based smp_ops.
-I added a patch to introduce smp_init to this series.
-In the last patch I am using smp_init to switch to psci_smp_ops if Xen
-is detected on the platform.
+From: Jon Medhurst <tixy@linaro.org>
 
+Add a new 'smp_init' hook to machine_desc so platforms can specify a
+function to be used to setup smp ops instead of having a statically
+defined value.
 
-Jon Medhurst (1):
-      ARM: Enable selection of SMP operations at boot time
+Signed-off-by: Jon Medhurst <tixy@linaro.org>
+Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ arch/arm/include/asm/mach/arch.h |    3 +++
+ arch/arm/kernel/setup.c          |    4 +++-
+ 2 files changed, 6 insertions(+), 1 deletions(-)
 
-Stefano Stabellini (2):
-      arm: introduce psci_smp_ops
-      xen/arm: introduce xen_early_init, use PSCI on xen
+diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
+index 308ad7d..c01bf53 100644
+--- a/arch/arm/include/asm/mach/arch.h
++++ b/arch/arm/include/asm/mach/arch.h
+@@ -16,8 +16,10 @@ struct pt_regs;
+ struct smp_operations;
+ #ifdef CONFIG_SMP
+ #define smp_ops(ops) (&(ops))
++#define smp_init_ops(ops) (&(ops))
+ #else
+ #define smp_ops(ops) (struct smp_operations *)NULL
++#define smp_init_ops(ops) (void (*)(void))NULL
+ #endif
+ 
+ struct machine_desc {
+@@ -41,6 +43,7 @@ struct machine_desc {
+ 	unsigned char		reserve_lp2 :1;	/* never has lp2	*/
+ 	char			restart_mode;	/* default restart mode	*/
+ 	struct smp_operations	*smp;		/* SMP operations	*/
++	void			(*smp_init)(void);
+ 	void			(*fixup)(struct tag *, char **,
+ 					 struct meminfo *);
+ 	void			(*reserve)(void);/* reserve mem blocks	*/
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 341efaa..7e193df 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -770,7 +770,9 @@ void __init setup_arch(char **cmdline_p)
+ 	psci_init();
+ #ifdef CONFIG_SMP
+ 	if (is_smp()) {
+-		if (mdesc->smp)
++		if (mdesc->smp_init)
++			(*mdesc->smp_init)();
++		else if (mdesc->smp)
+ 			smp_set_ops(mdesc->smp);
+ 		else if (psci_smp_available())
+ 			smp_set_ops(&psci_smp_ops);
+-- 
+1.7.2.5
 
- arch/arm/Kconfig                      |    1 +
- arch/arm/include/asm/mach/arch.h      |    3 +
- arch/arm/include/asm/psci.h           |   29 ++++++++++++++
- arch/arm/include/asm/xen/hypervisor.h |    6 +++
- arch/arm/kernel/Makefile              |    5 ++-
- arch/arm/kernel/psci.c                |    7 +--
- arch/arm/kernel/psci_smp.c            |   67 +++++++++++++++++++++++++++++++++
- arch/arm/kernel/setup.c               |   12 +++++-
- arch/arm/mach-virt/Makefile           |    1 -
- arch/arm/mach-virt/platsmp.c          |   58 ----------------------------
- arch/arm/mach-virt/virt.c             |    3 -
- arch/arm/xen/enlighten.c              |   27 ++++++++++---
- 12 files changed, 144 insertions(+), 75 deletions(-)
-
-
-A branch based on "xen/arm: move to mach-virt and support SMP" and
-3.9-rc3 is available here:
-
-git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 3.9-rc3-smp-5
-
-
-Cheers,
-
-Stefano
