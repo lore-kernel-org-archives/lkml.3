@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762380Ab3DBUw2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 16:52:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58795 "EHLO mx1.redhat.com"
+	id S1762399Ab3DBUxB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 16:53:01 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55806 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761785Ab3DBUw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 16:52:27 -0400
-Date: Tue, 2 Apr 2013 22:52:15 +0200
-From: Frantisek Hrbata <fhrbata@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, oleg@redhat.com,
-        kamaleshb@in.ibm.com, hechjie@cn.ibm.com
-Subject: Re: [PATCH] x86: add phys addr validity check for /dev/mem mmap
-Message-ID: <20130402205215.GD3314@dhcp-26-164.brq.redhat.com>
-Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
-References: <1364905733-23937-1-git-send-email-fhrbata@redhat.com>
- <515B2802.1050405@zytor.com>
- <20130402191012.GC3314@dhcp-26-164.brq.redhat.com>
- <515B3F98.5020101@zytor.com>
+	id S1760449Ab3DBUw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 16:52:59 -0400
+Date: Tue, 2 Apr 2013 22:40:14 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH V3 2/2] cpufreq: AMD "frequency sensitivity feedback"
+ powersave bias for ondemand governor
+Message-ID: <20130402204014.GH17675@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jacob Shin <jacob.shin@amd.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+	cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Viresh Kumar <viresh.kumar@linaro.org>,
+	Thomas Renninger <trenn@suse.de>
+References: <1364926304-1799-1-git-send-email-jacob.shin@amd.com>
+ <1364926304-1799-3-git-send-email-jacob.shin@amd.com>
+ <20130402192352.GC17675@pd.tnic>
+ <20130402200337.GA17919@jshin-Toonie>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <515B3F98.5020101@zytor.com>
+In-Reply-To: <20130402200337.GA17919@jshin-Toonie>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 01:29:12PM -0700, H. Peter Anvin wrote:
-> On 04/02/2013 12:10 PM, Frantisek Hrbata wrote:
-> > 
-> > Hi, this is exactly what the patch is doing imho. Note that the
-> > valid_phys_addr_range(), which is using the high_memory, is the same as the
-> > default one in drivers/char/mem.c(#ifndef ARCH_HAS_VALID_PHYS_ADDR_RANGE). I
-> > just added x86 specific check for valid_mmap_phys_addr_range and moved both
-> > functions to arch/x86/mm/mmap.c, rather then modifying the default generic ones.
-> > This is how other archs(arm) are doing it.
-> > 
-> > Also valid_phys_addr_range is used just in read|write_mem and
-> > valid_mmap_phys_addr_range is checked in mmap_mem and it calls phys_addr_valid
-> > 
-> > static inline int phys_addr_valid(resource_size_t addr)
-> > {
-> > #ifdef CONFIG_PHYS_ADDR_T_64BIT
-> > 	return !(addr >> boot_cpu_data.x86_phys_bits);
-> > #else
-> >         return 1;
-> > #endif
-> > }                          
-> > 
-> > I for sure could overlooked something, but this seems right to me.
-> > 
-> 
-> OK, this is really confusing ... which isn't a *huge* surprise (the
-> entire /dev/mem code has some gigantic bugs in it.)
-> 
-> I think I need to do more of an in-depth review.  The other question is
-> why we don't call phys_addr_valid() everywhere.
+On Tue, Apr 02, 2013 at 03:03:37PM -0500, Jacob Shin wrote:
+> Well, so this powersave_bias also works as a tunable knob.
+>
+> From ondemand side, if /sys/../ondemand/powersave_bias is 0, then we
+> (AMD sensitivity) don't get called and you get the default ondemand
+> behavior.
+>
+> Like existing powersave_bias, users can tune the value to whatever
+> they want, to get a specturum of less to more aggressive power savings
+> vs performance.
+>
+> I thought tunable would be more flexible .. out in the field or what
+> not .. no?
 
-I'm not going to pretend I understand the code, but IMHO the
-valid_phys_addr_range and valid_mmap_phys_addr_range in drivers/char/mem.c are
-generic for all archs. If some arch wants specific version of those functions it
-defines them in the arch specific code and define ARCH_HAS_VALID_PHYS_ADDR_RANGE.
-The phys_addr_valid is x86 specific defined in arch/x86/mm/physaddr.h, so IMHO
-it cannot be used in the generic checks. For example ARM has it's specific
-checks in arch/arm/mm/mmap.c.
+Ok, yes, that is the default on current systems which don't have hw
+feedback.
 
-I reused phys_addr_valid because it is already used in ioremap(__ioremap_caller)
-for the same purpose imho.
+But, on hw with such counters, I think the default should be to use
+the hw feedback feature so that hardware can already do more informed
+decisions for users.
 
-Thank you for looking into this.
+As Thomas said, I hardly doubt users even know about that knob. So if we
+can make the freq sensitivity thing work out of the box and without user
+intervention, then we should strive to do that, no?
 
-> 
-> 	-hpa
-> 
-> 
+IOW:
+
+	if (!powersave_bias) {
+		/* user hasn't touched knob */
+
+		if (HAS_FEEDBACK_INTERFACE)
+			od_ops.powersave_bias_target(...);
+
+		__cpufreq_driver_target(..)
+	else
+		od_ops.powersave_bias_target(..)
+		__cpufreq_driver_target(..)
+	}
+
+The only change is that on hw feedback systems, you don't get the old
+behavior with powersave_bias == 0. Question is, do you even want it all
+that much but would rather leave the hw do much more informed decisions
+than the ondemand governor.
+
+Hmmm.
 
 -- 
-Frantisek Hrbata
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
