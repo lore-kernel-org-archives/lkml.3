@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760803Ab3DBLfG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 07:35:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46557 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760183Ab3DBLdB (ORCPT
+	id S1760906Ab3DBLfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 07:35:37 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42255 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760181Ab3DBLfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 07:33:01 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 08/16] extcon: arizona: Check we report a valid impedance
-Date: Tue,  2 Apr 2013 12:32:40 +0100
-Message-Id: <1364902368-1123-8-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1364902368-1123-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <20130402113157.GJ23065@opensource.wolfsonmicro.com>
- <1364902368-1123-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Tue, 2 Apr 2013 07:35:33 -0400
+Date: Tue, 2 Apr 2013 13:35:32 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Frank Li <lznuaa@gmail.com>
+Cc: kernel list <linux-kernel@vger.kernel.org>, fabio.estevam@freescale.com,
+        l.stach@pengutronix.de, Frank.Li@freescale.com, netdev@vger.kernel.org,
+        davem@davemloft.net
+Subject: Re: Freescale FEC: fall back to random address
+Message-ID: <20130402113532.GA8880@amd.pavel.ucw.cz>
+References: <20130331210605.GA29191@amd.pavel.ucw.cz>
+ <CAHrpEqSVUc1yedCoyOrRoxkjY7=N_pCDB1F7-WvRaP+4UEY68A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHrpEqSVUc1yedCoyOrRoxkjY7=N_pCDB1F7-WvRaP+4UEY68A@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Hi!
 
-Occasionally we can trigger an interrupt before we have completed
-impedance measurement, although the valid bit will still be set. This
-patch spins reading the impedance value until a valid value is seen.
+> I think it is okay.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/extcon/extcon-arizona.c |   28 ++++++++++++++++++----------
- 1 file changed, 18 insertions(+), 10 deletions(-)
+Ok, now... is there someone maintianing Freescale FEC? Or, Dave, can
+you merge the patch?
 
-diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index 9e4bffe..4022fe2 100644
---- a/drivers/extcon/extcon-arizona.c
-+++ b/drivers/extcon/extcon-arizona.c
-@@ -737,22 +737,30 @@ static irqreturn_t arizona_micdet(int irq, void *data)
- {
- 	struct arizona_extcon_info *info = data;
- 	struct arizona *arizona = info->arizona;
--	unsigned int val, lvl;
-+	unsigned int val = 0, lvl;
- 	int ret, i, key;
- 
- 	mutex_lock(&info->lock);
- 
--	ret = regmap_read(arizona->regmap, ARIZONA_MIC_DETECT_3, &val);
--	if (ret != 0) {
--		dev_err(arizona->dev, "Failed to read MICDET: %d\n", ret);
--		mutex_unlock(&info->lock);
--		return IRQ_NONE;
--	}
-+	for (i = 0; i < 10 && !(val & 0x7fc); i++) {
-+		ret = regmap_read(arizona->regmap, ARIZONA_MIC_DETECT_3, &val);
-+		if (ret != 0) {
-+			dev_err(arizona->dev, "Failed to read MICDET: %d\n", ret);
-+			mutex_unlock(&info->lock);
-+			return IRQ_NONE;
-+		}
-+
-+		dev_dbg(arizona->dev, "MICDET: %x\n", val);
- 
--	dev_dbg(arizona->dev, "MICDET: %x\n", val);
-+		if (!(val & ARIZONA_MICD_VALID)) {
-+			dev_warn(arizona->dev, "Microphone detection state invalid\n");
-+			mutex_unlock(&info->lock);
-+			return IRQ_NONE;
-+		}
-+	}
- 
--	if (!(val & ARIZONA_MICD_VALID)) {
--		dev_warn(arizona->dev, "Microphone detection state invalid\n");
-+	if (i == 10 && !(val & 0x7fc)) {
-+		dev_err(arizona->dev, "Failed to get valid MICDET value\n");
- 		mutex_unlock(&info->lock);
- 		return IRQ_NONE;
- 	}
+Thanks,
+								Pavel
+
+
+> 2013/4/1 Pavel Machek <pavel@denx.de>:
+> > If there's no valid ethernet address, fall back to randomly generated
+> > one.
+> >
+> > (Yes, I need to get newer u-boot for the board, but as the only
+> > available one is from 2009... this might be good idea).
+> >
+> > Signed-off-by: Pavel Machek <pavel@denx.de>
+> >
+> >
+> > index e3f3937..5a7d1e1 100644
+> > pp--- a/drivers/net/ethernet/freescale/fec.c
+> > +++ b/drivers/net/ethernet/freescale/fec.c
+> > @@ -906,6 +914,16 @@ static void fec_get_mac(struct net_device *ndev)
+> >                 iap = &tmpaddr[0];
+> >         }
+> >
+> > +       /*
+> > +        * 5) random mac address
+> > +        */
+> > +       if (!is_valid_ether_addr(iap)) {
+> > +               /* Report it and use a random ethernet address instead */
+> > +               netdev_err(ndev, "Invalid MAC address: %pM\n", iap);
+> > +               random_ether_addr(iap);
+> > +               netdev_info(ndev, "Using random MAC address: %pM\n", iap);
+> > +       }
+> > +
+> >         memcpy(ndev->dev_addr, iap, ETH_ALEN);
+> >
+> >         /* Adjust MAC if using macaddr */
+
 -- 
-1.7.10.4
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
