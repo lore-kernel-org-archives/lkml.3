@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757651Ab3DBWoi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:44:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33130 "EHLO
+	id S1757704Ab3DBWoy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:44:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33139 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933395Ab3DBWMw (ORCPT
+	with ESMTP id S1760939Ab3DBWMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:52 -0400
+	Tue, 2 Apr 2013 18:12:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Lingzhu Xiang <lxiang@redhat.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 090/124] iwlwifi: dvm: dont send HCMD in restart flow
-Date: Tue,  2 Apr 2013 15:11:12 -0700
-Message-Id: <20130402221114.566302878@linuxfoundation.org>
+        Anatol Pomozov <anatol.pomozov@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 080/124] loop: prevent bdev freeing while device in use
+Date: Tue,  2 Apr 2013 15:11:02 -0700
+Message-Id: <20130402221113.417233666@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -28,64 +28,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
 
-commit 2d5d50ee596361566f7f84300117cba7d7672bc5 upstream.
+commit c1681bf8a7b1b98edee8b862a42c19c4e53205fd upstream.
 
-There is a race between the restart flow and the workers.
-The workers are cancelled after the fw is already killed
-and might send HCMD when there is fw to handle them.
-Simply check that there is a fw to which the HCMD can be
-sent before actually sending it.
+struct block_device lifecycle is defined by its inode (see fs/block_dev.c) -
+block_device allocated first time we access /dev/loopXX and deallocated on
+bdev_destroy_inode. When we create the device "losetup /dev/loopXX afile"
+we want that block_device stay alive until we destroy the loop device
+with "losetup -d".
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
-Reviewed-by: CAI Qian <caiqian@redhat.com>
+But because we do not hold /dev/loopXX inode its counter goes 0, and
+inode/bdev can be destroyed at any moment. Usually it happens at memory
+pressure or when user drops inode cache (like in the test below). When later in
+loop_clr_fd() we want to use bdev we have use-after-free error with following
+stack:
+
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000280
+  bd_set_size+0x10/0xa0
+  loop_clr_fd+0x1f8/0x420 [loop]
+  lo_ioctl+0x200/0x7e0 [loop]
+  lo_compat_ioctl+0x47/0xe0 [loop]
+  compat_blkdev_ioctl+0x341/0x1290
+  do_filp_open+0x42/0xa0
+  compat_sys_ioctl+0xc1/0xf20
+  do_sys_open+0x16e/0x1d0
+  sysenter_dispatch+0x7/0x1a
+
+To prevent use-after-free we need to grab the device in loop_set_fd()
+and put it later in loop_clr_fd().
+
+The issue is reprodusible on current Linus head and v3.3. Here is the test:
+
+  dd if=/dev/zero of=loop.file bs=1M count=1
+  while [ true ]; do
+    losetup /dev/loop0 loop.file
+    echo 2 > /proc/sys/vm/drop_caches
+    losetup -d /dev/loop0
+  done
+
+[ Doing bdgrab/bput in loop_set_fd/loop_clr_fd is safe, because every
+  time we call loop_set_fd() we check that loop_device->lo_state is
+  Lo_unbound and set it to Lo_bound If somebody will try to set_fd again
+  it will get EBUSY.  And if we try to loop_clr_fd() on unbound loop
+  device we'll get ENXIO.
+
+  loop_set_fd/loop_clr_fd (and any other loop ioctl) is called under
+  loop_device->lo_ctl_mutex. ]
+
+Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/dvm/lib.c   |    9 +++++++++
- drivers/net/wireless/iwlwifi/dvm/ucode.c |    4 ++--
- 2 files changed, 11 insertions(+), 2 deletions(-)
+ drivers/block/loop.c |    9 ++++++++-
+ fs/block_dev.c       |    1 +
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/dvm/lib.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/lib.c
-@@ -1262,6 +1262,15 @@ int iwl_dvm_send_cmd(struct iwl_priv *pr
- 	}
- 
- 	/*
-+	 * This can happen upon FW ASSERT: we clear the STATUS_FW_ERROR flag
-+	 * in iwl_down but cancel the workers only later.
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -917,6 +917,11 @@ static int loop_set_fd(struct loop_devic
+ 		lo->lo_flags |= LO_FLAGS_PARTSCAN;
+ 	if (lo->lo_flags & LO_FLAGS_PARTSCAN)
+ 		ioctl_by_bdev(bdev, BLKRRPART, 0);
++
++	/* Grab the block_device to prevent its destruction after we
++	 * put /dev/loopXX inode. Later in loop_clr_fd() we bdput(bdev).
 +	 */
-+	if (!priv->ucode_loaded) {
-+		IWL_ERR(priv, "Fw not loaded - dropping CMD: %x\n", cmd->id);
-+		return -EIO;
-+	}
-+
-+	/*
- 	 * Synchronous commands from this op-mode must hold
- 	 * the mutex, this ensures we don't try to send two
- 	 * (or more) synchronous commands at a time.
---- a/drivers/net/wireless/iwlwifi/dvm/ucode.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/ucode.c
-@@ -450,6 +450,8 @@ int iwl_load_ucode_wait_alive(struct iwl
- 		return -EIO;
- 	}
- 
-+	priv->ucode_loaded = true;
-+
- 	/*
- 	 * This step takes a long time (60-80ms!!) and
- 	 * WoWLAN image should be loaded quickly, so
-@@ -474,8 +476,6 @@ int iwl_load_ucode_wait_alive(struct iwl
- 		return ret;
- 	}
- 
--	priv->ucode_loaded = true;
--
++	bdgrab(bdev);
  	return 0;
- }
  
+ out_clr:
+@@ -1026,8 +1031,10 @@ static int loop_clr_fd(struct loop_devic
+ 	memset(lo->lo_encrypt_key, 0, LO_KEY_SIZE);
+ 	memset(lo->lo_crypt_name, 0, LO_NAME_SIZE);
+ 	memset(lo->lo_file_name, 0, LO_NAME_SIZE);
+-	if (bdev)
++	if (bdev) {
++		bdput(bdev);
+ 		invalidate_bdev(bdev);
++	}
+ 	set_capacity(lo->lo_disk, 0);
+ 	loop_sysfs_exit(lo);
+ 	if (bdev) {
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -551,6 +551,7 @@ struct block_device *bdgrab(struct block
+ 	ihold(bdev->bd_inode);
+ 	return bdev;
+ }
++EXPORT_SYMBOL(bdgrab);
+ 
+ long nr_blockdev_pages(void)
+ {
 
 
