@@ -1,76 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933004Ab3DBTtg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 15:49:36 -0400
-Received: from 8.mo1.mail-out.ovh.net ([178.33.110.239]:54548 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932401Ab3DBTte (ORCPT
+	id S933128Ab3DBTtn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 15:49:43 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:58567 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932401Ab3DBTti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 15:49:34 -0400
-X-Greylist: delayed 8700 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Apr 2013 15:49:34 EDT
-From: Boris BREZILLON <linux-arm@overkiz.com>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org, Boris BREZILLON <linux-arm@overkiz.com>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: [PATCH RESEND] pwm: pwm-atmel-tcb: pinctrl support
-Date: Tue,  2 Apr 2013 18:09:46 +0200
-Message-Id: <1364918986-15336-1-git-send-email-linux-arm@overkiz.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Ovh-Tracer-Id: 269371554828039190
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiuddrkeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiuddrkeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Tue, 2 Apr 2013 15:49:38 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: Christian Kujau <lists@nerdbynature.de>,
+        Zheng Liu <gnehzuil.liu@gmail.com>
+Cc: CAI Qian <caiqian@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
+        linux-ext4@vger.kernel.org
+Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591! (powerpc too!)
+In-Reply-To: <alpine.DEB.2.10.1304021202100.13746@trent.utfs.org>
+References: <2133129347.8273339.1364549222854.JavaMail.root@redhat.com> <87ip46ss0o.fsf@openvz.org> <1211053180.322948.1364797847717.JavaMail.root@redhat.com> <87fvzaspr8.fsf@openvz.org> <874841142.414482.1364875584266.JavaMail.root@redhat.com> <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org> <877gkls1q7.fsf@openvz.org> <20130402123356.GA10703@gmail.com> <alpine.DEB.2.10.1304021202100.13746@trent.utfs.org>
+User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+Date: Tue, 02 Apr 2013 23:49:32 +0400
+Message-ID: <87mwtgvhkj.fsf@openvz.org>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setup tcb pins using pinctrl subsystem.
+--=-=-=
 
-Signed-off-by: Boris BREZILLON <linux-arm@overkiz.com>
+On Tue, 2 Apr 2013 12:07:37 -0700 (PDT), Christian Kujau <lists@nerdbynature.de> wrote:
+> On Tue, 2 Apr 2013 at 20:33, Zheng Liu wrote:
+> > Could you please revert your tree to this commit (3a225670), and try
+> > again. I want to make sure that the regression won't be fixed until now
+> > or it is introduced after this commit.
+> 
+> I have git-revert'ed this commit and the same BUG_ON was triggered again. 
+> I could not bring "fsstress" to trigger this but resuming this 4.3 GB 
+> Fedora DVD image via bittorrent made the machine crash after a couple of 
+> minutes.
+> 
+> Sadly the only message netconsole is able to catch is this single line 
+> from the subject above, but I'll try to apply the proposed patches[0] and 
+> see if it helps anything.
+Ok if netconsole can't log in case of BUG_ON then we just skip panic :)
+Please use following patch instead of enable_ES_AGGRESSIVE_TEST.diff
+
+--=-=-=
+Content-Type: text/x-patch
+Content-Disposition: inline;
+ filename=0001-enable-ES_AGGRESSIVE_TEST-V2.patch
+
+>From e802d032225a74156f8256467aa64535369ae45c Mon Sep 17 00:00:00 2001
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+Date: Tue, 2 Apr 2013 23:33:16 +0400
+Subject: [PATCH] enable ES_AGGRESSIVE_TEST V2
+
+
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
 ---
- drivers/pwm/pwm-atmel-tcb.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/ext4/extents_status.h |    2 +-
+ fs/ext4/inode.c          |   17 +++++++++++++++--
+ 2 files changed, 16 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pwm/pwm-atmel-tcb.c b/drivers/pwm/pwm-atmel-tcb.c
-index 16cb530..985b7bf 100644
---- a/drivers/pwm/pwm-atmel-tcb.c
-+++ b/drivers/pwm/pwm-atmel-tcb.c
-@@ -21,6 +21,7 @@
- #include <linux/pwm.h>
- #include <linux/of_device.h>
- #include <linux/slab.h>
-+#include <linux/pinctrl/consumer.h>
+diff --git a/fs/ext4/extents_status.h b/fs/ext4/extents_status.h
+index d8e2d4d..70233a6 100644
+--- a/fs/ext4/extents_status.h
++++ b/fs/ext4/extents_status.h
+@@ -24,7 +24,7 @@
+  * With ES_AGGRESSIVE_TEST defined, the result of es caching will be
+  * checked with old map_block's result.
+  */
+-#define ES_AGGRESSIVE_TEST__
++#define ES_AGGRESSIVE_TEST
  
- #define NPWM	6
- 
-@@ -365,6 +366,7 @@ static int atmel_tcb_pwm_probe(struct platform_device *pdev)
- 	struct atmel_tcb_pwm_chip *tcbpwm;
- 	struct device_node *np = pdev->dev.of_node;
- 	struct atmel_tc *tc;
-+	struct pinctrl *pinctrl;
- 	int err;
- 	int tcblock;
- 
-@@ -389,6 +391,13 @@ static int atmel_tcb_pwm_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
-+	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
-+	if (IS_ERR(pinctrl)) {
-+		atmel_tc_free(tc);
-+		dev_err(&pdev->dev, "failed to get pinctrl config\n");
-+		return PTR_ERR(pinctrl);
-+	}
-+
- 	tcbpwm->chip.dev = &pdev->dev;
- 	tcbpwm->chip.ops = &atmel_tcb_pwm_ops;
- 	tcbpwm->chip.of_xlate = of_pwm_xlate_with_flags;
+ /*
+  * These flags live in the high bits of extent_status.es_pblk
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 840a23e..7712aff 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -1546,7 +1546,18 @@ static int mpage_da_submit_io(struct mpage_da_data *mpd,
+ 					}
+ 					if (buffer_unwritten(bh) ||
+ 					    buffer_mapped(bh))
+-						BUG_ON(bh->b_blocknr != pblock);
++						if (bh->b_blocknr != pblock) {
++							printk(KERN_ERR "mpage_da_submit_io failed"
++							       " block=%llu != b_blocknr=%llu\n",
++							       (unsigned long long)pblock,
++							       (unsigned long long)bh->b_blocknr);
++							printk(KERN_ERR "ino:%ld lbkl:%lu, "
++							       "b_state=0x%08lx, b_size=%zu\n",
++							       inode->i_ino, cur_logical,
++							       bh->b_state, bh->b_size);
++							WARN_ON(1);
++							goto skip_page;
++						}
+ 					if (map->m_flags & EXT4_MAP_UNINIT)
+ 						set_buffer_uninit(bh);
+ 					clear_buffer_unwritten(bh);
+@@ -1556,8 +1567,10 @@ static int mpage_da_submit_io(struct mpage_da_data *mpd,
+ 				 * skip page if block allocation undone and
+ 				 * block is dirty
+ 				 */
+-				if (ext4_bh_delay_or_unwritten(NULL, bh))
++				if (ext4_bh_delay_or_unwritten(NULL, bh)) {
++				skip_page:
+ 					skip_page = 1;
++				}
+ 				bh = bh->b_this_page;
+ 				block_start += bh->b_size;
+ 				cur_logical++;
 -- 
-1.7.9.5
+1.7.1
 
+
+--=-=-=
+
+So once you hit the bug it will print a lot of warnings and try to
+pretend what nothing is happens.
+
+So my predictions is follows:
+1) with enable_ES_AGGRESSIVE_TEST-V2.diff patch you will see a lot of
+warnings
+
+2) with enable_ES_AGGRESSIVE_TEST-V2.diff and
+   http://nerdbynature.de/bits/3.9.0-rc4/ext4/disable-es_lookup_extent.patch
+ 
+   Issue probably will go away (will be hidden)
+
+> 
+> Thanks,
+> Christian.
+> 
+> [0] http://nerdbynature.de/bits/3.9.0-rc4/ext4/
+> -- 
+> BOFH excuse #344:
+> 
+> Network failure -  call NBC
+
+--=-=-=--
