@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762370Ab3DBWYV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:24:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33557 "EHLO
+	id S1762342Ab3DBWYT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:24:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33561 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933745Ab3DBWOa (ORCPT
+	with ESMTP id S933749Ab3DBWOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Apr 2013 18:14:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Laurent Chavey <chavey@google.com>, Eric Dumazet <edumazet@google.com>,
+        Mirko Lindner <mlindner@marvell.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 44/68] net: remove a WARN_ON() in net_enable_timestamp()
-Date: Tue,  2 Apr 2013 15:13:33 -0700
-Message-Id: <20130402221335.050405891@linuxfoundation.org>
+Subject: [ 45/68] sky2: Receive Overflows not counted
+Date: Tue,  2 Apr 2013 15:13:34 -0700
+Message-Id: <20130402221335.181363789@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
@@ -28,54 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Mirko Lindner <mlindner@marvell.com>
 
-[ Upstream commit 9979a55a833883242e3a29f3596676edd7199c46 ]
+[ Upstream commit 9cfe8b156c21cf340b3a10ecb3022fbbc1c39185 ]
 
-The WARN_ON(in_interrupt()) in net_enable_timestamp() can get false
-positive, in socket clone path, run from softirq context :
+The sky2 driver doesn't count the Receive Overflows because the MAC
+interrupt for this event is not set in the MAC's interrupt mask.
+The MAC's interrupt mask is set only for Transmit FIFO Underruns.
 
-[ 3641.624425] WARNING: at net/core/dev.c:1532 net_enable_timestamp+0x7b/0x80()
-[ 3641.668811] Call Trace:
-[ 3641.671254]  <IRQ>  [<ffffffff80286817>] warn_slowpath_common+0x87/0xc0
-[ 3641.677871]  [<ffffffff8028686a>] warn_slowpath_null+0x1a/0x20
-[ 3641.683683]  [<ffffffff80742f8b>] net_enable_timestamp+0x7b/0x80
-[ 3641.689668]  [<ffffffff80732ce5>] sk_clone_lock+0x425/0x450
-[ 3641.695222]  [<ffffffff8078db36>] inet_csk_clone_lock+0x16/0x170
-[ 3641.701213]  [<ffffffff807ae449>] tcp_create_openreq_child+0x29/0x820
-[ 3641.707663]  [<ffffffff807d62e2>] ? ipt_do_table+0x222/0x670
-[ 3641.713354]  [<ffffffff807aaf5b>] tcp_v4_syn_recv_sock+0xab/0x3d0
-[ 3641.719425]  [<ffffffff807af63a>] tcp_check_req+0x3da/0x530
-[ 3641.724979]  [<ffffffff8078b400>] ? inet_hashinfo_init+0x60/0x80
-[ 3641.730964]  [<ffffffff807ade6f>] ? tcp_v4_rcv+0x79f/0xbe0
-[ 3641.736430]  [<ffffffff807ab9bd>] tcp_v4_do_rcv+0x38d/0x4f0
-[ 3641.741985]  [<ffffffff807ae14a>] tcp_v4_rcv+0xa7a/0xbe0
+Fix: The correct setting should be (GM_IS_TX_FF_UR | GM_IS_RX_FF_OR)
+Otherwise the Receive Overflow event will not generate any interrupt.
+The  Receive Overflow interrupt is handled correctly
 
-Its safe at this point because the parent socket owns a reference
-on the netstamp_needed, so we cant have a 0 -> 1 transition, which
-requires to lock a mutex.
-
-Instead of refining the check, lets remove it, as all known callers
-are safe. If it ever changes in the future, static_key_slow_inc()
-will complain anyway.
-
-Reported-by: Laurent Chavey <chavey@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Mirko Lindner <mlindner@marvell.com>
+Acked-by: Stephen Hemminger <stephen@networkplumber.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/dev.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/net/ethernet/marvell/sky2.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1482,7 +1482,6 @@ void net_enable_timestamp(void)
- 		return;
- 	}
- #endif
--	WARN_ON(in_interrupt());
- 	static_key_slow_inc(&netstamp_needed);
- }
- EXPORT_SYMBOL(net_enable_timestamp);
+--- a/drivers/net/ethernet/marvell/sky2.h
++++ b/drivers/net/ethernet/marvell/sky2.h
+@@ -2069,7 +2069,7 @@ enum {
+ 	GM_IS_RX_FF_OR	= 1<<1,	/* Receive FIFO Overrun */
+ 	GM_IS_RX_COMPL	= 1<<0,	/* Frame Reception Complete */
+ 
+-#define GMAC_DEF_MSK     GM_IS_TX_FF_UR
++#define GMAC_DEF_MSK     (GM_IS_TX_FF_UR | GM_IS_RX_FF_OR)
+ };
+ 
+ /*	GMAC_LINK_CTRL	16 bit	GMAC Link Control Reg (YUKON only) */
 
 
