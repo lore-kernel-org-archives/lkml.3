@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760614Ab3DBDzo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 23:55:44 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:59545 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760585Ab3DBDzj (ORCPT
+	id S1760637Ab3DBD4E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 23:56:04 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:47735 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759869Ab3DBDzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 23:55:39 -0400
+	Mon, 1 Apr 2013 23:55:47 -0400
+X-Greylist: delayed 18518 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Apr 2013 23:55:47 EDT
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: David Ahern <dsahern@gmail.com>, Borislav Petkov <bp@alien8.de>,
@@ -15,9 +16,9 @@ Cc: David Ahern <dsahern@gmail.com>, Borislav Petkov <bp@alien8.de>,
         Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 20/23] perf: consolidate CONFIG_LIBELF checks in Makefile
-Date: Mon,  1 Apr 2013 21:54:34 -0600
-Message-Id: <1364874877-5618-21-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 23/23] perf: only add elf-based object files if CONFIG_LIBELF is set
+Date: Mon,  1 Apr 2013 21:54:37 -0600
+Message-Id: <1364874877-5618-24-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1364874877-5618-1-git-send-email-dsahern@gmail.com>
 References: <1364874877-5618-1-git-send-email-dsahern@gmail.com>
@@ -35,69 +36,60 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile |   34 ++++++++++++++++------------------
- 1 file changed, 16 insertions(+), 18 deletions(-)
+ tools/perf/Makefile |   12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index e76fa2f..a3a62611 100644
+index 5990520..b16a944 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -530,6 +530,12 @@ PERFLIBS = $(LIB_FILE) $(LIBTRACEEVENT)
- ifneq ($(MAKECMDGOALS),clean)
- ifneq ($(MAKECMDGOALS),tags)
- 
-+-include arch/$(ARCH)/Makefile
-+
-+ifneq ($(OUTPUT),)
-+	BASIC_CFLAGS += -I$(OUTPUT)
-+endif
-+
- # We choose to avoid "if .. else if .. else .. endif endif"
- # because maintaining the nesting to match is a pain.  If
- # we had "elif" things would have been much nicer...
-@@ -565,25 +571,7 @@ ifdef CONFIG_LIBELF
-             $(error Please install new elfutils-devel/libdw-dev or disable CONFIG_DWARF);
-         endif
-     endif
--else
--    ifdef CONFIG_DWARF
--        $(error CONFIG_DWARF depends on LIBELF)
--    endif
--    ifdef CONFIG_DEMANGLE
--        $(error CONFIG_DEMANGLE depends on LIBELF)
--    endif
--    ifdef CONFIG_LIBUNWIND
--        $(error CONFIG_LIBUNWIND depends on LIBELF)
--    endif
--endif
- 
---include arch/$(ARCH)/Makefile
--
--ifneq ($(OUTPUT),)
--	BASIC_CFLAGS += -I$(OUTPUT)
--endif
--
--ifdef CONFIG_LIBELF
-     FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
-     ifeq ($(call try-cc,$(SOURCE_ELF_MMAP),$(FLAGS_LIBELF),-DLIBELF_MMAP),y)
- 	    BASIC_CFLAGS += -DLIBELF_MMAP
-@@ -602,6 +590,16 @@ ifdef CONFIG_LIBELF
+@@ -430,7 +430,6 @@ LIB_OBJS += $(OUTPUT)util/wrapper.o
+ LIB_OBJS += $(OUTPUT)util/sigchain.o
+ LIB_OBJS += $(OUTPUT)util/dso.o
+ LIB_OBJS += $(OUTPUT)util/symbol.o
+-LIB_OBJS += $(OUTPUT)util/symbol-elf.o
+ LIB_OBJS += $(OUTPUT)util/color.o
+ LIB_OBJS += $(OUTPUT)util/pager.o
+ LIB_OBJS += $(OUTPUT)util/header.o
+@@ -454,7 +453,6 @@ LIB_OBJS += $(OUTPUT)util/trace-event-scripting.o
+ LIB_OBJS += $(OUTPUT)util/svghelper.o
+ LIB_OBJS += $(OUTPUT)util/sort.o
+ LIB_OBJS += $(OUTPUT)util/hist.o
+-LIB_OBJS += $(OUTPUT)util/probe-event.o
+ LIB_OBJS += $(OUTPUT)util/util.o
+ LIB_OBJS += $(OUTPUT)util/xyarray.o
+ LIB_OBJS += $(OUTPUT)util/cpumap.o
+@@ -515,7 +513,6 @@ BUILTIN_OBJS += $(OUTPUT)builtin-stat.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-timechart.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-top.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-script.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-probe.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-kmem.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-lock.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
+@@ -588,6 +585,10 @@ ifdef CONFIG_LIBELF
+         endif # PERF_HAVE_DWARF_REGS
      endif
  
++    LIB_OBJS += $(OUTPUT)util/symbol-elf.o
++    LIB_OBJS += $(OUTPUT)util/probe-event.o
++    BUILTIN_OBJS += $(OUTPUT)builtin-probe.o
++
  else
-+    ifdef CONFIG_DWARF
-+        $(error CONFIG_DWARF depends on LIBELF)
-+    endif
-+    ifdef CONFIG_DEMANGLE
-+        $(error CONFIG_DEMANGLE depends on LIBELF)
-+    endif
-+    ifdef CONFIG_LIBUNWIND
-+        $(error CONFIG_LIBUNWIND depends on LIBELF)
-+    endif
-+
-     EXTLIBS := $(filter-out -lelf,$(EXTLIBS))
+     ifdef CONFIG_DWARF
+         $(error CONFIG_DWARF depends on LIBELF)
+@@ -599,11 +600,6 @@ else
+         $(error CONFIG_LIBUNWIND depends on LIBELF)
+     endif
  
-     # Remove ELF/DWARF dependent codes
+-    # Remove ELF/DWARF dependent codes
+-    LIB_OBJS := $(filter-out $(OUTPUT)util/symbol-elf.o,$(LIB_OBJS))
+-    LIB_OBJS := $(filter-out $(OUTPUT)util/probe-event.o,$(LIB_OBJS))
+-    BUILTIN_OBJS := $(filter-out $(OUTPUT)builtin-probe.o,$(BUILTIN_OBJS))
+-
+     # Use minimal symbol handling
+     LIB_OBJS += $(OUTPUT)util/symbol-minimal.o
+ endif
 -- 
 1.7.10.1
 
