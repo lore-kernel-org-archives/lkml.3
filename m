@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759545Ab3DBXCp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:02:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33944 "EHLO
+	id S1759575Ab3DBXDB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:03:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33940 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758103Ab3DBWue (ORCPT
+	with ESMTP id S1752542Ab3DBWud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:50:34 -0400
+	Tue, 2 Apr 2013 18:50:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konstantin Holoborodko <klh.kernel@gmail.com>
-Subject: [ 12/56] usb: ftdi_sio: Add support for Mitsubishi FX-USB-AW/-BD
-Date: Tue,  2 Apr 2013 15:49:39 -0700
-Message-Id: <20130402224713.285818019@linuxfoundation.org>
+        Jan Beulich <jbeulich@suse.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 11/56] xen-blkback: fix dispatch_rw_block_io() error path
+Date: Tue,  2 Apr 2013 15:49:38 -0700
+Message-Id: <20130402224713.174944798@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
@@ -26,49 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konstantin Holoborodko <klh.kernel@gmail.com>
+From: Jan Beulich <JBeulich@suse.com>
 
-commit 482b0b5d82bd916cc0c55a2abf65bdc69023b843 upstream.
+commit 0e5e098ac22dae38f957e951b70d3cf73beff0f7 upstream.
 
-It enhances the driver for FTDI-based USB serial adapters
-to recognize Mitsubishi Electric Corp. USB/RS422 Converters
-as FT232BM chips and support them.
-https://search.meau.com/?q=FX-USB-AW
+Commit 7708992 ("xen/blkback: Seperate the bio allocation and the bio
+submission") consolidated the pendcnt updates to just a single write,
+neglecting the fact that the error path relied on it getting set to 1
+up front (such that the decrement in __end_block_io_op() would actually
+drop the count to zero, triggering the necessary cleanup actions).
 
-Signed-off-by: Konstantin Holoborodko <klh.kernel@gmail.com>
-Tested-by: Konstantin Holoborodko <klh.kernel@gmail.com>
+Also remove a misleading and a stale (after said commit) comment.
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    7 +++++++
- 2 files changed, 8 insertions(+)
+ drivers/block/xen-blkback/blkback.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -646,6 +646,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_RM_CANVIEW_PID) },
- 	{ USB_DEVICE(ACTON_VID, ACTON_SPECTRAPRO_PID) },
- 	{ USB_DEVICE(CONTEC_VID, CONTEC_COM1USBH_PID) },
-+	{ USB_DEVICE(MITSUBISHI_VID, MITSUBISHI_FXUSB_PID) },
- 	{ USB_DEVICE(BANDB_VID, BANDB_USOTL4_PID) },
- 	{ USB_DEVICE(BANDB_VID, BANDB_USTL4_PID) },
- 	{ USB_DEVICE(BANDB_VID, BANDB_USO9ML2_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -584,6 +584,13 @@
- #define CONTEC_COM1USBH_PID	0x8311	/* COM-1(USB)H */
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -650,13 +650,7 @@ static int dispatch_rw_block_io(struct x
+ 		bio->bi_end_io  = end_block_io_op;
+ 	}
  
- /*
-+ * Mitsubishi Electric Corp. (http://www.meau.com)
-+ * Submitted by Konstantin Holoborodko
-+ */
-+#define MITSUBISHI_VID		0x06D3
-+#define MITSUBISHI_FXUSB_PID	0x0284 /* USB/RS422 converters: FX-USB-AW/-BD */
-+
-+/*
-  * Definitions for B&B Electronics products.
-  */
- #define BANDB_VID		0x0856	/* B&B Electronics Vendor ID */
+-	/*
+-	 * We set it one so that the last submit_bio does not have to call
+-	 * atomic_inc.
+-	 */
+ 	atomic_set(&pending_req->pendcnt, nbio);
+-
+-	/* Get a reference count for the disk queue and start sending I/O */
+ 	blk_start_plug(&plug);
+ 
+ 	for (i = 0; i < nbio; i++)
+@@ -684,6 +678,7 @@ static int dispatch_rw_block_io(struct x
+  fail_put_bio:
+ 	for (i = 0; i < nbio; i++)
+ 		bio_put(biolist[i]);
++	atomic_set(&pending_req->pendcnt, 1);
+ 	__end_block_io_op(pending_req, -EINVAL);
+ 	msleep(1); /* back off a bit */
+ 	return -EIO;
 
 
