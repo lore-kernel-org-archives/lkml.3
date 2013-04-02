@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195Ab3DBNLX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 09:11:23 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:55457 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760526Ab3DBNLV (ORCPT
+	id S1760902Ab3DBNPQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 09:15:16 -0400
+Received: from mail-da0-f48.google.com ([209.85.210.48]:65217 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760483Ab3DBNPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 09:11:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <1364905575-10234-1-git-send-email-bp@alien8.de>
-References: <1364905575-10234-1-git-send-email-bp@alien8.de>
-Date: Tue, 2 Apr 2013 18:41:20 +0530
-X-Google-Sender-Auth: -Qk0ZLNKPxklefTerzk7Q-cx2KI
-Message-ID: <CAOh2x=nJTcaEAe5eS4JzHLY_vUx0HJo9pDD7exoq0OffMqzJDQ@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: Correct header guards typo
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 2 Apr 2013 09:15:14 -0400
+From: Prabhakar lad <prabhakar.csengg@gmail.com>
+To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Sekhar Nori <nsekhar@ti.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v7 0/2] ARM: davinci: dm355: add support for vpbe display
+Date: Tue,  2 Apr 2013 18:45:02 +0530
+Message-Id: <1364908504-14232-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 2, 2013 at 5:56 PM, Borislav Petkov <bp@alien8.de> wrote:
-> From: Borislav Petkov <bp@suse.de>
->
-> It should be "governor".
->
-> Signed-off-by: Borislav Petkov <bp@suse.de>
-> ---
->  drivers/cpufreq/cpufreq_governor.h | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
-> index 513cc8234e5e..65937697cab3 100644
-> --- a/drivers/cpufreq/cpufreq_governor.h
-> +++ b/drivers/cpufreq/cpufreq_governor.h
-> @@ -14,8 +14,8 @@
->   * published by the Free Software Foundation.
->   */
->
-> -#ifndef _CPUFREQ_GOVERNER_H
-> -#define _CPUFREQ_GOVERNER_H
-> +#ifndef _CPUFREQ_GOVERNOR_H
-> +#define _CPUFREQ_GOVERNOR_H
->
->  #include <linux/cpufreq.h>
->  #include <linux/kobject.h>
-> @@ -263,4 +263,4 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
->                 struct common_dbs_data *cdata, unsigned int event);
->  void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
->                 unsigned int delay, bool all_cpus);
-> -#endif /* _CPUFREQ_GOVERNER_H */
-> +#endif /* _CPUFREQ_GOVERNOR_H */
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+This patch series enables VPBE display driver on DM355.
+
+This patch series is dependent on VPSS clock cleanup patches
+(http://www.mail-archive.com/davinci-linux-open-source@linux.davincidsp.com/msg25613.html)
+posted.
+
+Changes for v7:
+1: Fixed nits pointed by Sekhar for DM365 series.
+
+Changes for v6:
+1: Fixed nits pointed by Sekhar.
+
+Changes for v5:
+1: Rebased on 3.9, fix review comments pointed by Sekhar for DM365 series.
+
+Changes for v4:
+1: pass different platform names to handle different ip's.
+
+Changes for v3:
+1: Replaced obsolete preset API by timings API.
+
+Changes for v2:
+1: Removed VPSS clock alias for master and slave which was
+   sent for VPSS driver. since this patch was dependent on
+   patch[1]. I will revist this patch once MC(captrure driver)
+   goes into mainline.
+[1] http://www.spinics.net/lists/linux-media/msg50562.html
+
+Lad, Prabhakar (2):
+  ARM: davinci: dm355: add support for v4l2 video display
+  ARM: davinci: dm355 EVM: add support for VPBE display
+
+ arch/arm/mach-davinci/board-dm355-evm.c |   71 ++++++++++++-
+ arch/arm/mach-davinci/davinci.h         |    3 +-
+ arch/arm/mach-davinci/dm355.c           |  173 ++++++++++++++++++++++++++++++-
+ 3 files changed, 239 insertions(+), 8 deletions(-)
+
+-- 
+1.7.4.1
+
