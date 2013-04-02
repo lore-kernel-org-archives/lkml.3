@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760550Ab3DBFef (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 01:34:35 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:34196 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760297Ab3DBFee (ORCPT
+	id S1760587Ab3DBFek (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 01:34:40 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:59843 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760297Ab3DBFeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 01:34:34 -0400
-Message-ID: <515A6DE5.8000508@openvz.org>
-Date: Tue, 02 Apr 2013 09:34:29 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
+	Tue, 2 Apr 2013 01:34:37 -0400
 MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/2] fix hugepage coredump
-References: <1364836882-9713-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1364836882-9713-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAErSpo5iyziiGDKiy-416UQ2xr+2hvcHz6do+ueMmnPM5oy6Cw@mail.gmail.com>
+References: <2282655.IicBMMa6jN@vostro.rjw.lan>
+	<1378320.ernsY1JWPv@vostro.rjw.lan>
+	<CAErSpo7kGBNEkLOftJ1J7ivaxZL-yVWyAwmoiQ1=NADpmJ67XA@mail.gmail.com>
+	<3943547.m5K1tfygWn@vostro.rjw.lan>
+	<CAErSpo5iyziiGDKiy-416UQ2xr+2hvcHz6do+ueMmnPM5oy6Cw@mail.gmail.com>
+Date: Tue, 2 Apr 2013 13:34:35 +0800
+Message-ID: <CAC=cRTNfUkgYzC-+tOw8hyP8k3qRd6jRU67NA7PwXpHNL+2c2A@mail.gmail.com>
+Subject: Re: [Update][PATCH] PCI / PM: Disable runtime PM of PCIe ports
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Zheng Yan <zheng.z.yan@intel.com>, Huang Ying <ying.huang@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Naoya Horiguchi wrote:
-> Hi,
+Hi, Bjorn,
+
+On Tue, Apr 2, 2013 at 4:53 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Mon, Apr 1, 2013 at 2:51 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> On Monday, April 01, 2013 11:34:46 AM Bjorn Helgaas wrote:
+>>> [+cc Zheng, who added this with 71a83bd727]
+>>>
+>>> On Sat, Mar 30, 2013 at 4:38 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>> >
+>>> > The runtime PM of PCIe ports turns out to be quite fragile, as in
+>>> > some cases things work while in some other cases they don't and we
+>>> > don't seem to have a good way to determine whether or not they are
+>>> > going to work in advance.
+>>>
+>>> Do you have any references to problems encountered when enabling
+>>> runtime PM for PCIe ports?  That information will be useful to anybody
+>>> who wants to take another crack at getting this working.
+>>
+>> Well, bug 53811 is one example and problems recently reported by
+>> Martin are another.  Do you want me to dig deeper?
 >
-> Here is 2nd version of hugepage coredump fix.
-> See individual patches for more details.
+> OK, I got this one:
 >
-> Thanks,
-> Naoya Horiguchi
+>   https://bugzilla.kernel.org/show_bug.cgi?id=53811
+>
+> Martin has reported a lot of problems lately, and I don't know which
+> are related to runtime PM for PCIe ports.  I was hoping for a couple
+> URLs to put in the changelog so that when somebody gets the itch to
+> make this work, they have some useful info to start from.  If you
+> point me at a specific message, I'll dig up an archive URL for it.
+>
+> Otherwise, I'm afraid we'll just oscillate between "enable PM, find
+> bug, disable PM, enable PM, find same bug, disable PM, etc..."
 
-ACK to both patches
+Sorry for late!  I am trying to fix a way to fix 53811 and Martin's
+bug without disable PM for port totally.
 
-
-VM_* bits cleanup patchset was merged into v3.7, so only two recent stable kernels needs this fix.
-
+Best Regards,
+Huang Ying
