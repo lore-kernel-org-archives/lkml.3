@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759558Ab3DBXC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:02:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33948 "EHLO
+	id S1759545Ab3DBXCp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:02:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33944 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758144Ab3DBWuf (ORCPT
+	with ESMTP id S1758103Ab3DBWue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:50:35 -0400
+	Tue, 2 Apr 2013 18:50:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 13/56] vt: synchronize_rcu() under spinlock is not nice...
-Date: Tue,  2 Apr 2013 15:49:40 -0700
-Message-Id: <20130402224713.407794747@linuxfoundation.org>
+        Konstantin Holoborodko <klh.kernel@gmail.com>
+Subject: [ 12/56] usb: ftdi_sio: Add support for Mitsubishi FX-USB-AW/-BD
+Date: Tue,  2 Apr 2013 15:49:39 -0700
+Message-Id: <20130402224713.285818019@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
@@ -26,45 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Konstantin Holoborodko <klh.kernel@gmail.com>
 
-commit e8cd81693bbbb15db57d3c9aa7dd90eda4842874 upstream.
+commit 482b0b5d82bd916cc0c55a2abf65bdc69023b843 upstream.
 
-vcs_poll_data_free() calls unregister_vt_notifier(), which calls
-atomic_notifier_chain_unregister(), which calls synchronize_rcu().
-Do it *after* we'd dropped ->f_lock.
+It enhances the driver for FTDI-based USB serial adapters
+to recognize Mitsubishi Electric Corp. USB/RS422 Converters
+as FT232BM chips and support them.
+https://search.meau.com/?q=FX-USB-AW
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Konstantin Holoborodko <klh.kernel@gmail.com>
+Tested-by: Konstantin Holoborodko <klh.kernel@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/vt/vc_screen.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    7 +++++++
+ 2 files changed, 8 insertions(+)
 
---- a/drivers/tty/vt/vc_screen.c
-+++ b/drivers/tty/vt/vc_screen.c
-@@ -92,7 +92,7 @@ vcs_poll_data_free(struct vcs_poll_data
- static struct vcs_poll_data *
- vcs_poll_data_get(struct file *file)
- {
--	struct vcs_poll_data *poll = file->private_data;
-+	struct vcs_poll_data *poll = file->private_data, *kill = NULL;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -646,6 +646,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RM_CANVIEW_PID) },
+ 	{ USB_DEVICE(ACTON_VID, ACTON_SPECTRAPRO_PID) },
+ 	{ USB_DEVICE(CONTEC_VID, CONTEC_COM1USBH_PID) },
++	{ USB_DEVICE(MITSUBISHI_VID, MITSUBISHI_FXUSB_PID) },
+ 	{ USB_DEVICE(BANDB_VID, BANDB_USOTL4_PID) },
+ 	{ USB_DEVICE(BANDB_VID, BANDB_USTL4_PID) },
+ 	{ USB_DEVICE(BANDB_VID, BANDB_USO9ML2_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -584,6 +584,13 @@
+ #define CONTEC_COM1USBH_PID	0x8311	/* COM-1(USB)H */
  
- 	if (poll)
- 		return poll;
-@@ -121,10 +121,12 @@ vcs_poll_data_get(struct file *file)
- 		file->private_data = poll;
- 	} else {
- 		/* someone else raced ahead of us */
--		vcs_poll_data_free(poll);
-+		kill = poll;
- 		poll = file->private_data;
- 	}
- 	spin_unlock(&file->f_lock);
-+	if (kill)
-+		vcs_poll_data_free(kill);
- 
- 	return poll;
- }
+ /*
++ * Mitsubishi Electric Corp. (http://www.meau.com)
++ * Submitted by Konstantin Holoborodko
++ */
++#define MITSUBISHI_VID		0x06D3
++#define MITSUBISHI_FXUSB_PID	0x0284 /* USB/RS422 converters: FX-USB-AW/-BD */
++
++/*
+  * Definitions for B&B Electronics products.
+  */
+ #define BANDB_VID		0x0856	/* B&B Electronics Vendor ID */
 
 
