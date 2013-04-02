@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757585Ab3DBWny (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:43:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33149 "EHLO
+	id S1757632Ab3DBWoO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:44:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33147 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760573Ab3DBWMx (ORCPT
+	with ESMTP id S933405Ab3DBWMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:53 -0400
+	Tue, 2 Apr 2013 18:12:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Sterba <dsterba@suse.cz>, Josef Bacik <jbacik@fusionio.com>,
         Lingzhu Xiang <lxiang@redhat.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 092/124] xen/events: avoid race with raising an event in unmask_evtchn()
-Date: Tue,  2 Apr 2013 15:11:14 -0700
-Message-Id: <20130402221114.806326162@linuxfoundation.org>
+Subject: [ 091/124] Btrfs: fix space leak when we fail to reserve metadata space
+Date: Tue,  2 Apr 2013 15:11:13 -0700
+Message-Id: <20130402221114.673877345@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -29,76 +27,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Josef Bacik <jbacik@fusionio.com>
 
-commit c26377e62f4e6bfb4d99ef88526047209701a83f upstream.
+commit f4881bc7a83eff263789dd524b7c269d138d4af5 upstream.
 
-In unmask_evtchn(), when the mask bit is cleared after testing for
-pending and the event becomes pending between the test and clear, then
-the upcall will not become pending and the event may be lost or
-delayed.
+Dave reported a warning when running xfstest 275.  We have been leaking delalloc
+metadata space when our reservations fail.  This is because we were improperly
+calculating how much space to free for our checksum reservations.  The problem
+is we would sometimes free up space that had already been freed in another
+thread and we would end up with negative usage for the delalloc space.  This
+patch fixes the problem by calculating how much space the other threads would
+have already freed, and then calculate how much space we need to free had we not
+done the reservation at all, and then freeing any excess space.  This makes
+xfstests 275 no longer have leaked space.  Thanks
 
-Avoid this by always clearing the mask bit before checking for
-pending.  If a hypercall is needed, remask the event as
-EVTCHNOP_unmask will only retrigger pending events if they were
-masked.
-
-This fixes a regression introduced in 3.7 by
-b5e579232d635b79a3da052964cb357ccda8d9ea (xen/events: fix
-unmask_evtchn for PV on HVM guests) which reordered the clear mask and
-check pending operations.
-
-Changes in v2:
-- set mask before hypercall.
-
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reported-by: David Sterba <dsterba@suse.cz>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
 Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
 Reviewed-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/events.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ fs/btrfs/extent-tree.c |   47 +++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 41 insertions(+), 6 deletions(-)
 
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -388,11 +388,23 @@ static void unmask_evtchn(int port)
- 
- 	if (unlikely((cpu != cpu_from_evtchn(port))))
- 		do_hypercall = 1;
--	else
-+	else {
-+		/*
-+		 * Need to clear the mask before checking pending to
-+		 * avoid a race with an event becoming pending.
-+		 *
-+		 * EVTCHNOP_unmask will only trigger an upcall if the
-+		 * mask bit was set, so if a hypercall is needed
-+		 * remask the event.
-+		 */
-+		sync_clear_bit(port, &s->evtchn_mask[0]);
- 		evtchn_pending = sync_test_bit(port, &s->evtchn_pending[0]);
- 
--	if (unlikely(evtchn_pending && xen_hvm_domain()))
--		do_hypercall = 1;
-+		if (unlikely(evtchn_pending && xen_hvm_domain())) {
-+			sync_set_bit(port, &s->evtchn_mask[0]);
-+			do_hypercall = 1;
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -4601,14 +4601,49 @@ int btrfs_delalloc_reserve_metadata(stru
+ 		 * If the inodes csum_bytes is the same as the original
+ 		 * csum_bytes then we know we haven't raced with any free()ers
+ 		 * so we can just reduce our inodes csum bytes and carry on.
+-		 * Otherwise we have to do the normal free thing to account for
+-		 * the case that the free side didn't free up its reserve
+-		 * because of this outstanding reservation.
+ 		 */
+-		if (BTRFS_I(inode)->csum_bytes == csum_bytes)
++		if (BTRFS_I(inode)->csum_bytes == csum_bytes) {
+ 			calc_csum_metadata_size(inode, num_bytes, 0);
+-		else
+-			to_free = calc_csum_metadata_size(inode, num_bytes, 0);
++		} else {
++			u64 orig_csum_bytes = BTRFS_I(inode)->csum_bytes;
++			u64 bytes;
++
++			/*
++			 * This is tricky, but first we need to figure out how much we
++			 * free'd from any free-ers that occured during this
++			 * reservation, so we reset ->csum_bytes to the csum_bytes
++			 * before we dropped our lock, and then call the free for the
++			 * number of bytes that were freed while we were trying our
++			 * reservation.
++			 */
++			bytes = csum_bytes - BTRFS_I(inode)->csum_bytes;
++			BTRFS_I(inode)->csum_bytes = csum_bytes;
++			to_free = calc_csum_metadata_size(inode, bytes, 0);
++
++
++			/*
++			 * Now we need to see how much we would have freed had we not
++			 * been making this reservation and our ->csum_bytes were not
++			 * artificially inflated.
++			 */
++			BTRFS_I(inode)->csum_bytes = csum_bytes - num_bytes;
++			bytes = csum_bytes - orig_csum_bytes;
++			bytes = calc_csum_metadata_size(inode, bytes, 0);
++
++			/*
++			 * Now reset ->csum_bytes to what it should be.  If bytes is
++			 * more than to_free then we would have free'd more space had we
++			 * not had an artificially high ->csum_bytes, so we need to free
++			 * the remainder.  If bytes is the same or less then we don't
++			 * need to do anything, the other free-ers did the correct
++			 * thing.
++			 */
++			BTRFS_I(inode)->csum_bytes = orig_csum_bytes - num_bytes;
++			if (bytes > to_free)
++				to_free = bytes - to_free;
++			else
++				to_free = 0;
 +		}
-+	}
- 
- 	/* Slow path (hypercall) if this is a non-local port or if this is
- 	 * an hvm domain and an event is pending (hvm domains don't have
-@@ -403,8 +415,6 @@ static void unmask_evtchn(int port)
- 	} else {
- 		struct vcpu_info *vcpu_info = __this_cpu_read(xen_vcpu);
- 
--		sync_clear_bit(port, &s->evtchn_mask[0]);
--
- 		/*
- 		 * The following is basically the equivalent of
- 		 * 'hw_resend_irq'. Just like a real IO-APIC we 'lose
+ 		spin_unlock(&BTRFS_I(inode)->lock);
+ 		if (dropped)
+ 			to_free += btrfs_calc_trans_metadata_size(root, dropped);
 
 
