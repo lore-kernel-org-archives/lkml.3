@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761630Ab3DBJkl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:40:41 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64568 "EHLO
+	id S1761649Ab3DBJlI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:41:08 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56013 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755342Ab3DBJkk (ORCPT
+	with ESMTP id S1758089Ab3DBJlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:40:40 -0400
-Date: Tue, 2 Apr 2013 11:40:36 +0200
+	Tue, 2 Apr 2013 05:41:05 -0400
+Date: Tue, 2 Apr 2013 11:40:59 +0200
 From: Thierry Reding <thierry.reding@avionic-design.de>
 To: Axel Lin <axel.lin@ingics.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] pwm: mxs: Remove unused *dev from struct mxs_pwm_chip
-Message-ID: <20130402094036.GC856@avionic-0098.mockup.avionic-design.de>
-References: <1364784493.7725.1.camel@phoenix>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pwm: twl: Return proper error if twl6030_pwm_enable()
+ fails
+Message-ID: <20130402094059.GD856@avionic-0098.mockup.avionic-design.de>
+References: <1364742450.3834.8.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="32u276st3Jlj2kUU"
+	protocol="application/pgp-signature"; boundary="2Z2K0IlrPCVsbNpk"
 Content-Disposition: inline
-In-Reply-To: <1364784493.7725.1.camel@phoenix>
+In-Reply-To: <1364742450.3834.8.camel@phoenix>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:WEnLyJg0x8i++aF9+CVqo5YOPhmYKU3iHJ6NuerC0hK
- 1clvym3omf1NYNPPoRgo+XGwNhdrUafCRkupMDINbO9eqKXzpD
- c6YBMPg6wq6x3l+qJryAoynSKKgUBC3Sg7HVJ7ht1dAKP7nh2B
- p6p6CV+BV35YELprQV+BNW6COwmRbDuS4S9pTivSwnBKu6HVRa
- BxuYkbR2yjnYq2MiP2dNesMBVfv3z8pKy5OjLsnS4qEgn7AqjV
- UyLIDpht01PTiKqCHfIqUCcufViPdlp5BlX0Lu9LTz2mpwszHA
- z5JPBqGsoLGJcK4bEeks7GgKPL4V5bclEXtW+BdtfsxSOU7KdU
- ak5fbRJWe5U0bGlp2E0FbhV8Q0Hs3lMgvgh/0UmWCnrp9fpUCT
- aOj7NFa/fm/fiDpIk26Pci5iwi2/D0R6ZQ=
+X-Provags-ID: V02:K0:3oC9nbwVaMqT63vp3GxgfpQH5v11UgnLMLpNe4tU+WQ
+ dRxDQM597osAOePpldtL3FZpKm1QS6BTXCkzXLqZEKdHPIMBzr
+ 4wsVxI93n/qLTIUdOI2CaB8HZ+wc8/z6x9JmjIOcDMy6VK0ZBx
+ 0P5iHeByg4xvbED1d+N7griSPgJwXUHpVvgGMw/QfAVu0pZvRs
+ KvAJXU4C5g5tBwc5fqJX6BVMZA8UfXLTknhb9jbQeymDz8lrc9
+ nvdcsnkCLEvO3unNHFER7nIxKPeUewafBIM7GISuH6C292mvOn
+ VzEu31Ep6E6BI/9x71A6/lMZSDu/LLbdzUL77gi6vAxYqewU/w
+ RnJ1BEiweXIKM2+AmPTE93/ddntmkAYur2OwJC+OAYDQFwHLuW
+ 5KiYYbSvBK1j+opeU0uWj0+6QrVoh+HmI0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---32u276st3Jlj2kUU
+--2Z2K0IlrPCVsbNpk
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Apr 01, 2013 at 10:48:13AM +0800, Axel Lin wrote:
+On Sun, Mar 31, 2013 at 11:07:30PM +0800, Axel Lin wrote:
+> Return proper error instead of 0 if twl6030_pwm_enable() fails.
+>=20
 > Signed-off-by: Axel Lin <axel.lin@ingics.com>
 > ---
->  drivers/pwm/pwm-mxs.c |    2 --
->  1 file changed, 2 deletions(-)
+>  drivers/pwm/pwm-twl.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Both patches applied, thanks.
+Applied, thanks.
 
 Thierry
 
---32u276st3Jlj2kUU
+--2Z2K0IlrPCVsbNpk
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRWqeUAAoJEN0jrNd/PrOhvGYP/1qkuNwjCifr7DVmuOJ3QrT6
-SFDt5nShUqYagy7GPXpOk6DiahfEVWrP/M8jSXV32siypBga0MFUHjNCVAByfxSp
-pJWccUnlmUPXiphpsAG2Nt0nBTNkEP6KCudRf6Oo+cIJ/mrFA1th12Ic7xhq8d3M
-U7Hp25q+MotXZ7DsmHeCpy+pbmUwWTz2yqecPTnc4OFcy5wmM68C2OX9uBlq3hk/
-A3g448cSrAqhvc6Vriu3pXgfRlzCpOSlg3DeOIsuvhFjciVyHAIAAtNgXnn4zJZ1
-pi0A1HmuBXOG9QNw9rMVh0rtiAkVbKmCi+XhzkjKHDN0ZCY4IJ2J8mM3gZV1n2fG
-0OsCGdP1OyOSEjqIsB14EBSUJY2hhOJEMAxIsoQNqUiu/OXJM4MmfzeQyrFoLjPI
-31dyaoPQkGVUolqo16JDG/FcVsEWsKIvWzAmTQRVh6+MaI7n92LeSOowETbQpOBW
-BUrZ92gUCw5J5lFmwYhbZ8geUDsv+8OC5qjNJ9kqWAL6NNcnDoO/tcKClyK4N+MH
-ryyYPqm14WVsPYRNXdvF49Uz/ctW0DitdpEs9tJhWDm8n9puRZOE2upgTr6e1sT+
-T+dGgrhtW1SNnPhBc34rKAzSLADdgFgIiCF+JQ2sBFaJ0072FVjihREw8U61rqbZ
-JJMwYcXJ3hOL4BW0D2xD
-=VV+e
+iQIcBAEBAgAGBQJRWqerAAoJEN0jrNd/PrOh8WEP/i1tlGjTG+Nn9CiGqXSnDgTD
+XKHasTxxSNCObRlC/0Kjmydd/5gYwEoHtjMKDqMd1kUqXWW3xhsblcGD+eJo9BdG
+Z6RK+K3DSVPD/pJmpSArB1BrfNN/k7d/GDy97SBTySaKieDhez95w0Oh1dDyKR/K
+7i8iArrgif0BCE8iCabTvTh2CHUz9KPXFtu9aWGfwoet8eqzlxwGRXc0c+aeZtNa
+PR8Mrt3hT7QLnjSfCFMfyf9dzRMXCzCQoKRiolOsOIrPdwqzM/MP4EfTwsESkJgH
+h371T/XTZ9UEcpYmqNk82DKcAMUXR+v+mX12KzxSpNFO09keH31zTKMaMaRros2E
+QJoOY/Flv2VkkLMXzoCiCcHzRNxUt8ALZlZ5OIWKBJ6t6wdXk/u3j2cebLEQz8CT
+AXPfpCI5EoPI0HxGUqIPFrcJOAlXqtcnIAjtGQq0QjlziIRB/IpGZx0+QuktiGEj
+nf84AKCpA1OM28ehnuWL3I+IKXhQ0Onmz+sw/kxsbmM5Rdc50YO1iNhUkvucEqdg
+xXo0lwUI/9owD6KrFJggbaVLpoUChgpSLrAUEKOqcvojb8kzNyEGmLibviw6KoUE
+0ebQKeOg4UYhlSE3ADd5R6JLZl0dghPjohxAL5JVPpaa1iQckj8wIyEJFz6wNeN8
+sEX3BtJQRlVSHt9mRpMd
+=+Hdo
 -----END PGP SIGNATURE-----
 
---32u276st3Jlj2kUU--
+--2Z2K0IlrPCVsbNpk--
