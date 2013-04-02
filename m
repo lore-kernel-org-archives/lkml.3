@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933187Ab3DBTzM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 15:55:12 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:19702 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933080Ab3DBTzK (ORCPT
+	id S933211Ab3DBUAs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 16:00:48 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:41240 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932644Ab3DBUAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 15:55:10 -0400
-Message-ID: <515B371D.9010809@oracle.com>
-Date: Tue, 02 Apr 2013 15:53:01 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130310 Thunderbird/17.0.4
+	Tue, 2 Apr 2013 16:00:47 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Peter Hurley <peter@hurleysoftware.com>, Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@surriel.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        hhuang@redhat.com, "Low, Jason" <jason.low2@hp.com>,
-        Michel Lespinasse <walken@google.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        "Vinod, Chegu" <chegu_vinod@hp.com>,
-        Stanislav Kinsbursky <skinsbursky@parallels.com>
-Subject: Re: ipc,sem: sysv semaphore scalability
-References: <1363809337-29718-1-git-send-email-riel@surriel.com> <20130321141058.76e028e492f98f6ee6e60353@linux-foundation.org> <20130326192852.GA25899@redhat.com> <20130326124309.077e21a9f59aaa3f3355e09b@linux-foundation.org> <20130329161746.GA8391@redhat.com> <CA+55aFwA6CpODkJwHFd59EbNxOrP-FHM+xG8Xcgeni2DBotGPA@mail.gmail.com> <20130329190642.GC23893@redhat.com> <CA+55aFyj2zfumVUJ7JMhJkQY_LiyQYX+tK4Cu4Jg=g72-amC2g@mail.gmail.com> <1364585774.31320.9.camel@thor.lan> <515B026B.1040901@oracle.com> <CA+55aFz-0J3uhJC-00AJ0R-4TVOYqFGJk0h5x0HmaX+JR6_MYQ@mail.gmail.com>
-In-Reply-To: <CA+55aFz-0J3uhJC-00AJ0R-4TVOYqFGJk0h5x0HmaX+JR6_MYQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20130402191130.GB31760@redhat.com>
+References: <1364923183-316-1-git-send-email-yinghai@kernel.org>
+	<1364923183-316-4-git-send-email-yinghai@kernel.org>
+	<20130402180606.GI29506@redhat.com>
+	<CAE9FiQUKqv_t-99JN_t=EGop2-Wbjd4Yb9vYvU_SbbNctG6Yeg@mail.gmail.com>
+	<CAE9FiQXEa0-WS8+E6LGy8CenoHX5qF1MpjBgejQx9-EvG_1rGw@mail.gmail.com>
+	<20130402191130.GB31760@redhat.com>
+Date: Tue, 2 Apr 2013 13:00:46 -0700
+X-Google-Sender-Auth: iMlhzjm71r3zc6zD58MJAvaeRHg
+Message-ID: <CAE9FiQViU_X-idHyFmRFQXmP23oWN63XkAr3KmXsfys1VBR53g@mail.gmail.com>
+Subject: Re: [PATCH 3/4] x86, kdump: Retore crashkernel= to allocate low
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2013 01:52 PM, Linus Torvalds wrote:
-> On Tue, Apr 2, 2013 at 9:08 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+On Tue, Apr 2, 2013 at 12:11 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Tue, Apr 02, 2013 at 11:49:13AM -0700, Yinghai Lu wrote:
+>> On Tue, Apr 2, 2013 at 11:42 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> > aka:
+>> > old kexec-tools stay with "crashkernel=X"
+>> > new kexec-tools stay with
+>> > 1. like old kexec tools
+>> > 2. or "crashkernel=X,high" or "crashkernel=X,high crashkernel=Y,low",
+>> > Y could be 100M or 0 etc.
 >>
->> By just playing with the 'msgsz' parameter with MSG_COPY set.
-> 
-> Hmm. Looking closer, I suspect you're testing without commit
-> 88b9e456b164 ("ipc: don't allocate a copy larger than max"). That
-> should limit the size passed in to prepare_copy -> load_copy to
-> msg_ctlmax.
+>> I keep the old logic like:
+>> if there are several "crashkernel=X,high", only last one is honored.
+>> if there are several "crashkernel=Y,low", only last one is honored.
+>
+> Yes but if different types of crashkernel= options are mixes then
+> behavior is not defined.
 
-That commit has a revert in the -next trees, do we need a revert
-of the revert?
+dmesg or /proc/iomem will show them what is finally reserved.
 
-	commit ff6577a3e714ccae02d4400e989762c19c37b0b3
-	Author: Andrew Morton <akpm@linux-foundation.org>
-	Date:   Wed Mar 27 10:24:02 2013 +1100
-	
-	    revert "ipc: don't allocate a copy larger than max"
-	
-	    Revert 88b9e456b164.  Dave has confirmed that this was causing oopses
-	    during trinity testing.
-	
-	    Cc: Peter Hurley <peter@hurleysoftware.com>
-	    Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
-	    Reported-by: Dave Jones <davej@redhat.com>
-	    Cc: <stable@vger.kernel.org>
-	    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>
+> crashkernel=X,high crashkernel=X
 
+==> crashkernel=X is tossed away.
 
+> crashkernel=X,high crashkernel=Y;low
 
-Thanks,
-Sasha
+normal case. if user want more or disable low range.
+
+> crashkernel=Y;low crashkernel=X
+
+crashkernel=X will be used.
+
+>
+> And possibilities go on. So I think it makes life simpler if we always
+> parse last crashkernel= option and act upon that. And use
+> crashkernel_no_auto_low to opt out of auto reserved low memory area.
+
+No, that is not just disable. User could want more like 128M instead of 72M.
+
+Thanks
+
+Yinghai
