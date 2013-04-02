@@ -1,93 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761961Ab3DBKNr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 06:13:47 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48136 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761943Ab3DBKNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 06:13:44 -0400
-Message-ID: <515AAF50.9010504@ti.com>
-Date: Tue, 2 Apr 2013 13:13:36 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1761975Ab3DBKNz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 06:13:55 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:54478 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761943Ab3DBKNu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 06:13:50 -0400
 MIME-Version: 1.0
-To: Andrei Epure <epure.andrei@gmail.com>
-CC: <FlorianSchandinat@gmx.de>, <archit@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] video: omap2: dss: use PTR_RET function
-References: <1364416537-25367-1-git-send-email-epure.andrei@gmail.com>
-In-Reply-To: <1364416537-25367-1-git-send-email-epure.andrei@gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="------------enigFC07AC7C235DE6BE0BECC3F8"
+In-Reply-To: <CAL0eWdGjPKUUcm6mStAHgHKHLABmPw7nMwDhR8D5rbvg+DPzfQ@mail.gmail.com>
+References: <1363223183-3772-1-git-send-email-ynvich@gmail.com>
+	<1363224194-7366-1-git-send-email-ynvich@gmail.com>
+	<87620jmkoe.fsf@octavius.laptop.org>
+	<CAPDyKFp27MUOjhydLXf92vN3cua=XcX4oTJnMGfOJPpBhtwM8Q@mail.gmail.com>
+	<CAL0eWdGjPKUUcm6mStAHgHKHLABmPw7nMwDhR8D5rbvg+DPzfQ@mail.gmail.com>
+Date: Tue, 2 Apr 2013 12:13:49 +0200
+Message-ID: <CAPDyKFroki00+SCLjUXYN_=+qcVZwZ2H4NJacH+d8p3dFXoLPg@mail.gmail.com>
+Subject: Re: [PATCH v2] wait while adding MMC host to ensure root mounts
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: =?UTF-8?B?0KHQtdGA0LPQtdC5INCv0L3QvtCy0LjRhw==?= <ynvich@gmail.com>
+Cc: Chris Ball <cjb@laptop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------enigFC07AC7C235DE6BE0BECC3F8
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 27 March 2013 13:28, Сергей Янович <ynvich@gmail.com> wrote:
+> Hi Ulf,
+>
+> On 27 March 2013 15:13, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+>> Moreover, this patch will have bad impact on booting the kernel, since
+>> every host device that has scheduled a detect work from it's probe
+>> function will also wait for it to finish. Even if it is the boot
+>> device of not. If this is needed, I would prefer that a host cap is
+>> used.
+>
+> Do you have any profiling data supporting bad impact on boot?
+>
+> It should be it in the range of dozens us, if any. Without the patch,
+> approx. 30% of boots succeeded with CONFIG_PREEMT and aprox. 95%
+> without CONFIG_PREEMT. mmc_rescan is just a few instructions, if there
+> is no card present. On boot and with a card present, it might only
+> sleep in the host implementation.
+>
+> Anyway, something had to be done about mmc boot. rootdelay will not
+> report error if the card is absent or its partition table is damaged.
+> rootdelay is a workaround by definition, so it may occasionally fail
+> if it is too small. Big rootdealy has a clear bad impact on boot time.
 
-Hi,
+Consider a platform having two eMMCs and one SD-card. Each eMMC card
+will take around 400 ms to initialize and the SD-card 700 ms. The card
+initialization times are real examples from eMMCs and SD-cards,
+moreover those are typical values not worth cases. In total we have
+around 1.5 s to initialize the cards.
 
-On 2013-03-27 22:35, Andrei Epure wrote:
-> Use PTR_RET function instead of IS_ERR + PTR_ERR.
-> Patch found using coccinelle.
->=20
-> Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
-> ---
->  drivers/video/omap2/dss/core.c |    5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
->=20
-> diff --git a/drivers/video/omap2/dss/core.c b/drivers/video/omap2/dss/c=
-ore.c
-> index f8779d4..60cc6fe 100644
-> --- a/drivers/video/omap2/dss/core.c
-> +++ b/drivers/video/omap2/dss/core.c
-> @@ -181,10 +181,7 @@ int dss_debugfs_create_file(const char *name, void=
- (*write)(struct seq_file *))
->  	d =3D debugfs_create_file(name, S_IRUGO, dss_debugfs_dir,
->  			write, &dss_debug_fops);
-> =20
-> -	if (IS_ERR(d))
-> -		return PTR_ERR(d);
-> -
-> -	return 0;
-> +	return PTR_RET(d);
->  }
->  #else /* CONFIG_OMAP2_DSS_DEBUGFS */
->  static inline int dss_initialize_debugfs(void)
->=20
+Now, suppose you boot using an initrd image. Thus neither of the cards
+needs to be accessible immediately after the kernel has booted. It all
+depends what the init process decides to do. With this patch the init
+process will always be delayed to wait for each and every card to be
+initialized. I would prefer a solution where this can be configurable
+somehow, since certainly this is not the scenario you want for all
+cases.
 
-There's an identical patch from Alexandru Gheorghiu already queued.
-
- Tomi
-
-
-
---------------enigFC07AC7C235DE6BE0BECC3F8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with undefined - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJRWq9QAAoJEPo9qoy8lh7119YP/098U8am6Ljox7mOGjoVC86j
-puhBovr4Qmtea+FqomExIaS7zmvawpvNnrO/9AKzHGJuqHmUMIbfJFR3VxNm5gZk
-iPG29BiI9K0C4h7jCzN4kxVr+waQzCVm2pJNrqtkxow0f39sII3+bv/TULyVR3iw
-eVLIwVl0QaQlBNQyonUh++0DIbrsreR77Il4Zid1lA7RP+2nX1L/fCq+2eZp9j/0
-TfjPx/CuRykiJJuNCrAIZIYxb4160nzBbjfQ+31YqFTJIhwSGgUQBD1zWRiO3i0K
-Np0l0atAikD5h4iUalZctT0XZ+XykQFTgHtQi5FGyep7AM46NIXRmtorO/hjjmv0
-/GDYFRtagnOnC8lj4kUGk5aGjRijTL8b6dHs9D+BMfYic5UxsCnFcuaSgtm0C3OE
-qh3+5jHFEwOBHpRhqNRYO8HnVCdqR121guf3T8SK1GNmy6t2r8iLCTMCcNfX/StP
-gSf5tB0O3RMk3Q76ZGxQgoFO1x/d7wYvxHWQnxdwuummIZokkF9GdnhQX5nWldSs
-iBt772fetw8XYSlU/RvKfXY+ZhvThVS9dqS8+VQ9mC8WXf49b3wcznXLnWXusBdg
-BqB6cyarWGHpr4cBPJVQnvFaYye1WDv292GpCPsU1D4qFIRoMvclxsCILLJoDa5u
-of93dqQQJGtgGoqNzWF4
-=cgro
------END PGP SIGNATURE-----
-
---------------enigFC07AC7C235DE6BE0BECC3F8--
+Kind regards
+Ulf Hansson
