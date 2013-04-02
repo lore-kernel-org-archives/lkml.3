@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933588Ab3DBWNV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:13:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33301 "EHLO
+	id S933573Ab3DBWNT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:13:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33307 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933531Ab3DBWNN (ORCPT
+	with ESMTP id S933486Ab3DBWNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:13:13 -0400
+	Tue, 2 Apr 2013 18:13:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li RongQing <roy.qing.li@gmail.com>,
+        Vijay Subramanian <subramanian.vijay@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 121/124] net: fix the use of this_cpu_ptr
-Date: Tue,  2 Apr 2013 15:11:43 -0700
-Message-Id: <20130402221118.214679783@linuxfoundation.org>
+Subject: [ 122/124] net: fq_codel: Fix off-by-one error
+Date: Tue,  2 Apr 2013 15:11:44 -0700
+Message-Id: <20130402221118.334999450@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -28,34 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Li RongQing <roy.qing.li@gmail.com>
+From: Vijay Subramanian <subramanian.vijay@gmail.com>
 
-[ Upstream commit 50eab0503a7579ada512e4968738b7c9737cf36e ]
+[ Upstream commit cd68ddd4c29ab523440299f24ff2417fe7a0dca6 ]
 
-flush_tasklet is not percpu var, and percpu is percpu var, and
-	this_cpu_ptr(&info->cache->percpu->flush_tasklet)
-is not equal to
-	&this_cpu_ptr(info->cache->percpu)->flush_tasklet
+Currently, we hold a max of sch->limit -1 number of packets instead of
+sch->limit packets. Fix this off-by-one error.
 
-1f743b076(use this_cpu_ptr per-cpu helper) introduced this bug.
-
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Signed-off-by: Vijay Subramanian <subramanian.vijay@gmail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/flow.c |    2 +-
+ net/sched/sch_fq_codel.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/core/flow.c
-+++ b/net/core/flow.c
-@@ -329,7 +329,7 @@ static void flow_cache_flush_per_cpu(voi
- 	struct flow_flush_info *info = data;
- 	struct tasklet_struct *tasklet;
+--- a/net/sched/sch_fq_codel.c
++++ b/net/sched/sch_fq_codel.c
+@@ -195,7 +195,7 @@ static int fq_codel_enqueue(struct sk_bu
+ 		flow->deficit = q->quantum;
+ 		flow->dropped = 0;
+ 	}
+-	if (++sch->q.qlen < sch->limit)
++	if (++sch->q.qlen <= sch->limit)
+ 		return NET_XMIT_SUCCESS;
  
--	tasklet = this_cpu_ptr(&info->cache->percpu->flush_tasklet);
-+	tasklet = &this_cpu_ptr(info->cache->percpu)->flush_tasklet;
- 	tasklet->data = (unsigned long)info;
- 	tasklet_schedule(tasklet);
- }
+ 	q->drop_overlimit++;
 
 
