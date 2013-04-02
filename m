@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933573Ab3DBWNT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:13:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33307 "EHLO
+	id S933557Ab3DBWNR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:13:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33313 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933486Ab3DBWNO (ORCPT
+	with ESMTP id S933533Ab3DBWNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Apr 2013 18:13:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vijay Subramanian <subramanian.vijay@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
+        Hong Zhiguo <honkiko@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 122/124] net: fq_codel: Fix off-by-one error
-Date: Tue,  2 Apr 2013 15:11:44 -0700
-Message-Id: <20130402221118.334999450@linuxfoundation.org>
+Subject: [ 115/124] ipv6: fix bad free of addrconf_init_net
+Date: Tue,  2 Apr 2013 15:11:37 -0700
+Message-Id: <20130402221117.508630337@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -29,31 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Vijay Subramanian <subramanian.vijay@gmail.com>
+From: Hong Zhiguo <honkiko@gmail.com>
 
-[ Upstream commit cd68ddd4c29ab523440299f24ff2417fe7a0dca6 ]
+[ Upstream commit a79ca223e029aa4f09abb337accf1812c900a800 ]
 
-Currently, we hold a max of sch->limit -1 number of packets instead of
-sch->limit packets. Fix this off-by-one error.
-
-Signed-off-by: Vijay Subramanian <subramanian.vijay@gmail.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Hong Zhiguo <honkiko@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sched/sch_fq_codel.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv6/addrconf.c |   26 ++++++++++----------------
+ 1 file changed, 10 insertions(+), 16 deletions(-)
 
---- a/net/sched/sch_fq_codel.c
-+++ b/net/sched/sch_fq_codel.c
-@@ -195,7 +195,7 @@ static int fq_codel_enqueue(struct sk_bu
- 		flow->deficit = q->quantum;
- 		flow->dropped = 0;
- 	}
--	if (++sch->q.qlen < sch->limit)
-+	if (++sch->q.qlen <= sch->limit)
- 		return NET_XMIT_SUCCESS;
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -4787,26 +4787,20 @@ static void addrconf_sysctl_unregister(s
  
- 	q->drop_overlimit++;
+ static int __net_init addrconf_init_net(struct net *net)
+ {
+-	int err;
++	int err = -ENOMEM;
+ 	struct ipv6_devconf *all, *dflt;
+ 
+-	err = -ENOMEM;
+-	all = &ipv6_devconf;
+-	dflt = &ipv6_devconf_dflt;
++	all = kmemdup(&ipv6_devconf, sizeof(ipv6_devconf), GFP_KERNEL);
++	if (all == NULL)
++		goto err_alloc_all;
+ 
+-	if (!net_eq(net, &init_net)) {
+-		all = kmemdup(all, sizeof(ipv6_devconf), GFP_KERNEL);
+-		if (all == NULL)
+-			goto err_alloc_all;
++	dflt = kmemdup(&ipv6_devconf_dflt, sizeof(ipv6_devconf_dflt), GFP_KERNEL);
++	if (dflt == NULL)
++		goto err_alloc_dflt;
+ 
+-		dflt = kmemdup(dflt, sizeof(ipv6_devconf_dflt), GFP_KERNEL);
+-		if (dflt == NULL)
+-			goto err_alloc_dflt;
+-	} else {
+-		/* these will be inherited by all namespaces */
+-		dflt->autoconf = ipv6_defaults.autoconf;
+-		dflt->disable_ipv6 = ipv6_defaults.disable_ipv6;
+-	}
++	/* these will be inherited by all namespaces */
++	dflt->autoconf = ipv6_defaults.autoconf;
++	dflt->disable_ipv6 = ipv6_defaults.disable_ipv6;
+ 
+ 	net->ipv6.devconf_all = all;
+ 	net->ipv6.devconf_dflt = dflt;
 
 
