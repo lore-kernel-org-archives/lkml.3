@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760058Ab3DBCsb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 22:48:31 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:59010 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760001Ab3DBCqn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 22:46:43 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v5 4/8] staging: zcache: fix pers_pageframes|_max aren't exported in debugfs
-Date: Tue,  2 Apr 2013 10:46:16 +0800
-Message-Id: <1364870780-16296-5-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1364870780-16296-1-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1364870780-16296-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040202-5140-0000-0000-000002F8E81C
+	id S1759974Ab3DBCyH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 22:54:07 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58061 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759324Ab3DBCyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 22:54:05 -0400
+Date: Mon, 1 Apr 2013 22:53:50 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: Re: [PATCH 17/33] aio: change reqs_active to include unreaped
+ completions
+Message-ID: <20130402025350.GF30122@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Kent Overstreet <koverstreet@google.com>,
+	linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+	akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+	Felipe Balbi <balbi@ti.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+	Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+	Asai Thambi S P <asamymuthupa@micron.com>,
+	Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+	Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+	Benjamin LaHaise <bcrl@kvack.org>
+References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
+ <1363883754-27966-18-git-send-email-koverstreet@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363883754-27966-18-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before commit 9c0ad59ef ("zcache/debug: Use an array to initialize/use debugfs attributes"),
-pers_pageframes|_max are exported in debugfs, but this commit forgot use array export 
-pers_pageframes|_max. This patch add pers_pageframes|_max back.
+On Thu, Mar 21, 2013 at 09:35:38AM -0700, Kent Overstreet wrote:
+> The aio code tries really hard to avoid having to deal with the completion
+> ringbuffer overflowing.  To do that, it has to keep track of the number of
+> outstanding kiocbs, and the number of completions currently in the
+> ringbuffer - and it's got to check that every time we allocate a kiocb.
+> Ouch.
+> 
+> But - we can improve this quite a bit if we just change reqs_active to
+> mean "number of outstanding requests and unreaped completions" - that
+> means kiocb allocation doesn't have to look at the ringbuffer, which is a
+> fairly significant win.
 
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
----
- drivers/staging/zcache/debug.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 
-diff --git a/drivers/staging/zcache/debug.c b/drivers/staging/zcache/debug.c
-index e951c64..254dada 100644
---- a/drivers/staging/zcache/debug.c
-+++ b/drivers/staging/zcache/debug.c
-@@ -21,6 +21,7 @@ static struct debug_entry {
- 	ATTR(pers_ate_eph), ATTR(pers_ate_eph_failed),
- 	ATTR(evicted_eph_zpages), ATTR(evicted_eph_pageframes),
- 	ATTR(eph_pageframes), ATTR(eph_pageframes_max),
-+	ATTR(pers_pageframes), ATTR(pers_pageframes_max),
- 	ATTR(eph_zpages), ATTR(eph_zpages_max),
- 	ATTR(pers_zpages), ATTR(pers_zpages_max),
- 	ATTR(last_active_file_pageframes),
--- 
-1.7.7.6
+Could you please add a quick comment documenting the reqs_active field
+in the struct kioctx definition here?  For future code
+maintainability, it should be documented in fs/aio.c, not just in a
+commit description.
 
+>  struct kioctx {
+>  	atomic_t		users;
+>  	atomic_t		dead;
+> @@ -92,7 +86,13 @@ struct kioctx {
+>  	atomic_t		reqs_active;
+>  	struct list_head	active_reqs;	/* used for cancellation */
+
+	       					   - Ted
