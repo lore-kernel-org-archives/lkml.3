@@ -1,85 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760456Ab3DBHKw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 03:10:52 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58538 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758972Ab3DBHKv (ORCPT
+	id S1760720Ab3DBHNA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 03:13:00 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:9263 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900Ab3DBHM7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 03:10:51 -0400
-Date: Tue, 2 Apr 2013 18:10:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Stephen Warren <swarren@nvidia.com>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wolfram Sang <w.sang@pengutronix.de>, Wolfram Sang <wsa@the-dreams.de>,
-        Danny Huang <dahuang@nvidia.com>
-Subject: linux-next: manual merge of the tegra tree with the i2c tree
-Message-Id: <20130402181041.067483395c622b627826fed9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__2_Apr_2013_18_10_41_+1100_aT/F0BCLAdiIGVNL"
+	Tue, 2 Apr 2013 03:12:59 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 02 Apr 2013 00:12:11 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+CC: "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 2 Apr 2013 12:42:54 +0530
+Subject: RE: [PATCH] usb: host: tegra: Reset Tegra USB controller before init
+Thread-Topic: [PATCH] usb: host: tegra: Reset Tegra USB controller before
+ init
+Thread-Index: Ac4ZOUx4ld3TXeheQwGwpQD0WTlwaAWNwbhQ
+Message-ID: <D958900912E20642BCBC71664EFECE3E6E50BE434F@BGMAIL02.nvidia.com>
+References: <1362033418-7332-1-git-send-email-vbyravarasu@nvidia.com>
+ <512F9F0B.1040303@wwwdotorg.org>
+ <D958900912E20642BCBC71664EFECE3E6E4F7216C0@BGMAIL02.nvidia.com>
+ <5134D210.3060405@wwwdotorg.org> <20130305003423.GA23996@kroah.com>
+In-Reply-To: <20130305003423.GA23996@kroah.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__2_Apr_2013_18_10_41_+1100_aT/F0BCLAdiIGVNL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> -----Original Message-----
+> From: gregkh@linuxfoundation.org [mailto:gregkh@linuxfoundation.org]
+> Sent: Tuesday, March 05, 2013 6:04 AM
+> To: Stephen Warren
+> Cc: Venu Byravarasu; stern@rowland.harvard.edu; linux-
+> usb@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] usb: host: tegra: Reset Tegra USB controller before init
+> 
+> On Mon, Mar 04, 2013 at 09:55:44AM -0700, Stephen Warren wrote:
+> > On 03/04/2013 12:55 AM, Venu Byravarasu wrote:
+> > > Stephen Warren wrote at Thursday, February 28, 2013 11:47 PM:
+> > >> On 02/27/2013 11:36 PM, Venu Byravarasu wrote:
+> > >>> To clear any configurations made by U-Boot on Tegra USB controller,
+> > >>> reset it before init in probe.
+> > >>
+> > >>> diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-
+> tegra.c
+> > >>
+> > >>> @@ -691,6 +692,10 @@ static int tegra_ehci_probe(struct
+> platform_device
+> > >> *pdev)
+> > >>>  	if (err)
+> > >>>  		goto fail_clk;
+> > >>>
+> > >>> +	tegra_periph_reset_assert(tegra->clk);
+> > >>> +	udelay(1);
+> > >>> +	tegra_periph_reset_deassert(tegra->clk);
+> > >>
 
-Hi all,
+> > Alan, Greg, if you're OK with this patch now, or for any revised
+> > version, an Ack so I can take it through the Tegra tree would be great,
+> > thanks.
+> 
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ 
+Hi Greg,
 
-Today's linux-next merge of the tegra tree got a conflict in
-arch/arm/mach-tegra/tegra.c between commit 49a64ac555f1 ("i2c: tegra:
-assume CONFIG_OF, remove platform data") from the i2c tree and commit
-d591fdf8e23e ("ARM: tegra: expose chip ID and revision") from the tegra
-tree.
+Stephen initially thought that the patch can be taken through tegra tree, along with
+other patches posted at  http://marc.info/?l=linux-tegra&m=136361016003625&w=2 .
+As some other issues are blocking that patch series, can this change be merged
+independent of that patch series via USB tree?
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+The original change can be seen at http://marc.info/?l=linux-usb&m=136203353205291&w=2  
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks,
+Venu
 
-diff --cc arch/arm/mach-tegra/tegra.c
-index 6e1c9a9,84deeab..0000000
---- a/arch/arm/mach-tegra/tegra.c
-+++ b/arch/arm/mach-tegra/tegra.c
-@@@ -30,6 -31,10 +31,8 @@@
-  #include <linux/pda_power.h>
-  #include <linux/platform_data/tegra_usb.h>
-  #include <linux/io.h>
- -#include <linux/i2c.h>
- -#include <linux/i2c-tegra.h>
-+ #include <linux/slab.h>
-+ #include <linux/sys_soc.h>
-  #include <linux/usb/tegra_usb_phy.h>
- =20
-  #include <asm/mach-types.h>
-
---Signature=_Tue__2_Apr_2013_18_10_41_+1100_aT/F0BCLAdiIGVNL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRWoRxAAoJEECxmPOUX5FEz0sP/2vROtB0T7AsDG4RIZ7NS98S
-oWwIPOkNF89vW50jM6Jos9p7MjGtEhSszyIz4PUutvrW2ltIgoxc7HF4rp64U9tR
-KI4qmrNvwQq/mcNqEi3am2o/bgYkEbS7ehW/79vOh+BHOFp8kiYORe49M8Lpgc6A
-KXhIamPcv1MbniIbp6XXx+r3tIk8Jc2S9FpsM8MP1ekUjlnr131ChDBD53w8KUFv
-pujRJXEF4XwkmG0JsbYFWZo9/UODELMSQIB6LdiukNWOhPsXvZi6Vm9xLa0O9mln
-2V3DqrIaQKXrNNsd71xhOYWQwwsYZrpqB9OhVv6RZ7RE0iXg2Fc2Dl0h78k6jTef
-huSL//4V6bTFvyhFLpO96+B92aZjGX9+X/Oae04sz/jZS+6Uk3aA24ux3xDVDf0+
-EoOUij7mPMOVypOk+ij/ThL6cTdFLf/bhY0AhCoi9gCrnKfazczdK8211BnvJ3Uy
-AZNKez61Y8K+GmDt2hIlTTJQgl4sMb1niJyPK9qjz3LjXCXPCrT7mVCmqJLntpfw
-/d6YjH/22o7qNx+MOKa9qhBgCK5ycgGGlPTqz8b7yU45/YrZwDPJF3CupB5ajikk
-CGgLkv027pNc9irIaCG9+3T7Lc8jgxKfxI46Zu72cVPhHZykN2s3kWXE5Wf+Hz7F
-rppZJVdSFMPOTtAFXHdQ
-=y18W
------END PGP SIGNATURE-----
-
---Signature=_Tue__2_Apr_2013_18_10_41_+1100_aT/F0BCLAdiIGVNL--
