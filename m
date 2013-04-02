@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932632Ab3DBPJv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 11:09:51 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:58049 "EHLO SMTP.CITRIX.COM"
+	id S932646Ab3DBPKU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 11:10:20 -0400
+Received: from 8bytes.org ([85.214.48.195]:53874 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757848Ab3DBPJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 11:09:47 -0400
-X-IronPort-AV: E=Sophos;i="4.87,394,1363132800"; 
-   d="scan'208";a="16935261"
-Date: Tue, 2 Apr 2013 16:09:38 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Will Deacon <will.deacon@arm.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "nico@linaro.org" <nico@linaro.org>
-Subject: Re: [PATCH v4 1/2] arm: introduce psci_smp_ops
-In-Reply-To: <20130402110255.GA26949@mudshark.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.02.1304021535420.5078@kaball.uk.xensource.com>
-References: <1364575371-8926-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130402110255.GA26949@mudshark.cambridge.arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932574Ab3DBPKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 11:10:15 -0400
+Date: Tue, 2 Apr 2013 17:10:12 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Varun Sethi <Varun.Sethi@freescale.com>
+Cc: stuart.yoder@freescale.com, scottwood@freescale.com,
+        iommu@lists.linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, galak@kernel.crashing.org,
+        benh@kernel.crashing.org
+Subject: Re: [PATCH 4/5 v11] iommu/fsl: Add additional iommu attributes
+ required by the PAMU driver.
+Message-ID: <20130402151011.GH15687@8bytes.org>
+References: <1364500442-20927-1-git-send-email-Varun.Sethi@freescale.com>
+ <1364500442-20927-5-git-send-email-Varun.Sethi@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364500442-20927-5-git-send-email-Varun.Sethi@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Apr  2 17:10:14 2013
+X-DSPAM-Confidence: 0.9995
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 515af4d623672050420500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Apr 2013, Will Deacon wrote:
-> > diff --git a/arch/arm/include/asm/psci.h b/arch/arm/include/asm/psci.h
-> > index ce0dbe7..4134dda 100644
-> > --- a/arch/arm/include/asm/psci.h
-> > +++ b/arch/arm/include/asm/psci.h
-> > @@ -32,5 +32,14 @@ struct psci_operations {
-> >  };
-> >  
-> >  extern struct psci_operations psci_ops;
-> > +extern struct smp_operations psci_smp_ops;
-> >  
-> > +#ifdef CONFIG_ARM_PSCI
-> > +int psci_init(void);
-> > +bool psci_smp_available(void);
-> > +#else
-> > +static inline int psci_init(void) { return -ENODEV; }
-> > +static inline bool psci_smp_available(void) { return false; }
-> 
-> You can probably make psci_init return void now that it's no longer an
-> initcall (you're not checking it's return value anyway).
+On Fri, Mar 29, 2013 at 01:24:01AM +0530, Varun Sethi wrote:
+> +/* cache stash targets */
+> +enum stash_target {
+> +	IOMMU_ATTR_CACHE_L1 = 1,
+> +	IOMMU_ATTR_CACHE_L2,
+> +	IOMMU_ATTR_CACHE_L3,
+> +};
+> +
+> +/* This attribute corresponds to IOMMUs capable of generating
+> + * a stash transaction. A stash transaction is typically a
+> + * hardware initiated prefetch of data from memory to cache.
+> + * This attribute allows configuring stashig specific parameters
+> + * in the IOMMU hardware.
+> + */
+> +
+> +struct iommu_stash_attribute {
+> +	u32 	cpu;	/* cpu number */
+> +	u32 	cache;	/* cache to stash to: L1,L2,L3 */
+> +};
+> +
 
-Sure.
+I would prefer these PAMU specific enum and struct to be in a
+pamu-specific iommu-header.
 
 
-> > diff --git a/arch/arm/kernel/psci_smp.c b/arch/arm/kernel/psci_smp.c
-> > new file mode 100644
-> > index 0000000..66b0f77
-> > --- /dev/null
-> > +++ b/arch/arm/kernel/psci_smp.c
-> > @@ -0,0 +1,67 @@
-> > +/*
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + *
-> > + * This program is distributed in the hope that it will be useful,
-> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > + * GNU General Public License for more details.
-> > + *
-> > + * Copyright (C) 2012 ARM Limited
-> > + *
-> > + * Author: Will Deacon <will.deacon@arm.com>
-> > + */
-> > +
-> > +#include <linux/init.h>
-> > +#include <linux/irqchip/arm-gic.h>
-> > +#include <linux/smp.h>
-> > +#include <linux/of.h>
-> > +
-> > +#include <asm/psci.h>
-> > +#include <asm/smp_plat.h>
-> > +
-> > +extern void secondary_startup(void);
-> > +
-> > +static int __cpuinit psci_boot_secondary(unsigned int cpu,
-> > +					 struct task_struct *idle)
-> > +{
-> > +	if (psci_ops.cpu_on)
-> > +		return psci_ops.cpu_on(cpu_logical_map(cpu),
-> > +				       __pa(secondary_startup));
-> > +	return -ENODEV;
-> > +}
-> 
-> Since this code is now likely to be shared, it could be worth a comment
-> before each function to describe the expected semantics (e.g. mpidr is used
-> as the CPUID, additional power state information is zero).
+	Joerg
 
-OK. I'll document psci_operations in psci.h.
+
