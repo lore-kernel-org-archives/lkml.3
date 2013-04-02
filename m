@@ -1,87 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760385Ab3DBXYi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:24:38 -0400
-Received: from pequod.mess.org ([46.65.169.142]:39048 "EHLO pequod.mess.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757405Ab3DBWLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:11:51 -0400
-Date: Tue, 2 Apr 2013 23:11:48 +0100
-From: Sean Young <sean@mess.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Josh Boyer <jwboyer@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
-        tkil@scrye.com, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Vincent Deffontaines <vincent@gryzor.com>
-Subject: Re: Stable kernel 3.8.4/3.9-rc3 breaks PNP serial port
-Message-ID: <20130402221148.GA28892@pequod.mess.org>
-References: <20130402155344.GA29980@hansolo.jdub.homelinux.org>
- <20130402162336.GB318@kroah.com>
- <20130402163435.GA27371@pequod.mess.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130402163435.GA27371@pequod.mess.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1760368Ab3DBX0F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:26:05 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:50070 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755591Ab3DBX0D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 19:26:03 -0400
+Date: Tue, 02 Apr 2013 19:26:01 -0400 (EDT)
+Message-Id: <20130402.192601.800808445795589231.davem@davemloft.net>
+To: romieu@fr.zoreil.com
+Cc: hayeswang@realtek.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next 5/7] r8169: add a new chip for RTL8111G
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130402232008.GB16612@electric-eye.fr.zoreil.com>
+References: <20130401222235.GB19335@electric-eye.fr.zoreil.com>
+	<2808A1ABA9A5470C8CB9534309588984@realtek.com.tw>
+	<20130402232008.GB16612@electric-eye.fr.zoreil.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Tue, 02 Apr 2013 16:26:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 05:34:35PM +0100, Sean Young wrote:
-> On Tue, Apr 02, 2013 at 09:23:36AM -0700, Greg Kroah-Hartman wrote:
-> > On Tue, Apr 02, 2013 at 11:53:44AM -0400, Josh Boyer wrote:
-> > > Hi All,
-> > > 
-> > > We've had a report [1] that the 3.8.4 stable kernel makes a PNP serial
-> > > port stop working.  After testing 3.8.3, the reporter narrowed it down
-> > > to stable commit eec98f82c637 (tty/8250_pnp: serial port detection
-> > > regression since v3.7) (upstream commit 77e372a3d82).  Reverting that
-> > > single commit from 3.8.5 allows the serial port to continue working.
-> > > 
-> > > The machine in question is using an AMI UEFI implementation as the
-> > > firmware, and on 3.8.3 the serial port has the following in
-> > > /sys/bus/pnp/devices/00:0a/resources
-> > > 
-> > > 	state = active
-> > > 	io disabled
-> > > 	irq 4
-> > > 	dma disabled
-> > > 
-> > > With 3.8.[45], the same file has:
-> > > 
-> > > 	state = disabled
-> > > 	io disabled
-> > > 	irq 4
-> > > 	dma disabled
-> > > 
-> > > In both cases, the io and dma resources are disabled, and an IRQ is
-> > > assigned.  However, the state remains active for the port on 3.8.3.
-> > > 
-> > > The offending commit mentions this is a BIOS bug from InsydeH2O and that
-> > > the port is bogus in that case, but we have something similar here with
-> > > an AMI UEFI implementation (Version: 0406 Release Date: 06/06/2012)
-> > > where the port isn't bogus.
-> > > 
-> > > I'm not sure exactly what the solution should be here.  Any thoughts?
-> > 
-> > Sean, should I just revert this patch now, and wait for a better fix
-> > later?
+From: Francois Romieu <romieu@fr.zoreil.com>
+Date: Wed, 3 Apr 2013 01:20:08 +0200
+
+> hayeswang <hayeswang@realtek.com> :
+>> Francois Romieu [mailto:romieu@fr.zoreil.com] 
+> [...]
+>> > There is close to zero added value for this stuff in the kernel.
+>> > You may as well move it completely into the firmware.
+>> 
+>> Do you mean all of the phy settings ? I have checked these settings with
+>> our hw engineers. These are not firmware. 
 > 
-> Looks like although the pnp io is disabled, it does contain a valid port 
-> number, else pnp detection would fail in 3.8.3. We're a little stricter
-> in 3.8.4, but it should fall back to legacy port detection -- the port
-> and irq are standard.
+> Undocumented configuration data which is subject to change over time ?
+> 
+> No one outside of Realtek can make any sense of this opaque pile of data.
+> There is no point in me or anybody else rubber stamping it for inclusion.
 
-The device is disabled after pnp probe fails, so the legacy probe fails
-as well. I can think of two options:
-
-1) check if both io and irq are disabled, as they are on the bogus bios 
-   for which the patch was written, but not on this board
-2) try to detect the port at the pnp io/irq provided, enabled or not, and
-   fail if no port can be found
-
-I think the second is better but I'm not sure how much code needs to change
-for that. I'll try over the next couple of evenings.
-
-
-Sean
+Right, so either document all of these indirect registers being programmed
+in the PHY or move it to firmware.
