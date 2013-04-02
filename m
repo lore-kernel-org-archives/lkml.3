@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762399Ab3DBUxB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 16:53:01 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55806 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760449Ab3DBUw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 16:52:59 -0400
-Date: Tue, 2 Apr 2013 22:40:14 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH V3 2/2] cpufreq: AMD "frequency sensitivity feedback"
- powersave bias for ondemand governor
-Message-ID: <20130402204014.GH17675@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Jacob Shin <jacob.shin@amd.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-	cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Viresh Kumar <viresh.kumar@linaro.org>,
-	Thomas Renninger <trenn@suse.de>
-References: <1364926304-1799-1-git-send-email-jacob.shin@amd.com>
- <1364926304-1799-3-git-send-email-jacob.shin@amd.com>
- <20130402192352.GC17675@pd.tnic>
- <20130402200337.GA17919@jshin-Toonie>
+	id S1762425Ab3DBUy4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 16:54:56 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:38833 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762344Ab3DBUyz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 16:54:55 -0400
+Date: Tue, 2 Apr 2013 13:54:51 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Russ Dill <Russ.Dill@ti.com>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 3.8-stable] regulator: core: Log when a device causes a
+ voltage
+Message-ID: <20130402205451.GA2710@kroah.com>
+References: <009001ce2f84$beb22ea0$3c168be0$%choi@samsung.com>
+ <20130402200257.GB8177@kroah.com>
+ <515B41EA.8040704@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130402200337.GA17919@jshin-Toonie>
+In-Reply-To: <515B41EA.8040704@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 03:03:37PM -0500, Jacob Shin wrote:
-> Well, so this powersave_bias also works as a tunable knob.
->
-> From ondemand side, if /sys/../ondemand/powersave_bias is 0, then we
-> (AMD sensitivity) don't get called and you get the default ondemand
-> behavior.
->
-> Like existing powersave_bias, users can tune the value to whatever
-> they want, to get a specturum of less to more aggressive power savings
-> vs performance.
->
-> I thought tunable would be more flexible .. out in the field or what
-> not .. no?
+On Tue, Apr 02, 2013 at 01:39:06PM -0700, Russ Dill wrote:
+> On 04/02/2013 01:02 PM, Greg KH wrote:
+> > On Tue, Apr 02, 2013 at 06:30:42PM +0900, Jonghwan Choi wrote:
+> >> 3.8-stable review patch.  If anyone has any objections, please let us know.
+> >>
+> >> ------------------
+> >>
+> >> From: "Russ Dill <Russ.Dill@ti.com>"
+> >>
+> >> commit 6e45eb12fd1c741d556bf264ee98853b5f3104e5 upstream.
+> > 
+> > Wait, no, this is NOT the commit id of this patch, please don't get this
+> > wrong.
+> > 
+> > I've dropped this from my stable mbox, if Russ feels this should go to
+> > 3.8-stable, please send me the correct git id of the patch to apply.
+> 
+> 9c7b4e8a8ad2624106fbf690fa97ab9c8c9bfa88 is the proper upstream commit.
+> This fixes a potential oops that was added in 3.8-rc4, and fixed
+> upstream in 3.9-rc1. I do think it belongs in stable.
 
-Ok, yes, that is the default on current systems which don't have hw
-feedback.
+Thanks, I've applied that commit now.
 
-But, on hw with such counters, I think the default should be to use
-the hw feedback feature so that hardware can already do more informed
-decisions for users.
+> Too bad I can't muck up the commit, then I'd owe you a beer. Might help
+> that shoulder of yours.
 
-As Thomas said, I hardly doubt users even know about that knob. So if we
-can make the freq sensitivity thing work out of the box and without user
-intervention, then we should strive to do that, no?
+Yes, that would help it out, but probably not help me catch up with
+pending patches to apply :)
 
-IOW:
-
-	if (!powersave_bias) {
-		/* user hasn't touched knob */
-
-		if (HAS_FEEDBACK_INTERFACE)
-			od_ops.powersave_bias_target(...);
-
-		__cpufreq_driver_target(..)
-	else
-		od_ops.powersave_bias_target(..)
-		__cpufreq_driver_target(..)
-	}
-
-The only change is that on hw feedback systems, you don't get the old
-behavior with powersave_bias == 0. Question is, do you even want it all
-that much but would rather leave the hw do much more informed decisions
-than the ondemand governor.
-
-Hmmm.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+greg k-h
