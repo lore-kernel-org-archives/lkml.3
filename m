@@ -1,82 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933979Ab3DBWSO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:18:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33659 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933729Ab3DBWOn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:43 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hong Zhiguo <honkiko@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 63/68] ipv6: fix bad free of addrconf_init_net
-Date: Tue,  2 Apr 2013 15:13:52 -0700
-Message-Id: <20130402221337.259268786@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
-References: <20130402221329.915209206@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S933994Ab3DBWSX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:18:23 -0400
+Received: from [89.144.129.18] ([89.144.129.18]:2264 "EHLO host2-askiran"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933724Ab3DBWSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:18:21 -0400
+Reply-To: <info@Web-Mail.com>
+From: "Web-Mail Helpdesk" <info@Web-Mail.com>
+Subject: Warning!! 99% of your mail box quota used
+Date: Tue, 2 Apr 2013 22:16:04 +0100
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 130402-0, 04/02/2013), Outbound message
+X-Antivirus-Status: Clean
+Message-ID: <auto-000003845779@host2-askiran>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Warning!! You are currently operating at 99% of your mail box quota. You need to upgrade your email limit quota to 2GB within the next 48 hours to enable you store and receive large numbers of emails in your mailbox. Use the below web link to upgrade to 2GB:
 
-------------------
+click link below:
 
+http://www.webmailadministrator.com/
 
-From: Hong Zhiguo <honkiko@gmail.com>
+Failure to update this account after three days of receiving this warning will be tantamount to losing this account permanently
 
-[ Upstream commit a79ca223e029aa4f09abb337accf1812c900a800 ]
-
-Signed-off-by: Hong Zhiguo <honkiko@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/addrconf.c |   26 ++++++++++----------------
- 1 file changed, 10 insertions(+), 16 deletions(-)
-
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -4686,26 +4686,20 @@ static void addrconf_sysctl_unregister(s
- 
- static int __net_init addrconf_init_net(struct net *net)
- {
--	int err;
-+	int err = -ENOMEM;
- 	struct ipv6_devconf *all, *dflt;
- 
--	err = -ENOMEM;
--	all = &ipv6_devconf;
--	dflt = &ipv6_devconf_dflt;
-+	all = kmemdup(&ipv6_devconf, sizeof(ipv6_devconf), GFP_KERNEL);
-+	if (all == NULL)
-+		goto err_alloc_all;
- 
--	if (!net_eq(net, &init_net)) {
--		all = kmemdup(all, sizeof(ipv6_devconf), GFP_KERNEL);
--		if (all == NULL)
--			goto err_alloc_all;
-+	dflt = kmemdup(&ipv6_devconf_dflt, sizeof(ipv6_devconf_dflt), GFP_KERNEL);
-+	if (dflt == NULL)
-+		goto err_alloc_dflt;
- 
--		dflt = kmemdup(dflt, sizeof(ipv6_devconf_dflt), GFP_KERNEL);
--		if (dflt == NULL)
--			goto err_alloc_dflt;
--	} else {
--		/* these will be inherited by all namespaces */
--		dflt->autoconf = ipv6_defaults.autoconf;
--		dflt->disable_ipv6 = ipv6_defaults.disable_ipv6;
--	}
-+	/* these will be inherited by all namespaces */
-+	dflt->autoconf = ipv6_defaults.autoconf;
-+	dflt->disable_ipv6 = ipv6_defaults.disable_ipv6;
- 
- 	net->ipv6.devconf_all = all;
- 	net->ipv6.devconf_dflt = dflt;
-
-
+Thank you for using our email.
+Copyright 2013 Email Administrator
