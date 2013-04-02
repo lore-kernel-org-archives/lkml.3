@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933731Ab3DBW1z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:27:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33472 "EHLO
+	id S933684Ab3DBWOP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:14:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33404 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933543Ab3DBWOR (ORCPT
+	with ESMTP id S932800Ab3DBWOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:17 -0400
+	Tue, 2 Apr 2013 18:14:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marco Cesarano <marco@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 25/68] mwifiex: cancel cmd timer and free curr_cmd in shutdown process
-Date: Tue,  2 Apr 2013 15:13:14 -0700
-Message-Id: <20130402221332.853561408@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 08/68] staging: comedi: s626: fix continuous acquisition
+Date: Tue,  2 Apr 2013 15:12:57 -0700
+Message-Id: <20130402221330.883556372@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
@@ -27,40 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 084c7189acb3f969c855536166042e27f5dd703f upstream.
+commit e4317ce877a31dbb9d96375391c1c4ad2210d637 upstream.
 
-curr_cmd points to the command that is in processing or waiting
-for its command response from firmware. If the function shutdown
-happens to occur at this time we should cancel the cmd timer and
-put the command back to free queue.
+For the s626 driver, there is a bug in the handling of asynchronous
+commands on the AI subdevice when the stop source is `TRIG_NONE`.  The
+command should run continuously until cancelled, but the interrupt
+handler stops the command running after the first scan.
 
-Tested-by: Marco Cesarano <marco@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The command set-up function `s626_ai_cmd()` contains this code:
+
+	switch (cmd->stop_src) {
+	case TRIG_COUNT:
+		/*  data arrives as one packet */
+		devpriv->ai_sample_count = cmd->stop_arg;
+		devpriv->ai_continous = 0;
+		break;
+	case TRIG_NONE:
+		/*  continous acquisition */
+		devpriv->ai_continous = 1;
+		devpriv->ai_sample_count = 0;
+		break;
+	}
+
+The interrupt handler `s626_irq_handler()` contains this code:
+
+		if (!(devpriv->ai_continous))
+			devpriv->ai_sample_count--;
+		if (devpriv->ai_sample_count <= 0) {
+			devpriv->ai_cmd_running = 0;
+			/* ... */
+		}
+
+So `devpriv->ai_sample_count` is only decremented for the `TRIG_COUNT`
+case, but `devpriv->ai_cmd_running` is set to 0 (and the command
+stopped) regardless.
+
+Fix this in `s626_ai_cmd()` by setting `devpriv->ai_sample_count = 1`
+for the `TRIG_NONE` case.  The interrupt handler will not decrement it
+so it will remain greater than 0 and the check for stopping the
+acquisition will fail.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/init.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/staging/comedi/drivers/s626.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/mwifiex/init.c
-+++ b/drivers/net/wireless/mwifiex/init.c
-@@ -584,6 +584,14 @@ mwifiex_shutdown_drv(struct mwifiex_adap
- 		return ret;
+--- a/drivers/staging/comedi/drivers/s626.c
++++ b/drivers/staging/comedi/drivers/s626.c
+@@ -1882,7 +1882,7 @@ static int s626_ai_cmd(struct comedi_dev
+ 	case TRIG_NONE:
+ 		/*  continous acquisition */
+ 		devpriv->ai_continous = 1;
+-		devpriv->ai_sample_count = 0;
++		devpriv->ai_sample_count = 1;
+ 		break;
  	}
- 
-+	/* cancel current command */
-+	if (adapter->curr_cmd) {
-+		dev_warn(adapter->dev, "curr_cmd is still in processing\n");
-+		del_timer(&adapter->cmd_timer);
-+		mwifiex_insert_cmd_to_free_q(adapter, adapter->curr_cmd);
-+		adapter->curr_cmd = NULL;
-+	}
-+
- 	/* shut down mwifiex */
- 	dev_dbg(adapter->dev, "info: shutdown mwifiex...\n");
  
 
 
