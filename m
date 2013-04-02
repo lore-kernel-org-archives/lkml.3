@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab3DBEMO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 00:12:14 -0400
-Received: from mail-gh0-f182.google.com ([209.85.160.182]:35485 "EHLO
-	mail-gh0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753917Ab3DBEMM (ORCPT
+	id S1754272Ab3DBEPJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 00:15:09 -0400
+Received: from mga11.intel.com ([192.55.52.93]:51036 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753917Ab3DBEPH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 00:12:12 -0400
-Message-ID: <515A5966.7020203@lwfinger.net>
-Date: Mon, 01 Apr 2013 23:07:02 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Tue, 2 Apr 2013 00:15:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,391,1363158000"; 
+   d="scan'208";a="312138419"
+From: "Sun, Yi" <yi.sun@intel.com>
+To: "davej@redhat.com" <davej@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Fail to build trinity
+Thread-Topic: Fail to build trinity
+Thread-Index: Ac4uhi1Z2bMzvEifR1e82cUD7oO9qAAROMiAACNgf6A=
+Date: Tue, 2 Apr 2013 04:15:03 +0000
+Message-ID: <D9F66AA509623343B6A9A3D4502D5A520FF22632@SHSMSX102.ccr.corp.intel.com>
+References: <D9F66AA509623343B6A9A3D4502D5A520FF21B43@SHSMSX102.ccr.corp.intel.com>
+ <20130401192133.GB30182@redhat.com>
+In-Reply-To: <20130401192133.GB30182@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the wireless-next tree
-References: <20130402133400.017b4ec5cd37725b32aa8079@canb.auug.org.au> <515A4B6C.2080805@lwfinger.net> <20130402143108.129f7a97a8a05e88e53f3ff4@canb.auug.org.au>
-In-Reply-To: <20130402143108.129f7a97a8a05e88e53f3ff4@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2013 10:31 PM, Stephen Rothwell wrote:
-> Hi Larry,
->
-> On Mon, 01 Apr 2013 22:07:24 -0500 Larry Finger <Larry.Finger@lwfinger.net> wrote:
->>
->> On 04/01/2013 09:34 PM, Stephen Rothwell wrote:
->>>
->>> After merging the wireless-next tree, today's linux-next build (x86_64
->>> allmodconfig) failed like this:
->>>
->>> drivers/net/wireless/rtlwifi/rtl8188ee/dm.c:30:18: fatal error: wifi.h: No such file or directory
->>>
->>> Caused by commit f0eb856e0b6c ("rtlwifi: rtl8188ee: Add new driver").
->>> Forgot a file?
->>
->> I do not understand. File wifi.h is definitely there and is in
->> drivers/net/wireless/rtlwifi/. Use of that directory as a source of include
->> files is handled by "ccflags-y += -I drivers/net/wireless/rtlwifi
->> -D__CHECK_ENDIAN__" in the Makefile for rtl8188ee. In fact, it builds just fine
->> here.
->>
->> What am I missing?
->
-> I don't know, sorry.  The tree I have also has
-> drivers/net/wireless/rtlwifi/wifi.h. All the other uses of wifi.h in the
-> other drivers below that directory use
->
-> #include "../wifi.h"
->
-> Maybe it has something to do with using O=... on the command line (which I do).
+Alright, done.
 
-I was trying to get rid of the relative directory notation, but I guess I 
-screwed it up somewhere. Rather than "wifi.h, I suspect I should have used <wifi.h>.
+Thank you, Dave.
 
-Larry
+Thanks
+    --Sun, Yi
 
+
+> -----Original Message-----
+> From: davej@redhat.com [mailto:davej@redhat.com]
+> Sent: Tuesday, April 02, 2013 3:22 AM
+> To: Sun, Yi
+> Cc: linux-kernel@vger.kernel.org
+> Subject: Re: Fail to build trinity
+> 
+> On Mon, Apr 01, 2013 at 03:09:09AM +0000, Sun, Yi wrote:
+>  > Hi Dave,
+>  >
+>  > I'm a newer for trinity. Apologize for my foolish question. :)  >  > But I got
+> the source with command: "git clone git://git.codemonkey.org.uk/trinity".
+> While running ./configure.sh, got following failure:
+>  > [root@x-ivb8 trinity]# ./configure.sh  > [*] Checking system headers.
+>  > [*] Checking if pppox can use pppol2tpin6..  [NO]  > [*] Checking if pppox
+> can use pppol2tv3..  [NO]  > [*] Checking if pppox can use pptp..  [NO]  > [*]
+> Checking if llc can use LLC_OPT_PKTINFO..  [YES]  > [*] Checking if glibc
+> headers provide termios2..  [NO]  > [*] Checking linux/caif/caif_socket.h
+> exists...  [YES]  > [*] Checking linux/if_alg.h exists...  [YES]  > [*] Checking
+> linux/rds.h exists...  [YES]  > [*] Checking linux/vfio.h exists...  [NO]  > [*]
+> Checking linux/btrfs.h exists...  [NO]  > [*] Checking drm/exynos_drm.h
+> exists...  [NO]  > [*] Checking sound/compress_offload.h exists...  [NO]  >
+> [*] Checking linux/vhost.h exists...  [YES]  >  > It seems I'm missing dozens
+> of header files. So could you please guide me how to get those header files or
+> some other libraries?
+> 
+> They aren't actually failures.
+> 
+> It should still compile even though it doesn't find all the headers.
+> You just won't be able to fuzz those specific functions because your headers
+> your distro puts in /usr/include don't have definitions for them.
+> 
+>  > BTW, the mailing list
+> linux-kernel@vger.kernel.org<mailto:linux-kernel@vger.kernel.org> doesn't
+> work.
+> 
+> Did you mean trinity@vger.kernel.org ? it seems to be working fine for others.
+> 
+> 	Dave
 
