@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759310Ab3DBW6c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:58:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33989 "EHLO
+	id S1759456Ab3DBW7D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:59:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33991 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758355Ab3DBWur (ORCPT
+	with ESMTP id S1758294Ab3DBWum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:50:47 -0400
+	Tue, 2 Apr 2013 18:50:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 32/56] loop: prevent bdev freeing while device in use
-Date: Tue,  2 Apr 2013 15:49:59 -0700
-Message-Id: <20130402224715.586946194@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Andy Adamson <andros@netapp.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [ 25/56] NFSv4: Fix an Oops in the NFSv4 getacl code
+Date: Tue,  2 Apr 2013 15:49:52 -0700
+Message-Id: <20130402224714.822295640@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
@@ -28,99 +27,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
 
-commit c1681bf8a7b1b98edee8b862a42c19c4e53205fd upstream.
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-struct block_device lifecycle is defined by its inode (see fs/block_dev.c) -
-block_device allocated first time we access /dev/loopXX and deallocated on
-bdev_destroy_inode. When we create the device "losetup /dev/loopXX afile"
-we want that block_device stay alive until we destroy the loop device
-with "losetup -d".
+commit 331818f1c468a24e581aedcbe52af799366a9dfe upstream.
 
-But because we do not hold /dev/loopXX inode its counter goes 0, and
-inode/bdev can be destroyed at any moment. Usually it happens at memory
-pressure or when user drops inode cache (like in the test below). When later in
-loop_clr_fd() we want to use bdev we have use-after-free error with following
-stack:
+Commit bf118a342f10dafe44b14451a1392c3254629a1f (NFSv4: include bitmap
+in nfsv4 get acl data) introduces the 'acl_scratch' page for the case
+where we may need to decode multi-page data. However it fails to take
+into account the fact that the variable may be NULL (for the case where
+we're not doing multi-page decode), and it also attaches it to the
+encoding xdr_stream rather than the decoding one.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000280
-  bd_set_size+0x10/0xa0
-  loop_clr_fd+0x1f8/0x420 [loop]
-  lo_ioctl+0x200/0x7e0 [loop]
-  lo_compat_ioctl+0x47/0xe0 [loop]
-  compat_blkdev_ioctl+0x341/0x1290
-  do_filp_open+0x42/0xa0
-  compat_sys_ioctl+0xc1/0xf20
-  do_sys_open+0x16e/0x1d0
-  sysenter_dispatch+0x7/0x1a
+The immediate result is an Oops in nfs4_xdr_enc_getacl due to the
+call to page_address() with a NULL page pointer.
 
-To prevent use-after-free we need to grab the device in loop_set_fd()
-and put it later in loop_clr_fd().
-
-The issue is reprodusible on current Linus head and v3.3. Here is the test:
-
-  dd if=/dev/zero of=loop.file bs=1M count=1
-  while [ true ]; do
-    losetup /dev/loop0 loop.file
-    echo 2 > /proc/sys/vm/drop_caches
-    losetup -d /dev/loop0
-  done
-
-[ Doing bdgrab/bput in loop_set_fd/loop_clr_fd is safe, because every
-  time we call loop_set_fd() we check that loop_device->lo_state is
-  Lo_unbound and set it to Lo_bound If somebody will try to set_fd again
-  it will get EBUSY.  And if we try to loop_clr_fd() on unbound loop
-  device we'll get ENXIO.
-
-  loop_set_fd/loop_clr_fd (and any other loop ioctl) is called under
-  loop_device->lo_ctl_mutex. ]
-
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Andy Adamson <andros@netapp.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/block/loop.c |    9 ++++++++-
- fs/block_dev.c       |    1 +
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ fs/nfs/nfs4proc.c       |    8 ++++----
+ fs/nfs/nfs4xdr.c        |    5 ++++-
+ include/linux/nfs_xdr.h |    2 +-
+ 3 files changed, 9 insertions(+), 6 deletions(-)
 
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -928,6 +928,11 @@ static int loop_set_fd(struct loop_devic
- 	wake_up_process(lo->lo_thread);
- 	if (max_part > 0)
- 		ioctl_by_bdev(bdev, BLKRRPART, 0);
-+
-+	/* Grab the block_device to prevent its destruction after we
-+	 * put /dev/loopXX inode. Later in loop_clr_fd() we bdput(bdev).
-+	 */
-+	bdgrab(bdev);
- 	return 0;
- 
- out_clr:
-@@ -1024,8 +1029,10 @@ static int loop_clr_fd(struct loop_devic
- 	memset(lo->lo_encrypt_key, 0, LO_KEY_SIZE);
- 	memset(lo->lo_crypt_name, 0, LO_NAME_SIZE);
- 	memset(lo->lo_file_name, 0, LO_NAME_SIZE);
--	if (bdev)
-+	if (bdev) {
-+		bdput(bdev);
- 		invalidate_bdev(bdev);
-+	}
- 	set_capacity(lo->lo_disk, 0);
- 	loop_sysfs_exit(lo);
- 	if (bdev) {
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -576,6 +576,7 @@ struct block_device *bdgrab(struct block
- 	ihold(bdev->bd_inode);
- 	return bdev;
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -3578,8 +3578,8 @@ static ssize_t __nfs4_get_acl_uncached(s
+ 	}
+ 	if (npages > 1) {
+ 		/* for decoding across pages */
+-		args.acl_scratch = alloc_page(GFP_KERNEL);
+-		if (!args.acl_scratch)
++		res.acl_scratch = alloc_page(GFP_KERNEL);
++		if (!res.acl_scratch)
+ 			goto out_free;
+ 	}
+ 	args.acl_len = npages * PAGE_SIZE;
+@@ -3615,8 +3615,8 @@ out_free:
+ 	for (i = 0; i < npages; i++)
+ 		if (pages[i])
+ 			__free_page(pages[i]);
+-	if (args.acl_scratch)
+-		__free_page(args.acl_scratch);
++	if (res.acl_scratch)
++		__free_page(res.acl_scratch);
+ 	return ret;
  }
-+EXPORT_SYMBOL(bdgrab);
  
- long nr_blockdev_pages(void)
- {
+--- a/fs/nfs/nfs4xdr.c
++++ b/fs/nfs/nfs4xdr.c
+@@ -2379,7 +2379,6 @@ static void nfs4_xdr_enc_getacl(struct r
+ 
+ 	xdr_inline_pages(&req->rq_rcv_buf, replen << 2,
+ 		args->acl_pages, args->acl_pgbase, args->acl_len);
+-	xdr_set_scratch_buffer(xdr, page_address(args->acl_scratch), PAGE_SIZE);
+ 
+ 	encode_nops(&hdr);
+ }
+@@ -5688,6 +5687,10 @@ nfs4_xdr_dec_getacl(struct rpc_rqst *rqs
+ 	struct compound_hdr hdr;
+ 	int status;
+ 
++	if (res->acl_scratch != NULL) {
++		void *p = page_address(res->acl_scratch);
++		xdr_set_scratch_buffer(xdr, p, PAGE_SIZE);
++	}
+ 	status = decode_compound_hdr(xdr, &hdr);
+ 	if (status)
+ 		goto out;
+--- a/include/linux/nfs_xdr.h
++++ b/include/linux/nfs_xdr.h
+@@ -588,7 +588,6 @@ struct nfs_getaclargs {
+ 	size_t				acl_len;
+ 	unsigned int			acl_pgbase;
+ 	struct page **			acl_pages;
+-	struct page *			acl_scratch;
+ 	struct nfs4_sequence_args 	seq_args;
+ };
+ 
+@@ -598,6 +597,7 @@ struct nfs_getaclres {
+ 	size_t				acl_len;
+ 	size_t				acl_data_offset;
+ 	int				acl_flags;
++	struct page *			acl_scratch;
+ 	struct nfs4_sequence_res	seq_res;
+ };
+ 
 
 
