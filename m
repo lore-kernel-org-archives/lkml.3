@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933762Ab3DBW2u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:28:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33457 "EHLO
+	id S933790Ab3DBW3J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:29:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33450 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933675Ab3DBWOO (ORCPT
+	with ESMTP id S933667Ab3DBWON (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:14 -0400
+	Tue, 2 Apr 2013 18:14:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Beulich <jbeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 21/68] xen-blkback: fix dispatch_rw_block_io() error path
-Date: Tue,  2 Apr 2013 15:13:10 -0700
-Message-Id: <20130402221332.408466104@linuxfoundation.org>
+        Andreas Degert <andreas.degert@googlemail.com>,
+        Joerg Roedel <joro@8bytes.org>
+Subject: [ 19/68] iommu/amd: Make sure dma_ops are set for hotplug devices
+Date: Tue,  2 Apr 2013 15:13:08 -0700
+Message-Id: <20130402221332.180553538@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
@@ -27,49 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@suse.com>
+From: Joerg Roedel <joro@8bytes.org>
 
-commit 0e5e098ac22dae38f957e951b70d3cf73beff0f7 upstream.
+commit c2a2876e863356b092967ea62bebdb4dd663af80 upstream.
 
-Commit 7708992 ("xen/blkback: Seperate the bio allocation and the bio
-submission") consolidated the pendcnt updates to just a single write,
-neglecting the fact that the error path relied on it getting set to 1
-up front (such that the decrement in __end_block_io_op() would actually
-drop the count to zero, triggering the necessary cleanup actions).
+There is a bug introduced with commit 27c2127 that causes
+devices which are hot unplugged and then hot-replugged to
+not have per-device dma_ops set. This causes these devices
+to not function correctly. Fixed with this patch.
 
-Also remove a misleading and a stale (after said commit) comment.
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reported-by: Andreas Degert <andreas.degert@googlemail.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/xen-blkback/blkback.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ drivers/iommu/amd_iommu.c |   20 +++++++++-----------
+ 1 file changed, 9 insertions(+), 11 deletions(-)
 
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -742,13 +742,7 @@ static int dispatch_rw_block_io(struct x
- 		bio->bi_end_io  = end_block_io_op;
- 	}
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -2270,18 +2270,16 @@ static int device_change_notifier(struct
  
--	/*
--	 * We set it one so that the last submit_bio does not have to call
--	 * atomic_inc.
--	 */
- 	atomic_set(&pending_req->pendcnt, nbio);
+ 		/* allocate a protection domain if a device is added */
+ 		dma_domain = find_protection_domain(devid);
+-		if (dma_domain)
+-			goto out;
+-		dma_domain = dma_ops_domain_alloc();
+-		if (!dma_domain)
+-			goto out;
+-		dma_domain->target_dev = devid;
++		if (!dma_domain) {
++			dma_domain = dma_ops_domain_alloc();
++			if (!dma_domain)
++				goto out;
++			dma_domain->target_dev = devid;
+ 
+-		spin_lock_irqsave(&iommu_pd_list_lock, flags);
+-		list_add_tail(&dma_domain->list, &iommu_pd_list);
+-		spin_unlock_irqrestore(&iommu_pd_list_lock, flags);
 -
--	/* Get a reference count for the disk queue and start sending I/O */
- 	blk_start_plug(&plug);
+-		dev_data = get_dev_data(dev);
++			spin_lock_irqsave(&iommu_pd_list_lock, flags);
++			list_add_tail(&dma_domain->list, &iommu_pd_list);
++			spin_unlock_irqrestore(&iommu_pd_list_lock, flags);
++		}
  
- 	for (i = 0; i < nbio; i++)
-@@ -776,6 +770,7 @@ static int dispatch_rw_block_io(struct x
-  fail_put_bio:
- 	for (i = 0; i < nbio; i++)
- 		bio_put(biolist[i]);
-+	atomic_set(&pending_req->pendcnt, 1);
- 	__end_block_io_op(pending_req, -EINVAL);
- 	msleep(1); /* back off a bit */
- 	return -EIO;
+ 		dev->archdata.dma_ops = &amd_iommu_dma_ops;
+ 
 
 
