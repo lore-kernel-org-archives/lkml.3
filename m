@@ -1,102 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760304Ab3DBM3K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 08:29:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65176 "EHLO mx1.redhat.com"
+	id S1760053Ab3DBMhU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 08:37:20 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:50065 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757309Ab3DBM3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 08:29:08 -0400
-From: Frantisek Hrbata <fhrbata@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, oleg@redhat.com, kamaleshb@in.ibm.com,
-        hechjie@cn.ibm.com
-Subject: [PATCH] x86: add phys addr validity check for /dev/mem mmap
-Date: Tue,  2 Apr 2013 14:28:53 +0200
-Message-Id: <1364905733-23937-1-git-send-email-fhrbata@redhat.com>
+	id S1759837Ab3DBMhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 08:37:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-i2c@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: Re: [PATCH] ACPI / I2C: Use parent's ACPI_HANDLE() in acpi_i2c_register_devices()
+Date: Tue, 02 Apr 2013 14:44:51 +0200
+Message-ID: <1781994.sa3Syq0Q4W@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130402045105.GA17682@the-dreams.de>
+References: <2966020.zlpeyGGUDW@vostro.rjw.lan> <20130402045105.GA17682@the-dreams.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CR4.PAE is set, the 64b PTE's are used(ARCH_PHYS_ADDR_T_64BIT is set for
-X86_64 || X86_PAE). According to [1] Chapter 4 Paging, some higher bits in 64b
-PTE are reserved and have to be set to zero. For example, for IA-32e and 4KB
-page [1] 4.5 IA-32e Paging: Table 4-19, bits 51-M(MAXPHYADDR) are reserved. So
-for a CPU with e.g. 48bit phys addr width, bits 51-48 have to be zero. If one of
-the reserved bits is set, [1] 4.7 Page-Fault Exceptions, the #PF is generated
-with RSVD error code.
+On Tuesday, April 02, 2013 06:52:37 AM Wolfram Sang wrote:
+> On Mon, Apr 01, 2013 at 02:25:03AM +0200, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > The ACPI handle of struct i2c_adapter's dev member should not be
+> > set, because this causes that struct i2c_adapter to be associated
+> > with the ACPI device node corresponding to its parent as the
+> > second "physical_device", which is incorrect (this happens during
+> > the registration of struct i2c_adapter).  Consequently,
+> > acpi_i2c_register_devices() should use the ACPI handle of the
+> > parent of the struct i2c_adapter it is called for rather than the
+> > struct i2c_adapter's ACPI handle (which should be NULL).
+> > 
+> > Make that happen and modify the i2c-designware-platdrv driver,
+> > which currently is the only driver for ACPI-enumerated I2C
+> > controller chips, not to set the ACPI handle for the
+> > struct i2c_adapter it creates.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Shall this go via the I2C tree? If not, for the I2C part:
 
-<quote>
-RSVD flag (bit 3).
-This flag is 1 if there is no valid translation for the linear address because a
-reserved bit was set in one of the paging-structure entries used to translate
-that address. (Because reserved bits are not checked in a paging-structure entry
-whose P flag is 0, bit 3 of the error code can be set only if bit 0 is also
-set.)
-</quote>
+Well, I'm going to push it through the ACPI/PM tree, if that's not a problem
+along with an analogous SPI patch.
 
-In mmap_mem() the first check is valid_mmap_phys_addr_range(), but it always
-returns 1 on x86. So it's possible to use any pgoff we want and to set the PTE's
-reserved bits in remap_pfn_range(). Meaning there is a possibility to use mmap
-on /dev/mem and cause system panic. It's probably not that serious, because
-access to /dev/mem is limited and the system has to have panic_on_oops set, but
-still I think we should check this and return error.
+> Acked-by: Wolfram Sang <wsa@the-dreams.de>
 
-This patch adds check for x86 when ARCH_PHYS_ADDR_T_64BIT is set, the same way
-as it is already done in e.g. ioremap. With this fix mmap returns -EINVAL if the
-requested phys addr is bigger then the supported phys addr width.
+Thanks!
 
-[1] Intel 64 and IA-32 Architectures Software Developer's Manual, Volume 3A
 
-Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
----
- arch/x86/include/asm/io.h |  4 ++++
- arch/x86/mm/mmap.c        | 13 +++++++++++++
- 2 files changed, 17 insertions(+)
-
-diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
-index d8e8eef..39607c6 100644
---- a/arch/x86/include/asm/io.h
-+++ b/arch/x86/include/asm/io.h
-@@ -242,6 +242,10 @@ static inline void flush_write_buffers(void)
- #endif
- }
- 
-+#define ARCH_HAS_VALID_PHYS_ADDR_RANGE
-+extern int valid_phys_addr_range(phys_addr_t addr, size_t count);
-+extern int valid_mmap_phys_addr_range(unsigned long pfn, size_t count);
-+
- #endif /* __KERNEL__ */
- 
- extern void native_io_delay(void);
-diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-index 845df68..92ec31c 100644
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -31,6 +31,8 @@
- #include <linux/sched.h>
- #include <asm/elf.h>
- 
-+#include "physaddr.h"
-+
- struct __read_mostly va_alignment va_align = {
- 	.flags = -1,
- };
-@@ -122,3 +124,14 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
- 		mm->unmap_area = arch_unmap_area_topdown;
- 	}
- }
-+
-+int valid_phys_addr_range(phys_addr_t addr, size_t count)
-+{
-+	return addr + count <= __pa(high_memory);
-+}
-+
-+int valid_mmap_phys_addr_range(unsigned long pfn, size_t count)
-+{
-+	resource_size_t addr = (pfn << PAGE_SHIFT) + count;
-+	return phys_addr_valid(addr);
-+}
 -- 
-1.8.1.4
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
