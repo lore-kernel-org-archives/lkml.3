@@ -1,55 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab3DBSIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 14:08:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58945 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760602Ab3DBSIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 14:08:05 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20130329001048.GK5995@xanatos>
-References: <20130329001048.GK5995@xanatos> <20130328201505.GC5995@xanatos> <20130328184827.29679.62426.stgit@warthog.procyon.org.uk> <20130328184835.29679.62285.stgit@warthog.procyon.org.uk> <32349.1364509973@warthog.procyon.org.uk>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: dhowells@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] xhci: Rename SEGMENT_SIZE and SEGMENT_SHIFT as the former is used in a.out.h
-Date: Tue, 02 Apr 2013 19:07:36 +0100
-Message-ID: <20541.1364926056@warthog.procyon.org.uk>
+	id S932751Ab3DBSJF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 14:09:05 -0400
+Received: from mail-da0-f53.google.com ([209.85.210.53]:59365 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759845Ab3DBSJD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 14:09:03 -0400
+Date: Tue, 2 Apr 2013 11:09:01 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Simon Jeons <simon.jeons@gmail.com>
+cc: Zhouping Liu <zliu@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Amos Kong <akong@redhat.com>
+Subject: Re: THP: AnonHugePages in /proc/[pid]/smaps is correct or not?
+In-Reply-To: <515ACDC9.2090506@gmail.com>
+Message-ID: <alpine.DEB.2.02.1304021106190.17138@chino.kir.corp.google.com>
+References: <383590596.664138.1364803227470.JavaMail.root@redhat.com> <alpine.DEB.2.02.1304011512490.17714@chino.kir.corp.google.com> <515ACDC9.2090506@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
+On Tue, 2 Apr 2013, Simon Jeons wrote:
 
-> I guess my question is a deeper one: do we need to rename all the xHCI
-> macros to have the XHCI_ prefix, in order to avoid future collision?
-> For example, one of the macros is MAX_HC_PORTS, which could possibly be
-> used by other host drivers in the future.
+> Both thp and hugetlb pages should be 2MB aligned, correct?
+> 
 
-Hmmm...
-
-I suspect the question is whether your symbols are likely to collide with
-core symbols rather than symbols of unrelated drivers - after all, you're
-unlikely to be #including the headers of those drivers.
-
-I personally prefer to prefix the names of symbols in drivers with something
-consistent for that driver to reduce namespace collisions - but I know not
-everyone cares about that.  Linux doesn't have much of a policy in this area
-though.  I also like it because it makes tags easier to use (fewer definitions
-of the same symbol).
-
-Whether you should go back and rename existing xHCI functions, I don't know.
-I'd be tempted to leave it for now unless there's some collision.  However,
-things like MAX_HC_PORTS does seem a little generic.  Further #define
-collisions go unnoticed under some circumstances.  Two obvious cases are (a)
-redefinition of a symbol because it happens to be the same value and (b) where
-the second one is accidentally suppressed because it is wrapped in a
-conditional.
-
-Perhaps we should move to C++ and use namespaces;-)
-
-David
+To answer this question and your followup reply at the same time: they 
+come from one level higher in the page table so they will naturally need 
+to be 2MB aligned.
