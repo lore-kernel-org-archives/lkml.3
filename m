@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655Ab3DBPb5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 11:31:57 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53540 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932341Ab3DBPbz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 11:31:55 -0400
-Message-ID: <515AF9E9.1020603@wwwdotorg.org>
-Date: Tue, 02 Apr 2013 09:31:53 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S932658Ab3DBPdU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 11:33:20 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:49980 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761236Ab3DBPdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 11:33:18 -0400
+Message-ID: <515AFA0B.7020509@interlog.com>
+Date: Tue, 02 Apr 2013 11:32:27 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: host: tegra: Reset Tegra USB controller before init
-References: <1362033418-7332-1-git-send-email-vbyravarasu@nvidia.com> <512F9F0B.1040303@wwwdotorg.org> <D958900912E20642BCBC71664EFECE3E6E4F7216C0@BGMAIL02.nvidia.com> <5134D210.3060405@wwwdotorg.org> <20130305003423.GA23996@kroah.com> <D958900912E20642BCBC71664EFECE3E6E50BE434F@BGMAIL02.nvidia.com>
-In-Reply-To: <D958900912E20642BCBC71664EFECE3E6E50BE434F@BGMAIL02.nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: linux-arm-kernel@lists.infradead.org, jhovold@gmail.com,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] rtc: rtc-at91rm9200: manage IMR depending on revision
+References: <1364573029-19346-5-git-send-email-jhovold@gmail.com> <1364908007-5150-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <1364908007-5150-1-git-send-email-nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2013 01:12 AM, Venu Byravarasu wrote:
->> gregkh@linuxfoundation.org wrote at Tuesday, March 05, 2013 6:04 AM:
->> On Mon, Mar 04, 2013 at 09:55:44AM -0700, Stephen Warren wrote:
->>> On 03/04/2013 12:55 AM, Venu Byravarasu wrote:
->>>> Stephen Warren wrote at Thursday, February 28, 2013 11:47 PM:
->>>>> On 02/27/2013 11:36 PM, Venu Byravarasu wrote:
->>>>>> To clear any configurations made by U-Boot on Tegra USB controller,
->>>>>> reset it before init in probe.
-...
->> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->  
-> Hi Greg,
-> 
-> Stephen initially thought that the patch can be taken through tegra tree, along with
-> other patches posted at  http://marc.info/?l=linux-tegra&m=136361016003625&w=2 .
-> As some other issues are blocking that patch series, can this change be merged
-> independent of that patch series via USB tree?
-> 
-> The original change can be seen at http://marc.info/?l=linux-usb&m=136203353205291&w=2  
+On 13-04-02 09:06 AM, Nicolas Ferre wrote:
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+> Hi all,
+>
+> The funny thing is that I was writing exactly the same code as Johan's
+> when he posted his series.
+>
+> So, here is my single patch, with the comment about the readback stolen from
+> Johan's, but without the way to determine with IP is buggy and which one is
+> not...
+> After having dug the possibility to read the IP revision, I discovered that it
+> is not possible to use this information ("version" register offset changing
+> according to... IP version number: well done!).
+> In conclusion, I guess that the only way to determine if we need the workaround
+> is to use the DT.
+> One remark though: if we use the compatibility string for this purpose, I fear
+> that we would twist the meaning of this information: SoC using an
+> "atmel,at91sam9x5-rtc" compatible RTC will not necessarily be touched by the
+> "non responding IMR" bug: at91sam9n12 or upcoming sama5d3 are not affected for
+> instance, and we need to cling to "atmel,at91rm9200-rtc" for them...
+> I think that we can use this method for the moment and move to another
+> compatibility string later if it is needed.
 
-Venu, you should simply repost the patch; I'm sure its not in anyone's
-email inbox any more.
+Rather than have so many people working on rtc-at91rm9200.c,
+how about someone bring its "RTT" sibling into the DT
+world. I'm talking about drivers/rtc/rtc-at91sam9.c ...
+
+Doug Gilbert
+
