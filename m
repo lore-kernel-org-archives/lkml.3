@@ -1,79 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760676Ab3DBMtb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 08:49:31 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:50079 "EHLO hydra.sisk.pl"
+	id S1760708Ab3DBMtq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 08:49:46 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50435 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760629Ab3DBMt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 08:49:29 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Toshi Kani <toshi.kani@hp.com>, linux-acpi@vger.kernel.org,
-        tangchen@cn.fujitsu.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] ACPI,acpi_memhotplug: Remove acpi_memory_info->failed bit
-Date: Tue, 02 Apr 2013 14:57:03 +0200
-Message-ID: <2321578.IdtOOylV2Q@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <515A227C.3060009@jp.fujitsu.com>
-References: <514022BF.3080303@jp.fujitsu.com> <7171436.IWIKuTHVjL@vostro.rjw.lan> <515A227C.3060009@jp.fujitsu.com>
+	id S1759896Ab3DBMtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 08:49:43 -0400
+Date: Tue, 2 Apr 2013 14:49:40 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Thomas Renninger <trenn@suse.de>
+Cc: Jacob Shin <jacob.shin@amd.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH V2 2/2] cpufreq: AMD "frequency sensitivity feedback"
+ powersave bias for ondemand governor
+Message-ID: <20130402124940.GB5488@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Thomas Renninger <trenn@suse.de>, Jacob Shin <jacob.shin@amd.com>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+	linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Viresh Kumar <viresh.kumar@linaro.org>
+References: <1364495057-14939-1-git-send-email-jacob.shin@amd.com>
+ <1364495057-14939-3-git-send-email-jacob.shin@amd.com>
+ <4985234.c9GFoGKqo8@skinner.arch.suse.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4985234.c9GFoGKqo8@skinner.arch.suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 02, 2013 09:12:44 AM Yasuaki Ishimatsu wrote:
-> Hi Rafael,
+On Tue, Apr 02, 2013 at 01:40:13PM +0200, Thomas Renninger wrote:
+> On Thursday, March 28, 2013 01:24:17 PM Jacob Shin wrote:
+> > Future AMD processors, starting with Family 16h, can provide software
+> > with feedback on how the workload may respond to frequency change --
+> > memory-bound workloads will not benefit from higher frequency, where
+> > as compute-bound workloads will. This patch enables this "frequency
+> > sensitivity feedback" to aid the ondemand governor to make better
+> > frequency change decisions by hooking into the powersave bias.
+> If I read this correctly, nothing changes even if the driver is loaded,
+> unless user modifies:
+> /sys/devices/system/cpu/cpufreq/ondemand/powersave_bias
+> is this correct?
 > 
-> 2013/04/02 8:48, Rafael J. Wysocki wrote:
-> > On Thursday, March 28, 2013 08:58:03 AM Yasuaki Ishimatsu wrote:
-> >> Hi Rafael,
-> >>
-> >> 2013/03/26 22:41, Rafael J. Wysocki wrote:
-> >>> On Tuesday, March 26, 2013 08:57:05 AM Yasuaki Ishimatsu wrote:
-> >>>> 2013/03/23 5:24, Toshi Kani wrote:
-> >>>>> On Fri, 2013-03-22 at 10:53 +0900, Yasuaki Ishimatsu wrote:
-> >>>>>> acpi_memory_info has enabled bit and failed bit for controlling memory
-> >>>>>> hotplug. But we don't need to keep both bits.
-> >>>>>>
-> >>>>>> The patch removes acpi_memory_info->failed bit.
-> >>>>>>
-> >>>>>> Signed-off-by: yasuaki ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> >>>>>
-> >>>>> Thanks for the update.  It looks good.  For the series:
-> >>>>>
-> >>>>> Acked-by: Toshi Kani <toshi.kani@hp.com>
-> >>>>
-> >>>> Thanks!
-> >>>
-> >>> Both patches applied to linux-pm.git/linux-next.
-> >>
-> >> Thank you for applying both patches.
-> >> If you don't mind, I hope these patches are merged into linux-3.9
-> >> since this is bug fix.
-> >
-> > I honestly don't think that [2/2] is 3.9 material, but I can push [1/2]
-> > for 3.9 provided that you also regard it as material for 3.8-stable.
+> I wonder who should modify:
+> /sys/devices/system/cpu/cpufreq/ondemand/powersave_bias
+> Even cpupower is not aware of this very specific tunable.
 > 
-> linux-3.8 does not support physical memory hot remove. It has been supported
-> since linux-3.9. So I don't need [1/2] patch to linux-3.8 but need it to
-> linux-3.9. So please push [1/2] patch to linux-3.9.
+> Also, are you sure cpufreq subsystem will be the only user
+> of this one?
+> Or could cpuidle or others also make use of this somewhen in the future?
 
-Well, I don't think it would be a good idea to push that patch for 3.9 so late
-in the cycle.  Yes, it would make memory hotplug work in 3.9, but that might
-surprise some people and cause problems to happen as a result and we wouldn't
-have the time to address them before the 3.9 release.
+Yeah, I don't think this is supposed to work like that - more likely,
+you want to use the freq sensitivity thing by default if the hardware
+supports it.
 
-If that's not a big problem, I'd prefer to defer that patch until the 3.10
-merge window is open (which is just about 2 weeks from now) and if need be we
-can still push it for 3.9-stable afterward.
+So I think the od_tuners->powersave_bias check needs to be augmented
+with a freq_sensitivity cpuid bit check...
 
-Thanks,
-Rafael
+> Then this could more be done like:
+> drivers/cpufreq/mperf.c
+> And scheduler, cpuidle, cpufreq or whatever could use this as well.
+> 
+> Just some thinking:
+> I wonder how one could check/verify that the right thing is done
+> (by CPU and kernel). Ideally it would be nice to have the CPU register
+> appended to a cpufreq or cpuidle event trace.
+> But this very (AMD or X86 only?) specific data would not look nice there.
+> An arch placeholder value would be needed or similar?
 
+I actually wonder whether this should be a separate module but I
+guess this is maybe the most agreeable way for adding vendor-specific
+functionality to cpufreq.
+
+> ...
+> > +}
+> > +
+> > +static int __init amd_freq_sensitivity_init(void)
+> > +{
+> > +	int i;
+> > +	u32 eax, edx, dummy;
+> > +
+> > +	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
+> > +		return -ENODEV;
+> > +
+> > +	cpuid(0x80000007, &eax, &dummy, &dummy, &edx);
+> If this really should be a separate module:
+> Does/will Intel have the same (feature/cpuid bit)?
+> Anyway, this should get a general AMD or X86 CPU capability flag.
+> 
+> Then you can also autoload this driver similar to how it's done in acpi-
+> cpufreq:
+> static const struct x86_cpu_id acpi_cpufreq_ids[] = {
+>         X86_FEATURE_MATCH(X86_FEATURE_ACPI),
+>         X86_FEATURE_MATCH(X86_FEATURE_HW_PSTATE),
+>         {}
+> };
+> MODULE_DEVICE_TABLE(x86cpu, acpi_cpufreq_ids);
+
+Yes, this needs to be a cpu feature bit in cpufeature.h and be loaded
+automatically.
+
+Thanks.
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
