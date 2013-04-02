@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933169Ab3DBWM0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:12:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32975 "EHLO
+	id S1760116Ab3DBXKs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:10:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33006 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933078Ab3DBWMV (ORCPT
+	with ESMTP id S933152Ab3DBWM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:21 -0400
+	Tue, 2 Apr 2013 18:12:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Benny Halevy <bhalevy@tonian.com>
-Subject: [ 038/124] NFSv4.1: Fix a race in pNFS layoutcommit
-Date: Tue,  2 Apr 2013 15:10:20 -0700
-Message-Id: <20130402221108.617512719@linuxfoundation.org>
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [ 053/124] userns: Restrict when proc and sysfs can be mounted
+Date: Tue,  2 Apr 2013 15:10:35 -0700
+Message-Id: <20130402221110.364453287@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -27,92 +27,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit a073dbff359f4741013ae4b8395f5364c5e00b48 upstream.
+commit 87a8ebd637dafc255070f503909a053cf0d98d3f upstream.
 
-We need to clear the NFS_LSEG_LAYOUTCOMMIT bits atomically with the
-NFS_INO_LAYOUTCOMMIT bit, otherwise we may end up with situations
-where the two are out of sync.
-The first half of the problem is to ensure that pnfs_layoutcommit_inode
-clears the NFS_LSEG_LAYOUTCOMMIT bit through pnfs_list_write_lseg.
-We still need to keep the reference to those segments until the RPC call
-is finished, so in order to make it clear _where_ those references come
-from, we add a helper pnfs_list_write_lseg_done() that cleans up after
-pnfs_list_write_lseg.
+Only allow unprivileged mounts of proc and sysfs if they are already
+mounted when the user namespace is created.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Acked-by: Benny Halevy <bhalevy@tonian.com>
+proc and sysfs are interesting because they have content that is
+per namespace, and so fresh mounts are needed when new namespaces
+are created while at the same time proc and sysfs have content that
+is shared between every instance.
+
+Respect the policy of who may see the shared content of proc and sysfs
+by only allowing new mounts if there was an existing mount at the time
+the user namespace was created.
+
+In practice there are only two interesting cases: proc and sysfs are
+mounted at their usual places, proc and sysfs are not mounted at all
+(some form of mount namespace jail).
+
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |   14 --------------
- fs/nfs/pnfs.c     |   19 ++++++++++++++++++-
- 2 files changed, 18 insertions(+), 15 deletions(-)
+ fs/namespace.c                 |   21 +++++++++++++++++++++
+ fs/proc/root.c                 |    4 ++++
+ fs/sysfs/mount.c               |    4 ++++
+ include/linux/user_namespace.h |    4 ++++
+ kernel/user.c                  |    2 ++
+ kernel/user_namespace.c        |    2 ++
+ 6 files changed, 37 insertions(+)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -6366,22 +6366,8 @@ nfs4_layoutcommit_done(struct rpc_task *
- static void nfs4_layoutcommit_release(void *calldata)
- {
- 	struct nfs4_layoutcommit_data *data = calldata;
--	struct pnfs_layout_segment *lseg, *tmp;
--	unsigned long *bitlock = &NFS_I(data->args.inode)->flags;
- 
- 	pnfs_cleanup_layoutcommit(data);
--	/* Matched by references in pnfs_set_layoutcommit */
--	list_for_each_entry_safe(lseg, tmp, &data->lseg_list, pls_lc_list) {
--		list_del_init(&lseg->pls_lc_list);
--		if (test_and_clear_bit(NFS_LSEG_LAYOUTCOMMIT,
--				       &lseg->pls_flags))
--			pnfs_put_lseg(lseg);
--	}
--
--	clear_bit_unlock(NFS_INO_LAYOUTCOMMITTING, bitlock);
--	smp_mb__after_clear_bit();
--	wake_up_bit(bitlock, NFS_INO_LAYOUTCOMMITTING);
--
- 	put_rpccred(data->cred);
- 	kfree(data);
- }
---- a/fs/nfs/pnfs.c
-+++ b/fs/nfs/pnfs.c
-@@ -1747,11 +1747,27 @@ static void pnfs_list_write_lseg(struct
- 
- 	list_for_each_entry(lseg, &NFS_I(inode)->layout->plh_segs, pls_list) {
- 		if (lseg->pls_range.iomode == IOMODE_RW &&
--		    test_bit(NFS_LSEG_LAYOUTCOMMIT, &lseg->pls_flags))
-+		    test_and_clear_bit(NFS_LSEG_LAYOUTCOMMIT, &lseg->pls_flags))
- 			list_add(&lseg->pls_lc_list, listp);
- 	}
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -2789,6 +2789,27 @@ bool current_chrooted(void)
+ 	return chrooted;
  }
  
-+static void pnfs_list_write_lseg_done(struct inode *inode, struct list_head *listp)
++void update_mnt_policy(struct user_namespace *userns)
 +{
-+	struct pnfs_layout_segment *lseg, *tmp;
-+	unsigned long *bitlock = &NFS_I(inode)->flags;
++	struct mnt_namespace *ns = current->nsproxy->mnt_ns;
++	struct mount *mnt;
 +
-+	/* Matched by references in pnfs_set_layoutcommit */
-+	list_for_each_entry_safe(lseg, tmp, listp, pls_lc_list) {
-+		list_del_init(&lseg->pls_lc_list);
-+		pnfs_put_lseg(lseg);
++	down_read(&namespace_sem);
++	list_for_each_entry(mnt, &ns->list, mnt_list) {
++		switch (mnt->mnt.mnt_sb->s_magic) {
++		case SYSFS_MAGIC:
++			userns->may_mount_sysfs = true;
++			break;
++		case PROC_SUPER_MAGIC:
++			userns->may_mount_proc = true;
++			break;
++		}
++		if (userns->may_mount_sysfs && userns->may_mount_proc)
++			break;
 +	}
-+
-+	clear_bit_unlock(NFS_INO_LAYOUTCOMMITTING, bitlock);
-+	smp_mb__after_clear_bit();
-+	wake_up_bit(bitlock, NFS_INO_LAYOUTCOMMITTING);
++	up_read(&namespace_sem);
 +}
 +
- void pnfs_set_lo_fail(struct pnfs_layout_segment *lseg)
+ static void *mntns_get(struct task_struct *task)
  {
- 	pnfs_layout_io_set_failed(lseg->pls_layout, lseg->pls_range.iomode);
-@@ -1796,6 +1812,7 @@ void pnfs_cleanup_layoutcommit(struct nf
+ 	struct mnt_namespace *ns = NULL;
+--- a/fs/proc/root.c
++++ b/fs/proc/root.c
+@@ -16,6 +16,7 @@
+ #include <linux/sched.h>
+ #include <linux/module.h>
+ #include <linux/bitops.h>
++#include <linux/user_namespace.h>
+ #include <linux/mount.h>
+ #include <linux/pid_namespace.h>
+ #include <linux/parser.h>
+@@ -108,6 +109,9 @@ static struct dentry *proc_mount(struct
+ 	} else {
+ 		ns = task_active_pid_ns(current);
+ 		options = data;
++
++		if (!current_user_ns()->may_mount_proc)
++			return ERR_PTR(-EPERM);
+ 	}
  
- 	if (nfss->pnfs_curr_ld->cleanup_layoutcommit)
- 		nfss->pnfs_curr_ld->cleanup_layoutcommit(data);
-+	pnfs_list_write_lseg_done(data->args.inode, &data->lseg_list);
+ 	sb = sget(fs_type, proc_test_super, proc_set_super, flags, ns);
+--- a/fs/sysfs/mount.c
++++ b/fs/sysfs/mount.c
+@@ -19,6 +19,7 @@
+ #include <linux/module.h>
+ #include <linux/magic.h>
+ #include <linux/slab.h>
++#include <linux/user_namespace.h>
+ 
+ #include "sysfs.h"
+ 
+@@ -111,6 +112,9 @@ static struct dentry *sysfs_mount(struct
+ 	struct super_block *sb;
+ 	int error;
+ 
++	if (!(flags & MS_KERNMOUNT) && !current_user_ns()->may_mount_sysfs)
++		return ERR_PTR(-EPERM);
++
+ 	info = kzalloc(sizeof(*info), GFP_KERNEL);
+ 	if (!info)
+ 		return ERR_PTR(-ENOMEM);
+--- a/include/linux/user_namespace.h
++++ b/include/linux/user_namespace.h
+@@ -26,6 +26,8 @@ struct user_namespace {
+ 	kuid_t			owner;
+ 	kgid_t			group;
+ 	unsigned int		proc_inum;
++	bool			may_mount_sysfs;
++	bool			may_mount_proc;
+ };
+ 
+ extern struct user_namespace init_user_ns;
+@@ -82,4 +84,6 @@ static inline void put_user_ns(struct us
+ 
+ #endif
+ 
++void update_mnt_policy(struct user_namespace *userns);
++
+ #endif /* _LINUX_USER_H */
+--- a/kernel/user.c
++++ b/kernel/user.c
+@@ -53,6 +53,8 @@ struct user_namespace init_user_ns = {
+ 	.owner = GLOBAL_ROOT_UID,
+ 	.group = GLOBAL_ROOT_GID,
+ 	.proc_inum = PROC_USER_INIT_INO,
++	.may_mount_sysfs = true,
++	.may_mount_proc = true,
+ };
+ EXPORT_SYMBOL_GPL(init_user_ns);
+ 
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -96,6 +96,8 @@ int create_user_ns(struct cred *new)
+ 
+ 	set_cred_user_ns(new, ns);
+ 
++	update_mnt_policy(ns);
++
+ 	return 0;
  }
  
- /*
 
 
