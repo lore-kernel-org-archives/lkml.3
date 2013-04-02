@@ -1,49 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759637Ab3DBXDc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:03:32 -0400
-Received: from mail-da0-f41.google.com ([209.85.210.41]:53759 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758073Ab3DBXD0 (ORCPT
+	id S1759624Ab3DBXD4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:03:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33932 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758056Ab3DBWuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 19:03:26 -0400
-Date: Tue, 2 Apr 2013 16:03:23 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Platform Driver <platform-driver-x86@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 1/1] Introduce Intel RAPL cooling device driver
-Message-ID: <20130402230323.GB8713@kroah.com>
-References: <1364940936-20846-1-git-send-email-jacob.jun.pan@linux.intel.com>
- <1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
- <20130402230042.GA8713@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130402230042.GA8713@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 2 Apr 2013 18:50:32 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dave Jones <davej@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Ming Lei <ming.lei@canonical.com>
+Subject: [ 09/56] sysfs: handle failure path correctly for readdir()
+Date: Tue,  2 Apr 2013 15:49:36 -0700
+Message-Id: <20130402224712.935625545@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
+References: <20130402224711.840825715@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 04:00:42PM -0700, Greg KH wrote:
-> I'm not even going to review the rest of this file, please fix that up
-> first, before sending it out again.  And, when you do so, please cc: me.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-It's like a train wreck, you just can't tear away your eyes...
+------------------
 
-You race with userspace in the creation of your sysfs files.  Your
-device is announced to userspace and then, later on, you create the
-sysfs files.  This means that tools like libudev never sees your files,
-so the attributes aren't read properly by loads of userspace programs
-that you want to have read them.
+From: Ming Lei <ming.lei@canonical.com>
 
-Please fix that before resending this as well.
+commit e5110f411d2ee35bf8d202ccca2e89c633060dca upstream.
 
-greg k-h
+In case of 'if (filp->f_pos ==  0 or 1)' of sysfs_readdir(),
+the failure from filldir() isn't handled, and the reference counter
+of the sysfs_dirent object pointed by filp->private_data will be
+released without clearing filp->private_data, so use after free
+bug will be triggered later.
+
+This patch returns immeadiately under the situation for fixing the bug,
+and it is reasonable to return from readdir() when filldir() fails.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Tested-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/sysfs/dir.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -917,6 +917,8 @@ static int sysfs_readdir(struct file * f
+ 		ino = parent_sd->s_ino;
+ 		if (filldir(dirent, ".", 1, filp->f_pos, ino, DT_DIR) == 0)
+ 			filp->f_pos++;
++		else
++			return 0;
+ 	}
+ 	if (filp->f_pos == 1) {
+ 		if (parent_sd->s_parent)
+@@ -925,6 +927,8 @@ static int sysfs_readdir(struct file * f
+ 			ino = parent_sd->s_ino;
+ 		if (filldir(dirent, "..", 2, filp->f_pos, ino, DT_DIR) == 0)
+ 			filp->f_pos++;
++		else
++			return 0;
+ 	}
+ 	mutex_lock(&sysfs_mutex);
+ 	for (pos = sysfs_dir_pos(ns, parent_sd, filp->f_pos, pos);
+
+
