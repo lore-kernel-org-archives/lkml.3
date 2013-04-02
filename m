@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760040Ab3DBCqu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 22:46:50 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:53006 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760010Ab3DBCqp (ORCPT
+	id S1759935Ab3DBCrs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 22:47:48 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:33054 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760028Ab3DBCqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 22:46:45 -0400
+	Mon, 1 Apr 2013 22:46:50 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -18,45 +18,39 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         Fengguang Wu <fengguang.wu@intel.com>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v5 5/8] staging: zcache: fix zcache writeback in debugfs
-Date: Tue,  2 Apr 2013 10:46:17 +0800
-Message-Id: <1364870780-16296-6-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v5 8/8] staging: zcache: clean TODO list
+Date: Tue,  2 Apr 2013 10:46:20 +0800
+Message-Id: <1364870780-16296-9-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1364870780-16296-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1364870780-16296-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040202-6102-0000-0000-0000033F8C6E
+x-cbid: 13040202-8878-0000-0000-000006898C9D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 9c0ad59ef ("zcache/debug: Use an array to initialize/use debugfs attributes") 
-use an array to initialize/use debugfs attributes, .name = #x, .val = &zcache_##x.
-For zcache writeback, this commit set .name = zcache_outstanding_writeback_pages and 
-.name = zcache_writtenback_pages seperately, however, corresponding .val = 
-&zcache_zcache_outstanding_writeback_pages and .val = &zcache_zcache_writtenback_pages,
-which are not correct.
+Cleanup TODO list since support zero-filled pages more efficiently has 
+already done by this patchset.
 
+Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- drivers/staging/zcache/debug.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/zcache/TODO |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/zcache/debug.c b/drivers/staging/zcache/debug.c
-index 254dada..d2d1fdf 100644
---- a/drivers/staging/zcache/debug.c
-+++ b/drivers/staging/zcache/debug.c
-@@ -31,8 +31,8 @@ static struct debug_entry {
- 	ATTR(eph_nonactive_puts_ignored),
- 	ATTR(pers_nonactive_puts_ignored),
- #ifdef CONFIG_ZCACHE_WRITEBACK
--	ATTR(zcache_outstanding_writeback_pages),
--	ATTR(zcache_writtenback_pages),
-+	ATTR(outstanding_writeback_pages),
-+	ATTR(writtenback_pages),
- #endif
- };
- #undef ATTR
+diff --git a/drivers/staging/zcache/TODO b/drivers/staging/zcache/TODO
+index ec9aa11..d0c18fa 100644
+--- a/drivers/staging/zcache/TODO
++++ b/drivers/staging/zcache/TODO
+@@ -61,5 +61,4 @@ ZCACHE FUTURE NEW FUNCTIONALITY
+ 
+ A. Support zsmalloc as an alternative high-density allocator
+     (See https://lkml.org/lkml/2013/1/23/511)
+-B. Support zero-filled pages more efficiently
+-C. Possibly support three zbuds per pageframe when space allows
++B. Possibly support three zbuds per pageframe when space allows
 -- 
 1.7.7.6
 
