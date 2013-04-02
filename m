@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762067Ab3DBSH6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 14:07:58 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:45677 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755415Ab3DBSHz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 14:07:55 -0400
-Date: Tue, 2 Apr 2013 11:07:50 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mingo@redhat.com, x86@kernel.org,
-        rth@twiddle.net, linux@arm.linux.org.uk, msalter@redhat.com,
-        starvik@axis.com, dhowells@redhat.com, tony.luck@intel.com,
-        benh@kernel.crashing.org, takata@linux-m32r.org, geert@linux-m68k.org,
-        james.hogan@imgtec.com, monstr@monstr.eu, ralf@linux-mips.org,
-        jonas@southpole.se, rkuo@codeaurora.org, schwidefsky@de.ibm.com,
-        liqin.chen@sunplusct.com, davem@davemloft.net, lethal@linux-sh.org,
-        chris@zankel.net, cmetcalf@tilera.com, ysato@users.sourceforge.jp,
-        gxt@mprc.pku.edu.cn, jdike@addtoit.com
-Subject: Re: [PATCH v2 5/5] dump_stack: unify debug information printed by
- show_regs()
-Message-ID: <20130402180750.GA6185@htj.dyndns.org>
-References: <1364610428-2074-1-git-send-email-tj@kernel.org>
- <1364610428-2074-6-git-send-email-tj@kernel.org>
- <20130330032445.GA28468@htj.dyndns.org>
- <51568277.8000404@synopsys.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51568277.8000404@synopsys.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932525Ab3DBSIJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 14:08:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58945 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760602Ab3DBSIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 14:08:05 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20130329001048.GK5995@xanatos>
+References: <20130329001048.GK5995@xanatos> <20130328201505.GC5995@xanatos> <20130328184827.29679.62426.stgit@warthog.procyon.org.uk> <20130328184835.29679.62285.stgit@warthog.procyon.org.uk> <32349.1364509973@warthog.procyon.org.uk>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: dhowells@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] xhci: Rename SEGMENT_SIZE and SEGMENT_SHIFT as the former is used in a.out.h
+Date: Tue, 02 Apr 2013 19:07:36 +0100
+Message-ID: <20541.1364926056@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Vineet.
+Sarah Sharp <sarah.a.sharp@linux.intel.com> wrote:
 
-On Sat, Mar 30, 2013 at 11:43:11AM +0530, Vineet Gupta wrote:
-> Although in line [2], ARC trouble-shooting code prints the task path (rather than
-> comm). This was done to help identify faulting LTP open posix tests with same name
-> in different directories: e.g. fork/6-1, sigqueue/6-1 ....
-> Is this something you want to add to generic code as well - although it's slightly
-> involved due to tsk/mm locking etc.
+> I guess my question is a deeper one: do we need to rename all the xHCI
+> macros to have the XHCI_ prefix, in order to avoid future collision?
+> For example, one of the macros is MAX_HC_PORTS, which could possibly be
+> used by other host drivers in the future.
 
-I don't think that'd be a particularly good idea.  Paths can be pretty
-long and in general we want to limit the scope of unsafe accesses from
-dump functions.  dump could easily be called from deep inside mmap
-paths and you definitely don't wanna do get_mm_exec_file() which
-involves read-locking mm->mmap_sem.
+Hmmm...
 
-While it could be useful for arc where, supposedly, not a lot of
-generic development and debugging would happen and flushing out bugs
-in arch code is much more important, I don't really think it's a good
-idea in general.
+I suspect the question is whether your symbols are likely to collide with
+core symbols rather than symbols of unrelated drivers - after all, you're
+unlikely to be #including the headers of those drivers.
 
-> Also I personally prefer the more compact <task-nm>/<tgid> format of [1] vs. [3].
+I personally prefer to prefix the names of symbols in drivers with something
+consistent for that driver to reduce namespace collisions - but I know not
+everyone cares about that.  Linux doesn't have much of a policy in this area
+though.  I also like it because it makes tags easier to use (fewer definitions
+of the same symbol).
 
-It's taken from x86 messages which should be familiar to most number
-of devs.  Given that it's a last-resort debug thing, we can change
-things but there's no reason to disturb more than necessary.
+Whether you should go back and rename existing xHCI functions, I don't know.
+I'd be tempted to leave it for now unless there's some collision.  However,
+things like MAX_HC_PORTS does seem a little generic.  Further #define
+collisions go unnoticed under some circumstances.  Two obvious cases are (a)
+redefinition of a symbol because it happens to be the same value and (b) where
+the second one is accidentally suppressed because it is wrapped in a
+conditional.
 
-> Anyhow, can you please fold the following into your patchset to reduce above
-> duplication.
+Perhaps we should move to C++ and use namespaces;-)
 
-Sure thing.
-
-Thanks!
-
--- 
-tejun
+David
