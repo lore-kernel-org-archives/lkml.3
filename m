@@ -1,94 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761904Ab3DBJ52 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:57:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51143 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621Ab3DBJ51 (ORCPT
+	id S1759814Ab3DBJ6W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:58:22 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:39215 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753235Ab3DBJ6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:57:27 -0400
-Date: Tue, 2 Apr 2013 02:57:05 -0700
-From: tip-bot for Stephane Eranian <tipbot@zytor.com>
-Message-ID: <tip-bad4091791b0bb8c2d7919ddefe2f0d109299b5a@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        namhyung.kim@lge.com, jolsa@redhat.com, ak@linux.intel.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-        namhyung.kim@lge.com, jolsa@redhat.com, ak@linux.intel.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1359040242-8269-17-git-send-email-eranian@google.com>
-References: <1359040242-8269-17-git-send-email-eranian@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf machine: Detect data vs. text mappings
-Git-Commit-ID: bad4091791b0bb8c2d7919ddefe2f0d109299b5a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 2 Apr 2013 05:58:21 -0400
+Message-ID: <515AA8B8.2090009@linux.vnet.ibm.com>
+Date: Tue, 02 Apr 2013 17:45:28 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 02:57:11 -0700 (PDT)
+To: Alex Shi <alex.shi@intel.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
+        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
+        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
+        mgorman@suse.de, riel@redhat.com
+Subject: Re: [patch v3 0/8] sched: use runnable avg in load balance
+References: <1364873008-3169-1-git-send-email-alex.shi@intel.com> <515A877B.3020908@linux.vnet.ibm.com> <515A9859.6000606@intel.com>
+In-Reply-To: <515A9859.6000606@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 13040209-7014-0000-0000-000002CC88A5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bad4091791b0bb8c2d7919ddefe2f0d109299b5a
-Gitweb:     http://git.kernel.org/tip/bad4091791b0bb8c2d7919ddefe2f0d109299b5a
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Thu, 24 Jan 2013 16:10:40 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 1 Apr 2013 12:22:00 -0300
+On 04/02/2013 04:35 PM, Alex Shi wrote:
+> On 04/02/2013 03:23 PM, Michael Wang wrote:
+[snip]
+>>
+>> The reason may caused by wake_affine()'s higher overhead, and pgbench is
+>> really sensitive to this stuff...
+> 
+> Thanks for testing. Could you like to remove the last patch and test it
+> again? I want to know if the last patch has effect on pgbench.
 
-perf machine: Detect data vs. text mappings
+Amazing, without the last one, pgbench show very good improvement,
+higher than 10ms throttle, lower than 100ms throttle, I need confirm
+this with a night-through testing.
 
-Leverages the PERF_RECORD_MISC_MMAP_DATA bit in the RECORD_MMAP record
-header. When the bit is set then the mapping type is set to
-MAP__VARIABLE.
+I will look into those patches in detail later, I think it addressed
+part of the wake_affine() issue (make the decision more accurately),
+that's nice ;-)
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1359040242-8269-17-git-send-email-eranian@google.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/machine.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+Regards,
+Michael Wang
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index d77ba86..b2ecad6 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -955,6 +955,7 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 	struct thread *thread;
- 	struct map *map;
-+	enum map_type type;
- 	int ret = 0;
- 
- 	if (dump_trace)
-@@ -971,10 +972,17 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
- 	thread = machine__findnew_thread(machine, event->mmap.pid);
- 	if (thread == NULL)
- 		goto out_problem;
-+
-+	if (event->header.misc & PERF_RECORD_MISC_MMAP_DATA)
-+		type = MAP__VARIABLE;
-+	else
-+		type = MAP__FUNCTION;
-+
- 	map = map__new(&machine->user_dsos, event->mmap.start,
- 			event->mmap.len, event->mmap.pgoff,
- 			event->mmap.pid, event->mmap.filename,
--			MAP__FUNCTION);
-+			type);
-+
- 	if (map == NULL)
- 		goto out_problem;
- 
+> 
+
