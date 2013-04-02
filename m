@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649Ab3DBTtb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 15:49:31 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:58580 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932401Ab3DBTt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 15:49:29 -0400
-Date: Tue, 2 Apr 2013 15:48:03 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>, Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH 30/33] block, aio: batch completion for bios/kiocbs
-Message-ID: <20130402194803.GA5703@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Kent Overstreet <koverstreet@google.com>,
-	linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-	akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
-	Felipe Balbi <balbi@ti.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-	Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-	Asai Thambi S P <asamymuthupa@micron.com>,
-	Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-	Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-	Benjamin LaHaise <bcrl@kvack.org>, Minchan Kim <minchan@kernel.org>
-References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
- <1363883754-27966-31-git-send-email-koverstreet@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363883754-27966-31-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S933004Ab3DBTtg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 15:49:36 -0400
+Received: from 8.mo1.mail-out.ovh.net ([178.33.110.239]:54548 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932401Ab3DBTte (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 15:49:34 -0400
+X-Greylist: delayed 8700 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Apr 2013 15:49:34 EDT
+From: Boris BREZILLON <linux-arm@overkiz.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: linux-kernel@vger.kernel.org, Boris BREZILLON <linux-arm@overkiz.com>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: [PATCH RESEND] pwm: pwm-atmel-tcb: pinctrl support
+Date: Tue,  2 Apr 2013 18:09:46 +0200
+Message-Id: <1364918986-15336-1-git-send-email-linux-arm@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Ovh-Tracer-Id: 269371554828039190
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiuddrkeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiuddrkeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 09:35:51AM -0700, Kent Overstreet wrote:
-> +		if (unlikely(req->ki_ctx != ctx)) {
-> +			kioctx_ring_unlock(ctx, tail);
-> +
-> +			ctx = req->ki_ctx;
-> +			tail = kioctx_ring_lock(ctx);
-> +		}
+Setup tcb pins using pinctrl subsystem.
 
-The only place where you're calling kioctx_ring_lock() is above, which
-is part of an unlock/lock pair.
+Signed-off-by: Boris BREZILLON <linux-arm@overkiz.com>
+---
+ drivers/pwm/pwm-atmel-tcb.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-There is also a kioctx_ring_unlock at the end of batch_complete_aio():
+diff --git a/drivers/pwm/pwm-atmel-tcb.c b/drivers/pwm/pwm-atmel-tcb.c
+index 16cb530..985b7bf 100644
+--- a/drivers/pwm/pwm-atmel-tcb.c
++++ b/drivers/pwm/pwm-atmel-tcb.c
+@@ -21,6 +21,7 @@
+ #include <linux/pwm.h>
+ #include <linux/of_device.h>
+ #include <linux/slab.h>
++#include <linux/pinctrl/consumer.h>
+ 
+ #define NPWM	6
+ 
+@@ -365,6 +366,7 @@ static int atmel_tcb_pwm_probe(struct platform_device *pdev)
+ 	struct atmel_tcb_pwm_chip *tcbpwm;
+ 	struct device_node *np = pdev->dev.of_node;
+ 	struct atmel_tc *tc;
++	struct pinctrl *pinctrl;
+ 	int err;
+ 	int tcblock;
+ 
+@@ -389,6 +391,13 @@ static int atmel_tcb_pwm_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
++	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
++	if (IS_ERR(pinctrl)) {
++		atmel_tc_free(tc);
++		dev_err(&pdev->dev, "failed to get pinctrl config\n");
++		return PTR_ERR(pinctrl);
++	}
++
+ 	tcbpwm->chip.dev = &pdev->dev;
+ 	tcbpwm->chip.ops = &atmel_tcb_pwm_ops;
+ 	tcbpwm->chip.of_xlate = of_pwm_xlate_with_flags;
+-- 
+1.7.9.5
 
-> +	kioctx_ring_unlock(ctx, tail);
-> +	local_irq_restore(flags);
-> +	rcu_read_unlock();
-
-But I'm not seeing a matching kioctx_ring_lock() before the while loop
-in batch_complete_aio(), nor anywhere else in the file.  And since
-kioctx_ring_lock() is a static function....
-
-Am I missing something?
-
-						- Ted
