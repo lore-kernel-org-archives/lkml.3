@@ -1,66 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758344Ab3DBAhu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 20:37:50 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52563 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab3DBAhs (ORCPT
+	id S1757531Ab3DBAjQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 20:39:16 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40447 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601Ab3DBAjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 20:37:48 -0400
-X-AuditID: 9c930197-b7c9dae000006959-e6-515a285a5b21
-Date: Tue, 2 Apr 2013 09:37:46 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH] THP: Use explicit memory barrier
-Message-ID: <20130402003746.GA30444@blaptop>
-References: <1364773535-26264-1-git-send-email-minchan@kernel.org>
- <alpine.DEB.2.02.1304011634530.21603@chino.kir.corp.google.com>
+	Mon, 1 Apr 2013 20:39:15 -0400
+Date: Tue, 2 Apr 2013 01:39:14 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the vfs tree
+Message-ID: <20130402003914.GG21522@ZenIV.linux.org.uk>
+References: <20130402112627.223048680be1397ad59cdcec@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1304011634530.21603@chino.kir.corp.google.com>
+In-Reply-To: <20130402112627.223048680be1397ad59cdcec@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 01, 2013 at 04:35:38PM -0700, David Rientjes wrote:
-> On Mon, 1 Apr 2013, Minchan Kim wrote:
+On Tue, Apr 02, 2013 at 11:26:27AM +1100, Stephen Rothwell wrote:
+> Hi Al,
 > 
-> > __do_huge_pmd_anonymous_page depends on page_add_new_anon_rmap's
-> > spinlock for making sure that clear_huge_page write become visible
-> > after set set_pmd_at() write.
-> > 
-> > But lru_cache_add_lru uses pagevec so it could miss spinlock
-> > easily so above rule was broken so user may see inconsistent data.
-> > 
-> > This patch fixes it with using explict barrier rather than depending
-> > on lru spinlock.
-> > 
+> After merging the vfs tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
 > 
-> Is this the same issue that Andrea responded to in the "thp and memory 
-> barrier assumptions" thread at http://marc.info/?t=134333512700004 ?
-
-Yes and Peter pointed out further step.
-Thanks for pointing out.
-Not that I know that Andrea alreay noticed it, I don't care about this
-patch.
-
-Remaining question is Kame's one.
-Isn't there anyone could answer it?
-
+> arch/powerpc/kernel/lparcfg.c:44:31: error: 'proc_ppc64_lparcfg' defined but not used [-Werror=unused-variable]
+> cc1: all warnings being treated as errors
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Caused by commit dfda3a48f2e7 ("lparcfg: don't bother saving pointer to
+> proc_dir_entry").
+> 
+> I have used the vfs tree form next-20130328 for today.
 
--- 
-Kind regards,
-Minchan Kim
+... or just remove the variable ;-)  Fixed and pushed.
