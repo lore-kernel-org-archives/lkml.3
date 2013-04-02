@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759090Ab3DBRlV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 13:41:21 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:57675 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758104Ab3DBRlU (ORCPT
+	id S1759731Ab3DBRpb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 13:45:31 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:47914 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758889Ab3DBRp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 13:41:20 -0400
-Date: Tue, 2 Apr 2013 13:41:17 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, will.deacon@arm.com,
-        arnd@arndb.de, rob.herring@calxeda.com, marc.zyngier@arm.com,
-        linux@arm.linux.org.uk
-Subject: Re: [PATCH v5 1/3] arm: introduce psci_smp_ops
-In-Reply-To: <1364919374-7836-1-git-send-email-stefano.stabellini@eu.citrix.com>
-Message-ID: <alpine.LFD.2.03.1304021336270.1171@syhkavp.arg>
-References: <alpine.DEB.2.02.1304021700380.5078@kaball.uk.xensource.com> <1364919374-7836-1-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Tue, 2 Apr 2013 13:45:29 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1364898904.2556.26.camel@host5.opentask.org>
+References: <1363223183-3772-1-git-send-email-ynvich@gmail.com>
+	<1363224194-7366-1-git-send-email-ynvich@gmail.com>
+	<87620jmkoe.fsf@octavius.laptop.org>
+	<CAPDyKFp27MUOjhydLXf92vN3cua=XcX4oTJnMGfOJPpBhtwM8Q@mail.gmail.com>
+	<CAL0eWdGjPKUUcm6mStAHgHKHLABmPw7nMwDhR8D5rbvg+DPzfQ@mail.gmail.com>
+	<CAPDyKFroki00+SCLjUXYN_=+qcVZwZ2H4NJacH+d8p3dFXoLPg@mail.gmail.com>
+	<1364898904.2556.26.camel@host5.opentask.org>
+Date: Tue, 2 Apr 2013 19:45:28 +0200
+Message-ID: <CAPDyKFpOf7G_f=J=6sDdH1NQXow5uq1+rkACGGSvpEQ-LWsm4g@mail.gmail.com>
+Subject: Re: [PATCH v2] wait while adding MMC host to ensure root mounts
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Sergey Yanovich <ynvich@gmail.com>
+Cc: Chris Ball <cjb@laptop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Apr 2013, Stefano Stabellini wrote:
+On 2 April 2013 12:35, Sergey Yanovich <ynvich@gmail.com> wrote:
+> On Tue, 2013-04-02 at 12:13 +0200, Ulf Hansson wrote:
+>> Consider a platform having two eMMCs and one SD-card. Each eMMC card
+>> will take around 400 ms to initialize and the SD-card 700 ms. The card
+>> initialization times are real examples from eMMCs and SD-cards,
+>> moreover those are typical values not worth cases. In total we have
+>> around 1.5 s to initialize the cards.
+>
+> We have a separate workqueue per host, so all probes go in parallel.
+> They also go in parallel with probing for other devices. So the actual
+> delay is 700 ms minus maximum probing time for other devices. The time
+> is either zero or small (dozen us) on the hardware I have access to
+> (intel laptop, arm controller).
+>
+>> Now, suppose you boot using an initrd image. Thus neither of the cards
+>> needs to be accessible immediately after the kernel has booted. It all
+>> depends what the init process decides to do. With this patch the init
+>> process will always be delayed to wait for each and every card to be
+>> initialized. I would prefer a solution where this can be configurable
+>> somehow, since certainly this is not the scenario you want for all
+>> cases.
+>
+> If the system is booted using initrd and root is not on an mmc card,
+> then mmc modules can be omitted from initrd. The probing will happen
+> only after root is mounted.
 
-> Rename virt_smp_ops to psci_smp_ops and move them to arch/arm/kernel/psci_smp.c.
-> Remove mach-virt/platsmp.c, now unused.
-> Compile psci_smp if CONFIG_ARM_PSCI and CONFIG_SMP.
-> 
-> Add a cpu_die smp_op based on psci_ops.cpu_off.
-> 
-> Initialize PSCI before setting smp_ops in setup_arch.
-> Use psci_smp_ops if the platform doesn't provide its own smp_ops.
+This will not solve the problem when having one device intended for
+rootfs and some other for something else. Of course, as long as the
+devices uses the same mmc module. Once inserted, all devices will be
+probed.
 
-[...]
+>
+> If root is on an mmc, kernel needs to wait for the mmc probe.
+>
 
-> @@ -766,9 +767,13 @@ void __init setup_arch(char **cmdline_p)
->  	unflatten_device_tree();
->  
->  	arm_dt_init_cpu_maps();
-> +	psci_init();
->  #ifdef CONFIG_SMP
->  	if (is_smp()) {
-> -		smp_set_ops(mdesc->smp);
-> +		if (mdesc->smp)
-> +			smp_set_ops(mdesc->smp);
-> +		else if (psci_smp_available())
-> +			smp_set_ops(&psci_smp_ops);
+True, although your patch is preventing the parallelism and instead
+doing things in synchronized manner.
 
-Didn't we agree to do this the other way around, i.e. 
+I think we must discuss alternative solutions instead.
 
-	if (psci_smp_available())
-		smp_set_ops(&psci_smp_ops);
-	else if (mdesc->smp)
-		smp_set_ops(mdesc->smp);
+Like an "mmc detect flush" mechanism or a "new card device notification" event.
 
-?
-
-This way you won't need the ->smp_init for Xen and that won't conflict 
-with MCPM.
-
-
-Nicolas
+Kind regards
+Ulf Hansson
