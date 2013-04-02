@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759743Ab3DBA4V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 20:56:21 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:59867 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758369Ab3DBA4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 20:56:20 -0400
-Date: Mon, 1 Apr 2013 19:56:18 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Nathan Zimmer <nzimmer@sgi.com>, viresh.kumar@linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 2/2] cpufreq: covert the cpufreq_data_lock to a
-	spinlock
-Message-ID: <20130402005618.GA12199@gulag1.americas.sgi.com>
-References: <5159C147.70800@sgi.com> <1364847069-2887-1-git-send-email-nzimmer@sgi.com> <1364847069-2887-3-git-send-email-nzimmer@sgi.com> <1479737.lmOfIzUVqh@vostro.rjw.lan>
+	id S1757681Ab3DBBDk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 21:03:40 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:12954 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601Ab3DBBDj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 21:03:39 -0400
+X-Spam-Score: -100.8
+Message-ID: <515A2E4C.8050409@asianux.com>
+Date: Tue, 02 Apr 2013 09:03:08 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1479737.lmOfIzUVqh@vostro.rjw.lan>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: jhovold@gmail.com, Jiri Slaby <jslaby@suse.cz>, mferrell@uplogix.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: USB: mos7840: looping issue: avoid the return value overriden
+ by looping
+References: <5158F689.5040406@asianux.com> <20130401030555.GA21113@kroah.com> <5159041F.7020608@asianux.com> <20130401193721.GA13712@kroah.com>
+In-Reply-To: <20130401193721.GA13712@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 01, 2013 at 10:41:27PM +0200, Rafael J. Wysocki wrote:
-> On Monday, April 01, 2013 03:11:09 PM Nathan Zimmer wrote:
-> > This eliminates the rest of the contention found in __cpufreq_cpu_get.
-> > I am not seeing a way to use the rcu so we will have to make due with a
-> > rwlock for now.
-> > 
-> > Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> > Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
-> 
-> I've already applied this one.
-> 
-> Can you please check if the version in my tree is OK?
-> 
-> Rafael
+
+  thank you for spending your time for this patch, especially you are
+very busy.
+
+  next time, I should send patch with more careful, so can let other
+members work with more efficiency.
+
+  excuse me, the next 2-3 days, I have to do another urgent things
+within my company, so I will send our patch v2 within this week (if our
+patch is urgent, too, please tell me, and I should try to send it in time).
+
+  welcome any suggestions or completions. thanks.
+
+
+On 2013年04月02日 03:37, Greg KH wrote:
+> Please use a "real" error value, or even better yet, use the error value
+> returned from the call here.
 > 
 
-Nope, the previous version was too different, probably best to just replace it.
-> 
+  ok, I will do.
+
+> And please identify the driver you are modifying in the Subject: line,
+> like I have changed this one to.
+
+  ok, thanks.
+
+  and next, I should use such kind of format for any sub systems.
+
+
+
+-- 
+Chen Gang
+
+Asianux Corporation
