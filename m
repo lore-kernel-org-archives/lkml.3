@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759611Ab3DBBxV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 21:53:21 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:7883 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757201Ab3DBBxT (ORCPT
+	id S1759657Ab3DBBzU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 21:55:20 -0400
+Received: from mail-da0-f41.google.com ([209.85.210.41]:39473 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757201Ab3DBBzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 21:53:19 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Hanjun Guo <guohanjun@huawei.com>,
-        <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH -v2] PCI/VFIO: use pcie_flags_reg instead of access PCI-E Capabilities Register
-Date: Tue, 2 Apr 2013 09:52:27 +0800
-Message-ID: <1364867547-15300-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	Mon, 1 Apr 2013 21:55:19 -0400
+Date: Mon, 1 Apr 2013 18:55:16 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Yet another pipe related oops.
+Message-ID: <20130402015516.GA28619@kroah.com>
+References: <20130327135127.GB1738@redhat.com>
+ <20130327152030.GY21522@ZenIV.linux.org.uk>
+ <CA+55aFx=BPQ2empEahqCs2hQ=sRaw3OjJotrS6OMT3e6tUVMLQ@mail.gmail.com>
+ <20130327174506.GZ21522@ZenIV.linux.org.uk>
+ <20130401203445.GA20862@ZenIV.linux.org.uk>
+ <20130401210029.GA3245@kroah.com>
+ <20130401212142.GD21522@ZenIV.linux.org.uk>
+ <20130401214436.GA5786@kroah.com>
+ <20130401232718.GE21522@ZenIV.linux.org.uk>
+ <20130402002204.GF21522@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130402002204.GF21522@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we use pcie_flags_reg to cache PCI-E Capabilities Register,
-because PCI-E Capabilities Register bits are almost read-only. This patch
-use pcie_caps_reg() instead of another access PCI-E Capabilities Register.
+On Tue, Apr 02, 2013 at 01:22:04AM +0100, Al Viro wrote:
+> On Tue, Apr 02, 2013 at 12:27:18AM +0100, Al Viro wrote:
+> > On Mon, Apr 01, 2013 at 02:44:36PM -0700, Greg Kroah-Hartman wrote:
+> > > > > I guess you are right, it will not.  I guess we need to do what
+> > > > > character devices do and have an "intermediate" fops in order to protect
+> > > > > this.  Would that work?
+> > > > 
+> > > > You mean, with reassigning ->f_op in ->open()?  That'll work, as long as
+> > > > we have exclusion between removal and fetching the sucker in primary
+> > > > ->open()...  Where would you prefer to stash fops?
+> > > 
+> > > Ick, that's not going to work as the current api just uses a fops and
+> > > debugfs doesn't keep anything else hanging around that referes to
+> > > something "before" that, like 'struct cdev' does.
+> > 
+> > Er?  How about just sticking it into dentry->d_fsdata and letting
+> > debugfs_remove() zero that out?  What am I missing here?
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- drivers/vfio/pci/vfio_pci_config.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+Nothing, you are right, that would work just fine.  Want me to fix it
+up, or do you want to?
 
-diff --git a/drivers/vfio/pci/vfio_pci_config.c b/drivers/vfio/pci/vfio_pci_config.c
-index aeb00fc..12a81f7 100644
---- a/drivers/vfio/pci/vfio_pci_config.c
-+++ b/drivers/vfio/pci/vfio_pci_config.c
-@@ -1017,13 +1017,9 @@ static int vfio_cap_len(struct vfio_pci_device *vdev, u8 cap, u8 pos)
- 		return byte;
- 	case PCI_CAP_ID_EXP:
- 		/* length based on version */
--		ret = pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &word);
--		if (ret)
--			return pcibios_err_to_errno(ret);
--
- 		vdev->extended_caps = true;
- 
--		if ((word & PCI_EXP_FLAGS_VERS) == 1)
-+		if ((pcie_caps_reg(pdev) & PCI_EXP_FLAGS_VERS) == 1)
- 			return PCI_CAP_EXP_ENDPOINT_SIZEOF_V1;
- 		else
- 			return PCI_CAP_EXP_ENDPOINT_SIZEOF_V2;
--- 
-1.7.1
+> Hrm...  For what it's worth, how do debugfs entries associated with
+> dynamic objects deal with debugfs_remove() vs. method calls?  I don't
+> see _anything_ in {,__}debugfs_remove() that would looks like "wait
+> for ongoing write(2) attempts to complete".  IOW, forget rmmod - WTF
+> protects us from access-after-free for any kind of data that isn't
+> permanently allocated?
 
+Nothing protects you from that, that's what I was trying to get at with
+the dynamic attributes comment.
 
+greg k-h
