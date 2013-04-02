@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759974Ab3DBCyH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 22:54:07 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:58061 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759324Ab3DBCyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 22:54:05 -0400
-Date: Mon, 1 Apr 2013 22:53:50 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Subject: Re: [PATCH 17/33] aio: change reqs_active to include unreaped
- completions
-Message-ID: <20130402025350.GF30122@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Kent Overstreet <koverstreet@google.com>,
-	linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-	akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
-	Felipe Balbi <balbi@ti.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-	Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-	Asai Thambi S P <asamymuthupa@micron.com>,
-	Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-	Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-	Benjamin LaHaise <bcrl@kvack.org>
-References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
- <1363883754-27966-18-git-send-email-koverstreet@google.com>
+	id S1760047Ab3DBC5J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 22:57:09 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:48587 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758426Ab3DBC5H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 22:57:07 -0400
+Message-ID: <515A48E8.60605@huawei.com>
+Date: Tue, 2 Apr 2013 10:56:40 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363883754-27966-18-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: "Luck, Tony" <tony.luck@intel.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 2/2] PCI/IA64: fix pci_dev->enable_cnt balance when doing
+ pci hotplug
+References: <1364805775-12396-1-git-send-email-wangyijing@huawei.com> <1364805775-12396-2-git-send-email-wangyijing@huawei.com> <3908561D78D1C84285E8C5FCA982C28F1E096033@ORSMSX108.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1E096033@ORSMSX108.amr.corp.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 09:35:38AM -0700, Kent Overstreet wrote:
-> The aio code tries really hard to avoid having to deal with the completion
-> ringbuffer overflowing.  To do that, it has to keep track of the number of
-> outstanding kiocbs, and the number of completions currently in the
-> ringbuffer - and it's got to check that every time we allocate a kiocb.
-> Ouch.
+On 2013/4/2 6:23, Luck, Tony wrote:
+>> In IA64 platform, we don't call pci_enable_bridges()
+>> when scan all pci buses during system boot up. But in
+>> X86 we do it in
 > 
-> But - we can improve this quite a bit if we just change reqs_active to
-> mean "number of outstanding requests and unreaped completions" - that
-> means kiocb allocation doesn't have to look at the ringbuffer, which is a
-> fairly significant win.
+> Your patch looks plausible ... but I have a question. X86 doesn't
+> *directly* call pci_enable_bridges() from any arch/x86/* file.
+> 
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Hi Tony,
+   In x86, we will use pcibios_assign_resources() in arch/x86/pci/i386.c to
+assign pci device resource. And at the end of pci_assign_unassigned_resources()
+function we enable pci bridges. So X86 call pci_enable_bridges() when doing device
+resource assignment. But in IA64, we assign device resource according BIOS setting in
+PCI BARs. No additional resource reassignment code support after scan all pci buses.
+In this respects, resource reassignment support is weak in IA64.
 
-Could you please add a quick comment documenting the reqs_active field
-in the struct kioctx definition here?  For future code
-maintainability, it should be documented in fs/aio.c, not just in a
-commit description.
+But this patch mainly to fix the unbalanced dev->enable_cnt in IA64 which will print WARNING Calltrace
+in dmesg.
 
->  struct kioctx {
->  	atomic_t		users;
->  	atomic_t		dead;
-> @@ -92,7 +86,13 @@ struct kioctx {
->  	atomic_t		reqs_active;
->  	struct list_head	active_reqs;	/* used for cancellation */
+If you think it is valuable, I will try to improve resource assignment in IA64 like other arch (eg arm, m68k, mips and sh..)
+in another patch.
 
-	       					   - Ted
+Thanks!
+Yijing.
+
+> Do we need this in an arch/ia64 file because our PCI support
+> is getting old and stale?  "git grep" says that arm, m68k, mips
+> and sh all make direct calls.
+
+I think so.
+
+> 
+> -Tony
+> 
+> .
+> 
+
+
+-- 
+Thanks!
+Yijing
+
