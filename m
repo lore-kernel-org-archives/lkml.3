@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760177Ab3DBIYH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 04:24:07 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59534 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761166Ab3DBIYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 04:24:01 -0400
-Date: Tue, 2 Apr 2013 11:23:42 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-CC: <linux-usb@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <balbi@ti.com>,
-        <stern@rowland.harvard.edu>, <sarah.a.sharp@linux.intel.com>,
-        <rob.herring@calxeda.com>, <kgene.kim@samsung.com>, <kishon@ti.com>,
-        <dianders@chromium.org>, <t.figa@samsung.com>, <p.paneri@samsung.com>
-Subject: Re: [PATCH v3 01/11] usb: phy: Add APIs for runtime power management
-Message-ID: <20130402082342.GF30286@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com>
- <1364824448-14732-2-git-send-email-gautam.vivek@samsung.com>
+	id S1761204Ab3DBIYS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 04:24:18 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:36275 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760203Ab3DBIYO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 04:24:14 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r328O6JH003327
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH v2 net-next 1/8] r8169: Remove firmware code
+Date: Tue, 2 Apr 2013 16:23:35 +0800
+Message-ID: <1364891022-3220-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1364824539-4156-1-git-send-email-hayeswang@realtek.com>
+References: <1364824539-4156-1-git-send-email-hayeswang@realtek.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xaMk4Io5JJdpkLEb"
-Content-Disposition: inline
-In-Reply-To: <1364824448-14732-2-git-send-email-gautam.vivek@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---xaMk4Io5JJdpkLEb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Some codes are belong to binary codes and should be removed.
 
-On Mon, Apr 01, 2013 at 07:24:00PM +0530, Vivek Gautam wrote:
-> Adding  APIs to handle runtime power management on PHY
-> devices. PHY consumers may need to wake-up/suspend PHYs
-> when they work across autosuspend.
->=20
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> ---
->  include/linux/usb/phy.h |  141 +++++++++++++++++++++++++++++++++++++++++=
-++++++
->  1 files changed, 141 insertions(+), 0 deletions(-)
->=20
-> diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
-> index 6b5978f..01bf9c1 100644
-> --- a/include/linux/usb/phy.h
-> +++ b/include/linux/usb/phy.h
-> @@ -297,4 +297,145 @@ static inline const char *usb_phy_type_string(enum =
-usb_phy_type type)
->  		return "UNKNOWN PHY TYPE";
->  	}
->  }
-> +
-> +static inline void usb_phy_autopm_enable(struct usb_phy *x)
-> +{
-> +	if (!x || !x->dev) {
-> +		dev_err(x->dev, "no PHY or attached device available\n");
-> +		return;
-> +		}
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/ethernet/realtek/r8169.c | 26 --------------------------
+ 1 file changed, 26 deletions(-)
 
-wrong indentation, also, I'm not sure we should allow calls with NULL
-pointers. Perhaps a WARN() so we get API offenders early enough ?
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 28fb50a..d36aa76 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -3368,32 +3368,6 @@ static void rtl8411_hw_phy_config(struct rtl8169_private *tp)
+ 
+ static void rtl8168g_1_hw_phy_config(struct rtl8169_private *tp)
+ {
+-	static const u16 mac_ocp_patch[] = {
+-		0xe008, 0xe01b, 0xe01d, 0xe01f,
+-		0xe021, 0xe023, 0xe025, 0xe027,
+-		0x49d2, 0xf10d, 0x766c, 0x49e2,
+-		0xf00a, 0x1ec0, 0x8ee1, 0xc60a,
+-
+-		0x77c0, 0x4870, 0x9fc0, 0x1ea0,
+-		0xc707, 0x8ee1, 0x9d6c, 0xc603,
+-		0xbe00, 0xb416, 0x0076, 0xe86c,
+-		0xc602, 0xbe00, 0x0000, 0xc602,
+-
+-		0xbe00, 0x0000, 0xc602, 0xbe00,
+-		0x0000, 0xc602, 0xbe00, 0x0000,
+-		0xc602, 0xbe00, 0x0000, 0xc602,
+-		0xbe00, 0x0000, 0xc602, 0xbe00,
+-
+-		0x0000, 0x0000, 0x0000, 0x0000
+-	};
+-	u32 i;
+-
+-	/* Patch code for GPHY reset */
+-	for (i = 0; i < ARRAY_SIZE(mac_ocp_patch); i++)
+-		r8168_mac_ocp_write(tp, 0xf800 + 2*i, mac_ocp_patch[i]);
+-	r8168_mac_ocp_write(tp, 0xfc26, 0x8000);
+-	r8168_mac_ocp_write(tp, 0xfc28, 0x0075);
+-
+ 	rtl_apply_firmware(tp);
+ 
+ 	if (r8168_phy_ocp_read(tp, 0xa460) & 0x0100)
+-- 
+1.8.1
 
---=20
-balbi
-
---xaMk4Io5JJdpkLEb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRWpWOAAoJEIaOsuA1yqREzcMQAJkqx8O1xjqU7ukdheuiNosY
-agYaXVJr2Z121Ma4+wJnHaYPli6aK7akMiejDWbjliF/FmWQXoxnL9V4xN92Gjkl
-5VVche6xTykVBYv+bjrw7EbWvxlYDDanSLIVWyhYrHMtMJsnRA+7NRGrAfjC7jfx
-K08F0e6hQ7HUYGy2UDjw2RaJUyuWfeaOyGJ/wa1NrmzZGFTNwV+StlGPaq0RlFHR
-9UPFWBx10QQBx047aj4UL13442NzxHeKHKQwVk7ijJzWsx4DIi2BoKDoPjCnedUl
-Y7ml8T9qcbo5xfvtfD/BLu6NXVM4qqs2FyoIkJhwrMKHW1y11kc/5JV1/c47QhGF
-ky09mnui2hS9MXNVGGRnzRJzOFVdsKgC3ZMwaP2/93FcI7SkInuBklM7eFh6x7BH
-geXO1ymDnzJwvAjoIFv81FjPC8BEDWqrEuKoi0Vof3A0kINzYA+Uw8gCt+cHo2dz
-obBq21oIhspBEbvWUdgKrDYKrQcCIOFP6KYRsCksWWa4Zawd3bvgOoLzgL7sixPX
-5gYwZFqzzGP/ZqYpYN2jAGOGu6M55xbFk3HuOGXTMM75p7elKNahV60NVjMyGwnd
-DrVeUneLmn2t+voHiaPXwVEcxGo30WHP0mh8HphDBHelGU1qn2VLImktKMNm5Y7f
-iaSGVA7B75D/oasvY+kh
-=389A
------END PGP SIGNATURE-----
-
---xaMk4Io5JJdpkLEb--
