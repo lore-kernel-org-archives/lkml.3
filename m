@@ -1,90 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760036Ab3DBHYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 03:24:05 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:56410 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952Ab3DBHYC (ORCPT
+	id S1760942Ab3DBHY2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 03:24:28 -0400
+Received: from smtpfb2-g21.free.fr ([212.27.42.10]:53598 "EHLO
+	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760336Ab3DBHY1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 03:24:02 -0400
-Message-ID: <515A877B.3020908@linux.vnet.ibm.com>
-Date: Tue, 02 Apr 2013 15:23:39 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
-        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
-        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
-        mgorman@suse.de, riel@redhat.com
-Subject: Re: [patch v3 0/8] sched: use runnable avg in load balance
-References: <1364873008-3169-1-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1364873008-3169-1-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040207-0260-0000-0000-000002C007A3
+	Tue, 2 Apr 2013 03:24:27 -0400
+Date: Tue, 2 Apr 2013 09:23:10 +0200
+From: Eric =?UTF-8?B?QsOpbmFyZA==?= <eric@eukrea.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, Paul Bolle <pebolle@tiscali.nl>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpuimx27 and mbimx27: prepend CONFIG_ to Kconfig macro
+Message-ID: <20130402092310.57307d13@e6520eb>
+In-Reply-To: <20130402071800.GI1906@pengutronix.de>
+References: <1363911302.1390.167.camel@x61.thuisdomein>
+	<20130402071800.GI1906@pengutronix.de>
+Organization: =?UTF-8?B?RXVrcsOpYQ==?= Electromatique
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2013 11:23 AM, Alex Shi wrote:
-[snip]
+Hi Sascha,
+
+Le Tue, 2 Apr 2013 09:18:00 +0200,
+Sascha Hauer <s.hauer@pengutronix.de> a écrit :
+> Any comment to this one? It looks like an obvious bugfix, but since this
+> is quite old and was never noticed I wonder if there's something else
+> wrong aswell?
 > 
-> [patch v3 1/8] Revert "sched: Introduce temporary FAIR_GROUP_SCHED
-> [patch v3 2/8] sched: set initial value of runnable avg for new
-> [patch v3 3/8] sched: only count runnable avg on cfs_rq's nr_running
-> [patch v3 4/8] sched: update cpu load after task_tick.
-> [patch v3 5/8] sched: compute runnable load avg in cpu_load and
-> [patch v3 6/8] sched: consider runnable load average in move_tasks
-> [patch v3 7/8] sched: consider runnable load average in
-> [patch v3 8/8] sched: use instant load for burst wake up
+the patch seems OK.
 
-I've tested the patch set on 12 cpu X86 box with 3.9.0-rc2, and pgbench
-show regression on high-end this time.
+Acked-by: Eric Bénard <eric@eukrea.com> 
 
-| db_size | clients |  tps  |   |  tps  |
-+---------+---------+-------+   +-------+
-| 22 MB   |       1 | 10662 |   | 10446 |
-| 22 MB   |       2 | 21483 |   | 20887 |
-| 22 MB   |       4 | 42046 |   | 41266 |
-| 22 MB   |       8 | 55807 |   | 51987 |
-| 22 MB   |      12 | 50768 |   | 50974 |
-| 22 MB   |      16 | 49880 |   | 49510 |
-| 22 MB   |      24 | 45904 |   | 42398 |
-| 22 MB   |      32 | 43420 |   | 40995 |
-| 7484 MB |       1 |  7965 |   |  7376 |
-| 7484 MB |       2 | 19354 |   | 19149 |
-| 7484 MB |       4 | 37552 |   | 37458 |
-| 7484 MB |       8 | 48655 |   | 46618 |
-| 7484 MB |      12 | 45778 |   | 45756 |
-| 7484 MB |      16 | 45659 |   | 44911 |
-| 7484 MB |      24 | 42192 |   | 37185 |	-11.87%
-| 7484 MB |      32 | 36385 |   | 34447 |
-| 15 GB   |       1 |  7677 |   |  7359 |
-| 15 GB   |       2 | 19227 |   | 19049 |
-| 15 GB   |       4 | 37335 |   | 36947 |
-| 15 GB   |       8 | 48130 |   | 46898 |
-| 15 GB   |      12 | 45393 |   | 43986 |
-| 15 GB   |      16 | 45110 |   | 45719 |
-| 15 GB   |      24 | 41415 |   | 36813 |	-11.11%
-| 15 GB   |      32 | 35988 |   | 34025 |
+Thanks,
+Eric
 
-The reason may caused by wake_affine()'s higher overhead, and pgbench is
-really sensitive to this stuff...
-
-Regards,
-Michael Wang
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> On Fri, Mar 22, 2013 at 01:15:02AM +0100, Paul Bolle wrote:
+> > Commit 2d66c7803595da0d4bcd949825d598575f5de9e6 ("cpuimx27 and mbimx27:
+> > allow fine control of UART4 and SDHC2 usage") added the Kconfig symbol
+> > MACH_EUKREA_CPUIMX27_USEUART4. But it forgot to prepend CONFIG_ to the
+> > use of its macro. Add that prefix now.
+> > 
+> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> > ---
+> > Untested. This needs testing, obviously. Or a rethink, because these
+> > typos have been in the tree since v2.6.36!
+> > 
+> >  arch/arm/mach-imx/eukrea_mbimx27-baseboard.c | 4 ++--
+> >  arch/arm/mach-imx/mach-cpuimx27.c            | 4 ++--
+> >  2 files changed, 4 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c b/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
+> > index b4c7002..b2f08bf 100644
+> > --- a/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
+> > +++ b/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
+> > @@ -46,7 +46,7 @@ static const int eukrea_mbimx27_pins[] __initconst = {
+> >  	PE10_PF_UART3_CTS,
+> >  	PE11_PF_UART3_RTS,
+> >  	/* UART4 */
+> > -#if !defined(MACH_EUKREA_CPUIMX27_USEUART4)
+> > +#if !defined(CONFIG_MACH_EUKREA_CPUIMX27_USEUART4)
+> >  	PB26_AF_UART4_RTS,
+> >  	PB28_AF_UART4_TXD,
+> >  	PB29_AF_UART4_CTS,
+> > @@ -306,7 +306,7 @@ void __init eukrea_mbimx27_baseboard_init(void)
+> >  
+> >  	imx27_add_imx_uart1(&uart_pdata);
+> >  	imx27_add_imx_uart2(&uart_pdata);
+> > -#if !defined(MACH_EUKREA_CPUIMX27_USEUART4)
+> > +#if !defined(CONFIG_MACH_EUKREA_CPUIMX27_USEUART4)
+> >  	imx27_add_imx_uart3(&uart_pdata);
+> >  #endif
+> >  
+> > diff --git a/arch/arm/mach-imx/mach-cpuimx27.c b/arch/arm/mach-imx/mach-cpuimx27.c
+> > index 1465593..ea50870 100644
+> > --- a/arch/arm/mach-imx/mach-cpuimx27.c
+> > +++ b/arch/arm/mach-imx/mach-cpuimx27.c
+> > @@ -48,7 +48,7 @@ static const int eukrea_cpuimx27_pins[] __initconst = {
+> >  	PE14_PF_UART1_CTS,
+> >  	PE15_PF_UART1_RTS,
+> >  	/* UART4 */
+> > -#if defined(MACH_EUKREA_CPUIMX27_USEUART4)
+> > +#if defined(CONFIG_MACH_EUKREA_CPUIMX27_USEUART4)
+> >  	PB26_AF_UART4_RTS,
+> >  	PB28_AF_UART4_TXD,
+> >  	PB29_AF_UART4_CTS,
+> > @@ -272,7 +272,7 @@ static void __init eukrea_cpuimx27_init(void)
+> >  	/* SDHC2 can be used for Wifi */
+> >  	imx27_add_mxc_mmc(1, NULL);
+> >  #endif
+> > -#if defined(MACH_EUKREA_CPUIMX27_USEUART4)
+> > +#if defined(CONFIG_MACH_EUKREA_CPUIMX27_USEUART4)
+> >  	/* in which case UART4 is also used for Bluetooth */
+> >  	imx27_add_imx_uart3(&uart_pdata);
+> >  #endif
+> > -- 
+> > 1.7.11.7
+> > 
+> > 
 > 
 
