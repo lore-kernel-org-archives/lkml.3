@@ -1,99 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759880Ab3DBCC1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 22:02:27 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:57936 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759864Ab3DBCCZ (ORCPT
+	id S1759826Ab3DBCEd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 22:04:33 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56482 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758159Ab3DBCEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 22:02:25 -0400
-X-AuditID: 9c93016f-b7b6aae000000e9c-0b-515a3c2fe5c4
-Date: Tue, 2 Apr 2013 11:02:36 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH 5/5] sched: limit sched_slice if it is more than
- sysctl_sched_latency
-Message-ID: <20130402020236.GC16699@lge.com>
-References: <1364457537-15114-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1364457537-15114-6-git-send-email-iamjoonsoo.kim@lge.com>
- <51557C89.4070201@linux.vnet.ibm.com>
- <20130401050926.GB12015@lge.com>
- <51592D1E.7030707@linux.vnet.ibm.com>
+	Mon, 1 Apr 2013 22:04:32 -0400
+X-AuditID: 9c930179-b7c78ae000000e4b-7a-515a3cad36cd
+Date: Tue, 2 Apr 2013 11:04:30 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Shaohua Li <shli@kernel.org>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Bob Liu <bob.liu@oracle.com>
+Subject: Re: [RFC] mm: remove swapcache page early
+Message-ID: <20130402020429.GD30444@blaptop>
+References: <1364350932-12853-1-git-send-email-minchan@kernel.org>
+ <alpine.LNX.2.00.1303271230210.29687@eggly.anvils>
+ <433aaa17-7547-4e39-b472-7060ee15e85f@default>
+ <20130328010706.GB22908@blaptop>
+ <5f1504e7-8b07-4109-8271-b214b496ca61@default>
+ <20130329011801.GA32245@blaptop>
+ <alpine.LNX.2.00.1303291250160.3741@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51592D1E.7030707@linux.vnet.ibm.com>
+In-Reply-To: <alpine.LNX.2.00.1303291250160.3741@eggly.anvils>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Preeti.
+Hi Hugh,
 
-On Mon, Apr 01, 2013 at 12:15:50PM +0530, Preeti U Murthy wrote:
-> Hi Joonsoo,
+On Fri, Mar 29, 2013 at 01:01:14PM -0700, Hugh Dickins wrote:
+> On Fri, 29 Mar 2013, Minchan Kim wrote:
+> > On Thu, Mar 28, 2013 at 11:19:12AM -0700, Dan Magenheimer wrote:
+> > > > From: Minchan Kim [mailto:minchan@kernel.org]
+> > > > On Wed, Mar 27, 2013 at 03:24:00PM -0700, Dan Magenheimer wrote:
+> > > > > > From: Hugh Dickins [mailto:hughd@google.com]
+> > > > > > Subject: Re: [RFC] mm: remove swapcache page early
+> > > > > >
+> > > > > > I believe the answer is for frontswap/zmem to invalidate the frontswap
+> > > > > > copy of the page (to free up the compressed memory when possible) and
+> > > > > > SetPageDirty on the PageUptodate PageSwapCache page when swapping in
+> > > > > > (setting page dirty so nothing will later go to read it from the
+> > > > > > unfreed location on backing swap disk, which was never written).
+> > > > >
+> > > > > There are two duplication issues:  (1) When can the page be removed
+> > > > > from the swap cache after a call to frontswap_store; and (2) When
+> > > > > can the page be removed from the frontswap storage after it
+> > > > > has been brought back into memory via frontswap_load.
+> > > > >
+> > > > > This patch from Minchan addresses (1).  The issue you are raising
+> > > > 
+> > > > No. I am addressing (2).
+> > > > 
+> > > > > here is (2).  You may not know that (2) has recently been solved
+> > > > > in frontswap, at least for zcache.  See frontswap_exclusive_gets_enabled.
+> > > > > If this is enabled (and it is for zcache but not yet for zswap),
+> > > > > what you suggest (SetPageDirty) is what happens.
+> > > > 
+> > > > I am blind on zcache so I didn't see it. Anyway, I'd like to address it
+> > > > on zram and zswap.
+> > > 
+> > > Zswap can enable it trivially by adding a function call in init_zswap.
+> > > (Note that it is not enabled by default for all frontswap backends
+> > > because it is another complicated tradeoff of cpu time vs memory space
+> > > that needs more study on a broad set of workloads.)
+> > > 
+> > > I wonder if something like this would have a similar result for zram?
+> > > (Completely untested... snippet stolen from swap_entry_free with
+> > > SetPageDirty added... doesn't compile yet, but should give you the idea.)
 > 
-> On 04/01/2013 10:39 AM, Joonsoo Kim wrote:
-> > Hello Preeti.
-> > So we should limit this possible weird situation.
-> >>>
-> >>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> >>>
-> >>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> >>> index e232421..6ceffbc 100644
-> >>> --- a/kernel/sched/fair.c
-> >>> +++ b/kernel/sched/fair.c
-> >>> @@ -645,6 +645,9 @@ static u64 sched_slice(struct cfs_rq *cfs_rq, struct sched_entity *se)
-> >>>  	}
-> >>>  	slice = calc_delta_mine(slice, se->load.weight, load);
-> >>>
-> >>> +	if (unlikely(slice > sysctl_sched_latency))
-> >>> +		slice = sysctl_sched_latency;
-> >>
-> >> Then in this case the highest priority thread would get
-> >> 20ms(sysctl_sched_latency), and the rest would get
-> >> sysctl_sched_min_granularity * 10 * (1024/97977) which would be 0.4ms.
-> >> Then all tasks would get scheduled ateast once within 20ms + (0.4*9) ms
-> >> = 23.7ms, while your scheduling latency period was extended to 40ms,just
-> >> so that each of these tasks don't have their sched_slices shrunk due to
-> >> large number of tasks.
-> > 
-> > I don't know I understand your question correctly.
-> > I will do my best to answer your comment. :)
-> > 
-> > With this patch, I just limit maximum slice at one time. Scheduling is
-> > controlled through the vruntime. So, in this case, the task with nice -20
-> > will be scheduled twice.
-> > 
-> > 20 + (0.4 * 9) + 20 = 43.9 ms
-> > 
-> > And after 43.9 ms, this process is repeated.
-> > 
-> > So I can tell you that scheduling period is preserved as before.
-> > 
-> > If we give a long period to a task at one go, it can cause
-> > a latency problem. So IMHO, limiting this is meaningful.
+> Thanks for correcting me on zram (in earlier mail of this thread), yes,
+> I was forgetting about the swap_slot_free_notify entry point which lets
+> that memory be freed.
 > 
-> Thank you very much for the explanation. Just one question. What is the
-> reason behind you choosing sysctl_sched_latency as the upper bound here?
-
-sysctl_sched_latency is a sched_slice when there is one task.
-So, I think that this is proper as upper bound.
-
-Thanks.
-
-> Regards
-> Preeti U Murthy
+> > 
+> > Nice idea!
+> > 
+> > After I see your patch, I realized it was Hugh's suggestion and
+> > you implemented it in proper place.
+> > 
+> > Will resend it after testing. Maybe nextweek.
+> > Thanks!
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Be careful, although Dan is right that something like this can be
+> done for zram, I believe you will find that it needs a little more:
+> either a separate new entry point (not my preference) or a flags arg
+> (or boolean) added to swap_slot_free_notify.
+> 
+> Because this is a different operation: end_swap_bio_read() wants
+> to free up zram's compressed copy of the page, but the swp_entry_t
+> must remain valid until swap_entry_free() can clear up the rest.
+> Precisely how much of the work each should do, you will discover.
+
+First of all, Thanks for noticing it for me!
+
+If I parse your concern correctly, you are concerning about
+different semantic on two functions.
+(end_swap_bio_read's swap_slot_free_notify VS swap_entry_free's one).
+
+But current implementatoin on zram_slot_free_notify could cover both cases
+properly with luck.
+
+zram_free_page caused by end_swap_bio_read will free compressed copy
+of the page and zram_free_page caused by swap_entry_free later won't find
+right index from zram->table and just return.
+So I think there is no problem.
+
+Remained problem is zram->stats.notify_free, which could be counted
+redundantly but not sure it's valuable to count exactly.
+
+If I miss your point, please pinpoint your concern. :)
+
+Thanks!
+-- 
+Kind regards,
+Minchan Kim
