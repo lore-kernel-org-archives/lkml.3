@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758996Ab3DBW4P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:56:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34057 "EHLO
+	id S1759137Ab3DBW4q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:56:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757902Ab3DBWuw (ORCPT
+	with ESMTP id S1758452Ab3DBWuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:50:52 -0400
+	Tue, 2 Apr 2013 18:50:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
+        "Theodore Tso" <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
         Lingzhu Xiang <lxiang@redhat.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 40/56] tracing: Prevent buffer overwrite disabled for latency tracers
-Date: Tue,  2 Apr 2013 15:50:07 -0700
-Message-Id: <20130402224716.518407996@linuxfoundation.org>
+Subject: [ 38/56] ext4: use atomic64_t for the per-flexbg free_clusters count
+Date: Tue,  2 Apr 2013 15:50:05 -0700
+Message-Id: <20130402224716.303889593@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
@@ -27,282 +27,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 613f04a0f51e6e68ac6fe571ab79da3c0a5eb4da upstream.
+commit 90ba983f6889e65a3b506b30dc606aa9d1d46cd2 upstream.
 
-The latency tracers require the buffers to be in overwrite mode,
-otherwise they get screwed up. Force the buffers to stay in overwrite
-mode when latency tracers are enabled.
+A user who was using a 8TB+ file system and with a very large flexbg
+size (> 65536) could cause the atomic_t used in the struct flex_groups
+to overflow.  This was detected by PaX security patchset:
 
-Added a flag_changed() method to the tracer structure to allow
-the tracers to see what flags are being changed, and also be able
-to prevent the change from happing.
+http://forums.grsecurity.net/viewtopic.php?f=3&t=3289&p=12551#p12551
 
-[Backported for 3.4-stable. Re-added current_trace NULL checks; removed
-allocated_snapshot field; adapted to tracing_trace_options_write without
-trace_set_options.]
+This bug was introduced in commit 9f24e4208f7e, so it's been around
+since 2.6.30.  :-(
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Fix this by using an atomic64_t for struct orlav_stats's
+free_clusters.
+
+[Backported for 3.0-stable. Renamed free_clusters back to free_blocks;
+fixed a few more atomic_read's of free_blocks left in 3.0.]
+
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Lukas Czerner <lczerner@redhat.com>
 Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
 Reviewed-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- kernel/trace/trace.c              |   35 +++++++++++++++++++++++++++++------
- kernel/trace/trace.h              |    7 +++++++
- kernel/trace/trace_irqsoff.c      |   19 ++++++++++++++-----
- kernel/trace/trace_sched_wakeup.c |   18 +++++++++++++-----
- 4 files changed, 63 insertions(+), 16 deletions(-)
-
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2527,11 +2527,25 @@ static int set_tracer_option(struct trac
- 	return -EINVAL;
- }
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -288,9 +288,9 @@ struct ext4_group_desc
+  */
  
--static void set_tracer_flags(unsigned int mask, int enabled)
-+/* Some tracers require overwrite to stay enabled */
-+int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set)
-+{
-+	if (tracer->enabled && (mask & TRACE_ITER_OVERWRITE) && !set)
-+		return -1;
-+
-+	return 0;
-+}
-+
-+int set_tracer_flag(unsigned int mask, int enabled)
- {
- 	/* do nothing if flag is already set */
- 	if (!!(trace_flags & mask) == !!enabled)
--		return;
-+		return 0;
-+
-+	/* Give the tracer a chance to approve the change */
-+	if (current_trace->flag_changed)
-+		if (current_trace->flag_changed(current_trace, mask, !!enabled))
-+			return -EINVAL;
- 
- 	if (enabled)
- 		trace_flags |= mask;
-@@ -2543,6 +2557,8 @@ static void set_tracer_flags(unsigned in
- 
- 	if (mask == TRACE_ITER_OVERWRITE)
- 		ring_buffer_change_overwrite(global_trace.buffer, enabled);
-+
-+	return 0;
- }
- 
- static ssize_t
-@@ -2552,7 +2568,7 @@ tracing_trace_options_write(struct file
- 	char buf[64];
- 	char *cmp;
- 	int neg = 0;
--	int ret = 0;
-+	int ret = -ENODEV;
- 	int i;
- 
- 	if (cnt >= sizeof(buf))
-@@ -2573,7 +2589,7 @@ tracing_trace_options_write(struct file
- 
- 	for (i = 0; trace_options[i]; i++) {
- 		if (strcmp(cmp, trace_options[i]) == 0) {
--			set_tracer_flags(1 << i, !neg);
-+			ret = set_tracer_flag(1 << i, !neg);
- 			break;
- 		}
- 	}
-@@ -2584,7 +2600,7 @@ tracing_trace_options_write(struct file
- 
- 	mutex_unlock(&trace_types_lock);
- 
--	if (ret)
-+	if (ret < 0)
- 		return ret;
- 
- 	*ppos += cnt;
-@@ -2883,6 +2899,9 @@ static int tracing_set_tracer(const char
- 		goto out;
- 
- 	trace_branch_disable();
-+
-+	current_trace->enabled = false;
-+
- 	if (current_trace && current_trace->reset)
- 		current_trace->reset(tr);
- 	if (current_trace && current_trace->use_max_tr) {
-@@ -2912,6 +2931,7 @@ static int tracing_set_tracer(const char
- 			goto out;
- 	}
- 
-+	current_trace->enabled = true;
- 	trace_branch_enable(tr);
-  out:
- 	mutex_unlock(&trace_types_lock);
-@@ -4184,9 +4204,12 @@ trace_options_core_write(struct file *fi
- 		return -EINVAL;
- 
- 	mutex_lock(&trace_types_lock);
--	set_tracer_flags(1 << index, val);
-+	ret = set_tracer_flag(1 << index, val);
- 	mutex_unlock(&trace_types_lock);
- 
-+	if (ret < 0)
-+		return ret;
-+
- 	*ppos += cnt;
- 
- 	return cnt;
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -271,10 +271,14 @@ struct tracer {
- 	enum print_line_t	(*print_line)(struct trace_iterator *iter);
- 	/* If you handled the flag setting, return 0 */
- 	int			(*set_flag)(u32 old_flags, u32 bit, int set);
-+	/* Return 0 if OK with change, else return non-zero */
-+	int			(*flag_changed)(struct tracer *tracer,
-+						u32 mask, int set);
- 	struct tracer		*next;
- 	struct tracer_flags	*flags;
- 	int			print_max;
- 	int			use_max_tr;
-+	bool			enabled;
+ struct flex_groups {
+-	atomic_t free_inodes;
+-	atomic_t free_blocks;
+-	atomic_t used_dirs;
++	atomic64_t	free_blocks;
++	atomic_t	free_inodes;
++	atomic_t	used_dirs;
  };
  
+ #define EXT4_BG_INODE_UNINIT	0x0001 /* Inode table/bitmap not in use */
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index 29272de..dd732c7 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -345,8 +345,8 @@ static int find_group_flex(struct super_block *sb, struct inode *parent,
+ 	ext4_group_t ngroups = ext4_get_groups_count(sb);
+ 	int flex_size = ext4_flex_bg_size(sbi);
+ 	ext4_group_t best_flex = parent_fbg_group;
+-	int blocks_per_flex = sbi->s_blocks_per_group * flex_size;
+-	int flexbg_free_blocks;
++	ext4_fsblk_t blocks_per_flex = sbi->s_blocks_per_group * flex_size;
++	ext4_fsblk_t flexbg_free_blocks;
+ 	int flex_freeb_ratio;
+ 	ext4_group_t n_fbg_groups;
+ 	ext4_group_t i;
+@@ -355,7 +355,7 @@ static int find_group_flex(struct super_block *sb, struct inode *parent,
+ 		sbi->s_log_groups_per_flex;
  
-@@ -776,6 +780,9 @@ extern struct list_head ftrace_events;
- extern const char *__start___trace_bprintk_fmt[];
- extern const char *__stop___trace_bprintk_fmt[];
+ find_close_to_parent:
+-	flexbg_free_blocks = atomic_read(&flex_group[best_flex].free_blocks);
++	flexbg_free_blocks = atomic64_read(&flex_group[best_flex].free_blocks);
+ 	flex_freeb_ratio = flexbg_free_blocks * 100 / blocks_per_flex;
+ 	if (atomic_read(&flex_group[best_flex].free_inodes) &&
+ 	    flex_freeb_ratio > free_block_ratio)
+@@ -370,7 +370,7 @@ find_close_to_parent:
+ 		if (i == parent_fbg_group || i == parent_fbg_group - 1)
+ 			continue;
  
-+int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set);
-+int set_tracer_flag(unsigned int mask, int enabled);
-+
- #undef FTRACE_ENTRY
- #define FTRACE_ENTRY(call, struct_name, id, tstruct, print)		\
- 	extern struct ftrace_event_call					\
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -32,7 +32,7 @@ enum {
+-		flexbg_free_blocks = atomic_read(&flex_group[i].free_blocks);
++		flexbg_free_blocks = atomic64_read(&flex_group[i].free_blocks);
+ 		flex_freeb_ratio = flexbg_free_blocks * 100 / blocks_per_flex;
  
- static int trace_type __read_mostly;
+ 		if (flex_freeb_ratio > free_block_ratio &&
+@@ -380,14 +380,14 @@ find_close_to_parent:
+ 		}
  
--static int save_lat_flag;
-+static int save_flags;
+ 		if ((atomic_read(&flex_group[best_flex].free_inodes) == 0) ||
+-		    ((atomic_read(&flex_group[i].free_blocks) >
+-		      atomic_read(&flex_group[best_flex].free_blocks)) &&
++		    ((atomic64_read(&flex_group[i].free_blocks) >
++		      atomic64_read(&flex_group[best_flex].free_blocks)) &&
+ 		     atomic_read(&flex_group[i].free_inodes)))
+ 			best_flex = i;
+ 	}
  
- static void stop_irqsoff_tracer(struct trace_array *tr, int graph);
- static int start_irqsoff_tracer(struct trace_array *tr, int graph);
-@@ -544,8 +544,11 @@ static void stop_irqsoff_tracer(struct t
+ 	if (!atomic_read(&flex_group[best_flex].free_inodes) ||
+-	    !atomic_read(&flex_group[best_flex].free_blocks))
++	    !atomic64_read(&flex_group[best_flex].free_blocks))
+ 		return -1;
  
- static void __irqsoff_tracer_init(struct trace_array *tr)
- {
--	save_lat_flag = trace_flags & TRACE_ITER_LATENCY_FMT;
--	trace_flags |= TRACE_ITER_LATENCY_FMT;
-+	save_flags = trace_flags;
-+
-+	/* non overwrite screws up the latency tracers */
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, 1);
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, 1);
- 
- 	tracing_max_latency = 0;
- 	irqsoff_trace = tr;
-@@ -559,10 +562,13 @@ static void __irqsoff_tracer_init(struct
- 
- static void irqsoff_tracer_reset(struct trace_array *tr)
- {
-+	int lat_flag = save_flags & TRACE_ITER_LATENCY_FMT;
-+	int overwrite_flag = save_flags & TRACE_ITER_OVERWRITE;
-+
- 	stop_irqsoff_tracer(tr, is_graph());
- 
--	if (!save_lat_flag)
--		trace_flags &= ~TRACE_ITER_LATENCY_FMT;
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, lat_flag);
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, overwrite_flag);
+ found_flexbg:
+@@ -406,8 +406,8 @@ out:
  }
  
- static void irqsoff_tracer_start(struct trace_array *tr)
-@@ -595,6 +601,7 @@ static struct tracer irqsoff_tracer __re
- 	.print_line     = irqsoff_print_line,
- 	.flags		= &tracer_flags,
- 	.set_flag	= irqsoff_set_flag,
-+	.flag_changed	= trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_irqsoff,
- #endif
-@@ -628,6 +635,7 @@ static struct tracer preemptoff_tracer _
- 	.print_line     = irqsoff_print_line,
- 	.flags		= &tracer_flags,
- 	.set_flag	= irqsoff_set_flag,
-+	.flag_changed	= trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_preemptoff,
- #endif
-@@ -663,6 +671,7 @@ static struct tracer preemptirqsoff_trac
- 	.print_line     = irqsoff_print_line,
- 	.flags		= &tracer_flags,
- 	.set_flag	= irqsoff_set_flag,
-+	.flag_changed	= trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_preemptirqsoff,
- #endif
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -36,7 +36,7 @@ static void __wakeup_reset(struct trace_
- static int wakeup_graph_entry(struct ftrace_graph_ent *trace);
- static void wakeup_graph_return(struct ftrace_graph_ret *trace);
+ struct orlov_stats {
++	__u64 free_blocks;
+ 	__u32 free_inodes;
+-	__u32 free_blocks;
+ 	__u32 used_dirs;
+ };
  
--static int save_lat_flag;
-+static int save_flags;
+@@ -424,7 +424,7 @@ static void get_orlov_stats(struct super_block *sb, ext4_group_t g,
  
- #define TRACE_DISPLAY_GRAPH     1
+ 	if (flex_size > 1) {
+ 		stats->free_inodes = atomic_read(&flex_group[g].free_inodes);
+-		stats->free_blocks = atomic_read(&flex_group[g].free_blocks);
++		stats->free_blocks = atomic64_read(&flex_group[g].free_blocks);
+ 		stats->used_dirs = atomic_read(&flex_group[g].used_dirs);
+ 		return;
+ 	}
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 31bbdb5..35959f6 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -2814,8 +2814,8 @@ ext4_mb_mark_diskspace_used(struct ext4_allocation_context *ac,
+ 	if (sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group = ext4_flex_group(sbi,
+ 							  ac->ac_b_ex.fe_group);
+-		atomic_sub(ac->ac_b_ex.fe_len,
+-			   &sbi->s_flex_groups[flex_group].free_blocks);
++		atomic64_sub(ac->ac_b_ex.fe_len,
++			     &sbi->s_flex_groups[flex_group].free_blocks);
+ 	}
  
-@@ -526,8 +526,11 @@ static void stop_wakeup_tracer(struct tr
+ 	err = ext4_handle_dirty_metadata(handle, NULL, bitmap_bh);
+@@ -4614,7 +4614,7 @@ do_more:
  
- static int __wakeup_tracer_init(struct trace_array *tr)
- {
--	save_lat_flag = trace_flags & TRACE_ITER_LATENCY_FMT;
--	trace_flags |= TRACE_ITER_LATENCY_FMT;
-+	save_flags = trace_flags;
-+
-+	/* non overwrite screws up the latency tracers */
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, 1);
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, 1);
+ 	if (sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group = ext4_flex_group(sbi, block_group);
+-		atomic_add(count, &sbi->s_flex_groups[flex_group].free_blocks);
++		atomic64_add(count, &sbi->s_flex_groups[flex_group].free_blocks);
+ 	}
  
- 	tracing_max_latency = 0;
- 	wakeup_trace = tr;
-@@ -549,12 +552,15 @@ static int wakeup_rt_tracer_init(struct
+ 	ext4_mb_unload_buddy(&e4b);
+@@ -4745,8 +4745,8 @@ void ext4_add_groupblocks(handle_t *handle, struct super_block *sb,
  
- static void wakeup_tracer_reset(struct trace_array *tr)
- {
-+	int lat_flag = save_flags & TRACE_ITER_LATENCY_FMT;
-+	int overwrite_flag = save_flags & TRACE_ITER_OVERWRITE;
-+
- 	stop_wakeup_tracer(tr);
- 	/* make sure we put back any tasks we are tracing */
- 	wakeup_reset(tr);
+ 	if (sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group = ext4_flex_group(sbi, block_group);
+-		atomic_add(blocks_freed,
+-			   &sbi->s_flex_groups[flex_group].free_blocks);
++		atomic64_add(blocks_freed,
++			     &sbi->s_flex_groups[flex_group].free_blocks);
+ 	}
  
--	if (!save_lat_flag)
--		trace_flags &= ~TRACE_ITER_LATENCY_FMT;
-+	set_tracer_flag(TRACE_ITER_LATENCY_FMT, lat_flag);
-+	set_tracer_flag(TRACE_ITER_OVERWRITE, overwrite_flag);
- }
- 
- static void wakeup_tracer_start(struct trace_array *tr)
-@@ -580,6 +586,7 @@ static struct tracer wakeup_tracer __rea
- 	.print_line	= wakeup_print_line,
- 	.flags		= &tracer_flags,
- 	.set_flag	= wakeup_set_flag,
-+	.flag_changed	= trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_wakeup,
- #endif
-@@ -601,6 +608,7 @@ static struct tracer wakeup_rt_tracer __
- 	.print_line	= wakeup_print_line,
- 	.flags		= &tracer_flags,
- 	.set_flag	= wakeup_set_flag,
-+	.flag_changed	= trace_keep_overwrite,
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_wakeup,
- #endif
+ 	ext4_mb_unload_buddy(&e4b);
+diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
+index 244100f..d2661aac 100644
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -929,8 +929,8 @@ int ext4_group_add(struct super_block *sb, struct ext4_new_group_data *input)
+ 	    sbi->s_log_groups_per_flex) {
+ 		ext4_group_t flex_group;
+ 		flex_group = ext4_flex_group(sbi, input->group);
+-		atomic_add(input->free_blocks_count,
+-			   &sbi->s_flex_groups[flex_group].free_blocks);
++		atomic64_add(input->free_blocks_count,
++			     &sbi->s_flex_groups[flex_group].free_blocks);
+ 		atomic_add(EXT4_INODES_PER_GROUP(sb),
+ 			   &sbi->s_flex_groups[flex_group].free_inodes);
+ 	}
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index c6a3363..e05cd34 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1992,8 +1992,8 @@ static int ext4_fill_flex_info(struct super_block *sb)
+ 		flex_group = ext4_flex_group(sbi, i);
+ 		atomic_add(ext4_free_inodes_count(sb, gdp),
+ 			   &sbi->s_flex_groups[flex_group].free_inodes);
+-		atomic_add(ext4_free_blks_count(sb, gdp),
+-			   &sbi->s_flex_groups[flex_group].free_blocks);
++		atomic64_add(ext4_free_blks_count(sb, gdp),
++			     &sbi->s_flex_groups[flex_group].free_blocks);
+ 		atomic_add(ext4_used_dirs_count(sb, gdp),
+ 			   &sbi->s_flex_groups[flex_group].used_dirs);
+ 	}
+-- 
+1.7.11.7
+
+--
+To unsubscribe from this list: send the line "unsubscribe stable" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 
