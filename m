@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762055Ab3DBSXt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 14:23:49 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:52624 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758373Ab3DBSXs (ORCPT
+	id S1762056Ab3DBSY7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 14:24:59 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:64629 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759201Ab3DBSY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 14:23:48 -0400
-X-Greylist: delayed 2142 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Apr 2013 14:23:47 EDT
-Date: Tue, 2 Apr 2013 11:23:44 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ARM: irq: Call irqchit_init if no init_irq function
- is specified
-Message-ID: <20130402182344.GK25867@quad.lixom.net>
-References: <1364503606-10597-1-git-send-email-maxime.ripard@free-electrons.com>
- <1364503606-10597-2-git-send-email-maxime.ripard@free-electrons.com>
+	Tue, 2 Apr 2013 14:24:58 -0400
+Date: Tue, 2 Apr 2013 11:24:52 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-arch@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        Richard Henderson <rth@twiddle.net>,
+        Russell King <linux@arm.linux.org.uk>, msalter@redhat.com,
+        starvik@axis.com, David Howells <dhowells@redhat.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        takata@linux-m32r.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+        james.hogan@imgtec.com, Michal Simek <monstr@monstr.eu>,
+        Ralf Baechle <ralf@linux-mips.org>, jonas@southpole.se,
+        rkuo@codeaurora.org, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        liqin.chen@sunplusct.com, David Miller <davem@davemloft.net>,
+        Paul Mundt <lethal@linux-sh.org>, vgupta@synopsys.com,
+        Chris Zankel <chris@zankel.net>, Chris Metcalf <cmetcalf@tilera.com>,
+        ysato@users.sourceforge.jp, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        jdike@addtoit.com
+Subject: Re: [PATCH 4/5] dump_stack: implement arch-specific hardware
+ description in task dumps
+Message-ID: <20130402182452.GB6185@htj.dyndns.org>
+References: <1364610428-2074-1-git-send-email-tj@kernel.org>
+ <1364610428-2074-5-git-send-email-tj@kernel.org>
+ <CAErSpo7Hh7UNkeH=dKrNwPywQZFRfzaX5o7ReUsNvWjM4aD-eA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1364503606-10597-2-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <CAErSpo7Hh7UNkeH=dKrNwPywQZFRfzaX5o7ReUsNvWjM4aD-eA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 09:46:44PM +0100, Maxime Ripard wrote:
-> More and more sub-architectures are using only the irqchip_init
-> function. Make the core code call this function if no init_irq field is
-> provided in the machine description to remove some boilerplate code.
+Hello,
+
+On Mon, Apr 01, 2013 at 12:11:17PM -0600, Bjorn Helgaas wrote:
+> > +       dump_stack_set_arch_desc("%s %s%s%s", vendor, product,
+> > +                                board ? "/" : "", board ? board : "");
+> > +}
 > 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Should this be combined or made consistent with dmi_dump_ids()?  They
+> look almost the same but not quite (no BIOS version here).
 
-Applied to next/cleanup (fixed the typo in the subject though :).
+Yeah, that actually would be more useful.  It'd likely be too long
+tho.  We can separate it out into its own line which one of the x86
+debug paths is doing anyway.  I'll look into it.
 
-I'm trying to figure out how to best apply 2/2 without causing a lot of
-merge conflicts. It might make sense to either do it late in the merge
-window or stage it at the base of 3.11 cleanup. I'll revisit after I've
-dealt with the rest of the pull request queue.
+Thanks.
 
-
--Olof
+-- 
+tejun
