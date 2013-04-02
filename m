@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760587Ab3DBFek (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 01:34:40 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:59843 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760297Ab3DBFeh (ORCPT
+	id S1760589Ab3DBFqU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 01:46:20 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:51426 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759398Ab3DBFqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 01:34:37 -0400
+	Tue, 2 Apr 2013 01:46:19 -0400
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "richard.genoud@gmail.com" <richard.genoud@gmail.com>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "Lin, JM" <JM.Lin@atmel.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v7 08/14] spi/spi-atmel: fix spi-atmel driver to adapt
+ to slave_config changes
+Thread-Topic: [PATCH v7 08/14] spi/spi-atmel: fix spi-atmel driver to adapt
+ to slave_config changes
+Thread-Index: AQHOJHZ4XYMPApy8HEK0K/M7YbB+ZJjA8N4AgAGPfxA=
+Date: Tue, 2 Apr 2013 05:45:48 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A24364150E8A2ED@penmbx01>
+References: <1363678866-3567-1-git-send-email-wenyou.yang@atmel.com>
+ <1363679236-3973-1-git-send-email-wenyou.yang@atmel.com>
+ <20130401135104.GZ18636@opensource.wolfsonmicro.com>
+In-Reply-To: <20130401135104.GZ18636@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo5iyziiGDKiy-416UQ2xr+2hvcHz6do+ueMmnPM5oy6Cw@mail.gmail.com>
-References: <2282655.IicBMMa6jN@vostro.rjw.lan>
-	<1378320.ernsY1JWPv@vostro.rjw.lan>
-	<CAErSpo7kGBNEkLOftJ1J7ivaxZL-yVWyAwmoiQ1=NADpmJ67XA@mail.gmail.com>
-	<3943547.m5K1tfygWn@vostro.rjw.lan>
-	<CAErSpo5iyziiGDKiy-416UQ2xr+2hvcHz6do+ueMmnPM5oy6Cw@mail.gmail.com>
-Date: Tue, 2 Apr 2013 13:34:35 +0800
-Message-ID: <CAC=cRTNfUkgYzC-+tOw8hyP8k3qRd6jRU67NA7PwXpHNL+2c2A@mail.gmail.com>
-Subject: Re: [Update][PATCH] PCI / PM: Disable runtime PM of PCIe ports
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Zheng Yan <zheng.z.yan@intel.com>, Huang Ying <ying.huang@intel.com>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r325kNN3015406
 
-Hi, Bjorn,
+Hi, Mark,
 
-On Tue, Apr 2, 2013 at 4:53 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Mon, Apr 1, 2013 at 2:51 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> On Monday, April 01, 2013 11:34:46 AM Bjorn Helgaas wrote:
->>> [+cc Zheng, who added this with 71a83bd727]
->>>
->>> On Sat, Mar 30, 2013 at 4:38 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->>> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>> >
->>> > The runtime PM of PCIe ports turns out to be quite fragile, as in
->>> > some cases things work while in some other cases they don't and we
->>> > don't seem to have a good way to determine whether or not they are
->>> > going to work in advance.
->>>
->>> Do you have any references to problems encountered when enabling
->>> runtime PM for PCIe ports?  That information will be useful to anybody
->>> who wants to take another crack at getting this working.
->>
->> Well, bug 53811 is one example and problems recently reported by
->> Martin are another.  Do you want me to dig deeper?
->
-> OK, I got this one:
->
->   https://bugzilla.kernel.org/show_bug.cgi?id=53811
->
-> Martin has reported a lot of problems lately, and I don't know which
-> are related to runtime PM for PCIe ports.  I was hoping for a couple
-> URLs to put in the changelog so that when somebody gets the itch to
-> make this work, they have some useful info to start from.  If you
-> point me at a specific message, I'll dig up an archive URL for it.
->
-> Otherwise, I'm afraid we'll just oscillate between "enable PM, find
-> bug, disable PM, enable PM, find same bug, disable PM, etc..."
-
-Sorry for late!  I am trying to fix a way to fix 53811 and Martin's
-bug without disable PM for port totally.
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
+> Sent: 2013Äê4ÔÂ1ÈÕ 21:51
+> To: Yang, Wenyou
+> Cc: linux-arm-kernel@lists.infradead.org; grant.likely@secretlab.ca;
+> richard.genoud@gmail.com; plagnioj@jcrosoft.com; Ferre, Nicolas; Lin, JM;
+> spi-devel-general@lists.sourceforge.net; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v7 08/14] spi/spi-atmel: fix spi-atmel driver to adapt to
+> slave_config changes
+> 
+> On Tue, Mar 19, 2013 at 03:47:16PM +0800, Wenyou Yang wrote:
+> > From: Richard Genoud <richard.genoud@gmail.com>
+> >
+> > This is the following of the patch
+> > e2b35f3dbfc080f15b72834d08f04f0269dbe9be
+> 
+> What is this patch actually doing, shouldn't it be part of the previous commit?
+> The changelog really ought to have a plain text version of the commit
+> description too.
+You are right, it isn't the part of the previous commit.
+I will squash it into the dmaengine patch.
 
 Best Regards,
-Huang Ying
+Wenyou Yang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
