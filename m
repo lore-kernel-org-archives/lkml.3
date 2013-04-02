@@ -1,26 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758937Ab3DBWxK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:53:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34099 "EHLO
+	id S1758791Ab3DBWxI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:53:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34107 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758397Ab3DBWu7 (ORCPT
+	with ESMTP id S1752714Ab3DBWu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Apr 2013 18:50:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Franke <dan.franke@schneider-electric.com>,
-        Sriramakrishnan A G <srk@ti.com>, Mugunthan V N <mugunthanvnm@ti.com>,
-        Eric Dumazet <edumazet@google.com>,
+        rebelyouth <rebelyouth.hacklab@gmail.com>,
+        "Huang, Xiong" <xiong@qca.qualcomm.com>,
+        =?UTF-8?q?Christian=20S=FCnkenberg?= 
+	<christian.suenkenberg@student.kit.edu>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 49/56] drivers: net: ethernet: davinci_emac: use netif_wake_queue() while restarting tx queue
-Date: Tue,  2 Apr 2013 15:50:16 -0700
-Message-Id: <20130402224717.505188414@linuxfoundation.org>
+Subject: [ 50/56] atl1e: drop pci-msi support because of packet corruption
+Date: Tue,  2 Apr 2013 15:50:17 -0700
+Message-Id: <20130402224717.618904463@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,30 +35,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-To restart tx queue use netif_wake_queue() intead of netif_start_queue()
-so that net schedule will restart transmission immediately which will
-increase network performance while doing huge data transfers.
+From: Mugunthan V N <mugunthanvnm@ti.com>
 
-Reported-by: Dan Franke <dan.franke@schneider-electric.com>
-Suggested-by: Sriramakrishnan A G <srk@ti.com>
-Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+[ Upstream commit 188ab1b105c96656f6bcfb49d0d8bb1b1936b632 ]
+
+Usage of pci-msi results in corrupted dma packet transfers to the host.
+
+Reported-by: rebelyouth <rebelyouth.hacklab@gmail.com>
+Cc: Huang, Xiong <xiong@qca.qualcomm.com>
+Tested-by: Christian Sünkenberg <christian.suenkenberg@student.kit.edu>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/davinci_emac.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/atl1e/atl1e.h      |    1 -
+ drivers/net/atl1e/atl1e_main.c |   22 ++--------------------
+ 2 files changed, 2 insertions(+), 21 deletions(-)
 
---- a/drivers/net/davinci_emac.c
-+++ b/drivers/net/davinci_emac.c
-@@ -1049,7 +1049,7 @@ static void emac_tx_handler(void *token,
- 	struct net_device	*ndev = skb->dev;
+--- a/drivers/net/atl1e/atl1e.h
++++ b/drivers/net/atl1e/atl1e.h
+@@ -439,7 +439,6 @@ struct atl1e_adapter {
+ 	struct atl1e_hw        hw;
+ 	struct atl1e_hw_stats  hw_stats;
  
- 	if (unlikely(netif_queue_stopped(ndev)))
--		netif_start_queue(ndev);
-+		netif_wake_queue(ndev);
- 	ndev->stats.tx_packets++;
- 	ndev->stats.tx_bytes += len;
- 	dev_kfree_skb_any(skb);
+-	bool have_msi;
+ 	u32 wol;
+ 	u16 link_speed;
+ 	u16 link_duplex;
+--- a/drivers/net/atl1e/atl1e_main.c
++++ b/drivers/net/atl1e/atl1e_main.c
+@@ -1848,37 +1848,19 @@ static void atl1e_free_irq(struct atl1e_
+ 	struct net_device *netdev = adapter->netdev;
+ 
+ 	free_irq(adapter->pdev->irq, netdev);
+-
+-	if (adapter->have_msi)
+-		pci_disable_msi(adapter->pdev);
+ }
+ 
+ static int atl1e_request_irq(struct atl1e_adapter *adapter)
+ {
+ 	struct pci_dev    *pdev   = adapter->pdev;
+ 	struct net_device *netdev = adapter->netdev;
+-	int flags = 0;
+ 	int err = 0;
+ 
+-	adapter->have_msi = true;
+-	err = pci_enable_msi(adapter->pdev);
+-	if (err) {
+-		netdev_dbg(adapter->netdev,
+-			   "Unable to allocate MSI interrupt Error: %d\n", err);
+-		adapter->have_msi = false;
+-	} else
+-		netdev->irq = pdev->irq;
+-
+-
+-	if (!adapter->have_msi)
+-		flags |= IRQF_SHARED;
+-	err = request_irq(adapter->pdev->irq, atl1e_intr, flags,
+-			netdev->name, netdev);
++	err = request_irq(pdev->irq, atl1e_intr, IRQF_SHARED,
++			  netdev->name, netdev);
+ 	if (err) {
+ 		netdev_dbg(adapter->netdev,
+ 			   "Unable to allocate interrupt Error: %d\n", err);
+-		if (adapter->have_msi)
+-			pci_disable_msi(adapter->pdev);
+ 		return err;
+ 	}
+ 	netdev_dbg(adapter->netdev, "atl1e_request_irq OK\n");
 
 
