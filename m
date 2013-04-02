@@ -1,43 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757948Ab3DBWuR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:50:17 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:50397 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755073Ab3DBWuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:50:14 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Nathan Zimmer <nzimmer@sgi.com>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 1/2] cpufreq: split the cpufreq_driver_lock and use the rcu
-Date: Wed, 03 Apr 2013 00:57:50 +0200
-Message-ID: <8456428.Vj8uefv4LI@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKohpokXbeRp-pHaJRAOjnF+R+wy8R9We67Yr2C2nyoVXyJd6w@mail.gmail.com>
-References: <5159C147.70800@sgi.com> <20130402145536.GA31757@gulag1.americas.sgi.com> <CAKohpokXbeRp-pHaJRAOjnF+R+wy8R9We67Yr2C2nyoVXyJd6w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1758039Ab3DBWub (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:50:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33897 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863Ab3DBWu0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:50:26 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Emese Revfy <re.emese@gmail.com>, PaX Team <pageexec@freemail.hu>,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Julien Tinnes <jln@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 02/56] kernel/signal.c: use __ARCH_HAS_SA_RESTORER instead of SA_RESTORER
+Date: Tue,  2 Apr 2013 15:49:29 -0700
+Message-Id: <20130402224712.136059762@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
+References: <20130402224711.840825715@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 02, 2013 08:29:12 PM Viresh Kumar wrote:
-> On 2 April 2013 20:25, Nathan Zimmer <nzimmer@sgi.com> wrote:
-> > The lock is unneeded if we expect register and unregister driver to not be
-> > called from muliple threads at once.  I didn't make that assumption.
-> 
-> Hmm.. But doesn't rcu part take care of that too?? Two writers
-> updating stuff simultaneously?
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-RCU doesn't cover that in general.  Additional locking is needed to provide
-synchronization between writers.
+------------------
 
-Thanks,
-Rafael
+From: Andrew Morton <akpm@linux-foundation.org>
+
+commit 522cff142d7d2f9230839c9e1f21a4d8bcc22a4a upstream.
+
+__ARCH_HAS_SA_RESTORER is the preferred conditional for use in 3.9 and
+later kernels, per Kees.
+
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Cc: Emese Revfy <re.emese@gmail.com>
+Cc: Emese Revfy <re.emese@gmail.com>
+Cc: PaX Team <pageexec@freemail.hu>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Julien Tinnes <jln@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/signal.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -437,7 +437,7 @@ flush_signal_handlers(struct task_struct
+ 		if (force_default || ka->sa.sa_handler != SIG_IGN)
+ 			ka->sa.sa_handler = SIG_DFL;
+ 		ka->sa.sa_flags = 0;
+-#ifdef SA_RESTORER
++#ifdef __ARCH_HAS_SA_RESTORER
+ 		ka->sa.sa_restorer = NULL;
+ #endif
+ 		sigemptyset(&ka->sa.sa_mask);
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
