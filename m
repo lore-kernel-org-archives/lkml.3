@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932328Ab3DBOhb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 10:37:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24750 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932082Ab3DBOh3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 10:37:29 -0400
-Date: Tue, 02 Apr 2013 10:35:50 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        stable@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <1364913350-hwvx480l-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130402092441.GE24345@dhcp22.suse.cz>
-References: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1364485358-8745-3-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20130329135730.GB21879@dhcp22.suse.cz>
- <1364577818-615ipxeo-mutt-n-horiguchi@ah.jp.nec.com>
- <20130402092441.GE24345@dhcp22.suse.cz>
-Subject: Re: [PATCH 2/2] hugetlbfs: add swap entry check in
- follow_hugetlb_page()
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <20130402092441.GE24345@dhcp22.suse.cz>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S932346Ab3DBOix (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 10:38:53 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:64630 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932161Ab3DBOiw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 10:38:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <1364654108-16307-11-git-send-email-alex.shi@intel.com>
+References: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
+	<1364654108-16307-11-git-send-email-alex.shi@intel.com>
+Date: Tue, 2 Apr 2013 16:38:51 +0200
+Message-ID: <CAKfTPtAb1byoZRJZPfvGGgQBEVDCNya3tC6NF83v0khiGV9dDw@mail.gmail.com>
+Subject: Re: [patch v6 10/21] sched: get rq potential maximum utilization
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, Paul Turner <pjt@google.com>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        gregkh@linuxfoundation.org,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 11:24:41AM +0200, Michal Hocko wrote:
-> On Fri 29-03-13 13:23:38, Naoya Horiguchi wrote:
-> > Hi,
-> > 
-> > On Fri, Mar 29, 2013 at 02:57:30PM +0100, Michal Hocko wrote:
-> > > On Thu 28-03-13 11:42:38, Naoya Horiguchi wrote:
-> > > [...]
-> > > > @@ -2968,7 +2968,8 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
-> > > >  		 * first, for the page indexing below to work.
-> > > >  		 */
-> > > >  		pte = huge_pte_offset(mm, vaddr & huge_page_mask(h));
-> > > > -		absent = !pte || huge_pte_none(huge_ptep_get(pte));
-> > > > +		absent = !pte || huge_pte_none(huge_ptep_get(pte)) ||
-> > > > +			is_swap_pte(huge_ptep_get(pte));
-> > > 
-> > > is_swap_pte doesn't seem right. Shouldn't you use is_hugetlb_entry_hwpoisoned
-> > > instead?
-> > 
-> > I tested only hwpoisoned hugepage, but the same can happen for hugepages
-> > under migration. So I intended to filter out all types of swap entries.
-> > The local variable 'absent' seems to mean whether data on the address
-> > is immediately available, so swap type entry isn't included in it.
-> 
-> OK, I didn't consider huge pages under migration and I was merely worried
-> that is_hugetlb_entry_hwpoisoned sounds more appropriate than
-> is_swap_pte.
-> 
-> Could you add a comment which would clarify that is_swap_pte covers both
-> migration and hwpoison pages, please? Something like:
-> 
-> 		/*
-> 		 * is_swap_pte test covers both is_hugetlb_entry_hwpoisoned
-> 		 * and hugepages under migration in which case
-> 		 * hugetlb_fault waits for the migration and bails out
-> 		 * properly for HWPosined pages.
-> 		 */
-> 		 absent = !pte || huge_pte_none(huge_ptep_get(pte)) ||
-> 		 	 is_swap_pte(huge_ptep_get(pte));
+On 30 March 2013 15:34, Alex Shi <alex.shi@intel.com> wrote:
+> Since the rt task priority is higher than fair tasks, cfs_rq utilization
+> is just the left of rt utilization.
+>
+> When there are some cfs tasks in queue, the potential utilization may
+> be yielded, so mulitiplying cfs task number to get max potential
+> utilization of cfs. Then the rq utilization is sum of rt util and cfs
+> util.
+>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/fair.c | 16 ++++++++++++++++
+>  1 file changed, 16 insertions(+)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index ae87dab..0feeaee 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3350,6 +3350,22 @@ struct sg_lb_stats {
+>         unsigned int group_util;        /* sum utilization of group */
+>  };
+>
+> +static unsigned long scale_rt_util(int cpu);
+> +
+> +static unsigned int max_rq_util(int cpu)
+> +{
+> +       struct rq *rq = cpu_rq(cpu);
+> +       unsigned int rt_util = scale_rt_util(cpu);
+> +       unsigned int cfs_util;
+> +       unsigned int nr_running;
+> +
+> +       cfs_util = (FULL_UTIL - rt_util) > rq->util ? rq->util
+> +                       : (FULL_UTIL - rt_util);
 
-OK, I'll add this.
+rt_util and rq->util don't use the same computation algorithm so the
+results are hardly comparable or addable. In addition, some RT tasks
+can have impacted the rq->util, so they will be accounted in both
+side.
 
-> Other than that feel free to add
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Vincent
 
-Thank you!
-Naoya
+> +       nr_running = rq->nr_running ? rq->nr_running : 1;
+> +
+> +       return rt_util + cfs_util * nr_running;
+> +}
+> +
+>  /*
+>   * sched_balance_self: balance the current task (running on cpu) in domains
+>   * that have the 'flag' flag set. In practice, this is SD_BALANCE_FORK and
+> --
+> 1.7.12
+>
