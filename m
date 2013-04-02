@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932736Ab3DBPqS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 11:46:18 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:48570 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932084Ab3DBPqR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 11:46:17 -0400
+	id S932691Ab3DBPr1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 11:47:27 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58338 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760348Ab3DBPrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 11:47:25 -0400
+Date: Tue, 2 Apr 2013 11:47:01 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Kent Overstreet <koverstreet@google.com>, linux-kernel@vger.kernel.org,
+        linux-aio@kvack.org, akpm@linux-foundation.org,
+        Zach Brown <zab@redhat.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: Re: [PATCH 17/33] aio: change reqs_active to include unreaped
+ completions
+Message-ID: <20130402154701.GD31577@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Kent Overstreet <koverstreet@google.com>,
+	linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+	akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+	Felipe Balbi <balbi@ti.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+	Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+	Asai Thambi S P <asamymuthupa@micron.com>,
+	Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+	Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+	Benjamin LaHaise <bcrl@kvack.org>
+References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
+ <1363883754-27966-18-git-send-email-koverstreet@google.com>
+ <20130402025350.GF30122@thunk.org>
 MIME-Version: 1.0
-In-Reply-To: <20130402153957.GG29506@redhat.com>
-References: <20130401192606.GA17951@redhat.com>
-	<5159F27E.7060300@zytor.com>
-	<CAE9FiQXikU8-FkYYULHx50qP_ME2bRSzCC=8ZH8iDyUr2ug66g@mail.gmail.com>
-	<515A03DB.6040107@zytor.com>
-	<CAE9FiQWNFbFgXafJBvORRax+GNU_uf0KFnqZ5NQit0BeZZx9LA@mail.gmail.com>
-	<515A083B.7050508@zytor.com>
-	<CAE9FiQXwy8nLRQAiZ+P56fokisUXAmTJWA07TZ-gSH61K5FQLA@mail.gmail.com>
-	<CAE9FiQW1RzP5A_82qUP7gF_6-G3+Ceay_L1FQf7N=MMbQA4+iw@mail.gmail.com>
-	<20130402135001.GC29506@redhat.com>
-	<CAE9FiQVWprV4YkMq_Pu95AYk_qGzXWPVBWJVDfa=0RbqL63y4Q@mail.gmail.com>
-	<20130402153957.GG29506@redhat.com>
-Date: Tue, 2 Apr 2013 08:46:16 -0700
-X-Google-Sender-Auth: 9wABV9eehMRF_Df1hyIENhITSLI
-Message-ID: <CAE9FiQU99i+fBLnCq72c17XTALdsuUS5jrANAbL=1aMm7=mahw@mail.gmail.com>
-Subject: Re: [PATCH] kexec: use Crash kernel for Crash kernel low
-From: Yinghai Lu <yinghai@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130402025350.GF30122@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 2, 2013 at 8:39 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Tue, Apr 02, 2013 at 07:45:36AM -0700, Yinghai Lu wrote:
->
-> [..]
->> 2. keep thing unified when new kexec-tools is used: always high.
->
-> I think this is wrong. What if system does not have more than 4G of
-> memory. crashkernel=x,high will fail. So just because we have new version
-> of kexec-tools, it does not mean that one can always use crashkernel=x,high.
+On Mon, Apr 01, 2013 at 10:53:50PM -0400, Theodore Ts'o wrote:
+> Could you please add a quick comment documenting the reqs_active field
+> in the struct kioctx definition here?  For future code
+> maintainability, it should be documented in fs/aio.c, not just in a
+> commit description.
 
-no, it will not fail.
+I see this field gets changed yet again in "aio: reqs_active ->
+reqs_available" and it's documented appropritaely after that commit....
 
-If the system have less 4G, and memblock will still find the ram for us.
-
-Thanks
-
-Yinghai
+		    	 	    		  - Ted
