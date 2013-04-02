@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932994Ab3DBSoP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 14:44:15 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38295 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932220Ab3DBSoN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 14:44:13 -0400
-X-Sasl-enc: alsYCJSjD5vwsJ44s4QogK6PdH+k0mWUyiHGbS9vdbus 1364928252
-Date: Tue, 2 Apr 2013 11:44:11 -0700
-From: Greg KH <greg@kroah.com>
-To: Jonghwan Choi <jhbird.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "'Liam Girdwood'" <lrg@ti.com>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
-        "'Russ Dill'" <Russ.Dill@ti.com>
-Subject: Re: [PATCH 3.8-stable] regulator: core: Log when a device causes a
- voltage
-Message-ID: <20130402184411.GA21927@kroah.com>
-References: <009001ce2f84$beb22ea0$3c168be0$%choi@samsung.com>
+	id S932999Ab3DBSrK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 14:47:10 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58528 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932891Ab3DBSrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 14:47:08 -0400
+Date: Tue, 2 Apr 2013 14:46:47 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: Re: [PATCH 28/33] aio: kill ki_retry
+Message-ID: <20130402184647.GB4936@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Kent Overstreet <koverstreet@google.com>,
+	linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+	akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+	Felipe Balbi <balbi@ti.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+	Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+	Asai Thambi S P <asamymuthupa@micron.com>,
+	Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+	Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+	Benjamin LaHaise <bcrl@kvack.org>
+References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
+ <1363883754-27966-29-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <009001ce2f84$beb22ea0$3c168be0$%choi@samsung.com>
+In-Reply-To: <1363883754-27966-29-git-send-email-koverstreet@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 06:30:42PM +0900, Jonghwan Choi wrote:
-> 3.8-stable review patch.  If anyone has any objections, please let us know.
+On Thu, Mar 21, 2013 at 09:35:49AM -0700, Kent Overstreet wrote:
+> Thanks to Zach Brown's work to rip out the retry infrastructure, we don't
+> need this anymore - ki_retry was only called right after the kiocb was
+> initialized.
+> 
+> This also refactors and trims some duplicated code, as well as cleaning up
+> the refcounting/error handling a bit.
 
-Who is "us"?  :)
-
-It's a bit nicer to say, "This patch looks like it should be in the
-3.8-stable tree, should we apply it?"
-
-That way, the default, if no one replies, is that the patch is not
-applied (safer), not that it will be applied.  I need/require that the
-authors/maintainers agree that any patch they don't explicitly mark for
-the stable tree, yet people think it should be, to be acknowledged by
-them.
-
-thanks,
-
-greg k-h
+Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
