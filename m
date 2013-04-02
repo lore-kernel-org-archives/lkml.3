@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251Ab3DBIe7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 04:34:59 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:55117 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760286Ab3DBIe4 (ORCPT
+	id S932271Ab3DBIf0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 04:35:26 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42102 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932254Ab3DBIfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 04:34:56 -0400
-Message-ID: <515A9819.5090603@huawei.com>
-Date: Tue, 2 Apr 2013 16:34:33 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Tue, 2 Apr 2013 04:35:23 -0400
+Message-ID: <515A983D.8040907@ti.com>
+Date: Tue, 2 Apr 2013 14:05:09 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [PATCH] memcg: don't do cleanup manually if mem_cgroup_css_online()
- fails
-References: <515A8A40.6020406@huawei.com> <515A90ED.7010208@huawei.com> <515A91B4.3090607@parallels.com>
-In-Reply-To: <515A91B4.3090607@parallels.com>
-Content-Type: text/plain; charset="GB2312"
+To: Philip Avinash <avinashphilip@ti.com>
+CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <prakash.pm@ti.com>,
+        <jacmet@sunsite.dk>
+Subject: Re: [PATCH v3 0/3] Platform support for EHRPWM & ECAP devices in
+ DAVINCI.
+References: <1364197789-16783-1-git-send-email-avinashphilip@ti.com>
+In-Reply-To: <1364197789-16783-1-git-send-email-avinashphilip@ti.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/4/2 16:07, Glauber Costa wrote:
-> On 04/02/2013 12:03 PM, Li Zefan wrote:
->> On 2013/4/2 15:35, Li Zefan wrote:
->>> If memcg_init_kmem() returns -errno when a memcg is being created,
->>> mem_cgroup_css_online() will decrement memcg and its parent's refcnt,
->>
->>> (but strangely there's no mem_cgroup_put() for mem_cgroup_get() called
->>> in memcg_propagate_kmem()).
->>
->> The comment in memcg_propagate_kmem() suggests it knows mem_cgroup_css_free()
->> will be called in failure, while mem_cgroup_css_online() doesn't know.
->>
-> This is a bit suspicious. At first your analysis seems fair, but I've
-> extensively tested memcg teardown process with kmemcg (and even
-> uncovered some bugs at that), and it works when and how expected.
+On 3/25/2013 1:19 PM, Philip Avinash wrote:
+> Add platform support for EHRPWM and ECAP by providing clock nodes and
+> device tree nodes.
+> This series depends on [1] and [2] and is available for testing at [3].
+> Tested for back light support in da850 EVM with EHRPWM PWM device.
 > 
-
-Because this bug is in a failure path, and seems the only way to get into
-this path is -ENOMEM.
-
-> Also, note that this teardown code long predates kmemcg.
+> [1] http://gitorious.org/linux-davinci/linux-davinci/trees/davinci-for-v3.9/dt-2
+> [2] https://gitorious.org/linux-pwm/linux-pwm/trees/for-next
+> [3] https://github.com/avinashphilip/am335x_linux/tree/davinci-for-v3.9_soc_pwm
 > 
+> Note:
+> DT support for EHRPWM backlight has not been added in da850-evm.dts as there is
+> conflicting pin-mux requirement with SPI flash.
 
-Maybe this bug was introduced when ss->create() was changed to ss->css_alloc()
-and ss->css_online(), and before that change ss->destroy() won't be called
-if ss->create() failed.
+Can you check if this is really true even in newer boards (have a look
+at the latest schematics)? I remember this used to be a problem in very
+early versions but was fixed later.
 
-> I am not saying your are wrong - on the contrary, you seem to be right,
-> but I think this one needs to be handled with extra care. I will run
-> some tests, take a look, and get back to you.
-> 
-
+Thanks,
+Sekhar
