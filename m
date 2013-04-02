@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759575Ab3DBXDB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:03:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33940 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752542Ab3DBWud (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758087Ab3DBWud (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 2 Apr 2013 18:50:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33890 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752542Ab3DBWu0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:50:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Beulich <jbeulich@suse.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 11/56] xen-blkback: fix dispatch_rw_block_io() error path
-Date: Tue,  2 Apr 2013 15:49:38 -0700
-Message-Id: <20130402224713.174944798@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 01/56] signal: Define __ARCH_HAS_SA_RESTORER so we know whether to clear sa_restorer
+Date: Tue,  2 Apr 2013 15:49:28 -0700
+Message-Id: <20130402224712.037884059@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
@@ -27,49 +26,168 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@suse.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 0e5e098ac22dae38f957e951b70d3cf73beff0f7 upstream.
+Vaguely based on upstream commit 574c4866e33d 'consolidate kernel-side
+struct sigaction declarations'.
 
-Commit 7708992 ("xen/blkback: Seperate the bio allocation and the bio
-submission") consolidated the pendcnt updates to just a single write,
-neglecting the fact that the error path relied on it getting set to 1
-up front (such that the decrement in __end_block_io_op() would actually
-drop the count to zero, triggering the necessary cleanup actions).
+flush_signal_handlers() needs to know whether sigaction::sa_restorer
+is defined, not whether SA_RESTORER is defined.  Define the
+__ARCH_HAS_SA_RESTORER macro to indicate this.
 
-Also remove a misleading and a stale (after said commit) comment.
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/xen-blkback/blkback.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ arch/arm/include/asm/signal.h     |    1 +
+ arch/avr32/include/asm/signal.h   |    1 +
+ arch/cris/include/asm/signal.h    |    1 +
+ arch/h8300/include/asm/signal.h   |    1 +
+ arch/m32r/include/asm/signal.h    |    1 +
+ arch/m68k/include/asm/signal.h    |    1 +
+ arch/mn10300/include/asm/signal.h |    1 +
+ arch/powerpc/include/asm/signal.h |    1 +
+ arch/s390/include/asm/signal.h    |    1 +
+ arch/sparc/include/asm/signal.h   |    1 +
+ arch/x86/include/asm/signal.h     |    2 ++
+ arch/xtensa/include/asm/signal.h  |    1 +
+ include/asm-generic/signal.h      |    4 ++++
+ 13 files changed, 17 insertions(+)
 
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -650,13 +650,7 @@ static int dispatch_rw_block_io(struct x
- 		bio->bi_end_io  = end_block_io_op;
- 	}
+--- a/arch/arm/include/asm/signal.h
++++ b/arch/arm/include/asm/signal.h
+@@ -127,6 +127,7 @@ struct sigaction {
+ 	__sigrestore_t sa_restorer;
+ 	sigset_t sa_mask;		/* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
  
--	/*
--	 * We set it one so that the last submit_bio does not have to call
--	 * atomic_inc.
--	 */
- 	atomic_set(&pending_req->pendcnt, nbio);
--
--	/* Get a reference count for the disk queue and start sending I/O */
- 	blk_start_plug(&plug);
+ struct k_sigaction {
+ 	struct sigaction sa;
+--- a/arch/avr32/include/asm/signal.h
++++ b/arch/avr32/include/asm/signal.h
+@@ -128,6 +128,7 @@ struct sigaction {
+ 	__sigrestore_t sa_restorer;
+ 	sigset_t sa_mask;		/* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
  
- 	for (i = 0; i < nbio; i++)
-@@ -684,6 +678,7 @@ static int dispatch_rw_block_io(struct x
-  fail_put_bio:
- 	for (i = 0; i < nbio; i++)
- 		bio_put(biolist[i]);
-+	atomic_set(&pending_req->pendcnt, 1);
- 	__end_block_io_op(pending_req, -EINVAL);
- 	msleep(1); /* back off a bit */
- 	return -EIO;
+ struct k_sigaction {
+ 	struct sigaction sa;
+--- a/arch/cris/include/asm/signal.h
++++ b/arch/cris/include/asm/signal.h
+@@ -122,6 +122,7 @@ struct sigaction {
+ 	void (*sa_restorer)(void);
+ 	sigset_t sa_mask;		/* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ struct k_sigaction {
+ 	struct sigaction sa;
+--- a/arch/h8300/include/asm/signal.h
++++ b/arch/h8300/include/asm/signal.h
+@@ -121,6 +121,7 @@ struct sigaction {
+ 	void (*sa_restorer)(void);
+ 	sigset_t sa_mask;		/* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ struct k_sigaction {
+ 	struct sigaction sa;
+--- a/arch/m32r/include/asm/signal.h
++++ b/arch/m32r/include/asm/signal.h
+@@ -123,6 +123,7 @@ struct sigaction {
+ 	__sigrestore_t sa_restorer;
+ 	sigset_t sa_mask;		/* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ struct k_sigaction {
+ 	struct sigaction sa;
+--- a/arch/m68k/include/asm/signal.h
++++ b/arch/m68k/include/asm/signal.h
+@@ -119,6 +119,7 @@ struct sigaction {
+ 	__sigrestore_t sa_restorer;
+ 	sigset_t sa_mask;		/* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ struct k_sigaction {
+ 	struct sigaction sa;
+--- a/arch/mn10300/include/asm/signal.h
++++ b/arch/mn10300/include/asm/signal.h
+@@ -131,6 +131,7 @@ struct sigaction {
+ 	__sigrestore_t sa_restorer;
+ 	sigset_t sa_mask;		/* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ struct k_sigaction {
+ 	struct sigaction sa;
+--- a/arch/powerpc/include/asm/signal.h
++++ b/arch/powerpc/include/asm/signal.h
+@@ -109,6 +109,7 @@ struct sigaction {
+ 	__sigrestore_t sa_restorer;
+ 	sigset_t sa_mask;		/* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ struct k_sigaction {
+ 	struct sigaction sa;
+--- a/arch/s390/include/asm/signal.h
++++ b/arch/s390/include/asm/signal.h
+@@ -131,6 +131,7 @@ struct sigaction {
+         void (*sa_restorer)(void);
+         sigset_t sa_mask;               /* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ struct k_sigaction {
+         struct sigaction sa;
+--- a/arch/sparc/include/asm/signal.h
++++ b/arch/sparc/include/asm/signal.h
+@@ -191,6 +191,7 @@ struct __old_sigaction {
+ 	unsigned long		sa_flags;
+ 	void			(*sa_restorer)(void);  /* not used by Linux/SPARC yet */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ typedef struct sigaltstack {
+ 	void			__user *ss_sp;
+--- a/arch/x86/include/asm/signal.h
++++ b/arch/x86/include/asm/signal.h
+@@ -125,6 +125,8 @@ typedef unsigned long sigset_t;
+ extern void do_notify_resume(struct pt_regs *, void *, __u32);
+ # endif /* __KERNEL__ */
+ 
++#define __ARCH_HAS_SA_RESTORER
++
+ #ifdef __i386__
+ # ifdef __KERNEL__
+ struct old_sigaction {
+--- a/arch/xtensa/include/asm/signal.h
++++ b/arch/xtensa/include/asm/signal.h
+@@ -133,6 +133,7 @@ struct sigaction {
+ 	void (*sa_restorer)(void);
+ 	sigset_t sa_mask;		/* mask last for extensibility */
+ };
++#define __ARCH_HAS_SA_RESTORER
+ 
+ struct k_sigaction {
+ 	struct sigaction sa;
+--- a/include/asm-generic/signal.h
++++ b/include/asm-generic/signal.h
+@@ -99,6 +99,10 @@ typedef unsigned long old_sigset_t;
+ 
+ #include <asm-generic/signal-defs.h>
+ 
++#ifdef SA_RESTORER
++#define __ARCH_HAS_SA_RESTORER
++#endif
++
+ struct sigaction {
+ 	__sighandler_t sa_handler;
+ 	unsigned long sa_flags;
 
 
