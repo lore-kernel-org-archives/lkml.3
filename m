@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760286Ab3DBXXH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:23:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32817 "EHLO
+	id S1760324Ab3DBXXZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:23:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32814 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106Ab3DBWLz (ORCPT
+	with ESMTP id S1761127Ab3DBWLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:11:55 -0400
+	Tue, 2 Apr 2013 18:11:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Horia Geanta <horia.geanta@freescale.com>,
         Kim Phillips <kim.phillips@freescale.com>,
         Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 008/124] Revert "crypto: caam - add IPsec ESN support"
-Date: Tue,  2 Apr 2013 15:09:50 -0700
-Message-Id: <20130402221105.179936895@linuxfoundation.org>
+Subject: [ 007/124] Revert "crypto: talitos - add IPsec ESN support"
+Date: Tue,  2 Apr 2013 15:09:49 -0700
+Message-Id: <20130402221105.049992165@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -31,9 +31,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Horia Geanta <horia.geanta@freescale.com>
 
-commit 246bbedb9aaf27e2207501d93a869023a439fce5 upstream.
+commit 991155bacb91c988c45586525771758ddadd44ce upstream.
 
-This reverts commit 891104ed008e8646c7860fe5bc70b0aac55dcc6c.
+This reverts commit e763eb699be723fb41af818118068c6b3afdaf8d.
 
 Current IPsec ESN implementation for authencesn(cbc(aes), hmac(sha))
 (separate encryption and integrity algorithms) does not conform
@@ -51,71 +51,77 @@ Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/crypto/caam/caamalg.c |   27 ++-------------------------
- drivers/crypto/caam/compat.h  |    1 -
- 2 files changed, 2 insertions(+), 26 deletions(-)
+ drivers/crypto/talitos.c |   30 ++----------------------------
+ 1 file changed, 2 insertions(+), 28 deletions(-)
 
---- a/drivers/crypto/caam/caamalg.c
-+++ b/drivers/crypto/caam/caamalg.c
-@@ -1650,11 +1650,7 @@ struct caam_alg_template {
+--- a/drivers/crypto/talitos.c
++++ b/drivers/crypto/talitos.c
+@@ -38,7 +38,6 @@
+ #include <linux/spinlock.h>
+ #include <linux/rtnetlink.h>
+ #include <linux/slab.h>
+-#include <linux/string.h>
+ 
+ #include <crypto/algapi.h>
+ #include <crypto/aes.h>
+@@ -1974,11 +1973,7 @@ struct talitos_alg_template {
  };
  
- static struct caam_alg_template driver_algs[] = {
+ static struct talitos_alg_template driver_algs[] = {
 -	/*
--	 * single-pass ipsec_esp descriptor
+-	 * AEAD algorithms. These use a single-pass ipsec_esp descriptor.
 -	 * authencesn(*,*) is also registered, although not present
 -	 * explicitly here.
 -	 */
-+	/* single-pass ipsec_esp descriptor */
- 	{
- 		.name = "authenc(hmac(md5),cbc(aes))",
- 		.driver_name = "authenc-hmac-md5-cbc-aes-caam",
-@@ -2217,9 +2213,7 @@ static int __init caam_algapi_init(void)
- 	for (i = 0; i < ARRAY_SIZE(driver_algs); i++) {
- 		/* TODO: check if h/w supports alg */
- 		struct caam_crypto_alg *t_alg;
--		bool done = false;
++	/* AEAD algorithms.  These use a single-pass ipsec_esp descriptor */
+ 	{	.type = CRYPTO_ALG_TYPE_AEAD,
+ 		.alg.crypto = {
+ 			.cra_name = "authenc(hmac(sha1),cbc(aes))",
+@@ -2820,9 +2815,7 @@ static int talitos_probe(struct platform
+ 		if (hw_supports(dev, driver_algs[i].desc_hdr_template)) {
+ 			struct talitos_crypto_alg *t_alg;
+ 			char *name = NULL;
+-			bool authenc = false;
  
 -authencesn:
- 		t_alg = caam_alg_alloc(ctrldev, &driver_algs[i]);
- 		if (IS_ERR(t_alg)) {
- 			err = PTR_ERR(t_alg);
-@@ -2233,25 +2227,8 @@ authencesn:
- 			dev_warn(ctrldev, "%s alg registration failed\n",
- 				t_alg->crypto_alg.cra_driver_name);
- 			kfree(t_alg);
--		} else {
-+		} else
- 			list_add_tail(&t_alg->entry, &priv->alg_list);
--			if (driver_algs[i].type == CRYPTO_ALG_TYPE_AEAD &&
--			    !memcmp(driver_algs[i].name, "authenc", 7) &&
--			    !done) {
--				char *name;
+ 			t_alg = talitos_alg_alloc(dev, &driver_algs[i]);
+ 			if (IS_ERR(t_alg)) {
+ 				err = PTR_ERR(t_alg);
+@@ -2837,8 +2830,6 @@ authencesn:
+ 				err = crypto_register_alg(
+ 						&t_alg->algt.alg.crypto);
+ 				name = t_alg->algt.alg.crypto.cra_driver_name;
+-				authenc = authenc ? !authenc :
+-					  !(bool)memcmp(name, "authenc", 7);
+ 				break;
+ 			case CRYPTO_ALG_TYPE_AHASH:
+ 				err = crypto_register_ahash(
+@@ -2851,25 +2842,8 @@ authencesn:
+ 				dev_err(dev, "%s alg registration failed\n",
+ 					name);
+ 				kfree(t_alg);
+-			} else {
++			} else
+ 				list_add_tail(&t_alg->entry, &priv->alg_list);
+-				if (authenc) {
+-					struct crypto_alg *alg =
+-						&driver_algs[i].alg.crypto;
 -
--				name = driver_algs[i].name;
--				memmove(name + 10, name + 7, strlen(name) - 7);
--				memcpy(name + 7, "esn", 3);
+-					name = alg->cra_name;
+-					memmove(name + 10, name + 7,
+-						strlen(name) - 7);
+-					memcpy(name + 7, "esn", 3);
 -
--				name = driver_algs[i].driver_name;
--				memmove(name + 10, name + 7, strlen(name) - 7);
--				memcpy(name + 7, "esn", 3);
+-					name = alg->cra_driver_name;
+-					memmove(name + 10, name + 7,
+-						strlen(name) - 7);
+-					memcpy(name + 7, "esn", 3);
 -
--				done = true;
--				goto authencesn;
+-					goto authencesn;
+-				}
 -			}
--		}
+ 		}
  	}
  	if (!list_empty(&priv->alg_list))
- 		dev_info(ctrldev, "%s algorithms registered in /proc/crypto\n",
---- a/drivers/crypto/caam/compat.h
-+++ b/drivers/crypto/caam/compat.h
-@@ -23,7 +23,6 @@
- #include <linux/types.h>
- #include <linux/debugfs.h>
- #include <linux/circ_buf.h>
--#include <linux/string.h>
- #include <net/xfrm.h>
- 
- #include <crypto/algapi.h>
 
 
