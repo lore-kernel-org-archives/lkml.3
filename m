@@ -1,116 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933936Ab3DBWPw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:15:52 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:50104 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933879Ab3DBWPs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:15:48 -0400
-Date: Tue, 2 Apr 2013 15:15:23 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Ying Han <yinghan@google.com>,
-        Minchan Kim <minchan@kernel.org>, Christoph Lameter <cl@linux.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: RE: [PATCHv2, RFC 20/30] ramfs: enable transparent huge page cache
-In-Reply-To: <20130402162813.0B4CBE0085@blue.fi.intel.com>
-Message-ID: <alpine.LNX.2.00.1304021422460.19363@eggly.anvils>
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-21-git-send-email-kirill.shutemov@linux.intel.com> <20130402162813.0B4CBE0085@blue.fi.intel.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S933956Ab3DBWP7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:15:59 -0400
+Received: from mga03.intel.com ([143.182.124.21]:62899 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933879Ab3DBWP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:15:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,396,1363158000"; 
+   d="scan'208";a="279875720"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        Platform Driver <platform-driver-x86@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: =?UTF-8?q?=5BPATCH=200/1=5D=20RAPL=20=28Running=20Average=20Power=20Limit=29=20driver?=
+Date: Tue,  2 Apr 2013 15:15:35 -0700
+Message-Id: <1364940936-20846-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Apr 2013, Kirill A. Shutemov wrote:
-> Kirill A. Shutemov wrote:
-> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> > 
-> > ramfs is the most simple fs from page cache point of view. Let's start
-> > transparent huge page cache enabling here.
-> > 
-> > For now we allocate only non-movable huge page. It's not yet clear if
-> > movable page is safe here and what need to be done to make it safe.
-> > 
-> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > ---
-> >  fs/ramfs/inode.c |    6 +++++-
-> >  1 file changed, 5 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
-> > index c24f1e1..da30b4f 100644
-> > --- a/fs/ramfs/inode.c
-> > +++ b/fs/ramfs/inode.c
-> > @@ -61,7 +61,11 @@ struct inode *ramfs_get_inode(struct super_block *sb,
-> >  		inode_init_owner(inode, dir, mode);
-> >  		inode->i_mapping->a_ops = &ramfs_aops;
-> >  		inode->i_mapping->backing_dev_info = &ramfs_backing_dev_info;
-> > -		mapping_set_gfp_mask(inode->i_mapping, GFP_HIGHUSER);
-> > +		/*
-> > +		 * TODO: what should be done to make movable safe?
-> > +		 */
-> > +		mapping_set_gfp_mask(inode->i_mapping,
-> > +				GFP_TRANSHUGE & ~__GFP_MOVABLE);
-> 
-> Hugh, I've found old thread with the reason why we have GFP_HIGHUSER here, not
-> GFP_HIGHUSER_MOVABLE:
-> 
-> http://lkml.org/lkml/2006/11/27/156
-> 
-> It seems the origin reason is not longer valid, correct?
+RAPL(Running Average Power Limit) interface provides platform software
+with the ability to monitor, control, and get notifications on SOC
+power consumptions. Since its first appearance on Sandy Bridge, more
+features have being added to extend its usage. In RAPL, platforms are
+divided into domains for fine grained control. These domains include
+package, DRAM controller, CPU core (Power Plane 0), graphics uncore
+(power plane 1), etc.
 
-Incorrect, I believe: so far as I know, the original reason remains
-valid - though it would only require a couple of good small changes
-to reverse that - or perhaps you have already made these changes?
+The purpose of this driver is to expose RAPL for userspace
+consumption. Overall, RAPL fits in the generic thermal layer in
+that platform level power capping and monitoring are mainly used for
+thermal management and thermal layer provides the abstracted interface
+needed to have portable applications.
 
-The original reason is that ramfs pages are not migratable,
-therefore they should be allocated from an unmovable area.
+Specifically, userspace is presented with per domain cooling device
+with sysfs links to its kobject. Although RAPL domain provides many
+parameters for fine tuning, long term power limit is exposed as the
+single knob via cooling device state. Whereas the rest of the
+parameters are still accessible via the linked kobject. This simplifies
+the interface for both simple and advanced use cases.
 
-As I understand it (and I would have preferred to run a test to check
-my understanding before replying, but don't have time for that), ramfs
-pages cannot be migrated for two reasons, neither of them a good reason.
+DETAILS
+=======
+1. sysfs layout
 
-One reason (okay, it wouldn't have been quite this way in 2006) is that
-ramfs (rightly) calls mapping_set_unevictable(), so its pages will fail
-the page_evictable() test, so they will be marked PageUnevictable, so
-__isolate_lru_page() will refuse to isolate them for migration (except
-for CMA).
+As an x86 platform driver, RAPL driver binds with supported CPU ids
+during probing phase. Once domains are discovered, kobjets are created
+for each domain which are also linked with cooling devices after its
+registration with the generic thermal layer.
 
-I am strongly in favour of removing that limitation from
-__isolate_lru_page() (and the thread you pointed - thank you - shows Mel
-and Christoph were both in favour too); and note that there is no such
-restriction in the confusingly similar but different isolate_lru_page().
+e.g.package RAPL domain registered as cooling device #15, link "device"
+back to its kobject.
 
-Some people do worry that migrating Mlocked pages would introduce the
-occasional possibility of a minor fault (with migration_entry_wait())
-on an Mlocked region which never faulted before.  I tend to dismiss
-that worry, but maybe I'm wrong to do so: maybe there should be a
-tunable for realtimey people to set, to prohibit page migration from
-mlocked areas; but the default should be to allow it.
+/sys/class/thermal/cooling_device15/
+├── cur_state
+├── device -> ../../../platform/intel_rapl/rapl_domains/package
+├── max_state
+├── power
+├── subsystem -> ../../../../class/thermal
+├── type
+└── uevent
 
-(Of course, we could separate ramfs's mapping_unevictable case from
-the Mlocked case; but I'd prefer to continue to treat them the same.)
+In driver's private sysfs area, domains kobjects are grouped under a
+kset which exposes global data.
+/sys/devices/platform/intel_rapl/
+├── driver -> ../../../bus/platform/drivers/intel_rapl
+├── power
+├── rapl_domains
+│   ├── package
+│   │   └── thermal_cooling
+-> ../../../../virtual/thermal/cooling_device15  
+│   ├── power_plane_0
+│   │   └── thermal_cooling
+-> ../../../../virtual/thermal/cooling_device16  
+│   └── power_plane_1
+│       └── thermal_cooling
+-> ../../../../virtual/thermal/cooling_device18  
+└── subsystem -> ../../../bus/platform
 
-The other reason it looks as if ramfs pages cannot be migrated, is
-that it does not set a suitable ->migratepage method, so would be
-handled by fallback_migrate_page(), whose PageDirty test will end
-up failing the migration with -EBUSY or -EINVAL - if I read it
-correctly.
 
-Perhaps other such reasons would surface once those are fixed.
-But until ramfs pages can be migrated, they should not be allocated
-with __GFP_MOVABLE.  (I've been writing about the migratability of
-small pages: I expect you have the migratability of THPages in flux.)
+2. per domain parameters
 
-Hugh
+These are the fine tuning parameters only used by advanced
+power/thermal management applications. Refer to Intel SDM ch14 for
+details.
+
+root@chromoly:/sys/class/thermal/cooling_device15/device# grep . *
+domain_name:package
+energy:924228
+lock:0
+max_power:0
+max_window:0
+min_power:0
+pl1_clamp:1
+pl1_enable:1
+pl2_clamp:0
+pl2_enable:1
+power:2276
+power_limit1:12000
+power_limit2:31250
+thermal_spec_power:17000
+throttle_time:
+time_window1:28000
+time_window2:0
+
+3. event notifications
+
+RAPL driver uses eventfd to provide userspace notifications on selected
+events. A file node called "event_control" is created for each RAPL
+domain. User can write control file descriptor, eventfd descriptor, and
+threshold to event_control file. Then, user application can use
+poll/select or blocking read to get notifications from the driver.
+Multiple events are allowed for each domain but only a single threshold
+is accepted.
+
+4. Usage Examples (assume the topology in the sysfs layout above)
+
+- set power limit to package domain (whole SOC package) to 6w
+root@chromoly:~# echo 6000
+	> /sys/class/thermal/cooling_device15/cur_state  
+
+- set power limit to pp1 domain (graphics) to 4w
+root@chromoly:~# echo 4000
+	> /sys/class/thermal/cooling_device18/cur_state  
+
+- check the current power usage in mWatts of pp1 domain
+root@chromoly:~# cat  /sys/class/thermal/cooling_device18/cur_state 
+61
+
+- set event notification when power consumption of graphics unit crosses
+  5w.
+root@chromoly:~#
+  event_fd_listener /sys/class/thermal/cooling_device18/device/power 5000
+(event_fd_listener opens control file power and creates an eventfd,
+then write efd, cfd, threshold to event_control file of the given
+domain)
+
+
+Caveats:
+
+1. Package power limit events are supported by legacy thermal reporting
+mechanism, which uses local APIC thermal vector to generate interrupts
+when targeted P-states are not honored by the HW/FW. This is tied to
+machine check reporting. Until RAPL is used, this notification is a rare
+exception. When RAPL power limit is set artifically low, this
+notification could result in unwanted interrupts for each power limit
+excursion. Therefore, RAPL driver attempts to turn off the power limit
+notification interrupt when user sets a power limit.
+
+2. By Intel Software Developer's Manual, RAPL interface can report
+max/min power for certain domains. But in reality HW often reports 0
+for max/min power. RAPL driver tackles this problem by using thermal
+specification power or current power limit1 when max power information
+is not available. The result is that the max_state of a RAPL cooling
+device can be based on thermal spec power or power limit 1.
+
+3. Since RAPL is backed by FW. In case of FW failure or plain lack of
+support, setting RAPL power limit could result in silent failure. I
+don't have a good solution for that.
+
+4. Data polling starts only when the following items are set
+	- power limit
+	- events
+
+
+Jacob Pan (1):
+  Introduce Intel RAPL cooling device driver
+
+ drivers/platform/x86/Kconfig      |    8 +
+ drivers/platform/x86/Makefile     |    1 +
+ drivers/platform/x86/intel_rapl.c | 1323 +++++++++++++++++++++++++++++++++++++
+ drivers/platform/x86/intel_rapl.h |  249 +++++++
+ 4 files changed, 1581 insertions(+)
+ create mode 100644 drivers/platform/x86/intel_rapl.c
+ create mode 100644 drivers/platform/x86/intel_rapl.h
+
+-- 
+1.7.9.5
+
