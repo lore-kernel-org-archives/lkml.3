@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932964Ab3DBRV1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 13:21:27 -0400
-Received: from mail-ia0-f179.google.com ([209.85.210.179]:65190 "EHLO
-	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762011Ab3DBRVX (ORCPT
+	id S933006Ab3DBRVg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 13:21:36 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:20767 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932975Ab3DBRVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 13:21:23 -0400
+	Tue, 2 Apr 2013 13:21:33 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+JW1DFcTsFnHUepacQ0LWQ
+Date: Tue, 2 Apr 2013 10:21:30 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Roger Quadros <rogerq@ti.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 01/21] usb: phy: nop: Add some parameters to
+ platform data
+Message-ID: <20130402172129.GT10155@atomide.com>
+References: <1363794300-31526-1-git-send-email-rogerq@ti.com>
+ <1363794300-31526-2-git-send-email-rogerq@ti.com>
+ <20130320155555.GG1567@arwen.pp.htv.fi>
+ <20130320161324.GL16413@atomide.com>
+ <20130320161947.GJ1567@arwen.pp.htv.fi>
 MIME-Version: 1.0
-In-Reply-To: <20130402155050.GH29506@redhat.com>
-References: <CAE9FiQXikU8-FkYYULHx50qP_ME2bRSzCC=8ZH8iDyUr2ug66g@mail.gmail.com>
-	<515A03DB.6040107@zytor.com>
-	<CAE9FiQWNFbFgXafJBvORRax+GNU_uf0KFnqZ5NQit0BeZZx9LA@mail.gmail.com>
-	<515A083B.7050508@zytor.com>
-	<CAE9FiQXwy8nLRQAiZ+P56fokisUXAmTJWA07TZ-gSH61K5FQLA@mail.gmail.com>
-	<CAE9FiQW1RzP5A_82qUP7gF_6-G3+Ceay_L1FQf7N=MMbQA4+iw@mail.gmail.com>
-	<20130402135001.GC29506@redhat.com>
-	<CAE9FiQVWprV4YkMq_Pu95AYk_qGzXWPVBWJVDfa=0RbqL63y4Q@mail.gmail.com>
-	<20130402153957.GG29506@redhat.com>
-	<CAE9FiQU99i+fBLnCq72c17XTALdsuUS5jrANAbL=1aMm7=mahw@mail.gmail.com>
-	<20130402155050.GH29506@redhat.com>
-Date: Tue, 2 Apr 2013 10:21:22 -0700
-X-Google-Sender-Auth: l2htOGpfZJw68bmAiM6E32O1OwY
-Message-ID: <CAE9FiQW762wajje4VxGtikceQWecJ=ZL=qQj_TJju7aKgz4dsQ@mail.gmail.com>
-Subject: Re: [PATCH] kexec: use Crash kernel for Crash kernel low
-From: Yinghai Lu <yinghai@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130320161947.GJ1567@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 2, 2013 at 8:50 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+* Felipe Balbi <balbi@ti.com> [130320 09:24]:
+> On Wed, Mar 20, 2013 at 09:13:24AM -0700, Tony Lindgren wrote:
+> > * Felipe Balbi <balbi@ti.com> [130320 09:00]:
+> > > On Wed, Mar 20, 2013 at 05:44:40PM +0200, Roger Quadros wrote:
+> > > > Add clk_rate parameter to platform data. If supplied, the
+> > > > NOP phy driver will program the clock to that rate during probe.
+> > > > 
+> > > > Also add 2 flags, needs_vcc and needs_reset.
+> > > > If the flag is set and the regulator couldn't be found
+> > > > then the driver will bail out with -EPROBE_DEFER.
+> > > > 
+> > > > Signed-off-by: Roger Quadros <rogerq@ti.com>
+> > > > Acked-by: Felipe Balbi <balbi@ti.com>
+> > > 
+> > > Hi Tony,
+> > > 
+> > > maybe you might prefer to merge commit 1f0972f from my next branch which
+> > > is exactly this patch. Basically, if you:
+> > > 
+> > > $ git fetch git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git next
+> > > $ git merge 1f0972f
+> > > 
+> > > you get $SUBJECT and can apply the others without fear of conflicts
+> > > later.
+> > 
+> > OK thanks will use commit 1f0972f, so let's consider that commit immutable.
+> 
+> yeah, once it hits my 'next' branch, I don't rebase anymore.
 
-> Can you please inline your patches. Otherwise how one is supposed to give
-> review comments?
+I've applied the board related patchs into omap-for-v3.10/usb that's based
+on commit 1f0972f.
 
-Just sent the whole updated four patches. Please check them.
+Regards,
 
-Thanks
-
-Yinghai
+Tony
