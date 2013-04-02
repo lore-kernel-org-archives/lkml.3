@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760259Ab3DBD0b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 23:26:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:45848 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760158Ab3DBDYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 23:24:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,391,1363158000"; 
-   d="scan'208";a="310928616"
-From: Alex Shi <alex.shi@intel.com>
-To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com
-Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, alex.shi@intel.com, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
-        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
-        riel@redhat.com
-Subject: [patch v3 6/8] sched: consider runnable load average in move_tasks
-Date: Tue,  2 Apr 2013 11:23:26 +0800
-Message-Id: <1364873008-3169-7-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1364873008-3169-1-git-send-email-alex.shi@intel.com>
-References: <1364873008-3169-1-git-send-email-alex.shi@intel.com>
+	id S1760272Ab3DBD1N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 23:27:13 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58091 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760158Ab3DBD1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 23:27:11 -0400
+Date: Mon, 1 Apr 2013 23:26:53 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: Re: [PATCH 19/33] aio: kill struct aio_ring_info
+Message-ID: <20130402032653.GH30122@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Kent Overstreet <koverstreet@google.com>,
+	linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+	akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+	Felipe Balbi <balbi@ti.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+	Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+	Asai Thambi S P <asamymuthupa@micron.com>,
+	Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+	Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+	Benjamin LaHaise <bcrl@kvack.org>
+References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
+ <1363883754-27966-20-git-send-email-koverstreet@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363883754-27966-20-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Except using runnable load average in background, move_tasks is also
-the key functions in load balance. We need consider the runnable load
-average in it in order to the apple to apple load comparison.
+On Thu, Mar 21, 2013 at 09:35:40AM -0700, Kent Overstreet wrote:
+> struct aio_ring_info was kind of odd, the only place it's used is where
+> it's embedded in struct kioctx - there's no real need for it.
+> 
+> The next patch rearranges struct kioctx and puts various things on their
+> own cachelines - getting rid of struct aio_ring_info now makes that
+> reordering a bit clearer.
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- kernel/sched/fair.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 1f9026e..bf4e0d4 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3966,6 +3966,15 @@ static unsigned long task_h_load(struct task_struct *p);
- 
- static const unsigned int sched_nr_migrate_break = 32;
- 
-+static unsigned long task_h_load_avg(struct task_struct *p)
-+{
-+	u32 period = p->se.avg.runnable_avg_period;
-+	if (!period)
-+		return 0;
-+
-+	return task_h_load(p) * p->se.avg.runnable_avg_sum / period;
-+}
-+
- /*
-  * move_tasks tries to move up to imbalance weighted load from busiest to
-  * this_rq, as part of a balancing operation within domain "sd".
-@@ -4001,7 +4010,7 @@ static int move_tasks(struct lb_env *env)
- 		if (throttled_lb_pair(task_group(p), env->src_cpu, env->dst_cpu))
- 			goto next;
- 
--		load = task_h_load(p);
-+		load = task_h_load_avg(p);
- 
- 		if (sched_feat(LB_MIN) && load < 16 && !env->sd->nr_balance_failed)
- 			goto next;
--- 
-1.7.12
+Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
 
