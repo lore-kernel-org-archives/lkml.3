@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761011Ab3DBNWP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 09:22:15 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:58924 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760699Ab3DBNWM (ORCPT
+	id S1761098Ab3DBNWX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 09:22:23 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:52329 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761057Ab3DBNWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 09:22:12 -0400
+	Tue, 2 Apr 2013 09:22:21 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 3/9] ARM: ux500: Supply a DTS file for the u8540 platform
-Date: Tue,  2 Apr 2013 14:21:50 +0100
-Message-Id: <1364908916-29803-3-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 7/9] ARM: ux500: Add a VQMMC (level-shifting) regulator DT node for Snowball
+Date: Tue,  2 Apr 2013 14:21:54 +0100
+Message-Id: <1364908916-29803-7-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1364908916-29803-1-git-send-email-lee.jones@linaro.org>
 References: <1364908916-29803-1-git-send-email-lee.jones@linaro.org>
@@ -21,57 +21,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a skeleton DTS file which only enables serial. Just using
-this simple file yields a terminal when booting u8540.
+Until recently platform code took care of all MMCI level-shifting by
+way of an ios_handler() call-back. Now it is the driver's responsibility
+to handle. In order to so that we need to provide the VQMMC regulator
+reference in Device Tree. This patch takes care of that.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/boot/dts/u8540.dts |   36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
- create mode 100644 arch/arm/boot/dts/u8540.dts
+ arch/arm/boot/dts/snowball.dts |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/arch/arm/boot/dts/u8540.dts b/arch/arm/boot/dts/u8540.dts
-new file mode 100644
-index 0000000..02e8e1a
---- /dev/null
-+++ b/arch/arm/boot/dts/u8540.dts
-@@ -0,0 +1,36 @@
-+/*
-+ * Copyright 2013 ST-Ericsson AB
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
+diff --git a/arch/arm/boot/dts/snowball.dts b/arch/arm/boot/dts/snowball.dts
+index cc99447..6b4f8b9 100644
+--- a/arch/arm/boot/dts/snowball.dts
++++ b/arch/arm/boot/dts/snowball.dts
+@@ -119,6 +119,13 @@
+ 			};
+ 		};
+ 
++		vmmci: regulator-gpio {
++			gpios = <&gpio6 25 0x4>;
++			enable-gpio = <&gpio7 4 0x4>;
 +
-+/dts-v1/;
-+/include/ "dbx5x0.dtsi"
-+
-+/ {
-+	model = "ST-Ericsson U8540 platform with Device Tree";
-+	compatible = "st-ericsson,u8540";
-+
-+	memory {
-+		reg = <0x00000000 0x20000000>;
-+	};
-+
-+	soc-u9500 {
-+		uart@80120000 {
 +			status = "okay";
 +		};
 +
-+		uart@80121000 {
-+			status = "okay";
-+		};
-+
-+		uart@80007000 {
-+			status = "okay";
-+		};
-+	};
-+};
+ 		// External Micro SD slot
+ 		sdi0_per1@80126000 {
+ 			arm,primecell-periphid = <0x10480180>;
+@@ -126,6 +133,7 @@
+ 			bus-width = <4>;
+ 			mmc-cap-mmc-highspeed;
+ 			vmmc-supply = <&ab8500_ldo_aux3_reg>;
++			vqmmc-supply = <&vmmci>;
+ 
+ 			cd-gpios  = <&gpio6 26 0x4>; // 218
+ 			cd-inverted;
 -- 
 1.7.10.4
 
