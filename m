@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759169Ab3DBW5L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:57:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34042 "EHLO
+	id S1759190Ab3DBW5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:57:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758446Ab3DBWuu (ORCPT
+	with ESMTP id S1758335Ab3DBWut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:50:50 -0400
+	Tue, 2 Apr 2013 18:50:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andre Heider <a.heider@gmail.com>, Lingzhu Xiang <lxiang@redhat.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Matt Fleming <matt.fleming@intel.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 37/56] efivars: Handle duplicate names from get_next_variable()
-Date: Tue,  2 Apr 2013 15:50:04 -0700
-Message-Id: <20130402224716.181018832@linuxfoundation.org>
+        Michael Ellerman <michael@ellerman.id.au>, Avi Kivity <avi@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [ 27/56] KVM: Ensure all vcpus are consistent with in-kernel irqchip settings
+Date: Tue,  2 Apr 2013 15:49:54 -0700
+Message-Id: <20130402224715.037040056@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
@@ -28,191 +27,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
 
-commit e971318bbed610e28bb3fde9d548e6aaf0a6b02e upstream.
+From: Avi Kivity <avi@redhat.com>
 
-Some firmware exhibits a bug where the same VariableName and
-VendorGuid values are returned on multiple invocations of
-GetNextVariableName(). See,
+commit 3e515705a1f46beb1c942bb8043c16f8ac7b1e9e upstream.
 
-    https://bugzilla.kernel.org/show_bug.cgi?id=47631
+If some vcpus are created before KVM_CREATE_IRQCHIP, then
+irqchip_in_kernel() and vcpu->arch.apic will be inconsistent, leading
+to potential NULL pointer dereferences.
 
-As a consequence of such a bug, Andre reports hitting the following
-WARN_ON() in the sysfs code after updating the BIOS on his, "Gigabyte
-Technology Co., Ltd. To be filled by O.E.M./Z77X-UD3H, BIOS F19e
-11/21/2012)" machine,
+Fix by:
+- ensuring that no vcpus are installed when KVM_CREATE_IRQCHIP is called
+- ensuring that a vcpu has an apic if it is installed after KVM_CREATE_IRQCHIP
 
-[    0.581554] EFI Variables Facility v0.08 2004-May-17
-[    0.584914] ------------[ cut here ]------------
-[    0.585639] WARNING: at /home/andre/linux/fs/sysfs/dir.c:536 sysfs_add_one+0xd4/0x100()
-[    0.586381] Hardware name: To be filled by O.E.M.
-[    0.587123] sysfs: cannot create duplicate filename '/firmware/efi/vars/SbAslBufferPtrVar-01f33c25-764d-43ea-aeea-6b5a41f3f3e8'
-[    0.588694] Modules linked in:
-[    0.589484] Pid: 1, comm: swapper/0 Not tainted 3.8.0+ #7
-[    0.590280] Call Trace:
-[    0.591066]  [<ffffffff81208954>] ? sysfs_add_one+0xd4/0x100
-[    0.591861]  [<ffffffff810587bf>] warn_slowpath_common+0x7f/0xc0
-[    0.592650]  [<ffffffff810588bc>] warn_slowpath_fmt+0x4c/0x50
-[    0.593429]  [<ffffffff8134dd85>] ? strlcat+0x65/0x80
-[    0.594203]  [<ffffffff81208954>] sysfs_add_one+0xd4/0x100
-[    0.594979]  [<ffffffff81208b78>] create_dir+0x78/0xd0
-[    0.595753]  [<ffffffff81208ec6>] sysfs_create_dir+0x86/0xe0
-[    0.596532]  [<ffffffff81347e4c>] kobject_add_internal+0x9c/0x220
-[    0.597310]  [<ffffffff81348307>] kobject_init_and_add+0x67/0x90
-[    0.598083]  [<ffffffff81584a71>] ? efivar_create_sysfs_entry+0x61/0x1c0
-[    0.598859]  [<ffffffff81584b2b>] efivar_create_sysfs_entry+0x11b/0x1c0
-[    0.599631]  [<ffffffff8158517e>] register_efivars+0xde/0x420
-[    0.600395]  [<ffffffff81d430a7>] ? edd_init+0x2f5/0x2f5
-[    0.601150]  [<ffffffff81d4315f>] efivars_init+0xb8/0x104
-[    0.601903]  [<ffffffff8100215a>] do_one_initcall+0x12a/0x180
-[    0.602659]  [<ffffffff81d05d80>] kernel_init_freeable+0x13e/0x1c6
-[    0.603418]  [<ffffffff81d05586>] ? loglevel+0x31/0x31
-[    0.604183]  [<ffffffff816a6530>] ? rest_init+0x80/0x80
-[    0.604936]  [<ffffffff816a653e>] kernel_init+0xe/0xf0
-[    0.605681]  [<ffffffff816ce7ec>] ret_from_fork+0x7c/0xb0
-[    0.606414]  [<ffffffff816a6530>] ? rest_init+0x80/0x80
-[    0.607143] ---[ end trace 1609741ab737eb29 ]---
+This is somewhat long winded because vcpu->arch.apic is created without
+kvm->lock held.
 
-There's not much we can do to work around and keep traversing the
-variable list once we hit this firmware bug. Our only solution is to
-terminate the loop because, as Lingzhu reports, some machines get
-stuck when they encounter duplicate names,
+Based on earlier patch by Michael Ellerman.
 
-  > I had an IBM System x3100 M4 and x3850 X5 on which kernel would
-  > get stuck in infinite loop creating duplicate sysfs files because,
-  > for some reason, there are several duplicate boot entries in nvram
-  > getting GetNextVariableName into a circle of iteration (with
-  > period > 2).
-
-Also disable the workqueue, as efivar_update_sysfs_entries() uses
-GetNextVariableName() to figure out which variables have been created
-since the last iteration. That algorithm isn't going to work if
-GetNextVariableName() returns duplicates. Note that we don't disable
-EFI variable creation completely on the affected machines, it's just
-that any pstore dump-* files won't appear in sysfs until the next
-boot.
-
-[Backported for 3.0-stable. Removed code related to pstore
-workqueue but pulled in helper function variable_is_present
-from a93bc0c; Moved the definition of __efivars to the top
-for being referenced in variable_is_present.]
-
-Reported-by: Andre Heider <a.heider@gmail.com>
-Reported-by: Lingzhu Xiang <lxiang@redhat.com>
-Tested-by: Lingzhu Xiang <lxiang@redhat.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
-Reviewed-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
 ---
- drivers/firmware/efivars.c |   65 ++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 62 insertions(+), 3 deletions(-)
+ arch/ia64/kvm/kvm-ia64.c |    5 +++++
+ arch/x86/kvm/x86.c       |    8 ++++++++
+ include/linux/kvm_host.h |    7 +++++++
+ virt/kvm/kvm_main.c      |    4 ++++
+ 4 files changed, 24 insertions(+)
 
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -119,6 +119,8 @@ struct efivar_attribute {
- 	ssize_t (*store)(struct efivar_entry *entry, const char *buf, size_t count);
- };
+--- a/arch/ia64/kvm/kvm-ia64.c
++++ b/arch/ia64/kvm/kvm-ia64.c
+@@ -1168,6 +1168,11 @@ out:
  
-+static struct efivars __efivars;
-+static struct efivar_operations ops;
+ #define PALE_RESET_ENTRY    0x80000000ffffffb0UL
  
- #define EFIVAR_ATTR(_name, _mode, _show, _store) \
- struct efivar_attribute efivar_attr_##_name = { \
-@@ -730,6 +732,28 @@ static ssize_t efivar_delete(struct file
- 	return count;
++bool kvm_vcpu_compatible(struct kvm_vcpu *vcpu)
++{
++	return irqchip_in_kernel(vcpu->kcm) == (vcpu->arch.apic != NULL);
++}
++
+ int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu)
+ {
+ 	struct kvm_vcpu *v;
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3410,6 +3410,9 @@ long kvm_arch_vm_ioctl(struct file *filp
+ 		r = -EEXIST;
+ 		if (kvm->arch.vpic)
+ 			goto create_irqchip_unlock;
++		r = -EINVAL;
++		if (atomic_read(&kvm->online_vcpus))
++			goto create_irqchip_unlock;
+ 		r = -ENOMEM;
+ 		vpic = kvm_create_pic(kvm);
+ 		if (vpic) {
+@@ -6189,6 +6192,11 @@ void kvm_arch_check_processor_compat(voi
+ 	kvm_x86_ops->check_processor_compatibility(rtn);
  }
  
-+static bool variable_is_present(efi_char16_t *variable_name, efi_guid_t *vendor)
++bool kvm_vcpu_compatible(struct kvm_vcpu *vcpu)
 +{
-+	struct efivar_entry *entry, *n;
-+	struct efivars *efivars = &__efivars;
-+	unsigned long strsize1, strsize2;
-+	bool found = false;
++	return irqchip_in_kernel(vcpu->kvm) == (vcpu->arch.apic != NULL);
++}
 +
-+	strsize1 = utf16_strsize(variable_name, 1024);
-+	list_for_each_entry_safe(entry, n, &efivars->list, list) {
-+		strsize2 = utf16_strsize(entry->var.VariableName, 1024);
-+		if (strsize1 == strsize2 &&
-+			!memcmp(variable_name, &(entry->var.VariableName),
-+				strsize2) &&
-+			!efi_guidcmp(entry->var.VendorGuid,
-+				*vendor)) {
-+			found = true;
-+			break;
-+		}
+ int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu)
+ {
+ 	struct page *page;
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -736,6 +736,13 @@ static inline bool kvm_vcpu_is_bsp(struc
+ {
+ 	return vcpu->kvm->bsp_vcpu_id == vcpu->vcpu_id;
+ }
++
++bool kvm_vcpu_compatible(struct kvm_vcpu *vcpu);
++
++#else
++
++static inline bool kvm_vcpu_compatible(struct kvm_vcpu *vcpu) { return true; }
++
+ #endif
+ 
+ #ifdef __KVM_HAVE_DEVICE_ASSIGNMENT
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1619,6 +1619,10 @@ static int kvm_vm_ioctl_create_vcpu(stru
+ 		goto vcpu_destroy;
+ 
+ 	mutex_lock(&kvm->lock);
++	if (!kvm_vcpu_compatible(vcpu)) {
++		r = -EINVAL;
++		goto unlock_vcpu_destroy;
 +	}
-+	return found;
-+}
-+
- /*
-  * Returns the size of variable_name, in bytes, including the
-  * terminating NULL character, or variable_name_size if no NULL
-@@ -942,6 +966,28 @@ void unregister_efivars(struct efivars *
- }
- EXPORT_SYMBOL_GPL(unregister_efivars);
- 
-+/*
-+ * Print a warning when duplicate EFI variables are encountered and
-+ * disable the sysfs workqueue since the firmware is buggy.
-+ */
-+static void dup_variable_bug(efi_char16_t *s16, efi_guid_t *vendor_guid,
-+			     unsigned long len16)
-+{
-+	size_t i, len8 = len16 / sizeof(efi_char16_t);
-+	char *s8;
-+
-+	s8 = kzalloc(len8, GFP_KERNEL);
-+	if (!s8)
-+		return;
-+
-+	for (i = 0; i < len8; i++)
-+		s8[i] = s16[i];
-+
-+	printk(KERN_WARNING "efivars: duplicate variable: %s-%pUl\n",
-+	       s8, vendor_guid);
-+	kfree(s8);
-+}
-+
- int register_efivars(struct efivars *efivars,
- 		     const struct efivar_operations *ops,
- 		     struct kobject *parent_kobj)
-@@ -984,6 +1030,22 @@ int register_efivars(struct efivars *efi
- 		case EFI_SUCCESS:
- 			variable_name_size = var_name_strnsize(variable_name,
- 							       variable_name_size);
-+
-+			/*
-+			 * Some firmware implementations return the
-+			 * same variable name on multiple calls to
-+			 * get_next_variable(). Terminate the loop
-+			 * immediately as there is no guarantee that
-+			 * we'll ever see a different variable name,
-+			 * and may end up looping here forever.
-+			 */
-+			if (variable_is_present(variable_name, &vendor_guid)) {
-+				dup_variable_bug(variable_name, &vendor_guid,
-+						 variable_name_size);
-+				status = EFI_NOT_FOUND;
-+				break;
-+			}
-+
- 			efivar_create_sysfs_entry(efivars,
- 						  variable_name_size,
- 						  variable_name,
-@@ -1010,9 +1072,6 @@ out:
- }
- EXPORT_SYMBOL_GPL(register_efivars);
- 
--static struct efivars __efivars;
--static struct efivar_operations ops;
--
- /*
-  * For now we register the efi subsystem with the firmware subsystem
-  * and the vars subsystem with the efi subsystem.  In the future, it
+ 	if (atomic_read(&kvm->online_vcpus) == KVM_MAX_VCPUS) {
+ 		r = -EINVAL;
+ 		goto unlock_vcpu_destroy;
 
 
