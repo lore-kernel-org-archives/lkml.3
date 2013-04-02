@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933642Ab3DBWOI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:14:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33400 "EHLO
+	id S933753Ab3DBWbf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:31:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33417 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933603Ab3DBWOF (ORCPT
+	with ESMTP id S933636Ab3DBWOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:05 -0400
+	Tue, 2 Apr 2013 18:14:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vinicius Costa Gomes <vinicius.gomes@openbossa.org>,
-        Frederic Dalleau <frederic.dalleau@intel.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 05/68] Bluetooth: Fix not closing SCO sockets in the BT_CONNECT2 state
-Date: Tue,  2 Apr 2013 15:12:54 -0700
-Message-Id: <20130402221330.547648340@linuxfoundation.org>
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 11/68] can: sja1000: fix define conflict on SH
+Date: Tue,  2 Apr 2013 15:13:00 -0700
+Message-Id: <20130402221331.254852937@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
@@ -28,96 +27,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit eb20ff9c91ddcb2d55c1849a87d3db85af5e88a9 upstream.
+commit f901b6bc404b67d96eca739857c097e022727b71 upstream.
 
-With deferred setup for SCO, it is possible that userspace closes the
-socket when it is in the BT_CONNECT2 state, after the Connect Request is
-received but before the Accept Synchonous Connection is sent.
+Thias patch fixes a define conflict between the SH architecture and the sja1000
+driver:
 
-If this happens the following crash was observed, when the connection is
-terminated:
+    drivers/net/can/sja1000/sja1000.h:59:0: warning:
+        "REG_SR" redefined [enabled by default]
+    arch/sh/include/asm/ptrace_32.h:25:0: note:
+         this is the location of the previous definition
 
-[  +0.000003] hci_sync_conn_complete_evt: hci0 status 0x10
-[  +0.000005] sco_connect_cfm: hcon ffff88003d1bd800 bdaddr 40:98:4e:32:d7:39 status 16
-[  +0.000003] sco_conn_del: hcon ffff88003d1bd800 conn ffff88003cc8e300, err 110
-[  +0.000015] BUG: unable to handle kernel NULL pointer dereference at 0000000000000199
-[  +0.000906] IP: [<ffffffff810620dd>] __lock_acquire+0xed/0xe82
-[  +0.000000] PGD 3d21f067 PUD 3d291067 PMD 0
-[  +0.000000] Oops: 0002 [#1] SMP
-[  +0.000000] Modules linked in: rfcomm bnep btusb bluetooth
-[  +0.000000] CPU 0
-[  +0.000000] Pid: 1481, comm: kworker/u:2H Not tainted 3.9.0-rc1-25019-gad82cdd #1 Bochs Bochs
-[  +0.000000] RIP: 0010:[<ffffffff810620dd>]  [<ffffffff810620dd>] __lock_acquire+0xed/0xe82
-[  +0.000000] RSP: 0018:ffff88003c3c19d8  EFLAGS: 00010002
-[  +0.000000] RAX: 0000000000000001 RBX: 0000000000000246 RCX: 0000000000000000
-[  +0.000000] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff88003d1be868
-[  +0.000000] RBP: ffff88003c3c1a98 R08: 0000000000000002 R09: 0000000000000000
-[  +0.000000] R10: ffff88003d1be868 R11: ffff88003e20b000 R12: 0000000000000002
-[  +0.000000] R13: ffff88003aaa8000 R14: 000000000000006e R15: ffff88003d1be850
-[  +0.000000] FS:  0000000000000000(0000) GS:ffff88003e200000(0000) knlGS:0000000000000000
-[  +0.000000] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  +0.000000] CR2: 0000000000000199 CR3: 000000003c1cb000 CR4: 00000000000006b0
-[  +0.000000] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  +0.000000] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  +0.000000] Process kworker/u:2H (pid: 1481, threadinfo ffff88003c3c0000, task ffff88003aaa8000)
-[  +0.000000] Stack:
-[  +0.000000]  ffffffff81b16342 0000000000000000 0000000000000000 ffff88003d1be868
-[  +0.000000]  ffffffff00000000 00018c0c7863e367 000000003c3c1a28 ffffffff8101efbd
-[  +0.000000]  0000000000000000 ffff88003e3d2400 ffff88003c3c1a38 ffffffff81007c7a
-[  +0.000000] Call Trace:
-[  +0.000000]  [<ffffffff8101efbd>] ? kvm_clock_read+0x34/0x3b
-[  +0.000000]  [<ffffffff81007c7a>] ? paravirt_sched_clock+0x9/0xd
-[  +0.000000]  [<ffffffff81007fd4>] ? sched_clock+0x9/0xb
-[  +0.000000]  [<ffffffff8104fd7a>] ? sched_clock_local+0x12/0x75
-[  +0.000000]  [<ffffffff810632d1>] lock_acquire+0x93/0xb1
-[  +0.000000]  [<ffffffffa0022339>] ? spin_lock+0x9/0xb [bluetooth]
-[  +0.000000]  [<ffffffff8105f3d8>] ? lock_release_holdtime.part.22+0x4e/0x55
-[  +0.000000]  [<ffffffff814f6038>] _raw_spin_lock+0x40/0x74
-[  +0.000000]  [<ffffffffa0022339>] ? spin_lock+0x9/0xb [bluetooth]
-[  +0.000000]  [<ffffffff814f6936>] ? _raw_spin_unlock+0x23/0x36
-[  +0.000000]  [<ffffffffa0022339>] spin_lock+0x9/0xb [bluetooth]
-[  +0.000000]  [<ffffffffa00230cc>] sco_conn_del+0x76/0xbb [bluetooth]
-[  +0.000000]  [<ffffffffa002391d>] sco_connect_cfm+0x2da/0x2e9 [bluetooth]
-[  +0.000000]  [<ffffffffa000862a>] hci_proto_connect_cfm+0x38/0x65 [bluetooth]
-[  +0.000000]  [<ffffffffa0008d30>] hci_sync_conn_complete_evt.isra.79+0x11a/0x13e [bluetooth]
-[  +0.000000]  [<ffffffffa000cd96>] hci_event_packet+0x153b/0x239d [bluetooth]
-[  +0.000000]  [<ffffffff814f68ff>] ? _raw_spin_unlock_irqrestore+0x48/0x5c
-[  +0.000000]  [<ffffffffa00025f6>] hci_rx_work+0xf3/0x2e3 [bluetooth]
-[  +0.000000]  [<ffffffff8103efed>] process_one_work+0x1dc/0x30b
-[  +0.000000]  [<ffffffff8103ef83>] ? process_one_work+0x172/0x30b
-[  +0.000000]  [<ffffffff8103e07f>] ? spin_lock_irq+0x9/0xb
-[  +0.000000]  [<ffffffff8103fc8d>] worker_thread+0x123/0x1d2
-[  +0.000000]  [<ffffffff8103fb6a>] ? manage_workers+0x240/0x240
-[  +0.000000]  [<ffffffff81044211>] kthread+0x9d/0xa5
-[  +0.000000]  [<ffffffff81044174>] ? __kthread_parkme+0x60/0x60
-[  +0.000000]  [<ffffffff814f75bc>] ret_from_fork+0x7c/0xb0
-[  +0.000000]  [<ffffffff81044174>] ? __kthread_parkme+0x60/0x60
-[  +0.000000] Code: d7 44 89 8d 50 ff ff ff 4c 89 95 58 ff ff ff e8 44 fc ff ff 44 8b 8d 50 ff ff ff 48 85 c0 4c 8b 95 58 ff ff ff 0f 84 7a 04 00 00 <f0> ff 80 98 01 00 00 83 3d 25 41 a7 00 00 45 8b b5 e8 05 00 00
-[  +0.000000] RIP  [<ffffffff810620dd>] __lock_acquire+0xed/0xe82
-[  +0.000000]  RSP <ffff88003c3c19d8>
-[  +0.000000] CR2: 0000000000000199
-[  +0.000000] ---[ end trace e73cd3b52352dd34 ]---
+A SJA1000_ prefix is added to the offending sja1000 define only, to make a
+minimal patch suited for stable. A later patch will add a SJA1000_ prefix to
+all defines in sja1000.h.
 
-Signed-off-by: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
-Tested-by: Frederic Dalleau <frederic.dalleau@intel.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/sco.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/can/sja1000/plx_pci.c |    4 ++--
+ drivers/net/can/sja1000/sja1000.c |    6 +++---
+ drivers/net/can/sja1000/sja1000.h |    2 +-
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/net/bluetooth/sco.c
-+++ b/net/bluetooth/sco.c
-@@ -378,6 +378,7 @@ static void __sco_sock_close(struct sock
- 			sco_chan_del(sk, ECONNRESET);
- 		break;
+--- a/drivers/net/can/sja1000/plx_pci.c
++++ b/drivers/net/can/sja1000/plx_pci.c
+@@ -329,7 +329,7 @@ static inline int plx_pci_check_sja1000(
+ 	 */
+ 	if ((priv->read_reg(priv, REG_CR) & REG_CR_BASICCAN_INITIAL_MASK) ==
+ 	    REG_CR_BASICCAN_INITIAL &&
+-	    (priv->read_reg(priv, REG_SR) == REG_SR_BASICCAN_INITIAL) &&
++	    (priv->read_reg(priv, SJA1000_REG_SR) == REG_SR_BASICCAN_INITIAL) &&
+ 	    (priv->read_reg(priv, REG_IR) == REG_IR_BASICCAN_INITIAL))
+ 		flag = 1;
  
-+	case BT_CONNECT2:
- 	case BT_CONNECT:
- 	case BT_DISCONN:
- 		sco_chan_del(sk, ECONNRESET);
+@@ -341,7 +341,7 @@ static inline int plx_pci_check_sja1000(
+ 	 * See states on p. 23 of the Datasheet.
+ 	 */
+ 	if (priv->read_reg(priv, REG_MOD) == REG_MOD_PELICAN_INITIAL &&
+-	    priv->read_reg(priv, REG_SR) == REG_SR_PELICAN_INITIAL &&
++	    priv->read_reg(priv, SJA1000_REG_SR) == REG_SR_PELICAN_INITIAL &&
+ 	    priv->read_reg(priv, REG_IR) == REG_IR_PELICAN_INITIAL)
+ 		return flag;
+ 
+--- a/drivers/net/can/sja1000/sja1000.c
++++ b/drivers/net/can/sja1000/sja1000.c
+@@ -91,7 +91,7 @@ static void sja1000_write_cmdreg(struct
+ 	 */
+ 	spin_lock_irqsave(&priv->cmdreg_lock, flags);
+ 	priv->write_reg(priv, REG_CMR, val);
+-	priv->read_reg(priv, REG_SR);
++	priv->read_reg(priv, SJA1000_REG_SR);
+ 	spin_unlock_irqrestore(&priv->cmdreg_lock, flags);
+ }
+ 
+@@ -496,7 +496,7 @@ irqreturn_t sja1000_interrupt(int irq, v
+ 
+ 	while ((isrc = priv->read_reg(priv, REG_IR)) && (n < SJA1000_MAX_IRQ)) {
+ 		n++;
+-		status = priv->read_reg(priv, REG_SR);
++		status = priv->read_reg(priv, SJA1000_REG_SR);
+ 		/* check for absent controller due to hw unplug */
+ 		if (status == 0xFF && sja1000_is_absent(priv))
+ 			return IRQ_NONE;
+@@ -515,7 +515,7 @@ irqreturn_t sja1000_interrupt(int irq, v
+ 			/* receive interrupt */
+ 			while (status & SR_RBS) {
+ 				sja1000_rx(dev);
+-				status = priv->read_reg(priv, REG_SR);
++				status = priv->read_reg(priv, SJA1000_REG_SR);
+ 				/* check for absent controller */
+ 				if (status == 0xFF && sja1000_is_absent(priv))
+ 					return IRQ_NONE;
+--- a/drivers/net/can/sja1000/sja1000.h
++++ b/drivers/net/can/sja1000/sja1000.h
+@@ -56,7 +56,7 @@
+ /* SJA1000 registers - manual section 6.4 (Pelican Mode) */
+ #define REG_MOD		0x00
+ #define REG_CMR		0x01
+-#define REG_SR		0x02
++#define SJA1000_REG_SR		0x02
+ #define REG_IR		0x03
+ #define REG_IER		0x04
+ #define REG_ALC		0x0B
 
 
