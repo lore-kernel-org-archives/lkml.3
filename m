@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932843Ab3DBQWL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 12:22:11 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:38005 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932683Ab3DBQWJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 12:22:09 -0400
-Message-ID: <515B056E.6010002@oracle.com>
-Date: Tue, 02 Apr 2013 12:21:02 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130310 Thunderbird/17.0.4
+	id S932856Ab3DBQXR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 12:23:17 -0400
+Received: from 8bytes.org ([85.214.48.195]:54085 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760564Ab3DBQXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 12:23:15 -0400
+Date: Tue, 2 Apr 2013 18:23:12 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Varun Sethi <Varun.Sethi@freescale.com>
+Cc: stuart.yoder@freescale.com, scottwood@freescale.com,
+        iommu@lists.linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, galak@kernel.crashing.org,
+        benh@kernel.crashing.org
+Subject: Re: [PATCH 0/5 v11] iommu/fsl: Freescale PAMU driver and IOMMU API
+ implementation.
+Message-ID: <20130402162310.GJ15687@8bytes.org>
+References: <1364500442-20927-1-git-send-email-Varun.Sethi@freescale.com>
 MIME-Version: 1.0
-To: koverstreet@google.com, NeilBrown <neilb@suse.de>
-CC: linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: bcache: BUG in fuzz testing without devices
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364500442-20927-1-git-send-email-Varun.Sethi@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Apr  2 18:23:14 2013
+X-DSPAM-Confidence: 0.9990
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 515b05f223675883760883
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Fri, Mar 29, 2013 at 01:23:57AM +0530, Varun Sethi wrote:
+> This patchset provides the Freescale PAMU (Peripheral Access Management Unit) driver
+> and the corresponding IOMMU API implementation. PAMU is the IOMMU present on Freescale
+> QorIQ platforms. PAMU can authorize memory access, remap the memory address, and remap 
+> the I/O transaction type.
+> 
+> This set consists of the following patches:
+> 1.  Make iova dma_addr_t in the iommu_iova_to_phys API.
+> 2. Addition of new field in the device (powerpc) archdata structure for storing iommu domain information
+>    pointer.
+> 3. Add window permission flags in the iommu_domain_window_enable API.
+> 4. Add domain attributes for FSL PAMU driver.
+> 5. PAMU driver and IOMMU API implementation.
 
-It seems that trying to fuzz bcache without any devices triggers a BUG:
+Okay, I am about to apply patches 1 and 3 to a new ppc/pamu branch in my
+tree.
 
-sh-4.2# echo 1 > /sys/fs/bcache/fuzz
-[   89.700458] bio: create slab <bio-1> at 1
-[   89.704543] ------------[ cut here ]------------
-[   89.710043] kernel BUG at drivers/md/bcache/debug.c:447!
-[   89.710043] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[   89.710043] Modules linked in:
-[   89.710043] CPU 2
-[   89.710043] Pid: 6885, comm: sh Tainted: G        W    3.9.0-rc4-next-20130328-sasha-00017-g1463000 #321
-[   89.710043] RIP: 0010:[<ffffffff8324c005>]  [<ffffffff8324c005>] btree_fuzz+0x95/0x720
-[   89.710043] RSP: 0018:ffff880035279be8  EFLAGS: 00010246
-[   89.710043] RAX: ffff880034720000 RBX: ffff880034721030 RCX: ffff8800353af400
-[   89.710043] RDX: 0000000000000000 RSI: ffff880034723b18 RDI: ffff88003477a960
-[   89.710043] RBP: ffff880035279e88 R08: ffff88003477a900 R09: ffff88003d801e00
-[   89.710043] R10: 000000000048d002 R11: 0000000000000000 R12: ffff880035279c18
-[   89.710043] R13: ffff880034721030 R14: ffff880034720000 R15: ffff880035279c30
-[   89.710043] FS:  00007f591db62700(0000) GS:ffff88003e000000(0000) knlGS:0000000000000000
-[   89.710043] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   89.710043] CR2: 00007f591db8e000 CR3: 0000000035bf0000 CR4: 00000000000406e0
-[   89.710043] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   89.710043] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   89.710043] Process sh (pid: 6885, threadinfo ffff880035278000, task ffff880037060000)
-[   89.710043] Stack:
-[   89.710043]  ffffffff84c1b104 ffffffff83e20320 000000000000d8e0 ffff880035279ca8
-[   89.710043]  ffff88003e00a000 ffff880035278000 ffff880035279fd8 ffff88003e1d7cd0
-[   89.710043]  ffff880035279c58 0000000000000000 0000000000000000 0000000000000000
-[   89.710043] Call Trace:
-[   89.710043]  [<ffffffff812ffd92>] ? sysfs_write_file+0xe2/0x150
-[   89.710043]  [<ffffffff819fff5f>] kobj_attr_store+0xf/0x20
-[   89.710043]  [<ffffffff812ffdaa>] sysfs_write_file+0xfa/0x150
-[   89.710043]  [<ffffffff8127eff0>] vfs_write+0xb0/0x180
-[   89.710043]  [<ffffffff8127f480>] SyS_write+0x50/0xa0
-[   89.710043]  [<ffffffff83db7e58>] tracesys+0xe1/0xe6
-[   89.710043] Code: c0 49 89 c6 0f 84 2c 06 00 00 4c 8d a5 90 fd ff ff 4c 8d a8 30 10 00 00 4d 89 e7 49 83 c7 18 49 8b 9e 30 10
-00 00 4c 39 eb 75 0b <0f> 0b 66 0f 1f 84 00 00 00 00 00 48 8d 83 a0 fd ff ff 48 89 df
-[   89.710043] RIP  [<ffffffff8324c005>] btree_fuzz+0x95/0x720
-[   89.710043]  RSP <ffff880035279be8>
-[   89.755259] ---[ end trace d6647580839fba22 ]---
-
-That BUG looks very intentional there, any reason for adding it instead of exiting
-if there aren't any devices?
+As a general question, how did you test the IOMMU driver and what will
+you do in the future to avoid regressions?
 
 
-Thanks,
-Sasha
+	Joerg
+
+
