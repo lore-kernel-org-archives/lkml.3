@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760796Ab3DBM5U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 08:57:20 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:35256 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760414Ab3DBM5S (ORCPT
+	id S932070Ab3DBNAo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 09:00:44 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:44598 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760480Ab3DBNAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 08:57:18 -0400
+	Tue, 2 Apr 2013 09:00:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130313081955.GA19276@udknight>
-References: <20130313081955.GA19276@udknight>
-Date: Tue, 2 Apr 2013 14:57:16 +0200
-Message-ID: <CAMeQTsaDOYE5VV9vapJyx1FQ-=YX--OFY3nyqZux=0dnH00s8A@mail.gmail.com>
-Subject: Re: [PATCH]gma500: remove unused drm_psb_no_fb
+In-Reply-To: <1363031174-22525-1-git-send-email-gheorghiuandru@gmail.com>
+References: <1363031174-22525-1-git-send-email-gheorghiuandru@gmail.com>
+Date: Tue, 2 Apr 2013 15:00:42 +0200
+Message-ID: <CAMeQTsbGKaeG68vKRmpPiKEXZF_E7BYsdNwa2A-CyjuQK8Y2JA@mail.gmail.com>
+Subject: Re: [PATCH] drivers: gpu: drm: gma500: Replaced calls kzalloc &
+ memcpy with kmemdup
 From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: Wang YanQing <udknight@gmail.com>, airlied@linux.ie, airlied@redhat.com,
-        alan@linux.intel.com, kirill.shutemov@linux.intel.com,
-        linux-kernel@vger.kernel.org
+To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
+Cc: David Airlie <airlied@linux.ie>, Alan Cox <alan@linux.intel.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 9:19 AM, Wang YanQing <udknight@gmail.com> wrote:
-> commit f9f23a77f07506a32d9dc1d925bf85c0e7507b66(gma500: remove no_fb bits)
-> remove all the drm_psb_no_fb relations code in gma500 except this line code,
-> so remove it also.
+On Mon, Mar 11, 2013 at 8:46 PM, Alexandru Gheorghiu
+<gheorghiuandru@gmail.com> wrote:
+> Replaced calls kzalloc followed by memcpy with call to kmemdup.
+> Patch found using coccinelle.
 >
-> Signed-off-by: Wang YanQing <udknight@gmail.com>
+> Signed-off-by: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
 > ---
->  drivers/gpu/drm/gma500/psb_drv.h | 1 -
->  1 file changed, 1 deletion(-)
+>  drivers/gpu/drm/gma500/intel_bios.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 >
-> diff --git a/drivers/gpu/drm/gma500/psb_drv.h b/drivers/gpu/drm/gma500/psb_drv.h
-> index a7fd6c4..6053b8a 100644
-> --- a/drivers/gpu/drm/gma500/psb_drv.h
-> +++ b/drivers/gpu/drm/gma500/psb_drv.h
-> @@ -876,7 +876,6 @@ extern const struct psb_ops cdv_chip_ops;
->  #define PSB_D_MSVDX   (1 << 9)
->  #define PSB_D_TOPAZ   (1 << 10)
+> diff --git a/drivers/gpu/drm/gma500/intel_bios.c b/drivers/gpu/drm/gma500/intel_bios.c
+> index 403fffb..d349734 100644
+> --- a/drivers/gpu/drm/gma500/intel_bios.c
+> +++ b/drivers/gpu/drm/gma500/intel_bios.c
+> @@ -218,12 +218,11 @@ static void parse_backlight_data(struct drm_psb_private *dev_priv,
+>         bl_start = find_section(bdb, BDB_LVDS_BACKLIGHT);
+>         vbt_lvds_bl = (struct bdb_lvds_backlight *)(bl_start + 1) + p_type;
 >
-> -extern int drm_psb_no_fb;
->  extern int drm_idle_check_interval;
+> -       lvds_bl = kzalloc(sizeof(*vbt_lvds_bl), GFP_KERNEL);
+> +       lvds_bl = kmemdup(vbt_lvds_bl, sizeof(*vbt_lvds_bl), GFP_KERNEL);
+>         if (!lvds_bl) {
+>                 dev_err(dev_priv->dev->dev, "out of memory for backlight data\n");
+>                 return;
+>         }
+> -       memcpy(lvds_bl, vbt_lvds_bl, sizeof(*vbt_lvds_bl));
+>         dev_priv->lvds_bl = lvds_bl;
+>  }
 >
->  /*
 > --
-> 1.7.12.4.dirty
+> 1.7.9.5
+>
 > --
 
 Your patch has been applied to:
