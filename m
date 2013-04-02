@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759807Ab3DBCfe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 22:35:34 -0400
-Received: from mout.gmx.net ([212.227.15.19]:61554 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759395Ab3DBCfd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 22:35:33 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/lluc0+enlol+f4g/0SrRQ+AulU1vlnLW9FENnxo
-	7oHhks8+8XO2Jt
-Message-ID: <1364870126.9544.5.camel@marge.simpson.net>
-Subject: Re: [PATCH 4/5] sched: don't consider upper se in sched_slice()
-From: Mike Galbraith <efault@gmx.de>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Date: Tue, 02 Apr 2013 04:35:26 +0200
-In-Reply-To: <20130402022556.GD16699@lge.com>
-References: <1364457537-15114-1-git-send-email-iamjoonsoo.kim@lge.com>
-	 <1364457537-15114-5-git-send-email-iamjoonsoo.kim@lge.com>
-	 <51553EF5.90702@linux.vnet.ibm.com> <20130401040820.GA12015@lge.com>
-	 <5159320C.4050903@linux.vnet.ibm.com> <20130402022556.GD16699@lge.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1759909Ab3DBCgY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 22:36:24 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58044 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759834Ab3DBCgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 22:36:23 -0400
+Date: Mon, 1 Apr 2013 22:36:09 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>
+Subject: Re: [PATCH 16/33] aio: use cancellation list lazily
+Message-ID: <20130402023609.GE30122@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Kent Overstreet <koverstreet@google.com>,
+	linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+	akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+	Felipe Balbi <balbi@ti.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+	Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+	Asai Thambi S P <asamymuthupa@micron.com>,
+	Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+	Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+	Benjamin LaHaise <bcrl@kvack.org>
+References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
+ <1363883754-27966-17-git-send-email-koverstreet@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363883754-27966-17-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-02 at 11:25 +0900, Joonsoo Kim wrote: 
-> Hello, Preeti.
+On Thu, Mar 21, 2013 at 09:35:37AM -0700, Kent Overstreet wrote:
+> Cancelling kiocbs requires adding them to a per kioctx linked list, which
+> is one of the few things we need to take the kioctx lock for in the fast
+> path.  But most kiocbs can't be cancelled - so if we just do this lazily,
+> we can avoid quite a bit of locking overhead.
 > 
-> On Mon, Apr 01, 2013 at 12:36:52PM +0530, Preeti U Murthy wrote:
-> > Hi Joonsoo,
-> > 
-> > On 04/01/2013 09:38 AM, Joonsoo Kim wrote:
-> > > Hello, Preeti.
-> > > 
-> > 
-> > >>
-> > >> Ideally the children's cpu share must add upto the parent's share.
-> > >>
-> > > 
-> > > I don't think so.
-> > > 
-> > > We should schedule out the parent tg if 5ms is over. As we do so, we can
-> > > fairly distribute time slice to every tg within short term. If we add
-> > > the children's cpu share upto the parent's, the parent tg may have
-> > > large time slice, so it cannot be preempted easily. There may be a latency
-> > > problem if there are many tgs.
-> > 
-> > In the case where the #running < sched_nr_latency, the children's
-> > sched_slices add up to the parent's.
-> > 
-> > A rq with two tgs,each with 3 tasks.
-> > 
-> > Each of these tasks have a sched slice of
-> > [(sysctl_sched_latency / 3) / 2] as of the present implementation.
-> > 
-> > The sum of the above sched_slice of all tasks of a tg will lead to the
-> > sched_slice of its parent: sysctl_sched_latency / 2
-> > 
-> > This breaks when the nr_running on each tg > sched_nr_latency. However I
-> > don't know if this is a good thing or a bad thing.
-> 
-> Ah.. Now I get your point. Yes, you are right and it may be good thing.
-> With that property, all tasks in the system can be scheduled at least once
-> in sysctl_sched_latency. sysctl_sched_latency is system-wide configuration,
-> so my patch may be wrong. With my patch, all tasks in the system cannot be
-> scheduled at least once in sysctl_sched_latency. Instead, it schedule
-> all tasks in cfs_rq at least once in sysctl_sched_latency if there is
-> no other tgs.
-> 
-> I think that it is real problem that sysctl_sched_min_granularity is not
-> guaranteed for each task.
-> Instead of this patch, how about considering low bound?
-> 
-> if (slice < sysctl_sched_min_granularity)
-> 	slice = sysctl_sched_min_granularity;
+> While we're at it, instead of using a flag bit switch to using ki_cancel
+> itself to indicate that a kiocb has been cancelled/completed.  This lets
+> us get rid of ki_flags entirely.
 
-How many SCHED_IDLE or +nice tasks will fit in that?
 
--Mike
+Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
 
+One nit....
+
+> + * And since most things don't implement kiocb cancellation and we'd really like
+> + * kiocb completion to be lockless when possible, we use ki_cancel to
+> + * synchronize cancellation and completion - we only set it to KIOCB_CANCELLED
+> + * with xchg() or cmpxchg(), see batch_complete_aio() and kiocb_cancel().
+
+It's not batch_complete_aio() until later in the patch series.... as
+of this commit, it's still aio_complete()
+
+						- Ted
