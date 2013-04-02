@@ -1,112 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762254Ab3DBUfX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 16:35:23 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42081 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760329Ab3DBUfW (ORCPT
+	id S1762290Ab3DBUgE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 16:36:04 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:57015 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761463Ab3DBUgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 16:35:22 -0400
-Date: Tue, 2 Apr 2013 22:35:19 +0200
-From: Pavel Machek <pavel@denx.de>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: sr@denx.de, w.sang@pengutronix.de, magnus.damm@gmail.com,
-        hjk@linutronix.de, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, dzu@denx.de
-Subject: Re: UIO device tree bindings.
-Message-ID: <20130402203519.GA12385@amd.pavel.ucw.cz>
-References: <20130401142336.GA18034@amd.pavel.ucw.cz>
- <20130401154008.GA20963@amd.pavel.ucw.cz>
- <20130402024212.GA19431@roeck-us.net>
- <20130402115151.GA9052@amd.pavel.ucw.cz>
- <20130402125149.GA7216@roeck-us.net>
- <20130402131951.GA9975@amd.pavel.ucw.cz>
- <20130402134645.GB9975@amd.pavel.ucw.cz>
- <20130402154333.GA21941@roeck-us.net>
+	Tue, 2 Apr 2013 16:36:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130402154333.GA21941@roeck-us.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130402201148.GJ29506@redhat.com>
+References: <1364923183-316-1-git-send-email-yinghai@kernel.org>
+	<1364923183-316-4-git-send-email-yinghai@kernel.org>
+	<20130402180606.GI29506@redhat.com>
+	<CAE9FiQUKqv_t-99JN_t=EGop2-Wbjd4Yb9vYvU_SbbNctG6Yeg@mail.gmail.com>
+	<CAE9FiQXEa0-WS8+E6LGy8CenoHX5qF1MpjBgejQx9-EvG_1rGw@mail.gmail.com>
+	<20130402191130.GB31760@redhat.com>
+	<CAE9FiQViU_X-idHyFmRFQXmP23oWN63XkAr3KmXsfys1VBR53g@mail.gmail.com>
+	<20130402201148.GJ29506@redhat.com>
+Date: Tue, 2 Apr 2013 13:36:02 -0700
+X-Google-Sender-Auth: _NLHuDaq00G3NBkUA7orTHjpS_I
+Message-ID: <CAE9FiQURMNjPYYze-tPn4Ssrc4TqMqTuvwRRhoVYEnGLF4Z0cQ@mail.gmail.com>
+Subject: Re: [PATCH 3/4] x86, kdump: Retore crashkernel= to allocate low
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Tue, Apr 2, 2013 at 1:11 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Tue, Apr 02, 2013 at 01:00:46PM -0700, Yinghai Lu wrote:
+>> On Tue, Apr 2, 2013 at 12:11 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>> > On Tue, Apr 02, 2013 at 11:49:13AM -0700, Yinghai Lu wrote:
+>> >> On Tue, Apr 2, 2013 at 11:42 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> >> > aka:
+>> >> > old kexec-tools stay with "crashkernel=X"
+>> >> > new kexec-tools stay with
+>> >> > 1. like old kexec tools
+>> >> > 2. or "crashkernel=X,high" or "crashkernel=X,high crashkernel=Y,low",
+>> >> > Y could be 100M or 0 etc.
+>> >>
+>> >> I keep the old logic like:
+>> >> if there are several "crashkernel=X,high", only last one is honored.
+>> >> if there are several "crashkernel=Y,low", only last one is honored.
+>> >
+>> > Yes but if different types of crashkernel= options are mixes then
+>> > behavior is not defined.
+>>
+>> dmesg or /proc/iomem will show them what is finally reserved.
+>>
+>> >
+>> > crashkernel=X,high crashkernel=X
+>>
+>> ==> crashkernel=X is tossed away.
+>
+> You are just describing what your code does. There is no theme or
+> justification behind this behavior. There is no uniformity. A user can
+> question that so far you used to honor last crashkernel= parameter and
+> suddenly in 3.9 that's no more the case. Out of blue crashkernel=X,high is
+> overriding crashkernel=X and it is not obivious why.
 
-> > > > > Or maybe we can do some magic with module parameter. That should be
-> > > > > enough for expected use.
-> > > > > 
-> > > > I don't think that would make a difference. I mean, just take ns16550 as another
-> > > > example. No one has problems declaring some block of hardware addresses to be
-> > > > compatible with "ns16550", even though it can be anything including a memory
-> > > > block on one of the FPGAs or ASICs we are talking about here, it can be anything
-> > > > but a NS16550, and many of the actual "compatible" strings are not defined
-> > > > anythere either.
-> > > > 
-> > > > So there is no problem with "ata-generic" and "ns16550", and no one cares if
-> > > > "fsl,mpc8349emitx-pata" or "xlnx,xps-uart16550-2.00.b" is defined or not, but
-> > > > "generic-uio" together with "ptx,c64fpga001" is unacceptable.
-> > > > 
-> > > > I think it has more to do with the uio driver not being an actual driver, but
-> > > > the kernel part of a user-space driver, though that is just a wild guess.
-> > > 
-> > > Well, it turned out that adding module parameter was not that much
-> > > work... and yes I believe it is a tiny bit cleaner.
-> > > 
-> > > Here's updated patch, if you can please test this one.
-> > > 
-> > > [You can just pass "uio_of_genirq.of_id=generic-uio" to get previous
-> > > behaviour. But don't tell anyone :-)]
-> > 
-> > Actually, looking at it some more, perhaps even solution is possible?
-> > (This will need uio_pdrv_genirq.of_id=generic-uio .)
-> > 
-> Possibly for your case, but not for mine, as I'll have several instances of the
-> driver, and the hardware is not always present. Also, I am not sure if the match
-> function runs before the module paratemers are initialized or afterwards, but that
-> would be a matter of testing.
+Let me repeat again:
+we keep crashkernel=X old behavior with old kexec-tools.
+crashkernel=X;high is for new kexec-tools that support loading high.
 
-I tested that much: it works ok.
+If the user want to use ,high but still with old kexec-tools, that is
+not going to work.
 
-And... yes, this should work for you. You'll simply put
-compatible="generic-uio" into the dts. (Ok, ugly part is that this is
-probably not acceptable for upstream.) Then you'll use this patch,
-with uio_pdrv_genirq.of_id=generic-uio commandline. It should pick up
-all the devices old version of patch picked. (Not sure how you'll
-assign right userland drivers to right devices, but that problem was
-that even with old patch version, right?)
+Can we just keep it separated?
 
-> > Unfortunately, I don't have easy way to test this :-(. So feedback is
-> > essential.
-> > 
-> I'll try to get it to work, but it will take a bit.
+>
+>>
+>> > crashkernel=X,high crashkernel=Y;low
+>>
+>> normal case. if user want more or disable low range.
+>
+> Again, behavior is not clear to user. Please stop describing your code
+> behavior. Discuss more in terms of presenting a consistent interface to
+> user.
+>
+>>
+>> > crashkernel=Y;low crashkernel=X
+>>
+>> crashkernel=X will be used.
+>
+> Why? When crashkernel=X is specified with crashkernel=Y;high, high takes
+> over but when crashkernel=X is specified with crashkernel=Y;low,
+> crashkernel=X takes over. These is highly unintutive.
+>
+>>
+>> >
+>> > And possibilities go on. So I think it makes life simpler if we always
+>> > parse last crashkernel= option and act upon that. And use
+>> > crashkernel_no_auto_low to opt out of auto reserved low memory area.
+>>
+>> No, that is not just disable. User could want more like 128M instead of 72M.
+>
+> If user wants 128M in low memory, they will just specify
+> crashkernel=128M;low
 
-Thanks,
-									Pavel
+in the kernel-parameter.txt, already says ;low is need to used with ;high.
 
-> > Signed-off-by: Pavel Machek <pavel@denx.de>
-> > 
-> > diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-> > index 4a50ead..64b6dac 100644
-> > --- a/drivers/uio/uio_pdrv_genirq.c
-> > +++ b/drivers/uio/uio_pdrv_genirq.c
-> > @@ -271,9 +273,13 @@ static const struct dev_pm_ops uio_pdrv_genirq_dev_pm_ops = {
-> >  
-> >  #ifdef CONFIG_OF
-> >  static const struct of_device_id uio_of_genirq_match[] = {
-> > -	{ /* empty for now */ },
-> > +	{ /* This is filled with module_parm */ },
-> > +	{ /* Sentinel */ },
-> >  };
-> >  MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
-> > +
-> > +module_param_string(of_id, uio_of_genirq_match[0].compatible, 128, 0);
-> > +MODULE_PARM_DESC(of_id, "Openfirmware id of the device to be handled by uio");
-> >  #else
-> >  # define uio_of_genirq_match NULL
-> >  #endif
+>
+> If they want to control multiple ranges of memory, then that's the feature
+> we currently don't support. Currently we support only reserving one range
+> of memory.
+>
+> If you want to support multiple ranges of memory,then do it properly.
+> Parse all crashkernel= options, prepare a list of memory to be reserved
+> and unreserved, resolve all the conflicts between various options and
+> then reserve the memory. But that does not seem to be a requirement at
+> this point of time.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+No we does not support multiple ranges, as it will need more changes
+in kexec-tools.
+
+Can we stop here with those four patches?
+
+Later, we can extend it if it is really needed.
+
+Thanks
+
+Yinghai
