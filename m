@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761313Ab3DBWF4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:05:56 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:59173 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395Ab3DBWFy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:05:54 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: CAI Qian <caiqian@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
-        linux-ext4@vger.kernel.org, Zheng Liu <gnehzuil.liu@gmail.com>
-Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591! (powerpc too!)
-In-Reply-To: <alpine.DEB.2.10.1304021430480.13746@trent.utfs.org>
-References: <2133129347.8273339.1364549222854.JavaMail.root@redhat.com> <87ip46ss0o.fsf@openvz.org> <1211053180.322948.1364797847717.JavaMail.root@redhat.com> <87fvzaspr8.fsf@openvz.org> <874841142.414482.1364875584266.JavaMail.root@redhat.com> <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org> <877gkls1q7.fsf@openvz.org> <alpine.DEB.2.10.1304021430480.13746@trent.utfs.org>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Wed, 03 Apr 2013 02:05:48 +0400
-Message-ID: <87r4isd1vn.fsf@openvz.org>
+	id S1761060Ab3DBWJf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:09:35 -0400
+Received: from 8bytes.org ([85.214.48.195]:54595 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752238Ab3DBWJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:09:34 -0400
+Date: Wed, 3 Apr 2013 00:09:32 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: suravee.suthikulpanit@amd.com
+Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] iommu/amd: Add logic to decode AMD IOMMU event flag
+Message-ID: <20130402220931.GV30540@8bytes.org>
+References: <1364929514-3129-1-git-send-email-suravee.suthikulpanit@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364929514-3129-1-git-send-email-suravee.suthikulpanit@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Apr  3 00:09:32 2013
+X-DSPAM-Confidence: 0.9994
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 515b571c23671120564415
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Apr 2013 14:35:29 -0700 (PDT), Christian Kujau <lists@nerdbynature.de> wrote:
-> On Tue, 2 Apr 2013 at 13:47, Dmitry Monakhov wrote:
-> > So you just do bunch of writes/mmap to fallocated area.
-> > The only guess I have is that some bug in extent status tree
-> > 
-> > Please run test with a patch which was posted here:
-> > http://marc.info/?l=linux-kernel&m=136455173926544&w=2
-> > This patch enable sanity checks for extent_status tree.
-> > Also please try following patch. It voluntary disable es_lookup functionality.
-> 
-> I tested your patch below (applied to 3.9-rc4) and now the BUG is gone. 
-> The machine stays up and the corruption of that torrent file is gone too! 
-> 
-> Feel free to add my Tested-by: but I don't know if this will be the final 
-> solution to this issue, no?
-No. This is just a proof that es_cache is a root of cause.
-Please drop that patch and collect logs with a kernel which 
-has only 0001-enable-ES_AGGRESSIVE_TEST-V2.patch patch applied
-This can help us understand what was wrong. From CAI Qian's
-logs(http://marc.info/?l=linux-ext4&m=136489690730402&w=2) 
-I found that in most cases assertion failed because
-ec_cache contains BH_Mapped entries, but extent_tree has not data at all
+On Tue, Apr 02, 2013 at 02:05:14PM -0500, Suthikulpanit, Suravee wrote:
+> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+> +static const char * const _type_field_encodings[] = {
+> +	/* 00 */"Reserved",
+> +	/* 01 */"Master Abort",
+> +	/* 10 */"Target Abort",
+> +	/* 11 */"Data Error",
 
-Also there is another assertion failure where
-es_cache {15/1/33490/MAPPED}  != extent_tree {15/1/33579/BH_UNWRITTEN}
+In these arrays, please put the comments at the end of the line and
+align them nicely like this:
 
-> 
-> Thanks!
-> Christian.
-> 
-> diff --git a/fs/ext4/extents_status.c b/fs/ext4/extents_status.c> index fe3337a..95d27cd 100644
-> --- a/fs/ext4/extents_status.c
-> +++ b/fs/ext4/extents_status.c
-> @@ -689,6 +689,7 @@ int ext4_es_lookup_extent(struct inode *inode, ext4_lblk_t lblk,
->  	trace_ext4_es_lookup_extent_enter(inode, lblk);
->  	es_debug("lookup extent in block %u\n", lblk);
->  
-> +	return 0;
->  	tree = &EXT4_I(inode)->i_es_tree;
->  	read_lock(&EXT4_I(inode)->i_es_lock);
->  
-> -- 
-> BOFH excuse #414:
-> 
-> tachyon emissions overloading the system
+	static const char * const _type_field_encodings[] = {
+		"Reserved",		/* 00 */
+		"Master Abort",		/* 01 */
+		"Target Abort",		/* 10 */
+		"Data Error",		/* 11 */
+	};
+
+This improves readability a lot.
+
+> +static void dump_flags(int flags, int ev_type)
+> +{
+> +	struct _event_log_flags *p = (struct _event_log_flags *) &flags;
+> +	u32 err_type = p->type;
+> +
+> +	pr_err("AMD-Vi: Flags details: %s, NX:%u, %s, %s, %s, %s, %s, %s, %s\n",
+> +		(p->gn ? "Use guest address" : "Use nested address"),
+> +		(p->nx),
+> +		(p->us ? "User privileges" : "Supervisor privileges"),
+> +		(p->i ? "Interrupt request" : "memory request"),
+> +		(p->pr ? "Page present or Interrupt remapped" :
+> +			"Page not present or Interrupt blocked"),
+> +		(p->rw ? "Write transaction" : "Read transaction"),
+> +		(p->pe ? "Does not have permission" : "Has permission"),
+> +		(p->rz ? "Reserv bit not zero" : "Illegal level encoding"),
+> +		(p->tr ? "Translation request" : "Transaction request"));
+
+These strings are too long, please just print useful shortcuts for them,
+like
+	"US" : "SV" instead of
+	"User privileges" : "Supervisor privileges"
+
+Also the commas between the strings are not needed then.
+
+As a general rule, in the default configuration an event-log entry
+should not take more than a single line in dmesg (which is also not too
+long). If you want to print more information in some cases you can
+enable that by a command line parameter like 'amd_iommu=verbose' or
+something like that.
+
+	Joerg
+
