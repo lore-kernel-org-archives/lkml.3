@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762342Ab3DBWYT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:24:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33561 "EHLO
+	id S1762401Ab3DBWYt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:24:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33551 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933749Ab3DBWOa (ORCPT
+	with ESMTP id S933742Ab3DBWO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:30 -0400
+	Tue, 2 Apr 2013 18:14:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mirko Lindner <mlindner@marvell.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 45/68] sky2: Receive Overflows not counted
-Date: Tue,  2 Apr 2013 15:13:34 -0700
-Message-Id: <20130402221335.181363789@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>,
+        Lingzhu Xiang <lxiang@redhat.com>, CAI Qian <caiqian@redhat.com>
+Subject: [ 43/68] tracing: Prevent buffer overwrite disabled for latency tracers
+Date: Tue,  2 Apr 2013 15:13:32 -0700
+Message-Id: <20130402221334.921112259@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
@@ -28,37 +27,282 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-From: Mirko Lindner <mlindner@marvell.com>
+commit 613f04a0f51e6e68ac6fe571ab79da3c0a5eb4da upstream.
 
-[ Upstream commit 9cfe8b156c21cf340b3a10ecb3022fbbc1c39185 ]
+The latency tracers require the buffers to be in overwrite mode,
+otherwise they get screwed up. Force the buffers to stay in overwrite
+mode when latency tracers are enabled.
 
-The sky2 driver doesn't count the Receive Overflows because the MAC
-interrupt for this event is not set in the MAC's interrupt mask.
-The MAC's interrupt mask is set only for Transmit FIFO Underruns.
+Added a flag_changed() method to the tracer structure to allow
+the tracers to see what flags are being changed, and also be able
+to prevent the change from happing.
 
-Fix: The correct setting should be (GM_IS_TX_FF_UR | GM_IS_RX_FF_OR)
-Otherwise the Receive Overflow event will not generate any interrupt.
-The  Receive Overflow interrupt is handled correctly
+[Backported for 3.4-stable. Re-added current_trace NULL checks; removed
+allocated_snapshot field; adapted to tracing_trace_options_write without
+trace_set_options.]
 
-Signed-off-by: Mirko Lindner <mlindner@marvell.com>
-Acked-by: Stephen Hemminger <stephen@networkplumber.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
+Reviewed-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/marvell/sky2.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/marvell/sky2.h
-+++ b/drivers/net/ethernet/marvell/sky2.h
-@@ -2069,7 +2069,7 @@ enum {
- 	GM_IS_RX_FF_OR	= 1<<1,	/* Receive FIFO Overrun */
- 	GM_IS_RX_COMPL	= 1<<0,	/* Frame Reception Complete */
+---
+ kernel/trace/trace.c              |   35 +++++++++++++++++++++++++++++------
+ kernel/trace/trace.h              |    7 +++++++
+ kernel/trace/trace_irqsoff.c      |   19 ++++++++++++++-----
+ kernel/trace/trace_sched_wakeup.c |   18 +++++++++++++-----
+ 4 files changed, 63 insertions(+), 16 deletions(-)
+
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2743,11 +2743,25 @@ static int set_tracer_option(struct trac
+ 	return -EINVAL;
+ }
  
--#define GMAC_DEF_MSK     GM_IS_TX_FF_UR
-+#define GMAC_DEF_MSK     (GM_IS_TX_FF_UR | GM_IS_RX_FF_OR)
+-static void set_tracer_flags(unsigned int mask, int enabled)
++/* Some tracers require overwrite to stay enabled */
++int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set)
++{
++	if (tracer->enabled && (mask & TRACE_ITER_OVERWRITE) && !set)
++		return -1;
++
++	return 0;
++}
++
++int set_tracer_flag(unsigned int mask, int enabled)
+ {
+ 	/* do nothing if flag is already set */
+ 	if (!!(trace_flags & mask) == !!enabled)
+-		return;
++		return 0;
++
++	/* Give the tracer a chance to approve the change */
++	if (current_trace->flag_changed)
++		if (current_trace->flag_changed(current_trace, mask, !!enabled))
++			return -EINVAL;
+ 
+ 	if (enabled)
+ 		trace_flags |= mask;
+@@ -2759,6 +2773,8 @@ static void set_tracer_flags(unsigned in
+ 
+ 	if (mask == TRACE_ITER_OVERWRITE)
+ 		ring_buffer_change_overwrite(global_trace.buffer, enabled);
++
++	return 0;
+ }
+ 
+ static ssize_t
+@@ -2768,7 +2784,7 @@ tracing_trace_options_write(struct file
+ 	char buf[64];
+ 	char *cmp;
+ 	int neg = 0;
+-	int ret = 0;
++	int ret = -ENODEV;
+ 	int i;
+ 
+ 	if (cnt >= sizeof(buf))
+@@ -2789,7 +2805,7 @@ tracing_trace_options_write(struct file
+ 
+ 	for (i = 0; trace_options[i]; i++) {
+ 		if (strcmp(cmp, trace_options[i]) == 0) {
+-			set_tracer_flags(1 << i, !neg);
++			ret = set_tracer_flag(1 << i, !neg);
+ 			break;
+ 		}
+ 	}
+@@ -2800,7 +2816,7 @@ tracing_trace_options_write(struct file
+ 
+ 	mutex_unlock(&trace_types_lock);
+ 
+-	if (ret)
++	if (ret < 0)
+ 		return ret;
+ 
+ 	*ppos += cnt;
+@@ -3125,6 +3141,9 @@ static int tracing_set_tracer(const char
+ 		goto out;
+ 
+ 	trace_branch_disable();
++
++	current_trace->enabled = false;
++
+ 	if (current_trace && current_trace->reset)
+ 		current_trace->reset(tr);
+ 	if (current_trace && current_trace->use_max_tr) {
+@@ -3154,6 +3173,7 @@ static int tracing_set_tracer(const char
+ 			goto out;
+ 	}
+ 
++	current_trace->enabled = true;
+ 	trace_branch_enable(tr);
+  out:
+ 	mutex_unlock(&trace_types_lock);
+@@ -4490,9 +4510,12 @@ trace_options_core_write(struct file *fi
+ 		return -EINVAL;
+ 
+ 	mutex_lock(&trace_types_lock);
+-	set_tracer_flags(1 << index, val);
++	ret = set_tracer_flag(1 << index, val);
+ 	mutex_unlock(&trace_types_lock);
+ 
++	if (ret < 0)
++		return ret;
++
+ 	*ppos += cnt;
+ 
+ 	return cnt;
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -278,10 +278,14 @@ struct tracer {
+ 	enum print_line_t	(*print_line)(struct trace_iterator *iter);
+ 	/* If you handled the flag setting, return 0 */
+ 	int			(*set_flag)(u32 old_flags, u32 bit, int set);
++	/* Return 0 if OK with change, else return non-zero */
++	int			(*flag_changed)(struct tracer *tracer,
++						u32 mask, int set);
+ 	struct tracer		*next;
+ 	struct tracer_flags	*flags;
+ 	int			print_max;
+ 	int			use_max_tr;
++	bool			enabled;
  };
  
- /*	GMAC_LINK_CTRL	16 bit	GMAC Link Control Reg (YUKON only) */
+ 
+@@ -826,6 +830,9 @@ extern struct list_head ftrace_events;
+ extern const char *__start___trace_bprintk_fmt[];
+ extern const char *__stop___trace_bprintk_fmt[];
+ 
++int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set);
++int set_tracer_flag(unsigned int mask, int enabled);
++
+ #undef FTRACE_ENTRY
+ #define FTRACE_ENTRY(call, struct_name, id, tstruct, print, filter)	\
+ 	extern struct ftrace_event_call					\
+--- a/kernel/trace/trace_irqsoff.c
++++ b/kernel/trace/trace_irqsoff.c
+@@ -32,7 +32,7 @@ enum {
+ 
+ static int trace_type __read_mostly;
+ 
+-static int save_lat_flag;
++static int save_flags;
+ 
+ static void stop_irqsoff_tracer(struct trace_array *tr, int graph);
+ static int start_irqsoff_tracer(struct trace_array *tr, int graph);
+@@ -557,8 +557,11 @@ static void stop_irqsoff_tracer(struct t
+ 
+ static void __irqsoff_tracer_init(struct trace_array *tr)
+ {
+-	save_lat_flag = trace_flags & TRACE_ITER_LATENCY_FMT;
+-	trace_flags |= TRACE_ITER_LATENCY_FMT;
++	save_flags = trace_flags;
++
++	/* non overwrite screws up the latency tracers */
++	set_tracer_flag(TRACE_ITER_OVERWRITE, 1);
++	set_tracer_flag(TRACE_ITER_LATENCY_FMT, 1);
+ 
+ 	tracing_max_latency = 0;
+ 	irqsoff_trace = tr;
+@@ -572,10 +575,13 @@ static void __irqsoff_tracer_init(struct
+ 
+ static void irqsoff_tracer_reset(struct trace_array *tr)
+ {
++	int lat_flag = save_flags & TRACE_ITER_LATENCY_FMT;
++	int overwrite_flag = save_flags & TRACE_ITER_OVERWRITE;
++
+ 	stop_irqsoff_tracer(tr, is_graph());
+ 
+-	if (!save_lat_flag)
+-		trace_flags &= ~TRACE_ITER_LATENCY_FMT;
++	set_tracer_flag(TRACE_ITER_LATENCY_FMT, lat_flag);
++	set_tracer_flag(TRACE_ITER_OVERWRITE, overwrite_flag);
+ }
+ 
+ static void irqsoff_tracer_start(struct trace_array *tr)
+@@ -608,6 +614,7 @@ static struct tracer irqsoff_tracer __re
+ 	.print_line     = irqsoff_print_line,
+ 	.flags		= &tracer_flags,
+ 	.set_flag	= irqsoff_set_flag,
++	.flag_changed	= trace_keep_overwrite,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_irqsoff,
+ #endif
+@@ -641,6 +648,7 @@ static struct tracer preemptoff_tracer _
+ 	.print_line     = irqsoff_print_line,
+ 	.flags		= &tracer_flags,
+ 	.set_flag	= irqsoff_set_flag,
++	.flag_changed	= trace_keep_overwrite,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_preemptoff,
+ #endif
+@@ -676,6 +684,7 @@ static struct tracer preemptirqsoff_trac
+ 	.print_line     = irqsoff_print_line,
+ 	.flags		= &tracer_flags,
+ 	.set_flag	= irqsoff_set_flag,
++	.flag_changed	= trace_keep_overwrite,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_preemptirqsoff,
+ #endif
+--- a/kernel/trace/trace_sched_wakeup.c
++++ b/kernel/trace/trace_sched_wakeup.c
+@@ -36,7 +36,7 @@ static void __wakeup_reset(struct trace_
+ static int wakeup_graph_entry(struct ftrace_graph_ent *trace);
+ static void wakeup_graph_return(struct ftrace_graph_ret *trace);
+ 
+-static int save_lat_flag;
++static int save_flags;
+ 
+ #define TRACE_DISPLAY_GRAPH     1
+ 
+@@ -539,8 +539,11 @@ static void stop_wakeup_tracer(struct tr
+ 
+ static int __wakeup_tracer_init(struct trace_array *tr)
+ {
+-	save_lat_flag = trace_flags & TRACE_ITER_LATENCY_FMT;
+-	trace_flags |= TRACE_ITER_LATENCY_FMT;
++	save_flags = trace_flags;
++
++	/* non overwrite screws up the latency tracers */
++	set_tracer_flag(TRACE_ITER_OVERWRITE, 1);
++	set_tracer_flag(TRACE_ITER_LATENCY_FMT, 1);
+ 
+ 	tracing_max_latency = 0;
+ 	wakeup_trace = tr;
+@@ -562,12 +565,15 @@ static int wakeup_rt_tracer_init(struct
+ 
+ static void wakeup_tracer_reset(struct trace_array *tr)
+ {
++	int lat_flag = save_flags & TRACE_ITER_LATENCY_FMT;
++	int overwrite_flag = save_flags & TRACE_ITER_OVERWRITE;
++
+ 	stop_wakeup_tracer(tr);
+ 	/* make sure we put back any tasks we are tracing */
+ 	wakeup_reset(tr);
+ 
+-	if (!save_lat_flag)
+-		trace_flags &= ~TRACE_ITER_LATENCY_FMT;
++	set_tracer_flag(TRACE_ITER_LATENCY_FMT, lat_flag);
++	set_tracer_flag(TRACE_ITER_OVERWRITE, overwrite_flag);
+ }
+ 
+ static void wakeup_tracer_start(struct trace_array *tr)
+@@ -593,6 +599,7 @@ static struct tracer wakeup_tracer __rea
+ 	.print_line	= wakeup_print_line,
+ 	.flags		= &tracer_flags,
+ 	.set_flag	= wakeup_set_flag,
++	.flag_changed	= trace_keep_overwrite,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_wakeup,
+ #endif
+@@ -614,6 +621,7 @@ static struct tracer wakeup_rt_tracer __
+ 	.print_line	= wakeup_print_line,
+ 	.flags		= &tracer_flags,
+ 	.set_flag	= wakeup_set_flag,
++	.flag_changed	= trace_keep_overwrite,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_wakeup,
+ #endif
 
 
