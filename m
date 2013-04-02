@@ -1,287 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760962Ab3DBJgg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:36:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50798 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760555Ab3DBJgd (ORCPT
+	id S1761351Ab3DBJhO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:37:14 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:18330 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760147Ab3DBJhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:36:33 -0400
-Date: Tue, 2 Apr 2013 02:36:01 -0700
-From: tip-bot for Stephane Eranian <tipbot@zytor.com>
-Message-ID: <tip-12c08a9f591aeda57fb3b05897169e7da5439a79@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        namhyung.kim@lge.com, eranian@gmail.com, jolsa@redhat.com,
-        ak@linux.intel.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-        namhyung.kim@lge.com, eranian@gmail.com, jolsa@redhat.com,
-        ak@linux.intel.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1360846649-6411-4-git-send-email-eranian@google.com>
-References: <1360846649-6411-4-git-send-email-eranian@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf stat: Add per-core aggregation
-Git-Commit-ID: 12c08a9f591aeda57fb3b05897169e7da5439a79
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 02:36:07 -0700 (PDT)
+	Tue, 2 Apr 2013 05:37:11 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee691-b7f5f6d000002fda-b2-515aa6c4ccd3
+Content-transfer-encoding: 8BIT
+Message-id: <515AA6C3.3060408@samsung.com>
+Date: Tue, 02 Apr 2013 18:37:07 +0900
+From: jonghwa3.lee@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, sw0312.kim@samsung.com,
+        m.szyprowski@samsung.com
+Subject: Re: [RFC PATCH 1/2] cpuidle: Add idle enter/exit time stamp for
+ notifying current idle state.
+References: <1364804657-16590-1-git-send-email-jonghwa3.lee@samsung.com>
+ <1364804657-16590-2-git-send-email-jonghwa3.lee@samsung.com>
+ <515A65DB.8070803@linaro.org> <515A77FC.70008@samsung.com>
+ <515A8A21.6070509@linaro.org>
+In-reply-to: <515A8A21.6070509@linaro.org>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zXd0jy6ICDSa2qFo8bfrBbnH9y3NW
+	i3mfZS3ONr1ht3jzcDOjxeVdc9gsPvceYbRYe+Quu8XtxhVsFv0Le5ksZkx+yebA7XHn2h42
+	j74tqxg9Hi1uYfT4vEkugCWKyyYlNSezLLVI3y6BK2PhsfvMBfdFK1YseMTWwLhYsIuRk0NC
+	wETiwbm1zBC2mMSFe+vZuhi5OIQEljFKrD10l6mLkQOsaOphKYj4dKD43GVMIA28AoISPybf
+	YwGpYRaQlzhyKRskzCygLjFp3iJmiPqXjBKfr15mh6jXkpjyB6Sek4NFQFVi69EvYIvZBOQk
+	3jZ9YwSZIyoQIfGrnwMkLCKgJ9H4vo0JZA6zwA0miWVXmsF6hQUyJOY+usUCseAJo8THhr9g
+	CU6gBRcaT4MlJAQ+sktcOPqAEWKbgMS3yYdYIL6Rldh0AOpjSYmDK26wTGAUm4Xkn1kI/8xC
+	8s8CRuZVjKKpBckFxUnpRaZ6xYm5xaV56XrJ+bmbGCEROXEH4/0D1ocYk4E2TmSWEk3OB0Z0
+	Xkm8obGZkYWpiamxkbmlGWnCSuK86i3WgUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYj/pE
+	y2Q1n/N80SKUc/yGl/PD+LkdOn8S7k+P+NVjnCQrUsZfNcNihk+CDsOpA5//efzQ1/5s7tw5
+	5fEpvcbqRXrd6hGnIixXr9Sf03PPbYlGoqORxiX5BHNTh6p/gWcdO+pP5l1qKFBmK6quC04w
+	vDhhyvcjZhmH/nH4y55kl7j6UHGBZrwSS3FGoqEWc1FxIgD5JlmB3gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBKsWRmVeSWpSXmKPExsVy+t9jQd0jy6ICDRY9krN42vSD3eL6l+es
+	FvM+y1qcbXrDbvHm4WZGi8u75rBZfO49wmix9shddovbjSvYLPoX9jJZzJj8ks2B2+POtT1s
+	Hn1bVjF6PFrcwujxeZNcAEtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJC
+	XmJuqq2Si0+ArltmDtBVSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCOsaM
+	hcfuMxfcF61YseARWwPjYsEuRg4OCQETiamHpboYOYFMMYkL99azdTFycQgJTGeUWDt3GRNI
+	gldAUOLH5HssIPXMAvISRy5lg4SZBdQlJs1bxAxR/5JR4vPVy+wQ9VoSU/6A1HNysAioSmw9
+	+oUZxGYTkJN42/SNEWSOqECExK9+DpCwiICeROP7NiaQOcwCN5gkll1pBusVFsiQmPvoFgvE
+	gieMEh8b/oIlOIEWXGg8zTKBUWAWkvtmIdw3C8l9CxiZVzGKphYkFxQnpeca6hUn5haX5qXr
+	JefnbmIEx/szqR2MKxssDjEKcDAq8fA6zIkMFGJNLCuuzD3EKMHBrCTCu1U3KlCINyWxsiq1
+	KD++qDQntfgQYzLQdxOZpUST84GpKK8k3tDYxMzI0sjM2MTc2Jg0YSVx3gOt1oFCAumJJanZ
+	qakFqUUwW5g4OKUaGLN9fmj9en30tbxQYdGH7AKDxUfO2kUvnMQ2geHahuZW2T1mm831Gs+n
+	yDt4lstNsq1+UFUko1MmcL43QdVuzsaIKNOr5va7q8rZVwt93TrVIFXmQdr/P7zPyqcG/5q0
+	VO8kh9rVp/zVrzpnME84d/P6iX27VltcuRKwqaHao758/dFLdyXOrFJiKc5INNRiLipOBAAl
+	dC4fOwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  12c08a9f591aeda57fb3b05897169e7da5439a79
-Gitweb:     http://git.kernel.org/tip/12c08a9f591aeda57fb3b05897169e7da5439a79
-Author:     Stephane Eranian <eranian@gmail.com>
-AuthorDate: Thu, 14 Feb 2013 13:57:29 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 25 Mar 2013 16:13:26 -0300
+On 2013년 04월 02일 16:34, Daniel Lezcano wrote:
 
-perf stat: Add per-core aggregation
+> On 04/02/2013 08:17 AM, jonghwa3.lee@samsung.com wrote:
+>> On 2013년 04월 02일 14:00, Daniel Lezcano wrote:
+>>
+>>> On 04/01/2013 10:24 AM, Jonghwa Lee wrote:
+>>>> This patch adds idle state time stamp to cpuidle device structure to
+>>>> notify its current idle state. If last enter time is newer than last
+>>>> exit time, then it means that the core is in idle now.
+>>>>
+>>>> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+>>>> ---
+>>>
+>>> The patch description does not explain what problem you want to solve,
+>>> how to solve it and the patch itself shows nothing.
+>>>
+>>> Could you elaborate ?
+>>
+>>
+>> I'm sorry for lacking description. I supplement more.
+>>
+>> This patch does add time-stamp for idle enter/exit only nothing more.
+>> The reason why I needed them is that I wanted to know current cpu idle
+>> state. It is hard to know whether cpu is in idle or not now.
+> 
+> Did you looked at:
+> 
+> include/linux/sched.h:extern int idle_cpu(int cpu);
+> 
 
-This patch adds the --per-core option to perf stat.
 
-This option is used to aggregate system-wide counts
-on a per physical core basis. On processors with
-hyperthreading, this means counts of all HT threads
-running on a physical core are aggregated.
+Yes, I did.
 
-This mode is useful to find imblance between physical
-cores running an uniform workload. Cores are identified
-by socket: S0-C1, means physical core 1 on socket 0. Note
-that cores are identified using their physical core id,
-thus their numbering may not be continuous.
+> ?
+> 
+>> When I check the cpuidle state usage, sometimes the information is wrong.
+>> Because it is updated only when the cpu exits the idle state. So while the
+>> cpu is idling, the cpuidle state usage holds past one. Therefore I put
+>> the time-stamp for cpuidle enter/exit for checking current idling and
+>> calculating idle state usage correctly.
+>>
+>> I just make this patch temporary for my cpufreq governor work. So, it just
+>> use time-stamp for all idle state together. After RFC working, I have a plan
+>> to update this patch to use timestamp for each idle state.
+> 
+> I suggest you look at the enter_idle / exit_idle function and make your
+> governor to subscribe to the IDLE_START/EXIT notifiers.
+> 
+> arch/x86/kernel/process.c
+> 
+> These are defined for the x86 architecture, maybe worth to add it to
+> another architecture.
+> 
 
-Per core aggregation can be combined with interval printing:
 
- # perf stat -a --per-core -I 1000 -e cycles sleep 1000
- #           time core         cpus             counts events
-      1.000090030 S0-C0           1          4,765,747 cycles
-      1.000090030 S0-C1           1          5,580,647 cycles
-      1.000090030 S0-C2           1            221,181 cycles
-      1.000090030 S0-C3           1            266,092 cycles
+Thanks for your opinion.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1360846649-6411-4-git-send-email-eranian@google.com
-[ committer note: Remove parts already applied on 86ee6e1 to keep bisectability ]
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Documentation/perf-stat.txt |  6 +++++
- tools/perf/builtin-stat.c              | 31 ++++++++++++++++++++---
- tools/perf/util/cpumap.c               | 46 ++++++++++++++++++++++++++++++++++
- tools/perf/util/cpumap.h               | 12 +++++++++
- 4 files changed, 92 insertions(+), 3 deletions(-)
+Actually, I work on ARM architecture and I knew that the attempt of applying
+idle notifier was failed. You probably knew it, because the link you gave me
+before is that attempt. (https://lkml.org/lkml/2012/2/7/504) :) Currently, there
+is only notifying call which is for led in arch/arm/kernel/process.c and I think
+it isn't for me to use. Anyway, Do you really think it is better way to use
+notifier than my way? Because I think it is too heavy for me. On my board,
+sometimes entering idle happened hundreds times during the 100ms. I don't want
+to call notifier that much time. IMO, just moving local variable to per-cpu
+variable for showing the enter/exit time looks better although it requires code
+modification on cpudile side.  What do you think?
 
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index 46027e1..2fe87fb 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -126,6 +126,12 @@ use --per-socket in addition to -a. (system-wide).  The output includes the
- socket number and the number of online processors on that socket. This is
- useful to gauge the amount of aggregation.
- 
-+--per-core::
-+Aggregate counts per physical processor for system-wide mode measurements.  This
-+is a useful mode to detect imbalance between physical cores.  To enable this mode,
-+use --per-core in addition to -a. (system-wide).  The output includes the
-+core number and the number of online logical processors on that physical processor.
-+
- EXAMPLES
- --------
- 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 6f6ea931..7e910ba 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -80,6 +80,7 @@ enum aggr_mode {
- 	AGGR_NONE,
- 	AGGR_GLOBAL,
- 	AGGR_SOCKET,
-+	AGGR_CORE,
- };
- 
- static int			run_count			=  1;
-@@ -384,6 +385,9 @@ static void print_interval(void)
- 		case AGGR_SOCKET:
- 			fprintf(output, "#           time socket cpus             counts events\n");
- 			break;
-+		case AGGR_CORE:
-+			fprintf(output, "#           time core         cpus             counts events\n");
-+			break;
- 		case AGGR_NONE:
- 			fprintf(output, "#           time CPU                 counts events\n");
- 			break;
-@@ -397,6 +401,7 @@ static void print_interval(void)
- 		num_print_interval = 0;
- 
- 	switch (aggr_mode) {
-+	case AGGR_CORE:
- 	case AGGR_SOCKET:
- 		print_aggr(prefix);
- 		break;
-@@ -566,13 +571,23 @@ static void print_noise(struct perf_evsel *evsel, double avg)
- 	print_noise_pct(stddev_stats(&ps->res_stats[0]), avg);
- }
- 
--static void aggr_printout(struct perf_evsel *evsel, int cpu, int nr)
-+static void aggr_printout(struct perf_evsel *evsel, int id, int nr)
- {
- 	switch (aggr_mode) {
-+	case AGGR_CORE:
-+		fprintf(output, "S%d-C%*d%s%*d%s",
-+			cpu_map__id_to_socket(id),
-+			csv_output ? 0 : -8,
-+			cpu_map__id_to_cpu(id),
-+			csv_sep,
-+			csv_output ? 0 : 4,
-+			nr,
-+			csv_sep);
-+		break;
- 	case AGGR_SOCKET:
- 		fprintf(output, "S%*d%s%*d%s",
- 			csv_output ? 0 : -5,
--			cpu,
-+			id,
- 			csv_sep,
- 			csv_output ? 0 : 4,
- 			nr,
-@@ -581,7 +596,7 @@ static void aggr_printout(struct perf_evsel *evsel, int cpu, int nr)
- 	case AGGR_NONE:
- 		fprintf(output, "CPU%*d%s",
- 			csv_output ? 0 : -4,
--			perf_evsel__cpus(evsel)->map[cpu], csv_sep);
-+			perf_evsel__cpus(evsel)->map[id], csv_sep);
- 		break;
- 	case AGGR_GLOBAL:
- 	default:
-@@ -1095,6 +1110,7 @@ static void print_stat(int argc, const char **argv)
- 	}
- 
- 	switch (aggr_mode) {
-+	case AGGR_CORE:
- 	case AGGR_SOCKET:
- 		print_aggr(NULL);
- 		break;
-@@ -1163,6 +1179,13 @@ static int perf_stat_init_aggr_mode(void)
- 		}
- 		aggr_get_id = cpu_map__get_socket;
- 		break;
-+	case AGGR_CORE:
-+		if (cpu_map__build_core_map(evsel_list->cpus, &aggr_map)) {
-+			perror("cannot build core map");
-+			return -1;
-+		}
-+		aggr_get_id = cpu_map__get_core;
-+		break;
- 	case AGGR_NONE:
- 	case AGGR_GLOBAL:
- 	default:
-@@ -1372,6 +1395,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 		    "print counts at regular interval in ms (>= 100)"),
- 	OPT_SET_UINT(0, "per-socket", &aggr_mode,
- 		     "aggregate counts per processor socket", AGGR_SOCKET),
-+	OPT_SET_UINT(0, "per-core", &aggr_mode,
-+		     "aggregate counts per physical processor core", AGGR_CORE),
- 	OPT_END()
- 	};
- 	const char * const stat_usage[] = {
-diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
-index 7bb8e87..beb8cf9 100644
---- a/tools/perf/util/cpumap.c
-+++ b/tools/perf/util/cpumap.c
-@@ -267,7 +267,53 @@ static int cpu_map__build_map(struct cpu_map *cpus, struct cpu_map **res,
- 	return 0;
- }
- 
-+int cpu_map__get_core(struct cpu_map *map, int idx)
-+{
-+	FILE *fp;
-+	const char *mnt;
-+	char path[PATH_MAX];
-+	int cpu, ret, s;
-+
-+	if (idx > map->nr)
-+		return -1;
-+
-+	cpu = map->map[idx];
-+
-+	mnt = sysfs_find_mountpoint();
-+	if (!mnt)
-+		return -1;
-+
-+	snprintf(path, PATH_MAX,
-+		"%s/devices/system/cpu/cpu%d/topology/core_id",
-+		mnt, cpu);
-+
-+	fp = fopen(path, "r");
-+	if (!fp)
-+		return -1;
-+	ret = fscanf(fp, "%d", &cpu);
-+	fclose(fp);
-+	if (ret != 1)
-+		return -1;
-+
-+	s = cpu_map__get_socket(map, idx);
-+	if (s == -1)
-+		return -1;
-+
-+	/*
-+	 * encode socket in upper 16 bits
-+	 * core_id is relative to socket, and
-+	 * we need a global id. So we combine
-+	 * socket+ core id
-+	 */
-+	return (s << 16) | (cpu & 0xffff);
-+}
-+
- int cpu_map__build_socket_map(struct cpu_map *cpus, struct cpu_map **sockp)
- {
- 	return cpu_map__build_map(cpus, sockp, cpu_map__get_socket);
- }
-+
-+int cpu_map__build_core_map(struct cpu_map *cpus, struct cpu_map **corep)
-+{
-+	return cpu_map__build_map(cpus, corep, cpu_map__get_core);
-+}
-diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
-index 161b007..9bed02e 100644
---- a/tools/perf/util/cpumap.h
-+++ b/tools/perf/util/cpumap.h
-@@ -15,7 +15,9 @@ void cpu_map__delete(struct cpu_map *map);
- struct cpu_map *cpu_map__read(FILE *file);
- size_t cpu_map__fprintf(struct cpu_map *map, FILE *fp);
- int cpu_map__get_socket(struct cpu_map *map, int idx);
-+int cpu_map__get_core(struct cpu_map *map, int idx);
- int cpu_map__build_socket_map(struct cpu_map *cpus, struct cpu_map **sockp);
-+int cpu_map__build_core_map(struct cpu_map *cpus, struct cpu_map **corep);
- 
- static inline int cpu_map__socket(struct cpu_map *sock, int s)
- {
-@@ -24,6 +26,16 @@ static inline int cpu_map__socket(struct cpu_map *sock, int s)
- 	return sock->map[s];
- }
- 
-+static inline int cpu_map__id_to_socket(int id)
-+{
-+	return id >> 16;
-+}
-+
-+static inline int cpu_map__id_to_cpu(int id)
-+{
-+	return id & 0xffff;
-+}
-+
- static inline int cpu_map__nr(const struct cpu_map *map)
- {
- 	return map ? map->nr : 1;
+Thanks,
+Jonghwa.
+
+> Thanks
+>   -- Daniel
+> 
+
+
