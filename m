@@ -1,63 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762242Ab3DBUbc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 16:31:32 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:3252 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759674Ab3DBUba (ORCPT
+	id S1762254Ab3DBUfX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 16:35:23 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42081 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760329Ab3DBUfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 16:31:30 -0400
-X-IronPort-AV: E=Sophos;i="4.87,394,1363158000"; 
-   d="scan'208";a="35356418"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: [PATCH] ARM: arch_timer: Silence debug preempt warnings
-Date: Tue,  2 Apr 2013 13:31:12 -0700
-Message-Id: <1364934672-31554-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.2
+	Tue, 2 Apr 2013 16:35:22 -0400
+Date: Tue, 2 Apr 2013 22:35:19 +0200
+From: Pavel Machek <pavel@denx.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: sr@denx.de, w.sang@pengutronix.de, magnus.damm@gmail.com,
+        hjk@linutronix.de, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, dzu@denx.de
+Subject: Re: UIO device tree bindings.
+Message-ID: <20130402203519.GA12385@amd.pavel.ucw.cz>
+References: <20130401142336.GA18034@amd.pavel.ucw.cz>
+ <20130401154008.GA20963@amd.pavel.ucw.cz>
+ <20130402024212.GA19431@roeck-us.net>
+ <20130402115151.GA9052@amd.pavel.ucw.cz>
+ <20130402125149.GA7216@roeck-us.net>
+ <20130402131951.GA9975@amd.pavel.ucw.cz>
+ <20130402134645.GB9975@amd.pavel.ucw.cz>
+ <20130402154333.GA21941@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130402154333.GA21941@roeck-us.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hot-plugging with CONFIG_DEBUG_PREEMPT=y on a device with arm
-architected timers causes a slew of "using smp_processor_id() in
-preemptible" warnings:
+Hi!
 
-  BUG: using smp_processor_id() in preemptible [00000000] code: sh/111
-  caller is arch_timer_cpu_notify+0x14/0xc8
+> > > > > Or maybe we can do some magic with module parameter. That should be
+> > > > > enough for expected use.
+> > > > > 
+> > > > I don't think that would make a difference. I mean, just take ns16550 as another
+> > > > example. No one has problems declaring some block of hardware addresses to be
+> > > > compatible with "ns16550", even though it can be anything including a memory
+> > > > block on one of the FPGAs or ASICs we are talking about here, it can be anything
+> > > > but a NS16550, and many of the actual "compatible" strings are not defined
+> > > > anythere either.
+> > > > 
+> > > > So there is no problem with "ata-generic" and "ns16550", and no one cares if
+> > > > "fsl,mpc8349emitx-pata" or "xlnx,xps-uart16550-2.00.b" is defined or not, but
+> > > > "generic-uio" together with "ptx,c64fpga001" is unacceptable.
+> > > > 
+> > > > I think it has more to do with the uio driver not being an actual driver, but
+> > > > the kernel part of a user-space driver, though that is just a wild guess.
+> > > 
+> > > Well, it turned out that adding module parameter was not that much
+> > > work... and yes I believe it is a tiny bit cleaner.
+> > > 
+> > > Here's updated patch, if you can please test this one.
+> > > 
+> > > [You can just pass "uio_of_genirq.of_id=generic-uio" to get previous
+> > > behaviour. But don't tell anyone :-)]
+> > 
+> > Actually, looking at it some more, perhaps even solution is possible?
+> > (This will need uio_pdrv_genirq.of_id=generic-uio .)
+> > 
+> Possibly for your case, but not for mine, as I'll have several instances of the
+> driver, and the hardware is not always present. Also, I am not sure if the match
+> function runs before the module paratemers are initialized or afterwards, but that
+> would be a matter of testing.
 
-This happens because sometimes the cpu notifier, arch_timer_cpu_notify(),
-is called in preemptible context but we use this_cpu_ptr()
-to retrieve the clockevent unconditionally. We're only going to
-actually use the pointer in non-preemptible context though,
-so use __this_cpu_ptr() instead to avoid the preemptible checks
-and silence the warning.
+I tested that much: it works ok.
 
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Marc Zyngier <Marc.Zyngier@arm.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/clocksource/arm_arch_timer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+And... yes, this should work for you. You'll simply put
+compatible="generic-uio" into the dts. (Ok, ugly part is that this is
+probably not acceptable for upstream.) Then you'll use this patch,
+with uio_pdrv_genirq.of_id=generic-uio commandline. It should pick up
+all the devices old version of patch picked. (Not sure how you'll
+assign right userland drivers to right devices, but that problem was
+that even with old patch version, right?)
 
-diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index d7ad425..5928c29 100644
---- a/drivers/clocksource/arm_arch_timer.c
-+++ b/drivers/clocksource/arm_arch_timer.c
-@@ -248,7 +248,7 @@ static void __cpuinit arch_timer_stop(struct clock_event_device *clk)
- static int __cpuinit arch_timer_cpu_notify(struct notifier_block *self,
- 					   unsigned long action, void *hcpu)
- {
--	struct clock_event_device *evt = this_cpu_ptr(arch_timer_evt);
-+	struct clock_event_device *evt = __this_cpu_ptr(arch_timer_evt);
- 
- 	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_STARTING:
+> > Unfortunately, I don't have easy way to test this :-(. So feedback is
+> > essential.
+> > 
+> I'll try to get it to work, but it will take a bit.
+
+Thanks,
+									Pavel
+
+> > Signed-off-by: Pavel Machek <pavel@denx.de>
+> > 
+> > diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+> > index 4a50ead..64b6dac 100644
+> > --- a/drivers/uio/uio_pdrv_genirq.c
+> > +++ b/drivers/uio/uio_pdrv_genirq.c
+> > @@ -271,9 +273,13 @@ static const struct dev_pm_ops uio_pdrv_genirq_dev_pm_ops = {
+> >  
+> >  #ifdef CONFIG_OF
+> >  static const struct of_device_id uio_of_genirq_match[] = {
+> > -	{ /* empty for now */ },
+> > +	{ /* This is filled with module_parm */ },
+> > +	{ /* Sentinel */ },
+> >  };
+> >  MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
+> > +
+> > +module_param_string(of_id, uio_of_genirq_match[0].compatible, 128, 0);
+> > +MODULE_PARM_DESC(of_id, "Openfirmware id of the device to be handled by uio");
+> >  #else
+> >  # define uio_of_genirq_match NULL
+> >  #endif
+
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
