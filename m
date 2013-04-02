@@ -1,190 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760281Ab3DBDxq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 23:53:46 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:53591 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758699Ab3DBDxn (ORCPT
+	id S1753858Ab3DBEG3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 00:06:29 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:46009 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753404Ab3DBEG1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 23:53:43 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Borislav Petkov <bp@alien8.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 02/23] perf: make perl support based on CONFIG_LIBPERL
-Date: Mon,  1 Apr 2013 21:53:08 -0600
-Message-Id: <1364874809-5575-3-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1364874809-5575-1-git-send-email-dsahern@gmail.com>
-References: <1364874809-5575-1-git-send-email-dsahern@gmail.com>
+	Tue, 2 Apr 2013 00:06:27 -0400
+Date: Tue, 2 Apr 2013 00:06:24 -0400 (EDT)
+From: CAI Qian <caiqian@redhat.com>
+To: Dmitry Monakhov <dmonakhov@openvz.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
+        linux-ext4@vger.kernel.org
+Message-ID: <874841142.414482.1364875584266.JavaMail.root@redhat.com>
+In-Reply-To: <87fvzaspr8.fsf@openvz.org>
+References: <2133129347.8273339.1364549222854.JavaMail.root@redhat.com> <87ip46ss0o.fsf@openvz.org> <1211053180.322948.1364797847717.JavaMail.root@redhat.com> <87fvzaspr8.fsf@openvz.org>
+Subject: bisected! (WAS Re: s390x: kernel BUG at fs/ext4/inode.c:1591!)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF19 (Linux)/8.0.3_GA_5664)
+Thread-Topic: bisected! (WAS Re: s390x: kernel BUG at fs/ext4/inode.c:1591!)
+Thread-Index: XxAXKs9TrPCMlUs6Y9kzmw0IZf+xmg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/Makefile                     |   34 ++++++++++++++-----------------
- tools/perf/Pconfig                      |    2 ++
- tools/perf/builtin-script.c             |    3 ++-
- tools/perf/config/feature-tests.mak     |    4 ++--
- tools/perf/util/trace-event-scripting.c |   13 ++++++------
- 5 files changed, 28 insertions(+), 28 deletions(-)
+Bisect indicated this is the culprit,
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 4e54d05..af7b746 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -16,8 +16,6 @@ include config/utilities.mak
- #
- # Define CROSS_COMPILE as prefix name of compiler if you want cross-builds.
- #
--# Define NO_LIBPERL to disable perl script extension.
--#
- # Define NO_LIBPYTHON to disable python script extension.
- #
- # Define PYTHON to point to the python binary if the default
-@@ -718,23 +716,21 @@ ifndef NO_GTK2
- 	endif
- endif
- 
--ifdef NO_LIBPERL
--	BASIC_CFLAGS += -DNO_LIBPERL
--else
--       PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
--       PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
--       PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
--	PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
--	FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
--
--	ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED),perl),y)
--		BASIC_CFLAGS += -DNO_LIBPERL
--	else
--               ALL_LDFLAGS += $(PERL_EMBED_LDFLAGS)
--               EXTLIBS += $(PERL_EMBED_LIBADD)
--		LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
--		LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
--	endif
-+ifdef CONFIG_LIBPERL
-+    PERL_EMBED_LDOPTS = $(shell perl -MExtUtils::Embed -e ldopts 2>/dev/null)
-+    PERL_EMBED_LDFLAGS = $(call strip-libs,$(PERL_EMBED_LDOPTS))
-+    PERL_EMBED_LIBADD = $(call grep-libs,$(PERL_EMBED_LDOPTS))
-+    PERL_EMBED_CCOPTS = `perl -MExtUtils::Embed -e ccopts 2>/dev/null`
-+    FLAGS_PERL_EMBED=$(PERL_EMBED_CCOPTS) $(PERL_EMBED_LDOPTS)
-+
-+    ifneq ($(call try-cc,$(SOURCE_PERL_EMBED),$(FLAGS_PERL_EMBED)),y)
-+        $(error perl module ExtUtils::Embed not installed. Install it or unset CONFIG_LIBPERL to continue)
-+    endif
-+
-+    ALL_LDFLAGS += $(PERL_EMBED_LDFLAGS)
-+    EXTLIBS += $(PERL_EMBED_LIBADD)
-+    LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
-+    LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
- endif
- 
- disable-python = $(eval $(disable-python_code))
-diff --git a/tools/perf/Pconfig b/tools/perf/Pconfig
-index e69de29..a636af3 100644
---- a/tools/perf/Pconfig
-+++ b/tools/perf/Pconfig
-@@ -0,0 +1,2 @@
-+config LIBPERL
-+    bool "Enable support for perl scripting engine"
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 92d4658..7841533 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -16,6 +16,7 @@
- #include "util/evsel.h"
- #include "util/sort.h"
- #include <linux/bitmap.h>
-+#include <linux/kconfig.h>
- 
- static char const		*script_name;
- static char const		*generate_script_lang;
-@@ -1110,7 +1111,7 @@ int find_scripts(char **scripts_array, char **scripts_path_array)
- 	for_each_lang(scripts_path, scripts_dir, lang_dirent, lang_next) {
- 		snprintf(lang_path, MAXPATHLEN, "%s/%s", scripts_path,
- 			 lang_dirent.d_name);
--#ifdef NO_LIBPERL
-+#ifndef CONFIG_LIBPERL
- 		if (strstr(lang_path, "perl"))
- 			continue;
- #endif
-diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index b4eabb4..1222b33 100644
---- a/tools/perf/config/feature-tests.mak
-+++ b/tools/perf/config/feature-tests.mak
-@@ -102,7 +102,7 @@ int main(void)
- endef
- endif
- 
--ifndef NO_LIBPERL
-+ifdef CONFIG_LIBPERL
- define SOURCE_PERL_EMBED
- #include <EXTERN.h>
- #include <perl.h>
-@@ -235,4 +235,4 @@ int main(void)
- 	numa_available();
- 	return 0;
- }
--endef
-\ No newline at end of file
-+endef
-diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
-index 8715a10..3343d97 100644
---- a/tools/perf/util/trace-event-scripting.c
-+++ b/tools/perf/util/trace-event-scripting.c
-@@ -27,6 +27,7 @@
- #include "../perf.h"
- #include "util.h"
- #include "trace-event.h"
-+#include <linux/kconfig.h>
- 
- struct scripting_context *scripting_context;
- 
-@@ -110,7 +111,7 @@ void setup_python_scripting(void)
- static void print_perl_unsupported_msg(void)
- {
- 	fprintf(stderr, "Perl scripting not supported."
--		"  Install libperl and rebuild perf to enable it.\n"
-+		"  Enable CONFIG_LIBPERL and rebuild perf.\n"
- 		"For example:\n  # apt-get install libperl-dev (ubuntu)"
- 		"\n  # yum install 'perl(ExtUtils::Embed)' (Fedora)"
- 		"\n  etc.\n");
-@@ -156,16 +157,16 @@ static void register_perl_scripting(struct scripting_ops *scripting_ops)
- 	scripting_context = malloc(sizeof(struct scripting_context));
- }
- 
--#ifdef NO_LIBPERL
-+#ifdef CONFIG_LIBPERL
-+extern struct scripting_ops perl_scripting_ops;
-+
- void setup_perl_scripting(void)
- {
--	register_perl_scripting(&perl_scripting_unsupported_ops);
-+	register_perl_scripting(&perl_scripting_ops);
- }
- #else
--extern struct scripting_ops perl_scripting_ops;
--
- void setup_perl_scripting(void)
- {
--	register_perl_scripting(&perl_scripting_ops);
-+	register_perl_scripting(&perl_scripting_unsupported_ops);
- }
- #endif
--- 
-1.7.10.1
+0e401101db49959f5783f6ee9e676124b5a183ac
+ext4: fix memory leakage in mext_check_coverage
 
+This following with Dmitry's debug patch applied,
+
+CAI Qian
+
+Ý  101.408610¨ ES cache assertation failed for inode: 753 es_cached ex Ý56/5/744
+81/20¨ != found ex Ý56/5/3396400/0¨ retval 0 flags 5
+Ý  209.858899¨ ES cache assertation failed for inode: 384 es_cached ex Ý57/7/332
+82/20¨ != found ex Ý57/7/3396400/0¨ retval 0 flags 5
+Ý  209.860656¨ ES cache assertation failed for inode: 384 es_cached ex Ý25/1/332
+50/20¨ != found ex Ý25/1/0/0¨ retval 0 flags 0
+Ý  209.893587¨ ES cache assertation failed for inode: 384 es_cached ex Ý22/1/332
+47/20¨ != found ex Ý22/1/34838/1000¨ retval 1 flags 0
+Ý  209.913482¨ ES cache assertation failed for inode: 384 es_cached ex Ý27/1/329
+40/20¨ != found ex Ý27/1/0/0¨ retval 0 flags 0
+Ý  209.919950¨ ES cache assertation failed for inode: 384 es_cached ex Ý59/5/338
+48/20¨ != found ex Ý59/5/3396400/0¨ retval 0 flags 5
+Ý  209.931856¨ ES cache assertation failed for inode: 384 es_cached ex Ý7/1/3292
+0/20¨ != found ex Ý7/1/35879/20¨ retval 1 flags 43
+Ý  209.969282¨ ES cache assertation failed for inode: 384 es_cached ex Ý35/1/361
+97/20¨ != found ex Ý35/1/36197/1000¨ retval 1 flags 0
+Ý  209.969290¨ ES cache assertation failed for inode: 384 es_cached ex Ý48/1/362
+10/20¨ != found ex Ý48/1/0/0¨ retval 0 flags 0
+Ý  209.980724¨ ES cache assertation failed for inode: 384 es_cached ex Ý13/4/334
+89/20¨ != found ex Ý13/4/2161372/0¨ retval 0 flags 5
+Ý  209.980744¨ ES cache assertation failed for inode: 384 es_cached ex Ý61/3/335
+37/20¨ != found ex Ý61/3/3396400/0¨ retval 0 flags 5
+Ý  209.983848¨ ES cache assertation failed for inode: 384 es_cached ex Ý44/2/335
+20/20¨ != found ex Ý44/2/36216/20¨ retval 2 flags 43
+Ý  210.020041¨ ES cache assertation failed for inode: 384 es_cached ex Ý61/3/341
+91/20¨ != found ex Ý61/3/3396400/0¨ retval 0 flags 5
+Ý  210.050100¨ ES cache assertation failed for inode: 384 es_cached ex Ý22/11/34
+565/20¨ != found ex Ý22/11/3396400/0¨ retval 0 flags 5
+Ý  210.053271¨ ES cache assertation failed for inode: 384 es_cached ex Ý15/1/334
+90/20¨ != found ex Ý15/1/33579/1000¨ retval 1 flags 1
+Ý  210.053275¨ mpage_da_submit_io failed block=33490 != b_blocknr=33579
+Ý  210.053277¨ ino:384 lbkl:15, b_state=0x00001023, b_size=4096
+Ý  210.053320¨ ------------Ý cut here ¨------------
+Ý  210.053323¨ kernel BUG at fs/ext4/inode.c:1639!
+Ý  210.053402¨ illegal operation: 0001 Ý#1¨ SMP
+Ý  210.053405¨ Modules linked in: nf_conntrack_netbios_ns nf_conntrack_broadcast
+ ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ipt
+able_nat nf_nat_ipv4 nf_nat iptable_mangle ipt_REJECT nf_conntrack_ipv4 nf_defra
+g_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tab
+les iptable_filter ip_tables sg qeth_l2 vmur xfs libcrc32c dasd_fba_mod dasd_eck
+d_mod lcs dasd_mod qeth ctcm qdio ccwgroup fsm dm_mirror dm_region_hash dm_log d
+m_mod
+Ý  210.053434¨ CPU: 0 Not tainted 3.8.0-rc3+ #16
+Ý  210.053436¨ Process fsx (pid: 20565, task: 000000002c358000, ksp: 000000002c0
+8f480)
+Ý  210.053439¨ Krnl PSW : 0704f00180000000 00000000003033e8 (mpage_da_submit_io
+0x3d4/0x408)
+Ý  210.053450¨            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:3 CC:3 PM:0 EA:
+3
+Krnl GPRS: 0000000000000015 0000000000000001 0000000000000030 00000000031b4508
+Ý  210.053455¨            00000000003033e4 0000000000000000 0000000000001000 000
+7ffff00001000
+Ý  210.053457¨            000000002c08fa98 000003d100a8c6c0 000000002c08fb68 000
+000000000000f
+Ý  210.053460¨            00000000000082d2 000000002204d068 00000000003033e4 000
+000002c08f970
+Ý  210.053473¨ Krnl Code: 00000000003033d8: c02000215447        larl    %r2,72dc
+66
+           00000000003033de: c0e50016788f       brasl   %r14,5d24fc
+          #00000000003033e4: a7f40001           brc     15,3033e6
+          >00000000003033e8: a7f40001           brc     15,3033ea
+           00000000003033ec: a7f40001           brc     15,3033ee
+           00000000003033f0: 4120f0e8           la      %r2,232(%r15)
+           00000000003033f4: a7180000           lhi     %r1,0
+           00000000003033f8: 5010f0d8           st      %r1,216(%r15)
+Ý  210.053497¨ Call Trace:
+Ý  210.053498¨ (Ý<00000000003033e4>¨ mpage_da_submit_io+0x3d0/0x408)
+Ý  210.053501¨  Ý<0000000000309a48>¨ mpage_da_map_and_submit+0x150/0x41c
+Ý  210.053505¨  Ý<000000000030a212>¨ write_cache_pages_da+0x4fe/0x530
+Ý  210.053509¨  Ý<000000000030a584>¨ ext4_da_writepages+0x340/0x628
+Ý  210.053512¨  Ý<00000000002024d2>¨ __filemap_fdatawrite_range+0x6e/0x7c
+Ý  210.053518¨  Ý<00000000002025fc>¨ filemap_write_and_wait_range+0x54/0x8c
+Ý  210.053521¨  Ý<00000000002fe0f8>¨ ext4_sync_file+0x7c/0x3d8
+Ý  210.053524¨  Ý<000000000023c932>¨ SyS_msync+0x14e/0x1d8
+Ý  210.053528¨  Ý<00000000005de66e>¨ sysc_tracego+0x14/0x1a
+Ý  210.053533¨  Ý<000003fffd0e1240>¨ 0x3fffd0e1240
+Ý  210.053536¨ Last Breaking-Event-Address:
+Ý  210.053537¨  Ý<00000000003033e4>¨ mpage_da_submit_io+0x3d0/0x408
+Ý  210.053540¨
+Ý  210.053542¨ ---Ý end trace f387176e9fcb98d0 ¨---
+Ý  210.053546¨ ------------Ý cut here ¨------------
+Ý  210.053548¨ WARNING: at kernel/exit.c:713
+Ý  210.053550¨ Modules linked in: nf_conntrack_netbios_ns nf_conntrack_broadcast
+ ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ipt
+able_nat nf_nat_ipv4 nf_nat iptable_mangle ipt_REJECT nf_conntrack_ipv4 nf_defra
+g_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tab
+les iptable_filter ip_tables sg qeth_l2 vmur xfs libcrc32c dasd_fba_mod dasd_eck
+d_mod lcs dasd_mod qeth ctcm qdio ccwgroup fsm dm_mirror dm_region_hash dm_log d
+m_mod
+Ý  210.053571¨ CPU: 0 Tainted: G      D      3.8.0-rc3+ #16
