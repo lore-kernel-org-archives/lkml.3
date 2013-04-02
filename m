@@ -1,89 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932902Ab3DBQXq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 12:23:46 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61091 "EHLO
+	id S1761590Ab3DBQYy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 12:24:54 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:59052 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932883Ab3DBQXn (ORCPT
+	with ESMTP id S932861Ab3DBQXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 12:23:43 -0400
+	Tue, 2 Apr 2013 12:23:40 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Greg KH <greg@kroah.com>
 Cc: linux-usb@vger.kernel.org, Manjunath Goudar <manjunath.goudar@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH V5 0/6] USB: EHCI multiplatform for 3.10
-Date: Tue,  2 Apr 2013 18:23:58 +0200
-Message-Id: <1364919844-1726-1-git-send-email-arnd@arndb.de>
+        Alan Stern <stern@rowland.harvard.edu>,
+        Deepak Saxena <dsaxena@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Shiraz Hashim <shiraz.hashim@st.com>, spear-devel@list.st.com
+Subject: [PATCH V5 2/6] USB: EHCI: make ehci-spear a separate driver
+Date: Tue,  2 Apr 2013 18:24:00 +0200
+Message-Id: <1364919844-1726-3-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
-X-Provags-ID: V02:K0:exdrIqrxEVJWeo4rw/MQbia1WtGISvLXTWbbrcJeBUI
- buLqQbew1FCjBgnF2ThXriXHUBaGNS1kW99IwJ2+uVkroPwNaA
- xyRCgOk6om58piT4Fyzj1E3W9vfMCq6gd/9e3X2RFgKpa/2x5L
- a3Mm430ZvORaOgIHVIzBoqj4BFkPTad6llOnlV6AJFhrapKGw2
- reT/U4UCEMCrz1y55Jo24Hf55suGymMcOAbklyFijz1R1zjOX7
- GrFHzt5Gwd6d+8+zyr8PcT0pfoQCvQreB0HVdAYLbhX8jmw6om
- rnUkoxQ9YZCLSEdLE08uLyS3JHFuKS8pkiszKid35ugNbTPec2
- E3A86gzI3PkxyXytMpFseP5+GSyxemzwJj5EWLn7Z
+In-Reply-To: <1364919844-1726-1-git-send-email-arnd@arndb.de>
+References: <1364919844-1726-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:gUZfrnSX6uUbAL+1gnkWZi8OPud2sWB+4yGOmZMx0UF
+ uouMuSB7YhCYwi9BQ0vzDVd3T0g1n/23RaPE7p7ksQXNg0tDuQ
+ VQjcZBW9iaO3qO188rpsipUMssSCwyDTA2XU8ZDh84HZTER9dH
+ FRkTGPE6ngiS9VrL5ZkbkK1Md5DBfzjf+a20F8TJv8JUjqF7Mb
+ kNKWGIVlOYlsyndC/K/I06yf61bVAOp9Rm1YB3HVZOIArdtw1L
+ EK8oflGoptfG3qaTwvn5PuFZEhoPxS+VrQtcRdFRmoqBzxZvwj
+ 1W8a9cnLpIE9GoUvrup6KlcXWGSX54PkmaPhAc2dCBwXF0xJCC
+ at0K7jotYK5GtexZDf3FvH0m5+ol0xPz52xF1n82L
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+From: Manjunath Goudar <manjunath.goudar@linaro.org>
 
-Here are the EHCI patches that I think are good for inclusion in 3.10,
-I hope you are willing to include them after the debacle over these
-patches in 3.9.
+Separate the SPEAr host controller driver from ehci-hcd host code
+so that it can be built as a separate driver module.
+This work is part of enabling multi-platform kernels on ARM;
+however, note that other changes are still needed before SPEAr can be
+booted with a multi-platform kernel, but they are queued in the
+arm-soc tree for 3.10.
 
-The patches are all logically independent but sorted by priority,
-so decide for yourself how many you want to take, starting at the
-first one. The first six patches all have an Ack from Alan Stern
-and from the respective ARM platform maintainers.
+With the infrastructure added by Alan Stern in patch 3e0232039
+"USB: EHCI: prepare to make ehci-hcd a library module", we can
+avoid this problem by turning a bus glue into a separate
+module, as we do here for the SPEAr bus glue.
 
-* The first patch (Orion) fixes a preexisting bug because the driver
-  conflicts with the OMAP and vt8500 back-ends in 3.9. Both of those
-  are fixed in usb-next now, but the same problem comes back with
-  any other platform we enable for ARM multiplatform support.
-* The second patch fixes a problem that will happen in 3.10 as we
-  enable SPEAr multiplatform support.
-* S5P/Exynos multiplatform support is not yet part of linux-next, but
-  I still have hope for 3.10, so the third patch will be needed as well
-  then.
-* The ehci-atmel patch will not be needed in 3.10 but quite likely
-  in 3.11.
-* I have no time line for MSM multiplatform support, but we will
-  get there eventually and the driver is broken already so there
-  is no risk of regressions.
-* The final patch is from me and still waiting for an Ack from Alan
-  Stern, so please wait for his feedback before applying that one.
+In V4 (arnd):
+ - renamed all 'struct spear_ehci' pointers from 'ehci' to the
+   less ambiguous 'sehci'.
+ - folded trivial spear_start_ehci/spear_stop_ehci functions into
+   callers.
+ - brought back initialization of ehci->caps.
 
-There is one more patch coming for ehci-tegra. I've forwarded
-Manjunath's work on that driver to the Tegra developers, who
-will test it and send it directly to you. The version I had was
-incomplete.
+In V3:
+ - Detailed commit message added here about why this patch is required.
+ - Eliminated ehci_spear_setup routine because hcd registers can
+   be directly set in the spear_ehci_hcd_drv_probe function.
+ - spear_overrides struct initialized.
+ - Converted to using .extra_priv_size for allocating spear_ehci,
+   and updated all users of that structure.
+ - to_spear_ehci() macro modified for spear_ehci.
 
-	Arnd
+In V2:
+ - Replaced spear as SPEAr everywhere, leaving functions/variables/config options.
 
-Arnd Bergmann (1):
-  USB: OHCI: avoid conflicting platform drivers
+Signed-off-by: Deepak Saxena <dsaxena@linaro.org>
+Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Viresh Kumar <viresh.linux@gmail.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Cc: Shiraz Hashim <shiraz.hashim@st.com>
+Cc: spear-devel@list.st.com
+---
+ drivers/usb/host/Kconfig      |   8 +++
+ drivers/usb/host/Makefile     |   1 +
+ drivers/usb/host/ehci-hcd.c   |   6 +--
+ drivers/usb/host/ehci-spear.c | 115 +++++++++++++++++++-----------------------
+ 4 files changed, 61 insertions(+), 69 deletions(-)
 
-Manjunath Goudar (5):
-  USB: EHCI: make ehci-orion a separate driver
-  USB: EHCI: make ehci-spear a separate driver
-  USB: EHCI: make ehci-s5p a separate driver
-  USB: EHCI: make ehci-atmel a separate driver
-  USB: EHCI: make ehci-msm a separate driver
-
- drivers/usb/host/Kconfig      |  40 +++++++++--
- drivers/usb/host/Makefile     |   5 ++
- drivers/usb/host/ehci-atmel.c |  88 +++++++++++------------
- drivers/usb/host/ehci-hcd.c   |  30 ++------
- drivers/usb/host/ehci-msm.c   |  89 +++++++++++------------
- drivers/usb/host/ehci-orion.c |  82 +++++++++------------
- drivers/usb/host/ehci-s5p.c   | 164 +++++++++++++++++++++---------------------
- drivers/usb/host/ehci-spear.c | 115 +++++++++++++----------------
- drivers/usb/host/ohci-hcd.c   | 136 ++++++++++++++++++++++++++++++-----
- 9 files changed, 412 insertions(+), 337 deletions(-)
-
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index e5649c1..4723f79 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -174,6 +174,14 @@ config USB_EHCI_HCD_ORION
+ 	  on Marvell's mobile PXA and MMP SoC, see "EHCI support for
+ 	  Marvell PXA/MMP USB controller" for those.
+ 
++config USB_EHCI_HCD_SPEAR
++        tristate "Support for ST SPEAr on-chip EHCI USB controller"
++        depends on USB_EHCI_HCD && PLAT_SPEAR
++        default y
++        ---help---
++          Enables support for the on-chip EHCI controller on
++          ST SPEAr chips.
++
+ config USB_EHCI_MSM
+ 	bool "Support for MSM on-chip EHCI USB controller"
+ 	depends on USB_EHCI_HCD && ARCH_MSM
+diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+index 9492f50..3e02471 100644
+--- a/drivers/usb/host/Makefile
++++ b/drivers/usb/host/Makefile
+@@ -29,6 +29,7 @@ obj-$(CONFIG_USB_EHCI_HCD_PLATFORM)	+= ehci-platform.o
+ obj-$(CONFIG_USB_EHCI_MXC)	+= ehci-mxc.o
+ obj-$(CONFIG_USB_EHCI_HCD_OMAP)	+= ehci-omap.o
+ obj-$(CONFIG_USB_EHCI_HCD_ORION)	+= ehci-orion.o
++obj-$(CONFIG_USB_EHCI_HCD_SPEAR)	+= ehci-spear.o
+ 
+ obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
+ obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 1f97268..c8c70a1 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1264,11 +1264,6 @@ MODULE_LICENSE ("GPL");
+ #define PLATFORM_DRIVER		ehci_octeon_driver
+ #endif
+ 
+-#ifdef CONFIG_PLAT_SPEAR
+-#include "ehci-spear.c"
+-#define PLATFORM_DRIVER		spear_ehci_hcd_driver
+-#endif
+-
+ #ifdef CONFIG_USB_EHCI_MSM
+ #include "ehci-msm.c"
+ #define PLATFORM_DRIVER		ehci_msm_driver
+@@ -1315,6 +1310,7 @@ MODULE_LICENSE ("GPL");
+ 	!IS_ENABLED(CONFIG_USB_EHCI_MXC) && \
+ 	!IS_ENABLED(CONFIG_USB_EHCI_HCD_OMAP) && \
+ 	!IS_ENABLED(CONFIG_USB_EHCI_HCD_ORION) && \
++	!IS_ENABLED(CONFIG_USB_EHCI_HCD_SPEAR) && \
+ 	!defined(PLATFORM_DRIVER) && \
+ 	!defined(PS3_SYSTEM_BUS_DRIVER) && \
+ 	!defined(OF_PLATFORM_DRIVER) && \
+diff --git a/drivers/usb/host/ehci-spear.c b/drivers/usb/host/ehci-spear.c
+index 210bb67..61ecfb3 100644
+--- a/drivers/usb/host/ehci-spear.c
++++ b/drivers/usb/host/ehci-spear.c
+@@ -1,5 +1,5 @@
+ /*
+-* Driver for EHCI HCD on SPEAR SOC
++* Driver for EHCI HCD on SPEAr SOC
+ *
+ * Copyright (C) 2010 ST Micro Electronics,
+ * Deepak Sikri <deepak.sikri@st.com>
+@@ -12,71 +12,30 @@
+ */
+ 
+ #include <linux/clk.h>
++#include <linux/dma-mapping.h>
++#include <linux/io.h>
+ #include <linux/jiffies.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm.h>
++#include <linux/usb.h>
++#include <linux/usb/hcd.h>
+ 
+-struct spear_ehci {
+-	struct ehci_hcd ehci;
+-	struct clk *clk;
+-};
+-
+-#define to_spear_ehci(hcd)	(struct spear_ehci *)hcd_to_ehci(hcd)
++#include "ehci.h"
+ 
+-static void spear_start_ehci(struct spear_ehci *ehci)
+-{
+-	clk_prepare_enable(ehci->clk);
+-}
++#define DRIVER_DESC "EHCI SPEAr driver"
+ 
+-static void spear_stop_ehci(struct spear_ehci *ehci)
+-{
+-	clk_disable_unprepare(ehci->clk);
+-}
++static const char hcd_name[] = "SPEAr-ehci";
+ 
+-static int ehci_spear_setup(struct usb_hcd *hcd)
+-{
+-	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
+-
+-	/* registers start at offset 0x0 */
+-	ehci->caps = hcd->regs;
++struct spear_ehci {
++	struct clk *clk;
++};
+ 
+-	return ehci_setup(hcd);
+-}
++#define to_spear_ehci(hcd)	(struct spear_ehci *)(hcd_to_ehci(hcd)->priv)
+ 
+-static const struct hc_driver ehci_spear_hc_driver = {
+-	.description			= hcd_name,
+-	.product_desc			= "SPEAr EHCI",
+-	.hcd_priv_size			= sizeof(struct spear_ehci),
+-
+-	/* generic hardware linkage */
+-	.irq				= ehci_irq,
+-	.flags				= HCD_MEMORY | HCD_USB2,
+-
+-	/* basic lifecycle operations */
+-	.reset				= ehci_spear_setup,
+-	.start				= ehci_run,
+-	.stop				= ehci_stop,
+-	.shutdown			= ehci_shutdown,
+-
+-	/* managing i/o requests and associated device resources */
+-	.urb_enqueue			= ehci_urb_enqueue,
+-	.urb_dequeue			= ehci_urb_dequeue,
+-	.endpoint_disable		= ehci_endpoint_disable,
+-	.endpoint_reset			= ehci_endpoint_reset,
+-
+-	/* scheduling support */
+-	.get_frame_number		= ehci_get_frame,
+-
+-	/* root hub support */
+-	.hub_status_data		= ehci_hub_status_data,
+-	.hub_control			= ehci_hub_control,
+-	.bus_suspend			= ehci_bus_suspend,
+-	.bus_resume			= ehci_bus_resume,
+-	.relinquish_port		= ehci_relinquish_port,
+-	.port_handed_over		= ehci_port_handed_over,
+-	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
+-};
++static struct hc_driver __read_mostly ehci_spear_hc_driver;
+ 
+ #ifdef CONFIG_PM_SLEEP
+ static int ehci_spear_drv_suspend(struct device *dev)
+@@ -104,7 +63,7 @@ static u64 spear_ehci_dma_mask = DMA_BIT_MASK(32);
+ static int spear_ehci_hcd_drv_probe(struct platform_device *pdev)
+ {
+ 	struct usb_hcd *hcd ;
+-	struct spear_ehci *ehci;
++	struct spear_ehci *sehci;
+ 	struct resource *res;
+ 	struct clk *usbh_clk;
+ 	const struct hc_driver *driver = &ehci_spear_hc_driver;
+@@ -161,10 +120,13 @@ static int spear_ehci_hcd_drv_probe(struct platform_device *pdev)
+ 		goto err_put_hcd;
+ 	}
+ 
+-	ehci = (struct spear_ehci *)hcd_to_ehci(hcd);
+-	ehci->clk = usbh_clk;
++	sehci = to_spear_ehci(hcd);
++	sehci->clk = usbh_clk;
++
++	/* registers start at offset 0x0 */
++	hcd_to_ehci(hcd)->caps = hcd->regs;
+ 
+-	spear_start_ehci(ehci);
++	clk_prepare_enable(sehci->clk);
+ 	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
+ 	if (retval)
+ 		goto err_stop_ehci;
+@@ -172,7 +134,7 @@ static int spear_ehci_hcd_drv_probe(struct platform_device *pdev)
+ 	return retval;
+ 
+ err_stop_ehci:
+-	spear_stop_ehci(ehci);
++	clk_disable_unprepare(sehci->clk);
+ err_put_hcd:
+ 	usb_put_hcd(hcd);
+ fail:
+@@ -184,7 +146,7 @@ fail:
+ static int spear_ehci_hcd_drv_remove(struct platform_device *pdev)
+ {
+ 	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+-	struct spear_ehci *ehci_p = to_spear_ehci(hcd);
++	struct spear_ehci *sehci = to_spear_ehci(hcd);
+ 
+ 	if (!hcd)
+ 		return 0;
+@@ -192,8 +154,8 @@ static int spear_ehci_hcd_drv_remove(struct platform_device *pdev)
+ 		BUG();
+ 	usb_remove_hcd(hcd);
+ 
+-	if (ehci_p->clk)
+-		spear_stop_ehci(ehci_p);
++	if (sehci->clk)
++		clk_disable_unprepare(sehci->clk);
+ 	usb_put_hcd(hcd);
+ 
+ 	return 0;
+@@ -216,4 +178,29 @@ static struct platform_driver spear_ehci_hcd_driver = {
+ 	}
+ };
+ 
++static const struct ehci_driver_overrides spear_overrides __initdata = {
++	.extra_priv_size = sizeof(struct spear_ehci),
++};
++
++static int __init ehci_spear_init(void)
++{
++	if (usb_disabled())
++		return -ENODEV;
++
++	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
++
++	ehci_init_driver(&ehci_spear_hc_driver, &spear_overrides);
++	return platform_driver_register(&spear_ehci_hcd_driver);
++}
++module_init(ehci_spear_init);
++
++static void __exit ehci_spear_cleanup(void)
++{
++	platform_driver_unregister(&spear_ehci_hcd_driver);
++}
++module_exit(ehci_spear_cleanup);
++
++MODULE_DESCRIPTION(DRIVER_DESC);
+ MODULE_ALIAS("platform:spear-ehci");
++MODULE_AUTHOR("Deepak Sikri");
++MODULE_LICENSE("GPL");
 -- 
 1.8.1.2
 
