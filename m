@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab3DBPOx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 11:14:53 -0400
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:63585 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760543Ab3DBPOw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 11:14:52 -0400
+	id S932642Ab3DBPPY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 11:15:24 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58313 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932370Ab3DBPPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 11:15:22 -0400
+Date: Tue, 2 Apr 2013 11:14:36 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Excessive stall times on ext4 in 3.9-rc2
+Message-ID: <20130402151436.GC31577@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+	Jiri Slaby <jslaby@suse.cz>
+References: <20130402142717.GH32241@suse.de>
+ <20130402150651.GB31577@thunk.org>
 MIME-Version: 1.0
-Reply-To: konrad@darnok.org
-In-Reply-To: <1364870780-16296-6-git-send-email-liwanp@linux.vnet.ibm.com>
-References: <1364870780-16296-1-git-send-email-liwanp@linux.vnet.ibm.com> <1364870780-16296-6-git-send-email-liwanp@linux.vnet.ibm.com>
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Date: Tue, 2 Apr 2013 11:14:31 -0400
-X-Google-Sender-Auth: gH-ALRV_fQC8qZIW18jxwBojPgQ
-Message-ID: <CAPbh3rvRAJaQ0wfxKYkOOuKtoD+U+7WaA2shKvhTyfLB=5k2aw@mail.gmail.com>
-Subject: Re: [PATCH v5 5/8] staging: zcache: fix zcache writeback in debugfs
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130402150651.GB31577@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 1, 2013 at 10:46 PM, Wanpeng Li <liwanp@linux.vnet.ibm.com> wrote:
-> commit 9c0ad59ef ("zcache/debug: Use an array to initialize/use debugfs attributes")
-> use an array to initialize/use debugfs attributes, .name = #x, .val = &zcache_##x.
-> For zcache writeback, this commit set .name = zcache_outstanding_writeback_pages and
-> .name = zcache_writtenback_pages seperately, however, corresponding .val =
-> &zcache_zcache_outstanding_writeback_pages and .val = &zcache_zcache_writtenback_pages,
-> which are not correct.
->
+On Tue, Apr 02, 2013 at 11:06:51AM -0400, Theodore Ts'o wrote:
+> 
+> Can you try 3.9-rc4 or later and see if the problem still persists?
+> There were a number of ext4 issues especially around low memory
+> performance which weren't resolved until -rc4.
 
-Weird. I recall spotting that when I did the patches, but I wonder how
-I missed this.
-Ah, now I remember - I  did a silly patch by adding in #define
-CONFIG_ZCACHE_WRITEBACK
-in the zcache-main.c code, but forgot to try it out here.
+Actually, sorry, I took a closer look and I'm not as sure going to
+-rc4 is going to help (although we did have some ext4 patches to fix a
+number of bugs that flowed in as late as -rc4).
 
-<sigh>
+Can you send us the patch that you used to get record these long stall
+times?  And I assume you're using a laptop drive?  5400RPM or 7200RPM?
 
-Thank you for spotting and fixing it.
-
-Reviewed-by: Konrad Rzeszutek Wilk <konrad@kernel.org>
-
-> Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> ---
->  drivers/staging/zcache/debug.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/staging/zcache/debug.c b/drivers/staging/zcache/debug.c
-> index 254dada..d2d1fdf 100644
-> --- a/drivers/staging/zcache/debug.c
-> +++ b/drivers/staging/zcache/debug.c
-> @@ -31,8 +31,8 @@ static struct debug_entry {
->         ATTR(eph_nonactive_puts_ignored),
->         ATTR(pers_nonactive_puts_ignored),
->  #ifdef CONFIG_ZCACHE_WRITEBACK
-> -       ATTR(zcache_outstanding_writeback_pages),
-> -       ATTR(zcache_writtenback_pages),
-> +       ATTR(outstanding_writeback_pages),
-> +       ATTR(writtenback_pages),
->  #endif
->  };
->  #undef ATTR
-> --
-> 1.7.7.6
->
+	      	     	    	    	   - Ted
