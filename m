@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759860Ab3DBXLo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:11:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33004 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933079Ab3DBWMZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933134Ab3DBWMZ (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 2 Apr 2013 18:12:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32979 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933079Ab3DBWMW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:12:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@canonical.com>,
+        Andy Lutomirski <luto@amacapital.net>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [ 052/124] ipc: Restrict mounting the mqueue filesystem
-Date: Tue,  2 Apr 2013 15:10:34 -0700
-Message-Id: <20130402221110.244125698@linuxfoundation.org>
+Subject: [ 047/124] scm: Require CAP_SYS_ADMIN over the current pidns to spoof pids.
+Date: Tue,  2 Apr 2013 15:10:29 -0700
+Message-Id: <20130402221109.647773164@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -29,49 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit a636b702ed1805e988ad3d8ff8b52c060f8b341c upstream.
+commit 92f28d973cce45ef5823209aab3138eb45d8b349 upstream.
 
-Only allow mounting the mqueue filesystem if the caller has CAP_SYS_ADMIN
-rights over the ipc namespace.   The principle here is if you create
-or have capabilities over it you can mount it, otherwise you get to live
-with what other people have mounted.
+Don't allow spoofing pids over unix domain sockets in the corner
+cases where a user has created a user namespace but has not yet
+created a pid namespace.
 
-This information is not particularly sensitive and mqueue essentially
-only reports which posix messages queues exist.  Still when creating a
-restricted environment for an application to live any extra
-information may be of use to someone with sufficient creativity.  The
-historical if imperfect way this information has been restricted has
-been not to allow mounts and restricting this to ipc namespace
-creators maintains the spirit of the historical restriction.
-
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Reported-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- ipc/mqueue.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ net/core/scm.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -330,8 +330,16 @@ static struct dentry *mqueue_mount(struc
- 			 int flags, const char *dev_name,
- 			 void *data)
- {
--	if (!(flags & MS_KERNMOUNT))
--		data = current->nsproxy->ipc_ns;
-+	if (!(flags & MS_KERNMOUNT)) {
-+		struct ipc_namespace *ns = current->nsproxy->ipc_ns;
-+		/* Don't allow mounting unless the caller has CAP_SYS_ADMIN
-+		 * over the ipc namespace.
-+		 */
-+		if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN))
-+			return ERR_PTR(-EPERM);
-+
-+		data = ns;
-+	}
- 	return mount_ns(fs_type, flags, data, mqueue_fill_super);
- }
+--- a/net/core/scm.c
++++ b/net/core/scm.c
+@@ -24,6 +24,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/netdevice.h>
+ #include <linux/security.h>
++#include <linux/pid_namespace.h>
+ #include <linux/pid.h>
+ #include <linux/nsproxy.h>
+ #include <linux/slab.h>
+@@ -52,7 +53,8 @@ static __inline__ int scm_check_creds(st
+ 	if (!uid_valid(uid) || !gid_valid(gid))
+ 		return -EINVAL;
  
+-	if ((creds->pid == task_tgid_vnr(current) || nsown_capable(CAP_SYS_ADMIN)) &&
++	if ((creds->pid == task_tgid_vnr(current) ||
++	     ns_capable(current->nsproxy->pid_ns->user_ns, CAP_SYS_ADMIN)) &&
+ 	    ((uid_eq(uid, cred->uid)   || uid_eq(uid, cred->euid) ||
+ 	      uid_eq(uid, cred->suid)) || nsown_capable(CAP_SETUID)) &&
+ 	    ((gid_eq(gid, cred->gid)   || gid_eq(gid, cred->egid) ||
 
 
