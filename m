@@ -1,111 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760019Ab3DBMXq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 08:23:46 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:33981 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754107Ab3DBMXp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 08:23:45 -0400
-Message-ID: <515ACDC9.2090506@gmail.com>
-Date: Tue, 02 Apr 2013 20:23:37 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Zhouping Liu <zliu@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Amos Kong <akong@redhat.com>
-Subject: Re: THP: AnonHugePages in /proc/[pid]/smaps is correct or not?
-References: <383590596.664138.1364803227470.JavaMail.root@redhat.com> <alpine.DEB.2.02.1304011512490.17714@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1304011512490.17714@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1760113Ab3DBM0a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 08:26:30 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41341 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759619Ab3DBM02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 08:26:28 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: cpufreq@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH] cpufreq: Correct header guards typo
+Date: Tue,  2 Apr 2013 14:26:15 +0200
+Message-Id: <1364905575-10234-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.2.135.g7b592fa
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
-On 04/02/2013 06:23 AM, David Rientjes wrote:
-> On Mon, 1 Apr 2013, Zhouping Liu wrote:
->
->> Hi all,
->>
->> I found THP can't correctly distinguish one anonymous hugepage map.
->>
->> 1. when /sys/kernel/mm/transparent_hugepage/enabled is 'always', the
->>     amount of THP always is one less.
->>
-> It's not a problem with identifying an anonymous mapping as a hugepage,
-> setting thp enabled to "always" does not guarantee that they will always
-> be allocatable or that your mmap() will be 2MB aligned.  Your sample code
+From: Borislav Petkov <bp@suse.de>
 
-Both thp and hugetlb pages should be 2MB aligned, correct?
+It should be "governor".
 
-> is using mmap() instead of posix_memalign() so you'll probably only get
-> 100% hugepages only 1/512th of the time.
->
->> 2. when /sys/kernel/mm/transparent_hugepage/enabled is 'madvise', THP can't
->>     distinguish any one anonymous hugepage size:
->>
->>     Testing code:
->> -------- snip --------
->> unsigned long hugepagesize = (1UL << 21);
->>
->> int main()
->> {
->> 	void *addr;
->> 	int i;
->>
->> 	printf("pid is %d\n", getpid());
->>
->> 	for (i = 0; i < 5; i++) {
->> 		addr = mmap(NULL, hugepagesize, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
->>
->> 		if (addr == MAP_FAILED) {
->> 			perror("mmap");
->> 			return -1;
->> 		}
->>
->> 		if (madvise(addr, hugepagesize, MADV_HUGEPAGE) == -1) {
->> 			perror("madvise");
->> 			return -1;
->> 		}
->>
->> 		memset(addr, i, hugepagesize);
->> 	}
->>
->> 	sleep(50);
->>
->> 	return 0;
->> }
->> --------- snip ----------
->>
->> The result is that it can't find any AnonHugePages from /proc/[pid]/smaps :
->> -------------- snip -------
->> 7f0b38cd0000-7f0b396d0000 rw-p 00000000 00:00 0
->> Size:              10240 kB
->> Rss:               10240 kB
->> Pss:               10240 kB
->> Shared_Clean:          0 kB
->> Shared_Dirty:          0 kB
->> Private_Clean:         0 kB
->> Private_Dirty:     10240 kB
->> Referenced:        10240 kB
->> Anonymous:         10240 kB
->> AnonHugePages:         0 kB
->> Swap:                  0 kB
->> KernelPageSize:        4 kB
->> MMUPageSize:           4 kB
->> Locked:                0 kB
->> VmFlags: rd wr mr mw me ac
-> "hg" would be shown in VmFlags if your MADV_HUGEPAGE was successful, are
-> you sure this is the right vma?
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ drivers/cpufreq/cpufreq_governor.h | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+index 513cc8234e5e..65937697cab3 100644
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -14,8 +14,8 @@
+  * published by the Free Software Foundation.
+  */
+ 
+-#ifndef _CPUFREQ_GOVERNER_H
+-#define _CPUFREQ_GOVERNER_H
++#ifndef _CPUFREQ_GOVERNOR_H
++#define _CPUFREQ_GOVERNOR_H
+ 
+ #include <linux/cpufreq.h>
+ #include <linux/kobject.h>
+@@ -263,4 +263,4 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 		struct common_dbs_data *cdata, unsigned int event);
+ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+ 		unsigned int delay, bool all_cpus);
+-#endif /* _CPUFREQ_GOVERNER_H */
++#endif /* _CPUFREQ_GOVERNOR_H */
+-- 
+1.8.2.135.g7b592fa
 
