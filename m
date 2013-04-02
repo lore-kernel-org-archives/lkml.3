@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932267Ab3DBOo7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 10:44:59 -0400
-Received: from mga03.intel.com ([143.182.124.21]:36365 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760166Ab3DBOo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 10:44:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,393,1363158000"; 
-   d="scan'208";a="221900036"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <514C6E68.4050203@sr71.net>
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1363283435-7666-8-git-send-email-kirill.shutemov@linux.intel.com>
- <514B336C.6070404@sr71.net>
- <20130322101211.34A5EE0085@blue.fi.intel.com>
- <514C6E68.4050203@sr71.net>
-Subject: Re: [PATCHv2, RFC 07/30] thp, mm: introduce
- mapping_can_have_hugepages() predicate
+	id S932410Ab3DBOpL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 10:45:11 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:54356
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932353Ab3DBOpG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 10:45:06 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1155h)
+X-WSS-ID: 0MKMUAV-01-GMW-02
+X-M-MSG: 
+Message-ID: <515AEEE7.40903@amd.com>
+Date: Tue, 2 Apr 2013 09:44:55 -0500
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Joerg Roedel <joro@8bytes.org>
+CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] iommu/amd: Add IOMMU event log injection interface
+ for testing event flag decoding logic
+References: <1364428294-2579-1-git-send-email-suravee.suthikulpanit@amd.com> <20130402143521.GC15687@8bytes.org>
+In-Reply-To: <20130402143521.GC15687@8bytes.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <20130402144648.47240E0085@blue.fi.intel.com>
-Date: Tue,  2 Apr 2013 17:46:48 +0300 (EEST)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Hansen wrote:
-> On 03/22/2013 03:12 AM, Kirill A. Shutemov wrote:
-> > Dave Hansen wrote:
-> >> On 03/14/2013 10:50 AM, Kirill A. Shutemov wrote:
-> >>> +static inline bool mapping_can_have_hugepages(struct address_space *m)
-> >>> +{
-> >>> +	if (IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE)) {
-> >>> +		gfp_t gfp_mask = mapping_gfp_mask(m);
-> >>> +		return !!(gfp_mask & __GFP_COMP);
-> >>> +	}
-> >>> +
-> >>> +	return false;
-> >>> +}
-> >>
-> >> I did a quick search in all your patches and don't see __GFP_COMP
-> >> getting _set_ anywhere.  Am I missing something?
-> > 
-> > __GFP_COMP is part of GFP_TRANSHUGE. We set it for ramfs in patch 20/30.
-> 
-> That's a bit non-obvious.  For a casual observer, it _seems_ like you
-> should just be setting and checking GFP_TRANSHUGE directly.  It looks
-> like you were having some problems with __GFP_MOVABLE and masked it out
-> of GFP_TRANSHUGE and that has cascaded over to _this_ check.
+On 4/2/2013 9:35 AM, Joerg Roedel wrote:
+> On Wed, Mar 27, 2013 at 06:51:34PM -0500, suravee.suthikulpanit@amd.com wrote:
+>> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+>>
+>> Add IOMMU event log injection interface for testing event flag decoding logic.
+>> This interface allows users to specify device id, event flag, and event types via debugfs.
+>>
+>> echo 0x300 > /sys/kernel/debug/amd-iommu-evninj/devid // (e.g. Bus:Dev.fun 3:0.0)
+>> echo 0xfff > /sys/kernel/debug/amd-iommu-evninj/flags // (e.g. Specify flag value)
+>> echo 2 > /sys/kernel/debug/amd-iommu-evninj/type      // (e.g. for IO_PAGE_FAULT event)
+>>
+>> Once the event is injected, IOMMU driver will parse and print out the event information
+>> in kernel log (dmesg) with the various information depending on the types of event and flag
+>> specified.
+> Why is this needed? I think the risk of regressions in the
+> event-handling code is to low to justify the need for an event-injection
+> mechanism.
+You are right, it is not needed.  I create this interface to provide a 
+way for reviewers to test out how the report will be generated for each 
+type of events/errors.
 
-Checking GFP_TRANSHUGE directly is not right way. File systems can clear
-GFP bits or set additional for its own reason. We should not limit file
-systems here.
+Suravee
+>
+> 	Joerg
+>
+>
+>
 
-So the only way robust way is to check __GFP_COMP. I'll add comment.
 
--- 
- Kirill A. Shutemov
