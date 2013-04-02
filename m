@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758733Ab3DBWvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:51:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34092 "EHLO
+	id S1758937Ab3DBWxK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:53:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34099 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758688Ab3DBWu6 (ORCPT
+	with ESMTP id S1758397Ab3DBWu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:50:58 -0400
+	Tue, 2 Apr 2013 18:50:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Oostdyk <daveo@ll.mit.edu>, Eric Dumazet <edumazet@google.com>,
-        Ed Cashin <ecashin@coraid.com>,
+        Dan Franke <dan.franke@schneider-electric.com>,
+        Sriramakrishnan A G <srk@ti.com>, Mugunthan V N <mugunthanvnm@ti.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 48/56] aoe: reserve enough headroom on skbs
-Date: Tue,  2 Apr 2013 15:50:15 -0700
-Message-Id: <20130402224717.396397038@linuxfoundation.org>
+Subject: [ 49/56] drivers: net: ethernet: davinci_emac: use netif_wake_queue() while restarting tx queue
+Date: Tue,  2 Apr 2013 15:50:16 -0700
+Message-Id: <20130402224717.505188414@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
@@ -29,41 +30,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+To restart tx queue use netif_wake_queue() intead of netif_start_queue()
+so that net schedule will restart transmission immediately which will
+increase network performance while doing huge data transfers.
 
-[ Upstream commit 91c5746425aed8f7188a351f1224a26aa232e4b3 ]
-
-Some network drivers use a non default hard_header_len
-
-Transmitted skb should take into account dev->hard_header_len, or risk
-crashes or expensive reallocations.
-
-In the case of aoe, lets reserve MAX_HEADER bytes.
-
-David reported a crash in defxx driver, solved by this patch.
-
-Reported-by: David Oostdyk <daveo@ll.mit.edu>
-Tested-by: David Oostdyk <daveo@ll.mit.edu>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Ed Cashin <ecashin@coraid.com>
+Reported-by: Dan Franke <dan.franke@schneider-electric.com>
+Suggested-by: Sriramakrishnan A G <srk@ti.com>
+Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/block/aoe/aoecmd.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/davinci_emac.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/aoe/aoecmd.c
-+++ b/drivers/block/aoe/aoecmd.c
-@@ -30,8 +30,9 @@ new_skb(ulong len)
- {
- 	struct sk_buff *skb;
+--- a/drivers/net/davinci_emac.c
++++ b/drivers/net/davinci_emac.c
+@@ -1049,7 +1049,7 @@ static void emac_tx_handler(void *token,
+ 	struct net_device	*ndev = skb->dev;
  
--	skb = alloc_skb(len, GFP_ATOMIC);
-+	skb = alloc_skb(len + MAX_HEADER, GFP_ATOMIC);
- 	if (skb) {
-+		skb_reserve(skb, MAX_HEADER);
- 		skb_reset_mac_header(skb);
- 		skb_reset_network_header(skb);
- 		skb->protocol = __constant_htons(ETH_P_AOE);
+ 	if (unlikely(netif_queue_stopped(ndev)))
+-		netif_start_queue(ndev);
++		netif_wake_queue(ndev);
+ 	ndev->stats.tx_packets++;
+ 	ndev->stats.tx_bytes += len;
+ 	dev_kfree_skb_any(skb);
 
 
