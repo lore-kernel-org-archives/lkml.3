@@ -1,64 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761128Ab3DBIXT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 04:23:19 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56277 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761108Ab3DBIXP (ORCPT
+	id S1761155Ab3DBIXv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 04:23:51 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:41443 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761139Ab3DBIXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 04:23:15 -0400
+	Tue, 2 Apr 2013 04:23:49 -0400
+Message-ID: <515A958B.5080905@ti.com>
+Date: Tue, 2 Apr 2013 11:23:39 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <20130331210605.GA29191@amd.pavel.ucw.cz>
-References: <20130331210605.GA29191@amd.pavel.ucw.cz>
-Date: Tue, 2 Apr 2013 16:23:13 +0800
-Message-ID: <CAHrpEqSVUc1yedCoyOrRoxkjY7=N_pCDB1F7-WvRaP+4UEY68A@mail.gmail.com>
-Subject: Re: Freescale FEC: fall back to random address
-From: Frank Li <lznuaa@gmail.com>
-To: Pavel Machek <pavel@denx.de>
-Cc: kernel list <linux-kernel@vger.kernel.org>, fabio.estevam@freescale.com,
-        l.stach@pengutronix.de, Frank.Li@freescale.com, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Paul Walmsley <paul@pwsan.com>
+CC: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>, <rnayak@ti.com>,
+        <b-cousson@ti.com>, <santosh.shilimkar@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] ARM: OMAP4: clock: Add device tree support for AUXCLKs
+References: <1363703220-4777-2-git-send-email-rogerq@ti.com> <1364293408-20677-1-git-send-email-rogerq@ti.com>
+In-Reply-To: <1364293408-20677-1-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think it is okay.
++ Paul
 
-2013/4/1 Pavel Machek <pavel@denx.de>:
-> If there's no valid ethernet address, fall back to randomly generated
-> one.
->
-> (Yes, I need to get newer u-boot for the board, but as the only
-> available one is from 2009... this might be good idea).
->
-> Signed-off-by: Pavel Machek <pavel@denx.de>
->
->
-> index e3f3937..5a7d1e1 100644
-> pp--- a/drivers/net/ethernet/freescale/fec.c
-> +++ b/drivers/net/ethernet/freescale/fec.c
-> @@ -906,6 +914,16 @@ static void fec_get_mac(struct net_device *ndev)
->                 iap = &tmpaddr[0];
->         }
->
-> +       /*
-> +        * 5) random mac address
-> +        */
-> +       if (!is_valid_ether_addr(iap)) {
-> +               /* Report it and use a random ethernet address instead */
-> +               netdev_err(ndev, "Invalid MAC address: %pM\n", iap);
-> +               random_ether_addr(iap);
-> +               netdev_info(ndev, "Using random MAC address: %pM\n", iap);
-> +       }
+On 03/26/2013 12:23 PM, Roger Quadros wrote:
+> Register a device tree clock provider for the clocks
+> on the OMAP4 SoC. Also provide the binding information.
+> 
+> For now we only provide AUXCLKs.
+> 
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  .../devicetree/bindings/clock/omap4-clock.txt      |   33 ++++++++++++++++
+>  arch/arm/boot/dts/omap4.dtsi                       |    5 ++
+>  arch/arm/mach-omap2/cclock44xx_data.c              |   41 ++++++++++++++++++++
+>  3 files changed, 79 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/clock/omap4-clock.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/clock/omap4-clock.txt b/Documentation/devicetree/bindings/clock/omap4-clock.txt
+> new file mode 100644
+> index 0000000..2845a3f
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/omap4-clock.txt
+> @@ -0,0 +1,33 @@
+> +* Clock bindings for Texas Instruments OMAP4 clocks
 > +
->         memcpy(ndev->dev_addr, iap, ETH_ALEN);
->
->         /* Adjust MAC if using macaddr */
->
-> --
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> +Required properties:
+> +- compatible: Should be "ti,omap4-clock"
+> +- #clock-cells: Should be <1>
+> +
+> +The clock consumer should specify the desired clock by having the clock
+> +ID in its "clocks" phandle cell.  The following is a list of OMAP4 clocks
+> +and IDs.
+> +
+> +	Clock		ID
+> +	------------------
+> +	auxclk0_ck	0
+> +	auxclk1_ck	1
+> +	auxclk2_ck	2
+> +	auxclk3_ck	3
+> +	auxclk4_ck	4
+> +	auxclk5_ck	5
+> +
+> +Example:
+> +
+> +aux_clks: scrmclks {
+> +	compatible = "ti,omap4-clock";
+> +	#clock-cells = <1>;
+> +};
+> +
+> +hsusb1_phy: hsusb1_phy {
+> +	compatible = "usb-nop-xceiv";
+> +	reset-supply = <&hsusb1_reset>;
+> +	clocks = <&aux_clks 3>;
+> +	clock-names = "main_clk";
+> +	clock-frequency = <19200000>;
+> +};
+> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+> index 739bb79..f27548a 100644
+> --- a/arch/arm/boot/dts/omap4.dtsi
+> +++ b/arch/arm/boot/dts/omap4.dtsi
+> @@ -101,6 +101,11 @@
+>  			ti,hwmods = "counter_32k";
+>  		};
+>  
+> +		clks: clocks {
+> +			compatible = "ti,omap4-clock";
+> +			#clock-cells = <1>;
+> +		};
+> +
+>  		omap4_pmx_core: pinmux@4a100040 {
+>  			compatible = "ti,omap4-padconf", "pinctrl-single";
+>  			reg = <0x4a100040 0x0196>;
+> diff --git a/arch/arm/mach-omap2/cclock44xx_data.c b/arch/arm/mach-omap2/cclock44xx_data.c
+> index 3d58f33..a93617b 100644
+> --- a/arch/arm/mach-omap2/cclock44xx_data.c
+> +++ b/arch/arm/mach-omap2/cclock44xx_data.c
+> @@ -27,6 +27,7 @@
+>  #include <linux/clk-private.h>
+>  #include <linux/clkdev.h>
+>  #include <linux/io.h>
+> +#include <linux/of.h>
+>  
+>  #include "soc.h"
+>  #include "iomap.h"
+> @@ -1663,6 +1664,44 @@ static struct omap_clk omap44xx_clks[] = {
+>  	CLK(NULL,	"cpufreq_ck",	&dpll_mpu_ck,	CK_443X),
+>  };
+>  
+> +/*
+> + * List of clocks that can be referenced in device tree
+> + * Must match with Documentation/devicetree/bindings/clock/omap4-clock.txt
+> + */
+> +static struct clk *dt_clks[] = {
+> +	&auxclk0_ck,
+> +	&auxclk1_ck,
+> +	&auxclk2_ck,
+> +	&auxclk3_ck,
+> +	&auxclk4_ck,
+> +	&auxclk5_ck,
+> +};
+> +
+> +static struct clk_onecell_data clock_data;
+> +
+> +#ifdef CONFIG_OF
+> +int __init omap4_clk_init_dt(void)
+> +{
+> +	struct device_node *np;
+> +
+> +	np = of_find_compatible_node(NULL, NULL, "ti,omap4-clock");
+> +	if (np) {
+> +		clock_data.clks = dt_clks;
+> +		clock_data.clk_num = ARRAY_SIZE(dt_clks);
+> +		of_clk_add_provider(np, of_clk_src_onecell_get,	&clock_data);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +#else
+> +
+> +int __init omap4_clk_init_dt(void)
+> +{
+> +	return 0;
+> +}
+> +#endif /* CONFIG_OF */
+> +
+>  int __init omap4xxx_clk_init(void)
+>  {
+>  	u32 cpu_clkflg;
+> @@ -1693,6 +1732,8 @@ int __init omap4xxx_clk_init(void)
+>  
+>  	omap2_clk_disable_autoidle_all();
+>  
+> +	omap4_clk_init_dt();
+> +
+>  	/*
+>  	 * On OMAP4460 the ABE DPLL fails to turn on if in idle low-power
+>  	 * state when turning the ABE clock domain. Workaround this by
+> 
+
