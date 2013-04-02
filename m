@@ -1,117 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759986Ab3DBE5j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 00:57:39 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:37928 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758972Ab3DBE5i (ORCPT
+	id S1760236Ab3DBE7D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 00:59:03 -0400
+Received: from mail-ia0-f173.google.com ([209.85.210.173]:58236 "EHLO
+	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759296Ab3DBE7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 00:57:38 -0400
-Message-ID: <515A64BB.5050005@linux.vnet.ibm.com>
-Date: Tue, 02 Apr 2013 10:25:23 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 2 Apr 2013 00:59:00 -0400
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH 4/5] sched: don't consider upper se in sched_slice()
-References: <1364457537-15114-1-git-send-email-iamjoonsoo.kim@lge.com> <1364457537-15114-5-git-send-email-iamjoonsoo.kim@lge.com> <51553EF5.90702@linux.vnet.ibm.com> <20130401040820.GA12015@lge.com> <5159320C.4050903@linux.vnet.ibm.com> <20130402022556.GD16699@lge.com>
-In-Reply-To: <20130402022556.GD16699@lge.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 13040204-5490-0000-0000-00000335C9FF
+In-Reply-To: <20130402000741.GA4077@roeck-us.net>
+References: <1364795972-8649-1-git-send-email-tonychung00@gmail.com>
+	<1364795972-8649-2-git-send-email-tonychung00@gmail.com>
+	<20130402000741.GA4077@roeck-us.net>
+Date: Mon, 1 Apr 2013 21:59:00 -0700
+Message-ID: <CAHyaeP1ExzMr8_KvSrmf6+urVROEHRePs_KA3CZ3bnU6Ov79LQ@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] watchdog: fix w83627hf_wdt clear timeout expired
+From: Tony Chung <tonychung00@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joonsoo,
+Thanks Guenter!
+I agree with you.  My first reaction was also about a small watchdog
+server that will start in early boot process.  There are pros and
+cons.   For example, there are many types of watchdog devices such as
+ipmi_watchdog which can accept more than  255 seconds for timeout. So
+you really need udev to pick the correct watchdog driver.  It could be
+very complex.
 
-On 04/02/2013 07:55 AM, Joonsoo Kim wrote:
-> Hello, Preeti.
-> 
-> On Mon, Apr 01, 2013 at 12:36:52PM +0530, Preeti U Murthy wrote:
->> Hi Joonsoo,
+Our requirement don't need watchdog protection during the boot process
+until application is fully up but a driver should not assume anything.
+ Anyway, an unexpected reboot is definitely a bug that need to be
+fixed.   It is really easily reproducible.  Depending on your hardware
+and BIOS settings, just reboot the boot, wait for 5 minutes and then
+run "insmod w83627hf_wdt.ko".  The box just reboot by itself.  The
+watchdog sever is not even started.
+
+This line is actually the original fix that is running over a year:
+    outb_p(0, WDT_EFDR);    /* disable to prevent reboot */
+
+When I tried to cleanup it up,  I thought I don't need it but it
+turned out it was still needed.
+When I changed it from 0xC0 to 0xD0, it still reboot.
+
+Thanks and best regards,
+@Tony
+
+On Mon, Apr 1, 2013 at 5:07 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Sun, Mar 31, 2013 at 10:59:32PM -0700, Tony Chung wrote:
+>> Observed that the w83627hf watchdog timer start counting during reboot.
+>> If the system load the driver after 5  minutes, it rebooted immediately because of timer expired.
+>> For example, fsck took more than 5 minutes to run, then the computer reboot as soon as the driver was loaded.
 >>
->> On 04/01/2013 09:38 AM, Joonsoo Kim wrote:
->>> Hello, Preeti.
->>>
+> Thinking about it, I wonder if that really solves your problem.
+>
+> If the watchdog driver is built into the kernel, and if the watchdog is already
+> running, you still may have the problem that it may time out again and trigger
+> (again) before the watchdog application can be loaded. Ultimately, in such a
+> situation, the watchdog application, or at least a primitive one, should really
+> be started from initramfs and possibly be replaced later on by the "real" watchdog
+> application. The watchdog package includes a small binary for that purpose,
+> though I have no idea if is is loaded in initramfs or only later.
+>
+> Ultimately, that also applies to the original problem you tried to solve with
+> the longer timeout. It doesn't seem correct to have to set a long timeout to
+> address excessive boot times; in a way that defeats the purpose of a watchdog.
+> A cleaner solution for that problem would be to make sure that a small watchdog
+> application is started early in the boot process.
+>
+>> Signed-off-by: Tony Chung <tonychung00@gmail.com>
+>> ---
+>>  drivers/watchdog/w83627hf_wdt.c |    6 ++++--
+>>  1 files changed, 4 insertions(+), 2 deletions(-)
 >>
->>>>
->>>> Ideally the children's cpu share must add upto the parent's share.
->>>>
->>>
->>> I don't think so.
->>>
->>> We should schedule out the parent tg if 5ms is over. As we do so, we can
->>> fairly distribute time slice to every tg within short term. If we add
->>> the children's cpu share upto the parent's, the parent tg may have
->>> large time slice, so it cannot be preempted easily. There may be a latency
->>> problem if there are many tgs.
+>> diff --git a/drivers/watchdog/w83627hf_wdt.c b/drivers/watchdog/w83627hf_wdt.c
+>> index 8f1111d..7eaa226 100644
+>> --- a/drivers/watchdog/w83627hf_wdt.c
+>> +++ b/drivers/watchdog/w83627hf_wdt.c
+>> @@ -168,14 +168,16 @@ static void w83627hf_init(void)
+>>               pr_info("Watchdog already running. Resetting timeout to %d sec\n",
+>>                       wdt_get_timeout_secs(timeout));
+>>               outb_p(timeout, WDT_EFDR);    /* Write back to CRF6 */
+>> +     } else {
+>> +             outb_p(0, WDT_EFDR);    /* disable to prevent reboot */
+>>       }
+> Did I miss that earlier, or did yo add it in this version ?
+>
+> Reading the counter register just returned 0, so what are the benefits
+> of writing 0 into it ?
+>
+> Thanks,
+> Guenter
+>
 >>
->> In the case where the #running < sched_nr_latency, the children's
->> sched_slices add up to the parent's.
+>>       w83627hf_setup_crf5();
 >>
->> A rq with two tgs,each with 3 tasks.
+>>       outb_p(0xF7, WDT_EFER); /* Select CRF7 */
+>>       t = inb_p(WDT_EFDR);      /* read CRF7 */
+>> -     t &= ~0xC0;               /* disable keyboard & mouse turning off
+>> -                                 watchdog */
+>> +     t &= ~0xD0;               /* clear timeout occurred and disable keyboard
+>> +                                  & mouse turning off watchdog */
+>>       outb_p(t, WDT_EFDR);    /* Write back to CRF7 */
 >>
->> Each of these tasks have a sched slice of
->> [(sysctl_sched_latency / 3) / 2] as of the present implementation.
+>>       w83627hf_unselect_wd_register();
+>> --
+>> 1.7.0.4
 >>
->> The sum of the above sched_slice of all tasks of a tg will lead to the
->> sched_slice of its parent: sysctl_sched_latency / 2
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >>
->> This breaks when the nr_running on each tg > sched_nr_latency. However I
->> don't know if this is a good thing or a bad thing.
-> 
-> Ah.. Now I get your point. Yes, you are right and it may be good thing.
-> With that property, all tasks in the system can be scheduled at least once
-> in sysctl_sched_latency. sysctl_sched_latency is system-wide configuration,
-> so my patch may be wrong. With my patch, all tasks in the system cannot be
-> scheduled at least once in sysctl_sched_latency. Instead, it schedule
-> all tasks in cfs_rq at least once in sysctl_sched_latency if there is
-> no other tgs.
-
-Exactly. You have got all the above points right.
-
-> 
-> I think that it is real problem that sysctl_sched_min_granularity is not
-> guaranteed for each task.
-> Instead of this patch, how about considering low bound?
-> 
-> if (slice < sysctl_sched_min_granularity)
-> 	slice = sysctl_sched_min_granularity;
-
-Consider the below scenario.
-
-A runqueue has two task groups,each with 10 tasks.
-
-With the current implementation,each of these tasks get a sched_slice of
-2ms.Hence in a matter of (10*2) + (10*2) = 40 ms, all tasks( all tasks
-of both the task groups) will get the chance to run.
-
-But what is the scheduling period in this scenario? Is it 40ms (extended
-sysctl_sched_latency), which is the scheduling period for each of the
-runqueues with 10 tasks in it?
-Or is it 80ms which is the total of the scheduling periods of each of
-the run queues with 10 tasks.Either way all tasks seem to get scheduled
-atleast once within the scheduling period.So we appear to be safe.
-Although the sched_slice < sched_min_granularity.
-
-With your above lower bound of sysctl_sched_min_granularity, each task
-of each tg gets 4ms as its sched_slice.So in a matter of
-(10*4) + (10*4) = 80ms,all tasks get to run. With the above question
-being put forth here as well, we don't appear to be safe if the
-scheduling_period is considered to be 40ms, otherwise it appears fine to
-me, because it ensures the sched_slice is atleast sched_min_granularity
-no matter what.
 
 
-Thank you
 
-Regards
-Preeti U Murthy
-
+--
+- Tony Chung
