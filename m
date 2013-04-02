@@ -1,70 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932527Ab3DBO6g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 10:58:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53130 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932492Ab3DBO6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 10:58:34 -0400
-Date: Tue, 2 Apr 2013 10:58:20 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kexec: use Crash kernel for Crash kernel low
-Message-ID: <20130402145820.GF29506@redhat.com>
-References: <20130401192606.GA17951@redhat.com>
- <5159F27E.7060300@zytor.com>
- <CAE9FiQXikU8-FkYYULHx50qP_ME2bRSzCC=8ZH8iDyUr2ug66g@mail.gmail.com>
- <515A03DB.6040107@zytor.com>
- <CAE9FiQWNFbFgXafJBvORRax+GNU_uf0KFnqZ5NQit0BeZZx9LA@mail.gmail.com>
- <515A083B.7050508@zytor.com>
- <CAE9FiQXwy8nLRQAiZ+P56fokisUXAmTJWA07TZ-gSH61K5FQLA@mail.gmail.com>
- <CAE9FiQW1RzP5A_82qUP7gF_6-G3+Ceay_L1FQf7N=MMbQA4+iw@mail.gmail.com>
- <20130402135001.GC29506@redhat.com>
- <CAE9FiQVWprV4YkMq_Pu95AYk_qGzXWPVBWJVDfa=0RbqL63y4Q@mail.gmail.com>
+	id S932561Ab3DBO7O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 10:59:14 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:63359 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932465Ab3DBO7N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 10:59:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQVWprV4YkMq_Pu95AYk_qGzXWPVBWJVDfa=0RbqL63y4Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130402145536.GA31757@gulag1.americas.sgi.com>
+References: <5159C147.70800@sgi.com>
+	<1364847069-2887-1-git-send-email-nzimmer@sgi.com>
+	<1364847069-2887-2-git-send-email-nzimmer@sgi.com>
+	<CAKohpok7MR28trAddHRi5Lcg0bGBHBnOfJO=yu7SQqGnV5ZCRg@mail.gmail.com>
+	<20130402145536.GA31757@gulag1.americas.sgi.com>
+Date: Tue, 2 Apr 2013 20:29:12 +0530
+Message-ID: <CAKohpokXbeRp-pHaJRAOjnF+R+wy8R9We67Yr2C2nyoVXyJd6w@mail.gmail.com>
+Subject: Re: [PATCH v6 1/2] cpufreq: split the cpufreq_driver_lock and use the rcu
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 07:45:36AM -0700, Yinghai Lu wrote:
+On 2 April 2013 20:25, Nathan Zimmer <nzimmer@sgi.com> wrote:
+> The lock is unneeded if we expect register and unregister driver to not be
+> called from muliple threads at once.  I didn't make that assumption.
 
-[..]
-> No, that make the logic too complicated.
-> 
-> After those four patches:
-> if the user still use old kexec-tools, they are still with
-> crashkernel=X, nothing is changed.
-> if the user want to use crashkernel=X,high, they should update kexec-tools.
->    when high is used, memblock will search from top to low.
->    if the allocated one is above 4G, kernel will try to auto allocate
-> 72M under 4G for swiotlb
->        user could crashkernel=Y,low to change 72M to other value.
-
-Hm...,
-
-- Ok so atleast use a different delimiter. Otherwise one could specify
-  rage1:size1,range2:size2,high which is confusing.
-
-- I think one can look at above as follows.
-
-  crashkernel=<memory_to_reserve>;[<option1>];....
-
-where option1 specifies range of memory where to look for specified amount
-of memory. Current valid values are high/low. High means look for memory
-above 4G or fail. Low means look for memory below 4G or fail. We can
-always extend range syntax later if need be. Similarly we can always
-add option2 to emulate where to begin search (high/low). So this still
-falls into the generic syntax category and extendable, if need be.
-
-I will test your patches again.
-
-Thanks
-Vivek
+Hmm.. But doesn't rcu part take care of that too?? Two writers
+updating stuff simultaneously?
