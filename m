@@ -1,34 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759523Ab3DBAnb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 20:43:31 -0400
-Received: from hrsb-68.hrsb.EDnet.NS.CA ([142.227.203.68]:33284 "HELO
-	mcafee1.hrsb.ns.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759463Ab3DBAna convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 20:43:30 -0400
-X-Greylist: delayed 1799 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Apr 2013 20:43:30 EDT
-From: "Duchesne, Dominique" <DuchesneD@hrsb.ns.ca>
-Subject: Reply Via: safetrustsecurities@careceo.com {Congratulations!!!}
-Thread-Topic: Reply Via: safetrustsecurities@careceo.com {Congratulations!!!}
-Thread-Index: Ac4vMkQTzvuyy+C4RuSSZ972fVE7sg==
-Date: Mon, 1 Apr 2013 23:40:17 +0000
-Message-ID: <55FC8116DF4BDA4EA251CCC438E9211C348C4070@exchmb01.hrsb.ns.ca>
-Accept-Language: en-CA, en-US
-Content-Language: en-CA
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [41.203.67.51]
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1759623Ab3DBAny (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 20:43:54 -0400
+Received: from tundra.namei.org ([65.99.196.166]:50984 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757681Ab3DBAnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 20:43:49 -0400
+Date: Tue, 2 Apr 2013 11:44:49 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Jeff Layton <jlayton@redhat.com>
+cc: sds@tycho.nsa.gov, james.l.morris@oracle.com, eparis@parisplace.org,
+        linux-security-module@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] selinux: make security_sb_clone_mnt_opts return an
+ error on context mismatch
+In-Reply-To: <1364818464-20220-1-git-send-email-jlayton@redhat.com>
+Message-ID: <alpine.LRH.2.02.1304021144220.14139@tundra.namei.org>
+References: <1358437249-8631-1-git-send-email-jlayton@redhat.com> <1364818464-20220-1-git-send-email-jlayton@redhat.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You have been selected by the UN's Department for International Development to receive a Grant of One Million Dollar. An International Cashiers Cheque has been forwarded to the Safe Trust Security and Deposit Company for an onward delivery to you. To file for claim, send your Full Name, Phone Number and Contact Address to the Remittance Officer Ms. Elizabeth Bradley with details as below.
+Applied to
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git next
 
-Email: safetrustsecurities@careceo.com
 
-Phone: +234-807-586-1898
+-- 
+James Morris
+<jmorris@namei.org>
