@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761580Ab3DBKzW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 06:55:22 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:1709 "EHLO mms3.broadcom.com"
+	id S932326Ab3DBK4b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 06:56:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35350 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760139Ab3DBKzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 06:55:21 -0400
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-Message-ID: <515AB90C.7080509@broadcom.com>
-Date: Tue, 2 Apr 2013 12:55:08 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308
- Thunderbird/17.0.4
+	id S1760842Ab3DBK42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 06:56:28 -0400
+Date: Tue, 2 Apr 2013 11:56:25 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Cyril Hrubis <chrubis@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/mmap: Check for RLIMIT_AS before unmapping
+Message-ID: <20130402105625.GA12855@suse.de>
+References: <20130402095402.GA6568@rei>
 MIME-Version: 1.0
-To: "John Talbut" <jt@dpets.co.uk>, "Ben Hutchings" <ben@decadent.org.uk>,
-        "David Woodhouse" <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: brcmsmac: firmware
-References: <1364472755-5672-1-git-send-email-arend@broadcom.com>
- <51546EFC.8060508@dpets.co.uk> <51547384.3060004@broadcom.com>
- <5154B7AF.101@dpets.co.uk> <5154B82A.50704@broadcom.com>
- <5155315E.4030506@dpets.co.uk> <5155759F.3050205@broadcom.com>
- <5157F5ED.1010505@dpets.co.uk>
-In-Reply-To: <5157F5ED.1010505@dpets.co.uk>
-X-WSS-ID: 7D4468EF3YC15363646-01-01
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130402095402.GA6568@rei>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/31/2013 10:38 AM, John Talbut wrote:
-> On 29/03/13 11:06, Arend van Spriel wrote:
->> On 03/29/2013 07:14 AM, John Talbut wrote:
->>>
->>> As a matter of curiosity, why is the code currently in the firmware not
->>> included in the kernel driver?
->>
->> Well. the kernel driver is what is running on the host. In your case on
->> the Atom processor. The firmware contains of initialization data for the
->> device and code that is using an instruction set that is dedicated to
->> the broadcom device so there is no way to move that into the driver
->> other than as a binary blob, but that is not acceptable in open-source
->> Linux drivers. So people in the community invented the user-space
->> firmware loading stuff.
->>
->> Gr. AvS
+On Tue, Apr 02, 2013 at 11:54:03AM +0200, Cyril Hrubis wrote:
+> This patch fixes corner case for MAP_FIXED when requested mapping length
+> is larger than rlimit for virtual memory. In such case any overlapping
+> mappings are unmapped before we check for the limit and return ENOMEM.
 > 
-> Hi Arend
+> The check is moved before the loop that unmaps overlapping parts of
+> existing mappings. When we are about to hit the limit (currently mapped
+> pages + len > limit) we scan for overlapping pages and check again
+> accounting for them.
 > 
-> Hmm.  As I understand it, if the source code for the initialization data
-> for the device and code that is using an instruction set that is
-> dedicated to the broadcom device was released then the code could be
-> compiled into the kernel.
+> This fixes situation when userspace program expects that the previous
+> mappings are preserved after the mmap() syscall has returned with error.
+> (POSIX clearly states that successfull mapping shall replace any
+> previous mappings.)
 > 
-> Do you have any sense of why Broadcom does not do this?
+> This corner case was found and can be tested with LTP testcase:
+> 
+> testcases/open_posix_testsuite/conformance/interfaces/mmap/24-2.c
+> 
+> In this case the mmap, which is clearly over current limit, unmaps
+> dynamic libraries and the testcase segfaults right after returning into
+> userspace.
+> 
+> I've also looked at the second instance of the unmapping loop in the
+> do_brk(). The do_brk() is called from brk() syscall and from vm_brk().
+> The brk() syscall checks for overlapping mappings and bails out when
+> there are any (so it can't be triggered from the brk syscall). The
+> vm_brk() is called only from binmft handlers so it shouldn't be
+> triggered unless binmft handler created overlapping mappings.
+> 
+> Signed-off-by: Cyril Hrubis <chrubis@suse.cz>
 
-Well. Your understanding is different from mine. Here is mine: the linux
-kernel aims for a separation between kernel code and firmware (mainly to
-resolve licensing issues, I think) and all drivers with embedded
-firmware have/are converted to using the request_firmware API. This is
-described in [1].
+Reviewed-by: Mel Gorman <mgorman@suse.de>
 
-Gr. AvS
-
-[1]
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/firmware/README.AddingFirmware
-
+-- 
+Mel Gorman
+SUSE Labs
