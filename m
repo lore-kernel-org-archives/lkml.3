@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603Ab3DBWtq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:49:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33061 "EHLO
+	id S1757836Ab3DBWuA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:50:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33058 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933267Ab3DBWMj (ORCPT
+	with ESMTP id S933290Ab3DBWMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:39 -0400
+	Tue, 2 Apr 2013 18:12:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hovold <jhovold@gmail.com>
-Subject: [ 071/124] USB: io_edgeport: fix use-after-free in TIOCMIWAIT
-Date: Tue,  2 Apr 2013 15:10:53 -0700
-Message-Id: <20130402221112.421231730@linuxfoundation.org>
+Subject: [ 070/124] USB: ch341: fix use-after-free in TIOCMIWAIT
+Date: Tue,  2 Apr 2013 15:10:52 -0700
+Message-Id: <20130402221112.308953445@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -28,7 +28,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 333576255d4cfc53efd056aad438568184b36af6 upstream.
+commit fa1e11d5231c001c80a479160b5832933c5d35fb upstream.
 
 Use the port wait queue and make sure to check the serial disconnected
 flag before accessing private port data after waking up.
@@ -40,55 +40,60 @@ Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/io_edgeport.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/usb/serial/ch341.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/io_edgeport.c
-+++ b/drivers/usb/serial/io_edgeport.c
-@@ -110,7 +110,6 @@ struct edgeport_port {
- 	wait_queue_head_t	wait_chase;		/* for handling sleeping while waiting for chase to finish */
- 	wait_queue_head_t	wait_open;		/* for handling sleeping while waiting for open to finish */
- 	wait_queue_head_t	wait_command;		/* for handling sleeping while waiting for command to finish */
--	wait_queue_head_t	delta_msr_wait;		/* for handling sleeping while waiting for msr change to happen */
+--- a/drivers/usb/serial/ch341.c
++++ b/drivers/usb/serial/ch341.c
+@@ -80,7 +80,6 @@ MODULE_DEVICE_TABLE(usb, id_table);
  
- 	struct async_icount	icount;
- 	struct usb_serial_port	*port;			/* loop back to the owner of this object */
-@@ -884,7 +883,6 @@ static int edge_open(struct tty_struct *
- 	/* initialize our wait queues */
- 	init_waitqueue_head(&edge_port->wait_open);
- 	init_waitqueue_head(&edge_port->wait_chase);
--	init_waitqueue_head(&edge_port->delta_msr_wait);
- 	init_waitqueue_head(&edge_port->wait_command);
+ struct ch341_private {
+ 	spinlock_t lock; /* access lock */
+-	wait_queue_head_t delta_msr_wait; /* wait queue for modem status */
+ 	unsigned baud_rate; /* set baud rate */
+ 	u8 line_control; /* set line control value RTS/DTR */
+ 	u8 line_status; /* active status of modem control inputs */
+@@ -252,7 +251,6 @@ static int ch341_port_probe(struct usb_s
+ 		return -ENOMEM;
  
- 	/* initialize our icount structure */
-@@ -1669,13 +1667,17 @@ static int edge_ioctl(struct tty_struct
- 		dev_dbg(&port->dev, "%s (%d) TIOCMIWAIT\n", __func__,  port->number);
- 		cprev = edge_port->icount;
- 		while (1) {
--			prepare_to_wait(&edge_port->delta_msr_wait,
-+			prepare_to_wait(&port->delta_msr_wait,
- 						&wait, TASK_INTERRUPTIBLE);
- 			schedule();
--			finish_wait(&edge_port->delta_msr_wait, &wait);
-+			finish_wait(&port->delta_msr_wait, &wait);
- 			/* see if a signal did it */
- 			if (signal_pending(current))
- 				return -ERESTARTSYS;
-+
-+			if (port->serial->disconnected)
-+				return -EIO;
-+
- 			cnow = edge_port->icount;
- 			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
- 			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
-@@ -2055,7 +2057,7 @@ static void handle_new_msr(struct edgepo
- 			icount->dcd++;
- 		if (newMsr & EDGEPORT_MSR_DELTA_RI)
- 			icount->rng++;
--		wake_up_interruptible(&edge_port->delta_msr_wait);
-+		wake_up_interruptible(&edge_port->port->delta_msr_wait);
+ 	spin_lock_init(&priv->lock);
+-	init_waitqueue_head(&priv->delta_msr_wait);
+ 	priv->baud_rate = DEFAULT_BAUD_RATE;
+ 	priv->line_control = CH341_BIT_RTS | CH341_BIT_DTR;
+ 
+@@ -298,7 +296,7 @@ static void ch341_dtr_rts(struct usb_ser
+ 		priv->line_control &= ~(CH341_BIT_RTS | CH341_BIT_DTR);
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 	ch341_set_handshake(port->serial->dev, priv->line_control);
+-	wake_up_interruptible(&priv->delta_msr_wait);
++	wake_up_interruptible(&port->delta_msr_wait);
+ }
+ 
+ static void ch341_close(struct usb_serial_port *port)
+@@ -491,7 +489,7 @@ static void ch341_read_int_callback(stru
+ 			tty_kref_put(tty);
+ 		}
+ 
+-		wake_up_interruptible(&priv->delta_msr_wait);
++		wake_up_interruptible(&port->delta_msr_wait);
  	}
  
- 	/* Save the new modem status */
+ exit:
+@@ -517,11 +515,14 @@ static int wait_modem_info(struct usb_se
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 
+ 	while (!multi_change) {
+-		interruptible_sleep_on(&priv->delta_msr_wait);
++		interruptible_sleep_on(&port->delta_msr_wait);
+ 		/* see if a signal did it */
+ 		if (signal_pending(current))
+ 			return -ERESTARTSYS;
+ 
++		if (port->serial->disconnected)
++			return -EIO;
++
+ 		spin_lock_irqsave(&priv->lock, flags);
+ 		status = priv->line_status;
+ 		multi_change = priv->multi_status_change;
 
 
