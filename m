@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932801Ab3DBPvP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 11:51:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15918 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932689Ab3DBPvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 11:51:14 -0400
-Date: Tue, 2 Apr 2013 11:50:50 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kexec: use Crash kernel for Crash kernel low
-Message-ID: <20130402155050.GH29506@redhat.com>
-References: <CAE9FiQXikU8-FkYYULHx50qP_ME2bRSzCC=8ZH8iDyUr2ug66g@mail.gmail.com>
- <515A03DB.6040107@zytor.com>
- <CAE9FiQWNFbFgXafJBvORRax+GNU_uf0KFnqZ5NQit0BeZZx9LA@mail.gmail.com>
- <515A083B.7050508@zytor.com>
- <CAE9FiQXwy8nLRQAiZ+P56fokisUXAmTJWA07TZ-gSH61K5FQLA@mail.gmail.com>
- <CAE9FiQW1RzP5A_82qUP7gF_6-G3+Ceay_L1FQf7N=MMbQA4+iw@mail.gmail.com>
- <20130402135001.GC29506@redhat.com>
- <CAE9FiQVWprV4YkMq_Pu95AYk_qGzXWPVBWJVDfa=0RbqL63y4Q@mail.gmail.com>
- <20130402153957.GG29506@redhat.com>
- <CAE9FiQU99i+fBLnCq72c17XTALdsuUS5jrANAbL=1aMm7=mahw@mail.gmail.com>
+	id S932775Ab3DBPwS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 11:52:18 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:54845 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760123Ab3DBPwQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 11:52:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQU99i+fBLnCq72c17XTALdsuUS5jrANAbL=1aMm7=mahw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130402154021.GA521@gulag1.americas.sgi.com>
+References: <5159C147.70800@sgi.com>
+	<1364847069-2887-1-git-send-email-nzimmer@sgi.com>
+	<1364847069-2887-2-git-send-email-nzimmer@sgi.com>
+	<CAKohpok7MR28trAddHRi5Lcg0bGBHBnOfJO=yu7SQqGnV5ZCRg@mail.gmail.com>
+	<20130402145536.GA31757@gulag1.americas.sgi.com>
+	<CAKohpokXbeRp-pHaJRAOjnF+R+wy8R9We67Yr2C2nyoVXyJd6w@mail.gmail.com>
+	<20130402154021.GA521@gulag1.americas.sgi.com>
+Date: Tue, 2 Apr 2013 21:22:15 +0530
+Message-ID: <CAKohpo=6xeESG2DqET4WQFciHN6sX5Z7Jz9JbE6RC00BsV3bdA@mail.gmail.com>
+Subject: Re: [PATCH v6 1/2] cpufreq: split the cpufreq_driver_lock and use the rcu
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 08:46:16AM -0700, Yinghai Lu wrote:
-> On Tue, Apr 2, 2013 at 8:39 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Tue, Apr 02, 2013 at 07:45:36AM -0700, Yinghai Lu wrote:
-> >
-> > [..]
-> >> 2. keep thing unified when new kexec-tools is used: always high.
-> >
-> > I think this is wrong. What if system does not have more than 4G of
-> > memory. crashkernel=x,high will fail. So just because we have new version
-> > of kexec-tools, it does not mean that one can always use crashkernel=x,high.
-> 
-> no, it will not fail.
-> 
-> If the system have less 4G, and memblock will still find the ram for us.
+On 2 April 2013 21:10, Nathan Zimmer <nzimmer@sgi.com> wrote:
+> My concern is in the cpufreq_register_driver.  Since we are only to set the
+> pointer when it is null we have have to hold the lock over both operations.
+>
+> int cpufreq_register_driver(struct cpufreq_driver *driver_data)
+> {
+> ...
+>         spin_lock_irqsave(&cpufreq_driver_lock, flags);
+>         if (rcu_access_pointer(cpufreq_driver)) {
+>                 spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
+>                 return -EBUSY;
+>         }
+>         rcu_assign_pointer(cpufreq_driver, driver_data);
+>         spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
+>         synchronize_rcu();
+> ...
+> }
 
-Ok, then description in kernel-parameters.txt is wrong.
+How will the lock help you here?? Lock is useful only when somebody
+else who want to access it is waiting on the lock and we are updating
+the pointer.
 
-+	crashkernel_high=size[KMG]
-+                       [KNL, x86_64] range above 4G. kernel allocate
-physical
-+                       memory region above 4G.
-
-
-Can you please inline your patches. Otherwise how one is supposed to give
-review comments?
-
-Thanks
-Vivek
+Because all other accesses to cpufreq_driver don't have any lock, this
+lock is just a waste of time.
