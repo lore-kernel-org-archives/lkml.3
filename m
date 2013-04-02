@@ -1,83 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759967Ab3DBDRv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 23:17:51 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:61000 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759353Ab3DBDRu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 23:17:50 -0400
-Date: Tue, 2 Apr 2013 14:17:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>
-Subject: linux-next: manual merge of the virtio tree with the rr-fixes tree
-Message-Id: <20130402141739.0d0b45f519be505a7da471ac@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__2_Apr_2013_14_17_39_+1100_Bg6sJc_xXjuk0_k8"
+	id S1760148Ab3DBDVQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 23:21:16 -0400
+Received: from toro.web-alm.net ([62.245.132.31]:42827 "EHLO toro.web-alm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759825Ab3DBDVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 23:21:14 -0400
+Message-ID: <515A4CE4.9050607@osadl.org>
+Date: Tue, 02 Apr 2013 05:13:40 +0200
+From: Carsten Emde <C.Emde@osadl.org>
+Organization: Open Source Automation Development Lab (OSADL)
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: Re: [ANNOUNCE] 3.6.11.1-rt32
+References: <1364527527.10629.10.camel@gandalf.local.home>
+In-Reply-To: <1364527527.10629.10.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__2_Apr_2013_14_17_39_+1100_Bg6sJc_xXjuk0_k8
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Steven,
 
-Hi Rusty,
+> I'm pleased to announce the 3.6.11.1-rt32 stable release.
+Unfortunately, there is another compile error:
+drivers/gpu/drm/i915/i915_gem.c: In function ‘i915_gem_wait_for_error’:
+drivers/gpu/drm/i915/i915_gem.c:118:3: warning: passing argument 1 of 
+‘rt_spin_lock’ from incompatible pointer type [enabled by default]
+In file included from include/linux/spinlock.h:273:0,
+                  from include/linux/wait.h:24,
+                  from include/linux/fs.h:396,
+                  from include/drm/drmP.h:47,
+                  from drivers/gpu/drm/i915/i915_gem.c:28:
+include/linux/spinlock_rt.h:21:24: note: expected ‘struct spinlock_t *’ 
+but argument is of type ‘struct raw_spinlock_t *’
+drivers/gpu/drm/i915/i915_gem.c:120:3: warning: passing argument 1 of 
+‘rt_spin_unlock’ from incompatible pointer type [enabled by default]
+In file included from include/linux/spinlock.h:273:0,
+                  from include/linux/wait.h:24,
+                  from include/linux/fs.h:396,
+                  from include/drm/drmP.h:47,
+                  from drivers/gpu/drm/i915/i915_gem.c:28:
+include/linux/spinlock_rt.h:24:24: note: expected ‘struct spinlock_t *’ 
+but argument is of type ‘struct raw_spinlock_t *’
+drivers/gpu/drm/i915/i915_gem.c: In function ‘i915_gem_check_wedge’:
+drivers/gpu/drm/i915/i915_gem.c:1890:3: warning: passing argument 1 of 
+‘rt_spin_lock’ from incompatible pointer type [enabled by default]
+In file included from include/linux/spinlock.h:273:0,
+                  from include/linux/wait.h:24,
+                  from include/linux/fs.h:396,
+                  from include/drm/drmP.h:47,
+                  from drivers/gpu/drm/i915/i915_gem.c:28:
+include/linux/spinlock_rt.h:21:24: note: expected ‘struct spinlock_t *’ 
+but argument is of type ‘struct raw_spinlock_t *’
+drivers/gpu/drm/i915/i915_gem.c:1892:3: warning: passing argument 1 of 
+‘rt_spin_unlock’ from incompatible pointer type [enabled by default]
+In file included from include/linux/spinlock.h:273:0,
+                  from include/linux/wait.h:24,
+                  from include/linux/fs.h:396,
+                  from include/drm/drmP.h:47,
+                  from drivers/gpu/drm/i915/i915_gem.c:28:
+include/linux/spinlock_rt.h:24:24: note: expected ‘struct spinlock_t *’ 
+but argument is of type ‘struct raw_spinlock_t *’
 
-Today's linux-next merge of the virtio tree got a conflict in
-drivers/char/virtio_console.c between commit 9ba5c80b1aea ("virtio:
-console: add locking around c_ovq operations") from the rr-fixes tree and
-commit 6797999d9958 ("virtio_console: use simplified virtqueue
-accessors") from the virtio tree.
+I would propose to adopt the mechanism that Sebastian introduced in
+3.8.4-rt2 (https://lkml.org/lkml/2013/3/26/600). The kernel compiles
+and runs without any problem with the below patch on a system that
+requires the i915 driver module.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+	-Carsten.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/char/virtio_console.c
-index ce5f3fc,6d59f16..0000000
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@@ -570,9 -569,7 +570,9 @@@ static ssize_t __send_control_msg(struc
-  	vq =3D portdev->c_ovq;
- =20
-  	sg_init_one(sg, &cpkt, sizeof(cpkt));
- +
- +	spin_lock(&portdev->c_ovq_lock);
-- 	if (virtqueue_add_buf(vq, sg, 1, 0, &cpkt, GFP_ATOMIC) =3D=3D 0) {
-+ 	if (virtqueue_add_outbuf(vq, sg, 1, &cpkt, GFP_ATOMIC) =3D=3D 0) {
-  		virtqueue_kick(vq);
-  		while (!virtqueue_get_buf(vq, &len))
-  			cpu_relax();
 
---Signature=_Tue__2_Apr_2013_14_17_39_+1100_Bg6sJc_xXjuk0_k8
-Content-Type: application/pgp-signature
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: gpu/i915: don't open code these things
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+  drivers/gpu/drm/i915/i915_gem.c |   10 ++--------
+  1 file changed, 2 insertions(+), 8 deletions(-)
 
-iQIcBAEBCAAGBQJRWk3TAAoJEECxmPOUX5FEmXwP/Radxu4t/N68pKe1mmz2tbOF
-sXDS/1fOaYajWWcE+LaNXZR26qndpBUaSaSW4llg0iGbB0TEYQx+o1nZaRfVQmmi
-VghfxQvc4CVjypkH1BQkk4r+Q3Gfc6rB0ZM9H3DHadRjdjYSTe0ljznWKSgv0uKQ
-gUkj42Kbakwc2brudjz4POIEzkgS6v0quVjwwPqwj2PK3SmBXm/9Dyt14WYbU/65
-1I/zkZFxzmGqnrlzPDqa15/AzBIomPVpM3xORDASnLiKHpn4xNNYZ/qtfrxQ7Fes
-yHDsyUzdIzd99RSTI3UBCmWgSkVQu0bh9Gog0olvm5rZoJq1flokV5JLxkyCiLrG
-70Wimgs9i83QJsYeubH0QLo3I2yJ/HcMwtIutJ1kacVHpSUZwA8AzzfrXmEvqMUl
-5DsMp6I1wRi6bRkj9M9mEO/rdF++mB/kqBOlwnhBhZxpY2v4vcPs8BMVFA+H7X//
-Tt8fsbwBGpjjnpIlvHWlrzSDCVcQZ7Xu3BHBCe8eSrITg8vwdn1U5Ixmr8iKTnr7
-Ie8i1QsN7PS6er1PjhkpZtrqKwlZ83xQrndZaX88lpFqWH24xM7V3/hXt/RCi7Oa
-YX3n34ZMT1s7eV5cuu2l2IXJmjiyAVM4R7WueeGXNDj6WAFqyTf4a5SpKb4aR4uP
-AG8Zg9b4x/Na1xHFwLAN
-=IinT
------END PGP SIGNATURE-----
+Index: linux-3.6.11.1-rt32/drivers/gpu/drm/i915/i915_gem.c
+===================================================================
+--- linux-3.6.11.1-rt32.orig/drivers/gpu/drm/i915/i915_gem.c
++++ linux-3.6.11.1-rt32/drivers/gpu/drm/i915/i915_gem.c
+@@ -90,7 +90,6 @@ i915_gem_wait_for_error(struct drm_devic
+  {
+  	struct drm_i915_private *dev_priv = dev->dev_private;
+  	struct completion *x = &dev_priv->error_completion;
+-	unsigned long flags;
+  	int ret;
 
---Signature=_Tue__2_Apr_2013_14_17_39_+1100_Bg6sJc_xXjuk0_k8--
+  	if (!atomic_read(&dev_priv->mm.wedged))
+@@ -115,9 +114,7 @@ i915_gem_wait_for_error(struct drm_devic
+  		 * end up waiting upon a subsequent completion event that
+  		 * will never happen.
+  		 */
+-		spin_lock_irqsave(&x->wait.lock, flags);
+-		x->done++;
+-		spin_unlock_irqrestore(&x->wait.lock, flags);
++		complete(x);
+  	}
+  	return 0;
+  }
+@@ -1884,12 +1881,9 @@ i915_gem_check_wedge(struct drm_i915_pri
+  	if (atomic_read(&dev_priv->mm.wedged)) {
+  		struct completion *x = &dev_priv->error_completion;
+  		bool recovery_complete;
+-		unsigned long flags;
+
+  		/* Give the error handler a chance to run. */
+-		spin_lock_irqsave(&x->wait.lock, flags);
+-		recovery_complete = x->done > 0;
+-		spin_unlock_irqrestore(&x->wait.lock, flags);
++		recovery_complete = completion_done(x);
+
+  		/* Non-interruptible callers can't handle -EAGAIN, hence return
+  		 * -EIO unconditionally for these. */
+
+
