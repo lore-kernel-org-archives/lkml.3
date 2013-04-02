@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759734Ab3DBBoN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 21:44:13 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:57992 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758472Ab3DBBoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 21:44:12 -0400
-Date: Mon, 1 Apr 2013 21:43:53 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        akpm@linux-foundation.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Zach Brown <zab@redhat.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Subject: Re: [PATCH 13/33] wait: add wait_event_hrtimeout()
-Message-ID: <20130402014353.GB30122@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Kent Overstreet <koverstreet@google.com>,
-	linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-	akpm@linux-foundation.org, Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@elte.hu>, Zach Brown <zab@redhat.com>,
-	Felipe Balbi <balbi@ti.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-	Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-	Asai Thambi S P <asamymuthupa@micron.com>,
-	Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-	Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-	Benjamin LaHaise <bcrl@kvack.org>
-References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
- <1363883754-27966-14-git-send-email-koverstreet@google.com>
+	id S1758906Ab3DBBs2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 21:48:28 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:11346 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757201Ab3DBBs1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 21:48:27 -0400
+Message-ID: <515A38CB.5030406@huawei.com>
+Date: Tue, 2 Apr 2013 09:47:55 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363883754-27966-14-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>
+Subject: Re: [PATCH] PCI/VFIO: use pcie_flags_reg instead of access PCI-E
+ Capabilities Register
+References: <1364375140-6388-1-git-send-email-wangyijing@huawei.com> <1364829361.2882.26.camel@bling.home>
+In-Reply-To: <1364829361.2882.26.camel@bling.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 09:35:34AM -0700, Kent Overstreet wrote:
-> Analagous to wait_event_timeout() and friends, this adds
-> wait_event_hrtimeout() and wait_event_interruptible_hrtimeout().
+>> @@ -1017,13 +1017,9 @@ static int vfio_cap_len(struct vfio_pci_device *vdev, u8 cap, u8 pos)
+>>  		return byte;
+>>  	case PCI_CAP_ID_EXP:
+>>  		/* length based on version */
+>> -		ret = pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &word);
+>> -		if (ret)
+>> -			return pcibios_err_to_errno(ret);
+>> -
+>>  		vdev->extended_caps = true;
+>>  
+>> -		if ((word & PCI_EXP_FLAGS_VERS) == 1)
+>> +		if ((pdev->pcie_flags_reg & PCI_EXP_FLAGS_VERS) == 1)
 > 
-> Note that unlike the versions that use regular timers, these don't return
-> the amount of time remaining when they return - instead, they return 0 or
-> -ETIME if they timed out.  because I was uncomfortable with the semantics
-> of doing it the other way (that I could get it right, anyways).
-> 
-> If the timer expires, there's no real guarantee that expire_time -
-> current_time would be <= 0 - due to timer slack certainly, and I'm not
-> sure I want to know the implications of the different clock bases in
-> hrtimers.
-> 
-> If the timer does expire and the code calculates that the time remaining
-> is nonnegative, that could be even worse if the calling code then reuses
-> that timeout.  Probably safer to just return 0 then, but I could imagine
-> weird bugs or at least unintended behaviour arising from that too.
-> 
-> I came to the conclusion that if other users end up actually needing the
-> amount of time remaining, the sanest thing to do would be to create a
-> version that uses absolute timeouts instead of relative.
+> It looks like we should be using pcie_caps_reg(pdev) here instead of
+> directly accessing pcie_flags_reg.  Thanks,
 
-Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
+That's right, I forget Myron Stowe introduced the PCIe Cap accessor function  pcie_caps_reg().
+I will resend the updated patch.
+
+Thanks!
+Yijing
+
+> 
+> Alex
+> 
+>>  			return PCI_CAP_EXP_ENDPOINT_SIZEOF_V1;
+>>  		else
+>>  			return PCI_CAP_EXP_ENDPOINT_SIZEOF_V2;
+> 
+> 
+> 
+> 
+> .
+> 
+
+
+-- 
+Thanks!
+Yijing
 
