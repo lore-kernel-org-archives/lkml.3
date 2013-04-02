@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758477Ab3DBXNW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:13:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32956 "EHLO
+	id S1758695Ab3DBXNh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:13:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32954 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933020Ab3DBWMT (ORCPT
+	with ESMTP id S932993Ab3DBWMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:19 -0400
+	Tue, 2 Apr 2013 18:12:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Soeren Moch <smoch@web.de>, Alan Stern <stern@rowland.harvard.edu>
-Subject: [ 042/124] USB: EHCI: fix bug in iTD/siTD DMA pool allocation
-Date: Tue,  2 Apr 2013 15:10:24 -0700
-Message-Id: <20130402221109.089283689@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 041/124] Nest rename_lock inside vfsmount_lock
+Date: Tue,  2 Apr 2013 15:10:23 -0700
+Message-Id: <20130402221108.985609296@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -26,86 +26,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Soeren Moch <smoch@web.de>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 85ecd0322b9a1a9f451d9150e9460ab42fd17219 upstream.
+commit 7ea600b5314529f9d1b9d6d3c41cb26fce6a7a4a upstream.
 
-[Description written by Alan Stern]
+... lest we get livelocks between path_is_under() and d_path() and friends.
 
-Soeren tracked down a very difficult bug in ehci-hcd's DMA pool
-management of iTD and siTD structures.  Some background: ehci-hcd
-gives each isochronous endpoint its own set of active and free itd's
-(or sitd's for full-speed devices).  When a new itd is needed, it is
-taken from the head of the free list, if possible.  However, itd's
-must not be used twice in a single frame because the hardware
-continues to access the data structure for the entire duration of a
-frame.  Therefore if the itd at the head of the free list has its
-"frame" member equal to the current value of ehci->now_frame, it
-cannot be reused and instead a new itd is allocated from the DMA pool.
-The entries on the free list are not released back to the pool until
-the endpoint is no longer in use.
+The thing is, wrt fairness lglocks are more similar to rwsems than to rwlocks;
+it is possible to have thread B spin on attempt to take lock shared while thread
+A is already holding it shared, if B is on lower-numbered CPU than A and there's
+a thread C spinning on attempt to take the same lock exclusive.
 
-The bug arises from the fact that sometimes an itd can be moved back
-onto the free list before itd->frame has been set properly.  In
-Soeren's case, this happened because ehci-hcd can allocate one more
-itd than it actually needs for an URB; the extra itd may or may not be
-required depending on how the transfer aligns with a frame boundary.
-For example, an URB with 8 isochronous packets will cause two itd's to
-be allocated.  If the URB is scheduled to start in microframe 3 of
-frame N then it will require both itds: one for microframes 3 - 7 of
-frame N and one for microframes 0 - 2 of frame N+1.  But if the URB
-had been scheduled to start in microframe 0 then it would require only
-the first itd, which could cover microframes 0 - 7 of frame N.  The
-second itd would be returned to the end of the free list.
+As the result, we need consistent ordering between vfsmount_lock (lglock) and
+rename_lock (seq_lock), even though everything that takes both is going to take
+vfsmount_lock only shared.
 
-The itd allocation routine initializes the entire structure to 0, so
-the extra itd ends up on the free list with itd->frame set to 0
-instead of a meaningful value.  After a while the itd reaches the head
-of the list, and occasionally this happens when ehci->now_frame is
-equal to 0.  Then, even though it would be okay to reuse this itd, the
-driver thinks it must get another itd from the DMA pool.
-
-For as long as the isochronous endpoint remains in use, this flaw in
-the mechanism causes more and more itd's to be taken slowly from the
-DMA pool.  Since none are released back, the pool eventually becomes
-exhausted.
-
-This reuslts in memory allocation failures, which typically show up
-during a long-running audio stream.  Video might suffer the same
-effect.
-
-The fix is very simple.  To prevent allocations from the pool when
-they aren't needed, make sure that itd's sent back to the free list
-prematurely have itd->frame set to an invalid value which can never be
-equal to ehci->now_frame.
-
-This should be applied to -stable kernels going back to 3.6.
-
-Signed-off-by: Soeren Moch <smoch@web.de>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Spotted-by: Brad Spengler <spender@grsecurity.net>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-sched.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/dcache.c |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -1214,6 +1214,7 @@ itd_urb_transaction (
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2552,7 +2552,6 @@ static int prepend_path(const struct pat
+ 	bool slash = false;
+ 	int error = 0;
  
- 		memset (itd, 0, sizeof *itd);
- 		itd->itd_dma = itd_dma;
-+		itd->frame = 9999;		/* an invalid value */
- 		list_add (&itd->itd_list, &sched->td_list);
+-	br_read_lock(&vfsmount_lock);
+ 	while (dentry != root->dentry || vfsmnt != root->mnt) {
+ 		struct dentry * parent;
+ 
+@@ -2582,8 +2581,6 @@ static int prepend_path(const struct pat
+ 	if (!error && !slash)
+ 		error = prepend(buffer, buflen, "/", 1);
+ 
+-out:
+-	br_read_unlock(&vfsmount_lock);
+ 	return error;
+ 
+ global_root:
+@@ -2600,7 +2597,7 @@ global_root:
+ 		error = prepend(buffer, buflen, "/", 1);
+ 	if (!error)
+ 		error = is_mounted(vfsmnt) ? 1 : 2;
+-	goto out;
++	return error;
+ }
+ 
+ /**
+@@ -2627,9 +2624,11 @@ char *__d_path(const struct path *path,
+ 	int error;
+ 
+ 	prepend(&res, &buflen, "\0", 1);
++	br_read_lock(&vfsmount_lock);
+ 	write_seqlock(&rename_lock);
+ 	error = prepend_path(path, root, &res, &buflen);
+ 	write_sequnlock(&rename_lock);
++	br_read_unlock(&vfsmount_lock);
+ 
+ 	if (error < 0)
+ 		return ERR_PTR(error);
+@@ -2646,9 +2645,11 @@ char *d_absolute_path(const struct path
+ 	int error;
+ 
+ 	prepend(&res, &buflen, "\0", 1);
++	br_read_lock(&vfsmount_lock);
+ 	write_seqlock(&rename_lock);
+ 	error = prepend_path(path, &root, &res, &buflen);
+ 	write_sequnlock(&rename_lock);
++	br_read_unlock(&vfsmount_lock);
+ 
+ 	if (error > 1)
+ 		error = -EINVAL;
+@@ -2712,11 +2713,13 @@ char *d_path(const struct path *path, ch
+ 		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
+ 
+ 	get_fs_root(current->fs, &root);
++	br_read_lock(&vfsmount_lock);
+ 	write_seqlock(&rename_lock);
+ 	error = path_with_deleted(path, &root, &res, &buflen);
++	write_sequnlock(&rename_lock);
++	br_read_unlock(&vfsmount_lock);
+ 	if (error < 0)
+ 		res = ERR_PTR(error);
+-	write_sequnlock(&rename_lock);
+ 	path_put(&root);
+ 	return res;
+ }
+@@ -2871,6 +2874,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
+ 	get_fs_root_and_pwd(current->fs, &root, &pwd);
+ 
+ 	error = -ENOENT;
++	br_read_lock(&vfsmount_lock);
+ 	write_seqlock(&rename_lock);
+ 	if (!d_unlinked(pwd.dentry)) {
+ 		unsigned long len;
+@@ -2880,6 +2884,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
+ 		prepend(&cwd, &buflen, "\0", 1);
+ 		error = prepend_path(&pwd, &root, &cwd, &buflen);
+ 		write_sequnlock(&rename_lock);
++		br_read_unlock(&vfsmount_lock);
+ 
+ 		if (error < 0)
+ 			goto out;
+@@ -2900,6 +2905,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
+ 		}
+ 	} else {
+ 		write_sequnlock(&rename_lock);
++		br_read_unlock(&vfsmount_lock);
  	}
- 	spin_unlock_irqrestore (&ehci->lock, flags);
-@@ -1915,6 +1916,7 @@ sitd_urb_transaction (
  
- 		memset (sitd, 0, sizeof *sitd);
- 		sitd->sitd_dma = sitd_dma;
-+		sitd->frame = 9999;		/* an invalid value */
- 		list_add (&sitd->sitd_list, &iso_sched->td_list);
- 	}
- 
+ out:
 
 
