@@ -1,45 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760890Ab3DBNWJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 09:22:09 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:53320 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758451Ab3DBNWI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 09:22:08 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 1/9] ARM: ux500: Increase the size of the PRCMU's TCPM size
-Date: Tue,  2 Apr 2013 14:21:48 +0100
-Message-Id: <1364908916-29803-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1761371Ab3DBNZa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 09:25:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57748 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760408Ab3DBNZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 09:25:29 -0400
+Date: Tue, 2 Apr 2013 15:25:20 +0200
+From: Anton Arapov <anton@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] uprobes/tracing: uretprobes
+Message-ID: <20130402132520.GA2265@bandura.redhat.com>
+References: <20130329181520.GA20670@redhat.com>
+ <20130401160827.GA19206@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130401160827.GA19206@redhat.com>
+X-PGP-Key: http://people.redhat.com/aarapov/gpg
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Tightly Coupled Program Memory location is actually 32kB in
-size, rather than the originally depicted 4kB.
+On Mon, Apr 01, 2013 at 06:08:27PM +0200, Oleg Nesterov wrote:
+> On 03/29, Oleg Nesterov wrote:
+> >
+> > uretprobes code is almost ready, we need to teach trace_uprobe.c
+> > to support them.
+> >
+> > This looks simple, but there is a nasty complication. We do not
+> > want to copy-and-paste the code like trace_kprobe.c does. Just look
+> > at kprobe_event_define_fields() and kretprobe_event_define_fields().
+> > They are non-trivial but almost identical. And there are a lot more
+> > examples.
+> >
+> > So I'd like to send 4/4 for review before I'll do other changes.
+> > The patch itself doesn't make sense and complicates the source code a
+> > bit. But note how easy we can change, say, uprobe_event_define_fields(),
+> >
+> > 	-	DEFINE_FIELD(vaddr[0], FIELD_STRING_IP);
+> > 	-	size = SIZEOF_TRACE_ENTRY(1);
+> > 	+	if (!trace_probe_is_return(tu)) {
+> > 	+		DEFINE_FIELD(vaddr[0], FIELD_STRING_IP);
+> > 	+		size = SIZEOF_TRACE_ENTRY(1);
+> > 	+	} else {
+> > 	+		DEFINE_FIELD(vaddr[0], FIELD_STRING_FUNC);
+> > 	+		DEFINE_FIELD(vaddr[1], FIELD_STRING_RETIP);
+> > 	+		size = SIZEOF_TRACE_ENTRY(2);
+> > 	+	}
+> >
+> > without copy-and-paste. The same simple change is possible for other
+> > helpers playing with uprobe_trace_entry_head.
+> 
+> And the rest of the necessary changes to support uretprobes.
+> 
+> To remind, this is on top of Anton's uretprobes implementation which is
+> not finished yet. This series can't be even compiled, but I think it can
+> be already reviewed. All it needs to compile is the new
+> uprobe_consumer->ret_handler().
+> 
+> Oleg.
+> 
+>  kernel/trace/trace_uprobe.c |  152 +++++++++++++++++++++++++++++++++++--------
+>  1 files changed, 124 insertions(+), 28 deletions(-)
+>
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/mach-ux500/devices-db8500.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I've played with this patch-set and it works.
 
-diff --git a/arch/arm/mach-ux500/devices-db8500.c b/arch/arm/mach-ux500/devices-db8500.c
-index f3d9419..afa5b04 100644
---- a/arch/arm/mach-ux500/devices-db8500.c
-+++ b/arch/arm/mach-ux500/devices-db8500.c
-@@ -225,7 +225,7 @@ static struct resource db8500_prcmu_res[] = {
- 	{
- 		.name  = "prcmu-tcpm",
- 		.start = U8500_PRCMU_TCPM_BASE,
--		.end   = U8500_PRCMU_TCPM_BASE + SZ_4K - 1,
-+		.end   = U8500_PRCMU_TCPM_BASE + SZ_32K - 1,
- 		.flags = IORESOURCE_MEM,
- 	},
- };
--- 
-1.7.10.4
-
+Tested-by: Anton Arapov <anton@redhat.com>
