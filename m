@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762136Ab3DBSUs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 14:20:48 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:58510 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760543Ab3DBSUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 14:20:39 -0400
-Date: Tue, 2 Apr 2013 14:19:40 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Excessive stall times on ext4 in 3.9-rc2
-Message-ID: <20130402181940.GA4936@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-	Jiri Slaby <jslaby@suse.cz>
-References: <20130402142717.GH32241@suse.de>
- <20130402150651.GB31577@thunk.org>
- <20130402151436.GC31577@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130402151436.GC31577@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1762093Ab3DBSUh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 14:20:37 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:56526 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760298Ab3DBSUe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 14:20:34 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: tomi.valkeinen@ti.com
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        linux-arm-kernel@lists.infradead.org, plagnioj@jcrosoft.com,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCHv3 0/6] fb: vt8500: patches for 3.10
+Date: Wed,  3 Apr 2013 07:20:32 +1300
+Message-Id: <1364926838-6721-1-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So I tried to reproduce the problem, and so I installed systemtap
-(bleeding edge, since otherwise it won't work with development
-kernel), and then rebuilt a kernel with all of the necessary CONFIG
-options enabled:
+V3 Changes:
+Tidied up patch 1 as requested by Jean-Christophe - Makes the patch much
+simpler.
 
-	CONFIG_DEBUG_INFO, CONFIG_KPROBES, CONFIG_RELAY, CONFIG_DEBUG_FS,
-	CONFIG_MODULES, CONFIG_MODULE_UNLOAD
+V2 Changes:
+Split the SoC and board portions of the binding into their respective files.
+Removed the forced non-interlaced code from wm8505fb.c and vt8500lcdfb.c
 
-I then pulled down mmtests, and tried running watch-dstate.pl, which
-is what I sasume you were using, and I got a reminder of why I've
-tried very hard to use systemtap:
+Julia Lawall (1):
+  drivers/video/wm8505fb.c: use devm_ functions
 
-semantic error: while resolving probe point: identifier 'kprobe' at /tmp/stapdjN4_l:18:7
-        source: probe kprobe.function("get_request_wait")
-                      ^
+Tony Prisk (5):
+  video: vt8500: Make wmt_ge_rops optional
+  video: vt8500: Remove unused platform_data/video-vt8500lcdfb.h
+  video: vt8500: Correct descriptions in video/Kconfig
+  video: vt8500: Adjust contrast in wm8505 framebuffer driver.
+  video: fb: vt8500: Convert framebuffer drivers to standardized
+    binding
 
-semantic error: no match
-semantic error: while resolving probe point: identifier 'kprobe' at :74:8
-        source: }probe kprobe.function("get_request_wait").return
-                       ^
+ .../devicetree/bindings/video/via,vt8500-fb.txt    |   48 ++-----
+ .../devicetree/bindings/video/wm,wm8505-fb.txt     |   32 +++--
+ arch/arm/boot/dts/vt8500-bv07.dts                  |   34 ++---
+ arch/arm/boot/dts/vt8500.dtsi                      |    4 +-
+ arch/arm/boot/dts/wm8505-ref.dts                   |   34 ++---
+ arch/arm/boot/dts/wm8505.dtsi                      |    4 +-
+ arch/arm/boot/dts/wm8650-mid.dts                   |   36 +++--
+ arch/arm/boot/dts/wm8650.dtsi                      |    4 +-
+ arch/arm/boot/dts/wm8850-w70v2.dts                 |   40 +++---
+ arch/arm/boot/dts/wm8850.dtsi                      |    4 +-
+ drivers/video/Kconfig                              |   37 +++--
+ drivers/video/vt8500lcdfb.c                        |   55 +++-----
+ drivers/video/wm8505fb.c                           |  144 ++++++--------------
+ drivers/video/wmt_ge_rops.h                        |   23 ++++
+ include/linux/platform_data/video-vt8500lcdfb.h    |   31 -----
+ 15 files changed, 211 insertions(+), 319 deletions(-)
+ delete mode 100644 include/linux/platform_data/video-vt8500lcdfb.h
 
-Pass 2: analysis failed.  [man error::pass2]
-Unexpected exit of STAP script at ./watch-dstate.pl line 296.
+-- 
+1.7.9.5
 
-I have no clue what to do next.  Can you give me a hint?
-
-Thanks,
-
-						- Ted
