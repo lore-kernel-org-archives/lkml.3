@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760450Ab3DBHTo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 03:19:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57660 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527Ab3DBHTn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 03:19:43 -0400
-Date: Tue, 2 Apr 2013 09:19:37 +0200
-From: Jens Axboe <axboe@kernel.dk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: CAI Qian <caiqian@redhat.com>, xfs@oss.sgi.com,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Loopback device hung [was Re: xfs deadlock on 3.9-rc5 running
- xfstests case #78]
-Message-ID: <20130402071937.GC3670@kernel.dk>
-References: <1462091996.435156.1364882416199.JavaMail.root@redhat.com>
- <247719576.438259.1364882929749.JavaMail.root@redhat.com>
- <20130402070537.GP6369@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130402070537.GP6369@dastard>
+	id S1760596Ab3DBHWo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 03:22:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48604 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753561Ab3DBHWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 03:22:43 -0400
+Subject: Re: gpio-ucb1400
+From: Jean Delvare <jdelvare@suse.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Marek Vasut <marek.vasut@gmail.com>, Guenter Roeck <linux@roeck-us.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+In-Reply-To: <20130401153247.GA13517@sirena.org.uk>
+References: <1364586399.4216.312.camel@amber.site>
+	 <201303302020.44584.marek.vasut@gmail.com>
+	 <20130330232559.GA12864@roeck-us.net>
+	 <201303311919.06030.marek.vasut@gmail.com>
+	 <1364814403.4943.7.camel@amber.site> <20130401153247.GA13517@sirena.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Suse Linux
+Date: Tue, 02 Apr 2013 09:22:37 +0200
+Message-ID: <1364887357.4208.6.camel@amber.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02 2013, Dave Chinner wrote:
-> [Added jens Axboe to CC]
+Le lundi 01 avril 2013 à 16:32 +0100, Mark Brown a écrit :
+> On Mon, Apr 01, 2013 at 01:06:43PM +0200, Jean Delvare wrote:
 > 
-> On Tue, Apr 02, 2013 at 02:08:49AM -0400, CAI Qian wrote:
-> > Saw on almost all the servers range from x64, ppc64 and s390x with kernel
-> > 3.9-rc5 and xfsprogs-3.1.10. Never caught this in 3.9-rc4, so looks like
-> > something new broke this. Log is here with sysrq debug info.
-> > http://people.redhat.com/qcai/stable/log
+> > My point was, the upstream gpio-ucb1400 driver in its current form is
+> > unusable (on top of being ugly.) I have no doubt that someone used that
+> > driver successfully in some external kernel tree, but the code that was
+> > merged upstream is incomplete and no good.
+> 
+> What the driver is doing is, unfortunately, the best practice for an
+> AC'97 connected device like this - we've got an uncomfortable mix of
+> an enumerable bus and platform data combined with a subsystem which has
+> never had enough love to work in a nice way with the kernel.  The idea
+> is that any boards which have the device will call the _set_data()
+> function in their board-specific code.
 
-CAI Qian, can you try and back the below out and test again?
+OK but where are these users? I can't see any in the upstream kernel.
 
+> Sadly we're a little short on volunteers to clean up the AC'97
+> subsystem so this situation shows little sign of improving.
 
-commit 8761a3dc1f07b163414e2215a2cadbb4cfe2a107
-Author: Phillip Susi <psusi@ubuntu.com>
-Date:   Fri Mar 22 12:21:53 2013 -0600
+Well Marek proposed a cleanup which looked good [1], several times
+apparently, but it was never applied.
 
-    loop: cleanup partitions when detaching loop device
-    
-    Any partitions added by user space to the loop device were being
-    left in place after detaching the loop device.  This was because
-    the detach path issued a BLKRRPART to clean up partitions if
-    LO_FLAGS_PARTSCAN was set, meaning that the partitions were auto
-    scanned on attach.  Replace this BLKRRPART with code that
-    unconditionally cleans up partitions on detach instead.
-    
-    Signed-off-by: Phillip Susi <psusi@ubuntu.com>
-    
-    Modified by Jens to export delete_partition().
-    
-    Signed-off-by: Jens Axboe <axboe@kernel.dk>
-
-diff --git a/block/partition-generic.c b/block/partition-generic.c
-index 789cdea..ae95ee6 100644
---- a/block/partition-generic.c
-+++ b/block/partition-generic.c
-@@ -257,6 +257,7 @@ void delete_partition(struct gendisk *disk, int partno)
- 
- 	hd_struct_put(part);
- }
-+EXPORT_SYMBOL(delete_partition);
- 
- static ssize_t whole_disk_show(struct device *dev,
- 			       struct device_attribute *attr, char *buf)
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index ee13a82..fe5f640 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1044,12 +1044,29 @@ static int loop_clr_fd(struct loop_device *lo)
- 	lo->lo_state = Lo_unbound;
- 	/* This is safe: open() is still holding a reference. */
- 	module_put(THIS_MODULE);
--	if (lo->lo_flags & LO_FLAGS_PARTSCAN && bdev)
--		ioctl_by_bdev(bdev, BLKRRPART, 0);
- 	lo->lo_flags = 0;
- 	if (!part_shift)
- 		lo->lo_disk->flags |= GENHD_FL_NO_PART_SCAN;
- 	mutex_unlock(&lo->lo_ctl_mutex);
-+
-+	/*
-+	 * Remove all partitions, since BLKRRPART won't remove user
-+	 * added partitions when max_part=0
-+	 */
-+	if (bdev) {
-+		struct disk_part_iter piter;
-+		struct hd_struct *part;
-+
-+		mutex_lock_nested(&bdev->bd_mutex, 1);
-+		invalidate_partition(bdev->bd_disk, 0);
-+		disk_part_iter_init(&piter, bdev->bd_disk,
-+					DISK_PITER_INCL_EMPTY);
-+		while ((part = disk_part_iter_next(&piter)))
-+			delete_partition(bdev->bd_disk, part->partno);
-+		disk_part_iter_exit(&piter);
-+		mutex_unlock(&bdev->bd_mutex);
-+	}
-+
- 	/*
- 	 * Need not hold lo_ctl_mutex to fput backing file.
- 	 * Calling fput holding lo_ctl_mutex triggers a circular
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2010-October/028656.html
 
 -- 
-Jens Axboe
+Jean Delvare
+Suse L3
 
