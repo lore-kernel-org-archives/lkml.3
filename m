@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933814Ab3DBWiY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:38:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33244 "EHLO
+	id S933539Ab3DBWiW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:38:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33249 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933351Ab3DBWNF (ORCPT
+	with ESMTP id S933466Ab3DBWNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:13:05 -0400
+	Tue, 2 Apr 2013 18:13:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Andrey Vagin <avagin@openvz.org>
-Subject: [ 110/124] net: fix *_DIAG_MAX constants
-Date: Tue,  2 Apr 2013 15:11:32 -0700
-Message-Id: <20130402221116.952615014@linuxfoundation.org>
+        David Oostdyk <daveo@ll.mit.edu>, Eric Dumazet <edumazet@google.com>,
+        Ed Cashin <ecashin@coraid.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 111/124] aoe: reserve enough headroom on skbs
+Date: Tue,  2 Apr 2013 15:11:33 -0700
+Message-Id: <20130402221117.060428566@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -31,65 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit ae5fc98728c8bbbd6d7cab0b9781671fc4419c1b ]
+[ Upstream commit 91c5746425aed8f7188a351f1224a26aa232e4b3 ]
 
-Follow the common pattern and define *_DIAG_MAX like:
+Some network drivers use a non default hard_header_len
 
-        [...]
-        __XXX_DIAG_MAX,
-};
+Transmitted skb should take into account dev->hard_header_len, or risk
+crashes or expensive reallocations.
 
-Because everyone is used to do:
+In the case of aoe, lets reserve MAX_HEADER bytes.
 
-        struct nlattr *attrs[XXX_DIAG_MAX+1];
+David reported a crash in defxx driver, solved by this patch.
 
-        nla_parse([...], XXX_DIAG_MAX, [...]
-
-Reported-by: Thomas Graf <tgraf@suug.ch>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Reported-by: David Oostdyk <daveo@ll.mit.edu>
+Tested-by: David Oostdyk <daveo@ll.mit.edu>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Ed Cashin <ecashin@coraid.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/uapi/linux/packet_diag.h |    4 +++-
- include/uapi/linux/unix_diag.h   |    4 +++-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ drivers/block/aoe/aoecmd.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/include/uapi/linux/packet_diag.h
-+++ b/include/uapi/linux/packet_diag.h
-@@ -33,9 +33,11 @@ enum {
- 	PACKET_DIAG_TX_RING,
- 	PACKET_DIAG_FANOUT,
+--- a/drivers/block/aoe/aoecmd.c
++++ b/drivers/block/aoe/aoecmd.c
+@@ -51,8 +51,9 @@ new_skb(ulong len)
+ {
+ 	struct sk_buff *skb;
  
--	PACKET_DIAG_MAX,
-+	__PACKET_DIAG_MAX,
- };
- 
-+#define PACKET_DIAG_MAX (__PACKET_DIAG_MAX - 1)
-+
- struct packet_diag_info {
- 	__u32	pdi_index;
- 	__u32	pdi_version;
---- a/include/uapi/linux/unix_diag.h
-+++ b/include/uapi/linux/unix_diag.h
-@@ -39,9 +39,11 @@ enum {
- 	UNIX_DIAG_MEMINFO,
- 	UNIX_DIAG_SHUTDOWN,
- 
--	UNIX_DIAG_MAX,
-+	__UNIX_DIAG_MAX,
- };
- 
-+#define UNIX_DIAG_MAX (__UNIX_DIAG_MAX - 1)
-+
- struct unix_diag_vfs {
- 	__u32	udiag_vfs_ino;
- 	__u32	udiag_vfs_dev;
+-	skb = alloc_skb(len, GFP_ATOMIC);
++	skb = alloc_skb(len + MAX_HEADER, GFP_ATOMIC);
+ 	if (skb) {
++		skb_reserve(skb, MAX_HEADER);
+ 		skb_reset_mac_header(skb);
+ 		skb_reset_network_header(skb);
+ 		skb->protocol = __constant_htons(ETH_P_AOE);
 
 
