@@ -1,99 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760895Ab3DBNue (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 09:50:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4576 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760607Ab3DBNud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 09:50:33 -0400
-Date: Tue, 2 Apr 2013 09:50:01 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kexec: use Crash kernel for Crash kernel low
-Message-ID: <20130402135001.GC29506@redhat.com>
-References: <20130401133428.GA13499@redhat.com>
- <5159D2E9.7080707@zytor.com>
- <20130401192606.GA17951@redhat.com>
- <5159F27E.7060300@zytor.com>
- <CAE9FiQXikU8-FkYYULHx50qP_ME2bRSzCC=8ZH8iDyUr2ug66g@mail.gmail.com>
- <515A03DB.6040107@zytor.com>
- <CAE9FiQWNFbFgXafJBvORRax+GNU_uf0KFnqZ5NQit0BeZZx9LA@mail.gmail.com>
- <515A083B.7050508@zytor.com>
- <CAE9FiQXwy8nLRQAiZ+P56fokisUXAmTJWA07TZ-gSH61K5FQLA@mail.gmail.com>
- <CAE9FiQW1RzP5A_82qUP7gF_6-G3+Ceay_L1FQf7N=MMbQA4+iw@mail.gmail.com>
+	id S1761206Ab3DBOAe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 10:00:34 -0400
+Received: from ams-iport-4.cisco.com ([144.254.224.147]:44868 "EHLO
+	ams-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761158Ab3DBOAc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 10:00:32 -0400
+X-Greylist: delayed 588 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Apr 2013 10:00:32 EDT
+X-IronPort-AV: E=Sophos;i="4.87,393,1363132800"; 
+   d="scan'208";a="13037141"
+From: Hans Verkuil <hansverk@cisco.com>
+Organization: Cisco Systems Norway
+To: Prabhakar lad <prabhakar.csengg@gmail.com>
+Subject: Re: [PATCH v3] davinci: vpif: add pm_runtime support
+Date: Tue, 2 Apr 2013 15:50:20 +0200
+User-Agent: KMail/1.13.7 (Linux/3.7-7.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LMML <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>, Sekhar Nori <nsekhar@ti.com>
+References: <1364910090-5501-1-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1364910090-5501-1-git-send-email-prabhakar.csengg@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQW1RzP5A_82qUP7gF_6-G3+Ceay_L1FQf7N=MMbQA4+iw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304021550.21018.hansverk@cisco.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 01, 2013 at 06:11:38PM -0700, Yinghai Lu wrote:
-> On Mon, Apr 1, 2013 at 3:40 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> > On Mon, Apr 1, 2013 at 3:20 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> >> On 04/01/2013 03:17 PM, Yinghai Lu wrote:
-> >>>
-> >>> And his last suggestion is just as his old second suggestion.
-> >>>
-> >>> I just check the code again, it looks it is easy to change it to support:
-> >>> 1. crashkernel=XM
-> >>> 2. crashkernel_high=XM
-> >>> 3. crashkernel_high=XM crashkernel_low=YM
-> >>>
-> >>
-> >> Yes... my objections that you are giving the user the headache of
-> >> dealing with this very much remains, but I don't think we have any good
-> >> options.  However, the <size>,<options>.... syntax is at least
-> >> extensible, which the above syntax is not.
-> >
-> > ok, will check crashkernel=XM,high
+On Tue 2 April 2013 15:41:30 Prabhakar lad wrote:
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 > 
-> Please check attached four patches that should get into upstream for 3.9.
-> I sent first and second before.
-> other two is addressing old kexec-tools with kdump on new kernel.
+> Add pm_runtime support to the TI Davinci VPIF driver.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
 
-Hi Yinghai,
+Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
 
-I think there is still little confusion. What does crashkernel=X,high
-mean. Currently it seems to mean that memory is allocated from region
-above 4G and if it is not available, allocation fails.
+Regards,
 
-I thought what would be more useful if it means that we start search
-for memory from higher range of addresses and continue down till we
-find a suitable memory area.
+	Hans
 
-That means memory could either come from higher memory regions (above
-4G) or from low memory regions (below 4G) depending on how much physical
-RAM system has.
-
-Similary crashkernel=X or crashkernel=X,low will mean that we start
-scanning for free memory from low memory area first. And if sufficient
-amount of memory is not available below 4G, memory could very well
-come from above 4G.
-
-That way a distribution could decide its default memory requirement
-(say 128M) and they could simply say, crashkernel=128M or
-crashkernel=128M,high (depending on whether they support 64bit bzImage
-or not).
-
-To achieve the behavior where we want to enforce that memory either
-comes from low or high area only otherwise allocation fails, we could
-probably use.
-
-crashkernel=X,high_only
-crashkernel=X,low_only
-
-And crashkernel_low could be replaced with crashkernel=X,low_only
-
-I think it is reasonable to continue to reserve low memory automatically
-for swiotlb if crash memory reservation happens above 4G. Users should
-be able to opt out of it using crashkernel=0M,low_only.
-
-Thanks
-Vivek
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+> Cc: Sekhar Nori <nsekhar@ti.com>
+> ---
+>  Changes for v3:
+>  1: Removed pm_runtime_resume() from probe as pm_runtime_get()
+>     calls it as pointed by Hans.
+> 
+>  Changes for v2:
+>  1: Removed use of clk API as pointed by Laurent and Sekhar.
+> 
+>  drivers/media/platform/davinci/vpif.c |   24 ++++++------------------
+>  1 files changed, 6 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/media/platform/davinci/vpif.c b/drivers/media/platform/davinci/vpif.c
+> index 3bc4db8..ea82a8b 100644
+> --- a/drivers/media/platform/davinci/vpif.c
+> +++ b/drivers/media/platform/davinci/vpif.c
+> @@ -23,8 +23,8 @@
+>  #include <linux/spinlock.h>
+>  #include <linux/kernel.h>
+>  #include <linux/io.h>
+> -#include <linux/clk.h>
+>  #include <linux/err.h>
+> +#include <linux/pm_runtime.h>
+>  #include <linux/v4l2-dv-timings.h>
+>  
+>  #include <mach/hardware.h>
+> @@ -46,8 +46,6 @@ spinlock_t vpif_lock;
+>  void __iomem *vpif_base;
+>  EXPORT_SYMBOL_GPL(vpif_base);
+>  
+> -struct clk *vpif_clk;
+> -
+>  /**
+>   * vpif_ch_params: video standard configuration parameters for vpif
+>   * The table must include all presets from supported subdevices.
+> @@ -443,19 +441,13 @@ static int vpif_probe(struct platform_device *pdev)
+>  		goto fail;
+>  	}
+>  
+> -	vpif_clk = clk_get(&pdev->dev, "vpif");
+> -	if (IS_ERR(vpif_clk)) {
+> -		status = PTR_ERR(vpif_clk);
+> -		goto clk_fail;
+> -	}
+> -	clk_prepare_enable(vpif_clk);
+> +	pm_runtime_enable(&pdev->dev);
+> +	pm_runtime_get(&pdev->dev);
+>  
+>  	spin_lock_init(&vpif_lock);
+>  	dev_info(&pdev->dev, "vpif probe success\n");
+>  	return 0;
+>  
+> -clk_fail:
+> -	iounmap(vpif_base);
+>  fail:
+>  	release_mem_region(res->start, res_len);
+>  	return status;
+> @@ -463,11 +455,7 @@ fail:
+>  
+>  static int vpif_remove(struct platform_device *pdev)
+>  {
+> -	if (vpif_clk) {
+> -		clk_disable_unprepare(vpif_clk);
+> -		clk_put(vpif_clk);
+> -	}
+> -
+> +	pm_runtime_disable(&pdev->dev);
+>  	iounmap(vpif_base);
+>  	release_mem_region(res->start, res_len);
+>  	return 0;
+> @@ -476,13 +464,13 @@ static int vpif_remove(struct platform_device *pdev)
+>  #ifdef CONFIG_PM
+>  static int vpif_suspend(struct device *dev)
+>  {
+> -	clk_disable_unprepare(vpif_clk);
+> +	pm_runtime_put(dev);
+>  	return 0;
+>  }
+>  
+>  static int vpif_resume(struct device *dev)
+>  {
+> -	clk_prepare_enable(vpif_clk);
+> +	pm_runtime_get(dev);
+>  	return 0;
+>  }
+>  
+> 
