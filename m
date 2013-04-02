@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760564Ab3DBDza (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 23:55:30 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:39069 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760549Ab3DBDz0 (ORCPT
+	id S1760625Ab3DBDzt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 23:55:49 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:64356 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760612Ab3DBDzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 23:55:26 -0400
+	Mon, 1 Apr 2013 23:55:45 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: David Ahern <dsahern@gmail.com>, Borislav Petkov <bp@alien8.de>,
@@ -15,9 +15,9 @@ Cc: David Ahern <dsahern@gmail.com>, Borislav Petkov <bp@alien8.de>,
         Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 15/23] perf: make libaudit support based on CONFIG_LIBAUDIT
-Date: Mon,  1 Apr 2013 21:54:29 -0600
-Message-Id: <1364874877-5618-16-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 22/23] perf: only add elf to EXTLIBS if CONFIG_LIBELF is set
+Date: Mon,  1 Apr 2013 21:54:36 -0600
+Message-Id: <1364874877-5618-23-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1364874877-5618-1-git-send-email-dsahern@gmail.com>
 References: <1364874877-5618-1-git-send-email-dsahern@gmail.com>
@@ -35,89 +35,57 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile                 |   16 +++++++---------
- tools/perf/Pconfig                  |    5 +++++
- tools/perf/config/feature-tests.mak |    2 +-
- tools/perf/perf.c                   |    3 ++-
- 4 files changed, 15 insertions(+), 11 deletions(-)
+ tools/perf/Makefile |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 0baa19b..62c10b8 100644
+index 5037856..5990520 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -644,15 +644,13 @@ ifdef CONFIG_LIBUNWIND
- 	LIB_OBJS += $(OUTPUT)util/unwind.o
+@@ -87,7 +87,7 @@ ifdef PARSER_DEBUG
  endif
  
--ifndef NO_LIBAUDIT
--	FLAGS_LIBAUDIT = $(ALL_CFLAGS) $(ALL_LDFLAGS) -laudit
--	ifneq ($(call try-cc,$(SOURCE_LIBAUDIT),$(FLAGS_LIBAUDIT),libaudit),y)
--		msg := $(warning No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev);
--	else
--		BASIC_CFLAGS += -DLIBAUDIT_SUPPORT
--		BUILTIN_OBJS += $(OUTPUT)builtin-trace.o
--		EXTLIBS += -laudit
--	endif
-+ifdef CONFIG_LIBAUDIT
-+    FLAGS_LIBAUDIT = $(ALL_CFLAGS) $(ALL_LDFLAGS) -laudit
-+    ifneq ($(call try-cc,$(SOURCE_LIBAUDIT),$(FLAGS_LIBAUDIT),libaudit),y)
-+        $(error No libaudit.h found, please install audit-libs-devel or libaudit-dev or disable CONFIG_LIBAUDIT)
-+    endif
-+    BUILTIN_OBJS += $(OUTPUT)builtin-trace.o
-+    EXTLIBS += -laudit
- endif
+ CFLAGS = -fno-omit-frame-pointer -ggdb3 -funwind-tables -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
+-EXTLIBS = -lpthread -lrt -lelf -lm
++EXTLIBS = -lpthread -lrt -lm
+ ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+ ALL_LDFLAGS = $(LDFLAGS)
+ STRIP ?= strip
+@@ -541,6 +541,7 @@ endif
+ # we had "elif" things would have been much nicer...
  
- ifdef CONFIG_NEWT
-diff --git a/tools/perf/Pconfig b/tools/perf/Pconfig
-index b03881c..4cfccf3 100644
---- a/tools/perf/Pconfig
-+++ b/tools/perf/Pconfig
-@@ -45,6 +45,11 @@ config LIBPERL
- config LIBPYTHON
-     bool "Enable support for python scripting engine"
+ ifdef CONFIG_LIBELF
++    EXTLIBS += -lelf
+     FLAGS_LIBELF=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
  
-+config LIBAUDIT
-+    bool "Enable support for libaudit"
-+    help
-+        Used for perf trace tool.
-+
- config LIBNUMA
-     bool "Enable support for libnuma"
-     help
-diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index 1d16481..6e3ba0f 100644
---- a/tools/perf/config/feature-tests.mak
-+++ b/tools/perf/config/feature-tests.mak
-@@ -206,7 +206,7 @@ int main(void)
- endef
- endif
+     # try to compile with libelf support ...
+@@ -570,7 +571,7 @@ ifdef CONFIG_LIBELF
  
--ifndef NO_LIBAUDIT
-+ifdef CONFIG_LIBAUDIT
- define SOURCE_LIBAUDIT
- #include <libaudit.h>
+     # libelf supported - what about dwarf?
+     ifdef CONFIG_DWARF
+-        FLAGS_DWARF=$(ALL_CFLAGS) $(LIBDW_CFLAGS) -ldw -lelf $(LIBDW_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
++        FLAGS_DWARF=$(ALL_CFLAGS) $(LIBDW_CFLAGS) -ldw $(LIBDW_LDFLAGS) $(ALL_LDFLAGS) $(EXTLIBS)
+         ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF),libdw),y)
+             $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138.ables dwarf support.)
+             $(error Please install new elfutils-devel/libdw-dev or disable CONFIG_DWARF);
+@@ -581,7 +582,7 @@ ifdef CONFIG_LIBELF
+         else
+             BASIC_CFLAGS := $(LIBDW_CFLAGS) $(BASIC_CFLAGS)
+             BASIC_LDFLAGS := $(LIBDW_LDFLAGS) $(BASIC_LDFLAGS)
+-            EXTLIBS += -lelf -ldw
++            EXTLIBS += -ldw
+             LIB_OBJS += $(OUTPUT)util/probe-finder.o
+             LIB_OBJS += $(OUTPUT)util/dwarf-aux.o
+         endif # PERF_HAVE_DWARF_REGS
+@@ -598,8 +599,6 @@ else
+         $(error CONFIG_LIBUNWIND depends on LIBELF)
+     endif
  
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 095b882..f7fcf78 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -14,6 +14,7 @@
- #include "util/run-command.h"
- #include "util/parse-events.h"
- #include "util/debugfs.h"
-+#include <linux/kconfig.h>
- #include <pthread.h>
- 
- const char perf_usage_string[] =
-@@ -56,7 +57,7 @@ static struct cmd_struct commands[] = {
- 	{ "lock",	cmd_lock,	0 },
- 	{ "kvm",	cmd_kvm,	0 },
- 	{ "test",	cmd_test,	0 },
--#ifdef LIBAUDIT_SUPPORT
-+#ifdef CONFIG_LIBAUDIT
- 	{ "trace",	cmd_trace,	0 },
- #endif
- 	{ "inject",	cmd_inject,	0 },
+-    EXTLIBS := $(filter-out -lelf,$(EXTLIBS))
+-
+     # Remove ELF/DWARF dependent codes
+     LIB_OBJS := $(filter-out $(OUTPUT)util/symbol-elf.o,$(LIB_OBJS))
+     LIB_OBJS := $(filter-out $(OUTPUT)util/probe-event.o,$(LIB_OBJS))
 -- 
 1.7.10.1
 
