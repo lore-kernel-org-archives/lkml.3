@@ -1,95 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759348Ab3DBADo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 20:03:44 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:45845 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757248Ab3DBADm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 20:03:42 -0400
+	id S1759454Ab3DBAFz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 20:05:55 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:49703 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758487Ab3DBAFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 20:05:53 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Len Brown <len.brown@intel.com>,
+        Changlong Xie <changlongx.xie@intel.com>, linux-acpi@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>, lkp@linux.intel.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [LKP] Commit ac3ebafa81a makes NHM EX/EP machines hung out since 3.9-rc1
+Date: Tue, 02 Apr 2013 02:13:27 +0200
+Message-ID: <3665202.iVImCII9RK@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <515396B7.1060909@intel.com>
+References: <20130313022759.GA120840@bee> <15175142.3Xo9lEvds6@vostro.rjw.lan> <515396B7.1060909@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20130401235256.GA31966@google.com>
-References: <CAErSpo6v0mj9=Q13d=G4hho0mb9XTcsmefzke9fROYmZ7oBWxQ@mail.gmail.com>
-	<CAE9FiQU7cDzJdHxmqhJNgc9UCsRLgvCFQpv8+fLxD79pLEUC5A@mail.gmail.com>
-	<CAErSpo4ncW8rkcpDiccORZedj30m7jRmpXK+amfDGn_wjwt7EA@mail.gmail.com>
-	<CAE9FiQVqKag2TGah7x_1MAJ+c0UWgywgM_jKUoOnh+rq3bwBhg@mail.gmail.com>
-	<CAE9FiQVMgdj5edbR4qZny29fV9-bW_We_G4Wpn_yruDLQZiQiQ@mail.gmail.com>
-	<20130329032200.GA11990@google.com>
-	<CAE9FiQVu5QyxaKsYzzQoroQD=TvsziHzDOtoeg=FvhZ8HyN5yw@mail.gmail.com>
-	<CAErSpo7ChfRiEn0eR1rf-mVheUS9Yf8f+j4n78PJcGYh+yMVgA@mail.gmail.com>
-	<CAE9FiQXkDg7Y336S=DXoms44=5HLaiUx=sWviupz1fJmaDUEzQ@mail.gmail.com>
-	<CAE9FiQU5c=ztzbskNnYFFKF9V5zO+jnRcMBCivLxA1F3fSfX5w@mail.gmail.com>
-	<20130401235256.GA31966@google.com>
-Date: Mon, 1 Apr 2013 17:03:41 -0700
-X-Google-Sender-Auth: _Y8CJh1ExGjXXFFxZXLlHLXj-oA
-Message-ID: <CAE9FiQV8cPh-s6=EQu_cZTtn86+NwZE5KuGMhf43aOhzkL=hwA@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Remove not needed check in disable aspm link
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Roman Yepishev <roman.yepishev@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 1, 2013 at 4:52 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Fri, Mar 29, 2013 at 11:04:48AM -0700, Yinghai Lu wrote:
->> attatched -v3 again
->>
->> > Please check attached -v3.
->
-> It's getting late in the v3.9 cycle already, and while your v3 patch
-> probably fixes Roman's problem, I can't convince myself that it is
-> safe in general.
->
-> I think the safest thing to do at this point is to revert 8c33f51df
-> ("PCI/ACPI: Request _OSC control before scanning PCI root bus") with a
-> patch like the one below.
+On Thursday, March 28, 2013 09:02:47 AM Alex Shi wrote:
+> On 03/28/2013 08:40 AM, Rafael J. Wysocki wrote:
+> >> > 
+> >> > It fixes the problem on my 8 sockets Nehalem-EX that will hang around
+> >> > ip_auto_config()
+> >> > 
+> >> > Tested-by: Yinghai Lu <yinghai@kernel.org>
+> >> > 
+> >> > Rafael,
+> >> > Can you please push this one to Linus tree ?
+> >> > As the offending patch was via your tree to upstream.
+> > I will if there's no better way to address this issue before -rc6.
+> 
+> If it can be pushed to upstream, please add:
+> 
+> Reported-by: LKP project <lkp@linux.intel.com>
+> Reported-by: Xie ChanglongX <changlongx.xie@intel.com>
 
-Agreed.
+I have applied the patch, but I've modified the changelog.  Please check the
+linux-next branch of my tree and see if the commit is what you meant.
 
->
-> That does mean the booting path and hotplug paths will be different (we set
-> aspm_disabled after boot but before hotplug), but it was that way for a
-> long time before 8c33f51df.  I think it's more important to fix this recent
-> ath5k regression than to fix a long-standing hotplug bug that nobody ever
-> complained about.
->
-> Obviously, I think we should fix the hotplug bug and clean up the ASPM
-> mess, too.  But we need to do that when we have more time to do it right
-> and test it.
+Thanks,
+Rafael
 
-Sure.
 
->
-> Bjorn
->
->
-> commit 96e5d01cd536458435ef0678d9fa3dc542afb41f
-> Author: Bjorn Helgaas <bhelgaas@google.com>
-> Date:   Mon Apr 1 15:47:39 2013 -0600
->
->     Revert "PCI/ACPI: Request _OSC control before scanning PCI root bus"
->
->     This reverts commit 8c33f51df406e1a1f7fa4e9b244845b7ebd61fa6.
->
->     Conflicts:
->         drivers/acpi/pci_root.c
->
->     Reference: https://bugzilla.kernel.org/show_bug.cgi?id=55211
->     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-
-stable need this reverting too.
-
-Yinghai
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
