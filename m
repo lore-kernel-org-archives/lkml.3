@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933508Ab3DBWNL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:13:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33266 "EHLO
+	id S933801Ab3DBWgm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:36:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33282 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933412Ab3DBWNI (ORCPT
+	with ESMTP id S933500Ab3DBWNK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:13:08 -0400
+	Tue, 2 Apr 2013 18:13:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Erik Hugne <erik.hugne@ericsson.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 114/124] fec: Fix the build as module
-Date: Tue,  2 Apr 2013 15:11:36 -0700
-Message-Id: <20130402221117.397955394@linuxfoundation.org>
+Subject: [ 117/124] ipv6: dont accept node local multicast traffic from the wire
+Date: Tue,  2 Apr 2013 15:11:39 -0700
+Message-Id: <20130402221117.720986532@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -29,49 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 9d73adf431e093b23fb4990f1ade11283cb67a98 ]
+[ Upstream commit 1c4a154e5253687c51123956dfcee9e9dfa8542d ]
 
-Since commit ff43da86c69 (NET: FEC: dynamtic check DMA desc buff type) the
-following build error happens when CONFIG_FEC=m
+Erik Hugne's errata proposal (Errata ID: 3480) to RFC4291 has been
+verified: http://www.rfc-editor.org/errata_search.php?eid=3480
 
-ERROR: "fec_ptp_init" [drivers/net/ethernet/freescale/fec.ko] undefined!
-ERROR: "fec_ptp_ioctl" [drivers/net/ethernet/freescale/fec.ko] undefined!
-ERROR: "fec_ptp_start_cyclecounter" [drivers/net/ethernet/freescale/fec.ko] undefined!
+We have to check for pkt_type and loopback flag because either the
+packets are allowed to travel over the loopback interface (in which case
+pkt_type is PACKET_HOST and IFF_LOOPBACK flag is set) or they travel
+over a non-loopback interface back to us (in which case PACKET_TYPE is
+PACKET_LOOPBACK and IFF_LOOPBACK flag is not set).
 
-Fix it by exporting the required fec_ptp symbols.
-
-Reported-by: Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Erik Hugne <erik.hugne@ericsson.com>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/freescale/fec_ptp.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/ipv6/ip6_input.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/drivers/net/ethernet/freescale/fec_ptp.c
-+++ b/drivers/net/ethernet/freescale/fec_ptp.c
-@@ -128,6 +128,7 @@ void fec_ptp_start_cyclecounter(struct n
+--- a/net/ipv6/ip6_input.c
++++ b/net/ipv6/ip6_input.c
+@@ -118,6 +118,18 @@ int ipv6_rcv(struct sk_buff *skb, struct
+ 	    ipv6_addr_loopback(&hdr->daddr))
+ 		goto err;
  
- 	spin_unlock_irqrestore(&fep->tmreg_lock, flags);
- }
-+EXPORT_SYMBOL(fec_ptp_start_cyclecounter);
- 
- /**
-  * fec_ptp_adjfreq - adjust ptp cycle frequency
-@@ -318,6 +319,7 @@ int fec_ptp_ioctl(struct net_device *nde
- 	return copy_to_user(ifr->ifr_data, &config, sizeof(config)) ?
- 	    -EFAULT : 0;
- }
-+EXPORT_SYMBOL(fec_ptp_ioctl);
- 
- /**
-  * fec_time_keep - call timecounter_read every second to avoid timer overrun
-@@ -381,3 +383,4 @@ void fec_ptp_init(struct net_device *nde
- 		pr_info("registered PHC device on %s\n", ndev->name);
- 	}
- }
-+EXPORT_SYMBOL(fec_ptp_init);
++	/* RFC4291 Errata ID: 3480
++	 * Interface-Local scope spans only a single interface on a
++	 * node and is useful only for loopback transmission of
++	 * multicast.  Packets with interface-local scope received
++	 * from another node must be discarded.
++	 */
++	if (!(skb->pkt_type == PACKET_LOOPBACK ||
++	      dev->flags & IFF_LOOPBACK) &&
++	    ipv6_addr_is_multicast(&hdr->daddr) &&
++	    IPV6_ADDR_MC_SCOPE(&hdr->daddr) == 1)
++		goto err;
++
+ 	/* RFC4291 2.7
+ 	 * Nodes must not originate a packet to a multicast address whose scope
+ 	 * field contains the reserved value 0; if such a packet is received, it
 
 
