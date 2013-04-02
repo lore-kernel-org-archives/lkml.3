@@ -1,31 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761959Ab3DBWTc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:19:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33642 "EHLO
+	id S933835Ab3DBWOk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:14:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33512 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933702Ab3DBWOl (ORCPT
+	with ESMTP id S933702Ab3DBWOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:41 -0400
+	Tue, 2 Apr 2013 18:14:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        rebelyouth <rebelyouth.hacklab@gmail.com>,
-        "Huang, Xiong" <xiong@qca.qualcomm.com>,
-        =?UTF-8?q?Christian=20S=FCnkenberg?= 
-	<christian.suenkenberg@student.kit.edu>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 60/68] atl1e: drop pci-msi support because of packet corruption
-Date: Tue,  2 Apr 2013 15:13:49 -0700
-Message-Id: <20130402221336.908404375@linuxfoundation.org>
+        Mac Lin <mkl0301@gmail.com>, Anton Vorontsov <anton@enomsg.org>
+Subject: [ 34/68] ARM: cns3xxx: fix mapping of private memory region
+Date: Tue,  2 Apr 2013 15:13:23 -0700
+Message-Id: <20130402221333.895658579@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,75 +26,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Mac Lin <mkl0301@gmail.com>
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+commit a3d9052c6296ad3398d3ad649c3c682c3e7ecfa6 upstream.
 
-[ Upstream commit 188ab1b105c96656f6bcfb49d0d8bb1b1936b632 ]
+Since commit 0536bdf33faf (ARM: move iotable mappings within the vmalloc
+region), the Cavium CNS3xxx cannot boot anymore.
 
-Usage of pci-msi results in corrupted dma packet transfers to the host.
+This is caused by the pre-defined iotable mappings is not in the vmalloc
+region. This patch move the iotable mappings into the vmalloc region, and
+merge the MPCore private memory region (containing the SCU, the GIC and
+the TWD) as a single region.
 
-Reported-by: rebelyouth <rebelyouth.hacklab@gmail.com>
-Cc: Huang, Xiong <xiong@qca.qualcomm.com>
-Tested-by: Christian Sünkenberg <christian.suenkenberg@student.kit.edu>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Mac Lin <mkl0301@gmail.com>
+Signed-off-by: Anton Vorontsov <anton@enomsg.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/atheros/atl1e/atl1e.h      |    1 -
- drivers/net/ethernet/atheros/atl1e/atl1e_main.c |   22 ++--------------------
- 2 files changed, 2 insertions(+), 21 deletions(-)
 
---- a/drivers/net/ethernet/atheros/atl1e/atl1e.h
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e.h
-@@ -438,7 +438,6 @@ struct atl1e_adapter {
- 	struct atl1e_hw        hw;
- 	struct atl1e_hw_stats  hw_stats;
+---
+ arch/arm/mach-cns3xxx/core.c                 |   16 +++-------------
+ arch/arm/mach-cns3xxx/include/mach/cns3xxx.h |   16 ++++++++--------
+ 2 files changed, 11 insertions(+), 21 deletions(-)
+
+--- a/arch/arm/mach-cns3xxx/core.c
++++ b/arch/arm/mach-cns3xxx/core.c
+@@ -22,19 +22,9 @@
  
--	bool have_msi;
- 	u32 wol;
- 	u16 link_speed;
- 	u16 link_duplex;
---- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-@@ -1870,37 +1870,19 @@ static void atl1e_free_irq(struct atl1e_
- 	struct net_device *netdev = adapter->netdev;
+ static struct map_desc cns3xxx_io_desc[] __initdata = {
+ 	{
+-		.virtual	= CNS3XXX_TC11MP_TWD_BASE_VIRT,
+-		.pfn		= __phys_to_pfn(CNS3XXX_TC11MP_TWD_BASE),
+-		.length		= SZ_4K,
+-		.type		= MT_DEVICE,
+-	}, {
+-		.virtual	= CNS3XXX_TC11MP_GIC_CPU_BASE_VIRT,
+-		.pfn		= __phys_to_pfn(CNS3XXX_TC11MP_GIC_CPU_BASE),
+-		.length		= SZ_4K,
+-		.type		= MT_DEVICE,
+-	}, {
+-		.virtual	= CNS3XXX_TC11MP_GIC_DIST_BASE_VIRT,
+-		.pfn		= __phys_to_pfn(CNS3XXX_TC11MP_GIC_DIST_BASE),
+-		.length		= SZ_4K,
++		.virtual	= CNS3XXX_TC11MP_SCU_BASE_VIRT,
++		.pfn		= __phys_to_pfn(CNS3XXX_TC11MP_SCU_BASE),
++		.length		= SZ_8K,
+ 		.type		= MT_DEVICE,
+ 	}, {
+ 		.virtual	= CNS3XXX_TIMER1_2_3_BASE_VIRT,
+--- a/arch/arm/mach-cns3xxx/include/mach/cns3xxx.h
++++ b/arch/arm/mach-cns3xxx/include/mach/cns3xxx.h
+@@ -94,10 +94,10 @@
+ #define RTC_INTR_STS_OFFSET			0x34
  
- 	free_irq(adapter->pdev->irq, netdev);
--
--	if (adapter->have_msi)
--		pci_disable_msi(adapter->pdev);
- }
+ #define CNS3XXX_MISC_BASE			0x76000000	/* Misc Control */
+-#define CNS3XXX_MISC_BASE_VIRT			0xFFF07000	/* Misc Control */
++#define CNS3XXX_MISC_BASE_VIRT			0xFB000000	/* Misc Control */
  
- static int atl1e_request_irq(struct atl1e_adapter *adapter)
- {
- 	struct pci_dev    *pdev   = adapter->pdev;
- 	struct net_device *netdev = adapter->netdev;
--	int flags = 0;
- 	int err = 0;
+ #define CNS3XXX_PM_BASE				0x77000000	/* Power Management Control */
+-#define CNS3XXX_PM_BASE_VIRT			0xFFF08000
++#define CNS3XXX_PM_BASE_VIRT			0xFB001000
  
--	adapter->have_msi = true;
--	err = pci_enable_msi(adapter->pdev);
--	if (err) {
--		netdev_dbg(adapter->netdev,
--			   "Unable to allocate MSI interrupt Error: %d\n", err);
--		adapter->have_msi = false;
--	} else
--		netdev->irq = pdev->irq;
--
--
--	if (!adapter->have_msi)
--		flags |= IRQF_SHARED;
--	err = request_irq(adapter->pdev->irq, atl1e_intr, flags,
--			netdev->name, netdev);
-+	err = request_irq(pdev->irq, atl1e_intr, IRQF_SHARED,
-+			  netdev->name, netdev);
- 	if (err) {
- 		netdev_dbg(adapter->netdev,
- 			   "Unable to allocate interrupt Error: %d\n", err);
--		if (adapter->have_msi)
--			pci_disable_msi(adapter->pdev);
- 		return err;
- 	}
- 	netdev_dbg(adapter->netdev, "atl1e_request_irq OK\n");
+ #define PM_CLK_GATE_OFFSET			0x00
+ #define PM_SOFT_RST_OFFSET			0x04
+@@ -109,7 +109,7 @@
+ #define PM_PLL_HM_PD_OFFSET			0x1C
+ 
+ #define CNS3XXX_UART0_BASE			0x78000000	/* UART 0 */
+-#define CNS3XXX_UART0_BASE_VIRT			0xFFF09000
++#define CNS3XXX_UART0_BASE_VIRT			0xFB002000
+ 
+ #define CNS3XXX_UART1_BASE			0x78400000	/* UART 1 */
+ #define CNS3XXX_UART1_BASE_VIRT			0xFFF0A000
+@@ -130,7 +130,7 @@
+ #define CNS3XXX_I2S_BASE_VIRT			0xFFF10000
+ 
+ #define CNS3XXX_TIMER1_2_3_BASE			0x7C800000	/* Timer */
+-#define CNS3XXX_TIMER1_2_3_BASE_VIRT		0xFFF10800
++#define CNS3XXX_TIMER1_2_3_BASE_VIRT		0xFB003000
+ 
+ #define TIMER1_COUNTER_OFFSET			0x00
+ #define TIMER1_AUTO_RELOAD_OFFSET		0x04
+@@ -227,16 +227,16 @@
+  * Testchip peripheral and fpga gic regions
+  */
+ #define CNS3XXX_TC11MP_SCU_BASE			0x90000000	/* IRQ, Test chip */
+-#define CNS3XXX_TC11MP_SCU_BASE_VIRT		0xFF000000
++#define CNS3XXX_TC11MP_SCU_BASE_VIRT		0xFB004000
+ 
+ #define CNS3XXX_TC11MP_GIC_CPU_BASE		0x90000100	/* Test chip interrupt controller CPU interface */
+-#define CNS3XXX_TC11MP_GIC_CPU_BASE_VIRT	0xFF000100
++#define CNS3XXX_TC11MP_GIC_CPU_BASE_VIRT	(CNS3XXX_TC11MP_SCU_BASE_VIRT + 0x100)
+ 
+ #define CNS3XXX_TC11MP_TWD_BASE			0x90000600
+-#define CNS3XXX_TC11MP_TWD_BASE_VIRT		0xFF000600
++#define CNS3XXX_TC11MP_TWD_BASE_VIRT		(CNS3XXX_TC11MP_SCU_BASE_VIRT + 0x600)
+ 
+ #define CNS3XXX_TC11MP_GIC_DIST_BASE		0x90001000	/* Test chip interrupt controller distributor */
+-#define CNS3XXX_TC11MP_GIC_DIST_BASE_VIRT	0xFF001000
++#define CNS3XXX_TC11MP_GIC_DIST_BASE_VIRT	(CNS3XXX_TC11MP_SCU_BASE_VIRT + 0x1000)
+ 
+ #define CNS3XXX_TC11MP_L220_BASE		0x92002000	/* L220 registers */
+ #define CNS3XXX_TC11MP_L220_BASE_VIRT		0xFF002000
 
 
