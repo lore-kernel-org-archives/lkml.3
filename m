@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760168Ab3DBElE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 00:41:04 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:55500 "EHLO
+	id S1760723Ab3DBEmf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 00:42:35 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:54858 "EHLO
 	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760122Ab3DBElB (ORCPT
+	with ESMTP id S1760143Ab3DBElD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 00:41:01 -0400
+	Tue, 2 Apr 2013 00:41:03 -0400
 From: Tony Prisk <linux@prisktech.co.nz>
 To: linus.walleij@linaro.org
 Cc: swarren@wwwdotorg.org, linux-arm-kernel@lists.infradead.org,
         vt8500-wm8505-linux-kernel@googlegroups.com,
         linux-kernel@vger.kernel.org, Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCHv4 1/6] of: Add support for reading a u32 from a multi-value property.
-Date: Tue,  2 Apr 2013 17:40:56 +1300
-Message-Id: <1364877661-26086-2-git-send-email-linux@prisktech.co.nz>
+Subject: [PATCHv4 5/6] arm: vt8500: Remove gpio devicetree nodes
+Date: Tue,  2 Apr 2013 17:41:00 +1300
+Message-Id: <1364877661-26086-6-git-send-email-linux@prisktech.co.nz>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1364877661-26086-1-git-send-email-linux@prisktech.co.nz>
 References: <1364877661-26086-1-git-send-email-linux@prisktech.co.nz>
@@ -22,88 +22,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds an of_property_read_u32_index() function to allow
-reading a single indexed u32 value from a property containing multiple
-u32 values.
+Remove the gpio related devicetree nodes as these are no longer required
+with the move to a combined pinctrl/gpio driver.
 
 Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
 ---
- drivers/of/base.c  |   33 +++++++++++++++++++++++++++++++++
- include/linux/of.h |    9 +++++++++
- 2 files changed, 42 insertions(+)
+ arch/arm/boot/dts/vt8500.dtsi |    7 -------
+ arch/arm/boot/dts/wm8505.dtsi |    7 -------
+ arch/arm/boot/dts/wm8650.dtsi |    7 -------
+ arch/arm/boot/dts/wm8850.dtsi |    7 -------
+ 4 files changed, 28 deletions(-)
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 321d3ef..f6c89ed 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -746,6 +746,39 @@ struct device_node *of_find_node_by_phandle(phandle handle)
- EXPORT_SYMBOL(of_find_node_by_phandle);
+diff --git a/arch/arm/boot/dts/vt8500.dtsi b/arch/arm/boot/dts/vt8500.dtsi
+index 8e87aa9..e1c3926 100644
+--- a/arch/arm/boot/dts/vt8500.dtsi
++++ b/arch/arm/boot/dts/vt8500.dtsi
+@@ -25,13 +25,6 @@
+ 			#interrupt-cells = <1>;
+ 		};
  
- /**
-+ * of_property_read_u32_index - Find and read a u32 from a multi-value property.
-+ *
-+ * @np:		device node from which the property value is to be read.
-+ * @propname:	name of the property to be searched.
-+ * @index:	index of the u32 in the list of values
-+ * @out_value:	pointer to return value, modified only if no error.
-+ *
-+ * Search for a property in a device node and read nth 32-bit value from
-+ * it. Returns 0 on success, -EINVAL if the property does not exist,
-+ * -ENODATA if property does not have a value, and -EOVERFLOW if the
-+ * property data isn't large enough.
-+ *
-+ * The out_value is modified only if a valid u32 value can be decoded.
-+ */
-+int of_property_read_u32_index(const struct device_node *np,
-+				       const char *propname,
-+				       u32 index, u32 *out_value)
-+{
-+	struct property *prop = of_find_property(np, propname, NULL);
-+
-+	if (!prop)
-+		return -EINVAL;
-+	if (!prop->value)
-+		return -ENODATA;
-+	if (((index + 1) * sizeof(*out_value)) > prop->length)
-+		return -EOVERFLOW;
-+
-+	*out_value = be32_to_cpup(((__be32 *)prop->value) + index);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(of_property_read_u32_index);
-+
-+/**
-  * of_property_read_u8_array - Find and read an array of u8 from a property.
-  *
-  * @np:		device node from which the property value is to be read.
-diff --git a/include/linux/of.h b/include/linux/of.h
-index a0f1292..c0747a4 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -235,6 +235,9 @@ extern struct device_node *of_find_node_with_property(
- extern struct property *of_find_property(const struct device_node *np,
- 					 const char *name,
- 					 int *lenp);
-+extern int of_property_read_u32_index(const struct device_node *np,
-+				       const char *propname,
-+				       u32 index, u32 *out_value);
- extern int of_property_read_u8_array(const struct device_node *np,
- 			const char *propname, u8 *out_values, size_t sz);
- extern int of_property_read_u16_array(const struct device_node *np,
-@@ -394,6 +397,12 @@ static inline struct device_node *of_find_compatible_node(
- 	return NULL;
- }
+-		gpio: gpio-controller@d8110000 {
+-			compatible = "via,vt8500-gpio";
+-			gpio-controller;
+-			reg = <0xd8110000 0x10000>;
+-			#gpio-cells = <3>;
+-		};
+-
+ 		pinctrl: pinctrl@d8110000 {
+ 			compatible = "via,vt8500-pinctrl";
+ 			reg = <0xd8110000 0x10000>;
+diff --git a/arch/arm/boot/dts/wm8505.dtsi b/arch/arm/boot/dts/wm8505.dtsi
+index e4f768a..bb92ef8 100644
+--- a/arch/arm/boot/dts/wm8505.dtsi
++++ b/arch/arm/boot/dts/wm8505.dtsi
+@@ -40,13 +40,6 @@
+ 			interrupts = <56 57 58 59 60 61 62 63>;
+ 		};
  
-+static inline int of_property_read_u32_index(const struct device_node *np,
-+			const char *propname, u32 index, u32 *out_value)
-+{
-+	return -ENOSYS;
-+}
-+
- static inline int of_property_read_u8_array(const struct device_node *np,
- 			const char *propname, u8 *out_values, size_t sz)
- {
+-		gpio: gpio-controller@d8110000 {
+-			compatible = "wm,wm8505-gpio";
+-			gpio-controller;
+-			reg = <0xd8110000 0x10000>;
+-			#gpio-cells = <3>;
+-		};
+-
+ 		pinctrl: pinctrl@d8110000 {
+ 			compatible = "wm,wm8505-pinctrl";
+ 			reg = <0xd8110000 0x10000>;
+diff --git a/arch/arm/boot/dts/wm8650.dtsi b/arch/arm/boot/dts/wm8650.dtsi
+index 01b6a8d..bb4af58 100644
+--- a/arch/arm/boot/dts/wm8650.dtsi
++++ b/arch/arm/boot/dts/wm8650.dtsi
+@@ -34,13 +34,6 @@
+ 			interrupts = <56 57 58 59 60 61 62 63>;
+ 		};
+ 
+-		gpio: gpio-controller@d8110000 {
+-			compatible = "wm,wm8650-gpio";
+-			gpio-controller;
+-			reg = <0xd8110000 0x10000>;
+-			#gpio-cells = <3>;
+-		};
+-
+ 		pinctrl: pinctrl@d8110000 {
+ 			compatible = "wm,wm8650-pinctrl";
+ 			reg = <0xd8110000 0x10000>;
+diff --git a/arch/arm/boot/dts/wm8850.dtsi b/arch/arm/boot/dts/wm8850.dtsi
+index 297aa05..11cd180 100644
+--- a/arch/arm/boot/dts/wm8850.dtsi
++++ b/arch/arm/boot/dts/wm8850.dtsi
+@@ -41,13 +41,6 @@
+ 			interrupts = <56 57 58 59 60 61 62 63>;
+ 		};
+ 
+-		gpio: gpio-controller@d8110000 {
+-			compatible = "wm,wm8650-gpio";
+-			gpio-controller;
+-			reg = <0xd8110000 0x10000>;
+-			#gpio-cells = <3>;
+-		};
+-
+ 		pinctrl: pinctrl@d8110000 {
+ 			compatible = "wm,wm8850-pinctrl";
+ 			reg = <0xd8110000 0x10000>;
 -- 
 1.7.9.5
 
