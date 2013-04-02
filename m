@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760062Ab3DBDvQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 23:51:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28456 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758500Ab3DBDvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 23:51:15 -0400
-Message-ID: <515A5506.1000809@redhat.com>
-Date: Tue, 02 Apr 2013 11:48:22 +0800
-From: Zhouping Liu <zliu@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Lin Feng <linfeng@cn.fujitsu.com>
-CC: David Rientjes <rientjes@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Amos Kong <akong@redhat.com>
-Subject: Re: THP: AnonHugePages in /proc/[pid]/smaps is correct or not?
-References: <383590596.664138.1364803227470.JavaMail.root@redhat.com> <alpine.DEB.2.02.1304011512490.17714@chino.kir.corp.google.com> <515A4BD1.1020407@redhat.com> <515A5329.6020805@cn.fujitsu.com>
-In-Reply-To: <515A5329.6020805@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1760148Ab3DBDxl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 23:53:41 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:43863 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758699Ab3DBDxk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 23:53:40 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>, Borislav Petkov <bp@alien8.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>, linux-kbuild@vger.kernel.org
+Subject: [PATCH 01/23] perf: initial infrasructure for kconfig
+Date: Mon,  1 Apr 2013 21:53:07 -0600
+Message-Id: <1364874809-5575-2-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1364874809-5575-1-git-send-email-dsahern@gmail.com>
+References: <1364874809-5575-1-git-send-email-dsahern@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2013 11:40 AM, Lin Feng wrote:
-> Hi Zhouping,
->
-> On 04/02/2013 11:09 AM, Zhouping Liu wrote:
->> I don't understand clearly the last sentence 'you'll probably only get 100% hugepages only 1/512th of the time.'
->> could you please explain more details about 'only 1/512th of the time'?
-> IIUC, thp size is 2M so it may be comprised of 512 normal page(size 4k).
-> Since your test code is not 2M aligned(not using  posix_memalign()) so
-> the start address of the mapped vma will be random, such as
-> 2M*i+4k*1, 2M*i+4k*2...2M*i+k4*511, there is 512 possibilities.
->
-> The only chance you get thp happens when the first map just starts at 2M*i,
-> and the consequent maps also benefit from this.
+Add Pconfig file which will hold the build options.
+Update Makefile with new config files.
 
-Feng, it's easy to understand now, thanks for your detailed explanation :)
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: linux-kbuild@vger.kernel.org
+---
+ tools/perf/Makefile |    5 +++++
+ 1 file changed, 5 insertions(+)
+ create mode 100644 tools/perf/Pconfig
 
-Zhouping
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index bb74c79..4e54d05 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -5,6 +5,9 @@ all:
+ 
+ include config/utilities.mak
+ 
++# Read in config if it exists
++-include $(OUTPUT)include/config/auto.conf
++
+ # Define V to have a more verbose compile.
+ #
+ # Define O to save output files in a separate directory.
+@@ -203,6 +206,7 @@ ifneq ($(OUTPUT),)
+ endif
+ 
+ BASIC_CFLAGS = \
++	-I$(OUTPUT)include \
+ 	-Iutil/include \
+ 	-Iarch/$(ARCH)/include \
+ 	$(if $(objtree),-I$(objtree)/arch/$(ARCH)/include/generated/uapi) \
+@@ -409,6 +413,7 @@ LIB_H += ui/helpline.h
+ LIB_H += ui/progress.h
+ LIB_H += ui/util.h
+ LIB_H += ui/ui.h
++LIB_H += $(OUTPUT)include/generated/autoconf.h
+ 
+ LIB_OBJS += $(OUTPUT)util/abspath.o
+ LIB_OBJS += $(OUTPUT)util/alias.o
+diff --git a/tools/perf/Pconfig b/tools/perf/Pconfig
+new file mode 100644
+index 0000000..e69de29
+-- 
+1.7.10.1
+
