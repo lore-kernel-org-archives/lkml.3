@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933839Ab3DBWhA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:37:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33276 "EHLO
+	id S933484Ab3DBWNH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:13:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33185 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933492Ab3DBWNK (ORCPT
+	with ESMTP id S933412Ab3DBWM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:13:10 -0400
+	Tue, 2 Apr 2013 18:12:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Erik Hugne <erik.hugne@ericsson.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Mirko Lindner <mlindner@marvell.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 116/124] ipv6: dont accept multicast traffic with scope 0
-Date: Tue,  2 Apr 2013 15:11:38 -0700
-Message-Id: <20130402221117.606782064@linuxfoundation.org>
+Subject: [ 099/124] sky2: Threshold for Pause Packet is set wrong
+Date: Tue,  2 Apr 2013 15:11:21 -0700
+Message-Id: <20130402221115.586110298@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -30,42 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Mirko Lindner <mlindner@marvell.com>
 
-[ Upstream commit 20314092c1b41894d8c181bf9aa6f022be2416aa ]
+[ Upstream commit 74f9f42c1c1650e74fb464f76644c9041f996851 ]
 
-v2:
-a) moved before multicast source address check
-b) changed comment to netdev style
+The sky2 driver sets the Rx Upper Threshold for Pause Packet generation to a
+wrong value which leads to only 2kB of RAM remaining space. This can lead to
+Rx overflow errors even with activated flow-control.
 
-Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Cc: Erik Hugne <erik.hugne@ericsson.com>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Fix: We should increase the value to 8192/8
+
+Signed-off-by: Mirko Lindner <mlindner@marvell.com>
+Acked-by: Stephen Hemminger <stephen@networkplumber.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6_input.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/net/ethernet/marvell/sky2.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv6/ip6_input.c
-+++ b/net/ipv6/ip6_input.c
-@@ -118,6 +118,15 @@ int ipv6_rcv(struct sk_buff *skb, struct
- 	    ipv6_addr_loopback(&hdr->daddr))
- 		goto err;
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -1067,7 +1067,7 @@ static void sky2_ramset(struct sky2_hw *
+ 		sky2_write32(hw, RB_ADDR(q, RB_RX_UTHP), tp);
+ 		sky2_write32(hw, RB_ADDR(q, RB_RX_LTHP), space/2);
  
-+	/* RFC4291 2.7
-+	 * Nodes must not originate a packet to a multicast address whose scope
-+	 * field contains the reserved value 0; if such a packet is received, it
-+	 * must be silently dropped.
-+	 */
-+	if (ipv6_addr_is_multicast(&hdr->daddr) &&
-+	    IPV6_ADDR_MC_SCOPE(&hdr->daddr) == 0)
-+		goto err;
-+
- 	/*
- 	 * RFC4291 2.7
- 	 * Multicast addresses must not be used as source addresses in IPv6
+-		tp = space - 2048/8;
++		tp = space - 8192/8;
+ 		sky2_write32(hw, RB_ADDR(q, RB_RX_UTPP), tp);
+ 		sky2_write32(hw, RB_ADDR(q, RB_RX_LTPP), space/4);
+ 	} else {
 
 
