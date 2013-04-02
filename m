@@ -1,160 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204Ab3DBIZL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 04:25:11 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:36300 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761267Ab3DBIYj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 04:24:39 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r328OXZ2003443, This message is released by code: ctlocs8528
-From: Hayes Wang <hayeswang@realtek.com>
-To: <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH v2 net-next 8/8] r8169: add a new chip for RTL8106E
-Date: Tue, 2 Apr 2013 16:23:42 +0800
-Message-ID: <1364891022-3220-8-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1364891022-3220-1-git-send-email-hayeswang@realtek.com>
-References: <1364824539-4156-1-git-send-email-hayeswang@realtek.com>
- <1364891022-3220-1-git-send-email-hayeswang@realtek.com>
+	id S1760375Ab3DBIZz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 04:25:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52068 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753533Ab3DBIZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 04:25:51 -0400
+Date: Tue, 2 Apr 2013 10:25:47 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Ilija Hadzic <ihadzic@research.bell-labs.com>,
+        Marco Munderloh <munderl@tnt.uni-hannover.de>
+Cc: Ilija Hadzic <ilijahadzic@gmail.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm: fix i_mapping and f_mapping initialization in
+ drm_open in error path
+Message-ID: <20130402082547.GA24345@dhcp22.suse.cz>
+References: <20130326195601.GA5124@dhcp22.suse.cz>
+ <CA+4h6Hnhm-Ox_5dRdBH3C9Lh_qVNac8_oL=3ruy75jBX7xp9OQ@mail.gmail.com>
+ <20130331103418.GA18476@dhcp22.suse.cz>
+ <Pine.GSO.4.64.1304011249370.27674@umail>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.GSO.4.64.1304011249370.27674@umail>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new chip for RTL8106E series.
+On Mon 01-04-13 13:14:50, Ilija Hadzic wrote:
+> 
+> 
+> On Sun, 31 Mar 2013, Michal Hocko wrote:
+> 
+> >On Sat 30-03-13 18:26:53, Ilija Hadzic wrote:
+> >>This looks a bit like a hack and it doesn't look right,
+> >>conceptually. If the call fails, it should restore things as if
+> >>nothing has ever happened and overwriting old_mapping is not going to
+> >>do the trick.
+> >
+> >OK, I thought this is what the patch does as it falls back to
+> >&inode->i_data which is the default mapping for all inodes or it uses
+> >what used to be in device mapping.
+> >
+> >I am obviously not familiar with the drm code but it feels a bit strange
+> >that the device mapping can be different than inode's resp. file's one
+> 
+> The reason for this is explained in commit message associated with
+> 949c4a34.
+> 
+> In summary, the device's mapping is that of the inode associated with the
+> first opener. Before 949c4a34, subsequent openers would have to come in
+> through exactly the same inode that the first opener came in
+> (otherwise the open call would fail). So if a user did something
+> like: start X, remove /dev/dri/cardN file, mknod the same file
+> again, the applications started after such an action would stop
+> working. Also, using the GPU from chroot-ed environment was not
+> possible if there was another opener from different root.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+Oh, I see. Thanks for the clarification.
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 85536bf..e392dd0 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -47,6 +47,7 @@
- #define FIRMWARE_8402_1		"rtl_nic/rtl8402-1.fw"
- #define FIRMWARE_8411_1		"rtl_nic/rtl8411-1.fw"
- #define FIRMWARE_8106E_1	"rtl_nic/rtl8106e-1.fw"
-+#define FIRMWARE_8106E_2	"rtl_nic/rtl8106e-2.fw"
- #define FIRMWARE_8168G_2	"rtl_nic/rtl8168g-2.fw"
- #define FIRMWARE_8168G_3	"rtl_nic/rtl8168g-3.fw"
- 
-@@ -142,6 +143,7 @@ enum mac_version {
- 	RTL_GIGA_MAC_VER_40,
- 	RTL_GIGA_MAC_VER_41,
- 	RTL_GIGA_MAC_VER_42,
-+	RTL_GIGA_MAC_VER_43,
- 	RTL_GIGA_MAC_NONE   = 0xff,
- };
- 
-@@ -271,6 +273,9 @@ static const struct {
- 	[RTL_GIGA_MAC_VER_42] =
- 		_R("RTL8168g/8111g",	RTL_TD_1, FIRMWARE_8168G_3,
- 							JUMBO_9K, false),
-+	[RTL_GIGA_MAC_VER_43] =
-+		_R("RTL8106e",		RTL_TD_1, FIRMWARE_8106E_2,
-+							JUMBO_1K, true),
- };
- #undef _R
- 
-@@ -822,6 +827,7 @@ MODULE_FIRMWARE(FIRMWARE_8168F_2);
- MODULE_FIRMWARE(FIRMWARE_8402_1);
- MODULE_FIRMWARE(FIRMWARE_8411_1);
- MODULE_FIRMWARE(FIRMWARE_8106E_1);
-+MODULE_FIRMWARE(FIRMWARE_8106E_2);
- MODULE_FIRMWARE(FIRMWARE_8168G_2);
- MODULE_FIRMWARE(FIRMWARE_8168G_3);
- 
-@@ -2133,6 +2139,10 @@ static void rtl8169_get_mac_version(struct rtl8169_private *tp,
- 		netif_notice(tp, probe, dev,
- 			     "unknown MAC, using family default\n");
- 		tp->mac_version = default_version;
-+	} else if (tp->mac_version == RTL_GIGA_MAC_VER_42) {
-+		tp->mac_version = tp->mii.supports_gmii ?
-+				  RTL_GIGA_MAC_VER_42 :
-+				  RTL_GIGA_MAC_VER_43;
- 	}
- }
- 
-@@ -3639,6 +3649,7 @@ static void rtl_hw_phy_config(struct net_device *dev)
- 		rtl8168g_1_hw_phy_config(tp);
- 		break;
- 	case RTL_GIGA_MAC_VER_42:
-+	case RTL_GIGA_MAC_VER_43:
- 		rtl8168g_2_hw_phy_config(tp);
- 		break;
- 
-@@ -3850,6 +3861,7 @@ static void rtl_init_mdio_ops(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_40:
- 	case RTL_GIGA_MAC_VER_41:
- 	case RTL_GIGA_MAC_VER_42:
-+	case RTL_GIGA_MAC_VER_43:
- 		ops->write	= r8168g_mdio_write;
- 		ops->read	= r8168g_mdio_read;
- 		break;
-@@ -3878,6 +3890,7 @@ static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_40:
- 	case RTL_GIGA_MAC_VER_41:
- 	case RTL_GIGA_MAC_VER_42:
-+	case RTL_GIGA_MAC_VER_43:
- 		RTL_W32(RxConfig, RTL_R32(RxConfig) |
- 			AcceptBroadcast | AcceptMulticast | AcceptMyPhys);
- 		break;
-@@ -4113,6 +4126,7 @@ static void rtl_init_pll_power_ops(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_30:
- 	case RTL_GIGA_MAC_VER_37:
- 	case RTL_GIGA_MAC_VER_39:
-+	case RTL_GIGA_MAC_VER_43:
- 		ops->down	= r810x_pll_power_down;
- 		ops->up		= r810x_pll_power_up;
- 		break;
-@@ -4186,6 +4200,7 @@ static void rtl_init_rxcfg(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_40:
- 	case RTL_GIGA_MAC_VER_41:
- 	case RTL_GIGA_MAC_VER_42:
-+	case RTL_GIGA_MAC_VER_43:
- 		RTL_W32(RxConfig, RX128_INT_EN | RX_DMA_BURST | RX_EARLY_OFF);
- 		break;
- 	default:
-@@ -4345,6 +4360,7 @@ static void rtl_init_jumbo_ops(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_40:
- 	case RTL_GIGA_MAC_VER_41:
- 	case RTL_GIGA_MAC_VER_42:
-+	case RTL_GIGA_MAC_VER_43:
- 	default:
- 		ops->disable	= NULL;
- 		ops->enable	= NULL;
-@@ -4453,6 +4469,7 @@ static void rtl8169_hw_reset(struct rtl8169_private *tp)
- 	           tp->mac_version == RTL_GIGA_MAC_VER_40 ||
- 	           tp->mac_version == RTL_GIGA_MAC_VER_41 ||
- 	           tp->mac_version == RTL_GIGA_MAC_VER_42 ||
-+	           tp->mac_version == RTL_GIGA_MAC_VER_43 ||
- 	           tp->mac_version == RTL_GIGA_MAC_VER_38) {
- 		RTL_W8(ChipCmd, RTL_R8(ChipCmd) | StopReq);
- 		rtl_udelay_loop_wait_high(tp, &rtl_txcfg_empty_cond, 100, 666);
-@@ -5527,6 +5544,9 @@ static void rtl_hw_start_8101(struct net_device *dev)
- 	case RTL_GIGA_MAC_VER_39:
- 		rtl_hw_start_8106(tp);
- 		break;
-+	case RTL_GIGA_MAC_VER_43:
-+		rtl_hw_start_8168g_2(tp);
-+		break;
- 	}
- 
- 	RTL_W8(Cfg9346, Cfg9346_Lock);
-@@ -6811,6 +6831,7 @@ static void rtl_hw_initialize(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_40:
- 	case RTL_GIGA_MAC_VER_41:
- 	case RTL_GIGA_MAC_VER_42:
-+	case RTL_GIGA_MAC_VER_43:
- 		rtl_hw_init_8168g(tp);
- 		break;
- 
+> The 949c4a34, removed this restriction, but introduced a problem
+> with VmWare GPU drivers, which fdb40a08. However, fdb40a08
+> introduced the bug that you have reported.
+> 
+> The problem that I have with your proposed fix is that if the first
+> opener fails, it can set the device's mapping to that of the inode
+> that was never used and never opened (and could even be removed
+> later down the road).
+
+Makes sense.
+
+> >and even more confusing that inode and file are saved separately.
+> >
+> 
+> I was trying to quickly get out the patch that was safe in terms of
+> introducing new breakage. So the "conservative" thing to do (without
+> having to think through all possible scenarios) was to restore each
+> of the three pointers from their own temporary variable. Thinking
+> about it, you are probably right that file descriptor's and inode's
+> mapping pointer are equal when open call is entered so we could use
+> one variable. However, you still need a separate variable to store
+> the device's mapping pointer because that one can be different.
+
+Right.
+
+> Attached is a v2 of the patch, for reference. I would appreciate if
+> the original reporter or you tested it in lieu of your proposed
+> patch and let me know if it fixes your issue.
+
+OK, this is a call for Marco. I have attached this bug to our bugzilla
+as well (just for reference:
+https://bugzilla.novell.com/show_bug.cgi?id=807850)
+
+> 
+> -- Ilija
+
+> From 7e3c832158e2552e5e106a588e2b9e61c35b68f2 Mon Sep 17 00:00:00 2001
+> From: Ilija Hadzic <ihadzic@research.bell-labs.com>
+> Date: Sat, 30 Mar 2013 18:20:35 -0400
+> Subject: [PATCH] drm: correctly restore mappings if drm_open fails
+> 
+> If first drm_open fails, the error-handling path will
+> incorrectly restore inode's mapping to NULL. This can
+> cause the crash later on. Fix by separately storing
+> away mapping pointers that drm_open can touch and
+> restore each from its own respective variable if the
+> call fails.
+> 
+> Reference:
+> http://lists.freedesktop.org/archives/dri-devel/2013-March/036564.html
+> 
+> v2: use one variable to store file and inode mapping
+>     since they are the same at the function entry; also
+>     fix spelling mistakes in commit message.
+> 
+> Reported-by: Marco Munderloh <munderl@tnt.uni-hannover.de>
+> Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: stable@vger.kernel.org
+
+Feel free to add
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
+Thanks!
+
+> Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
+> ---
+>  drivers/gpu/drm/drm_fops.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/drm_fops.c b/drivers/gpu/drm/drm_fops.c
+> index 13fdcd1..429e07d 100644
+> --- a/drivers/gpu/drm/drm_fops.c
+> +++ b/drivers/gpu/drm/drm_fops.c
+> @@ -123,6 +123,7 @@ int drm_open(struct inode *inode, struct file *filp)
+>  	int retcode = 0;
+>  	int need_setup = 0;
+>  	struct address_space *old_mapping;
+> +	struct address_space *old_imapping;
+>  
+>  	minor = idr_find(&drm_minors_idr, minor_id);
+>  	if (!minor)
+> @@ -137,6 +138,7 @@ int drm_open(struct inode *inode, struct file *filp)
+>  	if (!dev->open_count++)
+>  		need_setup = 1;
+>  	mutex_lock(&dev->struct_mutex);
+> +	old_imapping = inode->i_mapping;
+>  	old_mapping = dev->dev_mapping;
+>  	if (old_mapping == NULL)
+>  		dev->dev_mapping = &inode->i_data;
+> @@ -159,8 +161,8 @@ int drm_open(struct inode *inode, struct file *filp)
+>  
+>  err_undo:
+>  	mutex_lock(&dev->struct_mutex);
+> -	filp->f_mapping = old_mapping;
+> -	inode->i_mapping = old_mapping;
+> +	filp->f_mapping = old_imapping;
+> +	inode->i_mapping = old_imapping;
+>  	iput(container_of(dev->dev_mapping, struct inode, i_data));
+>  	dev->dev_mapping = old_mapping;
+>  	mutex_unlock(&dev->struct_mutex);
+> -- 
+> 1.7.4.1
+> 
+
+
 -- 
-1.8.1
-
+Michal Hocko
+SUSE Labs
