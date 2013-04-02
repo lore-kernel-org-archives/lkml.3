@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759986Ab3DBMRz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 08:17:55 -0400
-Received: from mail-da0-f54.google.com ([209.85.210.54]:61561 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754329Ab3DBMRy (ORCPT
+	id S1759941Ab3DBMVp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 08:21:45 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:40946 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759502Ab3DBMVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 08:17:54 -0400
-Date: Tue, 2 Apr 2013 20:33:56 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: Dmitry Monakhov <dmonakhov@openvz.org>
-Cc: Christian Kujau <lists@nerdbynature.de>, CAI Qian <caiqian@redhat.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
-        linux-ext4@vger.kernel.org
-Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591! (powerpc too!)
-Message-ID: <20130402123356.GA10703@gmail.com>
-Mail-Followup-To: Dmitry Monakhov <dmonakhov@openvz.org>,
-	Christian Kujau <lists@nerdbynature.de>,
-	CAI Qian <caiqian@redhat.com>, Theodore Ts'o <tytso@mit.edu>,
-	LKML <linux-kernel@vger.kernel.org>,
-	linux-s390 <linux-s390@vger.kernel.org>,
-	Steve Best <sbest@redhat.com>, linux-ext4@vger.kernel.org
-References: <2133129347.8273339.1364549222854.JavaMail.root@redhat.com>
- <87ip46ss0o.fsf@openvz.org>
- <1211053180.322948.1364797847717.JavaMail.root@redhat.com>
- <87fvzaspr8.fsf@openvz.org>
- <874841142.414482.1364875584266.JavaMail.root@redhat.com>
- <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org>
- <877gkls1q7.fsf@openvz.org>
+	Tue, 2 Apr 2013 08:21:43 -0400
+Message-ID: <515ACD7F.3070009@parallels.com>
+Date: Tue, 2 Apr 2013 16:22:23 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <877gkls1q7.fsf@openvz.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Hocko <mhocko@suse.cz>
+CC: Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [PATCH] memcg: don't do cleanup manually if mem_cgroup_css_online()
+ fails
+References: <515A8A40.6020406@huawei.com> <20130402121600.GK24345@dhcp22.suse.cz>
+In-Reply-To: <20130402121600.GK24345@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 01:47:44PM +0400, Dmitry Monakhov wrote:
-> On Mon, 1 Apr 2013 23:15:07 -0700 (PDT), Christian Kujau <lists@nerdbynature.de> wrote:
-> > Hi,
-> > 
-> > my machine (PowerBook G4) just crashed and the only thing netconsole was 
-> > able to transmit was:
-> > 
-> >   ------------[ cut here ]------------
-> >   kernel BUG at /usr/local/src/linux-git/fs/ext4/inode.c:1591!
-> > 
-> > But (unfortunately) nothing more. I have no clear way to reproduce this, 
-> > but I have some kind of a (longish) backstory to this, see below. The 
-> > system is running 3.9-rc4, its .config and dmesg:
-> > 
-> >   http://nerdbynature.de/bits/3.9.0-rc1/config.gz (oldconfig'ed to -rc4)
-> >   http://nerdbynature.de/bits/3.9.0-rc1/dmesg.txt (w/o the calltrace at the end)
-> > 
-> > 
-> > I was having trouble all day downloading a file via bittorrent to an 
-> > ext4 filesystem.
+On 04/02/2013 04:16 PM, Michal Hocko wrote:
+> On Tue 02-04-13 15:35:28, Li Zefan wrote:
+> [...]
+>> @@ -6247,16 +6247,7 @@ mem_cgroup_css_online(struct cgroup *cont)
+>>  
+>>  	error = memcg_init_kmem(memcg, &mem_cgroup_subsys);
+>>  	mutex_unlock(&memcg_create_mutex);
+>> -	if (error) {
+>> -		/*
+>> -		 * We call put now because our (and parent's) refcnts
+>> -		 * are already in place. mem_cgroup_put() will internally
+>> -		 * call __mem_cgroup_free, so return directly
+>> -		 */
+>> -		mem_cgroup_put(memcg);
+>> -		if (parent->use_hierarchy)
+>> -			mem_cgroup_put(parent);
+>> -	}
+>> +
+>>  	return error;
+>>  }
+> 
+> The mem_cgroup_put(parent) part is incorrect because mem_cgroup_put goes
+> up the hierarchy already but I do not think mem_cgroup_put(memcg) should
+> go away as well. Who is going to free the last reference then?
+> 
+> Maybe I am missing something but we have:
+> cgroup_create
+>   css = ss->css_alloc(cgrp)
+>     mem_cgroup_css_alloc
+>       atomic_set(&memcg->refcnt, 1)
+>   online_css(ss, cgrp)
+>     mem_cgroup_css_online
+>       error = memcg_init_kmem		# fails
+>   goto err_destroy
+> err_destroy:
+>   cgroup_destroy_locked(cgrp)
+>     offline_css
+>       mem_cgroup_css_offline
+> 
+> no mem_cgroup_put on the way.
+> 
 
-It looks like the same problem [1].  But it should have been fixed in
-3.9-rc4.  Frankly, I think the root cause is es_cache.  Sorry, it hasn't
-been well tested.
+static void mem_cgroup_css_free(struct cgroup *cont)
+{
+        struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
 
-1. http://www.serverphorums.com/read.php?12,667656
+        kmem_cgroup_destroy(memcg);
 
-Could you please revert your tree to this commit (3a225670), and try
-again. I want to make sure that the regression won't be fixed until now
-or it is introduced after this commit.
+        mem_cgroup_put(memcg);
+}
 
-Thanks in advance,
-                                                - Zheng
+kernel/cgroup.c:
+err_free_all:
+        for_each_subsys(root, ss) {
+                if (cgrp->subsys[ss->subsys_id])
+                        ss->css_free(cgrp);
+        }
+
+As I've said, this error path predates kmemcg for a long time. I wasn't
+still able to identify precisely why it was working - assuming it was
+indeed working (I remember having tested it with handcrafted manual
+errors, but memory can always fail...).
+
+But our best theory so far is that the cgroup rework started calling the
+free function that wasn't called before.
+
