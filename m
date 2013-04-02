@@ -1,38 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933994Ab3DBWSX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:18:23 -0400
-Received: from [89.144.129.18] ([89.144.129.18]:2264 "EHLO host2-askiran"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933724Ab3DBWSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:18:21 -0400
-Reply-To: <info@Web-Mail.com>
-From: "Web-Mail Helpdesk" <info@Web-Mail.com>
-Subject: Warning!! 99% of your mail box quota used
-Date: Tue, 2 Apr 2013 22:16:04 +0100
+	id S933851Ab3DBWOm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:14:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33522 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933729Ab3DBWOY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:14:24 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Lingzhu Xiang <lxiang@redhat.com>, CAI Qian <caiqian@redhat.com>
+Subject: [ 36/68] drm/i915: Dont clobber crtc->fb when queue_flip fails
+Date: Tue,  2 Apr 2013 15:13:25 -0700
+Message-Id: <20130402221334.113155792@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
+References: <20130402221329.915209206@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 130402-0, 04/02/2013), Outbound message
-X-Antivirus-Status: Clean
-Message-ID: <auto-000003845779@host2-askiran>
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Warning!! You are currently operating at 99% of your mail box quota. You need to upgrade your email limit quota to 2GB within the next 48 hours to enable you store and receive large numbers of emails in your mailbox. Use the below web link to upgrade to 2GB:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-click link below:
+------------------
 
-http://www.webmailadministrator.com/
+From: Ville Syrjälä <ville.syrjala@linux.intel.com>
 
-Failure to update this account after three days of receiving this warning will be tantamount to losing this account permanently
+commit 4a35f83b2b7c6aae3fc0d1c4554fdc99dc33ad07 upstream.
 
-Thank you for using our email.
-Copyright 2013 Email Administrator
+Restore crtc->fb to the old framebuffer if queue_flip fails.
+
+While at it, kill the pointless intel_fb temp variable.
+
+v2: Update crtc->fb before queue_flip and restore it back
+    after a failure.
+
+Backported for 3.4-stable. Adjusted context only.
+
+Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reported-and-Tested-by: Mika Kuoppala <mika.kuoppala@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
+Reviewed-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/i915/intel_display.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
+
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7567,8 +7567,8 @@ static int intel_crtc_page_flip(struct d
+ {
+ 	struct drm_device *dev = crtc->dev;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+-	struct intel_framebuffer *intel_fb;
+-	struct drm_i915_gem_object *obj;
++	struct drm_framebuffer *old_fb = crtc->fb;
++	struct drm_i915_gem_object *obj = to_intel_framebuffer(fb)->obj;
+ 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+ 	struct intel_unpin_work *work;
+ 	unsigned long flags;
+@@ -7580,8 +7580,7 @@ static int intel_crtc_page_flip(struct d
+ 
+ 	work->event = event;
+ 	work->dev = crtc->dev;
+-	intel_fb = to_intel_framebuffer(crtc->fb);
+-	work->old_fb_obj = intel_fb->obj;
++	work->old_fb_obj = to_intel_framebuffer(old_fb)->obj;
+ 	INIT_WORK(&work->work, intel_unpin_work_fn);
+ 
+ 	ret = drm_vblank_get(dev, intel_crtc->pipe);
+@@ -7601,9 +7600,6 @@ static int intel_crtc_page_flip(struct d
+ 	intel_crtc->unpin_work = work;
+ 	spin_unlock_irqrestore(&dev->event_lock, flags);
+ 
+-	intel_fb = to_intel_framebuffer(fb);
+-	obj = intel_fb->obj;
+-
+ 	mutex_lock(&dev->struct_mutex);
+ 
+ 	/* Reference the objects for the scheduled work. */
+@@ -7634,6 +7630,7 @@ static int intel_crtc_page_flip(struct d
+ 
+ cleanup_pending:
+ 	atomic_sub(1 << intel_crtc->plane, &work->old_fb_obj->pending_flip);
++	crtc->fb = old_fb;
+ 	drm_gem_object_unreference(&work->old_fb_obj->base);
+ 	drm_gem_object_unreference(&obj->base);
+ 	mutex_unlock(&dev->struct_mutex);
+
+
