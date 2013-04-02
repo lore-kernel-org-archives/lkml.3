@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759910Ab3DBXJx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:09:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33011 "EHLO
+	id S933169Ab3DBWM0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:12:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32975 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933186Ab3DBWM3 (ORCPT
+	with ESMTP id S933078Ab3DBWMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:29 -0400
+	Tue, 2 Apr 2013 18:12:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fusionio.com>
-Subject: [ 057/124] Btrfs: limit the global reserve to 512mb
-Date: Tue,  2 Apr 2013 15:10:39 -0700
-Message-Id: <20130402221110.831487524@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Benny Halevy <bhalevy@tonian.com>
+Subject: [ 038/124] NFSv4.1: Fix a race in pNFS layoutcommit
+Date: Tue,  2 Apr 2013 15:10:20 -0700
+Message-Id: <20130402221108.617512719@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -26,36 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit fdf30d1c1b386e1b73116cc7e0fb14e962b763b0 upstream.
+commit a073dbff359f4741013ae4b8395f5364c5e00b48 upstream.
 
-A user reported a problem where he was getting early ENOSPC with hundreds of
-gigs of free data space and 6 gigs of free metadata space.  This is because the
-global block reserve was taking up the entire free metadata space.  This is
-ridiculous, we have infrastructure in place to throttle if we start using too
-much of the global reserve, so instead of letting it get this huge just limit it
-to 512mb so that users can still get work done.  This allowed the user to
-complete his rsync without issues.  Thanks
+We need to clear the NFS_LSEG_LAYOUTCOMMIT bits atomically with the
+NFS_INO_LAYOUTCOMMIT bit, otherwise we may end up with situations
+where the two are out of sync.
+The first half of the problem is to ensure that pnfs_layoutcommit_inode
+clears the NFS_LSEG_LAYOUTCOMMIT bit through pnfs_list_write_lseg.
+We still need to keep the reference to those segments until the RPC call
+is finished, so in order to make it clear _where_ those references come
+from, we add a helper pnfs_list_write_lseg_done() that cleans up after
+pnfs_list_write_lseg.
 
-Reported-and-tested-by: Stefan Priebe <s.priebe@profihost.ag>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Acked-by: Benny Halevy <bhalevy@tonian.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/extent-tree.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/nfs4proc.c |   14 --------------
+ fs/nfs/pnfs.c     |   19 ++++++++++++++++++-
+ 2 files changed, 18 insertions(+), 15 deletions(-)
 
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -4308,7 +4308,7 @@ static void update_global_block_rsv(stru
- 	spin_lock(&sinfo->lock);
- 	spin_lock(&block_rsv->lock);
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -6366,22 +6366,8 @@ nfs4_layoutcommit_done(struct rpc_task *
+ static void nfs4_layoutcommit_release(void *calldata)
+ {
+ 	struct nfs4_layoutcommit_data *data = calldata;
+-	struct pnfs_layout_segment *lseg, *tmp;
+-	unsigned long *bitlock = &NFS_I(data->args.inode)->flags;
  
--	block_rsv->size = num_bytes;
-+	block_rsv->size = min_t(u64, num_bytes, 512 * 1024 * 1024);
+ 	pnfs_cleanup_layoutcommit(data);
+-	/* Matched by references in pnfs_set_layoutcommit */
+-	list_for_each_entry_safe(lseg, tmp, &data->lseg_list, pls_lc_list) {
+-		list_del_init(&lseg->pls_lc_list);
+-		if (test_and_clear_bit(NFS_LSEG_LAYOUTCOMMIT,
+-				       &lseg->pls_flags))
+-			pnfs_put_lseg(lseg);
+-	}
+-
+-	clear_bit_unlock(NFS_INO_LAYOUTCOMMITTING, bitlock);
+-	smp_mb__after_clear_bit();
+-	wake_up_bit(bitlock, NFS_INO_LAYOUTCOMMITTING);
+-
+ 	put_rpccred(data->cred);
+ 	kfree(data);
+ }
+--- a/fs/nfs/pnfs.c
++++ b/fs/nfs/pnfs.c
+@@ -1747,11 +1747,27 @@ static void pnfs_list_write_lseg(struct
  
- 	num_bytes = sinfo->bytes_used + sinfo->bytes_pinned +
- 		    sinfo->bytes_reserved + sinfo->bytes_readonly +
+ 	list_for_each_entry(lseg, &NFS_I(inode)->layout->plh_segs, pls_list) {
+ 		if (lseg->pls_range.iomode == IOMODE_RW &&
+-		    test_bit(NFS_LSEG_LAYOUTCOMMIT, &lseg->pls_flags))
++		    test_and_clear_bit(NFS_LSEG_LAYOUTCOMMIT, &lseg->pls_flags))
+ 			list_add(&lseg->pls_lc_list, listp);
+ 	}
+ }
+ 
++static void pnfs_list_write_lseg_done(struct inode *inode, struct list_head *listp)
++{
++	struct pnfs_layout_segment *lseg, *tmp;
++	unsigned long *bitlock = &NFS_I(inode)->flags;
++
++	/* Matched by references in pnfs_set_layoutcommit */
++	list_for_each_entry_safe(lseg, tmp, listp, pls_lc_list) {
++		list_del_init(&lseg->pls_lc_list);
++		pnfs_put_lseg(lseg);
++	}
++
++	clear_bit_unlock(NFS_INO_LAYOUTCOMMITTING, bitlock);
++	smp_mb__after_clear_bit();
++	wake_up_bit(bitlock, NFS_INO_LAYOUTCOMMITTING);
++}
++
+ void pnfs_set_lo_fail(struct pnfs_layout_segment *lseg)
+ {
+ 	pnfs_layout_io_set_failed(lseg->pls_layout, lseg->pls_range.iomode);
+@@ -1796,6 +1812,7 @@ void pnfs_cleanup_layoutcommit(struct nf
+ 
+ 	if (nfss->pnfs_curr_ld->cleanup_layoutcommit)
+ 		nfss->pnfs_curr_ld->cleanup_layoutcommit(data);
++	pnfs_list_write_lseg_done(data->args.inode, &data->lseg_list);
+ }
+ 
+ /*
 
 
