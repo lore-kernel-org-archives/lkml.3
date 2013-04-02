@@ -1,125 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757613Ab3DBWnD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:43:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33147 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761734Ab3DBWMy (ORCPT
+	id S1757409Ab3DBWnU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:43:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55432 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756493Ab3DBWnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:54 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Frederic Crozat <fcrozat@suse.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@redhat.com>,
-        Michael Schroeder <mls@suse.com>, "Lee, Chun-Yi" <jlee@suse.com>,
-        Lingzhu Xiang <lxiang@redhat.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Matt Fleming <matt.fleming@intel.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 094/124] efivars: explicitly calculate length of VariableName
-Date: Tue,  2 Apr 2013 15:11:16 -0700
-Message-Id: <20130402221115.023383753@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
-References: <20130402221104.163133110@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 2 Apr 2013 18:43:17 -0400
+Message-ID: <515B50CF.7050103@infradead.org>
+Date: Tue, 02 Apr 2013 14:42:39 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Platform Driver <platform-driver-x86@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH 1/1] Introduce Intel RAPL cooling device driver
+References: <1364940936-20846-1-git-send-email-jacob.jun.pan@linux.intel.com> <1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
+In-Reply-To: <1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On 04/02/13 15:15, Jacob Pan wrote:
+> RAPL(Running Average Power Limit) interface provides platform software
+> with the ability to monitor, control, and get notifications on SOC
+> power consumptions. Since its first appearance on Sandy Bridge, more
+> features have being added to extend its usage. In RAPL, platforms are
+> divided into domains for fine grained control. These domains include
+> package, DRAM controller, CPU core (Power Plane 0), graphics uncore
+> (power plane 1), etc.
+> 
+> The purpose of this driver is to expose RAPL for userspace
+> consumption. Overall, RAPL fits in the generic thermal layer in
+> that platform level power capping and monitoring are mainly used for
+> thermal management and thermal layer provides the abstracted interface
+> needed to have portable applications.
+> 
+> Specifically, userspace is presented with per domain cooling device
+> with sysfs links to its kobject. Although RAPL domain provides many
+> parameters for fine tuning, long term power limit is exposed as the
+> single knob via cooling device state. Whereas the rest of the
+> parameters are still accessible via the linked kobject. This simplifies
+> the interface for both simple and advanced use cases.
+> 
+> Eventfd is used to provide notifications to the userspace. At per domain
+> level, use can choose any event capable parameters to register for
+> threshold crossing notifications. This is shamelessly "borrowed" from
+> cgroup with some trimming/fitting.
+> 
+> Zhang, Rui's initial RAPL driver was used as a reference and starting
+> point. Many thanks.
+> https://lkml.org/lkml/2011/5/26/93
+> 
+> Unlike the patch above, which is mainly for monitoring, this driver
+> focus on the control and usability by user applications.
+> 
+> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> ---
+>  drivers/platform/x86/Kconfig      |    8 +
+>  drivers/platform/x86/Makefile     |    1 +
+>  drivers/platform/x86/intel_rapl.c | 1323 +++++++++++++++++++++++++++++++++++++
+>  drivers/platform/x86/intel_rapl.h |  249 +++++++
+>  4 files changed, 1581 insertions(+)
+>  create mode 100644 drivers/platform/x86/intel_rapl.c
+>  create mode 100644 drivers/platform/x86/intel_rapl.h
+> 
+> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+> index 3338437..34bcd52 100644
+> --- a/drivers/platform/x86/Kconfig
+> +++ b/drivers/platform/x86/Kconfig
+> @@ -781,4 +781,12 @@ config APPLE_GMUX
+>  	  graphics as well as the backlight. Currently only backlight
+>  	  control is supported by the driver.
+>  
+> +config INTEL_RAPL
+> +	tristate "Intel RAPL Support"
+> +	depends on X86 && THERMAL
+> +	default y
+> +	---help---
+> +	  RAPL, AKA, Running Average Power Limit provides mechanisms to enforce
 
-------------------
+	  RAPL, aka Running Average Power Limit, provides mechanisms to enforce
 
-From: Matt Fleming <matt.fleming@intel.com>
+or a.k.a., but not AKA
 
-commit ec50bd32f1672d38ddce10fb1841cbfda89cfe9a upstream.
-
-It's not wise to assume VariableNameSize represents the length of
-VariableName, as not all firmware updates VariableNameSize in the same
-way (some don't update it at all if EFI_SUCCESS is returned). There
-are even implementations out there that update VariableNameSize with
-values that are both larger than the string returned in VariableName
-and smaller than the buffer passed to GetNextVariableName(), which
-resulted in the following bug report from Michael Schroeder,
-
-  > On HP z220 system (firmware version 1.54), some EFI variables are
-  > incorrectly named :
-  >
-  > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
-  > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-  > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-  > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-  > /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
-
-The issue here is that because we blindly use VariableNameSize without
-verifying its value, we can potentially read garbage values from the
-buffer containing VariableName if VariableNameSize is larger than the
-length of VariableName.
-
-Since VariableName is a string, we can calculate its size by searching
-for the terminating NULL character.
-
-[Backported for 3.8-stable. Removed workqueue code added in
-a93bc0c 3.9-rc1.]
-
-Reported-by: Frederic Crozat <fcrozat@suse.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Michael Schroeder <mls@suse.com>
-Cc: Lee, Chun-Yi <jlee@suse.com>
-Cc: Lingzhu Xiang <lxiang@redhat.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
-Reviewed-by: CAI Qian <caiqian@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/firmware/efivars.c |   27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
-
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -1670,6 +1670,31 @@ static ssize_t efivar_delete(struct file
- }
- 
- /*
-+ * Returns the size of variable_name, in bytes, including the
-+ * terminating NULL character, or variable_name_size if no NULL
-+ * character is found among the first variable_name_size bytes.
-+ */
-+static unsigned long var_name_strnsize(efi_char16_t *variable_name,
-+				       unsigned long variable_name_size)
-+{
-+	unsigned long len;
-+	efi_char16_t c;
-+
-+	/*
-+	 * The variable name is, by definition, a NULL-terminated
-+	 * string, so make absolutely sure that variable_name_size is
-+	 * the value we expect it to be. If not, return the real size.
-+	 */
-+	for (len = 2; len <= variable_name_size; len += sizeof(c)) {
-+		c = variable_name[(len / sizeof(c)) - 1];
-+		if (!c)
-+			break;
-+	}
-+
-+	return min(len, variable_name_size);
-+}
-+
-+/*
-  * Let's not leave out systab information that snuck into
-  * the efivars driver
-  */
-@@ -1912,6 +1937,8 @@ int register_efivars(struct efivars *efi
- 						&vendor_guid);
- 		switch (status) {
- 		case EFI_SUCCESS:
-+			variable_name_size = var_name_strnsize(variable_name,
-+							       variable_name_size);
- 			efivar_create_sysfs_entry(efivars,
- 						  variable_name_size,
- 						  variable_name,
+or even:
+	  RAPL (Running Average Power Limit) provides mechanisms to enforce
 
 
+> +	  and monitor per domain power consumption limits of supported Intel CPUs.
+> +
+>  endif # X86_PLATFORM_DEVICES
+
+
+-- 
+~Randy
