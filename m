@@ -1,194 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761573Ab3DBJYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:24:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50527 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760318Ab3DBJYQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:24:16 -0400
-Date: Tue, 2 Apr 2013 02:23:50 -0700
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-5a6fd27ad73fef0ed39a00236acbc3a17834672a@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, fweisbec@gmail.com,
-        rostedt@goodmis.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@kernel.org, fweisbec@gmail.com,
-        rostedt@goodmis.org, tglx@linutronix.de
-In-Reply-To: <1363850332-25297-3-git-send-email-namhyung@kernel.org>
-References: <1363850332-25297-3-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Get rid of malloc_or_die()
-  in trace-event-info.c
-Git-Commit-ID: 5a6fd27ad73fef0ed39a00236acbc3a17834672a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1761576Ab3DBJYs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:24:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56385 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754319Ab3DBJYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 05:24:44 -0400
+Date: Tue, 2 Apr 2013 11:24:41 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        stable@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] hugetlbfs: add swap entry check in
+ follow_hugetlb_page()
+Message-ID: <20130402092441.GE24345@dhcp22.suse.cz>
+References: <1364485358-8745-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1364485358-8745-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130329135730.GB21879@dhcp22.suse.cz>
+ <1364577818-615ipxeo-mutt-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 02:23:58 -0700 (PDT)
+In-Reply-To: <1364577818-615ipxeo-mutt-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5a6fd27ad73fef0ed39a00236acbc3a17834672a
-Gitweb:     http://git.kernel.org/tip/5a6fd27ad73fef0ed39a00236acbc3a17834672a
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Thu, 21 Mar 2013 16:18:45 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 21 Mar 2013 13:12:28 -0300
+On Fri 29-03-13 13:23:38, Naoya Horiguchi wrote:
+> Hi,
+> 
+> On Fri, Mar 29, 2013 at 02:57:30PM +0100, Michal Hocko wrote:
+> > On Thu 28-03-13 11:42:38, Naoya Horiguchi wrote:
+> > [...]
+> > > @@ -2968,7 +2968,8 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
+> > >  		 * first, for the page indexing below to work.
+> > >  		 */
+> > >  		pte = huge_pte_offset(mm, vaddr & huge_page_mask(h));
+> > > -		absent = !pte || huge_pte_none(huge_ptep_get(pte));
+> > > +		absent = !pte || huge_pte_none(huge_ptep_get(pte)) ||
+> > > +			is_swap_pte(huge_ptep_get(pte));
+> > 
+> > is_swap_pte doesn't seem right. Shouldn't you use is_hugetlb_entry_hwpoisoned
+> > instead?
+> 
+> I tested only hwpoisoned hugepage, but the same can happen for hugepages
+> under migration. So I intended to filter out all types of swap entries.
+> The local variable 'absent' seems to mean whether data on the address
+> is immediately available, so swap type entry isn't included in it.
 
-perf tools: Get rid of malloc_or_die() in trace-event-info.c
+OK, I didn't consider huge pages under migration and I was merely worried
+that is_hugetlb_entry_hwpoisoned sounds more appropriate than
+is_swap_pte.
 
-Check return value of malloc and fail if NULL.
+Could you add a comment which would clarify that is_swap_pte covers both
+migration and hwpoison pages, please? Something like:
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1363850332-25297-3-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/trace-event-info.c | 48 ++++++++++++++++++++++++--------------
- 1 file changed, 30 insertions(+), 18 deletions(-)
+		/*
+		 * is_swap_pte test covers both is_hugetlb_entry_hwpoisoned
+		 * and hugepages under migration in which case
+		 * hugetlb_fault waits for the migration and bails out
+		 * properly for HWPosined pages.
+		 */
+		 absent = !pte || huge_pte_none(huge_ptep_get(pte)) ||
+		 	 is_swap_pte(huge_ptep_get(pte));
 
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index 81c6732..91db6e8 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -47,16 +47,6 @@ static const char *output_file = "trace.info";
- static int output_fd;
- 
- 
--static void *malloc_or_die(unsigned int size)
--{
--	void *data;
--
--	data = malloc(size);
--	if (!data)
--		die("malloc");
--	return data;
--}
--
- static const char *find_debugfs(void)
- {
- 	const char *path = perf_debugfs_mount(NULL);
-@@ -209,7 +199,7 @@ static bool name_in_tp_list(char *sys, struct tracepoint_path *tps)
- 	return false;
- }
- 
--static void copy_event_system(const char *sys, struct tracepoint_path *tps)
-+static int copy_event_system(const char *sys, struct tracepoint_path *tps)
- {
- 	struct dirent *dent;
- 	struct stat st;
-@@ -217,6 +207,7 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
- 	DIR *dir;
- 	int count = 0;
- 	int ret;
-+	int err;
- 
- 	dir = opendir(sys);
- 	if (!dir)
-@@ -228,7 +219,11 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
- 		    strcmp(dent->d_name, "..") == 0 ||
- 		    !name_in_tp_list(dent->d_name, tps))
- 			continue;
--		format = malloc_or_die(strlen(sys) + strlen(dent->d_name) + 10);
-+		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
-+		if (!format) {
-+			err = -ENOMEM;
-+			goto out;
-+		}
- 		sprintf(format, "%s/%s/format", sys, dent->d_name);
- 		ret = stat(format, &st);
- 		free(format);
-@@ -246,16 +241,22 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
- 		    strcmp(dent->d_name, "..") == 0 ||
- 		    !name_in_tp_list(dent->d_name, tps))
- 			continue;
--		format = malloc_or_die(strlen(sys) + strlen(dent->d_name) + 10);
-+		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
-+		if (!format) {
-+			err = -ENOMEM;
-+			goto out;
-+		}
- 		sprintf(format, "%s/%s/format", sys, dent->d_name);
- 		ret = stat(format, &st);
- 
- 		if (ret >= 0)
- 			record_file(format, 8);
--
- 		free(format);
- 	}
-+	err = 0;
-+out:
- 	closedir(dir);
-+	return err;
- }
- 
- static void read_ftrace_files(struct tracepoint_path *tps)
-@@ -282,7 +283,7 @@ static bool system_in_tp_list(char *sys, struct tracepoint_path *tps)
- 	return false;
- }
- 
--static void read_event_files(struct tracepoint_path *tps)
-+static int read_event_files(struct tracepoint_path *tps)
- {
- 	struct dirent *dent;
- 	struct stat st;
-@@ -291,6 +292,7 @@ static void read_event_files(struct tracepoint_path *tps)
- 	DIR *dir;
- 	int count = 0;
- 	int ret;
-+	int err;
- 
- 	path = get_tracing_file("events");
- 	if (!path)
-@@ -320,7 +322,11 @@ static void read_event_files(struct tracepoint_path *tps)
- 		    strcmp(dent->d_name, "ftrace") == 0 ||
- 		    !system_in_tp_list(dent->d_name, tps))
- 			continue;
--		sys = malloc_or_die(strlen(path) + strlen(dent->d_name) + 2);
-+		sys = malloc(strlen(path) + strlen(dent->d_name) + 2);
-+		if (!sys) {
-+			err = -ENOMEM;
-+			goto out;
-+		}
- 		sprintf(sys, "%s/%s", path, dent->d_name);
- 		ret = stat(sys, &st);
- 		if (ret >= 0) {
-@@ -329,9 +335,12 @@ static void read_event_files(struct tracepoint_path *tps)
- 		}
- 		free(sys);
- 	}
--
-+	err = 0;
-+out:
- 	closedir(dir);
- 	put_tracing_file(path);
-+
-+	return err;
- }
- 
- static void read_proc_kallsyms(void)
-@@ -463,7 +472,10 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
- 	if (!tps)
- 		return NULL;
- 
--	tdata = malloc_or_die(sizeof(*tdata));
-+	tdata = malloc(sizeof(*tdata));
-+	if (!tdata)
-+		return NULL;
-+
- 	tdata->temp = temp;
- 	tdata->size = 0;
- 
+Other than that feel free to add
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
+Thanks.
+-- 
+Michal Hocko
+SUSE Labs
