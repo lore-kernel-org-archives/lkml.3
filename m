@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761891Ab3DBQ3I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 12:29:08 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:23937 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758965Ab3DBQ3F (ORCPT
+	id S1761954Ab3DBQ3R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 12:29:17 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:32941 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761895Ab3DBQ3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 12:29:05 -0400
+	Tue, 2 Apr 2013 12:29:15 -0400
 From: Toshi Kani <toshi.kani@hp.com>
 To: akpm@linux-foundation.org
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, linuxram@us.ibm.com,
         tmac@hp.com, isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
         tangchen@cn.fujitsu.com, jiang.liu@huawei.com,
         Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH 0/3] Support memory hot-delete to boot memory
-Date: Tue,  2 Apr 2013 10:17:27 -0600
-Message-Id: <1364919450-8741-1-git-send-email-toshi.kani@hp.com>
+Subject: [PATCH 3/3] mm: Change __remove_pages() to call release_mem_region_adjustable()
+Date: Tue,  2 Apr 2013 10:17:30 -0600
+Message-Id: <1364919450-8741-4-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1364919450-8741-1-git-send-email-toshi.kani@hp.com>
+References: <1364919450-8741-1-git-send-email-toshi.kani@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory hot-delete a memory range present at boot causes an
-error message in __release_region(), such as:
+Changed __remove_pages() to call release_mem_region_adjustable().
+This allows a requested memory range to be released from
+the iomem_resource table even if it does not match exactly to
+an resource entry but still fits into.  The resource entries
+initialized at bootup usually cover the whole contiguous
+memory ranges and may not necessarily match with the size of
+memory hot-delete requests.
 
- Trying to free nonexistent resource <0000000070000000-0000000077ffffff>
+If release_mem_region_adjustable() failed, __remove_pages() logs
+an error message and continues to proceed as it was the case
+with release_mem_region().  release_mem_region(), which is defined
+to __release_region(), logs an error message and returns no error
+since a void function.
 
-Hot-delete operation still continues since __release_region() is 
-a void function, but the target memory range is not freed from
-iomem_resource as the result.  This also leads a failure in a 
-subsequent hot-add operation to the same memory range since the
-address range is still in-use in iomem_resource.
-
-This problem happens because the granularity of memory resource ranges
-may be different between boot and hot-delete.  During bootup,
-iomem_resource is set up from the boot descriptor table, such as EFI
-Memory Table and e820.  Each resource entry usually covers the whole
-contiguous memory range.  Hot-delete request, on the other hand, may
-target to a particular range of memory resource, and its size can be
-much smaller than the whole contiguous memory.  Since the existing
-release interfaces like __release_region() require a requested region
-to be exactly matched to a resource entry, they do not allow a partial
-resource to be released.
-
-This patchset introduces release_mem_region_adjustable() for memory
-hot-delete operations, which allows releasing a partial memory range
-and adjusts remaining resource accordingly.  This patchset makes no
-changes to the existing interfaces since their restriction is still
-valid for I/O resources.
-
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 ---
-Toshi Kani (3):
- resource: Add __adjust_resource() for internal use
- resource: Add release_mem_region_adjustable()
- mm: Change __remove_pages() to call release_mem_region_adjustable()
+ mm/memory_hotplug.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
----
- include/linux/ioport.h |   2 +
- kernel/resource.c      | 122 +++++++++++++++++++++++++++++++++++++++++++------
- mm/memory_hotplug.c    |  11 ++++-
- 3 files changed, 120 insertions(+), 15 deletions(-)
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 57decb2..c916582 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -705,8 +705,10 @@ EXPORT_SYMBOL_GPL(__add_pages);
+ int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
+ 		 unsigned long nr_pages)
+ {
+-	unsigned long i, ret = 0;
++	unsigned long i;
+ 	int sections_to_remove;
++	resource_size_t start, size;
++	int ret = 0;
+ 
+ 	/*
+ 	 * We can only remove entire sections
+@@ -714,7 +716,12 @@ int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
+ 	BUG_ON(phys_start_pfn & ~PAGE_SECTION_MASK);
+ 	BUG_ON(nr_pages % PAGES_PER_SECTION);
+ 
+-	release_mem_region(phys_start_pfn << PAGE_SHIFT, nr_pages * PAGE_SIZE);
++	start = phys_start_pfn << PAGE_SHIFT;
++	size = nr_pages * PAGE_SIZE;
++	ret = release_mem_region_adjustable(&iomem_resource, start, size);
++	if (ret)
++		pr_warn("Unable to release resource <%016llx-%016llx> (%d)\n",
++				start, start + size - 1, ret);
+ 
+ 	sections_to_remove = nr_pages / PAGES_PER_SECTION;
+ 	for (i = 0; i < sections_to_remove; i++) {
