@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762308Ab3DBWix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:38:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33235 "EHLO
+	id S933503Ab3DBWjU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:39:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33228 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933457Ab3DBWNF (ORCPT
+	with ESMTP id S933445Ab3DBWNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:13:05 -0400
+	Tue, 2 Apr 2013 18:13:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Sriramakrishnan A G <srk@ti.com>, Mugunthan V N <mugunthanvnm@ti.com>,
         Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 109/124] drivers: net: ethernet: cpsw: use netif_wake_queue() while restarting tx queue
-Date: Tue,  2 Apr 2013 15:11:31 -0700
-Message-Id: <20130402221116.824973254@linuxfoundation.org>
+Subject: [ 108/124] drivers: net: ethernet: davinci_emac: use netif_wake_queue() while restarting tx queue
+Date: Tue,  2 Apr 2013 15:11:30 -0700
+Message-Id: <20130402221116.678434614@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -30,10 +30,6 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Mugunthan V N <mugunthanvnm@ti.com>
-
-[ Upstream commit b56d6b3fca6d1214dbc9c5655f26e5d4ec04afc8 ]
-
 To restart tx queue use netif_wake_queue() intead of netif_start_queue()
 so that net schedule will restart transmission immediately which will
 increase network performance while doing huge data transfers.
@@ -45,19 +41,19 @@ Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/ti/cpsw.c |    2 +-
+ drivers/net/ethernet/ti/davinci_emac.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -375,7 +375,7 @@ void cpsw_tx_handler(void *token, int le
- 	struct cpsw_priv	*priv = netdev_priv(ndev);
+--- a/drivers/net/ethernet/ti/davinci_emac.c
++++ b/drivers/net/ethernet/ti/davinci_emac.c
+@@ -1055,7 +1055,7 @@ static void emac_tx_handler(void *token,
+ 	atomic_dec(&priv->cur_tx);
  
  	if (unlikely(netif_queue_stopped(ndev)))
 -		netif_start_queue(ndev);
 +		netif_wake_queue(ndev);
- 	cpts_tx_timestamp(&priv->cpts, skb);
- 	priv->stats.tx_packets++;
- 	priv->stats.tx_bytes += len;
+ 	ndev->stats.tx_packets++;
+ 	ndev->stats.tx_bytes += len;
+ 	dev_kfree_skb_any(skb);
 
 
