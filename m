@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758324Ab3DBWun (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:50:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33964 "EHLO
+	id S1759359Ab3DBW6d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:58:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34017 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758208Ab3DBWui (ORCPT
+	with ESMTP id S1758350Ab3DBWuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:50:38 -0400
+	Tue, 2 Apr 2013 18:50:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Daley <mattjd@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Hendry <andrew.hendry@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [ 19/56] x25: Validate incoming call user data lengths
-Date: Tue,  2 Apr 2013 15:49:46 -0700
-Message-Id: <20130402224714.113356130@linuxfoundation.org>
+        Petr Matousek <pmatouse@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [ 31/56] KVM: x86: invalid opcode oops on SET_SREGS with OSXSAVE bit set (CVE-2012-4461)
+Date: Tue,  2 Apr 2013 15:49:58 -0700
+Message-Id: <20130402224715.484895918@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
@@ -30,56 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Matthew Daley <mattjd@gmail.com>
+From: Petr Matousek <pmatouse@redhat.com>
 
-commit c7fd0d48bde943e228e9c28ce971a22d6a1744c4 upstream.
+commit 6d1068b3a98519247d8ba4ec85cd40ac136dbdf9 upstream.
 
-X.25 call user data is being copied in its entirety from incoming messages
-without consideration to the size of the destination buffers, leading to
-possible buffer overflows. Validate incoming call user data lengths before
-these copies are performed.
+On hosts without the XSAVE support unprivileged local user can trigger
+oops similar to the one below by setting X86_CR4_OSXSAVE bit in guest
+cr4 register using KVM_SET_SREGS ioctl and later issuing KVM_RUN
+ioctl.
 
-It appears this issue was noticed some time ago, however nothing seemed to
-come of it: see http://www.spinics.net/lists/linux-x25/msg00043.html and
-commit 8db09f26f912f7c90c764806e804b558da520d4f.
+invalid opcode: 0000 [#2] SMP
+Modules linked in: tun ip6table_filter ip6_tables ebtable_nat ebtables
+...
+Pid: 24935, comm: zoog_kvm_monito Tainted: G      D      3.2.0-3-686-pae
+EIP: 0060:[<f8b9550c>] EFLAGS: 00210246 CPU: 0
+EIP is at kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm]
+EAX: 00000001 EBX: 000f387e ECX: 00000000 EDX: 00000000
+ESI: 00000000 EDI: 00000000 EBP: ef5a0060 ESP: d7c63e70
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+Process zoog_kvm_monito (pid: 24935, ti=d7c62000 task=ed84a0c0
+task.ti=d7c62000)
+Stack:
+ 00000001 f70a1200 f8b940a9 ef5a0060 00000000 00200202 f8769009 00000000
+ ef5a0060 000f387e eda5c020 8722f9c8 00015bae 00000000 ed84a0c0 ed84a0c0
+ c12bf02d 0000ae80 ef7f8740 fffffffb f359b740 ef5a0060 f8b85dc1 0000ae80
+Call Trace:
+ [<f8b940a9>] ? kvm_arch_vcpu_ioctl_set_sregs+0x2fe/0x308 [kvm]
+...
+ [<c12bfb44>] ? syscall_call+0x7/0xb
+Code: 89 e8 e8 14 ee ff ff ba 00 00 04 00 89 e8 e8 98 48 ff ff 85 c0 74
+1e 83 7d 48 00 75 18 8b 85 08 07 00 00 31 c9 8b 95 0c 07 00 00 <0f> 01
+d1 c7 45 48 01 00 00 00 c7 45 1c 01 00 00 00 0f ae f0 89
+EIP: [<f8b9550c>] kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm] SS:ESP
+0068:d7c63e70
 
-Signed-off-by: Matthew Daley <mattjd@gmail.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Tested-by: Andrew Hendry <andrew.hendry@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+QEMU first retrieves the supported features via KVM_GET_SUPPORTED_CPUID
+and then sets them later. So guest's X86_FEATURE_XSAVE should be masked
+out on hosts without X86_FEATURE_XSAVE, making kvm_set_cr4 with
+X86_CR4_OSXSAVE fail. Userspaces that allow specifying guest cpuid with
+X86_FEATURE_XSAVE even on hosts that do not support it, might be
+susceptible to this attack from inside the guest as well.
+
+Allow setting X86_CR4_OSXSAVE bit only if host has XSAVE support.
+
+Signed-off-by: Petr Matousek <pmatouse@redhat.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/x25/af_x25.c |    6 ++++++
- net/x25/x25_in.c |    3 +++
- 2 files changed, 9 insertions(+)
 
---- a/net/x25/af_x25.c
-+++ b/net/x25/af_x25.c
-@@ -960,6 +960,12 @@ int x25_rx_call_request(struct sk_buff *
- 	skb_pull(skb,len);
+---
+ arch/x86/kvm/x86.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -575,6 +575,9 @@ static bool guest_cpuid_has_xsave(struct
+ {
+ 	struct kvm_cpuid_entry2 *best;
  
- 	/*
-+	 *	Ensure that the amount of call user data is valid.
-+	 */
-+	if (skb->len > X25_MAX_CUD_LEN)
-+		goto out_clear_request;
++	if (!cpu_has_xsave)
++		return 0;
 +
-+	/*
- 	 *	Find a listener for the particular address/cud pair.
- 	 */
- 	sk = x25_find_listener(&source_addr,skb);
---- a/net/x25/x25_in.c
-+++ b/net/x25/x25_in.c
-@@ -127,6 +127,9 @@ static int x25_state1_machine(struct soc
- 			 *	Copy any Call User Data.
- 			 */
- 			if (skb->len > 0) {
-+				if (skb->len > X25_MAX_CUD_LEN)
-+					goto out_clear;
+ 	best = kvm_find_cpuid_entry(vcpu, 1, 0);
+ 	return best && (best->ecx & bit(X86_FEATURE_XSAVE));
+ }
+@@ -5854,6 +5857,9 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct
+ 	int pending_vec, max_bits, idx;
+ 	struct desc_ptr dt;
+ 
++	if (!guest_cpuid_has_xsave(vcpu) && (sregs->cr4 & X86_CR4_OSXSAVE))
++		return -EINVAL;
 +
- 				skb_copy_from_linear_data(skb,
- 					      x25->calluserdata.cuddata,
- 					      skb->len);
+ 	dt.size = sregs->idt.limit;
+ 	dt.address = sregs->idt.base;
+ 	kvm_x86_ops->set_idt(vcpu, &dt);
 
 
