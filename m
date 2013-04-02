@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760306Ab3DBDx4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 23:53:56 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:62102 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759847Ab3DBDxy (ORCPT
+	id S1760327Ab3DBDyH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 23:54:07 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:49230 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760312Ab3DBDyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 23:53:54 -0400
+	Mon, 1 Apr 2013 23:54:05 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: David Ahern <dsahern@gmail.com>, Borislav Petkov <bp@alien8.de>,
@@ -15,9 +15,9 @@ Cc: David Ahern <dsahern@gmail.com>, Borislav Petkov <bp@alien8.de>,
         Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 04/23] perf: make gtk2 support based on CONFIG_GTK2
-Date: Mon,  1 Apr 2013 21:53:10 -0600
-Message-Id: <1364874809-5575-5-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 05/23] perf: make newt support based on CONFIG_NEWT
+Date: Mon,  1 Apr 2013 21:53:11 -0600
+Message-Id: <1364874809-5575-6-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1364874809-5575-1-git-send-email-dsahern@gmail.com>
 References: <1364874809-5575-1-git-send-email-dsahern@gmail.com>
@@ -35,92 +35,100 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile                 |   39 ++++++++++++++++-------------------
+ tools/perf/Makefile                 |   46 +++++++++++++++++------------------
  tools/perf/Pconfig                  |    3 +++
  tools/perf/config/feature-tests.mak |    2 +-
- 3 files changed, 22 insertions(+), 22 deletions(-)
+ 3 files changed, 26 insertions(+), 25 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 2225c3d..01e2abf 100644
+index 01e2abf..f4c3b02 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -36,8 +36,6 @@ include config/utilities.mak
+@@ -34,8 +34,6 @@ include config/utilities.mak
  #
- # Define NO_NEWT if you do not want TUI support.
+ # Define WERROR=0 to disable treating any warnings as errors.
  #
--# Define NO_GTK2 if you do not want GTK+ GUI support.
+-# Define NO_NEWT if you do not want TUI support.
 -#
  # Define NO_DEMANGLE if you do not want C++ symbol demangling.
  #
  # Define NO_LIBELF if you do not want libelf dependency (e.g. cross-builds)
-@@ -693,25 +691,24 @@ ifndef NO_NEWT
+@@ -666,29 +664,29 @@ ifndef NO_LIBAUDIT
  	endif
  endif
  
--ifndef NO_GTK2
--	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
--	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
--		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
+-ifndef NO_NEWT
++ifdef CONFIG_NEWT
+ 	FLAGS_NEWT=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) -lnewt
+-	ifneq ($(call try-cc,$(SOURCE_NEWT),$(FLAGS_NEWT),libnewt),y)
+-		msg := $(warning newt not found, disables TUI support. Please install newt-devel or libnewt-dev);
 -	else
--		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
--			BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
--		endif
--		BASIC_CFLAGS += -DGTK2_SUPPORT
--		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
--		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
--		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/util.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
+-		# Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
+-		BASIC_CFLAGS += -I/usr/include/slang
+-		BASIC_CFLAGS += -DNEWT_SUPPORT
+-		EXTLIBS += -lnewt -lslang
+-		LIB_OBJS += $(OUTPUT)ui/browser.o
+-		LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
+-		LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
+-		LIB_OBJS += $(OUTPUT)ui/browsers/map.o
+-		LIB_OBJS += $(OUTPUT)ui/browsers/scripts.o
+-		LIB_OBJS += $(OUTPUT)ui/tui/setup.o
+-		LIB_OBJS += $(OUTPUT)ui/tui/util.o
+-		LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
+-		LIB_OBJS += $(OUTPUT)ui/tui/progress.o
+-		LIB_H += ui/browser.h
+-		LIB_H += ui/browsers/map.h
+-		LIB_H += ui/keysyms.h
+-		LIB_H += ui/libslang.h
 -	endif
-+ifdef CONFIG_GTK2
-+    FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
-+    ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
-+        $(error GTK2 not found. Please install gtk2-devel or libgtk2.0-dev or unset CONFIG_GTK2)
++    ifneq ($(call try-cc,$(SOURCE_NEWT),$(FLAGS_NEWT),libnewt),y)
++        $(error newt not found. Please install newt-devel or libnewt-dev or disable CONFIG_NEWT)
 +    endif
-+    ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
-+        BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
-+    endif
-+    BASIC_CFLAGS += -DGTK2_SUPPORT
-+    BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
-+    EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
-+    LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
-+    LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
-+    LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
-+    LIB_OBJS += $(OUTPUT)ui/gtk/util.o
-+    LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
-+    LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
-+    LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
++
++    # Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
++    BASIC_CFLAGS += -I/usr/include/slang
++    BASIC_CFLAGS += -DNEWT_SUPPORT
++    EXTLIBS += -lnewt -lslang
++    LIB_OBJS += $(OUTPUT)ui/browser.o
++    LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
++    LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
++    LIB_OBJS += $(OUTPUT)ui/browsers/map.o
++    LIB_OBJS += $(OUTPUT)ui/browsers/scripts.o
++    LIB_OBJS += $(OUTPUT)ui/tui/setup.o
++    LIB_OBJS += $(OUTPUT)ui/tui/util.o
++    LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
++    LIB_OBJS += $(OUTPUT)ui/tui/progress.o
++    LIB_H += ui/browser.h
++    LIB_H += ui/browsers/map.h
++    LIB_H += ui/keysyms.h
++    LIB_H += ui/libslang.h
  endif
  
- ifdef CONFIG_LIBPERL
+ ifdef CONFIG_GTK2
 diff --git a/tools/perf/Pconfig b/tools/perf/Pconfig
-index 67ae110..79e1fc3 100644
+index 79e1fc3..367cc65 100644
 --- a/tools/perf/Pconfig
 +++ b/tools/perf/Pconfig
 @@ -1,3 +1,6 @@
-+config GTK2
-+    bool "Enable GTK-based UI"
++config NEWT
++    bool "Enable newt-based TUI"
 +
- config LIBPERL
-     bool "Enable support for perl scripting engine"
+ config GTK2
+     bool "Enable GTK-based UI"
  
 diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index 2a2fa3b..bf906e8 100644
+index bf906e8..7ec044f 100644
 --- a/tools/perf/config/feature-tests.mak
 +++ b/tools/perf/config/feature-tests.mak
-@@ -74,7 +74,7 @@ int main(void)
+@@ -61,7 +61,7 @@ int main(void)
+ }
  endef
- endif
  
--ifndef NO_GTK2
-+ifdef CONFIG_GTK2
- define SOURCE_GTK2
- #pragma GCC diagnostic ignored \"-Wstrict-prototypes\"
- #include <gtk/gtk.h>
+-ifndef NO_NEWT
++ifdef CONFIG_NEWT
+ define SOURCE_NEWT
+ #include <newt.h>
+ 
 -- 
 1.7.10.1
 
