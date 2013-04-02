@@ -1,73 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760127Ab3DBDJp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 23:09:45 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:38687 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759451Ab3DBDJo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 23:09:44 -0400
-Date: Mon, 1 Apr 2013 20:09:33 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Fengguang Wu <fengguang.wu@intel.com>, Jeff Moyer <jmoyer@redhat.com>
-Subject: [GIT PULL] writeback: convert writeback to unbound workqueue
-Message-ID: <20130402030933.GB6255@htj.dyndns.org>
+	id S1759892Ab3DBDLt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 23:11:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8173 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759360Ab3DBDLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 23:11:48 -0400
+Message-ID: <515A4BD1.1020407@redhat.com>
+Date: Tue, 02 Apr 2013 11:09:05 +0800
+From: Zhouping Liu <zliu@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Rientjes <rientjes@google.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Amos Kong <akong@redhat.com>
+Subject: Re: THP: AnonHugePages in /proc/[pid]/smaps is correct or not?
+References: <383590596.664138.1364803227470.JavaMail.root@redhat.com> <alpine.DEB.2.02.1304011512490.17714@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1304011512490.17714@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Jens.
+On 04/02/2013 06:23 AM, David Rientjes wrote:
+> On Mon, 1 Apr 2013, Zhouping Liu wrote:
+>
+>> Hi all,
+>>
+>> I found THP can't correctly distinguish one anonymous hugepage map.
+>>
+>> 1. when /sys/kernel/mm/transparent_hugepage/enabled is 'always', the
+>>     amount of THP always is one less.
+>>
+> It's not a problem with identifying an anonymous mapping as a hugepage,
+> setting thp enabled to "always" does not guarantee that they will always
+> be allocatable or that your mmap() will be 2MB aligned.  Your sample code
+> is using mmap() instead of posix_memalign() so you'll probably only get
+> 100% hugepages only 1/512th of the time.
 
-This is the pull request for the earlier patchset[1] with the same
-name.  It's only three patches (the first one was committed to
-workqueue tree) but the merge strategy is a bit involved due to the
-dependencies.
+I don't understand clearly the last sentence 'you'll probably only get 
+100% hugepages only 1/512th of the time.'
+could you please explain more details about 'only 1/512th of the time'?
 
-* Because the conversion needs features from wq/for-3.10,
-  block/for-3.10/core is based on rc3, and wq/for-3.10 has conflicts
-  with rc3, I pulled mainline (rc5) into wq/for-3.10 to prevent those
-  workqueue conflicts from flaring up in block tree.
+>
+>> 2. when /sys/kernel/mm/transparent_hugepage/enabled is 'madvise', THP can't
+>>     distinguish any one anonymous hugepage size:
+>>
+>>     Testing code:
+>> -------- snip --------
+>> unsigned long hugepagesize = (1UL << 21);
+>>
+>> int main()
+>> {
+>> 	void *addr;
+>> 	int i;
+>>
+>> 	printf("pid is %d\n", getpid());
+>>
+>> 	for (i = 0; i < 5; i++) {
+>> 		addr = mmap(NULL, hugepagesize, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+>>
+>> 		if (addr == MAP_FAILED) {
+>> 			perror("mmap");
+>> 			return -1;
+>> 		}
+>>
+>> 		if (madvise(addr, hugepagesize, MADV_HUGEPAGE) == -1) {
+>> 			perror("madvise");
+>> 			return -1;
+>> 		}
+>>
+>> 		memset(addr, i, hugepagesize);
+>> 	}
+>>
+>> 	sleep(50);
+>>
+>> 	return 0;
+>> }
+>> --------- snip ----------
+>>
+>> The result is that it can't find any AnonHugePages from /proc/[pid]/smaps :
+>> -------------- snip -------
+>> 7f0b38cd0000-7f0b396d0000 rw-p 00000000 00:00 0
+>> Size:              10240 kB
+>> Rss:               10240 kB
+>> Pss:               10240 kB
+>> Shared_Clean:          0 kB
+>> Shared_Dirty:          0 kB
+>> Private_Clean:         0 kB
+>> Private_Dirty:     10240 kB
+>> Referenced:        10240 kB
+>> Anonymous:         10240 kB
+>> AnonHugePages:         0 kB
+>> Swap:                  0 kB
+>> KernelPageSize:        4 kB
+>> MMUPageSize:           4 kB
+>> Locked:                0 kB
+>> VmFlags: rd wr mr mw me ac
+> "hg" would be shown in VmFlags if your MADV_HUGEPAGE was successful, are
+> you sure this is the right vma?
 
-* Resolving the issue that Jan and Dave raised about debugging
-  requires arch-wide changes.  The patchset is being worked on[2] but
-  it'll have to go through -mm after these changes show up in -next,
-  and not included in this pull request.
+I think it's the same issue as the above, according to the sample code, 
+it does mmap() five times in total,
+and each time it map 2MB anonymous maps, as all the maps maybe aren't 
+2MB aligned, so "AnonHugePages"
+show 0 kB, and no "hg" VmFalgs.
 
-The three commits are located in the following git branch.
+so, again, if I understand correctly, thp should tune the naturally 
+aligned maps, such as generated by mmap()/malloc(),
+make such maps 'hugepagesize' aligned if the maps or vma is equal and 
+greater than 'hugepagesize', doesn't it?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git writeback-workqueue
-
-Pulling it into block/for-3.10/core produces a conflict in
-drivers/md/raid5.c between the following two commits.
-
-  e3620a3ad5 ("MD RAID5: Avoid accessing gendisk or queue structs when not available")
-  2f6db2a707 ("raid5: use bio_reset()")
-
-The conflict is trivial - one removes an "if ()" conditional while the
-other removes "rbi->bi_next = NULL" right above it.  We just need to
-remove both.  The merged branch is available at
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git block-test-merge
-
-so that you can use it for verification.  The test merge commit has
-proper merge description.
-
-While these changes are a bit of pain to route, they make code simpler
-and even have, while minute, measureable performance gain[3] even on a
-workload which isn't particularly favorable to showing the benefits of
-this conversion.
-
-Thanks.
-
--- 
-tejun
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1453006
-[2] https://lkml.org/lkml/2013/3/29/354
-[3] https://lkml.org/lkml/2013/3/28/67
+Thanks,
+Zhouping
