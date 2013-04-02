@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761735Ab3DBQvf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 12:51:35 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54735 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761656Ab3DBQvd (ORCPT
+	id S1761722Ab3DBQ6D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 12:58:03 -0400
+Received: from na3sys010aog109.obsmtp.com ([74.125.245.86]:60709 "HELO
+	na3sys010aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1760974Ab3DBQ6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 12:51:33 -0400
-Date: Tue, 2 Apr 2013 17:51:14 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: Fix typo "CONFIG_LPAE" twice
-Message-ID: <20130402165114.GI6608@mudshark.cambridge.arm.com>
-References: <1364563104.1345.74.camel@x61.thuisdomein>
+	Tue, 2 Apr 2013 12:58:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364563104.1345.74.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130402155104.GA27382@redhat.com>
+References: <20130324155153.GA8597@redhat.com> <20130402155104.GA27382@redhat.com>
+From: Roland Dreier <roland@kernel.org>
+Date: Tue, 2 Apr 2013 09:57:38 -0700
+X-Google-Sender-Auth: 4JEiUgVRxFXVvVYiXUBR9Rwq0Lg
+Message-ID: <CAL1RGDUe1=Xd1mpNajiLY08fJ+gBKAMDGeX3SVkS+egOQyiCxQ@mail.gmail.com>
+Subject: Re: [PATCHv2] rdma: add a new IB_ACCESS_GIFT flag
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Tue, Apr 2, 2013 at 8:51 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+>> At the moment registering an MR breaks COW.  This breaks memory
+>> overcommit for users such as KVM: we have a lot of COW pages, e.g.
+>> instances of the zero page or pages shared using KSM.
+>>
+>> If the application does not care that adapter sees stale data (for
+>> example, it tracks writes reregisters and resends), it can use a new
+>> IBV_ACCESS_GIFT flag to prevent registration from breaking COW.
+>>
+>> The semantics are similar to that of SPLICE_F_GIFT thus the name.
+>>
+>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+>
+> Roland, Michael is yet to test this but could you please
+> confirm whether this looks acceptable to you?
 
-On Fri, Mar 29, 2013 at 01:18:24PM +0000, Paul Bolle wrote:
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> 0) Untested.
-> 
-> 1) This typo was first introduced in v3.4: commit
-> e5ab85800820edd907d3f43f285e1232f84d5a41 ("ARM: 7382/1: mm: truncate
-> memory banks to fit in 4GB space for classic MMU"). The second instance
-> was added in v3.9-rc2: commit d61947a164760ac520cb416768afdf38c33d60e7
-> (" ARM: 7657/1: head: fix swapper and idmap population with LPAE and
-> big-endian"). So testing is really needed here.
-> 
-> 2) If this passes (review and) testing, this probably needs to go to
-> stable too.
-> 
->  arch/arm/kernel/head.S  | 2 +-
->  arch/arm/kernel/setup.c | 2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-> index e0eb9a1..8bac553 100644
-> --- a/arch/arm/kernel/head.S
-> +++ b/arch/arm/kernel/head.S
-> @@ -267,7 +267,7 @@ __create_page_tables:
->  	addne	r6, r6, #1 << SECTION_SHIFT
->  	strne	r6, [r3]
->  
-> -#if defined(CONFIG_LPAE) && defined(CONFIG_CPU_ENDIAN_BE8)
-> +#if defined(CONFIG_ARM_LPAE) && defined(CONFIG_CPU_ENDIAN_BE8)
->  	sub	r4, r4, #4			@ Fixup page table pointer
->  						@ for 64-bit descriptors
->  #endif
+The patch itself is reasonable I guess, given the needs of this particular app.
 
-The problem with this code is that there are very few people with platforms
-on which they can test it. You need an LPAE-capable CPU (Cortex-A7 or
-Cortex-A15) sitting on a big-endian platform. The only platform that I have
-for that is KVM, which doesn't have earlyprintk support.
+I'm not particularly happy with the name of the flag.  The analogy
+with SPLICE_F_GIFT doesn't seem particularly strong and I'm not
+convinced even the splice flag name is very understandable.  But in
+the RDMA case there's not really any sense in which we're "gifting"
+memory to the adapter -- we're just telling the library "please don't
+trigger copy-on-write" and it doesn't seem particularly easy for users
+to understand that from the flag name.
 
-Now, without the offending patch, such a configuration didn't even boot, but
-I can't verify that the mapping actually works. Of course, what you have
-written was the intended behaviour, so perhaps we should just go with that
-for the time being.
-
-Will
+ - R.
