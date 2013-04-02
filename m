@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758769Ab3DBXMn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:12:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32991 "EHLO
+	id S1758528Ab3DBXM6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:12:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32961 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933085Ab3DBWMX (ORCPT
+	with ESMTP id S933034Ab3DBWMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:23 -0400
+	Tue, 2 Apr 2013 18:12:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [ 049/124] userns:  Dont allow creation if the user is chrooted
-Date: Tue,  2 Apr 2013 15:10:31 -0700
-Message-Id: <20130402221109.873021700@linuxfoundation.org>
+        Vivek gautam <gautam.vivek@samsung.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 043/124] usb: xhci: Fix TRB transfer length macro used for Event TRB.
+Date: Tue,  2 Apr 2013 15:10:25 -0700
+Message-Id: <20130402221109.225575257@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -28,101 +27,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Vivek Gautam <gautam.vivek@samsung.com>
 
-commit 3151527ee007b73a0ebd296010f1c0454a919c7d upstream.
+commit 1c11a172cb30492f5f6a82c6e118fdcd9946c34f upstream.
 
-Guarantee that the policy of which files may be access that is
-established by setting the root directory will not be violated
-by user namespaces by verifying that the root directory points
-to the root of the mount namespace at the time of user namespace
-creation.
+Use proper macro while extracting TRB transfer length from
+Transfer event TRBs. Adding a macro EVENT_TRB_LEN (bits 0:23)
+for the same, and use it instead of TRB_LEN (bits 0:16) in
+case of event TRBs.
 
-Changing the root is a privileged operation, and as a matter of policy
-it serves to limit unprivileged processes to files below the current
-root directory.
+This patch should be backported to kernels as old as 2.6.31, that
+contain the commit b10de142119a676552df3f0d2e3a9d647036c26a "USB: xhci:
+Bulk transfer support".  This patch will have issues applying to older
+kernels.
 
-For reasons of simplicity and comprehensibility the privilege to
-change the root directory is gated solely on the CAP_SYS_CHROOT
-capability in the user namespace.  Therefore when creating a user
-namespace we must ensure that the policy of which files may be access
-can not be violated by changing the root directory.
-
-Anyone who runs a processes in a chroot and would like to use user
-namespace can setup the same view of filesystems with a mount
-namespace instead.  With this result that this is not a practical
-limitation for using user namespaces.
-
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Reported-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Vivek gautam <gautam.vivek@samsung.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namespace.c            |   24 ++++++++++++++++++++++++
- include/linux/fs_struct.h |    2 ++
- kernel/user_namespace.c   |    9 +++++++++
- 3 files changed, 35 insertions(+)
+ drivers/usb/host/xhci-ring.c |   24 ++++++++++++------------
+ drivers/usb/host/xhci.h      |    4 ++++
+ 2 files changed, 16 insertions(+), 12 deletions(-)
 
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -2758,6 +2758,30 @@ bool our_mnt(struct vfsmount *mnt)
- 	return check_mnt(real_mount(mnt));
- }
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -2027,8 +2027,8 @@ static int process_ctrl_td(struct xhci_h
+ 		if (event_trb != ep_ring->dequeue &&
+ 				event_trb != td->last_trb)
+ 			td->urb->actual_length =
+-				td->urb->transfer_buffer_length
+-				- TRB_LEN(le32_to_cpu(event->transfer_len));
++				td->urb->transfer_buffer_length -
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+ 		else
+ 			td->urb->actual_length = 0;
  
-+bool current_chrooted(void)
-+{
-+	/* Does the current process have a non-standard root */
-+	struct path ns_root;
-+	struct path fs_root;
-+	bool chrooted;
-+
-+	/* Find the namespace root */
-+	ns_root.mnt = &current->nsproxy->mnt_ns->root->mnt;
-+	ns_root.dentry = ns_root.mnt->mnt_root;
-+	path_get(&ns_root);
-+	while (d_mountpoint(ns_root.dentry) && follow_down_one(&ns_root))
-+		;
-+
-+	get_fs_root(current->fs, &fs_root);
-+
-+	chrooted = !path_equal(&fs_root, &ns_root);
-+
-+	path_put(&fs_root);
-+	path_put(&ns_root);
-+
-+	return chrooted;
-+}
-+
- static void *mntns_get(struct task_struct *task)
- {
- 	struct mnt_namespace *ns = NULL;
---- a/include/linux/fs_struct.h
-+++ b/include/linux/fs_struct.h
-@@ -50,4 +50,6 @@ static inline void get_fs_root_and_pwd(s
- 	spin_unlock(&fs->lock);
- }
+@@ -2060,7 +2060,7 @@ static int process_ctrl_td(struct xhci_h
+ 		/* Maybe the event was for the data stage? */
+ 			td->urb->actual_length =
+ 				td->urb->transfer_buffer_length -
+-				TRB_LEN(le32_to_cpu(event->transfer_len));
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+ 			xhci_dbg(xhci, "Waiting for status "
+ 					"stage event\n");
+ 			return 0;
+@@ -2096,7 +2096,7 @@ static int process_isoc_td(struct xhci_h
+ 	/* handle completion code */
+ 	switch (trb_comp_code) {
+ 	case COMP_SUCCESS:
+-		if (TRB_LEN(le32_to_cpu(event->transfer_len)) == 0) {
++		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) == 0) {
+ 			frame->status = 0;
+ 			break;
+ 		}
+@@ -2141,7 +2141,7 @@ static int process_isoc_td(struct xhci_h
+ 				len += TRB_LEN(le32_to_cpu(cur_trb->generic.field[2]));
+ 		}
+ 		len += TRB_LEN(le32_to_cpu(cur_trb->generic.field[2])) -
+-			TRB_LEN(le32_to_cpu(event->transfer_len));
++			EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
  
-+extern bool current_chrooted(void);
-+
- #endif /* _LINUX_FS_STRUCT_H */
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -61,6 +61,15 @@ int create_user_ns(struct cred *new)
- 	kgid_t group = new->egid;
- 	int ret;
+ 		if (trb_comp_code != COMP_STOP_INVAL) {
+ 			frame->actual_length = len;
+@@ -2199,7 +2199,7 @@ static int process_bulk_intr_td(struct x
+ 	case COMP_SUCCESS:
+ 		/* Double check that the HW transferred everything. */
+ 		if (event_trb != td->last_trb ||
+-				TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
++		    EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
+ 			xhci_warn(xhci, "WARN Successful completion "
+ 					"on short TX\n");
+ 			if (td->urb->transfer_flags & URB_SHORT_NOT_OK)
+@@ -2227,18 +2227,18 @@ static int process_bulk_intr_td(struct x
+ 				"%d bytes untransferred\n",
+ 				td->urb->ep->desc.bEndpointAddress,
+ 				td->urb->transfer_buffer_length,
+-				TRB_LEN(le32_to_cpu(event->transfer_len)));
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)));
+ 	/* Fast path - was this the last TRB in the TD for this URB? */
+ 	if (event_trb == td->last_trb) {
+-		if (TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
++		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
+ 			td->urb->actual_length =
+ 				td->urb->transfer_buffer_length -
+-				TRB_LEN(le32_to_cpu(event->transfer_len));
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+ 			if (td->urb->transfer_buffer_length <
+ 					td->urb->actual_length) {
+ 				xhci_warn(xhci, "HC gave bad length "
+ 						"of %d bytes left\n",
+-					  TRB_LEN(le32_to_cpu(event->transfer_len)));
++					  EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)));
+ 				td->urb->actual_length = 0;
+ 				if (td->urb->transfer_flags & URB_SHORT_NOT_OK)
+ 					*status = -EREMOTEIO;
+@@ -2280,7 +2280,7 @@ static int process_bulk_intr_td(struct x
+ 		if (trb_comp_code != COMP_STOP_INVAL)
+ 			td->urb->actual_length +=
+ 				TRB_LEN(le32_to_cpu(cur_trb->generic.field[2])) -
+-				TRB_LEN(le32_to_cpu(event->transfer_len));
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+ 	}
  
-+	/*
-+	 * Verify that we can not violate the policy of which files
-+	 * may be accessed that is specified by the root directory,
-+	 * by verifing that the root directory is at the root of the
-+	 * mount namespace which allows all files to be accessed.
-+	 */
-+	if (current_chrooted())
-+		return -EPERM;
+ 	return finish_td(xhci, td, event_trb, event, ep, status, false);
+@@ -2368,7 +2368,7 @@ static int handle_tx_event(struct xhci_h
+ 	 * transfer type
+ 	 */
+ 	case COMP_SUCCESS:
+-		if (TRB_LEN(le32_to_cpu(event->transfer_len)) == 0)
++		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) == 0)
+ 			break;
+ 		if (xhci->quirks & XHCI_TRUST_TX_LENGTH)
+ 			trb_comp_code = COMP_SHORT_TX;
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -972,6 +972,10 @@ struct xhci_transfer_event {
+ 	__le32	flags;
+ };
+ 
++/* Transfer event TRB length bit mask */
++/* bits 0:23 */
++#define	EVENT_TRB_LEN(p)		((p) & 0xffffff)
 +
- 	/* The creator needs a mapping in the parent user namespace
- 	 * or else we won't be able to reasonably tell userspace who
- 	 * created a user_namespace.
+ /** Transfer Event bit fields **/
+ #define	TRB_TO_EP_ID(p)	(((p) >> 16) & 0x1f)
+ 
 
 
