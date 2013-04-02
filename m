@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762080Ab3DBWV0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:21:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33609 "EHLO
+	id S933799Ab3DBWOg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:14:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33528 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933731Ab3DBWOh (ORCPT
+	with ESMTP id S933731Ab3DBWOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:37 -0400
+	Tue, 2 Apr 2013 18:14:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Veaceslav Falico <vfalico@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 53/68] bonding: remove already created master sysfs link on failure
-Date: Tue,  2 Apr 2013 15:13:42 -0700
-Message-Id: <20130402221336.106693944@linuxfoundation.org>
+        David Sterba <dsterba@suse.cz>, Josef Bacik <jbacik@fusionio.com>,
+        Lingzhu Xiang <lxiang@redhat.com>, CAI Qian <caiqian@redhat.com>
+Subject: [ 37/68] Btrfs: fix space leak when we fail to reserve metadata space
+Date: Tue,  2 Apr 2013 15:13:26 -0700
+Message-Id: <20130402221334.210209745@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
@@ -27,34 +27,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Josef Bacik <jbacik@fusionio.com>
 
-From: Veaceslav Falico <vfalico@redhat.com>
+commit f4881bc7a83eff263789dd524b7c269d138d4af5 upstream.
 
-[ Upstream commit 9fe16b78ee17579cb4f333534cf7043e94c67024 ]
+Dave reported a warning when running xfstest 275.  We have been leaking delalloc
+metadata space when our reservations fail.  This is because we were improperly
+calculating how much space to free for our checksum reservations.  The problem
+is we would sometimes free up space that had already been freed in another
+thread and we would end up with negative usage for the delalloc space.  This
+patch fixes the problem by calculating how much space the other threads would
+have already freed, and then calculate how much space we need to free had we not
+done the reservation at all, and then freeing any excess space.  This makes
+xfstests 275 no longer have leaked space.  Thanks
 
-If slave sysfs symlink failes to be created - we end up without removing
-the master sysfs symlink. Remove it in case of failure.
-
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: David Sterba <dsterba@suse.cz>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
+Reviewed-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/bonding/bond_sysfs.c |    5 +++++
- 1 file changed, 5 insertions(+)
 
---- a/drivers/net/bonding/bond_sysfs.c
-+++ b/drivers/net/bonding/bond_sysfs.c
-@@ -183,6 +183,11 @@ int bond_create_slave_symlinks(struct ne
- 	sprintf(linkname, "slave_%s", slave->name);
- 	ret = sysfs_create_link(&(master->dev.kobj), &(slave->dev.kobj),
- 				linkname);
+---
+ fs/btrfs/extent-tree.c |   47 +++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 41 insertions(+), 6 deletions(-)
+
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -4486,14 +4486,49 @@ int btrfs_delalloc_reserve_metadata(stru
+ 		 * If the inodes csum_bytes is the same as the original
+ 		 * csum_bytes then we know we haven't raced with any free()ers
+ 		 * so we can just reduce our inodes csum bytes and carry on.
+-		 * Otherwise we have to do the normal free thing to account for
+-		 * the case that the free side didn't free up its reserve
+-		 * because of this outstanding reservation.
+ 		 */
+-		if (BTRFS_I(inode)->csum_bytes == csum_bytes)
++		if (BTRFS_I(inode)->csum_bytes == csum_bytes) {
+ 			calc_csum_metadata_size(inode, num_bytes, 0);
+-		else
+-			to_free = calc_csum_metadata_size(inode, num_bytes, 0);
++		} else {
++			u64 orig_csum_bytes = BTRFS_I(inode)->csum_bytes;
++			u64 bytes;
 +
-+	/* free the master link created earlier in case of error */
-+	if (ret)
-+		sysfs_remove_link(&(slave->dev.kobj), "master");
++			/*
++			 * This is tricky, but first we need to figure out how much we
++			 * free'd from any free-ers that occured during this
++			 * reservation, so we reset ->csum_bytes to the csum_bytes
++			 * before we dropped our lock, and then call the free for the
++			 * number of bytes that were freed while we were trying our
++			 * reservation.
++			 */
++			bytes = csum_bytes - BTRFS_I(inode)->csum_bytes;
++			BTRFS_I(inode)->csum_bytes = csum_bytes;
++			to_free = calc_csum_metadata_size(inode, bytes, 0);
 +
- 	return ret;
- 
- }
++
++			/*
++			 * Now we need to see how much we would have freed had we not
++			 * been making this reservation and our ->csum_bytes were not
++			 * artificially inflated.
++			 */
++			BTRFS_I(inode)->csum_bytes = csum_bytes - num_bytes;
++			bytes = csum_bytes - orig_csum_bytes;
++			bytes = calc_csum_metadata_size(inode, bytes, 0);
++
++			/*
++			 * Now reset ->csum_bytes to what it should be.  If bytes is
++			 * more than to_free then we would have free'd more space had we
++			 * not had an artificially high ->csum_bytes, so we need to free
++			 * the remainder.  If bytes is the same or less then we don't
++			 * need to do anything, the other free-ers did the correct
++			 * thing.
++			 */
++			BTRFS_I(inode)->csum_bytes = orig_csum_bytes - num_bytes;
++			if (bytes > to_free)
++				to_free = bytes - to_free;
++			else
++				to_free = 0;
++		}
+ 		spin_unlock(&BTRFS_I(inode)->lock);
+ 		if (dropped)
+ 			to_free += btrfs_calc_trans_metadata_size(root, dropped);
 
 
