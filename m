@@ -1,44 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366Ab3DBOzl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 10:55:41 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:56629 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1760270Ab3DBOzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 10:55:39 -0400
-Date: Tue, 2 Apr 2013 09:55:36 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Nathan Zimmer <nzimmer@sgi.com>, rjw@sisk.pl, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 1/2] cpufreq: split the cpufreq_driver_lock and use
-	the rcu
-Message-ID: <20130402145536.GA31757@gulag1.americas.sgi.com>
-References: <5159C147.70800@sgi.com> <1364847069-2887-1-git-send-email-nzimmer@sgi.com> <1364847069-2887-2-git-send-email-nzimmer@sgi.com> <CAKohpok7MR28trAddHRi5Lcg0bGBHBnOfJO=yu7SQqGnV5ZCRg@mail.gmail.com>
+	id S932429Ab3DBO5K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 10:57:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55630 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760714Ab3DBO5J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 10:57:09 -0400
+Message-ID: <515AF1C1.7080508@canonical.com>
+Date: Tue, 02 Apr 2013 16:57:05 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohpok7MR28trAddHRi5Lcg0bGBHBnOfJO=yu7SQqGnV5ZCRg@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        daniel.vetter@ffwll.ch, x86@kernel.org,
+        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+        robclark@gmail.com, tglx@linutronix.de, mingo@elte.hu,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] mutex: add support for reservation style locks,
+ v2
+References: <20130228102452.15191.22673.stgit@patser>  <20130228102502.15191.14146.stgit@patser> <1364900432.18374.24.camel@laptop>
+In-Reply-To: <1364900432.18374.24.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 10:35:46AM +0530, Viresh Kumar wrote:
-> On 2 April 2013 01:41, Nathan Zimmer <nzimmer@sgi.com> wrote:
-> > diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> 
-> > +static struct cpufreq_driver __rcu *cpufreq_driver;
-> > +static DEFINE_SPINLOCK(cpufreq_driver_lock);
-> 
-> You really need this lock? This is only used in cpufreq_register_driver
-> and unregister_driver... And it doesn't protect other routines at all. And
-> because we are using rcu stuff now, probably this lock is just not required.
-> 
-The lock is unneeded if we expect register and unregister driver to not be
-called from muliple threads at once.  I didn't make that assumption.
+Hey,
 
-> > +static DEFINE_SPINLOCK(cpufreq_data_lock);
-> 
-> Only this one is required and it can be the rwlock which is already pushed
-> by rafael.
+Thanks for reviewing.
+
+Op 02-04-13 13:00, Peter Zijlstra schreef:
+> On Thu, 2013-02-28 at 11:25 +0100, Maarten Lankhorst wrote:
+>> +Reservation type mutexes
+>> +struct ticket_mutex {
+>> +extern int __must_check _mutex_reserve_lock(struct ticket_mutex *lock,
+> That's two different names and two different forms of one (for a total
+> of 3 variants) for the same scheme.
+>
+> FAIL...
+It's been hard since I haven't seen anything similar in the kernel, I originally went with tickets
+since that's what ttm originally called it, and tried to kill as many references as I could
+when I noticed ticket mutexes already being taken.
+
+I'll fix up the ticket_mutex -> reservation_mutex, and mutex_reserve_* -> reserve_mutex_*
+
+> On Thu, 2013-02-28 at 11:25 +0100, Maarten Lankhorst wrote:
+>> +mutex_reserve_lock_slow and mutex_reserve_lock_intr_slow:
+>> +  Similar to mutex_reserve_lock, except it won't backoff with
+>> -EAGAIN.
+>> +  This is useful when mutex_reserve_lock failed with -EAGAIN, and you
+>> +  unreserved all reservation_locks so no deadlock can occur.
+>> +
+> I don't particularly like these function names, with lock
+> implementations the _slow post-fix is typically used for slow path
+> implementations, not API type interfaces.
+ I didn't intend for drivers to use the new calls directly, but rather through a wrapper,
+for example by ttm_eu_reserve_buffers in drivers/gpu/drm/ttm/ttm_execbuf_util.c
+
+> Also, is there anything in CS literature that comes close to this? I'd
+> think the DBMS people would have something similar with their
+> transactional systems. What do they call it?
+I didn't study cs, but judging from your phrasing I guess you mean you want me to call it transaction_mutexes instead?
+
+> Head hurts, needs more time to ponder. It would be good if someone else
+> (this would probably be you maarten) would also consider this and
+> explore
+> this 'interesting' problem space :-)
+My head too, evil priority stuff!
+
+Hacky but pragmatical workaround for now: use a real mutex around all the reserve_mutex_lock* calls instead of a virtual lock.
+It can be unlocked as soon as all locks have been taken, before any actual work is done.
+
+It only slightly kills the point of having a reservation in the first place, but at least it won't break completely -rt completely for now.
+
+~Maarten
+
