@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760150Ab3DBXUN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:20:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32859 "EHLO
+	id S1760206Ab3DBXVY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:21:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32854 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932722Ab3DBWMA (ORCPT
+	with ESMTP id S932645Ab3DBWL6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:00 -0400
+	Tue, 2 Apr 2013 18:11:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Boyer <jwboyer@redhat.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 016/124] HID: usbhid: quirk for MSI GX680R led panel
-Date: Tue,  2 Apr 2013 15:09:58 -0700
-Message-Id: <20130402221106.068100071@linuxfoundation.org>
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 013/124] ath9k: limit tx path hang check to normal data queues
+Date: Tue,  2 Apr 2013 15:09:55 -0700
+Message-Id: <20130402221105.735566880@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -26,45 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 620ae90ed8ca8b6e40cb9e10279b4f5ef9f0ab81 upstream.
+commit 01d4ab96d2e7fceaad204e5a8710ce34e229b8c5 upstream.
 
-This keyboard backlight device causes a 10 second delay to boot.  Add it
-to the quirk list with HID_QUIRK_NO_INIT_REPORTS.
+The beacon and multicast-buffer queues are managed by the beacon
+tasklet, and the generic tx path hang check does not help in any way
+here. Running it on those queues anyway can introduce some race
+conditions leading to unnecessary chip resets.
 
-This fixes Red Hat bugzilla https://bugzilla.redhat.com/show_bug.cgi?id=907221
-
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ids.h           |    3 +++
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 2 files changed, 4 insertions(+)
+ drivers/net/wireless/ath/ath9k/link.c |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -587,6 +587,9 @@
- #define USB_VENDOR_ID_MONTEREY		0x0566
- #define USB_DEVICE_ID_GENIUS_KB29E	0x3004
+--- a/drivers/net/wireless/ath/ath9k/link.c
++++ b/drivers/net/wireless/ath/ath9k/link.c
+@@ -28,21 +28,21 @@ void ath_tx_complete_poll_work(struct wo
+ 	int i;
+ 	bool needreset = false;
  
-+#define USB_VENDOR_ID_MSI		0x1770
-+#define USB_DEVICE_ID_MSI_GX680R_LED_PANEL	0xff00
+-	for (i = 0; i < ATH9K_NUM_TX_QUEUES; i++)
+-		if (ATH_TXQ_SETUP(sc, i)) {
+-			txq = &sc->tx.txq[i];
+-			ath_txq_lock(sc, txq);
+-			if (txq->axq_depth) {
+-				if (txq->axq_tx_inprogress) {
+-					needreset = true;
+-					ath_txq_unlock(sc, txq);
+-					break;
+-				} else {
+-					txq->axq_tx_inprogress = true;
+-				}
++	for (i = 0; i < IEEE80211_NUM_ACS; i++) {
++		txq = sc->tx.txq_map[i];
 +
- #define USB_VENDOR_ID_NATIONAL_SEMICONDUCTOR 0x0400
- #define USB_DEVICE_ID_N_S_HARMONY	0xc359
++		ath_txq_lock(sc, txq);
++		if (txq->axq_depth) {
++			if (txq->axq_tx_inprogress) {
++				needreset = true;
++				ath_txq_unlock(sc, txq);
++				break;
++			} else {
++				txq->axq_tx_inprogress = true;
+ 			}
+-			ath_txq_unlock_complete(sc, txq);
+ 		}
++		ath_txq_unlock_complete(sc, txq);
++	}
  
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -73,6 +73,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
-+	{ USB_VENDIR_ID_MSI, USB_DEVICE_ID_MSI_GX680R_LED_PANEL, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_MOUSE, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1, HID_QUIRK_NO_INIT_REPORTS },
+ 	if (needreset) {
+ 		ath_dbg(ath9k_hw_common(sc->sc_ah), RESET,
 
 
