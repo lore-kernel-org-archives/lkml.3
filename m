@@ -1,76 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761649Ab3DBJlI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:41:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:56013 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758089Ab3DBJlF (ORCPT
+	id S1761661Ab3DBJlR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:41:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50888 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756550Ab3DBJlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:41:05 -0400
-Date: Tue, 2 Apr 2013 11:40:59 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pwm: twl: Return proper error if twl6030_pwm_enable()
- fails
-Message-ID: <20130402094059.GD856@avionic-0098.mockup.avionic-design.de>
-References: <1364742450.3834.8.camel@phoenix>
+	Tue, 2 Apr 2013 05:41:13 -0400
+Date: Tue, 2 Apr 2013 02:40:56 -0700
+From: tip-bot for Stephane Eranian <tipbot@zytor.com>
+Message-ID: <tip-9fac2cf316b070ae43d2ae2525e381ff2d1d68aa@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, tglx@linutronix.de
+In-Reply-To: <1359040242-8269-4-git-send-email-eranian@google.com>
+References: <1359040242-8269-4-git-send-email-eranian@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf/x86: Add flags to event constraints
+Git-Commit-ID: 9fac2cf316b070ae43d2ae2525e381ff2d1d68aa
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2Z2K0IlrPCVsbNpk"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1364742450.3834.8.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:3oC9nbwVaMqT63vp3GxgfpQH5v11UgnLMLpNe4tU+WQ
- dRxDQM597osAOePpldtL3FZpKm1QS6BTXCkzXLqZEKdHPIMBzr
- 4wsVxI93n/qLTIUdOI2CaB8HZ+wc8/z6x9JmjIOcDMy6VK0ZBx
- 0P5iHeByg4xvbED1d+N7griSPgJwXUHpVvgGMw/QfAVu0pZvRs
- KvAJXU4C5g5tBwc5fqJX6BVMZA8UfXLTknhb9jbQeymDz8lrc9
- nvdcsnkCLEvO3unNHFER7nIxKPeUewafBIM7GISuH6C292mvOn
- VzEu31Ep6E6BI/9x71A6/lMZSDu/LLbdzUL77gi6vAxYqewU/w
- RnJ1BEiweXIKM2+AmPTE93/ddntmkAYur2OwJC+OAYDQFwHLuW
- 5KiYYbSvBK1j+opeU0uWj0+6QrVoh+HmI0=
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 02:41:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  9fac2cf316b070ae43d2ae2525e381ff2d1d68aa
+Gitweb:     http://git.kernel.org/tip/9fac2cf316b070ae43d2ae2525e381ff2d1d68aa
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Thu, 24 Jan 2013 16:10:27 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 1 Apr 2013 12:15:04 -0300
 
---2Z2K0IlrPCVsbNpk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+perf/x86: Add flags to event constraints
 
-On Sun, Mar 31, 2013 at 11:07:30PM +0800, Axel Lin wrote:
-> Return proper error instead of 0 if twl6030_pwm_enable() fails.
->=20
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  drivers/pwm/pwm-twl.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+This patch adds a flags field to each event constraint.
+It can be used to store event specific features which can
+then later be used by scheduling code or low-level x86 code.
 
-Applied, thanks.
+The flags are propagated into event->hw.flags during the
+get_event_constraint() call. They are cleared during the
+put_event_constraint() call.
 
-Thierry
+This mechanism is going to be used by the PEBS-LL patches.
+It avoids defining yet another table to hold event specific
+information.
 
---2Z2K0IlrPCVsbNpk
-Content-Type: application/pgp-signature
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: peterz@infradead.org
+Cc: ak@linux.intel.com
+Cc: jolsa@redhat.com
+Cc: namhyung.kim@lge.com
+Link: http://lkml.kernel.org/r/1359040242-8269-4-git-send-email-eranian@google.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ arch/x86/kernel/cpu/perf_event.c              | 2 +-
+ arch/x86/kernel/cpu/perf_event.h              | 8 +++++---
+ arch/x86/kernel/cpu/perf_event_intel.c        | 6 +++++-
+ arch/x86/kernel/cpu/perf_event_intel_ds.c     | 4 +++-
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 2 +-
+ include/linux/perf_event.h                    | 1 +
+ 6 files changed, 16 insertions(+), 7 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRWqerAAoJEN0jrNd/PrOh8WEP/i1tlGjTG+Nn9CiGqXSnDgTD
-XKHasTxxSNCObRlC/0Kjmydd/5gYwEoHtjMKDqMd1kUqXWW3xhsblcGD+eJo9BdG
-Z6RK+K3DSVPD/pJmpSArB1BrfNN/k7d/GDy97SBTySaKieDhez95w0Oh1dDyKR/K
-7i8iArrgif0BCE8iCabTvTh2CHUz9KPXFtu9aWGfwoet8eqzlxwGRXc0c+aeZtNa
-PR8Mrt3hT7QLnjSfCFMfyf9dzRMXCzCQoKRiolOsOIrPdwqzM/MP4EfTwsESkJgH
-h371T/XTZ9UEcpYmqNk82DKcAMUXR+v+mX12KzxSpNFO09keH31zTKMaMaRros2E
-QJoOY/Flv2VkkLMXzoCiCcHzRNxUt8ALZlZ5OIWKBJ6t6wdXk/u3j2cebLEQz8CT
-AXPfpCI5EoPI0HxGUqIPFrcJOAlXqtcnIAjtGQq0QjlziIRB/IpGZx0+QuktiGEj
-nf84AKCpA1OM28ehnuWL3I+IKXhQ0Onmz+sw/kxsbmM5Rdc50YO1iNhUkvucEqdg
-xXo0lwUI/9owD6KrFJggbaVLpoUChgpSLrAUEKOqcvojb8kzNyEGmLibviw6KoUE
-0ebQKeOg4UYhlSE3ADd5R6JLZl0dghPjohxAL5JVPpaa1iQckj8wIyEJFz6wNeN8
-sEX3BtJQRlVSHt9mRpMd
-=+Hdo
------END PGP SIGNATURE-----
-
---2Z2K0IlrPCVsbNpk--
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 6e8ab04..8ba5151 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1489,7 +1489,7 @@ static int __init init_hw_perf_events(void)
+ 
+ 	unconstrained = (struct event_constraint)
+ 		__EVENT_CONSTRAINT(0, (1ULL << x86_pmu.num_counters) - 1,
+-				   0, x86_pmu.num_counters, 0);
++				   0, x86_pmu.num_counters, 0, 0);
+ 
+ 	x86_pmu.attr_rdpmc = 1; /* enable userspace RDPMC usage by default */
+ 	x86_pmu_format_group.attrs = x86_pmu.format_attrs;
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index b1518ee..9686d38 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -59,6 +59,7 @@ struct event_constraint {
+ 	u64	cmask;
+ 	int	weight;
+ 	int	overlap;
++	int	flags;
+ };
+ 
+ struct amd_nb {
+@@ -170,16 +171,17 @@ struct cpu_hw_events {
+ 	void				*kfree_on_online;
+ };
+ 
+-#define __EVENT_CONSTRAINT(c, n, m, w, o) {\
++#define __EVENT_CONSTRAINT(c, n, m, w, o, f) {\
+ 	{ .idxmsk64 = (n) },		\
+ 	.code = (c),			\
+ 	.cmask = (m),			\
+ 	.weight = (w),			\
+ 	.overlap = (o),			\
++	.flags = f,			\
+ }
+ 
+ #define EVENT_CONSTRAINT(c, n, m)	\
+-	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 0)
++	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 0, 0)
+ 
+ /*
+  * The overlap flag marks event constraints with overlapping counter
+@@ -203,7 +205,7 @@ struct cpu_hw_events {
+  * and its counter masks must be kept at a minimum.
+  */
+ #define EVENT_CONSTRAINT_OVERLAP(c, n, m)	\
+-	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 1)
++	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 1, 0)
+ 
+ /*
+  * Constraint on the Event code.
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index dab7580..df3beaa 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1392,8 +1392,11 @@ x86_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+ 
+ 	if (x86_pmu.event_constraints) {
+ 		for_each_event_constraint(c, x86_pmu.event_constraints) {
+-			if ((event->hw.config & c->cmask) == c->code)
++			if ((event->hw.config & c->cmask) == c->code) {
++				/* hw.flags zeroed at initialization */
++				event->hw.flags |= c->flags;
+ 				return c;
++			}
+ 		}
+ 	}
+ 
+@@ -1438,6 +1441,7 @@ intel_put_shared_regs_event_constraints(struct cpu_hw_events *cpuc,
+ static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
+ 					struct perf_event *event)
+ {
++	event->hw.flags = 0;
+ 	intel_put_shared_regs_event_constraints(cpuc, event);
+ }
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 826054a..f30d85b 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -430,8 +430,10 @@ struct event_constraint *intel_pebs_constraints(struct perf_event *event)
+ 
+ 	if (x86_pmu.pebs_constraints) {
+ 		for_each_event_constraint(c, x86_pmu.pebs_constraints) {
+-			if ((event->hw.config & c->cmask) == c->code)
++			if ((event->hw.config & c->cmask) == c->code) {
++				event->hw.flags |= c->flags;
+ 				return c;
++			}
+ 		}
+ 	}
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index b43200d..75da9e1 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2438,7 +2438,7 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
+ 
+ 	type->unconstrainted = (struct event_constraint)
+ 		__EVENT_CONSTRAINT(0, (1ULL << type->num_counters) - 1,
+-				0, type->num_counters, 0);
++				0, type->num_counters, 0, 0);
+ 
+ 	for (i = 0; i < type->num_boxes; i++) {
+ 		pmus[i].func_id = -1;
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 1c59211..cd3bb2c 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -127,6 +127,7 @@ struct hw_perf_event {
+ 			int		event_base_rdpmc;
+ 			int		idx;
+ 			int		last_cpu;
++			int		flags;
+ 
+ 			struct hw_perf_event_extra extra_reg;
+ 			struct hw_perf_event_extra branch_reg;
