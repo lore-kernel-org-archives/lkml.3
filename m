@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760439Ab3DBDy7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 23:54:59 -0400
-Received: from mail-da0-f45.google.com ([209.85.210.45]:53172 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760419Ab3DBDy4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760420Ab3DBDy4 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 1 Apr 2013 23:54:56 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52797 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760402Ab3DBDyx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Apr 2013 23:54:53 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: David Ahern <dsahern@gmail.com>, Borislav Petkov <bp@alien8.de>,
@@ -15,9 +15,9 @@ Cc: David Ahern <dsahern@gmail.com>, Borislav Petkov <bp@alien8.de>,
         Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 04/23] perf: make gtk2 support based on CONFIG_GTK2
-Date: Mon,  1 Apr 2013 21:54:18 -0600
-Message-Id: <1364874877-5618-5-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 03/23] perf: make python support based on CONFIG_LIBPYTHON
+Date: Mon,  1 Apr 2013 21:54:17 -0600
+Message-Id: <1364874877-5618-4-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1364874877-5618-1-git-send-email-dsahern@gmail.com>
 References: <1364874877-5618-1-git-send-email-dsahern@gmail.com>
@@ -35,92 +35,222 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile                 |   39 ++++++++++++++++-------------------
- tools/perf/Pconfig                  |    3 +++
- tools/perf/config/feature-tests.mak |    2 +-
- 3 files changed, 22 insertions(+), 22 deletions(-)
+ tools/perf/Makefile                     |  105 +++++++++++++++----------------
+ tools/perf/Pconfig                      |    3 +
+ tools/perf/builtin-script.c             |    2 +-
+ tools/perf/config/feature-tests.mak     |    2 +-
+ tools/perf/util/trace-event-scripting.c |   17 +++--
+ 5 files changed, 61 insertions(+), 68 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 2225c3d..01e2abf 100644
+index af7b746..2225c3d 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -36,8 +36,6 @@ include config/utilities.mak
+@@ -16,8 +16,6 @@ include config/utilities.mak
  #
- # Define NO_NEWT if you do not want TUI support.
+ # Define CROSS_COMPILE as prefix name of compiler if you want cross-builds.
  #
--# Define NO_GTK2 if you do not want GTK+ GUI support.
+-# Define NO_LIBPYTHON to disable python script extension.
 -#
- # Define NO_DEMANGLE if you do not want C++ symbol demangling.
+ # Define PYTHON to point to the python binary if the default
+ # `python' is not correct; for example: PYTHON=python2
  #
- # Define NO_LIBELF if you do not want libelf dependency (e.g. cross-builds)
-@@ -693,25 +691,24 @@ ifndef NO_NEWT
- 	endif
+@@ -733,69 +731,64 @@ ifdef CONFIG_LIBPERL
+     LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
  endif
  
--ifndef NO_GTK2
--	FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
--	ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
--		msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
--	else
--		ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
--			BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
--		endif
--		BASIC_CFLAGS += -DGTK2_SUPPORT
--		BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
--		EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
--		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/util.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
--		LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
--	endif
-+ifdef CONFIG_GTK2
-+    FLAGS_GTK2=$(ALL_CFLAGS) $(ALL_LDFLAGS) $(EXTLIBS) $(shell pkg-config --libs --cflags gtk+-2.0 2>/dev/null)
-+    ifneq ($(call try-cc,$(SOURCE_GTK2),$(FLAGS_GTK2),gtk2),y)
-+        $(error GTK2 not found. Please install gtk2-devel or libgtk2.0-dev or unset CONFIG_GTK2)
+-disable-python = $(eval $(disable-python_code))
+-define disable-python_code
+-  BASIC_CFLAGS += -DNO_LIBPYTHON
+-  $(if $(1),$(warning No $(1) was found))
+-  $(warning Python support will not be built)
+-endef
++ifdef CONFIG_LIBPYTHON
++    override PYTHON := \
++        $(call get-executable-or-default,PYTHON,python)
+ 
+-override PYTHON := \
+-  $(call get-executable-or-default,PYTHON,python)
++    ifndef PYTHON
++        $(error python interpreter not found. Install it or unset CONFIG_LIBPYTHON to continue.)
 +    endif
-+    ifeq ($(call try-cc,$(SOURCE_GTK2_INFOBAR),$(FLAGS_GTK2),-DHAVE_GTK_INFO_BAR),y)
-+        BASIC_CFLAGS += -DHAVE_GTK_INFO_BAR
+ 
+-ifndef PYTHON
+-  $(call disable-python,python interpreter)
+-else
++    PYTHON_WORD := $(call shell-wordify,$(PYTHON))
+ 
+-  PYTHON_WORD := $(call shell-wordify,$(PYTHON))
++    # python extension build directories
++    PYTHON_EXTBUILD     := $(OUTPUT)python_ext_build/
++    PYTHON_EXTBUILD_LIB := $(PYTHON_EXTBUILD)lib/
++    PYTHON_EXTBUILD_TMP := $(PYTHON_EXTBUILD)tmp/
++    export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
+ 
+-  ifdef NO_LIBPYTHON
+-    $(call disable-python)
+-  else
++    python-clean := rm -rf $(PYTHON_EXTBUILD) $(OUTPUT)python/perf.so
+ 
+     override PYTHON_CONFIG := \
+-      $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
++        $(call get-executable-or-default,PYTHON_CONFIG,$(PYTHON)-config)
+ 
+     ifndef PYTHON_CONFIG
+-      $(call disable-python,python-config tool)
+-    else
+-
+-      PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
+-
+-      PYTHON_EMBED_LDOPTS := $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
+-      PYTHON_EMBED_LDFLAGS := $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
+-      PYTHON_EMBED_LIBADD := $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
+-      PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
+-      FLAGS_PYTHON_EMBED := $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
+-
+-      ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED),python),y)
+-        $(call disable-python,Python.h (for Python 2.x))
+-      else
+-
+-        ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED),python version),y)
+-          $(warning Python 3 is not yet supported; please set)
+-          $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
+-          $(warning If you also have Python 2 installed, then)
+-          $(warning try something like:)
+-          $(warning $(and ,))
+-          $(warning $(and ,)  make PYTHON=python2)
+-          $(warning $(and ,))
+-          $(warning Otherwise, disable Python support entirely:)
+-          $(warning $(and ,))
+-          $(warning $(and ,)  make NO_LIBPYTHON=1)
+-          $(warning $(and ,))
+-          $(error   $(and ,))
+-        else
+-          ALL_LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
+-          EXTLIBS += $(PYTHON_EMBED_LIBADD)
+-          LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
+-          LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
+-          LANG_BINDINGS += $(OUTPUT)python/perf.so
+-        endif
+-
+-      endif
++        $(error python-config not found. Install it or unset CONFIG_LIBPYTHON to continue.)
+     endif
+-  endif
++
++    PYTHON_CONFIG_SQ := $(call shell-sq,$(PYTHON_CONFIG))
++
++    PYTHON_EMBED_LDOPTS := $(shell $(PYTHON_CONFIG_SQ) --ldflags 2>/dev/null)
++    PYTHON_EMBED_LDFLAGS := $(call strip-libs,$(PYTHON_EMBED_LDOPTS))
++    PYTHON_EMBED_LIBADD := $(call grep-libs,$(PYTHON_EMBED_LDOPTS))
++    PYTHON_EMBED_CCOPTS := $(shell $(PYTHON_CONFIG_SQ) --cflags 2>/dev/null)
++    FLAGS_PYTHON_EMBED := $(PYTHON_EMBED_CCOPTS) $(PYTHON_EMBED_LDOPTS)
++
++    ifneq ($(call try-cc,$(SOURCE_PYTHON_EMBED),$(FLAGS_PYTHON_EMBED)),y)
++        $(warning Failed to detect python development kit.)
++        $(warning Install it or unset CONFIG_LIBPYTHON to continue.)
++        $(warning e.g., apt-get install python-dev (ubuntu).)
++        $(warning       yum install python-devel (Fedora).)
++        $(error )
 +    endif
-+    BASIC_CFLAGS += -DGTK2_SUPPORT
-+    BASIC_CFLAGS += $(shell pkg-config --cflags gtk+-2.0 2>/dev/null)
-+    EXTLIBS += $(shell pkg-config --libs gtk+-2.0 2>/dev/null)
-+    LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
-+    LIB_OBJS += $(OUTPUT)ui/gtk/hists.o
-+    LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
-+    LIB_OBJS += $(OUTPUT)ui/gtk/util.o
-+    LIB_OBJS += $(OUTPUT)ui/gtk/helpline.o
-+    LIB_OBJS += $(OUTPUT)ui/gtk/progress.o
-+    LIB_OBJS += $(OUTPUT)ui/gtk/annotate.o
++
++    ifneq ($(call try-cc,$(SOURCE_PYTHON_VERSION),$(FLAGS_PYTHON_EMBED),python version),y)
++        $(warning Python 3 is not yet supported; please set)
++        $(warning PYTHON and/or PYTHON_CONFIG appropriately.)
++        $(warning If you also have Python 2 installed, then)
++        $(warning try something like:)
++        $(warning $(and ,))
++        $(warning $(and ,)  make PYTHON=python2)
++        $(warning $(and ,))
++        $(warning Otherwise, disable Python support entirely by unsetting CONFIG_LIBPYTHON.)
++        $(error   $(and ,))
++    endif
++
++    ALL_LDFLAGS   += $(PYTHON_EMBED_LDFLAGS)
++    EXTLIBS       += $(PYTHON_EMBED_LIBADD)
++    LIB_OBJS      += $(OUTPUT)util/scripting-engines/trace-event-python.o
++    LIB_OBJS      += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
++    LANG_BINDINGS += $(OUTPUT)python/perf.so
  endif
  
- ifdef CONFIG_LIBPERL
+ ifdef NO_DEMANGLE
 diff --git a/tools/perf/Pconfig b/tools/perf/Pconfig
-index 67ae110..79e1fc3 100644
+index a636af3..67ae110 100644
 --- a/tools/perf/Pconfig
 +++ b/tools/perf/Pconfig
-@@ -1,3 +1,6 @@
-+config GTK2
-+    bool "Enable GTK-based UI"
-+
+@@ -1,2 +1,5 @@
  config LIBPERL
      bool "Enable support for perl scripting engine"
- 
++
++config LIBPYTHON
++    bool "Enable support for python scripting engine"
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 7841533..e57b87d 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -1115,7 +1115,7 @@ int find_scripts(char **scripts_array, char **scripts_path_array)
+ 		if (strstr(lang_path, "perl"))
+ 			continue;
+ #endif
+-#ifdef NO_LIBPYTHON
++#ifndef CONFIG_LIBPYTHON
+ 		if (strstr(lang_path, "python"))
+ 			continue;
+ #endif
 diff --git a/tools/perf/config/feature-tests.mak b/tools/perf/config/feature-tests.mak
-index 2a2fa3b..bf906e8 100644
+index 1222b33..2a2fa3b 100644
 --- a/tools/perf/config/feature-tests.mak
 +++ b/tools/perf/config/feature-tests.mak
-@@ -74,7 +74,7 @@ int main(void)
+@@ -115,7 +115,7 @@ return 0;
  endef
  endif
  
--ifndef NO_GTK2
-+ifdef CONFIG_GTK2
- define SOURCE_GTK2
- #pragma GCC diagnostic ignored \"-Wstrict-prototypes\"
- #include <gtk/gtk.h>
+-ifndef NO_LIBPYTHON
++ifdef CONFIG_LIBPYTHON
+ define SOURCE_PYTHON_VERSION
+ #include <Python.h>
+ #if PY_VERSION_HEX >= 0x03000000
+diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
+index 3343d97..932d480 100644
+--- a/tools/perf/util/trace-event-scripting.c
++++ b/tools/perf/util/trace-event-scripting.c
+@@ -46,11 +46,8 @@ static void process_event_unsupported(union perf_event *event __maybe_unused,
+ 
+ static void print_python_unsupported_msg(void)
+ {
+-	fprintf(stderr, "Python scripting not supported."
+-		"  Install libpython and rebuild perf to enable it.\n"
+-		"For example:\n  # apt-get install python-dev (ubuntu)"
+-		"\n  # yum install python-devel (Fedora)"
+-		"\n  etc.\n");
++	fprintf(stderr, "Python scripting not supported.\n"
++		"Enable CONFIG_LIBPYTHON and rebuild perf to enable it.\n");
+ }
+ 
+ static int python_start_script_unsupported(const char *script __maybe_unused,
+@@ -94,17 +91,17 @@ static void register_python_scripting(struct scripting_ops *scripting_ops)
+ 	scripting_context = malloc(sizeof(struct scripting_context));
+ }
+ 
+-#ifdef NO_LIBPYTHON
++#ifdef CONFIG_LIBPYTHON
++extern struct scripting_ops python_scripting_ops;
++
+ void setup_python_scripting(void)
+ {
+-	register_python_scripting(&python_scripting_unsupported_ops);
++	register_python_scripting(&python_scripting_ops);
+ }
+ #else
+-extern struct scripting_ops python_scripting_ops;
+-
+ void setup_python_scripting(void)
+ {
+-	register_python_scripting(&python_scripting_ops);
++	register_python_scripting(&python_scripting_unsupported_ops);
+ }
+ #endif
+ 
 -- 
 1.7.10.1
 
