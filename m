@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760885Ab3DBJBR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:01:17 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:50607 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760511Ab3DBJBP (ORCPT
+	id S1760991Ab3DBJDA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:03:00 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50604 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753276Ab3DBJC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:01:15 -0400
+	Tue, 2 Apr 2013 05:02:57 -0400
+X-AuditID: 9c930179-b7b2aae000000518-37-515a9ebec9ef
+From: Namhyung Kim <namhyung@kernel.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, efault@gmx.de, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch v6 10/21] sched: get rq potential maximum utilization
+References: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
+	<1364654108-16307-11-git-send-email-alex.shi@intel.com>
+Date: Tue, 02 Apr 2013 18:02:54 +0900
+In-Reply-To: <1364654108-16307-11-git-send-email-alex.shi@intel.com> (Alex
+	Shi's message of "Sat, 30 Mar 2013 22:34:57 +0800")
+Message-ID: <87a9phfgox.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <515459D8.4010001@nvidia.com>
-References: <1363876214-25933-1-git-send-email-ldewangan@nvidia.com>
-	<CACRpkdY_9pEkNfp7L82nGjsjFOi-VXwPHo7_3XwjCz8XcN8osg@mail.gmail.com>
-	<5153DC24.7040309@nvidia.com>
-	<515459D8.4010001@nvidia.com>
-Date: Tue, 2 Apr 2013 11:01:14 +0200
-Message-ID: <CACRpkdYTcEzVMK-7V_T1qxtz1Pbw_um8pzasM=pTJ+vFnZasAg@mail.gmail.com>
-Subject: Re: [PATCH] gpio: palmas: add dt support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 3:55 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> On 03/27/2013 11:59 PM, Laxman Dewangan wrote:
->> On Wednesday 27 March 2013 06:30 PM, Linus Walleij wrote:
->>> On Thu, Mar 21, 2013 at 3:30 PM, Laxman Dewangan
->>> <ldewangan@nvidia.com> wrote:
->>>
->>>> +#ifdef CONFIG_OF
->>>> +static struct of_device_id of_palmas_gpio_match[] = {
->>>> +       { .compatible = "ti,palmas-gpio"},
->>>> +       { },
->>>> +};
->>>> +MODULE_DEVICE_TABLE(of, of_palmas_gpio_match);
->>>> +#endif
->>>
->>> But please drop the #ifdef here unless it causes compile errors
->>> (I don't think it will.)
->>>
->>
->> I am using this table as
->>
->> driver.of_match_table = of_match_ptr(of_palmas_gpio_match),
->> of_match_ptr is macro which is NULL in case of CONFIG_OF not defined.
->> So if I remove ifdefs then it may create build warning as unused variable.
+Hi Alex,
+
+On Sat, 30 Mar 2013 22:34:57 +0800, Alex Shi wrote:
+> Since the rt task priority is higher than fair tasks, cfs_rq utilization
+> is just the left of rt utilization.
 >
-> I think Linus's point is that you can simply remove the use of
-> of_match_ptr(). The only disadvantage of doing so is that the table will
-> always be included in the object file, but it's so small that it's
-> probably not worth worrying about.
+> When there are some cfs tasks in queue, the potential utilization may
+> be yielded, so mulitiplying cfs task number to get max potential
+> utilization of cfs. Then the rq utilization is sum of rt util and cfs
+> util.
+>
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/sched/fair.c | 16 ++++++++++++++++
+>  1 file changed, 16 insertions(+)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index ae87dab..0feeaee 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3350,6 +3350,22 @@ struct sg_lb_stats {
+>  	unsigned int group_util;	/* sum utilization of group */
+>  };
+>  
+> +static unsigned long scale_rt_util(int cpu);
+> +
+> +static unsigned int max_rq_util(int cpu)
+> +{
+> +	struct rq *rq = cpu_rq(cpu);
+> +	unsigned int rt_util = scale_rt_util(cpu);
+> +	unsigned int cfs_util;
+> +	unsigned int nr_running;
+> +
+> +	cfs_util = (FULL_UTIL - rt_util) > rq->util ? rq->util
+> +			: (FULL_UTIL - rt_util);
+> +	nr_running = rq->nr_running ? rq->nr_running : 1;
 
-Oh I wasn't that smart :-)
+This can be cleaned up with proper min/max().
 
-But what you're saying seems true.
+> +
+> +	return rt_util + cfs_util * nr_running;
 
-The of_match_ptr() is something
-I haven't quite seen before and don't quite understand the
-semantics of, why would we use that?
+Should this nr_running consider tasks in cfs_rq only?  Also it seems
+there's no upper bound so that it can possibly exceed FULL_UTIL.
 
-Yours,
-Linus Walleij
+Thanks,
+Namhyung
+
+> +}
+> +
+>  /*
+>   * sched_balance_self: balance the current task (running on cpu) in domains
+>   * that have the 'flag' flag set. In practice, this is SD_BALANCE_FORK and
