@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab3DBWmq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:42:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33162 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761779Ab3DBWMz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1761757Ab3DBWMz (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 2 Apr 2013 18:12:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33073 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933341Ab3DBWMo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:12:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andre Heider <a.heider@gmail.com>, Lingzhu Xiang <lxiang@redhat.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Matt Fleming <matt.fleming@intel.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 095/124] efivars: Handle duplicate names from get_next_variable()
-Date: Tue,  2 Apr 2013 15:11:17 -0700
-Message-Id: <20130402221115.128526612@linuxfoundation.org>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Emese Revfy <re.emese@gmail.com>, PaX Team <pageexec@freemail.hu>,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Julien Tinnes <jln@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 079/124] kernel/signal.c: use __ARCH_HAS_SA_RESTORER instead of SA_RESTORER
+Date: Tue,  2 Apr 2013 15:11:01 -0700
+Message-Id: <20130402221113.311991542@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -28,170 +33,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Andrew Morton <akpm@linux-foundation.org>
 
-commit e971318bbed610e28bb3fde9d548e6aaf0a6b02e upstream.
+commit 522cff142d7d2f9230839c9e1f21a4d8bcc22a4a upstream.
 
-Some firmware exhibits a bug where the same VariableName and
-VendorGuid values are returned on multiple invocations of
-GetNextVariableName(). See,
+__ARCH_HAS_SA_RESTORER is the preferred conditional for use in 3.9 and
+later kernels, per Kees.
 
-    https://bugzilla.kernel.org/show_bug.cgi?id=47631
-
-As a consequence of such a bug, Andre reports hitting the following
-WARN_ON() in the sysfs code after updating the BIOS on his, "Gigabyte
-Technology Co., Ltd. To be filled by O.E.M./Z77X-UD3H, BIOS F19e
-11/21/2012)" machine,
-
-[    0.581554] EFI Variables Facility v0.08 2004-May-17
-[    0.584914] ------------[ cut here ]------------
-[    0.585639] WARNING: at /home/andre/linux/fs/sysfs/dir.c:536 sysfs_add_one+0xd4/0x100()
-[    0.586381] Hardware name: To be filled by O.E.M.
-[    0.587123] sysfs: cannot create duplicate filename '/firmware/efi/vars/SbAslBufferPtrVar-01f33c25-764d-43ea-aeea-6b5a41f3f3e8'
-[    0.588694] Modules linked in:
-[    0.589484] Pid: 1, comm: swapper/0 Not tainted 3.8.0+ #7
-[    0.590280] Call Trace:
-[    0.591066]  [<ffffffff81208954>] ? sysfs_add_one+0xd4/0x100
-[    0.591861]  [<ffffffff810587bf>] warn_slowpath_common+0x7f/0xc0
-[    0.592650]  [<ffffffff810588bc>] warn_slowpath_fmt+0x4c/0x50
-[    0.593429]  [<ffffffff8134dd85>] ? strlcat+0x65/0x80
-[    0.594203]  [<ffffffff81208954>] sysfs_add_one+0xd4/0x100
-[    0.594979]  [<ffffffff81208b78>] create_dir+0x78/0xd0
-[    0.595753]  [<ffffffff81208ec6>] sysfs_create_dir+0x86/0xe0
-[    0.596532]  [<ffffffff81347e4c>] kobject_add_internal+0x9c/0x220
-[    0.597310]  [<ffffffff81348307>] kobject_init_and_add+0x67/0x90
-[    0.598083]  [<ffffffff81584a71>] ? efivar_create_sysfs_entry+0x61/0x1c0
-[    0.598859]  [<ffffffff81584b2b>] efivar_create_sysfs_entry+0x11b/0x1c0
-[    0.599631]  [<ffffffff8158517e>] register_efivars+0xde/0x420
-[    0.600395]  [<ffffffff81d430a7>] ? edd_init+0x2f5/0x2f5
-[    0.601150]  [<ffffffff81d4315f>] efivars_init+0xb8/0x104
-[    0.601903]  [<ffffffff8100215a>] do_one_initcall+0x12a/0x180
-[    0.602659]  [<ffffffff81d05d80>] kernel_init_freeable+0x13e/0x1c6
-[    0.603418]  [<ffffffff81d05586>] ? loglevel+0x31/0x31
-[    0.604183]  [<ffffffff816a6530>] ? rest_init+0x80/0x80
-[    0.604936]  [<ffffffff816a653e>] kernel_init+0xe/0xf0
-[    0.605681]  [<ffffffff816ce7ec>] ret_from_fork+0x7c/0xb0
-[    0.606414]  [<ffffffff816a6530>] ? rest_init+0x80/0x80
-[    0.607143] ---[ end trace 1609741ab737eb29 ]---
-
-There's not much we can do to work around and keep traversing the
-variable list once we hit this firmware bug. Our only solution is to
-terminate the loop because, as Lingzhu reports, some machines get
-stuck when they encounter duplicate names,
-
-  > I had an IBM System x3100 M4 and x3850 X5 on which kernel would
-  > get stuck in infinite loop creating duplicate sysfs files because,
-  > for some reason, there are several duplicate boot entries in nvram
-  > getting GetNextVariableName into a circle of iteration (with
-  > period > 2).
-
-Also disable the workqueue, as efivar_update_sysfs_entries() uses
-GetNextVariableName() to figure out which variables have been created
-since the last iteration. That algorithm isn't going to work if
-GetNextVariableName() returns duplicates. Note that we don't disable
-EFI variable creation completely on the affected machines, it's just
-that any pstore dump-* files won't appear in sysfs until the next
-boot.
-
-[Backported for 3.8-stable. Removed code related to pstore
-workqueue but pulled in helper function variable_is_present
-from a93bc0c.]
-
-Reported-by: Andre Heider <a.heider@gmail.com>
-Reported-by: Lingzhu Xiang <lxiang@redhat.com>
-Tested-by: Lingzhu Xiang <lxiang@redhat.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
-Reviewed-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Cc: Emese Revfy <re.emese@gmail.com>
+Cc: Emese Revfy <re.emese@gmail.com>
+Cc: PaX Team <pageexec@freemail.hu>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Julien Tinnes <jln@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firmware/efivars.c |   60 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 60 insertions(+)
+ kernel/signal.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -1669,6 +1669,28 @@ static ssize_t efivar_delete(struct file
- 	return count;
- }
- 
-+static bool variable_is_present(efi_char16_t *variable_name, efi_guid_t *vendor)
-+{
-+	struct efivar_entry *entry, *n;
-+	struct efivars *efivars = &__efivars;
-+	unsigned long strsize1, strsize2;
-+	bool found = false;
-+
-+	strsize1 = utf16_strsize(variable_name, 1024);
-+	list_for_each_entry_safe(entry, n, &efivars->list, list) {
-+		strsize2 = utf16_strsize(entry->var.VariableName, 1024);
-+		if (strsize1 == strsize2 &&
-+			!memcmp(variable_name, &(entry->var.VariableName),
-+				strsize2) &&
-+			!efi_guidcmp(entry->var.VendorGuid,
-+				*vendor)) {
-+			found = true;
-+			break;
-+		}
-+	}
-+	return found;
-+}
-+
- /*
-  * Returns the size of variable_name, in bytes, including the
-  * terminating NULL character, or variable_name_size if no NULL
-@@ -1889,6 +1911,28 @@ void unregister_efivars(struct efivars *
- }
- EXPORT_SYMBOL_GPL(unregister_efivars);
- 
-+/*
-+ * Print a warning when duplicate EFI variables are encountered and
-+ * disable the sysfs workqueue since the firmware is buggy.
-+ */
-+static void dup_variable_bug(efi_char16_t *s16, efi_guid_t *vendor_guid,
-+			     unsigned long len16)
-+{
-+	size_t i, len8 = len16 / sizeof(efi_char16_t);
-+	char *s8;
-+
-+	s8 = kzalloc(len8, GFP_KERNEL);
-+	if (!s8)
-+		return;
-+
-+	for (i = 0; i < len8; i++)
-+		s8[i] = s16[i];
-+
-+	printk(KERN_WARNING "efivars: duplicate variable: %s-%pUl\n",
-+	       s8, vendor_guid);
-+	kfree(s8);
-+}
-+
- int register_efivars(struct efivars *efivars,
- 		     const struct efivar_operations *ops,
- 		     struct kobject *parent_kobj)
-@@ -1939,6 +1983,22 @@ int register_efivars(struct efivars *efi
- 		case EFI_SUCCESS:
- 			variable_name_size = var_name_strnsize(variable_name,
- 							       variable_name_size);
-+
-+			/*
-+			 * Some firmware implementations return the
-+			 * same variable name on multiple calls to
-+			 * get_next_variable(). Terminate the loop
-+			 * immediately as there is no guarantee that
-+			 * we'll ever see a different variable name,
-+			 * and may end up looping here forever.
-+			 */
-+			if (variable_is_present(variable_name, &vendor_guid)) {
-+				dup_variable_bug(variable_name, &vendor_guid,
-+						 variable_name_size);
-+				status = EFI_NOT_FOUND;
-+				break;
-+			}
-+
- 			efivar_create_sysfs_entry(efivars,
- 						  variable_name_size,
- 						  variable_name,
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -485,7 +485,7 @@ flush_signal_handlers(struct task_struct
+ 		if (force_default || ka->sa.sa_handler != SIG_IGN)
+ 			ka->sa.sa_handler = SIG_DFL;
+ 		ka->sa.sa_flags = 0;
+-#ifdef SA_RESTORER
++#ifdef __ARCH_HAS_SA_RESTORER
+ 		ka->sa.sa_restorer = NULL;
+ #endif
+ 		sigemptyset(&ka->sa.sa_mask);
 
 
