@@ -1,199 +1,470 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761224Ab3DBLoP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 07:44:15 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:52601 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049Ab3DBLoO (ORCPT
+	id S1761278Ab3DBLo2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 07:44:28 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:37122 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760957Ab3DBLoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 07:44:14 -0400
-Message-ID: <515AC479.9020508@ti.com>
-Date: Tue, 2 Apr 2013 17:13:53 +0530
-From: Sourav Poddar <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
-MIME-Version: 1.0
-To: Michael Trimarchi <michael@amarulasolutions.com>
-CC: Kevin Hilman <khilman@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>,
-        <tony@atomide.com>, <rmk+kernel@arm.linux.org.uk>,
-        <linux-serial@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH/Resend 2/2] arm: mach-omap2: prevent UART console idle
- on suspend while using "no_console_suspend"
-References: <1363612924-349-1-git-send-email-sourav.poddar@ti.com> <87fvzsilnv.fsf@linaro.org> <5149A221.5@ti.com> <5149A63C.4000102@ti.com> <515AA9CD.5000004@ti.com> <515AADB7.3080906@amarulasolutions.com> <515AB579.7010705@ti.com> <515AB67A.8010206@amarulasolutions.com>
-In-Reply-To: <515AB67A.8010206@amarulasolutions.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Apr 2013 07:44:25 -0400
+From: Prabhakar lad <prabhakar.csengg@gmail.com>
+To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Sekhar Nori <nsekhar@ti.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v2 1/3] media: davinci: vpss: enable vpss clocks
+Date: Tue,  2 Apr 2013 17:14:02 +0530
+Message-Id: <1364903044-13752-2-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1364903044-13752-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1364903044-13752-1-git-send-email-prabhakar.csengg@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On Tuesday 02 April 2013 04:14 PM, Michael Trimarchi wrote:
-> Hi
->
-> On 02/04/13 12:39, Sourav Poddar wrote:
->> Hi,
->> On Tuesday 02 April 2013 03:36 PM, Michael Trimarchi wrote:
->>> Hi
->>>
->>> On 02/04/13 11:50, Sourav Poddar wrote:
->>>> Hi Kevin,
->>>> On Wednesday 20 March 2013 05:36 PM, Sourav Poddar wrote:
->>>>> Realised the list  to whom the patch was send got dropped. Ccing them all..
->>>>> On Wednesday 20 March 2013 05:18 PM, Sourav Poddar wrote:
->>>>>> Hi Kevin,
->>>>>> On Tuesday 19 March 2013 12:24 AM, Kevin Hilman wrote:
->>>>>>> Sourav Poddar<sourav.poddar@ti.com>    writes:
->>>>>>>
->>>>>>>> With dt boot, uart wakeup after suspend is non functional on omap4/5 while using
->>>>>>>> "no_console_suspend" in the bootargs. With "no_console_suspend" used, od->flags
->>>>>>>> should be ORed with "OMAP_DEVICE_NO_IDLE_ON_SUSPEND", thereby not allowing the console
->>>>>>>> to idle in the suspend path. For non-dt case, this was taken care by platform data.
->>>>>>>>
->>>>>>>> Tested on omap5430evm, omap4430sdp.
->>>>>>>>
->>>>>>>> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
->>>>>>>> Cc: Felipe Balbi<balbi@ti.com>
->>>>>>>> Cc: Rajendra nayak<rnayak@ti.com>
->>>>>>>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
->>>>>>> This patch creates a dependency between omap_device (generic,
->>>>>>> device-independent code) and a specific driver (UART.)
->>>>>>>
->>>>>>> If you need to do something like this that's DT boot specific, then
->>>>>>> we probably need some late initcall in serial.c to handle this.  It does
->>>>>>> not belong in omap_device.
->>>>>>>
->>>>>> The following function "omap_device_disable_idle_on_suspend(pdev)" should only
->>>>>> be called once the omap device has been build, which in the case of device tree is
->>>>>> done in omap_device.c file. Moreover, the above call should be executed conditionally
->>>>>> and should depend on the following two parameter.
->>>>>>
->>>>>> [1]  a. Whether "no_console_suspend" is set and
->>>>>>        b.  the device build is a console uart.
->>>>>>
->>>>>> When I look closely into the serial.c file, I realised that
->>>>>> "core_initcall(omap_serial_early_init)" gets called irrespective
->>>>>> of dt/non dt boot and will take care of most of the stuff(checking whether
->>>>>> "no_console_suspend" is used and which uart is used as a console uart) which the
->>>>>> $subject patch is proposing.
->>>>>>
->>>>>> But the problem is that we need to exchange the parsed information
->>>>>> from serial.c to the omap_device file for the condtional execution of
->>>>>> "omap_device_disable_idle_on_suspend"
->>>>>>
->>>>>> In this case,
->>>>>> from "serial.c" we need
->>>>>>       1. no_console_suspend = true
->>>>>>       2. strcpy(console_name, oh_name), where oh_name corresponds to the console uart.
->>>>>>
->>>>>> then in "omap_device.c" do
->>>>>>       if (no_console_suspend&&   !strcmp(oh->name, console_name))
->>>>>>                   omap_device_disable_idle_on_suspend(pdev);
->>>>>>
->>>>>> Please correct if I am understanding it incorrectly.
->>>>>>
->>>>>> If the above understanding looks good to you, is there a way we can make this
->>>>>> exchange of information happen between serial.c and omap_device.c file?
->>>> Any input on this?
->>>> As I explained earlier, that there is a need to parse information in serial.c and use that in
->>>> omap_device.c only after the device is build.
->>>>
->>>> Below is the patch (inlined) which further explains my point. The patch is "just for the
->>>> idea" I am trying to express.
->>>> I have used extern variables to exchange information between serial.c and omap_device.c.
->>>> Is there is a better way, we can do this "information exchange" without using extern variables?
->>>>
->>>>
->>>> -----
->>>> From: Sourav Poddar<sourav.poddar@ti.com>
->>>> Date: Wed, 13 Mar 2013 20:32:36 +0530
->>>> Subject: [RFC/PATCH] arm: mach-omap2: prevent UART console idle on suspend while using "no_console_suspend"
->>>>
->>>> With dt boot on omap5, uart wakeup after suspend is non functional while using
->>>> "no_console_suspend" in the bootargs. With "no_console_suspend" used, od->flags
->>>> should be ORed with "OMAP_DEVICE_NO_IDLE_ON_SUSPEND", thereby not allowing the console
->>>> to idle in the suspend path. For non-dt case, this was taken care by platform data.
->>>>
->>>> Tested on omap5430evm, omap4430sdp.
->>>>
->>>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
->>>> ---
->>>> The problem is I need to use couple of "extern variables" which
->>>> can be used in the omap_device file, after the device is built from dt.
->>>>
->>>>    arch/arm/mach-omap2/omap_device.c |    7 ++++++-
->>>>    arch/arm/mach-omap2/serial.c      |    4 +++-
->>>>    2 files changed, 9 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
->>>> index e065daa..f4ebf9f 100644
->>>> --- a/arch/arm/mach-omap2/omap_device.c
->>>> +++ b/arch/arm/mach-omap2/omap_device.c
->>>> @@ -96,6 +96,9 @@
->>>>    #define USE_WAKEUP_LAT            0
->>>>    #define IGNORE_WAKEUP_LAT        1
->>>>
->>>> +extern u8 no_console_suspend;
->>>> +extern char console_uart_name[];
->>>> +
->>>>    static int omap_early_device_register(struct platform_device *pdev);
->>>>
->>>>    static struct omap_device_pm_latency omap_default_latency[] = {
->>>> @@ -372,7 +375,9 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
->>>>                r->name = dev_name(&pdev->dev);
->>>>        }
->>>>
->>>> -    if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
->>>> +    if (no_console_suspend&&   !strcmp(oh->name, console_uart_name))
->>>> +        omap_device_disable_idle_on_suspend(pdev);
->>>> +    else if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
->>>>            omap_device_disable_idle_on_suspend(pdev);
->>> Why do not use some flags instead of external variable?
->>>
->>>
->> That flag also need to be set in serial.c and used in omap_device.c.
->> Moreover, I am doing a strcmp so I need a console uart name to be passed
->> from serial.c to omap_device.c
-> Just an idea, I didn't check the code
->
-> if (oh->flags&  OMAP_FORCE_DISABLE_IDLE_ON_SUSPEND || of_get_property(node, "ti,no_idle_on_suspend", NULL))
-> 	omap_device_disable_idle_on_suspend(pdev);
->
-> And I don't know if you can set such flags in serial.c
->
-Yes, it should be possible.  I will try this out.
-Thanks for the suggestion.
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-~Sourav
-> Michael
->
->
->>>>        pdev->dev.pm_domain =&omap_device_pm_domain;
->>>> diff --git a/arch/arm/mach-omap2/serial.c b/arch/arm/mach-omap2/serial.c
->>>> index 037e691..f841ab5 100644
->>>> --- a/arch/arm/mach-omap2/serial.c
->>>> +++ b/arch/arm/mach-omap2/serial.c
->>>> @@ -63,8 +63,9 @@ struct omap_uart_state {
->>>>    static LIST_HEAD(uart_list);
->>>>    static u8 num_uarts;
->>>>    static u8 console_uart_id = -1;
->>>> -static u8 no_console_suspend;
->>>>    static u8 uart_debug;
->>>> +u8 no_console_suspend;
->>>> +char console_uart_name[MAX_UART_HWMOD_NAME_LEN];
->>>>
->>>>    #define DEFAULT_RXDMA_POLLRATE        1    /* RX DMA polling rate (us) */
->>>>    #define DEFAULT_RXDMA_BUFSIZE        4096    /* RX DMA buffer size */
->>>> @@ -199,6 +200,7 @@ static int __init omap_serial_early_init(void)
->>>>                    "%s%d", OMAP_SERIAL_NAME, uart->num);
->>>>
->>>>            if (cmdline_find_option(uart_name)) {
->>>> +            strcpy(console_uart_name, oh_name);
->>>>                console_uart_id = uart->num;
->>>>
->>>>                if (console_loglevel>= 10) {
->>> Michael
->> ~Sourav
+By default the VPSS clocks were enabled in capture driver
+for davinci family which creates duplicates for dm355/dm365/dm644x.
+This patch adds support to enable the VPSS clocks in VPSS driver,
+which avoids duplication of code and also adding clock aliases.
+
+This patch uses PM runtime API to enable/disable instead common clock
+framework. con_ids for master and slave clocks of vpss is added in pm_domain
+for pm runtime to clock handling.
+
+This patch cleanups the VPSS clock enabling in the capture driver,
+and also removes the clock alias in machine file. Along side adds
+a vpss slave clock for DM365 as mentioned by Sekhar
+(https://patchwork.kernel.org/patch/1221261/).
+
+The Suspend/Resume in dm644x_ccdc.c which enabled/disabled the VPSS clock
+is now implemented as part of the VPSS driver.
+
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ arch/arm/mach-davinci/dm355.c                |    7 +---
+ arch/arm/mach-davinci/dm365.c                |   11 +++++--
+ arch/arm/mach-davinci/dm644x.c               |    9 +----
+ arch/arm/mach-davinci/pm_domain.c            |    2 +-
+ drivers/media/platform/davinci/dm355_ccdc.c  |   39 +----------------------
+ drivers/media/platform/davinci/dm644x_ccdc.c |   44 --------------------------
+ drivers/media/platform/davinci/isif.c        |   28 ++--------------
+ drivers/media/platform/davinci/vpss.c        |   25 ++++++++++++++
+ 8 files changed, 43 insertions(+), 122 deletions(-)
+
+diff --git a/arch/arm/mach-davinci/dm355.c b/arch/arm/mach-davinci/dm355.c
+index b49c3b7..8e98bb0 100644
+--- a/arch/arm/mach-davinci/dm355.c
++++ b/arch/arm/mach-davinci/dm355.c
+@@ -345,8 +345,8 @@ static struct clk_lookup dm355_clks[] = {
+ 	CLK(NULL, "pll1_aux", &pll1_aux_clk),
+ 	CLK(NULL, "pll1_sysclkbp", &pll1_sysclkbp),
+ 	CLK(NULL, "vpss_dac", &vpss_dac_clk),
+-	CLK(NULL, "vpss_master", &vpss_master_clk),
+-	CLK(NULL, "vpss_slave", &vpss_slave_clk),
++	CLK("vpss", "master", &vpss_master_clk),
++	CLK("vpss", "slave", &vpss_slave_clk),
+ 	CLK(NULL, "clkout1", &clkout1_clk),
+ 	CLK(NULL, "clkout2", &clkout2_clk),
+ 	CLK(NULL, "pll2", &pll2_clk),
+@@ -873,9 +873,6 @@ static int __init dm355_init_devices(void)
+ 	if (!cpu_is_davinci_dm355())
+ 		return 0;
+ 
+-	/* Add ccdc clock aliases */
+-	clk_add_alias("master", dm355_ccdc_dev.name, "vpss_master", NULL);
+-	clk_add_alias("slave", dm355_ccdc_dev.name, "vpss_master", NULL);
+ 	davinci_cfg_reg(DM355_INT_EDMA_CC);
+ 	platform_device_register(&dm355_edma_device);
+ 	platform_device_register(&dm355_vpss_device);
+diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
+index 6c39805..c61dd94 100644
+--- a/arch/arm/mach-davinci/dm365.c
++++ b/arch/arm/mach-davinci/dm365.c
+@@ -257,6 +257,12 @@ static struct clk vpss_master_clk = {
+ 	.flags		= CLK_PSC,
+ };
+ 
++static struct clk vpss_slave_clk = {
++	.name		= "vpss_slave",
++	.parent		= &pll1_sysclk5,
++	.lpsc		= DAVINCI_LPSC_VPSSSLV,
++};
++
+ static struct clk arm_clk = {
+ 	.name		= "arm_clk",
+ 	.parent		= &pll2_sysclk2,
+@@ -449,7 +455,8 @@ static struct clk_lookup dm365_clks[] = {
+ 	CLK(NULL, "pll2_sysclk8", &pll2_sysclk8),
+ 	CLK(NULL, "pll2_sysclk9", &pll2_sysclk9),
+ 	CLK(NULL, "vpss_dac", &vpss_dac_clk),
+-	CLK(NULL, "vpss_master", &vpss_master_clk),
++	CLK("vpss", "master", &vpss_master_clk),
++	CLK("vpss", "slave", &vpss_slave_clk),
+ 	CLK(NULL, "arm", &arm_clk),
+ 	CLK(NULL, "uart0", &uart0_clk),
+ 	CLK(NULL, "uart1", &uart1_clk),
+@@ -1239,8 +1246,6 @@ static int __init dm365_init_devices(void)
+ 	clk_add_alias(NULL, dev_name(&dm365_mdio_device.dev),
+ 		      NULL, &dm365_emac_device.dev);
+ 
+-	/* Add isif clock alias */
+-	clk_add_alias("master", dm365_isif_dev.name, "vpss_master", NULL);
+ 	platform_device_register(&dm365_vpss_device);
+ 	platform_device_register(&dm365_isif_dev);
+ 	platform_device_register(&vpfe_capture_dev);
+diff --git a/arch/arm/mach-davinci/dm644x.c b/arch/arm/mach-davinci/dm644x.c
+index ee0e994..c2a9273 100644
+--- a/arch/arm/mach-davinci/dm644x.c
++++ b/arch/arm/mach-davinci/dm644x.c
+@@ -300,8 +300,8 @@ static struct clk_lookup dm644x_clks[] = {
+ 	CLK(NULL, "dsp", &dsp_clk),
+ 	CLK(NULL, "arm", &arm_clk),
+ 	CLK(NULL, "vicp", &vicp_clk),
+-	CLK(NULL, "vpss_master", &vpss_master_clk),
+-	CLK(NULL, "vpss_slave", &vpss_slave_clk),
++	CLK("vpss", "master", &vpss_master_clk),
++	CLK("vpss", "slave", &vpss_slave_clk),
+ 	CLK(NULL, "arm", &arm_clk),
+ 	CLK(NULL, "uart0", &uart0_clk),
+ 	CLK(NULL, "uart1", &uart1_clk),
+@@ -901,11 +901,6 @@ int __init dm644x_init_video(struct vpfe_config *vpfe_cfg,
+ 		dm644x_vpfe_dev.dev.platform_data = vpfe_cfg;
+ 		platform_device_register(&dm644x_ccdc_dev);
+ 		platform_device_register(&dm644x_vpfe_dev);
+-		/* Add ccdc clock aliases */
+-		clk_add_alias("master", dm644x_ccdc_dev.name,
+-			      "vpss_master", NULL);
+-		clk_add_alias("slave", dm644x_ccdc_dev.name,
+-			      "vpss_slave", NULL);
+ 	}
+ 
+ 	if (vpbe_cfg) {
+diff --git a/arch/arm/mach-davinci/pm_domain.c b/arch/arm/mach-davinci/pm_domain.c
+index c90250e..445b10b 100644
+--- a/arch/arm/mach-davinci/pm_domain.c
++++ b/arch/arm/mach-davinci/pm_domain.c
+@@ -53,7 +53,7 @@ static struct dev_pm_domain davinci_pm_domain = {
+ 
+ static struct pm_clk_notifier_block platform_bus_notifier = {
+ 	.pm_domain = &davinci_pm_domain,
+-	.con_ids = { "fck", NULL, },
++	.con_ids = { "fck", "master", "slave", NULL, },
+ };
+ 
+ static int __init davinci_pm_runtime_init(void)
+diff --git a/drivers/media/platform/davinci/dm355_ccdc.c b/drivers/media/platform/davinci/dm355_ccdc.c
+index 2364dba..05f8fb7 100644
+--- a/drivers/media/platform/davinci/dm355_ccdc.c
++++ b/drivers/media/platform/davinci/dm355_ccdc.c
+@@ -37,7 +37,6 @@
+ #include <linux/platform_device.h>
+ #include <linux/uaccess.h>
+ #include <linux/videodev2.h>
+-#include <linux/clk.h>
+ #include <linux/err.h>
+ #include <linux/module.h>
+ 
+@@ -59,10 +58,6 @@ static struct ccdc_oper_config {
+ 	struct ccdc_params_raw bayer;
+ 	/* YCbCr configuration */
+ 	struct ccdc_params_ycbcr ycbcr;
+-	/* Master clock */
+-	struct clk *mclk;
+-	/* slave clock */
+-	struct clk *sclk;
+ 	/* ccdc base address */
+ 	void __iomem *base_addr;
+ } ccdc_cfg = {
+@@ -997,32 +992,10 @@ static int dm355_ccdc_probe(struct platform_device *pdev)
+ 		goto fail_nomem;
+ 	}
+ 
+-	/* Get and enable Master clock */
+-	ccdc_cfg.mclk = clk_get(&pdev->dev, "master");
+-	if (IS_ERR(ccdc_cfg.mclk)) {
+-		status = PTR_ERR(ccdc_cfg.mclk);
+-		goto fail_nomap;
+-	}
+-	if (clk_prepare_enable(ccdc_cfg.mclk)) {
+-		status = -ENODEV;
+-		goto fail_mclk;
+-	}
+-
+-	/* Get and enable Slave clock */
+-	ccdc_cfg.sclk = clk_get(&pdev->dev, "slave");
+-	if (IS_ERR(ccdc_cfg.sclk)) {
+-		status = PTR_ERR(ccdc_cfg.sclk);
+-		goto fail_mclk;
+-	}
+-	if (clk_prepare_enable(ccdc_cfg.sclk)) {
+-		status = -ENODEV;
+-		goto fail_sclk;
+-	}
+-
+ 	/* Platform data holds setup_pinmux function ptr */
+ 	if (NULL == pdev->dev.platform_data) {
+ 		status = -ENODEV;
+-		goto fail_sclk;
++		goto fail_nomap;
+ 	}
+ 	setup_pinmux = pdev->dev.platform_data;
+ 	/*
+@@ -1033,12 +1006,6 @@ static int dm355_ccdc_probe(struct platform_device *pdev)
+ 	ccdc_cfg.dev = &pdev->dev;
+ 	printk(KERN_NOTICE "%s is registered with vpfe.\n", ccdc_hw_dev.name);
+ 	return 0;
+-fail_sclk:
+-	clk_disable_unprepare(ccdc_cfg.sclk);
+-	clk_put(ccdc_cfg.sclk);
+-fail_mclk:
+-	clk_disable_unprepare(ccdc_cfg.mclk);
+-	clk_put(ccdc_cfg.mclk);
+ fail_nomap:
+ 	iounmap(ccdc_cfg.base_addr);
+ fail_nomem:
+@@ -1052,10 +1019,6 @@ static int dm355_ccdc_remove(struct platform_device *pdev)
+ {
+ 	struct resource	*res;
+ 
+-	clk_disable_unprepare(ccdc_cfg.sclk);
+-	clk_disable_unprepare(ccdc_cfg.mclk);
+-	clk_put(ccdc_cfg.mclk);
+-	clk_put(ccdc_cfg.sclk);
+ 	iounmap(ccdc_cfg.base_addr);
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (res)
+diff --git a/drivers/media/platform/davinci/dm644x_ccdc.c b/drivers/media/platform/davinci/dm644x_ccdc.c
+index 971d639..30fa084 100644
+--- a/drivers/media/platform/davinci/dm644x_ccdc.c
++++ b/drivers/media/platform/davinci/dm644x_ccdc.c
+@@ -38,7 +38,6 @@
+ #include <linux/uaccess.h>
+ #include <linux/videodev2.h>
+ #include <linux/gfp.h>
+-#include <linux/clk.h>
+ #include <linux/err.h>
+ #include <linux/module.h>
+ 
+@@ -60,10 +59,6 @@ static struct ccdc_oper_config {
+ 	struct ccdc_params_raw bayer;
+ 	/* YCbCr configuration */
+ 	struct ccdc_params_ycbcr ycbcr;
+-	/* Master clock */
+-	struct clk *mclk;
+-	/* slave clock */
+-	struct clk *sclk;
+ 	/* ccdc base address */
+ 	void __iomem *base_addr;
+ } ccdc_cfg = {
+@@ -991,38 +986,9 @@ static int dm644x_ccdc_probe(struct platform_device *pdev)
+ 		goto fail_nomem;
+ 	}
+ 
+-	/* Get and enable Master clock */
+-	ccdc_cfg.mclk = clk_get(&pdev->dev, "master");
+-	if (IS_ERR(ccdc_cfg.mclk)) {
+-		status = PTR_ERR(ccdc_cfg.mclk);
+-		goto fail_nomap;
+-	}
+-	if (clk_prepare_enable(ccdc_cfg.mclk)) {
+-		status = -ENODEV;
+-		goto fail_mclk;
+-	}
+-
+-	/* Get and enable Slave clock */
+-	ccdc_cfg.sclk = clk_get(&pdev->dev, "slave");
+-	if (IS_ERR(ccdc_cfg.sclk)) {
+-		status = PTR_ERR(ccdc_cfg.sclk);
+-		goto fail_mclk;
+-	}
+-	if (clk_prepare_enable(ccdc_cfg.sclk)) {
+-		status = -ENODEV;
+-		goto fail_sclk;
+-	}
+ 	ccdc_cfg.dev = &pdev->dev;
+ 	printk(KERN_NOTICE "%s is registered with vpfe.\n", ccdc_hw_dev.name);
+ 	return 0;
+-fail_sclk:
+-	clk_disable_unprepare(ccdc_cfg.sclk);
+-	clk_put(ccdc_cfg.sclk);
+-fail_mclk:
+-	clk_disable_unprepare(ccdc_cfg.mclk);
+-	clk_put(ccdc_cfg.mclk);
+-fail_nomap:
+-	iounmap(ccdc_cfg.base_addr);
+ fail_nomem:
+ 	release_mem_region(res->start, resource_size(res));
+ fail_nores:
+@@ -1034,10 +1000,6 @@ static int dm644x_ccdc_remove(struct platform_device *pdev)
+ {
+ 	struct resource	*res;
+ 
+-	clk_disable_unprepare(ccdc_cfg.mclk);
+-	clk_disable_unprepare(ccdc_cfg.sclk);
+-	clk_put(ccdc_cfg.mclk);
+-	clk_put(ccdc_cfg.sclk);
+ 	iounmap(ccdc_cfg.base_addr);
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (res)
+@@ -1052,18 +1014,12 @@ static int dm644x_ccdc_suspend(struct device *dev)
+ 	ccdc_save_context();
+ 	/* Disable CCDC */
+ 	ccdc_enable(0);
+-	/* Disable both master and slave clock */
+-	clk_disable_unprepare(ccdc_cfg.mclk);
+-	clk_disable_unprepare(ccdc_cfg.sclk);
+ 
+ 	return 0;
+ }
+ 
+ static int dm644x_ccdc_resume(struct device *dev)
+ {
+-	/* Enable both master and slave clock */
+-	clk_prepare_enable(ccdc_cfg.mclk);
+-	clk_prepare_enable(ccdc_cfg.sclk);
+ 	/* Restore CCDC context */
+ 	ccdc_restore_context();
+ 
+diff --git a/drivers/media/platform/davinci/isif.c b/drivers/media/platform/davinci/isif.c
+index abc3ae3..3332cca 100644
+--- a/drivers/media/platform/davinci/isif.c
++++ b/drivers/media/platform/davinci/isif.c
+@@ -32,7 +32,6 @@
+ #include <linux/uaccess.h>
+ #include <linux/io.h>
+ #include <linux/videodev2.h>
+-#include <linux/clk.h>
+ #include <linux/err.h>
+ #include <linux/module.h>
+ 
+@@ -88,8 +87,6 @@ static struct isif_oper_config {
+ 	struct isif_ycbcr_config ycbcr;
+ 	struct isif_params_raw bayer;
+ 	enum isif_data_pack data_pack;
+-	/* Master clock */
+-	struct clk *mclk;
+ 	/* ISIF base address */
+ 	void __iomem *base_addr;
+ 	/* ISIF Linear Table 0 */
+@@ -1039,6 +1036,10 @@ static int isif_probe(struct platform_device *pdev)
+ 	void *__iomem addr;
+ 	int status = 0, i;
+ 
++	/* Platform data holds setup_pinmux function ptr */
++	if (!pdev->dev.platform_data)
++		return -ENODEV;
++
+ 	/*
+ 	 * first try to register with vpfe. If not correct platform, then we
+ 	 * don't have to iomap
+@@ -1047,22 +1048,6 @@ static int isif_probe(struct platform_device *pdev)
+ 	if (status < 0)
+ 		return status;
+ 
+-	/* Get and enable Master clock */
+-	isif_cfg.mclk = clk_get(&pdev->dev, "master");
+-	if (IS_ERR(isif_cfg.mclk)) {
+-		status = PTR_ERR(isif_cfg.mclk);
+-		goto fail_mclk;
+-	}
+-	if (clk_prepare_enable(isif_cfg.mclk)) {
+-		status = -ENODEV;
+-		goto fail_mclk;
+-	}
+-
+-	/* Platform data holds setup_pinmux function ptr */
+-	if (NULL == pdev->dev.platform_data) {
+-		status = -ENODEV;
+-		goto fail_mclk;
+-	}
+ 	setup_pinmux = pdev->dev.platform_data;
+ 	/*
+ 	 * setup Mux configuration for ccdc which may be different for
+@@ -1124,9 +1109,6 @@ fail_nobase_res:
+ 		release_mem_region(res->start, resource_size(res));
+ 		i--;
+ 	}
+-fail_mclk:
+-	clk_disable_unprepare(isif_cfg.mclk);
+-	clk_put(isif_cfg.mclk);
+ 	vpfe_unregister_ccdc_device(&isif_hw_dev);
+ 	return status;
+ }
+@@ -1146,8 +1128,6 @@ static int isif_remove(struct platform_device *pdev)
+ 		i++;
+ 	}
+ 	vpfe_unregister_ccdc_device(&isif_hw_dev);
+-	clk_disable_unprepare(isif_cfg.mclk);
+-	clk_put(isif_cfg.mclk);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/media/platform/davinci/vpss.c b/drivers/media/platform/davinci/vpss.c
+index a19c552..d36429d 100644
+--- a/drivers/media/platform/davinci/vpss.c
++++ b/drivers/media/platform/davinci/vpss.c
+@@ -25,6 +25,8 @@
+ #include <linux/spinlock.h>
+ #include <linux/compiler.h>
+ #include <linux/io.h>
++#include <linux/pm_runtime.h>
++
+ #include <media/davinci/vpss.h>
+ 
+ MODULE_LICENSE("GPL");
+@@ -490,6 +492,10 @@ static int vpss_probe(struct platform_device *pdev)
+ 	} else
+ 		oper_cfg.hw_ops.clear_wbl_overflow = dm644x_clear_wbl_overflow;
+ 
++	pm_runtime_enable(&pdev->dev);
++
++	pm_runtime_get(&pdev->dev);
++
+ 	spin_lock_init(&oper_cfg.vpss_lock);
+ 	dev_info(&pdev->dev, "%s vpss probe success\n", platform_name);
+ 	return 0;
+@@ -507,6 +513,7 @@ static int vpss_remove(struct platform_device *pdev)
+ {
+ 	struct resource		*res;
+ 
++	pm_runtime_disable(&pdev->dev);
+ 	iounmap(oper_cfg.vpss_regs_base0);
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	release_mem_region(res->start, resource_size(res));
+@@ -518,10 +525,28 @@ static int vpss_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static int vpss_suspend(struct device *dev)
++{
++	pm_runtime_put(dev);
++	return 0;
++}
++
++static int vpss_resume(struct device *dev)
++{
++	pm_runtime_get(dev);
++	return 0;
++}
++
++static const struct dev_pm_ops vpss_pm_ops = {
++	.suspend = vpss_suspend,
++	.resume = vpss_resume,
++};
++
+ static struct platform_driver vpss_driver = {
+ 	.driver = {
+ 		.name	= "vpss",
+ 		.owner = THIS_MODULE,
++		.pm = &vpss_pm_ops,
+ 	},
+ 	.remove = vpss_remove,
+ 	.probe = vpss_probe,
+-- 
+1.7.4.1
 
