@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759547Ab3DBXCH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:02:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33951 "EHLO
+	id S1759558Ab3DBXC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:02:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33948 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755073Ab3DBWuf (ORCPT
+	with ESMTP id S1758144Ab3DBWuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Apr 2013 18:50:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marco Cesarano <marco@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 14/56] mwifiex: cancel cmd timer and free curr_cmd in shutdown process
-Date: Tue,  2 Apr 2013 15:49:41 -0700
-Message-Id: <20130402224713.540410031@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 13/56] vt: synchronize_rcu() under spinlock is not nice...
+Date: Tue,  2 Apr 2013 15:49:40 -0700
+Message-Id: <20130402224713.407794747@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
@@ -27,40 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 084c7189acb3f969c855536166042e27f5dd703f upstream.
+commit e8cd81693bbbb15db57d3c9aa7dd90eda4842874 upstream.
 
-curr_cmd points to the command that is in processing or waiting
-for its command response from firmware. If the function shutdown
-happens to occur at this time we should cancel the cmd timer and
-put the command back to free queue.
+vcs_poll_data_free() calls unregister_vt_notifier(), which calls
+atomic_notifier_chain_unregister(), which calls synchronize_rcu().
+Do it *after* we'd dropped ->f_lock.
 
-Tested-by: Marco Cesarano <marco@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/init.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/tty/vt/vc_screen.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/init.c
-+++ b/drivers/net/wireless/mwifiex/init.c
-@@ -561,6 +561,14 @@ mwifiex_shutdown_drv(struct mwifiex_adap
- 		return ret;
+--- a/drivers/tty/vt/vc_screen.c
++++ b/drivers/tty/vt/vc_screen.c
+@@ -92,7 +92,7 @@ vcs_poll_data_free(struct vcs_poll_data
+ static struct vcs_poll_data *
+ vcs_poll_data_get(struct file *file)
+ {
+-	struct vcs_poll_data *poll = file->private_data;
++	struct vcs_poll_data *poll = file->private_data, *kill = NULL;
+ 
+ 	if (poll)
+ 		return poll;
+@@ -121,10 +121,12 @@ vcs_poll_data_get(struct file *file)
+ 		file->private_data = poll;
+ 	} else {
+ 		/* someone else raced ahead of us */
+-		vcs_poll_data_free(poll);
++		kill = poll;
+ 		poll = file->private_data;
  	}
+ 	spin_unlock(&file->f_lock);
++	if (kill)
++		vcs_poll_data_free(kill);
  
-+	/* cancel current command */
-+	if (adapter->curr_cmd) {
-+		dev_warn(adapter->dev, "curr_cmd is still in processing\n");
-+		del_timer(&adapter->cmd_timer);
-+		mwifiex_insert_cmd_to_free_q(adapter, adapter->curr_cmd);
-+		adapter->curr_cmd = NULL;
-+	}
-+
- 	/* shut down mwifiex */
- 	dev_dbg(adapter->dev, "info: shutdown mwifiex...\n");
- 
+ 	return poll;
+ }
 
 
