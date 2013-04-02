@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759359Ab3DBW6d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:58:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34017 "EHLO
+	id S1759310Ab3DBW6c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:58:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33989 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758350Ab3DBWuq (ORCPT
+	with ESMTP id S1758355Ab3DBWur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:50:46 -0400
+	Tue, 2 Apr 2013 18:50:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Petr Matousek <pmatouse@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [ 31/56] KVM: x86: invalid opcode oops on SET_SREGS with OSXSAVE bit set (CVE-2012-4461)
-Date: Tue,  2 Apr 2013 15:49:58 -0700
-Message-Id: <20130402224715.484895918@linuxfoundation.org>
+        Anatol Pomozov <anatol.pomozov@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 32/56] loop: prevent bdev freeing while device in use
+Date: Tue,  2 Apr 2013 15:49:59 -0700
+Message-Id: <20130402224715.586946194@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
@@ -27,80 +28,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
 
-From: Petr Matousek <pmatouse@redhat.com>
+commit c1681bf8a7b1b98edee8b862a42c19c4e53205fd upstream.
 
-commit 6d1068b3a98519247d8ba4ec85cd40ac136dbdf9 upstream.
+struct block_device lifecycle is defined by its inode (see fs/block_dev.c) -
+block_device allocated first time we access /dev/loopXX and deallocated on
+bdev_destroy_inode. When we create the device "losetup /dev/loopXX afile"
+we want that block_device stay alive until we destroy the loop device
+with "losetup -d".
 
-On hosts without the XSAVE support unprivileged local user can trigger
-oops similar to the one below by setting X86_CR4_OSXSAVE bit in guest
-cr4 register using KVM_SET_SREGS ioctl and later issuing KVM_RUN
-ioctl.
+But because we do not hold /dev/loopXX inode its counter goes 0, and
+inode/bdev can be destroyed at any moment. Usually it happens at memory
+pressure or when user drops inode cache (like in the test below). When later in
+loop_clr_fd() we want to use bdev we have use-after-free error with following
+stack:
 
-invalid opcode: 0000 [#2] SMP
-Modules linked in: tun ip6table_filter ip6_tables ebtable_nat ebtables
-...
-Pid: 24935, comm: zoog_kvm_monito Tainted: G      D      3.2.0-3-686-pae
-EIP: 0060:[<f8b9550c>] EFLAGS: 00210246 CPU: 0
-EIP is at kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm]
-EAX: 00000001 EBX: 000f387e ECX: 00000000 EDX: 00000000
-ESI: 00000000 EDI: 00000000 EBP: ef5a0060 ESP: d7c63e70
- DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-Process zoog_kvm_monito (pid: 24935, ti=d7c62000 task=ed84a0c0
-task.ti=d7c62000)
-Stack:
- 00000001 f70a1200 f8b940a9 ef5a0060 00000000 00200202 f8769009 00000000
- ef5a0060 000f387e eda5c020 8722f9c8 00015bae 00000000 ed84a0c0 ed84a0c0
- c12bf02d 0000ae80 ef7f8740 fffffffb f359b740 ef5a0060 f8b85dc1 0000ae80
-Call Trace:
- [<f8b940a9>] ? kvm_arch_vcpu_ioctl_set_sregs+0x2fe/0x308 [kvm]
-...
- [<c12bfb44>] ? syscall_call+0x7/0xb
-Code: 89 e8 e8 14 ee ff ff ba 00 00 04 00 89 e8 e8 98 48 ff ff 85 c0 74
-1e 83 7d 48 00 75 18 8b 85 08 07 00 00 31 c9 8b 95 0c 07 00 00 <0f> 01
-d1 c7 45 48 01 00 00 00 c7 45 1c 01 00 00 00 0f ae f0 89
-EIP: [<f8b9550c>] kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm] SS:ESP
-0068:d7c63e70
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000280
+  bd_set_size+0x10/0xa0
+  loop_clr_fd+0x1f8/0x420 [loop]
+  lo_ioctl+0x200/0x7e0 [loop]
+  lo_compat_ioctl+0x47/0xe0 [loop]
+  compat_blkdev_ioctl+0x341/0x1290
+  do_filp_open+0x42/0xa0
+  compat_sys_ioctl+0xc1/0xf20
+  do_sys_open+0x16e/0x1d0
+  sysenter_dispatch+0x7/0x1a
 
-QEMU first retrieves the supported features via KVM_GET_SUPPORTED_CPUID
-and then sets them later. So guest's X86_FEATURE_XSAVE should be masked
-out on hosts without X86_FEATURE_XSAVE, making kvm_set_cr4 with
-X86_CR4_OSXSAVE fail. Userspaces that allow specifying guest cpuid with
-X86_FEATURE_XSAVE even on hosts that do not support it, might be
-susceptible to this attack from inside the guest as well.
+To prevent use-after-free we need to grab the device in loop_set_fd()
+and put it later in loop_clr_fd().
 
-Allow setting X86_CR4_OSXSAVE bit only if host has XSAVE support.
+The issue is reprodusible on current Linus head and v3.3. Here is the test:
 
-Signed-off-by: Petr Matousek <pmatouse@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+  dd if=/dev/zero of=loop.file bs=1M count=1
+  while [ true ]; do
+    losetup /dev/loop0 loop.file
+    echo 2 > /proc/sys/vm/drop_caches
+    losetup -d /dev/loop0
+  done
+
+[ Doing bdgrab/bput in loop_set_fd/loop_clr_fd is safe, because every
+  time we call loop_set_fd() we check that loop_device->lo_state is
+  Lo_unbound and set it to Lo_bound If somebody will try to set_fd again
+  it will get EBUSY.  And if we try to loop_clr_fd() on unbound loop
+  device we'll get ENXIO.
+
+  loop_set_fd/loop_clr_fd (and any other loop ioctl) is called under
+  loop_device->lo_ctl_mutex. ]
+
+Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/x86.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/block/loop.c |    9 ++++++++-
+ fs/block_dev.c       |    1 +
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -575,6 +575,9 @@ static bool guest_cpuid_has_xsave(struct
- {
- 	struct kvm_cpuid_entry2 *best;
- 
-+	if (!cpu_has_xsave)
-+		return 0;
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -928,6 +928,11 @@ static int loop_set_fd(struct loop_devic
+ 	wake_up_process(lo->lo_thread);
+ 	if (max_part > 0)
+ 		ioctl_by_bdev(bdev, BLKRRPART, 0);
 +
- 	best = kvm_find_cpuid_entry(vcpu, 1, 0);
- 	return best && (best->ecx & bit(X86_FEATURE_XSAVE));
++	/* Grab the block_device to prevent its destruction after we
++	 * put /dev/loopXX inode. Later in loop_clr_fd() we bdput(bdev).
++	 */
++	bdgrab(bdev);
+ 	return 0;
+ 
+ out_clr:
+@@ -1024,8 +1029,10 @@ static int loop_clr_fd(struct loop_devic
+ 	memset(lo->lo_encrypt_key, 0, LO_KEY_SIZE);
+ 	memset(lo->lo_crypt_name, 0, LO_NAME_SIZE);
+ 	memset(lo->lo_file_name, 0, LO_NAME_SIZE);
+-	if (bdev)
++	if (bdev) {
++		bdput(bdev);
+ 		invalidate_bdev(bdev);
++	}
+ 	set_capacity(lo->lo_disk, 0);
+ 	loop_sysfs_exit(lo);
+ 	if (bdev) {
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -576,6 +576,7 @@ struct block_device *bdgrab(struct block
+ 	ihold(bdev->bd_inode);
+ 	return bdev;
  }
-@@ -5854,6 +5857,9 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct
- 	int pending_vec, max_bits, idx;
- 	struct desc_ptr dt;
++EXPORT_SYMBOL(bdgrab);
  
-+	if (!guest_cpuid_has_xsave(vcpu) && (sregs->cr4 & X86_CR4_OSXSAVE))
-+		return -EINVAL;
-+
- 	dt.size = sregs->idt.limit;
- 	dt.address = sregs->idt.base;
- 	kvm_x86_ops->set_idt(vcpu, &dt);
+ long nr_blockdev_pages(void)
+ {
 
 
