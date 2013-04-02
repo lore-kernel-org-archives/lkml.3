@@ -1,81 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761060Ab3DBWJf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:09:35 -0400
-Received: from 8bytes.org ([85.214.48.195]:54595 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752238Ab3DBWJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:09:34 -0400
-Date: Wed, 3 Apr 2013 00:09:32 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: suravee.suthikulpanit@amd.com
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] iommu/amd: Add logic to decode AMD IOMMU event flag
-Message-ID: <20130402220931.GV30540@8bytes.org>
-References: <1364929514-3129-1-git-send-email-suravee.suthikulpanit@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364929514-3129-1-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Apr  3 00:09:32 2013
-X-DSPAM-Confidence: 0.9994
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 515b571c23671120564415
+	id S932638Ab3DBWL6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:11:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32823 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752238Ab3DBWLx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:11:53 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Ming Lei <ming.lei@canonical.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 005/124] Bluetooth: Add support for Dell[QCA 0cf3:817a]
+Date: Tue,  2 Apr 2013 15:09:47 -0700
+Message-Id: <20130402221104.840774634@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
+References: <20130402221104.163133110@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 02:05:14PM -0500, Suthikulpanit, Suravee wrote:
-> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-> +static const char * const _type_field_encodings[] = {
-> +	/* 00 */"Reserved",
-> +	/* 01 */"Master Abort",
-> +	/* 10 */"Target Abort",
-> +	/* 11 */"Data Error",
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-In these arrays, please put the comments at the end of the line and
-align them nicely like this:
+------------------
 
-	static const char * const _type_field_encodings[] = {
-		"Reserved",		/* 00 */
-		"Master Abort",		/* 01 */
-		"Target Abort",		/* 10 */
-		"Data Error",		/* 11 */
-	};
+From: Ming Lei <ming.lei@canonical.com>
 
-This improves readability a lot.
+commit ebaf5795ef57a70a042ea259448a465024e2821d upstream.
 
-> +static void dump_flags(int flags, int ev_type)
-> +{
-> +	struct _event_log_flags *p = (struct _event_log_flags *) &flags;
-> +	u32 err_type = p->type;
-> +
-> +	pr_err("AMD-Vi: Flags details: %s, NX:%u, %s, %s, %s, %s, %s, %s, %s\n",
-> +		(p->gn ? "Use guest address" : "Use nested address"),
-> +		(p->nx),
-> +		(p->us ? "User privileges" : "Supervisor privileges"),
-> +		(p->i ? "Interrupt request" : "memory request"),
-> +		(p->pr ? "Page present or Interrupt remapped" :
-> +			"Page not present or Interrupt blocked"),
-> +		(p->rw ? "Write transaction" : "Read transaction"),
-> +		(p->pe ? "Does not have permission" : "Has permission"),
-> +		(p->rz ? "Reserv bit not zero" : "Illegal level encoding"),
-> +		(p->tr ? "Translation request" : "Transaction request"));
+Add support for the AR9462 chip
 
-These strings are too long, please just print useful shortcuts for them,
-like
-	"US" : "SV" instead of
-	"User privileges" : "Supervisor privileges"
+T:  Bus=03 Lev=01 Prnt=01 Port=08 Cnt=01 Dev#=  5 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0cf3 ProdID=817a Rev= 0.02
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-Also the commas between the strings are not needed then.
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Cc: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-As a general rule, in the default configuration an event-log entry
-should not take more than a single line in dmesg (which is also not too
-long). If you want to print more information in some cases you can
-enable that by a command line parameter like 'amd_iommu=verbose' or
-something like that.
+---
+ drivers/bluetooth/ath3k.c |    2 ++
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 3 insertions(+)
 
-	Joerg
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -76,6 +76,7 @@ static struct usb_device_id ath3k_table[
+ 	{ USB_DEVICE(0x0CF3, 0x0036) },
+ 	{ USB_DEVICE(0x0CF3, 0x3004) },
+ 	{ USB_DEVICE(0x0CF3, 0x311D) },
++	{ USB_DEVICE(0x0CF3, 0x817a) },
+ 	{ USB_DEVICE(0x13d3, 0x3375) },
+ 	{ USB_DEVICE(0x04CA, 0x3005) },
+ 	{ USB_DEVICE(0x04CA, 0x3006) },
+@@ -109,6 +110,7 @@ static struct usb_device_id ath3k_blist_
+ 	{ USB_DEVICE(0x0CF3, 0x0036), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0CF3, 0x817a), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -134,6 +134,7 @@ static struct usb_device_id blacklist_ta
+ 	{ USB_DEVICE(0x0cf3, 0x0036), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0cf3, 0x817a), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
+
 
