@@ -1,137 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021Ab3DBTfq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 15:35:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57381 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762111Ab3DBTfo (ORCPT
+	id S933113Ab3DBTgB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 15:36:01 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:59312 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932613Ab3DBTfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 15:35:44 -0400
-Date: Tue, 2 Apr 2013 12:34:51 -0700
-From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-93a829e8e2c292f1d30155f64803101ca1cb7d3d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bp@suse.de
-In-Reply-To: <1363788448-31325-4-git-send-email-bp@alien8.de>
-References: <1363788448-31325-4-git-send-email-bp@alien8.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86, cpu: Convert FDIV bug detection
-Git-Commit-ID: 93a829e8e2c292f1d30155f64803101ca1cb7d3d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 12:34:56 -0700 (PDT)
+	Tue, 2 Apr 2013 15:35:13 -0400
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Tue, 02 Apr 2013 14:35:08 -0500
+X-Originating-IP: 108.223.40.66
+From: Guenter Roeck <linux@roeck-us.net>
+To: "David S. Miller" <davem@davemloft.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        David Daney <david.daney@cavium.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 4/5] net/freescale/fec: Simplify OF dependencies
+Date: Tue,  2 Apr 2013 12:35:10 -0700
+Message-Id: <1364931311-30603-5-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
+In-Reply-To: <1364931311-30603-1-git-send-email-linux@roeck-us.net>
+References: <1364931311-30603-1-git-send-email-linux@roeck-us.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  93a829e8e2c292f1d30155f64803101ca1cb7d3d
-Gitweb:     http://git.kernel.org/tip/93a829e8e2c292f1d30155f64803101ca1cb7d3d
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Wed, 20 Mar 2013 15:07:25 +0100
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Tue, 2 Apr 2013 10:12:53 -0700
+Since of_get_mac_address() is now defined even if CONFIG_OF_NET
+is not configured, the ifdef around the code calling it is no longer
+necessary and can be removed.
 
-x86, cpu: Convert FDIV bug detection
+Similar, since of_get_phy_mode() is now defined as dummy function
+if OF_NET is not configured, it is no longer necessary to provide
+an OF dependent function as front-end. Also, the function depends
+on OF_NET, not on OF, so the conditional code was not correct anyway.
+Drop the front-end function and call of_get_phy_mode() directly.
 
-... to the new facility. Add a reference to the wikipedia article
-explaining the FDIV test we're doing here.
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1363788448-31325-4-git-send-email-bp@alien8.de
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- arch/x86/include/asm/cpufeature.h | 1 +
- arch/x86/include/asm/processor.h  | 1 -
- arch/x86/kernel/cpu/bugs.c        | 7 ++++---
- arch/x86/kernel/cpu/proc.c        | 2 +-
- arch/x86/kernel/setup.c           | 2 --
- 5 files changed, 6 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/freescale/fec.c |   19 +------------------
+ 1 file changed, 1 insertion(+), 18 deletions(-)
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index c0ad7e7..25eb948 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -223,6 +223,7 @@
- #define X86_BUG(x)		(NCAPINTS*32 + (x))
- 
- #define X86_BUG_F00F		X86_BUG(0) /* Intel F00F */
-+#define X86_BUG_FDIV		X86_BUG(1) /* FPU FDIV */
- 
- #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
- 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 1e55e2d..ea22dfa 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -91,7 +91,6 @@ struct cpuinfo_x86 {
- 	/* Problems on some 486Dx4's and old 386's: */
- 	char			hard_math;
- 	char			rfu;
--	char			fdiv_bug;
- 	char			coma_bug;
- 	char			pad0;
- #else
-diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
-index af6455e..c59635e 100644
---- a/arch/x86/kernel/cpu/bugs.c
-+++ b/arch/x86/kernel/cpu/bugs.c
-@@ -59,7 +59,7 @@ static void __init check_fpu(void)
- 	 * trap_init() enabled FXSR and company _before_ testing for FP
- 	 * problems here.
- 	 *
--	 * Test for the divl bug..
-+	 * Test for the divl bug: http://en.wikipedia.org/wiki/Fdiv_bug
+diff --git a/drivers/net/ethernet/freescale/fec.c b/drivers/net/ethernet/freescale/fec.c
+index 911d025..d374a94 100644
+--- a/drivers/net/ethernet/freescale/fec.c
++++ b/drivers/net/ethernet/freescale/fec.c
+@@ -868,7 +868,6 @@ static void fec_get_mac(struct net_device *ndev)
  	 */
- 	__asm__("fninit\n\t"
- 		"fldl %1\n\t"
-@@ -75,9 +75,10 @@ static void __init check_fpu(void)
+ 	iap = macaddr;
  
- 	kernel_fpu_end();
+-#ifdef CONFIG_OF
+ 	/*
+ 	 * 2) from device tree data
+ 	 */
+@@ -880,7 +879,6 @@ static void fec_get_mac(struct net_device *ndev)
+ 				iap = (unsigned char *) mac;
+ 		}
+ 	}
+-#endif
  
--	boot_cpu_data.fdiv_bug = fdiv_bug;
--	if (boot_cpu_data.fdiv_bug)
-+	if (fdiv_bug) {
-+		set_cpu_bug(&boot_cpu_data, X86_BUG_FDIV);
- 		pr_warn("Hmm, FPU with FDIV bug\n");
-+	}
+ 	/*
+ 	 * 3) from flash or fuse (via platform data)
+@@ -1666,16 +1664,6 @@ static int fec_enet_init(struct net_device *ndev)
  }
  
- /*
-diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
-index 2d60b2b..5dfb6c6 100644
---- a/arch/x86/kernel/cpu/proc.c
-+++ b/arch/x86/kernel/cpu/proc.c
-@@ -34,7 +34,7 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
- 		   "fpu_exception\t: %s\n"
- 		   "cpuid level\t: %d\n"
- 		   "wp\t\t: %s\n",
--		   c->fdiv_bug ? "yes" : "no",
-+		   static_cpu_has_bug(X86_BUG_FDIV) ? "yes" : "no",
- 		   static_cpu_has_bug(X86_BUG_F00F) ? "yes" : "no",
- 		   c->coma_bug ? "yes" : "no",
- 		   c->hard_math ? "yes" : "no",
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 90d8cc9..29258c75 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -173,12 +173,10 @@ static struct resource bss_resource = {
- /* cpu data as detected by the assembly code in head.S */
- struct cpuinfo_x86 new_cpu_data __cpuinitdata = {
- 	.wp_works_ok = -1,
--	.fdiv_bug = -1,
- };
- /* common cpu data for all cpus */
- struct cpuinfo_x86 boot_cpu_data __read_mostly = {
- 	.wp_works_ok = -1,
--	.fdiv_bug = -1,
- };
- EXPORT_SYMBOL(boot_cpu_data);
+ #ifdef CONFIG_OF
+-static int fec_get_phy_mode_dt(struct platform_device *pdev)
+-{
+-	struct device_node *np = pdev->dev.of_node;
+-
+-	if (np)
+-		return of_get_phy_mode(np);
+-
+-	return -ENODEV;
+-}
+-
+ static void fec_reset_phy(struct platform_device *pdev)
+ {
+ 	int err, phy_reset;
+@@ -1704,11 +1692,6 @@ static void fec_reset_phy(struct platform_device *pdev)
+ 	gpio_set_value(phy_reset, 1);
+ }
+ #else /* CONFIG_OF */
+-static int fec_get_phy_mode_dt(struct platform_device *pdev)
+-{
+-	return -ENODEV;
+-}
+-
+ static void fec_reset_phy(struct platform_device *pdev)
+ {
+ 	/*
+@@ -1773,7 +1756,7 @@ fec_probe(struct platform_device *pdev)
  
+ 	platform_set_drvdata(pdev, ndev);
+ 
+-	ret = fec_get_phy_mode_dt(pdev);
++	ret = of_get_phy_mode(pdev->dev.of_node);
+ 	if (ret < 0) {
+ 		pdata = pdev->dev.platform_data;
+ 		if (pdata)
+-- 
+1.7.9.7
+
