@@ -1,62 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762433Ab3DBViR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 17:38:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45456 "EHLO
+	id S1762444Ab3DBVjB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 17:39:01 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45463 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762403Ab3DBViQ (ORCPT
+	by vger.kernel.org with ESMTP id S1760340Ab3DBVjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 17:38:16 -0400
-Date: Tue, 2 Apr 2013 22:38:00 +0100
+	Tue, 2 Apr 2013 17:39:00 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
         Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] mfd: Add device tree bindings for Arizona class devices
-Message-ID: <20130402213739.GM23065@opensource.wolfsonmicro.com>
-References: <1364935878-11500-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LwbuP8dfxhLLLUfV"
-Content-Disposition: inline
-In-Reply-To: <1364935878-11500-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        devicetree-discuss@lists.ozlabs.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Add device tree bindings for Arizona class devices
+Date: Tue,  2 Apr 2013 22:38:48 +0100
+Message-Id: <1364938728-7732-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ Documentation/devicetree/bindings/mfd/arizona.txt |   62 ++++++++++++++++++++
+ drivers/mfd/arizona-core.c                        |   64 +++++++++++++++++++++
+ drivers/mfd/arizona-i2c.c                         |   10 +++-
+ drivers/mfd/arizona-spi.c                         |   10 +++-
+ drivers/mfd/arizona.h                             |   12 ++++
+ 5 files changed, 154 insertions(+), 4 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/arizona.txt
 
---LwbuP8dfxhLLLUfV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
+new file mode 100644
+index 0000000..7b61d05
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/arizona.txt
+@@ -0,0 +1,62 @@
++Wolfson Arizona class audio SoCs
++
++These devices are audio SoCs with extensive digital capabilites and a range
++of analogue I/O.
++
++Required properties:
++
++  - compatible : one of the following chip-specific strings:
++	"wlf,wm5102"
++	"wlf,wm5110"
++  - reg : I2C slave address when connected using I2C, chip select number when
++    using SPI.
++
++  - interrupts : The interrupt line the /IRQ signal for the device is
++    connected to.
++  - interrupt-controller : Arizona class devices contain interrupt controllers
++    and may provide interrupt services to other devices.
++  - interrupt-parent : The parent interrupt controller.
++  - #interrupt-cells: the number of cells to describe an IRQ, this should be 2.
++    The first cell is the IRQ number.
++    The second cell is the flags, encoded as the trigger masks from
++    Documentation/devicetree/bindings/interrupts.txt
++
++  - gpio-controller : Indicates this device is a GPIO controller.
++  - #gpio-cells : Must be 2. The first cell is the pin number and the
++    second cell is used to specify optional parameters (currently unused).
++
++  - AVDD1-supply, DBVDD1-supply, DBVDD2-supply, DBVDD3-supply, CPVDD-supply,
++    SPKVDDL-supply, SPKVDDR-supply : power supplies for the device, as covered
++    in Documentation/devicetree/bindings/regulator/regulator.txt
++
++Optional properties:
++
++  - reset : GPIO specifier for the GPIO controlling /RESET
++  - ldoena : GPIO specifier for the GPIO controlling LDOENA
++
++  - gpio-defaults : A list of GPIO configuration register values. If
++    absent, no configuration of these registers is performed. If any
++    entry has a value that is out of range for a 16 bit register then
++    the chip default will be used.  If present exactly five values must
++    be specified.
++
++Example:
++
++codec: wm5102@1a {
++	compatible = "wlf,wm5102";
++	reg = <0x1a>;
++	interrupts = <347>;
++	#interrupt-cells = <2>;
++        interrupt-parent = <&gic>;
++
++	gpio-controller;
++	#gpio-cells = <2>;
++
++	gpio-defaults = <
++		0x00000000, /* AIF1TXLRCLK */
++		0xffffffff,
++		0xffffffff,
++		0xffffffff,
++		0xffffffff,
++	>;
++};
+diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+index 7201a83..3c91c51 100644
+--- a/drivers/mfd/arizona-core.c
++++ b/drivers/mfd/arizona-core.c
+@@ -16,6 +16,9 @@
+ #include <linux/interrupt.h>
+ #include <linux/mfd/core.h>
+ #include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/of_gpio.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/regmap.h>
+ #include <linux/regulator/consumer.h>
+@@ -428,6 +431,65 @@ const struct dev_pm_ops arizona_pm_ops = {
+ };
+ EXPORT_SYMBOL_GPL(arizona_pm_ops);
+ 
++#ifdef CONFIG_OF
++int arizona_of_get_type(struct device *dev)
++{
++	const struct of_device_id *id = of_match_device(arizona_of_match, dev);
++
++	if (id)
++		return (int)id->data;
++	else
++		return 0;
++}
++EXPORT_SYMBOL_GPL(arizona_of_get_type);
++
++static int arizona_of_get_core_pdata(struct arizona *arizona)
++{
++	int ret, i;
++
++	arizona->pdata.reset = of_get_named_gpio(arizona->dev->of_node,
++						 "reset", 0);
++	if (arizona->pdata.reset < 0)
++		arizona->pdata.reset = 0;
++
++	arizona->pdata.ldoena = of_get_named_gpio(arizona->dev->of_node,
++						  "ldoena", 0);
++	if (arizona->pdata.ldoena < 0)
++		arizona->pdata.ldoena = 0;
++
++	ret = of_property_read_u32_array(arizona->dev->of_node,
++					 "gpio-defaults",
++					 arizona->pdata.gpio_defaults,
++					 ARRAY_SIZE(arizona->pdata.gpio_defaults));
++	if (ret >= 0) {
++		/*
++		 * All values are literal except out of range values
++		 * which are chip default, translate into platform
++		 * data which uses 0 as chip default and out of range
++		 * as zero.
++		 */
++		for (i = 0; i < ARRAY_SIZE(arizona->pdata.gpio_defaults); i++) {
++			if (arizona->pdata.gpio_defaults[i] > 0xffff)
++				arizona->pdata.gpio_defaults[i] = 0;
++			if (arizona->pdata.gpio_defaults[i] == 0)
++				arizona->pdata.gpio_defaults[i] = 0x10000;
++		}
++	} else {
++		dev_err(arizona->dev, "Failed to parse GPIO defaults: %d\n",
++			ret);
++	}
++
++	return 0;
++}
++
++const struct of_device_id arizona_of_match[] = {
++	{ .compatible = "wlf,wm5102", .data = (void *)WM5102 },
++	{ .compatible = "wlf,wm5110", .data = (void *)WM5110 },
++	{},
++};
++EXPORT_SYMBOL_GPL(arizona_of_match);
++#endif
++
+ static struct mfd_cell early_devs[] = {
+ 	{ .name = "arizona-ldo1" },
+ };
+@@ -461,6 +523,8 @@ int arizona_dev_init(struct arizona *arizona)
+ 	dev_set_drvdata(arizona->dev, arizona);
+ 	mutex_init(&arizona->clk_lock);
+ 
++	arizona_of_get_core_pdata(arizona);
++
+ 	if (dev_get_platdata(arizona->dev))
+ 		memcpy(&arizona->pdata, dev_get_platdata(arizona->dev),
+ 		       sizeof(arizona->pdata));
+diff --git a/drivers/mfd/arizona-i2c.c b/drivers/mfd/arizona-i2c.c
+index 44a1bb9..deb267e 100644
+--- a/drivers/mfd/arizona-i2c.c
++++ b/drivers/mfd/arizona-i2c.c
+@@ -27,9 +27,14 @@ static int arizona_i2c_probe(struct i2c_client *i2c,
+ {
+ 	struct arizona *arizona;
+ 	const struct regmap_config *regmap_config;
+-	int ret;
++	int ret, type;
+ 
+-	switch (id->driver_data) {
++	if (i2c->dev.of_node)
++		type = arizona_of_get_type(&i2c->dev);
++	else
++		type = id->driver_data;
++
++	switch (type) {
+ #ifdef CONFIG_MFD_WM5102
+ 	case WM5102:
+ 		regmap_config = &wm5102_i2c_regmap;
+@@ -84,6 +89,7 @@ static struct i2c_driver arizona_i2c_driver = {
+ 		.name	= "arizona",
+ 		.owner	= THIS_MODULE,
+ 		.pm	= &arizona_pm_ops,
++		.of_match_table	= of_match_ptr(arizona_of_match),
+ 	},
+ 	.probe		= arizona_i2c_probe,
+ 	.remove		= arizona_i2c_remove,
+diff --git a/drivers/mfd/arizona-spi.c b/drivers/mfd/arizona-spi.c
+index 1b9fdd6..06d93ba 100644
+--- a/drivers/mfd/arizona-spi.c
++++ b/drivers/mfd/arizona-spi.c
+@@ -27,9 +27,14 @@ static int arizona_spi_probe(struct spi_device *spi)
+ 	const struct spi_device_id *id = spi_get_device_id(spi);
+ 	struct arizona *arizona;
+ 	const struct regmap_config *regmap_config;
+-	int ret;
++	int ret, type;
+ 
+-	switch (id->driver_data) {
++	if (spi->dev.of_node)
++		type = arizona_of_get_type(&spi->dev);
++	else
++		type = id->driver_data;
++
++	switch (type) {
+ #ifdef CONFIG_MFD_WM5102
+ 	case WM5102:
+ 		regmap_config = &wm5102_spi_regmap;
+@@ -84,6 +89,7 @@ static struct spi_driver arizona_spi_driver = {
+ 		.name	= "arizona",
+ 		.owner	= THIS_MODULE,
+ 		.pm	= &arizona_pm_ops,
++		.of_match_table	= of_match_ptr(arizona_of_match),
+ 	},
+ 	.probe		= arizona_spi_probe,
+ 	.remove		= arizona_spi_remove,
+diff --git a/drivers/mfd/arizona.h b/drivers/mfd/arizona.h
+index 9798ae5..db55d98 100644
+--- a/drivers/mfd/arizona.h
++++ b/drivers/mfd/arizona.h
+@@ -13,6 +13,7 @@
+ #ifndef _WM5102_H
+ #define _WM5102_H
+ 
++#include <linux/of.h>
+ #include <linux/regmap.h>
+ #include <linux/pm.h>
+ 
+@@ -26,6 +27,8 @@ extern const struct regmap_config wm5110_spi_regmap;
+ 
+ extern const struct dev_pm_ops arizona_pm_ops;
+ 
++extern const struct of_device_id arizona_of_match[];
++
+ extern const struct regmap_irq_chip wm5102_aod;
+ extern const struct regmap_irq_chip wm5102_irq;
+ 
+@@ -37,4 +40,13 @@ int arizona_dev_exit(struct arizona *arizona);
+ int arizona_irq_init(struct arizona *arizona);
+ int arizona_irq_exit(struct arizona *arizona);
+ 
++#ifdef CONFIG_OF
++int arizona_of_get_type(struct device *dev);
++#else
++static inline int arizona_of_get_type(struct device *dev)
++{
++	return 0;
++}
++#endif
++
+ #endif
+-- 
+1.7.10.4
 
-On Tue, Apr 02, 2013 at 09:51:18PM +0100, Mark Brown wrote:
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
-*sigh* ignore this one, revised version coming shortly.
-
---LwbuP8dfxhLLLUfV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRW0+ZAAoJELSic+t+oim9ykUP/0aj0JJuaKSSXWc8CgF8dcC3
-jayNIKchpBVaJZ14VG4w43fauyTnwjV+sx7EGqniHgXEZar/1wnalbL+2snuihjk
-yrTuUBCijC4gpfqsx3VHF6xyT8WclSN46HV+KrWKdKEjYpM6Ha0vOUVkA5PAQGPe
-McR1GpISASGLrfrGsXTVHWqurJoZlxpmMsjPdBYlJokoXumJ6m2RSPwhYAHYyrQt
-aIV1UbVE7oRBLqVmnbpyPdvwZ9Oqn3eMyTiwdqpspnFVHSKN+k8V8FBauSGKJRuh
-XWFi49FnX8FWeEGlcVYGgLIX3jdN1xGQ+mlmzyz2NNh80p+kcnvW3y06RCltjgOC
-lf/cQKJqb+gjV8YOYvfWV8ABfBbuElrkZA1Tepcu+oQJZ4Q1AsZWCuoc1LOGRfkU
-aaJrM6sTiZq3NOzEmgZDGuAzCw6XhnrvgFYFWvZUUAjuYvgDwSltr4vtaJ14m0X/
-GrHAE+bFxqVwgq8z5AVtrcNDOWVwRZe+1pYWgbxWVN1LWjVbsJpoMXRNvln3VjHk
-8rVNUgV0uChlKhcPzkln+LwTu7Js5YgFyfXoX5jpsE7BYJ8TbvSEWfL5KTAHpQJR
-3wBjEnY8QAvV5s6UBGQA0vjyBM0kbMEA99Yvmn36P1Gu84ZxiuyI9g3O7i1VV/+n
-RxVcR6Ao+fhUMS6n1oCI
-=Jcyc
------END PGP SIGNATURE-----
-
---LwbuP8dfxhLLLUfV--
