@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933167Ab3DBSty (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 14:49:54 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:40404 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933118Ab3DBStu (ORCPT
+	id S933190Ab3DBSuy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 14:50:54 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44350 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932106Ab3DBSsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 14:49:50 -0400
-Date: Tue, 2 Apr 2013 11:49:47 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: DT changes for 3.10 #2
-Message-ID: <20130402184947.GA8015@quad.lixom.net>
-References: <1364569179-24773-1-git-send-email-nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364569179-24773-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 2 Apr 2013 14:48:13 -0400
+X-Sasl-enc: J4tD+oUVh0pw4gxCKtnCEDwxImyxFNocLfIQtksDN6Vr 1364928493
+From: Alan Ott <alan@signal11.us>
+To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Ott <alan@signal11.us>
+Subject: [PATCH 4/6] mac802154: Increase tx_buffer_len
+Date: Tue,  2 Apr 2013 14:47:59 -0400
+Message-Id: <1364928481-1813-5-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <1364928481-1813-1-git-send-email-alan@signal11.us>
+References: <1364928481-1813-1-git-send-email-alan@signal11.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 29, 2013 at 03:59:39PM +0100, Nicolas Ferre wrote:
-> Arnd, Olof,
-> 
-> Here is a pull-request for AT91 that is dedicated to Device Tree
-> modifications. It is stacked on the material that you already have
-> for 3.10 in your arm-soc/at91/dt branch.
-> Following our discussion with Arnd, I added the non-urgent patches that I
-> already proposed too late for 3.9. I also included the moving of macb node
-> and kept the original patch.
-> 
-> Thanks, best regards,
-> 
-> The following changes since commit 6901d947be5ba1245a0f63271355b95f9056a362:
-> 
->   ARM: at91/at91sam9x5cm: add 1-wire chip on CM board (2013-03-21 16:07:15 +0100)
-> 
-> are available in the git repository at:
-> 
->   git://github.com/at91linux/linux-at91.git tags/at91-dt
-> 
-> for you to fetch changes up to cc2e191b0ccc5a987fdb29261ab9c264c608924d:
-> 
->   ARM: at91/dt: fix macb node declaration (2013-03-29 10:02:04 +0100)
-> 
-> ----------------------------------------------------------------
-> One macb DT node move for 9x5 family: 9g15 doesn't
-> have an Ethernet interface.
-> Little fixes mainly related to at91sam9x5 DT and the
-> RTC addition.
-> Addition of the Acme Systems Aria G25 board.
-> 
-> ----------------------------------------------------------------
-> Douglas Gilbert (1):
->       ARM: at91: add Acme Systems Aria G25 board
+Increase the buffer length from 10 to 300 packets. Consider that traffic on
+mac802154 devices will often be 6LoWPAN, and a full-length (1280 octet)
+IPv6 packet will fragment into 15 6LoWPAN fragments (because the MTU of
+IEEE 802.15.4 is 127).  A 300-packet queue is really 20 full-length IPv6
+packets.
 
-Hi,
+With a queue length of 10, an entire IPv6 packet was unable to get queued
+at one time, causing fragments to be dropped, and making reassembly
+impossible.
 
-I just replied to the above patch -- please prefix the dts files with the
-platform so it's easier to navigate the directory.
+Signed-off-by: Alan Ott <alan@signal11.us>
+---
+ net/mac802154/wpan.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Otherwise the branch contents looks good, so send a fresh request when you've
-respun.
+diff --git a/net/mac802154/wpan.c b/net/mac802154/wpan.c
+index 7d3f659..2ca2f4d 100644
+--- a/net/mac802154/wpan.c
++++ b/net/mac802154/wpan.c
+@@ -360,7 +360,7 @@ void mac802154_wpan_setup(struct net_device *dev)
+ 	dev->header_ops		= &mac802154_header_ops;
+ 	dev->needed_tailroom	= 2; /* FCS */
+ 	dev->mtu		= IEEE802154_MTU;
+-	dev->tx_queue_len	= 10;
++	dev->tx_queue_len	= 300;
+ 	dev->type		= ARPHRD_IEEE802154;
+ 	dev->flags		= IFF_NOARP | IFF_BROADCAST;
+ 	dev->watchdog_timeo	= 0;
+-- 
+1.7.11.2
 
-Also, the new dts isn't added to the Makefile, please add it.
-
-
--Olof
