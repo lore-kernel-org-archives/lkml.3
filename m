@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762425Ab3DBUy4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 16:54:56 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:38833 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762344Ab3DBUyz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 16:54:55 -0400
-Date: Tue, 2 Apr 2013 13:54:51 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Russ Dill <Russ.Dill@ti.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 3.8-stable] regulator: core: Log when a device causes a
- voltage
-Message-ID: <20130402205451.GA2710@kroah.com>
-References: <009001ce2f84$beb22ea0$3c168be0$%choi@samsung.com>
- <20130402200257.GB8177@kroah.com>
- <515B41EA.8040704@ti.com>
+	id S1762402Ab3DBU6f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 16:58:35 -0400
+Received: from mga01.intel.com ([192.55.52.88]:12914 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762296Ab3DBU6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 16:58:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,394,1363158000"; 
+   d="scan'208";a="315900653"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@alien8.de>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: Ingo Molnar <mingo@kernel.org>, Chen Gong <gong.chen@linux.intel.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "tony.luck@gmail.com" <tony.luck@gmail.com>
+Subject: RE: [PATCH] x86/mce: Rework cmci_rediscover() to play well with CPU
+ hotplug
+Thread-Topic: [PATCH] x86/mce: Rework cmci_rediscover() to play well with
+ CPU hotplug
+Thread-Index: AQHOL6zgE3eEptPfu06NMEOUcaWDfJjDahQA
+Date: Tue, 2 Apr 2013 20:58:31 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F1E096E45@ORSMSX108.amr.corp.intel.com>
+References: <20130319224408.GB18152@redhat.com>
+ <20130320031647.GA13311@gchen.bj.intel.com>
+ <514988F9.2000005@linux.vnet.ibm.com> <515AE64B.7080804@linux.vnet.ibm.com>
+ <20130402141732.GA4391@pd.tnic>
+In-Reply-To: <20130402141732.GA4391@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515B41EA.8040704@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r32KwZsC021276
 
-On Tue, Apr 02, 2013 at 01:39:06PM -0700, Russ Dill wrote:
-> On 04/02/2013 01:02 PM, Greg KH wrote:
-> > On Tue, Apr 02, 2013 at 06:30:42PM +0900, Jonghwan Choi wrote:
-> >> 3.8-stable review patch.  If anyone has any objections, please let us know.
-> >>
-> >> ------------------
-> >>
-> >> From: "Russ Dill <Russ.Dill@ti.com>"
-> >>
-> >> commit 6e45eb12fd1c741d556bf264ee98853b5f3104e5 upstream.
-> > 
-> > Wait, no, this is NOT the commit id of this patch, please don't get this
-> > wrong.
-> > 
-> > I've dropped this from my stable mbox, if Russ feels this should go to
-> > 3.8-stable, please send me the correct git id of the patch to apply.
-> 
-> 9c7b4e8a8ad2624106fbf690fa97ab9c8c9bfa88 is the proper upstream commit.
-> This fixes a potential oops that was added in 3.8-rc4, and fixed
-> upstream in 3.9-rc1. I do think it belongs in stable.
+>> Tony mentioned that this patch worked fine for him. So could you
+>> kindly pick up this patch?
+>
+> Normally, Tony picks up the Intel side of MCE. Tony, want me to do it?
 
-Thanks, I've applied that commit now.
+I'll pick it up. Thanks.
 
-> Too bad I can't muck up the commit, then I'd owe you a beer. Might help
-> that shoulder of yours.
-
-Yes, that would help it out, but probably not help me catch up with
-pending patches to apply :)
-
-greg k-h
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
