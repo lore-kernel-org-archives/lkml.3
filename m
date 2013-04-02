@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530Ab3DBLPM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 07:15:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36223 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760990Ab3DBLPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 07:15:10 -0400
-Date: Tue, 2 Apr 2013 12:15:05 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd
- reclaims at each priority
-Message-ID: <20130402111505.GF32241@suse.de>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-2-git-send-email-mgorman@suse.de>
- <20130325090758.GO2154@dhcp22.suse.cz>
- <51501545.50908@suse.cz>
- <5154C4B6.102@suse.cz>
- <20130329082257.GB21227@dhcp22.suse.cz>
- <51576207.4090607@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <51576207.4090607@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932554Ab3DBLQP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 07:16:15 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:51569 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932534Ab3DBLQN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 07:16:13 -0400
+From: Yuan-Hsin Chen <yuanlmm@gmail.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Yuan-Hsin Chen <yhchen@faraday-tech.com>
+Subject: [PATCH v2 1/2] usb: gadget: fusb300_udc: add FUSB300_EPSET0_STL_CLR for clearing EP0 stall
+Date: Tue,  2 Apr 2013 11:15:28 +0000
+Message-Id: <1364901328-21405-1-git-send-email-yhchen@faraday-tech.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1361516979-7340-1-git-send-email-yhchen@faraday-tech.com>
+References: <1361516979-7340-1-git-send-email-yhchen@faraday-tech.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 30, 2013 at 11:07:03PM +0100, Jiri Slaby wrote:
-> On 03/29/2013 09:22 AM, Michal Hocko wrote:
-> > On Thu 28-03-13 23:31:18, Jiri Slaby wrote:
-> >> On 03/25/2013 10:13 AM, Jiri Slaby wrote:
-> >>> BTW I very pray this will fix also the issue I have when I run ltp tests
-> >>> (highly I/O intensive, esp. `growfiles') in a VM while playing a movie
-> >>> on the host resulting in a stuttered playback ;).
-> >>
-> >> No, this is still terrible. I was now updating a kernel in a VM and had
-> >> problems to even move with cursor.
-> > 
-> > :/
-> > 
-> >> There was still 1.2G used by I/O cache.
-> > 
-> > Could you collect /proc/zoneinfo and /proc/vmstat (say in 1 or 2s
-> > intervals)?
-> 
-> Sure:
-> http://www.fi.muni.cz/~xslaby/sklad/zoneinfos.tar.xz
-> 
+The final version of fusb300 controller adds EPSET0_STL_CLR
+for clearing EP0 stall and also removes EPSET0_EPn_TX0BYTE.
 
-There is no vmstat snapshots so we cannot see reclaim activity. However,
-based on the zoneinfo I suspect there is little. The anon and file pages
-are growing, there is no nr_vmscan_write or nr_vmscan_immediate_reclaim
-activity. nr_islated_* occasionally has a few entries so there is some
-reclaim activity but I'm not sure there is enough for this series to
-make a difference.
+fusb300_udc driver is tested on FARADAY platform a369 with
+FUSB300 FPGA v1.8
 
-nr_writeback is high during the window you record so there is IO
-activity but I wonder if the source of the stalls in this case are an
-IO change in the 3.9-rc window or a scheduler change.
+Signed-off-by: Yuan-Hsin Chen <yhchen@faraday-tech.com>
+---
 
-There still is a reclaim-related problem but in this particular case I
-think you might be triggering a different problem, one that the series
-is not going to address.
+v2:
+split patch
 
-Can you check vmstat and  make sure reclaim is actually active when
-mplayer performance goes to hell please?
+ drivers/usb/gadget/fusb300_udc.c |    2 +-
+ drivers/usb/gadget/fusb300_udc.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/usb/gadget/fusb300_udc.c b/drivers/usb/gadget/fusb300_udc.c
+index 72cd5e6..c20cc58 100644
+--- a/drivers/usb/gadget/fusb300_udc.c
++++ b/drivers/usb/gadget/fusb300_udc.c
+@@ -394,7 +394,7 @@ static void fusb300_clear_epnstall(struct fusb300 *fusb300, u8 ep)
+ 
+ 	if (reg & FUSB300_EPSET0_STL) {
+ 		printk(KERN_DEBUG "EP%d stall... Clear!!\n", ep);
+-		reg &= ~FUSB300_EPSET0_STL;
++		reg |= FUSB300_EPSET0_STL_CLR;
+ 		iowrite32(reg, fusb300->reg + FUSB300_OFFSET_EPSET0(ep));
+ 	}
+ }
+diff --git a/drivers/usb/gadget/fusb300_udc.h b/drivers/usb/gadget/fusb300_udc.h
+index 542cd83..ccae1b5 100644
+--- a/drivers/usb/gadget/fusb300_udc.h
++++ b/drivers/usb/gadget/fusb300_udc.h
+@@ -111,8 +111,8 @@
+ /*
+  * * EPn Setting 0 (EPn_SET0, offset = 020H+(n-1)*30H, n=1~15 )
+  * */
++#define FUSB300_EPSET0_STL_CLR		(1 << 3)
+ #define FUSB300_EPSET0_CLRSEQNUM	(1 << 2)
+-#define FUSB300_EPSET0_EPn_TX0BYTE	(1 << 1)
+ #define FUSB300_EPSET0_STL		(1 << 0)
+ 
+ /*
 -- 
-Mel Gorman
-SUSE Labs
+1.7.4.1
+
