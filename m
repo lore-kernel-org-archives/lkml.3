@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760953Ab3DBWFf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:05:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52963 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758195Ab3DBWFe (ORCPT
+	id S1761313Ab3DBWF4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:05:56 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:59173 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753395Ab3DBWFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:05:34 -0400
-Date: Tue, 2 Apr 2013 23:05:19 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: dbx500-prcmu: Remove operating_point from
- struct dbx500_regulator_info
-Message-ID: <20130402220515.GQ23065@opensource.wolfsonmicro.com>
-References: <1364908104.9803.3.camel@phoenix>
+	Tue, 2 Apr 2013 18:05:54 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: CAI Qian <caiqian@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
+        linux-ext4@vger.kernel.org, Zheng Liu <gnehzuil.liu@gmail.com>
+Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591! (powerpc too!)
+In-Reply-To: <alpine.DEB.2.10.1304021430480.13746@trent.utfs.org>
+References: <2133129347.8273339.1364549222854.JavaMail.root@redhat.com> <87ip46ss0o.fsf@openvz.org> <1211053180.322948.1364797847717.JavaMail.root@redhat.com> <87fvzaspr8.fsf@openvz.org> <874841142.414482.1364875584266.JavaMail.root@redhat.com> <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org> <877gkls1q7.fsf@openvz.org> <alpine.DEB.2.10.1304021430480.13746@trent.utfs.org>
+User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+Date: Wed, 03 Apr 2013 02:05:48 +0400
+Message-ID: <87r4isd1vn.fsf@openvz.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rG09A39trvEtf3rB"
-Content-Disposition: inline
-In-Reply-To: <1364908104.9803.3.camel@phoenix>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2 Apr 2013 14:35:29 -0700 (PDT), Christian Kujau <lists@nerdbynature.de> wrote:
+> On Tue, 2 Apr 2013 at 13:47, Dmitry Monakhov wrote:
+> > So you just do bunch of writes/mmap to fallocated area.
+> > The only guess I have is that some bug in extent status tree
+> > 
+> > Please run test with a patch which was posted here:
+> > http://marc.info/?l=linux-kernel&m=136455173926544&w=2
+> > This patch enable sanity checks for extent_status tree.
+> > Also please try following patch. It voluntary disable es_lookup functionality.
+> 
+> I tested your patch below (applied to 3.9-rc4) and now the BUG is gone. 
+> The machine stays up and the corruption of that torrent file is gone too! 
+> 
+> Feel free to add my Tested-by: but I don't know if this will be the final 
+> solution to this issue, no?
+No. This is just a proof that es_cache is a root of cause.
+Please drop that patch and collect logs with a kernel which 
+has only 0001-enable-ES_AGGRESSIVE_TEST-V2.patch patch applied
+This can help us understand what was wrong. From CAI Qian's
+logs(http://marc.info/?l=linux-ext4&m=136489690730402&w=2) 
+I found that in most cases assertion failed because
+ec_cache contains BH_Mapped entries, but extent_tree has not data at all
 
---rG09A39trvEtf3rB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Also there is another assertion failure where
+es_cache {15/1/33490/MAPPED}  != extent_tree {15/1/33579/BH_UNWRITTEN}
 
-On Tue, Apr 02, 2013 at 09:08:24PM +0800, Axel Lin wrote:
-> operating_point is not used since the initial commit of db8500-prcmu driver,
-> remove it.
-
-Applied, thanks.
-
---rG09A39trvEtf3rB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRW1YSAAoJELSic+t+oim9wGQP/R+hH/X9VfAhcfDfk+iI/cAw
-0Ri2I+OmlSFXvh358sjJ/f91P3bM8dNwQDXPVrRQAlgXTRuL17ntHVSfsOHSAvF1
-0oVz9qEKBqrO3RBF9ErkfYud/eZmfPwHmNIOlMZuJ4GGgLqo8PtwkaPHLfCCx7tH
-uTb4AXZu6Zp0KNlur3Hj38kR7iT5m6Ae98Qhq8XUB5fcVx8viHh7Kjolb6K6hRTE
-N9ZIC7uburi/6oWdBJwKl644jTI7R3bZ7yd8LuDcJCkC+qWaKX7ndbBmjxlopknT
-omlJnd1SvDaEmPzKH4an2lzWljw7lTacGiiSci4UpX3+eax+mp6elaHK2T02VtW4
-PrDWPlA8QS7RI5ZA7U/+r0jRRqY/kYVB5+cfBH+kmmRU52rInWcZSQ0OFxjtqPtV
-cjn+ioNbH4uE+Eqmd/ttTzi2XGhx9pdocqQ4SVQ58+KHc6+MaYIlgZaO+29x3ez2
-5AU/5Y2e5rsYJG0IGDt3pn2ySADHZBWONqGNdOxF10u85xFwnsK9eNVKFl43cE2U
-T/O56Izhvjlsw2ofe814mmZXxMsi2wRDLxxTskh3VL9ZsjqQWy35CCv4LvXoKfl/
-UCvhyJuec0bmQuzrvBje0RttoTLWhrp4h+sgREWq+XDkjy7n8ec7HAiGcS0MpzCL
-cM4fIfDNNfChwXNfhxgr
-=wqxM
------END PGP SIGNATURE-----
-
---rG09A39trvEtf3rB--
+> 
+> Thanks!
+> Christian.
+> 
+> diff --git a/fs/ext4/extents_status.c b/fs/ext4/extents_status.c> index fe3337a..95d27cd 100644
+> --- a/fs/ext4/extents_status.c
+> +++ b/fs/ext4/extents_status.c
+> @@ -689,6 +689,7 @@ int ext4_es_lookup_extent(struct inode *inode, ext4_lblk_t lblk,
+>  	trace_ext4_es_lookup_extent_enter(inode, lblk);
+>  	es_debug("lookup extent in block %u\n", lblk);
+>  
+> +	return 0;
+>  	tree = &EXT4_I(inode)->i_es_tree;
+>  	read_lock(&EXT4_I(inode)->i_es_lock);
+>  
+> -- 
+> BOFH excuse #414:
+> 
+> tachyon emissions overloading the system
