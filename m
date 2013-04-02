@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933529Ab3DBWNN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:13:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33260 "EHLO
+	id S933687Ab3DBWeO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:34:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33317 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933486Ab3DBWNI (ORCPT
+	with ESMTP id S933535Ab3DBWNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:13:08 -0400
+	Tue, 2 Apr 2013 18:13:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joseph CHANG <josright123@gmail.com>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 113/124] DM9000B: driver initialization upgrade
-Date: Tue,  2 Apr 2013 15:11:35 -0700
-Message-Id: <20130402221117.272204725@linuxfoundation.org>
+Subject: [ 124/124] smsc75xx: fix jumbo frame support
+Date: Tue,  2 Apr 2013 15:11:46 -0700
+Message-Id: <20130402221118.571289096@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -28,301 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Joseph CHANG <josright123@gmail.com>
+From: Steve Glendinning <steve.glendinning@shawell.net>
 
-[ Upstream commit 6741f40d198c6a5feb23653a1efd4ca47f93d83d ]
+[ Upstream commit 4c51e53689569398d656e631c17308d9b8e84650 ]
 
-Fix bug for DM9000 revision B which contain a DSP PHY
+This patch enables RX of jumbo frames for LAN7500.
 
-DM9000B use DSP PHY instead previouse DM9000 revisions' analog PHY,
-So need extra change in initialization, For
-explicity PHY Reset and PHY init parameter, and
-first DM9000_NCR reset need NCR_MAC_LBK bit by dm9000_probe().
+Previously the driver would transmit jumbo frames succesfully but
+would drop received jumbo frames (incrementing the interface errors
+count).
 
-Following DM9000_NCR reset cause by dm9000_open() clear the
-NCR_MAC_LBK bit.
+With this patch applied the device can succesfully receive jumbo
+frames up to MTU 9000 (9014 bytes on the wire including ethernet
+header).
 
-Without this fix, Power-up FIFO pointers error happen around 2%
-rate among Davicom's customers' boards. With this fix, All above
-cases can be solved.
-
-Signed-off-by: Joseph CHANG <josright123@gmail.com>
+Signed-off-by: Steve Glendinning <steve.glendinning@shawell.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/davicom/dm9000.c |  214 +++++++++++++++++-----------------
- drivers/net/ethernet/davicom/dm9000.h |   11 +
- 2 files changed, 120 insertions(+), 105 deletions(-)
+ drivers/net/usb/smsc75xx.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/net/ethernet/davicom/dm9000.c
-+++ b/drivers/net/ethernet/davicom/dm9000.c
-@@ -257,6 +257,107 @@ static void dm9000_dumpblk_32bit(void __
- 		tmp = readl(reg);
- }
- 
-+/*
-+ * Sleep, either by using msleep() or if we are suspending, then
-+ * use mdelay() to sleep.
-+ */
-+static void dm9000_msleep(board_info_t *db, unsigned int ms)
-+{
-+	if (db->in_suspend)
-+		mdelay(ms);
-+	else
-+		msleep(ms);
-+}
-+
-+/* Read a word from phyxcer */
-+static int
-+dm9000_phy_read(struct net_device *dev, int phy_reg_unused, int reg)
-+{
-+	board_info_t *db = netdev_priv(dev);
-+	unsigned long flags;
-+	unsigned int reg_save;
+--- a/drivers/net/usb/smsc75xx.c
++++ b/drivers/net/usb/smsc75xx.c
+@@ -914,8 +914,12 @@ static int smsc75xx_set_rx_max_frame_len
+ static int smsc75xx_change_mtu(struct net_device *netdev, int new_mtu)
+ {
+ 	struct usbnet *dev = netdev_priv(netdev);
 +	int ret;
 +
-+	mutex_lock(&db->addr_lock);
-+
-+	spin_lock_irqsave(&db->lock, flags);
-+
-+	/* Save previous register address */
-+	reg_save = readb(db->io_addr);
-+
-+	/* Fill the phyxcer register into REG_0C */
-+	iow(db, DM9000_EPAR, DM9000_PHY | reg);
-+
-+	/* Issue phyxcer read command */
-+	iow(db, DM9000_EPCR, EPCR_ERPRR | EPCR_EPOS);
-+
-+	writeb(reg_save, db->io_addr);
-+	spin_unlock_irqrestore(&db->lock, flags);
-+
-+	dm9000_msleep(db, 1);		/* Wait read complete */
-+
-+	spin_lock_irqsave(&db->lock, flags);
-+	reg_save = readb(db->io_addr);
-+
-+	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer read command */
-+
-+	/* The read data keeps on REG_0D & REG_0E */
-+	ret = (ior(db, DM9000_EPDRH) << 8) | ior(db, DM9000_EPDRL);
-+
-+	/* restore the previous address */
-+	writeb(reg_save, db->io_addr);
-+	spin_unlock_irqrestore(&db->lock, flags);
-+
-+	mutex_unlock(&db->addr_lock);
-+
-+	dm9000_dbg(db, 5, "phy_read[%02x] -> %04x\n", reg, ret);
-+	return ret;
-+}
-+
-+/* Write a word to phyxcer */
-+static void
-+dm9000_phy_write(struct net_device *dev,
-+		 int phyaddr_unused, int reg, int value)
-+{
-+	board_info_t *db = netdev_priv(dev);
-+	unsigned long flags;
-+	unsigned long reg_save;
-+
-+	dm9000_dbg(db, 5, "phy_write[%02x] = %04x\n", reg, value);
-+	mutex_lock(&db->addr_lock);
-+
-+	spin_lock_irqsave(&db->lock, flags);
-+
-+	/* Save previous register address */
-+	reg_save = readb(db->io_addr);
-+
-+	/* Fill the phyxcer register into REG_0C */
-+	iow(db, DM9000_EPAR, DM9000_PHY | reg);
-+
-+	/* Fill the written data into REG_0D & REG_0E */
-+	iow(db, DM9000_EPDRL, value);
-+	iow(db, DM9000_EPDRH, value >> 8);
-+
-+	/* Issue phyxcer write command */
-+	iow(db, DM9000_EPCR, EPCR_EPOS | EPCR_ERPRW);
-+
-+	writeb(reg_save, db->io_addr);
-+	spin_unlock_irqrestore(&db->lock, flags);
-+
-+	dm9000_msleep(db, 1);		/* Wait write complete */
-+
-+	spin_lock_irqsave(&db->lock, flags);
-+	reg_save = readb(db->io_addr);
-+
-+	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer write command */
-+
-+	/* restore the previous address */
-+	writeb(reg_save, db->io_addr);
-+
-+	spin_unlock_irqrestore(&db->lock, flags);
-+	mutex_unlock(&db->addr_lock);
-+}
-+
- /* dm9000_set_io
-  *
-  * select the specified set of io routines to use with the
-@@ -794,6 +895,9 @@ dm9000_init_dm9000(struct net_device *de
++	if (new_mtu > MAX_SINGLE_PACKET_SIZE)
++		return -EINVAL;
  
- 	iow(db, DM9000_GPCR, GPCR_GEP_CNTL);	/* Let GPIO0 output */
+-	int ret = smsc75xx_set_rx_max_frame_length(dev, new_mtu);
++	ret = smsc75xx_set_rx_max_frame_length(dev, new_mtu + ETH_HLEN);
+ 	if (ret < 0) {
+ 		netdev_warn(dev->net, "Failed to set mac rx frame length\n");
+ 		return ret;
+@@ -1324,7 +1328,7 @@ static int smsc75xx_reset(struct usbnet
  
-+	dm9000_phy_write(dev, 0, MII_BMCR, BMCR_RESET); /* PHY RESET */
-+	dm9000_phy_write(dev, 0, MII_DM_DSPCR, DSPCR_INIT_PARAM); /* Init */
-+
- 	ncr = (db->flags & DM9000_PLATF_EXT_PHY) ? NCR_EXT_PHY : 0;
+ 	netif_dbg(dev, ifup, dev->net, "FCT_TX_CTL set to 0x%08x\n", buf);
  
- 	/* if wol is needed, then always set NCR_WAKEEN otherwise we end
-@@ -1200,109 +1304,6 @@ dm9000_open(struct net_device *dev)
- 	return 0;
- }
- 
--/*
-- * Sleep, either by using msleep() or if we are suspending, then
-- * use mdelay() to sleep.
-- */
--static void dm9000_msleep(board_info_t *db, unsigned int ms)
--{
--	if (db->in_suspend)
--		mdelay(ms);
--	else
--		msleep(ms);
--}
--
--/*
-- *   Read a word from phyxcer
-- */
--static int
--dm9000_phy_read(struct net_device *dev, int phy_reg_unused, int reg)
--{
--	board_info_t *db = netdev_priv(dev);
--	unsigned long flags;
--	unsigned int reg_save;
--	int ret;
--
--	mutex_lock(&db->addr_lock);
--
--	spin_lock_irqsave(&db->lock,flags);
--
--	/* Save previous register address */
--	reg_save = readb(db->io_addr);
--
--	/* Fill the phyxcer register into REG_0C */
--	iow(db, DM9000_EPAR, DM9000_PHY | reg);
--
--	iow(db, DM9000_EPCR, EPCR_ERPRR | EPCR_EPOS);	/* Issue phyxcer read command */
--
--	writeb(reg_save, db->io_addr);
--	spin_unlock_irqrestore(&db->lock,flags);
--
--	dm9000_msleep(db, 1);		/* Wait read complete */
--
--	spin_lock_irqsave(&db->lock,flags);
--	reg_save = readb(db->io_addr);
--
--	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer read command */
--
--	/* The read data keeps on REG_0D & REG_0E */
--	ret = (ior(db, DM9000_EPDRH) << 8) | ior(db, DM9000_EPDRL);
--
--	/* restore the previous address */
--	writeb(reg_save, db->io_addr);
--	spin_unlock_irqrestore(&db->lock,flags);
--
--	mutex_unlock(&db->addr_lock);
--
--	dm9000_dbg(db, 5, "phy_read[%02x] -> %04x\n", reg, ret);
--	return ret;
--}
--
--/*
-- *   Write a word to phyxcer
-- */
--static void
--dm9000_phy_write(struct net_device *dev,
--		 int phyaddr_unused, int reg, int value)
--{
--	board_info_t *db = netdev_priv(dev);
--	unsigned long flags;
--	unsigned long reg_save;
--
--	dm9000_dbg(db, 5, "phy_write[%02x] = %04x\n", reg, value);
--	mutex_lock(&db->addr_lock);
--
--	spin_lock_irqsave(&db->lock,flags);
--
--	/* Save previous register address */
--	reg_save = readb(db->io_addr);
--
--	/* Fill the phyxcer register into REG_0C */
--	iow(db, DM9000_EPAR, DM9000_PHY | reg);
--
--	/* Fill the written data into REG_0D & REG_0E */
--	iow(db, DM9000_EPDRL, value);
--	iow(db, DM9000_EPDRH, value >> 8);
--
--	iow(db, DM9000_EPCR, EPCR_EPOS | EPCR_ERPRW);	/* Issue phyxcer write command */
--
--	writeb(reg_save, db->io_addr);
--	spin_unlock_irqrestore(&db->lock, flags);
--
--	dm9000_msleep(db, 1);		/* Wait write complete */
--
--	spin_lock_irqsave(&db->lock,flags);
--	reg_save = readb(db->io_addr);
--
--	iow(db, DM9000_EPCR, 0x0);	/* Clear phyxcer write command */
--
--	/* restore the previous address */
--	writeb(reg_save, db->io_addr);
--
--	spin_unlock_irqrestore(&db->lock, flags);
--	mutex_unlock(&db->addr_lock);
--}
--
- static void
- dm9000_shutdown(struct net_device *dev)
- {
-@@ -1501,7 +1502,12 @@ dm9000_probe(struct platform_device *pde
- 	db->flags |= DM9000_PLATF_SIMPLE_PHY;
- #endif
- 
--	dm9000_reset(db);
-+	/* Fixing bug on dm9000_probe, takeover dm9000_reset(db),
-+	 * Need 'NCR_MAC_LBK' bit to indeed stable our DM9000 fifo
-+	 * while probe stage.
-+	 */
-+
-+	iow(db, DM9000_NCR, NCR_MAC_LBK | NCR_RST);
- 
- 	/* try multiple times, DM9000 sometimes gets the read wrong */
- 	for (i = 0; i < 8; i++) {
---- a/drivers/net/ethernet/davicom/dm9000.h
-+++ b/drivers/net/ethernet/davicom/dm9000.h
-@@ -69,7 +69,9 @@
- #define NCR_WAKEEN          (1<<6)
- #define NCR_FCOL            (1<<4)
- #define NCR_FDX             (1<<3)
--#define NCR_LBK             (3<<1)
-+
-+#define NCR_RESERVED        (3<<1)
-+#define NCR_MAC_LBK         (1<<1)
- #define NCR_RST	            (1<<0)
- 
- #define NSR_SPEED           (1<<7)
-@@ -167,5 +169,12 @@
- #define ISR_LNKCHNG		(1<<5)
- #define ISR_UNDERRUN		(1<<4)
- 
-+/* Davicom MII registers.
-+ */
-+
-+#define MII_DM_DSPCR		0x1b    /* DSP Control Register */
-+
-+#define DSPCR_INIT_PARAM	0xE100	/* DSP init parameter */
-+
- #endif /* _DM9000X_H_ */
- 
+-	ret = smsc75xx_set_rx_max_frame_length(dev, 1514);
++	ret = smsc75xx_set_rx_max_frame_length(dev, dev->net->mtu + ETH_HLEN);
+ 	if (ret < 0) {
+ 		netdev_warn(dev->net, "Failed to set max rx frame length\n");
+ 		return ret;
+@@ -2136,8 +2140,8 @@ static int smsc75xx_rx_fixup(struct usbn
+ 			else if (rx_cmd_a & (RX_CMD_A_LONG | RX_CMD_A_RUNT))
+ 				dev->net->stats.rx_frame_errors++;
+ 		} else {
+-			/* ETH_FRAME_LEN + 4(CRC) + 2(COE) + 4(Vlan) */
+-			if (unlikely(size > (ETH_FRAME_LEN + 12))) {
++			/* MAX_SINGLE_PACKET_SIZE + 4(CRC) + 2(COE) + 4(Vlan) */
++			if (unlikely(size > (MAX_SINGLE_PACKET_SIZE + ETH_HLEN + 12))) {
+ 				netif_dbg(dev, rx_err, dev->net,
+ 					  "size err rx_cmd_a=0x%08x\n",
+ 					  rx_cmd_a);
 
 
