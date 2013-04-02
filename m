@@ -1,167 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761155Ab3DBIXv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 04:23:51 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:41443 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761139Ab3DBIXt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 04:23:49 -0400
-Message-ID: <515A958B.5080905@ti.com>
-Date: Tue, 2 Apr 2013 11:23:39 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1760177Ab3DBIYH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 04:24:07 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:59534 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761166Ab3DBIYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 04:24:01 -0400
+Date: Tue, 2 Apr 2013 11:23:42 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+CC: <linux-usb@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <balbi@ti.com>,
+        <stern@rowland.harvard.edu>, <sarah.a.sharp@linux.intel.com>,
+        <rob.herring@calxeda.com>, <kgene.kim@samsung.com>, <kishon@ti.com>,
+        <dianders@chromium.org>, <t.figa@samsung.com>, <p.paneri@samsung.com>
+Subject: Re: [PATCH v3 01/11] usb: phy: Add APIs for runtime power management
+Message-ID: <20130402082342.GF30286@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com>
+ <1364824448-14732-2-git-send-email-gautam.vivek@samsung.com>
 MIME-Version: 1.0
-To: Paul Walmsley <paul@pwsan.com>
-CC: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>, <rnayak@ti.com>,
-        <b-cousson@ti.com>, <santosh.shilimkar@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] ARM: OMAP4: clock: Add device tree support for AUXCLKs
-References: <1363703220-4777-2-git-send-email-rogerq@ti.com> <1364293408-20677-1-git-send-email-rogerq@ti.com>
-In-Reply-To: <1364293408-20677-1-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xaMk4Io5JJdpkLEb"
+Content-Disposition: inline
+In-Reply-To: <1364824448-14732-2-git-send-email-gautam.vivek@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Paul
+--xaMk4Io5JJdpkLEb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 03/26/2013 12:23 PM, Roger Quadros wrote:
-> Register a device tree clock provider for the clocks
-> on the OMAP4 SoC. Also provide the binding information.
-> 
-> For now we only provide AUXCLKs.
-> 
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+On Mon, Apr 01, 2013 at 07:24:00PM +0530, Vivek Gautam wrote:
+> Adding  APIs to handle runtime power management on PHY
+> devices. PHY consumers may need to wake-up/suspend PHYs
+> when they work across autosuspend.
+>=20
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 > ---
->  .../devicetree/bindings/clock/omap4-clock.txt      |   33 ++++++++++++++++
->  arch/arm/boot/dts/omap4.dtsi                       |    5 ++
->  arch/arm/mach-omap2/cclock44xx_data.c              |   41 ++++++++++++++++++++
->  3 files changed, 79 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/clock/omap4-clock.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/omap4-clock.txt b/Documentation/devicetree/bindings/clock/omap4-clock.txt
-> new file mode 100644
-> index 0000000..2845a3f
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/omap4-clock.txt
-> @@ -0,0 +1,33 @@
-> +* Clock bindings for Texas Instruments OMAP4 clocks
+>  include/linux/usb/phy.h |  141 +++++++++++++++++++++++++++++++++++++++++=
+++++++
+>  1 files changed, 141 insertions(+), 0 deletions(-)
+>=20
+> diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
+> index 6b5978f..01bf9c1 100644
+> --- a/include/linux/usb/phy.h
+> +++ b/include/linux/usb/phy.h
+> @@ -297,4 +297,145 @@ static inline const char *usb_phy_type_string(enum =
+usb_phy_type type)
+>  		return "UNKNOWN PHY TYPE";
+>  	}
+>  }
 > +
-> +Required properties:
-> +- compatible: Should be "ti,omap4-clock"
-> +- #clock-cells: Should be <1>
-> +
-> +The clock consumer should specify the desired clock by having the clock
-> +ID in its "clocks" phandle cell.  The following is a list of OMAP4 clocks
-> +and IDs.
-> +
-> +	Clock		ID
-> +	------------------
-> +	auxclk0_ck	0
-> +	auxclk1_ck	1
-> +	auxclk2_ck	2
-> +	auxclk3_ck	3
-> +	auxclk4_ck	4
-> +	auxclk5_ck	5
-> +
-> +Example:
-> +
-> +aux_clks: scrmclks {
-> +	compatible = "ti,omap4-clock";
-> +	#clock-cells = <1>;
-> +};
-> +
-> +hsusb1_phy: hsusb1_phy {
-> +	compatible = "usb-nop-xceiv";
-> +	reset-supply = <&hsusb1_reset>;
-> +	clocks = <&aux_clks 3>;
-> +	clock-names = "main_clk";
-> +	clock-frequency = <19200000>;
-> +};
-> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-> index 739bb79..f27548a 100644
-> --- a/arch/arm/boot/dts/omap4.dtsi
-> +++ b/arch/arm/boot/dts/omap4.dtsi
-> @@ -101,6 +101,11 @@
->  			ti,hwmods = "counter_32k";
->  		};
->  
-> +		clks: clocks {
-> +			compatible = "ti,omap4-clock";
-> +			#clock-cells = <1>;
-> +		};
-> +
->  		omap4_pmx_core: pinmux@4a100040 {
->  			compatible = "ti,omap4-padconf", "pinctrl-single";
->  			reg = <0x4a100040 0x0196>;
-> diff --git a/arch/arm/mach-omap2/cclock44xx_data.c b/arch/arm/mach-omap2/cclock44xx_data.c
-> index 3d58f33..a93617b 100644
-> --- a/arch/arm/mach-omap2/cclock44xx_data.c
-> +++ b/arch/arm/mach-omap2/cclock44xx_data.c
-> @@ -27,6 +27,7 @@
->  #include <linux/clk-private.h>
->  #include <linux/clkdev.h>
->  #include <linux/io.h>
-> +#include <linux/of.h>
->  
->  #include "soc.h"
->  #include "iomap.h"
-> @@ -1663,6 +1664,44 @@ static struct omap_clk omap44xx_clks[] = {
->  	CLK(NULL,	"cpufreq_ck",	&dpll_mpu_ck,	CK_443X),
->  };
->  
-> +/*
-> + * List of clocks that can be referenced in device tree
-> + * Must match with Documentation/devicetree/bindings/clock/omap4-clock.txt
-> + */
-> +static struct clk *dt_clks[] = {
-> +	&auxclk0_ck,
-> +	&auxclk1_ck,
-> +	&auxclk2_ck,
-> +	&auxclk3_ck,
-> +	&auxclk4_ck,
-> +	&auxclk5_ck,
-> +};
-> +
-> +static struct clk_onecell_data clock_data;
-> +
-> +#ifdef CONFIG_OF
-> +int __init omap4_clk_init_dt(void)
+> +static inline void usb_phy_autopm_enable(struct usb_phy *x)
 > +{
-> +	struct device_node *np;
-> +
-> +	np = of_find_compatible_node(NULL, NULL, "ti,omap4-clock");
-> +	if (np) {
-> +		clock_data.clks = dt_clks;
-> +		clock_data.clk_num = ARRAY_SIZE(dt_clks);
-> +		of_clk_add_provider(np, of_clk_src_onecell_get,	&clock_data);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +#else
-> +
-> +int __init omap4_clk_init_dt(void)
-> +{
-> +	return 0;
-> +}
-> +#endif /* CONFIG_OF */
-> +
->  int __init omap4xxx_clk_init(void)
->  {
->  	u32 cpu_clkflg;
-> @@ -1693,6 +1732,8 @@ int __init omap4xxx_clk_init(void)
->  
->  	omap2_clk_disable_autoidle_all();
->  
-> +	omap4_clk_init_dt();
-> +
->  	/*
->  	 * On OMAP4460 the ABE DPLL fails to turn on if in idle low-power
->  	 * state when turning the ABE clock domain. Workaround this by
-> 
+> +	if (!x || !x->dev) {
+> +		dev_err(x->dev, "no PHY or attached device available\n");
+> +		return;
+> +		}
 
+wrong indentation, also, I'm not sure we should allow calls with NULL
+pointers. Perhaps a WARN() so we get API offenders early enough ?
+
+--=20
+balbi
+
+--xaMk4Io5JJdpkLEb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRWpWOAAoJEIaOsuA1yqREzcMQAJkqx8O1xjqU7ukdheuiNosY
+agYaXVJr2Z121Ma4+wJnHaYPli6aK7akMiejDWbjliF/FmWQXoxnL9V4xN92Gjkl
+5VVche6xTykVBYv+bjrw7EbWvxlYDDanSLIVWyhYrHMtMJsnRA+7NRGrAfjC7jfx
+K08F0e6hQ7HUYGy2UDjw2RaJUyuWfeaOyGJ/wa1NrmzZGFTNwV+StlGPaq0RlFHR
+9UPFWBx10QQBx047aj4UL13442NzxHeKHKQwVk7ijJzWsx4DIi2BoKDoPjCnedUl
+Y7ml8T9qcbo5xfvtfD/BLu6NXVM4qqs2FyoIkJhwrMKHW1y11kc/5JV1/c47QhGF
+ky09mnui2hS9MXNVGGRnzRJzOFVdsKgC3ZMwaP2/93FcI7SkInuBklM7eFh6x7BH
+geXO1ymDnzJwvAjoIFv81FjPC8BEDWqrEuKoi0Vof3A0kINzYA+Uw8gCt+cHo2dz
+obBq21oIhspBEbvWUdgKrDYKrQcCIOFP6KYRsCksWWa4Zawd3bvgOoLzgL7sixPX
+5gYwZFqzzGP/ZqYpYN2jAGOGu6M55xbFk3HuOGXTMM75p7elKNahV60NVjMyGwnd
+DrVeUneLmn2t+voHiaPXwVEcxGo30WHP0mh8HphDBHelGU1qn2VLImktKMNm5Y7f
+iaSGVA7B75D/oasvY+kh
+=389A
+-----END PGP SIGNATURE-----
+
+--xaMk4Io5JJdpkLEb--
