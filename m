@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762278Ab3DBU3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 16:29:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57818 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757405Ab3DBU3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 16:29:36 -0400
-Message-ID: <515B3F98.5020101@zytor.com>
-Date: Tue, 02 Apr 2013 13:29:12 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Frantisek Hrbata <fhrbata@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, oleg@redhat.com,
-        kamaleshb@in.ibm.com, hechjie@cn.ibm.com
-Subject: Re: [PATCH] x86: add phys addr validity check for /dev/mem mmap
-References: <1364905733-23937-1-git-send-email-fhrbata@redhat.com> <515B2802.1050405@zytor.com> <20130402191012.GC3314@dhcp-26-164.brq.redhat.com>
-In-Reply-To: <20130402191012.GC3314@dhcp-26-164.brq.redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1762242Ab3DBUbc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 16:31:32 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:3252 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759674Ab3DBUba (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 16:31:30 -0400
+X-IronPort-AV: E=Sophos;i="4.87,394,1363158000"; 
+   d="scan'208";a="35356418"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mark Rutland <mark.rutland@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>
+Subject: [PATCH] ARM: arch_timer: Silence debug preempt warnings
+Date: Tue,  2 Apr 2013 13:31:12 -0700
+Message-Id: <1364934672-31554-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2013 12:10 PM, Frantisek Hrbata wrote:
-> 
-> Hi, this is exactly what the patch is doing imho. Note that the
-> valid_phys_addr_range(), which is using the high_memory, is the same as the
-> default one in drivers/char/mem.c(#ifndef ARCH_HAS_VALID_PHYS_ADDR_RANGE). I
-> just added x86 specific check for valid_mmap_phys_addr_range and moved both
-> functions to arch/x86/mm/mmap.c, rather then modifying the default generic ones.
-> This is how other archs(arm) are doing it.
-> 
-> Also valid_phys_addr_range is used just in read|write_mem and
-> valid_mmap_phys_addr_range is checked in mmap_mem and it calls phys_addr_valid
-> 
-> static inline int phys_addr_valid(resource_size_t addr)
-> {
-> #ifdef CONFIG_PHYS_ADDR_T_64BIT
-> 	return !(addr >> boot_cpu_data.x86_phys_bits);
-> #else
->         return 1;
-> #endif
-> }                          
-> 
-> I for sure could overlooked something, but this seems right to me.
-> 
+Hot-plugging with CONFIG_DEBUG_PREEMPT=y on a device with arm
+architected timers causes a slew of "using smp_processor_id() in
+preemptible" warnings:
 
-OK, this is really confusing ... which isn't a *huge* surprise (the
-entire /dev/mem code has some gigantic bugs in it.)
+  BUG: using smp_processor_id() in preemptible [00000000] code: sh/111
+  caller is arch_timer_cpu_notify+0x14/0xc8
 
-I think I need to do more of an in-depth review.  The other question is
-why we don't call phys_addr_valid() everywhere.
+This happens because sometimes the cpu notifier, arch_timer_cpu_notify(),
+is called in preemptible context but we use this_cpu_ptr()
+to retrieve the clockevent unconditionally. We're only going to
+actually use the pointer in non-preemptible context though,
+so use __this_cpu_ptr() instead to avoid the preemptible checks
+and silence the warning.
 
-	-hpa
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Marc Zyngier <Marc.Zyngier@arm.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clocksource/arm_arch_timer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index d7ad425..5928c29 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -248,7 +248,7 @@ static void __cpuinit arch_timer_stop(struct clock_event_device *clk)
+ static int __cpuinit arch_timer_cpu_notify(struct notifier_block *self,
+ 					   unsigned long action, void *hcpu)
+ {
+-	struct clock_event_device *evt = this_cpu_ptr(arch_timer_evt);
++	struct clock_event_device *evt = __this_cpu_ptr(arch_timer_evt);
+ 
+ 	switch (action & ~CPU_TASKS_FROZEN) {
+ 	case CPU_STARTING:
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
