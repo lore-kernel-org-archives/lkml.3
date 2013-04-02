@@ -1,37 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761376Ab3DBIeF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 04:34:05 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42588 "EHLO arroyo.ext.ti.com"
+	id S1761387Ab3DBIex (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 04:34:53 -0400
+Received: from mout.gmx.net ([212.227.15.18]:56466 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760516Ab3DBIeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 04:34:01 -0400
-Message-ID: <515A97DE.1080403@ti.com>
-Date: Tue, 2 Apr 2013 14:03:34 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Philip Avinash <avinashphilip@ti.com>
-CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <prakash.pm@ti.com>,
-        <jacmet@sunsite.dk>
-Subject: Re: [PATCH v3 3/3] ARM: davinci: da850: add EHRPWM & ECAP DT node
-References: <1364197789-16783-1-git-send-email-avinashphilip@ti.com> <1364197789-16783-4-git-send-email-avinashphilip@ti.com>
-In-Reply-To: <1364197789-16783-4-git-send-email-avinashphilip@ti.com>
+	id S1760435Ab3DBIeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 04:34:50 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19Xc/tNJxxX/2k0QcwRz6McN+p4KaTkwwJT9dcfCd
+	gm+BxkBR8o2Xre
+Message-ID: <1364891674.4976.65.camel@marge.simpson.net>
+Subject: Re: [patch v3 0/8] sched: use runnable avg in load balance
+From: Mike Galbraith <efault@gmx.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Alex Shi <alex.shi@intel.com>, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
+        bp@alien8.de, pjt@google.com, namhyung@kernel.org,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
+        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
+        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
+        mgorman@suse.de, riel@redhat.com
+Date: Tue, 02 Apr 2013 10:34:34 +0200
+In-Reply-To: <515A877B.3020908@linux.vnet.ibm.com>
+References: <1364873008-3169-1-git-send-email-alex.shi@intel.com>
+	 <515A877B.3020908@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/25/2013 1:19 PM, Philip Avinash wrote:
-> Add da850 EHRPWM & ECAP DT node.
-> Also adds OF_DEV_AUXDATA for EHRPWM & ECAP driver to use EHRPWM & ECAP
-> clock.
+On Tue, 2013-04-02 at 15:23 +0800, Michael Wang wrote: 
+> On 04/02/2013 11:23 AM, Alex Shi wrote:
+> [snip]
+> > 
+> > [patch v3 1/8] Revert "sched: Introduce temporary FAIR_GROUP_SCHED
+> > [patch v3 2/8] sched: set initial value of runnable avg for new
+> > [patch v3 3/8] sched: only count runnable avg on cfs_rq's nr_running
+> > [patch v3 4/8] sched: update cpu load after task_tick.
+> > [patch v3 5/8] sched: compute runnable load avg in cpu_load and
+> > [patch v3 6/8] sched: consider runnable load average in move_tasks
+> > [patch v3 7/8] sched: consider runnable load average in
+> > [patch v3 8/8] sched: use instant load for burst wake up
+> 
+> I've tested the patch set on 12 cpu X86 box with 3.9.0-rc2, and pgbench
+> show regression on high-end this time.
+> 
+> | db_size | clients |  tps  |   |  tps  |
+> +---------+---------+-------+   +-------+
+> | 22 MB   |       1 | 10662 |   | 10446 |
+> | 22 MB   |       2 | 21483 |   | 20887 |
+> | 22 MB   |       4 | 42046 |   | 41266 |
+> | 22 MB   |       8 | 55807 |   | 51987 |
+> | 22 MB   |      12 | 50768 |   | 50974 |
+> | 22 MB   |      16 | 49880 |   | 49510 |
+> | 22 MB   |      24 | 45904 |   | 42398 |
+> | 22 MB   |      32 | 43420 |   | 40995 |
+> | 7484 MB |       1 |  7965 |   |  7376 |
+> | 7484 MB |       2 | 19354 |   | 19149 |
+> | 7484 MB |       4 | 37552 |   | 37458 |
+> | 7484 MB |       8 | 48655 |   | 46618 |
+> | 7484 MB |      12 | 45778 |   | 45756 |
+> | 7484 MB |      16 | 45659 |   | 44911 |
+> | 7484 MB |      24 | 42192 |   | 37185 |	-11.87%
+> | 7484 MB |      32 | 36385 |   | 34447 |
+> | 15 GB   |       1 |  7677 |   |  7359 |
+> | 15 GB   |       2 | 19227 |   | 19049 |
+> | 15 GB   |       4 | 37335 |   | 36947 |
+> | 15 GB   |       8 | 48130 |   | 46898 |
+> | 15 GB   |      12 | 45393 |   | 43986 |
+> | 15 GB   |      16 | 45110 |   | 45719 |
+> | 15 GB   |      24 | 41415 |   | 36813 |	-11.11%
+> | 15 GB   |      32 | 35988 |   | 34025 |
+> 
+> The reason may caused by wake_affine()'s higher overhead, and pgbench is
+> really sensitive to this stuff...
 
-This looks fine to me but I will wait for the bindings to get accepted
-before taking this one.
+For grins, you could try running the whole thing SCHED_BATCH.  (/me sees
+singing/dancing red herring whenever wake_affine() and pgbench appear in
+the same sentence;)
 
-Thanks,
-Sekhar
+-Mike
+
