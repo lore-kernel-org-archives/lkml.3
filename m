@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759970Ab3DBCjf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 22:39:35 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:33216 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759806Ab3DBCje (ORCPT
+	id S1759938Ab3DBCmI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 22:42:08 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:50712 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754237Ab3DBCmH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 22:39:34 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r322dRYm023592, This message is released by code: ctlocs8528
-From: hayeswang <hayeswang@realtek.com>
-To: "'Francois Romieu'" <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <1364824539-4156-1-git-send-email-hayeswang@realtek.com> <1364824539-4156-5-git-send-email-hayeswang@realtek.com> <20130401222235.GB19335@electric-eye.fr.zoreil.com>
-Subject: RE: [PATCH net-next 5/7] r8169: add a new chip for RTL8111G
-Date: Tue, 2 Apr 2013 10:39:31 +0800
-Message-ID: <2808A1ABA9A5470C8CB9534309588984@realtek.com.tw>
+	Mon, 1 Apr 2013 22:42:07 -0400
+X-Originating-IP: 108.223.40.66
+Date: Mon, 1 Apr 2013 19:42:12 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Pavel Machek <pavel@denx.de>
+Cc: sr@denx.de, w.sang@pengutronix.de, magnus.damm@gmail.com,
+        hjk@linutronix.de, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, dzu@denx.de
+Subject: Re: UIO device tree bindings.
+Message-ID: <20130402024212.GA19431@roeck-us.net>
+References: <20130401142336.GA18034@amd.pavel.ucw.cz>
+ <20130401154008.GA20963@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Ac4vJ2u41mrrZaqqRu+TrbCu3ovk2AAIr3kg
-In-Reply-To: <20130401222235.GB19335@electric-eye.fr.zoreil.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130401154008.GA20963@amd.pavel.ucw.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Francois Romieu [mailto:romieu@fr.zoreil.com] 
-> Sent: Tuesday, April 02, 2013 6:23 AM
-> To: Hayeswang
-> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH net-next 5/7] r8169: add a new chip for RTL8111G
+On Mon, Apr 01, 2013 at 05:40:08PM +0200, Pavel Machek wrote:
+> On Mon 2013-04-01 16:23:36, Pavel Machek wrote:
+> > Hi!
+> > 
+> > I'd like to get uio device tree bindings to work -- with recent FPGA
+> > parts it will be important. Latest version I see is 
+> > 
+> > https://lists.ozlabs.org/pipermail/linuxppc-dev/2009-June/073087.html
+> > 
+> > ... Is there anything newer?
+> > 
+> > I red the discussion, and main problem seems to be the "tell kernel to
+> > drive this device tree device", right?
 > 
-[..]
-> There is close to zero added value for this stuff in the kernel.
-> You may as well move it completely into the firmware.
+Problem seems to be the notion that the proposed devicetree entry would not
+describe the hardware, but its use. Not really sure I understand the problem,
+as I would see the hardware description to be "A hardware device which is
+compatible to and managed by the generic-uio driver". I would argue that
+this _is_ a hardware description (if not, what is ?), but I am not the one
+to make the call.
 
-Do you mean all of the phy settings? I have checked these settings with our hw
-engineers. These are not firmware. 
+> So... here's the port to recent kernels. Not for mainline.
+> 
+> Signed-off-by: Pavel Machek <pavel@denx.de>
+> 
+Turns out this is exactly what I need, and your post saves me the time
+I would have spent writing essentially the same code and submitting it,
+only to have it rejected.
 
-Best Regards,
-Hayes
+Thanks a lot for digging this up!
 
+Guenter
