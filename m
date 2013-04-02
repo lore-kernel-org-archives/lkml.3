@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762058Ab3DBRLk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 13:11:40 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:51975 "EHLO zmc.proxad.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762003Ab3DBRKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 13:10:47 -0400
-From: Florian Fainelli <florian@openwrt.org>
-To: stern@rowland.harvard.edu
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>
-Subject: [PATCH 5/5 v2] USB: enclose USB_XHCI_HCD related symbols within a if USB_XHCI_HCD block
-Date: Tue,  2 Apr 2013 19:10:26 +0200
-Message-Id: <1364922626-32407-6-git-send-email-florian@openwrt.org>
+	id S932907Ab3DBRMM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 13:12:12 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:58395 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932888Ab3DBRMK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 13:12:10 -0400
+From: Antony Pavlov <antonynpavlov@gmail.com>
+To: linux-kbuild@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Antony Pavlov <antonynpavlov@gmail.com>
+Subject: [RFC] kbuild: fix ld-option function
+Date: Tue,  2 Apr 2013 21:13:42 +0400
+Message-Id: <1364922822-7510-1-git-send-email-antonynpavlov@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1364922626-32407-1-git-send-email-florian@openwrt.org>
-References: <1364321177-12146-1-git-send-email-florian@openwrt.org>
- <1364922626-32407-1-git-send-email-florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch encloses all symbols depending on USB_XHCI_HCD within an if
-USB_XHCI_HCD / endif block.
+The kbuild's ld-option function is broken because
+the command
+  $(CC) /dev/null -c -o "$$TMPO"
+does not create object file!
 
-Signed-off-by: Florian Fainelli <florian@openwrt.org>
+I have used a relatively old mips gcc 3.4.6 cross-compiler
+and a relatively new gcc 4.7.2 to check this fact
+but the results are the same.
+
+EXAMPLE:
+  $ rm /tmp/1.o
+  $ mips-linux-gcc /dev/null -c -o /tmp/1.o
+  mips-linux-gcc: /dev/null: linker input file unused because linking not done
+  $ ls -la /tmp/1.o
+  ls: cannot access /tmp/1.o: No such file or directory
+
+We can easily fix the problem by adding
+the '-x c' compiler option.
+
+EXAMPLE:
+  $ rm /tmp/1.o
+  $ mips-linux-gcc -x c /dev/null -c -o /tmp/1.o
+  $ ls -la /tmp/1.o
+  -rw-r--r-- 1 antony antony 778 Apr  2 20:40 /tmp/1.o
+
+Signed-off-by: Antony Pavlov <antonynpavlov@gmail.com>
 ---
- drivers/usb/host/Kconfig |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ scripts/Kbuild.include |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 475c508..a96a979 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -25,13 +25,13 @@ config USB_XHCI_HCD
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called xhci-hcd.
+diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
+index 978416d..547e15d 100644
+--- a/scripts/Kbuild.include
++++ b/scripts/Kbuild.include
+@@ -148,7 +148,7 @@ cc-ldoption = $(call try-run,\
+ # ld-option
+ # Usage: LDFLAGS += $(call ld-option, -X)
+ ld-option = $(call try-run,\
+-	$(CC) /dev/null -c -o "$$TMPO" ; $(LD) $(1) "$$TMPO" -o "$$TMP",$(1),$(2))
++	$(CC) -x c /dev/null -c -o "$$TMPO" ; $(LD) $(1) "$$TMPO" -o "$$TMP",$(1),$(2))
  
-+if USB_XHCI_HCD
-+
- config USB_XHCI_PLATFORM
- 	tristate
--	depends on USB_XHCI_HCD
- 
- config USB_XHCI_HCD_DEBUGGING
- 	bool "Debugging for the xHCI host controller"
--	depends on USB_XHCI_HCD
- 	---help---
- 	  Say 'Y' to turn on debugging for the xHCI host controller driver.
- 	  This will spew debugging output, even in interrupt context.
-@@ -39,6 +39,8 @@ config USB_XHCI_HCD_DEBUGGING
- 
- 	  If unsure, say N.
- 
-+endif # USB_XHCI_HCD
-+
- config USB_EHCI_HCD
- 	tristate "EHCI HCD (USB 2.0) support"
- 	depends on USB_ARCH_HAS_EHCI
+ # ar-option
+ # Usage: KBUILD_ARFLAGS := $(call ar-option,D)
 -- 
 1.7.10.4
 
