@@ -1,62 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933922Ab3DBWPg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:15:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33684 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933879Ab3DBWOq (ORCPT
+	id S933936Ab3DBWPw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:15:52 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:50104 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933879Ab3DBWPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:46 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Veaceslav Falico <vfalico@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 67/68] pch_gbe: fix ip_summed checksum reporting on rx
-Date: Tue,  2 Apr 2013 15:13:56 -0700
-Message-Id: <20130402221337.711571938@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
-References: <20130402221329.915209206@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 2 Apr 2013 18:15:48 -0400
+Date: Tue, 2 Apr 2013 15:15:23 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Ying Han <yinghan@google.com>,
+        Minchan Kim <minchan@kernel.org>, Christoph Lameter <cl@linux.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: RE: [PATCHv2, RFC 20/30] ramfs: enable transparent huge page cache
+In-Reply-To: <20130402162813.0B4CBE0085@blue.fi.intel.com>
+Message-ID: <alpine.LNX.2.00.1304021422460.19363@eggly.anvils>
+References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-21-git-send-email-kirill.shutemov@linux.intel.com> <20130402162813.0B4CBE0085@blue.fi.intel.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2 Apr 2013, Kirill A. Shutemov wrote:
+> Kirill A. Shutemov wrote:
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > 
+> > ramfs is the most simple fs from page cache point of view. Let's start
+> > transparent huge page cache enabling here.
+> > 
+> > For now we allocate only non-movable huge page. It's not yet clear if
+> > movable page is safe here and what need to be done to make it safe.
+> > 
+> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > ---
+> >  fs/ramfs/inode.c |    6 +++++-
+> >  1 file changed, 5 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
+> > index c24f1e1..da30b4f 100644
+> > --- a/fs/ramfs/inode.c
+> > +++ b/fs/ramfs/inode.c
+> > @@ -61,7 +61,11 @@ struct inode *ramfs_get_inode(struct super_block *sb,
+> >  		inode_init_owner(inode, dir, mode);
+> >  		inode->i_mapping->a_ops = &ramfs_aops;
+> >  		inode->i_mapping->backing_dev_info = &ramfs_backing_dev_info;
+> > -		mapping_set_gfp_mask(inode->i_mapping, GFP_HIGHUSER);
+> > +		/*
+> > +		 * TODO: what should be done to make movable safe?
+> > +		 */
+> > +		mapping_set_gfp_mask(inode->i_mapping,
+> > +				GFP_TRANSHUGE & ~__GFP_MOVABLE);
+> 
+> Hugh, I've found old thread with the reason why we have GFP_HIGHUSER here, not
+> GFP_HIGHUSER_MOVABLE:
+> 
+> http://lkml.org/lkml/2006/11/27/156
+> 
+> It seems the origin reason is not longer valid, correct?
 
-------------------
+Incorrect, I believe: so far as I know, the original reason remains
+valid - though it would only require a couple of good small changes
+to reverse that - or perhaps you have already made these changes?
 
+The original reason is that ramfs pages are not migratable,
+therefore they should be allocated from an unmovable area.
 
-From: Veaceslav Falico <vfalico@redhat.com>
+As I understand it (and I would have preferred to run a test to check
+my understanding before replying, but don't have time for that), ramfs
+pages cannot be migrated for two reasons, neither of them a good reason.
 
-[ Upstream commit 76a0e68129d7d24eb995a6871ab47081bbfa0acc ]
+One reason (okay, it wouldn't have been quite this way in 2006) is that
+ramfs (rightly) calls mapping_set_unevictable(), so its pages will fail
+the page_evictable() test, so they will be marked PageUnevictable, so
+__isolate_lru_page() will refuse to isolate them for migration (except
+for CMA).
 
-skb->ip_summed should be CHECKSUM_UNNECESSARY when the driver reports that
-checksums were correct and CHECKSUM_NONE in any other case. They're
-currently placed vice versa, which breaks the forwarding scenario. Fix it
-by placing them as described above.
+I am strongly in favour of removing that limitation from
+__isolate_lru_page() (and the thread you pointed - thank you - shows Mel
+and Christoph were both in favour too); and note that there is no such
+restriction in the confusingly similar but different isolate_lru_page().
 
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Some people do worry that migrating Mlocked pages would introduce the
+occasional possibility of a minor fault (with migration_entry_wait())
+on an Mlocked region which never faulted before.  I tend to dismiss
+that worry, but maybe I'm wrong to do so: maybe there should be a
+tunable for realtimey people to set, to prohibit page migration from
+mlocked areas; but the default should be to allow it.
 
---- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-@@ -1740,9 +1740,9 @@ pch_gbe_clean_rx(struct pch_gbe_adapter
- 
- 			skb->protocol = eth_type_trans(skb, netdev);
- 			if (tcp_ip_status & PCH_GBE_RXD_ACC_STAT_TCPIPOK)
--				skb->ip_summed = CHECKSUM_NONE;
--			else
- 				skb->ip_summed = CHECKSUM_UNNECESSARY;
-+			else
-+				skb->ip_summed = CHECKSUM_NONE;
- 
- 			napi_gro_receive(&adapter->napi, skb);
- 			(*work_done)++;
+(Of course, we could separate ramfs's mapping_unevictable case from
+the Mlocked case; but I'd prefer to continue to treat them the same.)
 
+The other reason it looks as if ramfs pages cannot be migrated, is
+that it does not set a suitable ->migratepage method, so would be
+handled by fallback_migrate_page(), whose PageDirty test will end
+up failing the migration with -EBUSY or -EINVAL - if I read it
+correctly.
 
+Perhaps other such reasons would surface once those are fixed.
+But until ramfs pages can be migrated, they should not be allocated
+with __GFP_MOVABLE.  (I've been writing about the migratability of
+small pages: I expect you have the migratability of THPages in flux.)
+
+Hugh
