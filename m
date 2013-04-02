@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933439Ab3DBWND (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:13:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33195 "EHLO
+	id S1762211Ab3DBWkU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:40:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33214 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933417Ab3DBWM7 (ORCPT
+	with ESMTP id S933435Ab3DBWND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:59 -0400
+	Tue, 2 Apr 2013 18:13:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yuchung Cheng <ycheng@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
+        Ding Tianhong <dingtianhong@huawei.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 101/124] tcp: undo spurious timeout after SACK reneging
-Date: Tue,  2 Apr 2013 15:11:23 -0700
-Message-Id: <20130402221115.829566225@linuxfoundation.org>
+Subject: [ 105/124] af_unix: dont send SCM_CREDENTIAL when dest socket is NULL
+Date: Tue,  2 Apr 2013 15:11:27 -0700
+Message-Id: <20130402221116.307254752@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -29,39 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Yuchung Cheng <ycheng@google.com>
+From: dingtianhong <dingtianhong@huawei.com>
 
-[ Upstream commit 7ebe183c6d444ef5587d803b64a1f4734b18c564 ]
+[ Upstream commit 14134f6584212d585b310ce95428014b653dfaf6 ]
 
-On SACK reneging the sender immediately retransmits and forces a
-timeout but disables Eifel (undo). If the (buggy) receiver does not
-drop any packet this can trigger a false slow-start retransmit storm
-driven by the ACKs of the original packets. This can be detected with
-undo and TCP timestamps.
+SCM_SCREDENTIALS should apply to write() syscalls only either source or destination
+socket asserted SOCK_PASSCRED. The original implememtation in maybe_add_creds is wrong,
+and breaks several LSB testcases ( i.e. /tset/LSB.os/netowkr/recvfrom/T.recvfrom).
 
-Signed-off-by: Yuchung Cheng <ycheng@google.com>
-Acked-by: Neal Cardwell <ncardwell@google.com>
+Origionally-authored-by: Karel Srot <ksrot@redhat.com>
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_input.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ net/unix/af_unix.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -2064,11 +2064,8 @@ void tcp_enter_loss(struct sock *sk, int
- 	if (tcp_is_reno(tp))
- 		tcp_reset_reno_sack(tp);
- 
--	if (!how) {
--		/* Push undo marker, if it was plain RTO and nothing
--		 * was retransmitted. */
--		tp->undo_marker = tp->snd_una;
--	} else {
-+	tp->undo_marker = tp->snd_una;
-+	if (how) {
- 		tp->sacked_out = 0;
- 		tp->fackets_out = 0;
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1414,8 +1414,8 @@ static void maybe_add_creds(struct sk_bu
+ 	if (UNIXCB(skb).cred)
+ 		return;
+ 	if (test_bit(SOCK_PASSCRED, &sock->flags) ||
+-	    !other->sk_socket ||
+-	    test_bit(SOCK_PASSCRED, &other->sk_socket->flags)) {
++	    (other->sk_socket &&
++	    test_bit(SOCK_PASSCRED, &other->sk_socket->flags))) {
+ 		UNIXCB(skb).pid  = get_pid(task_tgid(current));
+ 		UNIXCB(skb).cred = get_current_cred();
  	}
 
 
