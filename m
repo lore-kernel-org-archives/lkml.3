@@ -1,82 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933557Ab3DBWNR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:13:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33313 "EHLO
+	id S933725Ab3DBWOW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:14:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33488 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933533Ab3DBWNO (ORCPT
+	with ESMTP id S933702Ab3DBWOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:13:14 -0400
+	Tue, 2 Apr 2013 18:14:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hong Zhiguo <honkiko@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 115/124] ipv6: fix bad free of addrconf_init_net
-Date: Tue,  2 Apr 2013 15:11:37 -0700
-Message-Id: <20130402221117.508630337@linuxfoundation.org>
+        Vivek gautam <gautam.vivek@samsung.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 28/68] usb: xhci: Fix TRB transfer length macro used for Event TRB.
+Date: Tue,  2 Apr 2013 15:13:17 -0700
+Message-Id: <20130402221333.211210083@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
-References: <20130402221104.163133110@linuxfoundation.org>
+In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
+References: <20130402221329.915209206@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
+From: Vivek Gautam <gautam.vivek@samsung.com>
 
-From: Hong Zhiguo <honkiko@gmail.com>
+commit 1c11a172cb30492f5f6a82c6e118fdcd9946c34f upstream.
 
-[ Upstream commit a79ca223e029aa4f09abb337accf1812c900a800 ]
+Use proper macro while extracting TRB transfer length from
+Transfer event TRBs. Adding a macro EVENT_TRB_LEN (bits 0:23)
+for the same, and use it instead of TRB_LEN (bits 0:16) in
+case of event TRBs.
 
-Signed-off-by: Hong Zhiguo <honkiko@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This patch should be backported to kernels as old as 2.6.31, that
+contain the commit b10de142119a676552df3f0d2e3a9d647036c26a "USB: xhci:
+Bulk transfer support".  This patch will have issues applying to older
+kernels.
+
+Signed-off-by: Vivek gautam <gautam.vivek@samsung.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/addrconf.c |   26 ++++++++++----------------
- 1 file changed, 10 insertions(+), 16 deletions(-)
 
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -4787,26 +4787,20 @@ static void addrconf_sysctl_unregister(s
+---
+ drivers/usb/host/xhci-ring.c |   24 ++++++++++++------------
+ drivers/usb/host/xhci.h      |    4 ++++
+ 2 files changed, 16 insertions(+), 12 deletions(-)
+
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -2027,8 +2027,8 @@ static int process_ctrl_td(struct xhci_h
+ 		if (event_trb != ep_ring->dequeue &&
+ 				event_trb != td->last_trb)
+ 			td->urb->actual_length =
+-				td->urb->transfer_buffer_length
+-				- TRB_LEN(le32_to_cpu(event->transfer_len));
++				td->urb->transfer_buffer_length -
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+ 		else
+ 			td->urb->actual_length = 0;
  
- static int __net_init addrconf_init_net(struct net *net)
- {
--	int err;
-+	int err = -ENOMEM;
- 	struct ipv6_devconf *all, *dflt;
+@@ -2060,7 +2060,7 @@ static int process_ctrl_td(struct xhci_h
+ 		/* Maybe the event was for the data stage? */
+ 			td->urb->actual_length =
+ 				td->urb->transfer_buffer_length -
+-				TRB_LEN(le32_to_cpu(event->transfer_len));
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+ 			xhci_dbg(xhci, "Waiting for status "
+ 					"stage event\n");
+ 			return 0;
+@@ -2096,7 +2096,7 @@ static int process_isoc_td(struct xhci_h
+ 	/* handle completion code */
+ 	switch (trb_comp_code) {
+ 	case COMP_SUCCESS:
+-		if (TRB_LEN(le32_to_cpu(event->transfer_len)) == 0) {
++		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) == 0) {
+ 			frame->status = 0;
+ 			break;
+ 		}
+@@ -2141,7 +2141,7 @@ static int process_isoc_td(struct xhci_h
+ 				len += TRB_LEN(le32_to_cpu(cur_trb->generic.field[2]));
+ 		}
+ 		len += TRB_LEN(le32_to_cpu(cur_trb->generic.field[2])) -
+-			TRB_LEN(le32_to_cpu(event->transfer_len));
++			EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
  
--	err = -ENOMEM;
--	all = &ipv6_devconf;
--	dflt = &ipv6_devconf_dflt;
-+	all = kmemdup(&ipv6_devconf, sizeof(ipv6_devconf), GFP_KERNEL);
-+	if (all == NULL)
-+		goto err_alloc_all;
+ 		if (trb_comp_code != COMP_STOP_INVAL) {
+ 			frame->actual_length = len;
+@@ -2199,7 +2199,7 @@ static int process_bulk_intr_td(struct x
+ 	case COMP_SUCCESS:
+ 		/* Double check that the HW transferred everything. */
+ 		if (event_trb != td->last_trb ||
+-				TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
++		    EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
+ 			xhci_warn(xhci, "WARN Successful completion "
+ 					"on short TX\n");
+ 			if (td->urb->transfer_flags & URB_SHORT_NOT_OK)
+@@ -2227,18 +2227,18 @@ static int process_bulk_intr_td(struct x
+ 				"%d bytes untransferred\n",
+ 				td->urb->ep->desc.bEndpointAddress,
+ 				td->urb->transfer_buffer_length,
+-				TRB_LEN(le32_to_cpu(event->transfer_len)));
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)));
+ 	/* Fast path - was this the last TRB in the TD for this URB? */
+ 	if (event_trb == td->last_trb) {
+-		if (TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
++		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
+ 			td->urb->actual_length =
+ 				td->urb->transfer_buffer_length -
+-				TRB_LEN(le32_to_cpu(event->transfer_len));
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+ 			if (td->urb->transfer_buffer_length <
+ 					td->urb->actual_length) {
+ 				xhci_warn(xhci, "HC gave bad length "
+ 						"of %d bytes left\n",
+-					  TRB_LEN(le32_to_cpu(event->transfer_len)));
++					  EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)));
+ 				td->urb->actual_length = 0;
+ 				if (td->urb->transfer_flags & URB_SHORT_NOT_OK)
+ 					*status = -EREMOTEIO;
+@@ -2280,7 +2280,7 @@ static int process_bulk_intr_td(struct x
+ 		if (trb_comp_code != COMP_STOP_INVAL)
+ 			td->urb->actual_length +=
+ 				TRB_LEN(le32_to_cpu(cur_trb->generic.field[2])) -
+-				TRB_LEN(le32_to_cpu(event->transfer_len));
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+ 	}
  
--	if (!net_eq(net, &init_net)) {
--		all = kmemdup(all, sizeof(ipv6_devconf), GFP_KERNEL);
--		if (all == NULL)
--			goto err_alloc_all;
-+	dflt = kmemdup(&ipv6_devconf_dflt, sizeof(ipv6_devconf_dflt), GFP_KERNEL);
-+	if (dflt == NULL)
-+		goto err_alloc_dflt;
+ 	return finish_td(xhci, td, event_trb, event, ep, status, false);
+@@ -2366,7 +2366,7 @@ static int handle_tx_event(struct xhci_h
+ 	 * transfer type
+ 	 */
+ 	case COMP_SUCCESS:
+-		if (TRB_LEN(le32_to_cpu(event->transfer_len)) == 0)
++		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) == 0)
+ 			break;
+ 		if (xhci->quirks & XHCI_TRUST_TX_LENGTH)
+ 			trb_comp_code = COMP_SHORT_TX;
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -968,6 +968,10 @@ struct xhci_transfer_event {
+ 	__le32	flags;
+ };
  
--		dflt = kmemdup(dflt, sizeof(ipv6_devconf_dflt), GFP_KERNEL);
--		if (dflt == NULL)
--			goto err_alloc_dflt;
--	} else {
--		/* these will be inherited by all namespaces */
--		dflt->autoconf = ipv6_defaults.autoconf;
--		dflt->disable_ipv6 = ipv6_defaults.disable_ipv6;
--	}
-+	/* these will be inherited by all namespaces */
-+	dflt->autoconf = ipv6_defaults.autoconf;
-+	dflt->disable_ipv6 = ipv6_defaults.disable_ipv6;
++/* Transfer event TRB length bit mask */
++/* bits 0:23 */
++#define	EVENT_TRB_LEN(p)		((p) & 0xffffff)
++
+ /** Transfer Event bit fields **/
+ #define	TRB_TO_EP_ID(p)	(((p) >> 16) & 0x1f)
  
- 	net->ipv6.devconf_all = all;
- 	net->ipv6.devconf_dflt = dflt;
 
 
