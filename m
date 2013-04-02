@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757785Ab3DBXQQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:16:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32923 "EHLO
+	id S1759647Ab3DBXQg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:16:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32911 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761202Ab3DBWMM (ORCPT
+	with ESMTP id S932899Ab3DBWMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:12 -0400
+	Tue, 2 Apr 2013 18:12:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Drake <dsd@laptop.org>, Marco Cesarano <marco@marvell.com>,
-        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 033/124] mwifiex: fix race when queuing commands
-Date: Tue,  2 Apr 2013 15:10:15 -0700
-Message-Id: <20130402221107.990286829@linuxfoundation.org>
+Subject: [ 020/124] b43: N-PHY: increase initial value of "mind" in RSSI calibration
+Date: Tue,  2 Apr 2013 15:10:02 -0700
+Message-Id: <20130402221106.532477855@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,138 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Rafał Miłecki <zajec5@gmail.com>
 
-commit 00d7ea11ff0783e24fe70778f3141270b561aaa1 upstream.
+commit e67dd874e60529dbd2e8232babb1e23479ba2ffa upstream.
 
-Running the following script repeatedly on XO-4 with SD8787
-produces command timeout and system lockup.
+We're using "mind" variable to find the VCM that got the best polling
+results. For each VCM we calculte "currd" which is compared to the
+"mind". For PHY rev3+ "currd" gets values around 14k-40k. Looking for a
+value smaller than 40 makes no sense, so increase the initial value.
 
-insmod mwifiex_sdio.ko
-sleep 1
-ifconfig eth0 up
-iwlist eth0 scan &
-sleep 0.5
-rmmod mwifiex_sdio
+This fixes a regression introduced in 3.4 by commit:
+e0c9a0219a8f542e3946fe972a68aacf8c3f906c
+(my BCM4322 performance dropped from 18,4Mb/s to 9,26Mb/s)
 
-mwifiex_send_cmd_async() is called for sync as well as async
-commands. (mwifiex_send_cmd_sync() internally calls it for
-sync command.)
-
-"adapter->cmd_queued" gets filled inside mwifiex_send_cmd_async()
-routine for both types of commands. But it is used only for sync
-commands in mwifiex_wait_queue_complete(). This could lead to a
-race when two threads try to queue a sync command with another
-sync/async command simultaneously.
-
-Get rid of global variable and pass command node as a parameter
-to mwifiex_wait_queue_complete() to fix the problem.
-
-Reported-by: Daniel Drake <dsd@laptop.org>
-Tested-by: Daniel Drake <dsd@laptop.org>
-Tested-by: Marco Cesarano <marco@marvell.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/cmdevt.c    |    5 ++---
- drivers/net/wireless/mwifiex/main.h      |    4 ++--
- drivers/net/wireless/mwifiex/scan.c      |    8 ++++----
- drivers/net/wireless/mwifiex/sta_ioctl.c |   10 ++--------
- 4 files changed, 10 insertions(+), 17 deletions(-)
+ drivers/net/wireless/b43/phy_n.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/cmdevt.c
-+++ b/drivers/net/wireless/mwifiex/cmdevt.c
-@@ -488,8 +488,6 @@ int mwifiex_send_cmd_sync(struct mwifiex
- 
- 	ret = mwifiex_send_cmd_async(priv, cmd_no, cmd_action, cmd_oid,
- 				     data_buf);
--	if (!ret)
--		ret = mwifiex_wait_queue_complete(adapter);
- 
- 	return ret;
- }
-@@ -592,9 +590,10 @@ int mwifiex_send_cmd_async(struct mwifie
- 	if (cmd_no == HostCmd_CMD_802_11_SCAN) {
- 		mwifiex_queue_scan_cmd(priv, cmd_node);
- 	} else {
--		adapter->cmd_queued = cmd_node;
- 		mwifiex_insert_cmd_to_pending_q(adapter, cmd_node, true);
- 		queue_work(adapter->workqueue, &adapter->main_work);
-+		if (cmd_node->wait_q_enabled)
-+			ret = mwifiex_wait_queue_complete(adapter, cmd_node);
+--- a/drivers/net/wireless/b43/phy_n.c
++++ b/drivers/net/wireless/b43/phy_n.c
+@@ -1615,7 +1615,7 @@ static void b43_nphy_rev3_rssi_cal(struc
+ 		}
+ 		for (i = 0; i < 4; i += 2) {
+ 			s32 curr;
+-			s32 mind = 40;
++			s32 mind = 0x100000;
+ 			s32 minpoll = 249;
+ 			u8 minvcm = 0;
+ 			if (2 * core != i)
+@@ -1799,7 +1799,7 @@ static void b43_nphy_rev2_rssi_cal(struc
  	}
  
- 	return ret;
---- a/drivers/net/wireless/mwifiex/main.h
-+++ b/drivers/net/wireless/mwifiex/main.h
-@@ -714,7 +714,6 @@ struct mwifiex_adapter {
- 	u16 cmd_wait_q_required;
- 	struct mwifiex_wait_queue cmd_wait_q;
- 	u8 scan_wait_q_woken;
--	struct cmd_ctrl_node *cmd_queued;
- 	spinlock_t queue_lock;		/* lock for tx queues */
- 	struct completion fw_load;
- 	u8 country_code[IEEE80211_COUNTRY_STRING_LEN];
-@@ -994,7 +993,8 @@ int mwifiex_request_set_multicast_list(s
- 			struct mwifiex_multicast_list *mcast_list);
- int mwifiex_copy_mcast_addr(struct mwifiex_multicast_list *mlist,
- 			    struct net_device *dev);
--int mwifiex_wait_queue_complete(struct mwifiex_adapter *adapter);
-+int mwifiex_wait_queue_complete(struct mwifiex_adapter *adapter,
-+				struct cmd_ctrl_node *cmd_queued);
- int mwifiex_bss_start(struct mwifiex_private *priv, struct cfg80211_bss *bss,
- 		      struct cfg80211_ssid *req_ssid);
- int mwifiex_cancel_hs(struct mwifiex_private *priv, int cmd_type);
---- a/drivers/net/wireless/mwifiex/scan.c
-+++ b/drivers/net/wireless/mwifiex/scan.c
-@@ -1366,10 +1366,13 @@ int mwifiex_scan_networks(struct mwifiex
- 			list_del(&cmd_node->list);
- 			spin_unlock_irqrestore(&adapter->scan_pending_q_lock,
- 					       flags);
--			adapter->cmd_queued = cmd_node;
- 			mwifiex_insert_cmd_to_pending_q(adapter, cmd_node,
- 							true);
- 			queue_work(adapter->workqueue, &adapter->main_work);
-+
-+			/* Perform internal scan synchronously */
-+			if (!priv->scan_request)
-+				mwifiex_wait_queue_complete(adapter, cmd_node);
- 		} else {
- 			spin_unlock_irqrestore(&adapter->scan_pending_q_lock,
- 					       flags);
-@@ -1923,9 +1926,6 @@ int mwifiex_request_scan(struct mwifiex_
- 		/* Normal scan */
- 		ret = mwifiex_scan_networks(priv, NULL);
- 
--	if (!ret)
--		ret = mwifiex_wait_queue_complete(priv->adapter);
--
- 	up(&priv->async_sem);
- 
- 	return ret;
---- a/drivers/net/wireless/mwifiex/sta_ioctl.c
-+++ b/drivers/net/wireless/mwifiex/sta_ioctl.c
-@@ -54,16 +54,10 @@ int mwifiex_copy_mcast_addr(struct mwifi
-  * This function waits on a cmd wait queue. It also cancels the pending
-  * request after waking up, in case of errors.
-  */
--int mwifiex_wait_queue_complete(struct mwifiex_adapter *adapter)
-+int mwifiex_wait_queue_complete(struct mwifiex_adapter *adapter,
-+				struct cmd_ctrl_node *cmd_queued)
- {
- 	int status;
--	struct cmd_ctrl_node *cmd_queued;
--
--	if (!adapter->cmd_queued)
--		return 0;
--
--	cmd_queued = adapter->cmd_queued;
--	adapter->cmd_queued = NULL;
- 
- 	dev_dbg(adapter->dev, "cmd pending\n");
- 	atomic_inc(&adapter->cmd_pending);
+ 	for (i = 0; i < 4; i++) {
+-		s32 mind = 40;
++		s32 mind = 0x100000;
+ 		u8 minvcm = 0;
+ 		s32 minpoll = 249;
+ 		s32 curr;
 
 
