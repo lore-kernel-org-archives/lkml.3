@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932642Ab3DBPPY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 11:15:24 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:58313 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932370Ab3DBPPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 11:15:22 -0400
-Date: Tue, 2 Apr 2013 11:14:36 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Jiri Slaby <jslaby@suse.cz>
+	id S1761358Ab3DBPQE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 11:16:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50399 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760521Ab3DBPQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 11:16:02 -0400
+Date: Tue, 2 Apr 2013 16:15:58 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Zheng Liu <gnehzuil.liu@gmail.com>
+Cc: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>
 Subject: Re: Excessive stall times on ext4 in 3.9-rc2
-Message-ID: <20130402151436.GC31577@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-	Jiri Slaby <jslaby@suse.cz>
+Message-ID: <20130402151558.GI32241@suse.de>
 References: <20130402142717.GH32241@suse.de>
- <20130402150651.GB31577@thunk.org>
+ <515AF348.7060209@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20130402150651.GB31577@thunk.org>
+In-Reply-To: <515AF348.7060209@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 11:06:51AM -0400, Theodore Ts'o wrote:
+On Tue, Apr 02, 2013 at 11:03:36PM +0800, Zheng Liu wrote:
+> Hi Mel,
 > 
-> Can you try 3.9-rc4 or later and see if the problem still persists?
-> There were a number of ext4 issues especially around low memory
-> performance which weren't resolved until -rc4.
+> Thanks for reporting it.
+> 
+> On 04/02/2013 10:27 PM, Mel Gorman wrote:
+> > I'm testing a page-reclaim-related series on my laptop that is partially
+> > aimed at fixing long stalls when doing metadata-intensive operations on
+> > low memory such as a git checkout. I've been running 3.9-rc2 with the
+> > series applied but found that the interactive performance was awful even
+> > when there was plenty of free memory.
+> > 
+> > I activated a monitor from mmtests that logs when a process is stuck for
+> > a long time in D state and found that there are a lot of stalls in ext4.
+> > The report first states that processes have been stalled for a total of
+> > 6498 seconds on IO which seems like a lot. Here is a breakdown of the
+> > recorded events.
+> 
+> In this merge window, we add a status tree as a extent cache.  Meanwhile
+> a es_cache shrinker is registered to try to reclaim from this cache when
+> we are under a high memory pressure. 
 
-Actually, sorry, I took a closer look and I'm not as sure going to
--rc4 is going to help (although we did have some ext4 patches to fix a
-number of bugs that flowed in as late as -rc4).
+Ok.
 
-Can you send us the patch that you used to get record these long stall
-times?  And I assume you're using a laptop drive?  5400RPM or 7200RPM?
+> So I suspect that the root cause
+> is this shrinker.  Could you please tell me how to reproduce this
+> problem?  If I understand correctly, I can run mmtest to reproduce this
+> problem, right?
+> 
 
-	      	     	    	    	   - Ted
+This is normal desktop usage with some development thrown in, nothing
+spectacular but nothing obviously reproducible either unfortuantely. I
+just noticed that some git operations were taking abnormally long, mutt
+was very slow opening mail, applications like mozilla were very slow to
+launch etc. and dug a little further. I haven't checked if regression
+tests under mmtests captured something similar yet.
+
+-- 
+Mel Gorman
+SUSE Labs
