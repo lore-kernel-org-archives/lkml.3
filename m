@@ -1,106 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757409Ab3DBWnU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:43:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55432 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756493Ab3DBWnR (ORCPT
+	id S1757387Ab3DBWnj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:43:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33154 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761705Ab3DBWMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:43:17 -0400
-Message-ID: <515B50CF.7050103@infradead.org>
-Date: Tue, 02 Apr 2013 14:42:39 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Platform Driver <platform-driver-x86@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 1/1] Introduce Intel RAPL cooling device driver
-References: <1364940936-20846-1-git-send-email-jacob.jun.pan@linux.intel.com> <1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
-In-Reply-To: <1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Apr 2013 18:12:54 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Lingzhu Xiang <lxiang@redhat.com>, CAI Qian <caiqian@redhat.com>
+Subject: [ 093/124] tracing: Prevent buffer overwrite disabled for latency tracers
+Date: Tue,  2 Apr 2013 15:11:15 -0700
+Message-Id: <20130402221114.920642315@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
+References: <20130402221104.163133110@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/13 15:15, Jacob Pan wrote:
-> RAPL(Running Average Power Limit) interface provides platform software
-> with the ability to monitor, control, and get notifications on SOC
-> power consumptions. Since its first appearance on Sandy Bridge, more
-> features have being added to extend its usage. In RAPL, platforms are
-> divided into domains for fine grained control. These domains include
-> package, DRAM controller, CPU core (Power Plane 0), graphics uncore
-> (power plane 1), etc.
-> 
-> The purpose of this driver is to expose RAPL for userspace
-> consumption. Overall, RAPL fits in the generic thermal layer in
-> that platform level power capping and monitoring are mainly used for
-> thermal management and thermal layer provides the abstracted interface
-> needed to have portable applications.
-> 
-> Specifically, userspace is presented with per domain cooling device
-> with sysfs links to its kobject. Although RAPL domain provides many
-> parameters for fine tuning, long term power limit is exposed as the
-> single knob via cooling device state. Whereas the rest of the
-> parameters are still accessible via the linked kobject. This simplifies
-> the interface for both simple and advanced use cases.
-> 
-> Eventfd is used to provide notifications to the userspace. At per domain
-> level, use can choose any event capable parameters to register for
-> threshold crossing notifications. This is shamelessly "borrowed" from
-> cgroup with some trimming/fitting.
-> 
-> Zhang, Rui's initial RAPL driver was used as a reference and starting
-> point. Many thanks.
-> https://lkml.org/lkml/2011/5/26/93
-> 
-> Unlike the patch above, which is mainly for monitoring, this driver
-> focus on the control and usability by user applications.
-> 
-> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> ---
->  drivers/platform/x86/Kconfig      |    8 +
->  drivers/platform/x86/Makefile     |    1 +
->  drivers/platform/x86/intel_rapl.c | 1323 +++++++++++++++++++++++++++++++++++++
->  drivers/platform/x86/intel_rapl.h |  249 +++++++
->  4 files changed, 1581 insertions(+)
->  create mode 100644 drivers/platform/x86/intel_rapl.c
->  create mode 100644 drivers/platform/x86/intel_rapl.h
-> 
-> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> index 3338437..34bcd52 100644
-> --- a/drivers/platform/x86/Kconfig
-> +++ b/drivers/platform/x86/Kconfig
-> @@ -781,4 +781,12 @@ config APPLE_GMUX
->  	  graphics as well as the backlight. Currently only backlight
->  	  control is supported by the driver.
->  
-> +config INTEL_RAPL
-> +	tristate "Intel RAPL Support"
-> +	depends on X86 && THERMAL
-> +	default y
-> +	---help---
-> +	  RAPL, AKA, Running Average Power Limit provides mechanisms to enforce
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-	  RAPL, aka Running Average Power Limit, provides mechanisms to enforce
+------------------
 
-or a.k.a., but not AKA
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-or even:
-	  RAPL (Running Average Power Limit) provides mechanisms to enforce
+commit 613f04a0f51e6e68ac6fe571ab79da3c0a5eb4da upstream.
+
+The latency tracers require the buffers to be in overwrite mode,
+otherwise they get screwed up. Force the buffers to stay in overwrite
+mode when latency tracers are enabled.
+
+Added a flag_changed() method to the tracer structure to allow
+the tracers to see what flags are being changed, and also be able
+to prevent the change from happing.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
+Reviewed-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/trace/trace.c              |   38 ++++++++++++++++++++++++++++++++------
+ kernel/trace/trace.h              |    6 ++++++
+ kernel/trace/trace_irqsoff.c      |   19 ++++++++++++++-----
+ kernel/trace/trace_sched_wakeup.c |   18 +++++++++++++-----
+ 4 files changed, 65 insertions(+), 16 deletions(-)
+
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2836,11 +2836,25 @@ static int set_tracer_option(struct trac
+ 	return -EINVAL;
+ }
+ 
+-static void set_tracer_flags(unsigned int mask, int enabled)
++/* Some tracers require overwrite to stay enabled */
++int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set)
++{
++	if (tracer->enabled && (mask & TRACE_ITER_OVERWRITE) && !set)
++		return -1;
++
++	return 0;
++}
++
++int set_tracer_flag(unsigned int mask, int enabled)
+ {
+ 	/* do nothing if flag is already set */
+ 	if (!!(trace_flags & mask) == !!enabled)
+-		return;
++		return 0;
++
++	/* Give the tracer a chance to approve the change */
++	if (current_trace->flag_changed)
++		if (current_trace->flag_changed(current_trace, mask, !!enabled))
++			return -EINVAL;
+ 
+ 	if (enabled)
+ 		trace_flags |= mask;
+@@ -2859,13 +2873,15 @@ static void set_tracer_flags(unsigned in
+ 
+ 	if (mask == TRACE_ITER_PRINTK)
+ 		trace_printk_start_stop_comm(enabled);
++
++	return 0;
+ }
+ 
+ static int trace_set_options(char *option)
+ {
+ 	char *cmp;
+ 	int neg = 0;
+-	int ret = 0;
++	int ret = -ENODEV;
+ 	int i;
+ 
+ 	cmp = strstrip(option);
+@@ -2879,7 +2895,7 @@ static int trace_set_options(char *optio
+ 
+ 	for (i = 0; trace_options[i]; i++) {
+ 		if (strcmp(cmp, trace_options[i]) == 0) {
+-			set_tracer_flags(1 << i, !neg);
++			ret = set_tracer_flag(1 << i, !neg);
+ 			break;
+ 		}
+ 	}
+@@ -2898,6 +2914,7 @@ tracing_trace_options_write(struct file
+ 			size_t cnt, loff_t *ppos)
+ {
+ 	char buf[64];
++	int ret;
+ 
+ 	if (cnt >= sizeof(buf))
+ 		return -EINVAL;
+@@ -2907,7 +2924,9 @@ tracing_trace_options_write(struct file
+ 
+ 	buf[cnt] = 0;
+ 
+-	trace_set_options(buf);
++	ret = trace_set_options(buf);
++	if (ret < 0)
++		return ret;
+ 
+ 	*ppos += cnt;
+ 
+@@ -3213,6 +3232,9 @@ static int tracing_set_tracer(const char
+ 		goto out;
+ 
+ 	trace_branch_disable();
++
++	current_trace->enabled = false;
++
+ 	if (current_trace && current_trace->reset)
+ 		current_trace->reset(tr);
+ 	if (current_trace && current_trace->use_max_tr) {
+@@ -3244,6 +3266,7 @@ static int tracing_set_tracer(const char
+ 	}
+ 
+ 	current_trace = t;
++	current_trace->enabled = true;
+ 	trace_branch_enable(tr);
+  out:
+ 	mutex_unlock(&trace_types_lock);
+@@ -4648,9 +4671,12 @@ trace_options_core_write(struct file *fi
+ 		return -EINVAL;
+ 
+ 	mutex_lock(&trace_types_lock);
+-	set_tracer_flags(1 << index, val);
++	ret = set_tracer_flag(1 << index, val);
+ 	mutex_unlock(&trace_types_lock);
+ 
++	if (ret < 0)
++		return ret;
++
+ 	*ppos += cnt;
+ 
+ 	return cnt;
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -283,10 +283,14 @@ struct tracer {
+ 	enum print_line_t	(*print_line)(struct trace_iterator *iter);
+ 	/* If you handled the flag setting, return 0 */
+ 	int			(*set_flag)(u32 old_flags, u32 bit, int set);
++	/* Return 0 if OK with change, else return non-zero */
++	int			(*flag_changed)(struct tracer *tracer,
++						u32 mask, int set);
+ 	struct tracer		*next;
+ 	struct tracer_flags	*flags;
+ 	bool			print_max;
+ 	bool			use_max_tr;
++	bool			enabled;
+ };
+ 
+ 
+@@ -835,6 +839,8 @@ extern const char *__stop___trace_bprint
+ 
+ void trace_printk_init_buffers(void);
+ void trace_printk_start_comm(void);
++int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set);
++int set_tracer_flag(unsigned int mask, int enabled);
+ 
+ #undef FTRACE_ENTRY
+ #define FTRACE_ENTRY(call, struct_name, id, tstruct, print, filter)	\
+--- a/kernel/trace/trace_irqsoff.c
++++ b/kernel/trace/trace_irqsoff.c
+@@ -32,7 +32,7 @@ enum {
+ 
+ static int trace_type __read_mostly;
+ 
+-static int save_lat_flag;
++static int save_flags;
+ 
+ static void stop_irqsoff_tracer(struct trace_array *tr, int graph);
+ static int start_irqsoff_tracer(struct trace_array *tr, int graph);
+@@ -558,8 +558,11 @@ static void stop_irqsoff_tracer(struct t
+ 
+ static void __irqsoff_tracer_init(struct trace_array *tr)
+ {
+-	save_lat_flag = trace_flags & TRACE_ITER_LATENCY_FMT;
+-	trace_flags |= TRACE_ITER_LATENCY_FMT;
++	save_flags = trace_flags;
++
++	/* non overwrite screws up the latency tracers */
++	set_tracer_flag(TRACE_ITER_OVERWRITE, 1);
++	set_tracer_flag(TRACE_ITER_LATENCY_FMT, 1);
+ 
+ 	tracing_max_latency = 0;
+ 	irqsoff_trace = tr;
+@@ -573,10 +576,13 @@ static void __irqsoff_tracer_init(struct
+ 
+ static void irqsoff_tracer_reset(struct trace_array *tr)
+ {
++	int lat_flag = save_flags & TRACE_ITER_LATENCY_FMT;
++	int overwrite_flag = save_flags & TRACE_ITER_OVERWRITE;
++
+ 	stop_irqsoff_tracer(tr, is_graph());
+ 
+-	if (!save_lat_flag)
+-		trace_flags &= ~TRACE_ITER_LATENCY_FMT;
++	set_tracer_flag(TRACE_ITER_LATENCY_FMT, lat_flag);
++	set_tracer_flag(TRACE_ITER_OVERWRITE, overwrite_flag);
+ }
+ 
+ static void irqsoff_tracer_start(struct trace_array *tr)
+@@ -609,6 +615,7 @@ static struct tracer irqsoff_tracer __re
+ 	.print_line     = irqsoff_print_line,
+ 	.flags		= &tracer_flags,
+ 	.set_flag	= irqsoff_set_flag,
++	.flag_changed	= trace_keep_overwrite,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_irqsoff,
+ #endif
+@@ -642,6 +649,7 @@ static struct tracer preemptoff_tracer _
+ 	.print_line     = irqsoff_print_line,
+ 	.flags		= &tracer_flags,
+ 	.set_flag	= irqsoff_set_flag,
++	.flag_changed	= trace_keep_overwrite,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_preemptoff,
+ #endif
+@@ -677,6 +685,7 @@ static struct tracer preemptirqsoff_trac
+ 	.print_line     = irqsoff_print_line,
+ 	.flags		= &tracer_flags,
+ 	.set_flag	= irqsoff_set_flag,
++	.flag_changed	= trace_keep_overwrite,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_preemptirqsoff,
+ #endif
+--- a/kernel/trace/trace_sched_wakeup.c
++++ b/kernel/trace/trace_sched_wakeup.c
+@@ -36,7 +36,7 @@ static void __wakeup_reset(struct trace_
+ static int wakeup_graph_entry(struct ftrace_graph_ent *trace);
+ static void wakeup_graph_return(struct ftrace_graph_ret *trace);
+ 
+-static int save_lat_flag;
++static int save_flags;
+ 
+ #define TRACE_DISPLAY_GRAPH     1
+ 
+@@ -540,8 +540,11 @@ static void stop_wakeup_tracer(struct tr
+ 
+ static int __wakeup_tracer_init(struct trace_array *tr)
+ {
+-	save_lat_flag = trace_flags & TRACE_ITER_LATENCY_FMT;
+-	trace_flags |= TRACE_ITER_LATENCY_FMT;
++	save_flags = trace_flags;
++
++	/* non overwrite screws up the latency tracers */
++	set_tracer_flag(TRACE_ITER_OVERWRITE, 1);
++	set_tracer_flag(TRACE_ITER_LATENCY_FMT, 1);
+ 
+ 	tracing_max_latency = 0;
+ 	wakeup_trace = tr;
+@@ -563,12 +566,15 @@ static int wakeup_rt_tracer_init(struct
+ 
+ static void wakeup_tracer_reset(struct trace_array *tr)
+ {
++	int lat_flag = save_flags & TRACE_ITER_LATENCY_FMT;
++	int overwrite_flag = save_flags & TRACE_ITER_OVERWRITE;
++
+ 	stop_wakeup_tracer(tr);
+ 	/* make sure we put back any tasks we are tracing */
+ 	wakeup_reset(tr);
+ 
+-	if (!save_lat_flag)
+-		trace_flags &= ~TRACE_ITER_LATENCY_FMT;
++	set_tracer_flag(TRACE_ITER_LATENCY_FMT, lat_flag);
++	set_tracer_flag(TRACE_ITER_OVERWRITE, overwrite_flag);
+ }
+ 
+ static void wakeup_tracer_start(struct trace_array *tr)
+@@ -594,6 +600,7 @@ static struct tracer wakeup_tracer __rea
+ 	.print_line	= wakeup_print_line,
+ 	.flags		= &tracer_flags,
+ 	.set_flag	= wakeup_set_flag,
++	.flag_changed	= trace_keep_overwrite,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_wakeup,
+ #endif
+@@ -615,6 +622,7 @@ static struct tracer wakeup_rt_tracer __
+ 	.print_line	= wakeup_print_line,
+ 	.flags		= &tracer_flags,
+ 	.set_flag	= wakeup_set_flag,
++	.flag_changed	= trace_keep_overwrite,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_wakeup,
+ #endif
 
 
-> +	  and monitor per domain power consumption limits of supported Intel CPUs.
-> +
->  endif # X86_PLATFORM_DEVICES
-
-
--- 
-~Randy
