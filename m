@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762512Ab3DBW03 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:26:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33497 "EHLO
+	id S933701Ab3DBWOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:14:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33470 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933707Ab3DBWOU (ORCPT
+	with ESMTP id S932800Ab3DBWOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:20 -0400
+	Tue, 2 Apr 2013 18:14:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fusionio.com>
-Subject: [ 30/68] Btrfs: limit the global reserve to 512mb
-Date: Tue,  2 Apr 2013 15:13:19 -0700
-Message-Id: <20130402221333.427353023@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 24/68] vt: synchronize_rcu() under spinlock is not nice...
+Date: Tue,  2 Apr 2013 15:13:13 -0700
+Message-Id: <20130402221332.742038715@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
@@ -26,36 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit fdf30d1c1b386e1b73116cc7e0fb14e962b763b0 upstream.
+commit e8cd81693bbbb15db57d3c9aa7dd90eda4842874 upstream.
 
-A user reported a problem where he was getting early ENOSPC with hundreds of
-gigs of free data space and 6 gigs of free metadata space.  This is because the
-global block reserve was taking up the entire free metadata space.  This is
-ridiculous, we have infrastructure in place to throttle if we start using too
-much of the global reserve, so instead of letting it get this huge just limit it
-to 512mb so that users can still get work done.  This allowed the user to
-complete his rsync without issues.  Thanks
+vcs_poll_data_free() calls unregister_vt_notifier(), which calls
+atomic_notifier_chain_unregister(), which calls synchronize_rcu().
+Do it *after* we'd dropped ->f_lock.
 
-Reported-and-tested-by: Stefan Priebe <s.priebe@profihost.ag>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/extent-tree.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/vt/vc_screen.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -4217,7 +4217,7 @@ static void update_global_block_rsv(stru
- 	spin_lock(&sinfo->lock);
- 	spin_lock(&block_rsv->lock);
+--- a/drivers/tty/vt/vc_screen.c
++++ b/drivers/tty/vt/vc_screen.c
+@@ -93,7 +93,7 @@ vcs_poll_data_free(struct vcs_poll_data
+ static struct vcs_poll_data *
+ vcs_poll_data_get(struct file *file)
+ {
+-	struct vcs_poll_data *poll = file->private_data;
++	struct vcs_poll_data *poll = file->private_data, *kill = NULL;
  
--	block_rsv->size = num_bytes;
-+	block_rsv->size = min_t(u64, num_bytes, 512 * 1024 * 1024);
+ 	if (poll)
+ 		return poll;
+@@ -122,10 +122,12 @@ vcs_poll_data_get(struct file *file)
+ 		file->private_data = poll;
+ 	} else {
+ 		/* someone else raced ahead of us */
+-		vcs_poll_data_free(poll);
++		kill = poll;
+ 		poll = file->private_data;
+ 	}
+ 	spin_unlock(&file->f_lock);
++	if (kill)
++		vcs_poll_data_free(kill);
  
- 	num_bytes = sinfo->bytes_used + sinfo->bytes_pinned +
- 		    sinfo->bytes_reserved + sinfo->bytes_readonly +
+ 	return poll;
+ }
 
 
