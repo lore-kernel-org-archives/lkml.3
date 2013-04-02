@@ -1,88 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760516Ab3DBKe4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 06:34:56 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48995 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751714Ab3DBKez (ORCPT
+	id S1761539Ab3DBKfM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 06:35:12 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:53654 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760974Ab3DBKfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 06:34:55 -0400
-Message-ID: <515AB443.4060407@ti.com>
-Date: Tue, 2 Apr 2013 13:34:43 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Wang YanQing <udknight@gmail.com>, <spock@gentoo.org>,
-        <linux-fbdev@vger.kernel.org>, <FlorianSchandinat@gmx.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]video:uvesafb: Fix dereference NULL pointer code path
-References: <20130330025330.GA25246@udknight>
-In-Reply-To: <20130330025330.GA25246@udknight>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="------------enig3D1B5BF4A1575E49B5861BCF"
+	Tue, 2 Apr 2013 06:35:09 -0400
+Message-ID: <1364898904.2556.26.camel@host5.opentask.org>
+Subject: Re: [PATCH v2] wait while adding MMC host to ensure root mounts
+From: Sergey Yanovich <ynvich@gmail.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Chris Ball <cjb@laptop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Date: Tue, 02 Apr 2013 14:35:04 +0400
+In-Reply-To: <CAPDyKFroki00+SCLjUXYN_=+qcVZwZ2H4NJacH+d8p3dFXoLPg@mail.gmail.com>
+References: <1363223183-3772-1-git-send-email-ynvich@gmail.com>
+	 <1363224194-7366-1-git-send-email-ynvich@gmail.com>
+	 <87620jmkoe.fsf@octavius.laptop.org>
+	 <CAPDyKFp27MUOjhydLXf92vN3cua=XcX4oTJnMGfOJPpBhtwM8Q@mail.gmail.com>
+	 <CAL0eWdGjPKUUcm6mStAHgHKHLABmPw7nMwDhR8D5rbvg+DPzfQ@mail.gmail.com>
+	 <CAPDyKFroki00+SCLjUXYN_=+qcVZwZ2H4NJacH+d8p3dFXoLPg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------enig3D1B5BF4A1575E49B5861BCF
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2013-04-02 at 12:13 +0200, Ulf Hansson wrote:
+> Consider a platform having two eMMCs and one SD-card. Each eMMC card
+> will take around 400 ms to initialize and the SD-card 700 ms. The card
+> initialization times are real examples from eMMCs and SD-cards,
+> moreover those are typical values not worth cases. In total we have
+> around 1.5 s to initialize the cards.
 
-On 2013-03-30 04:53, Wang YanQing wrote:
-> platform_device_alloc could failed and return NULL,
-> we should check this before call platform_device_put.
->=20
-> Signed-off-by: Wang YanQing <udknight@gmail.com>
-> ---
->  drivers/video/uvesafb.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->=20
-> diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
-> index 2f8f82d..230bd45 100644
-> --- a/drivers/video/uvesafb.c
-> +++ b/drivers/video/uvesafb.c
-> @@ -1975,7 +1975,8 @@ static int __devinit uvesafb_init(void)
->  			err =3D -ENOMEM;
-> =20
->  		if (err) {
-> -			platform_device_put(uvesafb_device);
-> +			if (uvesafb_device)
-> +				platform_device_put(uvesafb_device);
->  			platform_driver_unregister(&uvesafb_driver);
->  			cn_del_callback(&uvesafb_cn_id);
->  			return err;
->=20
+We have a separate workqueue per host, so all probes go in parallel.
+They also go in parallel with probing for other devices. So the actual
+delay is 700 ms minus maximum probing time for other devices. The time
+is either zero or small (dozen us) on the hardware I have access to
+(intel laptop, arm controller).
 
-Thanks, queued to fbdev fixes.
+> Now, suppose you boot using an initrd image. Thus neither of the cards
+> needs to be accessible immediately after the kernel has booted. It all
+> depends what the init process decides to do. With this patch the init
+> process will always be delayed to wait for each and every card to be
+> initialized. I would prefer a solution where this can be configurable
+> somehow, since certainly this is not the scenario you want for all
+> cases.
 
- Tomi
+If the system is booted using initrd and root is not on an mmc card,
+then mmc modules can be omitted from initrd. The probing will happen
+only after root is mounted.
 
+If root is on an mmc, kernel needs to wait for the mmc probe.
 
-
---------------enig3D1B5BF4A1575E49B5861BCF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with undefined - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJRWrRDAAoJEPo9qoy8lh71WiQP/iN8cIg9igTchq8wAHbA6Kaw
-KCYsHLXI1AOxyg2n0F7l3o/7WwHzwG59D5tJEatvtwYDKQifW2qSdu1/8W1sGWbR
-PEeOUTJ5U2nFj7cs5gtbjL6FytFjCtm5FYjP+pWhiBj2EwKCyfr4qBr2Ec0a+Jv+
-L0WlD5/gP7gefvqdQGUxKlB5LCdwd4haHUuWP+qIPjLR8xLuI84c/6NEHGUzN+yl
-iI3hAaawMsm4ZuPNOYTo2gejH6XXVJn/jo25fPhzaRK5jYoGGQK56emHUzho+sya
-xsV1diNQ0bmIkFPNQKYbYewWgyScy/G8zBBs/pu1qP1FQWE3VrNyUa3w6IHTf3vX
-rLHEME5Sll1HuNMVi1t5q/coo0FHasjgcNI1IELFTwyvi/ZXs+qYlx4OhRf02OD6
-bhNaqahHE5CZ7djToFczmbl3duNbAq90/o3QNn50l3e1bcIQYrbKDpF9tkv1Hwxm
-XnglnvVsh+DGl+nnzBmlUUqh3/oo5mV1HR4L//m2hpiBSGCZomyeu9x7I8Fqluh5
-xnZobrMqQoK8adRvvplZVLphEhZ7yd4Ezfe3NsbAo+pN5Oym9k7FJ0DUpZQLdo5k
-sctMElN4KoIC2C4QBfkWGZILw0gLrwWqTkD8wqIfSnYPWRPcqf3f6sM5jJCkc2YB
-TZrcyna6eK98HQYtKegZ
-=auSt
------END PGP SIGNATURE-----
-
---------------enig3D1B5BF4A1575E49B5861BCF--
