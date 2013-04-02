@@ -1,132 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932373Ab3DBOjH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 10:39:07 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:49966 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932161Ab3DBOjD (ORCPT
+	id S932392Ab3DBOjd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 10:39:33 -0400
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:32551
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932161Ab3DBOjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 10:39:03 -0400
-Message-ID: <515AED78.7000909@gmail.com>
-Date: Tue, 02 Apr 2013 22:38:48 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 2 Apr 2013 10:39:32 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(z551bizbb2dI98dI9371I1432Id799h4015Izz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1155h)
+X-WSS-ID: 0MKMU1M-02-HJR-02
+X-M-MSG: 
+Message-ID: <515AED9E.80204@amd.com>
+Date: Tue, 2 Apr 2013 09:39:26 -0500
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Jonas Bonn <jonas@southpole.se>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, linux@openrisc.net
-Subject: Re: [PATCH v3, part4 26/39] mm/openrisc: prepare for removing num_physpages
- and simplify mem_init()
-References: <1364313298-17336-1-git-send-email-jiang.liu@huawei.com> <1364313298-17336-27-git-send-email-jiang.liu@huawei.com> <515A6D40.90702@southpole.se>
-In-Reply-To: <515A6D40.90702@southpole.se>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joerg Roedel <joro@8bytes.org>
+CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] iommu/amd: Add logic to decode AMD IOMMU event flag
+References: <1364428283-2548-1-git-send-email-suravee.suthikulpanit@amd.com> <20130402143335.GB15687@8bytes.org>
+In-Reply-To: <20130402143335.GB15687@8bytes.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonas,
-	Thanks for testing.
-	Regards!
-	Gerry
-On 04/02/2013 01:31 PM, Jonas Bonn wrote:
-> On 03/26/2013 04:54 PM, Jiang Liu wrote:
->> Prepare for removing num_physpages and simplify mem_init().
+On 4/2/2013 9:33 AM, Joerg Roedel wrote:
+> Hi Suravee,
+>
+> On Wed, Mar 27, 2013 at 06:51:23PM -0500, suravee.suthikulpanit@amd.com wrote:
+>> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
 >>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> Cc: Jonas Bonn <jonas@southpole.se>
->> Cc: David Howells <dhowells@redhat.com>
->> Cc: Arnd Bergmann <arnd@arndb.de>
->> Cc: linux@lists.openrisc.net
->> Cc: linux-kernel@vger.kernel.org
-> 
-> Tested and works fine on OpenRISC.
-> 
-> Acked-by: Jonas Bonn <jonas@southpole.se>
-> 
-> /Jonas
-> 
->> ---
->> Hi all,
->>     Sorry for my mistake that my previous patch series has been screwed up.
->> So I regenerate a third version and also set up a git tree at:
->>     git://github.com/jiangliu/linux.git mem_init
->>     Any help to review and test are welcomed!
->>
->>     Regards!
->>     Gerry
->> ---
->>   arch/openrisc/mm/init.c |   44 ++++----------------------------------------
->>   1 file changed, 4 insertions(+), 40 deletions(-)
->>
->> diff --git a/arch/openrisc/mm/init.c b/arch/openrisc/mm/init.c
->> index 71d6b40..f3c8f47 100644
->> --- a/arch/openrisc/mm/init.c
->> +++ b/arch/openrisc/mm/init.c
->> @@ -191,56 +191,20 @@ void __init paging_init(void)
->>     /* References to section boundaries */
->>   -static int __init free_pages_init(void)
->> -{
->> -    int reservedpages, pfn;
->> -
->> -    /* this will put all low memory onto the freelists */
->> -    free_all_bootmem();
->> -
->> -    reservedpages = 0;
->> -    for (pfn = 0; pfn < max_low_pfn; pfn++) {
->> -        /*
->> -         * Only count reserved RAM pages
->> -         */
->> -        if (PageReserved(mem_map + pfn))
->> -            reservedpages++;
->> -    }
->> -
->> -    return reservedpages;
->> -}
->> -
->> -static void __init set_max_mapnr_init(void)
->> -{
->> -    max_mapnr = num_physpages = max_low_pfn;
->> -}
->> -
->>   void __init mem_init(void)
->>   {
->> -    int codesize, reservedpages, datasize, initsize;
->> -
->>       BUG_ON(!mem_map);
->>   -    set_max_mapnr_init();
->> -
->> +    max_mapnr = max_low_pfn;
->>       high_memory = (void *)__va(max_low_pfn * PAGE_SIZE);
->>         /* clear the zero-page */
->>       memset((void *)empty_zero_page, 0, PAGE_SIZE);
->>   -    reservedpages = free_pages_init();
->> -
->> -    codesize = (unsigned long)&_etext - (unsigned long)&_stext;
->> -    datasize = (unsigned long)&_edata - (unsigned long)&_etext;
->> -    initsize = (unsigned long)&__init_end - (unsigned long)&__init_begin;
->> +    /* this will put all low memory onto the freelists */
->> +    free_all_bootmem();
->>   -    printk(KERN_INFO
->> -           "Memory: %luk/%luk available (%dk kernel code, %dk reserved, %dk data, %dk init, %ldk highmem)\n",
->> -           (unsigned long)nr_free_pages() << (PAGE_SHIFT - 10),
->> -           max_mapnr << (PAGE_SHIFT - 10), codesize >> 10,
->> -           reservedpages << (PAGE_SHIFT - 10), datasize >> 10,
->> -           initsize >> 10, (unsigned long)(0 << (PAGE_SHIFT - 10))
->> -        );
->> +    mem_init_print_info(NULL);
->>         printk("mem_init_done ...........................................\n");
->>       mem_init_done = 1;
-> 
-> 
+>> Add logic to decode AMD IOMMU event flag based on information from AMD IOMMU specification.
+>> This should simplify debugging IOMMU errors.  Also, dump DTE information in additional cases.
+> The patch in general makes sense to have, but I have a couple of
+> comments.
+>
+>> +static void dump_flags(int flags, int ev_type)
+>> +{
+>> +	struct _event_log_flags *p = (struct _event_log_flags *) &flags;
+>> +	u32 err_type = p->type;
+>> +
+>> +	pr_err("AMD-Vi: Flags details:\n");
+>> +	pr_err("AMD-Vi:    Guest / Nested  : %u\n", p->gn);
+>> +	pr_err("AMD-Vi:    No Execute      : %u\n", p->nx);
+>> +	pr_err("AMD-Vi:    User-Supervisor : %u\n", p->us);
+>> +	pr_err("AMD-Vi:    Interrupt       : %u\n", p->i);
+>> +	pr_err("AMD-Vi:    Present         : %u\n", p->pr);
+>> +	pr_err("AMD-Vi:    Read / Write    : %u\n", p->rw);
+>> +	pr_err("AMD-Vi:    Permission      : %u\n", p->pe);
+>> +	pr_err("AMD-Vi:    Reserv bit not zero / Illegal level encoding : %u\n",
+>> +		p->rz);
+>> +	pr_err("AMD-Vi:    Translation / Transaction : %u\n",
+>> +		p->tr);
+>> +	pr_err("AMD-Vi:    Type of error   : (0x%x) ", err_type);
+> Printing the flags multi-line is much too noisy for IOMMU events. Just
+> print a char-shortcut for each flag set on the same line.
+I will make the changes and send in for new patch for review.
+>
+>> +
+>> +	if ((ev_type == EVENT_TYPE_DEV_TAB_ERR)  ||
+>> +	    (ev_type == EVENT_TYPE_PAGE_TAB_ERR) ||
+>> +	    (ev_type == EVENT_TYPE_CMD_HARD_ERR)) {
+>> +		/* Only supports up to 2 bits */
+>> +		err_type &= 0x3;
+>> +		switch (err_type) {
+>> +		case 0:
+>> +			pr_err("Reserved\n");
+>> +			break;
+>> +		case 1:
+>> +			pr_err("Master Abort\n");
+>> +			break;
+>> +		case 2:
+>> +			pr_err("Target Abort\n");
+>> +			break;
+>> +		case 3:
+>> +			pr_err("Data Error\n");
+>> +			break;
+>> +		}
+> Why do you create string-arrays for other type-encodings but not for
+> this one?
+I can do the same way if that's preferred.
+
+Thanks,
+
+Suravee
+>
+>> +	} else if (ev_type == EVENT_TYPE_INV_DEV_REQ) {
+>> +		if (p->tr == 0) {
+>> +			if (err_type < ARRAY_SIZE(_invalid_translation_desc))
+>> +				printk("%s\n",
+>> +					_invalid_translation_desc[err_type]);
+>> +		} else {
+>> +			if (err_type < ARRAY_SIZE(_invalid_transaction_desc))
+>> +				printk("%s\n",
+>> +					_invalid_transaction_desc[err_type]);
+> pr_cont instead of printk.
+>
+>
+> 	Joerg
+>
+>
+>
+
 
