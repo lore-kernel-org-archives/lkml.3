@@ -1,159 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933182Ab3DBStz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 14:49:55 -0400
-Received: from mga03.intel.com ([143.182.124.21]:14177 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932977Ab3DBStu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933167Ab3DBSty (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 14:49:54 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:40404 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933118Ab3DBStu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Apr 2013 14:49:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,394,1363158000"; 
-   d="scan'208";a="279790568"
-Date: Tue, 2 Apr 2013 23:52:15 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Anatolij Gustschin <agust@denx.de>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 1/2] dmaengine: mpc512x_dma: use generic DMA DT bindings
-Message-ID: <20130402182215.GO10326@intel.com>
-References: <1364746680-6564-1-git-send-email-agust@denx.de>
+Date: Tue, 2 Apr 2013 11:49:47 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: DT changes for 3.10 #2
+Message-ID: <20130402184947.GA8015@quad.lixom.net>
+References: <1364569179-24773-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1364746680-6564-1-git-send-email-agust@denx.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1364569179-24773-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 31, 2013 at 06:17:59PM +0200, Anatolij Gustschin wrote:
-> Add generic DMA bindings and register the DMA controller
-> to DT DMA helpers.
-I need someone who understands DT better than me to comment/ack...
-Arnd...?
+On Fri, Mar 29, 2013 at 03:59:39PM +0100, Nicolas Ferre wrote:
+> Arnd, Olof,
+> 
+> Here is a pull-request for AT91 that is dedicated to Device Tree
+> modifications. It is stacked on the material that you already have
+> for 3.10 in your arm-soc/at91/dt branch.
+> Following our discussion with Arnd, I added the non-urgent patches that I
+> already proposed too late for 3.9. I also included the moving of macb node
+> and kept the original patch.
+> 
+> Thanks, best regards,
+> 
+> The following changes since commit 6901d947be5ba1245a0f63271355b95f9056a362:
+> 
+>   ARM: at91/at91sam9x5cm: add 1-wire chip on CM board (2013-03-21 16:07:15 +0100)
+> 
+> are available in the git repository at:
+> 
+>   git://github.com/at91linux/linux-at91.git tags/at91-dt
+> 
+> for you to fetch changes up to cc2e191b0ccc5a987fdb29261ab9c264c608924d:
+> 
+>   ARM: at91/dt: fix macb node declaration (2013-03-29 10:02:04 +0100)
+> 
+> ----------------------------------------------------------------
+> One macb DT node move for 9x5 family: 9g15 doesn't
+> have an Ethernet interface.
+> Little fixes mainly related to at91sam9x5 DT and the
+> RTC addition.
+> Addition of the Acme Systems Aria G25 board.
+> 
+> ----------------------------------------------------------------
+> Douglas Gilbert (1):
+>       ARM: at91: add Acme Systems Aria G25 board
 
-> 
-> Signed-off-by: Anatolij Gustschin <agust@denx.de>
-> ---
->  arch/powerpc/boot/dts/mpc5121.dtsi |    5 ++-
->  drivers/dma/mpc512x_dma.c          |   63 ++++++++++++++++++++++++++++++++++--
->  2 files changed, 64 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/powerpc/boot/dts/mpc5121.dtsi b/arch/powerpc/boot/dts/mpc5121.dtsi
-> index 723e292..d1fe070 100644
-> --- a/arch/powerpc/boot/dts/mpc5121.dtsi
-> +++ b/arch/powerpc/boot/dts/mpc5121.dtsi
-> @@ -384,10 +384,13 @@
->  			interrupts = <40 0x8>;
->  		};
->  
-> -		dma@14000 {
-> +		dma0: dma@14000 {
->  			compatible = "fsl,mpc5121-dma";
->  			reg = <0x14000 0x1800>;
->  			interrupts = <65 0x8>;
-> +			#dma-cells = <1>;
-> +			#dma-channels = <64>;
-> +			#dma-requests = <64>;
->  		};
->  	};
->  
-> diff --git a/drivers/dma/mpc512x_dma.c b/drivers/dma/mpc512x_dma.c
-> index 2d95673..bc6c356 100644
-> --- a/drivers/dma/mpc512x_dma.c
-> +++ b/drivers/dma/mpc512x_dma.c
-> @@ -40,6 +40,7 @@
->  #include <linux/io.h>
->  #include <linux/slab.h>
->  #include <linux/of_device.h>
-> +#include <linux/of_dma.h>
->  #include <linux/of_platform.h>
->  
->  #include <linux/random.h>
-> @@ -641,6 +642,44 @@ mpc_dma_prep_memcpy(struct dma_chan *chan, dma_addr_t dst, dma_addr_t src,
->  	return &mdesc->desc;
->  }
->  
-> +struct mpc_dma_filter_args {
-> +	struct mpc_dma *mdma;
-> +	unsigned int chan_id;
-> +};
-> +
-> +static bool mpc_dma_filter(struct dma_chan *chan, void *param)
-> +{
-> +	struct mpc_dma_filter_args *fargs = param;
-> +
-> +	if (chan->device != &fargs->mdma->dma)
-> +		return false;
-> +
-> +	return (chan->chan_id == fargs->chan_id);
-> +}
-> +
-> +static struct dma_chan *mpc_dma_xlate(struct of_phandle_args *dma_spec,
-> +						struct of_dma *ofdma)
-> +{
-> +	int count = dma_spec->args_count;
-> +	struct mpc_dma *mdma = ofdma->of_dma_data;
-> +	struct mpc_dma_filter_args fargs;
-> +	dma_cap_mask_t cap;
-> +
-> +	if (!mdma)
-> +		return NULL;
-> +
-> +	if (count != 1)
-> +		return NULL;
-> +
-> +	fargs.mdma = mdma;
-> +	fargs.chan_id = dma_spec->args[0];
-> +
-> +	dma_cap_zero(cap);
-> +	dma_cap_set(DMA_SLAVE, cap);
-> +
-> +	return dma_request_channel(cap, mpc_dma_filter, &fargs);
-> +}
-> +
->  static int mpc_dma_probe(struct platform_device *op)
->  {
->  	struct device_node *dn = op->dev.of_node;
-> @@ -791,11 +830,26 @@ static int mpc_dma_probe(struct platform_device *op)
->  	/* Register DMA engine */
->  	dev_set_drvdata(dev, mdma);
->  	retval = dma_async_device_register(dma);
-> -	if (retval) {
-> -		devm_free_irq(dev, mdma->irq, mdma);
-> -		irq_dispose_mapping(mdma->irq);
-> +	if (retval)
-> +		goto reg_err;
-> +
-> +	if (dev->of_node) {
-> +		retval = of_dma_controller_register(dev->of_node,
-> +						    mpc_dma_xlate, mdma);
-> +		if (retval) {
-> +			dev_err(&op->dev,
-> +				"could not register of_dma_controller\n");
-> +			goto of_err;
-> +		}
->  	}
->  
-> +	return 0;
-> +
-> +of_err:
-> +	dma_async_device_unregister(&mdma->dma);
-> +reg_err:
-> +	devm_free_irq(dev, mdma->irq, mdma);
-> +	irq_dispose_mapping(mdma->irq);
->  	return retval;
->  }
->  
-> @@ -804,6 +858,9 @@ static int mpc_dma_remove(struct platform_device *op)
->  	struct device *dev = &op->dev;
->  	struct mpc_dma *mdma = dev_get_drvdata(dev);
->  
-> +	if (dev->of_node)
-> +		of_dma_controller_free(dev->of_node);
-> +
->  	dma_async_device_unregister(&mdma->dma);
->  	devm_free_irq(dev, mdma->irq, mdma);
->  	irq_dispose_mapping(mdma->irq);
-> -- 
-> 1.7.5.4
-> 
+Hi,
+
+I just replied to the above patch -- please prefix the dts files with the
+platform so it's easier to navigate the directory.
+
+Otherwise the branch contents looks good, so send a fresh request when you've
+respun.
+
+Also, the new dts isn't added to the Makefile, please add it.
+
+
+-Olof
