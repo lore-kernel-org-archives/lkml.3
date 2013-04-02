@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761409Ab3DBIg1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 04:36:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:39134 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751983Ab3DBIgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 04:36:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,392,1363158000"; 
-   d="scan'208";a="312241770"
-Message-ID: <515A9859.6000606@intel.com>
-Date: Tue, 02 Apr 2013 16:35:37 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1760633Ab3DBIih (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 04:38:37 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54948 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755223Ab3DBIie (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 04:38:34 -0400
+Date: Tue, 2 Apr 2013 09:38:30 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: ux500: update V-INTCORE constraints
+Message-ID: <20130402083829.GB23065@opensource.wolfsonmicro.com>
+References: <1364397694-14126-1-git-send-email-fabio.baltieri@linaro.org>
+ <CACRpkdYgCxf9R1aU2QdPUBxErhK=E2tM=6L-yMLA_L3+ntj3nQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
-        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
-        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
-        mgorman@suse.de, riel@redhat.com
-Subject: Re: [patch v3 0/8] sched: use runnable avg in load balance
-References: <1364873008-3169-1-git-send-email-alex.shi@intel.com> <515A877B.3020908@linux.vnet.ibm.com>
-In-Reply-To: <515A877B.3020908@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Pd0ReVV5GZGQvF3a"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYgCxf9R1aU2QdPUBxErhK=E2tM=6L-yMLA_L3+ntj3nQ@mail.gmail.com>
+X-Cookie: Today is what happened to yesterday.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2013 03:23 PM, Michael Wang wrote:
->> > [patch v3 8/8] sched: use instant load for burst wake up
-> I've tested the patch set on 12 cpu X86 box with 3.9.0-rc2, and pgbench
-> show regression on high-end this time.
-> 
-> | db_size | clients |  tps  |   |  tps  |
-> +---------+---------+-------+   +-------+
-> | 22 MB   |       1 | 10662 |   | 10446 |
-> | 22 MB   |       2 | 21483 |   | 20887 |
-> | 22 MB   |       4 | 42046 |   | 41266 |
-> | 22 MB   |       8 | 55807 |   | 51987 |
-> | 22 MB   |      12 | 50768 |   | 50974 |
-> | 22 MB   |      16 | 49880 |   | 49510 |
-> | 22 MB   |      24 | 45904 |   | 42398 |
-> | 22 MB   |      32 | 43420 |   | 40995 |
-> | 7484 MB |       1 |  7965 |   |  7376 |
-> | 7484 MB |       2 | 19354 |   | 19149 |
-> | 7484 MB |       4 | 37552 |   | 37458 |
-> | 7484 MB |       8 | 48655 |   | 46618 |
-> | 7484 MB |      12 | 45778 |   | 45756 |
-> | 7484 MB |      16 | 45659 |   | 44911 |
-> | 7484 MB |      24 | 42192 |   | 37185 |	-11.87%
-> | 7484 MB |      32 | 36385 |   | 34447 |
-> | 15 GB   |       1 |  7677 |   |  7359 |
-> | 15 GB   |       2 | 19227 |   | 19049 |
-> | 15 GB   |       4 | 37335 |   | 36947 |
-> | 15 GB   |       8 | 48130 |   | 46898 |
-> | 15 GB   |      12 | 45393 |   | 43986 |
-> | 15 GB   |      16 | 45110 |   | 45719 |
-> | 15 GB   |      24 | 41415 |   | 36813 |	-11.11%
-> | 15 GB   |      32 | 35988 |   | 34025 |
-> 
-> The reason may caused by wake_affine()'s higher overhead, and pgbench is
-> really sensitive to this stuff...
 
-Thanks for testing. Could you like to remove the last patch and test it
-again? I want to know if the last patch has effect on pgbench.
+--Pd0ReVV5GZGQvF3a
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Thanks Alex
+On Tue, Apr 02, 2013 at 10:26:12AM +0200, Linus Walleij wrote:
+
+> I know that Lee's been sending off a large set of regulator patches
+> lately, some include alterations to this platform config.
+
+> Maybe it's better to take this patch into the regulator tree if these
+> machine configs will come in that way? Also like Lee to have a
+> look at this...
+
+If it's touching the board constraints it's likely to have conflicts
+with Lee's stuff, yes.
+
+--Pd0ReVV5GZGQvF3a
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRWpjzAAoJELSic+t+oim9MBgP/0ID95UsT4S+98kv3ly/tnoc
+tjMDc09/+tZhFGnlgS2qejYSpF3/eWiU3OKKYZMDNQ2fq97ZnM6RLAMNzdDBrACI
+XoAJ7SBd7CZfY0kXM73Luje2C8/h5nVWUVQIDR5YTcTBSNh33Rh1bDiPpom0//Q6
+Cmn91gM9kheAal+VbmZx/4PunxeNAallv0LBq2bV6bAUZuJ8EYpPThW93Zd2G+QH
+YDVWtIEFetKKp0ILwiNBv/2hZZ6QArw4zld6s9XEPVbo80U8uVgE+0ggeeyHlm8w
+O8BAt0nXtLOZvlcvf+TBZBHZvU6yRChSCdJyIrsa3nRIgbKte3H7WU7fXI2dTy5p
+hIYpRDV/Ft5xjk0rq4HgvRIahglrL2V9ht8/KsMMsOGmvkmEuoXoTsmpk0x0wGYp
+PRHmhegzQ/MCDvHSLETGQs7M14dcf0Dj26wnE/tzZAQSlbb9rX/RiqoJoB1xWCgI
+u5wjxJ0uIbA2qzM9ufMraQwMGvItS0DpSqPX+mATyl+57hAAp1Y1hr2i2C+JHcwQ
+jL3nwhNvOgSlKAnlMMd36Rv4UomhEUG+utq5cjUukSQ4AZqBFdfo2krEQO/pxAtr
+d6nOZT7kACp5Erh3bKjMKbTdzfyzZbJ4OxB+b9DOrh0eS8PYn5xfqNqs/XW1+33p
+ti6daAFb+KQ5JUR4ELkt
+=PR6y
+-----END PGP SIGNATURE-----
+
+--Pd0ReVV5GZGQvF3a--
