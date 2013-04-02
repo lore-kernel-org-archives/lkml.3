@@ -1,156 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933660Ab3DBWfU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:35:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33293 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933412Ab3DBWNM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:13:12 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Eric Dumazet <edumazet@google.com>, Jiri Pirko <jpirko@redhat.com>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 119/124] net: add a synchronize_net() in netdev_rx_handler_unregister()
-Date: Tue,  2 Apr 2013 15:11:41 -0700
-Message-Id: <20130402221117.967376650@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
-References: <20130402221104.163133110@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S933734Ab3DBWgS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:36:18 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:38955 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932322Ab3DBWfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:35:17 -0400
+Message-ID: <1364942115.2085.10.camel@joe-AO722>
+Subject: Re: [PATCH 1/1] Introduce Intel RAPL cooling device driver
+From: Joe Perches <joe@perches.com>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Platform Driver <platform-driver-x86@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Date: Tue, 02 Apr 2013 15:35:15 -0700
+In-Reply-To: <1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1364940936-20846-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	 <1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2013-04-02 at 15:15 -0700, Jacob Pan wrote:
+> RAPL(Running Average Power Limit) interface provides platform software
+> with the ability to monitor, control, and get notifications on SOC
+> power consumptions. Since its first appearance on Sandy Bridge, more
+> features have being added to extend its usage. In RAPL, platforms are
+> divided into domains for fine grained control. These domains include
+> package, DRAM controller, CPU core (Power Plane 0), graphics uncore
+> (power plane 1), etc.
 
-------------------
+trivia only:
+
+> diff --git a/drivers/platform/x86/intel_rapl.c b/drivers/platform/x86/intel_rapl.c
+[]
+> +static char *rapl_domain_names[] = {
+> +	"package",
+> +	"power_plane_0",
+> +	"power_plane_1",
+> +	"dram",
+> +};
+
+const
+
+> +static void rapl_init_domains(void)
+> +{
+> +	int i, j = 0;
 
 
-From: Eric Dumazet <edumazet@google.com>
+I think this below is unpleasant to read.
+Maybe add a temporary pointer and get rid of j?
 
-[ Upstream commit 00cfec37484761a44a3b6f4675a54caa618210ae ]
+	typeof rapl_domains *t = rapl_domains;
 
-commit 35d48903e97819 (bonding: fix rx_handler locking) added a race
-in bonding driver, reported by Steven Rostedt who did a very good
-diagnosis :
+(not typeof, but the actual type)
 
-<quoting Steven>
+> +
+> +	for (i = 0; i < RAPL_DOMAIN_MAX; i++) {
+> +		unsigned int mask = rg_data.domain_map & (1 << i);
+> +
+> +		switch (mask) {
+> +		case 1 << RAPL_DOMAIN_PKG:
+> +			rapl_domains[j].name =
+> +				rapl_domain_names[RAPL_DOMAIN_PKG];
 
-I'm currently debugging a crash in an old 3.0-rt kernel that one of our
-customers is seeing. The bug happens with a stress test that loads and
-unloads the bonding module in a loop (I don't know all the details as
-I'm not the one that is directly interacting with the customer). But the
-bug looks to be something that may still be present and possibly present
-in mainline too. It will just be much harder to trigger it in mainline.
+			t->name = rapl_domain_names[RAPL_DOMAIN_PKG];
+			etc...
+[]
+> +		if (mask)
+> +			j++;
 
-In -rt, interrupts are threads, and can schedule in and out just like
-any other thread. Note, mainline now supports interrupt threads so this
-may be easily reproducible in mainline as well. I don't have the ability
-to tell the customer to try mainline or other kernels, so my hands are
-somewhat tied to what I can do.
+			t++;
 
-But according to a core dump, I tracked down that the eth irq thread
-crashed in bond_handle_frame() here:
+> +/* in the order of enum rapl_primitives */
+> +static struct rapl_primitive_info rpi[] = {
 
-        slave = bond_slave_get_rcu(skb->dev);
-        bond = slave->bond; <--- BUG
+const?
 
-the slave returned was NULL and accessing slave->bond caused a NULL
-pointer dereference.
+> +	/* name, mask, shift, msr index, unit divisor*/
+> +	PRIMITIVE_INFO_INIT(energy, ENERGY_STATUS_MASK, 0,
+> +			RAPL_DOMAIN_MSR_STATUS, ENERGY_UNIT,
+> +			RAPL_PRIMITIVE_EVENT_CAP),
 
-Looking at the code that unregisters the handler:
+[]
+> +static int rapl_read_data_raw(struct rapl_domain *domain,
+> +			struct rapl_primitive_info *rp, bool xlate, u64 *data)
+> +{
+[]
+> +	/* specical-case pkg lock bit since pkg domain uses a different bit */
 
-void netdev_rx_handler_unregister(struct net_device *dev)
-{
+special-case
 
-        ASSERT_RTNL();
-        RCU_INIT_POINTER(dev->rx_handler, NULL);
-        RCU_INIT_POINTER(dev->rx_handler_data, NULL);
-}
+[]
+> +static ssize_t store_event_control(struct rapl_domain *rd, const char *buf,
+> +				size_t size)
+> +{
+> +	unsigned int efd, cfd, new_threshold;
+> +	struct file *efile = NULL;
+> +	struct file *cfile = NULL;
+> +	int ret = 0;
+> +	int prim;
+> +	struct rapl_event *ep;
+> +	u64 val;
+> +
+> +	if (sscanf(buf, "%u %u %u", &efd, &cfd, &new_threshold) != 3)
+> +		return -EINVAL;
+> +
+> +	efile = eventfd_fget(efd);
+> +	if (IS_ERR(efile)) {
+> +		ret = PTR_ERR(efile);
+> +		pr_err("failed to get eventfd file %d\n", efd);
+> +		goto done;
+> +	}
+> +	cfile = fget(cfd);
+> +	if (!cfile) {
+> +		ret = -EBADF;
+> +		fput(efile);
+> +		goto done;
+> +	}
+> +	/* check if the cfile belongs to the same rapl domain */
+> +	if (strcmp(rd->kobj.sd->s_name,
+> +			cfile->f_dentry->d_parent->d_name.name)) {
+> +		pr_debug("cfile does not belong to domain %s\n",
+> +			rd->kobj.sd->s_name);
+> +		ret = -EINVAL;
+> +		goto exit_cleanup_fds;
+> +	}
+> +	prim = primitive_name_to_entry(
+> +		(const char *)cfile->f_dentry->d_name.name);
+> +	if (prim < 0) {
+> +		pr_err("failed lookup primitive id for control file %s\n",
+> +			cfile->f_dentry->d_name.name);
+> +		ret = -EINVAL;
+> +		goto exit_cleanup_fds;
+> +	}
+> +	if (!(rpi[prim].flag & RAPL_PRIMITIVE_EVENT_CAP)) {
+> +		pr_info("Invalid control file %d\n", prim);
+> +		ret = -EINVAL;
+> +		goto exit_cleanup_fds;
+> +	}
 
-Which is basically:
-        dev->rx_handler = NULL;
-        dev->rx_handler_data = NULL;
+Perhaps all these pr_<levels> should be pr_err as they
+all lead to a failure path.
 
-And looking at __netif_receive_skb() we have:
 
-        rx_handler = rcu_dereference(skb->dev->rx_handler);
-        if (rx_handler) {
-                if (pt_prev) {
-                        ret = deliver_skb(skb, pt_prev, orig_dev);
-                        pt_prev = NULL;
-                }
-                switch (rx_handler(&skb)) {
+[]
 
-My question to all of you is, what stops this interrupt from happening
-while the bonding module is unloading?  What happens if the interrupt
-triggers and we have this:
+> +static int stop_periodic_polling(void)
+> +{
+> +	if (true == polling_started) {
 
-        CPU0                    CPU1
-        ----                    ----
-  rx_handler = skb->dev->rx_handler
+You don't need a comparison,
+	if (polling_started) {
+is perhaps better.
 
-                        netdev_rx_handler_unregister() {
-                           dev->rx_handler = NULL;
-                           dev->rx_handler_data = NULL;
+[]
+> +static int rapl_detect_domains(void)
+> +{
+[]
+> +	pr_info("Found %d vaild RAPL domains\n", rg_data.nr_domains);
 
-  rx_handler()
-   bond_handle_frame() {
-    slave = skb->dev->rx_handler;
-    bond = slave->bond; <-- NULL pointer dereference!!!
+valid
 
-What protection am I missing in the bond release handler that would
-prevent the above from happening?
+> +	rapl_domains = kzalloc(sizeof(struct rapl_domain) * rg_data.nr_domains,
+> +			GFP_KERNEL);
 
-</quoting Steven>
+kcalloc
 
-We can fix bug this in two ways. First is adding a test in
-bond_handle_frame() and others to check if rx_handler_data is NULL.
+> +	if (NULL == rapl_domains) {
+> +		pr_err("Failed to allocate memory for rapl domain\n");
 
-A second way is adding a synchronize_net() in
-netdev_rx_handler_unregister() to make sure that a rcu protected reader
-has the guarantee to see a non NULL rx_handler_data.
+You don't need OOM messages as the memory
+subsystem already does a dump_stack on OOM.
 
-The second way is better as it avoids an extra test in fast path.
+[]
 
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Jiri Pirko <jpirko@redhat.com>
-Cc: Paul E. McKenney <paulmck@us.ibm.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/core/dev.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+> +static int __init intel_rapl_init(void)
+> +{
 
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3276,6 +3276,7 @@ int netdev_rx_handler_register(struct ne
- 	if (dev->rx_handler)
- 		return -EBUSY;
- 
-+	/* Note: rx_handler_data must be set before rx_handler */
- 	rcu_assign_pointer(dev->rx_handler_data, rx_handler_data);
- 	rcu_assign_pointer(dev->rx_handler, rx_handler);
- 
-@@ -3296,6 +3297,11 @@ void netdev_rx_handler_unregister(struct
- 
- 	ASSERT_RTNL();
- 	RCU_INIT_POINTER(dev->rx_handler, NULL);
-+	/* a reader seeing a non NULL rx_handler in a rcu_read_lock()
-+	 * section has a guarantee to see a non NULL rx_handler_data
-+	 * as well.
-+	 */
-+	synchronize_net();
- 	RCU_INIT_POINTER(dev->rx_handler_data, NULL);
- }
- EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
+> +	rd_data = kzalloc(sizeof(struct rapl_domain_data) * rg_data.nr_domains,
+> +			GFP_KERNEL);
+
+kcalloc again.
+
+> +	if (NULL == rd_data) {
+> +		pr_err("Failed to allocate memory for rapl domain data\n");
+
+OOM too.
 
 
