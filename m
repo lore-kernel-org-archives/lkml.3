@@ -1,108 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761500Ab3DBN1j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 09:27:39 -0400
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:64439 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760072Ab3DBN1h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 09:27:37 -0400
-Message-ID: <515ADC96.7090908@synopsys.com>
-Date: Tue, 2 Apr 2013 18:56:46 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1761534Ab3DBN2w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 09:28:52 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:47920 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761505Ab3DBN2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 09:28:50 -0400
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <tony@atomide.com>, <khilman@linaro.org>, <rmk+kernel@arm.linux.org.uk>,
+        <gregkh@linuxfoundation.org>
+CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <b-cousson@ti.com>,
+        <michael@amarulasolutions.com>, Sourav Poddar <sourav.poddar@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: [PATCHv2] arm: mach-omap2: prevent UART console idle on suspend while using "no_console_suspend"
+Date: Tue, 2 Apr 2013 18:58:22 +0530
+Message-ID: <1364909302-27970-1-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: lkml <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        "Ingo Molnar" <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: n_tty_write() going into schedule but NOT coming out
-References: <5156DC21.20901@synopsys.com> <5159925B.5050806@synopsys.com> <1364829008.3617.21.camel@thor.lan>
-In-Reply-To: <1364829008.3617.21.camel@thor.lan>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.41]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2013 08:40 PM, Peter Hurley wrote:
-> On Mon, 2013-04-01 at 19:27 +0530, Vineet Gupta wrote:
->> Hi,
->>
->> Any thoughts: I observe the same issue even with CONFIG_PREEMPT and
->> CONFIG_PREEMPT_COUNT
->>
->> -Vineet
->>
->> On 03/30/2013 06:05 PM, Vineet Gupta wrote:
->>> Hi,
->>>
->>> I've been stress testing ARC Linux 3.8 (same happens for 3.9-rc3 as well). The
->>> setup has 3 telnet sessions, each running find . -name "*" in a loop.
->>> The platform is a FPGA @ 80 MHz, running a single core ARC700 so kernel .config
->>> has !SMP and PREEMPT_NONE.
->>>
->>> After ~10 mins of run, I see that one of the telnet session gets stuck (and later
->>> the 2nd one as well), while system is still alive, 3rd telnet is running find merrily.
->>>
->>> [ARCLinux]$ ps
->>> ....
->>>     7 root       0:00 inetd
->>>    62 root       0:00 -/bin/sh
->>>    64 root       1:34 telnetd -i -l /bin/sh
->>>    65 root       0:00 /bin/sh
->>>    75 root       1:47 telnetd -i -l /bin/sh
->>>    76 root       0:00 /bin/sh
->>>    79 root       0:53 telnetd -i -l /bin/sh
->>>    80 root       0:00 /bin/sh
->>>   281 root       0:00 find / -name *	<--- stuck
->>>   358 root       0:03 find / -name *	<--- stuck
->>>   377 root       0:00 find / -name *
->>>   378 root       0:00 ps
->>>
->>> Hung find task is sitting in the schedule() call in n_tty_write()
->>>
->>> [ARCLinux]$ cat /proc/281/stack
->>> [<8065945e>] n_tty_write+0x23a/0x424
->>> [<80655cd4>] tty_write+0x1ac/0x2d4
->>> [<805976ba>] vfs_write+0x92/0x110
->>> [<80597816>] sys_write+0x4e/0x88
->>> [<8050e780>] ret_from_system_call+0x0/0x4
-> Likely the writer is stuck because the receive buffer is full and the
-> reader is hung. What are the respective shells and telnetd doing?
+With dt boot, uart wakeup after suspend is non functional while using
+"no_console_suspend" in the bootargs. With "no_console_suspend" used, od->flags
+should be ORed with "OMAP_DEVICE_NO_IDLE_ON_SUSPEND", thereby not allowing the console
+to idle in the suspend path.
 
-I've added a couple of printk's around that schedule() call and in one pathetic
-case all 3 find tasks never return:
+Tested on omap5430evm, omap4430sdp.
 
-S     0    58    47  1768   488 0:0   00:00 00:03:50 telnetd -i -l /bin/sh
-S     0    59    58  1768   520 pts0  00:00 00:00:01 /bin/sh
-S     0    61    47  1768   488 0:0   00:00 00:03:45 telnetd -i -l /bin/sh
-S     0    62    61  1768   528 pts1  00:00 00:00:01 /bin/sh
-S     0    65    47  1768   488 0:0   00:00 00:03:23 telnetd -i -l /bin/sh
-S     0    66    65  1776   528 pts2  00:00 00:00:01 /bin/sh
-S     0   833    66  1840   488 pts2  00:58 00:00:01 find / -name *        <--
-S     0   871    62  1832   480 pts1  01:01 00:00:00 find / -name *        <--
-S     0   881    59  1840   488 pts0  01:01 00:00:02 find / -name *        <--
+Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
+Cc: Felipe Balbi<balbi@ti.com>
+Cc: Rajendra nayak<rnayak@ti.com>
+Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+---
+v1->v2
+These patches were sent before as a series[1], but realised
+"core_initcall(omap_serial_early_init)" in serial.c get executed
+irrespective of dt or non dt boot and it will do most of the stuff
+for us.
+As suggested by Kevin Hilman in the previous version, this patch will
+also prevent creating dependency between omap_device
+(generic device-independent code) and a specific driver (UART).
 
+[1]: http://lkml.org/lkml/2013/3/18/294
 
----> 833 8e21c580
-<--- 833 8e21c580
----> 833 8e21c580
+ arch/arm/mach-omap2/omap_device.c |    5 +++--
+ arch/arm/mach-omap2/omap_hwmod.h  |    5 +++++
+ arch/arm/mach-omap2/serial.c      |    4 +++-
+ 3 files changed, 11 insertions(+), 3 deletions(-)
 
----> 871 8e21c840
-<--- 871 8e21c840
----> 871 8e21c840
+diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+index 381be7a..89be64d 100644
+--- a/arch/arm/mach-omap2/omap_device.c
++++ b/arch/arm/mach-omap2/omap_device.c
+@@ -170,8 +170,9 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
+ 			r->name = dev_name(&pdev->dev);
+ 	}
+ 
+-	if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
+-		omap_device_disable_idle_on_suspend(pdev);
++	if (oh->flags & HWMOD_DISABLE_IDLE_ON_SUSPEND ||
++		of_get_property(node, "ti,no_idle_on_suspend", NULL))
++			omap_device_disable_idle_on_suspend(pdev);
+ 
+ 	pdev->dev.pm_domain = &omap_device_pm_domain;
+ 
+diff --git a/arch/arm/mach-omap2/omap_hwmod.h b/arch/arm/mach-omap2/omap_hwmod.h
+index d43d9b6..50e6145 100644
+--- a/arch/arm/mach-omap2/omap_hwmod.h
++++ b/arch/arm/mach-omap2/omap_hwmod.h
+@@ -459,6 +459,10 @@ struct omap_hwmod_omap4_prcm {
+  *     correctly, or this is being abused to deal with some PM latency
+  *     issues -- but we're currently suffering from a shortage of
+  *     folks who are able to track these issues down properly.
++ * HWMOD_DISABLE_IDLE_ON_SUSPEND: don't idle this module on suspend. This is
++ *     needed for uart controller, which requires its clock not to be cut
++ *     during suspend while using "no_console_suspend" in bootargs with
++ *     device tree boot.
+  */
+ #define HWMOD_SWSUP_SIDLE			(1 << 0)
+ #define HWMOD_SWSUP_MSTANDBY			(1 << 1)
+@@ -471,6 +475,7 @@ struct omap_hwmod_omap4_prcm {
+ #define HWMOD_16BIT_REG				(1 << 8)
+ #define HWMOD_EXT_OPT_MAIN_CLK			(1 << 9)
+ #define HWMOD_BLOCK_WFI				(1 << 10)
++#define HWMOD_DISABLE_IDLE_ON_SUSPEND		(1 << 12)
+ 
+ /*
+  * omap_hwmod._int_flags definitions
+diff --git a/arch/arm/mach-omap2/serial.c b/arch/arm/mach-omap2/serial.c
+index 8396b5b..adbafbd 100644
+--- a/arch/arm/mach-omap2/serial.c
++++ b/arch/arm/mach-omap2/serial.c
+@@ -236,8 +236,10 @@ static int __init omap_serial_early_init(void)
+ 					uart_name, uart->num);
+ 			}
+ 
+-			if (cmdline_find_option("no_console_suspend"))
++			if (cmdline_find_option("no_console_suspend")) {
+ 				no_console_suspend = true;
++				oh->flags |= HWMOD_DISABLE_IDLE_ON_SUSPEND;
++			}
+ 
+ 			/*
+ 			 * omap-uart can be used for earlyprintk logs
+-- 
+1.7.1
 
----> 881 8e21c2c0
-<--- 881 8e21c2c0
----> 881 8e21c2c0
-
-I don't undersand how the receive buffer full/empty is coming into play - that
-schedule() call is not a wait queue or something, it's an unconditional yield,
-expecting sched to unconditionally return at some point - unless ofcourse - that
-itself relies on some buffer r/w ISR semantics triggering an ISR, which makes the
-task runnable again causing schdule() to return.
-
--Vineet
