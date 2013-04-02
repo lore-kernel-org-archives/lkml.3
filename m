@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933646Ab3DBWef (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:34:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33298 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933521Ab3DBWNM (ORCPT
+	id S933738Ab3DBWen (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:34:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55409 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933660Ab3DBWej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:13:12 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Lothar=20Wa=DFmann?= <LW@KARO-electronics.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 120/124] net: ethernet: cpsw: fix erroneous condition in error check
-Date: Tue,  2 Apr 2013 15:11:42 -0700
-Message-Id: <20130402221118.095379465@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
-References: <20130402221104.163133110@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 2 Apr 2013 18:34:39 -0400
+Message-ID: <515B4EEC.8000908@infradead.org>
+Date: Tue, 02 Apr 2013 14:34:36 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Casey Schaufler <casey@schaufler-ca.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH] Smack: include magic.h in smackfs.c
+References: <20130402190929.62cea8988921a2599588a566@canb.auug.org.au> <515B12EB.50303@infradead.org> <515B264E.2020603@schaufler-ca.com>
+In-Reply-To: <515B264E.2020603@schaufler-ca.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On 04/02/13 11:41, Casey Schaufler wrote:
+> As reported for linux-next: Tree for Apr 2 (smack)
+> Add the required include for smackfs.c
+> 
+> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
 
-------------------
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
-
-From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-
-[ Upstream commit ce16294fda230c787ce5c35f61b2f80d14d70a72 ]
-
-The error check in cpsw_probe_dt() has an '&&' where an '||' is
-meant to be. This causes a NULL pointer dereference when incomplet DT
-data is passed to the driver ('phy_id' property for cpsw_emac1
-missing).
-
-Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/ti/cpsw.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/net/ethernet/ti/cpsw.c
-+++ b/drivers/net/ethernet/ti/cpsw.c
-@@ -1111,7 +1111,7 @@ static int cpsw_probe_dt(struct cpsw_pla
- 		struct platform_device *mdio;
- 
- 		parp = of_get_property(slave_node, "phy_id", &lenp);
--		if ((parp == NULL) && (lenp != (sizeof(void *) * 2))) {
-+		if ((parp == NULL) || (lenp != (sizeof(void *) * 2))) {
- 			pr_err("Missing slave[%d] phy_id property\n", i);
- 			ret = -EINVAL;
- 			goto error_ret;
+Thanks.
 
 
+> ---
+>  security/smack/smackfs.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
+> index 2479a41..53a08b8 100644
+> --- a/security/smack/smackfs.c
+> +++ b/security/smack/smackfs.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/seq_file.h>
+>  #include <linux/ctype.h>
+>  #include <linux/audit.h>
+> +#include <linux/magic.h>
+>  #include "smack.h"
+>  
+>  /*
+> 
+> --
+
+
+-- 
+~Randy
