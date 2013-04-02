@@ -1,94 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933219Ab3DBUKm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 16:10:42 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:54188 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932716Ab3DBUKj (ORCPT
+	id S933242Ab3DBULU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 16:11:20 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:53484 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933227Ab3DBULS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 16:10:39 -0400
+	Tue, 2 Apr 2013 16:11:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQV8cPh-s6=EQu_cZTtn86+NwZE5KuGMhf43aOhzkL=hwA@mail.gmail.com>
-References: <CAErSpo6v0mj9=Q13d=G4hho0mb9XTcsmefzke9fROYmZ7oBWxQ@mail.gmail.com>
- <CAE9FiQU7cDzJdHxmqhJNgc9UCsRLgvCFQpv8+fLxD79pLEUC5A@mail.gmail.com>
- <CAErSpo4ncW8rkcpDiccORZedj30m7jRmpXK+amfDGn_wjwt7EA@mail.gmail.com>
- <CAE9FiQVqKag2TGah7x_1MAJ+c0UWgywgM_jKUoOnh+rq3bwBhg@mail.gmail.com>
- <CAE9FiQVMgdj5edbR4qZny29fV9-bW_We_G4Wpn_yruDLQZiQiQ@mail.gmail.com>
- <20130329032200.GA11990@google.com> <CAE9FiQVu5QyxaKsYzzQoroQD=TvsziHzDOtoeg=FvhZ8HyN5yw@mail.gmail.com>
- <CAErSpo7ChfRiEn0eR1rf-mVheUS9Yf8f+j4n78PJcGYh+yMVgA@mail.gmail.com>
- <CAE9FiQXkDg7Y336S=DXoms44=5HLaiUx=sWviupz1fJmaDUEzQ@mail.gmail.com>
- <CAE9FiQU5c=ztzbskNnYFFKF9V5zO+jnRcMBCivLxA1F3fSfX5w@mail.gmail.com>
- <20130401235256.GA31966@google.com> <CAE9FiQV8cPh-s6=EQu_cZTtn86+NwZE5KuGMhf43aOhzkL=hwA@mail.gmail.com>
+In-Reply-To: <1364838466.19098.1.camel@x230>
+References: <CAPM=9tyYMSsK_2eCNRTx5EsgAQtnvmHxhgPHP3GHPxKUn+wo5w@mail.gmail.com>
+ <1364333156-4530-1-git-send-email-matthew.garrett@nebula.com>
+ <CAErSpo7fy+MVxDoLe6w+4noH5X2xJw_Lfdg6fVvgcbhgvUyAaw@mail.gmail.com>
+ <1364338554.2553.53.camel@x230.sbx07502.somerma.wayport.net>
+ <CAErSpo7ZYMsRAp=EKMS0YPmiw6YytN4pZVzoWPd-PL5EzT8+SQ@mail.gmail.com>
+ <515403ED.6010008@gmail.com> <CAErSpo6T5KmTcm2fnoQZvSpJjzXozRd4AVL9REjn6gsL9Q1uPw@mail.gmail.com>
+ <1364838466.19098.1.camel@x230>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 2 Apr 2013 14:10:18 -0600
-Message-ID: <CAErSpo7Jni1ZSf_W=vB3kqsucPpoepa2Q5g=77a6D3FaPwe9LA@mail.gmail.com>
-Subject: Re: [PATCH] PCI: Remove not needed check in disable aspm link
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Roman Yepishev <roman.yepishev@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+Date: Tue, 2 Apr 2013 14:10:58 -0600
+Message-ID: <CAErSpo4q3mU-0oi_xAUAjUpbDfFpU7Lb1rCnrd2WH67J2+U1hQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] pci: Add PCI ROM helper for platform-provided ROM images
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>,
+        Dave Airlie <airlied@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        "skeggsb@gmail.com" <skeggsb@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
+        Seth Forshee <seth.forshee@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Murphy <bugzilla@colorremedies.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 1, 2013 at 6:03 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Apr 1, 2013 at 4:52 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Fri, Mar 29, 2013 at 11:04:48AM -0700, Yinghai Lu wrote:
->>> attatched -v3 again
->>>
->>> > Please check attached -v3.
->>
->> It's getting late in the v3.9 cycle already, and while your v3 patch
->> probably fixes Roman's problem, I can't convince myself that it is
->> safe in general.
->>
->> I think the safest thing to do at this point is to revert 8c33f51df
->> ("PCI/ACPI: Request _OSC control before scanning PCI root bus") with a
->> patch like the one below.
+On Mon, Apr 1, 2013 at 11:47 AM, Matthew Garrett
+<matthew.garrett@nebula.com> wrote:
+> On Mon, 2013-04-01 at 11:39 -0600, Bjorn Helgaas wrote:
 >
-> Agreed.
+>> Chris still has problems (see
+>> https://bugzilla.redhat.com/show_bug.cgi?id=927451), but I don't know
+>> whether they are related to these patches or something else.
 >
->>
->> That does mean the booting path and hotplug paths will be different (we set
->> aspm_disabled after boot but before hotplug), but it was that way for a
->> long time before 8c33f51df.  I think it's more important to fix this recent
->> ath5k regression than to fix a long-standing hotplug bug that nobody ever
->> complained about.
->>
->> Obviously, I think we should fix the hotplug bug and clean up the ASPM
->> mess, too.  But we need to do that when we have more time to do it right
->> and test it.
->
-> Sure.
->
->>
->> Bjorn
->>
->>
->> commit 96e5d01cd536458435ef0678d9fa3dc542afb41f
->> Author: Bjorn Helgaas <bhelgaas@google.com>
->> Date:   Mon Apr 1 15:47:39 2013 -0600
->>
->>     Revert "PCI/ACPI: Request _OSC control before scanning PCI root bus"
->>
->>     This reverts commit 8c33f51df406e1a1f7fa4e9b244845b7ebd61fa6.
->>
->>     Conflicts:
->>         drivers/acpi/pci_root.c
->>
->>     Reference: https://bugzilla.kernel.org/show_bug.cgi?id=55211
->>     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->
-> Acked-by: Yinghai Lu <yinghai@kernel.org>
->
-> stable need this reverting too.
+> I think they're unrelated. The log he posts using this patch gives the
+> correct output - the ROM image comes from the platform method rather
+> than from PCI. I think Ben probably needs to look at that.
 
-I updated the changelog and added this to my for-linus branch, headed for v3.9.
+OK, I added these three patches to my for-linus branch, headed for v3.9.
