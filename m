@@ -1,166 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073Ab3DBXmK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:42:10 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:41949 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab3DBXmI (ORCPT
+	id S1757209Ab3DBXq6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:46:58 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:47746 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753127Ab3DBXq4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 19:42:08 -0400
-Message-ID: <515B6CCD.9060703@gmail.com>
-Date: Tue, 02 Apr 2013 18:42:05 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 2 Apr 2013 19:46:56 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Tony Prisk <linux@prisktech.co.nz>
-CC: linus.walleij@linaro.org, vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        swarren@wwwdotorg.org
-Subject: Re: [PATCHv4 1/6] of: Add support for reading a u32 from a multi-value
- property.
-References: <1364877661-26086-1-git-send-email-linux@prisktech.co.nz> <1364877661-26086-2-git-send-email-linux@prisktech.co.nz>
-In-Reply-To: <1364877661-26086-2-git-send-email-linux@prisktech.co.nz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1364050010-23919-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Dom Cobley <popcornmix@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rabeeh Khoury <rabeeh@solid-run.com>, Daniel Mack <zonque@gmail.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <1363603397-2762-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1364050010-23919-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Message-ID: <20130402234648.8177.86213@quantum>
+User-Agent: alot/0.3.3+
+Subject: Re: [PATCH v4] clk: add si5351 i2c common clock driver
+Date: Tue, 02 Apr 2013 16:46:48 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2013 11:40 PM, Tony Prisk wrote:
-> This patch adds an of_property_read_u32_index() function to allow
-> reading a single indexed u32 value from a property containing multiple
-> u32 values.
-> 
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-> Reviewed-by: Stephen Warren <swarren@nvidia.com>
-> ---
->  drivers/of/base.c  |   33 +++++++++++++++++++++++++++++++++
->  include/linux/of.h |    9 +++++++++
->  2 files changed, 42 insertions(+)
-> 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index 321d3ef..f6c89ed 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -746,6 +746,39 @@ struct device_node *of_find_node_by_phandle(phandle handle)
->  EXPORT_SYMBOL(of_find_node_by_phandle);
->  
->  /**
-> + * of_property_read_u32_index - Find and read a u32 from a multi-value property.
+Quoting Sebastian Hesselbarth (2013-03-23 07:46:50)
+> diff --git a/drivers/clk/clk-si5351.c b/drivers/clk/clk-si5351.c
+> new file mode 100644
+> index 0000000..9d0c210
+> --- /dev/null
+> +++ b/drivers/clk/clk-si5351.c
+> @@ -0,0 +1,1411 @@
+> +/*
+> + * clk-si5351.c: Silicon Laboratories Si5351A/B/C I2C Clock Generator
 > + *
-> + * @np:		device node from which the property value is to be read.
-> + * @propname:	name of the property to be searched.
-> + * @index:	index of the u32 in the list of values
-> + * @out_value:	pointer to return value, modified only if no error.
+> + * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> + * Rabeeh Khoury <rabeeh@solid-run.com>
 > + *
-> + * Search for a property in a device node and read nth 32-bit value from
-> + * it. Returns 0 on success, -EINVAL if the property does not exist,
-> + * -ENODATA if property does not have a value, and -EOVERFLOW if the
-> + * property data isn't large enough.
+> + * References:
+> + * [1] "Si5351A/B/C Data Sheet"
+> + *     http://www.silabs.com/Support%20Documents/TechnicalDocs/Si5351.pdf
+> + * [2] "Manually Generating an Si5351 Register Map"
+> + *     http://www.silabs.com/Support%20Documents/TechnicalDocs/AN619.pdf
 > + *
-> + * The out_value is modified only if a valid u32 value can be decoded.
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
 > + */
-> +int of_property_read_u32_index(const struct device_node *np,
-> +				       const char *propname,
-> +				       u32 index, u32 *out_value)
-> +{
-> +	struct property *prop = of_find_property(np, propname, NULL);
 > +
-> +	if (!prop)
-> +		return -EINVAL;
-> +	if (!prop->value)
-> +		return -ENODATA;
-> +	if (((index + 1) * sizeof(*out_value)) > prop->length)
-> +		return -EOVERFLOW;
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+> +#include <linux/clk-private.h>
 
-Yet another copy of almost the same code...
+I hope that this is supposed to be clk-provider.h.  I don't plan on
+taking in any more clock drivers that depend on clk-private.h.  I didn't
+see any reason for this patch to not use clk-provider.h.
 
-Can you re-factor things to do something like this:
-
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 321d3ef..482d29c 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -745,6 +745,21 @@ struct device_node *of_find_node_by_phandle(phandle handle)
- }
- EXPORT_SYMBOL(of_find_node_by_phandle);
- 
-+static void *of_find_property_value_of_size(const struct device_node *np,
-+			const char *propname, u32 len)
-+{
-+	struct property *prop = of_find_property(np, propname, NULL);
-+
-+	if (!prop)
-+		return -EINVAL;
-+	if (!prop->value)
-+		return -ENODATA;
-+	if (len > prop->length)
-+		return -EOVERFLOW;
-+
-+	return prop->value;
-+}
-+
- /**
-  * of_property_read_u8_array - Find and read an array of u8 from a property.
-  *
-@@ -766,17 +781,11 @@ EXPORT_SYMBOL(of_find_node_by_phandle);
- int of_property_read_u8_array(const struct device_node *np,
- 			const char *propname, u8 *out_values, size_t sz)
- {
--	struct property *prop = of_find_property(np, propname, NULL);
--	const u8 *val;
-+	const u8 *val = of_find_property_value_of_size(np, propname, sz * sizeof(*out_values));
- 
--	if (!prop)
--		return -EINVAL;
--	if (!prop->value)
--		return -ENODATA;
--	if ((sz * sizeof(*out_values)) > prop->length)
--		return -EOVERFLOW;
-+	if (IS_ERR(val))
-+		return PTR_ERR(val);
- 
--	val = prop->value;
- 	while (sz--)
- 		*out_values++ = *val++;
- 	return 0;
-
-
-> +	*out_value = be32_to_cpup(((__be32 *)prop->value) + index);
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(of_property_read_u32_index);
-> +
-> +/**
->   * of_property_read_u8_array - Find and read an array of u8 from a property.
->   *
->   * @np:		device node from which the property value is to be read.
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index a0f1292..c0747a4 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -235,6 +235,9 @@ extern struct device_node *of_find_node_with_property(
->  extern struct property *of_find_property(const struct device_node *np,
->  					 const char *name,
->  					 int *lenp);
-> +extern int of_property_read_u32_index(const struct device_node *np,
-> +				       const char *propname,
-> +				       u32 index, u32 *out_value);
->  extern int of_property_read_u8_array(const struct device_node *np,
->  			const char *propname, u8 *out_values, size_t sz);
->  extern int of_property_read_u16_array(const struct device_node *np,
-> @@ -394,6 +397,12 @@ static inline struct device_node *of_find_compatible_node(
->  	return NULL;
->  }
->  
-> +static inline int of_property_read_u32_index(const struct device_node *np,
-> +			const char *propname, u32 index, u32 *out_value)
-> +{
-> +	return -ENOSYS;
-> +}
-> +
->  static inline int of_property_read_u8_array(const struct device_node *np,
->  			const char *propname, u8 *out_values, size_t sz)
->  {
-> 
-
+Regards,
+Mike
