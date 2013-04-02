@@ -1,242 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761824Ab3DBNko (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 09:40:44 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:58590 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761005Ab3DBNkl (ORCPT
+	id S1761855Ab3DBNln (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 09:41:43 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:42055 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761691Ab3DBNlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 09:40:41 -0400
-Message-ID: <515ADFCF.4010209@gmail.com>
-Date: Tue, 02 Apr 2013 21:40:31 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Shaohua Li <shli@kernel.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC] mm: remove swapcache page early
-References: <1364350932-12853-1-git-send-email-minchan@kernel.org> <alpine.LNX.2.00.1303271230210.29687@eggly.anvils>
-In-Reply-To: <alpine.LNX.2.00.1303271230210.29687@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Apr 2013 09:41:42 -0400
+From: Prabhakar lad <prabhakar.csengg@gmail.com>
+To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LMML <linux-media@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>, Sekhar Nori <nsekhar@ti.com>
+Subject: [PATCH v3] davinci: vpif: add pm_runtime support
+Date: Tue,  2 Apr 2013 19:11:30 +0530
+Message-Id: <1364910090-5501-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
-On 03/28/2013 05:41 AM, Hugh Dickins wrote:
-> On Wed, 27 Mar 2013, Minchan Kim wrote:
->
->> Swap subsystem does lazy swap slot free with expecting the page
->> would be swapped out again so we can't avoid unnecessary write.
->                               so we can avoid unnecessary write.
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-If page can be swap out again, which codes can avoid unnecessary write? 
-Could you point out to me? Thanks in advance. ;-)
+Add pm_runtime support to the TI Davinci VPIF driver.
 
->> But the problem in in-memory swap is that it consumes memory space
->> until vm_swap_full(ie, used half of all of swap device) condition
->> meet. It could be bad if we use multiple swap device, small in-memory swap
->> and big storage swap or in-memory swap alone.
-> That is a very good realization: it's surprising that none of us
-> thought of it before - no disrespect to you, well done, thank you.
->
-> And I guess swap readahead is utterly unhelpful in this case too.
->
->> This patch changes vm_swap_full logic slightly so it could free
->> swap slot early if the backed device is really fast.
->> For it, I used SWP_SOLIDSTATE but It might be controversial.
-> But I strongly disagree with almost everything in your patch :)
-> I disagree with addressing it in vm_swap_full(), I disagree that
-> it can be addressed by device, I disagree that it has anything to
-> do with SWP_SOLIDSTATE.
->
-> This is not a problem with swapping to /dev/ram0 or to /dev/zram0,
-> is it?  In those cases, a fixed amount of memory has been set aside
-> for swap, and it works out just like with disk block devices.  The
-> memory set aside may be wasted, but that is accepted upfront.
->
-> Similarly, this is not a problem with swapping to SSD.  There might
-> or might not be other reasons for adjusting the vm_swap_full() logic
-> for SSD or generally, but those have nothing to do with this issue.
->
-> The problem here is peculiar to frontswap, and the variably sized
-> memory behind it, isn't it?  We are accustomed to using swap to free
-> up memory by transferring its data to some other, cheaper but slower
-> resource.
->
-> But in the case of frontswap and zmem (I'll say that to avoid thinking
-> through which backends are actually involved), it is not a cheaper and
-> slower resource, but the very same memory we are trying to save: swap
-> is stolen from the memory under reclaim, so any duplication becomes
-> counter-productive (if we ignore cpu compression/decompression costs:
-> I have no idea how fair it is to do so, but anyone who chooses zmem
-> is prepared to pay some cpu price for that).
->
-> And because it's a frontswap thing, we cannot decide this by device:
-> frontswap may or may not stand in front of each device.  There is no
-> problem with swapcache duplicated on disk (until that area approaches
-> being full or fragmented), but at the higher level we cannot see what
-> is in zmem and what is on disk: we only want to free up the zmem dup.
->
-> I believe the answer is for frontswap/zmem to invalidate the frontswap
-> copy of the page (to free up the compressed memory when possible) and
-> SetPageDirty on the PageUptodate PageSwapCache page when swapping in
-> (setting page dirty so nothing will later go to read it from the
-> unfreed location on backing swap disk, which was never written).
->
-> We cannot rely on freeing the swap itself, because in general there
-> may be multiple references to the swap, and we only satisfy the one
-> which has faulted.  It may or may not be a good idea to use rmap to
-> locate the other places to insert pte in place of swap entry, to
-> resolve them all at once; but we have chosen not to do so in the
-> past, and there's no need for that, if the zmem gets invalidated
-> and the swapcache page set dirty.
->
-> Hugh
->
->> So let's add Ccing Shaohua and Hugh.
->> If it's a problem for SSD, I'd like to create new type SWP_INMEMORY
->> or something for z* family.
->>
->> Other problem is zram is block device so that it can set SWP_INMEMORY
->> or SWP_SOLIDSTATE easily(ie, actually, zram is already done) but
->> I have no idea to use it for frontswap.
->>
->> Any idea?
->>
->> Other optimize point is we remove it unconditionally when we
->> found it's exclusive when swap in happen.
->> It could help frontswap family, too.
->> What do you think about it?
->>
->> Cc: Hugh Dickins <hughd@google.com>
->> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
->> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
->> Cc: Nitin Gupta <ngupta@vflare.org>
->> Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
->> Cc: Shaohua Li <shli@kernel.org>
->> Signed-off-by: Minchan Kim <minchan@kernel.org>
->> ---
->>   include/linux/swap.h | 11 ++++++++---
->>   mm/memory.c          |  3 ++-
->>   mm/swapfile.c        | 11 +++++++----
->>   mm/vmscan.c          |  2 +-
->>   4 files changed, 18 insertions(+), 9 deletions(-)
->>
->> diff --git a/include/linux/swap.h b/include/linux/swap.h
->> index 2818a12..1f4df66 100644
->> --- a/include/linux/swap.h
->> +++ b/include/linux/swap.h
->> @@ -359,9 +359,14 @@ extern struct page *swapin_readahead(swp_entry_t, gfp_t,
->>   extern atomic_long_t nr_swap_pages;
->>   extern long total_swap_pages;
->>   
->> -/* Swap 50% full? Release swapcache more aggressively.. */
->> -static inline bool vm_swap_full(void)
->> +/*
->> + * Swap 50% full or fast backed device?
->> + * Release swapcache more aggressively.
->> + */
->> +static inline bool vm_swap_full(struct swap_info_struct *si)
->>   {
->> +	if (si->flags & SWP_SOLIDSTATE)
->> +		return true;
->>   	return atomic_long_read(&nr_swap_pages) * 2 < total_swap_pages;
->>   }
->>   
->> @@ -405,7 +410,7 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
->>   #define get_nr_swap_pages()			0L
->>   #define total_swap_pages			0L
->>   #define total_swapcache_pages()			0UL
->> -#define vm_swap_full()				0
->> +#define vm_swap_full(si)			0
->>   
->>   #define si_swapinfo(val) \
->>   	do { (val)->freeswap = (val)->totalswap = 0; } while (0)
->> diff --git a/mm/memory.c b/mm/memory.c
->> index 705473a..1ca21a9 100644
->> --- a/mm/memory.c
->> +++ b/mm/memory.c
->> @@ -3084,7 +3084,8 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
->>   	mem_cgroup_commit_charge_swapin(page, ptr);
->>   
->>   	swap_free(entry);
->> -	if (vm_swap_full() || (vma->vm_flags & VM_LOCKED) || PageMlocked(page))
->> +	if (likely(PageSwapCache(page)) && (vm_swap_full(page_swap_info(page))
->> +			|| (vma->vm_flags & VM_LOCKED) || PageMlocked(page)))
->>   		try_to_free_swap(page);
->>   	unlock_page(page);
->>   	if (page != swapcache) {
->> diff --git a/mm/swapfile.c b/mm/swapfile.c
->> index 1bee6fa..f9cc701 100644
->> --- a/mm/swapfile.c
->> +++ b/mm/swapfile.c
->> @@ -293,7 +293,7 @@ checks:
->>   		scan_base = offset = si->lowest_bit;
->>   
->>   	/* reuse swap entry of cache-only swap if not busy. */
->> -	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
->> +	if (vm_swap_full(si) && si->swap_map[offset] == SWAP_HAS_CACHE) {
->>   		int swap_was_freed;
->>   		spin_unlock(&si->lock);
->>   		swap_was_freed = __try_to_reclaim_swap(si, offset);
->> @@ -382,7 +382,8 @@ scan:
->>   			spin_lock(&si->lock);
->>   			goto checks;
->>   		}
->> -		if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
->> +		if (vm_swap_full(si) &&
->> +			si->swap_map[offset] == SWAP_HAS_CACHE) {
->>   			spin_lock(&si->lock);
->>   			goto checks;
->>   		}
->> @@ -397,7 +398,8 @@ scan:
->>   			spin_lock(&si->lock);
->>   			goto checks;
->>   		}
->> -		if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
->> +		if (vm_swap_full(si) &&
->> +			si->swap_map[offset] == SWAP_HAS_CACHE) {
->>   			spin_lock(&si->lock);
->>   			goto checks;
->>   		}
->> @@ -763,7 +765,8 @@ int free_swap_and_cache(swp_entry_t entry)
->>   		 * Also recheck PageSwapCache now page is locked (above).
->>   		 */
->>   		if (PageSwapCache(page) && !PageWriteback(page) &&
->> -				(!page_mapped(page) || vm_swap_full())) {
->> +				(!page_mapped(page) ||
->> +				  vm_swap_full(page_swap_info(page)))) {
->>   			delete_from_swap_cache(page);
->>   			SetPageDirty(page);
->>   		}
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> index df78d17..145c59c 100644
->> --- a/mm/vmscan.c
->> +++ b/mm/vmscan.c
->> @@ -933,7 +933,7 @@ cull_mlocked:
->>   
->>   activate_locked:
->>   		/* Not a candidate for swapping, so reclaim swap space. */
->> -		if (PageSwapCache(page) && vm_swap_full())
->> +		if (PageSwapCache(page) && vm_swap_full(page_swap_info(page)))
->>   			try_to_free_swap(page);
->>   		VM_BUG_ON(PageActive(page));
->>   		SetPageActive(page);
->> -- 
->> 1.8.2
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Sakari Ailus <sakari.ailus@iki.fi>
+Cc: Sekhar Nori <nsekhar@ti.com>
+---
+ Changes for v3:
+ 1: Removed pm_runtime_resume() from probe as pm_runtime_get()
+    calls it as pointed by Hans.
+
+ Changes for v2:
+ 1: Removed use of clk API as pointed by Laurent and Sekhar.
+
+ drivers/media/platform/davinci/vpif.c |   24 ++++++------------------
+ 1 files changed, 6 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/media/platform/davinci/vpif.c b/drivers/media/platform/davinci/vpif.c
+index 3bc4db8..ea82a8b 100644
+--- a/drivers/media/platform/davinci/vpif.c
++++ b/drivers/media/platform/davinci/vpif.c
+@@ -23,8 +23,8 @@
+ #include <linux/spinlock.h>
+ #include <linux/kernel.h>
+ #include <linux/io.h>
+-#include <linux/clk.h>
+ #include <linux/err.h>
++#include <linux/pm_runtime.h>
+ #include <linux/v4l2-dv-timings.h>
+ 
+ #include <mach/hardware.h>
+@@ -46,8 +46,6 @@ spinlock_t vpif_lock;
+ void __iomem *vpif_base;
+ EXPORT_SYMBOL_GPL(vpif_base);
+ 
+-struct clk *vpif_clk;
+-
+ /**
+  * vpif_ch_params: video standard configuration parameters for vpif
+  * The table must include all presets from supported subdevices.
+@@ -443,19 +441,13 @@ static int vpif_probe(struct platform_device *pdev)
+ 		goto fail;
+ 	}
+ 
+-	vpif_clk = clk_get(&pdev->dev, "vpif");
+-	if (IS_ERR(vpif_clk)) {
+-		status = PTR_ERR(vpif_clk);
+-		goto clk_fail;
+-	}
+-	clk_prepare_enable(vpif_clk);
++	pm_runtime_enable(&pdev->dev);
++	pm_runtime_get(&pdev->dev);
+ 
+ 	spin_lock_init(&vpif_lock);
+ 	dev_info(&pdev->dev, "vpif probe success\n");
+ 	return 0;
+ 
+-clk_fail:
+-	iounmap(vpif_base);
+ fail:
+ 	release_mem_region(res->start, res_len);
+ 	return status;
+@@ -463,11 +455,7 @@ fail:
+ 
+ static int vpif_remove(struct platform_device *pdev)
+ {
+-	if (vpif_clk) {
+-		clk_disable_unprepare(vpif_clk);
+-		clk_put(vpif_clk);
+-	}
+-
++	pm_runtime_disable(&pdev->dev);
+ 	iounmap(vpif_base);
+ 	release_mem_region(res->start, res_len);
+ 	return 0;
+@@ -476,13 +464,13 @@ static int vpif_remove(struct platform_device *pdev)
+ #ifdef CONFIG_PM
+ static int vpif_suspend(struct device *dev)
+ {
+-	clk_disable_unprepare(vpif_clk);
++	pm_runtime_put(dev);
+ 	return 0;
+ }
+ 
+ static int vpif_resume(struct device *dev)
+ {
+-	clk_prepare_enable(vpif_clk);
++	pm_runtime_get(dev);
+ 	return 0;
+ }
+ 
+-- 
+1.7.4.1
 
