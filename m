@@ -1,204 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192Ab3DBJxL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:53:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59378 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760594Ab3DBJxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:53:10 -0400
-Date: Tue, 2 Apr 2013 11:54:03 +0200
-From: Cyril Hrubis <chrubis@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mm/mmap: Check for RLIMIT_AS before unmapping
-Message-ID: <20130402095402.GA6568@rei>
+	id S932390Ab3DBJxf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:53:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51083 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760119Ab3DBJxd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 05:53:33 -0400
+Date: Tue, 2 Apr 2013 02:53:08 -0700
+From: tip-bot for Stephane Eranian <tipbot@zytor.com>
+Message-ID: <tip-f4f7e28d0e813ddb997f49ae718ddf98db972292@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        namhyung.kim@lge.com, jolsa@redhat.com, ak@linux.intel.com,
+        tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        namhyung.kim@lge.com, jolsa@redhat.com, ak@linux.intel.com,
+        tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1359040242-8269-13-git-send-email-eranian@google.com>
+References: <1359040242-8269-13-git-send-email-eranian@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf report: Add support for mem access profiling
+Git-Commit-ID: f4f7e28d0e813ddb997f49ae718ddf98db972292
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="lrZ03NoBR/3+SXJZ"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 02:53:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  f4f7e28d0e813ddb997f49ae718ddf98db972292
+Gitweb:     http://git.kernel.org/tip/f4f7e28d0e813ddb997f49ae718ddf98db972292
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Thu, 24 Jan 2013 16:10:36 +0100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 1 Apr 2013 12:21:28 -0300
 
---lrZ03NoBR/3+SXJZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+perf report: Add support for mem access profiling
 
-This patch fixes corner case for MAP_FIXED when requested mapping length
-is larger than rlimit for virtual memory. In such case any overlapping
-mappings are unmapped before we check for the limit and return ENOMEM.
+This patch adds the --mem-mode option to perf report.
 
-The check is moved before the loop that unmaps overlapping parts of
-existing mappings. When we are about to hit the limit (currently mapped
-pages + len > limit) we scan for overlapping pages and check again
-accounting for them.
+This mode requires a perf.data file created with memory access samples.
 
-This fixes situation when userspace program expects that the previous
-mappings are preserved after the mmap() syscall has returned with error.
-(POSIX clearly states that successfull mapping shall replace any
-previous mappings.)
-
-This corner case was found and can be tested with LTP testcase:
-
-testcases/open_posix_testsuite/conformance/interfaces/mmap/24-2.c
-
-In this case the mmap, which is clearly over current limit, unmaps
-dynamic libraries and the testcase segfaults right after returning into
-userspace.
-
-I've also looked at the second instance of the unmapping loop in the
-do_brk(). The do_brk() is called from brk() syscall and from vm_brk().
-The brk() syscall checks for overlapping mappings and bails out when
-there are any (so it can't be triggered from the brk syscall). The
-vm_brk() is called only from binmft handlers so it shouldn't be
-triggered unless binmft handler created overlapping mappings.
-
-Signed-off-by: Cyril Hrubis <chrubis@suse.cz>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1359040242-8269-13-git-send-email-eranian@google.com
+[ Removed duplicates in the --sort help, man page needs updating,
+  Fixed minor conflict with 328ccda "perf report: Add --no-demangle option" ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- mm/mmap.c | 50 ++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 46 insertions(+), 4 deletions(-)
+ tools/perf/builtin-report.c | 135 ++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 131 insertions(+), 4 deletions(-)
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 2664a47..e755080 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -33,6 +33,7 @@
- #include <linux/uprobes.h>
- #include <linux/rbtree_augmented.h>
- #include <linux/sched/sysctl.h>
-+#include <linux/kernel.h>
- 
- #include <asm/uaccess.h>
- #include <asm/cacheflush.h>
-@@ -543,6 +544,34 @@ static int find_vma_links(struct mm_struct *mm, unsigned long addr,
- 	return 0;
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index e31f070..a20550c 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -46,6 +46,7 @@ struct perf_report {
+ 	bool			show_full_info;
+ 	bool			show_threads;
+ 	bool			inverted_callchain;
++	bool			mem_mode;
+ 	struct perf_read_values	show_threads_values;
+ 	const char		*pretty_printing_style;
+ 	symbol_filter_t		annotate_init;
+@@ -64,6 +65,99 @@ static int perf_report_config(const char *var, const char *value, void *cb)
+ 	return perf_default_config(var, value, cb);
  }
  
-+static unsigned long count_vma_pages_range(struct mm_struct *mm,
-+		unsigned long addr, unsigned long end)
++static int perf_report__add_mem_hist_entry(struct perf_tool *tool,
++					   struct addr_location *al,
++					   struct perf_sample *sample,
++					   struct perf_evsel *evsel,
++					   struct machine *machine,
++					   union perf_event *event)
 +{
-+	unsigned long nr_pages = 0;
-+	struct vm_area_struct *vma;
++	struct perf_report *rep = container_of(tool, struct perf_report, tool);
++	struct symbol *parent = NULL;
++	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
++	int err = 0;
++	struct hist_entry *he;
++	struct mem_info *mi, *mx;
++	uint64_t cost;
 +
-+	/* Find first overlaping mapping */
-+	vma = find_vma_intersection(mm, addr, end);
-+	if (!vma)
++	if ((sort__has_parent || symbol_conf.use_callchain) &&
++	    sample->callchain) {
++		err = machine__resolve_callchain(machine, evsel, al->thread,
++						 sample, &parent);
++		if (err)
++			return err;
++	}
++
++	mi = machine__resolve_mem(machine, al->thread, sample, cpumode);
++	if (!mi)
++		return -ENOMEM;
++
++	if (rep->hide_unresolved && !al->sym)
 +		return 0;
 +
-+	nr_pages = (min(end, vma->vm_end) -
-+		max(addr, vma->vm_start)) >> PAGE_SHIFT;
++	cost = sample->weight;
++	if (!cost)
++		cost = 1;
 +
-+	/* Iterate over the rest of the overlaps */
-+	for (vma = vma->vm_next; vma; vma = vma->vm_next) {
-+		unsigned long overlap_len;
++	/*
++	 * must pass period=weight in order to get the correct
++	 * sorting from hists__collapse_resort() which is solely
++	 * based on periods. We want sorting be done on nr_events * weight
++	 * and this is indirectly achieved by passing period=weight here
++	 * and the he_stat__add_period() function.
++	 */
++	he = __hists__add_mem_entry(&evsel->hists, al, parent, mi, cost, cost);
++	if (!he)
++		return -ENOMEM;
 +
-+		if (vma->vm_start > end)
-+			break;
++	/*
++	 * In the newt browser, we are doing integrated annotation,
++	 * so we don't allocate the extra space needed because the stdio
++	 * code will not use it.
++	 */
++	if (sort__has_sym && he->ms.sym && use_browser > 0) {
++		struct annotation *notes = symbol__annotation(he->ms.sym);
 +
-+		overlap_len = min(end, vma->vm_end) - vma->vm_start;
-+		nr_pages += overlap_len >> PAGE_SHIFT;
++		assert(evsel != NULL);
++
++		if (notes->src == NULL && symbol__alloc_hist(he->ms.sym) < 0)
++			goto out;
++
++		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
++		if (err)
++			goto out;
 +	}
 +
-+	return nr_pages;
++	if (sort__has_sym && he->mem_info->daddr.sym && use_browser > 0) {
++		struct annotation *notes;
++
++		mx = he->mem_info;
++
++		notes = symbol__annotation(mx->daddr.sym);
++		if (notes->src == NULL && symbol__alloc_hist(mx->daddr.sym) < 0)
++			goto out;
++
++		err = symbol__inc_addr_samples(mx->daddr.sym,
++					       mx->daddr.map,
++					       evsel->idx,
++					       mx->daddr.al_addr);
++		if (err)
++			goto out;
++	}
++
++	evsel->hists.stats.total_period += cost;
++	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
++	err = 0;
++
++	if (symbol_conf.use_callchain) {
++		err = callchain_append(he->callchain,
++				       &callchain_cursor,
++				       sample->period);
++	}
++out:
++	return err;
 +}
 +
- void __vma_link_rb(struct mm_struct *mm, struct vm_area_struct *vma,
- 		struct rb_node **rb_link, struct rb_node *rb_parent)
+ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
+ 					struct addr_location *al,
+ 					struct perf_sample *sample,
+@@ -220,6 +314,12 @@ static int process_sample_event(struct perf_tool *tool,
+ 			pr_debug("problem adding lbr entry, skipping event\n");
+ 			return -1;
+ 		}
++	} else if (rep->mem_mode == 1) {
++		if (perf_report__add_mem_hist_entry(tool, &al, sample,
++						    evsel, machine, event)) {
++			pr_debug("problem adding mem entry, skipping event\n");
++			return -1;
++		}
+ 	} else {
+ 		if (al.map != NULL)
+ 			al.map->dso->hit = 1;
+@@ -303,7 +403,8 @@ static void sig_handler(int sig __maybe_unused)
+ 	session_done = 1;
+ }
+ 
+-static size_t hists__fprintf_nr_sample_events(struct hists *self,
++static size_t hists__fprintf_nr_sample_events(struct perf_report *rep,
++					      struct hists *self,
+ 					      const char *evname, FILE *fp)
  {
-@@ -1433,6 +1462,23 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
- 	unsigned long charged = 0;
- 	struct inode *inode =  file ? file_inode(file) : NULL;
+ 	size_t ret;
+@@ -331,7 +432,11 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
+ 	if (evname != NULL)
+ 		ret += fprintf(fp, " of event '%s'", evname);
  
-+	/* Check against address space limit. */
-+	if (!may_expand_vm(mm, len >> PAGE_SHIFT)) {
-+		unsigned long nr_pages;
-+
-+		/*
-+		 * MAP_FIXED may remove pages of mappings that intersects with
-+		 * requested mapping. Account for the pages it would unmap.
-+		 */
-+		if (!(vm_flags & MAP_FIXED))
-+			return -ENOMEM;
-+
-+		nr_pages = count_vma_pages_range(mm, addr, addr + len);
-+
-+		if (!may_expand_vm(mm, (len >> PAGE_SHIFT) - nr_pages))
-+			return -ENOMEM;
-+	}
-+
- 	/* Clear old maps */
- 	error = -ENOMEM;
- munmap_back:
-@@ -1442,10 +1488,6 @@ munmap_back:
- 		goto munmap_back;
+-	ret += fprintf(fp, "\n# Event count (approx.): %" PRIu64, nr_events);
++	if (rep->mem_mode) {
++		ret += fprintf(fp, "\n# Total weight : %" PRIu64, nr_events);
++		ret += fprintf(fp, "\n# Sort order   : %s", sort_order);
++	} else
++		ret += fprintf(fp, "\n# Event count (approx.): %" PRIu64, nr_events);
+ 	return ret + fprintf(fp, "\n#\n");
+ }
+ 
+@@ -349,7 +454,7 @@ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
+ 		    !perf_evsel__is_group_leader(pos))
+ 			continue;
+ 
+-		hists__fprintf_nr_sample_events(hists, evname, stdout);
++		hists__fprintf_nr_sample_events(rep, hists, evname, stdout);
+ 		hists__fprintf(hists, true, 0, 0, stdout);
+ 		fprintf(stdout, "\n\n");
  	}
+@@ -646,7 +751,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline,"
+ 		   " dso_to, dso_from, symbol_to, symbol_from, mispredict,"
+-		   " weight, local_weight"),
++		   " weight, local_weight, mem, symbol_daddr, dso_daddr, tlb, "
++		   "snoop, locked"),
+ 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
+ 		    "Show sample percentage for different cpu modes"),
+ 	OPT_STRING('p', "parent", &parent_pattern, "regex",
+@@ -696,6 +802,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		   "objdump binary to use for disassembly and annotations"),
+ 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
+ 		    "Disable symbol demangling"),
++	OPT_BOOLEAN(0, "mem-mode", &report.mem_mode, "mem access profile"),
+ 	OPT_END()
+ 	};
  
--	/* Check against address space limit. */
--	if (!may_expand_vm(mm, len >> PAGE_SHIFT))
--		return -ENOMEM;
--
- 	/*
- 	 * Private writable mapping: check memory availability
- 	 */
--- 
-1.8.1.5
-
-See also a testsuite that exercies the newly added codepaths which is
-attached as a tarball (All testcases minus the second that tests
-that this patch works succeeds both before and after this patch).
-
--- 
-Cyril Hrubis
-chrubis@suse.cz
-
---lrZ03NoBR/3+SXJZ
-Content-Type: application/x-bzip2
-Content-Disposition: attachment; filename="mm.tar.bz2"
-Content-Transfer-Encoding: base64
-
-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
-jCcIBP/F3JFOFCQPRFOdgA==
-
---lrZ03NoBR/3+SXJZ--
+@@ -753,6 +860,18 @@ repeat:
+ 				     "dso_to,symbol_to";
+ 
+ 	}
++	if (report.mem_mode) {
++		if (sort__branch_mode == 1) {
++			fprintf(stderr, "branch and mem mode incompatible\n");
++			goto error;
++		}
++		/*
++		 * if no sort_order is provided, then specify
++		 * branch-mode specific order
++		 */
++		if (sort_order == default_sort_order)
++			sort_order = "local_weight,mem,sym,dso,symbol_daddr,dso_daddr,snoop,tlb,locked";
++	}
+ 
+ 	if (setup_sorting() < 0)
+ 		usage_with_options(report_usage, options);
+@@ -818,6 +937,14 @@ repeat:
+ 		sort_entry__setup_elide(&sort_sym_from, symbol_conf.sym_from_list, "sym_from", stdout);
+ 		sort_entry__setup_elide(&sort_sym_to, symbol_conf.sym_to_list, "sym_to", stdout);
+ 	} else {
++		if (report.mem_mode) {
++			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "symbol_daddr", stdout);
++			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso_daddr", stdout);
++			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "mem", stdout);
++			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "local_weight", stdout);
++			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "tlb", stdout);
++			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "snoop", stdout);
++		}
+ 		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", stdout);
+ 		sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", stdout);
+ 	}
