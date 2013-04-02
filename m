@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758695Ab3DBXNh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:13:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32954 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932993Ab3DBWMS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933012Ab3DBWMS (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 2 Apr 2013 18:12:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32870 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761137Ab3DBWMK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:12:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 041/124] Nest rename_lock inside vfsmount_lock
-Date: Tue,  2 Apr 2013 15:10:23 -0700
-Message-Id: <20130402221108.985609296@linuxfoundation.org>
+        Pawel Wieczorkiewicz <wpawel@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [ 030/124] tty: atmel_serial_probe(): index of atmel_ports[] fix
+Date: Tue,  2 Apr 2013 15:10:12 -0700
+Message-Id: <20130402221107.654308132@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -26,119 +27,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Pawel Wieczorkiewicz <wpawel@gmail.com>
 
-commit 7ea600b5314529f9d1b9d6d3c41cb26fce6a7a4a upstream.
+commit 503bded92da283b2f31d87e054c4c6d30c3c2340 upstream.
 
-... lest we get livelocks between path_is_under() and d_path() and friends.
+Index of atmel_ports[ATMEL_MAX_UART] should be smaller
+than ATMEL_MAX_UART.
 
-The thing is, wrt fairness lglocks are more similar to rwsems than to rwlocks;
-it is possible to have thread B spin on attempt to take lock shared while thread
-A is already holding it shared, if B is on lower-numbered CPU than A and there's
-a thread C spinning on attempt to take the same lock exclusive.
-
-As the result, we need consistent ordering between vfsmount_lock (lglock) and
-rename_lock (seq_lock), even though everything that takes both is going to take
-vfsmount_lock only shared.
-
-Spotted-by: Brad Spengler <spender@grsecurity.net>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Pawel Wieczorkiewicz <wpawel@gmail.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/dcache.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ drivers/tty/serial/atmel_serial.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2552,7 +2552,6 @@ static int prepend_path(const struct pat
- 	bool slash = false;
- 	int error = 0;
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -158,7 +158,7 @@ struct atmel_uart_port {
+ };
  
--	br_read_lock(&vfsmount_lock);
- 	while (dentry != root->dentry || vfsmnt != root->mnt) {
- 		struct dentry * parent;
+ static struct atmel_uart_port atmel_ports[ATMEL_MAX_UART];
+-static unsigned long atmel_ports_in_use;
++static DECLARE_BITMAP(atmel_ports_in_use, ATMEL_MAX_UART);
  
-@@ -2582,8 +2581,6 @@ static int prepend_path(const struct pat
- 	if (!error && !slash)
- 		error = prepend(buffer, buflen, "/", 1);
+ #ifdef SUPPORT_SYSRQ
+ static struct console atmel_console;
+@@ -1768,15 +1768,14 @@ static int atmel_serial_probe(struct pla
+ 	if (ret < 0)
+ 		/* port id not found in platform data nor device-tree aliases:
+ 		 * auto-enumerate it */
+-		ret = find_first_zero_bit(&atmel_ports_in_use,
+-				sizeof(atmel_ports_in_use));
++		ret = find_first_zero_bit(atmel_ports_in_use, ATMEL_MAX_UART);
  
--out:
--	br_read_unlock(&vfsmount_lock);
- 	return error;
- 
- global_root:
-@@ -2600,7 +2597,7 @@ global_root:
- 		error = prepend(buffer, buflen, "/", 1);
- 	if (!error)
- 		error = is_mounted(vfsmnt) ? 1 : 2;
--	goto out;
-+	return error;
- }
- 
- /**
-@@ -2627,9 +2624,11 @@ char *__d_path(const struct path *path,
- 	int error;
- 
- 	prepend(&res, &buflen, "\0", 1);
-+	br_read_lock(&vfsmount_lock);
- 	write_seqlock(&rename_lock);
- 	error = prepend_path(path, root, &res, &buflen);
- 	write_sequnlock(&rename_lock);
-+	br_read_unlock(&vfsmount_lock);
- 
- 	if (error < 0)
- 		return ERR_PTR(error);
-@@ -2646,9 +2645,11 @@ char *d_absolute_path(const struct path
- 	int error;
- 
- 	prepend(&res, &buflen, "\0", 1);
-+	br_read_lock(&vfsmount_lock);
- 	write_seqlock(&rename_lock);
- 	error = prepend_path(path, &root, &res, &buflen);
- 	write_sequnlock(&rename_lock);
-+	br_read_unlock(&vfsmount_lock);
- 
- 	if (error > 1)
- 		error = -EINVAL;
-@@ -2712,11 +2713,13 @@ char *d_path(const struct path *path, ch
- 		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
- 
- 	get_fs_root(current->fs, &root);
-+	br_read_lock(&vfsmount_lock);
- 	write_seqlock(&rename_lock);
- 	error = path_with_deleted(path, &root, &res, &buflen);
-+	write_sequnlock(&rename_lock);
-+	br_read_unlock(&vfsmount_lock);
- 	if (error < 0)
- 		res = ERR_PTR(error);
--	write_sequnlock(&rename_lock);
- 	path_put(&root);
- 	return res;
- }
-@@ -2871,6 +2874,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
- 	get_fs_root_and_pwd(current->fs, &root, &pwd);
- 
- 	error = -ENOENT;
-+	br_read_lock(&vfsmount_lock);
- 	write_seqlock(&rename_lock);
- 	if (!d_unlinked(pwd.dentry)) {
- 		unsigned long len;
-@@ -2880,6 +2884,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
- 		prepend(&cwd, &buflen, "\0", 1);
- 		error = prepend_path(&pwd, &root, &cwd, &buflen);
- 		write_sequnlock(&rename_lock);
-+		br_read_unlock(&vfsmount_lock);
- 
- 		if (error < 0)
- 			goto out;
-@@ -2900,6 +2905,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
- 		}
- 	} else {
- 		write_sequnlock(&rename_lock);
-+		br_read_unlock(&vfsmount_lock);
+-	if (ret > ATMEL_MAX_UART) {
++	if (ret >= ATMEL_MAX_UART) {
+ 		ret = -ENODEV;
+ 		goto err;
  	}
  
- out:
+-	if (test_and_set_bit(ret, &atmel_ports_in_use)) {
++	if (test_and_set_bit(ret, atmel_ports_in_use)) {
+ 		/* port already in use */
+ 		ret = -EBUSY;
+ 		goto err;
+@@ -1856,7 +1855,7 @@ static int atmel_serial_remove(struct pl
+ 
+ 	/* "port" is allocated statically, so we shouldn't free it */
+ 
+-	clear_bit(port->line, &atmel_ports_in_use);
++	clear_bit(port->line, atmel_ports_in_use);
+ 
+ 	clk_put(atmel_port->clk);
+ 
 
 
