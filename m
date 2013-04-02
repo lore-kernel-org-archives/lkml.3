@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416Ab3DBJ4T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:56:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51125 "EHLO
+	id S1761904Ab3DBJ52 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:57:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51143 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760917Ab3DBJ4R (ORCPT
+	with ESMTP id S1751621Ab3DBJ51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:56:17 -0400
-Date: Tue, 2 Apr 2013 02:55:52 -0700
+	Tue, 2 Apr 2013 05:57:27 -0400
+Date: Tue, 2 Apr 2013 02:57:05 -0700
 From: tip-bot for Stephane Eranian <tipbot@zytor.com>
-Message-ID: <tip-028f12ee6beff0961781c5ed3f740e5f3b56f781@git.kernel.org>
+Message-ID: <tip-bad4091791b0bb8c2d7919ddefe2f0d109299b5a@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         namhyung.kim@lge.com, jolsa@redhat.com, ak@linux.intel.com,
@@ -18,12 +18,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
         linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
         namhyung.kim@lge.com, jolsa@redhat.com, ak@linux.intel.com,
         tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1359040242-8269-15-git-send-email-eranian@google.com>
-References: <1359040242-8269-15-git-send-email-eranian@google.com>
+In-Reply-To: <1359040242-8269-17-git-send-email-eranian@google.com>
+References: <1359040242-8269-17-git-send-email-eranian@google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools:
-  Add new mem command for memory access profiling
-Git-Commit-ID: 028f12ee6beff0961781c5ed3f740e5f3b56f781
+Subject: [tip:perf/core] perf machine: Detect data vs. text mappings
+Git-Commit-ID: bad4091791b0bb8c2d7919ddefe2f0d109299b5a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,31 +31,23 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 02:55:59 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 02:57:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  028f12ee6beff0961781c5ed3f740e5f3b56f781
-Gitweb:     http://git.kernel.org/tip/028f12ee6beff0961781c5ed3f740e5f3b56f781
+Commit-ID:  bad4091791b0bb8c2d7919ddefe2f0d109299b5a
+Gitweb:     http://git.kernel.org/tip/bad4091791b0bb8c2d7919ddefe2f0d109299b5a
 Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Thu, 24 Jan 2013 16:10:38 +0100
+AuthorDate: Thu, 24 Jan 2013 16:10:40 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 1 Apr 2013 12:21:44 -0300
+CommitDate: Mon, 1 Apr 2013 12:22:00 -0300
 
-perf tools: Add new mem command for memory access profiling
+perf machine: Detect data vs. text mappings
 
-This new command is a wrapper on top of perf record and perf report to
-make it easier to configure for memory access profiling.
-
-To record loads:
-$ perf mem -t load rec .....
-
-To record stores:
-$ perf mem -t store rec .....
-
-To get the report:
-$ perf mem -t load rep
+Leverages the PERF_RECORD_MISC_MMAP_DATA bit in the RECORD_MMAP record
+header. When the bit is set then the mapping type is set to
+MAP__VARIABLE.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 Cc: Andi Kleen <ak@linux.intel.com>
@@ -64,378 +55,40 @@ Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Namhyung Kim <namhyung.kim@lge.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1359040242-8269-15-git-send-email-eranian@google.com
-[ Fixed minor conflict with 66857b5 "Sort command-list.txt alphabetically" ]
+Link: http://lkml.kernel.org/r/1359040242-8269-17-git-send-email-eranian@google.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-mem.txt |  48 +++++++
- tools/perf/Makefile                   |   1 +
- tools/perf/builtin-mem.c              | 242 ++++++++++++++++++++++++++++++++++
- tools/perf/builtin.h                  |   1 +
- tools/perf/command-list.txt           |   1 +
- tools/perf/perf.c                     |   1 +
- tools/perf/util/hist.c                |   1 +
- 7 files changed, 295 insertions(+)
+ tools/perf/util/machine.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/Documentation/perf-mem.txt b/tools/perf/Documentation/perf-mem.txt
-new file mode 100644
-index 0000000..888d511
---- /dev/null
-+++ b/tools/perf/Documentation/perf-mem.txt
-@@ -0,0 +1,48 @@
-+perf-mem(1)
-+===========
-+
-+NAME
-+----
-+perf-mem - Profile memory accesses
-+
-+SYNOPSIS
-+--------
-+[verse]
-+'perf mem' [<options>] (record [<command>] | report)
-+
-+DESCRIPTION
-+-----------
-+"perf mem -t <TYPE> record" runs a command and gathers memory operation data
-+from it, into perf.data. Perf record options are accepted and are passed through.
-+
-+"perf mem -t <TYPE> report" displays the result. It invokes perf report with the
-+right set of options to display a memory access profile.
-+
-+OPTIONS
-+-------
-+<command>...::
-+	Any command you can specify in a shell.
-+
-+-t::
-+--type=::
-+	Select the memory operation type: load or store (default: load)
-+
-+-D::
-+--dump-raw-samples=::
-+	Dump the raw decoded samples on the screen in a format that is easy to parse with
-+	one sample per line.
-+
-+-x::
-+--field-separator::
-+	Specify the field separator used when dump raw samples (-D option). By default,
-+	The separator is the space character.
-+
-+-C::
-+--cpu-list::
-+	Restrict dump of raw samples to those provided via this option. Note that the same
-+	option can be passed in record mode. It will be interpreted the same way as perf
-+	record.
-+
-+SEE ALSO
-+--------
-+linkperf:perf-record[1], linkperf:perf-report[1]
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 0230b75..07feae7 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -547,6 +547,7 @@ BUILTIN_OBJS += $(OUTPUT)builtin-lock.o
- BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
- BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
- BUILTIN_OBJS += $(OUTPUT)tests/builtin-test.o
-+BUILTIN_OBJS += $(OUTPUT)builtin-mem.o
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index d77ba86..b2ecad6 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -955,6 +955,7 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 	struct thread *thread;
+ 	struct map *map;
++	enum map_type type;
+ 	int ret = 0;
  
- PERFLIBS = $(LIB_FILE) $(LIBLK) $(LIBTRACEEVENT)
- 
-diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
-new file mode 100644
-index 0000000..a8ff6d2
---- /dev/null
-+++ b/tools/perf/builtin-mem.c
-@@ -0,0 +1,242 @@
-+#include "builtin.h"
-+#include "perf.h"
+ 	if (dump_trace)
+@@ -971,10 +972,17 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
+ 	thread = machine__findnew_thread(machine, event->mmap.pid);
+ 	if (thread == NULL)
+ 		goto out_problem;
 +
-+#include "util/parse-options.h"
-+#include "util/trace-event.h"
-+#include "util/tool.h"
-+#include "util/session.h"
-+
-+#define MEM_OPERATION_LOAD	"load"
-+#define MEM_OPERATION_STORE	"store"
-+
-+static const char	*mem_operation		= MEM_OPERATION_LOAD;
-+
-+struct perf_mem {
-+	struct perf_tool	tool;
-+	char const		*input_name;
-+	symbol_filter_t		annotate_init;
-+	bool			hide_unresolved;
-+	bool			dump_raw;
-+	const char		*cpu_list;
-+	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
-+};
-+
-+static const char * const mem_usage[] = {
-+	"perf mem [<options>] {record <command> |report}",
-+	NULL
-+};
-+
-+static int __cmd_record(int argc, const char **argv)
-+{
-+	int rec_argc, i = 0, j;
-+	const char **rec_argv;
-+	char event[64];
-+	int ret;
-+
-+	rec_argc = argc + 4;
-+	rec_argv = calloc(rec_argc + 1, sizeof(char *));
-+	if (!rec_argv)
-+		return -1;
-+
-+	rec_argv[i++] = strdup("record");
-+	if (!strcmp(mem_operation, MEM_OPERATION_LOAD))
-+		rec_argv[i++] = strdup("-W");
-+	rec_argv[i++] = strdup("-d");
-+	rec_argv[i++] = strdup("-e");
-+
-+	if (strcmp(mem_operation, MEM_OPERATION_LOAD))
-+		sprintf(event, "cpu/mem-stores/pp");
++	if (event->header.misc & PERF_RECORD_MISC_MMAP_DATA)
++		type = MAP__VARIABLE;
 +	else
-+		sprintf(event, "cpu/mem-loads/pp");
++		type = MAP__FUNCTION;
 +
-+	rec_argv[i++] = strdup(event);
-+	for (j = 1; j < argc; j++, i++)
-+		rec_argv[i] = argv[j];
+ 	map = map__new(&machine->user_dsos, event->mmap.start,
+ 			event->mmap.len, event->mmap.pgoff,
+ 			event->mmap.pid, event->mmap.filename,
+-			MAP__FUNCTION);
++			type);
 +
-+	ret = cmd_record(i, rec_argv, NULL);
-+	free(rec_argv);
-+	return ret;
-+}
-+
-+static int
-+dump_raw_samples(struct perf_tool *tool,
-+		 union perf_event *event,
-+		 struct perf_sample *sample,
-+		 struct perf_evsel *evsel __maybe_unused,
-+		 struct machine *machine)
-+{
-+	struct perf_mem *mem = container_of(tool, struct perf_mem, tool);
-+	struct addr_location al;
-+	const char *fmt;
-+
-+	if (perf_event__preprocess_sample(event, machine, &al, sample,
-+				mem->annotate_init) < 0) {
-+		fprintf(stderr, "problem processing %d event, skipping it.\n",
-+				event->header.type);
-+		return -1;
-+	}
-+
-+	if (al.filtered || (mem->hide_unresolved && al.sym == NULL))
-+		return 0;
-+
-+	if (al.map != NULL)
-+		al.map->dso->hit = 1;
-+
-+	if (symbol_conf.field_sep) {
-+		fmt = "%d%s%d%s0x%"PRIx64"%s0x%"PRIx64"%s%"PRIu64
-+		      "%s0x%"PRIx64"%s%s:%s\n";
-+	} else {
-+		fmt = "%5d%s%5d%s0x%016"PRIx64"%s0x016%"PRIx64
-+		      "%s%5"PRIu64"%s0x%06"PRIx64"%s%s:%s\n";
-+		symbol_conf.field_sep = " ";
-+	}
-+
-+	printf(fmt,
-+		sample->pid,
-+		symbol_conf.field_sep,
-+		sample->tid,
-+		symbol_conf.field_sep,
-+		event->ip.ip,
-+		symbol_conf.field_sep,
-+		sample->addr,
-+		symbol_conf.field_sep,
-+		sample->weight,
-+		symbol_conf.field_sep,
-+		sample->data_src,
-+		symbol_conf.field_sep,
-+		al.map ? (al.map->dso ? al.map->dso->long_name : "???") : "???",
-+		al.sym ? al.sym->name : "???");
-+
-+	return 0;
-+}
-+
-+static int process_sample_event(struct perf_tool *tool,
-+				union perf_event *event,
-+				struct perf_sample *sample,
-+				struct perf_evsel *evsel,
-+				struct machine *machine)
-+{
-+	return dump_raw_samples(tool, event, sample, evsel, machine);
-+}
-+
-+static int report_raw_events(struct perf_mem *mem)
-+{
-+	int err = -EINVAL;
-+	int ret;
-+	struct perf_session *session = perf_session__new(input_name, O_RDONLY,
-+							 0, false, &mem->tool);
-+
-+	if (session == NULL)
-+		return -ENOMEM;
-+
-+	if (mem->cpu_list) {
-+		ret = perf_session__cpu_bitmap(session, mem->cpu_list,
-+					       mem->cpu_bitmap);
-+		if (ret)
-+			goto out_delete;
-+	}
-+
-+	if (symbol__init() < 0)
-+		return -1;
-+
-+	printf("# PID, TID, IP, ADDR, LOCAL WEIGHT, DSRC, SYMBOL\n");
-+
-+	err = perf_session__process_events(session, &mem->tool);
-+	if (err)
-+		return err;
-+
-+	return 0;
-+
-+out_delete:
-+	perf_session__delete(session);
-+	return err;
-+}
-+
-+static int report_events(int argc, const char **argv, struct perf_mem *mem)
-+{
-+	const char **rep_argv;
-+	int ret, i = 0, j, rep_argc;
-+
-+	if (mem->dump_raw)
-+		return report_raw_events(mem);
-+
-+	rep_argc = argc + 3;
-+	rep_argv = calloc(rep_argc + 1, sizeof(char *));
-+	if (!rep_argv)
-+		return -1;
-+
-+	rep_argv[i++] = strdup("report");
-+	rep_argv[i++] = strdup("--mem-mode");
-+	rep_argv[i++] = strdup("-n"); /* display number of samples */
-+
-+	/*
-+	 * there is no weight (cost) associated with stores, so don't print
-+	 * the column
-+	 */
-+	if (strcmp(mem_operation, MEM_OPERATION_LOAD))
-+		rep_argv[i++] = strdup("--sort=mem,sym,dso,symbol_daddr,"
-+				       "dso_daddr,tlb,locked");
-+
-+	for (j = 1; j < argc; j++, i++)
-+		rep_argv[i] = argv[j];
-+
-+	ret = cmd_report(i, rep_argv, NULL);
-+	free(rep_argv);
-+	return ret;
-+}
-+
-+int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
-+{
-+	struct stat st;
-+	struct perf_mem mem = {
-+		.tool = {
-+			.sample		= process_sample_event,
-+			.mmap		= perf_event__process_mmap,
-+			.comm		= perf_event__process_comm,
-+			.lost		= perf_event__process_lost,
-+			.fork		= perf_event__process_fork,
-+			.build_id	= perf_event__process_build_id,
-+			.ordered_samples = true,
-+		},
-+		.input_name		 = "perf.data",
-+	};
-+	const struct option mem_options[] = {
-+	OPT_STRING('t', "type", &mem_operation,
-+		   "type", "memory operations(load/store)"),
-+	OPT_BOOLEAN('D', "dump-raw-samples", &mem.dump_raw,
-+		    "dump raw samples in ASCII"),
-+	OPT_BOOLEAN('U', "hide-unresolved", &mem.hide_unresolved,
-+		    "Only display entries resolved to a symbol"),
-+	OPT_STRING('i', "input", &input_name, "file",
-+		   "input file name"),
-+	OPT_STRING('C', "cpu", &mem.cpu_list, "cpu",
-+		   "list of cpus to profile"),
-+	OPT_STRING('x', "field-separator", &symbol_conf.field_sep,
-+		   "separator",
-+		   "separator for columns, no spaces will be added"
-+		   " between columns '.' is reserved."),
-+	OPT_END()
-+	};
-+
-+	argc = parse_options(argc, argv, mem_options, mem_usage,
-+			     PARSE_OPT_STOP_AT_NON_OPTION);
-+
-+	if (!argc || !(strncmp(argv[0], "rec", 3) || mem_operation))
-+		usage_with_options(mem_usage, mem_options);
-+
-+	if (!mem.input_name || !strlen(mem.input_name)) {
-+		if (!fstat(STDIN_FILENO, &st) && S_ISFIFO(st.st_mode))
-+			mem.input_name = "-";
-+		else
-+			mem.input_name = "perf.data";
-+	}
-+
-+	if (!strncmp(argv[0], "rec", 3))
-+		return __cmd_record(argc, argv);
-+	else if (!strncmp(argv[0], "rep", 3))
-+		return report_events(argc, argv, &mem);
-+	else
-+		usage_with_options(mem_usage, mem_options);
-+
-+	return 0;
-+}
-diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
-index 08143bd..b210d62 100644
---- a/tools/perf/builtin.h
-+++ b/tools/perf/builtin.h
-@@ -36,6 +36,7 @@ extern int cmd_kvm(int argc, const char **argv, const char *prefix);
- extern int cmd_test(int argc, const char **argv, const char *prefix);
- extern int cmd_trace(int argc, const char **argv, const char *prefix);
- extern int cmd_inject(int argc, const char **argv, const char *prefix);
-+extern int cmd_mem(int argc, const char **argv, const char *prefix);
- 
- extern int find_scripts(char **scripts_array, char **scripts_path_array);
- #endif
-diff --git a/tools/perf/command-list.txt b/tools/perf/command-list.txt
-index a28e31b..0906fc4 100644
---- a/tools/perf/command-list.txt
-+++ b/tools/perf/command-list.txt
-@@ -14,6 +14,7 @@ perf-kmem			mainporcelain common
- perf-kvm			mainporcelain common
- perf-list			mainporcelain common
- perf-lock			mainporcelain common
-+perf-mem			mainporcelain common
- perf-probe			mainporcelain full
- perf-record			mainporcelain common
- perf-report			mainporcelain common
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index f6ba7b7..31c9380 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -60,6 +60,7 @@ static struct cmd_struct commands[] = {
- 	{ "trace",	cmd_trace,	0 },
- #endif
- 	{ "inject",	cmd_inject,	0 },
-+	{ "mem",	cmd_mem,	0 },
- };
- 
- struct pager_config {
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 99cc719..6b32721 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -520,6 +520,7 @@ hist_entry__collapse(struct hist_entry *left, struct hist_entry *right)
- void hist_entry__free(struct hist_entry *he)
- {
- 	free(he->branch_info);
-+	free(he->mem_info);
- 	free(he);
- }
+ 	if (map == NULL)
+ 		goto out_problem;
  
