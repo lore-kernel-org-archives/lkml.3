@@ -1,35 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760837Ab3DBGnu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 02:43:50 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:51986 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759919Ab3DBGns (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 02:43:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130319051045.GB8858@lge.com>
-References: <1358755287-3899-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<20130319051045.GB8858@lge.com>
-Date: Tue, 2 Apr 2013 09:43:47 +0300
-X-Google-Sender-Auth: f1ebMoq1OQ5Ph8eKnGbMZE5AeZc
-Message-ID: <CAOJsxLH7Vhi1ady+uu5Vn-o5bW4rd6MiJZ1Okjqo2nX-JjgXAQ@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] slub: correct to calculate num of acquired objects
- in get_partial_node()
-From: Pekka Enberg <penberg@kernel.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1760808Ab3DBGqx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 02:46:53 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759353Ab3DBGqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 02:46:51 -0400
+From: Richard Weinberger <richard@nod.at>
+To: greg@kroah.com
+Cc: arnd@arndb.de, sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH v2] cs5535-mfgpt: Add another reset method
+Date: Tue,  2 Apr 2013 08:46:37 +0200
+Message-Id: <1364885197-17212-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <20130402172950.1fd8d6653a4c79b319945212@canb.auug.org.au>
+References: <20130402172950.1fd8d6653a4c79b319945212@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 7:10 AM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> Could you pick up 1/3, 3/3?
-> These are already acked by Christoph.
-> 2/3 is same effect as Glauber's "slub: correctly bootstrap boot caches",
-> so should skip it.
+The CS5535/CS5536 MFGPT has no support to reset the device.
+The current method uses an undocumented bit but does not work on all
+devices. At least on my ALIX board it completely freezes the board.
 
-Applied, thanks!
+This new method tries to soft reset all timers by unconfiguring them.
+But this does not clear the RO setup register and therefore it has to
+be ignored while probing.
+
+Resetting the timers is not only needed on broken BIOSes also when
+kexec is used. Otherwise the new kernel will find preconfigured timers
+and odd things will happen.
+
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ drivers/misc/cs5535-mfgpt.c | 41 +++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 37 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/misc/cs5535-mfgpt.c b/drivers/misc/cs5535-mfgpt.c
+index 9858f36..effd8c6 100644
+--- a/drivers/misc/cs5535-mfgpt.c
++++ b/drivers/misc/cs5535-mfgpt.c
+@@ -24,8 +24,11 @@
+ 
+ static int mfgpt_reset_timers;
+ module_param_named(mfgptfix, mfgpt_reset_timers, int, 0644);
+-MODULE_PARM_DESC(mfgptfix, "Reset the MFGPT timers during init; "
+-		"required by some broken BIOSes (ie, TinyBIOS < 0.99).");
++MODULE_PARM_DESC(mfgptfix, "Try to reset the MFGPT timers during init; "
++		"required by some broken BIOSes (ie, TinyBIOS < 0.99) or kexec "
++		"(1 = reset the MFGPT using an undocumented bit, "
++		"2 = perform a soft reset by unconfiguring all timers); "
++		"use what works best for you.");
+ 
+ struct cs5535_mfgpt_timer {
+ 	struct cs5535_mfgpt_chip *chip;
+@@ -256,6 +259,28 @@ static void reset_all_timers(void)
+ }
+ 
+ /*
++ * This is another sledgehammer to reset all MFGPT timers.
++ * Instead of using the undocumented bit method it clears
++ * IRQ, NMI and RESET settings.
++ */
++static void soft_reset(void)
++{
++	int i;
++	struct cs5535_mfgpt_timer t;
++
++	for (i = 0; i < MFGPT_MAX_TIMERS; i++) {
++		t.nr = i;
++
++		cs5535_mfgpt_toggle_event(&t, MFGPT_CMP1, MFGPT_EVENT_RESET, 0);
++		cs5535_mfgpt_toggle_event(&t, MFGPT_CMP2, MFGPT_EVENT_RESET, 0);
++		cs5535_mfgpt_toggle_event(&t, MFGPT_CMP1, MFGPT_EVENT_NMI, 0);
++		cs5535_mfgpt_toggle_event(&t, MFGPT_CMP2, MFGPT_EVENT_NMI, 0);
++		cs5535_mfgpt_toggle_event(&t, MFGPT_CMP1, MFGPT_EVENT_IRQ, 0);
++		cs5535_mfgpt_toggle_event(&t, MFGPT_CMP2, MFGPT_EVENT_IRQ, 0);
++	}
++}
++
++/*
+  * Check whether any MFGPTs are available for the kernel to use.  In most
+  * cases, firmware that uses AMD's VSA code will claim all timers during
+  * bootup; we certainly don't want to take them if they're already in use.
+@@ -271,15 +296,17 @@ static int scan_timers(struct cs5535_mfgpt_chip *mfgpt)
+ 	int i;
+ 
+ 	/* bios workaround */
+-	if (mfgpt_reset_timers)
++	if (mfgpt_reset_timers == 1)
+ 		reset_all_timers();
++	else if (mfgpt_reset_timers == 2)
++		soft_reset();
+ 
+ 	/* just to be safe, protect this section w/ lock */
+ 	spin_lock_irqsave(&mfgpt->lock, flags);
+ 	for (i = 0; i < MFGPT_MAX_TIMERS; i++) {
+ 		timer.nr = i;
+ 		val = cs5535_mfgpt_read(&timer, MFGPT_REG_SETUP);
+-		if (!(val & MFGPT_SETUP_SETUP)) {
++		if (!(val & MFGPT_SETUP_SETUP) || mfgpt_reset_timers == 2) {
+ 			__set_bit(i, mfgpt->avail);
+ 			timers++;
+ 		}
+@@ -294,6 +321,12 @@ static int cs5535_mfgpt_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	int err = -EIO, t;
+ 
++	if (mfgpt_reset_timers < 0 || mfgpt_reset_timers > 2) {
++		dev_err(&pdev->dev, "Bad mfgpt_reset_timers value: %i\n",
++			mfgpt_reset_timers);
++		goto done;
++	}
++
+ 	/* There are two ways to get the MFGPT base address; one is by
+ 	 * fetching it from MSR_LBAR_MFGPT, the other is by reading the
+ 	 * PCI BAR info.  The latter method is easier (especially across
+-- 
+1.8.1.4
+
