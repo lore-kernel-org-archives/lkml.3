@@ -1,19 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933809Ab3DBWcx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:32:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33389 "EHLO
+	id S933832Ab3DBWdQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:33:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33378 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933615Ab3DBWOD (ORCPT
+	with ESMTP id S933565Ab3DBWOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:03 -0400
+	Tue, 2 Apr 2013 18:14:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: [ 04/68] tile: expect new initramfs name from hypervisor file system
-Date: Tue,  2 Apr 2013 15:12:53 -0700
-Message-Id: <20130402221330.443152300@linuxfoundation.org>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Emese Revfy <re.emese@gmail.com>, PaX Team <pageexec@freemail.hu>,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Julien Tinnes <jln@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 02/68] kernel/signal.c: use __ARCH_HAS_SA_RESTORER instead of SA_RESTORER
+Date: Tue,  2 Apr 2013 15:12:51 -0700
+Message-Id: <20130402221330.202347411@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
@@ -26,77 +33,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Andrew Morton <akpm@linux-foundation.org>
 
-commit ff7f3efb9abf986f4ecd8793a9593f7ca4d6431a upstream.
+commit 522cff142d7d2f9230839c9e1f21a4d8bcc22a4a upstream.
 
-The current Tilera boot infrastructure now provides the initramfs
-to Linux as a Tilera-hypervisor file named "initramfs", rather than
-"initramfs.cpio.gz", as before.  (This makes it reasonable to use
-other compression techniques than gzip on the file without having to
-worry about the name causing confusion.)  Adapt to use the new name,
-but also fall back to checking for the old name.
+__ARCH_HAS_SA_RESTORER is the preferred conditional for use in 3.9 and
+later kernels, per Kees.
 
-Cc'ing to stable so that older kernels will remain compatible with
-newer Tilera boot infrastructure.
-
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Cc: Emese Revfy <re.emese@gmail.com>
+Cc: Emese Revfy <re.emese@gmail.com>
+Cc: PaX Team <pageexec@freemail.hu>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: Julien Tinnes <jln@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/tile/kernel/setup.c |   25 ++++++++++++-------------
- 1 file changed, 12 insertions(+), 13 deletions(-)
+ kernel/signal.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/tile/kernel/setup.c
-+++ b/arch/tile/kernel/setup.c
-@@ -912,15 +912,8 @@ void __cpuinit setup_cpu(int boot)
- 
- #ifdef CONFIG_BLK_DEV_INITRD
- 
--/*
-- * Note that the kernel can potentially support other compression
-- * techniques than gz, though we don't do so by default.  If we ever
-- * decide to do so we can either look for other filename extensions,
-- * or just allow a file with this name to be compressed with an
-- * arbitrary compressor (somewhat counterintuitively).
-- */
- static int __initdata set_initramfs_file;
--static char __initdata initramfs_file[128] = "initramfs.cpio.gz";
-+static char __initdata initramfs_file[128] = "initramfs";
- 
- static int __init setup_initramfs_file(char *str)
- {
-@@ -934,9 +927,9 @@ static int __init setup_initramfs_file(c
- early_param("initramfs_file", setup_initramfs_file);
- 
- /*
-- * We look for an "initramfs.cpio.gz" file in the hvfs.
-- * If there is one, we allocate some memory for it and it will be
-- * unpacked to the initramfs.
-+ * We look for a file called "initramfs" in the hvfs.  If there is one, we
-+ * allocate some memory for it and it will be unpacked to the initramfs.
-+ * If it's compressed, the initd code will uncompress it first.
-  */
- static void __init load_hv_initrd(void)
- {
-@@ -946,10 +939,16 @@ static void __init load_hv_initrd(void)
- 
- 	fd = hv_fs_findfile((HV_VirtAddr) initramfs_file);
- 	if (fd == HV_ENOENT) {
--		if (set_initramfs_file)
-+		if (set_initramfs_file) {
- 			pr_warning("No such hvfs initramfs file '%s'\n",
- 				   initramfs_file);
--		return;
-+			return;
-+		} else {
-+			/* Try old backwards-compatible name. */
-+			fd = hv_fs_findfile((HV_VirtAddr)"initramfs.cpio.gz");
-+			if (fd == HV_ENOENT)
-+				return;
-+		}
- 	}
- 	BUG_ON(fd < 0);
- 	stat = hv_fs_fstat(fd);
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -482,7 +482,7 @@ flush_signal_handlers(struct task_struct
+ 		if (force_default || ka->sa.sa_handler != SIG_IGN)
+ 			ka->sa.sa_handler = SIG_DFL;
+ 		ka->sa.sa_flags = 0;
+-#ifdef SA_RESTORER
++#ifdef __ARCH_HAS_SA_RESTORER
+ 		ka->sa.sa_restorer = NULL;
+ #endif
+ 		sigemptyset(&ka->sa.sa_mask);
 
 
