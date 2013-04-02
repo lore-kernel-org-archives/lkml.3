@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759278Ab3DBW6J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:58:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34024 "EHLO
+	id S1758324Ab3DBWun (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:50:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33964 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758375Ab3DBWur (ORCPT
+	with ESMTP id S1758208Ab3DBWui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:50:47 -0400
+	Tue, 2 Apr 2013 18:50:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Toralf=20F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 33/56] nfsd4: reject "negative" acl lengths
-Date: Tue,  2 Apr 2013 15:50:00 -0700
-Message-Id: <20130402224715.702643931@linuxfoundation.org>
+        Matthew Daley <mattjd@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Hendry <andrew.hendry@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [ 19/56] x25: Validate incoming call user data lengths
+Date: Tue,  2 Apr 2013 15:49:46 -0700
+Message-Id: <20130402224714.113356130@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,34 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 64a817cfbded8674f345d1117b117f942a351a69 upstream.
+From: Matthew Daley <mattjd@gmail.com>
 
-Since we only enforce an upper bound, not a lower bound, a "negative"
-length can get through here.
+commit c7fd0d48bde943e228e9c28ce971a22d6a1744c4 upstream.
 
-The symptom seen was a warning when we attempt to a kmalloc with an
-excessive size.
+X.25 call user data is being copied in its entirety from incoming messages
+without consideration to the size of the destination buffers, leading to
+possible buffer overflows. Validate incoming call user data lengths before
+these copies are performed.
 
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+It appears this issue was noticed some time ago, however nothing seemed to
+come of it: see http://www.spinics.net/lists/linux-x25/msg00043.html and
+commit 8db09f26f912f7c90c764806e804b558da520d4f.
+
+Signed-off-by: Matthew Daley <mattjd@gmail.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Tested-by: Andrew Hendry <andrew.hendry@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/nfsd/nfs4xdr.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/x25/af_x25.c |    6 ++++++
+ net/x25/x25_in.c |    3 +++
+ 2 files changed, 9 insertions(+)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -262,7 +262,7 @@ nfsd4_decode_fattr(struct nfsd4_compound
- 		iattr->ia_valid |= ATTR_SIZE;
- 	}
- 	if (bmval[0] & FATTR4_WORD0_ACL) {
--		int nace;
-+		u32 nace;
- 		struct nfs4_ace *ace;
+--- a/net/x25/af_x25.c
++++ b/net/x25/af_x25.c
+@@ -960,6 +960,12 @@ int x25_rx_call_request(struct sk_buff *
+ 	skb_pull(skb,len);
  
- 		READ_BUF(4); len += 4;
+ 	/*
++	 *	Ensure that the amount of call user data is valid.
++	 */
++	if (skb->len > X25_MAX_CUD_LEN)
++		goto out_clear_request;
++
++	/*
+ 	 *	Find a listener for the particular address/cud pair.
+ 	 */
+ 	sk = x25_find_listener(&source_addr,skb);
+--- a/net/x25/x25_in.c
++++ b/net/x25/x25_in.c
+@@ -127,6 +127,9 @@ static int x25_state1_machine(struct soc
+ 			 *	Copy any Call User Data.
+ 			 */
+ 			if (skb->len > 0) {
++				if (skb->len > X25_MAX_CUD_LEN)
++					goto out_clear;
++
+ 				skb_copy_from_linear_data(skb,
+ 					      x25->calluserdata.cuddata,
+ 					      skb->len);
 
 
