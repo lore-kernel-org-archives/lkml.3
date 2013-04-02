@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760157Ab3DBXTn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:19:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32875 "EHLO
+	id S1760097Ab3DBXTk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:19:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32859 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932746Ab3DBWMD (ORCPT
+	with ESMTP id S932752Ab3DBWMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Apr 2013 18:12:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        Wojciech Dubowik <Wojciech.Dubowik@neratec.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 012/124] ath9k_hw: revert chainmask to user configuration after calibration
-Date: Tue,  2 Apr 2013 15:09:54 -0700
-Message-Id: <20130402221105.625026191@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 019/124] iwlwifi: fix length check in multi-TB HCMD
+Date: Tue,  2 Apr 2013 15:10:01 -0700
+Message-Id: <20130402221106.430435378@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -28,50 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 74632d11a133b5baf6b9d622dd19d2f944d93d94 upstream.
+commit cc904c7188c29847817f35e6966fec3014c7479b upstream.
 
-The commit 'ath9k_hw: fix calibration issues on chainmask that don't
-include chain 0' changed the hardware chainmask to the chip chainmask
-for the duration of the calibration, but the revert to user
-configuration in the reset path runs too early.
+As reported by Ben Hutchings, there was a harmless issue in
+the checks being done on the lengths of the TBs while
+building the TFD for a multi-TB host command.
 
-That causes some issues with limiting the number of antennas (including
-spurious failure in hardware-generated packets).
-
-Fix this by reverting the chainmask after the essential parts of the
-calibration that need the workaround, and before NF calibration is run.
-
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Reported-by: Wojciech Dubowik <Wojciech.Dubowik@neratec.com>
-Tested-by: Wojciech Dubowik <Wojciech.Dubowik@neratec.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_calib.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/wireless/iwlwifi/pcie/tx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_calib.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_calib.c
-@@ -976,6 +976,7 @@ static bool ar9003_hw_init_cal(struct at
- 					  AR_PHY_CL_TAB_1,
- 					  AR_PHY_CL_TAB_2 };
+--- a/drivers/net/wireless/iwlwifi/pcie/tx.c
++++ b/drivers/net/wireless/iwlwifi/pcie/tx.c
+@@ -1242,7 +1242,7 @@ static int iwl_pcie_enqueue_hcmd(struct
+ 	for (i = 0; i < IWL_MAX_CMD_TFDS; i++) {
+ 		int copy = 0;
  
-+	/* Use chip chainmask only for calibration */
- 	ar9003_hw_set_chain_masks(ah, ah->caps.rx_chainmask, ah->caps.tx_chainmask);
+-		if (!cmd->len)
++		if (!cmd->len[i])
+ 			continue;
  
- 	if (rtt) {
-@@ -1131,6 +1132,9 @@ skip_tx_iqcal:
- 		ar9003_hw_rtt_disable(ah);
- 	}
- 
-+	/* Revert chainmask to runtime parameters */
-+	ar9003_hw_set_chain_masks(ah, ah->rxchainmask, ah->txchainmask);
-+
- 	/* Initialize list pointers */
- 	ah->cal_list = ah->cal_list_last = ah->cal_list_curr = NULL;
- 	ah->supp_cals = IQ_MISMATCH_CAL;
+ 		/* need at least IWL_HCMD_MIN_COPY_SIZE copied */
 
 
