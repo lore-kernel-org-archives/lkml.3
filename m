@@ -1,95 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757923Ab3DBWsJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:48:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33070 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933318Ab3DBWMl (ORCPT
+	id S1757962Ab3DBWsP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:48:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55445 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753291Ab3DBWsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:41 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [ 074/124] USB: mct_u232: fix use-after-free in TIOCMIWAIT
-Date: Tue,  2 Apr 2013 15:10:56 -0700
-Message-Id: <20130402221112.777998447@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
-References: <20130402221104.163133110@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 2 Apr 2013 18:48:11 -0400
+Message-ID: <515B51F7.6070901@infradead.org>
+Date: Tue, 02 Apr 2013 14:47:35 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Platform Driver <platform-driver-x86@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 1/1] Introduce Intel RAPL cooling device driver
+References: <1364940936-20846-1-git-send-email-jacob.jun.pan@linux.intel.com> <1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
+In-Reply-To: <1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On 04/02/13 15:15, Jacob Pan wrote:
+> diff --git a/drivers/platform/x86/intel_rapl.c b/drivers/platform/x86/intel_rapl.c
+> new file mode 100644
+> index 0000000..56ee928
+> --- /dev/null
+> +++ b/drivers/platform/x86/intel_rapl.c
+> @@ -0,0 +1,1323 @@
+> +/*
+> + *  intel_rapl.c - Intel Running Average Power Limit Driver for MSR based
+> + *                 RAPL interface
+> + *
+> + *  Copyright (c) 2013, Intel Corporation.
+> + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> +#include <linux/sysfs.h>
+> +
 
-------------------
-
-From: Johan Hovold <jhovold@gmail.com>
-
-commit cf1d24443677a0758cfa88ca40f24858b89261c0 upstream.
-
-Use the port wait queue and make sure to check the serial disconnected
-flag before accessing private port data after waking up.
-
-This is is needed as the private port data (including the wait queue
-itself) can be gone when waking up after a disconnect.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/serial/mct_u232.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
-
---- a/drivers/usb/serial/mct_u232.c
-+++ b/drivers/usb/serial/mct_u232.c
-@@ -114,8 +114,6 @@ struct mct_u232_private {
- 	unsigned char	     last_msr;      /* Modem Status Register */
- 	unsigned int	     rx_flags;      /* Throttling flags */
- 	struct async_icount  icount;
--	wait_queue_head_t    msr_wait;	/* for handling sleeping while waiting
--						for msr change to happen */
- };
- 
- #define THROTTLED		0x01
-@@ -409,7 +407,6 @@ static int mct_u232_port_probe(struct us
- 		return -ENOMEM;
- 
- 	spin_lock_init(&priv->lock);
--	init_waitqueue_head(&priv->msr_wait);
- 
- 	usb_set_serial_port_data(port, priv);
- 
-@@ -606,7 +603,7 @@ static void mct_u232_read_int_callback(s
- 		tty_kref_put(tty);
- 	}
- #endif
--	wake_up_interruptible(&priv->msr_wait);
-+	wake_up_interruptible(&port->delta_msr_wait);
- 	spin_unlock_irqrestore(&priv->lock, flags);
- exit:
- 	retval = usb_submit_urb(urb, GFP_ATOMIC);
-@@ -815,13 +812,17 @@ static int  mct_u232_ioctl(struct tty_st
- 		cprev = mct_u232_port->icount;
- 		spin_unlock_irqrestore(&mct_u232_port->lock, flags);
- 		for ( ; ; ) {
--			prepare_to_wait(&mct_u232_port->msr_wait,
-+			prepare_to_wait(&port->delta_msr_wait,
- 					&wait, TASK_INTERRUPTIBLE);
- 			schedule();
--			finish_wait(&mct_u232_port->msr_wait, &wait);
-+			finish_wait(&port->delta_msr_wait, &wait);
- 			/* see if a signal did it */
- 			if (signal_pending(current))
- 				return -ERESTARTSYS;
-+
-+			if (port->serial->disconnected)
-+				return -EIO;
-+
- 			spin_lock_irqsave(&mct_u232_port->lock, flags);
- 			cnow = mct_u232_port->icount;
- 			spin_unlock_irqrestore(&mct_u232_port->lock, flags);
+> +#include "../../../fs/sysfs/sysfs.h"
 
 
+What does this driver need from ^^^^^^ that file, which says:
+
+ * fs/sysfs/sysfs.h - sysfs internal header file
+
+and should that be moved to include/linux/sysfs.h ?
+
+
+-- 
+~Randy
