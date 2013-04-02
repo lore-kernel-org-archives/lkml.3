@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933868Ab3DBWOp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:14:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33508 "EHLO
+	id S933962Ab3DBWRz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:17:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33666 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933724Ab3DBWOW (ORCPT
+	with ESMTP id S933856Ab3DBWOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:22 -0400
+	Tue, 2 Apr 2013 18:14:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 33/68] loop: prevent bdev freeing while device in use
-Date: Tue,  2 Apr 2013 15:13:22 -0700
-Message-Id: <20130402221333.776278124@linuxfoundation.org>
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Erik Hugne <erik.hugne@ericsson.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 64/68] ipv6: dont accept node local multicast traffic from the wire
+Date: Tue,  2 Apr 2013 15:13:53 -0700
+Message-Id: <20130402221337.379441919@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
@@ -28,99 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
 
-commit c1681bf8a7b1b98edee8b862a42c19c4e53205fd upstream.
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-struct block_device lifecycle is defined by its inode (see fs/block_dev.c) -
-block_device allocated first time we access /dev/loopXX and deallocated on
-bdev_destroy_inode. When we create the device "losetup /dev/loopXX afile"
-we want that block_device stay alive until we destroy the loop device
-with "losetup -d".
+[ Upstream commit 1c4a154e5253687c51123956dfcee9e9dfa8542d ]
 
-But because we do not hold /dev/loopXX inode its counter goes 0, and
-inode/bdev can be destroyed at any moment. Usually it happens at memory
-pressure or when user drops inode cache (like in the test below). When later in
-loop_clr_fd() we want to use bdev we have use-after-free error with following
-stack:
+Erik Hugne's errata proposal (Errata ID: 3480) to RFC4291 has been
+verified: http://www.rfc-editor.org/errata_search.php?eid=3480
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000280
-  bd_set_size+0x10/0xa0
-  loop_clr_fd+0x1f8/0x420 [loop]
-  lo_ioctl+0x200/0x7e0 [loop]
-  lo_compat_ioctl+0x47/0xe0 [loop]
-  compat_blkdev_ioctl+0x341/0x1290
-  do_filp_open+0x42/0xa0
-  compat_sys_ioctl+0xc1/0xf20
-  do_sys_open+0x16e/0x1d0
-  sysenter_dispatch+0x7/0x1a
+We have to check for pkt_type and loopback flag because either the
+packets are allowed to travel over the loopback interface (in which case
+pkt_type is PACKET_HOST and IFF_LOOPBACK flag is set) or they travel
+over a non-loopback interface back to us (in which case PACKET_TYPE is
+PACKET_LOOPBACK and IFF_LOOPBACK flag is not set).
 
-To prevent use-after-free we need to grab the device in loop_set_fd()
-and put it later in loop_clr_fd().
-
-The issue is reprodusible on current Linus head and v3.3. Here is the test:
-
-  dd if=/dev/zero of=loop.file bs=1M count=1
-  while [ true ]; do
-    losetup /dev/loop0 loop.file
-    echo 2 > /proc/sys/vm/drop_caches
-    losetup -d /dev/loop0
-  done
-
-[ Doing bdgrab/bput in loop_set_fd/loop_clr_fd is safe, because every
-  time we call loop_set_fd() we check that loop_device->lo_state is
-  Lo_unbound and set it to Lo_bound If somebody will try to set_fd again
-  it will get EBUSY.  And if we try to loop_clr_fd() on unbound loop
-  device we'll get ENXIO.
-
-  loop_set_fd/loop_clr_fd (and any other loop ioctl) is called under
-  loop_device->lo_ctl_mutex. ]
-
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Erik Hugne <erik.hugne@ericsson.com>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/block/loop.c |    9 ++++++++-
- fs/block_dev.c       |    1 +
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ net/ipv6/ip6_input.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -908,6 +908,11 @@ static int loop_set_fd(struct loop_devic
- 		lo->lo_flags |= LO_FLAGS_PARTSCAN;
- 	if (lo->lo_flags & LO_FLAGS_PARTSCAN)
- 		ioctl_by_bdev(bdev, BLKRRPART, 0);
-+
-+	/* Grab the block_device to prevent its destruction after we
-+	 * put /dev/loopXX inode. Later in loop_clr_fd() we bdput(bdev).
+--- a/net/ipv6/ip6_input.c
++++ b/net/ipv6/ip6_input.c
+@@ -111,6 +111,18 @@ int ipv6_rcv(struct sk_buff *skb, struct
+ 	    ipv6_addr_loopback(&hdr->daddr))
+ 		goto err;
+ 
++	/* RFC4291 Errata ID: 3480
++	 * Interface-Local scope spans only a single interface on a
++	 * node and is useful only for loopback transmission of
++	 * multicast.  Packets with interface-local scope received
++	 * from another node must be discarded.
 +	 */
-+	bdgrab(bdev);
- 	return 0;
- 
- out_clr:
-@@ -1004,8 +1009,10 @@ static int loop_clr_fd(struct loop_devic
- 	memset(lo->lo_encrypt_key, 0, LO_KEY_SIZE);
- 	memset(lo->lo_crypt_name, 0, LO_NAME_SIZE);
- 	memset(lo->lo_file_name, 0, LO_NAME_SIZE);
--	if (bdev)
-+	if (bdev) {
-+		bdput(bdev);
- 		invalidate_bdev(bdev);
-+	}
- 	set_capacity(lo->lo_disk, 0);
- 	loop_sysfs_exit(lo);
- 	if (bdev) {
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -604,6 +604,7 @@ struct block_device *bdgrab(struct block
- 	ihold(bdev->bd_inode);
- 	return bdev;
- }
-+EXPORT_SYMBOL(bdgrab);
- 
- long nr_blockdev_pages(void)
- {
++	if (!(skb->pkt_type == PACKET_LOOPBACK ||
++	      dev->flags & IFF_LOOPBACK) &&
++	    ipv6_addr_is_multicast(&hdr->daddr) &&
++	    IPV6_ADDR_MC_SCOPE(&hdr->daddr) == 1)
++		goto err;
++
+ 	/* RFC4291 2.7
+ 	 * Nodes must not originate a packet to a multicast address whose scope
+ 	 * field contains the reserved value 0; if such a packet is received, it
 
 
