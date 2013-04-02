@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933197Ab3DBWM3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:12:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32961 "EHLO
+	id S1759973Ab3DBXJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:09:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33016 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933077Ab3DBWMU (ORCPT
+	with ESMTP id S933179Ab3DBWM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:20 -0400
+	Tue, 2 Apr 2013 18:12:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 045/124] media: [REGRESSION] bt8xx: Fix too large height in cropcap
-Date: Tue,  2 Apr 2013 15:10:27 -0700
-Message-Id: <20130402221109.434248693@linuxfoundation.org>
+        Chris Mason <chris.mason@fusionio.com>,
+        Alexandre Oliva <oliva@gnu.org>
+Subject: [ 056/124] Btrfs: fix race between mmap writes and compression
+Date: Tue,  2 Apr 2013 15:10:38 -0700
+Message-Id: <20130402221110.725229421@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -27,149 +27,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Chris Mason <chris.mason@fusionio.com>
 
-commit 35ccecef6ed48a5602755ddf580c45a026a1dc05 upstream.
+commit 4adaa611020fa6ac65b0ac8db78276af4ec04e63 upstream.
 
-Since commit a1fd287780c8e91fed4957b30c757b0c93021162:
-"[media] bttv-driver: fix two warnings"
-cropcap.defrect.height and cropcap.bounds.height for the PAL entry are 32
-resp 30 pixels too large, if a userspace app (ie xawtv) actually tries to use
-the full advertised height, the resulting image is broken in ways only a
-screenshot can describe.
-The cause of this is the fix for this warning:
-drivers/media/pci/bt8xx/bttv-driver.c:308:3: warning: initialized field overwritten [-Woverride-init]
-In this chunk of the commit:
-@@ -301,11 +301,10 @@ const struct bttv_tvnorm bttv_tvnorms[] = {
-                        /* totalwidth */ 1135,
-                        /* sqwidth */ 944,
-                        /* vdelay */ 0x20,
--                       /* sheight */ 576,
--                       /* videostart0 */ 23)
-                /* bt878 (and bt848?) can capture another
-                   line below active video. */
--               .cropcap.bounds.height = (576 + 2) + 0x20 - 2,
-+                       /* sheight */ (576 + 2) + 0x20 - 2,
-+                       /* videostart0 */ 23)
-        },{
-                .v4l2_id        = V4L2_STD_NTSC_M | V4L2_STD_NTSC_M_KR,
-                .name           = "NTSC",
-Which replaces the overriding of cropcap.bounds.height initialization outside
-of the CROPCAP macro (which also initializes it), with passing a
-different sheight value to the CROPCAP macro.
-There are 2 problems with this warning fix:
-1) The sheight value is used twice in the CROPCAP macro, and the old code
-   only changed one resulting value.
-2) The old code increased the .cropcap.bounds.height value (and did not
-   touch the .cropcap.defrect.height value at all) by 2, where as the fixed
-   code increases it by 32, as the fixed code passes (576 + 2) + 0x20 - 2
-   to the CROPCAP macro, but the + 0x20 - 2 is already done by the macro so
-   now is done twice for .cropcap.bounds.height, and also is applied to
-   .cropcap.defrect.height where it should not be applied at all.
-This patch fixes this by adding an extraheight parameter to the CROPCAP entry
-and using it for the PAL entry.
+Btrfs uses page_mkwrite to ensure stable pages during
+crc calculations and mmap workloads.  We call clear_page_dirty_for_io
+before we do any crcs, and this forces any application with the file
+mapped to wait for the crc to finish before it is allowed to change
+the file.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+With compression on, the clear_page_dirty_for_io step is happening after
+we've compressed the pages.  This means the applications might be
+changing the pages while we are compressing them, and some of those
+modifications might not hit the disk.
+
+This commit adds the clear_page_dirty_for_io before compression starts
+and makes sure to redirty the page if we have to fallback to
+uncompressed IO as well.
+
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Reported-by: Alexandre Oliva <oliva@gnu.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/pci/bt8xx/bttv-driver.c |   20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ fs/btrfs/extent_io.c |   33 +++++++++++++++++++++++++++++++++
+ fs/btrfs/extent_io.h |    2 ++
+ fs/btrfs/inode.c     |   14 ++++++++++++++
+ 3 files changed, 49 insertions(+)
 
---- a/drivers/media/pci/bt8xx/bttv-driver.c
-+++ b/drivers/media/pci/bt8xx/bttv-driver.c
-@@ -250,17 +250,19 @@ static u8 SRAM_Table[][60] =
-    vdelay	start of active video in 2 * field lines relative to
- 		trailing edge of /VRESET pulse (VDELAY register).
-    sheight	height of active video in 2 * field lines.
-+   extraheight	Added to sheight for cropcap.bounds.height only
-    videostart0	ITU-R frame line number of the line corresponding
- 		to vdelay in the first field. */
- #define CROPCAP(minhdelayx1, hdelayx1, swidth, totalwidth, sqwidth,	 \
--		vdelay, sheight, videostart0)				 \
-+		vdelay, sheight, extraheight, videostart0)		 \
- 	.cropcap.bounds.left = minhdelayx1,				 \
- 	/* * 2 because vertically we count field lines times two, */	 \
- 	/* e.g. 23 * 2 to 23 * 2 + 576 in PAL-BGHI defrect. */		 \
- 	.cropcap.bounds.top = (videostart0) * 2 - (vdelay) + MIN_VDELAY, \
- 	/* 4 is a safety margin at the end of the line. */		 \
- 	.cropcap.bounds.width = (totalwidth) - (minhdelayx1) - 4,	 \
--	.cropcap.bounds.height = (sheight) + (vdelay) - MIN_VDELAY,	 \
-+	.cropcap.bounds.height = (sheight) + (extraheight) + (vdelay) -	 \
-+				 MIN_VDELAY,				 \
- 	.cropcap.defrect.left = hdelayx1,				 \
- 	.cropcap.defrect.top = (videostart0) * 2,			 \
- 	.cropcap.defrect.width = swidth,				 \
-@@ -301,9 +303,10 @@ const struct bttv_tvnorm bttv_tvnorms[]
- 			/* totalwidth */ 1135,
- 			/* sqwidth */ 944,
- 			/* vdelay */ 0x20,
--		/* bt878 (and bt848?) can capture another
--		   line below active video. */
--			/* sheight */ (576 + 2) + 0x20 - 2,
-+			/* sheight */ 576,
-+			/* bt878 (and bt848?) can capture another
-+			   line below active video. */
-+			/* extraheight */ 2,
- 			/* videostart0 */ 23)
- 	},{
- 		.v4l2_id        = V4L2_STD_NTSC_M | V4L2_STD_NTSC_M_KR,
-@@ -330,6 +333,7 @@ const struct bttv_tvnorm bttv_tvnorms[]
- 			/* sqwidth */ 780,
- 			/* vdelay */ 0x1a,
- 			/* sheight */ 480,
-+			/* extraheight */ 0,
- 			/* videostart0 */ 23)
- 	},{
- 		.v4l2_id        = V4L2_STD_SECAM,
-@@ -355,6 +359,7 @@ const struct bttv_tvnorm bttv_tvnorms[]
- 			/* sqwidth */ 944,
- 			/* vdelay */ 0x20,
- 			/* sheight */ 576,
-+			/* extraheight */ 0,
- 			/* videostart0 */ 23)
- 	},{
- 		.v4l2_id        = V4L2_STD_PAL_Nc,
-@@ -380,6 +385,7 @@ const struct bttv_tvnorm bttv_tvnorms[]
- 			/* sqwidth */ 780,
- 			/* vdelay */ 0x1a,
- 			/* sheight */ 576,
-+			/* extraheight */ 0,
- 			/* videostart0 */ 23)
- 	},{
- 		.v4l2_id        = V4L2_STD_PAL_M,
-@@ -405,6 +411,7 @@ const struct bttv_tvnorm bttv_tvnorms[]
- 			/* sqwidth */ 780,
- 			/* vdelay */ 0x1a,
- 			/* sheight */ 480,
-+			/* extraheight */ 0,
- 			/* videostart0 */ 23)
- 	},{
- 		.v4l2_id        = V4L2_STD_PAL_N,
-@@ -430,6 +437,7 @@ const struct bttv_tvnorm bttv_tvnorms[]
- 			/* sqwidth */ 944,
- 			/* vdelay */ 0x20,
- 			/* sheight */ 576,
-+			/* extraheight */ 0,
- 			/* videostart0 */ 23)
- 	},{
- 		.v4l2_id        = V4L2_STD_NTSC_M_JP,
-@@ -455,6 +463,7 @@ const struct bttv_tvnorm bttv_tvnorms[]
- 			/* sqwidth */ 780,
- 			/* vdelay */ 0x16,
- 			/* sheight */ 480,
-+			/* extraheight */ 0,
- 			/* videostart0 */ 23)
- 	},{
- 		/* that one hopefully works with the strange timing
-@@ -484,6 +493,7 @@ const struct bttv_tvnorm bttv_tvnorms[]
- 			/* sqwidth */ 944,
- 			/* vdelay */ 0x1a,
- 			/* sheight */ 480,
-+			/* extraheight */ 0,
- 			/* videostart0 */ 23)
- 	}
- };
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -1258,6 +1258,39 @@ int unlock_extent(struct extent_io_tree
+ 				GFP_NOFS);
+ }
+ 
++int extent_range_clear_dirty_for_io(struct inode *inode, u64 start, u64 end)
++{
++	unsigned long index = start >> PAGE_CACHE_SHIFT;
++	unsigned long end_index = end >> PAGE_CACHE_SHIFT;
++	struct page *page;
++
++	while (index <= end_index) {
++		page = find_get_page(inode->i_mapping, index);
++		BUG_ON(!page); /* Pages should be in the extent_io_tree */
++		clear_page_dirty_for_io(page);
++		page_cache_release(page);
++		index++;
++	}
++	return 0;
++}
++
++int extent_range_redirty_for_io(struct inode *inode, u64 start, u64 end)
++{
++	unsigned long index = start >> PAGE_CACHE_SHIFT;
++	unsigned long end_index = end >> PAGE_CACHE_SHIFT;
++	struct page *page;
++
++	while (index <= end_index) {
++		page = find_get_page(inode->i_mapping, index);
++		BUG_ON(!page); /* Pages should be in the extent_io_tree */
++		account_page_redirty(page);
++		__set_page_dirty_nobuffers(page);
++		page_cache_release(page);
++		index++;
++	}
++	return 0;
++}
++
+ /*
+  * helper function to set both pages and extents in the tree writeback
+  */
+--- a/fs/btrfs/extent_io.h
++++ b/fs/btrfs/extent_io.h
+@@ -329,6 +329,8 @@ int map_private_extent_buffer(struct ext
+ 		      unsigned long *map_len);
+ int extent_range_uptodate(struct extent_io_tree *tree,
+ 			  u64 start, u64 end);
++int extent_range_clear_dirty_for_io(struct inode *inode, u64 start, u64 end);
++int extent_range_redirty_for_io(struct inode *inode, u64 start, u64 end);
+ int extent_clear_unlock_delalloc(struct inode *inode,
+ 				struct extent_io_tree *tree,
+ 				u64 start, u64 end, struct page *locked_page,
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -352,6 +352,7 @@ static noinline int compress_file_range(
+ 	int i;
+ 	int will_compress;
+ 	int compress_type = root->fs_info->compress_type;
++	int redirty = 0;
+ 
+ 	/* if this is a small write inside eof, kick off a defrag */
+ 	if ((end - start + 1) < 16 * 1024 &&
+@@ -414,6 +415,17 @@ again:
+ 		if (BTRFS_I(inode)->force_compress)
+ 			compress_type = BTRFS_I(inode)->force_compress;
+ 
++		/*
++		 * we need to call clear_page_dirty_for_io on each
++		 * page in the range.  Otherwise applications with the file
++		 * mmap'd can wander in and change the page contents while
++		 * we are compressing them.
++		 *
++		 * If the compression fails for any reason, we set the pages
++		 * dirty again later on.
++		 */
++		extent_range_clear_dirty_for_io(inode, start, end);
++		redirty = 1;
+ 		ret = btrfs_compress_pages(compress_type,
+ 					   inode->i_mapping, start,
+ 					   total_compressed, pages,
+@@ -555,6 +567,8 @@ cleanup_and_bail_uncompressed:
+ 			__set_page_dirty_nobuffers(locked_page);
+ 			/* unlocked later on in the async handlers */
+ 		}
++		if (redirty)
++			extent_range_redirty_for_io(inode, start, end);
+ 		add_async_extent(async_cow, start, end - start + 1,
+ 				 0, NULL, 0, BTRFS_COMPRESS_NONE);
+ 		*num_added += 1;
 
 
