@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933738Ab3DBWen (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:34:43 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55409 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933660Ab3DBWej (ORCPT
+	id S933784Ab3DBWfW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:35:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33287 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933511Ab3DBWNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:34:39 -0400
-Message-ID: <515B4EEC.8000908@infradead.org>
-Date: Tue, 02 Apr 2013 14:34:36 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Casey Schaufler <casey@schaufler-ca.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        linux-security-module <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH] Smack: include magic.h in smackfs.c
-References: <20130402190929.62cea8988921a2599588a566@canb.auug.org.au> <515B12EB.50303@infradead.org> <515B264E.2020603@schaufler-ca.com>
-In-Reply-To: <515B264E.2020603@schaufler-ca.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Apr 2013 18:13:11 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Max Nekludov <Max.Nekludov@us.elster.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 118/124] ks8851: Fix interpretation of rxlen field.
+Date: Tue,  2 Apr 2013 15:11:40 -0700
+Message-Id: <20130402221117.852660420@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
+References: <20130402221104.163133110@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/13 11:41, Casey Schaufler wrote:
-> As reported for linux-next: Tree for Apr 2 (smack)
-> Add the required include for smackfs.c
-> 
-> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-Reported-by: Randy Dunlap <rdunlap@infradead.org>
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-
-Thanks.
+------------------
 
 
-> ---
->  security/smack/smackfs.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/security/smack/smackfs.c b/security/smack/smackfs.c
-> index 2479a41..53a08b8 100644
-> --- a/security/smack/smackfs.c
-> +++ b/security/smack/smackfs.c
-> @@ -26,6 +26,7 @@
->  #include <linux/seq_file.h>
->  #include <linux/ctype.h>
->  #include <linux/audit.h>
-> +#include <linux/magic.h>
->  #include "smack.h"
->  
->  /*
-> 
-> --
+From: "Max.Nekludov@us.elster.com" <Max.Nekludov@us.elster.com>
+
+[ Upstream commit 14bc435ea54cb888409efb54fc6b76c13ef530e9 ]
+
+According to the Datasheet (page 52):
+15-12 Reserved
+11-0 RXBC Receive Byte Count
+This field indicates the present received frame byte size.
+
+The code has a bug:
+                 rxh = ks8851_rdreg32(ks, KS_RXFHSR);
+                 rxstat = rxh & 0xffff;
+                 rxlen = rxh >> 16; // BUG!!! 0xFFF mask should be applied
+
+Signed-off-by: Max Nekludov <Max.Nekludov@us.elster.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/ethernet/micrel/ks8851.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/ethernet/micrel/ks8851.c
++++ b/drivers/net/ethernet/micrel/ks8851.c
+@@ -547,7 +547,7 @@ static void ks8851_rx_pkts(struct ks8851
+ 	for (; rxfc != 0; rxfc--) {
+ 		rxh = ks8851_rdreg32(ks, KS_RXFHSR);
+ 		rxstat = rxh & 0xffff;
+-		rxlen = rxh >> 16;
++		rxlen = (rxh >> 16) & 0xfff;
+ 
+ 		netif_dbg(ks, rx_status, ks->netdev,
+ 			  "rx: stat 0x%04x, len 0x%04x\n", rxstat, rxlen);
 
 
--- 
-~Randy
