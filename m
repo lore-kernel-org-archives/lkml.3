@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932444Ab3DBWL4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:11:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32825 "EHLO
+	id S1760291Ab3DBXWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:22:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32839 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761095Ab3DBWLy (ORCPT
+	with ESMTP id S932309Ab3DBWL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:11:54 -0400
+	Tue, 2 Apr 2013 18:11:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [ 006/124] staging: comedi: s626: fix continuous acquisition
-Date: Tue,  2 Apr 2013 15:09:48 -0700
-Message-Id: <20130402221104.951928261@linuxfoundation.org>
+        Dave Jones <davej@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Ming Lei <ming.lei@canonical.com>
+Subject: [ 009/124] sysfs: fix race between readdir and lseek
+Date: Tue,  2 Apr 2013 15:09:51 -0700
+Message-Id: <20130402221105.301706285@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -26,65 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Ming Lei <ming.lei@canonical.com>
 
-commit e4317ce877a31dbb9d96375391c1c4ad2210d637 upstream.
+commit 991f76f837bf22c5bb07261cfd86525a0a96650c upstream.
 
-For the s626 driver, there is a bug in the handling of asynchronous
-commands on the AI subdevice when the stop source is `TRIG_NONE`.  The
-command should run continuously until cancelled, but the interrupt
-handler stops the command running after the first scan.
+While readdir() is running, lseek() may set filp->f_pos as zero,
+then may leave filp->private_data pointing to one sysfs_dirent
+object without holding its reference counter, so the sysfs_dirent
+object may be used after free in next readdir().
 
-The command set-up function `s626_ai_cmd()` contains this code:
+This patch holds inode->i_mutex to avoid the problem since
+the lock is always held in readdir path.
 
-	switch (cmd->stop_src) {
-	case TRIG_COUNT:
-		/*  data arrives as one packet */
-		devpriv->ai_sample_count = cmd->stop_arg;
-		devpriv->ai_continous = 0;
-		break;
-	case TRIG_NONE:
-		/*  continous acquisition */
-		devpriv->ai_continous = 1;
-		devpriv->ai_sample_count = 0;
-		break;
-	}
-
-The interrupt handler `s626_irq_handler()` contains this code:
-
-		if (!(devpriv->ai_continous))
-			devpriv->ai_sample_count--;
-		if (devpriv->ai_sample_count <= 0) {
-			devpriv->ai_cmd_running = 0;
-			/* ... */
-		}
-
-So `devpriv->ai_sample_count` is only decremented for the `TRIG_COUNT`
-case, but `devpriv->ai_cmd_running` is set to 0 (and the command
-stopped) regardless.
-
-Fix this in `s626_ai_cmd()` by setting `devpriv->ai_sample_count = 1`
-for the `TRIG_NONE` case.  The interrupt handler will not decrement it
-so it will remain greater than 0 and the check for stopping the
-acquisition will fail.
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Reported-by: Dave Jones <davej@redhat.com>
+Tested-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/s626.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/sysfs/dir.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/comedi/drivers/s626.c
-+++ b/drivers/staging/comedi/drivers/s626.c
-@@ -1482,7 +1482,7 @@ static int s626_ai_cmd(struct comedi_dev
- 	case TRIG_NONE:
- 		/*  continous acquisition */
- 		devpriv->ai_continous = 1;
--		devpriv->ai_sample_count = 0;
-+		devpriv->ai_sample_count = 1;
- 		break;
- 	}
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -1058,10 +1058,21 @@ static int sysfs_readdir(struct file * f
+ 	return 0;
+ }
  
++static loff_t sysfs_dir_llseek(struct file *file, loff_t offset, int whence)
++{
++	struct inode *inode = file->f_path.dentry->d_inode;
++	loff_t ret;
++
++	mutex_lock(&inode->i_mutex);
++	ret = generic_file_llseek(file, offset, whence);
++	mutex_unlock(&inode->i_mutex);
++
++	return ret;
++}
+ 
+ const struct file_operations sysfs_dir_operations = {
+ 	.read		= generic_read_dir,
+ 	.readdir	= sysfs_readdir,
+ 	.release	= sysfs_dir_release,
+-	.llseek		= generic_file_llseek,
++	.llseek		= sysfs_dir_llseek,
+ };
 
 
