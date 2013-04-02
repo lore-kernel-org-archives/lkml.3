@@ -1,123 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760236Ab3DBE7D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 00:59:03 -0400
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:58236 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759296Ab3DBE7A (ORCPT
+	id S1760269Ab3DBFAS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 01:00:18 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:47094 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759120Ab3DBFAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 00:59:00 -0400
+	Tue, 2 Apr 2013 01:00:16 -0400
+Message-ID: <515A65DB.8070803@linaro.org>
+Date: Tue, 02 Apr 2013 07:00:11 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <20130402000741.GA4077@roeck-us.net>
-References: <1364795972-8649-1-git-send-email-tonychung00@gmail.com>
-	<1364795972-8649-2-git-send-email-tonychung00@gmail.com>
-	<20130402000741.GA4077@roeck-us.net>
-Date: Mon, 1 Apr 2013 21:59:00 -0700
-Message-ID: <CAHyaeP1ExzMr8_KvSrmf6+urVROEHRePs_KA3CZ3bnU6Ov79LQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] watchdog: fix w83627hf_wdt clear timeout expired
-From: Tony Chung <tonychung00@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jonghwa Lee <jonghwa3.lee@samsung.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, sw0312.kim@samsung.com,
+        m.szyprowski@samsung.com
+Subject: Re: [RFC PATCH 1/2] cpuidle: Add idle enter/exit time stamp for notifying
+ current idle state.
+References: <1364804657-16590-1-git-send-email-jonghwa3.lee@samsung.com> <1364804657-16590-2-git-send-email-jonghwa3.lee@samsung.com>
+In-Reply-To: <1364804657-16590-2-git-send-email-jonghwa3.lee@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Guenter!
-I agree with you.  My first reaction was also about a small watchdog
-server that will start in early boot process.  There are pros and
-cons.   For example, there are many types of watchdog devices such as
-ipmi_watchdog which can accept more than  255 seconds for timeout. So
-you really need udev to pick the correct watchdog driver.  It could be
-very complex.
+On 04/01/2013 10:24 AM, Jonghwa Lee wrote:
+> This patch adds idle state time stamp to cpuidle device structure to
+> notify its current idle state. If last enter time is newer than last
+> exit time, then it means that the core is in idle now.
+> 
+> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+> ---
 
-Our requirement don't need watchdog protection during the boot process
-until application is fully up but a driver should not assume anything.
- Anyway, an unexpected reboot is definitely a bug that need to be
-fixed.   It is really easily reproducible.  Depending on your hardware
-and BIOS settings, just reboot the boot, wait for 5 minutes and then
-run "insmod w83627hf_wdt.ko".  The box just reboot by itself.  The
-watchdog sever is not even started.
+The patch description does not explain what problem you want to solve,
+how to solve it and the patch itself shows nothing.
 
-This line is actually the original fix that is running over a year:
-    outb_p(0, WDT_EFDR);    /* disable to prevent reboot */
+Could you elaborate ?
 
-When I tried to cleanup it up,  I thought I don't need it but it
-turned out it was still needed.
-When I changed it from 0xC0 to 0xD0, it still reboot.
+Thanks
+  -- Daniel
 
-Thanks and best regards,
-@Tony
-
-On Mon, Apr 1, 2013 at 5:07 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On Sun, Mar 31, 2013 at 10:59:32PM -0700, Tony Chung wrote:
->> Observed that the w83627hf watchdog timer start counting during reboot.
->> If the system load the driver after 5  minutes, it rebooted immediately because of timer expired.
->> For example, fsck took more than 5 minutes to run, then the computer reboot as soon as the driver was loaded.
->>
-> Thinking about it, I wonder if that really solves your problem.
->
-> If the watchdog driver is built into the kernel, and if the watchdog is already
-> running, you still may have the problem that it may time out again and trigger
-> (again) before the watchdog application can be loaded. Ultimately, in such a
-> situation, the watchdog application, or at least a primitive one, should really
-> be started from initramfs and possibly be replaced later on by the "real" watchdog
-> application. The watchdog package includes a small binary for that purpose,
-> though I have no idea if is is loaded in initramfs or only later.
->
-> Ultimately, that also applies to the original problem you tried to solve with
-> the longer timeout. It doesn't seem correct to have to set a long timeout to
-> address excessive boot times; in a way that defeats the purpose of a watchdog.
-> A cleaner solution for that problem would be to make sure that a small watchdog
-> application is started early in the boot process.
->
->> Signed-off-by: Tony Chung <tonychung00@gmail.com>
->> ---
->>  drivers/watchdog/w83627hf_wdt.c |    6 ++++--
->>  1 files changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/watchdog/w83627hf_wdt.c b/drivers/watchdog/w83627hf_wdt.c
->> index 8f1111d..7eaa226 100644
->> --- a/drivers/watchdog/w83627hf_wdt.c
->> +++ b/drivers/watchdog/w83627hf_wdt.c
->> @@ -168,14 +168,16 @@ static void w83627hf_init(void)
->>               pr_info("Watchdog already running. Resetting timeout to %d sec\n",
->>                       wdt_get_timeout_secs(timeout));
->>               outb_p(timeout, WDT_EFDR);    /* Write back to CRF6 */
->> +     } else {
->> +             outb_p(0, WDT_EFDR);    /* disable to prevent reboot */
->>       }
-> Did I miss that earlier, or did yo add it in this version ?
->
-> Reading the counter register just returned 0, so what are the benefits
-> of writing 0 into it ?
->
-> Thanks,
-> Guenter
->
->>
->>       w83627hf_setup_crf5();
->>
->>       outb_p(0xF7, WDT_EFER); /* Select CRF7 */
->>       t = inb_p(WDT_EFDR);      /* read CRF7 */
->> -     t &= ~0xC0;               /* disable keyboard & mouse turning off
->> -                                 watchdog */
->> +     t &= ~0xD0;               /* clear timeout occurred and disable keyboard
->> +                                  & mouse turning off watchdog */
->>       outb_p(t, WDT_EFDR);    /* Write back to CRF7 */
->>
->>       w83627hf_unselect_wd_register();
->> --
->> 1.7.0.4
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
+>  drivers/cpuidle/cpuidle.c |    8 ++++----
+>  include/linux/cpuidle.h   |    4 ++++
+>  2 files changed, 8 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index eba6929..1e830cc 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -233,18 +233,18 @@ int cpuidle_wrap_enter(struct cpuidle_device *dev,
+>  				int (*enter)(struct cpuidle_device *dev,
+>  					struct cpuidle_driver *drv, int index))
+>  {
+> -	ktime_t time_start, time_end;
+>  	s64 diff;
+>  
+> -	time_start = ktime_get();
+> +	dev->last_idle_start = ktime_get();
+>  
+>  	index = enter(dev, drv, index);
+>  
+> -	time_end = ktime_get();
+> +	dev->last_idle_end = ktime_get();
+>  
+>  	local_irq_enable();
+>  
+> -	diff = ktime_to_us(ktime_sub(time_end, time_start));
+> +	diff = ktime_to_us(ktime_sub(dev->last_idle_end,
+> +				dev->last_idle_start));
+>  	if (diff > INT_MAX)
+>  		diff = INT_MAX;
+>  
+> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+> index 480c14d..d1af05f 100644
+> --- a/include/linux/cpuidle.h
+> +++ b/include/linux/cpuidle.h
+> @@ -16,6 +16,7 @@
+>  #include <linux/kobject.h>
+>  #include <linux/completion.h>
+>  #include <linux/hrtimer.h>
+> +#include <linux/ktime.h>
+>  
+>  #define CPUIDLE_STATE_MAX	8
+>  #define CPUIDLE_NAME_LEN	16
+> @@ -74,6 +75,9 @@ struct cpuidle_device {
+>  	struct kobject		kobj;
+>  	struct completion	kobj_unregister;
+>  
+> +	ktime_t			last_idle_start;
+> +	ktime_t			last_idle_end;
+> +
+>  #ifdef CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED
+>  	int			safe_state_index;
+>  	cpumask_t		coupled_cpus;
+> 
 
 
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
---
-- Tony Chung
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
