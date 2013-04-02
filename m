@@ -1,77 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760955Ab3DBHan (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 03:30:43 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:39702
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759023Ab3DBHam (ORCPT
+	id S932093Ab3DBHfF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 03:35:05 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:34700 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760957Ab3DBHfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 03:30:42 -0400
-Date: Tue, 2 Apr 2013 09:30:35 +0200
-From: Jens Axboe <axboe@kernel.dk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: CAI Qian <caiqian@redhat.com>, xfs@oss.sgi.com,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Loopback device hung [was Re: xfs deadlock on 3.9-rc5 running
- xfstests case #78]
-Message-ID: <20130402073035.GD3670@kernel.dk>
-References: <1462091996.435156.1364882416199.JavaMail.root@redhat.com>
- <247719576.438259.1364882929749.JavaMail.root@redhat.com>
- <20130402070537.GP6369@dastard>
- <20130402071937.GC3670@kernel.dk>
+	Tue, 2 Apr 2013 03:35:01 -0400
+Message-ID: <515A8A21.6070509@linaro.org>
+Date: Tue, 02 Apr 2013 09:34:57 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130402071937.GC3670@kernel.dk>
+To: jonghwa3.lee@samsung.com
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, sw0312.kim@samsung.com,
+        m.szyprowski@samsung.com
+Subject: Re: [RFC PATCH 1/2] cpuidle: Add idle enter/exit time stamp for notifying
+ current idle state.
+References: <1364804657-16590-1-git-send-email-jonghwa3.lee@samsung.com> <1364804657-16590-2-git-send-email-jonghwa3.lee@samsung.com> <515A65DB.8070803@linaro.org> <515A77FC.70008@samsung.com>
+In-Reply-To: <515A77FC.70008@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02 2013, Jens Axboe wrote:
-> On Tue, Apr 02 2013, Dave Chinner wrote:
-> > [Added jens Axboe to CC]
-> > 
-> > On Tue, Apr 02, 2013 at 02:08:49AM -0400, CAI Qian wrote:
-> > > Saw on almost all the servers range from x64, ppc64 and s390x with kernel
-> > > 3.9-rc5 and xfsprogs-3.1.10. Never caught this in 3.9-rc4, so looks like
-> > > something new broke this. Log is here with sysrq debug info.
-> > > http://people.redhat.com/qcai/stable/log
+On 04/02/2013 08:17 AM, jonghwa3.lee@samsung.com wrote:
+> On 2013년 04월 02일 14:00, Daniel Lezcano wrote:
 > 
-> CAI Qian, can you try and back the below out and test again?
+>> On 04/01/2013 10:24 AM, Jonghwa Lee wrote:
+>>> This patch adds idle state time stamp to cpuidle device structure to
+>>> notify its current idle state. If last enter time is newer than last
+>>> exit time, then it means that the core is in idle now.
+>>>
+>>> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+>>> ---
+>>
+>> The patch description does not explain what problem you want to solve,
+>> how to solve it and the patch itself shows nothing.
+>>
+>> Could you elaborate ?
+> 
+> 
+> I'm sorry for lacking description. I supplement more.
+> 
+> This patch does add time-stamp for idle enter/exit only nothing more.
+> The reason why I needed them is that I wanted to know current cpu idle
+> state. It is hard to know whether cpu is in idle or not now.
 
-Nevermind, it's clearly that one. The below should improve the
-situation, but it's not pretty. A better fix would be to allow
-auto-deletion even if PART_NO_SCAN is set.
+Did you looked at:
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index fe5f640..d6c5764 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1057,14 +1057,15 @@ static int loop_clr_fd(struct loop_device *lo)
- 		struct disk_part_iter piter;
- 		struct hd_struct *part;
- 
--		mutex_lock_nested(&bdev->bd_mutex, 1);
--		invalidate_partition(bdev->bd_disk, 0);
--		disk_part_iter_init(&piter, bdev->bd_disk,
--					DISK_PITER_INCL_EMPTY);
--		while ((part = disk_part_iter_next(&piter)))
--			delete_partition(bdev->bd_disk, part->partno);
--		disk_part_iter_exit(&piter);
--		mutex_unlock(&bdev->bd_mutex);
-+		if (mutex_trylock(&bdev->bd_mutex, 1))
-+			invalidate_partition(bdev->bd_disk, 0);
-+			disk_part_iter_init(&piter, bdev->bd_disk,
-+						DISK_PITER_INCL_EMPTY);
-+			while ((part = disk_part_iter_next(&piter)))
-+				delete_partition(bdev->bd_disk, part->partno);
-+			disk_part_iter_exit(&piter);
-+			mutex_unlock(&bdev->bd_mutex);
-+		}
- 	}
- 
- 	/*
+include/linux/sched.h:extern int idle_cpu(int cpu);
+
+?
+
+> When I check the cpuidle state usage, sometimes the information is wrong.
+> Because it is updated only when the cpu exits the idle state. So while the
+> cpu is idling, the cpuidle state usage holds past one. Therefore I put
+> the time-stamp for cpuidle enter/exit for checking current idling and
+> calculating idle state usage correctly.
+> 
+> I just make this patch temporary for my cpufreq governor work. So, it just
+> use time-stamp for all idle state together. After RFC working, I have a plan
+> to update this patch to use timestamp for each idle state.
+
+I suggest you look at the enter_idle / exit_idle function and make your
+governor to subscribe to the IDLE_START/EXIT notifiers.
+
+arch/x86/kernel/process.c
+
+These are defined for the x86 architecture, maybe worth to add it to
+another architecture.
+
+Thanks
+  -- Daniel
 
 -- 
-Jens Axboe
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
