@@ -1,126 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab3DBNFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 09:05:47 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:34954 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1760846Ab3DBNFq (ORCPT
+	id S932164Ab3DBNG4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 09:06:56 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:30752 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755411Ab3DBNGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 09:05:46 -0400
-Date: Tue, 2 Apr 2013 09:05:42 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [PATCH] wfcqueue: add function for unsynchronized prepend
-Message-ID: <20130402130541.GC11621@Krystal>
-References: <20130311213602.GB9829@Krystal> <20130329081016.GA15979@dcvr.yhbt.net>
+	Tue, 2 Apr 2013 09:06:55 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>, <jhovold@gmail.com>,
+        <dgilbert@interlog.com>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [RFC PATCH] rtc: rtc-at91rm9200: manage IMR depending on revision
+Date: Tue, 2 Apr 2013 15:06:47 +0200
+Message-ID: <1364908007-5150-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1364573029-19346-5-git-send-email-jhovold@gmail.com>
+References: <1364573029-19346-5-git-send-email-jhovold@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130329081016.GA15979@dcvr.yhbt.net>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Eric Wong (normalperson@yhbt.net) wrote:
-> In some situations, it is necessary to prepend a node to a queue.
-> For epoll, this is necessary for two rare conditions:
-> 
-> * when the user triggers -EFAULT
-> * when reinjecting elements from the ovflist (implemented as a stack)
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+Hi all,
 
-This approach makes sense.
+The funny thing is that I was writing exactly the same code as Johan's
+when he posted his series.
 
-In terms of API naming, I wonder if "prepend" is the good counterpart
-for "enqueue". Maybe "enqueue_first" or "enqueue_head" could be better
-suited ?
+So, here is my single patch, with the comment about the readback stolen from
+Johan's, but without the way to determine with IP is buggy and which one is
+not...
+After having dug the possibility to read the IP revision, I discovered that it
+is not possible to use this information ("version" register offset changing
+according to... IP version number: well done!).
+In conclusion, I guess that the only way to determine if we need the workaround
+is to use the DT.
+One remark though: if we use the compatibility string for this purpose, I fear
+that we would twist the meaning of this information: SoC using an
+"atmel,at91sam9x5-rtc" compatible RTC will not necessarily be touched by the
+"non responding IMR" bug: at91sam9n12 or upcoming sama5d3 are not affected for
+instance, and we need to cling to "atmel,at91rm9200-rtc" for them...
+I think that we can use this method for the moment and move to another
+compatibility string later if it is needed.
 
-Currently, we have an "append" function used internally, but it's not
-exposed by the API.
+Thanks for your help, best regards.
 
-Just for fun, I tried making your "prepend" wait-free (thus not
-requiring a mutex), but it's really not obvious, because of its impact
-on splice operation and dequeue-last-node operation.
+ drivers/rtc/rtc-at91rm9200.c | 75 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/rtc/rtc-at91rm9200.h |  1 +
+ 2 files changed, 76 insertions(+)
 
-Thoughts ?
-
-Thanks,
-
-Mathieu
-
-> 
-> Signed-off-by: Eric Wong <normalperson@yhbt.net>
-> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> ---
->  This is on top of my other patch to implement __wfcq_enqueue
-> 
->  include/linux/wfcqueue.h | 35 +++++++++++++++++++++++++++--------
->  1 file changed, 27 insertions(+), 8 deletions(-)
-> 
-> diff --git a/include/linux/wfcqueue.h b/include/linux/wfcqueue.h
-> index a452ab9..4cb8f22 100644
-> --- a/include/linux/wfcqueue.h
-> +++ b/include/linux/wfcqueue.h
-> @@ -56,15 +56,17 @@
->   * [5] __wfcq_first
->   * [6] __wfcq_next
->   * [7] __wfcq_enqueue
-> + * [8] __wfcq_prepend
->   *
-> - *     [1] [2] [3] [4] [5] [6] [7]
-> - * [1]  -   -   -   -   -   -   X
-> - * [2]  -   -   -   -   -   -   X
-> - * [3]  -   -   X   X   X   X   X
-> - * [4]  -   -   X   -   X   X   X
-> - * [5]  -   -   X   X   -   -   X
-> - * [6]  -   -   X   X   -   -   X
-> - * [7]  X   X   X   X   X   X   X
-> + *     [1] [2] [3] [4] [5] [6] [7] [8]
-> + * [1]  -   -   -   -   -   -   X   X
-> + * [2]  -   -   -   -   -   -   X   X
-> + * [3]  -   -   X   X   X   X   X   X
-> + * [4]  -   -   X   -   X   X   X   X
-> + * [5]  -   -   X   X   -   -   X   X
-> + * [6]  -   -   X   X   -   -   X   X
-> + * [7]  X   X   X   X   X   X   X   X
-> + * [8]  X   X   X   X   X   X   X   X
->   *
->   * Besides locking, mutual exclusion of dequeue, splice and iteration
->   * can be ensured by performing all of those operations from a single
-> @@ -441,6 +443,23 @@ static inline enum wfcq_ret __wfcq_splice(
->  }
->  
->  /*
-> + * __wfcq_prepend: prepend a node into a queue, requiring mutual exclusion.
-> + *
-> + * No memory barriers are issued.  Mutual exclusion is the responsibility
-> + * of the caller.
-> + */
-> +static inline void __wfcq_prepend(struct wfcq_head *head,
-> +				struct wfcq_tail *tail, struct wfcq_node *node)
-> +{
-> +	node->next = head->node.next;
-> +	head->node.next = node;
-> +
-> +	/* if the queue was empty before, it is no longer empty now */
-> +	if (tail->p == &head->node)
-> +		tail->p = node;
-> +}
-> +
-> +/*
->   * __wfcq_for_each: Iterate over all nodes in a queue,
->   * without dequeuing them.
->   * @head: head of the queue (struct wfcq_head pointer).
-> -- 
-> Eric Wong
-> 
-
+diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
+index 29b92e4..4960d42 100644
+--- a/drivers/rtc/rtc-at91rm9200.c
++++ b/drivers/rtc/rtc-at91rm9200.c
+@@ -25,6 +25,7 @@
+ #include <linux/rtc.h>
+ #include <linux/bcd.h>
+ #include <linux/interrupt.h>
++#include <linux/spinlock.h>
+ #include <linux/ioctl.h>
+ #include <linux/completion.h>
+ #include <linux/io.h>
+@@ -47,6 +48,74 @@ static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
+ static void __iomem *at91_rtc_regs;
+ static int irq;
+ static u32 at91_rtc_imr;
++static DEFINE_SPINLOCK(lock);
++static void (*at91_rtc_set_irq)(u32 irq_mask);
++static void (*at91_rtc_clear_irq)(u32 irq_mask);
++static u32 (*at91_rtc_read_imr)(void);
++
++static inline unsigned int at91_rtc_get_version(void)
++{
++	return at91_rtc_read(AT91_RTC_VERSION) & 0x00000fff;
++}
++
++static void at91_rtc_set_irq_simple(u32 irq_mask)
++{
++	at91_rtc_write(AT91_RTC_IER, irq_mask);
++}
++
++static void at91_rtc_clear_irq_simple(u32 irq_mask)
++{
++	at91_rtc_write(AT91_RTC_IDR, irq_mask);
++}
++
++static u32 at91_rtc_read_imr_simple(void)
++{
++	return at91_rtc_read(AT91_RTC_IMR);
++}
++
++static void at91_rtc_set_irq_brokenimr(u32 irq_mask)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&lock, flags);
++	at91_rtc_imr |= irq_mask;
++	at91_rtc_write(AT91_RTC_IER, irq_mask);
++	spin_unlock_irqrestore(&lock, flags);
++}
++
++static void at91_rtc_clear_irq_brokenimr(u32 irq_mask)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&lock, flags);
++	at91_rtc_write(AT91_RTC_IDR, irq_mask);
++	/*
++	 * Register read back (of any RTC-register) needed to make sure
++	 * IDR-register write has reached the peripheral before updating
++	 * shadow mask.
++	 *
++	 * Note that there is still a possibility that the mask is updated
++	 * before interrupts have actually been disabled in hardware. The only
++	 * way to be certain would be to poll the IMR-register, which is is
++	 * the very register we are trying to emulate. The register read back
++	 * is a reasonable heuristic.
++	 */
++	at91_rtc_read(AT91_RTC_SR);
++	at91_rtc_imr &= ~irq_mask;
++	spin_unlock_irqrestore(&lock, flags);
++}
++
++static u32 at91_rtc_read_imr_brokenimr(void)
++{
++	unsigned long flags;
++	u32 shadow_imr;
++
++	spin_lock_irqsave(&lock, flags);
++	shadow_imr = at91_rtc_imr;
++	spin_unlock_irqrestore(&lock, flags);
++
++	return shadow_imr;
++}
+ 
+ /*
+  * Decode time/date into rtc_time structure
+@@ -300,6 +369,12 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
+ 					AT91_RTC_SECEV | AT91_RTC_TIMEV |
+ 					AT91_RTC_CALEV);
+ 	at91_rtc_imr = 0;
++	spin_lock_init(&lock);
++
++	/* Choose IMR access functions */
++	at91_rtc_set_irq = at91_rtc_set_irq_simple;
++	at91_rtc_clear_irq = at91_rtc_clear_irq_simple;
++	at91_rtc_read_imr = at91_rtc_read_imr_simple;
+ 
+ 	ret = request_irq(irq, at91_rtc_interrupt,
+ 				IRQF_SHARED,
+diff --git a/drivers/rtc/rtc-at91rm9200.h b/drivers/rtc/rtc-at91rm9200.h
+index 5f940b6..da1945e 100644
+--- a/drivers/rtc/rtc-at91rm9200.h
++++ b/drivers/rtc/rtc-at91rm9200.h
+@@ -64,6 +64,7 @@
+ #define	AT91_RTC_SCCR		0x1c			/* Status Clear Command Register */
+ #define	AT91_RTC_IER		0x20			/* Interrupt Enable Register */
+ #define	AT91_RTC_IDR		0x24			/* Interrupt Disable Register */
++#define	AT91_RTC_IMR		0x28			/* Interrupt Mask Register */
+ 
+ #define	AT91_RTC_VER		0x2c			/* Valid Entry Register */
+ #define		AT91_RTC_NVTIM		(1 <<  0)		/* Non valid Time */
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+1.8.0
+
