@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933012Ab3DBWMS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:12:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32870 "EHLO
+	id S1758868Ab3DBXOB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:14:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32945 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761137Ab3DBWMK (ORCPT
+	with ESMTP id S932984Ab3DBWMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:10 -0400
+	Tue, 2 Apr 2013 18:12:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pawel Wieczorkiewicz <wpawel@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [ 030/124] tty: atmel_serial_probe(): index of atmel_ports[] fix
-Date: Tue,  2 Apr 2013 15:10:12 -0700
-Message-Id: <20130402221107.654308132@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Benny Halevy <bhalevy@tonian.com>
+Subject: [ 039/124] NFSv4.1: Always clear the NFS_INO_LAYOUTCOMMIT in layoutreturn
+Date: Tue,  2 Apr 2013 15:10:21 -0700
+Message-Id: <20130402221108.728367881@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -27,59 +27,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pawel Wieczorkiewicz <wpawel@gmail.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 503bded92da283b2f31d87e054c4c6d30c3c2340 upstream.
+commit 24956804349ca0eadcdde032d65e8c00b4214096 upstream.
 
-Index of atmel_ports[ATMEL_MAX_UART] should be smaller
-than ATMEL_MAX_UART.
+Note that clearing NFS_INO_LAYOUTCOMMIT is tricky, since it requires
+you to also clear the NFS_LSEG_LAYOUTCOMMIT bits from the layout
+segments.
+The only two sites that need to do this are the ones that call
+pnfs_return_layout() without first doing a layout commit.
 
-Signed-off-by: Pawel Wieczorkiewicz <wpawel@gmail.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Acked-by: Benny Halevy <bhalevy@tonian.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/atmel_serial.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ fs/nfs/nfs4filelayout.c |    1 -
+ fs/nfs/pnfs.c           |   35 +++++++++++++++++++++++++++--------
+ 2 files changed, 27 insertions(+), 9 deletions(-)
 
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -158,7 +158,7 @@ struct atmel_uart_port {
- };
+--- a/fs/nfs/nfs4filelayout.c
++++ b/fs/nfs/nfs4filelayout.c
+@@ -129,7 +129,6 @@ static void filelayout_fenceme(struct in
+ {
+ 	if (!test_and_clear_bit(NFS_LAYOUT_RETURN, &lo->plh_flags))
+ 		return;
+-	clear_bit(NFS_INO_LAYOUTCOMMIT, &NFS_I(inode)->flags);
+ 	pnfs_return_layout(inode);
+ }
  
- static struct atmel_uart_port atmel_ports[ATMEL_MAX_UART];
--static unsigned long atmel_ports_in_use;
-+static DECLARE_BITMAP(atmel_ports_in_use, ATMEL_MAX_UART);
+--- a/fs/nfs/pnfs.c
++++ b/fs/nfs/pnfs.c
+@@ -417,6 +417,16 @@ should_free_lseg(struct pnfs_layout_rang
+ 	       lo_seg_intersecting(lseg_range, recall_range);
+ }
  
- #ifdef SUPPORT_SYSRQ
- static struct console atmel_console;
-@@ -1768,15 +1768,14 @@ static int atmel_serial_probe(struct pla
- 	if (ret < 0)
- 		/* port id not found in platform data nor device-tree aliases:
- 		 * auto-enumerate it */
--		ret = find_first_zero_bit(&atmel_ports_in_use,
--				sizeof(atmel_ports_in_use));
-+		ret = find_first_zero_bit(atmel_ports_in_use, ATMEL_MAX_UART);
- 
--	if (ret > ATMEL_MAX_UART) {
-+	if (ret >= ATMEL_MAX_UART) {
- 		ret = -ENODEV;
- 		goto err;
++static bool pnfs_lseg_dec_and_remove_zero(struct pnfs_layout_segment *lseg,
++		struct list_head *tmp_list)
++{
++	if (!atomic_dec_and_test(&lseg->pls_refcount))
++		return false;
++	pnfs_layout_remove_lseg(lseg->pls_layout, lseg);
++	list_add(&lseg->pls_list, tmp_list);
++	return true;
++}
++
+ /* Returns 1 if lseg is removed from list, 0 otherwise */
+ static int mark_lseg_invalid(struct pnfs_layout_segment *lseg,
+ 			     struct list_head *tmp_list)
+@@ -430,11 +440,8 @@ static int mark_lseg_invalid(struct pnfs
+ 		 */
+ 		dprintk("%s: lseg %p ref %d\n", __func__, lseg,
+ 			atomic_read(&lseg->pls_refcount));
+-		if (atomic_dec_and_test(&lseg->pls_refcount)) {
+-			pnfs_layout_remove_lseg(lseg->pls_layout, lseg);
+-			list_add(&lseg->pls_list, tmp_list);
++		if (pnfs_lseg_dec_and_remove_zero(lseg, tmp_list))
+ 			rv = 1;
+-		}
  	}
+ 	return rv;
+ }
+@@ -777,6 +784,21 @@ send_layoutget(struct pnfs_layout_hdr *l
+ 	return lseg;
+ }
  
--	if (test_and_set_bit(ret, &atmel_ports_in_use)) {
-+	if (test_and_set_bit(ret, atmel_ports_in_use)) {
- 		/* port already in use */
- 		ret = -EBUSY;
- 		goto err;
-@@ -1856,7 +1855,7 @@ static int atmel_serial_remove(struct pl
++static void pnfs_clear_layoutcommit(struct inode *inode,
++		struct list_head *head)
++{
++	struct nfs_inode *nfsi = NFS_I(inode);
++	struct pnfs_layout_segment *lseg, *tmp;
++
++	if (!test_and_clear_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags))
++		return;
++	list_for_each_entry_safe(lseg, tmp, &nfsi->layout->plh_segs, pls_list) {
++		if (!test_and_clear_bit(NFS_LSEG_LAYOUTCOMMIT, &lseg->pls_flags))
++			continue;
++		pnfs_lseg_dec_and_remove_zero(lseg, head);
++	}
++}
++
+ /*
+  * Initiates a LAYOUTRETURN(FILE), and removes the pnfs_layout_hdr
+  * when the layout segment list is empty.
+@@ -808,6 +830,7 @@ _pnfs_return_layout(struct inode *ino)
+ 	/* Reference matched in nfs4_layoutreturn_release */
+ 	pnfs_get_layout_hdr(lo);
+ 	empty = list_empty(&lo->plh_segs);
++	pnfs_clear_layoutcommit(ino, &tmp_list);
+ 	pnfs_mark_matching_lsegs_invalid(lo, &tmp_list, NULL);
+ 	/* Don't send a LAYOUTRETURN if list was initially empty */
+ 	if (empty) {
+@@ -820,8 +843,6 @@ _pnfs_return_layout(struct inode *ino)
+ 	spin_unlock(&ino->i_lock);
+ 	pnfs_free_lseg_list(&tmp_list);
  
- 	/* "port" is allocated statically, so we shouldn't free it */
- 
--	clear_bit(port->line, &atmel_ports_in_use);
-+	clear_bit(port->line, atmel_ports_in_use);
- 
- 	clk_put(atmel_port->clk);
- 
+-	WARN_ON(test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags));
+-
+ 	lrp = kzalloc(sizeof(*lrp), GFP_KERNEL);
+ 	if (unlikely(lrp == NULL)) {
+ 		status = -ENOMEM;
+@@ -1459,7 +1480,6 @@ static void pnfs_ld_handle_write_error(s
+ 	dprintk("pnfs write error = %d\n", hdr->pnfs_error);
+ 	if (NFS_SERVER(hdr->inode)->pnfs_curr_ld->flags &
+ 	    PNFS_LAYOUTRET_ON_ERROR) {
+-		clear_bit(NFS_INO_LAYOUTCOMMIT, &NFS_I(hdr->inode)->flags);
+ 		pnfs_return_layout(hdr->inode);
+ 	}
+ 	if (!test_and_set_bit(NFS_IOHDR_REDO, &hdr->flags))
+@@ -1614,7 +1634,6 @@ static void pnfs_ld_handle_read_error(st
+ 	dprintk("pnfs read error = %d\n", hdr->pnfs_error);
+ 	if (NFS_SERVER(hdr->inode)->pnfs_curr_ld->flags &
+ 	    PNFS_LAYOUTRET_ON_ERROR) {
+-		clear_bit(NFS_INO_LAYOUTCOMMIT, &NFS_I(hdr->inode)->flags);
+ 		pnfs_return_layout(hdr->inode);
+ 	}
+ 	if (!test_and_set_bit(NFS_IOHDR_REDO, &hdr->flags))
 
 
