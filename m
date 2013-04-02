@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932558Ab3DBToq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 15:44:46 -0400
-Received: from a9-70.smtp-out.amazonses.com ([54.240.9.70]:34984 "EHLO
-	a9-70.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761236Ab3DBToo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 15:44:44 -0400
-X-Greylist: delayed 1162 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Apr 2013 15:44:44 EDT
-Date: Tue, 2 Apr 2013 19:25:20 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>, Pekka Enberg <penberg@kernel.org>
-Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
- unfreeze_partials() code.
-In-Reply-To: <20130402004217.GA16699@lge.com>
-Message-ID: <0000013dcc35f310-d338600d-8a5a-4c95-9770-af4b8d81e103-000000@email.amazonses.com>
-References: <0000013da2ce20f8-0e3a64ef-67ed-4ab4-9f20-b77980c876c3-000000@email.amazonses.com> <1364236355.6345.185.camel@gandalf.local.home> <20130327025957.GA17125@lge.com> <1364355032.6345.200.camel@gandalf.local.home> <20130327061351.GB17125@lge.com>
- <alpine.DEB.2.02.1303281227520.16200@gentwo.org> <0000013db20ca149-0064fbb8-2f81-4323-9095-a38f6abb79c5-000000@email.amazonses.com> <CAP=VYLr4i=39ywFCrmG-XuvUFmmXpyj6dYgG44JJoUJhpN6uuQ@mail.gmail.com> <alpine.DEB.2.02.1304011025550.12690@gentwo.org>
- <0000013dc63b3a87-6ce88b75-d011-407e-8dde-da73c3a7f5fd-000000@email.amazonses.com> <20130402004217.GA16699@lge.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932649Ab3DBTtb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 15:49:31 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58580 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932401Ab3DBTt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 15:49:29 -0400
+Date: Tue, 2 Apr 2013 15:48:03 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Benjamin LaHaise <bcrl@kvack.org>, Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH 30/33] block, aio: batch completion for bios/kiocbs
+Message-ID: <20130402194803.GA5703@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Kent Overstreet <koverstreet@google.com>,
+	linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+	akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+	Felipe Balbi <balbi@ti.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+	Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+	Asai Thambi S P <asamymuthupa@micron.com>,
+	Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+	Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+	Benjamin LaHaise <bcrl@kvack.org>, Minchan Kim <minchan@kernel.org>
+References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
+ <1363883754-27966-31-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 54.240.9.70
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363883754-27966-31-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Apr 2013, Joonsoo Kim wrote:
+On Thu, Mar 21, 2013 at 09:35:51AM -0700, Kent Overstreet wrote:
+> +		if (unlikely(req->ki_ctx != ctx)) {
+> +			kioctx_ring_unlock(ctx, tail);
+> +
+> +			ctx = req->ki_ctx;
+> +			tail = kioctx_ring_lock(ctx);
+> +		}
 
-> We need one more fix for correctness.
-> When available is assigned by put_cpu_partial, it doesn't count cpu slab's objects.
-> Please reference my old patch.
->
-> https://lkml.org/lkml/2013/1/21/64
+The only place where you're calling kioctx_ring_lock() is above, which
+is part of an unlock/lock pair.
 
-Could you update your patch and submit it again?
+There is also a kioctx_ring_unlock at the end of batch_complete_aio():
 
+> +	kioctx_ring_unlock(ctx, tail);
+> +	local_irq_restore(flags);
+> +	rcu_read_unlock();
+
+But I'm not seeing a matching kioctx_ring_lock() before the while loop
+in batch_complete_aio(), nor anywhere else in the file.  And since
+kioctx_ring_lock() is a static function....
+
+Am I missing something?
+
+						- Ted
