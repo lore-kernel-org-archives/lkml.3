@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760339Ab3DBHfz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 03:35:55 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:23097 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab3DBHfy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 03:35:54 -0400
-Message-ID: <515A8A40.6020406@huawei.com>
-Date: Tue, 2 Apr 2013 15:35:28 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Glauber Costa <glommer@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: [PATCH] memcg: don't do cleanup manually if mem_cgroup_css_online()
- fails
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+	id S1760977Ab3DBHhU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 03:37:20 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750891Ab3DBHhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 03:37:18 -0400
+From: Richard Weinberger <richard@nod.at>
+To: sfr@canb.auug.org.au
+Cc: greg@kroah.com, arnd@arndb.de, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH] cs5535-mfgpt: Fix quotation marks
+Date: Tue,  2 Apr 2013 09:37:09 +0200
+Message-Id: <1364888229-27714-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <20130402181728.1c3f92fc8727a39e1145c688@canb.auug.org.au>
+References: <20130402181728.1c3f92fc8727a39e1145c688@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If memcg_init_kmem() returns -errno when a memcg is being created,
-mem_cgroup_css_online() will decrement memcg and its parent's refcnt,
-(but strangely there's no mem_cgroup_put() for mem_cgroup_get() called
-in memcg_propagate_kmem()).
+Commit "cs5535-mfgpt: Add another reset method" introduced an unterminated
+string and broke the build.
 
-But then cgroup core will call mem_cgroup_css_free() to do cleanup...
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- mm/memcontrol.c | 11 +----------
- 1 file changed, 1 insertion(+), 10 deletions(-)
+ drivers/misc/cs5535-mfgpt.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index e80504e..e927fc6 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6247,16 +6247,7 @@ mem_cgroup_css_online(struct cgroup *cont)
+diff --git a/drivers/misc/cs5535-mfgpt.c b/drivers/misc/cs5535-mfgpt.c
+index 6bdb3ba..effd8c6 100644
+--- a/drivers/misc/cs5535-mfgpt.c
++++ b/drivers/misc/cs5535-mfgpt.c
+@@ -27,8 +27,8 @@ module_param_named(mfgptfix, mfgpt_reset_timers, int, 0644);
+ MODULE_PARM_DESC(mfgptfix, "Try to reset the MFGPT timers during init; "
+ 		"required by some broken BIOSes (ie, TinyBIOS < 0.99) or kexec "
+ 		"(1 = reset the MFGPT using an undocumented bit, "
+-		"2 = perform a soft reset by unconfiguring all timers);
+-		use what works best for you.");
++		"2 = perform a soft reset by unconfiguring all timers); "
++		"use what works best for you.");
  
- 	error = memcg_init_kmem(memcg, &mem_cgroup_subsys);
- 	mutex_unlock(&memcg_create_mutex);
--	if (error) {
--		/*
--		 * We call put now because our (and parent's) refcnts
--		 * are already in place. mem_cgroup_put() will internally
--		 * call __mem_cgroup_free, so return directly
--		 */
--		mem_cgroup_put(memcg);
--		if (parent->use_hierarchy)
--			mem_cgroup_put(parent);
--	}
-+
- 	return error;
- }
- 
+ struct cs5535_mfgpt_timer {
+ 	struct cs5535_mfgpt_chip *chip;
 -- 
-1.8.0.2
+1.8.1.4
 
