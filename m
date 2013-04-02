@@ -1,79 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933921Ab3DBWRR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:17:17 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:39562 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933873Ab3DBWRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:17:14 -0400
-Message-ID: <515B58E5.9070808@linux.vnet.ibm.com>
-Date: Tue, 02 Apr 2013 18:17:09 -0400
-From: "Michael R. Hines" <mrhines@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Roland Dreier <roland@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
-Subject: Re: [PATCHv2] rdma: add a new IB_ACCESS_GIFT flag
-References: <20130324155153.GA8597@redhat.com> <20130402155104.GA27382@redhat.com> <CAL1RGDUe1=Xd1mpNajiLY08fJ+gBKAMDGeX3SVkS+egOQyiCxQ@mail.gmail.com> <20130402170521.GA30295@redhat.com>
-In-Reply-To: <20130402170521.GA30295@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040222-7182-0000-0000-0000060E8A5E
+	id S933868Ab3DBWOp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:14:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33508 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933724Ab3DBWOW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:14:22 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Anatol Pomozov <anatol.pomozov@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 33/68] loop: prevent bdev freeing while device in use
+Date: Tue,  2 Apr 2013 15:13:22 -0700
+Message-Id: <20130402221333.776278124@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
+References: <20130402221329.915209206@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm getting around to it, Michael, I promise =).
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Just came back from vacation.
+------------------
 
-I have to re-build the ib_ucm kernel module from the original SUSE 
-kernel that I'm using along before I can test it......
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
 
-The machines I'm using are slightly tied up with other things, so its 
-taking me a little time to prepare to apply the patch and test the new 
-kernel module...
+commit c1681bf8a7b1b98edee8b862a42c19c4e53205fd upstream.
 
-- Michael
+struct block_device lifecycle is defined by its inode (see fs/block_dev.c) -
+block_device allocated first time we access /dev/loopXX and deallocated on
+bdev_destroy_inode. When we create the device "losetup /dev/loopXX afile"
+we want that block_device stay alive until we destroy the loop device
+with "losetup -d".
 
-On 04/02/2013 01:05 PM, Michael S. Tsirkin wrote:
-> On Tue, Apr 02, 2013 at 09:57:38AM -0700, Roland Dreier wrote:
->> On Tue, Apr 2, 2013 at 8:51 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
->>>> At the moment registering an MR breaks COW.  This breaks memory
->>>> overcommit for users such as KVM: we have a lot of COW pages, e.g.
->>>> instances of the zero page or pages shared using KSM.
->>>>
->>>> If the application does not care that adapter sees stale data (for
->>>> example, it tracks writes reregisters and resends), it can use a new
->>>> IBV_ACCESS_GIFT flag to prevent registration from breaking COW.
->>>>
->>>> The semantics are similar to that of SPLICE_F_GIFT thus the name.
->>>>
->>>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->>> Roland, Michael is yet to test this but could you please
->>> confirm whether this looks acceptable to you?
->> The patch itself is reasonable I guess, given the needs of this particular app.
->>
->> I'm not particularly happy with the name of the flag.  The analogy
->> with SPLICE_F_GIFT doesn't seem particularly strong and I'm not
->> convinced even the splice flag name is very understandable.  But in
->> the RDMA case there's not really any sense in which we're "gifting"
->> memory to the adapter -- we're just telling the library "please don't
->> trigger copy-on-write" and it doesn't seem particularly easy for users
->> to understand that from the flag name.
->>
->>   - R.
-> The point really is that any writes by application
-> won't be seen until re-registration, right?
-> OK, what's a better name?  IBV_ACCESS_NON_COHERENT?
-> Please tell me what is preferable and we'll go ahead with it.
->
+But because we do not hold /dev/loopXX inode its counter goes 0, and
+inode/bdev can be destroyed at any moment. Usually it happens at memory
+pressure or when user drops inode cache (like in the test below). When later in
+loop_clr_fd() we want to use bdev we have use-after-free error with following
+stack:
+
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000280
+  bd_set_size+0x10/0xa0
+  loop_clr_fd+0x1f8/0x420 [loop]
+  lo_ioctl+0x200/0x7e0 [loop]
+  lo_compat_ioctl+0x47/0xe0 [loop]
+  compat_blkdev_ioctl+0x341/0x1290
+  do_filp_open+0x42/0xa0
+  compat_sys_ioctl+0xc1/0xf20
+  do_sys_open+0x16e/0x1d0
+  sysenter_dispatch+0x7/0x1a
+
+To prevent use-after-free we need to grab the device in loop_set_fd()
+and put it later in loop_clr_fd().
+
+The issue is reprodusible on current Linus head and v3.3. Here is the test:
+
+  dd if=/dev/zero of=loop.file bs=1M count=1
+  while [ true ]; do
+    losetup /dev/loop0 loop.file
+    echo 2 > /proc/sys/vm/drop_caches
+    losetup -d /dev/loop0
+  done
+
+[ Doing bdgrab/bput in loop_set_fd/loop_clr_fd is safe, because every
+  time we call loop_set_fd() we check that loop_device->lo_state is
+  Lo_unbound and set it to Lo_bound If somebody will try to set_fd again
+  it will get EBUSY.  And if we try to loop_clr_fd() on unbound loop
+  device we'll get ENXIO.
+
+  loop_set_fd/loop_clr_fd (and any other loop ioctl) is called under
+  loop_device->lo_ctl_mutex. ]
+
+Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/block/loop.c |    9 ++++++++-
+ fs/block_dev.c       |    1 +
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -908,6 +908,11 @@ static int loop_set_fd(struct loop_devic
+ 		lo->lo_flags |= LO_FLAGS_PARTSCAN;
+ 	if (lo->lo_flags & LO_FLAGS_PARTSCAN)
+ 		ioctl_by_bdev(bdev, BLKRRPART, 0);
++
++	/* Grab the block_device to prevent its destruction after we
++	 * put /dev/loopXX inode. Later in loop_clr_fd() we bdput(bdev).
++	 */
++	bdgrab(bdev);
+ 	return 0;
+ 
+ out_clr:
+@@ -1004,8 +1009,10 @@ static int loop_clr_fd(struct loop_devic
+ 	memset(lo->lo_encrypt_key, 0, LO_KEY_SIZE);
+ 	memset(lo->lo_crypt_name, 0, LO_NAME_SIZE);
+ 	memset(lo->lo_file_name, 0, LO_NAME_SIZE);
+-	if (bdev)
++	if (bdev) {
++		bdput(bdev);
+ 		invalidate_bdev(bdev);
++	}
+ 	set_capacity(lo->lo_disk, 0);
+ 	loop_sysfs_exit(lo);
+ 	if (bdev) {
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -604,6 +604,7 @@ struct block_device *bdgrab(struct block
+ 	ihold(bdev->bd_inode);
+ 	return bdev;
+ }
++EXPORT_SYMBOL(bdgrab);
+ 
+ long nr_blockdev_pages(void)
+ {
+
 
