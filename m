@@ -1,80 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762073Ab3DBSTw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 14:19:52 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36737 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760563Ab3DBSTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 14:19:51 -0400
-From: <balbi@ti.com>
-Date: Tue, 2 Apr 2013 21:19:31 +0300
-To: Florian Fainelli <florian@openwrt.org>
-CC: <stern@rowland.harvard.edu>, <linux-kernel@vger.kernel.org>,
-        <arnd@arndb.de>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 1/5 v2] USB: regroup all depends on USB within an if USB
- block
-Message-ID: <20130402181931.GA21830@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1364321177-12146-1-git-send-email-florian@openwrt.org>
- <1364922626-32407-1-git-send-email-florian@openwrt.org>
- <1364922626-32407-2-git-send-email-florian@openwrt.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
-Content-Disposition: inline
-In-Reply-To: <1364922626-32407-2-git-send-email-florian@openwrt.org>
+	id S1762108Ab3DBSUi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 14:20:38 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:51903 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760543Ab3DBSUe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 14:20:34 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: tomi.valkeinen@ti.com
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        linux-arm-kernel@lists.infradead.org, plagnioj@jcrosoft.com,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCHv3 2/6] video: vt8500: Remove unused platform_data/video-vt8500lcdfb.h
+Date: Wed,  3 Apr 2013 07:20:34 +1300
+Message-Id: <1364926838-6721-3-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1364926838-6721-1-git-send-email-linux@prisktech.co.nz>
+References: <1364926838-6721-1-git-send-email-linux@prisktech.co.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---3MwIy2ne0vdjdPXF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+With the conversion to devicetree only for arch-vt8500, this
+header is no longer required. This patch removes the #include
+from the two framebuffer drivers that used it, and the header file.
 
-Hi,
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Reviewed-by: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+---
+ drivers/video/vt8500lcdfb.c                     |    2 --
+ drivers/video/wm8505fb.c                        |    2 --
+ include/linux/platform_data/video-vt8500lcdfb.h |   31 -----------------------
+ 3 files changed, 35 deletions(-)
+ delete mode 100644 include/linux/platform_data/video-vt8500lcdfb.h
 
-On Tue, Apr 02, 2013 at 07:10:22PM +0200, Florian Fainelli wrote:
-> diff --git a/drivers/usb/musb/Kconfig b/drivers/usb/musb/Kconfig
-> index 05e5143..ab5a3b9 100644
-> --- a/drivers/usb/musb/Kconfig
-> +++ b/drivers/usb/musb/Kconfig
-> @@ -6,7 +6,6 @@
->  # (M)HDRC =3D (Multipoint) Highspeed Dual-Role Controller
->  config USB_MUSB_HDRC
->  	tristate 'Inventra Highspeed Dual Role Controller (TI, ADI, ...)'
-> -	depends on USB && USB_GADGET
+diff --git a/drivers/video/vt8500lcdfb.c b/drivers/video/vt8500lcdfb.c
+index aa2579c..2ff2312 100644
+--- a/drivers/video/vt8500lcdfb.c
++++ b/drivers/video/vt8500lcdfb.c
+@@ -30,8 +30,6 @@
+ #include <linux/platform_device.h>
+ #include <linux/wait.h>
+ 
+-#include <linux/platform_data/video-vt8500lcdfb.h>
+-
+ #include "vt8500lcdfb.h"
+ #include "wmt_ge_rops.h"
+ 
+diff --git a/drivers/video/wm8505fb.c b/drivers/video/wm8505fb.c
+index 4dd0580..fe9afd6 100644
+--- a/drivers/video/wm8505fb.c
++++ b/drivers/video/wm8505fb.c
+@@ -32,8 +32,6 @@
+ #include <linux/of_fdt.h>
+ #include <linux/memblock.h>
+ 
+-#include <linux/platform_data/video-vt8500lcdfb.h>
+-
+ #include "wm8505fb_regs.h"
+ #include "wmt_ge_rops.h"
+ 
+diff --git a/include/linux/platform_data/video-vt8500lcdfb.h b/include/linux/platform_data/video-vt8500lcdfb.h
+deleted file mode 100644
+index 7f399c3..0000000
+--- a/include/linux/platform_data/video-vt8500lcdfb.h
++++ /dev/null
+@@ -1,31 +0,0 @@
+-/*
+- *  VT8500/WM8505 Frame Buffer platform data definitions
+- *
+- *  Copyright (C) 2010 Ed Spiridonov <edo.rus@gmail.com>
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- */
+-
+-#ifndef _VT8500FB_H
+-#define _VT8500FB_H
+-
+-#include <linux/fb.h>
+-
+-struct vt8500fb_platform_data {
+-	struct fb_videomode	mode;
+-	u32			xres_virtual;
+-	u32			yres_virtual;
+-	u32			bpp;
+-	unsigned long		video_mem_phys;
+-	void			*video_mem_virt;
+-	unsigned long		video_mem_len;
+-};
+-
+-#endif /* _VT8500FB_H */
+-- 
+1.7.9.5
 
-shouldn't:
-
-depends on USB_GADGET
-
-be left here ?
-
---=20
-balbi
-
---3MwIy2ne0vdjdPXF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRWyEzAAoJEIaOsuA1yqREhW8P/0Z6Q5UEdng0+fjML0HZmW/3
-s3G1d47uT231uto68lly1deu+VtXxPooFat3I12yC+x25ldDz9bTF86Q3LUA04N8
-TzTyvKpqHuomnBxY9/HbpsLHV+Q9VBM9o14IRzr9EEhZv2b5VZ0WwVOnlKG3FWT5
-+CBFyN6hAPCc133i/uR3v70P/CzgNDOwEOibObnr4l/dzoIxCaEwHO+/f6ulbGAl
-httziWm8NZRtYsvYUYpZyC7Fo6dmjK6ZOPT9YVmiqFGVIIa6k9OgqmyBHPanS6Qw
-oR8mJwWeWRfN78OWLvRO+pbsPjhHBZbhhzW5DMtYtlzXN88DZ0t0vKK9e1ZNBlzS
-a0ePw6DBPkVR7/vsJ1ZsfgkRT/t5+v74yYgH5FLdMu85kN8RcIxnVhMwmSSvITZa
-5DhWeljaNmyjqiPp8RiSiv8iLZZ8w6ErF4PYN9E3DwFHkIOr4QVwIuz2YmmAAvNA
-lBpdeAHSmgInGGOM3BTGQXtGN/7/282yqeQIJqZ9jmmY9AdwqtnSx1/6GrrjzWWK
-76PxkZnOEoVg8STaOhukh2igOoJ8mXsvHqszNhXnUU5OH1GDHA5brm7kuLsMwHiF
-UBL+vXRQGbxYtcP3zQD3isY9Vw4lpiBEvPnuP8Cu0ciNnkj4AxmwzyJRzFwtAIGv
-zORpQHOEZHkl4yB2erNW
-=PlYD
------END PGP SIGNATURE-----
-
---3MwIy2ne0vdjdPXF--
