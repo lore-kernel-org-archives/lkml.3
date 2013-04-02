@@ -1,123 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762000Ab3DBK0w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 06:26:52 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:52232 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761981Ab3DBK0q (ORCPT
+	id S1761496Ab3DBK34 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 06:29:56 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:40337
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760189Ab3DBK3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 06:26:46 -0400
-X-AuditID: cbfee68d-b7f786d000005188-97-515ab264819b
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Amit Daniel Kachhap'" <amit.daniel@samsung.com>,
-        linux-pm@vger.kernel.org
-Cc: "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Zhang Rui'" <rui.zhang@intel.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, amit.kachhap@gmail.com
-References: <1364297642-2746-1-git-send-email-amit.daniel@samsung.com>
-In-reply-to: <1364297642-2746-1-git-send-email-amit.daniel@samsung.com>
-Subject: RE: [PATCH 0/9] thermal: exynos: Add thermal driver for exynos5440
-Date: Tue, 02 Apr 2013 19:26:44 +0900
-Message-id: <237c01ce2f8c$92eb8ac0$b8c2a040$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4qFdxbQ1CTCZmLQmW8GZAohc85OwFdfy6w
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAIsWRmVeSWpSXmKPExsVy+t8zY92UTVGBBivOWFk0XA2x+PVuJrvF
-	5V1z2Cw+9x5htJhxfh+TxZOHfWwWx2YsYXRg99g56y67x+I9L5k87lzbw+bRt2UVo8fnTXIB
-	rFFcNimpOZllqUX6dglcGaeWHWAteCBW8bdDuoHxsmAXIyeHhICJxKe7exkhbDGJC/fWs3Ux
-	cnEICSxjlDi+ejcbTFHv9qtMEIlFjBIzT01mhHD+Mkr8/fgZrJ1NQEPi8Ptn7CC2iICvRP+2
-	G+wgRcwCGxglrsw5BpYQEnCT2PTlPBOIzSngLrHh63oWEFtYwFvi+eoXQDYHB4uAqsSiad4g
-	YV4BW4lVW66zQdiCEj8m3wMrZxbQkli/8zgThC0vsXnNW2aQVgkBdYlHf3UhTjCSuH3wEhtE
-	iYjEvhfvwG6WEPjILrFr8y9WkASLgIDEt8mHWCB6ZSU2HWCGeFhS4uCKGywTGCVmIdk8C8nm
-	WUg2z0KyYgEjyypG0dSC5ILipPQiQ73ixNzi0rx0veT83E2MkNjt3cF4+4D1IcZkoPUTmaVE
-	k/OBsZ9XEm9obGZkYWpiamxkbmlGmrCSOK9ai3WgkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6p
-	BsYlf+9XV9TfkW6faP1t+a7zdnvNptxv2bPY1PylwpW8n9scfF790Kya3M7V9GnvtHU61tfM
-	d5ZccdrAfkRULMn1UtaBM+HtKr8y1k764SKtt+juoTviUuu955s+2XSBN/GROeeaHTwmqdxL
-	Lv/a3R93mYV1+ZfVawRj182aGr6Se1PHJZMHW9+sVGIpzkg01GIuKk4EANKxWsTzAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLKsWRmVeSWpSXmKPExsVy+t9jAd2UTVGBBjtXmVk0XA2x+PVuJrvF
-	5V1z2Cw+9x5htJhxfh+TxZOHfWwWx2YsYXRg99g56y67x+I9L5k87lzbw+bRt2UVo8fnTXIB
-	rFENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QGco
-	KZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwnrGDNOLTvAWvBArOJvh3QD42XB
-	LkZODgkBE4ne7VeZIGwxiQv31rN1MXJxCAksYpSYeWoyI4Tzl1Hi78fPjCBVbAIaEoffP2MH
-	sUUEfCX6t91gByliFtjAKHFlzjGwhJCAm8SmL+fBxnIKuEts+LqeBcQWFvCWeL76BZDNwcEi
-	oCqxaJo3SJhXwFZi1ZbrbBC2oMSPyffAypkFtCTW7zzOBGHLS2xe85YZpFVCQF3i0V9diBOM
-	JG4fvMQGUSIise/FO8YJjEKzkEyahWTSLCSTZiFpWcDIsopRNLUguaA4KT3XUK84Mbe4NC9d
-	Lzk/dxMjODE8k9rBuLLB4hCjAAejEg+vw5zIQCHWxLLiytxDjBIczEoivFt1owKFeFMSK6tS
-	i/Lji0pzUosPMSYD/TmRWUo0OR+YtPJK4g2NTcyMLI3MLIxMzM1JE1YS5z3Qah0oJJCeWJKa
-	nZpakFoEs4WJg1OqgTGnYXUDO9Pi7VMjpVrmlKtcmFq3Y8H04y9+RKUtO89xXPWGpMHCxs0f
-	mY89nnC1aP1N63MiWVO63jz6t/9Emi+z+OqO7cvYeKZrhQu4lh/N3a5gdKlpskljqPhbu02X
-	Ni2x31R6+YXbpiXRO/6KTuvflPnMstz+3/bMfMHKn0s9eov+zXp+X3CPEktxRqKhFnNRcSIA
-	VFotHlADAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 2 Apr 2013 06:29:55 -0400
+Message-ID: <1364898582.18374.17.camel@laptop>
+Subject: Re: [PATCH 2/5] sched: factor out code to should_we_balance()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Date: Tue, 02 Apr 2013 12:29:42 +0200
+In-Reply-To: <1364896813.18374.0.camel@laptop>
+References: <1364457537-15114-1-git-send-email-iamjoonsoo.kim@lge.com>
+	 <1364457537-15114-3-git-send-email-iamjoonsoo.kim@lge.com>
+	 <1364890206.16858.6.camel@laptop> <20130402095034.GG16699@lge.com>
+	 <1364896813.18374.0.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Amit Daniel Kachhap wrote:
+On Tue, 2013-04-02 at 12:00 +0200, Peter Zijlstra wrote:
+> On Tue, 2013-04-02 at 18:50 +0900, Joonsoo Kim wrote:
+> > 
+> > It seems that there is some misunderstanding about this patch.
+> > In this patch, we don't iterate all groups. Instead, we iterate on
+> > cpus of local sched_group only. So there is no penalty you mentioned.
 > 
-> This patchset adds TMU(Thermal management Unit) driver support for
-> exynos5440 platform. There are 3 instances of the TMU controllers so
-> necessary cleanup is done to handle multiple thermal zone.
-> 
-> Patch 1 [thermal: exynos: Adapt to temperature emulation core thermal]
-> is a re-post of the earlier posted patch,
-> https://patchwork.kernel.org/patch/2123131/.
-> 
+> OK, I'll go stare at it again..
 
-Looks OK to me on whole series, there is my ack only on 1st patch though.
+Ah, I see, you're doing should_we_balance() _before_
+find_busiest_group() and instead you're doing another for_each_cpu() in
+there.
 
-So if you want to add my ack, feel free:
+I'd write the thing like:
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+static bool should_we_balance(struct lb_env *env)
+{
+	struct sched_group *sg = env->sd->groups;
+	struct cpumask *sg_cpus, *sg_mask;
+	int cpu, balance_cpu = -1;
 
-Thanks.
+	if (env->idle == CPU_NEWLY_IDLE)
+		return true;
 
-- Kukjin
+	sg_cpus = sched_group_cpus(sg);
+	sg_mask = sched_group_mask(sg);
 
-> All these patches are based on thermal maintainers git tree,
-> git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git next.
-> 
-> Amit Daniel Kachhap (9):
->   thermal: exynos: Adapt to temperature emulation core thermal
->     framework
->   thermal: exynos: Add support for instance based register/unregister
->   thermal: exynos: Moving into samsung directory for easy maintenance.
->   thermal: exynos: Bifurcate exynos thermal common and tmu controller
->     code
->   thermal: exynos: Make the zone handling dependent on trip count
->   thermal: exynos: small cleanups to prepare for adding exynos5440
->     driver
->   thermal: exynos: Add support for exynos5440 TMU sensor.
->   thermal: exynos: Parse the platform data from the device tree.
->   ARM: dts: Add device tree node for exynos5440 TMU controller
-> 
->  .../bindings/thermal/exynos5440-thermal.txt        |   93 ++
->  Documentation/thermal/exynos_thermal_emulation     |    8 +-
->  arch/arm/boot/dts/exynos5440.dtsi                  |   43 +
->  drivers/thermal/Kconfig                            |   22 +-
->  drivers/thermal/Makefile                           |    2 +-
->  drivers/thermal/exynos_thermal.c                   | 1112
---------------------
->  drivers/thermal/samsung/Kconfig                    |   32 +
->  drivers/thermal/samsung/Makefile                   |    6 +
->  drivers/thermal/samsung/exynos4210_thermal.c       |  658 ++++++++++++
->  drivers/thermal/samsung/exynos5440_thermal.c       |  712 +++++++++++++
->  drivers/thermal/samsung/exynos_common.c            |  515 +++++++++
->  drivers/thermal/samsung/exynos_common.h            |   74 ++
->  include/linux/platform_data/exynos_thermal.h       |   37 +-
->  13 files changed, 2163 insertions(+), 1151 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/thermal/exynos5440-
-> thermal.txt
->  delete mode 100644 drivers/thermal/exynos_thermal.c
->  create mode 100644 drivers/thermal/samsung/Kconfig
->  create mode 100644 drivers/thermal/samsung/Makefile
->  create mode 100644 drivers/thermal/samsung/exynos4210_thermal.c
->  create mode 100644 drivers/thermal/samsung/exynos5440_thermal.c
->  create mode 100644 drivers/thermal/samsung/exynos_common.c
->  create mode 100644 drivers/thermal/samsung/exynos_common.h
+	for_each_cpu_and(cpu, sg_cpus, env->cpus) {
+		if (!cpumask_test_cpu(cpu, sg_mask))
+			continue;
+
+		if (!idle_cpu(cpu))
+			continue;
+
+		balance_cpu = cpu;
+		break;
+	}
+
+	if (balance_cpu == -1)
+		balance_cpu = group_balance_cpu(sg);
+
+	return balance_cpu == env->dst_cpu;
+}
+
+I also considered doing the group_balance_cpu() first to avoid having
+to do the idle_cpu() scan, but that's a slight behavioural change
+afaict.
 
