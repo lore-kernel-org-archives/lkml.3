@@ -1,83 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760898Ab3DBG54 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 02:57:56 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34039 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760302Ab3DBG5y (ORCPT
+	id S1760717Ab3DBHFn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 03:05:43 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:12900 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759785Ab3DBHFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 02:57:54 -0400
-Date: Tue, 2 Apr 2013 17:57:52 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: linux-next: manual merge of the imx-mxs tree with the arm-soc tree
-Message-Id: <20130402175752.b6ff90247b873b67111d31ad@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__2_Apr_2013_17_57_52_+1100_cOk8FCxomU/zM2h="
+	Tue, 2 Apr 2013 03:05:42 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlcSABSCWlF5LBrj/2dsb2JhbABDgzuCN7dihSQEAX4XdIIfAQEFJxMcIxAIGwklDwUlAyETiBMNsRqQABWNeIEdB4NAA5ZqgSCPbIFVgUoo
+Date: Tue, 2 Apr 2013 18:05:37 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: CAI Qian <caiqian@redhat.com>
+Cc: xfs@oss.sgi.com, LKML <linux-kernel@vger.kernel.org>, axboe@kernel.dk
+Subject: Loopback device hung [was Re: xfs deadlock on 3.9-rc5 running
+ xfstests case #78]
+Message-ID: <20130402070537.GP6369@dastard>
+References: <1462091996.435156.1364882416199.JavaMail.root@redhat.com>
+ <247719576.438259.1364882929749.JavaMail.root@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <247719576.438259.1364882929749.JavaMail.root@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__2_Apr_2013_17_57_52_+1100_cOk8FCxomU/zM2h=
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[Added jens Axboe to CC]
 
-Hi Shawn,
+On Tue, Apr 02, 2013 at 02:08:49AM -0400, CAI Qian wrote:
+> Saw on almost all the servers range from x64, ppc64 and s390x with kernel
+> 3.9-rc5 and xfsprogs-3.1.10. Never caught this in 3.9-rc4, so looks like
+> something new broke this. Log is here with sysrq debug info.
+> http://people.redhat.com/qcai/stable/log
 
-Today's linux-next merge of the imx-mxs tree got a conflict in
-drivers/clocksource/Makefile between commit 275786b71d42 ("ARM: sirf: use
-clocksource_of infrastructure") from the arm-soc tree and commit
-c74512bf83f3 ("ARM: mxs: move timer driver into drivers/clocksource")
-from the imx-mxs tree.
+Has nothing to do with XFS:
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+[34762.105676] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message. 
+[34762.152871] systemd-udevd   D ffff88030bc94440     0  4391    412 0x00000084 
+[34762.196660]  ffff8801134d9a98 0000000000000082 ffff880303e09ac0 ffff8801134d9fd8 
+[34762.240512]  ffff8801134d9fd8 ffff8801134d9fd8 ffff880304f98000 ffff880303e09ac0 
+[34762.287047]  ffff8802936c1ac0 ffff88060521f998 ffff88060521f99c ffff880303e09ac0 
+[34762.331446] Call Trace: 
+[34762.345444]  [<ffffffff816274a9>] schedule+0x29/0x70 
+[34762.373908]  [<ffffffff8162777e>] schedule_preempt_disabled+0xe/0x10 
+[34762.411394]  [<ffffffff81625ae3>] __mutex_lock_slowpath+0xc3/0x140 
+[34762.447597]  [<ffffffff8162561a>] mutex_lock+0x2a/0x50 
+[34762.476785]  [<ffffffff811daddb>] __blkdev_get+0x6b/0x4b0 
+[34762.508839]  [<ffffffff812a619a>] ? selinux_file_alloc_security+0x4a/0x80 
+[34762.546436]  [<ffffffff811db3bd>] blkdev_get+0x19d/0x2e0 
+[34762.580977]  [<ffffffff812a18fa>] ? inode_has_perm.isra.31.constprop.61+0x2a/0x30 
+[34762.624346]  [<ffffffff811db55f>] blkdev_open+0x5f/0x90 
+[34762.656318]  [<ffffffff811a00bf>] do_dentry_open+0x20f/0x2c0 
+[34762.689762]  [<ffffffff811db500>] ? blkdev_get+0x2e0/0x2e0 
+[34762.722221]  [<ffffffff811a01a5>] finish_open+0x35/0x50 
+[34762.754363]  [<ffffffff811b082e>] do_last+0x6de/0xde0 
+[34762.783808]  [<ffffffff811ad378>] ? inode_permission+0x18/0x50 
+[34762.819265]  [<ffffffff811ad428>] ? link_path_walk+0x78/0x880 
+[34762.853700]  [<ffffffff812a619a>] ? selinux_file_alloc_security+0x4a/0x80 
+[34762.892881]  [<ffffffff811b0fe7>] path_openat+0xb7/0x4b0 
+[34762.923621]  [<ffffffff811ad0e0>] ? getname_flags.part.33+0x30/0x150 
+[34762.960839]  [<ffffffff811b16a1>] do_filp_open+0x41/0xa0 
+[34762.992114]  [<ffffffff811bddc2>] ? __alloc_fd+0x42/0x110 
+[34763.023342]  [<ffffffff811a14f4>] do_sys_open+0xf4/0x1e0 
+[34763.054129]  [<ffffffff811a1601>] sys_open+0x21/0x30 
+[34763.082134]  [<ffffffff81630d59>] system_call_fastpath+0x16/0x1b 
 
---=20
+
+And:
+
+[34763.116218] INFO: task umount:4421 blocked for more than 120 seconds. 
+[34763.153670] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message. 
+[34763.200321] umount          D ffff88030bcb4440     0  4421    452 0x00000080 
+[34763.242026]  ffff8801134fbcb8 0000000000000082 ffff8802936c1ac0 ffff8801134fbfd8 
+[34763.287320]  ffff8801134fbfd8 ffff8801134fbfd8 ffff8803069d0000 ffff8802936c1ac0 
+[34763.330722]  ffff8802936c1ac0 ffff88060521f998 ffff88060521f99c ffff8802936c1ac0 
+[34763.374428] Call Trace: 
+[34763.388977]  [<ffffffff816274a9>] schedule+0x29/0x70 
+[34763.419164]  [<ffffffff8162777e>] schedule_preempt_disabled+0xe/0x10 
+[34763.456279]  [<ffffffff81625ae3>] __mutex_lock_slowpath+0xc3/0x140 
+[34763.492474]  [<ffffffff8162561a>] mutex_lock+0x2a/0x50 
+[34763.520840]  [<ffffffff81417da5>] loop_clr_fd+0x285/0x480 
+[34763.552050]  [<ffffffff81418800>] lo_release+0x70/0x80 
+[34763.580787]  [<ffffffff811dabac>] __blkdev_put+0x17c/0x1d0 
+[34763.612479]  [<ffffffff811dac57>] blkdev_put+0x57/0x140 
+[34763.641557]  [<ffffffff811a409d>] kill_block_super+0x4d/0x80 
+[34763.674257]  [<ffffffff811a4467>] deactivate_locked_super+0x57/0x80 
+[34763.708755]  [<ffffffff811a4fee>] deactivate_super+0x4e/0x70 
+[34763.742906]  [<ffffffff811bfbb7>] mntput_no_expire+0xd7/0x130 
+[34763.776872]  [<ffffffff811c0a9c>] sys_umount+0x9c/0x3c0 
+[34763.811819]  [<ffffffff81630d59>] system_call_fastpath+0x16/0x1b 
+
+
+It's clearly a loopback device problem, stuck on the
+bdev->bd_inode->i_mutex. And there's changesin the loop device
+teardown since 3.9-rc4:
+
+$ glo v3.9-rc4..HEAD -- drivers/block/loop.c  
+c1681bf loop: prevent bdev freeing while device in use
+8761a3d loop: cleanup partitions when detaching loop device
+183cfb5 loop: fix error return code in loop_add()
+$
+
+So this looks like someone hasn't been testing their loopback
+driver changes properly...
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/clocksource/Makefile
-index 5e2176f,89c5adc..0000000
---- a/drivers/clocksource/Makefile
-+++ b/drivers/clocksource/Makefile
-@@@ -16,8 -16,7 +16,9 @@@ obj-$(CONFIG_CLKSRC_NOMADIK_MTU)	+=3D nom
-  obj-$(CONFIG_CLKSRC_DBX500_PRCMU)	+=3D clksrc-dbx500-prcmu.o
-  obj-$(CONFIG_ARMADA_370_XP_TIMER)	+=3D time-armada-370-xp.o
-  obj-$(CONFIG_ARCH_BCM2835)	+=3D bcm2835_timer.o
- +obj-$(CONFIG_ARCH_MARCO)	+=3D timer-marco.o
- +obj-$(CONFIG_ARCH_PRIMA2)	+=3D timer-prima2.o
-+ obj-$(CONFIG_ARCH_MXS)		+=3D mxs_timer.o
-  obj-$(CONFIG_SUNXI_TIMER)	+=3D sunxi_timer.o
-  obj-$(CONFIG_ARCH_TEGRA)	+=3D tegra20_timer.o
-  obj-$(CONFIG_VT8500_TIMER)	+=3D vt8500_timer.o
-
---Signature=_Tue__2_Apr_2013_17_57_52_+1100_cOk8FCxomU/zM2h=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIbBAEBCAAGBQJRWoFwAAoJEECxmPOUX5FEImQP92FNqsDj1RCZq5HdzRyF0whX
-TBk2qyYGQScMtx8+/0gYamH67mzH4G48Ve5PCdC0KIVcPZUOKYR4zsfON8c4SXm4
-N4fhp/volL69Tq6DlhI5pWplSwEYIbodmXkJ9eLvEXop+s99Dr6xsqz/v2gAVPxB
-neOPE1XFaP2ETwFPjj1DtiIp1Rig1o+vyuY0dRnijHxeGfiUQtZwpuxJh5BGs//R
-qF2epoo4KGuPARCYHMK13p8YPUtYFUksLyTJVP0eIDytbfDXTz1gwX6iB5iJb/6T
-ia3nyioAv/kCdQIckm5ufnd7a5QQj2xCPw4WobbeOJgJF1YZLh/u+Vv4ZUCDDbTu
-vxIqPvqdnSySFpxElSu49a/7e1HKoTsxvpIp2mMkD5DIgp23aCWbrapVAaErd68h
-Vm2N13uIkslaE3/3CH2SutM7xVsr1Vw20UL5tydKtjJXs/HENWPpv37wdELQJibH
-ntuRo7BhyWaqhMGpczpz099eUdPi+1ZvENAJ2kasAxgaIfcODH1+iw0+ha5j2Jl7
-7cZBdH3L69jKCb0C0uFV2orQmcv56tBAM46kmTNBa6rSpOxcld7pQNoG/ScgWK7d
-b0mQdiH3mzds6ELkzlpxG9zJpMMfv/lpUfXdJP5VWF/qHuiMtMDb8vGdAcTruJEv
-SwQFVEwNYHpVjBF6gX0=
-=MJ+W
------END PGP SIGNATURE-----
-
---Signature=_Tue__2_Apr_2013_17_57_52_+1100_cOk8FCxomU/zM2h=--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
