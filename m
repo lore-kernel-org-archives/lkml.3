@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761751Ab3DBNh0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 09:37:26 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:50124 "EHLO hydra.sisk.pl"
+	id S1761763Ab3DBNiV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 09:38:21 -0400
+Received: from mga01.intel.com ([192.55.52.88]:10960 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761349Ab3DBNhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 09:37:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/9] CPUFreq Updates & Fixes for 3.10
-Date: Tue, 02 Apr 2013 15:45 +0200
-Message-ID: <1635284.x1nGYKZPTd@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <cover.1364820620.git.viresh.kumar@linaro.org>
-References: <cover.1364820620.git.viresh.kumar@linaro.org>
+	id S1760446Ab3DBNiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 09:38:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,393,1363158000"; 
+   d="scan'208";a="312367494"
+Message-ID: <515ADF41.8070207@intel.com>
+Date: Tue, 02 Apr 2013 21:38:09 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Namhyung Kim <namhyung@kernel.org>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, efault@gmx.de, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch v6 10/21] sched: get rq potential maximum utilization
+References: <1364654108-16307-1-git-send-email-alex.shi@intel.com> <1364654108-16307-11-git-send-email-alex.shi@intel.com> <87a9phfgox.fsf@sejong.aot.lge.com>
+In-Reply-To: <87a9phfgox.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 01, 2013 06:27:40 PM Viresh Kumar wrote:
-> Hi Rafael,
-> 
-> These are fixes and updates that are sent and reviewed as separate patchsets
-> earlier. They are all now combined as part of a single patchset for you to apply
-> in your linux-next branch.
-> 
-> All have got reviews earlier and got fixups mailed and applied.
 
-Whole series applied to linux-pm.git/bleeding-edge.
+>> +	nr_running = rq->nr_running ? rq->nr_running : 1;
+> 
+> This can be cleaned up with proper min/max().
 
-Thanks,
-Rafael
+yes, thanks
+> 
+>> +
+>> +	return rt_util + cfs_util * nr_running;
+> 
+> Should this nr_running consider tasks in cfs_rq only?  Also it seems
+> there's no upper bound so that it can possibly exceed FULL_UTIL.
+
+Yes.
+we need to consider task number:nr_running, otherwise cpu utilization
+will never beyond FULL_UTIL, then we can not know if the cpu is overload.
+So we need the possible maximum utilization bigger than FULL_UTIL.
+> 
 
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Thanks
+    Alex
