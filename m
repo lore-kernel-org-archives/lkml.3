@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759519Ab3DBXB2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:01:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33970 "EHLO
+	id S1759539Ab3DBXBv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:01:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33954 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758215Ab3DBWui (ORCPT
+	with ESMTP id S1755591Ab3DBWug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:50:38 -0400
+	Tue, 2 Apr 2013 18:50:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Daley <mattjd@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Hendry <andrew.hendry@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [ 20/56] x25: Handle undersized/fragmented skbs
-Date: Tue,  2 Apr 2013 15:49:47 -0700
-Message-Id: <20130402224714.228537878@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>,
+        Brad Spengler <spender@grsecurity.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 15/56] net/irda: add missing error path release_sock call
+Date: Tue,  2 Apr 2013 15:49:42 -0700
+Message-Id: <20130402224713.658285426@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
@@ -29,345 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Kees Cook <keescook@chromium.org>
 
-From: Matthew Daley <mattjd@gmail.com>
+commit 896ee0eee6261e30c3623be931c3f621428947df upstream.
 
-commit cb101ed2c3c7c0224d16953fe77bfb9d6c2cb9df upstream.
+This makes sure that release_sock is called for all error conditions in
+irda_getsockopt.
 
-There are multiple locations in the X.25 packet layer where a skb is
-assumed to be of at least a certain size and that all its data is
-currently available at skb->data.  These assumptions are not checked,
-hence buffer overreads may occur.  Use pskb_may_pull to check these
-minimal size assumptions and ensure that data is available at skb->data
-when necessary, as well as use skb_copy_bits where needed.
-
-Signed-off-by: Matthew Daley <mattjd@gmail.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andrew Hendry <andrew.hendry@gmail.com>
-Acked-by: Andrew Hendry <andrew.hendry@gmail.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: Brad Spengler <spender@grsecurity.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/x25/af_x25.c         |   31 ++++++++++++++++++++++++-------
- net/x25/x25_dev.c        |    6 ++++++
- net/x25/x25_facilities.c |   10 ++++++----
- net/x25/x25_in.c         |   40 +++++++++++++++++++++++++++++++++++-----
- net/x25/x25_link.c       |    3 +++
- net/x25/x25_subr.c       |   14 +++++++++++++-
- 6 files changed, 87 insertions(+), 17 deletions(-)
 
---- a/net/x25/af_x25.c
-+++ b/net/x25/af_x25.c
-@@ -91,7 +91,7 @@ int x25_parse_address_block(struct sk_bu
- 	int needed;
- 	int rc;
+---
+ net/irda/af_irda.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/net/irda/af_irda.c
++++ b/net/irda/af_irda.c
+@@ -2584,8 +2584,10 @@ bed:
+ 				    NULL, NULL, NULL);
  
--	if (skb->len < 1) {
-+	if (!pskb_may_pull(skb, 1)) {
- 		/* packet has no address block */
- 		rc = 0;
- 		goto empty;
-@@ -100,7 +100,7 @@ int x25_parse_address_block(struct sk_bu
- 	len = *skb->data;
- 	needed = 1 + (len >> 4) + (len & 0x0f);
- 
--	if (skb->len < needed) {
-+	if (!pskb_may_pull(skb, needed)) {
- 		/* packet is too short to hold the addresses it claims
- 		   to hold */
- 		rc = -1;
-@@ -952,10 +952,10 @@ int x25_rx_call_request(struct sk_buff *
- 	 *
- 	 *	Facilities length is mandatory in call request packets
- 	 */
--	if (skb->len < 1)
-+	if (!pskb_may_pull(skb, 1))
- 		goto out_clear_request;
- 	len = skb->data[0] + 1;
--	if (skb->len < len)
-+	if (!pskb_may_pull(skb, len))
- 		goto out_clear_request;
- 	skb_pull(skb,len);
- 
-@@ -966,6 +966,13 @@ int x25_rx_call_request(struct sk_buff *
- 		goto out_clear_request;
- 
- 	/*
-+	 *	Get all the call user data so it can be used in
-+	 *	x25_find_listener and skb_copy_from_linear_data up ahead.
-+	 */
-+	if (!pskb_may_pull(skb, skb->len))
-+		goto out_clear_request;
-+
-+	/*
- 	 *	Find a listener for the particular address/cud pair.
- 	 */
- 	sk = x25_find_listener(&source_addr,skb);
-@@ -1173,6 +1180,9 @@ static int x25_sendmsg(struct kiocb *ioc
- 	 *	byte of the user data is the logical value of the Q Bit.
- 	 */
- 	if (test_bit(X25_Q_BIT_FLAG, &x25->flags)) {
-+		if (!pskb_may_pull(skb, 1))
-+			goto out_kfree_skb;
-+
- 		qbit = skb->data[0];
- 		skb_pull(skb, 1);
- 	}
-@@ -1251,7 +1261,9 @@ static int x25_recvmsg(struct kiocb *ioc
- 	struct x25_sock *x25 = x25_sk(sk);
- 	struct sockaddr_x25 *sx25 = (struct sockaddr_x25 *)msg->msg_name;
- 	size_t copied;
--	int qbit;
-+	int qbit, header_len = x25->neighbour->extended ?
-+		X25_EXT_MIN_LEN : X25_STD_MIN_LEN;
-+
- 	struct sk_buff *skb;
- 	unsigned char *asmptr;
- 	int rc = -ENOTCONN;
-@@ -1272,6 +1284,9 @@ static int x25_recvmsg(struct kiocb *ioc
- 
- 		skb = skb_dequeue(&x25->interrupt_in_queue);
- 
-+		if (!pskb_may_pull(skb, X25_STD_MIN_LEN))
-+			goto out_free_dgram;
-+
- 		skb_pull(skb, X25_STD_MIN_LEN);
- 
- 		/*
-@@ -1292,10 +1307,12 @@ static int x25_recvmsg(struct kiocb *ioc
- 		if (!skb)
- 			goto out;
- 
-+		if (!pskb_may_pull(skb, header_len))
-+			goto out_free_dgram;
-+
- 		qbit = (skb->data[0] & X25_Q_BIT) == X25_Q_BIT;
- 
--		skb_pull(skb, x25->neighbour->extended ?
--				X25_EXT_MIN_LEN : X25_STD_MIN_LEN);
-+		skb_pull(skb, header_len);
- 
- 		if (test_bit(X25_Q_BIT_FLAG, &x25->flags)) {
- 			asmptr  = skb_push(skb, 1);
---- a/net/x25/x25_dev.c
-+++ b/net/x25/x25_dev.c
-@@ -32,6 +32,9 @@ static int x25_receive_data(struct sk_bu
- 	unsigned short frametype;
- 	unsigned int lci;
- 
-+	if (!pskb_may_pull(skb, X25_STD_MIN_LEN))
-+		return 0;
-+
- 	frametype = skb->data[2];
- 	lci = ((skb->data[0] << 8) & 0xF00) + ((skb->data[1] << 0) & 0x0FF);
- 
-@@ -115,6 +118,9 @@ int x25_lapb_receive_frame(struct sk_buf
- 		goto drop;
- 	}
- 
-+	if (!pskb_may_pull(skb, 1))
-+		return 0;
-+
- 	switch (skb->data[0]) {
- 
- 	case X25_IFACE_DATA:
---- a/net/x25/x25_facilities.c
-+++ b/net/x25/x25_facilities.c
-@@ -44,7 +44,7 @@
- int x25_parse_facilities(struct sk_buff *skb, struct x25_facilities *facilities,
- 		struct x25_dte_facilities *dte_facs, unsigned long *vc_fac_mask)
- {
--	unsigned char *p = skb->data;
-+	unsigned char *p;
- 	unsigned int len;
- 
- 	*vc_fac_mask = 0;
-@@ -60,14 +60,16 @@ int x25_parse_facilities(struct sk_buff
- 	memset(dte_facs->called_ae, '\0', sizeof(dte_facs->called_ae));
- 	memset(dte_facs->calling_ae, '\0', sizeof(dte_facs->calling_ae));
- 
--	if (skb->len < 1)
-+	if (!pskb_may_pull(skb, 1))
- 		return 0;
- 
--	len = *p++;
-+	len = skb->data[0];
- 
--	if (len >= skb->len)
-+	if (!pskb_may_pull(skb, 1 + len))
- 		return -1;
- 
-+	p = skb->data + 1;
-+
- 	while (len > 0) {
- 		switch (*p & X25_FAC_CLASS_MASK) {
- 		case X25_FAC_CLASS_A:
---- a/net/x25/x25_in.c
-+++ b/net/x25/x25_in.c
-@@ -107,6 +107,8 @@ static int x25_state1_machine(struct soc
- 			/*
- 			 *	Parse the data in the frame.
- 			 */
-+			if (!pskb_may_pull(skb, X25_STD_MIN_LEN))
-+				goto out_clear;
- 			skb_pull(skb, X25_STD_MIN_LEN);
- 
- 			len = x25_parse_address_block(skb, &source_addr,
-@@ -130,9 +132,8 @@ static int x25_state1_machine(struct soc
- 				if (skb->len > X25_MAX_CUD_LEN)
- 					goto out_clear;
- 
--				skb_copy_from_linear_data(skb,
--					      x25->calluserdata.cuddata,
--					      skb->len);
-+				skb_copy_bits(skb, 0, x25->calluserdata.cuddata,
-+					skb->len);
- 				x25->calluserdata.cudlength = skb->len;
- 			}
- 			if (!sock_flag(sk, SOCK_DEAD))
-@@ -140,6 +141,9 @@ static int x25_state1_machine(struct soc
- 			break;
- 		}
- 		case X25_CLEAR_REQUEST:
-+			if (!pskb_may_pull(skb, X25_STD_MIN_LEN + 2))
-+				goto out_clear;
-+
- 			x25_write_internal(sk, X25_CLEAR_CONFIRMATION);
- 			x25_disconnect(sk, ECONNREFUSED, skb->data[3], skb->data[4]);
- 			break;
-@@ -167,6 +171,9 @@ static int x25_state2_machine(struct soc
- 	switch (frametype) {
- 
- 		case X25_CLEAR_REQUEST:
-+			if (!pskb_may_pull(skb, X25_STD_MIN_LEN + 2))
-+				goto out_clear;
-+
- 			x25_write_internal(sk, X25_CLEAR_CONFIRMATION);
- 			x25_disconnect(sk, 0, skb->data[3], skb->data[4]);
- 			break;
-@@ -180,6 +187,11 @@ static int x25_state2_machine(struct soc
- 	}
- 
- 	return 0;
-+
-+out_clear:
-+	x25_write_internal(sk, X25_CLEAR_REQUEST);
-+	x25_start_t23timer(sk);
-+	return 0;
- }
- 
- /*
-@@ -209,6 +221,9 @@ static int x25_state3_machine(struct soc
- 			break;
- 
- 		case X25_CLEAR_REQUEST:
-+			if (!pskb_may_pull(skb, X25_STD_MIN_LEN + 2))
-+				goto out_clear;
-+
- 			x25_write_internal(sk, X25_CLEAR_CONFIRMATION);
- 			x25_disconnect(sk, 0, skb->data[3], skb->data[4]);
- 			break;
-@@ -307,6 +322,12 @@ static int x25_state3_machine(struct soc
- 	}
- 
- 	return queued;
-+
-+out_clear:
-+	x25_write_internal(sk, X25_CLEAR_REQUEST);
-+	x25->state = X25_STATE_2;
-+	x25_start_t23timer(sk);
-+	return 0;
- }
- 
- /*
-@@ -316,13 +337,13 @@ static int x25_state3_machine(struct soc
-  */
- static int x25_state4_machine(struct sock *sk, struct sk_buff *skb, int frametype)
- {
-+	struct x25_sock *x25 = x25_sk(sk);
-+
- 	switch (frametype) {
- 
- 		case X25_RESET_REQUEST:
- 			x25_write_internal(sk, X25_RESET_CONFIRMATION);
- 		case X25_RESET_CONFIRMATION: {
--			struct x25_sock *x25 = x25_sk(sk);
--
- 			x25_stop_timer(sk);
- 			x25->condition = 0x00;
- 			x25->va        = 0;
-@@ -334,6 +355,9 @@ static int x25_state4_machine(struct soc
- 			break;
- 		}
- 		case X25_CLEAR_REQUEST:
-+			if (!pskb_may_pull(skb, X25_STD_MIN_LEN + 2))
-+				goto out_clear;
-+
- 			x25_write_internal(sk, X25_CLEAR_CONFIRMATION);
- 			x25_disconnect(sk, 0, skb->data[3], skb->data[4]);
- 			break;
-@@ -343,6 +367,12 @@ static int x25_state4_machine(struct soc
- 	}
- 
- 	return 0;
-+
-+out_clear:
-+	x25_write_internal(sk, X25_CLEAR_REQUEST);
-+	x25->state = X25_STATE_2;
-+	x25_start_t23timer(sk);
-+	return 0;
- }
- 
- /* Higher level upcall for a LAPB frame */
---- a/net/x25/x25_link.c
-+++ b/net/x25/x25_link.c
-@@ -90,6 +90,9 @@ void x25_link_control(struct sk_buff *sk
- 			break;
- 
- 		case X25_DIAGNOSTIC:
-+			if (!pskb_may_pull(skb, X25_STD_MIN_LEN + 4))
-+				break;
-+
- 			printk(KERN_WARNING "x25: diagnostic #%d - "
- 			       "%02X %02X %02X\n",
- 			       skb->data[3], skb->data[4],
---- a/net/x25/x25_subr.c
-+++ b/net/x25/x25_subr.c
-@@ -271,7 +271,11 @@ int x25_decode(struct sock *sk, struct s
- 	       int *d, int *m)
- {
- 	struct x25_sock *x25 = x25_sk(sk);
--	unsigned char *frame = skb->data;
-+	unsigned char *frame;
-+
-+	if (!pskb_may_pull(skb, X25_STD_MIN_LEN))
-+		return X25_ILLEGAL;
-+	frame = skb->data;
- 
- 	*ns = *nr = *q = *d = *m = 0;
- 
-@@ -296,6 +300,10 @@ int x25_decode(struct sock *sk, struct s
- 		if (frame[2] == X25_RR  ||
- 		    frame[2] == X25_RNR ||
- 		    frame[2] == X25_REJ) {
-+			if (!pskb_may_pull(skb, X25_EXT_MIN_LEN))
-+				return X25_ILLEGAL;
-+			frame = skb->data;
-+
- 			*nr = (frame[3] >> 1) & 0x7F;
- 			return frame[2];
- 		}
-@@ -310,6 +318,10 @@ int x25_decode(struct sock *sk, struct s
- 
- 	if (x25->neighbour->extended) {
- 		if ((frame[2] & 0x01) == X25_DATA) {
-+			if (!pskb_may_pull(skb, X25_EXT_MIN_LEN))
-+				return X25_ILLEGAL;
-+			frame = skb->data;
-+
- 			*q  = (frame[0] & X25_Q_BIT) == X25_Q_BIT;
- 			*d  = (frame[0] & X25_D_BIT) == X25_D_BIT;
- 			*m  = (frame[3] & X25_EXT_M_BIT) == X25_EXT_M_BIT;
+ 		/* Check if the we got some results */
+-		if (!self->cachedaddr)
+-			return -EAGAIN;		/* Didn't find any devices */
++		if (!self->cachedaddr) {
++			err = -EAGAIN;		/* Didn't find any devices */
++			goto out;
++		}
+ 		daddr = self->cachedaddr;
+ 		/* Cleanup */
+ 		self->cachedaddr = 0;
 
 
