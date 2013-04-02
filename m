@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759952Ab3DBCTY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Apr 2013 22:19:24 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:38717 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758625Ab3DBCTW (ORCPT
+	id S1759953Ab3DBCYj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Apr 2013 22:24:39 -0400
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:61810 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759439Ab3DBCYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Apr 2013 22:19:22 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r322JF2I014889, This message is released by code: ctlocs8528
-From: hayeswang <hayeswang@realtek.com>
-To: "'Francois Romieu'" <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <1364824539-4156-1-git-send-email-hayeswang@realtek.com> <1364824539-4156-2-git-send-email-hayeswang@realtek.com> <20130401222048.GA19335@electric-eye.fr.zoreil.com>
-Subject: RE: [PATCH net-next 2/7] r8169: Update PHY settings of RTL8111G
-Date: Tue, 2 Apr 2013 10:19:17 +0800
-Message-ID: <2CDCEE66B3D64940AB7259FBACFFDC6F@realtek.com.tw>
+	Mon, 1 Apr 2013 22:24:37 -0400
+Date: Mon, 1 Apr 2013 19:24:31 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2 tj/for-3.10] workqueue: add wq->freezing and remove
+ POOL_FREEZING
+Message-ID: <20130402022431.GA6255@htj.dyndns.org>
+References: <1364660955-5217-1-git-send-email-laijs@cn.fujitsu.com>
+ <20130401184402.GA31435@htj.dyndns.org>
+ <515A3FBD.3080509@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Ac4vJy0GO/ZT1bF0QA2RYKVN018QYgAH3Kgg
-In-Reply-To: <20130401222048.GA19335@electric-eye.fr.zoreil.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515A3FBD.3080509@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Francois Romieu [mailto:romieu@fr.zoreil.com] 
-> Sent: Tuesday, April 02, 2013 6:21 AM
-> To: Hayeswang
-> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH net-next 2/7] r8169: Update PHY settings 
-> of RTL8111G
+Hello, Lai.
+
+On Tue, Apr 02, 2013 at 10:17:33AM +0800, Lai Jiangshan wrote:
+> ->flags is hot and almost read-only(except __WQ_DRAINING).
+> __WQ_DRAINING bit is accessed for every queue_work(), so we add it to hot ->flags.
 > 
-> Hayes Wang <hayeswang@realtek.com> :
-> > - Replace the current settings with rtl_writephy and rtl_readphy.
-> >   For the hardware, the settings are same with previous ones. This
-> >   make the setting method like the previous chips.
-> > - Add new PHY settings.
+> __WQ_ORDERED is read-only.
 > 
-> Would you mind spliting it in two ?
+> ->freezing is cold and non-read-only.
+> I don't think we need to add __WQ_FREEZING to ->flags.
 
-OK.
+Hmm... I'm not following.  If you have multiple hot flags which may be
+used from different CPUs, yeah, you may want to put them in separate
+cachelines but cold flags don't really matter either way so why put it
+in a separate field?  Can you please elaborate?
 
-[...]
-> > -	if (r8168_phy_ocp_read(tp, 0xa466) & 0x0100)
-> > -		rtl_w1w0_phy_ocp(tp, 0xc41a, 0x0002, 0x0000);
-> > -	else
-> > -		rtl_w1w0_phy_ocp(tp, 0xbcc4, 0x0000, 0x0002);
->                                      ^^^^^^
-> This one was not right, was it ?
+Thanks.
 
-No, it was not right. It seems a mistake for copying and pasting.
-
+-- 
+tejun
