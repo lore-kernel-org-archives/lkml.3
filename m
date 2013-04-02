@@ -1,285 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932939Ab3DBQXy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 12:23:54 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52941 "EHLO
+	id S932902Ab3DBQXq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 12:23:46 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:61091 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932839Ab3DBQXt (ORCPT
+	with ESMTP id S932883Ab3DBQXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 12:23:49 -0400
+	Tue, 2 Apr 2013 12:23:43 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Greg KH <greg@kroah.com>
 Cc: linux-usb@vger.kernel.org, Manjunath Goudar <manjunath.goudar@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH V5 6/6] USB: OHCI: avoid conflicting platform drivers
-Date: Tue,  2 Apr 2013 18:24:04 +0200
-Message-Id: <1364919844-1726-7-git-send-email-arnd@arndb.de>
+Subject: [PATCH V5 0/6] USB: EHCI multiplatform for 3.10
+Date: Tue,  2 Apr 2013 18:23:58 +0200
+Message-Id: <1364919844-1726-1-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1364919844-1726-1-git-send-email-arnd@arndb.de>
-References: <1364919844-1726-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:owwBlnzWJeAteOqWR3BW/WB5awy7OjfFRHbpW8LkdjM
- lint6pUFKhzuK0D9IAQXQ/fbVaaWvRVSRYx9htpc1/FNyvcbNP
- QBdWZpmRwXACapFvyecJwpXvBKOCplAQGkh+m6jCS8+QQ4pKle
- EiJ1FZpX30HoY/C+bLwkTL6BoeZC8nc9zbhYCUszO6EBozYEle
- UhOkdbq5eHPxJRUiLoE2i13SWe6p5jvk4yVn0u5+zV/TmfNDQX
- hMfAzuNWem8zeTUi9nlxizL0Bpo4U7A1MNkQH9Y+Zsk30xmZnO
- TVKcu4DnnfNudeHD1JADe7Q5apx+aAJ9Diq9PUH7qa7LJ9sO9l
- 4gvWyymt6aCC3PMoADaYVbdzjjTaqRv5qGO2z3xwq
+X-Provags-ID: V02:K0:exdrIqrxEVJWeo4rw/MQbia1WtGISvLXTWbbrcJeBUI
+ buLqQbew1FCjBgnF2ThXriXHUBaGNS1kW99IwJ2+uVkroPwNaA
+ xyRCgOk6om58piT4Fyzj1E3W9vfMCq6gd/9e3X2RFgKpa/2x5L
+ a3Mm430ZvORaOgIHVIzBoqj4BFkPTad6llOnlV6AJFhrapKGw2
+ reT/U4UCEMCrz1y55Jo24Hf55suGymMcOAbklyFijz1R1zjOX7
+ GrFHzt5Gwd6d+8+zyr8PcT0pfoQCvQreB0HVdAYLbhX8jmw6om
+ rnUkoxQ9YZCLSEdLE08uLyS3JHFuKS8pkiszKid35ugNbTPec2
+ E3A86gzI3PkxyXytMpFseP5+GSyxemzwJj5EWLn7Z
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Like the EHCI driver, OHCI supports a large number of different platform
-glue drivers by directly including them, which causes problems with
-conflicting macro definitions in some cases. As more ARM architecture
-specific back-ends are required to coexist in a single build, we should
-split those out into separate drivers. Unfortunately, the infrastructure
-for that is still under development, so to give us more time, this uses
-a separate *_PLATFORM_DRIVER macro for each ARM specific OHCI backend,
-just like we already do on PowerPC and some of the other ARM platforms.
+Hi Greg,
 
-In linux-3.10, only the SPEAr and CNS3xxx back-ends would actually conflict
-without this patch, but over time we would get more of them, so this
-is a way to avoid having to patch the driver every time it breaks. We
-should still split out all back-ends into separate loadable modules,
-but that work is only needed to improve code size and cleanliness after
-this patch, not for correctness.
+Here are the EHCI patches that I think are good for inclusion in 3.10,
+I hope you are willing to include them after the debacle over these
+patches in 3.9.
 
-While we're here, this fixes the incorrectly sorted error path
-for the OMAP1 and OMAP3 backends to ensure we always unregister
-the exact set of drivers that were registered before erroring out.
+The patches are all logically independent but sorted by priority,
+so decide for yourself how many you want to take, starting at the
+first one. The first six patches all have an Ack from Alan Stern
+and from the respective ARM platform maintainers.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
- drivers/usb/host/ohci-hcd.c | 136 ++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 118 insertions(+), 18 deletions(-)
+* The first patch (Orion) fixes a preexisting bug because the driver
+  conflicts with the OMAP and vt8500 back-ends in 3.9. Both of those
+  are fixed in usb-next now, but the same problem comes back with
+  any other platform we enable for ARM multiplatform support.
+* The second patch fixes a problem that will happen in 3.10 as we
+  enable SPEAr multiplatform support.
+* S5P/Exynos multiplatform support is not yet part of linux-next, but
+  I still have hope for 3.10, so the third patch will be needed as well
+  then.
+* The ehci-atmel patch will not be needed in 3.10 but quite likely
+  in 3.11.
+* I have no time line for MSM multiplatform support, but we will
+  get there eventually and the driver is broken already so there
+  is no risk of regressions.
+* The final patch is from me and still waiting for an Ack from Alan
+  Stern, so please wait for his feedback before applying that one.
 
-diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
-index 180a2b0..9e6de95 100644
---- a/drivers/usb/host/ohci-hcd.c
-+++ b/drivers/usb/host/ohci-hcd.c
-@@ -1102,12 +1102,12 @@ MODULE_LICENSE ("GPL");
- 
- #if defined(CONFIG_ARCH_S3C24XX) || defined(CONFIG_ARCH_S3C64XX)
- #include "ohci-s3c2410.c"
--#define PLATFORM_DRIVER		ohci_hcd_s3c2410_driver
-+#define S3C2410_PLATFORM_DRIVER	ohci_hcd_s3c2410_driver
- #endif
- 
- #ifdef CONFIG_USB_OHCI_EXYNOS
- #include "ohci-exynos.c"
--#define PLATFORM_DRIVER		exynos_ohci_driver
-+#define EXYNOS_PLATFORM_DRIVER	exynos_ohci_driver
- #endif
- 
- #ifdef CONFIG_USB_OHCI_HCD_OMAP1
-@@ -1127,25 +1127,24 @@ MODULE_LICENSE ("GPL");
- 
- #ifdef CONFIG_ARCH_EP93XX
- #include "ohci-ep93xx.c"
--#define PLATFORM_DRIVER		ohci_hcd_ep93xx_driver
-+#define EP93XX_PLATFORM_DRIVER	ohci_hcd_ep93xx_driver
- #endif
- 
- #ifdef CONFIG_ARCH_AT91
- #include "ohci-at91.c"
--#define PLATFORM_DRIVER		ohci_hcd_at91_driver
-+#define AT91_PLATFORM_DRIVER	ohci_hcd_at91_driver
- #endif
- 
- #ifdef CONFIG_ARCH_LPC32XX
- #include "ohci-nxp.c"
--#define PLATFORM_DRIVER		usb_hcd_nxp_driver
-+#define NXP_PLATFORM_DRIVER	usb_hcd_nxp_driver
- #endif
- 
- #ifdef CONFIG_ARCH_DAVINCI_DA8XX
- #include "ohci-da8xx.c"
--#define PLATFORM_DRIVER		ohci_hcd_da8xx_driver
-+#define DAVINCI_PLATFORM_DRIVER	ohci_hcd_da8xx_driver
- #endif
- 
--
- #ifdef CONFIG_USB_OHCI_HCD_PPC_OF
- #include "ohci-ppc-of.c"
- #define OF_PLATFORM_DRIVER	ohci_hcd_ppc_of_driver
-@@ -1153,7 +1152,7 @@ MODULE_LICENSE ("GPL");
- 
- #ifdef CONFIG_PLAT_SPEAR
- #include "ohci-spear.c"
--#define PLATFORM_DRIVER		spear_ohci_hcd_driver
-+#define SPEAR_PLATFORM_DRIVER	spear_ohci_hcd_driver
- #endif
- 
- #ifdef CONFIG_PPC_PS3
-@@ -1199,7 +1198,14 @@ MODULE_LICENSE ("GPL");
- 	!defined(SA1111_DRIVER) &&	\
- 	!defined(PS3_SYSTEM_BUS_DRIVER) && \
- 	!defined(SM501_OHCI_DRIVER) && \
--	!defined(TMIO_OHCI_DRIVER)
-+	!defined(TMIO_OHCI_DRIVER) && \
-+	!defined(S3C2410_PLATFORM_DRIVER) && \
-+	!defined(EXYNOS_PLATFORM_DRIVER) && \
-+	!defined(EP93XX_PLATFORM_DRIVER) && \
-+	!defined(AT91_PLATFORM_DRIVER) && \
-+	!defined(NXP_PLATFORM_DRIVER) && \
-+	!defined(DAVINCI_PLATFORM_DRIVER) && \
-+	!defined(SPEAR_PLATFORM_DRIVER)
- #error "missing bus glue for ohci-hcd"
- #endif
- 
-@@ -1277,9 +1283,79 @@ static int __init ohci_hcd_mod_init(void)
- 		goto error_tmio;
- #endif
- 
-+#ifdef S3C2410_PLATFORM_DRIVER
-+	retval = platform_driver_register(&S3C2410_PLATFORM_DRIVER);
-+	if (retval < 0)
-+		goto error_s3c2410;
-+#endif
-+
-+#ifdef EXYNOS_PLATFORM_DRIVER
-+	retval = platform_driver_register(&EXYNOS_PLATFORM_DRIVER);
-+	if (retval < 0)
-+		goto error_exynos;
-+#endif
-+
-+#ifdef EP93XX_PLATFORM_DRIVER
-+	retval = platform_driver_register(&EP93XX_PLATFORM_DRIVER);
-+	if (retval < 0)
-+		goto error_ep93xx;
-+#endif
-+
-+#ifdef AT91_PLATFORM_DRIVER
-+	retval = platform_driver_register(&AT91_PLATFORM_DRIVER);
-+	if (retval < 0)
-+		goto error_at91;
-+#endif
-+
-+#ifdef NXP_PLATFORM_DRIVER
-+	retval = platform_driver_register(&NXP_PLATFORM_DRIVER);
-+	if (retval < 0)
-+		goto error_nxp;
-+#endif
-+
-+#ifdef DAVINCI_PLATFORM_DRIVER
-+	retval = platform_driver_register(&DAVINCI_PLATFORM_DRIVER);
-+	if (retval < 0)
-+		goto error_davinci;
-+#endif
-+
-+#ifdef SPEAR_PLATFORM_DRIVER
-+	retval = platform_driver_register(&SPEAR_PLATFORM_DRIVER);
-+	if (retval < 0)
-+		goto error_spear;
-+#endif
-+
- 	return retval;
- 
- 	/* Error path */
-+#ifdef SPEAR_PLATFORM_DRIVER
-+	platform_driver_unregister(&SPEAR_PLATFORM_DRIVER);
-+ error_spear:
-+#endif
-+#ifdef DAVINCI_PLATFORM_DRIVER
-+	platform_driver_unregister(&DAVINCI_PLATFORM_DRIVER);
-+ error_davinci:
-+#endif
-+#ifdef NXP_PLATFORM_DRIVER
-+	platform_driver_unregister(&NXP_PLATFORM_DRIVER);
-+ error_nxp:
-+#endif
-+#ifdef AT91_PLATFORM_DRIVER
-+	platform_driver_unregister(&AT91_PLATFORM_DRIVER);
-+ error_at91:
-+#endif
-+#ifdef EP93XX_PLATFORM_DRIVER
-+	platform_driver_unregister(&EP93XX_PLATFORM_DRIVER);
-+ error_ep93xx:
-+#endif
-+#ifdef EXYNOS_PLATFORM_DRIVER
-+	platform_driver_unregister(&EXYNOS_PLATFORM_DRIVER);
-+ error_exynos:
-+#endif
-+#ifdef S3C2410_PLATFORM_DRIVER
-+	platform_driver_unregister(&S3C2410_PLATFORM_DRIVER);
-+ error_s3c2410:
-+#endif
- #ifdef TMIO_OHCI_DRIVER
- 	platform_driver_unregister(&TMIO_OHCI_DRIVER);
-  error_tmio:
-@@ -1300,17 +1376,17 @@ static int __init ohci_hcd_mod_init(void)
- 	platform_driver_unregister(&OF_PLATFORM_DRIVER);
-  error_of_platform:
- #endif
--#ifdef PLATFORM_DRIVER
--	platform_driver_unregister(&PLATFORM_DRIVER);
-- error_platform:
-+#ifdef OMAP3_PLATFORM_DRIVER
-+	platform_driver_unregister(&OMAP3_PLATFORM_DRIVER);
-+ error_omap3_platform:
- #endif
- #ifdef OMAP1_PLATFORM_DRIVER
- 	platform_driver_unregister(&OMAP1_PLATFORM_DRIVER);
-  error_omap1_platform:
- #endif
--#ifdef OMAP3_PLATFORM_DRIVER
--	platform_driver_unregister(&OMAP3_PLATFORM_DRIVER);
-- error_omap3_platform:
-+#ifdef PLATFORM_DRIVER
-+	platform_driver_unregister(&PLATFORM_DRIVER);
-+ error_platform:
- #endif
- #ifdef PS3_SYSTEM_BUS_DRIVER
- 	ps3_ohci_driver_unregister(&PS3_SYSTEM_BUS_DRIVER);
-@@ -1329,6 +1405,27 @@ module_init(ohci_hcd_mod_init);
- 
- static void __exit ohci_hcd_mod_exit(void)
- {
-+#ifdef SPEAR_PLATFORM_DRIVER
-+	platform_driver_unregister(&SPEAR_PLATFORM_DRIVER);
-+#endif
-+#ifdef DAVINCI_PLATFORM_DRIVER
-+	platform_driver_unregister(&DAVINCI_PLATFORM_DRIVER);
-+#endif
-+#ifdef NXP_PLATFORM_DRIVER
-+	platform_driver_unregister(&NXP_PLATFORM_DRIVER);
-+#endif
-+#ifdef AT91_PLATFORM_DRIVER
-+	platform_driver_unregister(&AT91_PLATFORM_DRIVER);
-+#endif
-+#ifdef EP93XX_PLATFORM_DRIVER
-+	platform_driver_unregister(&EP93XX_PLATFORM_DRIVER);
-+#endif
-+#ifdef EXYNOS_PLATFORM_DRIVER
-+	platform_driver_unregister(&EXYNOS_PLATFORM_DRIVER);
-+#endif
-+#ifdef S3C2410_PLATFORM_DRIVER
-+	platform_driver_unregister(&S3C2410_PLATFORM_DRIVER);
-+#endif
- #ifdef TMIO_OHCI_DRIVER
- 	platform_driver_unregister(&TMIO_OHCI_DRIVER);
- #endif
-@@ -1344,12 +1441,15 @@ static void __exit ohci_hcd_mod_exit(void)
- #ifdef OF_PLATFORM_DRIVER
- 	platform_driver_unregister(&OF_PLATFORM_DRIVER);
- #endif
--#ifdef PLATFORM_DRIVER
--	platform_driver_unregister(&PLATFORM_DRIVER);
--#endif
- #ifdef OMAP3_PLATFORM_DRIVER
- 	platform_driver_unregister(&OMAP3_PLATFORM_DRIVER);
- #endif
-+#ifdef OMAP1_PLATFORM_DRIVER
-+	platform_driver_unregister(&OMAP1_PLATFORM_DRIVER);
-+#endif
-+#ifdef PLATFORM_DRIVER
-+	platform_driver_unregister(&PLATFORM_DRIVER);
-+#endif
- #ifdef PS3_SYSTEM_BUS_DRIVER
- 	ps3_ohci_driver_unregister(&PS3_SYSTEM_BUS_DRIVER);
- #endif
+There is one more patch coming for ehci-tegra. I've forwarded
+Manjunath's work on that driver to the Tegra developers, who
+will test it and send it directly to you. The version I had was
+incomplete.
+
+	Arnd
+
+Arnd Bergmann (1):
+  USB: OHCI: avoid conflicting platform drivers
+
+Manjunath Goudar (5):
+  USB: EHCI: make ehci-orion a separate driver
+  USB: EHCI: make ehci-spear a separate driver
+  USB: EHCI: make ehci-s5p a separate driver
+  USB: EHCI: make ehci-atmel a separate driver
+  USB: EHCI: make ehci-msm a separate driver
+
+ drivers/usb/host/Kconfig      |  40 +++++++++--
+ drivers/usb/host/Makefile     |   5 ++
+ drivers/usb/host/ehci-atmel.c |  88 +++++++++++------------
+ drivers/usb/host/ehci-hcd.c   |  30 ++------
+ drivers/usb/host/ehci-msm.c   |  89 +++++++++++------------
+ drivers/usb/host/ehci-orion.c |  82 +++++++++------------
+ drivers/usb/host/ehci-s5p.c   | 164 +++++++++++++++++++++---------------------
+ drivers/usb/host/ehci-spear.c | 115 +++++++++++++----------------
+ drivers/usb/host/ohci-hcd.c   | 136 ++++++++++++++++++++++++++++++-----
+ 9 files changed, 412 insertions(+), 337 deletions(-)
+
 -- 
 1.8.1.2
 
