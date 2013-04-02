@@ -1,30 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933851Ab3DBWOm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:14:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33522 "EHLO
+	id S964788Ab3DBWSt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:18:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33655 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933729Ab3DBWOY (ORCPT
+	with ESMTP id S933847Ab3DBWOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:24 -0400
+	Tue, 2 Apr 2013 18:14:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Lingzhu Xiang <lxiang@redhat.com>, CAI Qian <caiqian@redhat.com>
-Subject: [ 36/68] drm/i915: Dont clobber crtc->fb when queue_flip fails
-Date: Tue,  2 Apr 2013 15:13:25 -0700
-Message-Id: <20130402221334.113155792@linuxfoundation.org>
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Erik Hugne <erik.hugne@ericsson.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 62/68] ipv6: dont accept multicast traffic with scope 0
+Date: Tue,  2 Apr 2013 15:13:51 -0700
+Message-Id: <20130402221337.133612533@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,71 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ville Syrjälä <ville.syrjala@linux.intel.com>
 
-commit 4a35f83b2b7c6aae3fc0d1c4554fdc99dc33ad07 upstream.
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-Restore crtc->fb to the old framebuffer if queue_flip fails.
+[ Upstream commit 20314092c1b41894d8c181bf9aa6f022be2416aa ]
 
-While at it, kill the pointless intel_fb temp variable.
+v2:
+a) moved before multicast source address check
+b) changed comment to netdev style
 
-v2: Update crtc->fb before queue_flip and restore it back
-    after a failure.
-
-Backported for 3.4-stable. Adjusted context only.
-
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reported-and-Tested-by: Mika Kuoppala <mika.kuoppala@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Lingzhu Xiang <lxiang@redhat.com>
-Reviewed-by: CAI Qian <caiqian@redhat.com>
+Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Cc: Erik Hugne <erik.hugne@ericsson.com>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/gpu/drm/i915/intel_display.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ net/ipv6/ip6_input.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7567,8 +7567,8 @@ static int intel_crtc_page_flip(struct d
- {
- 	struct drm_device *dev = crtc->dev;
- 	struct drm_i915_private *dev_priv = dev->dev_private;
--	struct intel_framebuffer *intel_fb;
--	struct drm_i915_gem_object *obj;
-+	struct drm_framebuffer *old_fb = crtc->fb;
-+	struct drm_i915_gem_object *obj = to_intel_framebuffer(fb)->obj;
- 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
- 	struct intel_unpin_work *work;
- 	unsigned long flags;
-@@ -7580,8 +7580,7 @@ static int intel_crtc_page_flip(struct d
+--- a/net/ipv6/ip6_input.c
++++ b/net/ipv6/ip6_input.c
+@@ -111,6 +111,15 @@ int ipv6_rcv(struct sk_buff *skb, struct
+ 	    ipv6_addr_loopback(&hdr->daddr))
+ 		goto err;
  
- 	work->event = event;
- 	work->dev = crtc->dev;
--	intel_fb = to_intel_framebuffer(crtc->fb);
--	work->old_fb_obj = intel_fb->obj;
-+	work->old_fb_obj = to_intel_framebuffer(old_fb)->obj;
- 	INIT_WORK(&work->work, intel_unpin_work_fn);
- 
- 	ret = drm_vblank_get(dev, intel_crtc->pipe);
-@@ -7601,9 +7600,6 @@ static int intel_crtc_page_flip(struct d
- 	intel_crtc->unpin_work = work;
- 	spin_unlock_irqrestore(&dev->event_lock, flags);
- 
--	intel_fb = to_intel_framebuffer(fb);
--	obj = intel_fb->obj;
--
- 	mutex_lock(&dev->struct_mutex);
- 
- 	/* Reference the objects for the scheduled work. */
-@@ -7634,6 +7630,7 @@ static int intel_crtc_page_flip(struct d
- 
- cleanup_pending:
- 	atomic_sub(1 << intel_crtc->plane, &work->old_fb_obj->pending_flip);
-+	crtc->fb = old_fb;
- 	drm_gem_object_unreference(&work->old_fb_obj->base);
- 	drm_gem_object_unreference(&obj->base);
- 	mutex_unlock(&dev->struct_mutex);
++	/* RFC4291 2.7
++	 * Nodes must not originate a packet to a multicast address whose scope
++	 * field contains the reserved value 0; if such a packet is received, it
++	 * must be silently dropped.
++	 */
++	if (ipv6_addr_is_multicast(&hdr->daddr) &&
++	    IPV6_ADDR_MC_SCOPE(&hdr->daddr) == 0)
++		goto err;
++
+ 	/*
+ 	 * RFC4291 2.7
+ 	 * Multicast addresses must not be used as source addresses in IPv6
 
 
