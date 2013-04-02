@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209Ab3DBXq6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:46:58 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:47746 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753127Ab3DBXq4 convert rfc822-to-8bit (ORCPT
+	id S1757945Ab3DBXsL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:48:11 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:58772 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077Ab3DBXsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 19:46:56 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 2 Apr 2013 19:48:09 -0400
+Date: Tue, 2 Apr 2013 16:48:05 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Platform Driver <platform-driver-x86@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH 1/1] Introduce Intel RAPL cooling device driver
+Message-ID: <20130402234805.GA11880@kroah.com>
+References: <1364940936-20846-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
+ <20130402230042.GA8713@kroah.com>
+ <20130402163357.72dac902@chromoly>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1364050010-23919-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Dom Cobley <popcornmix@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rabeeh Khoury <rabeeh@solid-run.com>, Daniel Mack <zonque@gmail.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1363603397-2762-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1364050010-23919-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Message-ID: <20130402234648.8177.86213@quantum>
-User-Agent: alot/0.3.3+
-Subject: Re: [PATCH v4] clk: add si5351 i2c common clock driver
-Date: Tue, 02 Apr 2013 16:46:48 -0700
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130402163357.72dac902@chromoly>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Sebastian Hesselbarth (2013-03-23 07:46:50)
-> diff --git a/drivers/clk/clk-si5351.c b/drivers/clk/clk-si5351.c
-> new file mode 100644
-> index 0000000..9d0c210
-> --- /dev/null
-> +++ b/drivers/clk/clk-si5351.c
-> @@ -0,0 +1,1411 @@
-> +/*
-> + * clk-si5351.c: Silicon Laboratories Si5351A/B/C I2C Clock Generator
-> + *
-> + * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> + * Rabeeh Khoury <rabeeh@solid-run.com>
-> + *
-> + * References:
-> + * [1] "Si5351A/B/C Data Sheet"
-> + *     http://www.silabs.com/Support%20Documents/TechnicalDocs/Si5351.pdf
-> + * [2] "Manually Generating an Si5351 Register Map"
-> + *     http://www.silabs.com/Support%20Documents/TechnicalDocs/AN619.pdf
-> + *
-> + * This program is free software; you can redistribute  it and/or modify it
-> + * under  the terms of  the GNU General  Public License as published by the
-> + * Free Software Foundation;  either version 2 of the  License, or (at your
-> + * option) any later version.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
-> +#include <linux/clk-private.h>
+On Tue, Apr 02, 2013 at 04:33:57PM -0700, Jacob Pan wrote:
+> On Tue, 2 Apr 2013 16:00:42 -0700
+> Greg KH <gregkh@linuxfoundation.org> wrote:
+> 
+> > > +#include "intel_rapl.h"
+> > > +#include "../../../fs/sysfs/sysfs.h"  
+> > 
+> > WTF?
+> > 
+> > Oh, that's a sure sign you are not doing something properly, if you
+> > think it's ok to muck around with the internals of sysfs.
+> > 
+> > There's a reason that file is "private", why do you think it's ok to
+> > use it directly?  Did you just think that I somehow "forgot" to put
+> > it in the proper include directory?
+> I did feel unsure about this but i saw some precedence in the kernel.
 
-I hope that this is supposed to be clk-provider.h.  I don't plan on
-taking in any more clock drivers that depend on clk-private.h.  I didn't
-see any reason for this patch to not use clk-provider.h.
+Someone else is doing this with the sysfs api?  I don't see any other
+code in Linus's tree doing this at the moment, where did you see this?
+Let me know and I'll fix it up right away.
 
-Regards,
-Mike
+> Anyway, I needed a way to validate a userspace file passed to rapl
+> driver belong to the same sysfs directory. I will look for alternative
+> ways.
+
+What do you mean by this?  What exactly are you trying to do?  No normal
+driver code should _ever_ call sysfs functions directly, nor should they
+ever care about sysfs internals.
+
+And, odds are, you didn't test your code as a module, right, as any
+internal sysfs function that you could get from this .h file, wouldn't
+be exported for a module to use, unless I missed one somewhere?
+
+greg k-h
