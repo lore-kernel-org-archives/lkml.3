@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759765Ab3DBXEl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:04:41 -0400
-Received: from mail-da0-f43.google.com ([209.85.210.43]:45928 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758629Ab3DBXEi (ORCPT
+	id S1759797Ab3DBXFD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:05:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33919 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757997Ab3DBWua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 19:04:38 -0400
-Date: Tue, 2 Apr 2013 16:04:35 -0700
+	Tue, 2 Apr 2013 18:50:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Platform Driver <platform-driver-x86@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 1/1] Introduce Intel RAPL cooling device driver
-Message-ID: <20130402230435.GA9462@kroah.com>
-References: <1364940936-20846-1-git-send-email-jacob.jun.pan@linux.intel.com>
- <1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
- <515B51F7.6070901@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515B51F7.6070901@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [ 07/56] staging: comedi: s626: fix continuous acquisition
+Date: Tue,  2 Apr 2013 15:49:34 -0700
+Message-Id: <20130402224712.723596018@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
+References: <20130402224711.840825715@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 02:47:35PM -0700, Randy Dunlap wrote:
-> On 04/02/13 15:15, Jacob Pan wrote:
-> > diff --git a/drivers/platform/x86/intel_rapl.c b/drivers/platform/x86/intel_rapl.c
-> > new file mode 100644
-> > index 0000000..56ee928
-> > --- /dev/null
-> > +++ b/drivers/platform/x86/intel_rapl.c
-> > @@ -0,0 +1,1323 @@
-> > +/*
-> > + *  intel_rapl.c - Intel Running Average Power Limit Driver for MSR based
-> > + *                 RAPL interface
-> > + *
-> > + *  Copyright (c) 2013, Intel Corporation.
-> > + * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> > +#include <linux/sysfs.h>
-> > +
-> 
-> > +#include "../../../fs/sysfs/sysfs.h"
-> 
-> 
-> What does this driver need from ^^^^^^ that file, which says:
-> 
->  * fs/sysfs/sysfs.h - sysfs internal header file
-> 
-> and should that be moved to include/linux/sysfs.h ?
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-See my other complain about this already, I beat you to it :)
+------------------
 
-greg k-h
+From: Ian Abbott <abbotti@mev.co.uk>
+
+commit e4317ce877a31dbb9d96375391c1c4ad2210d637 upstream.
+
+For the s626 driver, there is a bug in the handling of asynchronous
+commands on the AI subdevice when the stop source is `TRIG_NONE`.  The
+command should run continuously until cancelled, but the interrupt
+handler stops the command running after the first scan.
+
+The command set-up function `s626_ai_cmd()` contains this code:
+
+	switch (cmd->stop_src) {
+	case TRIG_COUNT:
+		/*  data arrives as one packet */
+		devpriv->ai_sample_count = cmd->stop_arg;
+		devpriv->ai_continous = 0;
+		break;
+	case TRIG_NONE:
+		/*  continous acquisition */
+		devpriv->ai_continous = 1;
+		devpriv->ai_sample_count = 0;
+		break;
+	}
+
+The interrupt handler `s626_irq_handler()` contains this code:
+
+		if (!(devpriv->ai_continous))
+			devpriv->ai_sample_count--;
+		if (devpriv->ai_sample_count <= 0) {
+			devpriv->ai_cmd_running = 0;
+			/* ... */
+		}
+
+So `devpriv->ai_sample_count` is only decremented for the `TRIG_COUNT`
+case, but `devpriv->ai_cmd_running` is set to 0 (and the command
+stopped) regardless.
+
+Fix this in `s626_ai_cmd()` by setting `devpriv->ai_sample_count = 1`
+for the `TRIG_NONE` case.  The interrupt handler will not decrement it
+so it will remain greater than 0 and the check for stopping the
+acquisition will fail.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/staging/comedi/drivers/s626.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/staging/comedi/drivers/s626.c
++++ b/drivers/staging/comedi/drivers/s626.c
+@@ -1882,7 +1882,7 @@ static int s626_ai_cmd(struct comedi_dev
+ 	case TRIG_NONE:
+ 		/*  continous acquisition */
+ 		devpriv->ai_continous = 1;
+-		devpriv->ai_sample_count = 0;
++		devpriv->ai_sample_count = 1;
+ 		break;
+ 	}
+ 
+
+
