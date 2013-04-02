@@ -1,124 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762121Ab3DBSUk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 14:20:40 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:61523 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760602Ab3DBSUe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 14:20:34 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: tomi.valkeinen@ti.com
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-arm-kernel@lists.infradead.org, plagnioj@jcrosoft.com,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCHv3 1/6] video: vt8500: Make wmt_ge_rops optional
-Date: Wed,  3 Apr 2013 07:20:33 +1300
-Message-Id: <1364926838-6721-2-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1364926838-6721-1-git-send-email-linux@prisktech.co.nz>
-References: <1364926838-6721-1-git-send-email-linux@prisktech.co.nz>
+	id S1762136Ab3DBSUs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 14:20:48 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58510 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760543Ab3DBSUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 14:20:39 -0400
+Date: Tue, 2 Apr 2013 14:19:40 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Excessive stall times on ext4 in 3.9-rc2
+Message-ID: <20130402181940.GA4936@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+	Jiri Slaby <jslaby@suse.cz>
+References: <20130402142717.GH32241@suse.de>
+ <20130402150651.GB31577@thunk.org>
+ <20130402151436.GC31577@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130402151436.GC31577@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wmt_ge_rops is a seperate driver to vt8500/wm8505 framebuffer
-driver but is currently a required option. This patch makes
-accelerated raster ops optional.
+So I tried to reproduce the problem, and so I installed systemtap
+(bleeding edge, since otherwise it won't work with development
+kernel), and then rebuilt a kernel with all of the necessary CONFIG
+options enabled:
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-Reviewed-by: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
----
- drivers/video/Kconfig       |   22 ++++++++++++----------
- drivers/video/wmt_ge_rops.h |   23 +++++++++++++++++++++++
- 2 files changed, 35 insertions(+), 10 deletions(-)
+	CONFIG_DEBUG_INFO, CONFIG_KPROBES, CONFIG_RELAY, CONFIG_DEBUG_FS,
+	CONFIG_MODULES, CONFIG_MODULE_UNLOAD
 
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index 4c1546f..661aa54 100644
---- a/drivers/video/Kconfig
-+++ b/drivers/video/Kconfig
-@@ -212,14 +212,6 @@ config FB_SYS_FOPS
-        depends on FB
-        default n
- 
--config FB_WMT_GE_ROPS
--	tristate
--	depends on FB
--	default n
--	---help---
--	  Include functions for accelerated rectangle filling and area
--	  copying using WonderMedia Graphics Engine operations.
--
- config FB_DEFERRED_IO
- 	bool
- 	depends on FB
-@@ -1799,7 +1791,8 @@ config FB_AU1200
- config FB_VT8500
- 	bool "VT8500 LCD Driver"
- 	depends on (FB = y) && ARM && ARCH_VT8500
--	select FB_WMT_GE_ROPS
-+	select FB_SYS_FILLRECT if (!FB_WMT_GE_ROPS)
-+	select FB_SYS_COPYAREA if (!FB_WMT_GE_ROPS)
- 	select FB_SYS_IMAGEBLIT
- 	help
- 	  This is the framebuffer driver for VIA VT8500 integrated LCD
-@@ -1808,12 +1801,21 @@ config FB_VT8500
- config FB_WM8505
- 	bool "WM8505 frame buffer support"
- 	depends on (FB = y) && ARM && ARCH_VT8500
--	select FB_WMT_GE_ROPS
-+	select FB_SYS_FILLRECT if (!FB_WMT_GE_ROPS)
-+	select FB_SYS_COPYAREA if (!FB_WMT_GE_ROPS)
- 	select FB_SYS_IMAGEBLIT
- 	help
- 	  This is the framebuffer driver for WonderMedia WM8505/WM8650
- 	  integrated LCD controller.
- 
-+config FB_WMT_GE_ROPS
-+	bool "VT8500/WM85xx accelerated raster ops support"
-+	depends on (FB = y) && (FB_VT8500 || FB_WM8505)
-+	default n
-+	help
-+	  This adds support for accelerated raster operations on the
-+	  VIA VT8500 and Wondermedia 85xx series SoCs.
-+
- source "drivers/video/geode/Kconfig"
- 
- config FB_HIT
-diff --git a/drivers/video/wmt_ge_rops.h b/drivers/video/wmt_ge_rops.h
-index 8738075..f73ec63 100644
---- a/drivers/video/wmt_ge_rops.h
-+++ b/drivers/video/wmt_ge_rops.h
-@@ -1,5 +1,28 @@
-+#ifdef CONFIG_FB_WMT_GE_ROPS
-+
- extern void wmt_ge_fillrect(struct fb_info *info,
- 			    const struct fb_fillrect *rect);
- extern void wmt_ge_copyarea(struct fb_info *info,
- 			    const struct fb_copyarea *area);
- extern int wmt_ge_sync(struct fb_info *info);
-+
-+#else
-+
-+static inline int wmt_ge_sync(struct fb_info *p)
-+{
-+	return 0;
-+}
-+
-+static inline void wmt_ge_fillrect(struct fb_info *p,
-+				    const struct fb_fillrect *rect)
-+{
-+	sys_fillrect(p, rect);
-+}
-+
-+static inline void wmt_ge_copyarea(struct fb_info *p,
-+				     const struct fb_copyarea *area)
-+{
-+	sys_copyarea(p, area);
-+}
-+
-+#endif
--- 
-1.7.9.5
+I then pulled down mmtests, and tried running watch-dstate.pl, which
+is what I sasume you were using, and I got a reminder of why I've
+tried very hard to use systemtap:
 
+semantic error: while resolving probe point: identifier 'kprobe' at /tmp/stapdjN4_l:18:7
+        source: probe kprobe.function("get_request_wait")
+                      ^
+
+semantic error: no match
+semantic error: while resolving probe point: identifier 'kprobe' at :74:8
+        source: }probe kprobe.function("get_request_wait").return
+                       ^
+
+Pass 2: analysis failed.  [man error::pass2]
+Unexpected exit of STAP script at ./watch-dstate.pl line 296.
+
+I have no clue what to do next.  Can you give me a hint?
+
+Thanks,
+
+						- Ted
