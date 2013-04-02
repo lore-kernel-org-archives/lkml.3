@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758776Ab3DBWy5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:54:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34066 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758323Ab3DBWuy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758547Ab3DBWuy (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 2 Apr 2013 18:50:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33964 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758323Ab3DBWun (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:50:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>, Yuchung Cheng <ycheng@google.com>,
-        Van Jacobson <vanj@google.com>, Neal Cardwell <ncardwell@google.com>,
-        Nandita Dukkipati <nanditad@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 43/56] tcp: preserve ACK clocking in TSO
-Date: Tue,  2 Apr 2013 15:50:10 -0700
-Message-Id: <20130402224716.860227467@linuxfoundation.org>
+        Jan Kiszka <jan.kiszka@siemens.com>, Avi Kivity <avi@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [ 18/56] KVM: Clean up error handling during VCPU creation
+Date: Tue,  2 Apr 2013 15:49:45 -0700
+Message-Id: <20130402224713.992108424@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
@@ -30,87 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <edumazet@google.com>
+From: Jan Kiszka <jan.kiszka@siemens.com>
 
-[ Upstream commit f4541d60a449afd40448b06496dcd510f505928e ]
+commit d780592b99d7d8a5ff905f6bacca519d4a342c76 upstream.
 
-A long standing problem with TSO is the fact that tcp_tso_should_defer()
-rearms the deferred timer, while it should not.
+So far kvm_arch_vcpu_setup is responsible for freeing the vcpu struct if
+it fails. Move this confusing resonsibility back into the hands of
+kvm_vm_ioctl_create_vcpu. Only kvm_arch_vcpu_setup of x86 is affected,
+all other archs cannot fail.
 
-Current code leads to following bad bursty behavior :
-
-20:11:24.484333 IP A > B: . 297161:316921(19760) ack 1 win 119
-20:11:24.484337 IP B > A: . ack 263721 win 1117
-20:11:24.485086 IP B > A: . ack 265241 win 1117
-20:11:24.485925 IP B > A: . ack 266761 win 1117
-20:11:24.486759 IP B > A: . ack 268281 win 1117
-20:11:24.487594 IP B > A: . ack 269801 win 1117
-20:11:24.488430 IP B > A: . ack 271321 win 1117
-20:11:24.489267 IP B > A: . ack 272841 win 1117
-20:11:24.490104 IP B > A: . ack 274361 win 1117
-20:11:24.490939 IP B > A: . ack 275881 win 1117
-20:11:24.491775 IP B > A: . ack 277401 win 1117
-20:11:24.491784 IP A > B: . 316921:332881(15960) ack 1 win 119
-20:11:24.492620 IP B > A: . ack 278921 win 1117
-20:11:24.493448 IP B > A: . ack 280441 win 1117
-20:11:24.494286 IP B > A: . ack 281961 win 1117
-20:11:24.495122 IP B > A: . ack 283481 win 1117
-20:11:24.495958 IP B > A: . ack 285001 win 1117
-20:11:24.496791 IP B > A: . ack 286521 win 1117
-20:11:24.497628 IP B > A: . ack 288041 win 1117
-20:11:24.498459 IP B > A: . ack 289561 win 1117
-20:11:24.499296 IP B > A: . ack 291081 win 1117
-20:11:24.500133 IP B > A: . ack 292601 win 1117
-20:11:24.500970 IP B > A: . ack 294121 win 1117
-20:11:24.501388 IP B > A: . ack 295641 win 1117
-20:11:24.501398 IP A > B: . 332881:351881(19000) ack 1 win 119
-
-While the expected behavior is more like :
-
-20:19:49.259620 IP A > B: . 197601:202161(4560) ack 1 win 119
-20:19:49.260446 IP B > A: . ack 154281 win 1212
-20:19:49.261282 IP B > A: . ack 155801 win 1212
-20:19:49.262125 IP B > A: . ack 157321 win 1212
-20:19:49.262136 IP A > B: . 202161:206721(4560) ack 1 win 119
-20:19:49.262958 IP B > A: . ack 158841 win 1212
-20:19:49.263795 IP B > A: . ack 160361 win 1212
-20:19:49.264628 IP B > A: . ack 161881 win 1212
-20:19:49.264637 IP A > B: . 206721:211281(4560) ack 1 win 119
-20:19:49.265465 IP B > A: . ack 163401 win 1212
-20:19:49.265886 IP B > A: . ack 164921 win 1212
-20:19:49.266722 IP B > A: . ack 166441 win 1212
-20:19:49.266732 IP A > B: . 211281:215841(4560) ack 1 win 119
-20:19:49.267559 IP B > A: . ack 167961 win 1212
-20:19:49.268394 IP B > A: . ack 169481 win 1212
-20:19:49.269232 IP B > A: . ack 171001 win 1212
-20:19:49.269241 IP A > B: . 215841:221161(5320) ack 1 win 119
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Van Jacobson <vanj@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Nandita Dukkipati <nanditad@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_output.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/x86/kvm/x86.c  |    5 -----
+ virt/kvm/kvm_main.c |   11 ++++++-----
+ 2 files changed, 6 insertions(+), 10 deletions(-)
 
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1579,8 +1579,11 @@ static int tcp_tso_should_defer(struct s
- 			goto send_now;
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -6116,12 +6116,7 @@ int kvm_arch_vcpu_setup(struct kvm_vcpu
+ 	if (r == 0)
+ 		r = kvm_mmu_setup(vcpu);
+ 	vcpu_put(vcpu);
+-	if (r < 0)
+-		goto free_vcpu;
+ 
+-	return 0;
+-free_vcpu:
+-	kvm_x86_ops->vcpu_free(vcpu);
+ 	return r;
+ }
+ 
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1616,18 +1616,18 @@ static int kvm_vm_ioctl_create_vcpu(stru
+ 
+ 	r = kvm_arch_vcpu_setup(vcpu);
+ 	if (r)
+-		return r;
++		goto vcpu_destroy;
+ 
+ 	mutex_lock(&kvm->lock);
+ 	if (atomic_read(&kvm->online_vcpus) == KVM_MAX_VCPUS) {
+ 		r = -EINVAL;
+-		goto vcpu_destroy;
++		goto unlock_vcpu_destroy;
  	}
  
--	/* Ok, it looks like it is advisable to defer.  */
--	tp->tso_deferred = 1 | (jiffies << 1);
-+	/* Ok, it looks like it is advisable to defer.
-+	 * Do not rearm the timer if already set to not break TCP ACK clocking.
-+	 */
-+	if (!tp->tso_deferred)
-+		tp->tso_deferred = 1 | (jiffies << 1);
+ 	kvm_for_each_vcpu(r, v, kvm)
+ 		if (v->vcpu_id == id) {
+ 			r = -EEXIST;
+-			goto vcpu_destroy;
++			goto unlock_vcpu_destroy;
+ 		}
  
- 	return 1;
+ 	BUG_ON(kvm->vcpus[atomic_read(&kvm->online_vcpus)]);
+@@ -1637,7 +1637,7 @@ static int kvm_vm_ioctl_create_vcpu(stru
+ 	r = create_vcpu_fd(vcpu);
+ 	if (r < 0) {
+ 		kvm_put_kvm(kvm);
+-		goto vcpu_destroy;
++		goto unlock_vcpu_destroy;
+ 	}
  
+ 	kvm->vcpus[atomic_read(&kvm->online_vcpus)] = vcpu;
+@@ -1651,8 +1651,9 @@ static int kvm_vm_ioctl_create_vcpu(stru
+ 	mutex_unlock(&kvm->lock);
+ 	return r;
+ 
+-vcpu_destroy:
++unlock_vcpu_destroy:
+ 	mutex_unlock(&kvm->lock);
++vcpu_destroy:
+ 	kvm_arch_vcpu_destroy(vcpu);
+ 	return r;
+ }
 
 
