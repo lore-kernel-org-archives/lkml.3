@@ -1,111 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760686Ab3DBJW1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:22:27 -0400
-Received: from anubis.se.axis.com ([195.60.68.12]:53021 "EHLO
-	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754152Ab3DBJWY (ORCPT
+	id S1761379Ab3DBJXL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:23:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50508 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760952Ab3DBJXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:22:24 -0400
-Date: Tue, 2 Apr 2013 11:22:20 +0200
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mingo@redhat.com, x86@kernel.org,
-        rth@twiddle.net, linux@arm.linux.org.uk, msalter@redhat.com,
-        starvik@axis.com, dhowells@redhat.com, tony.luck@intel.com,
-        benh@kernel.crashing.org, takata@linux-m32r.org, geert@linux-m68k.org,
-        james.hogan@imgtec.com, monstr@monstr.eu, ralf@linux-mips.org,
-        jonas@southpole.se, rkuo@codeaurora.org, schwidefsky@de.ibm.com,
-        liqin.chen@sunplusct.com, davem@davemloft.net, lethal@linux-sh.org,
-        vgupta@synopsys.com, chris@zankel.net, cmetcalf@tilera.com,
-        ysato@users.sourceforge.jp, gxt@mprc.pku.edu.cn, jdike@addtoit.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [PATCH 3/5] dump_stack: consolidate dump_stack()
- implementations and unify their behaviors
-Message-ID: <20130402092220.GH19150@axis.com>
-References: <1364610428-2074-1-git-send-email-tj@kernel.org>
- <1364610428-2074-4-git-send-email-tj@kernel.org>
+	Tue, 2 Apr 2013 05:23:08 -0400
+Date: Tue, 2 Apr 2013 02:22:37 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-454f8c7d26fa7e1545df4efca5d9ba929ccef1e8@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, fweisbec@gmail.com,
+        rostedt@goodmis.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, fweisbec@gmail.com,
+        rostedt@goodmis.org, tglx@linutronix.de
+In-Reply-To: <1363850332-25297-2-git-send-email-namhyung@kernel.org>
+References: <1363850332-25297-2-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Let get_tracing_file()
+  return NULL to indicate failure.
+Git-Commit-ID: 454f8c7d26fa7e1545df4efca5d9ba929ccef1e8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1364610428-2074-4-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 02:22:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 29, 2013 at 07:27:06PM -0700, Tejun Heo wrote:
-> Both dump_stack() and show_stack() are currently implemented by each
-> architecture.  show_stack(NULL, NULL) dumps the backtrace for the
-> current task as does dump_stack().  On some archs, dump_stack() prints
-> extra information - pid, utsname and so on - in addition to the
-> backtrace while the two are identical on other archs.
-> 
-> The usages in arch-independent code of the two functions indicate
-> show_stack(NULL, NULL) should print out bare backtrace while
-> dump_stack() is used for debugging purposes when something went wrong,
-> so it does make sense to print additional information on the task
-> which triggered dump_stack().
-> 
-> There's no reason to require archs to implement two separate but
-> mostly identical functions.  It leads to unnecessary subtle
-> differences among archs and makes it very tedius to add generic debug
-> information.
-> 
-> This patch expands the dummy fallback dump_stack() implementation in
-> lib/dump_stack.c such that it prints out debug information (taken from
-> x86) and invokes show_stack(NULL, NULL) and drops arch-specific
-> dump_stack() implementations in all archs except blackfin and s390.
-> Blackfin's dump_stack() does something wonky that I don't understand
-> and s390 prints its own debug information which includes fields which
-> aren't accessible from arch-indepdent code.
-> 
-> Debug information can be printed separately by calling
-> dump_stack_print_info() so that arch-specific dump_stack()
-> implementation can still emit the same debug information.  This is
-> used in blackfin.
-> 
-> This patch brings the following behavior changes.
-> 
-> * On some archs, an extra level in backtrace for show_stack() could be
->   printed.  This is because the top frame was determined in
->   dump_stack() on those archs while generic dump_stack() can't do that
->   reliably.  It can be compensated by inlining dump_stack() but not
->   sure whether that'd be necessary.
-> 
-> * Most archs didn't use to print debug info on dump_stack().  They do
->   now.
-> 
-> An example WARN dump follows.
-> 
->  WARNING: at /work/os/work/kernel/workqueue.c:4840 init_workqueues+0x35/0x505()
->  Hardware name: empty
->  Modules linked in:
->  Pid: 1, comm: swapper/0 Not tainted 3.9.0-rc1-work+ #17
->   0000000000000009 ffff88007c861e08 ffffffff81c61545 ffff88007c861e48
->   ffffffff8108f50f ffffffff82228240 0000000000000040 ffffffff8234a03c
->   0000000000000000 0000000000000000 0000000000000000 ffff88007c861e58
->  Call Trace:
->   [<ffffffff81c61545>] dump_stack+0x19/0x1b
->   [<ffffffff8108f50f>] warn_slowpath_common+0x7f/0xc0
->   [<ffffffff8108f56a>] warn_slowpath_null+0x1a/0x20
->   [<ffffffff8234a071>] init_workqueues+0x35/0x505
->   ...
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: linux-s390@vger.kernel.org
-> Cc: Mike Frysinger <vapier@gentoo.org>
-> Cc: uclinux-dist-devel@blackfin.uclinux.org
+Commit-ID:  454f8c7d26fa7e1545df4efca5d9ba929ccef1e8
+Gitweb:     http://git.kernel.org/tip/454f8c7d26fa7e1545df4efca5d9ba929ccef1e8
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Thu, 21 Mar 2013 16:18:44 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 21 Mar 2013 13:09:42 -0300
 
-For the CRIS bits:
+perf tools: Let get_tracing_file() return NULL to indicate failure.
 
-Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+So that it can be used by other places.
 
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1363850332-25297-2-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/trace-event-info.c | 25 ++++++++++++++++++++++---
+ 1 file changed, 22 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index 5729f43..81c6732 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -62,7 +62,7 @@ static const char *find_debugfs(void)
+ 	const char *path = perf_debugfs_mount(NULL);
+ 
+ 	if (!path)
+-		die("Your kernel not support debugfs filesystem");
++		pr_debug("Your kernel does not support the debugfs filesystem");
+ 
+ 	return path;
+ }
+@@ -81,8 +81,12 @@ static const char *find_tracing_dir(void)
+ 		return tracing;
+ 
+ 	debugfs = find_debugfs();
++	if (!debugfs)
++		return NULL;
+ 
+-	tracing = malloc_or_die(strlen(debugfs) + 9);
++	tracing = malloc(strlen(debugfs) + 9);
++	if (!tracing)
++		return NULL;
+ 
+ 	sprintf(tracing, "%s/tracing", debugfs);
+ 
+@@ -99,7 +103,9 @@ static char *get_tracing_file(const char *name)
+ 	if (!tracing)
+ 		return NULL;
+ 
+-	file = malloc_or_die(strlen(tracing) + strlen(name) + 2);
++	file = malloc(strlen(tracing) + strlen(name) + 2);
++	if (!file)
++		return NULL;
+ 
+ 	sprintf(file, "%s/%s", tracing, name);
+ 	return file;
+@@ -170,6 +176,9 @@ static void read_header_files(void)
+ 	struct stat st;
+ 
+ 	path = get_tracing_file("events/header_page");
++	if (!path)
++		die("can't get tracing/events/header_page");
++
+ 	if (stat(path, &st) < 0)
+ 		die("can't read '%s'", path);
+ 
+@@ -178,6 +187,9 @@ static void read_header_files(void)
+ 	put_tracing_file(path);
+ 
+ 	path = get_tracing_file("events/header_event");
++	if (!path)
++		die("can't get tracing/events/header_event");
++
+ 	if (stat(path, &st) < 0)
+ 		die("can't read '%s'", path);
+ 
+@@ -251,6 +263,8 @@ static void read_ftrace_files(struct tracepoint_path *tps)
+ 	char *path;
+ 
+ 	path = get_tracing_file("events/ftrace");
++	if (!path)
++		die("can't get tracing/events/ftrace");
+ 
+ 	copy_event_system(path, tps);
+ 
+@@ -279,6 +293,8 @@ static void read_event_files(struct tracepoint_path *tps)
+ 	int ret;
+ 
+ 	path = get_tracing_file("events");
++	if (!path)
++		die("can't get tracing/events");
+ 
+ 	dir = opendir(path);
+ 	if (!dir)
+@@ -343,6 +359,9 @@ static void read_ftrace_printk(void)
+ 	int ret;
+ 
+ 	path = get_tracing_file("printk_formats");
++	if (!path)
++		die("can't get tracing/printk_formats");
++
+ 	ret = stat(path, &st);
+ 	if (ret < 0) {
+ 		/* not found */
