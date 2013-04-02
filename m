@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759480Ab3DBW7k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:59:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33986 "EHLO
+	id S1759350Ab3DBW7j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:59:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33989 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758272Ab3DBWul (ORCPT
+	with ESMTP id S1758166Ab3DBWul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Apr 2013 18:50:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [ 23/56] KVM: x86: Prevent starting PIT timers in the absence of irqchip support
-Date: Tue,  2 Apr 2013 15:49:50 -0700
-Message-Id: <20130402224714.579521362@linuxfoundation.org>
+        Andy Adamson <andros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [ 24/56] NFSv4: include bitmap in nfsv4 get acl data
+Date: Tue,  2 Apr 2013 15:49:51 -0700
+Message-Id: <20130402224714.708823449@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
@@ -28,69 +29,303 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Jan Kiszka <jan.kiszka@siemens.com>
+From: Andy Adamson <andros@netapp.com>
 
-commit 0924ab2cfa98b1ece26c033d696651fd62896c69 upstream.
+commit bf118a342f10dafe44b14451a1392c3254629a1f upstream.
 
-User space may create the PIT and forgets about setting up the irqchips.
-In that case, firing PIT IRQs will crash the host:
+The NFSv4 bitmap size is unbounded: a server can return an arbitrary
+sized bitmap in an FATTR4_WORD0_ACL request.  Replace using the
+nfs4_fattr_bitmap_maxsz as a guess to the maximum bitmask returned by a server
+with the inclusion of the bitmap (xdr length plus bitmasks) and the acl data
+xdr length to the (cached) acl page data.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000128
-IP: [<ffffffffa10f6280>] kvm_set_irq+0x30/0x170 [kvm]
-...
-Call Trace:
- [<ffffffffa11228c1>] pit_do_work+0x51/0xd0 [kvm]
- [<ffffffff81071431>] process_one_work+0x111/0x4d0
- [<ffffffff81071bb2>] worker_thread+0x152/0x340
- [<ffffffff81075c8e>] kthread+0x7e/0x90
- [<ffffffff815a4474>] kernel_thread_helper+0x4/0x10
+This is a general solution to commit e5012d1f "NFSv4.1: update
+nfs4_fattr_bitmap_maxsz" and fixes hitting a BUG_ON in xdr_shrink_bufhead
+when getting ACLs.
 
-Prevent this by checking the irqchip mode before starting a timer. We
-can't deny creating the PIT if the irqchips aren't set up yet as
-current user land expects this order to work.
+Fix a bug in decode_getacl that returned -EINVAL on ACLs > page when getxattr
+was called with a NULL buffer, preventing ACL > PAGE_SIZE from being retrieved.
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Andy Adamson <andros@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/x86/kvm/i8254.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ fs/nfs/nfs4proc.c          |   96 ++++++++++++++++++++++++++-------------------
+ fs/nfs/nfs4xdr.c           |   31 ++++++++++----
+ include/linux/nfs_xdr.h    |    5 ++
+ include/linux/sunrpc/xdr.h |    2 
+ net/sunrpc/xdr.c           |    3 -
+ 5 files changed, 89 insertions(+), 48 deletions(-)
 
---- a/arch/x86/kvm/i8254.c
-+++ b/arch/x86/kvm/i8254.c
-@@ -338,11 +338,15 @@ static enum hrtimer_restart pit_timer_fn
- 		return HRTIMER_NORESTART;
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -3440,19 +3440,6 @@ static inline int nfs4_server_supports_a
+  */
+ #define NFS4ACL_MAXPAGES (XATTR_SIZE_MAX >> PAGE_CACHE_SHIFT)
+ 
+-static void buf_to_pages(const void *buf, size_t buflen,
+-		struct page **pages, unsigned int *pgbase)
+-{
+-	const void *p = buf;
+-
+-	*pgbase = offset_in_page(buf);
+-	p -= *pgbase;
+-	while (p < buf + buflen) {
+-		*(pages++) = virt_to_page(p);
+-		p += PAGE_CACHE_SIZE;
+-	}
+-}
+-
+ static int buf_to_pages_noslab(const void *buf, size_t buflen,
+ 		struct page **pages, unsigned int *pgbase)
+ {
+@@ -3549,9 +3536,19 @@ out:
+ 	nfs4_set_cached_acl(inode, acl);
  }
  
--static void create_pit_timer(struct kvm_kpit_state *ps, u32 val, int is_period)
-+static void create_pit_timer(struct kvm *kvm, u32 val, int is_period)
++/*
++ * The getxattr API returns the required buffer length when called with a
++ * NULL buf. The NFSv4 acl tool then calls getxattr again after allocating
++ * the required buf.  On a NULL buf, we send a page of data to the server
++ * guessing that the ACL request can be serviced by a page. If so, we cache
++ * up to the page of ACL data, and the 2nd call to getxattr is serviced by
++ * the cache. If not so, we throw away the page, and cache the required
++ * length. The next getxattr call will then produce another round trip to
++ * the server, this time with the input buf of the required size.
++ */
+ static ssize_t __nfs4_get_acl_uncached(struct inode *inode, void *buf, size_t buflen)
  {
-+	struct kvm_kpit_state *ps = &kvm->arch.vpit->pit_state;
- 	struct kvm_timer *pt = &ps->pit_timer;
- 	s64 interval;
+-	struct page *pages[NFS4ACL_MAXPAGES];
++	struct page *pages[NFS4ACL_MAXPAGES] = {NULL, };
+ 	struct nfs_getaclargs args = {
+ 		.fh = NFS_FH(inode),
+ 		.acl_pages = pages,
+@@ -3566,41 +3563,60 @@ static ssize_t __nfs4_get_acl_uncached(s
+ 		.rpc_argp = &args,
+ 		.rpc_resp = &res,
+ 	};
+-	struct page *localpage = NULL;
+-	int ret;
++	int ret = -ENOMEM, npages, i, acl_len = 0;
  
-+	if (!irqchip_in_kernel(kvm))
-+		return;
+-	if (buflen < PAGE_SIZE) {
+-		/* As long as we're doing a round trip to the server anyway,
+-		 * let's be prepared for a page of acl data. */
+-		localpage = alloc_page(GFP_KERNEL);
+-		resp_buf = page_address(localpage);
+-		if (localpage == NULL)
+-			return -ENOMEM;
+-		args.acl_pages[0] = localpage;
+-		args.acl_pgbase = 0;
+-		args.acl_len = PAGE_SIZE;
+-	} else {
+-		resp_buf = buf;
+-		buf_to_pages(buf, buflen, args.acl_pages, &args.acl_pgbase);
++	npages = (buflen + PAGE_SIZE - 1) >> PAGE_SHIFT;
++	/* As long as we're doing a round trip to the server anyway,
++	 * let's be prepared for a page of acl data. */
++	if (npages == 0)
++		npages = 1;
 +
- 	interval = muldiv64(val, NSEC_PER_SEC, KVM_PIT_FREQ);
++	for (i = 0; i < npages; i++) {
++		pages[i] = alloc_page(GFP_KERNEL);
++		if (!pages[i])
++			goto out_free;
+ 	}
+-	ret = nfs4_call_sync(NFS_SERVER(inode)->client, NFS_SERVER(inode), &msg, &args.seq_args, &res.seq_res, 0);
++	if (npages > 1) {
++		/* for decoding across pages */
++		args.acl_scratch = alloc_page(GFP_KERNEL);
++		if (!args.acl_scratch)
++			goto out_free;
++	}
++	args.acl_len = npages * PAGE_SIZE;
++	args.acl_pgbase = 0;
++	/* Let decode_getfacl know not to fail if the ACL data is larger than
++	 * the page we send as a guess */
++	if (buf == NULL)
++		res.acl_flags |= NFS4_ACL_LEN_REQUEST;
++	resp_buf = page_address(pages[0]);
++
++	dprintk("%s  buf %p buflen %ld npages %d args.acl_len %ld\n",
++		__func__, buf, buflen, npages, args.acl_len);
++	ret = nfs4_call_sync(NFS_SERVER(inode)->client, NFS_SERVER(inode),
++			     &msg, &args.seq_args, &res.seq_res, 0);
+ 	if (ret)
+ 		goto out_free;
+-	if (res.acl_len > args.acl_len)
+-		nfs4_write_cached_acl(inode, NULL, res.acl_len);
++
++	acl_len = res.acl_len - res.acl_data_offset;
++	if (acl_len > args.acl_len)
++		nfs4_write_cached_acl(inode, NULL, acl_len);
+ 	else
+-		nfs4_write_cached_acl(inode, resp_buf, res.acl_len);
++		nfs4_write_cached_acl(inode, resp_buf + res.acl_data_offset,
++				      acl_len);
+ 	if (buf) {
+ 		ret = -ERANGE;
+-		if (res.acl_len > buflen)
++		if (acl_len > buflen)
+ 			goto out_free;
+-		if (localpage)
+-			memcpy(buf, resp_buf, res.acl_len);
++		_copy_from_pages(buf, pages, res.acl_data_offset,
++				res.acl_len);
+ 	}
+-	ret = res.acl_len;
++	ret = acl_len;
+ out_free:
+-	if (localpage)
+-		__free_page(localpage);
++	for (i = 0; i < npages; i++)
++		if (pages[i])
++			__free_page(pages[i]);
++	if (args.acl_scratch)
++		__free_page(args.acl_scratch);
+ 	return ret;
+ }
  
- 	pr_debug("create pit timer, interval is %llu nsec\n", interval);
-@@ -394,13 +398,13 @@ static void pit_load_count(struct kvm *k
-         /* FIXME: enhance mode 4 precision */
- 	case 4:
- 		if (!(ps->flags & KVM_PIT_FLAGS_HPET_LEGACY)) {
--			create_pit_timer(ps, val, 0);
-+			create_pit_timer(kvm, val, 0);
+@@ -3631,6 +3647,8 @@ static ssize_t nfs4_proc_get_acl(struct
+ 		nfs_zap_acl_cache(inode);
+ 	ret = nfs4_read_cached_acl(inode, buf, buflen);
+ 	if (ret != -ENOENT)
++		/* -ENOENT is returned if there is no ACL or if there is an ACL
++		 * but no cached acl data, just the acl length */
+ 		return ret;
+ 	return nfs4_get_acl_uncached(inode, buf, buflen);
+ }
+--- a/fs/nfs/nfs4xdr.c
++++ b/fs/nfs/nfs4xdr.c
+@@ -2374,11 +2374,13 @@ static void nfs4_xdr_enc_getacl(struct r
+ 	encode_compound_hdr(xdr, req, &hdr);
+ 	encode_sequence(xdr, &args->seq_args, &hdr);
+ 	encode_putfh(xdr, args->fh, &hdr);
+-	replen = hdr.replen + op_decode_hdr_maxsz + nfs4_fattr_bitmap_maxsz + 1;
++	replen = hdr.replen + op_decode_hdr_maxsz + 1;
+ 	encode_getattr_two(xdr, FATTR4_WORD0_ACL, 0, &hdr);
+ 
+ 	xdr_inline_pages(&req->rq_rcv_buf, replen << 2,
+ 		args->acl_pages, args->acl_pgbase, args->acl_len);
++	xdr_set_scratch_buffer(xdr, page_address(args->acl_scratch), PAGE_SIZE);
++
+ 	encode_nops(&hdr);
+ }
+ 
+@@ -4714,17 +4716,18 @@ decode_restorefh(struct xdr_stream *xdr)
+ }
+ 
+ static int decode_getacl(struct xdr_stream *xdr, struct rpc_rqst *req,
+-		size_t *acl_len)
++			 struct nfs_getaclres *res)
+ {
+-	__be32 *savep;
++	__be32 *savep, *bm_p;
+ 	uint32_t attrlen,
+ 		 bitmap[2] = {0};
+ 	struct kvec *iov = req->rq_rcv_buf.head;
+ 	int status;
+ 
+-	*acl_len = 0;
++	res->acl_len = 0;
+ 	if ((status = decode_op_hdr(xdr, OP_GETATTR)) != 0)
+ 		goto out;
++	bm_p = xdr->p;
+ 	if ((status = decode_attr_bitmap(xdr, bitmap)) != 0)
+ 		goto out;
+ 	if ((status = decode_attr_length(xdr, &attrlen, &savep)) != 0)
+@@ -4736,18 +4739,30 @@ static int decode_getacl(struct xdr_stre
+ 		size_t hdrlen;
+ 		u32 recvd;
+ 
++		/* The bitmap (xdr len + bitmaps) and the attr xdr len words
++		 * are stored with the acl data to handle the problem of
++		 * variable length bitmaps.*/
++		xdr->p = bm_p;
++		res->acl_data_offset = be32_to_cpup(bm_p) + 2;
++		res->acl_data_offset <<= 2;
++
+ 		/* We ignore &savep and don't do consistency checks on
+ 		 * the attr length.  Let userspace figure it out.... */
+ 		hdrlen = (u8 *)xdr->p - (u8 *)iov->iov_base;
++		attrlen += res->acl_data_offset;
+ 		recvd = req->rq_rcv_buf.len - hdrlen;
+ 		if (attrlen > recvd) {
+-			dprintk("NFS: server cheating in getattr"
+-					" acl reply: attrlen %u > recvd %u\n",
++			if (res->acl_flags & NFS4_ACL_LEN_REQUEST) {
++				/* getxattr interface called with a NULL buf */
++				res->acl_len = attrlen;
++				goto out;
++			}
++			dprintk("NFS: acl reply: attrlen %u > recvd %u\n",
+ 					attrlen, recvd);
+ 			return -EINVAL;
  		}
- 		break;
- 	case 2:
- 	case 3:
- 		if (!(ps->flags & KVM_PIT_FLAGS_HPET_LEGACY)){
--			create_pit_timer(ps, val, 1);
-+			create_pit_timer(kvm, val, 1);
- 		}
- 		break;
- 	default:
+ 		xdr_read_pages(xdr, attrlen);
+-		*acl_len = attrlen;
++		res->acl_len = attrlen;
+ 	} else
+ 		status = -EOPNOTSUPP;
+ 
+@@ -5682,7 +5697,7 @@ nfs4_xdr_dec_getacl(struct rpc_rqst *rqs
+ 	status = decode_putfh(xdr);
+ 	if (status)
+ 		goto out;
+-	status = decode_getacl(xdr, rqstp, &res->acl_len);
++	status = decode_getacl(xdr, rqstp, res);
+ 
+ out:
+ 	return status;
+--- a/include/linux/nfs_xdr.h
++++ b/include/linux/nfs_xdr.h
+@@ -588,11 +588,16 @@ struct nfs_getaclargs {
+ 	size_t				acl_len;
+ 	unsigned int			acl_pgbase;
+ 	struct page **			acl_pages;
++	struct page *			acl_scratch;
+ 	struct nfs4_sequence_args 	seq_args;
+ };
+ 
++/* getxattr ACL interface flags */
++#define NFS4_ACL_LEN_REQUEST	0x0001	/* zero length getxattr buffer */
+ struct nfs_getaclres {
+ 	size_t				acl_len;
++	size_t				acl_data_offset;
++	int				acl_flags;
+ 	struct nfs4_sequence_res	seq_res;
+ };
+ 
+--- a/include/linux/sunrpc/xdr.h
++++ b/include/linux/sunrpc/xdr.h
+@@ -191,6 +191,8 @@ extern int xdr_decode_array2(struct xdr_
+ 			     struct xdr_array2_desc *desc);
+ extern int xdr_encode_array2(struct xdr_buf *buf, unsigned int base,
+ 			     struct xdr_array2_desc *desc);
++extern void _copy_from_pages(char *p, struct page **pages, size_t pgbase,
++			     size_t len);
+ 
+ /*
+  * Provide some simple tools for XDR buffer overflow-checking etc.
+--- a/net/sunrpc/xdr.c
++++ b/net/sunrpc/xdr.c
+@@ -296,7 +296,7 @@ _copy_to_pages(struct page **pages, size
+  * Copies data into an arbitrary memory location from an array of pages
+  * The copy is assumed to be non-overlapping.
+  */
+-static void
++void
+ _copy_from_pages(char *p, struct page **pages, size_t pgbase, size_t len)
+ {
+ 	struct page **pgfrom;
+@@ -324,6 +324,7 @@ _copy_from_pages(char *p, struct page **
+ 
+ 	} while ((len -= copy) != 0);
+ }
++EXPORT_SYMBOL_GPL(_copy_from_pages);
+ 
+ /*
+  * xdr_shrink_bufhead
 
 
