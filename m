@@ -1,150 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762143Ab3DBTJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 15:09:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50511 "EHLO mx1.redhat.com"
+	id S1762168Ab3DBTK1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 15:10:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25836 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761146Ab3DBTJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 15:09:37 -0400
-Date: Tue, 2 Apr 2013 15:09:24 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/4] x86, kdump: Retore crashkernel= to allocate low
-Message-ID: <20130402190924.GA31760@redhat.com>
-References: <1364923183-316-1-git-send-email-yinghai@kernel.org>
- <1364923183-316-4-git-send-email-yinghai@kernel.org>
- <20130402180606.GI29506@redhat.com>
- <CAE9FiQUKqv_t-99JN_t=EGop2-Wbjd4Yb9vYvU_SbbNctG6Yeg@mail.gmail.com>
+	id S1761925Ab3DBTK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 15:10:26 -0400
+Date: Tue, 2 Apr 2013 21:10:12 +0200
+From: Frantisek Hrbata <fhrbata@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, oleg@redhat.com,
+        kamaleshb@in.ibm.com, hechjie@cn.ibm.com
+Subject: Re: [PATCH] x86: add phys addr validity check for /dev/mem mmap
+Message-ID: <20130402191012.GC3314@dhcp-26-164.brq.redhat.com>
+Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
+References: <1364905733-23937-1-git-send-email-fhrbata@redhat.com>
+ <515B2802.1050405@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQUKqv_t-99JN_t=EGop2-Wbjd4Yb9vYvU_SbbNctG6Yeg@mail.gmail.com>
+In-Reply-To: <515B2802.1050405@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 11:42:09AM -0700, Yinghai Lu wrote:
-> On Tue, Apr 2, 2013 at 11:06 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Tue, Apr 02, 2013 at 10:19:42AM -0700, Yinghai Lu wrote:
-> >
-> > [..]
-> >> Index: linux-2.6/Documentation/kernel-parameters.txt
-> >> ===================================================================
-> >> --- linux-2.6.orig/Documentation/kernel-parameters.txt
-> >> +++ linux-2.6/Documentation/kernel-parameters.txt
-> >> @@ -603,9 +603,13 @@ bytes respectively. Such letter suffixes
-> >>                       a memory unit (amount[KMG]). See also
-> >>                       Documentation/kdump/kdump.txt for an example.
-> >>
-> >> +     crashkernel_high=size[KMG]
-> >> +                     [KNL, x86_64] range could be above 4G. Allow kernel
-> >> +                     to allocate physical memory region from top, so could
-> >> +                     be above 4G if system have more than 4G ram installed.
-> >>       crashkernel_low=size[KMG]
-> >> -                     [KNL, x86_64] range under 4G. When crashkernel= is
-> >> -                     passed, kernel allocate physical memory region
-> >> +                     [KNL, x86_64] range under 4G. When crashkernel_high= is
-> >> +                     passed, kernel could allocate physical memory region
-> >>                       above 4G, that cause second kernel crash on system
-> >>                       that need swiotlb later. Kernel would try to allocate
-> >>                       some region below 4G automatically. This one let
-> >
-> > Hi Yinghai,
-> >
-> > I think there are still some issues with crashkernel= semantics.
-> >
-> > What if I specify both crashkernel_high= as well as crashkernel_low=.
-> > Looks like crashkernel_low will be parsed only if crashkernel_high
-> > reserved memory above 4G.
-> >
-> > So if one gives following command line.
-> >
-> > crashkernel=256M;high crashkernel=100M;low
-> >
-> > Final outcome will vary across systems. If system has all RAM below 4G
-> > we will see only one 256M chunk reserved otherwise we will see one 256M
-> > and one 100M chunk reserved. And a user might think that I asked you to
-> > reserve two chunks. One 256M and otherr 100M.
+On Tue, Apr 02, 2013 at 11:48:34AM -0700, H. Peter Anvin wrote:
+> On 04/02/2013 05:28 AM, Frantisek Hrbata wrote:
+> > 
+> > diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+> > index d8e8eef..39607c6 100644
+> > --- a/arch/x86/include/asm/io.h
+> > +++ b/arch/x86/include/asm/io.h
+> > @@ -242,6 +242,10 @@ static inline void flush_write_buffers(void)
+> >  #endif
+> >  }
+> >  
+> > +#define ARCH_HAS_VALID_PHYS_ADDR_RANGE
+> > +extern int valid_phys_addr_range(phys_addr_t addr, size_t count);
+> > +extern int valid_mmap_phys_addr_range(unsigned long pfn, size_t count);
+> > +
+> >  #endif /* __KERNEL__ */
+> >  
+> >  extern void native_io_delay(void);
+> > diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+> > index 845df68..92ec31c 100644
+> > --- a/arch/x86/mm/mmap.c
+> > +++ b/arch/x86/mm/mmap.c
+> > @@ -31,6 +31,8 @@
+> >  #include <linux/sched.h>
+> >  #include <asm/elf.h>
+> >  
+> > +#include "physaddr.h"
+> > +
+> >  struct __read_mostly va_alignment va_align = {
+> >  	.flags = -1,
+> >  };
+> > @@ -122,3 +124,14 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+> >  		mm->unmap_area = arch_unmap_area_topdown;
+> >  	}
+> >  }
+> > +
+> > +int valid_phys_addr_range(phys_addr_t addr, size_t count)
+> > +{
+> > +	return addr + count <= __pa(high_memory);
+> > +}
+> > +
+> > +int valid_mmap_phys_addr_range(unsigned long pfn, size_t count)
+> > +{
+> > +	resource_size_t addr = (pfn << PAGE_SHIFT) + count;
+> > +	return phys_addr_valid(addr);
+> > +}
+> > 
 > 
-> Yes, that is intentional.
+> Good initiative, but I think the implementation is worong.  I suspect we
+> should use the number of physical address bits supported rather than
+> high_memory, since it is common and legal to use /dev/mem to access I/O
+> resources that are beyond the last byte of RAM.
+> 
+> 	-hpa
 
-Why it is intentional. It seems be to aberration from user's point of
-view.
+Hi, this is exactly what the patch is doing imho. Note that the
+valid_phys_addr_range(), which is using the high_memory, is the same as the
+default one in drivers/char/mem.c(#ifndef ARCH_HAS_VALID_PHYS_ADDR_RANGE). I
+just added x86 specific check for valid_mmap_phys_addr_range and moved both
+functions to arch/x86/mm/mmap.c, rather then modifying the default generic ones.
+This is how other archs(arm) are doing it.
 
-> 
-> If you like, I could remove that checking, just add the low.
-> 
-> >
-> > Also interesting is, what if user specifies both crashkernel=X and
-> > crashkernel=Y;high. Looks like we will ignore crashkernel=X and honor
-> > only crashkernel=Y;high.
-> 
-> Yes, that is intentional.
+Also valid_phys_addr_range is used just in read|write_mem and
+valid_mmap_phys_addr_range is checked in mmap_mem and it calls phys_addr_valid
 
-Again, it is not clear that why are we prefering crashkernel=Y;high
-over crashkernel=X. There needs to be clearly defined behavior.
+static inline int phys_addr_valid(resource_size_t addr)
+{
+#ifdef CONFIG_PHYS_ADDR_T_64BIT
+	return !(addr >> boot_cpu_data.x86_phys_bits);
+#else
+        return 1;
+#endif
+}                          
 
-> 
-> >
-> > So the problem here is, do we want to parse multiple crashkernel=
-> > command line and support reserving multiple ranges? Till 3.8 kernel
-> > we did not do that.  If we want to do that, then parsing crashkernel=
-> > logic needs to be more generic.
-> >
-> > - I would say that to keep things simple, we can stick to semantics
-> >   of 3.8 kernel and say only first crashkernel= option is parsed and
-> >   acted upon. Rest are ignored. Trying to support multiple ranges will
-> >   require much more work.
-> 
-> we could do that, but that is not necessary.
-> 
-> >
-> > - If we say that we will only parse first crashkernel= option, then
-> >   crashkernel=X;high and crashkernel0;low can not co-exist. I would say
-> >   use a new option to disable automatically reserved low memory. Say,
-> >   crashkernel_no_auto_low; That way it can co-exist with other
-> >   crashkernel= options without any conflict.
-> 
-> I don't see any reason to make them co-exist.
+I for sure could overlooked something, but this seems right to me.
 
-We still need to define a clear behavior. What happens if user specifies
-multiple crashkernel= options.
+Thank you!
 
 > 
-> aka:
-> old kexec-tools stay with "crashkernel=X"
-> new kexec-tools stay with
-> 1. like old kexec tools
-> 2. or "crashkernel=X,high" or "crashkernel=X,high crashkernel=Y,low",
-> Y could be 100M or 0 etc.
-
-You are thinking that user will specify only the options you are looking
-for. But a user is free to specify all the possible inputs and we need
-to define very clearly what happens in those cases.
-
+> -- 
+> H. Peter Anvin, Intel Open Source Technology Center
+> I work for Intel.  I don't speak on their behalf.
 > 
-> >
-> >   In fact this will also work with crashkernel=X, if we decide to extend
-> >   crashkernel=X to look for memory below 4G and look beyond 4G.
-> >
-> > - Support crashkernel=X;high as a new crashkernel= option.
-> 
-> Actually we still support only one region that is could be high or low,
-> and that extra low is just for workaround
-> buggy system that does not support iommu with kdump.
 
-Well, crashkernel=X;high crashkernel=Y;low will reserve two ranges (one
-high and one low). So in some cases we are supporting 2 and in some
-cases we are supporting 1 range.
-
-So I still think that let us stick to old behavior of supporting one
-crashkernel= option. Last crashkernel= option on command line will be
-acted upon.
-
-Thanks
-Vivek
+-- 
+Frantisek Hrbata
