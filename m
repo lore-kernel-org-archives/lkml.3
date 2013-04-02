@@ -1,115 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760338Ab3DBHSL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 03:18:11 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33956 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760064Ab3DBHSJ (ORCPT
+	id S1760450Ab3DBHTo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 03:19:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57660 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527Ab3DBHTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 03:18:09 -0400
-Date: Tue, 2 Apr 2013 09:18:00 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Eric =?iso-8859-15?Q?B=E9nard?= <eric@eukrea.com>
-Cc: Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, Paul Bolle <pebolle@tiscali.nl>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpuimx27 and mbimx27: prepend CONFIG_ to Kconfig macro
-Message-ID: <20130402071800.GI1906@pengutronix.de>
-References: <1363911302.1390.167.camel@x61.thuisdomein>
+	Tue, 2 Apr 2013 03:19:43 -0400
+Date: Tue, 2 Apr 2013 09:19:37 +0200
+From: Jens Axboe <axboe@kernel.dk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: CAI Qian <caiqian@redhat.com>, xfs@oss.sgi.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Loopback device hung [was Re: xfs deadlock on 3.9-rc5 running
+ xfstests case #78]
+Message-ID: <20130402071937.GC3670@kernel.dk>
+References: <1462091996.435156.1364882416199.JavaMail.root@redhat.com>
+ <247719576.438259.1364882929749.JavaMail.root@redhat.com>
+ <20130402070537.GP6369@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363911302.1390.167.camel@x61.thuisdomein>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:15:11 up 282 days, 22:26, 44 users,  load average: 2.79, 2.27,
- 3.17
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20130402070537.GP6369@dastard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric,
+On Tue, Apr 02 2013, Dave Chinner wrote:
+> [Added jens Axboe to CC]
+> 
+> On Tue, Apr 02, 2013 at 02:08:49AM -0400, CAI Qian wrote:
+> > Saw on almost all the servers range from x64, ppc64 and s390x with kernel
+> > 3.9-rc5 and xfsprogs-3.1.10. Never caught this in 3.9-rc4, so looks like
+> > something new broke this. Log is here with sysrq debug info.
+> > http://people.redhat.com/qcai/stable/log
 
-Any comment to this one? It looks like an obvious bugfix, but since this
-is quite old and was never noticed I wonder if there's something else
-wrong aswell?
+CAI Qian, can you try and back the below out and test again?
 
-Sascha
 
-On Fri, Mar 22, 2013 at 01:15:02AM +0100, Paul Bolle wrote:
-> Commit 2d66c7803595da0d4bcd949825d598575f5de9e6 ("cpuimx27 and mbimx27:
-> allow fine control of UART4 and SDHC2 usage") added the Kconfig symbol
-> MACH_EUKREA_CPUIMX27_USEUART4. But it forgot to prepend CONFIG_ to the
-> use of its macro. Add that prefix now.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Untested. This needs testing, obviously. Or a rethink, because these
-> typos have been in the tree since v2.6.36!
-> 
->  arch/arm/mach-imx/eukrea_mbimx27-baseboard.c | 4 ++--
->  arch/arm/mach-imx/mach-cpuimx27.c            | 4 ++--
->  2 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c b/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
-> index b4c7002..b2f08bf 100644
-> --- a/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
-> +++ b/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
-> @@ -46,7 +46,7 @@ static const int eukrea_mbimx27_pins[] __initconst = {
->  	PE10_PF_UART3_CTS,
->  	PE11_PF_UART3_RTS,
->  	/* UART4 */
-> -#if !defined(MACH_EUKREA_CPUIMX27_USEUART4)
-> +#if !defined(CONFIG_MACH_EUKREA_CPUIMX27_USEUART4)
->  	PB26_AF_UART4_RTS,
->  	PB28_AF_UART4_TXD,
->  	PB29_AF_UART4_CTS,
-> @@ -306,7 +306,7 @@ void __init eukrea_mbimx27_baseboard_init(void)
->  
->  	imx27_add_imx_uart1(&uart_pdata);
->  	imx27_add_imx_uart2(&uart_pdata);
-> -#if !defined(MACH_EUKREA_CPUIMX27_USEUART4)
-> +#if !defined(CONFIG_MACH_EUKREA_CPUIMX27_USEUART4)
->  	imx27_add_imx_uart3(&uart_pdata);
->  #endif
->  
-> diff --git a/arch/arm/mach-imx/mach-cpuimx27.c b/arch/arm/mach-imx/mach-cpuimx27.c
-> index 1465593..ea50870 100644
-> --- a/arch/arm/mach-imx/mach-cpuimx27.c
-> +++ b/arch/arm/mach-imx/mach-cpuimx27.c
-> @@ -48,7 +48,7 @@ static const int eukrea_cpuimx27_pins[] __initconst = {
->  	PE14_PF_UART1_CTS,
->  	PE15_PF_UART1_RTS,
->  	/* UART4 */
-> -#if defined(MACH_EUKREA_CPUIMX27_USEUART4)
-> +#if defined(CONFIG_MACH_EUKREA_CPUIMX27_USEUART4)
->  	PB26_AF_UART4_RTS,
->  	PB28_AF_UART4_TXD,
->  	PB29_AF_UART4_CTS,
-> @@ -272,7 +272,7 @@ static void __init eukrea_cpuimx27_init(void)
->  	/* SDHC2 can be used for Wifi */
->  	imx27_add_mxc_mmc(1, NULL);
->  #endif
-> -#if defined(MACH_EUKREA_CPUIMX27_USEUART4)
-> +#if defined(CONFIG_MACH_EUKREA_CPUIMX27_USEUART4)
->  	/* in which case UART4 is also used for Bluetooth */
->  	imx27_add_imx_uart3(&uart_pdata);
->  #endif
-> -- 
-> 1.7.11.7
-> 
-> 
+commit 8761a3dc1f07b163414e2215a2cadbb4cfe2a107
+Author: Phillip Susi <psusi@ubuntu.com>
+Date:   Fri Mar 22 12:21:53 2013 -0600
+
+    loop: cleanup partitions when detaching loop device
+    
+    Any partitions added by user space to the loop device were being
+    left in place after detaching the loop device.  This was because
+    the detach path issued a BLKRRPART to clean up partitions if
+    LO_FLAGS_PARTSCAN was set, meaning that the partitions were auto
+    scanned on attach.  Replace this BLKRRPART with code that
+    unconditionally cleans up partitions on detach instead.
+    
+    Signed-off-by: Phillip Susi <psusi@ubuntu.com>
+    
+    Modified by Jens to export delete_partition().
+    
+    Signed-off-by: Jens Axboe <axboe@kernel.dk>
+
+diff --git a/block/partition-generic.c b/block/partition-generic.c
+index 789cdea..ae95ee6 100644
+--- a/block/partition-generic.c
++++ b/block/partition-generic.c
+@@ -257,6 +257,7 @@ void delete_partition(struct gendisk *disk, int partno)
+ 
+ 	hd_struct_put(part);
+ }
++EXPORT_SYMBOL(delete_partition);
+ 
+ static ssize_t whole_disk_show(struct device *dev,
+ 			       struct device_attribute *attr, char *buf)
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index ee13a82..fe5f640 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1044,12 +1044,29 @@ static int loop_clr_fd(struct loop_device *lo)
+ 	lo->lo_state = Lo_unbound;
+ 	/* This is safe: open() is still holding a reference. */
+ 	module_put(THIS_MODULE);
+-	if (lo->lo_flags & LO_FLAGS_PARTSCAN && bdev)
+-		ioctl_by_bdev(bdev, BLKRRPART, 0);
+ 	lo->lo_flags = 0;
+ 	if (!part_shift)
+ 		lo->lo_disk->flags |= GENHD_FL_NO_PART_SCAN;
+ 	mutex_unlock(&lo->lo_ctl_mutex);
++
++	/*
++	 * Remove all partitions, since BLKRRPART won't remove user
++	 * added partitions when max_part=0
++	 */
++	if (bdev) {
++		struct disk_part_iter piter;
++		struct hd_struct *part;
++
++		mutex_lock_nested(&bdev->bd_mutex, 1);
++		invalidate_partition(bdev->bd_disk, 0);
++		disk_part_iter_init(&piter, bdev->bd_disk,
++					DISK_PITER_INCL_EMPTY);
++		while ((part = disk_part_iter_next(&piter)))
++			delete_partition(bdev->bd_disk, part->partno);
++		disk_part_iter_exit(&piter);
++		mutex_unlock(&bdev->bd_mutex);
++	}
++
+ 	/*
+ 	 * Need not hold lo_ctl_mutex to fput backing file.
+ 	 * Calling fput holding lo_ctl_mutex triggers a circular
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Jens Axboe
+
