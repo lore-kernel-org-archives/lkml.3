@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933055Ab3DBWMs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:12:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33100 "EHLO
+	id S933340Ab3DBWMo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:12:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33041 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760702Ab3DBWMq (ORCPT
+	with ESMTP id S933068Ab3DBWMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:46 -0400
+	Tue, 2 Apr 2013 18:12:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mac Lin <mkl0301@gmail.com>, Anton Vorontsov <anton@enomsg.org>
-Subject: [ 081/124] ARM: cns3xxx: fix mapping of private memory region
-Date: Tue,  2 Apr 2013 15:11:03 -0700
-Message-Id: <20130402221113.542718124@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 065/124] USB: ftdi_sio: fix use-after-free in TIOCMIWAIT
+Date: Tue,  2 Apr 2013 15:10:47 -0700
+Message-Id: <20130402221111.731677558@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -26,105 +26,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mac Lin <mkl0301@gmail.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit a3d9052c6296ad3398d3ad649c3c682c3e7ecfa6 upstream.
+commit 71ccb9b01981fabae27d3c98260ea4613207618e upstream.
 
-Since commit 0536bdf33faf (ARM: move iotable mappings within the vmalloc
-region), the Cavium CNS3xxx cannot boot anymore.
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
 
-This is caused by the pre-defined iotable mappings is not in the vmalloc
-region. This patch move the iotable mappings into the vmalloc region, and
-merge the MPCore private memory region (containing the SCU, the GIC and
-the TWD) as a single region.
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
 
-Signed-off-by: Mac Lin <mkl0301@gmail.com>
-Signed-off-by: Anton Vorontsov <anton@enomsg.org>
+When switching to tty ports, some lifetime assumptions were changed.
+Specifically, close can now be called before the final tty reference is
+dropped as part of hangup at device disconnect. Even with the ftdi
+private-data refcounting this means that the port private data can be
+freed while a process is sleeping on modem-status changes and thus
+cannot be relied on to detect disconnects when woken up.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-cns3xxx/core.c                 |   16 +++-------------
- arch/arm/mach-cns3xxx/include/mach/cns3xxx.h |   16 ++++++++--------
- 2 files changed, 11 insertions(+), 21 deletions(-)
+ drivers/usb/serial/ftdi_sio.c |   19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
 
---- a/arch/arm/mach-cns3xxx/core.c
-+++ b/arch/arm/mach-cns3xxx/core.c
-@@ -22,19 +22,9 @@
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -69,9 +69,7 @@ struct ftdi_private {
+ 	int flags;		/* some ASYNC_xxxx flags are supported */
+ 	unsigned long last_dtr_rts;	/* saved modem control outputs */
+ 	struct async_icount	icount;
+-	wait_queue_head_t delta_msr_wait; /* Used for TIOCMIWAIT */
+ 	char prev_status;        /* Used for TIOCMIWAIT */
+-	bool dev_gone;        /* Used to abort TIOCMIWAIT */
+ 	char transmit_empty;	/* If transmitter is empty or not */
+ 	__u16 interface;	/* FT2232C, FT2232H or FT4232H port interface
+ 				   (0 for FT232/245) */
+@@ -1692,10 +1690,8 @@ static int ftdi_sio_port_probe(struct us
  
- static struct map_desc cns3xxx_io_desc[] __initdata = {
- 	{
--		.virtual	= CNS3XXX_TC11MP_TWD_BASE_VIRT,
--		.pfn		= __phys_to_pfn(CNS3XXX_TC11MP_TWD_BASE),
--		.length		= SZ_4K,
--		.type		= MT_DEVICE,
--	}, {
--		.virtual	= CNS3XXX_TC11MP_GIC_CPU_BASE_VIRT,
--		.pfn		= __phys_to_pfn(CNS3XXX_TC11MP_GIC_CPU_BASE),
--		.length		= SZ_4K,
--		.type		= MT_DEVICE,
--	}, {
--		.virtual	= CNS3XXX_TC11MP_GIC_DIST_BASE_VIRT,
--		.pfn		= __phys_to_pfn(CNS3XXX_TC11MP_GIC_DIST_BASE),
--		.length		= SZ_4K,
-+		.virtual	= CNS3XXX_TC11MP_SCU_BASE_VIRT,
-+		.pfn		= __phys_to_pfn(CNS3XXX_TC11MP_SCU_BASE),
-+		.length		= SZ_8K,
- 		.type		= MT_DEVICE,
- 	}, {
- 		.virtual	= CNS3XXX_TIMER1_2_3_BASE_VIRT,
---- a/arch/arm/mach-cns3xxx/include/mach/cns3xxx.h
-+++ b/arch/arm/mach-cns3xxx/include/mach/cns3xxx.h
-@@ -94,10 +94,10 @@
- #define RTC_INTR_STS_OFFSET			0x34
+ 	kref_init(&priv->kref);
+ 	mutex_init(&priv->cfg_lock);
+-	init_waitqueue_head(&priv->delta_msr_wait);
  
- #define CNS3XXX_MISC_BASE			0x76000000	/* Misc Control */
--#define CNS3XXX_MISC_BASE_VIRT			0xFFF07000	/* Misc Control */
-+#define CNS3XXX_MISC_BASE_VIRT			0xFB000000	/* Misc Control */
+ 	priv->flags = ASYNC_LOW_LATENCY;
+-	priv->dev_gone = false;
  
- #define CNS3XXX_PM_BASE				0x77000000	/* Power Management Control */
--#define CNS3XXX_PM_BASE_VIRT			0xFFF08000
-+#define CNS3XXX_PM_BASE_VIRT			0xFB001000
+ 	if (quirk && quirk->port_probe)
+ 		quirk->port_probe(priv);
+@@ -1841,8 +1837,7 @@ static int ftdi_sio_port_remove(struct u
+ {
+ 	struct ftdi_private *priv = usb_get_serial_port_data(port);
  
- #define PM_CLK_GATE_OFFSET			0x00
- #define PM_SOFT_RST_OFFSET			0x04
-@@ -109,7 +109,7 @@
- #define PM_PLL_HM_PD_OFFSET			0x1C
+-	priv->dev_gone = true;
+-	wake_up_interruptible_all(&priv->delta_msr_wait);
++	wake_up_interruptible(&port->delta_msr_wait);
  
- #define CNS3XXX_UART0_BASE			0x78000000	/* UART 0 */
--#define CNS3XXX_UART0_BASE_VIRT			0xFFF09000
-+#define CNS3XXX_UART0_BASE_VIRT			0xFB002000
+ 	remove_sysfs_attrs(port);
  
- #define CNS3XXX_UART1_BASE			0x78400000	/* UART 1 */
- #define CNS3XXX_UART1_BASE_VIRT			0xFFF0A000
-@@ -130,7 +130,7 @@
- #define CNS3XXX_I2S_BASE_VIRT			0xFFF10000
+@@ -1991,7 +1986,7 @@ static int ftdi_process_packet(struct tt
+ 		if (diff_status & FTDI_RS0_RLSD)
+ 			priv->icount.dcd++;
  
- #define CNS3XXX_TIMER1_2_3_BASE			0x7C800000	/* Timer */
--#define CNS3XXX_TIMER1_2_3_BASE_VIRT		0xFFF10800
-+#define CNS3XXX_TIMER1_2_3_BASE_VIRT		0xFB003000
+-		wake_up_interruptible_all(&priv->delta_msr_wait);
++		wake_up_interruptible(&port->delta_msr_wait);
+ 		priv->prev_status = status;
+ 	}
  
- #define TIMER1_COUNTER_OFFSET			0x00
- #define TIMER1_AUTO_RELOAD_OFFSET		0x04
-@@ -227,16 +227,16 @@
-  * Testchip peripheral and fpga gic regions
-  */
- #define CNS3XXX_TC11MP_SCU_BASE			0x90000000	/* IRQ, Test chip */
--#define CNS3XXX_TC11MP_SCU_BASE_VIRT		0xFF000000
-+#define CNS3XXX_TC11MP_SCU_BASE_VIRT		0xFB004000
- 
- #define CNS3XXX_TC11MP_GIC_CPU_BASE		0x90000100	/* Test chip interrupt controller CPU interface */
--#define CNS3XXX_TC11MP_GIC_CPU_BASE_VIRT	0xFF000100
-+#define CNS3XXX_TC11MP_GIC_CPU_BASE_VIRT	(CNS3XXX_TC11MP_SCU_BASE_VIRT + 0x100)
- 
- #define CNS3XXX_TC11MP_TWD_BASE			0x90000600
--#define CNS3XXX_TC11MP_TWD_BASE_VIRT		0xFF000600
-+#define CNS3XXX_TC11MP_TWD_BASE_VIRT		(CNS3XXX_TC11MP_SCU_BASE_VIRT + 0x600)
- 
- #define CNS3XXX_TC11MP_GIC_DIST_BASE		0x90001000	/* Test chip interrupt controller distributor */
--#define CNS3XXX_TC11MP_GIC_DIST_BASE_VIRT	0xFF001000
-+#define CNS3XXX_TC11MP_GIC_DIST_BASE_VIRT	(CNS3XXX_TC11MP_SCU_BASE_VIRT + 0x1000)
- 
- #define CNS3XXX_TC11MP_L220_BASE		0x92002000	/* L220 registers */
- #define CNS3XXX_TC11MP_L220_BASE_VIRT		0xFF002000
+@@ -2448,11 +2443,15 @@ static int ftdi_ioctl(struct tty_struct
+ 	 */
+ 	case TIOCMIWAIT:
+ 		cprev = priv->icount;
+-		while (!priv->dev_gone) {
+-			interruptible_sleep_on(&priv->delta_msr_wait);
++		for (;;) {
++			interruptible_sleep_on(&port->delta_msr_wait);
+ 			/* see if a signal did it */
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
++
++			if (port->serial->disconnected)
++				return -EIO;
++
+ 			cnow = priv->icount;
+ 			if (((arg & TIOCM_RNG) && (cnow.rng != cprev.rng)) ||
+ 			    ((arg & TIOCM_DSR) && (cnow.dsr != cprev.dsr)) ||
+@@ -2462,8 +2461,6 @@ static int ftdi_ioctl(struct tty_struct
+ 			}
+ 			cprev = cnow;
+ 		}
+-		return -EIO;
+-		break;
+ 	case TIOCSERGETLSR:
+ 		return get_lsr_info(port, (struct serial_struct __user *)arg);
+ 		break;
 
 
