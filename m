@@ -1,109 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932734Ab3DBPn3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 11:43:29 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:65254 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932700Ab3DBPn2 (ORCPT
+	id S932761Ab3DBPoU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 11:44:20 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:60833 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932744Ab3DBPoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 11:43:28 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 2 Apr 2013 08:43:33 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Pavel Machek <pavel@denx.de>
-Cc: sr@denx.de, w.sang@pengutronix.de, magnus.damm@gmail.com,
-        hjk@linutronix.de, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, dzu@denx.de
-Subject: Re: UIO device tree bindings.
-Message-ID: <20130402154333.GA21941@roeck-us.net>
-References: <20130401142336.GA18034@amd.pavel.ucw.cz>
- <20130401154008.GA20963@amd.pavel.ucw.cz>
- <20130402024212.GA19431@roeck-us.net>
- <20130402115151.GA9052@amd.pavel.ucw.cz>
- <20130402125149.GA7216@roeck-us.net>
- <20130402131951.GA9975@amd.pavel.ucw.cz>
- <20130402134645.GB9975@amd.pavel.ucw.cz>
+	Tue, 2 Apr 2013 11:44:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130402134645.GB9975@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130402145820.GF29506@redhat.com>
+References: <20130401192606.GA17951@redhat.com>
+	<5159F27E.7060300@zytor.com>
+	<CAE9FiQXikU8-FkYYULHx50qP_ME2bRSzCC=8ZH8iDyUr2ug66g@mail.gmail.com>
+	<515A03DB.6040107@zytor.com>
+	<CAE9FiQWNFbFgXafJBvORRax+GNU_uf0KFnqZ5NQit0BeZZx9LA@mail.gmail.com>
+	<515A083B.7050508@zytor.com>
+	<CAE9FiQXwy8nLRQAiZ+P56fokisUXAmTJWA07TZ-gSH61K5FQLA@mail.gmail.com>
+	<CAE9FiQW1RzP5A_82qUP7gF_6-G3+Ceay_L1FQf7N=MMbQA4+iw@mail.gmail.com>
+	<20130402135001.GC29506@redhat.com>
+	<CAE9FiQVWprV4YkMq_Pu95AYk_qGzXWPVBWJVDfa=0RbqL63y4Q@mail.gmail.com>
+	<20130402145820.GF29506@redhat.com>
+Date: Tue, 2 Apr 2013 08:44:16 -0700
+X-Google-Sender-Auth: tnIFYi3GNa_1lPlSAaiIsR_3mEQ
+Message-ID: <CAE9FiQV170i6+vHzvLF3AuX+be655KBH5xMf=raTGaUstBYRyQ@mail.gmail.com>
+Subject: Re: [PATCH] kexec: use Crash kernel for Crash kernel low
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=14dae9340f1d298cae04d9629c00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 03:46:45PM +0200, Pavel Machek wrote:
-> Hi!
-> 
-> > > > Or maybe we can do some magic with module parameter. That should be
-> > > > enough for expected use.
-> > > > 
-> > > I don't think that would make a difference. I mean, just take ns16550 as another
-> > > example. No one has problems declaring some block of hardware addresses to be
-> > > compatible with "ns16550", even though it can be anything including a memory
-> > > block on one of the FPGAs or ASICs we are talking about here, it can be anything
-> > > but a NS16550, and many of the actual "compatible" strings are not defined
-> > > anythere either.
-> > > 
-> > > So there is no problem with "ata-generic" and "ns16550", and no one cares if
-> > > "fsl,mpc8349emitx-pata" or "xlnx,xps-uart16550-2.00.b" is defined or not, but
-> > > "generic-uio" together with "ptx,c64fpga001" is unacceptable.
-> > > 
-> > > I think it has more to do with the uio driver not being an actual driver, but
-> > > the kernel part of a user-space driver, though that is just a wild guess.
-> > 
-> > Well, it turned out that adding module parameter was not that much
-> > work... and yes I believe it is a tiny bit cleaner.
-> > 
-> > Here's updated patch, if you can please test this one.
-> > 
-> > [You can just pass "uio_of_genirq.of_id=generic-uio" to get previous
-> > behaviour. But don't tell anyone :-)]
-> 
-> Actually, looking at it some more, perhaps even solution is possible?
-> (This will need uio_pdrv_genirq.of_id=generic-uio .)
-> 
-Possibly for your case, but not for mine, as I'll have several instances of the
-driver, and the hardware is not always present. Also, I am not sure if the match
-function runs before the module paratemers are initialized or afterwards, but that
-would be a matter of testing.
+--14dae9340f1d298cae04d9629c00
+Content-Type: text/plain; charset=ISO-8859-1
 
-Anyway, after sleeping over it, I think I understand the concern better.
-"ns16550" describes some HW compatible to a specific chip with well defined
-functionality, and "generic-uio" doesn't. Maybe it would have to be something
-like "generic-uio-hw" instead.
+On Tue, Apr 2, 2013 at 7:58 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Tue, Apr 02, 2013 at 07:45:36AM -0700, Yinghai Lu wrote:
+>
+> - Ok so atleast use a different delimiter. Otherwise one could specify
+>   rage1:size1,range2:size2,high which is confusing.
+>
+> - I think one can look at above as follows.
+>
+>   crashkernel=<memory_to_reserve>;[<option1>];....
 
-> Unfortunately, I don't have easy way to test this :-(. So feedback is
-> essential.
-> 
-I'll try to get it to work, but it will take a bit.
+ok, please check attached one that replace last one of four patches.
 
-Thanks,
-Guenter
+Thanks
 
-> Signed-off-by: Pavel Machek <pavel@denx.de>
-> 
-> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-> index 4a50ead..64b6dac 100644
-> --- a/drivers/uio/uio_pdrv_genirq.c
-> +++ b/drivers/uio/uio_pdrv_genirq.c
-> @@ -271,9 +273,13 @@ static const struct dev_pm_ops uio_pdrv_genirq_dev_pm_ops = {
->  
->  #ifdef CONFIG_OF
->  static const struct of_device_id uio_of_genirq_match[] = {
-> -	{ /* empty for now */ },
-> +	{ /* This is filled with module_parm */ },
-> +	{ /* Sentinel */ },
->  };
->  MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
-> +
-> +module_param_string(of_id, uio_of_genirq_match[0].compatible, 128, 0);
-> +MODULE_PARM_DESC(of_id, "Openfirmware id of the device to be handled by uio");
->  #else
->  # define uio_of_genirq_match NULL
->  #endif
-> 
-> -- 
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
-> 
+Yinghai
+
+--14dae9340f1d298cae04d9629c00
+Content-Type: application/octet-stream; 
+	name="crashkernel_high_low_2_v2.patch"
+Content-Disposition: attachment; filename="crashkernel_high_low_2_v2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hf18l48h0
+
+U3ViamVjdDogW1BBVENIXSB4ODYsIGtkdW1wOiBDaGFuZ2UgY3Jhc2hrZXJuZWxfaGlnaC9sb3c9
+IHRvIGNyYXNoa2VybmVsPTtoaWdoL2xvdwoKUGVyIGhwYSwgdXNlIGNyYXNoa2VybmVsPVhNO2hp
+Z2ggY3Jhc2hrZXJuZWw9WU07bG93IGluc3RlYWQgb2YKY3Jhc2hrZXJuZWxfaGlnbj1YTSBjcmFz
+aGtlcm5lbF9sb3c9WU0uCkFzIHRoYXQgY291bGQgYmUgZXh0ZW5zaWJsZS4KCi12MjogYWNjb3Jk
+aW5nIHRvIFZpdmVrLCBjaGFuZ2UgZGVsaW1pdGVyIHRvIDsKClNpZ25lZC1vZmYtYnk6IFlpbmdo
+YWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQogRG9jdW1lbnRhdGlvbi9rZXJuZWwtcGFy
+YW1ldGVycy50eHQgfCAgICA2ICsrKy0tLQogYXJjaC94ODYva2VybmVsL3NldHVwLmMgICAgICAg
+ICAgICAgfCAgICA2ICsrKy0tLQoga2VybmVsL2tleGVjLmMgICAgICAgICAgICAgICAgICAgICAg
+fCAgIDIzICsrKysrKysrKysrKysrKysrLS0tLS0tCiAzIGZpbGVzIGNoYW5nZWQsIDIzIGluc2Vy
+dGlvbnMoKyksIDEyIGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9Eb2N1bWVudGF0aW9u
+L2tlcm5lbC1wYXJhbWV0ZXJzLnR4dAo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9Eb2N1
+bWVudGF0aW9uL2tlcm5lbC1wYXJhbWV0ZXJzLnR4dAorKysgbGludXgtMi42L0RvY3VtZW50YXRp
+b24va2VybmVsLXBhcmFtZXRlcnMudHh0CkBAIC02MDMsMTEgKzYwMywxMSBAQCBieXRlcyByZXNw
+ZWN0aXZlbHkuIFN1Y2ggbGV0dGVyIHN1ZmZpeGVzCiAJCQlhIG1lbW9yeSB1bml0IChhbW91bnRb
+S01HXSkuIFNlZSBhbHNvCiAJCQlEb2N1bWVudGF0aW9uL2tkdW1wL2tkdW1wLnR4dCBmb3IgYW4g
+ZXhhbXBsZS4KIAotCWNyYXNoa2VybmVsX2hpZ2g9c2l6ZVtLTUddCisJY3Jhc2hrZXJuZWw9c2l6
+ZVtLTUddO2hpZ2gKIAkJCVtLTkwsIHg4Nl82NF0gcmFuZ2UgYWJvdmUgNEcuIGtlcm5lbCBhbGxv
+Y2F0ZSBwaHlzaWNhbAogCQkJbWVtb3J5IHJlZ2lvbiBhYm92ZSA0Ry4KLQljcmFzaGtlcm5lbF9s
+b3c9c2l6ZVtLTUddCi0JCQlbS05MLCB4ODZfNjRdIHJhbmdlIHVuZGVyIDRHLiBXaGVuIGNyYXNo
+a2VybmVsX2hpZ2g9IGlzCisJY3Jhc2hrZXJuZWw9c2l6ZVtLTUddO2xvdworCQkJW0tOTCwgeDg2
+XzY0XSByYW5nZSB1bmRlciA0Ry4gV2hlbiBjcmFzaGtlcm5lbD1YO2hpZ2ggaXMKIAkJCXBhc3Nl
+ZCwga2VybmVsIGFsbG9jYXRlIHBoeXNpY2FsIG1lbW9yeSByZWdpb24KIAkJCWFib3ZlIDRHLCB0
+aGF0IGNhdXNlIHNlY29uZCBrZXJuZWwgY3Jhc2ggb24gc3lzdGVtCiAJCQl0aGF0IG5lZWQgc3dp
+b3RsYiBsYXRlci4gS2VybmVsIHdvdWxkIHRyeSB0byBhbGxvY2F0ZQpJbmRleDogbGludXgtMi42
+L2FyY2gveDg2L2tlcm5lbC9zZXR1cC5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2Fy
+Y2gveDg2L2tlcm5lbC9zZXR1cC5jCisrKyBsaW51eC0yLjYvYXJjaC94ODYva2VybmVsL3NldHVw
+LmMKQEAgLTU1NCw3ICs1NTQsNyBAQCBzdGF0aWMgdm9pZCBfX2luaXQgcmVzZXJ2ZV9jcmFzaGtl
+cm5lbF9sCiAJaW50IHJldDsKIAogCXRvdGFsX2xvd19tZW0gPSBtZW1ibG9ja19tZW1fc2l6ZSgx
+VUw8PCgzMi1QQUdFX1NISUZUKSk7Ci0JLyogY3Jhc2hrZXJuZWxfbG93PVlNICovCisJLyogY3Jh
+c2hrZXJuZWw9WU07bG93ICovCiAJcmV0ID0gcGFyc2VfY3Jhc2hrZXJuZWxfbG93KGJvb3RfY29t
+bWFuZF9saW5lLCB0b3RhbF9sb3dfbWVtLAogCQkJCQkJJmxvd19zaXplLCAmYmFzZSk7CiAJaWYg
+KHJldCAhPSAwKSB7CkBAIC01NjcsNyArNTY3LDcgQEAgc3RhdGljIHZvaWQgX19pbml0IHJlc2Vy
+dmVfY3Jhc2hrZXJuZWxfbAogCQlsb3dfc2l6ZSA9IHN3aW90bGJfc2l6ZV9vcl9kZWZhdWx0KCkg
+KyAoOFVMPDwyMCk7CiAJCWF1dG9fc2V0ID0gdHJ1ZTsKIAl9IGVsc2UgewotCQkvKiBwYXNzZWQg
+d2l0aCBjcmFzaGtlcm5lbF9sb3c9MCA/ICovCisJCS8qIHBhc3NlZCB3aXRoIGNyYXNoa2VybmVs
+PTA7bG93ID8gKi8KIAkJaWYgKCFsb3dfc2l6ZSkKIAkJCXJldHVybjsKIAl9CkBAIC02MDMsNyAr
+NjAzLDcgQEAgc3RhdGljIHZvaWQgX19pbml0IHJlc2VydmVfY3Jhc2hrZXJuZWwodgogCiAJdG90
+YWxfbWVtID0gbWVtYmxvY2tfcGh5c19tZW1fc2l6ZSgpOwogCi0JLyogY3Jhc2hrZXJuZWxfaGln
+aD1YTSAqLworCS8qIGNyYXNoa2VybmVsPVhNO2hpZ2ggKi8KIAlyZXQgPSBwYXJzZV9jcmFzaGtl
+cm5lbF9oaWdoKGJvb3RfY29tbWFuZF9saW5lLCB0b3RhbF9tZW0sCiAJCQkmY3Jhc2hfc2l6ZSwg
+JmNyYXNoX2Jhc2UpOwogCWlmIChyZXQgIT0gMCB8fCBjcmFzaF9zaXplIDw9IDApIHsKSW5kZXg6
+IGxpbnV4LTIuNi9rZXJuZWwva2V4ZWMuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9r
+ZXJuZWwva2V4ZWMuYworKysgbGludXgtMi42L2tlcm5lbC9rZXhlYy5jCkBAIC0xMzc0LDcgKzEz
+NzQsNyBAQCBzdGF0aWMgaW50IF9faW5pdCBwYXJzZV9jcmFzaGtlcm5lbF9zaW1wCiAKIAlpZiAo
+KmN1ciA9PSAnQCcpCiAJCSpjcmFzaF9iYXNlID0gbWVtcGFyc2UoY3VyKzEsICZjdXIpOwotCWVs
+c2UgaWYgKCpjdXIgIT0gJyAnICYmICpjdXIgIT0gJ1wwJykgeworCWVsc2UgaWYgKCpjdXIgIT0g
+JyAnICYmICpjdXIgIT0gJzsnICYmICpjdXIgIT0gJ1wwJykgewogCQlwcl93YXJuaW5nKCJjcmFz
+aGtlcm5lbDogdW5yZWNvZ25pemVkIGNoYXJcbiIpOwogCQlyZXR1cm4gLUVJTlZBTDsKIAl9CkBA
+IC0xMzkwLDcgKzEzOTAsOCBAQCBzdGF0aWMgaW50IF9faW5pdCBfX3BhcnNlX2NyYXNoa2VybmVs
+KGNoCiAJCQkgICAgIHVuc2lnbmVkIGxvbmcgbG9uZyBzeXN0ZW1fcmFtLAogCQkJICAgICB1bnNp
+Z25lZCBsb25nIGxvbmcgKmNyYXNoX3NpemUsCiAJCQkgICAgIHVuc2lnbmVkIGxvbmcgbG9uZyAq
+Y3Jhc2hfYmFzZSwKLQkJCQljb25zdCBjaGFyICpuYW1lKQorCQkJICAgICBjb25zdCBjaGFyICpu
+YW1lLAorCQkJICAgICBjb25zdCBjaGFyICpzdWZmaXgpCiB7CiAJY2hhciAJKnAgPSBjbWRsaW5l
+LCAqY2tfY21kbGluZSA9IE5VTEw7CiAJY2hhcgkqZmlyc3RfY29sb24sICpmaXJzdF9zcGFjZTsK
+QEAgLTE0MDIsNyArMTQwMywxNyBAQCBzdGF0aWMgaW50IF9faW5pdCBfX3BhcnNlX2NyYXNoa2Vy
+bmVsKGNoCiAJLyogZmluZCBjcmFzaGtlcm5lbCBhbmQgdXNlIHRoZSBsYXN0IG9uZSBpZiB0aGVy
+ZSBhcmUgbW9yZSAqLwogCXAgPSBzdHJzdHIocCwgbmFtZSk7CiAJd2hpbGUgKHApIHsKLQkJY2tf
+Y21kbGluZSA9IHA7CisJCWlmICghc3VmZml4KQorCQkJY2tfY21kbGluZSA9IHA7CisJCWVsc2Ug
+eworCQkJY2hhciAqZW5kX3AgPSBzdHJjaHIocCwgJyAnKTsKKworCQkJaWYgKCFlbmRfcCkKKwkJ
+CQllbmRfcCA9IHAgKyBzdHJsZW4ocCk7CisJCQllbmRfcCAtPSBzdHJsZW4oc3VmZml4KTsKKwkJ
+CWlmICghc3RybmNtcChlbmRfcCwgc3VmZml4LCBzdHJsZW4oc3VmZml4KSkpCisJCQkJY2tfY21k
+bGluZSA9IHA7CisJCX0KIAkJcCA9IHN0cnN0cihwKzEsIG5hbWUpOwogCX0KIApAQCAtMTQzMyw3
+ICsxNDQ0LDcgQEAgaW50IF9faW5pdCBwYXJzZV9jcmFzaGtlcm5lbChjaGFyICpjbWRsaQogCQkJ
+ICAgICB1bnNpZ25lZCBsb25nIGxvbmcgKmNyYXNoX2Jhc2UpCiB7CiAJcmV0dXJuIF9fcGFyc2Vf
+Y3Jhc2hrZXJuZWwoY21kbGluZSwgc3lzdGVtX3JhbSwgY3Jhc2hfc2l6ZSwgY3Jhc2hfYmFzZSwK
+LQkJCQkJImNyYXNoa2VybmVsPSIpOworCQkJCQkiY3Jhc2hrZXJuZWw9IiwgTlVMTCk7CiB9CiAK
+IGludCBfX2luaXQgcGFyc2VfY3Jhc2hrZXJuZWxfaGlnaChjaGFyICpjbWRsaW5lLApAQCAtMTQ0
+Miw3ICsxNDUzLDcgQEAgaW50IF9faW5pdCBwYXJzZV9jcmFzaGtlcm5lbF9oaWdoKGNoYXIgKgog
+CQkJICAgICB1bnNpZ25lZCBsb25nIGxvbmcgKmNyYXNoX2Jhc2UpCiB7CiAJcmV0dXJuIF9fcGFy
+c2VfY3Jhc2hrZXJuZWwoY21kbGluZSwgc3lzdGVtX3JhbSwgY3Jhc2hfc2l6ZSwgY3Jhc2hfYmFz
+ZSwKLQkJCQkJImNyYXNoa2VybmVsX2hpZ2g9Iik7CisJCQkJCSJjcmFzaGtlcm5lbD0iLCAiO2hp
+Z2giKTsKIH0KIAogaW50IF9faW5pdCBwYXJzZV9jcmFzaGtlcm5lbF9sb3coY2hhciAqY21kbGlu
+ZSwKQEAgLTE0NTEsNyArMTQ2Miw3IEBAIGludCBfX2luaXQgcGFyc2VfY3Jhc2hrZXJuZWxfbG93
+KGNoYXIgKmMKIAkJCSAgICAgdW5zaWduZWQgbG9uZyBsb25nICpjcmFzaF9iYXNlKQogewogCXJl
+dHVybiBfX3BhcnNlX2NyYXNoa2VybmVsKGNtZGxpbmUsIHN5c3RlbV9yYW0sIGNyYXNoX3NpemUs
+IGNyYXNoX2Jhc2UsCi0JCQkJCSJjcmFzaGtlcm5lbF9sb3c9Iik7CisJCQkJCSJjcmFzaGtlcm5l
+bD0iLCAiO2xvdyIpOwogfQogCiBzdGF0aWMgdm9pZCB1cGRhdGVfdm1jb3JlaW5mb19ub3RlKHZv
+aWQpCg==
+--14dae9340f1d298cae04d9629c00--
