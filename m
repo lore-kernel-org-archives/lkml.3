@@ -1,62 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761557Ab3DBJYH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:24:07 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:36403 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760318Ab3DBJYD convert rfc822-to-8bit (ORCPT
+	id S1761573Ab3DBJYU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:24:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50527 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760318Ab3DBJYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:24:03 -0400
-From: Fabio Coatti <fabio.coatti@gmail.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        netdev@vger.kernel.org, Matt Carlson <mcarlson@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>
-Subject: Re: 3.7.10 kernel crash
-Date: Tue, 02 Apr 2013 11:16:55 +0200
-Message-ID: <1426784.IFBeqasnTm@calvin>
-User-Agent: KMail/4.10.1 (Linux/3.8.4; KDE/4.10.1; x86_64; ; )
-In-Reply-To: <1364474147.3261.1.camel@thor.lan>
-References: <CADpTngWo_c0MHNwYEFwSR_9KQrWKrOVgQSze+rZc4Ze9Rj2hsw@mail.gmail.com> <CADpTngW8RTVX28bVJQe5tV_ccc+FNOJezeQbczXFudy+7bMRDQ@mail.gmail.com> <1364474147.3261.1.camel@thor.lan>
+	Tue, 2 Apr 2013 05:24:16 -0400
+Date: Tue, 2 Apr 2013 02:23:50 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-5a6fd27ad73fef0ed39a00236acbc3a17834672a@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, fweisbec@gmail.com,
+        rostedt@goodmis.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, fweisbec@gmail.com,
+        rostedt@goodmis.org, tglx@linutronix.de
+In-Reply-To: <1363850332-25297-3-git-send-email-namhyung@kernel.org>
+References: <1363850332-25297-3-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Get rid of malloc_or_die()
+  in trace-event-info.c
+Git-Commit-ID: 5a6fd27ad73fef0ed39a00236acbc3a17834672a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 02:23:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In data giovedì 28 marzo 2013 08:35:47, Peter Hurley ha scritto:
-> [ +cc Matt Carlson, Michael Chan, netdev because this is a tg3-related oops]
-> On Thu, 2013-03-28 at 09:31 +0100, Fabio Coatti wrote:
-> > 2013/3/27 Fabio Coatti <fabio.coatti@gmail.com>:
-> > > Hi all,
-> > > we are experiencing crashes on some servers, right now running 3.7.10;
-> > > I've been able to get only screenshots from dying server that I
-> > > attached below. Probably we can exclude hardware issues, as it
-> > > happened on two different servers.
-> > 
-> > Further information: those crashes seems to happen only when the
-> > machine is heavily loaded (process, network and so on). We have seen
-> > this pattern several times.
-> 
-> I would recommend capturing the entire oops text (it will likely be
-> necessary anyway for someone to properly identify and fix the cause).
-> 
-> If the machine has a 2nd network port, then use netconsole on that
-> interface. If not, set up a serial console or try to get 50-line VGA
+Commit-ID:  5a6fd27ad73fef0ed39a00236acbc3a17834672a
+Gitweb:     http://git.kernel.org/tip/5a6fd27ad73fef0ed39a00236acbc3a17834672a
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Thu, 21 Mar 2013 16:18:45 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 21 Mar 2013 13:12:28 -0300
 
+perf tools: Get rid of malloc_or_die() in trace-event-info.c
 
-Ok, I'll try to get better oopes. However, this is going to be tricky, as the 
-machine is remotely administered (via HP iLO) and uses all network interfaces 
-(BTW, I'm not even sure to be able to get a network driver related crash using 
-netconsole approach). So far, no success in using a different resolution for 
-boot console.
-Anyway, I'll try to find a way to capture all the messages.
+Check return value of malloc and fail if NULL.
 
-Many thanks for the answer!
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1363850332-25297-3-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/trace-event-info.c | 48 ++++++++++++++++++++++++--------------
+ 1 file changed, 30 insertions(+), 18 deletions(-)
 
-
-
---
-Fabio
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index 81c6732..91db6e8 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -47,16 +47,6 @@ static const char *output_file = "trace.info";
+ static int output_fd;
+ 
+ 
+-static void *malloc_or_die(unsigned int size)
+-{
+-	void *data;
+-
+-	data = malloc(size);
+-	if (!data)
+-		die("malloc");
+-	return data;
+-}
+-
+ static const char *find_debugfs(void)
+ {
+ 	const char *path = perf_debugfs_mount(NULL);
+@@ -209,7 +199,7 @@ static bool name_in_tp_list(char *sys, struct tracepoint_path *tps)
+ 	return false;
+ }
+ 
+-static void copy_event_system(const char *sys, struct tracepoint_path *tps)
++static int copy_event_system(const char *sys, struct tracepoint_path *tps)
+ {
+ 	struct dirent *dent;
+ 	struct stat st;
+@@ -217,6 +207,7 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 	DIR *dir;
+ 	int count = 0;
+ 	int ret;
++	int err;
+ 
+ 	dir = opendir(sys);
+ 	if (!dir)
+@@ -228,7 +219,11 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 		    strcmp(dent->d_name, "..") == 0 ||
+ 		    !name_in_tp_list(dent->d_name, tps))
+ 			continue;
+-		format = malloc_or_die(strlen(sys) + strlen(dent->d_name) + 10);
++		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
++		if (!format) {
++			err = -ENOMEM;
++			goto out;
++		}
+ 		sprintf(format, "%s/%s/format", sys, dent->d_name);
+ 		ret = stat(format, &st);
+ 		free(format);
+@@ -246,16 +241,22 @@ static void copy_event_system(const char *sys, struct tracepoint_path *tps)
+ 		    strcmp(dent->d_name, "..") == 0 ||
+ 		    !name_in_tp_list(dent->d_name, tps))
+ 			continue;
+-		format = malloc_or_die(strlen(sys) + strlen(dent->d_name) + 10);
++		format = malloc(strlen(sys) + strlen(dent->d_name) + 10);
++		if (!format) {
++			err = -ENOMEM;
++			goto out;
++		}
+ 		sprintf(format, "%s/%s/format", sys, dent->d_name);
+ 		ret = stat(format, &st);
+ 
+ 		if (ret >= 0)
+ 			record_file(format, 8);
+-
+ 		free(format);
+ 	}
++	err = 0;
++out:
+ 	closedir(dir);
++	return err;
+ }
+ 
+ static void read_ftrace_files(struct tracepoint_path *tps)
+@@ -282,7 +283,7 @@ static bool system_in_tp_list(char *sys, struct tracepoint_path *tps)
+ 	return false;
+ }
+ 
+-static void read_event_files(struct tracepoint_path *tps)
++static int read_event_files(struct tracepoint_path *tps)
+ {
+ 	struct dirent *dent;
+ 	struct stat st;
+@@ -291,6 +292,7 @@ static void read_event_files(struct tracepoint_path *tps)
+ 	DIR *dir;
+ 	int count = 0;
+ 	int ret;
++	int err;
+ 
+ 	path = get_tracing_file("events");
+ 	if (!path)
+@@ -320,7 +322,11 @@ static void read_event_files(struct tracepoint_path *tps)
+ 		    strcmp(dent->d_name, "ftrace") == 0 ||
+ 		    !system_in_tp_list(dent->d_name, tps))
+ 			continue;
+-		sys = malloc_or_die(strlen(path) + strlen(dent->d_name) + 2);
++		sys = malloc(strlen(path) + strlen(dent->d_name) + 2);
++		if (!sys) {
++			err = -ENOMEM;
++			goto out;
++		}
+ 		sprintf(sys, "%s/%s", path, dent->d_name);
+ 		ret = stat(sys, &st);
+ 		if (ret >= 0) {
+@@ -329,9 +335,12 @@ static void read_event_files(struct tracepoint_path *tps)
+ 		}
+ 		free(sys);
+ 	}
+-
++	err = 0;
++out:
+ 	closedir(dir);
+ 	put_tracing_file(path);
++
++	return err;
+ }
+ 
+ static void read_proc_kallsyms(void)
+@@ -463,7 +472,10 @@ struct tracing_data *tracing_data_get(struct list_head *pattrs,
+ 	if (!tps)
+ 		return NULL;
+ 
+-	tdata = malloc_or_die(sizeof(*tdata));
++	tdata = malloc(sizeof(*tdata));
++	if (!tdata)
++		return NULL;
++
+ 	tdata->temp = temp;
+ 	tdata->size = 0;
+ 
