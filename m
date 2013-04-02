@@ -1,52 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932676Ab3DBPk1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 11:40:27 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:49236 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932491Ab3DBPkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 11:40:23 -0400
-Date: Tue, 2 Apr 2013 10:40:22 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Nathan Zimmer <nzimmer@sgi.com>, rjw@sisk.pl, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 1/2] cpufreq: split the cpufreq_driver_lock and use
-	the rcu
-Message-ID: <20130402154021.GA521@gulag1.americas.sgi.com>
-References: <5159C147.70800@sgi.com> <1364847069-2887-1-git-send-email-nzimmer@sgi.com> <1364847069-2887-2-git-send-email-nzimmer@sgi.com> <CAKohpok7MR28trAddHRi5Lcg0bGBHBnOfJO=yu7SQqGnV5ZCRg@mail.gmail.com> <20130402145536.GA31757@gulag1.americas.sgi.com> <CAKohpokXbeRp-pHaJRAOjnF+R+wy8R9We67Yr2C2nyoVXyJd6w@mail.gmail.com>
+	id S932694Ab3DBPlD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 11:41:03 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43208 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932491Ab3DBPlA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 11:41:00 -0400
+Message-ID: <515AFC06.8000502@wwwdotorg.org>
+Date: Tue, 02 Apr 2013 09:40:54 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohpokXbeRp-pHaJRAOjnF+R+wy8R9We67Yr2C2nyoVXyJd6w@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: linux-usb@vger.kernel.org, mchehab@redhat.com, linux-doc@vger.kernel.org,
+        tony@atomide.com, grant.likely@secretlab.ca, linux@arm.linux.org.uk,
+        javier@dowhile0.org, cesarb@cesarb.net, arnd@arndb.de,
+        eballetbo@gmail.com, devicetree-discuss@lists.ozlabs.org,
+        rob.herring@calxeda.com, swarren@nvidia.com,
+        sylvester.nawrocki@gmail.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, b-cousson@ti.com,
+        gregkh@linuxfoundation.org, broonie@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org, balbi@ti.com, santosh.shilimkar@ti.com,
+        rob@landley.net, akpm@linux-foundation.org, davem@davemloft.net
+Subject: Re: [PATCH v4 1/6] drivers: phy: add generic PHY framework
+References: <1364449408-9510-1-git-send-email-kishon@ti.com> <1364449408-9510-2-git-send-email-kishon@ti.com> <5154658A.3080209@wwwdotorg.org> <515A98B3.7090405@ti.com>
+In-Reply-To: <515A98B3.7090405@ti.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 08:29:12PM +0530, Viresh Kumar wrote:
-> On 2 April 2013 20:25, Nathan Zimmer <nzimmer@sgi.com> wrote:
-> > The lock is unneeded if we expect register and unregister driver to not be
-> > called from muliple threads at once.  I didn't make that assumption.
+On 04/02/2013 02:37 AM, Kishon Vijay Abraham I wrote:
+> Hi,
 > 
-> Hmm.. But doesn't rcu part take care of that too?? Two writers
-> updating stuff simultaneously?
+> On Thursday 28 March 2013 09:15 PM, Stephen Warren wrote:
+>> On 03/27/2013 11:43 PM, Kishon Vijay Abraham I wrote:
+>>> The PHY framework provides a set of APIs for the PHY drivers to
+>>> create/destroy a PHY and APIs for the PHY users to obtain a reference
+>>> to the
+>>
+>>> diff --git a/Documentation/devicetree/bindings/phy/phy-bindings.txt
 
-My concern is in the cpufreq_register_driver.  Since we are only to set the
-pointer when it is null we have have to hold the lock over both operations.
+>>> +PHY subsystem refer Documentation/phy.txt
+>>> +
+>>> +PHY device node
+>>> +===============
+>>> +
+>>> +Optional Properties:
+>>> +#phy-cells:    Number of cells in a PHY specifier;  The meaning of all those
+>>> +        cells is defined by the binding for the phy node. However
+>>> +        in-order to return the correct PHY, the PHY susbsystem
+>>> +        requires the first cell always refers to the port.
+>>
+>> Why impose that restriction? Other DT bindings do not.
+>>
+>> This is typically implemented by having each provider driver implement a
+>> .of_xlate() operation, which parses all of the specifier cells, and
+>> returns the ID of the object it represents. This allows bindings to use
+>> whatever arbitrary representation they want.
+> 
+> Do you mean something like this
+> 
+> struct phy *of_phy_get(struct device *dev, int index)
+> {
+>     struct phy *phy = NULL;
+>     struct phy_bind *phy_map = NULL;
+>     struct of_phandle_args args;
+>     struct device_node *node;
+> 
+>     if (!dev->of_node) {
+>         dev_dbg(dev, "device does not have a device node entry\n");
+>         return ERR_PTR(-EINVAL);
+>     }
+> 
+>     ret = of_parse_phandle_with_args(dev->of_node, "phys", "#phy-cells",
+>         index, &args);
+>     if (ret) {
+>         dev_dbg(dev, "failed to get phy in %s node\n",
+>             dev->of_node->full_name);
+>         return ERR_PTR(-ENODEV);
+>     }
 
-int cpufreq_register_driver(struct cpufreq_driver *driver_data)
-{
-...
-        spin_lock_irqsave(&cpufreq_driver_lock, flags);
-        if (rcu_access_pointer(cpufreq_driver)) {
-                spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-                return -EBUSY;
-        }
-        rcu_assign_pointer(cpufreq_driver, driver_data);
-        spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
-        synchronize_rcu();
-...
-}
+Looks good.
 
+> //Here we have to get a reference to the phy in order to call of_xlate
+> which seems a little hacky to me. I'm not sure how else can we call the
+> provider driver :-(
+>     phy = of_phy_lookup(dev, node);
+>     if (IS_ERR(phy) || !try_module_get(phy->ops->owner)) {
+>         phy = ERR_PTR(-EPROBE_DEFER);
+>         goto err0;
+>     }
+
+I think the concept of a "PHY provider" and a "PHY instance" are different.
+
+of_xlate should be called on a "PHY provider", and return a "PHY
+instance". Hence, above you want to only look up a "PHY provider", so
+there's no hackiness involved.
+
+> //here we are checking if the phy has additional specifiers and if so
+> call of_xlate using the phy we just obtained. The provider driver should
+> check the args and return the appropriate *phy in this case.
+>     if (args.args_count > 0) {
+
+It's probably simplest to always call of_xlate; that way, you're always
+calling it on a "PHY provider" and getting back a "PHY instance". For
+providers that only provide 1 instance, the implementation should be
+simple:-)
+
+>         phy = phy->of_xlate(&args);
+>         if (IS_ERR(phy))
+>             goto err0;
+>     }
+> 
+>     phy_map = phy_bind(dev_name(dev), index, dev_name(&phy->dev));
+>     if (!IS_ERR(phy_map)) {
+>         phy_map->phy = phy;
+>         phy_map->auto_bind = true;
+>     }
+> 
+>     get_device(&phy->dev);
+> 
+> err0:
+>     of_node_put(node);
+> 
+>     return phy;
+> }
+> EXPORT_SYMBOL_GPL(of_phy_get);
 
