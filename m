@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761679Ab3DBRFd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 13:05:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48258 "EHLO mx1.redhat.com"
+	id S1761945Ab3DBRFp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 13:05:45 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:51563 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760639Ab3DBRFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 13:05:32 -0400
-Date: Tue, 2 Apr 2013 20:05:22 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Roland Dreier <roland@kernel.org>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
-Subject: Re: [PATCHv2] rdma: add a new IB_ACCESS_GIFT flag
-Message-ID: <20130402170521.GA30295@redhat.com>
-References: <20130324155153.GA8597@redhat.com>
- <20130402155104.GA27382@redhat.com>
- <CAL1RGDUe1=Xd1mpNajiLY08fJ+gBKAMDGeX3SVkS+egOQyiCxQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL1RGDUe1=Xd1mpNajiLY08fJ+gBKAMDGeX3SVkS+egOQyiCxQ@mail.gmail.com>
+	id S1761822Ab3DBRFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 13:05:42 -0400
+From: Florian Fainelli <florian@openwrt.org>
+To: stern@rowland.harvard.edu
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, Florian Fainelli <florian@openwrt.org>
+Subject: [PATCH 0/5] USB: Kconfig cleanups
+Date: Tue,  2 Apr 2013 19:05:08 +0200
+Message-Id: <1364922314-30639-1-git-send-email-florian@openwrt.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1364321177-12146-1-git-send-email-florian@openwrt.org>
+References: <1364321177-12146-1-git-send-email-florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 09:57:38AM -0700, Roland Dreier wrote:
-> On Tue, Apr 2, 2013 at 8:51 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> >> At the moment registering an MR breaks COW.  This breaks memory
-> >> overcommit for users such as KVM: we have a lot of COW pages, e.g.
-> >> instances of the zero page or pages shared using KSM.
-> >>
-> >> If the application does not care that adapter sees stale data (for
-> >> example, it tracks writes reregisters and resends), it can use a new
-> >> IBV_ACCESS_GIFT flag to prevent registration from breaking COW.
-> >>
-> >> The semantics are similar to that of SPLICE_F_GIFT thus the name.
-> >>
-> >> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> >
-> > Roland, Michael is yet to test this but could you please
-> > confirm whether this looks acceptable to you?
-> 
-> The patch itself is reasonable I guess, given the needs of this particular app.
-> 
-> I'm not particularly happy with the name of the flag.  The analogy
-> with SPLICE_F_GIFT doesn't seem particularly strong and I'm not
-> convinced even the splice flag name is very understandable.  But in
-> the RDMA case there's not really any sense in which we're "gifting"
-> memory to the adapter -- we're just telling the library "please don't
-> trigger copy-on-write" and it doesn't seem particularly easy for users
-> to understand that from the flag name.
-> 
->  - R.
+Hello Alan, Greg,
 
-The point really is that any writes by application
-won't be seen until re-registration, right?
-OK, what's a better name?  IBV_ACCESS_NON_COHERENT?
-Please tell me what is preferable and we'll go ahead with it.
+These 5 patches contain my Kconfig cleanup on which I based the removal
+of the USB_ARCH_HAS_* patches. They have been suggested by Alan Stern
+as part of an earlier conversations.
+
+Let me know what you think about it so I can post subsequent work based
+on it. This time I dropped the RFC from the subject.
+
+Thanks!
+
+Florian Fainelli (5):
+  USB: regroup all depends on USB within an if USB block
+  USB: remove USB_EHCI_BIG_ENDIAN_{DESC,MMIO} depends on architecture
+    symbol
+  USB: enclose EHCI HCD drivers within an if USB_EHCI_HCD block
+  USB: enclose all depends on USB_OHCI_HCD within an if USB_OHCI_HCD
+    block
+  USB: enclose USB_XHCI_HCD related symbols within a if USB_XHCI_HCD
+    block
+
+ arch/arm/Kconfig                    |    2 +
+ arch/mips/Kconfig                   |    3 +
+ arch/powerpc/platforms/44x/Kconfig  |    2 +
+ arch/powerpc/platforms/512x/Kconfig |    2 +
+ arch/sparc/Kconfig                  |    2 +
+ drivers/usb/Kconfig                 |   21 +++--
+ drivers/usb/atm/Kconfig             |    2 +-
+ drivers/usb/class/Kconfig           |    6 +-
+ drivers/usb/core/Kconfig            |    6 --
+ drivers/usb/host/Kconfig            |  164 +++++++++++++++++------------------
+ drivers/usb/image/Kconfig           |    4 +-
+ drivers/usb/misc/Kconfig            |   21 -----
+ drivers/usb/misc/sisusbvga/Kconfig  |    2 +-
+ drivers/usb/mon/Kconfig             |    1 -
+ drivers/usb/musb/Kconfig            |    1 -
+ drivers/usb/renesas_usbhs/Kconfig   |    2 +-
+ drivers/usb/serial/Kconfig          |    2 +-
+ drivers/usb/storage/Kconfig         |    7 +-
+ drivers/usb/wusbcore/Kconfig        |    2 -
+ 19 files changed, 111 insertions(+), 141 deletions(-)
 
 -- 
-MST
+1.7.10.4
+
