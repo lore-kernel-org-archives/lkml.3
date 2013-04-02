@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760418Ab3DBSL5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 14:11:57 -0400
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:14424
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759718Ab3DBSLz (ORCPT
+	id S1762070Ab3DBSMG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 14:12:06 -0400
+Received: from mail-db8lp0184.outbound.messaging.microsoft.com ([213.199.154.184]:25909
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761244Ab3DBSMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 14:11:55 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+	Tue, 2 Apr 2013 14:12:00 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
-X-BigFish: VPS0(zzzz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-X-WSS-ID: 0MKN3VP-02-ACA-02
+X-BigFish: VPS0(zzzz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-WSS-ID: 0MKN3VQ-01-I7H-02
 X-M-MSG: 
 From: Jacob Shin <jacob.shin@amd.com>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,10 +18,12 @@ CC: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>,
         Thomas Renninger <trenn@suse.de>, Borislav Petkov <bp@alien8.de>,
         Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH V3 0/2] cpufreq: ondemand: add AMD specific powersave bias
-Date: Tue, 2 Apr 2013 13:11:42 -0500
-Message-ID: <1364926304-1799-1-git-send-email-jacob.shin@amd.com>
+Subject: [PATCH V3 1/2] cpufreq: ondemand: allow custom powersave_bias_target handler to be registered
+Date: Tue, 2 Apr 2013 13:11:43 -0500
+Message-ID: <1364926304-1799-2-git-send-email-jacob.shin@amd.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1364926304-1799-1-git-send-email-jacob.shin@amd.com>
+References: <1364926304-1799-1-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: amd.com
@@ -29,48 +31,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds AMD specific powersave bias function to the ondemand
-governor; which can be used to help ondemand governor make more power conscious
-frequency change decisions based on feedback from hardware (availble on AMD
-Family 16h and above).
+This allows for another [arch specific] driver to hook into existing
+powersave bias function of the ondemand governor. i.e. This allows AMD
+specific powersave bias function (in a separate AMD specific driver)
+to aid ondemand governor's frequency transition deicisions.
 
-Hardware feedback tells software how "sensitive" to frequency changes the
-workloads are. CPU-bound workloads will be more sensitive -- they will
-perform better as frequency increases. Memory/IO-bound workloads will be less
-sensitive -- they will not necessarily perform better as frequnecy increases.
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+---
+ drivers/cpufreq/cpufreq_governor.h |    3 +++
+ drivers/cpufreq/cpufreq_ondemand.c |   32 ++++++++++++++++++++++++--------
+ 2 files changed, 27 insertions(+), 8 deletions(-)
 
-This patchset was compared against ondemand governor without powersave bias
-and did not show any performance degradation on CPU-bound workloads such as
-kernbench and unixbench. While saving power on Memory-bound workloads such as
-stream.
-
-V3:
-* Added to CPUID bit to cpufeature.h
-* Added MODULE_DEVICE_TABLE to autoload this driver.
-* Other small changes per feedback from:
-  https://lkml.org/lkml/2013/4/2/349
-
-V2:
-* Added proper include files to amd_freq_sensitivity.c
-* Only register powersave_bias_target function pointer and not the entire
-  od_ops.
-
-Jacob Shin (2):
-  cpufreq: ondemand: allow custom powersave_bias_target handler to be
-    registered
-  cpufreq: AMD "frequency sensitivity feedback" powersave bias for
-    ondemand governor
-
- arch/x86/include/asm/cpufeature.h      |    1 +
- arch/x86/kernel/cpu/scattered.c        |    3 +-
- drivers/cpufreq/Kconfig.x86            |   17 ++++
- drivers/cpufreq/Makefile               |    1 +
- drivers/cpufreq/amd_freq_sensitivity.c |  150 ++++++++++++++++++++++++++++++++
- drivers/cpufreq/cpufreq_governor.h     |    3 +
- drivers/cpufreq/cpufreq_ondemand.c     |   32 +++++--
- 7 files changed, 198 insertions(+), 9 deletions(-)
- create mode 100644 drivers/cpufreq/amd_freq_sensitivity.c
-
+diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+index 6593769..f52bf17 100644
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -263,4 +263,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 		struct common_dbs_data *cdata, unsigned int event);
+ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+ 		unsigned int delay, bool all_cpus);
++void od_register_powersave_bias_handler(unsigned int (*f)
++		(struct cpufreq_policy *, unsigned int, unsigned int));
++void od_unregister_powersave_bias_handler(void);
+ #endif /* _CPUFREQ_GOVERNOR_H */
+diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+index 1471478..e43611d 100644
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -40,6 +40,8 @@
+ 
+ static DEFINE_PER_CPU(struct od_cpu_dbs_info_s, od_cpu_dbs_info);
+ 
++static struct od_ops od_ops;
++
+ #ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND
+ static struct cpufreq_governor cpufreq_gov_ondemand;
+ #endif
+@@ -80,7 +82,7 @@ static int should_io_be_busy(void)
+  * Returns the freq_hi to be used right now and will set freq_hi_jiffies,
+  * freq_lo, and freq_lo_jiffies in percpu area for averaging freqs.
+  */
+-static unsigned int powersave_bias_target(struct cpufreq_policy *policy,
++static unsigned int generic_powersave_bias_target(struct cpufreq_policy *policy,
+ 		unsigned int freq_next, unsigned int relation)
+ {
+ 	unsigned int freq_req, freq_reduc, freq_avg;
+@@ -145,7 +147,8 @@ static void dbs_freq_increase(struct cpufreq_policy *p, unsigned int freq)
+ 	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
+ 
+ 	if (od_tuners->powersave_bias)
+-		freq = powersave_bias_target(p, freq, CPUFREQ_RELATION_H);
++		freq = od_ops.powersave_bias_target(p, freq,
++				CPUFREQ_RELATION_H);
+ 	else if (p->cur == p->max)
+ 		return;
+ 
+@@ -205,12 +208,12 @@ static void od_check_cpu(int cpu, unsigned int load_freq)
+ 		if (!od_tuners->powersave_bias) {
+ 			__cpufreq_driver_target(policy, freq_next,
+ 					CPUFREQ_RELATION_L);
+-		} else {
+-			int freq = powersave_bias_target(policy, freq_next,
+-					CPUFREQ_RELATION_L);
+-			__cpufreq_driver_target(policy, freq,
+-					CPUFREQ_RELATION_L);
++			return;
+ 		}
++
++		freq_next = od_ops.powersave_bias_target(policy, freq_next,
++					CPUFREQ_RELATION_L);
++		__cpufreq_driver_target(policy, freq_next, CPUFREQ_RELATION_L);
+ 	}
+ }
+ 
+@@ -557,7 +560,7 @@ define_get_cpu_dbs_routines(od_cpu_dbs_info);
+ 
+ static struct od_ops od_ops = {
+ 	.powersave_bias_init_cpu = ondemand_powersave_bias_init_cpu,
+-	.powersave_bias_target = powersave_bias_target,
++	.powersave_bias_target = generic_powersave_bias_target,
+ 	.freq_increase = dbs_freq_increase,
+ };
+ 
+@@ -574,6 +577,19 @@ static struct common_dbs_data od_dbs_cdata = {
+ 	.exit = od_exit,
+ };
+ 
++void od_register_powersave_bias_handler(unsigned int (*f)
++		(struct cpufreq_policy *, unsigned int, unsigned int))
++{
++	od_ops.powersave_bias_target = f;
++}
++EXPORT_SYMBOL_GPL(od_register_powersave_bias_handler);
++
++void od_unregister_powersave_bias_handler(void)
++{
++	od_ops.powersave_bias_target = generic_powersave_bias_target;
++}
++EXPORT_SYMBOL_GPL(od_unregister_powersave_bias_handler);
++
+ static int od_cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 		unsigned int event)
+ {
 -- 
 1.7.9.5
 
