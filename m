@@ -1,79 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762271Ab3DBVLl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 17:11:41 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:47288 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760340Ab3DBVLk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 17:11:40 -0400
-Date: Tue, 02 Apr 2013 17:11:38 -0400 (EDT)
-Message-Id: <20130402.171138.487778516861745347.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Tue, 02 Apr 2013 14:11:39 -0700 (PDT)
+	id S1761964Ab3DBVPb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 17:15:31 -0400
+Received: from dcvr.yhbt.net ([64.71.152.64]:58034 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758910Ab3DBVP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 17:15:29 -0400
+Date: Tue, 2 Apr 2013 21:15:27 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: [PATCH] wfcqueue: add function for unsynchronized prepend
+Message-ID: <20130402211527.GA17261@dcvr.yhbt.net>
+References: <20130311213602.GB9829@Krystal>
+ <20130329081016.GA15979@dcvr.yhbt.net>
+ <20130402130541.GC11621@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130402130541.GC11621@Krystal>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> * Eric Wong (normalperson@yhbt.net) wrote:
+> > In some situations, it is necessary to prepend a node to a queue.
+> > For epoll, this is necessary for two rare conditions:
+> > 
+> > * when the user triggers -EFAULT
+> > * when reinjecting elements from the ovflist (implemented as a stack)
+> 
+> This approach makes sense.
+> 
+> In terms of API naming, I wonder if "prepend" is the good counterpart
+> for "enqueue". Maybe "enqueue_first" or "enqueue_head" could be better
+> suited ?
 
-1) Fix VSOCK layer handling of context ID changes, from Reilly Grant.
+I'm not sure, I'll go with whatever name you decide is best :)
 
-2) Now that we have a synchronize_net() in netdev_rx_handler_unregister(),
-   we can't let any call sites hold locks.  Unfortunately bonding does,
-   so we have to drop the rwlock there a little bit earlier, fix from
-   Veaceslav Falico.
+Thanks for looking at my patch, I'll post an updated version
+once a name is decided.
 
-3) MAC address setting loop exits one iteration too early in mlx4 driver,
-   from Yan Burman.
-
-4) Restore ipv6 routes properly upon ifdown/ifup of loopback, from
-   Balakumaran Kannan.
-
-Please pull, thanks a lot!
-
-The following changes since commit 118c9a45fdacc6fe57910fa1d048e2d5bbc193f4:
-
-  Merge tag 'fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc (2013-04-02 08:35:03 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-for you to fetch changes up to 990454b5a48babde44a23c0f22bae5523f4fdf13:
-
-  VSOCK: Handle changes to the VMCI context ID. (2013-04-02 14:39:17 -0400)
-
-----------------------------------------------------------------
-Balakumaran Kannan (1):
-      net IPv6 : Fix broken IPv6 routing table after loopback down-up
-
-Reilly Grant (1):
-      VSOCK: Handle changes to the VMCI context ID.
-
-Vasily Averin (1):
-      cbq: incorrect processing of high limits
-
-Veaceslav Falico (1):
-      bonding: get netdev_rx_handler_unregister out of locks
-
-Yan Burman (1):
-      net/mlx4_en: Fix setting initial MAC address
-
- drivers/net/bonding/bond_main.c                |  3 +--
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c |  4 ++--
- net/ipv6/addrconf.c                            | 27 +++++++++++++++++++++++++++
- net/sched/sch_cbq.c                            |  5 ++++-
- net/vmw_vsock/af_vsock.c                       |  6 +++---
- net/vmw_vsock/vmci_transport.c                 | 31 ++++++++++++++++++++-----------
- net/vmw_vsock/vsock_addr.c                     | 10 ----------
- net/vmw_vsock/vsock_addr.h                     |  2 --
- 8 files changed, 57 insertions(+), 31 deletions(-)
+-- 
+Eric "isuckatnamingthings" Wong
