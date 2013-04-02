@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760595Ab3DBLed (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 07:34:33 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46554 "EHLO
+	id S1760775Ab3DBLes (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 07:34:48 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46568 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760293Ab3DBLdD (ORCPT
+	by vger.kernel.org with ESMTP id S1760053Ab3DBLdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Apr 2013 07:33:03 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
@@ -13,9 +13,9 @@ To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Chanwoo Choi <cw00.choi@samsung.com>
 Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 15/16] extcon: arizona: Allow additional debounce during microphone detection
-Date: Tue,  2 Apr 2013 12:32:47 +0100
-Message-Id: <1364902368-1123-15-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 10/16] extcon: arizona: Retry HPDET identification for high impedance
+Date: Tue,  2 Apr 2013 12:32:42 +0100
+Message-Id: <1364902368-1123-10-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1364902368-1123-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 References: <20130402113157.GJ23065@opensource.wolfsonmicro.com>
@@ -24,118 +24,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Help mitigate against mechanical bounce during the initial detection by
-allowing the configuration of an additional debounce on top of that the
-hardware does during the initial phase of microphone detection operation.
+Sometimes we can trigger measurements early if contacts are shorted during
+a slow insertion. As well as debouncing add further robustness by retrying
+if we get a high impedance measurement for headphones as this can indicate
+that the headphones were not yet connected.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/extcon/extcon-arizona.c   |   35 ++++++++++++++++++++++++++++++-----
- include/linux/mfd/arizona/pdata.h |    3 +++
- 2 files changed, 33 insertions(+), 5 deletions(-)
+ drivers/extcon/extcon-arizona.c |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index 26f9a1a..c7f8eb4 100644
+index 5344f43..c18cf14 100644
 --- a/drivers/extcon/extcon-arizona.c
 +++ b/drivers/extcon/extcon-arizona.c
-@@ -64,6 +64,7 @@ struct arizona_extcon_info {
- 	bool micd_clamp;
+@@ -39,6 +39,8 @@
+ #define ARIZONA_ACCDET_MODE_HPL 1
+ #define ARIZONA_ACCDET_MODE_HPR 2
  
- 	struct delayed_work hpdet_work;
-+	struct delayed_work micd_detect_work;
- 	struct delayed_work micd_timeout_work;
++#define ARIZONA_HPDET_MAX 10000
++
+ #define HPDET_DEBOUNCE 500
+ 
+ struct arizona_extcon_info {
+@@ -64,6 +66,7 @@ struct arizona_extcon_info {
  
  	bool hpdet_active;
-@@ -750,9 +751,11 @@ static void arizona_micd_timeout_work(struct work_struct *work)
- 	mutex_unlock(&info->lock);
- }
+ 	bool hpdet_done;
++	bool hpdet_retried;
  
--static irqreturn_t arizona_micdet(int irq, void *data)
-+static void arizona_micd_detect(struct work_struct *work)
+ 	int num_hpdet_res;
+ 	unsigned int hpdet_res[3];
+@@ -112,6 +115,8 @@ static const char *arizona_cable[] = {
+ 	NULL,
+ };
+ 
++static void arizona_start_hpdet_acc_id(struct arizona_extcon_info *info);
++
+ static void arizona_extcon_do_magic(struct arizona_extcon_info *info,
+ 				    unsigned int magic)
  {
--	struct arizona_extcon_info *info = data;
-+	struct arizona_extcon_info *info = container_of(work,
-+							struct arizona_extcon_info,
-+							micd_detect_work.work);
- 	struct arizona *arizona = info->arizona;
- 	unsigned int val = 0, lvl;
- 	int ret, i, key;
-@@ -766,7 +769,7 @@ static irqreturn_t arizona_micdet(int irq, void *data)
- 		if (ret != 0) {
- 			dev_err(arizona->dev, "Failed to read MICDET: %d\n", ret);
- 			mutex_unlock(&info->lock);
--			return IRQ_NONE;
-+			return;
+@@ -393,7 +398,7 @@ static int arizona_hpdet_read(struct arizona_extcon_info *info)
+ 		/* If we go out of range report top of range */
+ 		if (val < 100 || val > 0x3fb) {
+ 			dev_dbg(arizona->dev, "Measurement out of range\n");
+-			return 10000;
++			return ARIZONA_HPDET_MAX;
  		}
  
- 		dev_dbg(arizona->dev, "MICDET: %x\n", val);
-@@ -774,14 +777,14 @@ static irqreturn_t arizona_micdet(int irq, void *data)
- 		if (!(val & ARIZONA_MICD_VALID)) {
- 			dev_warn(arizona->dev, "Microphone detection state invalid\n");
- 			mutex_unlock(&info->lock);
--			return IRQ_NONE;
-+			return;
- 		}
- 	}
+ 		dev_dbg(arizona->dev, "HPDET read %d in range %d\n",
+@@ -518,6 +523,16 @@ static int arizona_hpdet_do_id(struct arizona_extcon_info *info, int *reading)
+ 		/* Take the headphone impedance for the main report */
+ 		*reading = info->hpdet_res[0];
  
- 	if (i == 10 && !(val & 0x7fc)) {
- 		dev_err(arizona->dev, "Failed to get valid MICDET value\n");
- 		mutex_unlock(&info->lock);
--		return IRQ_NONE;
-+		return;
- 	}
- 
- 	/* Due to jack detect this should never happen */
-@@ -890,6 +893,27 @@ handled:
- 
- 	pm_runtime_mark_last_busy(info->dev);
- 	mutex_unlock(&info->lock);
-+}
++		/* Sometimes we get false readings due to slow insert */
++		if (*reading >= ARIZONA_HPDET_MAX && !info->hpdet_retried) {
++			dev_dbg(arizona->dev, "Retrying high impedance\n");
++			info->num_hpdet_res = 0;
++			info->hpdet_retried = true;
++			arizona_start_hpdet_acc_id(info);
++			pm_runtime_put(info->dev);
++			return -EAGAIN;
++		}
 +
-+static irqreturn_t arizona_micdet(int irq, void *data)
-+{
-+	struct arizona_extcon_info *info = data;
-+	struct arizona *arizona = info->arizona;
-+	int debounce = arizona->pdata.micd_detect_debounce;
-+
-+	cancel_delayed_work_sync(&info->micd_detect_work);
-+	cancel_delayed_work_sync(&info->micd_timeout_work);
-+
-+	mutex_lock(&info->lock);
-+	if (!info->detecting)
-+		debounce = 0;
-+	mutex_unlock(&info->lock);
-+
-+	if (debounce)
-+		schedule_delayed_work(&info->micd_detect_work,
-+				      msecs_to_jiffies(debounce));
-+	else
-+		arizona_micd_detect(&info->micd_detect_work.work);
+ 		/*
+ 		 * Either the two grounds measure differently or we
+ 		 * measure the mic as high impedance.
+@@ -953,6 +968,7 @@ static irqreturn_t arizona_jackdet(int irq, void *data)
+ 			info->hpdet_res[i] = 0;
+ 		info->mic = false;
+ 		info->hpdet_done = false;
++		info->hpdet_retried = false;
  
- 	return IRQ_HANDLED;
- }
-@@ -1072,6 +1096,7 @@ static int arizona_extcon_probe(struct platform_device *pdev)
- 	info->dev = &pdev->dev;
- 	info->last_jackdet = ~(ARIZONA_MICD_CLAMP_STS | ARIZONA_JD1_STS);
- 	INIT_DELAYED_WORK(&info->hpdet_work, arizona_hpdet_work);
-+	INIT_DELAYED_WORK(&info->micd_detect_work, arizona_micd_detect);
- 	INIT_DELAYED_WORK(&info->micd_timeout_work, arizona_micd_timeout_work);
- 	platform_set_drvdata(pdev, info);
- 
-diff --git a/include/linux/mfd/arizona/pdata.h b/include/linux/mfd/arizona/pdata.h
-index 45c8477..3ef300b 100644
---- a/include/linux/mfd/arizona/pdata.h
-+++ b/include/linux/mfd/arizona/pdata.h
-@@ -134,6 +134,9 @@ struct arizona_pdata {
- 	/** GPIO used for mic isolation with HPDET */
- 	int hpdet_id_gpio;
- 
-+	/** Extra debounce timeout used during initial mic detection (ms) */
-+	int micd_detect_debounce;
-+
- 	/** GPIO for mic detection polarity */
- 	int micd_pol_gpio;
- 
+ 		for (i = 0; i < info->num_micd_ranges; i++)
+ 			input_report_key(info->input,
 -- 
 1.7.10.4
 
