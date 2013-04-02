@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758528Ab3DBXM6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:12:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32961 "EHLO
+	id S1758477Ab3DBXNW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:13:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32956 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933034Ab3DBWMT (ORCPT
+	with ESMTP id S933020Ab3DBWMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Apr 2013 18:12:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vivek gautam <gautam.vivek@samsung.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 043/124] usb: xhci: Fix TRB transfer length macro used for Event TRB.
-Date: Tue,  2 Apr 2013 15:10:25 -0700
-Message-Id: <20130402221109.225575257@linuxfoundation.org>
+        Soeren Moch <smoch@web.de>, Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 042/124] USB: EHCI: fix bug in iTD/siTD DMA pool allocation
+Date: Tue,  2 Apr 2013 15:10:24 -0700
+Message-Id: <20130402221109.089283689@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -27,131 +26,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vivek Gautam <gautam.vivek@samsung.com>
+From: Soeren Moch <smoch@web.de>
 
-commit 1c11a172cb30492f5f6a82c6e118fdcd9946c34f upstream.
+commit 85ecd0322b9a1a9f451d9150e9460ab42fd17219 upstream.
 
-Use proper macro while extracting TRB transfer length from
-Transfer event TRBs. Adding a macro EVENT_TRB_LEN (bits 0:23)
-for the same, and use it instead of TRB_LEN (bits 0:16) in
-case of event TRBs.
+[Description written by Alan Stern]
 
-This patch should be backported to kernels as old as 2.6.31, that
-contain the commit b10de142119a676552df3f0d2e3a9d647036c26a "USB: xhci:
-Bulk transfer support".  This patch will have issues applying to older
-kernels.
+Soeren tracked down a very difficult bug in ehci-hcd's DMA pool
+management of iTD and siTD structures.  Some background: ehci-hcd
+gives each isochronous endpoint its own set of active and free itd's
+(or sitd's for full-speed devices).  When a new itd is needed, it is
+taken from the head of the free list, if possible.  However, itd's
+must not be used twice in a single frame because the hardware
+continues to access the data structure for the entire duration of a
+frame.  Therefore if the itd at the head of the free list has its
+"frame" member equal to the current value of ehci->now_frame, it
+cannot be reused and instead a new itd is allocated from the DMA pool.
+The entries on the free list are not released back to the pool until
+the endpoint is no longer in use.
 
-Signed-off-by: Vivek gautam <gautam.vivek@samsung.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+The bug arises from the fact that sometimes an itd can be moved back
+onto the free list before itd->frame has been set properly.  In
+Soeren's case, this happened because ehci-hcd can allocate one more
+itd than it actually needs for an URB; the extra itd may or may not be
+required depending on how the transfer aligns with a frame boundary.
+For example, an URB with 8 isochronous packets will cause two itd's to
+be allocated.  If the URB is scheduled to start in microframe 3 of
+frame N then it will require both itds: one for microframes 3 - 7 of
+frame N and one for microframes 0 - 2 of frame N+1.  But if the URB
+had been scheduled to start in microframe 0 then it would require only
+the first itd, which could cover microframes 0 - 7 of frame N.  The
+second itd would be returned to the end of the free list.
+
+The itd allocation routine initializes the entire structure to 0, so
+the extra itd ends up on the free list with itd->frame set to 0
+instead of a meaningful value.  After a while the itd reaches the head
+of the list, and occasionally this happens when ehci->now_frame is
+equal to 0.  Then, even though it would be okay to reuse this itd, the
+driver thinks it must get another itd from the DMA pool.
+
+For as long as the isochronous endpoint remains in use, this flaw in
+the mechanism causes more and more itd's to be taken slowly from the
+DMA pool.  Since none are released back, the pool eventually becomes
+exhausted.
+
+This reuslts in memory allocation failures, which typically show up
+during a long-running audio stream.  Video might suffer the same
+effect.
+
+The fix is very simple.  To prevent allocations from the pool when
+they aren't needed, make sure that itd's sent back to the free list
+prematurely have itd->frame set to an invalid value which can never be
+equal to ehci->now_frame.
+
+This should be applied to -stable kernels going back to 3.6.
+
+Signed-off-by: Soeren Moch <smoch@web.de>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |   24 ++++++++++++------------
- drivers/usb/host/xhci.h      |    4 ++++
- 2 files changed, 16 insertions(+), 12 deletions(-)
+ drivers/usb/host/ehci-sched.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -2027,8 +2027,8 @@ static int process_ctrl_td(struct xhci_h
- 		if (event_trb != ep_ring->dequeue &&
- 				event_trb != td->last_trb)
- 			td->urb->actual_length =
--				td->urb->transfer_buffer_length
--				- TRB_LEN(le32_to_cpu(event->transfer_len));
-+				td->urb->transfer_buffer_length -
-+				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
- 		else
- 			td->urb->actual_length = 0;
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -1214,6 +1214,7 @@ itd_urb_transaction (
  
-@@ -2060,7 +2060,7 @@ static int process_ctrl_td(struct xhci_h
- 		/* Maybe the event was for the data stage? */
- 			td->urb->actual_length =
- 				td->urb->transfer_buffer_length -
--				TRB_LEN(le32_to_cpu(event->transfer_len));
-+				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
- 			xhci_dbg(xhci, "Waiting for status "
- 					"stage event\n");
- 			return 0;
-@@ -2096,7 +2096,7 @@ static int process_isoc_td(struct xhci_h
- 	/* handle completion code */
- 	switch (trb_comp_code) {
- 	case COMP_SUCCESS:
--		if (TRB_LEN(le32_to_cpu(event->transfer_len)) == 0) {
-+		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) == 0) {
- 			frame->status = 0;
- 			break;
- 		}
-@@ -2141,7 +2141,7 @@ static int process_isoc_td(struct xhci_h
- 				len += TRB_LEN(le32_to_cpu(cur_trb->generic.field[2]));
- 		}
- 		len += TRB_LEN(le32_to_cpu(cur_trb->generic.field[2])) -
--			TRB_LEN(le32_to_cpu(event->transfer_len));
-+			EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
- 
- 		if (trb_comp_code != COMP_STOP_INVAL) {
- 			frame->actual_length = len;
-@@ -2199,7 +2199,7 @@ static int process_bulk_intr_td(struct x
- 	case COMP_SUCCESS:
- 		/* Double check that the HW transferred everything. */
- 		if (event_trb != td->last_trb ||
--				TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
-+		    EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
- 			xhci_warn(xhci, "WARN Successful completion "
- 					"on short TX\n");
- 			if (td->urb->transfer_flags & URB_SHORT_NOT_OK)
-@@ -2227,18 +2227,18 @@ static int process_bulk_intr_td(struct x
- 				"%d bytes untransferred\n",
- 				td->urb->ep->desc.bEndpointAddress,
- 				td->urb->transfer_buffer_length,
--				TRB_LEN(le32_to_cpu(event->transfer_len)));
-+				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)));
- 	/* Fast path - was this the last TRB in the TD for this URB? */
- 	if (event_trb == td->last_trb) {
--		if (TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
-+		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
- 			td->urb->actual_length =
- 				td->urb->transfer_buffer_length -
--				TRB_LEN(le32_to_cpu(event->transfer_len));
-+				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
- 			if (td->urb->transfer_buffer_length <
- 					td->urb->actual_length) {
- 				xhci_warn(xhci, "HC gave bad length "
- 						"of %d bytes left\n",
--					  TRB_LEN(le32_to_cpu(event->transfer_len)));
-+					  EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)));
- 				td->urb->actual_length = 0;
- 				if (td->urb->transfer_flags & URB_SHORT_NOT_OK)
- 					*status = -EREMOTEIO;
-@@ -2280,7 +2280,7 @@ static int process_bulk_intr_td(struct x
- 		if (trb_comp_code != COMP_STOP_INVAL)
- 			td->urb->actual_length +=
- 				TRB_LEN(le32_to_cpu(cur_trb->generic.field[2])) -
--				TRB_LEN(le32_to_cpu(event->transfer_len));
-+				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+ 		memset (itd, 0, sizeof *itd);
+ 		itd->itd_dma = itd_dma;
++		itd->frame = 9999;		/* an invalid value */
+ 		list_add (&itd->itd_list, &sched->td_list);
  	}
+ 	spin_unlock_irqrestore (&ehci->lock, flags);
+@@ -1915,6 +1916,7 @@ sitd_urb_transaction (
  
- 	return finish_td(xhci, td, event_trb, event, ep, status, false);
-@@ -2368,7 +2368,7 @@ static int handle_tx_event(struct xhci_h
- 	 * transfer type
- 	 */
- 	case COMP_SUCCESS:
--		if (TRB_LEN(le32_to_cpu(event->transfer_len)) == 0)
-+		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) == 0)
- 			break;
- 		if (xhci->quirks & XHCI_TRUST_TX_LENGTH)
- 			trb_comp_code = COMP_SHORT_TX;
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -972,6 +972,10 @@ struct xhci_transfer_event {
- 	__le32	flags;
- };
- 
-+/* Transfer event TRB length bit mask */
-+/* bits 0:23 */
-+#define	EVENT_TRB_LEN(p)		((p) & 0xffffff)
-+
- /** Transfer Event bit fields **/
- #define	TRB_TO_EP_ID(p)	(((p) >> 16) & 0x1f)
+ 		memset (sitd, 0, sizeof *sitd);
+ 		sitd->sitd_dma = sitd_dma;
++		sitd->frame = 9999;		/* an invalid value */
+ 		list_add (&sitd->sitd_list, &iso_sched->td_list);
+ 	}
  
 
 
