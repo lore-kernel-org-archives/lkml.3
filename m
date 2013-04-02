@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761810Ab3DBQej (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 12:34:39 -0400
-Received: from pequod.mess.org ([46.65.169.142]:54535 "EHLO pequod.mess.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754152Ab3DBQei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 12:34:38 -0400
-Date: Tue, 2 Apr 2013 17:34:35 +0100
-From: Sean Young <sean@mess.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Josh Boyer <jwboyer@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
-        tkil@scrye.com, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Stable kernel 3.8.4/3.9-rc3 breaks PNP serial port
-Message-ID: <20130402163435.GA27371@pequod.mess.org>
-References: <20130402155344.GA29980@hansolo.jdub.homelinux.org>
- <20130402162336.GB318@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130402162336.GB318@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1761967Ab3DBQey (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 12:34:54 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:48162 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761929Ab3DBQex convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 12:34:53 -0400
+Message-ID: <1364920489.3019.26.camel@hornet>
+Subject: Re: [RFC] perf: need to expose sched_clock to correlate user
+ samples with kernel samples
+From: Pawel Moll <pawel.moll@arm.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Robert Richter <robert.richter@amd.com>
+Date: Tue, 02 Apr 2013 17:34:49 +0100
+In-Reply-To: <515B0502.8070408@linaro.org>
+References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>
+	 <1350408232.2336.42.camel@laptop>	<1359728280.8360.15.camel@hornet>
+	 <CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com>
+	 <51118797.9080800@linaro.org>	<alpine.LFD.2.02.1302182132230.22263@ionos>
+	 <5123C3AF.8060100@linaro.org>	<1361356160.10155.22.camel@laptop>
+	 <51285BF1.2090208@linaro.org>	<1361801441.4007.40.camel@laptop>
+	 <CABPqkBS4TELhoUGrO+moca2fPUoqGjiYCdHJc=H8CjLomPWWDQ@mail.gmail.com>
+	 <1363291021.3100.144.camel@hornet> <51586315.7080006@gmail.com>
+	 <5159D221.70304@linaro.org> <1364889256.16858.1.camel@laptop>
+	 <515B0502.8070408@linaro.org>
+X-Mailer: Evolution 3.6.2-0ubuntu0.1
+Mime-Version: 1.0
+X-OriginalArrivalTime: 02 Apr 2013 16:34:50.0744 (UTC) FILETIME=[FF37F780:01CE2FBF]
+X-MC-Unique: 113040217345100201
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 09:23:36AM -0700, Greg Kroah-Hartman wrote:
-> On Tue, Apr 02, 2013 at 11:53:44AM -0400, Josh Boyer wrote:
-> > Hi All,
-> > 
-> > We've had a report [1] that the 3.8.4 stable kernel makes a PNP serial
-> > port stop working.  After testing 3.8.3, the reporter narrowed it down
-> > to stable commit eec98f82c637 (tty/8250_pnp: serial port detection
-> > regression since v3.7) (upstream commit 77e372a3d82).  Reverting that
-> > single commit from 3.8.5 allows the serial port to continue working.
-> > 
-> > The machine in question is using an AMI UEFI implementation as the
-> > firmware, and on 3.8.3 the serial port has the following in
-> > /sys/bus/pnp/devices/00:0a/resources
-> > 
-> > 	state = active
-> > 	io disabled
-> > 	irq 4
-> > 	dma disabled
-> > 
-> > With 3.8.[45], the same file has:
-> > 
-> > 	state = disabled
-> > 	io disabled
-> > 	irq 4
-> > 	dma disabled
-> > 
-> > In both cases, the io and dma resources are disabled, and an IRQ is
-> > assigned.  However, the state remains active for the port on 3.8.3.
-> > 
-> > The offending commit mentions this is a BIOS bug from InsydeH2O and that
-> > the port is bogus in that case, but we have something similar here with
-> > an AMI UEFI implementation (Version: 0406 Release Date: 06/06/2012)
-> > where the port isn't bogus.
-> > 
-> > I'm not sure exactly what the solution should be here.  Any thoughts?
-> 
-> Sean, should I just revert this patch now, and wait for a better fix
-> later?
+On Tue, 2013-04-02 at 17:19 +0100, John Stultz wrote:
+> I still think exposing the perf clock to userland is a bad idea, and 
+> would much rather the kernel provide timestamp data in the logs 
+> themselves to make the logs useful. But if we're going to have to do 
+> this via a clockid, I'm going to want it to be done via a dynamic posix 
+> clockid, so its clear its tightly tied with perf and not considered a 
+> generic interface (and I can clearly point folks having problems to the 
+> perf maintainers ;).
 
-Looks like although the pnp io is disabled, it does contain a valid port 
-number, else pnp detection would fail in 3.8.3. We're a little stricter
-in 3.8.4, but it should fall back to legacy port detection -- the port
-and irq are standard.
+Hm. 15 mins ago I didn't know about dynamic posix clocks existence at
+all ;-)
 
-I don't understand why the legacy port detection (see SERIAL_PORT_DFNS)
-isn't working. Since the fallback isn't working properly maybe this 
-patch should be reverted for now.
+I feel that the idea of opening a magic character device to obtain a
+magic number to be used with clock_gettime() to get the timestamp may
+not be popular, but maybe (just a thought) we could somehow use the file
+descriptor obtained by the sys_perf_open() itself? How different would
+it be from the ioctl(*_GET_TIME) I'm not sure, but I'll try to research
+the idea. Counts as number 4 (5?) on my list ;-)
 
-If the pnp information had some virtue we wouldn't have these problems.
+Paweł
 
 
-Sean
