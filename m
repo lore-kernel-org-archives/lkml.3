@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758868Ab3DBXOB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:14:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32945 "EHLO
+	id S932986Ab3DBWMQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:12:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32917 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932984Ab3DBWMR (ORCPT
+	with ESMTP id S1761172Ab3DBWML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:17 -0400
+	Tue, 2 Apr 2013 18:12:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Benny Halevy <bhalevy@tonian.com>
-Subject: [ 039/124] NFSv4.1: Always clear the NFS_INO_LAYOUTCOMMIT in layoutreturn
-Date: Tue,  2 Apr 2013 15:10:21 -0700
-Message-Id: <20130402221108.728367881@linuxfoundation.org>
+        Konstantin Holoborodko <klh.kernel@gmail.com>
+Subject: [ 031/124] usb: ftdi_sio: Add support for Mitsubishi FX-USB-AW/-BD
+Date: Tue,  2 Apr 2013 15:10:13 -0700
+Message-Id: <20130402221107.754800248@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -27,121 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Konstantin Holoborodko <klh.kernel@gmail.com>
 
-commit 24956804349ca0eadcdde032d65e8c00b4214096 upstream.
+commit 482b0b5d82bd916cc0c55a2abf65bdc69023b843 upstream.
 
-Note that clearing NFS_INO_LAYOUTCOMMIT is tricky, since it requires
-you to also clear the NFS_LSEG_LAYOUTCOMMIT bits from the layout
-segments.
-The only two sites that need to do this are the ones that call
-pnfs_return_layout() without first doing a layout commit.
+It enhances the driver for FTDI-based USB serial adapters
+to recognize Mitsubishi Electric Corp. USB/RS422 Converters
+as FT232BM chips and support them.
+https://search.meau.com/?q=FX-USB-AW
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Acked-by: Benny Halevy <bhalevy@tonian.com>
+Signed-off-by: Konstantin Holoborodko <klh.kernel@gmail.com>
+Tested-by: Konstantin Holoborodko <klh.kernel@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4filelayout.c |    1 -
- fs/nfs/pnfs.c           |   35 +++++++++++++++++++++++++++--------
- 2 files changed, 27 insertions(+), 9 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    7 +++++++
+ 2 files changed, 8 insertions(+)
 
---- a/fs/nfs/nfs4filelayout.c
-+++ b/fs/nfs/nfs4filelayout.c
-@@ -129,7 +129,6 @@ static void filelayout_fenceme(struct in
- {
- 	if (!test_and_clear_bit(NFS_LAYOUT_RETURN, &lo->plh_flags))
- 		return;
--	clear_bit(NFS_INO_LAYOUTCOMMIT, &NFS_I(inode)->flags);
- 	pnfs_return_layout(inode);
- }
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -642,6 +642,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RM_CANVIEW_PID) },
+ 	{ USB_DEVICE(ACTON_VID, ACTON_SPECTRAPRO_PID) },
+ 	{ USB_DEVICE(CONTEC_VID, CONTEC_COM1USBH_PID) },
++	{ USB_DEVICE(MITSUBISHI_VID, MITSUBISHI_FXUSB_PID) },
+ 	{ USB_DEVICE(BANDB_VID, BANDB_USOTL4_PID) },
+ 	{ USB_DEVICE(BANDB_VID, BANDB_USTL4_PID) },
+ 	{ USB_DEVICE(BANDB_VID, BANDB_USO9ML2_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -584,6 +584,13 @@
+ #define CONTEC_COM1USBH_PID	0x8311	/* COM-1(USB)H */
  
---- a/fs/nfs/pnfs.c
-+++ b/fs/nfs/pnfs.c
-@@ -417,6 +417,16 @@ should_free_lseg(struct pnfs_layout_rang
- 	       lo_seg_intersecting(lseg_range, recall_range);
- }
- 
-+static bool pnfs_lseg_dec_and_remove_zero(struct pnfs_layout_segment *lseg,
-+		struct list_head *tmp_list)
-+{
-+	if (!atomic_dec_and_test(&lseg->pls_refcount))
-+		return false;
-+	pnfs_layout_remove_lseg(lseg->pls_layout, lseg);
-+	list_add(&lseg->pls_list, tmp_list);
-+	return true;
-+}
-+
- /* Returns 1 if lseg is removed from list, 0 otherwise */
- static int mark_lseg_invalid(struct pnfs_layout_segment *lseg,
- 			     struct list_head *tmp_list)
-@@ -430,11 +440,8 @@ static int mark_lseg_invalid(struct pnfs
- 		 */
- 		dprintk("%s: lseg %p ref %d\n", __func__, lseg,
- 			atomic_read(&lseg->pls_refcount));
--		if (atomic_dec_and_test(&lseg->pls_refcount)) {
--			pnfs_layout_remove_lseg(lseg->pls_layout, lseg);
--			list_add(&lseg->pls_list, tmp_list);
-+		if (pnfs_lseg_dec_and_remove_zero(lseg, tmp_list))
- 			rv = 1;
--		}
- 	}
- 	return rv;
- }
-@@ -777,6 +784,21 @@ send_layoutget(struct pnfs_layout_hdr *l
- 	return lseg;
- }
- 
-+static void pnfs_clear_layoutcommit(struct inode *inode,
-+		struct list_head *head)
-+{
-+	struct nfs_inode *nfsi = NFS_I(inode);
-+	struct pnfs_layout_segment *lseg, *tmp;
-+
-+	if (!test_and_clear_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags))
-+		return;
-+	list_for_each_entry_safe(lseg, tmp, &nfsi->layout->plh_segs, pls_list) {
-+		if (!test_and_clear_bit(NFS_LSEG_LAYOUTCOMMIT, &lseg->pls_flags))
-+			continue;
-+		pnfs_lseg_dec_and_remove_zero(lseg, head);
-+	}
-+}
-+
  /*
-  * Initiates a LAYOUTRETURN(FILE), and removes the pnfs_layout_hdr
-  * when the layout segment list is empty.
-@@ -808,6 +830,7 @@ _pnfs_return_layout(struct inode *ino)
- 	/* Reference matched in nfs4_layoutreturn_release */
- 	pnfs_get_layout_hdr(lo);
- 	empty = list_empty(&lo->plh_segs);
-+	pnfs_clear_layoutcommit(ino, &tmp_list);
- 	pnfs_mark_matching_lsegs_invalid(lo, &tmp_list, NULL);
- 	/* Don't send a LAYOUTRETURN if list was initially empty */
- 	if (empty) {
-@@ -820,8 +843,6 @@ _pnfs_return_layout(struct inode *ino)
- 	spin_unlock(&ino->i_lock);
- 	pnfs_free_lseg_list(&tmp_list);
- 
--	WARN_ON(test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags));
--
- 	lrp = kzalloc(sizeof(*lrp), GFP_KERNEL);
- 	if (unlikely(lrp == NULL)) {
- 		status = -ENOMEM;
-@@ -1459,7 +1480,6 @@ static void pnfs_ld_handle_write_error(s
- 	dprintk("pnfs write error = %d\n", hdr->pnfs_error);
- 	if (NFS_SERVER(hdr->inode)->pnfs_curr_ld->flags &
- 	    PNFS_LAYOUTRET_ON_ERROR) {
--		clear_bit(NFS_INO_LAYOUTCOMMIT, &NFS_I(hdr->inode)->flags);
- 		pnfs_return_layout(hdr->inode);
- 	}
- 	if (!test_and_set_bit(NFS_IOHDR_REDO, &hdr->flags))
-@@ -1614,7 +1634,6 @@ static void pnfs_ld_handle_read_error(st
- 	dprintk("pnfs read error = %d\n", hdr->pnfs_error);
- 	if (NFS_SERVER(hdr->inode)->pnfs_curr_ld->flags &
- 	    PNFS_LAYOUTRET_ON_ERROR) {
--		clear_bit(NFS_INO_LAYOUTCOMMIT, &NFS_I(hdr->inode)->flags);
- 		pnfs_return_layout(hdr->inode);
- 	}
- 	if (!test_and_set_bit(NFS_IOHDR_REDO, &hdr->flags))
++ * Mitsubishi Electric Corp. (http://www.meau.com)
++ * Submitted by Konstantin Holoborodko
++ */
++#define MITSUBISHI_VID		0x06D3
++#define MITSUBISHI_FXUSB_PID	0x0284 /* USB/RS422 converters: FX-USB-AW/-BD */
++
++/*
+  * Definitions for B&B Electronics products.
+  */
+ #define BANDB_VID		0x0856	/* B&B Electronics Vendor ID */
 
 
