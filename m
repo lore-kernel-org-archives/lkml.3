@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761089Ab3DBIl7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 04:41:59 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44589 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757101Ab3DBIl5 (ORCPT
+	id S1761463Ab3DBImP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 04:42:15 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:55335 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761447Ab3DBImL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 04:41:57 -0400
-Date: Tue, 2 Apr 2013 09:41:39 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv3 03/10] ARM: smp_twd: Divorce smp_twd from local timer
- API
-Message-ID: <20130402084138.GG30477@e106331-lin.cambridge.arm.com>
-References: <1363198676-30417-1-git-send-email-sboyd@codeaurora.org>
- <1363198676-30417-4-git-send-email-sboyd@codeaurora.org>
- <20130328152255.GD30477@e106331-lin.cambridge.arm.com>
- <5154A37B.1070407@codeaurora.org>
+	Tue, 2 Apr 2013 04:42:11 -0400
+Message-ID: <515A9A0C.7030503@parallels.com>
+Date: Tue, 2 Apr 2013 12:42:52 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5154A37B.1070407@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Li Zefan <lizefan@huawei.com>
+CC: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [PATCH] memcg: don't do cleanup manually if mem_cgroup_css_online()
+ fails
+References: <515A8A40.6020406@huawei.com> <515A90ED.7010208@huawei.com> <515A91B4.3090607@parallels.com> <515A9819.5090603@huawei.com>
+In-Reply-To: <515A9819.5090603@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 08:09:31PM +0000, Stephen Boyd wrote:
-> On 03/28/13 08:22, Mark Rutland wrote:
-> > This works on my A9x4 coretile, bringing CPUs up and down via
-> > /sys/devices/system/cpu/*/online, so:
-> >
-> > Tested-by: Mark Rutland <mark.rutland@arm.com>
+On 04/02/2013 12:34 PM, Li Zefan wrote:
+> On 2013/4/2 16:07, Glauber Costa wrote:
+>> On 04/02/2013 12:03 PM, Li Zefan wrote:
+>>> On 2013/4/2 15:35, Li Zefan wrote:
+>>>> If memcg_init_kmem() returns -errno when a memcg is being created,
+>>>> mem_cgroup_css_online() will decrement memcg and its parent's refcnt,
+>>>
+>>>> (but strangely there's no mem_cgroup_put() for mem_cgroup_get() called
+>>>> in memcg_propagate_kmem()).
+>>>
+>>> The comment in memcg_propagate_kmem() suggests it knows mem_cgroup_css_free()
+>>> will be called in failure, while mem_cgroup_css_online() doesn't know.
+>>>
+>> This is a bit suspicious. At first your analysis seems fair, but I've
+>> extensively tested memcg teardown process with kmemcg (and even
+>> uncovered some bugs at that), and it works when and how expected.
+>>
 > 
-> Thanks. I still need to resolve patch #1 though.
+> Because this bug is in a failure path, and seems the only way to get into
+> this path is -ENOMEM.
 > 
-> >
-> > Otherwise, is there any reason we couldn't now use the twd driver on a UP
-> > system? Or would the overhead of handling frequency change make this pointless?
-> 
-> I don't see why not but I don't have any interest in pursuing it.
+Yes, but I tend to test that with manually introduced error codes.
 
-Ok.
+For what is worth, I just did it. And indeed, by ignoring kmemcg
+initialization and failing with ENOMEM here triggers a bug. Your patch
+fixes it. I tested both failing all non-root, and letting the first
+succeed and failing the second if the parent is use_hierarchy. Both
+cases have a bug initially that you fix.
 
+If that is allowed to proceed, kmemcg initialization and teardown works
+as expected.
+
+>> Also, note that this teardown code long predates kmemcg.
+>>
 > 
-> >
-> > On Wed, Mar 13, 2013 at 06:17:49PM +0000, Stephen Boyd wrote:
-> >> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> >> index 5b71469..5ad2ccf 100644
-> >> --- a/arch/arm/Kconfig
-> >> +++ b/arch/arm/Kconfig
-> >> @@ -1527,6 +1527,7 @@ config SMP
-> >>  	depends on HAVE_SMP
-> >>  	depends on MMU
-> >>  	select HAVE_ARM_SCU if !ARCH_MSM_SCORPIONMP
-> >> +	select HAVE_ARM_TWD if (!ARCH_MSM_SCORPIONMP && !EXYNOS4_MCT)
-> > Could you not depend on your "Push selects for TWD/SCU into machine entries"
-> > for this?
+> Maybe this bug was introduced when ss->create() was changed to ss->css_alloc()
+> and ss->css_online(), and before that change ss->destroy() won't be called
+> if ss->create() failed.
 > 
-> Right now the patches don't depend on the push down patch. Are you
-> saying it would be better to depend on that patch?
+Yes, this is possible,
 
-It just seemed odd to me that the two series should conflict (though
-trivially) here.
-
-Mark.
