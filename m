@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759527Ab3DBXMW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:12:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32996 "EHLO
+	id S933070Ab3DBWMU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:12:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32931 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933099Ab3DBWMY (ORCPT
+	with ESMTP id S1761197Ab3DBWMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:24 -0400
+	Tue, 2 Apr 2013 18:12:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [ 050/124] vfs: Add a mount flag to lock read only bind mounts
-Date: Tue,  2 Apr 2013 15:10:32 -0700
-Message-Id: <20130402221109.995019468@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>,
+        Brad Spengler <spender@grsecurity.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 040/124] net/irda: add missing error path release_sock call
+Date: Tue,  2 Apr 2013 15:10:22 -0700
+Message-Id: <20130402221108.854105153@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -27,49 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 90563b198e4c6674c63672fae1923da467215f45 upstream.
+commit 896ee0eee6261e30c3623be931c3f621428947df upstream.
 
-When a read-only bind mount is copied from mount namespace in a higher
-privileged user namespace to a mount namespace in a lesser privileged
-user namespace, it should not be possible to remove the the read-only
-restriction.
+This makes sure that release_sock is called for all error conditions in
+irda_getsockopt.
 
-Add a MNT_LOCK_READONLY mount flag to indicate that a mount must
-remain read-only.
-
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: Brad Spengler <spender@grsecurity.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namespace.c        |    3 +++
- include/linux/mount.h |    2 ++
- 2 files changed, 5 insertions(+)
+ net/irda/af_irda.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1736,6 +1736,9 @@ static int change_mount_flags(struct vfs
- 	if (readonly_request == __mnt_is_readonly(mnt))
- 		return 0;
+--- a/net/irda/af_irda.c
++++ b/net/irda/af_irda.c
+@@ -2584,8 +2584,10 @@ bed:
+ 				    NULL, NULL, NULL);
  
-+	if (mnt->mnt_flags & MNT_LOCK_READONLY)
-+		return -EPERM;
-+
- 	if (readonly_request)
- 		error = mnt_make_readonly(real_mount(mnt));
- 	else
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -47,6 +47,8 @@ struct mnt_namespace;
- 
- #define MNT_INTERNAL	0x4000
- 
-+#define MNT_LOCK_READONLY	0x400000
-+
- struct vfsmount {
- 	struct dentry *mnt_root;	/* root of the mounted tree */
- 	struct super_block *mnt_sb;	/* pointer to superblock */
+ 		/* Check if the we got some results */
+-		if (!self->cachedaddr)
+-			return -EAGAIN;		/* Didn't find any devices */
++		if (!self->cachedaddr) {
++			err = -EAGAIN;		/* Didn't find any devices */
++			goto out;
++		}
+ 		daddr = self->cachedaddr;
+ 		/* Cleanup */
+ 		self->cachedaddr = 0;
 
 
