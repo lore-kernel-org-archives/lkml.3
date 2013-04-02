@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762382Ab3DBVhq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 17:37:46 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:40320 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760170Ab3DBVhp (ORCPT
+	id S1762433Ab3DBViR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 17:38:17 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45456 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762403Ab3DBViQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 17:37:45 -0400
-Date: Tue, 2 Apr 2013 23:37:36 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, bowgotsai@google.com
-Subject: Re: [PATCH v2] r8169: fix auto speed down issue
-Message-ID: <20130402213736.GA15328@electric-eye.fr.zoreil.com>
-References: <1364541062-9024-1-git-send-email-hayeswang@realtek.com>
- <1364785324-1604-1-git-send-email-hayeswang@realtek.com>
+	Tue, 2 Apr 2013 17:38:16 -0400
+Date: Tue, 2 Apr 2013 22:38:00 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] mfd: Add device tree bindings for Arizona class devices
+Message-ID: <20130402213739.GM23065@opensource.wolfsonmicro.com>
+References: <1364935878-11500-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LwbuP8dfxhLLLUfV"
 Content-Disposition: inline
-In-Reply-To: <1364785324-1604-1-git-send-email-hayeswang@realtek.com>
-X-Organisation: Land of Sunshine Inc.
+In-Reply-To: <1364935878-11500-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Cookie: Today is what happened to yesterday.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hayes Wang <hayeswang@realtek.com> :
-> It would cause no link after suspending or shutdowning when the
-> nic changes the speed to 10M and connects to a link partner which
-> forces the speed to 100M.
-> 
-> Check the link partner ability to determine which speed to set.
-> 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
+--LwbuP8dfxhLLLUfV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I have given it a short sanity testing with suspend or shutdown (no rpm)
-on 8168evl or 8168e and it did not seem to regress (8168e and 8168evl).
+On Tue, Apr 02, 2013 at 09:51:18PM +0100, Mark Brown wrote:
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-The driver does not do what it is requested to when the r81xx - not the
-link partner - forces the link. Not that it ever did but autonegotiation
-will now always end up enabled and nothing will prevent a higher than
-expected link speed after that.
+*sigh* ignore this one, revised version coming shortly.
 
-It could be worth to check MII_BMCR for BMCR_ANENABLE before anything else
-in rtl_speed_down.
+--LwbuP8dfxhLLLUfV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-[...]
-> diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-> index 28fb50a..bdc03a9 100644
-> --- a/drivers/net/ethernet/realtek/r8169.c
-> +++ b/drivers/net/ethernet/realtek/r8169.c
-> @@ -3818,6 +3818,30 @@ static void rtl_init_mdio_ops(struct rtl8169_private *tp)
->  	}
->  }
->  
-> +static void rtl_speed_down(struct rtl8169_private *tp)
-> +{
-> +	u32	adv;
-> +	int	lpa;
-           ^^^^^
-Please use a single, true space (no tabs) next time.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
--- 
-Ueimor
+iQIcBAEBAgAGBQJRW0+ZAAoJELSic+t+oim9ykUP/0aj0JJuaKSSXWc8CgF8dcC3
+jayNIKchpBVaJZ14VG4w43fauyTnwjV+sx7EGqniHgXEZar/1wnalbL+2snuihjk
+yrTuUBCijC4gpfqsx3VHF6xyT8WclSN46HV+KrWKdKEjYpM6Ha0vOUVkA5PAQGPe
+McR1GpISASGLrfrGsXTVHWqurJoZlxpmMsjPdBYlJokoXumJ6m2RSPwhYAHYyrQt
+aIV1UbVE7oRBLqVmnbpyPdvwZ9Oqn3eMyTiwdqpspnFVHSKN+k8V8FBauSGKJRuh
+XWFi49FnX8FWeEGlcVYGgLIX3jdN1xGQ+mlmzyz2NNh80p+kcnvW3y06RCltjgOC
+lf/cQKJqb+gjV8YOYvfWV8ABfBbuElrkZA1Tepcu+oQJZ4Q1AsZWCuoc1LOGRfkU
+aaJrM6sTiZq3NOzEmgZDGuAzCw6XhnrvgFYFWvZUUAjuYvgDwSltr4vtaJ14m0X/
+GrHAE+bFxqVwgq8z5AVtrcNDOWVwRZe+1pYWgbxWVN1LWjVbsJpoMXRNvln3VjHk
+8rVNUgV0uChlKhcPzkln+LwTu7Js5YgFyfXoX5jpsE7BYJ8TbvSEWfL5KTAHpQJR
+3wBjEnY8QAvV5s6UBGQA0vjyBM0kbMEA99Yvmn36P1Gu84ZxiuyI9g3O7i1VV/+n
+RxVcR6Ao+fhUMS6n1oCI
+=Jcyc
+-----END PGP SIGNATURE-----
+
+--LwbuP8dfxhLLLUfV--
