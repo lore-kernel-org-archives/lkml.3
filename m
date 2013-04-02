@@ -1,271 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761667Ab3DBQ0T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 12:26:19 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60552 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758934Ab3DBQ0R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 12:26:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg KH <greg@kroah.com>
-Cc: linux-usb@vger.kernel.org, Manjunath Goudar <manjunath.goudar@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Andrew Victor <linux@maxim.org.za>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH V5 4/6] USB: EHCI: make ehci-atmel a separate driver
-Date: Tue,  2 Apr 2013 18:24:02 +0200
-Message-Id: <1364919844-1726-5-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1364919844-1726-1-git-send-email-arnd@arndb.de>
-References: <1364919844-1726-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:7MM1rLs49QpEC91or6B6iIlljYnxo66AWb9mk68Sw2d
- oM23QYm+dQpALzPIfJPLnwSgMzW400b90juxrQYGf3FadOpjeR
- P5S4BM7G3+cc0xZ9HoM5g8h8DfQMXEN7KbRAFAmIeNSkqkREh7
- 2o46SiXtoMMqdDE5M0u8X76zJRgFcGTCspm65VF18WjYz35Rwb
- dUTX0lpqEC2tqOPVv4mwNgW1kp1jfpzMiWHgJoGpzh9klxY1OY
- h6mYJWWw2oWLb+UNLjLNyg6dOBkGrebPHuAJ4sipLAK7PjaljT
- a0CC9GAFlaB3JUpHmk38FTA+4X2c93q3sv7/mRphdwBzDj6WYM
- sHnRLJ5K4T/q2MQ8+06v1a5M11eumrdxE6AfXt1jP
+	id S1761715Ab3DBQ03 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 12:26:29 -0400
+Received: from mga03.intel.com ([143.182.124.21]:37224 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761692Ab3DBQ00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 12:26:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,394,1363158000"; 
+   d="scan'208";a="279722308"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+In-Reply-To: <1363283435-7666-21-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1363283435-7666-21-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: RE: [PATCHv2, RFC 20/30] ramfs: enable transparent huge page cache
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130402162813.0B4CBE0085@blue.fi.intel.com>
+Date: Tue,  2 Apr 2013 19:28:12 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Manjunath Goudar <manjunath.goudar@linaro.org>
+Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+> ramfs is the most simple fs from page cache point of view. Let's start
+> transparent huge page cache enabling here.
+> 
+> For now we allocate only non-movable huge page. It's not yet clear if
+> movable page is safe here and what need to be done to make it safe.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> ---
+>  fs/ramfs/inode.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
+> index c24f1e1..da30b4f 100644
+> --- a/fs/ramfs/inode.c
+> +++ b/fs/ramfs/inode.c
+> @@ -61,7 +61,11 @@ struct inode *ramfs_get_inode(struct super_block *sb,
+>  		inode_init_owner(inode, dir, mode);
+>  		inode->i_mapping->a_ops = &ramfs_aops;
+>  		inode->i_mapping->backing_dev_info = &ramfs_backing_dev_info;
+> -		mapping_set_gfp_mask(inode->i_mapping, GFP_HIGHUSER);
+> +		/*
+> +		 * TODO: what should be done to make movable safe?
+> +		 */
+> +		mapping_set_gfp_mask(inode->i_mapping,
+> +				GFP_TRANSHUGE & ~__GFP_MOVABLE);
 
-Separate the Atmel host controller driver from ehci-hcd host code
-so that it can be built as a separate driver module.
-This work is part of enabling multi-platform kernels on ARM;
-however, note that other changes are still needed before Atmel can be
-booted with a multi-platform kernel. This is currently planned for
-Linux-3.11.
+Hugh, I've found old thread with the reason why we have GFP_HIGHUSER here, not
+GFP_HIGHUSER_MOVABLE:
 
-With the infrastructure added by Alan Stern in patch 3e0232039
-"USB: EHCI: prepare to make ehci-hcd a library module", we can
-avoid this problem by turning a bus glue into a separate
-module, as we do here for the Atmel bus glue.
+http://lkml.org/lkml/2006/11/27/156
 
-In V4 (arnd):
- - reordered #include statements.
- - removed call to ehci_shutdown and the corresponding export
+It seems the origin reason is not longer valid, correct?
 
-In V3:
- - Detailed commit message added here about why this patch is required.
- - Replaced hcd_name string "ehci-atmel" to "atmel-ehci".
- - Inserted blank line in the Makefile to separate the EHCI drivers from
-   the following non-EHCI drivers.
- - Exported ehci_shutdown symbol as it is needed by the Atmel driver.
- - Eliminated ehci_atmel_setup routine because hcd registers
-   can be directly set in the ehci_atmel_drv_probe function.
-
-In V2:
-  Resolved below compiler error.
-  drivers/usb/host/ehci-atmel.c: In function 'ehci_atmel_drv_remove':
-  drivers/usb/host/ehci-atmel.c:167: error: implicit declaration of function 'ehci_shutdown'
-
-Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Andrew Victor <linux@maxim.org.za>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
- drivers/usb/host/Kconfig      |  8 ++++
- drivers/usb/host/Makefile     |  1 +
- drivers/usb/host/ehci-atmel.c | 88 ++++++++++++++++++++-----------------------
- drivers/usb/host/ehci-hcd.c   |  6 +--
- 4 files changed, 51 insertions(+), 52 deletions(-)
-
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 98abec0f..f6f7872 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -182,6 +182,14 @@ config USB_EHCI_HCD_SPEAR
-           Enables support for the on-chip EHCI controller on
-           ST SPEAr chips.
- 
-+config USB_EHCI_HCD_AT91
-+        tristate  "Support for Atmel on-chip EHCI USB controller"
-+        depends on USB_EHCI_HCD && ARCH_AT91
-+        default y
-+        ---help---
-+          Enables support for the on-chip EHCI controller on
-+          Atmel chips.
-+
- config USB_EHCI_MSM
- 	bool "Support for MSM on-chip EHCI USB controller"
- 	depends on USB_EHCI_HCD && ARCH_MSM
-diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-index 3d895b5..368d3eb 100644
---- a/drivers/usb/host/Makefile
-+++ b/drivers/usb/host/Makefile
-@@ -31,6 +31,7 @@ obj-$(CONFIG_USB_EHCI_HCD_OMAP)	+= ehci-omap.o
- obj-$(CONFIG_USB_EHCI_HCD_ORION)	+= ehci-orion.o
- obj-$(CONFIG_USB_EHCI_HCD_SPEAR)	+= ehci-spear.o
- obj-$(CONFIG_USB_EHCI_S5P)	+= ehci-s5p.o
-+obj-$(CONFIG_USB_EHCI_HCD_AT91) += ehci-atmel.o
- 
- obj-$(CONFIG_USB_OXU210HP_HCD)	+= oxu210hp-hcd.o
- obj-$(CONFIG_USB_ISP116X_HCD)	+= isp116x-hcd.o
-diff --git a/drivers/usb/host/ehci-atmel.c b/drivers/usb/host/ehci-atmel.c
-index f3beac4..6642009 100644
---- a/drivers/usb/host/ehci-atmel.c
-+++ b/drivers/usb/host/ehci-atmel.c
-@@ -12,9 +12,22 @@
-  */
- 
- #include <linux/clk.h>
--#include <linux/platform_device.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
- #include <linux/of.h>
- #include <linux/of_platform.h>
-+#include <linux/platform_device.h>
-+#include <linux/usb.h>
-+#include <linux/usb/hcd.h>
-+
-+#include "ehci.h"
-+
-+#define DRIVER_DESC "EHCI Atmel driver"
-+
-+static const char hcd_name[] = "ehci-atmel";
-+static struct hc_driver __read_mostly ehci_atmel_hc_driver;
- 
- /* interface and function clocks */
- static struct clk *iclk, *fclk;
-@@ -50,51 +63,6 @@ static void atmel_stop_ehci(struct platform_device *pdev)
- 
- /*-------------------------------------------------------------------------*/
- 
--static int ehci_atmel_setup(struct usb_hcd *hcd)
--{
--	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
--
--	/* registers start at offset 0x0 */
--	ehci->caps = hcd->regs;
--
--	return ehci_setup(hcd);
--}
--
--static const struct hc_driver ehci_atmel_hc_driver = {
--	.description		= hcd_name,
--	.product_desc		= "Atmel EHCI UHP HS",
--	.hcd_priv_size		= sizeof(struct ehci_hcd),
--
--	/* generic hardware linkage */
--	.irq			= ehci_irq,
--	.flags			= HCD_MEMORY | HCD_USB2,
--
--	/* basic lifecycle operations */
--	.reset			= ehci_atmel_setup,
--	.start			= ehci_run,
--	.stop			= ehci_stop,
--	.shutdown		= ehci_shutdown,
--
--	/* managing i/o requests and associated device resources */
--	.urb_enqueue		= ehci_urb_enqueue,
--	.urb_dequeue		= ehci_urb_dequeue,
--	.endpoint_disable	= ehci_endpoint_disable,
--	.endpoint_reset		= ehci_endpoint_reset,
--
--	/* scheduling support */
--	.get_frame_number	= ehci_get_frame,
--
--	/* root hub support */
--	.hub_status_data	= ehci_hub_status_data,
--	.hub_control		= ehci_hub_control,
--	.bus_suspend		= ehci_bus_suspend,
--	.bus_resume		= ehci_bus_resume,
--	.relinquish_port	= ehci_relinquish_port,
--	.port_handed_over	= ehci_port_handed_over,
--
--	.clear_tt_buffer_complete	= ehci_clear_tt_buffer_complete,
--};
--
- static u64 at91_ehci_dma_mask = DMA_BIT_MASK(32);
- 
- static int ehci_atmel_drv_probe(struct platform_device *pdev)
-@@ -102,6 +70,7 @@ static int ehci_atmel_drv_probe(struct platform_device *pdev)
- 	struct usb_hcd *hcd;
- 	const struct hc_driver *driver = &ehci_atmel_hc_driver;
- 	struct resource *res;
-+	struct ehci_hcd *ehci;
- 	int irq;
- 	int retval;
- 
-@@ -162,6 +131,10 @@ static int ehci_atmel_drv_probe(struct platform_device *pdev)
- 		goto fail_request_resource;
- 	}
- 
-+	ehci = hcd_to_ehci(hcd);
-+	/* registers start at offset 0x0 */
-+	ehci->caps = hcd->regs;
-+
- 	atmel_start_ehci(pdev);
- 
- 	retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
-@@ -185,7 +158,6 @@ static int ehci_atmel_drv_remove(struct platform_device *pdev)
- {
- 	struct usb_hcd *hcd = platform_get_drvdata(pdev);
- 
--	ehci_shutdown(hcd);
- 	usb_remove_hcd(hcd);
- 	usb_put_hcd(hcd);
- 
-@@ -213,3 +185,25 @@ static struct platform_driver ehci_atmel_driver = {
- 		.of_match_table	= of_match_ptr(atmel_ehci_dt_ids),
- 	},
- };
-+
-+static int __init ehci_atmel_init(void)
-+{
-+	if (usb_disabled())
-+		return -ENODEV;
-+
-+	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
-+	ehci_init_driver(&ehci_atmel_hc_driver, NULL);
-+	return platform_driver_register(&ehci_atmel_driver);
-+}
-+module_init(ehci_atmel_init);
-+
-+static void __exit ehci_atmel_cleanup(void)
-+{
-+	platform_driver_unregister(&ehci_atmel_driver);
-+}
-+module_exit(ehci_atmel_cleanup);
-+
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_ALIAS("platform:atmel-ehci");
-+MODULE_AUTHOR("Nicolas Ferre");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index 8f1f4b4..ccc78ab 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1254,11 +1254,6 @@ MODULE_LICENSE ("GPL");
- #define	PLATFORM_DRIVER		ehci_hcd_w90x900_driver
- #endif
- 
--#ifdef CONFIG_ARCH_AT91
--#include "ehci-atmel.c"
--#define	PLATFORM_DRIVER		ehci_atmel_driver
--#endif
--
- #ifdef CONFIG_USB_OCTEON_EHCI
- #include "ehci-octeon.c"
- #define PLATFORM_DRIVER		ehci_octeon_driver
-@@ -1307,6 +1302,7 @@ MODULE_LICENSE ("GPL");
- 	!IS_ENABLED(CONFIG_USB_EHCI_HCD_ORION) && \
- 	!IS_ENABLED(CONFIG_USB_EHCI_HCD_SPEAR) && \
- 	!IS_ENABLED(CONFIG_USB_EHCI_S5P) && \
-+	!IS_ENABLED(CONFIG_USB_EHCI_HCD_AT91) && \
- 	!defined(PLATFORM_DRIVER) && \
- 	!defined(PS3_SYSTEM_BUS_DRIVER) && \
- 	!defined(OF_PLATFORM_DRIVER) && \
 -- 
-1.8.1.2
-
+ Kirill A. Shutemov
