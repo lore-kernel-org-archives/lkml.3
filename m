@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762154Ab3DBWVm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:21:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33602 "EHLO
+	id S1762171Ab3DBWV7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:21:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33596 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933794Ab3DBWOg (ORCPT
+	with ESMTP id S933789Ab3DBWOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:36 -0400
+	Tue, 2 Apr 2013 18:14:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ding Tianhong <dingtianhong@huawei.com>,
-        Eric Dumazet <edumazet@google.com>,
+        Jan Stancek <jan.stancek@gmail.com>, Paul Moore <pmoore@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 52/68] af_unix: dont send SCM_CREDENTIAL when dest socket is NULL
-Date: Tue,  2 Apr 2013 15:13:41 -0700
-Message-Id: <20130402221335.997754400@linuxfoundation.org>
+Subject: [ 51/68] unix: fix a race condition in unix_release()
+Date: Tue,  2 Apr 2013 15:13:40 -0700
+Message-Id: <20130402221335.894653126@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
@@ -29,35 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: dingtianhong <dingtianhong@huawei.com>
+From: Paul Moore <pmoore@redhat.com>
 
-[ Upstream commit 14134f6584212d585b310ce95428014b653dfaf6 ]
+[ Upstream commit ded34e0fe8fe8c2d595bfa30626654e4b87621e0 ]
 
-SCM_SCREDENTIALS should apply to write() syscalls only either source or destination
-socket asserted SOCK_PASSCRED. The original implememtation in maybe_add_creds is wrong,
-and breaks several LSB testcases ( i.e. /tset/LSB.os/netowkr/recvfrom/T.recvfrom).
+As reported by Jan, and others over the past few years, there is a
+race condition caused by unix_release setting the sock->sk pointer
+to NULL before properly marking the socket as dead/orphaned.  This
+can cause a problem with the LSM hook security_unix_may_send() if
+there is another socket attempting to write to this partially
+released socket in between when sock->sk is set to NULL and it is
+marked as dead/orphaned.  This patch fixes this by only setting
+sock->sk to NULL after the socket has been marked as dead; I also
+take the opportunity to make unix_release_sock() a void function
+as it only ever returned 0/success.
 
-Origionally-authored-by: Karel Srot <ksrot@redhat.com>
-Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Dave, I think this one should go on the -stable pile.
+
+Special thanks to Jan for coming up with a reproducer for this
+problem.
+
+Reported-by: Jan Stancek <jan.stancek@gmail.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/unix/af_unix.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/unix/af_unix.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
 --- a/net/unix/af_unix.c
 +++ b/net/unix/af_unix.c
-@@ -1414,8 +1414,8 @@ static void maybe_add_creds(struct sk_bu
- 	if (UNIXCB(skb).cred)
- 		return;
- 	if (test_bit(SOCK_PASSCRED, &sock->flags) ||
--	    !other->sk_socket ||
--	    test_bit(SOCK_PASSCRED, &other->sk_socket->flags)) {
-+	    (other->sk_socket &&
-+	    test_bit(SOCK_PASSCRED, &other->sk_socket->flags))) {
- 		UNIXCB(skb).pid  = get_pid(task_tgid(current));
- 		UNIXCB(skb).cred = get_current_cred();
- 	}
+@@ -374,7 +374,7 @@ static void unix_sock_destructor(struct
+ #endif
+ }
+ 
+-static int unix_release_sock(struct sock *sk, int embrion)
++static void unix_release_sock(struct sock *sk, int embrion)
+ {
+ 	struct unix_sock *u = unix_sk(sk);
+ 	struct path path;
+@@ -443,8 +443,6 @@ static int unix_release_sock(struct sock
+ 
+ 	if (unix_tot_inflight)
+ 		unix_gc();		/* Garbage collect fds */
+-
+-	return 0;
+ }
+ 
+ static void init_peercred(struct sock *sk)
+@@ -694,9 +692,10 @@ static int unix_release(struct socket *s
+ 	if (!sk)
+ 		return 0;
+ 
++	unix_release_sock(sk, 0);
+ 	sock->sk = NULL;
+ 
+-	return unix_release_sock(sk, 0);
++	return 0;
+ }
+ 
+ static int unix_autobind(struct socket *sock)
 
 
