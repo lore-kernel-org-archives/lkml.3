@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761513Ab3DBJXa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 05:23:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56327 "EHLO mx2.suse.de"
+	id S1761530Ab3DBJXj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 05:23:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56341 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754310Ab3DBJX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 05:23:28 -0400
-Date: Tue, 02 Apr 2013 11:23:24 +0200
-Message-ID: <s5hmwth8ewj.wl%tiwai@suse.de>
+	id S1760318Ab3DBJXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 05:23:37 -0400
+Date: Tue, 02 Apr 2013 11:23:36 +0200
+Message-ID: <s5hli918ew7.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Alexandru Gheorghiu <gheorghiuandru@gmail.com>
 Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sound: oss: uart401: Used kmemdup instead of kmalloc and memcpy
-In-Reply-To: <1364219209-11807-1-git-send-email-gheorghiuandru@gmail.com>
-References: <1364219209-11807-1-git-send-email-gheorghiuandru@gmail.com>
+Subject: Re: [PATCH] sound: oss: sb_common: Used kmemdup instead of kmalloc and memcpy
+In-Reply-To: <1364219434-11920-1-git-send-email-gheorghiuandru@gmail.com>
+References: <1364219434-11920-1-git-send-email-gheorghiuandru@gmail.com>
 User-Agent: Wanderlust/2.15.9 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.8 Emacs/24.2
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Mon, 25 Mar 2013 15:46:49 +0200,
+At Mon, 25 Mar 2013 15:50:34 +0200,
 Alexandru Gheorghiu wrote:
 > 
 > Used kmemdup instead of replicating it's behaviour with kmalloc followed
@@ -38,45 +38,30 @@ Thanks, applied.
 
 Takashi
 
+
 > ---
->  sound/oss/uart401.c |   11 +++++++----
->  1 file changed, 7 insertions(+), 4 deletions(-)
+>  sound/oss/sb_common.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> diff --git a/sound/oss/uart401.c b/sound/oss/uart401.c
-> index 8e514a6..5433c6f 100644
-> --- a/sound/oss/uart401.c
-> +++ b/sound/oss/uart401.c
-> @@ -352,23 +352,26 @@ int probe_uart401(struct address_info *hw_config, struct module *owner)
->  		goto cleanup_irq;
->  	}
->  	conf_printf(name, hw_config);
-> -	midi_devs[devc->my_dev] = kmalloc(sizeof(struct midi_operations), GFP_KERNEL);
-> +	midi_devs[devc->my_dev] = kmemdup(&uart401_operations,
-> +					  sizeof(struct midi_operations),
-> +					  GFP_KERNEL);
->  	if (!midi_devs[devc->my_dev]) {
->  		printk(KERN_ERR "uart401: Failed to allocate memory\n");
->  		goto cleanup_unload_mididev;
->  	}
-> -	memcpy(midi_devs[devc->my_dev], &uart401_operations, sizeof(struct midi_operations));
+> diff --git a/sound/oss/sb_common.c b/sound/oss/sb_common.c
+> index 7d42c54..851a1da 100644
+> --- a/sound/oss/sb_common.c
+> +++ b/sound/oss/sb_common.c
+> @@ -626,13 +626,12 @@ int sb_dsp_detect(struct address_info *hw_config, int pci, int pciio, struct sb_
+>  	 */
 >  
->  	if (owner)
->  		midi_devs[devc->my_dev]->owner = owner;
->  	
->  	midi_devs[devc->my_dev]->devc = devc;
-> -	midi_devs[devc->my_dev]->converter = kmalloc(sizeof(struct synth_operations), GFP_KERNEL);
-> +	midi_devs[devc->my_dev]->converter = kmemdup(&std_midi_synth,
-> +						     sizeof(struct synth_operations),
-> +						     GFP_KERNEL);
-> +
->  	if (!midi_devs[devc->my_dev]->converter) {
->  		printk(KERN_WARNING "uart401: Failed to allocate memory\n");
->  		goto cleanup_midi_devs;
+>  
+> -	detected_devc = kmalloc(sizeof(sb_devc), GFP_KERNEL);
+> +	detected_devc = kmemdup(devc, sizeof(sb_devc), GFP_KERNEL);
+>  	if (detected_devc == NULL)
+>  	{
+>  		printk(KERN_ERR "sb: Can't allocate memory for device information\n");
+>  		return 0;
 >  	}
-> -	memcpy(midi_devs[devc->my_dev]->converter, &std_midi_synth, sizeof(struct synth_operations));
->  	strcpy(midi_devs[devc->my_dev]->info.name, name);
->  	midi_devs[devc->my_dev]->converter->id = "UART401";
->  	midi_devs[devc->my_dev]->converter->midi_dev = devc->my_dev;
+> -	memcpy(detected_devc, devc, sizeof(sb_devc));
+>  	MDB(printk(KERN_INFO "SB %d.%02d detected OK (%x)\n", devc->major, devc->minor, hw_config->io_base));
+>  	return 1;
+>  }
 > -- 
 > 1.7.9.5
 > 
