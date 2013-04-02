@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762368Ab3DBUv6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 16:51:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35787 "EHLO mx2.suse.de"
+	id S1762380Ab3DBUw2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 16:52:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58795 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760449Ab3DBUv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 16:51:56 -0400
-From: Thomas Renninger <trenn@suse.de>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH V3 2/2] cpufreq: AMD "frequency sensitivity feedback" powersave bias for ondemand governor
-Date: Tue, 02 Apr 2013 22:51:51 +0200
-Message-ID: <2932884.BNCEuERbdR@skinner.arch.suse.de>
-Organization: SUSE Products GmbH
-User-Agent: KMail/4.10 (Linux/3.7.10-1.1-desktop; KDE/4.10.0; x86_64; ; )
-In-Reply-To: <20130402200337.GA17919@jshin-Toonie>
-References: <1364926304-1799-1-git-send-email-jacob.shin@amd.com> <20130402192352.GC17675@pd.tnic> <20130402200337.GA17919@jshin-Toonie>
+	id S1761785Ab3DBUw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 16:52:27 -0400
+Date: Tue, 2 Apr 2013 22:52:15 +0200
+From: Frantisek Hrbata <fhrbata@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, oleg@redhat.com,
+        kamaleshb@in.ibm.com, hechjie@cn.ibm.com
+Subject: Re: [PATCH] x86: add phys addr validity check for /dev/mem mmap
+Message-ID: <20130402205215.GD3314@dhcp-26-164.brq.redhat.com>
+Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
+References: <1364905733-23937-1-git-send-email-fhrbata@redhat.com>
+ <515B2802.1050405@zytor.com>
+ <20130402191012.GC3314@dhcp-26-164.brq.redhat.com>
+ <515B3F98.5020101@zytor.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515B3F98.5020101@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 02, 2013 03:03:37 PM Jacob Shin wrote:
-> On Tue, Apr 02, 2013 at 09:23:52PM +0200, Borislav Petkov wrote:
-> > On Tue, Apr 02, 2013 at 01:11:44PM -0500, Jacob Shin wrote:
-> > > Future AMD processors, starting with Family 16h, can provide software
-> > > with feedback on how the workload may respond to frequency change --
-> > > memory-bound workloads will not benefit from higher frequency, where
-> > > as compute-bound workloads will. This patch enables this "frequency
-> > > sensitivity feedback" to aid the ondemand governor to make better
-> > > frequency change decisions by hooking into the powersave bias.
-
-I had a quick look at the specification of these registers.
-So this seem to be designed and stay very cpufreq specific and other kernel
-parts probably won't make use of it.
-...
-> > > +
-> > > +	/* this workload is not CPU bound, so choose a lower freq */
-> > > +	if (sensitivity < od_tuners->powersave_bias) {
+On Tue, Apr 02, 2013 at 01:29:12PM -0700, H. Peter Anvin wrote:
+> On 04/02/2013 12:10 PM, Frantisek Hrbata wrote:
 > > 
-> > Ok, I still didn't get an answer to that: don't we want to use this
-> > feature by default, even without looking at ->powersave_bias? I mean,
-> > with feedback from the hardware, we kinda know better than the user, no?
+> > Hi, this is exactly what the patch is doing imho. Note that the
+> > valid_phys_addr_range(), which is using the high_memory, is the same as the
+> > default one in drivers/char/mem.c(#ifndef ARCH_HAS_VALID_PHYS_ADDR_RANGE). I
+> > just added x86 specific check for valid_mmap_phys_addr_range and moved both
+> > functions to arch/x86/mm/mmap.c, rather then modifying the default generic ones.
+> > This is how other archs(arm) are doing it.
+> > 
+> > Also valid_phys_addr_range is used just in read|write_mem and
+> > valid_mmap_phys_addr_range is checked in mmap_mem and it calls phys_addr_valid
+> > 
+> > static inline int phys_addr_valid(resource_size_t addr)
+> > {
+> > #ifdef CONFIG_PHYS_ADDR_T_64BIT
+> > 	return !(addr >> boot_cpu_data.x86_phys_bits);
+> > #else
+> >         return 1;
+> > #endif
+> > }                          
+> > 
+> > I for sure could overlooked something, but this seems right to me.
+> > 
 > 
-> Well, so this powersave_bias also works as a tunable knob.
+> OK, this is really confusing ... which isn't a *huge* surprise (the
+> entire /dev/mem code has some gigantic bugs in it.)
 > 
-> From ondemand side, if /sys/../ondemand/powersave_bias is 0, then we
-> (AMD sensitivity) don't get called and you get the default ondemand
-> behavior.
+> I think I need to do more of an in-depth review.  The other question is
+> why we don't call phys_addr_valid() everywhere.
+
+I'm not going to pretend I understand the code, but IMHO the
+valid_phys_addr_range and valid_mmap_phys_addr_range in drivers/char/mem.c are
+generic for all archs. If some arch wants specific version of those functions it
+defines them in the arch specific code and define ARCH_HAS_VALID_PHYS_ADDR_RANGE.
+The phys_addr_valid is x86 specific defined in arch/x86/mm/physaddr.h, so IMHO
+it cannot be used in the generic checks. For example ARM has it's specific
+checks in arch/arm/mm/mmap.c.
+
+I reused phys_addr_valid because it is already used in ioremap(__ioremap_caller)
+for the same purpose imho.
+
+Thank you for looking into this.
+
 > 
-> Like existing powersave_bias, users can tune the value to whatever
-> they want, to get a specturum of less to more aggressive power savings
-> vs performance.
-I understand powersave_bias code to only be able to do a more
-aggressive power saving way:
-If you pass 900, a frequency of 90%  (for example 900MHz instead of 1000MHz)
-of the one ondemand typically would choose is taken.
-powersave_bias values above 1000 (take higher frequencies than the ondemand
-would take) are not allowed.
+> 	-hpa
+> 
+> 
 
-powersave_bias is undocumented in Documentation/cpu-freq/...
-I guess its use-case is for people who want to get some percent more
-power savings out of their laptop and do not care of the one or other
-percent performance.
-In fact I would like to get rid of this extra code and I expect nobody would 
-miss it.
-I might miss a configuration tool where someone went through the code,
-documented things and allows users to set powersave_bias values through
-some /etc/* config files.
-If so, please point me to it.
-
-What your patch misses are some hints how and when to use this at all.
-What value should a user write to powersave_bias tunable to activate your 
-stuff?
-I guess it's also for laptop users to get some percent more battery out of 
-their platform and this with an even higher performance rate?
-Server guys do not care for some percent of power, but they do care for
-some percent of performance.
-
-> I thought tunable would be more flexible .. out in the field or what
-> not .. no?
-Yep, if you want anyone to make use of this, it should better get embedded
-in more general, at least general ondemand code.
-
-       Thomas
-
+-- 
+Frantisek Hrbata
