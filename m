@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933892Ab3DBWPd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:15:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33687 "EHLO
+	id S933815Ab3DBWRF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:17:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33677 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933887Ab3DBWOq (ORCPT
+	with ESMTP id S933873Ab3DBWOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:14:46 -0400
+	Tue, 2 Apr 2013 18:14:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve Glendinning <steve.glendinning@shawell.net>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Eric Dumazet <edumazet@google.com>, Jiri Pirko <jpirko@redhat.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 68/68] smsc75xx: fix jumbo frame support
-Date: Tue,  2 Apr 2013 15:13:57 -0700
-Message-Id: <20130402221337.832005104@linuxfoundation.org>
+Subject: [ 66/68] net: add a synchronize_net() in netdev_rx_handler_unregister()
+Date: Tue,  2 Apr 2013 15:13:55 -0700
+Message-Id: <20130402221337.614092458@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
 References: <20130402221329.915209206@linuxfoundation.org>
@@ -28,62 +31,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Steve Glendinning <steve.glendinning@shawell.net>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 4c51e53689569398d656e631c17308d9b8e84650 ]
+[ Upstream commit 00cfec37484761a44a3b6f4675a54caa618210ae ]
 
-This patch enables RX of jumbo frames for LAN7500.
+commit 35d48903e97819 (bonding: fix rx_handler locking) added a race
+in bonding driver, reported by Steven Rostedt who did a very good
+diagnosis :
 
-Previously the driver would transmit jumbo frames succesfully but
-would drop received jumbo frames (incrementing the interface errors
-count).
+<quoting Steven>
 
-With this patch applied the device can succesfully receive jumbo
-frames up to MTU 9000 (9014 bytes on the wire including ethernet
-header).
+I'm currently debugging a crash in an old 3.0-rt kernel that one of our
+customers is seeing. The bug happens with a stress test that loads and
+unloads the bonding module in a loop (I don't know all the details as
+I'm not the one that is directly interacting with the customer). But the
+bug looks to be something that may still be present and possibly present
+in mainline too. It will just be much harder to trigger it in mainline.
 
-Signed-off-by: Steve Glendinning <steve.glendinning@shawell.net>
+In -rt, interrupts are threads, and can schedule in and out just like
+any other thread. Note, mainline now supports interrupt threads so this
+may be easily reproducible in mainline as well. I don't have the ability
+to tell the customer to try mainline or other kernels, so my hands are
+somewhat tied to what I can do.
+
+But according to a core dump, I tracked down that the eth irq thread
+crashed in bond_handle_frame() here:
+
+        slave = bond_slave_get_rcu(skb->dev);
+        bond = slave->bond; <--- BUG
+
+the slave returned was NULL and accessing slave->bond caused a NULL
+pointer dereference.
+
+Looking at the code that unregisters the handler:
+
+void netdev_rx_handler_unregister(struct net_device *dev)
+{
+
+        ASSERT_RTNL();
+        RCU_INIT_POINTER(dev->rx_handler, NULL);
+        RCU_INIT_POINTER(dev->rx_handler_data, NULL);
+}
+
+Which is basically:
+        dev->rx_handler = NULL;
+        dev->rx_handler_data = NULL;
+
+And looking at __netif_receive_skb() we have:
+
+        rx_handler = rcu_dereference(skb->dev->rx_handler);
+        if (rx_handler) {
+                if (pt_prev) {
+                        ret = deliver_skb(skb, pt_prev, orig_dev);
+                        pt_prev = NULL;
+                }
+                switch (rx_handler(&skb)) {
+
+My question to all of you is, what stops this interrupt from happening
+while the bonding module is unloading?  What happens if the interrupt
+triggers and we have this:
+
+        CPU0                    CPU1
+        ----                    ----
+  rx_handler = skb->dev->rx_handler
+
+                        netdev_rx_handler_unregister() {
+                           dev->rx_handler = NULL;
+                           dev->rx_handler_data = NULL;
+
+  rx_handler()
+   bond_handle_frame() {
+    slave = skb->dev->rx_handler;
+    bond = slave->bond; <-- NULL pointer dereference!!!
+
+What protection am I missing in the bond release handler that would
+prevent the above from happening?
+
+</quoting Steven>
+
+We can fix bug this in two ways. First is adding a test in
+bond_handle_frame() and others to check if rx_handler_data is NULL.
+
+A second way is adding a synchronize_net() in
+netdev_rx_handler_unregister() to make sure that a rcu protected reader
+has the guarantee to see a non NULL rx_handler_data.
+
+The second way is better as it avoids an extra test in fast path.
+
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Jiri Pirko <jpirko@redhat.com>
+Cc: Paul E. McKenney <paulmck@us.ibm.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/smsc75xx.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ net/core/dev.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/net/usb/smsc75xx.c
-+++ b/drivers/net/usb/smsc75xx.c
-@@ -725,8 +725,12 @@ static int smsc75xx_set_rx_max_frame_len
- static int smsc75xx_change_mtu(struct net_device *netdev, int new_mtu)
- {
- 	struct usbnet *dev = netdev_priv(netdev);
-+	int ret;
-+
-+	if (new_mtu > MAX_SINGLE_PACKET_SIZE)
-+		return -EINVAL;
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3124,6 +3124,7 @@ int netdev_rx_handler_register(struct ne
+ 	if (dev->rx_handler)
+ 		return -EBUSY;
  
--	int ret = smsc75xx_set_rx_max_frame_length(dev, new_mtu);
-+	ret = smsc75xx_set_rx_max_frame_length(dev, new_mtu + ETH_HLEN);
- 	check_warn_return(ret, "Failed to set mac rx frame length");
++	/* Note: rx_handler_data must be set before rx_handler */
+ 	rcu_assign_pointer(dev->rx_handler_data, rx_handler_data);
+ 	rcu_assign_pointer(dev->rx_handler, rx_handler);
  
- 	return usbnet_change_mtu(netdev, new_mtu);
-@@ -979,7 +983,7 @@ static int smsc75xx_reset(struct usbnet
+@@ -3144,6 +3145,11 @@ void netdev_rx_handler_unregister(struct
  
- 	netif_dbg(dev, ifup, dev->net, "FCT_TX_CTL set to 0x%08x", buf);
- 
--	ret = smsc75xx_set_rx_max_frame_length(dev, 1514);
-+	ret = smsc75xx_set_rx_max_frame_length(dev, dev->net->mtu + ETH_HLEN);
- 	check_warn_return(ret, "Failed to set max rx frame length");
- 
- 	ret = smsc75xx_read_reg(dev, MAC_RX, &buf);
-@@ -1123,8 +1127,8 @@ static int smsc75xx_rx_fixup(struct usbn
- 			else if (rx_cmd_a & (RX_CMD_A_LONG | RX_CMD_A_RUNT))
- 				dev->net->stats.rx_frame_errors++;
- 		} else {
--			/* ETH_FRAME_LEN + 4(CRC) + 2(COE) + 4(Vlan) */
--			if (unlikely(size > (ETH_FRAME_LEN + 12))) {
-+			/* MAX_SINGLE_PACKET_SIZE + 4(CRC) + 2(COE) + 4(Vlan) */
-+			if (unlikely(size > (MAX_SINGLE_PACKET_SIZE + ETH_HLEN + 12))) {
- 				netif_dbg(dev, rx_err, dev->net,
- 					"size err rx_cmd_a=0x%08x", rx_cmd_a);
- 				return 0;
+ 	ASSERT_RTNL();
+ 	RCU_INIT_POINTER(dev->rx_handler, NULL);
++	/* a reader seeing a non NULL rx_handler in a rcu_read_lock()
++	 * section has a guarantee to see a non NULL rx_handler_data
++	 * as well.
++	 */
++	synchronize_net();
+ 	RCU_INIT_POINTER(dev->rx_handler_data, NULL);
+ }
+ EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
 
 
