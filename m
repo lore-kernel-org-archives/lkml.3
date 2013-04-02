@@ -1,21 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758716Ab3DBWy1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:54:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34024 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758588Ab3DBWu4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758611Ab3DBWu4 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 2 Apr 2013 18:50:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34013 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757911Ab3DBWup (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:50:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cong Wang <amwang@redhat.com>, Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>
-Subject: [ 45/56] 8021q: fix a potential use-after-free
-Date: Tue,  2 Apr 2013 15:50:12 -0700
-Message-Id: <20130402224717.071394205@linuxfoundation.org>
+        Jianguo Wu <wujianguo@huawei.com>, Jiang Liu <liuj97@gmail.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Minchan Kim <minchan@kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Yinghai Lu <yinghai@kernel.org>,
+        Tony Luck <tony.luck@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Keping Chen <chenkeping@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [ 30/56] mm/hotplug: correctly add new zone to all other nodes zone lists
+Date: Tue,  2 Apr 2013 15:49:57 -0700
+Message-Id: <20130402224715.377163713@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
@@ -29,55 +38,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Cong Wang <amwang@redhat.com>
+From: Jiang Liu <jiang.liu@huawei.com>
 
-[ Upstream commit 4a7df340ed1bac190c124c1601bfc10cde9fb4fb ]
+commit 08dff7b7d629807dbb1f398c68dd9cd58dd657a1 upstream.
 
-vlan_vid_del() could possibly free ->vlan_info after a RCU grace
-period, however, we may still refer to the freed memory area
-by 'grp' pointer. Found by code inspection.
+When online_pages() is called to add new memory to an empty zone, it
+rebuilds all zone lists by calling build_all_zonelists().  But there's a
+bug which prevents the new zone to be added to other nodes' zone lists.
 
-This patch moves vlan_vid_del() as behind as possible.
+online_pages() {
+	build_all_zonelists()
+	.....
+	node_set_state(zone_to_nid(zone), N_HIGH_MEMORY)
+}
 
-Signed-off-by: Cong Wang <amwang@redhat.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: "David S. Miller" <davem@davemloft.net>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Here the node of the zone is put into N_HIGH_MEMORY state after calling
+build_all_zonelists(), but build_all_zonelists() only adds zones from
+nodes in N_HIGH_MEMORY state to the fallback zone lists.
+build_all_zonelists()
+
+    ->__build_all_zonelists()
+	->build_zonelists()
+	    ->find_next_best_node()
+		->for_each_node_state(n, N_HIGH_MEMORY)
+
+So memory in the new zone will never be used by other nodes, and it may
+cause strange behavor when system is under memory pressure.  So put node
+into N_HIGH_MEMORY state before calling build_all_zonelists().
+
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Keping Chen <chenkeping@huawei.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/8021q/vlan.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ mm/memory_hotplug.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
---- a/net/8021q/vlan.c
-+++ b/net/8021q/vlan.c
-@@ -108,13 +108,6 @@ void unregister_vlan_dev(struct net_devi
- 	grp = rtnl_dereference(real_dev->vlgrp);
- 	BUG_ON(!grp);
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -453,19 +453,20 @@ int __ref online_pages(unsigned long pfn
  
--	/* Take it out of our own structures, but be sure to interlock with
--	 * HW accelerating devices or SW vlan input packet processing if
--	 * VLAN is not 0 (leave it there for 802.1p).
--	 */
--	if (vlan_id && (real_dev->features & NETIF_F_HW_VLAN_FILTER))
--		ops->ndo_vlan_rx_kill_vid(real_dev, vlan_id);
--
- 	grp->nr_vlans--;
+ 	zone->present_pages += onlined_pages;
+ 	zone->zone_pgdat->node_present_pages += onlined_pages;
+-	if (need_zonelists_rebuild)
+-		build_all_zonelists(zone);
+-	else
+-		zone_pcp_update(zone);
++	if (onlined_pages) {
++		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
++		if (need_zonelists_rebuild)
++			build_all_zonelists(zone);
++		else
++			zone_pcp_update(zone);
++	}
  
- 	if (vlan->flags & VLAN_FLAG_GVRP)
-@@ -139,6 +132,13 @@ void unregister_vlan_dev(struct net_devi
- 		call_rcu(&grp->rcu, vlan_rcu_free);
- 	}
+ 	mutex_unlock(&zonelists_mutex);
  
-+	/* Take it out of our own structures, but be sure to interlock with
-+	 * HW accelerating devices or SW vlan input packet processing if
-+	 * VLAN is not 0 (leave it there for 802.1p).
-+	 */
-+	if (vlan_id && (real_dev->features & NETIF_F_HW_VLAN_FILTER))
-+		ops->ndo_vlan_rx_kill_vid(real_dev, vlan_id);
-+
- 	/* Get rid of the vlan's reference to real_dev */
- 	dev_put(real_dev);
- }
+ 	init_per_zone_wmark_min();
+ 
+-	if (onlined_pages) {
++	if (onlined_pages)
+ 		kswapd_run(zone_to_nid(zone));
+-		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
+-	}
+ 
+ 	vm_total_pages = nr_free_pagecache_pages();
+ 
 
 
