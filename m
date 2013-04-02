@@ -1,110 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760723Ab3DBEmf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 00:42:35 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:54858 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760143Ab3DBElD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 00:41:03 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: linus.walleij@linaro.org
-Cc: swarren@wwwdotorg.org, linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-kernel@vger.kernel.org, Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCHv4 5/6] arm: vt8500: Remove gpio devicetree nodes
-Date: Tue,  2 Apr 2013 17:41:00 +1300
-Message-Id: <1364877661-26086-6-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1364877661-26086-1-git-send-email-linux@prisktech.co.nz>
-References: <1364877661-26086-1-git-send-email-linux@prisktech.co.nz>
+	id S1760219Ab3DBExA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 00:53:00 -0400
+Received: from sauhun.de ([89.238.76.85]:32873 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759828Ab3DBEw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 00:52:58 -0400
+Date: Tue, 2 Apr 2013 06:52:37 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-i2c@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: Re: [PATCH] ACPI / I2C: Use parent's ACPI_HANDLE() in
+ acpi_i2c_register_devices()
+Message-ID: <20130402045105.GA17682@the-dreams.de>
+References: <2966020.zlpeyGGUDW@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2966020.zlpeyGGUDW@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the gpio related devicetree nodes as these are no longer required
-with the move to a combined pinctrl/gpio driver.
+On Mon, Apr 01, 2013 at 02:25:03AM +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> The ACPI handle of struct i2c_adapter's dev member should not be
+> set, because this causes that struct i2c_adapter to be associated
+> with the ACPI device node corresponding to its parent as the
+> second "physical_device", which is incorrect (this happens during
+> the registration of struct i2c_adapter).  Consequently,
+> acpi_i2c_register_devices() should use the ACPI handle of the
+> parent of the struct i2c_adapter it is called for rather than the
+> struct i2c_adapter's ACPI handle (which should be NULL).
+> 
+> Make that happen and modify the i2c-designware-platdrv driver,
+> which currently is the only driver for ACPI-enumerated I2C
+> controller chips, not to set the ACPI handle for the
+> struct i2c_adapter it creates.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
- arch/arm/boot/dts/vt8500.dtsi |    7 -------
- arch/arm/boot/dts/wm8505.dtsi |    7 -------
- arch/arm/boot/dts/wm8650.dtsi |    7 -------
- arch/arm/boot/dts/wm8850.dtsi |    7 -------
- 4 files changed, 28 deletions(-)
+Shall this go via the I2C tree? If not, for the I2C part:
 
-diff --git a/arch/arm/boot/dts/vt8500.dtsi b/arch/arm/boot/dts/vt8500.dtsi
-index 8e87aa9..e1c3926 100644
---- a/arch/arm/boot/dts/vt8500.dtsi
-+++ b/arch/arm/boot/dts/vt8500.dtsi
-@@ -25,13 +25,6 @@
- 			#interrupt-cells = <1>;
- 		};
- 
--		gpio: gpio-controller@d8110000 {
--			compatible = "via,vt8500-gpio";
--			gpio-controller;
--			reg = <0xd8110000 0x10000>;
--			#gpio-cells = <3>;
--		};
--
- 		pinctrl: pinctrl@d8110000 {
- 			compatible = "via,vt8500-pinctrl";
- 			reg = <0xd8110000 0x10000>;
-diff --git a/arch/arm/boot/dts/wm8505.dtsi b/arch/arm/boot/dts/wm8505.dtsi
-index e4f768a..bb92ef8 100644
---- a/arch/arm/boot/dts/wm8505.dtsi
-+++ b/arch/arm/boot/dts/wm8505.dtsi
-@@ -40,13 +40,6 @@
- 			interrupts = <56 57 58 59 60 61 62 63>;
- 		};
- 
--		gpio: gpio-controller@d8110000 {
--			compatible = "wm,wm8505-gpio";
--			gpio-controller;
--			reg = <0xd8110000 0x10000>;
--			#gpio-cells = <3>;
--		};
--
- 		pinctrl: pinctrl@d8110000 {
- 			compatible = "wm,wm8505-pinctrl";
- 			reg = <0xd8110000 0x10000>;
-diff --git a/arch/arm/boot/dts/wm8650.dtsi b/arch/arm/boot/dts/wm8650.dtsi
-index 01b6a8d..bb4af58 100644
---- a/arch/arm/boot/dts/wm8650.dtsi
-+++ b/arch/arm/boot/dts/wm8650.dtsi
-@@ -34,13 +34,6 @@
- 			interrupts = <56 57 58 59 60 61 62 63>;
- 		};
- 
--		gpio: gpio-controller@d8110000 {
--			compatible = "wm,wm8650-gpio";
--			gpio-controller;
--			reg = <0xd8110000 0x10000>;
--			#gpio-cells = <3>;
--		};
--
- 		pinctrl: pinctrl@d8110000 {
- 			compatible = "wm,wm8650-pinctrl";
- 			reg = <0xd8110000 0x10000>;
-diff --git a/arch/arm/boot/dts/wm8850.dtsi b/arch/arm/boot/dts/wm8850.dtsi
-index 297aa05..11cd180 100644
---- a/arch/arm/boot/dts/wm8850.dtsi
-+++ b/arch/arm/boot/dts/wm8850.dtsi
-@@ -41,13 +41,6 @@
- 			interrupts = <56 57 58 59 60 61 62 63>;
- 		};
- 
--		gpio: gpio-controller@d8110000 {
--			compatible = "wm,wm8650-gpio";
--			gpio-controller;
--			reg = <0xd8110000 0x10000>;
--			#gpio-cells = <3>;
--		};
--
- 		pinctrl: pinctrl@d8110000 {
- 			compatible = "wm,wm8850-pinctrl";
- 			reg = <0xd8110000 0x10000>;
--- 
-1.7.9.5
+Acked-by: Wolfram Sang <wsa@the-dreams.de>
 
