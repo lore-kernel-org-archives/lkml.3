@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762501Ab3DBU7K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 16:59:10 -0400
-Received: from 8bytes.org ([85.214.48.195]:54500 "EHLO mail.8bytes.org"
+	id S1762328Ab3DBVBk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 17:01:40 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37124 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762440Ab3DBU7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 16:59:06 -0400
-Date: Tue, 2 Apr 2013 22:59:04 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Borislav Petkov <bp@alien8.de>, suravee.suthikulpanit@amd.com,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] iommu/amd: Add logic to decode AMD IOMMU event flag
-Message-ID: <20130402205904.GT30540@8bytes.org>
-References: <1364428283-2548-1-git-send-email-suravee.suthikulpanit@amd.com>
- <20130402143335.GB15687@8bytes.org>
- <20130402144037.GE5488@pd.tnic>
- <20130402150302.GF15687@8bytes.org>
- <20130402152956.GE4391@pd.tnic>
- <20130402160400.GP30540@8bytes.org>
- <20130402161757.GC17519@pd.tnic>
- <20130402163318.GS30540@8bytes.org>
- <20130402193240.GF17675@pd.tnic>
+	id S1761785Ab3DBVBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 17:01:38 -0400
+Date: Tue, 2 Apr 2013 23:01:24 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Thomas Renninger <trenn@suse.de>
+Cc: Jacob Shin <jacob.shin@amd.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH V3 2/2] cpufreq: AMD "frequency sensitivity feedback"
+ powersave bias for ondemand governor
+Message-ID: <20130402210124.GI17675@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Thomas Renninger <trenn@suse.de>, Jacob Shin <jacob.shin@amd.com>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+	linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Viresh Kumar <viresh.kumar@linaro.org>
+References: <1364926304-1799-1-git-send-email-jacob.shin@amd.com>
+ <20130402192352.GC17675@pd.tnic>
+ <20130402200337.GA17919@jshin-Toonie>
+ <2932884.BNCEuERbdR@skinner.arch.suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130402193240.GF17675@pd.tnic>
+In-Reply-To: <2932884.BNCEuERbdR@skinner.arch.suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Apr  2 22:59:05 2013
-X-DSPAM-Confidence: 0.9982
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 515b469923673005197199
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 09:32:40PM +0200, Borislav Petkov wrote:
-> On Tue, Apr 02, 2013 at 06:33:18PM +0200, Joerg Roedel wrote:
+On Tue, Apr 02, 2013 at 10:51:51PM +0200, Thomas Renninger wrote:
+> Yep, if you want anyone to make use of this, it should better get
+> embedded in more general, at least general ondemand code.
 
-> > Okay, in theory I could implement a feedback loop between timer-setup
-> > and intremap code and try fixups until it works. But that seems not to
-> > be worth it to work around a buggy BIOS.
-> 
-> Yeah, same here. It's not like we really need intremap to work - we're
-> only trying to fix the annoying error message currently. :-)
+Yeah, it all sounds like we want to enable this by default on systems
+which support it. Maybe with an off-switch for people who want plain
+ondemand decisions.
 
-Right :)
+The remaining systems with ripped out powersave_bias would get plain
+ondemand governor decisions. Provided, of course, nobody uses
+powersave_bias and the functionality doesn't make any sense anyway.
 
-> > What I actually thought about was providing an IVRS-override on the
-> > kernel command line. So that you can specify the IOAPIC_ID->DEVID
-> > mapping there and make it work this way. What do you think?
-> 
-> I guess that is workable. I can imagine people wanting this if they want
-> to do the intremap thing on such b0rked BIOSen. So how do I specify this
-> IOAPIC_ID->DEVID mapping on the cmdline exactly?
+Thanks.
 
+-- 
+Regards/Gruss,
+    Boris.
 
-Don't know yet, probably something like ivrs_ioapic[<apicid>]=0:14.2 and
-ivrs_hpet[<hpet-id>]=0:14.2. But not entierly sure yet, at least parsing
-shouldn't require lex and yacc ;)
-
-> > Yeah, that's my fear too. So we leave it better as it is...
-> 
-> Hohumm.
-
-Thus shall it be!
-
-
-	Joerg
-
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
