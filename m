@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932658Ab3DBPdU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 11:33:20 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:49980 "EHLO smtp.infotech.no"
+	id S932611Ab3DBPkS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 11:40:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12243 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761236Ab3DBPdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 11:33:18 -0400
-Message-ID: <515AFA0B.7020509@interlog.com>
-Date: Tue, 02 Apr 2013 11:32:27 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S932491Ab3DBPkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 11:40:17 -0400
+Date: Tue, 2 Apr 2013 11:39:57 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kexec: use Crash kernel for Crash kernel low
+Message-ID: <20130402153957.GG29506@redhat.com>
+References: <20130401192606.GA17951@redhat.com>
+ <5159F27E.7060300@zytor.com>
+ <CAE9FiQXikU8-FkYYULHx50qP_ME2bRSzCC=8ZH8iDyUr2ug66g@mail.gmail.com>
+ <515A03DB.6040107@zytor.com>
+ <CAE9FiQWNFbFgXafJBvORRax+GNU_uf0KFnqZ5NQit0BeZZx9LA@mail.gmail.com>
+ <515A083B.7050508@zytor.com>
+ <CAE9FiQXwy8nLRQAiZ+P56fokisUXAmTJWA07TZ-gSH61K5FQLA@mail.gmail.com>
+ <CAE9FiQW1RzP5A_82qUP7gF_6-G3+Ceay_L1FQf7N=MMbQA4+iw@mail.gmail.com>
+ <20130402135001.GC29506@redhat.com>
+ <CAE9FiQVWprV4YkMq_Pu95AYk_qGzXWPVBWJVDfa=0RbqL63y4Q@mail.gmail.com>
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: linux-arm-kernel@lists.infradead.org, jhovold@gmail.com,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] rtc: rtc-at91rm9200: manage IMR depending on revision
-References: <1364573029-19346-5-git-send-email-jhovold@gmail.com> <1364908007-5150-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1364908007-5150-1-git-send-email-nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQVWprV4YkMq_Pu95AYk_qGzXWPVBWJVDfa=0RbqL63y4Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-04-02 09:06 AM, Nicolas Ferre wrote:
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
-> Hi all,
->
-> The funny thing is that I was writing exactly the same code as Johan's
-> when he posted his series.
->
-> So, here is my single patch, with the comment about the readback stolen from
-> Johan's, but without the way to determine with IP is buggy and which one is
-> not...
-> After having dug the possibility to read the IP revision, I discovered that it
-> is not possible to use this information ("version" register offset changing
-> according to... IP version number: well done!).
-> In conclusion, I guess that the only way to determine if we need the workaround
-> is to use the DT.
-> One remark though: if we use the compatibility string for this purpose, I fear
-> that we would twist the meaning of this information: SoC using an
-> "atmel,at91sam9x5-rtc" compatible RTC will not necessarily be touched by the
-> "non responding IMR" bug: at91sam9n12 or upcoming sama5d3 are not affected for
-> instance, and we need to cling to "atmel,at91rm9200-rtc" for them...
-> I think that we can use this method for the moment and move to another
-> compatibility string later if it is needed.
+On Tue, Apr 02, 2013 at 07:45:36AM -0700, Yinghai Lu wrote:
 
-Rather than have so many people working on rtc-at91rm9200.c,
-how about someone bring its "RTT" sibling into the DT
-world. I'm talking about drivers/rtc/rtc-at91sam9.c ...
+[..]
+> 2. keep thing unified when new kexec-tools is used: always high.
 
-Doug Gilbert
+I think this is wrong. What if system does not have more than 4G of
+memory. crashkernel=x,high will fail. So just because we have new version
+of kexec-tools, it does not mean that one can always use crashkernel=x,high.
 
+I think we should do two things.
+
+- Extend crashkernel=X to search for memory below 896M, 4G, MAXMEM in
+  that order. To me, this will work best for most of the users.
+
+- For users who really care to not allocate memory in low memory ranges,
+  they can use crashkernel=X,high. But even there syntax should be that
+  look for memory in higher ranges first otherwise allocate from low
+  regions.
+
+  Otherwise it makes life very difficult for a user when there is no
+  memory available in higher addresses but it is available in low addresses.
+  How does one automate that.
+
+In current form, I double crashkernel=X,high is going to be very useful.
+
+Thanks
+Vivek
