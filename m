@@ -1,47 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933826Ab3DBWfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:35:37 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48712 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933511Ab3DBWfb (ORCPT
+	id S933660Ab3DBWfU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:35:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33293 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933412Ab3DBWNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:35:31 -0400
-X-Sasl-enc: z9rfeb8dLdvZxryD2/fK/FV+Cb/H2tZPZcpww74HlcuP 1364942130
-Message-ID: <515B5D34.4000407@signal11.us>
-Date: Tue, 02 Apr 2013 18:35:32 -0400
-From: Alan Ott <alan@signal11.us>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
-MIME-Version: 1.0
-To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>
-CC: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-zigbee-devel <linux-zigbee-devel@lists.sourceforge.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] mac802154: Immediately retry sending failed packets
-References: <1364928481-1813-1-git-send-email-alan@signal11.us> <1364928481-1813-2-git-send-email-alan@signal11.us> <CAJmB2rCr5ds11+iN=W5GCKsUgdfb57uKg+mH4NY4CWw6EFCTbg@mail.gmail.com> <515B3F78.2020301@signal11.us> <515B4D79.40805@signal11.us>
-In-Reply-To: <515B4D79.40805@signal11.us>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Apr 2013 18:13:12 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Eric Dumazet <edumazet@google.com>, Jiri Pirko <jpirko@redhat.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 119/124] net: add a synchronize_net() in netdev_rx_handler_unregister()
+Date: Tue,  2 Apr 2013 15:11:41 -0700
+Message-Id: <20130402221117.967376650@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
+References: <20130402221104.163133110@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2013 05:28 PM, Alan Ott wrote:
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-> According to 7.5.6.5 of IEEE 802.15.4-2003, if the retransmission fails
-> more than aMaxFrameRetries (3) times, it is assumed that it has failed.
-> Since some transceivers (and I would assume most if not all) do this in
-> hardware, it's now my opinion that we should _not_ try to retransmit at
-> all in mac802154/tx.c.
-> 
-> For a driver for a device which _doesn't_ do retransmission in hardware,
-> maybe it should be handled by that driver then.
+------------------
 
 
-It's worth noting that the mrf24j40, the at86rf230, and the cc2420
-support retransmission in hardware (the first two are the only two in
-mainline).
+From: Eric Dumazet <edumazet@google.com>
 
-Alan.
+[ Upstream commit 00cfec37484761a44a3b6f4675a54caa618210ae ]
+
+commit 35d48903e97819 (bonding: fix rx_handler locking) added a race
+in bonding driver, reported by Steven Rostedt who did a very good
+diagnosis :
+
+<quoting Steven>
+
+I'm currently debugging a crash in an old 3.0-rt kernel that one of our
+customers is seeing. The bug happens with a stress test that loads and
+unloads the bonding module in a loop (I don't know all the details as
+I'm not the one that is directly interacting with the customer). But the
+bug looks to be something that may still be present and possibly present
+in mainline too. It will just be much harder to trigger it in mainline.
+
+In -rt, interrupts are threads, and can schedule in and out just like
+any other thread. Note, mainline now supports interrupt threads so this
+may be easily reproducible in mainline as well. I don't have the ability
+to tell the customer to try mainline or other kernels, so my hands are
+somewhat tied to what I can do.
+
+But according to a core dump, I tracked down that the eth irq thread
+crashed in bond_handle_frame() here:
+
+        slave = bond_slave_get_rcu(skb->dev);
+        bond = slave->bond; <--- BUG
+
+the slave returned was NULL and accessing slave->bond caused a NULL
+pointer dereference.
+
+Looking at the code that unregisters the handler:
+
+void netdev_rx_handler_unregister(struct net_device *dev)
+{
+
+        ASSERT_RTNL();
+        RCU_INIT_POINTER(dev->rx_handler, NULL);
+        RCU_INIT_POINTER(dev->rx_handler_data, NULL);
+}
+
+Which is basically:
+        dev->rx_handler = NULL;
+        dev->rx_handler_data = NULL;
+
+And looking at __netif_receive_skb() we have:
+
+        rx_handler = rcu_dereference(skb->dev->rx_handler);
+        if (rx_handler) {
+                if (pt_prev) {
+                        ret = deliver_skb(skb, pt_prev, orig_dev);
+                        pt_prev = NULL;
+                }
+                switch (rx_handler(&skb)) {
+
+My question to all of you is, what stops this interrupt from happening
+while the bonding module is unloading?  What happens if the interrupt
+triggers and we have this:
+
+        CPU0                    CPU1
+        ----                    ----
+  rx_handler = skb->dev->rx_handler
+
+                        netdev_rx_handler_unregister() {
+                           dev->rx_handler = NULL;
+                           dev->rx_handler_data = NULL;
+
+  rx_handler()
+   bond_handle_frame() {
+    slave = skb->dev->rx_handler;
+    bond = slave->bond; <-- NULL pointer dereference!!!
+
+What protection am I missing in the bond release handler that would
+prevent the above from happening?
+
+</quoting Steven>
+
+We can fix bug this in two ways. First is adding a test in
+bond_handle_frame() and others to check if rx_handler_data is NULL.
+
+A second way is adding a synchronize_net() in
+netdev_rx_handler_unregister() to make sure that a rcu protected reader
+has the guarantee to see a non NULL rx_handler_data.
+
+The second way is better as it avoids an extra test in fast path.
+
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Jiri Pirko <jpirko@redhat.com>
+Cc: Paul E. McKenney <paulmck@us.ibm.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/core/dev.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3276,6 +3276,7 @@ int netdev_rx_handler_register(struct ne
+ 	if (dev->rx_handler)
+ 		return -EBUSY;
+ 
++	/* Note: rx_handler_data must be set before rx_handler */
+ 	rcu_assign_pointer(dev->rx_handler_data, rx_handler_data);
+ 	rcu_assign_pointer(dev->rx_handler, rx_handler);
+ 
+@@ -3296,6 +3297,11 @@ void netdev_rx_handler_unregister(struct
+ 
+ 	ASSERT_RTNL();
+ 	RCU_INIT_POINTER(dev->rx_handler, NULL);
++	/* a reader seeing a non NULL rx_handler in a rcu_read_lock()
++	 * section has a guarantee to see a non NULL rx_handler_data
++	 * as well.
++	 */
++	synchronize_net();
+ 	RCU_INIT_POINTER(dev->rx_handler_data, NULL);
+ }
+ EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
+
 
