@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757732Ab3DBWrP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:47:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33084 "EHLO
+	id S1756543Ab3DBWrt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 18:47:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33076 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933336Ab3DBWMo (ORCPT
+	with ESMTP id S933268Ab3DBWMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 18:12:44 -0400
+	Tue, 2 Apr 2013 18:12:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 078/124] signal: Define __ARCH_HAS_SA_RESTORER so we know whether to clear sa_restorer
-Date: Tue,  2 Apr 2013 15:11:00 -0700
-Message-Id: <20130402221113.204099415@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 076/124] USB: ti_usb_3410_5052: fix use-after-free in TIOCMIWAIT
+Date: Tue,  2 Apr 2013 15:10:58 -0700
+Message-Id: <20130402221112.992921424@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
 References: <20130402221104.163133110@linuxfoundation.org>
@@ -26,169 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Johan Hovold <jhovold@gmail.com>
 
-Vaguely based on upstream commit 574c4866e33d 'consolidate kernel-side
-struct sigaction declarations'.
+commit fc98ab873aa3dbe783ce56a2ffdbbe7c7609521a upstream.
 
-flush_signal_handlers() needs to know whether sigaction::sa_restorer
-is defined, not whether SA_RESTORER is defined.  Define the
-__ARCH_HAS_SA_RESTORER macro to indicate this.
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/signal.h     |    1 +
- arch/avr32/include/asm/signal.h   |    1 +
- arch/cris/include/asm/signal.h    |    1 +
- arch/h8300/include/asm/signal.h   |    1 +
- arch/m32r/include/asm/signal.h    |    1 +
- arch/m68k/include/asm/signal.h    |    1 +
- arch/mn10300/include/asm/signal.h |    1 +
- arch/powerpc/include/asm/signal.h |    1 +
- arch/s390/include/asm/signal.h    |    1 +
- arch/sparc/include/asm/signal.h   |    2 ++
- arch/x86/include/asm/signal.h     |    3 +++
- arch/xtensa/include/asm/signal.h  |    1 +
- include/uapi/asm-generic/signal.h |    4 ++++
- 13 files changed, 19 insertions(+)
+ drivers/usb/serial/ti_usb_3410_5052.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/arch/arm/include/asm/signal.h
-+++ b/arch/arm/include/asm/signal.h
-@@ -29,6 +29,7 @@ struct sigaction {
- 	__sigrestore_t sa_restorer;
- 	sigset_t sa_mask;		/* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
- 	struct sigaction sa;
---- a/arch/avr32/include/asm/signal.h
-+++ b/arch/avr32/include/asm/signal.h
-@@ -29,6 +29,7 @@ struct sigaction {
- 	__sigrestore_t sa_restorer;
- 	sigset_t sa_mask;		/* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
- 	struct sigaction sa;
---- a/arch/cris/include/asm/signal.h
-+++ b/arch/cris/include/asm/signal.h
-@@ -29,6 +29,7 @@ struct sigaction {
- 	void (*sa_restorer)(void);
- 	sigset_t sa_mask;		/* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
- 	struct sigaction sa;
---- a/arch/h8300/include/asm/signal.h
-+++ b/arch/h8300/include/asm/signal.h
-@@ -29,6 +29,7 @@ struct sigaction {
- 	void (*sa_restorer)(void);
- 	sigset_t sa_mask;		/* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
- 	struct sigaction sa;
---- a/arch/m32r/include/asm/signal.h
-+++ b/arch/m32r/include/asm/signal.h
-@@ -22,6 +22,7 @@ struct sigaction {
- 	__sigrestore_t sa_restorer;
- 	sigset_t sa_mask;		/* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
- 	struct sigaction sa;
---- a/arch/m68k/include/asm/signal.h
-+++ b/arch/m68k/include/asm/signal.h
-@@ -29,6 +29,7 @@ struct sigaction {
- 	__sigrestore_t sa_restorer;
- 	sigset_t sa_mask;		/* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
- 	struct sigaction sa;
---- a/arch/mn10300/include/asm/signal.h
-+++ b/arch/mn10300/include/asm/signal.h
-@@ -39,6 +39,7 @@ struct sigaction {
- 	__sigrestore_t sa_restorer;
- 	sigset_t sa_mask;		/* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
- 	struct sigaction sa;
---- a/arch/powerpc/include/asm/signal.h
-+++ b/arch/powerpc/include/asm/signal.h
-@@ -1,6 +1,7 @@
- #ifndef _ASM_POWERPC_SIGNAL_H
- #define _ASM_POWERPC_SIGNAL_H
- 
-+#define __ARCH_HAS_SA_RESTORER
- #include <uapi/asm/signal.h>
- 
- #endif /* _ASM_POWERPC_SIGNAL_H */
---- a/arch/s390/include/asm/signal.h
-+++ b/arch/s390/include/asm/signal.h
-@@ -34,6 +34,7 @@ struct sigaction {
-         void (*sa_restorer)(void);
-         sigset_t sa_mask;               /* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
- 
- struct k_sigaction {
-         struct sigaction sa;
---- a/arch/sparc/include/asm/signal.h
-+++ b/arch/sparc/include/asm/signal.h
-@@ -26,5 +26,7 @@ struct k_sigaction {
- 	void			__user *ka_restorer;
- };
- 
-+#define __ARCH_HAS_SA_RESTORER
+--- a/drivers/usb/serial/ti_usb_3410_5052.c
++++ b/drivers/usb/serial/ti_usb_3410_5052.c
+@@ -74,7 +74,6 @@ struct ti_port {
+ 	int			tp_flags;
+ 	int			tp_closing_wait;/* in .01 secs */
+ 	struct async_icount	tp_icount;
+-	wait_queue_head_t	tp_msr_wait;	/* wait for msr change */
+ 	wait_queue_head_t	tp_write_wait;
+ 	struct ti_device	*tp_tdev;
+ 	struct usb_serial_port	*tp_port;
+@@ -432,7 +431,6 @@ static int ti_port_probe(struct usb_seri
+ 	else
+ 		tport->tp_uart_base_addr = TI_UART2_BASE_ADDR;
+ 	tport->tp_closing_wait = closing_wait;
+-	init_waitqueue_head(&tport->tp_msr_wait);
+ 	init_waitqueue_head(&tport->tp_write_wait);
+ 	if (kfifo_alloc(&tport->write_fifo, TI_WRITE_BUF_SIZE, GFP_KERNEL)) {
+ 		kfree(tport);
+@@ -784,9 +782,13 @@ static int ti_ioctl(struct tty_struct *t
+ 		dev_dbg(&port->dev, "%s - TIOCMIWAIT\n", __func__);
+ 		cprev = tport->tp_icount;
+ 		while (1) {
+-			interruptible_sleep_on(&tport->tp_msr_wait);
++			interruptible_sleep_on(&port->delta_msr_wait);
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
 +
- #endif /* !(__ASSEMBLY__) */
- #endif /* !(__SPARC_SIGNAL_H) */
---- a/arch/x86/include/asm/signal.h
-+++ b/arch/x86/include/asm/signal.h
-@@ -31,6 +31,9 @@ typedef sigset_t compat_sigset_t;
- #include <uapi/asm/signal.h>
- #ifndef __ASSEMBLY__
- extern void do_notify_resume(struct pt_regs *, void *, __u32);
++			if (port->serial->disconnected)
++				return -EIO;
 +
-+#define __ARCH_HAS_SA_RESTORER
-+
- #ifdef __i386__
- struct old_sigaction {
- 	__sighandler_t sa_handler;
---- a/arch/xtensa/include/asm/signal.h
-+++ b/arch/xtensa/include/asm/signal.h
-@@ -21,6 +21,7 @@ struct sigaction {
- 	void (*sa_restorer)(void);
- 	sigset_t sa_mask;		/* mask last for extensibility */
- };
-+#define __ARCH_HAS_SA_RESTORER
+ 			cnow = tport->tp_icount;
+ 			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
+ 			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
+@@ -1400,7 +1402,7 @@ static void ti_handle_new_msr(struct ti_
+ 			icount->dcd++;
+ 		if (msr & TI_MSR_DELTA_RI)
+ 			icount->rng++;
+-		wake_up_interruptible(&tport->tp_msr_wait);
++		wake_up_interruptible(&tport->tp_port->delta_msr_wait);
+ 		spin_unlock_irqrestore(&tport->tp_lock, flags);
+ 	}
  
- struct k_sigaction {
- 	struct sigaction sa;
---- a/include/uapi/asm-generic/signal.h
-+++ b/include/uapi/asm-generic/signal.h
-@@ -93,6 +93,10 @@ typedef unsigned long old_sigset_t;
- 
- #include <asm-generic/signal-defs.h>
- 
-+#ifdef SA_RESTORER
-+#define __ARCH_HAS_SA_RESTORER
-+#endif
-+
- struct sigaction {
- 	__sighandler_t sa_handler;
- 	unsigned long sa_flags;
 
 
