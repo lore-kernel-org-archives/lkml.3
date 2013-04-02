@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759350Ab3DBW7j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 18:59:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33989 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758166Ab3DBWul (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756867Ab3DBWul (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 2 Apr 2013 18:50:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33959 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758166Ab3DBWuh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 18:50:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Adamson <andros@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [ 24/56] NFSv4: include bitmap in nfsv4 get acl data
-Date: Tue,  2 Apr 2013 15:49:51 -0700
-Message-Id: <20130402224714.708823449@linuxfoundation.org>
+        Vivek gautam <gautam.vivek@samsung.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 16/56] usb: xhci: Fix TRB transfer length macro used for Event TRB.
+Date: Tue,  2 Apr 2013 15:49:43 -0700
+Message-Id: <20130402224713.777199565@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
 References: <20130402224711.840825715@linuxfoundation.org>
@@ -28,304 +27,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Vivek Gautam <gautam.vivek@samsung.com>
 
-From: Andy Adamson <andros@netapp.com>
+commit 1c11a172cb30492f5f6a82c6e118fdcd9946c34f upstream.
 
-commit bf118a342f10dafe44b14451a1392c3254629a1f upstream.
+Use proper macro while extracting TRB transfer length from
+Transfer event TRBs. Adding a macro EVENT_TRB_LEN (bits 0:23)
+for the same, and use it instead of TRB_LEN (bits 0:16) in
+case of event TRBs.
 
-The NFSv4 bitmap size is unbounded: a server can return an arbitrary
-sized bitmap in an FATTR4_WORD0_ACL request.  Replace using the
-nfs4_fattr_bitmap_maxsz as a guess to the maximum bitmask returned by a server
-with the inclusion of the bitmap (xdr length plus bitmasks) and the acl data
-xdr length to the (cached) acl page data.
+This patch should be backported to kernels as old as 2.6.31, that
+contain the commit b10de142119a676552df3f0d2e3a9d647036c26a "USB: xhci:
+Bulk transfer support".  This patch will have issues applying to older
+kernels.
 
-This is a general solution to commit e5012d1f "NFSv4.1: update
-nfs4_fattr_bitmap_maxsz" and fixes hitting a BUG_ON in xdr_shrink_bufhead
-when getting ACLs.
-
-Fix a bug in decode_getacl that returned -EINVAL on ACLs > page when getxattr
-was called with a NULL buffer, preventing ACL > PAGE_SIZE from being retrieved.
-
-Signed-off-by: Andy Adamson <andros@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Vivek gautam <gautam.vivek@samsung.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/nfs/nfs4proc.c          |   96 ++++++++++++++++++++++++++-------------------
- fs/nfs/nfs4xdr.c           |   31 ++++++++++----
- include/linux/nfs_xdr.h    |    5 ++
- include/linux/sunrpc/xdr.h |    2 
- net/sunrpc/xdr.c           |    3 -
- 5 files changed, 89 insertions(+), 48 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -3440,19 +3440,6 @@ static inline int nfs4_server_supports_a
-  */
- #define NFS4ACL_MAXPAGES (XATTR_SIZE_MAX >> PAGE_CACHE_SHIFT)
+---
+ drivers/usb/host/xhci-ring.c |   24 ++++++++++++------------
+ drivers/usb/host/xhci.h      |    4 ++++
+ 2 files changed, 16 insertions(+), 12 deletions(-)
+
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1960,8 +1960,8 @@ static int process_ctrl_td(struct xhci_h
+ 		if (event_trb != ep_ring->dequeue &&
+ 				event_trb != td->last_trb)
+ 			td->urb->actual_length =
+-				td->urb->transfer_buffer_length
+-				- TRB_LEN(le32_to_cpu(event->transfer_len));
++				td->urb->transfer_buffer_length -
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+ 		else
+ 			td->urb->actual_length = 0;
  
--static void buf_to_pages(const void *buf, size_t buflen,
--		struct page **pages, unsigned int *pgbase)
--{
--	const void *p = buf;
--
--	*pgbase = offset_in_page(buf);
--	p -= *pgbase;
--	while (p < buf + buflen) {
--		*(pages++) = virt_to_page(p);
--		p += PAGE_CACHE_SIZE;
--	}
--}
--
- static int buf_to_pages_noslab(const void *buf, size_t buflen,
- 		struct page **pages, unsigned int *pgbase)
- {
-@@ -3549,9 +3536,19 @@ out:
- 	nfs4_set_cached_acl(inode, acl);
- }
- 
-+/*
-+ * The getxattr API returns the required buffer length when called with a
-+ * NULL buf. The NFSv4 acl tool then calls getxattr again after allocating
-+ * the required buf.  On a NULL buf, we send a page of data to the server
-+ * guessing that the ACL request can be serviced by a page. If so, we cache
-+ * up to the page of ACL data, and the 2nd call to getxattr is serviced by
-+ * the cache. If not so, we throw away the page, and cache the required
-+ * length. The next getxattr call will then produce another round trip to
-+ * the server, this time with the input buf of the required size.
-+ */
- static ssize_t __nfs4_get_acl_uncached(struct inode *inode, void *buf, size_t buflen)
- {
--	struct page *pages[NFS4ACL_MAXPAGES];
-+	struct page *pages[NFS4ACL_MAXPAGES] = {NULL, };
- 	struct nfs_getaclargs args = {
- 		.fh = NFS_FH(inode),
- 		.acl_pages = pages,
-@@ -3566,41 +3563,60 @@ static ssize_t __nfs4_get_acl_uncached(s
- 		.rpc_argp = &args,
- 		.rpc_resp = &res,
- 	};
--	struct page *localpage = NULL;
--	int ret;
-+	int ret = -ENOMEM, npages, i, acl_len = 0;
- 
--	if (buflen < PAGE_SIZE) {
--		/* As long as we're doing a round trip to the server anyway,
--		 * let's be prepared for a page of acl data. */
--		localpage = alloc_page(GFP_KERNEL);
--		resp_buf = page_address(localpage);
--		if (localpage == NULL)
--			return -ENOMEM;
--		args.acl_pages[0] = localpage;
--		args.acl_pgbase = 0;
--		args.acl_len = PAGE_SIZE;
--	} else {
--		resp_buf = buf;
--		buf_to_pages(buf, buflen, args.acl_pages, &args.acl_pgbase);
-+	npages = (buflen + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+	/* As long as we're doing a round trip to the server anyway,
-+	 * let's be prepared for a page of acl data. */
-+	if (npages == 0)
-+		npages = 1;
-+
-+	for (i = 0; i < npages; i++) {
-+		pages[i] = alloc_page(GFP_KERNEL);
-+		if (!pages[i])
-+			goto out_free;
- 	}
--	ret = nfs4_call_sync(NFS_SERVER(inode)->client, NFS_SERVER(inode), &msg, &args.seq_args, &res.seq_res, 0);
-+	if (npages > 1) {
-+		/* for decoding across pages */
-+		args.acl_scratch = alloc_page(GFP_KERNEL);
-+		if (!args.acl_scratch)
-+			goto out_free;
-+	}
-+	args.acl_len = npages * PAGE_SIZE;
-+	args.acl_pgbase = 0;
-+	/* Let decode_getfacl know not to fail if the ACL data is larger than
-+	 * the page we send as a guess */
-+	if (buf == NULL)
-+		res.acl_flags |= NFS4_ACL_LEN_REQUEST;
-+	resp_buf = page_address(pages[0]);
-+
-+	dprintk("%s  buf %p buflen %ld npages %d args.acl_len %ld\n",
-+		__func__, buf, buflen, npages, args.acl_len);
-+	ret = nfs4_call_sync(NFS_SERVER(inode)->client, NFS_SERVER(inode),
-+			     &msg, &args.seq_args, &res.seq_res, 0);
- 	if (ret)
- 		goto out_free;
--	if (res.acl_len > args.acl_len)
--		nfs4_write_cached_acl(inode, NULL, res.acl_len);
-+
-+	acl_len = res.acl_len - res.acl_data_offset;
-+	if (acl_len > args.acl_len)
-+		nfs4_write_cached_acl(inode, NULL, acl_len);
- 	else
--		nfs4_write_cached_acl(inode, resp_buf, res.acl_len);
-+		nfs4_write_cached_acl(inode, resp_buf + res.acl_data_offset,
-+				      acl_len);
- 	if (buf) {
- 		ret = -ERANGE;
--		if (res.acl_len > buflen)
-+		if (acl_len > buflen)
- 			goto out_free;
--		if (localpage)
--			memcpy(buf, resp_buf, res.acl_len);
-+		_copy_from_pages(buf, pages, res.acl_data_offset,
-+				res.acl_len);
- 	}
--	ret = res.acl_len;
-+	ret = acl_len;
- out_free:
--	if (localpage)
--		__free_page(localpage);
-+	for (i = 0; i < npages; i++)
-+		if (pages[i])
-+			__free_page(pages[i]);
-+	if (args.acl_scratch)
-+		__free_page(args.acl_scratch);
- 	return ret;
- }
- 
-@@ -3631,6 +3647,8 @@ static ssize_t nfs4_proc_get_acl(struct
- 		nfs_zap_acl_cache(inode);
- 	ret = nfs4_read_cached_acl(inode, buf, buflen);
- 	if (ret != -ENOENT)
-+		/* -ENOENT is returned if there is no ACL or if there is an ACL
-+		 * but no cached acl data, just the acl length */
- 		return ret;
- 	return nfs4_get_acl_uncached(inode, buf, buflen);
- }
---- a/fs/nfs/nfs4xdr.c
-+++ b/fs/nfs/nfs4xdr.c
-@@ -2374,11 +2374,13 @@ static void nfs4_xdr_enc_getacl(struct r
- 	encode_compound_hdr(xdr, req, &hdr);
- 	encode_sequence(xdr, &args->seq_args, &hdr);
- 	encode_putfh(xdr, args->fh, &hdr);
--	replen = hdr.replen + op_decode_hdr_maxsz + nfs4_fattr_bitmap_maxsz + 1;
-+	replen = hdr.replen + op_decode_hdr_maxsz + 1;
- 	encode_getattr_two(xdr, FATTR4_WORD0_ACL, 0, &hdr);
- 
- 	xdr_inline_pages(&req->rq_rcv_buf, replen << 2,
- 		args->acl_pages, args->acl_pgbase, args->acl_len);
-+	xdr_set_scratch_buffer(xdr, page_address(args->acl_scratch), PAGE_SIZE);
-+
- 	encode_nops(&hdr);
- }
- 
-@@ -4714,17 +4716,18 @@ decode_restorefh(struct xdr_stream *xdr)
- }
- 
- static int decode_getacl(struct xdr_stream *xdr, struct rpc_rqst *req,
--		size_t *acl_len)
-+			 struct nfs_getaclres *res)
- {
--	__be32 *savep;
-+	__be32 *savep, *bm_p;
- 	uint32_t attrlen,
- 		 bitmap[2] = {0};
- 	struct kvec *iov = req->rq_rcv_buf.head;
- 	int status;
- 
--	*acl_len = 0;
-+	res->acl_len = 0;
- 	if ((status = decode_op_hdr(xdr, OP_GETATTR)) != 0)
- 		goto out;
-+	bm_p = xdr->p;
- 	if ((status = decode_attr_bitmap(xdr, bitmap)) != 0)
- 		goto out;
- 	if ((status = decode_attr_length(xdr, &attrlen, &savep)) != 0)
-@@ -4736,18 +4739,30 @@ static int decode_getacl(struct xdr_stre
- 		size_t hdrlen;
- 		u32 recvd;
- 
-+		/* The bitmap (xdr len + bitmaps) and the attr xdr len words
-+		 * are stored with the acl data to handle the problem of
-+		 * variable length bitmaps.*/
-+		xdr->p = bm_p;
-+		res->acl_data_offset = be32_to_cpup(bm_p) + 2;
-+		res->acl_data_offset <<= 2;
-+
- 		/* We ignore &savep and don't do consistency checks on
- 		 * the attr length.  Let userspace figure it out.... */
- 		hdrlen = (u8 *)xdr->p - (u8 *)iov->iov_base;
-+		attrlen += res->acl_data_offset;
- 		recvd = req->rq_rcv_buf.len - hdrlen;
- 		if (attrlen > recvd) {
--			dprintk("NFS: server cheating in getattr"
--					" acl reply: attrlen %u > recvd %u\n",
-+			if (res->acl_flags & NFS4_ACL_LEN_REQUEST) {
-+				/* getxattr interface called with a NULL buf */
-+				res->acl_len = attrlen;
-+				goto out;
-+			}
-+			dprintk("NFS: acl reply: attrlen %u > recvd %u\n",
- 					attrlen, recvd);
- 			return -EINVAL;
+@@ -1993,7 +1993,7 @@ static int process_ctrl_td(struct xhci_h
+ 		/* Maybe the event was for the data stage? */
+ 			td->urb->actual_length =
+ 				td->urb->transfer_buffer_length -
+-				TRB_LEN(le32_to_cpu(event->transfer_len));
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+ 			xhci_dbg(xhci, "Waiting for status "
+ 					"stage event\n");
+ 			return 0;
+@@ -2029,7 +2029,7 @@ static int process_isoc_td(struct xhci_h
+ 	/* handle completion code */
+ 	switch (trb_comp_code) {
+ 	case COMP_SUCCESS:
+-		if (TRB_LEN(le32_to_cpu(event->transfer_len)) == 0) {
++		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) == 0) {
+ 			frame->status = 0;
+ 			break;
  		}
- 		xdr_read_pages(xdr, attrlen);
--		*acl_len = attrlen;
-+		res->acl_len = attrlen;
- 	} else
- 		status = -EOPNOTSUPP;
+@@ -2076,7 +2076,7 @@ static int process_isoc_td(struct xhci_h
+ 				len += TRB_LEN(le32_to_cpu(cur_trb->generic.field[2]));
+ 		}
+ 		len += TRB_LEN(le32_to_cpu(cur_trb->generic.field[2])) -
+-			TRB_LEN(le32_to_cpu(event->transfer_len));
++			EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
  
-@@ -5682,7 +5697,7 @@ nfs4_xdr_dec_getacl(struct rpc_rqst *rqs
- 	status = decode_putfh(xdr);
- 	if (status)
- 		goto out;
--	status = decode_getacl(xdr, rqstp, &res->acl_len);
-+	status = decode_getacl(xdr, rqstp, res);
+ 		if (trb_comp_code != COMP_STOP_INVAL) {
+ 			frame->actual_length = len;
+@@ -2134,7 +2134,7 @@ static int process_bulk_intr_td(struct x
+ 	case COMP_SUCCESS:
+ 		/* Double check that the HW transferred everything. */
+ 		if (event_trb != td->last_trb ||
+-				TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
++		    EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
+ 			xhci_warn(xhci, "WARN Successful completion "
+ 					"on short TX\n");
+ 			if (td->urb->transfer_flags & URB_SHORT_NOT_OK)
+@@ -2162,18 +2162,18 @@ static int process_bulk_intr_td(struct x
+ 				"%d bytes untransferred\n",
+ 				td->urb->ep->desc.bEndpointAddress,
+ 				td->urb->transfer_buffer_length,
+-				TRB_LEN(le32_to_cpu(event->transfer_len)));
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)));
+ 	/* Fast path - was this the last TRB in the TD for this URB? */
+ 	if (event_trb == td->last_trb) {
+-		if (TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
++		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
+ 			td->urb->actual_length =
+ 				td->urb->transfer_buffer_length -
+-				TRB_LEN(le32_to_cpu(event->transfer_len));
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+ 			if (td->urb->transfer_buffer_length <
+ 					td->urb->actual_length) {
+ 				xhci_warn(xhci, "HC gave bad length "
+ 						"of %d bytes left\n",
+-					  TRB_LEN(le32_to_cpu(event->transfer_len)));
++					  EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)));
+ 				td->urb->actual_length = 0;
+ 				if (td->urb->transfer_flags & URB_SHORT_NOT_OK)
+ 					*status = -EREMOTEIO;
+@@ -2217,7 +2217,7 @@ static int process_bulk_intr_td(struct x
+ 		if (trb_comp_code != COMP_STOP_INVAL)
+ 			td->urb->actual_length +=
+ 				TRB_LEN(le32_to_cpu(cur_trb->generic.field[2])) -
+-				TRB_LEN(le32_to_cpu(event->transfer_len));
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+ 	}
  
- out:
- 	return status;
---- a/include/linux/nfs_xdr.h
-+++ b/include/linux/nfs_xdr.h
-@@ -588,11 +588,16 @@ struct nfs_getaclargs {
- 	size_t				acl_len;
- 	unsigned int			acl_pgbase;
- 	struct page **			acl_pages;
-+	struct page *			acl_scratch;
- 	struct nfs4_sequence_args 	seq_args;
+ 	return finish_td(xhci, td, event_trb, event, ep, status, false);
+@@ -2283,7 +2283,7 @@ static int handle_tx_event(struct xhci_h
+ 	 * transfer type
+ 	 */
+ 	case COMP_SUCCESS:
+-		if (TRB_LEN(le32_to_cpu(event->transfer_len)) == 0)
++		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) == 0)
+ 			break;
+ 		if (xhci->quirks & XHCI_TRUST_TX_LENGTH)
+ 			trb_comp_code = COMP_SHORT_TX;
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -831,6 +831,10 @@ struct xhci_transfer_event {
+ 	__le32	flags;
  };
  
-+/* getxattr ACL interface flags */
-+#define NFS4_ACL_LEN_REQUEST	0x0001	/* zero length getxattr buffer */
- struct nfs_getaclres {
- 	size_t				acl_len;
-+	size_t				acl_data_offset;
-+	int				acl_flags;
- 	struct nfs4_sequence_res	seq_res;
- };
++/* Transfer event TRB length bit mask */
++/* bits 0:23 */
++#define	EVENT_TRB_LEN(p)		((p) & 0xffffff)
++
+ /** Transfer Event bit fields **/
+ #define	TRB_TO_EP_ID(p)	(((p) >> 16) & 0x1f)
  
---- a/include/linux/sunrpc/xdr.h
-+++ b/include/linux/sunrpc/xdr.h
-@@ -191,6 +191,8 @@ extern int xdr_decode_array2(struct xdr_
- 			     struct xdr_array2_desc *desc);
- extern int xdr_encode_array2(struct xdr_buf *buf, unsigned int base,
- 			     struct xdr_array2_desc *desc);
-+extern void _copy_from_pages(char *p, struct page **pages, size_t pgbase,
-+			     size_t len);
- 
- /*
-  * Provide some simple tools for XDR buffer overflow-checking etc.
---- a/net/sunrpc/xdr.c
-+++ b/net/sunrpc/xdr.c
-@@ -296,7 +296,7 @@ _copy_to_pages(struct page **pages, size
-  * Copies data into an arbitrary memory location from an array of pages
-  * The copy is assumed to be non-overlapping.
-  */
--static void
-+void
- _copy_from_pages(char *p, struct page **pages, size_t pgbase, size_t len)
- {
- 	struct page **pgfrom;
-@@ -324,6 +324,7 @@ _copy_from_pages(char *p, struct page **
- 
- 	} while ((len -= copy) != 0);
- }
-+EXPORT_SYMBOL_GPL(_copy_from_pages);
- 
- /*
-  * xdr_shrink_bufhead
 
 
