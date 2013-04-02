@@ -1,89 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759056Ab3DBXHQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 19:07:16 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:52698 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757275Ab3DBXHO (ORCPT
+	id S1758228Ab3DBXHk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 19:07:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33033 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933253Ab3DBWMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 19:07:14 -0400
-Date: Wed, 3 Apr 2013 10:07:02 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Weinberger <richard@nod.at>
-Subject: Re: linux-next: manual merge of the vfs tree with the ia64 tree
-Message-Id: <20130403100702.3396b4c87f4867bf5907dcd4@canb.auug.org.au>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1E09672C@ORSMSX108.amr.corp.intel.com>
-References: <20130402112017.8c5e288cbbd31f93788df9d5@canb.auug.org.au>
-	<3908561D78D1C84285E8C5FCA982C28F1E09672C@ORSMSX108.amr.corp.intel.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__3_Apr_2013_10_07_02_+1100_/A1enS5qlO4dKgun"
+	Tue, 2 Apr 2013 18:12:34 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>
+Subject: [ 064/124] USB: oti6858: fix use-after-free in TIOCMIWAIT
+Date: Tue,  2 Apr 2013 15:10:46 -0700
+Message-Id: <20130402221111.603489576@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130402221104.163133110@linuxfoundation.org>
+References: <20130402221104.163133110@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__3_Apr_2013_10_07_02_+1100_/A1enS5qlO4dKgun
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-Hi Tony,
+------------------
 
-On Tue, 2 Apr 2013 16:42:27 +0000 "Luck, Tony" <tony.luck@intel.com> wrote:
->
-> > Today's linux-next merge of the vfs tree got a conflict in
-> > arch/ia64/kernel/palinfo.c between commit 40c275bd92b8 ("[IA64] Fix sta=
-ck
-> > overflow in create_palinfo_proc_entries") from the ia64 tree and commit
-> > d8e904861a28 ("palinfo fixes") from the vfs tree.
-> >
-> > I fixed it up (arbitrarily choosing the vfs tree version) and can carry
-> > the fix as necessary (no action is required).
->=20
-> It looks like you picked the version from the ia64 tree - but it would ha=
-ve
-> been better to pick Al's version. He wastes less space on the stack by on=
-ly
-> declaring cpustr[3+4+1] instead of cpustr[32], but more importantly he
-> checks the return value from proc_mkdir().
+From: Johan Hovold <jhovold@gmail.com>
 
-I actually (effectively) dropped Al's tree due to a build error (after
-making the "correct" choice).  It will be back in today.
+commit 8edfdab37157d2683e51b8be5d3d5697f66a9f7b upstream.
 
-> I'll drop 40c275bd92b8 out of my tree so Al's can go in without a conflic=
-t.
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
 
-OK.
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---Signature=_Wed__3_Apr_2013_10_07_02_+1100_/A1enS5qlO4dKgun
-Content-Type: application/pgp-signature
+---
+ drivers/usb/serial/oti6858.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+--- a/drivers/usb/serial/oti6858.c
++++ b/drivers/usb/serial/oti6858.c
+@@ -188,7 +188,6 @@ struct oti6858_private {
+ 	u8 setup_done;
+ 	struct delayed_work delayed_setup_work;
+ 
+-	wait_queue_head_t intr_wait;
+ 	struct usb_serial_port *port;   /* USB port with which associated */
+ };
+ 
+@@ -339,7 +338,6 @@ static int oti6858_port_probe(struct usb
+ 		return -ENOMEM;
+ 
+ 	spin_lock_init(&priv->lock);
+-	init_waitqueue_head(&priv->intr_wait);
+ 	priv->port = port;
+ 	INIT_DELAYED_WORK(&priv->delayed_setup_work, setup_line);
+ 	INIT_DELAYED_WORK(&priv->delayed_write_work, send_data);
+@@ -664,11 +662,15 @@ static int wait_modem_info(struct usb_se
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 
+ 	while (1) {
+-		wait_event_interruptible(priv->intr_wait,
++		wait_event_interruptible(port->delta_msr_wait,
++					port->serial->disconnected ||
+ 					priv->status.pin_state != prev);
+ 		if (signal_pending(current))
+ 			return -ERESTARTSYS;
+ 
++		if (port->serial->disconnected)
++			return -EIO;
++
+ 		spin_lock_irqsave(&priv->lock, flags);
+ 		status = priv->status.pin_state & PIN_MASK;
+ 		spin_unlock_irqrestore(&priv->lock, flags);
+@@ -763,7 +765,7 @@ static void oti6858_read_int_callback(st
+ 
+ 		if (!priv->transient) {
+ 			if (xs->pin_state != priv->status.pin_state)
+-				wake_up_interruptible(&priv->intr_wait);
++				wake_up_interruptible(&port->delta_msr_wait);
+ 			memcpy(&priv->status, xs, OTI6858_CTRL_PKT_SIZE);
+ 		}
+ 
 
-iQIcBAEBCAAGBQJRW2SWAAoJEECxmPOUX5FEXSMP/AtcRyDsoRfpJBdxRof/VFkW
-roMLEs3K5NyuzQz9noMzirV438AqDNLxNy7KcVtkndYejWHL1H+ziJ1bVIobZPgf
-5ZQ5zLgWXJUb5j9rKvhboa8c4HNMwVgNrCSHZ9QxnJOsQXF8MrDBgTytjL44hUPP
-4uwyt3BNdOfYEzy8sXy3mmEWGAgwQ0IoCT0nO9wZ5WaCsAgzCcP70oYMCmkLKLhE
-bvKFnbi6I9XPOI4ab/UONjXNjadj/hJGp0tQIGDsW2wvCOSB5KYyI9TLd9yAaxpy
-AWB9+dJySMfbYApI0RpAD47uKd5owzGlMOcFPxqDCU0okpOO2AQnjzXGneCSXaGX
-S99JKD744tDZ/ZEiZ4lP4WY+w08pqvNrgYaHZdBTVlwllGM7EdbEk7jfcCe5JncN
-4/cYYR3JwpBufZhQfSP64kYYlQ5/o6I7pTcK1xDSrtmPABKSXgJFCYmvwZJUFVMG
-I/xjtpXEJNFkff8laQhbCZU9Ish2qVAru41l17RGXAiEGWUM+6TiIaAW/oAxFday
-l31iFIGu9qSaoAQt+5l/Z7KIU6ti9NEkp9Egh3rBo1fb/kLqFVFfS8fStSAtdHPA
-XAwhIzup0eym5VTKE7GpinN/wahzDMyGNGRXBDEX/i1lT2PWP4vj9ttJkTIUoF5U
-FzPA+gFOoyFmc6+9uB8X
-=RG64
------END PGP SIGNATURE-----
 
---Signature=_Wed__3_Apr_2013_10_07_02_+1100_/A1enS5qlO4dKgun--
