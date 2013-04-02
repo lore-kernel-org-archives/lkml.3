@@ -1,222 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761911Ab3DBNm1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 09:42:27 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:50132 "EHLO hydra.sisk.pl"
+	id S1761930Ab3DBNnA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 09:43:00 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40781 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761888Ab3DBNmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 09:42:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 linux-next] cpufreq: ondemand: Calculate gradient of CPU load to early increase frequency
-Date: Tue, 02 Apr 2013 15:50 +0200
-Message-ID: <1544183.cq3KaqH8x3@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51561556.7020904@semaphore.gr>
-References: <51253715.7080600@semaphore.gr> <CAKohpokKCrvMYWQCRWccDJHbBNO7km5-vP=d3TwhDyU7HGX-YA@mail.gmail.com> <51561556.7020904@semaphore.gr>
+	id S1760784Ab3DBNm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 09:42:58 -0400
+Date: Tue, 2 Apr 2013 15:42:55 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH V2 2/2] cpufreq: AMD "frequency sensitivity feedback"
+ powersave bias for ondemand governor
+Message-ID: <20130402134255.GD5488@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jacob Shin <jacob.shin@amd.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+	cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Viresh Kumar <viresh.kumar@linaro.org>
+References: <1364495057-14939-1-git-send-email-jacob.shin@amd.com>
+ <1364495057-14939-3-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1364495057-14939-3-git-send-email-jacob.shin@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, March 30, 2013 12:27:34 AM Stratos Karafotis wrote:
-> On 02/22/2013 03:56 AM, Viresh Kumar wrote:
-> > On 21 February 2013 23:09, Stratos Karafotis <stratosk@semaphore.gr> wrote:
-> >
-> >> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> > 
-> > Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-> > 
+On Thu, Mar 28, 2013 at 01:24:17PM -0500, Jacob Shin wrote:
+> Future AMD processors, starting with Family 16h, can provide software
+> with feedback on how the workload may respond to frequency change --
+> memory-bound workloads will not benefit from higher frequency, where
+> as compute-bound workloads will. This patch enables this "frequency
+> sensitivity feedback" to aid the ondemand governor to make better
+> frequency change decisions by hooking into the powersave bias.
 > 
-> Hi Rafael,
-> 
-> In case you are interested in this patch I rebased it to the latest linux-pm/bleeding-edge.
-> 
-> Thanks,
-> Stratos
-> 
-> ------------------------------------------
-> Instead of checking only the absolute value of CPU load_freq to increase
-> frequency, we detect forthcoming CPU load rise and increase frequency
-> earlier.
-> 
-> Every sampling rate, we calculate the gradient of load_freq. If it is
-> too steep we assume that the load most probably will go over
-> up_threshold in next iteration(s) and we increase frequency immediately.
-> 
-> New tuners are introduced:
-> - early_demand: to enable this functionality (disabled by default).
-> - grad_up_threshold: over this gradient of load we will increase
-> frequency immediately.
-
-Do you have any numbers indicating that this actually makes things better?
-
-Rafael
-
-
-> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 > ---
->  drivers/cpufreq/cpufreq_governor.c |  1 +
->  drivers/cpufreq/cpufreq_governor.h |  3 ++
->  drivers/cpufreq/cpufreq_ondemand.c | 59 +++++++++++++++++++++++++++++++++++++-
->  3 files changed, 62 insertions(+), 1 deletion(-)
+>  arch/x86/include/uapi/asm/msr-index.h  |    1 +
+>  drivers/cpufreq/Kconfig.x86            |   10 +++
+>  drivers/cpufreq/Makefile               |    1 +
+>  drivers/cpufreq/amd_freq_sensitivity.c |  147 ++++++++++++++++++++++++++++++++
+>  4 files changed, 159 insertions(+)
+>  create mode 100644 drivers/cpufreq/amd_freq_sensitivity.c
 > 
-> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-> index 41e5e56..1d9abc4 100644
-> --- a/drivers/cpufreq/cpufreq_governor.c
-> +++ b/drivers/cpufreq/cpufreq_governor.c
-> @@ -328,6 +328,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
->  		} else {
->  			od_dbs_info->rate_mult = 1;
->  			od_dbs_info->sample_type = OD_NORMAL_SAMPLE;
-> +			od_dbs_info->prev_load_freq = 0;
->  			od_ops->powersave_bias_init_cpu(cpu);
->  		}
+> diff --git a/arch/x86/include/uapi/asm/msr-index.h b/arch/x86/include/uapi/asm/msr-index.h
+> index 7a060f4..b2e6c49 100644
+> --- a/arch/x86/include/uapi/asm/msr-index.h
+> +++ b/arch/x86/include/uapi/asm/msr-index.h
+> @@ -173,6 +173,7 @@
+>  #define MSR_AMD64_TSC_RATIO		0xc0000104
+>  #define MSR_AMD64_NB_CFG		0xc001001f
+>  #define MSR_AMD64_PATCH_LOADER		0xc0010020
+> +#define MSR_AMD64_FREQ_SENSITIVITY	0xc0010080
+>  #define MSR_AMD64_OSVW_ID_LENGTH	0xc0010140
+>  #define MSR_AMD64_OSVW_STATUS		0xc0010141
+>  #define MSR_AMD64_DC_CFG		0xc0011022
+
+My guess is, this MSR won't be used outside of cpufreq so you probably
+want to define it there, in amd_freq_sensitivity.c
+
+> diff --git a/drivers/cpufreq/Kconfig.x86 b/drivers/cpufreq/Kconfig.x86
+> index d7dc0ed..6c714b0 100644
+> --- a/drivers/cpufreq/Kconfig.x86
+> +++ b/drivers/cpufreq/Kconfig.x86
+> @@ -129,6 +129,16 @@ config X86_POWERNOW_K8
 >  
-> diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
-> index 1f7de13..c33b37a 100644
-> --- a/drivers/cpufreq/cpufreq_governor.h
-> +++ b/drivers/cpufreq/cpufreq_governor.h
-> @@ -95,6 +95,7 @@ struct od_cpu_dbs_info_s {
->  	unsigned int freq_hi_jiffies;
->  	unsigned int rate_mult;
->  	unsigned int sample_type:1;
-> +	unsigned int prev_load_freq;
->  };
+>  	  For details, take a look at <file:Documentation/cpu-freq/>.
 >  
->  struct cs_cpu_dbs_info_s {
-> @@ -113,6 +114,8 @@ struct od_dbs_tuners {
->  	unsigned int adj_up_threshold;
->  	unsigned int powersave_bias;
->  	unsigned int io_is_busy;
-> +	unsigned int grad_up_threshold;
-> +	unsigned int early_demand;
->  };
->  
->  struct cs_dbs_tuners {
-> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-> index 29ed48a..6cd59a7 100644
-> --- a/drivers/cpufreq/cpufreq_ondemand.c
-> +++ b/drivers/cpufreq/cpufreq_ondemand.c
-> @@ -31,6 +31,7 @@
->  #define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
->  #define DEF_FREQUENCY_UP_THRESHOLD		(80)
->  #define DEF_SAMPLING_DOWN_FACTOR		(1)
-> +#define DEF_GRAD_UP_THRESHOLD			(50)
->  #define MAX_SAMPLING_DOWN_FACTOR		(100000)
->  #define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(3)
->  #define MICRO_FREQUENCY_UP_THRESHOLD		(95)
-> @@ -168,11 +169,26 @@ static void od_check_cpu(int cpu, unsigned int load_freq)
->  	struct cpufreq_policy *policy = dbs_info->cdbs.cur_policy;
->  	struct dbs_data *dbs_data = policy->governor_data;
->  	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
-> +	int boost_freq = 0;
->  
->  	dbs_info->freq_lo = 0;
->  
-> +	/*
-> +	 * Calculate the gradient of load_freq. If it is too steep we assume
-> +	 * that the load will go over up_threshold in next iteration(s) and
-> +	 * we increase the frequency immediately
-> +	 */
-> +	if (od_tuners->early_demand) {
-> +		if (load_freq > dbs_info->prev_load_freq &&
-> +		   (load_freq - dbs_info->prev_load_freq >
-> +		    od_tuners->grad_up_threshold * policy->cur))
-> +			boost_freq = 1;
+> +config X86_AMD_FREQ_SENSITIVITY
+> +	tristate "AMD 'frequency sensitivity feedback' powersave bias"
+
+Why in ' '? Isn't that the final name?
+
+> +	depends on CPU_FREQ_GOV_ONDEMAND && X86_ACPI_CPUFREQ
+
+depends on CPU_SUP_AMD
+
+> +	help
+> +	  This adds support for 'frequency sensitivity feedback' feature on
+> +	  supported AMD processors, which hooks into the ondemand governor's
+> +	  powersave bias to influence frequency change decisions.
+
+Your description about the feature in the 0/2 message is much better
+than this one here. How about adding it here too?
+
 > +
-> +		dbs_info->prev_load_freq = load_freq;
+> +	  If in doubt, say N.
+> +
+>  config X86_GX_SUSPMOD
+>  	tristate "Cyrix MediaGX/NatSemi Geode Suspend Modulation"
+>  	depends on X86_32 && PCI
+> diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+> index 863fd18..01dfdaf 100644
+> --- a/drivers/cpufreq/Makefile
+> +++ b/drivers/cpufreq/Makefile
+> @@ -41,6 +41,7 @@ obj-$(CONFIG_X86_SPEEDSTEP_CENTRINO)	+= speedstep-centrino.o
+>  obj-$(CONFIG_X86_P4_CLOCKMOD)		+= p4-clockmod.o
+>  obj-$(CONFIG_X86_CPUFREQ_NFORCE2)	+= cpufreq-nforce2.o
+>  obj-$(CONFIG_X86_INTEL_PSTATE)		+= intel_pstate.o
+> +obj-$(CONFIG_X86_AMD_FREQ_SENSITIVITY)	+= amd_freq_sensitivity.o
+>  
+>  ##################################################################################
+>  # ARM SoC drivers
+> diff --git a/drivers/cpufreq/amd_freq_sensitivity.c b/drivers/cpufreq/amd_freq_sensitivity.c
+> new file mode 100644
+> index 0000000..997feb0
+> --- /dev/null
+> +++ b/drivers/cpufreq/amd_freq_sensitivity.c
+> @@ -0,0 +1,147 @@
+> +/*
+> + * amd_freq_sensitivity.c: AMD "frequency sensitivity feedback" powersave bias
+> + *                         for ondemand governor.
+> + *
+> + * Copyright (C) 2013 Advanced Micro Devices, Inc.
+
+You probably want to leave an email address in here for contacting you
+when it is b0rked. :-)
+
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/types.h>
+> +#include <linux/percpu-defs.h>
+> +#include <linux/init.h>
+> +
+> +#include "cpufreq_governor.h"
+> +
+> +#define PROC_FEEDBACK_INTERFACE_SHIFT		11
+
+Yeah, that's a bit cumbersome. Just define a normal x86 feature bit in
+cpufeature.h and then you can use static_cpu_has below:
+
+	if (!static_cpu_has(AMD_PROC_FEEDBACK_INTERFACE))
+		return -ENODEV;
+
+
+> +#define CLASS_CODE_SHIFT			56
+> +#define CLASS_CODE_MASK				0xff
+> +#define CLASS_CODE_CORE_FREQUENCY_SENSITIVITY	0x01
+> +
+> +static u32 msr_addr;
+> +
+> +struct cpu_data_t {
+> +	u64 actual;
+> +	u64 reference;
+> +	unsigned int freq_prev;
+> +};
+> +
+> +static DEFINE_PER_CPU(struct cpu_data_t, cpu_data);
+> +
+> +static unsigned int amd_powersave_bias_target(struct cpufreq_policy *policy,
+> +		unsigned int freq_next, unsigned int relation)
+
+arg alignment.
+
+> +{
+> +	int sensitivity;
+> +	long d_actual, d_reference;
+> +	struct msr actual, reference;
+> +	struct cpu_data_t *data = &per_cpu(cpu_data, policy->cpu);
+> +	struct dbs_data *od_data = policy->governor_data;
+> +	struct od_dbs_tuners *od_tuners = od_data->tuners;
+> +	struct od_cpu_dbs_info_s *od_info =
+> +		od_data->cdata->get_cpu_dbs_info_s(policy->cpu);
+> +
+> +	rdmsr_on_cpu(policy->cpu, msr_addr, &actual.l, &actual.h);
+> +	rdmsr_on_cpu(policy->cpu, msr_addr + 1, &reference.l, &reference.h);
+> +	actual.h &= 0x00ffffff;
+> +	reference.h &= 0x00ffffff;
+> +
+> +	if (!od_info->freq_table)
+> +		goto out;
+
+Ok, this check is definitely misplaced. So if we don't have
+->freq_table, we can save us the MSR accesses above and simply return
+freq_next, right? So basically you want to push the check before the MSR
+accesses and do:
+
+	if (!od_info->freq_table)
+		return freq_next;
+
+Or am I missing something?
+
+> +
+> +	/* counter wrapped around, so push until next check */
+> +	if (actual.q < data->actual || reference.q < data->reference) {
+> +		freq_next = policy->cur;
+> +		goto out;
 > +	}
 > +
->  	/* Check for frequency increase */
-> -	if (load_freq > od_tuners->up_threshold * policy->cur) {
-> +	if (boost_freq || load_freq > od_tuners->up_threshold * policy->cur) {
->  		/* If switching to max speed, apply sampling_down_factor */
->  		if (policy->cur < policy->max)
->  			dbs_info->rate_mult =
-> @@ -454,12 +470,47 @@ static ssize_t store_powersave_bias(struct cpufreq_policy *policy,
->  	return count;
->  }
->  
-> +static ssize_t store_grad_up_threshold(struct cpufreq_policy *policy,
-> +		const char *buf, size_t count)
-> +{
-> +	struct dbs_data *dbs_data = policy->governor_data;
-> +	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
-> +	unsigned int input;
-> +	int ret;
-> +	ret = sscanf(buf, "%u", &input);
+> +	d_actual = actual.q - data->actual;
+> +	d_reference = reference.q - data->reference;
 > +
-> +	if (ret != 1 || input > MAX_FREQUENCY_UP_THRESHOLD ||
-> +			input < MIN_FREQUENCY_UP_THRESHOLD) {
-> +		return -EINVAL;
+> +	/* divide by 0, so push as well */
+
+What do you mean by "push as well"? No change, right?
+
+> +	if (d_reference == 0) {
+> +		freq_next = policy->cur;
+> +		goto out;
 > +	}
 > +
-> +	od_tuners->grad_up_threshold = input;
-> +	return count;
+> +	sensitivity = 1000 - (1000 * (d_reference - d_actual) / d_reference);
+
+Ok, now this naked 1000 could very well use a define here like you do
+for your other values you're using :-).
+
+> +	if (sensitivity > 1000)
+> +		sensitivity = 1000;
+> +	else if (sensitivity < 0)
+> +		sensitivity = 0;
+
+	clamp(sensitivity, 0, 1000);
+
+> +
+> +	/* this workload is not CPU bound, so choose a lower freq */
+> +	if (sensitivity < od_tuners->powersave_bias) {
+
+Yeah, this ->powersave_bias usage needs more discussion, as Thomas said
+earlier.
+
+> +		if (data->freq_prev == policy->cur)
+> +			freq_next = policy->cur;
+> +
+> +		if (freq_next > policy->cur)
+> +			freq_next = policy->cur;
+> +		else if (freq_next < policy->cur)
+> +			freq_next = policy->min;
+> +		else {
+> +			unsigned int index = 0;
+> +
+> +			cpufreq_frequency_table_target(policy,
+> +				od_info->freq_table, policy->cur - 1,
+> +				CPUFREQ_RELATION_H, &index);
+> +			freq_next = od_info->freq_table[index].frequency;
+> +		}
+> +
+> +		data->freq_prev = freq_next;
+> +	} else
+> +		data->freq_prev = 0;
+> +
+> +out:
+> +	data->actual = actual.q;
+> +	data->reference = reference.q;
+> +	return freq_next;
 > +}
 > +
-> +static ssize_t store_early_demand(struct cpufreq_policy *policy,
-> +		const char *buf, size_t count)
+> +static int __init amd_freq_sensitivity_init(void)
 > +{
-> +	struct dbs_data *dbs_data = policy->governor_data;
-> +	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
-> +	unsigned int input;
-> +	int ret;
+> +	int i;
+> +	u32 eax, edx, dummy;
 > +
-> +	ret = sscanf(buf, "%u", &input);
-> +	if (ret != 1)
-> +		return -EINVAL;
-> +	od_tuners->early_demand = !!input;
-> +	return count;
+> +	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
+> +		return -ENODEV;
+> +
+> +	cpuid(0x80000007, &eax, &dummy, &dummy, &edx);
+> +
+> +	if (!(edx & (1 << PROC_FEEDBACK_INTERFACE_SHIFT)))
+> +		return -ENODEV;
+> +
+> +	for (i = 0; i < (eax & 0xf); i++) {
+> +		u64 val;
+> +		u32 addr = MSR_AMD64_FREQ_SENSITIVITY + (i * 2);
+> +
+> +		rdmsrl(addr, val);
+
+Pls use rdmsrl_safe variant for virtualization's sake and check its
+retval befor using it below.
+
+> +
+> +		if (((val >> CLASS_CODE_SHIFT) & CLASS_CODE_MASK)
+> +			== CLASS_CODE_CORE_FREQUENCY_SENSITIVITY) {
+> +			msr_addr = addr;
+> +			break;
+> +		}
+> +	}
+
+What is this thing doing? There's a whole range of MSRs which can give
+you freq feedback? Or only the two as it is done above for actual and
+reference?
+
+Also, you can simplify the check provided that bits [63:56] denote
+support is present if they're not 0:
+
+	if (val >> CLASS_CODE_SHIFT)
+		msr_addr = addr;
+
+> +
+> +	if (!msr_addr)
+> +		return -ENODEV;
+> +
+> +	od_register_powersave_bias_function(amd_powersave_bias_target);
+> +	return 0;
 > +}
+> +module_init(amd_freq_sensitivity_init);
 > +
->  show_one(od, sampling_rate, sampling_rate);
->  show_one(od, io_is_busy, io_is_busy);
->  show_one(od, up_threshold, up_threshold);
->  show_one(od, sampling_down_factor, sampling_down_factor);
->  show_one(od, ignore_nice, ignore_nice);
->  show_one(od, powersave_bias, powersave_bias);
-> +show_one(od, grad_up_threshold, grad_up_threshold);
-> +show_one(od, early_demand, early_demand);
->  declare_show_sampling_rate_min();
->  
->  cpufreq_freq_attr_rw(sampling_rate);
-> @@ -468,6 +519,8 @@ cpufreq_freq_attr_rw(up_threshold);
->  cpufreq_freq_attr_rw(sampling_down_factor);
->  cpufreq_freq_attr_rw(ignore_nice);
->  cpufreq_freq_attr_rw(powersave_bias);
-> +cpufreq_freq_attr_rw(grad_up_threshold);
-> +cpufreq_freq_attr_rw(early_demand);
->  cpufreq_freq_attr_ro(sampling_rate_min);
->  
->  static struct attribute *dbs_attributes[] = {
-> @@ -478,6 +531,8 @@ static struct attribute *dbs_attributes[] = {
->  	&ignore_nice.attr,
->  	&powersave_bias.attr,
->  	&io_is_busy.attr,
-> +	&grad_up_threshold.attr,
-> +	&early_demand.attr,
->  	NULL
->  };
->  
-> @@ -525,9 +580,11 @@ static int od_init(struct dbs_data *dbs_data)
->  	}
->  
->  	tuners->sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR;
-> +	tuners->grad_up_threshold = DEF_GRAD_UP_THRESHOLD;
->  	tuners->ignore_nice = 0;
->  	tuners->powersave_bias = 0;
->  	tuners->io_is_busy = should_io_be_busy();
-> +	tuners->early_demand = 0;
->  
->  	dbs_data->tuners = tuners;
->  	mutex_init(&dbs_data->mutex);
-> 
+> +static void __exit amd_freq_sensitivity_exit(void)
+> +{
+> +	od_unregister_powersave_bias_function();
+> +}
+> +module_exit(amd_freq_sensitivity_exit);
+> +
+> +MODULE_AUTHOR("Jacob Shin <jacob.shin@amd.com>");
+> +MODULE_DESCRIPTION("AMD 'frequency sensitivity feedback' powersave bias for "
+> +		"the ondemand governor.");
+> +MODULE_LICENSE("GPL");
+
+Thanks.
+
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
