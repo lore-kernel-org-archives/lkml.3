@@ -1,176 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932621Ab3DBP05 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 11:26:57 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:65279 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932437Ab3DBP04 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 11:26:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] arm-soc fixes for 3.9-rc5
-Date: Tue, 2 Apr 2013 15:26:48 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-13-generic; KDE/4.3.2; x86_64; ; )
-Cc: "arm@kernel.org" <arm@kernel.org>,
+	id S932639Ab3DBP3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 11:29:40 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:58729
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932341Ab3DBP3j convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 11:29:39 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz9371I542I1432Izz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dh8275bhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
+From: Yoder Stuart-B08248 <B08248@freescale.com>
+To: Sethi Varun-B16395 <B16395@freescale.com>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>
+Subject: RE: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu
+ implementation.
+Thread-Topic: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu
+ implementation.
+Thread-Index: AQHOK+8tO/4GVyqmPkuty25lenzG/ZjDFW0g
+Date: Tue, 2 Apr 2013 15:29:19 +0000
+Message-ID: <9F6FE96B71CF29479FF1CDC8046E15035A0D34@039-SN1MPN1-003.039d.mgd.msft.net>
+References: <1364500442-20927-1-git-send-email-Varun.Sethi@freescale.com>
+ <1364500442-20927-6-git-send-email-Varun.Sethi@freescale.com>
+In-Reply-To: <1364500442-20927-6-git-send-email-Varun.Sethi@freescale.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.214.137.163]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304021526.48872.arnd@arndb.de>
-X-Provags-ID: V02:K0:+PiMfr/wLs8UYmsD7E1v0jIXUbW8qhFUxYTG2YrVz7b
- qhaNxUqgc7wPryQKmSqX7j3Fx3CG5/BwuNuva7ABOcWCnSUDgi
- mkTuKjJhoNiJZiIZJFNEnaGF1tsLt0Dtj92LBwxXlTd8V+vmpt
- YBKrvo0POm8wX7M7vMWbFbApMbTWK8pgvhMQF4yFabMZ+R6UJK
- bxJpS+P76oio1cOXr686qr8sz6DsLwi/GhGRQiYuIoI23RsMEF
- eWptt2JlKCLvbww1HNRTb4qVoo00WGMN4c324jqKp/qsc7Ar5v
- WuNbfMJA8Gw0D+M6YTA0rKUBxNItfpxYSUu9ZKlrqhfWzrijB1
- qHRZU+1yjPVhRe3ldKzQ=
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 8bb9660418e05bb1845ac1a2428444d78e322cc7:
 
-  Linux 3.9-rc4 (2013-03-23 16:52:44 -0700)
+> -----Original Message-----
+> From: Sethi Varun-B16395
+> Sent: Thursday, March 28, 2013 2:54 PM
+> To: joro@8bytes.org; Yoder Stuart-B08248; Wood Scott-B07421; iommu@lists.linux-foundation.org; linuxppc-
+> dev@lists.ozlabs.org; linux-kernel@vger.kernel.org; galak@kernel.crashing.org; benh@kernel.crashing.org
+> Cc: Sethi Varun-B16395
+> Subject: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu implementation.
+> 
+> Following is a brief description of the PAMU hardware:
+> PAMU determines what action to take and whether to authorize the action on
+> the basis of the memory address, a Logical IO Device Number (LIODN), and
+> PAACT table (logically) indexed by LIODN and address. Hardware devices which
+> need to access memory must provide an LIODN in addition to the memory address.
+> 
+> Peripheral Access Authorization and Control Tables (PAACTs) are the primary
+> data structures used by PAMU. A PAACT is a table of peripheral access
+> authorization and control entries (PAACE).Each PAACE defines the range of
+> I/O bus address space that is accessible by the LIOD and the associated access
+> capabilities.
+> 
+> There are two types of PAACTs: primary PAACT (PPAACT) and secondary PAACT
+> (SPAACT).A given physical I/O device may be able to act as one or more
+> independent logical I/O devices (LIODs). Each such logical I/O device is
+> assigned an identifier called logical I/O device number (LIODN). A LIODN is
+> allocated a contiguous portion of the I/O bus address space called the DSA window
+> for performing DSA operations. The DSA window may optionally be divided into
+> multiple sub-windows, each of which may be used to map to a region in system
+> storage space. The first sub-window is referred to as the primary sub-window
+> and the remaining are called secondary sub-windows.
+> 
+> This patch provides the PAMU driver (fsl_pamu.c) and the corresponding IOMMU
+> API implementation (fsl_pamu_domain.c). The PAMU hardware driver (fsl_pamu.c)
+> has been derived from the work done by Ashish Kalra and Timur Tabi.
+> 
+> Signed-off-by: Timur Tabi <<timur@tabi.org>
+> Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
+> ---
+> changes in v11:
+> - changed iova to dma_addr_t in iova_to_phys API.
+> changes in v10:
+> - Support for new guts compatibe string for T4 & B4 devices.
+> - Modified comment about port ID and mentioned the errata number.
+> - Fixed the issue where data pointer was not freed in case of a an error.
+> - Pass data pointer while freeing irq.
+> - Whle initializing the SPAACE entry clear the valid bit.
+> changes in v9:
+> - Merged and createad a single function to delete
+> a device from domain list.
+> - Refactored the add_device API code.
+> - Renamed the paace and spaace init fucntions.
+> - Renamed functions for mapping windows and subwindows.
+> - Changed the MAX LIODN value to MAX value u-boot can
+> program.
+> - Hard coded maximum number of subwindows.
+> changes in v8:
+> - implemented the new API for window based IOMMUs.
+> changes in v7:
+> - Set max_subwidows in the geometry attribute.
+> - Add checking for maximum supported LIODN value.
+> - Use upper_32_bits and lower_32_bits macros while
+>   intializing PAMU data structures.
+> changes in v6:
+> - Simplified complex conditional statements.
+> - Fixed indentation issues.
+> - Added comments for IOMMU API implementation.
+> changes in v5:
+> - Addressed comments from Timur.
+> changes in v4:
+> - Addressed comments from Timur and Scott.
+> changes in v3:
+> - Addressed comments by Kumar Gala
+> - dynamic fspi allocation
+> - fixed alignment check in map and unmap
+>  arch/powerpc/sysdev/fsl_pci.h   |    5 +
+>  drivers/iommu/Kconfig           |    8 +
+>  drivers/iommu/Makefile          |    1 +
+>  drivers/iommu/fsl_pamu.c        | 1269 +++++++++++++++++++++++++++++++++++++++
+>  drivers/iommu/fsl_pamu.h        |  405 +++++++++++++
+>  drivers/iommu/fsl_pamu_domain.c | 1137 +++++++++++++++++++++++++++++++++++
+>  drivers/iommu/fsl_pamu_domain.h |   85 +++
+>  7 files changed, 2910 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/iommu/fsl_pamu.c
+>  create mode 100644 drivers/iommu/fsl_pamu.h
+>  create mode 100644 drivers/iommu/fsl_pamu_domain.c
+>  create mode 100644 drivers/iommu/fsl_pamu_domain.h
 
-are available in the git repository at:
+Ack.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes
+Stuart
 
-for you to fetch changes up to 06d1d8c85700884940346f20d10b3a22c331b5e9:
-
-  Merge tag 'v3.9-rc1_cns3xxx_fixes' of git://git.infradead.org/users/cbou/linux-cns3xxx into fixes (2013-04-02 16:09:45 +0200)
-
-----------------------------------------------------------------
-
-arm-soc: bug fixes for 3.9-rc5
-
-After a quiet set of fixes for 3.9-rc4, a lot of people woke up and sent
-urgent fixes for 3.9. I pushed back on a number of them that got
-deferred to 3.10, but these are the ones that seemed important.
-
-Regression in 3.9:
-
-- Multiple regressions in OMAP2+ clock cleanup
-- SH-Mobile frame buffer bug fix that merged here because of maintainer MIA
-- ux500 prcmu changes broke DT booting
-- MMCI duplicated regulator setup on ux500
-- New ux500 clock driver broke ethernet on snowball
-- Local interrupt driver for mvebu broke ethernet
-- MVEBU GPIO driver did not get set up right on Orion DT
-- incorrect interrupt number on Orion crypto for DT
-
-Long-standing bugs, including candidates for stable:
-
-- Kirkwood MMC needs to disable invalid card detect pins
-- MV SDIO pinmux was wrong on Mirabox
-- GoFlex Net board file needs to set NAND chip delay
-- MSM timer restart race
-- ep93xx early debug code broke in 3.7
-- i.MX CPU hotplug race
-- Incorrect clock setup for OMAP1 USB
-- Workaround for bad clock setup by some old OMAP4 boot loaders
-- Static I/O mappings on cns3xxx since 3.2
-
-----------------------------------------------------------------
-Aaro Koskinen (1):
-      ARM: OMAP1: fix USB host on 1710
-
-Alexander Clouter (2):
-      arm: orion5x: fix orion5x.dtsi gpio parameters
-      arm: orion5x: correct IRQ used in dtsi for mv_cesa
-
-Arnd Bergmann (8):
-      Merge tag 'msm-fix-3.9' of git://git.kernel.org/.../davidb/linux-msm into fixes
-      Merge tag 'renesas-fbdev-fixes-for-v3.9' of git://git.kernel.org/.../horms/renesas into fixes
-      Merge tag 'omap-for-v3.9-rc3/fixes-signed' of git://git.kernel.org/.../tmlind/linux-omap into fixes
-      Merge tag 'ux500-fixes-for-v3.9' of git://git.kernel.org/.../linusw/linux-stericsson into fixes
-      Merge tag 'imx-fixes-3.9-4' of git://git.linaro.org/people/shawnguo/linux-2.6 into fixes
-      Merge tag 'ep93xx-fixes-for-3.9-rc5' of git://github.com/RyanMallon/linux-ep93xx into fixes
-      Merge tag 'mvebu_fixes_for_v3.9_round2' of git://git.infradead.org/users/jcooper/linux into fixes
-      Merge tag 'v3.9-rc1_cns3xxx_fixes' of git://git.infradead.org/users/cbou/linux-cns3xxx into fixes
-
-Eric Hutter (1):
-      ARM: kirkwood: Fix chip-delay for GoFlex Net
-
-Grazvydas Ignotas (1):
-      ARM: OMAP3: hwmod data: keep MIDLEMODE in force-standby for musb
-
-Gregory CLEMENT (1):
-      arm: mvebu: Use local interrupt only for the timer 0
-
-H Hartley Sweeten (1):
-      ARM: ep93xx: Fix wait for UART FIFO to be empty
-
-Jon Hunter (1):
-      ARM: OMAP4: clock data: lock USB DPLL on boot
-
-Kuninori Morimoto (1):
-      fbdev: sh_mobile_lcdc: fixup B side hsync adjust settings
-
-Lee Jones (3):
-      ARM: ux500: Apply the TCPM and TCDM locations and sizes to dbx5x0 DT
-      ARM: ux500: Stop passing ios_handler() as an MMCI power controlling call-back
-      ARM: ux500: Enable the clock controlling Ethernet on Snowball
-
-Mac Lin (1):
-      ARM: cns3xxx: fix mapping of private memory region
-
-Paul Walmsley (1):
-      ARM: OMAP4: PM: fix PM regression introduced by recent clock cleanup
-
-Rajendra Nayak (1):
-      ARM: OMAP: clocks: Delay clk inits atleast until slab is initialized
-
-Ryan Press (1):
-      arm: mvebu: Fix pinctrl for Armada 370 Mirabox SDIO port.
-
-Sebastian Hesselbarth (1):
-      ARM: Kirkwood: fix unused mvsdio gpio pins
-
-Shawn Guo (2):
-      ARM: imx: add dependency check for DEBUG_IMX_UART_PORT
-      ARM: imx: fix sync issue between imx_cpu_die and imx_cpu_kill
-
-Stephen Boyd (1):
-      ARM: msm: Stop counting before reprogramming clockevent
-
-Tony Lindgren (1):
-      Merge tag 'omap-fixes-a-for-3.9-rc' of git://git.kernel.org/.../pjw/omap-pending into omap-for-v3.9-rc3/fixes
-
- arch/arm/Kconfig.debug                         |  1 +
- arch/arm/boot/dts/armada-370-mirabox.dts       |  2 +-
- arch/arm/boot/dts/armada-370.dtsi              |  6 ++++++
- arch/arm/boot/dts/dbx5x0.dtsi                  |  4 ++--
- arch/arm/boot/dts/kirkwood-goflexnet.dts       |  1 +
- arch/arm/boot/dts/orion5x.dtsi                 |  9 +++++++--
- arch/arm/mach-cns3xxx/core.c                   | 16 +++-------------
- arch/arm/mach-cns3xxx/include/mach/cns3xxx.h   | 16 ++++++++--------
- arch/arm/mach-ep93xx/include/mach/uncompress.h | 10 +++++++---
- arch/arm/mach-imx/common.h                     |  2 ++
- arch/arm/mach-imx/hotplug.c                    | 12 ++++++++++++
- arch/arm/mach-imx/src.c                        | 12 ++++++++++++
- arch/arm/mach-kirkwood/guruplug-setup.c        |  2 ++
- arch/arm/mach-kirkwood/openrd-setup.c          |  1 +
- arch/arm/mach-kirkwood/rd88f6281-setup.c       |  1 +
- arch/arm/mach-msm/timer.c                      |  5 ++++-
- arch/arm/mach-mvebu/irq-armada-370-xp.c        |  8 +++++---
- arch/arm/mach-omap1/clock_data.c               | 12 +-----------
- arch/arm/mach-omap2/cclock44xx_data.c          | 20 ++++++++++++++++++++
- arch/arm/mach-omap2/common.h                   |  3 +++
- arch/arm/mach-omap2/io.c                       | 18 ++++++++++++------
- arch/arm/mach-omap2/omap_hwmod.c               |  7 +++++--
- arch/arm/mach-omap2/omap_hwmod.h               |  9 +++++++--
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c     |  7 ++++++-
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c     |  6 ++++++
- arch/arm/mach-omap2/timer.c                    |  4 ++++
- arch/arm/mach-ux500/board-mop500-sdi.c         |  1 -
- arch/arm/mach-ux500/board-mop500.c             | 12 ++++++++++++
- arch/arm/mach-ux500/board-mop500.h             |  1 +
- arch/arm/mach-ux500/cpu-db8500.c               |  5 +++--
- drivers/video/sh_mobile_lcdcfb.c               |  1 +
- 31 files changed, 156 insertions(+), 58 deletions(-)
