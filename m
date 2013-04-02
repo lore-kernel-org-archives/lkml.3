@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933121Ab3DBSsk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 14:48:40 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:37742 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932890Ab3DBSsi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 14:48:38 -0400
+	id S933141Ab3DBSsx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 14:48:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56885 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932977Ab3DBSsv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 14:48:51 -0400
+Message-ID: <515B2802.1050405@zytor.com>
+Date: Tue, 02 Apr 2013 11:48:34 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:c028]
-In-Reply-To: <1364297952-32473-1-git-send-email-nicolas.ferre@atmel.com>
-References: <1364201369-12047-1-git-send-email-nicolas.ferre@atmel.com>
-	<1364297952-32473-1-git-send-email-nicolas.ferre@atmel.com>
-Date: Tue, 2 Apr 2013 11:48:36 -0700
-Message-ID: <CAOesGMj+etPUMWffx2CiDtbWbB9A5_6QPbkTsmbEqCiBnkhm3A@mail.gmail.com>
-Subject: Re: [PATCH v2] ARM: at91: add Acme Systems Aria G25 board
-From: Olof Johansson <olof@lixom.net>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        tanzilli@acmesystems.it, dgilbert@interlog.com,
-        Robert.Nelson@digikey.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Frantisek Hrbata <fhrbata@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, oleg@redhat.com,
+        kamaleshb@in.ibm.com, hechjie@cn.ibm.com
+Subject: Re: [PATCH] x86: add phys addr validity check for /dev/mem mmap
+References: <1364905733-23937-1-git-send-email-fhrbata@redhat.com>
+In-Reply-To: <1364905733-23937-1-git-send-email-fhrbata@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04/02/2013 05:28 AM, Frantisek Hrbata wrote:
+> 
+> diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
+> index d8e8eef..39607c6 100644
+> --- a/arch/x86/include/asm/io.h
+> +++ b/arch/x86/include/asm/io.h
+> @@ -242,6 +242,10 @@ static inline void flush_write_buffers(void)
+>  #endif
+>  }
+>  
+> +#define ARCH_HAS_VALID_PHYS_ADDR_RANGE
+> +extern int valid_phys_addr_range(phys_addr_t addr, size_t count);
+> +extern int valid_mmap_phys_addr_range(unsigned long pfn, size_t count);
+> +
+>  #endif /* __KERNEL__ */
+>  
+>  extern void native_io_delay(void);
+> diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+> index 845df68..92ec31c 100644
+> --- a/arch/x86/mm/mmap.c
+> +++ b/arch/x86/mm/mmap.c
+> @@ -31,6 +31,8 @@
+>  #include <linux/sched.h>
+>  #include <asm/elf.h>
+>  
+> +#include "physaddr.h"
+> +
+>  struct __read_mostly va_alignment va_align = {
+>  	.flags = -1,
+>  };
+> @@ -122,3 +124,14 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+>  		mm->unmap_area = arch_unmap_area_topdown;
+>  	}
+>  }
+> +
+> +int valid_phys_addr_range(phys_addr_t addr, size_t count)
+> +{
+> +	return addr + count <= __pa(high_memory);
+> +}
+> +
+> +int valid_mmap_phys_addr_range(unsigned long pfn, size_t count)
+> +{
+> +	resource_size_t addr = (pfn << PAGE_SHIFT) + count;
+> +	return phys_addr_valid(addr);
+> +}
+> 
 
-I just saw this since it came in through a pull request
+Good initiative, but I think the implementation is worong.  I suspect we
+should use the number of physical address bits supported rather than
+high_memory, since it is common and legal to use /dev/mem to access I/O
+resources that are beyond the last byte of RAM.
 
-On Tue, Mar 26, 2013 at 4:39 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
-> From: Douglas Gilbert <dgilbert@interlog.com>
->
-> Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
->  arch/arm/boot/dts/ariag25.dts | 175 ++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 175 insertions(+)
->  create mode 100644 arch/arm/boot/dts/ariag25.dts
->
-> diff --git a/arch/arm/boot/dts/ariag25.dts b/arch/arm/boot/dts/ariag25.dts
-> new file mode 100644
-> index 0000000..b43266f
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/ariag25.dts
+	-hpa
 
-Please prefix the boards with the platform. Most other SoCs already do
-this, and I see now that some at91 boards haven't been prefixed in the
-past, but it's a good idea to not add more of them.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-So, at91-ariag25.dts is a good name in this case.
-
-
--Olof
