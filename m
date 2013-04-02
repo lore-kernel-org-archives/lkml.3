@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932496Ab3DBOxS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 10:53:18 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:61528 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932213Ab3DBOxR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 10:53:17 -0400
-X-IronPort-AV: E=Sophos;i="4.87,394,1363132800"; 
-   d="scan'208";a="16127942"
-Message-ID: <515AF0D9.80805@citrix.com>
-Date: Tue, 2 Apr 2013 15:53:13 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
+	id S932366Ab3DBOzl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 10:55:41 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:56629 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1760270Ab3DBOzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 10:55:39 -0400
+Date: Tue, 2 Apr 2013 09:55:36 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Nathan Zimmer <nzimmer@sgi.com>, rjw@sisk.pl, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 1/2] cpufreq: split the cpufreq_driver_lock and use
+	the rcu
+Message-ID: <20130402145536.GA31757@gulag1.americas.sgi.com>
+References: <5159C147.70800@sgi.com> <1364847069-2887-1-git-send-email-nzimmer@sgi.com> <1364847069-2887-2-git-send-email-nzimmer@sgi.com> <CAKohpok7MR28trAddHRi5Lcg0bGBHBnOfJO=yu7SQqGnV5ZCRg@mail.gmail.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: <linux-kernel@vger.kernel.org>, <xen-devel@lists.xensource.com>,
-        Keir Fraser <keir.fraser@citrix.com>
-Subject: Re: [Xen-devel] [PATCH] xen/evtchn: Handle VIRQ_TIMER before any
- other hardirq in event loop.
-References: <1364825261-25324-1-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1364825261-25324-1-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKohpok7MR28trAddHRi5Lcg0bGBHBnOfJO=yu7SQqGnV5ZCRg@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/13 15:07, Konrad Rzeszutek Wilk wrote:
-> From: Keir Fraser <keir.fraser@citrix.com>
+On Tue, Apr 02, 2013 at 10:35:46AM +0530, Viresh Kumar wrote:
+> On 2 April 2013 01:41, Nathan Zimmer <nzimmer@sgi.com> wrote:
+> > diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
 > 
-> This avoids any other hardirq handler seeing a very stale jiffies
-> value immediately after wakeup from a long idle period. The one
-> observable symptom of this was a USB keyboard, with software keyboard
-> repeat, which would always repeat a key immediately that it was
-> pressed. This is due to the key press waking the guest, the key
-> handler immediately runs, sees an old jiffies value, and then that
-> jiffies value significantly updated, before the key is unpressed.
+> > +static struct cpufreq_driver __rcu *cpufreq_driver;
+> > +static DEFINE_SPINLOCK(cpufreq_driver_lock);
+> 
+> You really need this lock? This is only used in cpufreq_register_driver
+> and unregister_driver... And it doesn't protect other routines at all. And
+> because we are using rcu stuff now, probably this lock is just not required.
+> 
+The lock is unneeded if we expect register and unregister driver to not be
+called from muliple threads at once.  I didn't make that assumption.
 
-It's a bit of hack but what else can you do when there is no generic
-mechanism to have different event priorities.
-
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-
-The subject should be prefixed with: "xen/events" as this isn't a patch
-to the evtchn driver.
-
-David
+> > +static DEFINE_SPINLOCK(cpufreq_data_lock);
+> 
+> Only this one is required and it can be the rwlock which is already pushed
+> by rafael.
