@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762324Ab3DCOBS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:01:18 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59853 "EHLO
+	id S1762258Ab3DCOBQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:01:16 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58747 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758148Ab3DCOBK (ORCPT
+	by vger.kernel.org with ESMTP id S1758194Ab3DCOBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:01:10 -0400
-X-Sasl-enc: K7/PU0xDS5+h4XUSA731piQg43LviW+6MJAVaV1oOAnh 1364997669
+	Wed, 3 Apr 2013 10:01:08 -0400
+X-Sasl-enc: mGwEaavf9nwQXZBLtUZLFlMe9OIIS4KY+jx2VUFJcjMx 1364997667
 From: Alan Ott <alan@signal11.us>
 To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
 Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, Alan Ott <alan@signal11.us>
-Subject: [PATCH v2 4/4] 6lowpan: handle dev_queue_xmit() error code properly
-Date: Wed,  3 Apr 2013 10:00:58 -0400
-Message-Id: <1364997658-16498-5-git-send-email-alan@signal11.us>
+Subject: [PATCH v2 1/4] mac802154: Do not try to resend failed packets
+Date: Wed,  3 Apr 2013 10:00:55 -0400
+Message-Id: <1364997658-16498-2-git-send-email-alan@signal11.us>
 X-Mailer: git-send-email 1.7.11.2
 In-Reply-To: <1364997658-16498-1-git-send-email-alan@signal11.us>
 References: <1364928481-1813-1-git-send-email-alan@signal11.us>
@@ -25,34 +25,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dev_queue_xmit() will return a positive value if the packet could not be
-queued, often because the real network device (in our case the mac802154
-wpan device) has its queue stopped.  lowpan_xmit() should handle the
-positive return code (for the debug statement) and return that value to
-the higher layer so the higher layer will retry sending the packet.
+When ops->xmit() fails, drop the packet. Devices which support hardware
+ack and retry (which include all devices currently supported by mainline),
+will automatically retry sending the packet (in the hardware) up to 3
+times, per the 802.15.4 spec.  There is no need, and it is incorrect to
+try to do it in mac802154.
 
 Signed-off-by: Alan Ott <alan@signal11.us>
 ---
- net/ieee802154/6lowpan.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/mac802154/mac802154.h |  2 --
+ net/mac802154/tx.c        | 12 ++----------
+ 2 files changed, 2 insertions(+), 12 deletions(-)
 
-diff --git a/net/ieee802154/6lowpan.c b/net/ieee802154/6lowpan.c
-index e1b4580..55e1fd5 100644
---- a/net/ieee802154/6lowpan.c
-+++ b/net/ieee802154/6lowpan.c
-@@ -1139,10 +1139,10 @@ static netdev_tx_t lowpan_xmit(struct sk_buff *skb, struct net_device *dev)
- error:
- 	dev_kfree_skb(skb);
+diff --git a/net/mac802154/mac802154.h b/net/mac802154/mac802154.h
+index 21fa386..5c9e021 100644
+--- a/net/mac802154/mac802154.h
++++ b/net/mac802154/mac802154.h
+@@ -88,8 +88,6 @@ struct mac802154_sub_if_data {
+ 
+ #define mac802154_to_priv(_hw)	container_of(_hw, struct mac802154_priv, hw)
+ 
+-#define MAC802154_MAX_XMIT_ATTEMPTS	3
+-
+ #define MAC802154_CHAN_NONE		(~(u8)0) /* No channel is assigned */
+ 
+ extern struct ieee802154_reduced_mlme_ops mac802154_mlme_reduced;
+diff --git a/net/mac802154/tx.c b/net/mac802154/tx.c
+index 4e09d07..7264874 100644
+--- a/net/mac802154/tx.c
++++ b/net/mac802154/tx.c
+@@ -39,7 +39,6 @@ struct xmit_work {
+ 	struct mac802154_priv *priv;
+ 	u8 chan;
+ 	u8 page;
+-	u8 xmit_attempts;
+ };
+ 
+ static void mac802154_xmit_worker(struct work_struct *work)
+@@ -60,18 +59,12 @@ static void mac802154_xmit_worker(struct work_struct *work)
+ 	}
+ 
+ 	res = xw->priv->ops->xmit(&xw->priv->hw, xw->skb);
++	if (res)
++		pr_debug("transmission failed\n");
+ 
  out:
--	if (err < 0)
-+	if (err)
- 		pr_debug("ERROR: xmit failed\n");
+ 	mutex_unlock(&xw->priv->phy->pib_lock);
  
--	return (err < 0 ? NETDEV_TX_BUSY : NETDEV_TX_OK);
-+	return (err < 0) ? NET_XMIT_DROP : err;
- }
+-	if (res) {
+-		if (xw->xmit_attempts++ < MAC802154_MAX_XMIT_ATTEMPTS) {
+-			queue_work(xw->priv->dev_workqueue, &xw->work);
+-			return;
+-		} else
+-			pr_debug("transmission failed for %d times",
+-				 MAC802154_MAX_XMIT_ATTEMPTS);
+-	}
  
- static struct wpan_phy *lowpan_get_phy(const struct net_device *dev)
+ 	dev_kfree_skb(xw->skb);
+ 
+@@ -114,7 +107,6 @@ netdev_tx_t mac802154_tx(struct mac802154_priv *priv, struct sk_buff *skb,
+ 	work->priv = priv;
+ 	work->page = page;
+ 	work->chan = chan;
+-	work->xmit_attempts = 0;
+ 
+ 	queue_work(priv->dev_workqueue, &work->work);
+ 
 -- 
 1.7.11.2
 
