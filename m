@@ -1,48 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760753Ab3DCIRw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 04:17:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26671 "EHLO mga02.intel.com"
+	id S1760885Ab3DCISr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 04:18:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55536 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760653Ab3DCIRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 04:17:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,399,1363158000"; 
-   d="scan'208";a="288645431"
-Message-ID: <515BE597.20901@intel.com>
-Date: Wed, 03 Apr 2013 16:17:27 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1760803Ab3DCISo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 04:18:44 -0400
+Date: Wed, 3 Apr 2013 10:18:43 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Glauber Costa <glommer@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH -v2] memcg: don't do cleanup manually if
+ mem_cgroup_css_online() fails
+Message-ID: <20130403081843.GC14384@dhcp22.suse.cz>
+References: <515A8A40.6020406@huawei.com>
+ <20130402121600.GK24345@dhcp22.suse.cz>
+ <20130402141646.GQ24345@dhcp22.suse.cz>
+ <515AE948.1000704@parallels.com>
+ <20130402142825.GA32520@dhcp22.suse.cz>
+ <515AEC3A.2030401@parallels.com>
+ <20130402150422.GB32520@dhcp22.suse.cz>
+ <515BA6C9.2000704@huawei.com>
+ <20130403074300.GA14384@dhcp22.suse.cz>
+ <515BDEF2.1080900@huawei.com>
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch v6 0/21] sched: power aware scheduling
-References: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
-In-Reply-To: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515BDEF2.1080900@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/30/2013 10:34 PM, Alex Shi wrote:
-> This patch set implement/consummate the rough power aware scheduling
-> proposal: https://lkml.org/lkml/2012/8/13/139.
+On Wed 03-04-13 15:49:06, Li Zefan wrote:
+> On 2013/4/3 15:43, Michal Hocko wrote:
+> > On Wed 03-04-13 11:49:29, Li Zefan wrote:
+> >>>> Yes, indeed you are very right - and thanks for looking at such depth.
+> >>>
+> >>> So what about the patch bellow? It seems that I provoked all this mess
+> >>> but my brain managed to push it away so I do not remember why I thought
+> >>> the parent needs reference drop... It is "only" 3.9 thing fortunately.
+> >>> ---
+> >>> >From 3aff5d958f1d0717795018f7d0d6b63d53ad1dd3 Mon Sep 17 00:00:00 2001
+> >>> From: Li Zefan <lizefan@huawei.com>
+> >>> Date: Tue, 2 Apr 2013 16:37:39 +0200
+> >>> Subject: [PATCH] memcg: don't do cleanup manually if mem_cgroup_css_online()
+> >>>  fails
+> >>>
+> >>> mem_cgroup_css_online is called with memcg with refcnt = 1 and it
+> >>> expects that mem_cgroup_css_free will drop this last reference.
+> >>> This doesn't hold when memcg_init_kmem fails though and a reference is
+> >>> dropped for both memcg and its parent explicitly if it returns with an
+> >>> error.
+> >>>
+> >>> This is not correct for two reasons. Firstly mem_cgroup_put on parent is
+> >>> excessive because mem_cgroup_put is hierarchy aware and secondly only
+> >>> memcg_propagate_kmem takes an additional reference.
+> >>>
+> >>> The first one is a real use-after-free bug introduced by e4715f01
+> >>> (memcg: avoid dangling reference count in creation failure)
+> >>>
+> >>> The later one is non-issue right now because the only implementation
+> >>> of init_cgroup seems to be tcp_init_cgroup which doesn't fail
+> >>> but it is better to make the error handling saner and move the
+> >>> mem_cgroup_put(memcg) to memcg_propagate_kmem where it belongs.
+> >>>
+> >>> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> >>> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> >>> ---
+> >>>  mm/memcontrol.c |   13 +++----------
+> >>>  1 file changed, 3 insertions(+), 10 deletions(-)
+> >>>
+> >>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> >>> index f608546..cf9ba7e 100644
+> >>> --- a/mm/memcontrol.c
+> >>> +++ b/mm/memcontrol.c
+> >>> @@ -5306,6 +5306,8 @@ static int memcg_propagate_kmem(struct mem_cgroup *memcg)
+> >>>  	ret = memcg_update_cache_sizes(memcg);
+> >>>  	mutex_unlock(&set_limit_mutex);
+> >>>  out:
+> >>> +	if (ret)
+> >>> +		mem_cgroup_put(memcg);
+> >>
+> >> Correct me if I'm wrong, but I think:
+> >>
+> >> When memcg_propagate_kmem() calls mem_cgroup_get(), it's because the kmemcg
+> >> is active by inheritance. Then when memcg_update_cache_sizes() fails, leading
+> >> to mem_cgroup_css_free() is called by cgroup core:
+> >>
+> >> static void mem_cgroup_css_free(struct cgroup *cont)
+> >> {
+> >>         struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+> >>
+> >>         kmem_cgroup_destroy(memcg);
+> >>
+> >>         mem_cgroup_put(memcg);
+> >> }
+> >>
+> >> static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
+> >> {
+> >>         mem_cgroup_sockets_destroy(memcg);
+> >>
+> >>         memcg_kmem_mark_dead(memcg);
+> >>
+> >>         if (res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0)
+> >>                 return;
+> >>
+> >>         if (memcg_kmem_test_and_clear_dead(memcg))
+> >>                 mem_cgroup_put(memcg);    <------- !!!!!!!!!
+> >> }
+> > 
+> > But memcg_update_cache_sizes calls memcg_kmem_clear_activated on the
+> > error path.
+> > 
 > 
-> The code also on this git tree:
-> https://github.com/alexshi/power-scheduling.git power-scheduling
-
-Many many thanks for PJT, Vincent, Preeti, Namhyung and Michael Wang's
-testing and suggestions!
-
-patch set were updated in above git tree.
-Few quick testing show the new code has slight better performance on
-aim7/hackbench with powersaving policy while keep the task packing
-behaviour.
-Thanks all!
+> But memcg_kmem_mark_dead() checks the ACCOUNT flag not the ACCOUNTED flag.
+> Am I missing something?
 > 
+
+Dang. You are right! Glauber, is there any reason why
+memcg_kmem_mark_dead checks only KMEM_ACCOUNTED_ACTIVE rather than
+KMEM_ACCOUNTED_MASK?
+
+This all is very confusing to say the least.
+
+Anyway, this all means that Li's first patch is correct. I am not sure I
+like it though. I think that the refcount cleanup should be done as
+close to where it has been taken as possible otherwise we will end up in
+this "chase the nasty details" again and again. There are definitely two
+bugs here. The one introduced by e4715f01 and the other one introduced
+even earlier (I haven't checked that history yet). I think we should do
+something like the 2 follow up patches but if you guys think that the smaller
+patch from Li is more appropriate then I will not block it.
+
+-- 
+Michal Hocko
+SUSE Labs
