@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759753Ab3DCJKv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 05:10:51 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43270 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758532Ab3DCJKs (ORCPT
+	id S1760350Ab3DCJMP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 05:12:15 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:36188 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759835Ab3DCJML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 05:10:48 -0400
-X-AuditID: 9c930197-b7b50ae00000018c-f4-515bf212ac9d
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 6/9] perf sort: Add 'addr' sort key
-References: <1364816125-12212-1-git-send-email-namhyung@kernel.org>
-	<1364816125-12212-7-git-send-email-namhyung@kernel.org>
-	<20130401204022.GB1022@krava.redhat.com>
-	<87wqslfzk4.fsf@sejong.aot.lge.com>
-	<20130402084014.GA26618@krava.redhat.com>
-Date: Wed, 03 Apr 2013 18:10:41 +0900
-In-Reply-To: <20130402084014.GA26618@krava.redhat.com> (Jiri Olsa's message of
-	"Tue, 2 Apr 2013 10:40:14 +0200")
-Message-ID: <87txnodlny.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 3 Apr 2013 05:12:11 -0400
+Date: Wed, 3 Apr 2013 11:12:00 +0200
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Praveena Nadahally <praveen.nadahally@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Sakethram Bommisetti <sakethram.bommisetti@stericsson.com>
+Subject: Re: [PATCH 04/12] usb: phy: ab8500-usb: fix eye diagram for ab8500
+ v2.0
+Message-ID: <20130403091200.GA3909@balto.lan>
+References: <1364978713-19612-1-git-send-email-fabio.baltieri@linaro.org>
+ <1364978713-19612-5-git-send-email-fabio.baltieri@linaro.org>
+ <20130403085336.GJ25837@arwen.pp.htv.fi>
+ <20130403085858.GK25837@arwen.pp.htv.fi>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130403085858.GK25837@arwen.pp.htv.fi>
+X-Operating-System: Linux balto 3.9.0-rc4-00218-g0776ce0 x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+Hi Felipe,
 
-On Tue, 2 Apr 2013 10:40:14 +0200, Jiri Olsa wrote:
-> On Tue, Apr 02, 2013 at 11:15:23AM +0900, Namhyung Kim wrote:
->> On Mon, 1 Apr 2013 22:40:23 +0200, Jiri Olsa wrote:
->> > On Mon, Apr 01, 2013 at 08:35:22PM +0900, Namhyung Kim wrote:
->> >> From: Namhyung Kim <namhyung.kim@lge.com>
->> >> 
->> >> New addr sort key provides a way to sort the entries by the symbol
->> >> addresses.  It can be helpful to figure out symbol resolution problem
->> >> when a dso cannot do it properly as well as finding hotpath in a dso
->> >> and/or a function.
->> >
->> > maybe it's just the recent mem profiling patches, but wouldn't
->> > it be better to use 'ip' instead of 'addr'?
->> >
->> > also it's following code getting the data:
->> > ...
->> >         if (sample_type & PERF_SAMPLE_IP)
->> >                 data->ip = perf_instruction_pointer(regs);
->> > ...
->> >
->> > same for the "perf sort: Add 'addr_to/from' sort key" patch
->> 
->> I'm not sure I understand what you mean exactly.
->> 
->> I used hist_entry->ip but it was set by al->addr which was converted
->> from the original sample ip to a relative ip by map->map_ip().
->> 
->> I can change it to use ->unmap_ip() before printing.  Is that your
->> concern?
->
-> what I meant was the 'addr' name itself for -s option, like use:
->   '-s ip' instead of '-s addr'
+On Wed, Apr 03, 2013 at 11:58:58AM +0300, Felipe Balbi wrote:
+> On Wed, Apr 03, 2013 at 11:53:36AM +0300, Felipe Balbi wrote:
+> > On Wed, Apr 03, 2013 at 10:45:05AM +0200, Fabio Baltieri wrote:
+> > > From: Sakethram Bommisetti <sakethram.bommisetti@stericsson.com>
+> > > 
+> > > AB8500 v2.0 has eye diagram issues when drawing more than 100mA from
+> > > VBUS.  Force charging current to 100mA in case of standard host.
+> > > 
+> > > Signed-off-by: Sakethram Bommisetti <sakethram.bommisetti@stericsson.com>
+> > > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> > > Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> > > ---
+> > >  drivers/usb/phy/phy-ab8500-usb.c | 14 ++++++++++++++
+> > >  1 file changed, 14 insertions(+)
+> > > 
+> > > diff --git a/drivers/usb/phy/phy-ab8500-usb.c b/drivers/usb/phy/phy-ab8500-usb.c
+> > > index 5b92a59..1fd0780 100644
+> > > --- a/drivers/usb/phy/phy-ab8500-usb.c
+> > > +++ b/drivers/usb/phy/phy-ab8500-usb.c
+> > > @@ -485,6 +485,18 @@ static void ab8500_usb_phy_disable_work(struct work_struct *work)
+> > >  		ab8500_usb_peri_phy_dis(ab);
+> > >  }
+> > >  
+> > > +static unsigned ab8500_eyediagram_workaroud(struct ab8500_usb *ab, unsigned mA)
+> > > +{
+> > > +	/* AB8500 V2 has eye diagram issues when drawing more than 100mA from
+> > 
+> > wrong comment style. Please run *all* patches through checkpatch.pl
+> > --strict and sparse. I can wait 2 more hours before closing my tree for
+> > v3.10.
+> 
+> you know what ? this is simple enough, I'll fix it myself.
 
-Well, I don't know what's better.  But the 'addr' looks more natural to
-me and it's requested originally.  And the 'ip' can have multiple
-meaning. :)
+Ok, I was rushing a rebase but you've been faster! :-)
+
+Anyway, paches were already sparse and checkpatch checked, but I ignored
+a warning for "mA" camelcase (as that's how it's commonly spelled for
+regulator) and new line indentation (where I used two-tabs instead of
+open parenthesis to be coherent with the rest of the source).
+
+For comment style, checkpatch does not give me any warning for some
+reson.  The in-line open style is already used in the net/ subsystem so
+I was assuming that it was accepted here too.  If this is not the case
+maybe checkpatch.pl has to be fixed somehow.
 
 Thanks,
-Namhyung
+Fabio
 
+-- 
+Fabio Baltieri
