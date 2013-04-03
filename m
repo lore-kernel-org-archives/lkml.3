@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762821Ab3DCM6U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 08:58:20 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:36395 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761572Ab3DCM6T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 08:58:19 -0400
-Message-ID: <515C2788.90907@parallels.com>
-Date: Wed, 3 Apr 2013 16:58:48 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Li Zefan <lizefan@huawei.com>
-CC: <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC][PATCH 1/7] memcg: use css_get in sock_update_memcg()
-References: <515BF233.6070308@huawei.com> <515BF249.50607@huawei.com>
-In-Reply-To: <515BF249.50607@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
+	id S1759871Ab3DCNAl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 09:00:41 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:35269 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757209Ab3DCNAk convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
+	Wed, 3 Apr 2013 09:00:40 -0400
+Message-Id: <515C444002000078000CA5B5@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Wed, 03 Apr 2013 14:01:20 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Chen Gang" <gang.chen@asianux.com>, "William Dauchy" <wdauchy@gmail.com>
+Cc: <roger.pau@citrix.com>,
+        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        "xen-devel" <xen-devel@lists.xen.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <dgdegra@tycho.nsa.gov>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] drivers/block/xen-blkback: preq.dev is used
+ without initialized
+References: <512EC22F.5020404@asianux.com>
+ <CAJ75kXZc+GtYi7ULs96G3VkmyzkS5-qe702iXpNenpPj8GF5BQ@mail.gmail.com>
+In-Reply-To: <CAJ75kXZc+GtYi7ULs96G3VkmyzkS5-qe702iXpNenpPj8GF5BQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 01:11 PM, Li Zefan wrote:
-> Use css_get/css_put instead of mem_cgroup_get/put.
+>>> On 03.04.13 at 14:56, William Dauchy <wdauchy@gmail.com> wrote:
+> On Thu, Feb 28, 2013 at 3:34 AM, Chen Gang <gang.chen@asianux.com> wrote:
+>> additional information:
+>>   before commit 01c681d4c70d64cb72142a2823f27c4146a02e63, the value printed
+>>   here was bogus, as it was the guest provided value from req->u.rw.handle
+>>   rather than the actual device.
+>>
+>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> Acked-by: Jan Beulich <JBeulich@suse.com>
 > 
-> Note, if at the same time someone is moving @current to a different
-> cgroup and removing the old cgroup, css_tryget() may return false,
-> and sock->sk_cgrp won't be initialized.
-> 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
-> ---
->  mm/memcontrol.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 23d0f6e..43ca91d 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -536,15 +536,15 @@ void sock_update_memcg(struct sock *sk)
->  		 */
->  		if (sk->sk_cgrp) {
->  			BUG_ON(mem_cgroup_is_root(sk->sk_cgrp->memcg));
-> -			mem_cgroup_get(sk->sk_cgrp->memcg);
-> +			css_get(&sk->sk_cgrp->memcg->css);
->  			return;
->  		}
->  
->  		rcu_read_lock();
->  		memcg = mem_cgroup_from_task(current);
->  		cg_proto = sk->sk_prot->proto_cgroup(memcg);
-> -		if (!mem_cgroup_is_root(memcg) && memcg_proto_active(cg_proto)) {
-> -			mem_cgroup_get(memcg);
-> +		if (!mem_cgroup_is_root(memcg) &&
-> +		    memcg_proto_active(cg_proto) && css_tryget(&memcg->css)) {
->  			sk->sk_cgrp = cg_proto;
->  		}
+> Sorry I'm a bit late but since since 01c681d is in stable, I guess
+> a72d900 (xen/xen-blkback: preq.dev is used without initialized)
+> could be added in stable as well.
+> Am I wrong? otherwise I'm ok to do the request.
 
-What happens if this tryget fails ? Won't we leak a reference here? We
-will put regardless when the socket is released, and this may go
-negative. No?
+Iirc we requested the earlier commit to be removed from stable
+trees, and I think Greg also did so.
+
+Jan
 
