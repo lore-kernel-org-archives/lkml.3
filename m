@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762444Ab3DCQBq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 12:01:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9284 "EHLO mx1.redhat.com"
+	id S1762575Ab3DCQCO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 12:02:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36396 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762254Ab3DCQBo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 12:01:44 -0400
+	id S1762536Ab3DCQCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 12:02:13 -0400
 From: Anton Arapov <anton@redhat.com>
 To: Anton Arapov <anton@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -14,55 +14,37 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
         Ingo Molnar <mingo@elte.hu>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: [PATCH v1 4/9] uretprobes/ppc: Hijack return address
-Date: Wed,  3 Apr 2013 18:00:34 +0200
-Message-Id: <1365004839-21982-5-git-send-email-anton@redhat.com>
+Subject: [PATCH v1 8/9] uretprobes: Remove -ENOSYS as return probes implemented
+Date: Wed,  3 Apr 2013 18:00:38 +0200
+Message-Id: <1365004839-21982-9-git-send-email-anton@redhat.com>
 In-Reply-To: <1365004839-21982-1-git-send-email-anton@redhat.com>
 References: <1365004839-21982-1-git-send-email-anton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hijack the return address and replace it with a trampoline address.
-PowerPC implementation.
+Enclose return probes implementation.
 
 Signed-off-by: Anton Arapov <anton@redhat.com>
 ---
- arch/powerpc/include/asm/uprobes.h |  1 +
- arch/powerpc/kernel/uprobes.c      | 13 +++++++++++++
- 2 files changed, 14 insertions(+)
+ kernel/events/uprobes.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/uprobes.h b/arch/powerpc/include/asm/uprobes.h
-index b532060..2301602 100644
---- a/arch/powerpc/include/asm/uprobes.h
-+++ b/arch/powerpc/include/asm/uprobes.h
-@@ -51,4 +51,5 @@ extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
- extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
- extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
- extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
-+extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long trampoline_vaddr, struct pt_regs *regs);
- #endif	/* _ASM_UPROBES_H */
-diff --git a/arch/powerpc/kernel/uprobes.c b/arch/powerpc/kernel/uprobes.c
-index bc77834..567b975 100644
---- a/arch/powerpc/kernel/uprobes.c
-+++ b/arch/powerpc/kernel/uprobes.c
-@@ -188,3 +188,16 @@ bool arch_uprobe_skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 489f5e3..9af52f7 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -828,10 +828,6 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
+ 	if (!uc->handler && !uc->ret_handler)
+ 		return -EINVAL;
  
- 	return false;
- }
-+
-+unsigned long
-+arch_uretprobe_hijack_return_addr(unsigned long trampoline_vaddr, struct pt_regs *regs)
-+{
-+	unsigned long orig_ret_vaddr;
-+
-+	orig_ret_vaddr = regs->link;
-+
-+	/* Replace the return addr with trampoline addr */
-+	regs->link = trampoline_vaddr;
-+
-+	return orig_ret_vaddr;
-+}
+-	/* TODO: Implement return probes */
+-	if (uc->ret_handler)
+-		return -ENOSYS;
+-
+ 	/* Racy, just to catch the obvious mistakes */
+ 	if (offset > i_size_read(inode))
+ 		return -EINVAL;
 -- 
 1.8.1.4
 
