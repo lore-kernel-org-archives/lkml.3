@@ -1,88 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761867Ab3DCJs6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 05:48:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59572 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761000Ab3DCJs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 05:48:56 -0400
-Date: Wed, 3 Apr 2013 11:48:53 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-mm@kvack.org
-Cc: Li Zefan <lizefan@huawei.com>, Glauber Costa <glommer@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH 2/2] memcg, kmem: clean up reference count handling on
- the error path
-Message-ID: <20130403094853.GG16471@dhcp22.suse.cz>
-References: <20130403085056.GD14384@dhcp22.suse.cz>
- <1364979234-16427-1-git-send-email-mhocko@suse.cz>
- <1364979234-16427-2-git-send-email-mhocko@suse.cz>
+	id S1763351Ab3DCJwv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 05:52:51 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:63740 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763338Ab3DCJwt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 05:52:49 -0400
+Date: Wed, 3 Apr 2013 11:51:50 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, jhovold@gmail.com,
+        dgilbert@interlog.com,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2] rtc: rtc-at91rm9200: manage IMR depending on
+ revision
+Message-ID: <20130403095150.GC27600@localhost>
+References: <1364908007-5150-1-git-send-email-nicolas.ferre@atmel.com>
+ <1364920566-30040-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1364979234-16427-2-git-send-email-mhocko@suse.cz>
+In-Reply-To: <1364920566-30040-1-git-send-email-nicolas.ferre@atmel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 03-04-13 10:53:54, Michal Hocko wrote:
-> mem_cgroup_css_online calls mem_cgroup_put if memcg_init_kmem
-> fails. This is not correct because only memcg_propagate_kmem takes an
-> additional reference while mem_cgroup_sockets_init is allowed to fail as
-> well (although no current implementation fails) but it doesn't take any
-> reference. This all suggests that it should be memcg_propagate_kmem that
-> should clean up after itself so this patch moves mem_cgroup_put over
-> there.
-> Unfortunately this is not that easy (as pointed out by Li Zefan) because
-> memcg_kmem_mark_dead marks the group dead (KMEM_ACCOUNTED_DEAD) if it
-> is marked active (KMEM_ACCOUNTED_ACTIVE) which is the case even if
-> memcg_propagate_kmem fails so the additional reference is dropped in
-> that case in kmem_cgroup_destroy which means that the reference would be
-> dropped two times.
-> 
-> The easiest way then would be to simply remove mem_cgrroup_put from
-> mem_cgroup_css_online and rely on kmem_cgroup_destroy doing the right
-> thing.
-
-Forgot to mention that this one could be marked for stable for 3.8
-
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+On Tue, Apr 02, 2013 at 06:36:06PM +0200, Nicolas Ferre wrote:
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 > ---
->  mm/memcontrol.c |    8 --------
->  1 file changed, 8 deletions(-)
+> Hi again,
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 6de6d70..65b2850 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -6417,14 +6417,6 @@ mem_cgroup_css_online(struct cgroup *cont)
->  
->  	error = memcg_init_kmem(memcg, &mem_cgroup_subsys);
->  	mutex_unlock(&memcg_create_mutex);
-> -	if (error) {
-> -		/*
-> -		 * We call put now because our (and parent's) refcnts
-> -		 * are already in place. mem_cgroup_put() will internally
-> -		 * call __mem_cgroup_free, so return directly
-> -		 */
-> -		mem_cgroup_put(memcg);
-> -	}
->  	return error;
->  }
->  
-> -- 
-> 1.7.10.4
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Here is my latest revision of this fix. It depends on the patch that is already
+> in Andrew's patch stack: "drivers-rtc-rtc-at91rm9200c-add-dt-support.patch".
 
--- 
-Michal Hocko
-SUSE Labs
+That is a problem, as the patch in Andrew's stack is not (and should
+not) be marked for stable. Hence this patch cannot be applied to the
+stable trees and it won't even apply to 3.9-rc.
+
+But there's more: The offending patch introduced the races we have been
+discussion while attempting to add support for the sam9x5 with the
+broken hardware register. But that family cannot be used without
+DT-support, which the driver currently does not support. Hence, we added
+a workaround (and introduced a regression by mistake), while adding
+support for a SoC which still could not use the driver. [ For example,
+the sam9x5 RTC-base register address can only be supplied from DT. ]
+
+I think the only reasonable thing to do is to revert the patch and add
+whatever version of the work-around on top of the device-tree support
+when that is added to the driver (hence, earliest v3.10).
+
+> I now use a different compatibility string to figure out what is the IP
+> revision that has the "boggus IMR" error. I think this way to handle it
+> is much simpler than the "config" structure one from Johan.
+
+I wouldn't say it's much simpler. My solution is only more generic, but
+could of course also be reduced to "set a flag if compatible matches
+sam9x5".
+
+> The small number of line changed and the "single patch" nature of it
+> make me think that it will be easier to send upstream and in the
+> "stable" trees...
+
+Unfortunately, the 130-line diff isn't very small. In fact, it violates
+the stable-kernel guide line of <100 lines. And as noted above, it
+depends on another patch which adds DT-support (which is a new feature
+and not a fix).
+
+But the fundamental problem remains: it does not fix anything which was
+working before the first work-around patch introduced the regression. I
+think this is a clear case where we need to revert.
+
+> Please give feedback, but moreover, I would like to know if you (Johan and Douglas)
+> agree to give your "Signed-off-by" line because this patch is certainly
+> inspired by your comments, code and reviews.
+> 
+> Thank you for your help. Best regards,
+> 
+>  .../bindings/rtc/atmel,at91rm9200-rtc.txt          |   3 +-
+>  drivers/rtc/rtc-at91rm9200.c                       | 126 ++++++++++++++++-----
+>  drivers/rtc/rtc-at91rm9200.h                       |   1 +
+>  3 files changed, 101 insertions(+), 29 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/rtc/atmel,at91rm9200-rtc.txt b/Documentation/devicetree/bindings/rtc/atmel,at91rm9200-rtc.txt
+> index 2a3feab..9b87053 100644
+> --- a/Documentation/devicetree/bindings/rtc/atmel,at91rm9200-rtc.txt
+> +++ b/Documentation/devicetree/bindings/rtc/atmel,at91rm9200-rtc.txt
+> @@ -1,7 +1,8 @@
+>  Atmel AT91RM9200 Real Time Clock
+>  
+>  Required properties:
+> -- compatible: should be: "atmel,at91rm9200-rtc"
+> +- compatible: should be: "atmel,at91rm9200-rtc", "atmel,at91sam9x5-rtc" or
+> +                         "atmel,at91sam9n12-rtc".
+
+Also at91sam9g45 and at91sam9rl use this driver. As seems to be the case
+for other peripherals, I suggest we use "atmel,at91sam9x5-rtc" for
+sam9x5 and "atmel,at91rm9200-rtc" for the other SoCs, that is, the least
+(and first) common denominator.
+
+Either way, there's not need to add at91sam9n12-rtc in this patch.
+
+>  - reg: physical base address of the controller and length of memory mapped
+>    region.
+>  - interrupts: rtc alarm/event interrupt
+
+I'll respond to this mail with a revert-patch, and an updated RFC-series
+based on top of the DT-patch in Andrew's queue.
+
+Thanks,
+Johan
