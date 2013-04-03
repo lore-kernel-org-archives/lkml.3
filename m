@@ -1,243 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762390Ab3DCOwJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:52:09 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:48717 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761357Ab3DCOwG (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Wed, 3 Apr 2013 10:52:06 -0400
-Message-Id: <515C5E6202000078000CA6BE@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Wed, 03 Apr 2013 15:52:50 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-        "xen-devel" <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] xen: drop tracking of IRQ vector
-Mime-Version: 1.0
-Content-Type: multipart/mixed; boundary="=__Part75457552.3__="
+	id S932550Ab3DCOwg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:52:36 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:19083 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762454Ab3DCOwd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 10:52:33 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 03 Apr 2013 07:51:29 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Pritesh Raithatha <praithatha@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>, Andrew Chew <achew@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v9 10/14] ARM: tegra: Define Tegra114 CAR binding
+Date: Wed, 3 Apr 2013 17:40:43 +0300
+Message-ID: <1365000110-8916-10-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME message. If you are reading this text, you may want to 
-consider changing to a mail reader or gateway that understands how to 
-properly handle MIME multipart messages.
+The device tree binding models Tegra114 CAR (Clock And Reset) as a single
+monolithic clock provider.
 
---=__Part75457552.3__=
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: inline
-
-For quite a few Xen versions, this wasn't the IRQ vector anymore
-anyway, and it is not being used by the kernel for anything. Hence
-drop the field from struct irq_info, and respective function
-parameters.
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- arch/x86/pci/xen.c   |    6 +++---
- drivers/xen/events.c |   13 ++++---------
- include/xen/events.h |    3 +--
- 3 files changed, 8 insertions(+), 14 deletions(-)
+ .../bindings/clock/nvidia,tegra114-car.txt         |  317 ++++++++++++++++++++
+ 1 files changed, 317 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/nvidia,tegra114-car.txt
 
---- 3.9-rc5/arch/x86/pci/xen.c
-+++ 3.9-rc5-xen-irq-no-vector/arch/x86/pci/xen.c
-@@ -177,7 +177,7 @@ static int xen_setup_msi_irqs(struct pci
- 		goto error;
- 	i =3D 0;
- 	list_for_each_entry(msidesc, &dev->msi_list, list) {
--		irq =3D xen_bind_pirq_msi_to_irq(dev, msidesc, v[i], 0,
-+		irq =3D xen_bind_pirq_msi_to_irq(dev, msidesc, v[i],
- 					       (type =3D=3D PCI_CAP_ID_MSIX=
-) ?
- 					       "pcifront-msi-x" :
- 					       "pcifront-msi",
-@@ -244,7 +244,7 @@ static int xen_hvm_setup_msi_irqs(struct
- 			dev_dbg(&dev->dev,
- 				"xen: msi already bound to pirq=3D%d\n", =
-pirq);
- 		}
--		irq =3D xen_bind_pirq_msi_to_irq(dev, msidesc, pirq, 0,
-+		irq =3D xen_bind_pirq_msi_to_irq(dev, msidesc, pirq,
- 					       (type =3D=3D PCI_CAP_ID_MSIX=
-) ?
- 					       "msi-x" : "msi",
- 					       DOMID_SELF);
-@@ -326,7 +326,7 @@ static int xen_initdom_setup_msi_irqs(st
- 		}
-=20
- 		ret =3D xen_bind_pirq_msi_to_irq(dev, msidesc,
--					       map_irq.pirq, map_irq.index,=
+diff --git a/Documentation/devicetree/bindings/clock/nvidia,tegra114-car.txt b/Documentation/devicetree/bindings/clock/nvidia,tegra114-car.txt
+new file mode 100644
+index 0000000..33574a2
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/nvidia,tegra114-car.txt
+@@ -0,0 +1,317 @@
++NVIDIA Tegra114 Clock And Reset Controller
++
++This binding uses the common clock binding:
++Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++The CAR (Clock And Reset) Controller on Tegra is the HW module responsible
++for muxing and gating Tegra's clocks, and setting their rates.
++
++Required properties :
++- compatible : Should be "nvidia,tegra114-car"
++- reg : Should contain CAR registers location and length
++- clocks : Should contain phandle and clock specifiers for two clocks:
++  the 32 KHz "32k_in", and the board-specific oscillator "osc".
++- #clock-cells : Should be 1.
++  In clock consumers, this cell represents the clock ID exposed by the CAR.
++
++  The first 160 clocks are numbered to match the bits in the CAR's CLK_OUT_ENB
++  registers. These IDs often match those in the CAR's RST_DEVICES registers,
++  but not in all cases. Some bits in CLK_OUT_ENB affect multiple clocks. In
++  this case, those clocks are assigned IDs above 160 in order to highlight
++  this issue. Implementations that interpret these clock IDs as bit values
++  within the CLK_OUT_ENB or RST_DEVICES registers should be careful to
++  explicitly handle these special cases.
++
++  The balance of the clocks controlled by the CAR are assigned IDs of 160 and
++  above.
++
++  0	unassigned
++  1	unassigned
++  2	unassigned
++  3	unassigned
++  4	rtc
++  5	timer
++  6	uarta
++  7	unassigned	(register bit affects uartb and vfir)
++  8	unassigned
++  9	sdmmc2
++  10	unassigned	(register bit affects spdif_in and spdif_out)
++  11	i2s1
++  12	i2c1
++  13	ndflash
++  14	sdmmc1
++  15	sdmmc4
++  16	unassigned
++  17	pwm
++  18	i2s2
++  19	epp
++  20	unassigned	(register bit affects vi and vi_sensor)
++  21	2d
++  22	usbd
++  23	isp
++  24	3d
++  25	unassigned
++  26	disp2
++  27	disp1
++  28	host1x
++  29	vcp
++  30	i2s0
++  31	unassigned
++
++  32	unassigned
++  33	unassigned
++  34	apbdma
++  35	unassigned
++  36	kbc
++  37	unassigned
++  38	unassigned
++  39	unassigned	(register bit affects fuse and fuse_burn)
++  40	kfuse
++  41	sbc1
++  42	nor
++  43	unassigned
++  44	sbc2
++  45	unassigned
++  46	sbc3
++  47	i2c5
++  48	dsia
++  49	unassigned
++  50	mipi
++  51	hdmi
++  52	csi
++  53	unassigned
++  54	i2c2
++  55	uartc
++  56	mipi-cal
++  57	emc
++  58	usb2
++  59	usb3
++  60	msenc
++  61	vde
++  62	bsea
++  63	bsev
++
++  64	unassigned
++  65	uartd
++  66	unassigned
++  67	i2c3
++  68	sbc4
++  69	sdmmc3
++  70	unassigned
++  71	owr
++  72	afi
++  73	csite
++  74	unassigned
++  75	unassigned
++  76	la
++  77	trace
++  78	soc_therm
++  79	dtv
++  80	ndspeed
++  81	i2cslow
++  82	dsib
++  83	tsec
++  84	unassigned
++  85	unassigned
++  86	unassigned
++  87	unassigned
++  88	unassigned
++  89	xusb_host
++  90	unassigned
++  91	msenc
++  92	csus
++  93	unassigned
++  94	unassigned
++  95	unassigned	(bit affects xusb_dev and xusb_dev_src)
++
++  96	unassigned
++  97	unassigned
++  98	unassigned
++  99	mselect
++  100	tsensor
++  101	i2s3
++  102	i2s4
++  103	i2c4
++  104	sbc5
++  105	sbc6
++  106	d_audio
++  107	apbif
++  108	dam0
++  109	dam1
++  110	dam2
++  111	hda2codec_2x
++  112	unassigned
++  113	audio0_2x
++  114	audio1_2x
++  115	audio2_2x
++  116	audio3_2x
++  117	audio4_2x
++  118	spdif_2x
++  119	actmon
++  120	extern1
++  121	extern2
++  122	extern3
++  123	unassigned
++  124	unassigned
++  125	hda
++  126	unassigned
++  127	se
++
++  128	hda2hdmi
++  129	unassigned
++  130	unassigned
++  131	unassigned
++  132	unassigned
++  133	unassigned
++  134	unassigned
++  135	unassigned
++  136	unassigned
++  137	unassigned
++  138	unassigned
++  139	unassigned
++  140	unassigned
++  141	unassigned
++  142	unassigned
++  143	unassigned	(bit affects xusb_falcon_src, xusb_fs_src,
++			 xusb_host_src and xusb_ss_src)
++  144	cilab
++  145	cilcd
++  146	cile
++  147	dsialp
++  148	dsiblp
++  149	unassigned
++  150	dds
++  151	unassigned
++  152	dp2
++  153	amx
++  154	adx
++  155	unassigned	(bit affects dfll_ref and dfll_soc)
++  156	xusb_ss
++
++  192	uartb
++  193	vfir
++  194	spdif_in
++  195	spdif_out
++  196	vi
++  197	vi_sensor
++  198	fuse
++  199	fuse_burn
++  200	clk_32k
++  201	clk_m
++  202	clk_m_div2
++  203	clk_m_div4
++  204	pll_ref
++  205	pll_c
++  206	pll_c_out1
++  207	pll_c2
++  208	pll_c3
++  209	pll_m
++  210	pll_m_out1
++  211	pll_p
++  212	pll_p_out1
++  213	pll_p_out2
++  214	pll_p_out3
++  215	pll_p_out4
++  216	pll_a
++  217	pll_a_out0
++  218	pll_d
++  219	pll_d_out0
++  220	pll_d2
++  221	pll_d2_out0
++  222	pll_u
++  223	pll_u_480M
++  224	pll_u_60M
++  225	pll_u_48M
++  226	pll_u_12M
++  227	pll_x
++  228	pll_x_out0
++  229	pll_re_vco
++  230	pll_re_out
++  231	pll_e_out0
++  232	spdif_in_sync
++  233	i2s0_sync
++  234	i2s1_sync
++  235	i2s2_sync
++  236	i2s3_sync
++  237	i2s4_sync
++  238	vimclk_sync
++  239	audio0
++  240	audio1
++  241	audio2
++  242	audio3
++  243	audio4
++  244	spdif
++  245	clk_out_1
++  246	clk_out_2
++  247	clk_out_3
++  248	blink
++  252	xusb_host_src
++  253	xusb_falcon_src
++  254	xusb_fs_src
++  255	xusb_ss_src
++  256	xusb_dev_src
++  257	xusb_dev
++  258	xusb_hs_src
++  259	sclk
++  260	hclk
++  261	pclk
++  262	cclk_g
++  263	cclk_lp
++  264	dfll_ref
++  265	dfll_soc
++
++Mux clocks
++
++  300	audio0_mux
++  301	audio1_mux
++  302	audio2_mux
++  303	audio3_mux
++  304	audio4_mux
++  305	spdif_mux
++  306	clk_out_1_mux
++  307	clk_out_2_mux
++  308	clk_out_3_mux
++  309	dsia_mux
++  310	dsib_mux
++
++Example SoC include file:
++
++/ {
++	tegra_car: clock {
++		compatible = "nvidia,tegra114-car";
++		reg = <0x60006000 0x1000>;
++		#clock-cells = <1>;
++	};
++
++	usb@c5004000 {
++		clocks = <&tegra_car 58>; /* usb2 */
++	};
++};
++
++Example board file:
++
++/ {
++	clocks {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		osc: clock@0 {
++			compatible = "fixed-clock";
++			reg = <0>;
++			#clock-cells = <0>;
++			clock-frequency = <12000000>;
++		};
++
++		clk_32k: clock@1 {
++			compatible = "fixed-clock";
++			reg = <1>;
++			#clock-cells = <0>;
++			clock-frequency = <32768>;
++		};
++	};
++
++	&tegra_car {
++		clocks = <&clk_32k> <&osc>;
++	};
++};
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
 
-+					       map_irq.pirq,
- 					       (type =3D=3D PCI_CAP_ID_MSIX=
-) ?
- 					       "msi-x" : "msi",
- 						domid);
---- 3.9-rc5/drivers/xen/events.c
-+++ 3.9-rc5-xen-irq-no-vector/drivers/xen/events.c
-@@ -85,8 +85,7 @@ enum xen_irq_type {
-  * event channel - irq->event channel mapping
-  * cpu - cpu this event channel is bound to
-  * index - type-specific information:
-- *    PIRQ - vector, with MSB being "needs EIO", or physical IRQ of the =
-HVM
-- *           guest, or GSI (real passthrough IRQ) of the device.
-+ *    PIRQ - physical IRQ, GSI, flags, and owner domain
-  *    VIRQ - virq number
-  *    IPI - IPI vector
-  *    EVTCHN -
-@@ -105,7 +104,6 @@ struct irq_info {
- 		struct {
- 			unsigned short pirq;
- 			unsigned short gsi;
--			unsigned char vector;
- 			unsigned char flags;
- 			uint16_t domid;
- 		} pirq;
-@@ -211,7 +209,6 @@ static void xen_irq_info_pirq_init(unsig
- 				   unsigned short evtchn,
- 				   unsigned short pirq,
- 				   unsigned short gsi,
--				   unsigned short vector,
- 				   uint16_t domid,
- 				   unsigned char flags)
- {
-@@ -221,7 +218,6 @@ static void xen_irq_info_pirq_init(unsig
-=20
- 	info->u.pirq.pirq =3D pirq;
- 	info->u.pirq.gsi =3D gsi;
--	info->u.pirq.vector =3D vector;
- 	info->u.pirq.domid =3D domid;
- 	info->u.pirq.flags =3D flags;
- }
-@@ -714,7 +710,7 @@ int xen_bind_pirq_gsi_to_irq(unsigned gs
- 		goto out;
- 	}
-=20
--	xen_irq_info_pirq_init(irq, 0, pirq, gsi, irq_op.vector, DOMID_SELF=
-,
-+	xen_irq_info_pirq_init(irq, 0, pirq, gsi, DOMID_SELF,
- 			       shareable ? PIRQ_SHAREABLE : 0);
-=20
- 	pirq_query_unmask(irq);
-@@ -762,8 +758,7 @@ int xen_allocate_pirq_msi(struct pci_dev
- }
-=20
- int xen_bind_pirq_msi_to_irq(struct pci_dev *dev, struct msi_desc =
-*msidesc,
--			     int pirq, int vector, const char *name,
--			     domid_t domid)
-+			     int pirq, const char *name, domid_t domid)
- {
- 	int irq, ret;
-=20
-@@ -776,7 +771,7 @@ int xen_bind_pirq_msi_to_irq(struct pci_
- 	irq_set_chip_and_handler_name(irq, &xen_pirq_chip, handle_edge_irq,=
-
- 			name);
-=20
--	xen_irq_info_pirq_init(irq, 0, pirq, 0, vector, domid, 0);
-+	xen_irq_info_pirq_init(irq, 0, pirq, 0, domid, 0);
- 	ret =3D irq_set_msi_desc(irq, msidesc);
- 	if (ret < 0)
- 		goto error_irq;
---- 3.9-rc5/include/xen/events.h
-+++ 3.9-rc5-xen-irq-no-vector/include/xen/events.h
-@@ -90,8 +90,7 @@ int xen_bind_pirq_gsi_to_irq(unsigned gs
- int xen_allocate_pirq_msi(struct pci_dev *dev, struct msi_desc *msidesc);
- /* Bind an PSI pirq to an irq. */
- int xen_bind_pirq_msi_to_irq(struct pci_dev *dev, struct msi_desc =
-*msidesc,
--			     int pirq, int vector, const char *name,
--			     domid_t domid);
-+			     int pirq, const char *name, domid_t domid);
- #endif
-=20
- /* De-allocates the above mentioned physical interrupt. */
-
-
-
---=__Part75457552.3__=
-Content-Type: text/plain; name="linux-3.9-rc5-xen-irq-no-vector.patch"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment; filename="linux-3.9-rc5-xen-irq-no-vector.patch"
-
-xen: drop tracking of IRQ vector=0A=0AFor quite a few Xen versions, this =
-wasn't the IRQ vector anymore=0Aanyway, and it is not being used by the =
-kernel for anything. Hence=0Adrop the field from struct irq_info, and =
-respective function=0Aparameters.=0A=0ASigned-off-by: Jan Beulich =
-<jbeulich@suse.com>=0ACc: Stefano Stabellini <stefano.stabellini@eu.citrix.=
-com>=0A=0A---=0A arch/x86/pci/xen.c   |    6 +++---=0A drivers/xen/events.c=
- |   13 ++++---------=0A include/xen/events.h |    3 +--=0A 3 files =
-changed, 8 insertions(+), 14 deletions(-)=0A=0A--- 3.9-rc5/arch/x86/pci/xen=
-.c=0A+++ 3.9-rc5-xen-irq-no-vector/arch/x86/pci/xen.c=0A@@ -177,7 +177,7 =
-@@ static int xen_setup_msi_irqs(struct pci=0A 		goto error;=0A 	i =
-=3D 0;=0A 	list_for_each_entry(msidesc, &dev->msi_list, list) {=0A-	=
-	irq =3D xen_bind_pirq_msi_to_irq(dev, msidesc, v[i], 0,=0A+		=
-irq =3D xen_bind_pirq_msi_to_irq(dev, msidesc, v[i],=0A 			=
-		       (type =3D=3D PCI_CAP_ID_MSIX) ?=0A 			=
-		       "pcifront-msi-x" :=0A 					=
-       "pcifront-msi",=0A@@ -244,7 +244,7 @@ static int xen_hvm_setup_msi_i=
-rqs(struct=0A 			dev_dbg(&dev->dev,=0A 				=
-"xen: msi already bound to pirq=3D%d\n", pirq);=0A 		}=0A-		=
-irq =3D xen_bind_pirq_msi_to_irq(dev, msidesc, pirq, 0,=0A+		=
-irq =3D xen_bind_pirq_msi_to_irq(dev, msidesc, pirq,=0A 			=
-		       (type =3D=3D PCI_CAP_ID_MSIX) ?=0A 			=
-		       "msi-x" : "msi",=0A 					=
-       DOMID_SELF);=0A@@ -326,7 +326,7 @@ static int xen_initdom_setup_msi_=
-irqs(st=0A 		}=0A =0A 		ret =3D xen_bind_pirq_msi_t=
-o_irq(dev, msidesc,=0A-					       map_irq.pirq=
-, map_irq.index,=0A+					       map_irq.pirq=
-,=0A 					       (type =3D=3D PCI_CAP_ID_MSIX=
-) ?=0A 					       "msi-x" : "msi",=0A 		=
-				domid);=0A--- 3.9-rc5/drivers/xen/events.c=
-=0A+++ 3.9-rc5-xen-irq-no-vector/drivers/xen/events.c=0A@@ -85,8 +85,7 @@ =
-enum xen_irq_type {=0A  * event channel - irq->event channel mapping=0A  * =
-cpu - cpu this event channel is bound to=0A  * index - type-specific =
-information:=0A- *    PIRQ - vector, with MSB being "needs EIO", or =
-physical IRQ of the HVM=0A- *           guest, or GSI (real passthrough =
-IRQ) of the device.=0A+ *    PIRQ - physical IRQ, GSI, flags, and owner =
-domain=0A  *    VIRQ - virq number=0A  *    IPI - IPI vector=0A  *    =
-EVTCHN -=0A@@ -105,7 +104,6 @@ struct irq_info {=0A 		struct =
-{=0A 			unsigned short pirq;=0A 			=
-unsigned short gsi;=0A-			unsigned char vector;=0A 		=
-	unsigned char flags;=0A 			uint16_t domid;=0A =
-		} pirq;=0A@@ -211,7 +209,6 @@ static void xen_irq_info_pirq=
-_init(unsig=0A 				   unsigned short evtchn,=0A 		=
-		   unsigned short pirq,=0A 				   =
-unsigned short gsi,=0A-				   unsigned short =
-vector,=0A 				   uint16_t domid,=0A 			=
-	   unsigned char flags)=0A {=0A@@ -221,7 +218,6 @@ static void =
-xen_irq_info_pirq_init(unsig=0A =0A 	info->u.pirq.pirq =3D pirq;=0A 	=
-info->u.pirq.gsi =3D gsi;=0A-	info->u.pirq.vector =3D vector;=0A 	=
-info->u.pirq.domid =3D domid;=0A 	info->u.pirq.flags =3D flags;=0A =
-}=0A@@ -714,7 +710,7 @@ int xen_bind_pirq_gsi_to_irq(unsigned gs=0A 		=
-goto out;=0A 	}=0A =0A-	xen_irq_info_pirq_init(irq, 0, pirq, gsi, =
-irq_op.vector, DOMID_SELF,=0A+	xen_irq_info_pirq_init(irq, 0, pirq, gsi, =
-DOMID_SELF,=0A 			       shareable ? PIRQ_SHAREABLE : 0);=0A =
-=0A 	pirq_query_unmask(irq);=0A@@ -762,8 +758,7 @@ int xen_allocate_pirq=
-_msi(struct pci_dev=0A }=0A =0A int xen_bind_pirq_msi_to_irq(struct =
-pci_dev *dev, struct msi_desc *msidesc,=0A-			     int =
-pirq, int vector, const char *name,=0A-			     domid_t =
-domid)=0A+			     int pirq, const char *name, domid_t =
-domid)=0A {=0A 	int irq, ret;=0A =0A@@ -776,7 +771,7 @@ int xen_bind_pirq_m=
-si_to_irq(struct pci_=0A 	irq_set_chip_and_handler_name(irq, =
-&xen_pirq_chip, handle_edge_irq,=0A 			name);=0A =0A-	=
-xen_irq_info_pirq_init(irq, 0, pirq, 0, vector, domid, 0);=0A+	xen_irq_inf=
-o_pirq_init(irq, 0, pirq, 0, domid, 0);=0A 	ret =3D irq_set_msi_desc(ir=
-q, msidesc);=0A 	if (ret < 0)=0A 		goto error_irq;=0A-=
--- 3.9-rc5/include/xen/events.h=0A+++ 3.9-rc5-xen-irq-no-vector/include/xen=
-/events.h=0A@@ -90,8 +90,7 @@ int xen_bind_pirq_gsi_to_irq(unsigned gs=0A =
-int xen_allocate_pirq_msi(struct pci_dev *dev, struct msi_desc *msidesc);=
-=0A /* Bind an PSI pirq to an irq. */=0A int xen_bind_pirq_msi_to_irq(struc=
-t pci_dev *dev, struct msi_desc *msidesc,=0A-			     int =
-pirq, int vector, const char *name,=0A-			     domid_t =
-domid);=0A+			     int pirq, const char *name, domid_t =
-domid);=0A #endif=0A =0A /* De-allocates the above mentioned physical =
-interrupt. */=0A
---=__Part75457552.3__=--
