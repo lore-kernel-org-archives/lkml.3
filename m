@@ -1,118 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763092Ab3DCHnN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 03:43:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53615 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761773Ab3DCHnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 03:43:11 -0400
-Date: Wed, 3 Apr 2013 09:43:08 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Glauber Costa <glommer@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH -v2] memcg: don't do cleanup manually if
- mem_cgroup_css_online() fails
-Message-ID: <20130403074300.GA14384@dhcp22.suse.cz>
-References: <515A8A40.6020406@huawei.com>
- <20130402121600.GK24345@dhcp22.suse.cz>
- <20130402141646.GQ24345@dhcp22.suse.cz>
- <515AE948.1000704@parallels.com>
- <20130402142825.GA32520@dhcp22.suse.cz>
- <515AEC3A.2030401@parallels.com>
- <20130402150422.GB32520@dhcp22.suse.cz>
- <515BA6C9.2000704@huawei.com>
+	id S932585Ab3DCHng (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 03:43:36 -0400
+Received: from vaxjo.synopsys.com ([198.182.60.75]:46403 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760049Ab3DCHne (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 03:43:34 -0400
+Message-ID: <515BDD64.3010405@synopsys.com>
+Date: Wed, 3 Apr 2013 13:12:28 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515BA6C9.2000704@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ilya Zykov <linux@izyk.ru>
+CC: lkml <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        "Ingo Molnar" <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Slaby <jslaby@suse.cz>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: Re: n_tty_write() going into schedule but NOT coming out
+References: <5156DC21.20901@synopsys.com> <515BC1AF.1070103@izyk.ru>
+In-Reply-To: <515BC1AF.1070103@izyk.ru>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.41]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 03-04-13 11:49:29, Li Zefan wrote:
-> >> Yes, indeed you are very right - and thanks for looking at such depth.
-> > 
-> > So what about the patch bellow? It seems that I provoked all this mess
-> > but my brain managed to push it away so I do not remember why I thought
-> > the parent needs reference drop... It is "only" 3.9 thing fortunately.
-> > ---
-> >>From 3aff5d958f1d0717795018f7d0d6b63d53ad1dd3 Mon Sep 17 00:00:00 2001
-> > From: Li Zefan <lizefan@huawei.com>
-> > Date: Tue, 2 Apr 2013 16:37:39 +0200
-> > Subject: [PATCH] memcg: don't do cleanup manually if mem_cgroup_css_online()
-> >  fails
-> > 
-> > mem_cgroup_css_online is called with memcg with refcnt = 1 and it
-> > expects that mem_cgroup_css_free will drop this last reference.
-> > This doesn't hold when memcg_init_kmem fails though and a reference is
-> > dropped for both memcg and its parent explicitly if it returns with an
-> > error.
-> > 
-> > This is not correct for two reasons. Firstly mem_cgroup_put on parent is
-> > excessive because mem_cgroup_put is hierarchy aware and secondly only
-> > memcg_propagate_kmem takes an additional reference.
-> > 
-> > The first one is a real use-after-free bug introduced by e4715f01
-> > (memcg: avoid dangling reference count in creation failure)
-> > 
-> > The later one is non-issue right now because the only implementation
-> > of init_cgroup seems to be tcp_init_cgroup which doesn't fail
-> > but it is better to make the error handling saner and move the
-> > mem_cgroup_put(memcg) to memcg_propagate_kmem where it belongs.
-> > 
-> > Signed-off-by: Li Zefan <lizefan@huawei.com>
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > ---
-> >  mm/memcontrol.c |   13 +++----------
-> >  1 file changed, 3 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index f608546..cf9ba7e 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -5306,6 +5306,8 @@ static int memcg_propagate_kmem(struct mem_cgroup *memcg)
-> >  	ret = memcg_update_cache_sizes(memcg);
-> >  	mutex_unlock(&set_limit_mutex);
-> >  out:
-> > +	if (ret)
-> > +		mem_cgroup_put(memcg);
-> 
-> Correct me if I'm wrong, but I think:
-> 
-> When memcg_propagate_kmem() calls mem_cgroup_get(), it's because the kmemcg
-> is active by inheritance. Then when memcg_update_cache_sizes() fails, leading
-> to mem_cgroup_css_free() is called by cgroup core:
-> 
-> static void mem_cgroup_css_free(struct cgroup *cont)
-> {
->         struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
-> 
->         kmem_cgroup_destroy(memcg);
-> 
->         mem_cgroup_put(memcg);
-> }
-> 
-> static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
-> {
->         mem_cgroup_sockets_destroy(memcg);
-> 
->         memcg_kmem_mark_dead(memcg);
-> 
->         if (res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0)
->                 return;
-> 
->         if (memcg_kmem_test_and_clear_dead(memcg))
->                 mem_cgroup_put(memcg);    <------- !!!!!!!!!
-> }
+Hi Ilya
 
-But memcg_update_cache_sizes calls memcg_kmem_clear_activated on the
-error path.
+On 04/03/2013 11:14 AM, Ilya Zykov wrote:
+> Please, try this patch maybe it can help localize your problem.
+>
+>  drivers/tty/n_tty.c | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+> index 05e72be..28f15d0 100644
+> --- a/drivers/tty/n_tty.c
+> +++ b/drivers/tty/n_tty.c
+> @@ -230,6 +230,7 @@ static void reset_buffer_flags(struct tty_struct *tty)
+>  	ldata->canon_head = ldata->canon_data = ldata->erasing = 0;
+>  	bitmap_zero(ldata->read_flags, N_TTY_BUF_SIZE);
+>  	n_tty_set_room(tty);
+> +	check_unthrottle(tty);
+>  }
+>  
+>  /**
 
--- 
-Michal Hocko
-SUSE Labs
+Thanks for the patch - but it didn't help at all - I see the same lockup.
+I'm no tty expert so don't understand how this patch would help - care to elaborate ?
+
+Thx,
+-Vineet
