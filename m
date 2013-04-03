@@ -1,187 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762183Ab3DCFiL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 01:38:11 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:42931 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154Ab3DCFiI (ORCPT
+	id S1762250Ab3DCFin (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 01:38:43 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:46029 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154Ab3DCFim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 01:38:08 -0400
-Date: Wed, 3 Apr 2013 13:37:20 +0800
-From: Ram Pai <linuxram@us.ibm.com>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, tmac@hp.com,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
-        tangchen@cn.fujitsu.com, jiang.liu@huawei.com
-Subject: Re: [PATCH 2/3] resource: Add release_mem_region_adjustable()
-Message-ID: <20130403053720.GA26398@ram.oc3035372033.ibm.com>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <1364919450-8741-1-git-send-email-toshi.kani@hp.com>
- <1364919450-8741-3-git-send-email-toshi.kani@hp.com>
+	Wed, 3 Apr 2013 01:38:42 -0400
+Message-ID: <515BC04C.6050403@linux.vnet.ibm.com>
+Date: Wed, 03 Apr 2013 13:38:20 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364919450-8741-3-git-send-email-toshi.kani@hp.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: No
+To: Alex Shi <alex.shi@intel.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
+        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
+        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
+        mgorman@suse.de, riel@redhat.com
+Subject: Re: [patch v3 0/8] sched: use runnable avg in load balance
+References: <1364873008-3169-1-git-send-email-alex.shi@intel.com> <515A877B.3020908@linux.vnet.ibm.com> <515A9859.6000606@intel.com> <515B97FF.2040409@linux.vnet.ibm.com> <515B9A7A.6030807@intel.com> <515BA0B7.2090906@linux.vnet.ibm.com> <515BAFE6.1020804@intel.com>
+In-Reply-To: <515BAFE6.1020804@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040305-2398-0000-0000-000012E2EEC5
+x-cbid: 13040305-0260-0000-0000-000002C1320C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 10:17:29AM -0600, Toshi Kani wrote:
-> Added release_mem_region_adjustable(), which releases a requested
-> region from a currently busy memory resource.  This interface
-> adjusts the matched memory resource accordingly if the requested
-> region does not match exactly but still fits into.
+On 04/03/2013 12:28 PM, Alex Shi wrote:
+[snip]
 > 
-> This new interface is intended for memory hot-delete.  During
-> bootup, memory resources are inserted from the boot descriptor
-> table, such as EFI Memory Table and e820.  Each memory resource
-> entry usually covers the whole contigous memory range.  Memory
-> hot-delete request, on the other hand, may target to a particular
-> range of memory resource, and its size can be much smaller than
-> the whole contiguous memory.  Since the existing release interfaces
-> like __release_region() require a requested region to be exactly
-> matched to a resource entry, they do not allow a partial resource
-> to be released.
-> 
-> There is no change to the existing interfaces since their restriction
-> is valid for I/O resources.
-> 
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> ---
->  include/linux/ioport.h |    2 +
->  kernel/resource.c      |   87 ++++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 89 insertions(+)
-> 
-> diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-> index 85ac9b9b..0fe1a82 100644
-> --- a/include/linux/ioport.h
-> +++ b/include/linux/ioport.h
-> @@ -192,6 +192,8 @@ extern struct resource * __request_region(struct resource *,
->  extern int __check_region(struct resource *, resource_size_t, resource_size_t);
->  extern void __release_region(struct resource *, resource_size_t,
->  				resource_size_t);
-> +extern int release_mem_region_adjustable(struct resource *, resource_size_t,
-> +				resource_size_t);
-> 
->  static inline int __deprecated check_region(resource_size_t s,
->  						resource_size_t n)
-> diff --git a/kernel/resource.c b/kernel/resource.c
-> index ae246f9..789f160 100644
-> --- a/kernel/resource.c
-> +++ b/kernel/resource.c
-> @@ -1021,6 +1021,93 @@ void __release_region(struct resource *parent, resource_size_t start,
->  }
->  EXPORT_SYMBOL(__release_region);
-> 
-> +/**
-> + * release_mem_region_adjustable - release a previously reserved memory region
-> + * @parent: parent resource descriptor
-> + * @start: resource start address
-> + * @size: resource region size
-> + *
-> + * The requested region is released from a currently busy memory resource.
-> + * It adjusts the matched busy memory resource accordingly if the requested
-> + * region does not match exactly but still fits into.  Existing children of
-> + * the busy memory resource must be immutable in this request.
-> + *
-> + * Note, when the busy memory resource gets split into two entries, the code
-> + * assumes that all children remain in the lower address entry for simplicity.
-> + * Enhance this logic when necessary.
-> + */
-> +int release_mem_region_adjustable(struct resource *parent,
-> +			resource_size_t start, resource_size_t size)
-> +{
-> +	struct resource **p;
-> +	struct resource *res, *new;
-> +	resource_size_t end;
-> +	int ret = 0;
-> +
-> +	p = &parent->child;
-> +	end = start + size - 1;
-> +
-> +	write_lock(&resource_lock);
-> +
-> +	while ((res = *p)) {
-> +		if (res->start > start || res->end < end) {
+> but the patch may cause some unfairness if this/prev cpu are not burst at 
+> same time. So could like try the following patch?
 
-This check looks sub-optimal; possbily wrong, to me.  if the res->start
-is greater than 'start', then obviously its sibling's start will
-also be greater than 'start'. So it will loop through all the
-resources unnecesarily.  you might want something like
+I will try it later, some doubt below :)
 
-		if (start >= res->end) {
-		
-> +			p = &res->sibling;
-> +			continue;
-> +		}
+[snip]
 > +
-> +		if (!(res->flags & IORESOURCE_MEM)) {
-> +			ret = -EINVAL;
-> +			break;
-> +		}
+> +	if (cpu_rq(this_cpu)->avg_idle < sysctl_sched_migration_cost ||
+> +		cpu_rq(prev_cpu)->avg_idle < sysctl_sched_migration_cost)
+> +		burst= 1;
 > +
-> +		if (!(res->flags & IORESOURCE_BUSY)) {
-> +			p = &res->child;
-> +			continue;
-> +		}
-> +
-> +		if (res->start == start && res->end == end) {
-> +			/* free the whole entry */
-> +			*p = res->sibling;
-> +			kfree(res);
+> +	/* use instant load for bursty waking up */
+> +	if (!burst) {
+> +		load = source_load(prev_cpu, idx);
+> +		this_load = target_load(this_cpu, idx);
+> +	} else {
+> +		load = cpu_rq(prev_cpu)->load.weight;
+> +		this_load = cpu_rq(this_cpu)->load.weight;
 
-This is incomplete. the prev resource's sibling should now point to
-this resource's sibling. The parent's child has to be updated if
-this resource is the first child resource. no?
+Ok, my understanding is, we want pull if 'prev_cpu' is burst, and don't
+want pull if 'this_cpu' is burst, correct?
 
-> +		} else if (res->start == start && res->end != end) {
-> +			/* adjust the start */
-> +			ret = __adjust_resource(res, end+1,
-> +						res->end - end);
-> +		} else if (res->start != start && res->end == end) {
-> +			/* adjust the end */
-> +			ret = __adjust_resource(res, res->start,
-> +						start - res->start);
-> +		} else {
-> +			/* split into two entries */
-> +			new = kzalloc(sizeof(struct resource), GFP_KERNEL);
-> +			if (!new) {
-> +				ret = -ENOMEM;
-> +				break;
-> +			}
-> +			new->name = res->name;
-> +			new->start = end + 1;
-> +			new->end = res->end;
-> +			new->flags = res->flags;
-> +			new->parent = res->parent;
-> +			new->sibling = res->sibling;
-> +			new->child = NULL;
-> +
-> +			ret = __adjust_resource(res, res->start,
-> +						start - res->start);
-> +			if (ret) {
-> +				kfree(new);
-> +				break;
-> +			}
-> +			res->sibling = new;
-> +		}
-> +
-> +		break;
+And we do this by guess the load higher or lower, is that right?
+
+And I think target_load() is capable enough to choose the higher load,
+if 'cpu_rq(cpu)->load.weight' is really higher, the results will be the
+same.
+
+So what about this:
+
+	/* prefer higher load if burst */
+	load = burst_prev ?
+		target_load(prev_cpu, idx) : source_load(prev_cpu, idx);
+
+	this_load = target_load(this_cpu, idx);
+
+Regards,
+Michael Wang
+
 > +	}
-> +
-> +	write_unlock(&resource_lock);
-> +	return ret;
-> +}
-> +
->  /*
->   * Managed region resource
->   */
-
--- 
-Ram Pai
+> 
+>  	/*
+>  	 * If sync wakeup then subtract the (maximum possible)
+> 
 
