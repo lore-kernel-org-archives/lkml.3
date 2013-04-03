@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761463Ab3DCVZQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 17:25:16 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60643 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760497Ab3DCVZP (ORCPT
+	id S1763356Ab3DCVdn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 17:33:43 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:36171 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760497Ab3DCVdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 17:25:15 -0400
-Message-ID: <515C9E38.9060603@wwwdotorg.org>
-Date: Wed, 03 Apr 2013 15:25:12 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 3 Apr 2013 17:33:41 -0400
+Date: Wed, 3 Apr 2013 14:33:34 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
+Message-ID: <20130403213334.GE3411@htj.dyndns.org>
+References: <1364373399-17397-1-git-send-email-mhocko@suse.cz>
+ <20130327145727.GD29052@cmpxchg.org>
+ <20130327151104.GK16579@dhcp22.suse.cz>
+ <51530E1E.3010100@parallels.com>
+ <20130327153220.GL16579@dhcp22.suse.cz>
+ <20130327173223.GQ16579@dhcp22.suse.cz>
+ <20130328074814.GA3018@dhcp22.suse.cz>
+ <20130402082648.GB24345@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Tony Prisk <linux@prisktech.co.nz>
-CC: linus.walleij@linaro.org, robherring2@gmail.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com
-Subject: Re: [PATCHv5 4/7] pinctrl: gpio: vt8500: Add pincontrol driver for
- arch-vt8500
-References: <1364970291-17721-1-git-send-email-linux@prisktech.co.nz> <1364970291-17721-5-git-send-email-linux@prisktech.co.nz>
-In-Reply-To: <1364970291-17721-5-git-send-email-linux@prisktech.co.nz>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130402082648.GB24345@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 12:24 AM, Tony Prisk wrote:
-> This patch adds support for the GPIO/pinmux controller found on the VIA
-> VT8500 and Wondermedia WM8xxx-series SoCs.
-> 
-> Each pin within the controller is capable of operating as a GPIO or as
-> an alternate function. The pins are numbered according to their control
-> bank/bit so that if new pins are added, the existing numbering is maintained.
-> 
-> All currently supported SoCs are included: VT8500, WM8505, WM8650, WM8750 and
-> WM8850.
-> 
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+On Tue, Apr 02, 2013 at 10:26:48AM +0200, Michal Hocko wrote:
+> Tejun,
+> could you take this one please?
 
-At a quick glance, the alloc/free stuff looks good in this patch, so I
-re-affirm the reviewed-by above.
+Aye aye, applied to cgroup/for-3.10.
+
+Thanks.
+
+-- 
+tejun
