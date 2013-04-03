@@ -1,99 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762520Ab3DCOxh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:53:37 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11493 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760985Ab3DCOxf (ORCPT
+	id S1762580Ab3DCOyG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:54:06 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45152 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760979Ab3DCOyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:53:35 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 03 Apr 2013 07:52:30 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Pritesh Raithatha <praithatha@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Andrew Chew <achew@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v9 09/14] clk: tegra: Workaround for Tegra114 MSENC problem
-Date: Wed, 3 Apr 2013 17:40:44 +0300
-Message-ID: <1365000110-8916-11-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
+	Wed, 3 Apr 2013 10:54:04 -0400
+Message-ID: <515C427E.4020101@ti.com>
+Date: Wed, 3 Apr 2013 17:53:50 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Tony Lindgren <tony@atomide.com>
+CC: Felipe Balbi <balbi@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 01/21] usb: phy: nop: Add some parameters to platform
+ data
+References: <1363794300-31526-1-git-send-email-rogerq@ti.com> <1363794300-31526-2-git-send-email-rogerq@ti.com> <20130320155555.GG1567@arwen.pp.htv.fi> <20130320161324.GL16413@atomide.com> <20130320161947.GJ1567@arwen.pp.htv.fi> <20130402172129.GT10155@atomide.com>
+In-Reply-To: <20130402172129.GT10155@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Workaround a hardware bug in MSENC during clock enable.
+On 04/02/2013 08:21 PM, Tony Lindgren wrote:
+> * Felipe Balbi <balbi@ti.com> [130320 09:24]:
+>> On Wed, Mar 20, 2013 at 09:13:24AM -0700, Tony Lindgren wrote:
+>>> * Felipe Balbi <balbi@ti.com> [130320 09:00]:
+>>>> On Wed, Mar 20, 2013 at 05:44:40PM +0200, Roger Quadros wrote:
+>>>>> Add clk_rate parameter to platform data. If supplied, the
+>>>>> NOP phy driver will program the clock to that rate during probe.
+>>>>>
+>>>>> Also add 2 flags, needs_vcc and needs_reset.
+>>>>> If the flag is set and the regulator couldn't be found
+>>>>> then the driver will bail out with -EPROBE_DEFER.
+>>>>>
+>>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>>>> Acked-by: Felipe Balbi <balbi@ti.com>
+>>>>
+>>>> Hi Tony,
+>>>>
+>>>> maybe you might prefer to merge commit 1f0972f from my next branch which
+>>>> is exactly this patch. Basically, if you:
+>>>>
+>>>> $ git fetch git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git next
+>>>> $ git merge 1f0972f
+>>>>
+>>>> you get $SUBJECT and can apply the others without fear of conflicts
+>>>> later.
+>>>
+>>> OK thanks will use commit 1f0972f, so let's consider that commit immutable.
+>>
+>> yeah, once it hits my 'next' branch, I don't rebase anymore.
+> 
+> I've applied the board related patchs into omap-for-v3.10/usb that's based
+> on commit 1f0972f.
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- drivers/clk/tegra/clk-periph-gate.c |    9 +++++++++
- drivers/clk/tegra/clk.h             |    2 ++
- 2 files changed, 11 insertions(+), 0 deletions(-)
+Thanks Tony.
 
-diff --git a/drivers/clk/tegra/clk-periph-gate.c b/drivers/clk/tegra/clk-periph-gate.c
-index 6dd5332..c9083fb 100644
---- a/drivers/clk/tegra/clk-periph-gate.c
-+++ b/drivers/clk/tegra/clk-periph-gate.c
-@@ -43,6 +43,8 @@ static DEFINE_SPINLOCK(periph_ref_lock);
- 
- #define periph_clk_to_bit(periph) (1 << (gate->clk_num % 32))
- 
-+#define LVL2_CLK_GATE_OVRE 0x554
-+
- /* Peripheral gate clock ops */
- static int clk_periph_is_enabled(struct clk_hw *hw)
- {
-@@ -83,6 +85,13 @@ static int clk_periph_enable(struct clk_hw *hw)
- 		}
- 	}
- 
-+	if (gate->flags & TEGRA_PERIPH_WAR_1005168) {
-+		writel_relaxed(0, gate->clk_base + LVL2_CLK_GATE_OVRE);
-+		writel_relaxed(BIT(22), gate->clk_base + LVL2_CLK_GATE_OVRE);
-+		udelay(1);
-+		writel_relaxed(0, gate->clk_base + LVL2_CLK_GATE_OVRE);
-+	}
-+
- 	spin_unlock_irqrestore(&periph_ref_lock, flags);
- 
- 	return 0;
-diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
-index fd12b77..fb48f04 100644
---- a/drivers/clk/tegra/clk.h
-+++ b/drivers/clk/tegra/clk.h
-@@ -358,6 +358,7 @@ struct tegra_clk_periph_regs {
-  * TEGRA_PERIPH_ON_APB - If peripheral is in the APB bus then read the
-  *     bus to flush the write operation in apb bus. This flag indicates
-  *     that this peripheral is in apb bus.
-+ * TEGRA_PERIPH_WAR_1005168 - Apply workaround for Tegra114 MSENC bug
-  */
- struct tegra_clk_periph_gate {
- 	u32			magic;
-@@ -377,6 +378,7 @@ struct tegra_clk_periph_gate {
- #define TEGRA_PERIPH_NO_RESET BIT(0)
- #define TEGRA_PERIPH_MANUAL_RESET BIT(1)
- #define TEGRA_PERIPH_ON_APB BIT(2)
-+#define TEGRA_PERIPH_WAR_1005168 BIT(3)
- 
- void tegra_periph_reset(struct tegra_clk_periph_gate *gate, bool assert);
- extern const struct clk_ops tegra_clk_periph_gate_ops;
--- 
-1.7.7.rc0.72.g4b5ea.dirty
-
+cheers,
+-roger
