@@ -1,107 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758707Ab3DCAKr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 20:10:47 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26907 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756197Ab3DCAKp convert rfc822-to-8bit (ORCPT
+	id S1758117Ab3DCANG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 20:13:06 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:51118 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752865Ab3DCANE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 20:10:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,396,1363158000"; 
-   d="scan'208";a="312694895"
-Message-ID: <515B7375.9000502@intel.com>
-Date: Wed, 03 Apr 2013 02:10:29 +0200
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Tue, 2 Apr 2013 20:13:04 -0400
+Date: Tue, 2 Apr 2013 17:13:00 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Platform Driver <platform-driver-x86@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH 1/1] Introduce Intel RAPL cooling device driver
+Message-ID: <20130403001300.GA13838@kroah.com>
+References: <1364940936-20846-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
+ <20130402230042.GA8713@kroah.com>
+ <20130402165340.61b7da02@chromoly>
 MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>
-CC: linux-acpi@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        Len Brown <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] acpi/bgrt: Don't let users configure BGRT on non X86
- systems
-References: <0234310@agluck-desk.sc.intel.com>
-In-Reply-To: <0234310@agluck-desk.sc.intel.com>
-Content-Type: text/plain; charset=US-ASCII;
-	format=flowed
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130402165340.61b7da02@chromoly>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/29/2013 11:30 PM, Luck, Tony wrote:
-> Fengguang Wu's 0-Day kernel build testing backend found the
-> following build error for an allmodconfig build on ia64:
->
->     drivers/built-in.o: In function `show_yoffset':
->>> bgrt.c:(.text+0xe5a71): undefined reference to `bgrt_tab'
->>> bgrt.c:(.text+0xe5a91): undefined reference to `bgrt_tab'
->     drivers/built-in.o: In function `show_xoffset':
->>> bgrt.c:(.text+0xe5b51): undefined reference to `bgrt_tab'
->>> bgrt.c:(.text+0xe5b71): undefined reference to `bgrt_tab'
->     drivers/built-in.o: In function `show_type':
->>> bgrt.c:(.text+0xe5c31): undefined reference to `bgrt_tab'
->     drivers/built-in.o:bgrt.c:(.text+0xe5c51): more undefined references to `bgrt_tab' follow
->     drivers/built-in.o: In function `bgrt_init':
->     bgrt.c:(.init.text+0x8931): undefined reference to `bgrt_image'
->     bgrt.c:(.init.text+0x8932): undefined reference to `bgrt_image_size'
->     bgrt.c:(.init.text+0x8950): undefined reference to `bgrt_image'
->     bgrt.c:(.init.text+0x8960): undefined reference to `bgrt_image_size'
->
-> The problem is that all these undefined names are provided by
-> arch/x86/platform/efi/efi-bgrt.c - which is obviously not available
-> to the ia64 build.
->
-> It doesn't seem useful to provide the BGRT support for Itanium
-> (many systems are headless and have no graphics at all). So
-> just don't let users configure this driver on non-X86 machines.
->
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Acked-by: H. Peter Anvin <hpa@zytor.com>
-> Signed-off-by: Tony Luck <tony.luck@intel.com>
+On Tue, Apr 02, 2013 at 04:53:40PM -0700, Jacob Pan wrote:
+> On Tue, 2 Apr 2013 16:00:42 -0700
+> Greg KH <gregkh@linuxfoundation.org> wrote:
+> 
+> > And, one final complaint, never use "raw" kobjects, for loads of good
+> > reasons, not the least being you just prevented userspace from seeing
+> > what is happening with your devices.  Use the driver model, that's
+> > what it is there for, if you need "sub children", or subdirectories.
+> I chose to use to kobjects for the reason that userspace can see the
+> device linking more clearly.
 
-I'd take it, but it didn't seem to make it to the list for some obscure 
-reason and I'd prefer it to show up there before it shows up in my tree.
+Then use a 'struct device'.
 
-Let's see if my reply makes it.
+> Let me try to paraphrase, I have two options:
+> 1. if I use the platform device model instead of raw kobjects, I would
+> have one platform device for each rapl domain. Then link individual
+> platform device with the generic thermal layer sysfs.
 
-Thanks,
-Rafael
+I don't understand.
 
+> 2. In the current patch, I have one platform driver, then expose per
+> domain kobject that can be linked to the generic thermal layer. Common
+> attributes of all domains are grouped under the kset. 
 
-> ---
->   drivers/acpi/Kconfig | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-> index 4fc0ffc..8fcae6d 100644
-> --- a/drivers/acpi/Kconfig
-> +++ b/drivers/acpi/Kconfig
-> @@ -395,7 +395,7 @@ config ACPI_CUSTOM_METHOD
->   
->   config ACPI_BGRT
->   	bool "Boottime Graphics Resource Table support"
-> -	depends on EFI
-> +	depends on EFI && X86
->           help
->   	  This driver adds support for exposing the ACPI Boottime Graphics
->   	  Resource Table, which allows the operating system to obtain
+Then use a 'struct device' that is attached to that kset, no need to use
+a platform device, as that's not what is needed here, right?
 
----------------------------------------------------------------------
-Intel Technology Poland sp. z o.o.
-z siedziba w Gdansku
-ul. Slowackiego 173
-80-298 Gdansk
+> I did consider both options. I thought using #2 option is better since
+> it allow user to discover the topologies easier by following the
+> sysfs link. If i use use #1, it would be hard to expose the common
+> attributes and more code too. Perhpas I misread
+> Documentation/kobjects.txt which i thought kobject/kset are perfect for
+> presenting situation like this.
 
-Sad Rejonowy Gdansk Polnoc w Gdansku, 
-VII Wydzial Gospodarczy Krajowego Rejestru Sadowego, 
-numer KRS 101882
+No, kobjects are for things not using the device tree, like filesystems
+or other stuff.  You are in the device tree, so use a 'struct device'.
+If you use a "raw" kobject, you do not notify userspace what is going
+on, and you loose out on a bunch of other stuff that the driver model
+provides you.
 
-NIP 957-07-52-316
-Kapital zakladowy 200.000 zl
+But do you even need to use anything at all?
 
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
+Let's step back and start over, what exactly are you trying to tell
+userspace?  What data do you have that you need to express to it?  How
+do you want userspace to see/use it?
 
+greg k-h
