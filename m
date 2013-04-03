@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763074Ab3DCTH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 15:07:56 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60839 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756069Ab3DCTHz (ORCPT
+	id S1763130Ab3DCTI0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 15:08:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37626 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762939Ab3DCTIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 15:07:55 -0400
-Message-ID: <515C7E07.4040505@wwwdotorg.org>
-Date: Wed, 03 Apr 2013 13:07:51 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 3 Apr 2013 15:08:24 -0400
+Message-ID: <515C7E20.5060402@canonical.com>
+Date: Wed, 03 Apr 2013 15:08:16 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: gregkh@linuxfoundation.org, balbi@ti.com, stern@rowland.harvard.edu,
-        linux-tegra@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/7] ARM: tegra: finalize USB EHCI and PHY bindings
-References: <1364978502-22887-1-git-send-email-vbyravarasu@nvidia.com> <1364978502-22887-2-git-send-email-vbyravarasu@nvidia.com>
-In-Reply-To: <1364978502-22887-2-git-send-email-vbyravarasu@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: David Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [v3.8 Regression]  Merge tag 'v3.7-rc2' into drm-intel-next-queued
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 02:41 AM, Venu Byravarasu wrote:
-> The existing Tegra USB bindings have a few issues:
-...
-> This patch fixes the binding definition to resolve these issues.
+Hi Daniel,
 
-> diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt
+A bug was opened against the Ubuntu kernel[0].  After a kernel bisect, 
+it was found the following was the first bad commit:
 
->  Required properties :
-...
-> +  - vbus-supply: regulator for VBUS
 
-Doesn't the driver only need to control VBUS if the port is in OTG mode?
+commit c2fb7916927e989ea424e61ce5fe617e54878827
+Merge: 29de6ce 6f0c058
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Mon Oct 22 14:34:51 2012 +0200
 
-If there is no VBUS control, and the HW provides VBUS, I think that the
-port can only operate in host mode.
+     Merge tag 'v3.7-rc2' into drm-intel-next-queued
 
-If there is no VBUS control, and the HW does not provide VBUS, I think
-that the port can only operate in peripheral mode.
 
-If there is VBUS control, then shouldn't the port always operate in OTG
-mode, or are there other reasons to control VBUS even in host-only mode?
 
-If VBUS control is only useful for OTG mode, then I think the
-vbus-supply property should be documented in a "Required properties for
-dr_mode == otg" section.
+The regression was introduced as of v3.8-rc1.  However, further testing 
+also shows this bug is now fixed in v3.9-rc4.
 
-I assume that VBUS control makes no sense for a peripheral-mode-only
-port, so if VBUS control is useful for host-only mode as well as OTG
-mode, then I think the vbus-supply property should be documented in a
-"Required properties for dr_mode != peripheral" section.
+I see that you are the author of this patch, so I wanted see if I can 
+get your feedback.  Do you happen to have an idea what may have fixed 
+this in v3.9-rc4, so we can send a request to stable, if not already 
+done?  Otherwise, I can perform a reverse bisect to see which commit 
+fixed this.
 
-Is the following table correct?
 
-Port operating mode:	host	peripheral	otg
---------------------	----	----------	---
-VBUS control required:	no	no		yes
-VBUS control useful:	yes[1]?	no		yes
+Thanks,
 
-[1] perhaps for power-saving/suspend???
+Joe
+
+[0] http://pad.lv/1109309
