@@ -1,103 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180Ab3DCOr2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:47:28 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18467 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111Ab3DCOrX (ORCPT
+	id S1761853Ab3DCOqH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:46:07 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:63043 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758844Ab3DCOpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:47:23 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 03 Apr 2013 07:46:19 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+	Wed, 3 Apr 2013 10:45:54 -0400
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Pritesh Raithatha <praithatha@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Andrew Chew <achew@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v9 04/14] clk: tegra: introduce TEGRA_PLL_HAS_LOCK_ENABLE
-Date: Wed, 3 Apr 2013 17:40:38 +0300
-Message-ID: <1365000110-8916-5-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+        Bjorn Helgaas <bhelgaas@google.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH v3 03/12] of/pci: Add of_pci_parse_bus_range() function
+Date: Wed,  3 Apr 2013 16:45:09 +0200
+Message-Id: <1365000318-28256-4-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.8.2
+In-Reply-To: <1365000318-28256-1-git-send-email-thierry.reding@avionic-design.de>
+References: <1365000318-28256-1-git-send-email-thierry.reding@avionic-design.de>
+X-Provags-ID: V02:K0:NMZjLb00773EoV79SNxpiFMIOXAvCykZPtwfpvzIML3
+ +hOxiIUWNtPoUpJbaRJ2JLLelbrDps0OCmcZ8J+zzCuhsGeAcc
+ qEHjokUWxRA0lSZdt0U0i0+gVpXGFIVfywBM32052SmaxxM/aj
+ P6rYfr6T63L3oBvzvMsFz23kl/YmSmsG1PNS49Ghi80QK6lHA2
+ L84hZhAo5UUHxHULietVsoxmARijBDigg4+BtobNfRQDkIVPNK
+ cvABcRXAybk3iekg/eAIy/MIMHmyNrkg2Jq0NYk44HW8+5q/Rs
+ 3hc1U7oA/JDXpoIx+hJTYawze9jwkyZxMhaWx9ULoIvPCNfwkp
+ 1mu0FB/f4jS7e6BK+bDG87ovR+pSRm30/QJ05hMfLOBgWIAS4I
+ HmBlxDGWhkyDTWSCWM+y+yvZ7f3RKmBAmnnJBT8sixy3oLRZ/s
+ TeajF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra114 PLLC2 and PLLC3 don't have a lock enable bit. The lock bits are
-always functional.
+This function can be used to parse a bus-range property as specified by
+device nodes representing PCI bridges.
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 ---
- drivers/clk/tegra/clk-pll.c |    5 +++++
- drivers/clk/tegra/clk.h     |    2 ++
- 2 files changed, 7 insertions(+), 0 deletions(-)
+ drivers/of/of_pci.c    | 25 +++++++++++++++++++++++++
+ include/linux/of_pci.h |  1 +
+ 2 files changed, 26 insertions(+)
 
-diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
-index 4ee6d03..eaab060 100644
---- a/drivers/clk/tegra/clk-pll.c
-+++ b/drivers/clk/tegra/clk-pll.c
-@@ -108,6 +108,9 @@ static void clk_pll_enable_lock(struct tegra_clk_pll *pll)
- 	if (!(pll->flags & TEGRA_PLL_USE_LOCK))
- 		return;
- 
-+	if (!(pll->flags & TEGRA_PLL_HAS_LOCK_ENABLE))
-+		return;
+diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+index 4dd7b9b..42c687a 100644
+--- a/drivers/of/of_pci.c
++++ b/drivers/of/of_pci.c
+@@ -64,3 +64,28 @@ int of_pci_get_devfn(struct device_node *np)
+ 	return (be32_to_cpup(reg) >> 8) & 0xff;
+ }
+ EXPORT_SYMBOL_GPL(of_pci_get_devfn);
 +
- 	val = pll_readl_misc(pll);
- 	val |= BIT(pll->params->lock_enable_bit_idx);
- 	pll_writel_misc(val, pll);
-@@ -675,6 +678,7 @@ struct clk *tegra_clk_register_pll(const char *name, const char *parent_name,
- 	struct clk *clk;
++/**
++ * of_pci_parse_bus_range() - parse the bus-range property of a PCI device
++ * @node: device node
++ * @res: address to a struct resource to return the bus-range
++ *
++ * Returns 0 on success or a negative error-code on failure.
++ */
++int of_pci_parse_bus_range(struct device_node *node, struct resource *res)
++{
++	const __be32 *values;
++	int len;
++
++	values = of_get_property(node, "bus-range", &len);
++	if (!values || len < sizeof(*values) * 2)
++		return -EINVAL;
++
++	res->name = node->name;
++	res->start = be32_to_cpup(values++);
++	res->end = be32_to_cpup(values);
++	res->flags = IORESOURCE_BUS;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(of_pci_parse_bus_range);
+diff --git a/include/linux/of_pci.h b/include/linux/of_pci.h
+index 91ec484..7a04826 100644
+--- a/include/linux/of_pci.h
++++ b/include/linux/of_pci.h
+@@ -11,5 +11,6 @@ struct device_node;
+ struct device_node *of_pci_find_child_device(struct device_node *parent,
+ 					     unsigned int devfn);
+ int of_pci_get_devfn(struct device_node *np);
++int of_pci_parse_bus_range(struct device_node *node, struct resource *res);
  
- 	pll_flags |= TEGRA_PLL_BYPASS;
-+	pll_flags |= TEGRA_PLL_HAS_LOCK_ENABLE;
- 	pll = _tegra_init_pll(clk_base, pmc, fixed_rate, pll_params, pll_flags,
- 			      freq_table, lock);
- 	if (IS_ERR(pll))
-@@ -698,6 +702,7 @@ struct clk *tegra_clk_register_plle(const char *name, const char *parent_name,
- 	struct clk *clk;
- 
- 	pll_flags |= TEGRA_PLL_LOCK_MISC | TEGRA_PLL_BYPASS;
-+	pll_flags |= TEGRA_PLL_HAS_LOCK_ENABLE;
- 	pll = _tegra_init_pll(clk_base, pmc, fixed_rate, pll_params, pll_flags,
- 			      freq_table, lock);
- 	if (IS_ERR(pll))
-diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
-index fff520a..17ddb22 100644
---- a/drivers/clk/tegra/clk.h
-+++ b/drivers/clk/tegra/clk.h
-@@ -185,6 +185,7 @@ struct tegra_clk_pll_params {
-  * TEGRA_PLL_LOCK_MISC - Lock bit is in the misc register instead of the
-  *     base register.
-  * TEGRA_PLL_BYPASS - PLL has bypass bit
-+ * TEGRA_PLL_HAS_LOCK_ENABLE - PLL has bit to enable lock monitoring
-  */
- struct tegra_clk_pll {
- 	struct clk_hw	hw;
-@@ -215,6 +216,7 @@ struct tegra_clk_pll {
- #define TEGRA_PLLE_CONFIGURE BIT(7)
- #define TEGRA_PLL_LOCK_MISC BIT(8)
- #define TEGRA_PLL_BYPASS BIT(9)
-+#define TEGRA_PLL_HAS_LOCK_ENABLE BIT(10)
- 
- extern const struct clk_ops tegra_clk_pll_ops;
- extern const struct clk_ops tegra_clk_plle_ops;
+ #endif
 -- 
-1.7.7.rc0.72.g4b5ea.dirty
+1.8.2
 
