@@ -1,98 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762166Ab3DCGWj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 02:22:39 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:56338 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760485Ab3DCGWi (ORCPT
+	id S1762473Ab3DCGYx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 02:24:53 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:54093 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762335Ab3DCGYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 02:22:38 -0400
-Message-ID: <515BCA94.6050703@linux.vnet.ibm.com>
-Date: Wed, 03 Apr 2013 14:22:12 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
-        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
-        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
-        mgorman@suse.de, riel@redhat.com
-Subject: Re: [patch v3 0/8] sched: use runnable avg in load balance
-References: <1364873008-3169-1-git-send-email-alex.shi@intel.com> <515A877B.3020908@linux.vnet.ibm.com> <515A9859.6000606@intel.com> <515B97FF.2040409@linux.vnet.ibm.com> <515B9A7A.6030807@intel.com> <515BA0B7.2090906@linux.vnet.ibm.com> <515BAFE6.1020804@intel.com>
-In-Reply-To: <515BAFE6.1020804@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040306-0260-0000-0000-000002C13E89
+	Wed, 3 Apr 2013 02:24:52 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: linus.walleij@linaro.org
+Cc: robherring2@gmail.com, swarren@wwwdotorg.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCHv5 1/7] of: Add support for reading a u32 from a multi-value property.
+Date: Wed,  3 Apr 2013 19:24:45 +1300
+Message-Id: <1364970291-17721-2-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1364970291-17721-1-git-send-email-linux@prisktech.co.nz>
+References: <1364970291-17721-1-git-send-email-linux@prisktech.co.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 12:28 PM, Alex Shi wrote:
-> On 04/03/2013 11:23 AM, Michael Wang wrote:
->> On 04/03/2013 10:56 AM, Alex Shi wrote:
->>> On 04/03/2013 10:46 AM, Michael Wang wrote:
-[snip]
-> 
-> 
-> From 4722a7567dccfb19aa5afbb49982ffb6d65e6ae5 Mon Sep 17 00:00:00 2001
-> From: Alex Shi <alex.shi@intel.com>
-> Date: Tue, 2 Apr 2013 10:27:45 +0800
-> Subject: [PATCH] sched: use instant load for burst wake up
-> 
-> If many tasks sleep long time, their runnable load are zero. And if they
-> are waked up bursty, too light runnable load causes big imbalance among
-> CPU. So such benchmark, like aim9 drop 5~7%.
-> 
-> With this patch the losing is covered, and even is slight better.
+This patch adds an of_property_read_u32_index() function to allow
+reading a single indexed u32 value from a property containing multiple
+u32 values.
 
-A fast test show the improvement disappear and the regression back
-again...after applied this one as the 8th patch, it doesn't works.
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+---
+ drivers/of/base.c  |   33 +++++++++++++++++++++++++++++++++
+ include/linux/of.h |    9 +++++++++
+ 2 files changed, 42 insertions(+)
 
-Regards,
-Michael Wang
-
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  kernel/sched/fair.c | 16 ++++++++++++++--
->  1 file changed, 14 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index dbaa8ca..25ac437 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -3103,12 +3103,24 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
->  	unsigned long weight;
->  	int balanced;
->  	int runnable_avg;
-> +	int burst = 0;
-> 
->  	idx	  = sd->wake_idx;
->  	this_cpu  = smp_processor_id();
->  	prev_cpu  = task_cpu(p);
-> -	load	  = source_load(prev_cpu, idx);
-> -	this_load = target_load(this_cpu, idx);
-> +
-> +	if (cpu_rq(this_cpu)->avg_idle < sysctl_sched_migration_cost ||
-> +		cpu_rq(prev_cpu)->avg_idle < sysctl_sched_migration_cost)
-> +		burst= 1;
-> +
-> +	/* use instant load for bursty waking up */
-> +	if (!burst) {
-> +		load = source_load(prev_cpu, idx);
-> +		this_load = target_load(this_cpu, idx);
-> +	} else {
-> +		load = cpu_rq(prev_cpu)->load.weight;
-> +		this_load = cpu_rq(this_cpu)->load.weight;
-> +	}
-> 
->  	/*
->  	 * If sync wakeup then subtract the (maximum possible)
-> 
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index 321d3ef..f6c89ed 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -746,6 +746,39 @@ struct device_node *of_find_node_by_phandle(phandle handle)
+ EXPORT_SYMBOL(of_find_node_by_phandle);
+ 
+ /**
++ * of_property_read_u32_index - Find and read a u32 from a multi-value property.
++ *
++ * @np:		device node from which the property value is to be read.
++ * @propname:	name of the property to be searched.
++ * @index:	index of the u32 in the list of values
++ * @out_value:	pointer to return value, modified only if no error.
++ *
++ * Search for a property in a device node and read nth 32-bit value from
++ * it. Returns 0 on success, -EINVAL if the property does not exist,
++ * -ENODATA if property does not have a value, and -EOVERFLOW if the
++ * property data isn't large enough.
++ *
++ * The out_value is modified only if a valid u32 value can be decoded.
++ */
++int of_property_read_u32_index(const struct device_node *np,
++				       const char *propname,
++				       u32 index, u32 *out_value)
++{
++	struct property *prop = of_find_property(np, propname, NULL);
++
++	if (!prop)
++		return -EINVAL;
++	if (!prop->value)
++		return -ENODATA;
++	if (((index + 1) * sizeof(*out_value)) > prop->length)
++		return -EOVERFLOW;
++
++	*out_value = be32_to_cpup(((__be32 *)prop->value) + index);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(of_property_read_u32_index);
++
++/**
+  * of_property_read_u8_array - Find and read an array of u8 from a property.
+  *
+  * @np:		device node from which the property value is to be read.
+diff --git a/include/linux/of.h b/include/linux/of.h
+index a0f1292..c0747a4 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -235,6 +235,9 @@ extern struct device_node *of_find_node_with_property(
+ extern struct property *of_find_property(const struct device_node *np,
+ 					 const char *name,
+ 					 int *lenp);
++extern int of_property_read_u32_index(const struct device_node *np,
++				       const char *propname,
++				       u32 index, u32 *out_value);
+ extern int of_property_read_u8_array(const struct device_node *np,
+ 			const char *propname, u8 *out_values, size_t sz);
+ extern int of_property_read_u16_array(const struct device_node *np,
+@@ -394,6 +397,12 @@ static inline struct device_node *of_find_compatible_node(
+ 	return NULL;
+ }
+ 
++static inline int of_property_read_u32_index(const struct device_node *np,
++			const char *propname, u32 index, u32 *out_value)
++{
++	return -ENOSYS;
++}
++
+ static inline int of_property_read_u8_array(const struct device_node *np,
+ 			const char *propname, u8 *out_values, size_t sz)
+ {
+-- 
+1.7.9.5
 
