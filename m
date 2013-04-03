@@ -1,62 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760475Ab3DCMSl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 08:18:41 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:49944 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759519Ab3DCMSj (ORCPT
+	id S1760971Ab3DCMTj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 08:19:39 -0400
+Received: from mail-da0-f41.google.com ([209.85.210.41]:37969 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759819Ab3DCMTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 08:18:39 -0400
-Message-ID: <515C1E0C.4070306@openwrt.org>
-Date: Wed, 03 Apr 2013 14:18:20 +0200
-From: Florian Fainelli <florian@openwrt.org>
-Organization: OpenWrt
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: balbi@ti.com
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Kernel development list <linux-kernel@vger.kernel.org>, arnd@arndb.de,
-        gregkh@linuxfoundation.org, USB list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 1/5 v2] USB: regroup all depends on USB within an if USB
- block
-References: <Pine.LNX.4.44L0.1304021359130.1314-100000@iolanthe.rowland.org> <515C1C61.50301@openwrt.org> <20130403121503.GY25837@arwen.pp.htv.fi>
-In-Reply-To: <20130403121503.GY25837@arwen.pp.htv.fi>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 3 Apr 2013 08:19:38 -0400
+From: Hongbo Zhang <hongbo.zhang@linaro.org>
+To: linux@roeck-us.net, khali@linux-fr.org, lm-sensors@lm-sensors.org,
+        cbou@mail.ru, dwmw2@infradead.org
+Cc: linaro-kernel@lists.linaro.org, STEricsson_nomadik_linux@list.st.com,
+        linux-kernel@vger.kernel.org, Hongbo Zhang <hongbo.zhang@linaro.org>
+Subject: [PATCH v8 0/5] Add ST-Ericsson AB8500 HWMON driver
+Date: Wed,  3 Apr 2013 20:18:07 +0800
+Message-Id: <1364991492-2421-1-git-send-email-hongbo.zhang@linaro.org>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 04/03/13 14:15, Felipe Balbi a écrit :
-> On Wed, Apr 03, 2013 at 02:11:13PM +0200, Florian Fainelli wrote:
->> Le 04/02/13 20:06, Alan Stern a écrit :
->>> On Tue, 2 Apr 2013, Florian Fainelli wrote:
->>>
->>>> This patch removes the depends on USB from all config symbols in
->>>> drivers/usb/host/Kconfig and replace that with an if USB / endif block
->>>> as suggested by Alan Stern. Some source ... Kconfig lines have been
->>>> shuffled around to permit a better regroupment of the Kconfig files
->>>> depending on "config USB" item. No functionnal change is introduced.
->>>
->>> This looks almost right.  The only problem I see is in
->>> drivers/usb/core/Kconfig.  The USB_OTG_WHITELIST and
->>> USB_OTG_BLACKLIST_HUB symbols don't have to depend on USB or USB_OTG,
->>> because they can be set if EXPERT is enabled.
->>>
->>> To avoid these issues, I think the best approach is to move all the
->>> USB_OTG* entries over to drivers/usb/otg/Kconfig, where by rights they
->>> should have been all along.
->>>
->>> Felipe, do you agree?
->>
->> Make sense, I will make this a sixth patch to this serie if this
->> sounds right with you?
->
-> Pleae don't. Look at my 'next' branch. I deleted drivers/usb/otg/
-> completely. OTG should be part of usbcore and I have plans of adding
-> generic (and optional) OTG hooks in there.
+Guenter and Anton,
+As suggested by Anton, I rebased these patches to his latest battery-2.6 tree.
+Thanks.
 
-Ok, then I will leave it as it is now and simply address the comment 
-your made initially, does that fit both you and Alan? Thanks!
---
-Florian
+v7 -> v8 changes:
+- rebase these patches to Anton's latest battery-2.6 tree.
+
+v6 -> v7 changes:
+- move exporting symbols from [5/5] to [4/5], which was a mistake.
+
+v5 -> v6 changes:
+- add depend on AB8500_BM in Kconfig
+- fix wrong usage of clamp_val()
+- export symbols for module compiling
+
+v4 -> v5 changes:
+- split the old [2/3]-ab8500-re-arrange-ab8500-power-and-temperature-data into
+  new three [2/5], [3/5] and [4/5] patches.
+- hwmon driver minor coding style clean ups:
+  - {} usage in if-else statement in ab8500_read_sensor function
+  - index error fix in gpadc_monitor function
+  - fix issue of clamp_val() usage
+  - remove unnecessary else in function abx500_attrs_visible
+  - remove redundant print message about irq set up
+  - return the calling function return value directly in probe function
+
+v3 -> v4 changes:
+for patch [3/3]
+- define delays in HZ
+- update ab8500_read_sensor function, returning temp by parameter
+- remove ab8500_is_visible function
+- use clamp_val in set_min and set_max callback
+- remove unnecessary locks in remove and suspend functions
+- let abx500 and ab8500 use its own data structure
+for patch [2/3]
+- move the data tables from driver/power/ab8500_bmdata.c to
+  include/linux/power/ab8500.h
+- rename driver/power/ab8500_bmdata.c to driver/power/ab8500_bm.c
+- rename these variable names to eliminate CamelCase warnings
+- add const attribute to these data
+
+v2 -> v3 changes:
+- Add interface for converting voltage to temperature
+- Remove temp5 sensor since we cannot offer temperature read interface of it
+- Update hyst to use absolute temperature instead of a difference
+- Add the 3/3 patch
+
+v1 -> v2 changes:
+- Add Documentation/hwmon/abx500 and Documentation/hwmon/abx500
+- Make devices which cannot report milli-Celsius invisible
+- Add temp5_crit interface
+- Re-work the old find_active_thresholds() to threshold_updated()
+- Reset updated_min_alarm and updated_max_alarm at the end of each loop
+- Update the hyst mechamisn to make it works as real hyst
+- Remove non-stand attributes
+- Re-order the operations sequence inside probe and remove functions
+- Update all the lock usages to eliminate race conditions
+- Make attibutes index starts from 0
+also changes:
+- Since the old [1/2] "ARM: ux500: rename ab8500 to abx500 for hwmon driver"
+  has been merged by Samuel, so won't send it again.
+- Add another new patch "ab8500_btemp: export two symblols" as [2/2] of this
+  patch set.
+
+Hongbo Zhang (5):
+  ab8500_btemp: make ab8500_btemp_get* interfaces public
+  ab8500: power: eliminate CamelCase warning of some variables
+  ab8500: power: add const attributes to some data arrays
+  ab8500: power: export abx500_res_to_temp tables for hwmon
+  hwmon: add ST-Ericsson ABX500 hwmon driver
+
+ Documentation/hwmon/ab8500           |  22 ++
+ Documentation/hwmon/abx500           |  28 ++
+ drivers/hwmon/Kconfig                |  13 +
+ drivers/hwmon/Makefile               |   1 +
+ drivers/hwmon/ab8500.c               | 206 +++++++++++++++
+ drivers/hwmon/abx500.c               | 491 +++++++++++++++++++++++++++++++++++
+ drivers/hwmon/abx500.h               |  69 +++++
+ drivers/power/ab8500_bmdata.c        |  44 ++--
+ drivers/power/ab8500_btemp.c         |   5 +-
+ drivers/power/ab8500_fg.c            |   4 +-
+ include/linux/mfd/abx500.h           |   6 +-
+ include/linux/mfd/abx500/ab8500-bm.h |   1 +
+ include/linux/power/ab8500.h         |  16 ++
+ 13 files changed, 882 insertions(+), 24 deletions(-)
+ create mode 100644 Documentation/hwmon/ab8500
+ create mode 100644 Documentation/hwmon/abx500
+ create mode 100644 drivers/hwmon/ab8500.c
+ create mode 100644 drivers/hwmon/abx500.c
+ create mode 100644 drivers/hwmon/abx500.h
+ create mode 100644 include/linux/power/ab8500.h
+
+-- 
+1.8.0
+
