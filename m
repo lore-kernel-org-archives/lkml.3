@@ -1,113 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477Ab3DCIrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 04:47:09 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10045 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932416Ab3DCIrF (ORCPT
+	id S932570Ab3DCIwS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 04:52:18 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:36702 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759778Ab3DCIwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 04:47:05 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 03 Apr 2013 01:46:06 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: <gregkh@linuxfoundation.org>, <balbi@ti.com>, <stern@rowland.harvard.edu>,
-        <linux-tegra@vger.kernel.org>, <swarren@wwwdotorg.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH v2 5/7] usb: phy: tegra: get ULPI reset GPIO info using DT.
-Date: Wed, 3 Apr 2013 14:11:40 +0530
-Message-ID: <1364978502-22887-6-git-send-email-vbyravarasu@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1364978502-22887-1-git-send-email-vbyravarasu@nvidia.com>
-References: <1364978502-22887-1-git-send-email-vbyravarasu@nvidia.com>
-X-NVConfidentiality: public
+	Wed, 3 Apr 2013 04:52:12 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: CAI Qian <caiqian@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
+        linux-ext4@vger.kernel.org, Zheng Liu <gnehzuil.liu@gmail.com>
+Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591! (powerpc too!)
+In-Reply-To: <alpine.DEB.2.10.1304021611020.13746@trent.utfs.org>
+References: <2133129347.8273339.1364549222854.JavaMail.root@redhat.com> <87ip46ss0o.fsf@openvz.org> <1211053180.322948.1364797847717.JavaMail.root@redhat.com> <87fvzaspr8.fsf@openvz.org> <874841142.414482.1364875584266.JavaMail.root@redhat.com> <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org> <877gkls1q7.fsf@openvz.org> <alpine.DEB.2.10.1304021430480.13746@trent.utfs.org> <87r4isd1vn.fsf@openvz.org> <alpine.DEB.2.10.1304021611020.13746@trent.utfs.org>
+User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+Date: Wed, 03 Apr 2013 12:52:06 +0400
+Message-ID: <87li90q9mx.fsf@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As GPIO information is avail through DT, used it to get Tegra ULPI
-reset GPIO number. Added a new member to tegra_usb_phy structure to
-store this number.
+--=-=-=
 
-Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
----
-delta from v2: no change.
+On Tue, 2 Apr 2013 16:22:41 -0700 (PDT), Christian Kujau <lists@nerdbynature.de> wrote:
+> On Wed, 3 Apr 2013 at 02:05, Dmitry Monakhov wrote:
+> > Please drop that patch and collect logs with a kernel which 
+> > has only 0001-enable-ES_AGGRESSIVE_TEST-V2.patch patch applied
+Ok I have found at least one issue.
+Please give a try to this patch
 
- drivers/usb/phy/phy-tegra-usb.c   |   25 +++++++++++--------------
- include/linux/usb/tegra_usb_phy.h |    1 +
- 2 files changed, 12 insertions(+), 14 deletions(-)
+--=-=-=
+Content-Type: text/x-patch
+Content-Disposition: inline; filename=ext4_zeroout_cpu2disk_fix.patch
 
-diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
-index 16851e2..a2a89a9 100644
---- a/drivers/usb/phy/phy-tegra-usb.c
-+++ b/drivers/usb/phy/phy-tegra-usb.c
-@@ -541,11 +541,10 @@ static int ulpi_phy_power_on(struct tegra_usb_phy *phy)
- 	int ret;
- 	unsigned long val;
- 	void __iomem *base = phy->regs;
--	struct tegra_ulpi_config *config = phy->config;
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 1530cf4..e8460f6 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -3272,7 +3272,7 @@ static int ext4_ext_convert_to_initialized(handle_t *handle,
+ 		if (err)
+ 			goto out;
+ 		zero_ex.ee_block = ex->ee_block;
+-		zero_ex.ee_len = ext4_ext_get_actual_len(ex);
++		zero_ex.ee_len = cpu_to_le16(ext4_ext_get_actual_len(ext));
+ 		ext4_ext_store_pblock(&zero_ex, ext4_ext_pblock(ex));
  
--	gpio_direction_output(config->reset_gpio, 0);
-+	gpio_direction_output(phy->reset_gpio, 0);
- 	msleep(5);
--	gpio_direction_output(config->reset_gpio, 1);
-+	gpio_direction_output(phy->reset_gpio, 1);
- 
- 	clk_prepare_enable(phy->clk);
- 	msleep(1);
-@@ -603,10 +602,8 @@ static int ulpi_phy_power_on(struct tegra_usb_phy *phy)
- 
- static int ulpi_phy_power_off(struct tegra_usb_phy *phy)
- {
--	struct tegra_ulpi_config *config = phy->config;
--
- 	clk_disable(phy->clk);
--	return gpio_direction_output(config->reset_gpio, 0);
-+	return gpio_direction_output(phy->reset_gpio, 0);
- }
- 
- static int	tegra_phy_init(struct usb_phy *x)
-@@ -622,18 +619,18 @@ static int	tegra_phy_init(struct usb_phy *x)
- 			pr_err("%s: can't get ulpi clock\n", __func__);
- 			return PTR_ERR(phy->clk);
- 		}
--		if (!gpio_is_valid(ulpi_config->reset_gpio))
--			ulpi_config->reset_gpio =
--				of_get_named_gpio(phy->dev->of_node,
--						  "nvidia,phy-reset-gpio", 0);
--		if (!gpio_is_valid(ulpi_config->reset_gpio)) {
-+
-+		phy->reset_gpio =
-+			of_get_named_gpio(phy->dev->of_node,
-+					  "nvidia,phy-reset-gpio", 0);
-+		if (!gpio_is_valid(phy->reset_gpio)) {
- 			pr_err("%s: invalid reset gpio: %d\n", __func__,
--			       ulpi_config->reset_gpio);
-+			       phy->reset_gpio);
- 			err = -EINVAL;
- 			goto err1;
- 		}
--		gpio_request(ulpi_config->reset_gpio, "ulpi_phy_reset_b");
--		gpio_direction_output(ulpi_config->reset_gpio, 0);
-+		gpio_request(phy->reset_gpio, "ulpi_phy_reset_b");
-+		gpio_direction_output(phy->reset_gpio, 0);
- 		phy->ulpi = otg_ulpi_create(&ulpi_viewport_access_ops, 0);
- 		phy->ulpi->io_priv = phy->regs + ULPI_VIEWPORT;
- 	} else {
-diff --git a/include/linux/usb/tegra_usb_phy.h b/include/linux/usb/tegra_usb_phy.h
-index a7af923..6cfb8f1 100644
---- a/include/linux/usb/tegra_usb_phy.h
-+++ b/include/linux/usb/tegra_usb_phy.h
-@@ -62,6 +62,7 @@ struct tegra_usb_phy {
- 	struct device *dev;
- 	bool is_legacy_phy;
- 	bool is_ulpi_phy;
-+	int reset_gpio;
- };
- 
- struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
--- 
-1.7.0.4
+ 		err = ext4_ext_get_access(handle, inode, path + depth);
 
+--=-=-=
+
+
+> 
+> I've applied (only) 0001-enable-ES_AGGRESSIVE_TEST-V2.patch to 3.9-rc4:
+> 
+>   patching file fs/ext4/extents_status.h
+>   patching file fs/ext4/inode.c
+>   Hunk #1 succeeded at 1588 (offset 42 lines).
+>   Hunk #2 succeeded at 1609 (offset 42 lines).
+> 
+> And tried to download some images via bittorrent. As expected, lots of 
+> "ES cache assertation failed" were being logged:
+> 
+>  http://nerdbynature.de/bits/3.9.0-rc4/ext4/
+>  => messages_0001-enable-ES_AGGRESSIVE_TEST-V2.txt.xz
+> 
+> I've tried to download 3 files, all via bittorrent (so, fallocate & heavy 
+> mmap)
+> 
+> 1) 8GB Fedora iso, there are also WARNINGs bring triggered, see below.
+>    I decided to cancel the download after some gigabyes.
+> 
+> 2) A 50 MB Debian iso, this produced just one "ES cache assertation" 
+>    message. Download went OK, checksum was correct too.
+> 
+> 3) A 221 MB Fedora iso, produced a couple of "ES cache assertation" 
+>    messages, but no WARNINGs. Download went OK, checksum was correct too.
+> 
+> It's all in that messages_0001-enable-ES_AGGRESSIVE_TEST-V2.txt.xz file 
+> above. I just e2fsck'ed the ext4 filesystem again (and did so last night), 
+> but no errors were found.
+> 
+> HTH,
+> Christian.
+> 
+> One of the WARNINGs during that 8GB download:
+> 
+>     ino:39190654 lbkl:0, b_state=0x0004b988, b_size=4131
+>  ------------[ cut here ]------------
+>  WARNING: at /opt/linux-git/fs/ext4/inode.c:1600
+>  Modules linked in: md5 ecb nfs i2c_powermac therm_adt746x ecryptfs firewire_sbp2 arc4 b43 usb_storage mac80211 cfg80211
+>  NIP: c013745c LR: c013745c CTR: c000df9c
+>  REGS: edc479a0 TRAP: 0700   Tainted: G        W     (3.9.0-rc4-dirty)
+>  MSR: 00029032 <EE,ME,IR,DR,RI>  CR: 44028644  XER: 20000000
+>  TASK = edca9740[4379] 'flush-254:1' THREAD: edc46000
+>  GPR00: c013745c edc47a50 edca9740 00000034 edca9db0 00000006 00000000 00008000
+>  GPR08: 00003fb0 00218f23 00000000 c000006e 00000dc9 00000000 00000009 ee18cca0
+>  GPR16: edc47c78 0000000e 0004b9bf 0004b988 00000000 edc47a84 00001000 e6357540
+>  GPR24: edc47b78 e6357540 00000000 0004b97f 00000000 0051d188 00000000 0004b988
+>  NIP [c013745c] mpage_da_submit_io+0x3dc/0x3f0
+>  LR [c013745c] mpage_da_submit_io+0x3dc/0x3f0
+>  Call Trace:
+>  [edc47a50] [c013745c] mpage_da_submit_io+0x3dc/0x3f0 (unreliable)
+>  [edc47b30] [c013c9f0] mpage_da_map_and_submit+0x16c/0x5f0
+>  [edc47bc0] [c013d2e4] write_cache_pages_da+0x470/0x480
+>  [edc47c70] [c013d554] ext4_da_writepages+0x260/0x49c
+>  [edc47d20] [c00eeea0] __writeback_single_inode+0x34/0x120
+>  [edc47d40] [c00ef508] writeback_sb_inodes+0x1fc/0x34c
+>  [edc47db0] [c00ef6e4] __writeback_inodes_wb+0x8c/0xd0
+>  [edc47de0] [c00efa90] wb_writeback+0x1b4/0x1bc
+>  [edc47e20] [c00f06d0] wb_do_writeback+0x1ec/0x1f4
+>  [edc47e80] [c00f0748] bdi_writeback_thread+0x70/0x140
+>  [edc47eb0] [c0051c18] kthread+0xa8/0xac
+>  [edc47f40] [c00106cc] ret_from_kernel_thread+0x64/0x6c
+>  --- Exception: 0 at   (null)
+>      LR =   (null)
+>  Instruction dump:
+> 
+> -- 
+> BOFH excuse #61:
+> 
+> not approved by the FCC
+
+--=-=-=--
