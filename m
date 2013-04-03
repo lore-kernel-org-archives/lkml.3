@@ -1,129 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570Ab3DCIwS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 04:52:18 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:36702 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759778Ab3DCIwM (ORCPT
+	id S932407Ab3DCIrE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 04:47:04 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:64676 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932296Ab3DCIqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 04:52:12 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: CAI Qian <caiqian@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
-        linux-ext4@vger.kernel.org, Zheng Liu <gnehzuil.liu@gmail.com>
-Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591! (powerpc too!)
-In-Reply-To: <alpine.DEB.2.10.1304021611020.13746@trent.utfs.org>
-References: <2133129347.8273339.1364549222854.JavaMail.root@redhat.com> <87ip46ss0o.fsf@openvz.org> <1211053180.322948.1364797847717.JavaMail.root@redhat.com> <87fvzaspr8.fsf@openvz.org> <874841142.414482.1364875584266.JavaMail.root@redhat.com> <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org> <877gkls1q7.fsf@openvz.org> <alpine.DEB.2.10.1304021430480.13746@trent.utfs.org> <87r4isd1vn.fsf@openvz.org> <alpine.DEB.2.10.1304021611020.13746@trent.utfs.org>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Wed, 03 Apr 2013 12:52:06 +0400
-Message-ID: <87li90q9mx.fsf@openvz.org>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+	Wed, 3 Apr 2013 04:46:54 -0400
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Praveena Nadahally <praveen.nadahally@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Sakethram Bommisetti <sakethram.bommisetti@stericsson.com>,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH 03/12] usb: phy: ab8500-usb: set phy tuning values
+Date: Wed,  3 Apr 2013 10:45:04 +0200
+Message-Id: <1364978713-19612-4-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1364978713-19612-1-git-send-email-fabio.baltieri@linaro.org>
+References: <1364978713-19612-1-git-send-email-fabio.baltieri@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
+From: Sakethram Bommisetti <sakethram.bommisetti@stericsson.com>
 
-On Tue, 2 Apr 2013 16:22:41 -0700 (PDT), Christian Kujau <lists@nerdbynature.de> wrote:
-> On Wed, 3 Apr 2013 at 02:05, Dmitry Monakhov wrote:
-> > Please drop that patch and collect logs with a kernel which 
-> > has only 0001-enable-ES_AGGRESSIVE_TEST-V2.patch patch applied
-Ok I have found at least one issue.
-Please give a try to this patch
+Set phy tuning values proposed by the hardware teams for AB8500 and
+AB8505 to improve USB eye diagram performances.
 
---=-=-=
-Content-Type: text/x-patch
-Content-Disposition: inline; filename=ext4_zeroout_cpu2disk_fix.patch
+Signed-off-by: Sakethram Bommisetti <sakethram.bommisetti@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+---
+ drivers/usb/phy/phy-ab8500-usb.c | 87 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 87 insertions(+)
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 1530cf4..e8460f6 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -3272,7 +3272,7 @@ static int ext4_ext_convert_to_initialized(handle_t *handle,
- 		if (err)
- 			goto out;
- 		zero_ex.ee_block = ex->ee_block;
--		zero_ex.ee_len = ext4_ext_get_actual_len(ex);
-+		zero_ex.ee_len = cpu_to_le16(ext4_ext_get_actual_len(ext));
- 		ext4_ext_store_pblock(&zero_ex, ext4_ext_pblock(ex));
+diff --git a/drivers/usb/phy/phy-ab8500-usb.c b/drivers/usb/phy/phy-ab8500-usb.c
+index ab6dd07..5b92a59 100644
+--- a/drivers/usb/phy/phy-ab8500-usb.c
++++ b/drivers/usb/phy/phy-ab8500-usb.c
+@@ -33,11 +33,22 @@
+ #include <linux/mfd/abx500/ab8500.h>
+ #include <linux/usb/musb-ux500.h>
  
- 		err = ext4_ext_get_access(handle, inode, path + depth);
++/* Bank AB8500_SYS_CTRL2_BLOCK */
+ #define AB8500_MAIN_WD_CTRL_REG 0x01
++
++/* Bank AB8500_USB */
+ #define AB8500_USB_LINE_STAT_REG 0x80
+ #define AB8505_USB_LINE_STAT_REG 0x94
+ #define AB8500_USB_PHY_CTRL_REG 0x8A
+ 
++/* Bank AB8500_DEVELOPMENT */
++#define AB8500_BANK12_ACCESS 0x00
++
++/* Bank AB8500_DEBUG */
++#define AB8500_USB_PHY_TUNE1 0x05
++#define AB8500_USB_PHY_TUNE2 0x06
++#define AB8500_USB_PHY_TUNE3 0x07
++
+ #define AB8500_BIT_OTG_STAT_ID (1 << 0)
+ #define AB8500_BIT_PHY_CTRL_HOST_EN (1 << 0)
+ #define AB8500_BIT_PHY_CTRL_DEVICE_EN (1 << 1)
+@@ -671,6 +682,82 @@ static int ab8500_usb_probe(struct platform_device *pdev)
+ 		return err;
+ 	}
+ 
++	/* Phy tuning values for AB8500 */
++	if (!is_ab8500_2p0_or_earlier(ab->ab8500)) {
++		/* Enable the PBT/Bank 0x12 access */
++		err = abx500_set_register_interruptible(ab->dev,
++				AB8500_DEVELOPMENT, AB8500_BANK12_ACCESS, 0x01);
++		if (err < 0)
++			dev_err(ab->dev, "Failed to enable bank12 access err=%d\n",
++					err);
++
++		err = abx500_set_register_interruptible(ab->dev,
++				AB8500_DEBUG, AB8500_USB_PHY_TUNE1, 0xC8);
++		if (err < 0)
++			dev_err(ab->dev, "Failed to set PHY_TUNE1 register err=%d\n",
++					err);
++
++		err = abx500_set_register_interruptible(ab->dev,
++				AB8500_DEBUG, AB8500_USB_PHY_TUNE2, 0x00);
++		if (err < 0)
++			dev_err(ab->dev, "Failed to set PHY_TUNE2 register err=%d\n",
++					err);
++
++		err = abx500_set_register_interruptible(ab->dev,
++				AB8500_DEBUG, AB8500_USB_PHY_TUNE3, 0x78);
++		if (err < 0)
++			dev_err(ab->dev, "Failed to set PHY_TUNE3 regester err=%d\n",
++					err);
++
++		/* Switch to normal mode/disable Bank 0x12 access */
++		err = abx500_set_register_interruptible(ab->dev,
++				AB8500_DEVELOPMENT, AB8500_BANK12_ACCESS, 0x00);
++		if (err < 0)
++			dev_err(ab->dev, "Failed to switch bank12 access err=%d\n",
++					err);
++	}
++
++	/* Phy tuning values for AB8505 */
++	if (is_ab8505(ab->ab8500)) {
++		/* Enable the PBT/Bank 0x12 access */
++		err = abx500_mask_and_set_register_interruptible(ab->dev,
++				AB8500_DEVELOPMENT, AB8500_BANK12_ACCESS,
++				0x01, 0x01);
++		if (err < 0)
++			dev_err(ab->dev, "Failed to enable bank12 access err=%d\n",
++					err);
++
++		err = abx500_mask_and_set_register_interruptible(ab->dev,
++				AB8500_DEBUG, AB8500_USB_PHY_TUNE1,
++				0xC8, 0xC8);
++		if (err < 0)
++			dev_err(ab->dev, "Failed to set PHY_TUNE1 register err=%d\n",
++					err);
++
++		err = abx500_mask_and_set_register_interruptible(ab->dev,
++				AB8500_DEBUG, AB8500_USB_PHY_TUNE2,
++				0x60, 0x60);
++		if (err < 0)
++			dev_err(ab->dev, "Failed to set PHY_TUNE2 register err=%d\n",
++					err);
++
++		err = abx500_mask_and_set_register_interruptible(ab->dev,
++				AB8500_DEBUG, AB8500_USB_PHY_TUNE3,
++				0xFC, 0x80);
++
++		if (err < 0)
++			dev_err(ab->dev, "Failed to set PHY_TUNE3 regester err=%d\n",
++					err);
++
++		/* Switch to normal mode/disable Bank 0x12 access */
++		err = abx500_mask_and_set_register_interruptible(ab->dev,
++				AB8500_DEVELOPMENT, AB8500_BANK12_ACCESS,
++				0x00, 0x00);
++		if (err < 0)
++			dev_err(ab->dev, "Failed to switch bank12 access err=%d\n",
++					err);
++	}
++
+ 	/* Needed to enable ID detection. */
+ 	ab8500_usb_wd_workaround(ab);
+ 
+-- 
+1.8.1.3
 
---=-=-=
-
-
-> 
-> I've applied (only) 0001-enable-ES_AGGRESSIVE_TEST-V2.patch to 3.9-rc4:
-> 
->   patching file fs/ext4/extents_status.h
->   patching file fs/ext4/inode.c
->   Hunk #1 succeeded at 1588 (offset 42 lines).
->   Hunk #2 succeeded at 1609 (offset 42 lines).
-> 
-> And tried to download some images via bittorrent. As expected, lots of 
-> "ES cache assertation failed" were being logged:
-> 
->  http://nerdbynature.de/bits/3.9.0-rc4/ext4/
->  => messages_0001-enable-ES_AGGRESSIVE_TEST-V2.txt.xz
-> 
-> I've tried to download 3 files, all via bittorrent (so, fallocate & heavy 
-> mmap)
-> 
-> 1) 8GB Fedora iso, there are also WARNINGs bring triggered, see below.
->    I decided to cancel the download after some gigabyes.
-> 
-> 2) A 50 MB Debian iso, this produced just one "ES cache assertation" 
->    message. Download went OK, checksum was correct too.
-> 
-> 3) A 221 MB Fedora iso, produced a couple of "ES cache assertation" 
->    messages, but no WARNINGs. Download went OK, checksum was correct too.
-> 
-> It's all in that messages_0001-enable-ES_AGGRESSIVE_TEST-V2.txt.xz file 
-> above. I just e2fsck'ed the ext4 filesystem again (and did so last night), 
-> but no errors were found.
-> 
-> HTH,
-> Christian.
-> 
-> One of the WARNINGs during that 8GB download:
-> 
->     ino:39190654 lbkl:0, b_state=0x0004b988, b_size=4131
->  ------------[ cut here ]------------
->  WARNING: at /opt/linux-git/fs/ext4/inode.c:1600
->  Modules linked in: md5 ecb nfs i2c_powermac therm_adt746x ecryptfs firewire_sbp2 arc4 b43 usb_storage mac80211 cfg80211
->  NIP: c013745c LR: c013745c CTR: c000df9c
->  REGS: edc479a0 TRAP: 0700   Tainted: G        W     (3.9.0-rc4-dirty)
->  MSR: 00029032 <EE,ME,IR,DR,RI>  CR: 44028644  XER: 20000000
->  TASK = edca9740[4379] 'flush-254:1' THREAD: edc46000
->  GPR00: c013745c edc47a50 edca9740 00000034 edca9db0 00000006 00000000 00008000
->  GPR08: 00003fb0 00218f23 00000000 c000006e 00000dc9 00000000 00000009 ee18cca0
->  GPR16: edc47c78 0000000e 0004b9bf 0004b988 00000000 edc47a84 00001000 e6357540
->  GPR24: edc47b78 e6357540 00000000 0004b97f 00000000 0051d188 00000000 0004b988
->  NIP [c013745c] mpage_da_submit_io+0x3dc/0x3f0
->  LR [c013745c] mpage_da_submit_io+0x3dc/0x3f0
->  Call Trace:
->  [edc47a50] [c013745c] mpage_da_submit_io+0x3dc/0x3f0 (unreliable)
->  [edc47b30] [c013c9f0] mpage_da_map_and_submit+0x16c/0x5f0
->  [edc47bc0] [c013d2e4] write_cache_pages_da+0x470/0x480
->  [edc47c70] [c013d554] ext4_da_writepages+0x260/0x49c
->  [edc47d20] [c00eeea0] __writeback_single_inode+0x34/0x120
->  [edc47d40] [c00ef508] writeback_sb_inodes+0x1fc/0x34c
->  [edc47db0] [c00ef6e4] __writeback_inodes_wb+0x8c/0xd0
->  [edc47de0] [c00efa90] wb_writeback+0x1b4/0x1bc
->  [edc47e20] [c00f06d0] wb_do_writeback+0x1ec/0x1f4
->  [edc47e80] [c00f0748] bdi_writeback_thread+0x70/0x140
->  [edc47eb0] [c0051c18] kthread+0xa8/0xac
->  [edc47f40] [c00106cc] ret_from_kernel_thread+0x64/0x6c
->  --- Exception: 0 at   (null)
->      LR =   (null)
->  Instruction dump:
-> 
-> -- 
-> BOFH excuse #61:
-> 
-> not approved by the FCC
-
---=-=-=--
