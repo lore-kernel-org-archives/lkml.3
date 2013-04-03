@@ -1,77 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932440Ab3DCTZE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 15:25:04 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:48946 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932267Ab3DCTZA (ORCPT
+	id S1763322Ab3DCTZk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 15:25:40 -0400
+Received: from mail-da0-f42.google.com ([209.85.210.42]:54676 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763267Ab3DCTZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 15:25:00 -0400
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk, akpm@linux-foundation.org
-Cc: jack@suse.cz, david@fromorbit.com, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/3] writeback: set worker desc to identify writeback workers in task dumps
-Date: Wed,  3 Apr 2013 12:24:32 -0700
-Message-Id: <1365017072-32213-4-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1365017072-32213-1-git-send-email-tj@kernel.org>
-References: <1365017072-32213-1-git-send-email-tj@kernel.org>
+	Wed, 3 Apr 2013 15:25:37 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH v3] netdev/phy: Implement ieee802.3 clause 45 in mdio-octeon.c
+Date: Wed,  3 Apr 2013 12:25:32 -0700
+Message-Id: <1365017132-6035-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Writeback has been recently converted to use workqueue instead of its
-private thread pool implementation.  One negative side effect of this
-conversion is that there's no easy to tell which backing device a
-writeback work item was working on at the time of task dump, be it
-sysrq-t, BUG, WARN or whatever, which, according to our writeback
-brethren, is important in tracking down issues with a lot of mounted
-file systems on a lot of different devices.
+From: David Daney <david.daney@cavium.com>
 
-This patch restores that information using the new worker description
-facility.  bdi_writeback_workfn() calls set_work_desc() to identify
-which bdi it's working on.  The description is printed out together
-with the worqueue name and worker function as in the following example
-dump.
+The Octeon SMI/MDIO interfaces can do clause 45 communications, so
+implement this in the driver.
 
- WARNING: at /work/os/work/fs/fs-writeback.c:1015 bdi_writeback_workfn+0x2b4/0x3c0()
- Modules linked in:
- Pid: 28, comm: kworker/u18:0 Not tainted 3.9.0-rc1-work+ #24 empty empty/S3992
- Workqueue: writeback bdi_writeback_workfn (flush-8:16)
-  ffffffff820a3a98 ffff88015b927cb8 ffffffff81c61855 ffff88015b927cf8
-  ffffffff8108f500 0000000000000000 ffff88007a171948 ffff88007a1716b0
-  ffff88015b49df00 ffff88015b8d3940 0000000000000000 ffff88015b927d08
- Call Trace:
-  [<ffffffff81c61855>] dump_stack+0x19/0x1b
-  [<ffffffff8108f500>] warn_slowpath_common+0x70/0xa0
-  [<ffffffff8108f54a>] warn_slowpath_null+0x1a/0x20
-  [<ffffffff81200144>] bdi_writeback_workfn+0x2b4/0x3c0
-  [<ffffffff810b4c87>] process_one_work+0x1d7/0x660
-  [<ffffffff810b5c72>] worker_thread+0x122/0x380
-  [<ffffffff810bdfea>] kthread+0xea/0xf0
-  [<ffffffff81c6cedc>] ret_from_fork+0x7c/0xb0
+Also fix some comment formatting to make it consistent and to comply
+with the netdev style.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: David Daney <david.daney@cavium.com>
 ---
- fs/fs-writeback.c | 1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 8067d37..3be5718 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -1009,6 +1009,7 @@ void bdi_writeback_workfn(struct work_struct *work)
- 	struct backing_dev_info *bdi = wb->bdi;
- 	long pages_written;
+v3: Remove now bogus comment noted by Ben Huchings
+
+v2: No code changes from v1, just fixed comment formatting snafu.
+
+Sorry for the spam.
+
+
+ drivers/net/phy/mdio-octeon.c | 94 +++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 87 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/phy/mdio-octeon.c b/drivers/net/phy/mdio-octeon.c
+index c2c878d..b51fa1f 100644
+--- a/drivers/net/phy/mdio-octeon.c
++++ b/drivers/net/phy/mdio-octeon.c
+@@ -3,7 +3,7 @@
+  * License.  See the file "COPYING" in the main directory of this archive
+  * for more details.
+  *
+- * Copyright (C) 2009,2011 Cavium, Inc.
++ * Copyright (C) 2009-2012 Cavium, Inc.
+  */
  
-+	set_worker_desc("flush-%s", dev_name(bdi->dev));
- 	current->flags |= PF_SWAPWRITE;
+ #include <linux/platform_device.h>
+@@ -27,30 +27,98 @@
+ #define SMI_CLK		0x18
+ #define SMI_EN		0x20
  
- 	if (likely(!current_is_workqueue_rescuer() ||
++enum octeon_mdiobus_mode {
++	UNINIT = 0,
++	C22,
++	C45
++};
++
+ struct octeon_mdiobus {
+ 	struct mii_bus *mii_bus;
+ 	u64 register_base;
+ 	resource_size_t mdio_phys;
+ 	resource_size_t regsize;
++	enum octeon_mdiobus_mode mode;
+ 	int phy_irq[PHY_MAX_ADDR];
+ };
+ 
++static void octeon_mdiobus_set_mode(struct octeon_mdiobus *p,
++				    enum octeon_mdiobus_mode m)
++{
++	union cvmx_smix_clk smi_clk;
++
++	if (m == p->mode)
++		return;
++
++	smi_clk.u64 = cvmx_read_csr(p->register_base + SMI_CLK);
++	smi_clk.s.mode = (m == C45) ? 1 : 0;
++	smi_clk.s.preamble = 1;
++	cvmx_write_csr(p->register_base + SMI_CLK, smi_clk.u64);
++	p->mode = m;
++}
++
++static int octeon_mdiobus_c45_addr(struct octeon_mdiobus *p,
++				   int phy_id, int regnum)
++{
++	union cvmx_smix_cmd smi_cmd;
++	union cvmx_smix_wr_dat smi_wr;
++	int timeout = 1000;
++
++	octeon_mdiobus_set_mode(p, C45);
++
++	smi_wr.u64 = 0;
++	smi_wr.s.dat = regnum & 0xffff;
++	cvmx_write_csr(p->register_base + SMI_WR_DAT, smi_wr.u64);
++
++	regnum = (regnum >> 16) & 0x1f;
++
++	smi_cmd.u64 = 0;
++	smi_cmd.s.phy_op = 0; /* MDIO_CLAUSE_45_ADDRESS */
++	smi_cmd.s.phy_adr = phy_id;
++	smi_cmd.s.reg_adr = regnum;
++	cvmx_write_csr(p->register_base + SMI_CMD, smi_cmd.u64);
++
++	do {
++		/* Wait 1000 clocks so we don't saturate the RSL bus
++		 * doing reads.
++		 */
++		__delay(1000);
++		smi_wr.u64 = cvmx_read_csr(p->register_base + SMI_WR_DAT);
++	} while (smi_wr.s.pending && --timeout);
++
++	if (timeout <= 0)
++		return -EIO;
++	return 0;
++}
++
+ static int octeon_mdiobus_read(struct mii_bus *bus, int phy_id, int regnum)
+ {
+ 	struct octeon_mdiobus *p = bus->priv;
+ 	union cvmx_smix_cmd smi_cmd;
+ 	union cvmx_smix_rd_dat smi_rd;
++	unsigned int op = 1; /* MDIO_CLAUSE_22_READ */
+ 	int timeout = 1000;
+ 
++	if (regnum & MII_ADDR_C45) {
++		int r = octeon_mdiobus_c45_addr(p, phy_id, regnum);
++		if (r < 0)
++			return r;
++
++		regnum = (regnum >> 16) & 0x1f;
++		op = 3; /* MDIO_CLAUSE_45_READ */
++	} else {
++		octeon_mdiobus_set_mode(p, C22);
++	}
++
++
+ 	smi_cmd.u64 = 0;
+-	smi_cmd.s.phy_op = 1; /* MDIO_CLAUSE_22_READ */
++	smi_cmd.s.phy_op = op;
+ 	smi_cmd.s.phy_adr = phy_id;
+ 	smi_cmd.s.reg_adr = regnum;
+ 	cvmx_write_csr(p->register_base + SMI_CMD, smi_cmd.u64);
+ 
+ 	do {
+-		/*
+-		 * Wait 1000 clocks so we don't saturate the RSL bus
++		/* Wait 1000 clocks so we don't saturate the RSL bus
+ 		 * doing reads.
+ 		 */
+ 		__delay(1000);
+@@ -69,21 +137,33 @@ static int octeon_mdiobus_write(struct mii_bus *bus, int phy_id,
+ 	struct octeon_mdiobus *p = bus->priv;
+ 	union cvmx_smix_cmd smi_cmd;
+ 	union cvmx_smix_wr_dat smi_wr;
++	unsigned int op = 0; /* MDIO_CLAUSE_22_WRITE */
+ 	int timeout = 1000;
+ 
++
++	if (regnum & MII_ADDR_C45) {
++		int r = octeon_mdiobus_c45_addr(p, phy_id, regnum);
++		if (r < 0)
++			return r;
++
++		regnum = (regnum >> 16) & 0x1f;
++		op = 1; /* MDIO_CLAUSE_45_WRITE */
++	} else {
++		octeon_mdiobus_set_mode(p, C22);
++	}
++
+ 	smi_wr.u64 = 0;
+ 	smi_wr.s.dat = val;
+ 	cvmx_write_csr(p->register_base + SMI_WR_DAT, smi_wr.u64);
+ 
+ 	smi_cmd.u64 = 0;
+-	smi_cmd.s.phy_op = 0; /* MDIO_CLAUSE_22_WRITE */
++	smi_cmd.s.phy_op = op;
+ 	smi_cmd.s.phy_adr = phy_id;
+ 	smi_cmd.s.reg_adr = regnum;
+ 	cvmx_write_csr(p->register_base + SMI_CMD, smi_cmd.u64);
+ 
+ 	do {
+-		/*
+-		 * Wait 1000 clocks so we don't saturate the RSL bus
++		/* Wait 1000 clocks so we don't saturate the RSL bus
+ 		 * doing reads.
+ 		 */
+ 		__delay(1000);
 -- 
-1.8.1.4
+1.7.11.7
 
