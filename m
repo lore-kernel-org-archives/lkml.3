@@ -1,120 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763007Ab3DCH0O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 03:26:14 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:43988 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762992Ab3DCH0M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 03:26:12 -0400
-Message-ID: <515BD992.50009@atmel.com>
-Date: Wed, 3 Apr 2013 09:26:10 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1763027Ab3DCH2v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 03:28:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63217 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762636Ab3DCH2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 03:28:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,399,1363158000"; 
+   d="scan'208";a="312844730"
+Message-ID: <515BDA1B.2040801@intel.com>
+Date: Wed, 03 Apr 2013 15:28:27 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Boris BREZILLON <linux-arm@overkiz.com>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
-        "Grant Likely" <grant.likely@secretlab.ca>,
-        Andrew Victor <linux@maxim.org.za>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: at91/tc: fix clock source id for tc block > 1
-References: <1364921211-15756-1-git-send-email-linux-arm@overkiz.com> <20130403044555.GN20693@game.jcrosoft.org>
-In-Reply-To: <20130403044555.GN20693@game.jcrosoft.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
+        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
+        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
+        mgorman@suse.de, riel@redhat.com
+Subject: Re: [patch v3 0/8] sched: use runnable avg in load balance
+References: <1364873008-3169-1-git-send-email-alex.shi@intel.com> <515A877B.3020908@linux.vnet.ibm.com> <515A9859.6000606@intel.com> <515B97FF.2040409@linux.vnet.ibm.com> <515B9A7A.6030807@intel.com> <515BA0B7.2090906@linux.vnet.ibm.com> <515BAFE6.1020804@intel.com> <515BCA94.6050703@linux.vnet.ibm.com> <515BD1FE.7030901@intel.com> <515BD7DB.6020602@linux.vnet.ibm.com>
+In-Reply-To: <515BD7DB.6020602@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 06:45 AM, Jean-Christophe PLAGNIOL-VILLARD :
-> On 18:46 Tue 02 Apr     , Boris BREZILLON wrote:
->> This patch fixes wrong clock request for TC block 2.
->> The second block was using t0_clk, t1_clk and t2_clk clks instead of
->> t3_clk, t4_clk and t5_clk clks.
->>
-> this is intended as we have 3 clock per device
+On 04/03/2013 03:18 PM, Michael Wang wrote:
+>> > the following patch include the renamed knob, and you can tune it under 
+>> > /proc/sys/kernel/... to see detailed impact degree.
+> Could I make the conclusion that the improvement on pgbench was caused
+> by the new weighted_cpuload()?
 
-True.
-Boris, did you hit an issue with former code that your patch is solving?
-What is the reason for this patch?
-
-Thanks, best regards,
-
-
->> Signed-off-by: Boris BREZILLON <linux-arm@overkiz.com>
->> ---
->>  drivers/misc/atmel_tclib.c |   24 ++++++++++++++++--------
->>  1 file changed, 16 insertions(+), 8 deletions(-)
->>
->> diff --git a/drivers/misc/atmel_tclib.c b/drivers/misc/atmel_tclib.c
->> index c8d8e38..768a988 100644
->> --- a/drivers/misc/atmel_tclib.c
->> +++ b/drivers/misc/atmel_tclib.c
->> @@ -142,6 +142,8 @@ static int __init tc_probe(struct platform_device *pdev)
->>  	struct atmel_tc *tc;
->>  	struct clk	*clk;
->>  	int		irq;
->> +	char		clk_id[7];
->> +	int		clk_offset;
->>  
->>  	if (!platform_get_resource(pdev, IORESOURCE_MEM, 0))
->>  		return -EINVAL;
->> @@ -156,25 +158,31 @@ static int __init tc_probe(struct platform_device *pdev)
->>  
->>  	tc->pdev = pdev;
->>  
->> -	clk = clk_get(&pdev->dev, "t0_clk");
->> -	if (IS_ERR(clk)) {
->> -		kfree(tc);
->> -		return -EINVAL;
->> -	}
->> -
->>  	/* Now take SoC information if available */
->>  	if (pdev->dev.of_node) {
->>  		const struct of_device_id *match;
->>  		match = of_match_node(atmel_tcb_dt_ids, pdev->dev.of_node);
->>  		if (match)
->>  			tc->tcb_config = match->data;
->> +		clk_offset = of_alias_get_id(tc->pdev->dev.of_node, "tcb");
->> +	} else
->> +		clk_offset = pdev->id;
->> +	clk_offset *= 3;
->> +
->> +	snprintf(clk_id, sizeof(clk_id), "t%d_clk", clk_offset++);
->> +	clk = clk_get(&pdev->dev, clk_id);
->> +	if (IS_ERR(clk)) {
->> +		kfree(tc);
->> +		return -EINVAL;
->>  	}
->>  
->>  	tc->clk[0] = clk;
->> -	tc->clk[1] = clk_get(&pdev->dev, "t1_clk");
->> +	snprintf(clk_id, sizeof(clk_id), "t%d_clk", clk_offset++);
->> +	tc->clk[1] = clk_get(&pdev->dev, clk_id);
->>  	if (IS_ERR(tc->clk[1]))
->>  		tc->clk[1] = clk;
->> -	tc->clk[2] = clk_get(&pdev->dev, "t2_clk");
->> +	snprintf(clk_id, sizeof(clk_id), "t%d_clk", clk_offset++);
->> +	tc->clk[2] = clk_get(&pdev->dev, clk_id);
->>  	if (IS_ERR(tc->clk[2]))
->>  		tc->clk[2] = clk;
->>  
->> -- 
->> 1.7.9.5
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+guess too.
 > 
+> The burst branch seems to just adopt the load in old world, if reduce
+> the rate to enter that branch could regain the benefit, then I could
+> confirm my supposition.
+> 
+>> > 
+>> > +	if (cpu_rq(this_cpu)->avg_idle < sysctl_sched_migration_cost ||
+>> > +		cpu_rq(prev_cpu)->avg_idle < sysctl_sched_migration_cost)
+> It should be 'sysctl_sched_burst_threshold' here, isn't it? anyway, I
+> will take a try with different rate.
 
+Ops, sth wrong in my git operation.
 
 -- 
-Nicolas Ferre
+Thanks Alex
