@@ -1,78 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760992Ab3DCP2G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 11:28:06 -0400
-Received: from mail-da0-f51.google.com ([209.85.210.51]:58123 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760282Ab3DCP2D (ORCPT
+	id S1761368Ab3DCP2Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 11:28:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35976 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760987Ab3DCP2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 11:28:03 -0400
-Date: Wed, 3 Apr 2013 08:28:00 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 000/124] 3.8.6-stable review
-Message-ID: <20130403152800.GB21643@kroah.com>
-References: <20130402221104.163133110@linuxfoundation.org>
- <CAKocOON7pmk5gFXA1Gq9Fx06jEWxSMx07kZXcrOLz9n-HcyZKA@mail.gmail.com>
+	Wed, 3 Apr 2013 11:28:22 -0400
+Message-ID: <515C4A89.6040903@canonical.com>
+Date: Wed, 03 Apr 2013 11:28:09 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKocOON7pmk5gFXA1Gq9Fx06jEWxSMx07kZXcrOLz9n-HcyZKA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Piotr Haber <phaber@broadcom.com>
+CC: "John W. Linville" <linville@tuxdriver.com>, arend@broadcom.com,
+        pieterpg@broadcom.com, meuleman@broadcom.com,
+        LKML <linux-kernel@vger.kernel.org>, brudley@broadcom.com,
+        frankyl@broadcom.com, linux-wireless@vger.kernel.org,
+        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org
+Subject: Re: [v3.8, v3.9] [Regression] brcmsmac: move PHY functions
+References: <5155F107.6050408@canonical.com> <20130401144225.GC21859@tuxdriver.com> <5159A559.4000808@canonical.com> <515A9EAF.4010005@broadcom.com>
+In-Reply-To: <515A9EAF.4010005@broadcom.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 03, 2013 at 09:17:33AM -0600, Shuah Khan wrote:
-> On Tue, Apr 2, 2013 at 4:09 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> >
-> > This is the start of the stable review cycle for the 3.8.6 release.
-> > There are 124 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> >
-> > Responses should be made by Thu Apr  4 22:09:55 UTC 2013.
-> > Anything received after that time might be too late.
-> >
-> > The whole patch series can be found in one patch at:
-> >         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.8.6-rc1.gz
-> > and the diffstat can be found below.
-> >
-> > thanks,
-> >
-> > greg k-h
-> >
-> 
-> Patches applied cleanly to 3.0.71, 3.4.38, and 3.8.5
-> 
-> Reviewing patches - will let you know anything odd.
-> 
-> Compiled and booted on the following systems:
-> 
-> HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz
-> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
-> 
-> dmesgs for all releases look good. No regressions compared to the
-> previous dmesgs for each of these releases.
-> 
-> mips compile problem fixed
-> 
-> Cross-compile tests results:
-> 
-> alpha: defconfig passed on all
-> arm: defconfig passed on all
-> arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.8.y
-> c6x: not applicable to 3.0.y, defconfig passed on 3.4.y, and 3.8.y.
-> powerpc: wii_defconfig passed on all
-> sh: defconfig passed on all
-> sparc: defconfig passed on all
-> tile: tilegx_defconfig passed on all
-> mips: defconfig passed on all
-> mipsel: defconfig passed on all
+On 04/02/2013 05:02 AM, Piotr Haber wrote:
+> On 04/01/13 17:18, Joseph Salisbury wrote:
+>> On 04/01/2013 10:42 AM, John W. Linville wrote:
+>>> On Fri, Mar 29, 2013 at 03:52:39PM -0400, Joseph Salisbury wrote:
+>>>> Hi Piotr,
+>>>>
+>>>> A bug was opened against the Ubuntu kernel[0].  After a kernel
+>>>> bisect, it was found that reverting the following commit resolved
+>>>> this bug:
+>>>>
+>>>> commit b83576341664957978e125f5f5db2f15496980b1
+>>>> Author: Piotr Haber <phaber@broadcom.com>
+>>>> Date:   Wed Nov 28 21:44:09 2012 +0100
+>>>>
+>>>>       brcmsmac: move PHY functions
+>>>>
+>>>> The regression was introduced as of v3.8-rc1.  The regression still
+>>>> exists in v3.9-rc4.
+>>>>
+>>>> I see that you are the author of this patch, so I wanted to run this
+>>>> by you.  I was thinking of requesting a revert for v3.9, but I
+>>>> wanted to get your feedback first.
+>>>>
+>>>>
+>>>> Thanks,
+>>>>
+>>>> Joe
+>>>>
+>>>> [0] http://pad.lv/1131914
+>>> I recently reverted b6fc28a1, which is the follow-on to that patch.
+>>> The revert is _not_ in 3.9-rc5.
+>>>
+>>> Could you try reverting that patch instead?  Does that fix the issue
+>>> for you?
+>>>
+>>> John
+>> Hi John,
+>>
+>> Thanks for the response.
+>>
+>> Yes, reverting commit b6fc28a1 does resolve this bug.  That is the appropriate fix for this issue.
+>> Thanks for the assistance.
+>>
+>> Thanks,
+>>
+>> Joe
+>>
+>>
+>>
+>>
+> Hi Joe,
+> could you elaborate a little bit on your failure scenario?
+> In bug report you say it happens after suspend/resume, are there any other scenarios you see this
+> behaviour? (like disassociation/association without suspend)
+> Also you mention it comes back after some time - what is the time needed?
+> We had reports of problems on 4313 with this patch (that's why the revert was done) but so far i
+> assumed it was a total breakdown, in your case this seem like a transient issue.
+This only happens after a suspend/resume cycle.  I haven't seen the 
+issue happen with disassociation/association without suspend.  After 
+suspend, the connection will re-establish after about 15 minutes or so.
 
-Thanks for testing, and confirming that I got the build problem fixed.
+>
+> One more thing, could you provide info about your hardware by sending me contents of:
+> <debugfs_mount>/brcmsmac/bcma0:0/hardware
 
-greg k-h
+board vendor: 144f
+board type: 7179
+board revision: 1408
+board flags: 8402a01
+board flags2: 880
+firmware revision: 262032c
+
+
+
+
+>
+> Kind regards
+> Piotr
+>
+>
+
