@@ -1,110 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763417Ab3DCKQj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 06:16:39 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:46488 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758732Ab3DCKQh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 06:16:37 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH part2 v6 0/3] staging: zcache: Support zero-filled pages more efficiently
-Date: Wed,  3 Apr 2013 18:16:20 +0800
-Message-Id: <1364984183-9711-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040310-8878-0000-0000-0000068ECEF4
+	id S932117Ab3DCKSd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 06:18:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14747 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758482Ab3DCKSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 06:18:31 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <874nfo5em2.fsf@rustcorp.com.au>
+References: <874nfo5em2.fsf@rustcorp.com.au> <1484037905.443048.1364884090669.JavaMail.root@redhat.com> <19926.1364924330@warthog.procyon.org.uk>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: dhowells@redhat.com, CAI Qian <caiqian@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: NULL pointer at kset_find_obj
+Date: Wed, 03 Apr 2013 11:18:27 +0100
+Message-ID: <10041.1364984307@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog:
- v5 -> v6:
-  * shove variables in debug.c and in debug.h just have an extern, spotted by Konrad
-  * update patch description, spotted by Konrad
- v4 -> v5:
-  * fix compile error, reported by Fengguang, Geert
-  * add check for !is_ephemeral(pool), spotted by Bob
- v3 -> v4:
-  * handle duplication in page_is_zero_filled, spotted by Bob
-  * fix zcache writeback in dubugfs
-  * fix pers_pageframes|_max isn't exported in debugfs
-  * fix static variable defined in debug.h but used in multiple C files
-  * rebase on Greg's staging-next
- v2 -> v3:
-  * increment/decrement zcache_[eph|pers]_zpages for zero-filled pages, spotted by Dan
-  * replace "zero" or "zero page" by "zero_filled_page", spotted by Dan
- v1 -> v2:
-  * avoid changing tmem.[ch] entirely, spotted by Dan.
-  * don't accumulate [eph|pers]pageframe and [eph|pers]zpages for
-    zero-filled pages, spotted by Dan
-  * cleanup TODO list
-  * add Dan Acked-by.
+Rusty Russell <rusty@rustcorp.com.au> wrote:
 
-Motivation:
+> > I think this bit should be waved in front of Rusty.  It looks like it
+> > might be a bug in error handling code.
+> 
+> It does look like it, but I can't see it.  The module code doesn't see
+> an error (presumably sig_enforce is false), so we continue processing
+> the module like normal.
 
-- Seth Jennings points out compress zero-filled pages with LZO(a lossless
-  data compression algorithm) will waste memory and result in fragmentation.
-  https://lkml.org/lkml/2012/8/14/347
-- Dan Magenheimer add "Support zero-filled pages more efficiently" feature
-  in zcache TODO list https://lkml.org/lkml/2013/2/13/503
+I just realised there's a second similar oops in there, and I only summarised
+the first one.  Not that I think the second one lends particularly much
+illumination that I can see:
 
-Design:
+[   35.242163] BUG: unable to handle kernel paging request at ffffffffa03093f0 
+[   35.242172] IP: [<ffffffff81303fb0>] kobject_get_path+0x20/0xf0 
+...
+[   35.242230] Call Trace: 
+[   35.242233]  [<ffffffff81304ce6>] kobject_uevent_env+0x166/0x610 
+[   35.242236]  [<ffffffff8130519b>] kobject_uevent+0xb/0x10 
+[   35.242238]  [<ffffffff81303bca>] kobject_cleanup+0xca/0x1b0 
+[   35.242241]  [<ffffffff81303a0b>] kobject_put+0x2b/0x60 
+[   35.242247]  [<ffffffff810c8af4>] load_module+0x1384/0x1b00 
+[   35.242252]  [<ffffffff81321880>] ? ddebug_proc_open+0xc0/0xc0 
+[   35.242259]  [<ffffffff81628cd8>] ? page_fault+0x28/0x30 
+[   35.242262]  [<ffffffff810c9347>] sys_init_module+0xd7/0x120 
+[   35.242268]  [<ffffffff81630d59>] system_call_fastpath+0x16/0x1b 
 
-- For store page, capture zero-filled pages(evicted clean page cache pages and
-  swap pages), but don't compress them, set pampd which store zpage address to
-  0x2(since 0x0 and 0x1 has already been ocuppied) to mark special zero-filled
-  case and take advantage of tmem infrastructure to transform handle-tuple(pool
-  id, object id, and an index) to a pampd. Twice compress zero-filled pages will
-  contribute to one zcache_[eph|pers]_pageframes count accumulated.
-- For load page, traverse tmem hierachical to transform handle-tuple to pampd
-  and identify zero-filled case by pampd equal to 0x2 when filesystem reads
-  file pages or a page needs to be swapped in, then refill the page to zero
-  and return.
+This is followed by a bunch of soft lockup notices, so I guess one of the
+oopsers was holding module_kset->list_lock.
 
-Test:
 
-dd if=/dev/zero of=zerofile bs=1MB count=500
-vmtouch -t zerofile
-vmtouch -e zerofile
+Anyway, assuming the original oops happened in kset_find_obj() as called from
+mod_sysfs_init(), it's possible that module_kset is corrupt.  The only thing
+kset_find_obj() is using from the module is a NUL-terminated name - which is
+typically in the file prior to a load of metadata, some of which will contain
+zeroed bytes.
 
-formula:
-- fragmentation level = (zcache_[eph|pers]_pageframes * PAGE_SIZE - zcache_[eph|pers]_zbytes)
-  * 100 / (zcache_[eph|pers]_pageframes * PAGE_SIZE)
-- memory zcache occupy = zcache_[eph|pers]_zbytes
+Btw, one thing I've noticed is that sysfs appears to be able to execute code
+in the module by way of parameter alterations before the module is completely
+set up.  I'm not sure this is an actual problem - but it might give an
+interesting interaction with module initialisers as they might reasonably
+expect that module parameters can't change whilst they're running.
 
-Result:
+> Is the module getting corrupted somehow?  I don't think the signing
+> infrastructure is doing it...
 
-without zero-filled awareness:
-- fragmentation level: 98%
-- memory zcache occupy: 238MB
-with zero-filled awareness:
-- fragmentation level: 0%
-- memory zcache occupy: 0MB
+I wonder if I should include all or part of the crytographic digest in the
+signature descriptor block.  A single byte therefrom would give a 255 in 256
+chance of picking up corruption - even if we can't actually verify the
+signature.  There are three bytes of padding available.
 
-Wanpeng Li (3):
-  staging: zcache: fix static variables defined in debug.h but used in
-    mutiple C files
-  staging: zcache: introduce zero-filled page stat count
-  staging: zcache: clean TODO list
+The module signing stuff shouldn't be altering it.  Const pointers are used to
+try and catch accidental alterations and the code mostly focuses on the bit
+beyond the end of the normal module content.  The crypto layer does get to
+play with it, but I doubt that is likely to corrupt it either.
 
- drivers/staging/zcache/TODO          |    3 +-
- drivers/staging/zcache/debug.c       |   35 +++++++++++++++
- drivers/staging/zcache/debug.h       |   79 ++++++++++++++++++++-------------
- drivers/staging/zcache/zcache-main.c |    4 ++
- 4 files changed, 88 insertions(+), 33 deletions(-)
-
--- 
-1.7.5.4
-
+David
