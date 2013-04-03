@@ -1,143 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758844Ab3DCKhv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 06:37:51 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:65366 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab3DCKhu (ORCPT
+	id S1759871Ab3DCKkv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 06:40:51 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:60349 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759154Ab3DCKku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 06:37:50 -0400
-Message-ID: <515C067B.6070503@atmel.com>
-Date: Wed, 3 Apr 2013 12:37:47 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Wed, 3 Apr 2013 06:40:50 -0400
+X-IronPort-AV: E=Sophos;i="4.87,399,1363158000"; 
+   d="scan'208";a="35341553"
+Message-ID: <515C072E.3010801@codeaurora.org>
+Date: Wed, 03 Apr 2013 13:40:46 +0300
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Johan Hovold <jhovold@gmail.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <dgilbert@interlog.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v2] rtc: rtc-at91rm9200: manage IMR depending on revision
-References: <1364908007-5150-1-git-send-email-nicolas.ferre@atmel.com> <1364920566-30040-1-git-send-email-nicolas.ferre@atmel.com> <20130403095150.GC27600@localhost>
-In-Reply-To: <20130403095150.GC27600@localhost>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+To: Jens Axboe <axboe@kernel.dk>
+CC: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Alex.Lemberg@sandisk.com, open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 2/3] block: Add API for urgent request handling
+References: <1364202178-8936-1-git-send-email-tlinder@codeaurora.org> <20130325124007.GH22327@kernel.dk>
+In-Reply-To: <20130325124007.GH22327@kernel.dk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 11:51 AM, Johan Hovold :
-> On Tue, Apr 02, 2013 at 06:36:06PM +0200, Nicolas Ferre wrote:
->> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->> ---
->> Hi again,
+On 3/25/2013 2:40 PM, Jens Axboe wrote:
+> On Mon, Mar 25 2013, Tanya Brokhman wrote:
+>> This patch add support in block & elevator layers for handling
+>> urgent requests. The decision if a request is urgent or not is taken
+>> by the scheduler. Request is marked as urgent in cmd_flags (by the
+>> scheduler) with a new flag - REQ_URGENT.
+>> Urgent request notification is passed to the underlying
+>> block device driver (eMMC for example). Block device driver may decide to
+>> interrupt the currently running low priority request to serve the new
+>> urgent request. By doing so READ latency is greatly reduced in read&write
+>> collision scenarios.
 >>
->> Here is my latest revision of this fix. It depends on the patch that is already
->> in Andrew's patch stack: "drivers-rtc-rtc-at91rm9200c-add-dt-support.patch".
-> 
-> That is a problem, as the patch in Andrew's stack is not (and should
-> not) be marked for stable. Hence this patch cannot be applied to the
-> stable trees and it won't even apply to 3.9-rc.
+>> Note that if the current scheduler doesn't implement the urgent request
+>> mechanism, this code path is never activated.
+> I really don't like this out-of-band mechanism. Lets say there is an
+> urgent request, the IO scheduler would put that at the head of the
+> queue. So the first time the driver fetches a request, it'll see this
+> urgent request. A driver that has support for this, would check the head
+> of queue everytime its request_fn was invoked. There's no need to add a
+> elevator_is_urgent_fn() and ->notified_urgent.
+>
+Hi Jens,
 
-My intentions were to tag both patches for "stable". You highlight that
-it is not a good practice: I admit that you are right.
+Thank you for your inputs. We implemented the URGENT request 
+notification in block layer with elevator_is_urgent_fn() and 
+->notified_urgent due to the following:
 
+1. In the future the URGENT request mechanism may be of use to other 
+block device drivers besides mmc (such as sdcc for example). Having this 
+mechanism in the block layer spares all of the block devices 
+re-implementing it.
 
-> But there's more: The offending patch introduced the races we have been
-> discussion while attempting to add support for the sam9x5 with the
-> broken hardware register. But that family cannot be used without
-> DT-support, which the driver currently does not support. Hence, we added
-> a workaround (and introduced a regression by mistake), while adding
-> support for a SoC which still could not use the driver. [ For example,
-> the sam9x5 RTC-base register address can only be supplied from DT. ]
-> 
-> I think the only reasonable thing to do is to revert the patch and add
-> whatever version of the work-around on top of the device-tree support
-> when that is added to the driver (hence, earliest v3.10).
+2. Using the existing API (->request_fn() and not urgent_request->fn()) 
+won’t work as intended for URGENT requests in case the block device 
+already handles 2 requests. In such a case, when a device driver will 
+peek the dispatch queue to check if an URGENT request is pending or not, 
+a new request will be dispatched. If an URGENT requests is inserted to 
+the scheduler after that, the block device will not be aware of its 
+existence, which will result in high latency for this URGENT request. 
+For example:
 
-Yes. Let's do this.
+The device driver is currently handling requests regular_A and regular_B 
+when a new regular request ( regular_C ) arrives and ->request_fn() is 
+called by the block layer. The device driver ”peeks” the dispatch queue 
+in order to find out if there is an URGENT request pending. The I/O 
+scheduler will insert regular_C into the dispatch queue, the device 
+driver will see that there is no URGNET request pending and continue its 
+work. Regular_C will remain pending on the dispatch queue. Now another 
+request arrives: URGENT_D and ->request_fn() is called again. But this 
+time when the device driver “peeks” the dispatch queue to find if an 
+URGENT request is pending it will look at regular_C and URGENT_D will 
+remain in the scheduler data base till regular_A and regular_B requests 
+are completed and regular_C is sent to the card.
 
+The ->notified_urgent is needed because we don’t want to notify the 
+device driver of an URGENT request if there is already an URGENT request 
+in flight. This is because we don’t want URGENT requests to be interrupted.
 
->> I now use a different compatibility string to figure out what is the IP
->> revision that has the "boggus IMR" error. I think this way to handle it
->> is much simpler than the "config" structure one from Johan.
-> 
-> I wouldn't say it's much simpler. My solution is only more generic, but
-> could of course also be reduced to "set a flag if compatible matches
-> sam9x5".
-
-The advantage is precisely to avoid the need for a "flag". Only function
-pointers that are changed in case of the compatible string matching.
-
-
->> The small number of line changed and the "single patch" nature of it
->> make me think that it will be easier to send upstream and in the
->> "stable" trees...
-> 
-> Unfortunately, the 130-line diff isn't very small. In fact, it violates
-> the stable-kernel guide line of <100 lines. And as noted above, it
-> depends on another patch which adds DT-support (which is a new feature
-> and not a fix).
-> 
-> But the fundamental problem remains: it does not fix anything which was
-> working before the first work-around patch introduced the regression. I
-> think this is a clear case where we need to revert.
-
-Okay.
-
->> Please give feedback, but moreover, I would like to know if you (Johan and Douglas)
->> agree to give your "Signed-off-by" line because this patch is certainly
->> inspired by your comments, code and reviews.
->>
->> Thank you for your help. Best regards,
->>
->>  .../bindings/rtc/atmel,at91rm9200-rtc.txt          |   3 +-
->>  drivers/rtc/rtc-at91rm9200.c                       | 126 ++++++++++++++++-----
->>  drivers/rtc/rtc-at91rm9200.h                       |   1 +
->>  3 files changed, 101 insertions(+), 29 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/rtc/atmel,at91rm9200-rtc.txt b/Documentation/devicetree/bindings/rtc/atmel,at91rm9200-rtc.txt
->> index 2a3feab..9b87053 100644
->> --- a/Documentation/devicetree/bindings/rtc/atmel,at91rm9200-rtc.txt
->> +++ b/Documentation/devicetree/bindings/rtc/atmel,at91rm9200-rtc.txt
->> @@ -1,7 +1,8 @@
->>  Atmel AT91RM9200 Real Time Clock
->>  
->>  Required properties:
->> -- compatible: should be: "atmel,at91rm9200-rtc"
->> +- compatible: should be: "atmel,at91rm9200-rtc", "atmel,at91sam9x5-rtc" or
->> +                         "atmel,at91sam9n12-rtc".
-> 
-> Also at91sam9g45 and at91sam9rl use this driver.
-
-Yes, sure, I did not want to add every single user of the RTC...
-
-> As seems to be the case
-> for other peripherals, I suggest we use "atmel,at91sam9x5-rtc" for
-> sam9x5 and "atmel,at91rm9200-rtc" for the other SoCs, that is, the least
-> (and first) common denominator.
-
-... I was just following the habit of naming the changes in peripheral
-revision by it first use in a SoC:
-at91rm9200-rtc: from rm9200 up to 9g45
-at91sam9x5-rtc: sam9x5 only (with IMR issue)
-at91sam9n12-rtc: fist SoC that corrects the IMR issue with a new IP
-revision, until now and sama5d3 SoC
-
-
-
-> Either way, there's not need to add at91sam9n12-rtc in this patch.
-> 
->>  - reg: physical base address of the controller and length of memory mapped
->>    region.
->>  - interrupts: rtc alarm/event interrupt
-> 
-> I'll respond to this mail with a revert-patch, and an updated RFC-series
-> based on top of the DT-patch in Andrew's queue.
-
-Best regards,
 -- 
-Nicolas Ferre
+
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+
+of Code Aurora Forum, hosted by The Linux Foundation
+
