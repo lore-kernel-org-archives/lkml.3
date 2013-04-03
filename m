@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762942Ab3DCSBR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 14:01:17 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:25744 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759491Ab3DCSBQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 14:01:16 -0400
-X-IronPort-AV: E=Sophos;i="4.87,402,1363158000"; 
-   d="scan'208";a="35467822"
-From: Christopher Covington <cov@codeaurora.org>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Christopher Covington <cov@codeaurora.org>
-Subject: [PATCH] arm64: Fix task tracing
-Date: Wed,  3 Apr 2013 14:01:01 -0400
-Message-Id: <1365012061-31660-1-git-send-email-cov@codeaurora.org>
-X-Mailer: git-send-email 1.8.2
+	id S1762958Ab3DCSBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 14:01:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23708 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759491Ab3DCSBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 14:01:45 -0400
+Message-ID: <1365012091.2882.252.camel@bling.home>
+Subject: Re: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu
+ implementation.
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Varun Sethi <Varun.Sethi@freescale.com>, stuart.yoder@freescale.com,
+        scottwood@freescale.com, iommu@lists.linux-foundation.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        galak@kernel.crashing.org, benh@kernel.crashing.org
+Date: Wed, 03 Apr 2013 12:01:31 -0600
+In-Reply-To: <20130402161812.GI15687@8bytes.org>
+References: <1364500442-20927-1-git-send-email-Varun.Sethi@freescale.com>
+	 <1364500442-20927-6-git-send-email-Varun.Sethi@freescale.com>
+	 <20130402161812.GI15687@8bytes.org>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For accurate accounting call contextidr_thread_switch before a
-task is scheduled, rather than after.
+On Tue, 2013-04-02 at 18:18 +0200, Joerg Roedel wrote:
+> Cc'ing Alex Williamson
+> 
+> Alex, can you please review the iommu-group part of this patch?
 
-Signed-off-by: Christopher Covington <cov@codeaurora.org>
----
- arch/arm64/kernel/process.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Sure, it looks pretty reasonable.  AIUI, all PCI devices are below some
+kind of host bridge that is either new and supports partitioning or old
+and doesn't.  I don't know if that's a visibility or isolation
+requirement, perhaps PCI ACS-ish.  In the new host bridge case, each
+device gets a group.  This seems not to have any quirks for
+multifunction devices though.  On AMD and Intel IOMMUs we test
+multifunction device ACS support to determine whether all the functions
+should be in the same group.  Is there any reason to trust multifunction
+devices on PAMU?
 
-diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
-index 0337cdb..c2cc249 100644
---- a/arch/arm64/kernel/process.c
-+++ b/arch/arm64/kernel/process.c
-@@ -311,11 +311,11 @@ struct task_struct *__switch_to(struct task_struct *prev,
- 	fpsimd_thread_switch(next);
- 	tls_thread_switch(next);
- 	hw_breakpoint_thread_switch(next);
-+	contextidr_thread_switch(next);
- 
- 	/* the actual thread switch */
- 	last = cpu_switch_to(prev, next);
- 
--	contextidr_thread_switch(next);
- 	return last;
- }
- 
--- 
-Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by the Linux Foundation.
+I also find it curious what happens to the iommu group of the host
+bridge.  In the partitionable case the host bridge group is removed, in
+the non-partitionable case the host bridge group becomes the group for
+the children, removing the host bridge.  It's unique to PAMU so far that
+these host bridges are even in an iommu group (x86 only adds pci
+devices), but I don't see it as necessarily wrong leaving it in either
+scenario.  Does it solve some problem to remove them from the groups?
+Thanks,
+
+Alex
 
