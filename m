@@ -1,95 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758456Ab3DCI7f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 04:59:35 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:35214 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758413Ab3DCI7b (ORCPT
+	id S1760600Ab3DCJHi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 05:07:38 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:12773 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758716Ab3DCJHe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 04:59:31 -0400
+	Wed, 3 Apr 2013 05:07:34 -0400
+X-Greylist: delayed 844 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Apr 2013 05:07:34 EDT
+Date: Wed, 3 Apr 2013 10:53:14 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: tglx@linutronix.de, Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] timer: Fix possible issues with non serialized
+ timer_pending( )
+Message-ID: <20130403085313.GA9321@ab42.lan>
+References: <1364553218-31255-1-git-send-email-vgupta@synopsys.com>
 MIME-Version: 1.0
-In-Reply-To: <1364899967-18118-1-git-send-email-huzefa.nomanx.kankroliwala@intel.com>
-References: <1364899967-18118-1-git-send-email-huzefa.nomanx.kankroliwala@intel.com>
-Date: Wed, 3 Apr 2013 10:59:30 +0200
-Message-ID: <CAN+gG=HWPCn8pdVtJUf+ijunm7hwgb-DpmNQzyRf2n3_m49+_w@mail.gmail.com>
-Subject: Re: [PATCH] i2c-hid: fix length for set/get report in i2c hid
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Huzefa Kankroliwala <huzefa.nomanx.kankroliwala@intel.com>
-Cc: jkosina@suse.cz, mika.westerberg@intel.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1364553218-31255-1-git-send-email-vgupta@synopsys.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Huzefa,
+We have tested the patch in several configurations and boards using
+tests which previously crashed the kernel in less than an hour. The
+crashes in question could not be reproduced in long term tests (3 days)
+and nightly tests with the patch. I can thus confirm that this fixes a
+real issue.
 
-On Tue, Apr 2, 2013 at 12:52 PM, Huzefa Kankroliwala
-<huzefa.nomanx.kankroliwala@intel.com> wrote:
-> With the current i2c hid driver set/get report does not work
-> as expected, for e.g sensor hub properties like power state,
-> frequency etc is not set properly on the device as a result
-> we do not get events.
-> The problem is that i2c hid driver in function i2c_hid_request
-> sets length equal to default buffer size for which the sensor
-> hub does not respond on get/set commands. Use report length
-> and calculate it based on report size and id.
+On Fri, Mar 29, 2013 at 04:03:38PM +0530, Vineet Gupta wrote:
+> When stress testing ARC Linux from 3.9-rc3, we've hit a serialization
+> issue when mod_timer() races with itself. This is on a FPGA board and
+> kernel .config among others has !SMP and !PREEMPT_COUNT.
+> 
+> The issue happens in mod_timer( ) because timer_pending( ) based early
+> exit check is NOT done inside the timer base spinlock - as a networking
+> optimization.
+> 
+> The value used in there, timer->entry.next is also used further in call
+> chain (all inlines though) for actual list manipulation. However if the
+> register containing this pointer remains live across the spinlock (in a
+> UP setup with !PREEMPT_COUNT there's nothing forcing gcc to reload) then
+> a stale value of next pointer causes incorrect list manipulation,
+> observed with following sequence in our tests.
+> 
+> [...]
+> 
+> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> Reported-by: Christian Ruppert <christian.ruppert@abilis.com>
+Tested-by: Christian Ruppert <christian.ruppert@abilis.com>
 
-oops, seems like I've been too lazy to get the actual size. Thanks for
-fixing it.
-
-I just have one small formatting comment (see below).
-Except that, Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-
->
-> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Huzefa Kankroliwala <huzefa.nomanx.kankroliwala@intel.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Christian Ruppert <christian.ruppert@abilis.com>
+> Cc: Pierrick Hascoet <pierrick.hascoet@abilis.com>
+> Cc: linux-kernel@vger.kernel.org
 > ---
->  drivers/hid/i2c-hid/i2c-hid.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> index 935f387..c8cd0c0 100644
-> --- a/drivers/hid/i2c-hid/i2c-hid.c
-> +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> @@ -567,18 +567,18 @@ static void i2c_hid_request(struct hid_device *hid, struct hid_report *rep,
->                 int reqtype)
+>  include/linux/timer.h |   11 ++++++++++-
+>  1 file changed, 10 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/timer.h b/include/linux/timer.h
+> index 8c5a197..1537104 100644
+> --- a/include/linux/timer.h
+> +++ b/include/linux/timer.h
+> @@ -168,7 +168,16 @@ static inline void init_timer_on_stack_key(struct timer_list *timer,
+>   */
+>  static inline int timer_pending(const struct timer_list * timer)
 >  {
->         struct i2c_client *client = hid->driver_data;
-> -       struct i2c_hid *ihid = i2c_get_clientdata(client);
->         char *buf;
->         int ret;
-> +       int len = i2c_hid_get_report_length(rep) - 2;
->
-> -       buf = kzalloc(ihid->bufsize, GFP_KERNEL);
-> +       buf = kzalloc(len, GFP_KERNEL);
->         if (!buf)
->                 return;
->
->         switch (reqtype) {
->         case HID_REQ_GET_REPORT:
-> -               ret = i2c_hid_get_raw_report(hid, rep->id, buf, ihid->bufsize,
-> -                                            rep->type);
-> +               ret = i2c_hid_get_raw_report(hid, rep->id, buf, len,
-> +                                                       rep->type);
+> -	return timer->entry.next != NULL;
+> +	int pending = timer->entry.next != NULL;
+> +
+> +	/*
+> +	 * The check above enables timer fast path - early exit.
+> +	 * However most of the call sites are not protected by timer->base
+> +	 * spinlock. If the caller (say mod_timer) races with itself, it
+> +	 * can use the stale "next" pointer. See commit log for details.
+> +	 */
+> +	barrier();
+> +	return pending;
+>  }
+>  
+>  extern void add_timer_on(struct timer_list *timer, int cpu);
+> -- 
+> 1.7.10.4
+> 
 
-No need to add a new line for rep->type when the 80 columns limit is
-not reached.
-
-Cheers,
-Benjamin
-
->                 if (ret < 0)
->                         dev_err(&client->dev, "%s: unable to get report: %d\n",
->                                 __func__, ret);
-> @@ -587,7 +587,7 @@ static void i2c_hid_request(struct hid_device *hid, struct hid_report *rep,
->                 break;
->         case HID_REQ_SET_REPORT:
->                 hid_output_report(rep, buf);
-> -               i2c_hid_output_raw_report(hid, buf, ihid->bufsize, rep->type);
-> +               i2c_hid_output_raw_report(hid, buf, len, rep->type);
->                 break;
->         }
->
-> --
-> 1.7.4.1
->
+-- 
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
