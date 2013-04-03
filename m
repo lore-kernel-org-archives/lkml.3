@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760064Ab3DCOAj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:00:39 -0400
-Received: from mail-da0-f51.google.com ([209.85.210.51]:36778 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758158Ab3DCOAe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:00:34 -0400
-Message-ID: <1364997630.13853.19.camel@edumazet-glaptop>
-Subject: Re: [ 105/124] af_unix: dont send SCM_CREDENTIAL when dest socket
- is NULL
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Sven Joachim <svenjoac@gmx.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Ding Tianhong <dingtianhong@huawei.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Wed, 03 Apr 2013 07:00:30 -0700
-In-Reply-To: <87vc833kpf.fsf@turtle.gmx.de>
-References: <20130402221104.163133110@linuxfoundation.org>
-	 <20130402221116.307254752@linuxfoundation.org>
-	 <87vc833kpf.fsf@turtle.gmx.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1759578Ab3DCOAy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:00:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44061 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758531Ab3DCOAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 10:00:52 -0400
+Date: Wed, 3 Apr 2013 16:00:49 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Robin Holt <holt@sgi.com>
+Cc: Cliff Wickman <cpw@sgi.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, x86@kernel.org, wli@holomorphy.com
+Subject: Re: [PATCH] mm, x86: Do not zero hugetlbfs pages at boot. -v2
+Message-ID: <20130403140049.GI16471@dhcp22.suse.cz>
+References: <E1UDME8-00041J-B4@eag09.americas.sgi.com>
+ <20130314085138.GA11636@dhcp22.suse.cz>
+ <20130403024344.GA4384@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130403024344.GA4384@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-03 at 13:41 +0200, Sven Joachim wrote:
-> On 2013-04-03 00:11 +0200, Greg Kroah-Hartman wrote:
-> 
-> > 3.8-stable review patch.  If anyone has any objections, please let me know.
-> 
-> I'm seeing several complaints from udevd at boot in both 3.8.6-rc1 and
-> 3.9-rc5: "udevd[56]: sender uid=65534, message ignored".  Reverting the
-> patch below on top of 3.8.6-rc1 fixes that.  I'm using udev version 175
-> here, and 65534 is the uid of user "nobody".
+On Tue 02-04-13 21:43:44, Robin Holt wrote:
+[...]
+> diff --git a/mm/bootmem.c b/mm/bootmem.c
+> index 2b0bcb0..b2e4027 100644
+> --- a/mm/bootmem.c
+> +++ b/mm/bootmem.c
+> @@ -705,12 +705,16 @@ void * __init __alloc_bootmem(unsigned long size, unsigned long align,
+>  
+>  void * __init ___alloc_bootmem_node_nopanic(pg_data_t *pgdat,
+>  				unsigned long size, unsigned long align,
+> -				unsigned long goal, unsigned long limit)
+> +				unsigned long goal, unsigned long limit,
+> +				int zeroed)
+>  {
+>  	void *ptr;
+>  
+>  	if (WARN_ON_ONCE(slab_is_available()))
+> -		return kzalloc(size, GFP_NOWAIT);
+> +		if (zeroed)
+> +			return kzalloc(size, GFP_NOWAIT);
+> +		else
+> +			return kmalloc(size, GFP_NOWAIT);
+>  again:
+>  
+>  	/* do not panic in alloc_bootmem_bdata() */
 
-And if you use a 3.1 kernel (before commit
-16e5726269611b71c930054ffe9b858c1cea88eb) are you seeing this message ?
+You need to update alloc_bootmem_bdata and alloc_bootmem_core as well.
+Otherwise this is a no-op for early allocations when slab is not
+available which is the case unless something is broken.
 
-It might be a wrong sender (application bug or bad identity), and udevd
-correctly discards the incoming message.
-
-
-
+[...]
+-- 
+Michal Hocko
+SUSE Labs
