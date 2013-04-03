@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761866Ab3DCMVK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 08:21:10 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:58881 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759692Ab3DCMVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 08:21:08 -0400
-Date: Wed, 3 Apr 2013 08:20:58 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Dmitry Monakhov <dmonakhov@openvz.org>,
-        Christian Kujau <lists@nerdbynature.de>, CAI Qian <caiqian@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] ext4: fix a big-endian bug when an extent is zeroed out
-Message-ID: <20130403122058.GB7741@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Dmitry Monakhov <dmonakhov@openvz.org>,
-	Christian Kujau <lists@nerdbynature.de>,
-	CAI Qian <caiqian@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-	linux-s390 <linux-s390@vger.kernel.org>,
-	Steve Best <sbest@redhat.com>, linux-ext4@vger.kernel.org
-References: <87fvzaspr8.fsf@openvz.org>
- <874841142.414482.1364875584266.JavaMail.root@redhat.com>
- <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org>
- <877gkls1q7.fsf@openvz.org>
- <alpine.DEB.2.10.1304021430480.13746@trent.utfs.org>
- <87r4isd1vn.fsf@openvz.org>
- <alpine.DEB.2.10.1304021611020.13746@trent.utfs.org>
- <87li90q9mx.fsf@openvz.org>
- <87hajoq6s2.fsf@openvz.org>
- <20130403102204.GA15383@gmail.com>
+	id S1761607Ab3DCMVW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 08:21:22 -0400
+Received: from ra.se.axis.com ([195.60.68.13]:37456 "EHLO ra.se.axis.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761888Ab3DCMVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 08:21:17 -0400
+Date: Wed, 3 Apr 2013 14:21:09 +0200
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "rjw@sisk.pl" <rjw@sisk.pl>,
+        "arvind.chauhan@arm.com" <arvind.chauhan@arm.com>,
+        "robin.randhawa@arm.com" <robin.randhawa@arm.com>,
+        "Steve.Bannister@arm.com" <Steve.Bannister@arm.com>,
+        "Liviu.Dudau@arm.com" <Liviu.Dudau@arm.com>,
+        "charles.garcia-tobin@arm.com" <charles.garcia-tobin@arm.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "arnd.bergmann@linaro.org" <arnd.bergmann@linaro.org>,
+        Jesper Nilsson <jespern@axis.com>, Mikael Starvik <starvik@axis.com>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>
+Subject: Re: [PATCH 3/9] cris: cpufreq:  move cpufreq driver to
+ drivers/cpufreq
+Message-ID: <20130403122109.GM19150@axis.com>
+References: <cover.1364229828.git.viresh.kumar@linaro.org>
+ <ba21f31410c122d160698a6d18266e3f695f6011.1364229828.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130403102204.GA15383@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <ba21f31410c122d160698a6d18266e3f695f6011.1364229828.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 03, 2013 at 06:22:04PM +0800, Zheng Liu wrote:
-> Subject: [PATCH] ext4: fix a big-endian bug when an extent is zeroed out
+On Mon, Mar 25, 2013 at 05:54:39PM +0100, Viresh Kumar wrote:
+> This patch moves cpufreq drivers of CRIS architecture to drivers/cpufreq.
 > 
-> From: Zheng Liu <wenqing.lz@taobao.com>
-> 
-> When an extent was zeroed out, we forgot to do convert from cpu to le16.
-> It could make us hit a BUG_ON when we try to write dirty pages out.  So
-> fix it.
-> 
-> Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+> Cc: Jesper Nilsson <jesper.nilsson@axis.com>
+> Cc: Mikael Starvik <starvik@axis.com>
+> Cc: linux-cris-kernel@axis.com
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Thanks for finding this!  I think we should push this to Linus right
-away, and not wait for the next merge window.  The bug has been here
-for a long time, but it was unmasked by the fact that we unbroke
-extent zeroing in 3.9-rcX.
+Ah, sorry for not responding earlier, looks good!
 
-I have two big questions.  (1) Shouldn't Eric Whitney have picked this
-up with his ARM pandaboard testing, since IIRC it's big-endian as
-well?  If not, is there something we can do to improve our testing wrt
-to big-endian systems?
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
 
-And (2) does it make sense to have an inline function
-ext4_ext_set_len(len)?  It might save some lines of code, but more
-importantly, it might make it less likely that we will overlook this
-sort of bug in the future.
-
-					- Ted
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
