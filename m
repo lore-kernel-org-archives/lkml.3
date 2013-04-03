@@ -1,118 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762069Ab3DCQa5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 12:30:57 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:46471 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759561Ab3DCQaz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 12:30:55 -0400
-Date: Wed, 3 Apr 2013 09:30:52 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Platform Driver <platform-driver-x86@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 1/1] Introduce Intel RAPL cooling device driver
-Message-ID: <20130403163052.GB21969@kroah.com>
-References: <1364940936-20846-1-git-send-email-jacob.jun.pan@linux.intel.com>
- <1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
- <20130402230042.GA8713@kroah.com>
- <20130402163357.72dac902@chromoly>
- <20130402234805.GA11880@kroah.com>
- <20130402171714.7309cdf2@chromoly>
+	id S1762198Ab3DCQb1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 12:31:27 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:5968 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758616Ab3DCQbZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 12:31:25 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dIc89bh936eI1432Izz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah906i1155h)
+Date: Wed, 3 Apr 2013 09:31:14 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Mike Turquette <mturquette@linaro.org>
+CC: Shawn Guo <shawn.guo@linaro.org>, Rajendra Nayak <rnayak@ti.com>,
+        Andrew Lunn <andrew@lunn.ch>, James Hogan <james.hogan@imgtec.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: divider: Introduce CLK_DIVIDER_ALLOW_ZERO flag
+References: <1364942216-4575-1-git-send-email-soren.brinkmann@xilinx.com>
+ <20130403154027.8177.58419@quantum>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20130402171714.7309cdf2@chromoly>
+In-Reply-To: <20130403154027.8177.58419@quantum>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <8fd6da66-dd3b-4e02-b958-095dee577330@VA3EHSMHS017.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 05:17:14PM -0700, Jacob Pan wrote:
-> On Tue, 2 Apr 2013 16:48:05 -0700
-> Greg KH <gregkh@linuxfoundation.org> wrote:
+On Wed, Apr 03, 2013 at 08:40:27AM -0700, Mike Turquette wrote:
+> Quoting Soren Brinkmann (2013-04-02 15:36:56)
+> > Dividers which have CLK_DIVIDER_ONE_BASED set have a redundant state,
+> > being a divider value of zero. Some hardware implementations allow a
+> > zero divider which simply doesn't alter the frequency. I.e. it acts like
+> > a divide by one or bypassing the divider.
+> > This flag is used to handle such HW in the clk-divider model.
+> > 
+> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 > 
-> > On Tue, Apr 02, 2013 at 04:33:57PM -0700, Jacob Pan wrote:
-> > > On Tue, 2 Apr 2013 16:00:42 -0700
-> > > Greg KH <gregkh@linuxfoundation.org> wrote:
-> > > 
-> > > > > +#include "intel_rapl.h"
-> > > > > +#include "../../../fs/sysfs/sysfs.h"  
-> > > > 
-> > > > WTF?
-> > > > 
-> > > > Oh, that's a sure sign you are not doing something properly, if
-> > > > you think it's ok to muck around with the internals of sysfs.
-> > > > 
-> > > > There's a reason that file is "private", why do you think it's ok
-> > > > to use it directly?  Did you just think that I somehow "forgot"
-> > > > to put it in the proper include directory?
-> > > I did feel unsure about this but i saw some precedence in the
-> > > kernel.
-> > 
-> > Someone else is doing this with the sysfs api?  I don't see any other
-> > code in Linus's tree doing this at the moment, where did you see this?
-> > Let me know and I'll fix it up right away.
-> > 
-> no, i did not mean sysfs api. I mean include internal header files via
-> #include ../../ 
-> e.g.in drivers/usb/image/microtek.c
-> 
-> #include "../../scsi/scsi.h"
-> #include <scsi/scsi_host.h>
+> This version looks good.  Taken into clk-next.
+Thanks.
 
-That is because this is a scsi host driver.  Your code is not part of
-sysfs itself.
+	Sören
 
-> > > Anyway, I needed a way to validate a userspace file passed to rapl
-> > > driver belong to the same sysfs directory. I will look for
-> > > alternative ways.
-> > 
-> > What do you mean by this?  What exactly are you trying to do?  No
-> > normal driver code should _ever_ call sysfs functions directly, nor
-> > should they ever care about sysfs internals.
-> > 
-> i did not call sysfs internal calls, just need to use 
-> struct sysfs_dirent {}
-> 
-> to do the following sanity check against user passed event control file,
-> it is still not a 100% strong check. 
-> 	/* check if the cfile belongs to the same rapl domain */
-> 	if (strcmp(rd->kobj.sd->s_name,
-> 			cfile->f_dentry->d_parent->d_name.name)) {
-> 		pr_debug("cfile does not belong to domain %s\n",
-> 			rd->kobj.sd->s_name);
-> 		ret = -EINVAL;
-> 		goto exit_cleanup_fds;
-> 	}
 
-This made it through a code review at Intel?  Seriously?  Come on,
-there's just so much wrong here, I don't know where to begin.
-
-Hint, if you find yourself caring about the internals of sysfs in a
-device driver, you are doing something so wrong it's not funny.  Do you
-see _any_ other driver doing anything like this?  What makes this driver
-so special that it can do unexpected, and totally different things with
-sysfs?
-
-> > And, odds are, you didn't test your code as a module, right, as any
-> > internal sysfs function that you could get from this .h file, wouldn't
-> > be exported for a module to use, unless I missed one somewhere?
-> > 
-> I did run the driver as module since i didn't use sysfs internal
-> functions, just the struct. I may be hitting a corner case here, but
-> for drivers who need to discover sysfs hierarchy would it be useful to
-> expose some info in struct sysfs_dirent{}?
-
-No, not at all, why would a driver ever care about that?  Somehow we
-have gotten by for the past 10+ years without needing it, why is your
-driver so different than the thousands of other Linux drivers?
-
-greg k-h
