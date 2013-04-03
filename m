@@ -1,74 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932582Ab3DCUi6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 16:38:58 -0400
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:47487 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932295Ab3DCUi5 (ORCPT
+	id S932579Ab3DCUjw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 16:39:52 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:56944 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932295Ab3DCUju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 16:38:57 -0400
+	Wed, 3 Apr 2013 16:39:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130403174734.GG5939@redhat.com>
-References: <20130402180606.GI29506@redhat.com>
-	<CAE9FiQUKqv_t-99JN_t=EGop2-Wbjd4Yb9vYvU_SbbNctG6Yeg@mail.gmail.com>
-	<CAE9FiQXEa0-WS8+E6LGy8CenoHX5qF1MpjBgejQx9-EvG_1rGw@mail.gmail.com>
-	<20130402191130.GB31760@redhat.com>
-	<CAE9FiQViU_X-idHyFmRFQXmP23oWN63XkAr3KmXsfys1VBR53g@mail.gmail.com>
-	<20130402201148.GJ29506@redhat.com>
-	<CAE9FiQURMNjPYYze-tPn4Ssrc4TqMqTuvwRRhoVYEnGLF4Z0cQ@mail.gmail.com>
-	<20130403131842.GA5939@redhat.com>
-	<CAE9FiQUO-fLY-k_gmw6cg56YEN52VRvZuXr+f1EnywKr_cGc4Q@mail.gmail.com>
-	<CAE9FiQXg2+DCd0BGRyKo4KWsMXdPZz74OjpQrUP=ciok2AZhuA@mail.gmail.com>
-	<20130403174734.GG5939@redhat.com>
-Date: Wed, 3 Apr 2013 13:38:56 -0700
-X-Google-Sender-Auth: d84PyN1l0lRdpNZodr9ZAbtZ63Y
-Message-ID: <CAE9FiQU96BjThKbOGBhc6RHBey2+bvM6J6ZYaLb=xGuwahTuLQ@mail.gmail.com>
-Subject: Re: [PATCH 3/4] x86, kdump: Retore crashkernel= to allocate low
-From: Yinghai Lu <yinghai@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <1364908916-29803-5-git-send-email-lee.jones@linaro.org>
+References: <1364908916-29803-1-git-send-email-lee.jones@linaro.org>
+	<1364908916-29803-5-git-send-email-lee.jones@linaro.org>
+Date: Wed, 3 Apr 2013 22:39:50 +0200
+Message-ID: <CACRpkdbh-DJti2ny=uBe-b_vGkQBNL=emMuZ6+_cE5jvRsA4sA@mail.gmail.com>
+Subject: Re: [PATCH 5/9] ARM: ux500: Over-ride TCDM size when booting the
+ DB8540 platform
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 3, 2013 at 10:47 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> So what I am saying that all our code is written assuming there is one
-> single reserved range. Now if we need to reserve two ranges, then let
-> us make it generic to suppoprt multiple ranges instead of hardcoding
-> things and assume there can be 2 ranges. That will be a more generic
-> solution.
+On Tue, Apr 2, 2013 at 3:21 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-I don't think we have case that we need to support more than two ranges.
-
-We only need to have one big range above 4G, and put second kernel and
-initrd in it.
-and another low one is only for switotlb or others that will be used by
-second kernel.
-
+> The PRCMU's Tightly Coupled Data Memory on the DB8540 platform is
+> 8kB larger than it's predecessor's. We need to reflect that in its
+> Device Tree. By re-specifying the address and size of the device
+> we effectively over-ride the previous values with more accurate
+> ones.
 >
-> So how about this.
->
-> - In 3.9, just implement crashkernel=X;high. Don't auto reserve any low
->   memory. Support reservation of single range only. It could be either
->   high or low.
->
-> - Those who are using iommu, they can use crashkernel=X;high. Old code
->   can continue to use crashkernel=X and get memory reserved in low
->   memory areas.
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-That will not handle the case: big system that crashkernel=X;high
-and kdump does not work with iommu.
+Need to change the name of the file it hits to ccu8540 before
+it applies...
 
->
-> - In 3.10 add a feature to support multiple crash reserved ranges.
-
-Again, we only need one high and one low range.
-We don't need to support more than two ranges for crash kernel.
-
-Thanks
-
-Yinghai
+Yours,
+Linus Walleij
