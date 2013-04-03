@@ -1,68 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760440Ab3DCOoV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:44:21 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18078 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758424Ab3DCOoS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:44:18 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 03 Apr 2013 07:44:05 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Pritesh Raithatha <praithatha@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Andrew Chew <achew@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v9 01/14] clk: tegra: provide dummy cpu car ops
-Date: Wed, 3 Apr 2013 17:40:35 +0300
-Message-ID: <1365000110-8916-2-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1760585Ab3DCOpR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:45:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50600 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755456Ab3DCOpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 10:45:15 -0400
+Date: Wed, 3 Apr 2013 10:44:28 -0400
+From: "Frank Ch. Eigler" <fche@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sourceware.org>
+Subject: Re: systemtap broken by removal of register_timer_hook
+Message-ID: <20130403144428.GA15432@redhat.com>
+References: <20130403075017.GA2534@suse.de> <CAFTL4hyYezB2ZxM-GJ70VoxOeRSG64V6u+nX2hTuhF30R-GdPg__32168.962484184$1364986928$gmane$org@mail.gmail.com> <y0mvc83u79f.fsf@fche.csb> <CAFTL4hxx_GHoa4uguSAtY0A=cC43qJPKvpqaoguS-WAjFj+HSw@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hxx_GHoa4uguSAtY0A=cC43qJPKvpqaoguS-WAjFj+HSw@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tegra_boot_secondary() relies on some of the car ops. This means having an
-uninitialized tegra_cpu_car_ops will lead to an early boot panic.
-Providing a dummy struct avoids this and makes adding Tegra114 clock support
-in a bisectable way a lot easier.
+Hi -
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- drivers/clk/tegra/clk.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+On Wed, Apr 03, 2013 at 02:49:53PM +0200, Frederic Weisbecker wrote:
 
-diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
-index 4a61d15..70b7a47 100644
---- a/drivers/clk/tegra/clk.c
-+++ b/drivers/clk/tegra/clk.c
-@@ -22,7 +22,8 @@
- #include "clk.h"
+> Sounds good, would you like to propose a version? We are also
+> interested in a timer tick event tracepoint for dynticks debugging.
+
+How about this?
+
+Author: Frank Ch. Eigler <fche@redhat.com>
+Date:   Wed Apr 3 10:35:21 2013 -0400
+
+    profiling: add profile_tick tracepoint
+    
+    Commit ba6fdda4 removed the timer_hook mechanism for modules to listen
+    to profiling timer ticks (without having to set up more complicated
+    perf mechanisms).  To reduce the impact on out-of-tree users, a
+    TRACE_EVENT-flavoured tracepoint is added in its place.  Tested with
+    perf and systemtap.
+    
+    Cc: Frederic Weisbecker <fweisbec@gmail.com>
+    Cc: Ingo Molnar <mingo@kernel.org>
+    Cc: Mel Gorman <mgorman@suse.de>
+    Signed-off-by: Frank Ch. Eigler <fche@redhat.com>
+
+diff --git a/include/trace/events/profile.h b/include/trace/events/profile.h
+new file mode 100644
+index 0000000..b48b6fe
+--- /dev/null
++++ b/include/trace/events/profile.h
+@@ -0,0 +1,35 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM profile
++
++#if !defined(_TRACE_PROFILE_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_PROFILE_H
++
++#include <linux/tracepoint.h>
++
++
++struct pt_regs;
++
++/**
++ * profile_tick - called when the profiling timer ticks
++ * @regs:	pointer to struct pt_regs*
++ */
++
++TRACE_EVENT(profile_tick,
++	TP_PROTO(int type, struct pt_regs *regs),
++	TP_ARGS(type, regs),
++	TP_STRUCT__entry(
++		__field( int,			type	)
++		__field( struct pt_regs*,	regs	)
++	),
++	TP_fast_assign(
++		__entry->type	= type;
++		__entry->regs	= regs;
++	),
++	TP_printk("type=%d regs=%p", __entry->type, __entry->regs)
++);
++
++
++#endif /*  _TRACE_PROFILE_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+diff --git a/kernel/profile.c b/kernel/profile.c
+index dc3384e..d61f921 100644
+--- a/kernel/profile.c
++++ b/kernel/profile.c
+@@ -29,6 +29,9 @@
+ #include <asm/irq_regs.h>
+ #include <asm/ptrace.h>
  
- /* Global data of Tegra CPU CAR ops */
--struct tegra_cpu_car_ops *tegra_cpu_car_ops;
-+static struct tegra_cpu_car_ops dummy_car_ops;
-+struct tegra_cpu_car_ops *tegra_cpu_car_ops = &dummy_car_ops;
++#define CREATE_TRACE_POINTS
++#include <trace/events/profile.h>
++
+ struct profile_hit {
+ 	u32 pc, hits;
+ };
+@@ -414,6 +417,8 @@ void profile_tick(int type)
+ {
+ 	struct pt_regs *regs = get_irq_regs();
  
- void __init tegra_init_dup_clks(struct tegra_clk_duplicate *dup_list,
- 				struct clk *clks[], int clk_max)
--- 
-1.7.7.rc0.72.g4b5ea.dirty
-
++	trace_profile_tick(type, regs);
++
+ 	if (!user_mode(regs) && prof_cpu_mask != NULL &&
+ 	    cpumask_test_cpu(smp_processor_id(), prof_cpu_mask))
+ 		profile_hit(type, (void *)profile_pc(regs));
