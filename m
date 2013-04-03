@@ -1,44 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762576Ab3DCM0o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 08:26:44 -0400
-Received: from mail-ia0-f178.google.com ([209.85.210.178]:55972 "EHLO
-	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762502Ab3DCM0m (ORCPT
+	id S1762702Ab3DCM1F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 08:27:05 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60530 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762291Ab3DCM0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 08:26:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <1364471748-23192-2-git-send-email-richard.genoud@gmail.com>
-References: <1364471748-23192-1-git-send-email-richard.genoud@gmail.com>
-	<1364471748-23192-2-git-send-email-richard.genoud@gmail.com>
-Date: Wed, 3 Apr 2013 14:26:41 +0200
-Message-ID: <CACRpkdZJ-2NSePwS0X=F=hkMxsw0_QmXWSb0ZegQ60pAOdv1UQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] pinctrl: remove superfluous optimization in pinctrl_select_state_locked
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 3 Apr 2013 08:26:31 -0400
+X-AuditID: 9c93016f-b7c18ae000002f5f-a7-515c1ff28ebd
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 09/10] perf hist browser: Use sort__has_sym
+Date: Wed,  3 Apr 2013 21:26:18 +0900
+Message-Id: <1364991979-3008-10-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1364991979-3008-1-git-send-email-namhyung@kernel.org>
+References: <1364991979-3008-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 12:55 PM, Richard Genoud
-<richard.genoud@gmail.com> wrote:
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-> As Stephen Warren suggested, checking first if the setting->node entry
-> is the first in the list or not is superfluous, as it is checked again
-> in the list_for_each_entry bellow.
-> So, remove it, the code will be simpler and lighter !
->
-> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-> ---
-> If can also be squashed whit commit:
-> 3102a76cfbf9ac4ae0cf54c7452f7ba4292a4760
-> "pinctrl: disable and free setting in select_state in case of error"
-> (But there will be a conflict on "if (old_state)" vs "FIXME comment")
+The TUI hist browser had a similar variable has_symbols for the same
+purpose.  Let's get rid of the duplication.
 
-Applied with Stephen's Reviewed tag.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/ui/browsers/hists.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-Thanks,
-Linus Walleij
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index cad8e37f05d9..a4268cab1921 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -25,7 +25,6 @@ struct hist_browser {
+ 	struct map_symbol   *selection;
+ 	int		     print_seq;
+ 	bool		     show_dso;
+-	bool		     has_symbols;
+ };
+ 
+ extern void hist_browser__init_hpp(void);
+@@ -1155,10 +1154,6 @@ static struct hist_browser *hist_browser__new(struct hists *hists)
+ 		browser->b.refresh = hist_browser__refresh;
+ 		browser->b.seek = ui_browser__hists_seek;
+ 		browser->b.use_navkeypressed = true;
+-		if (sort__mode == SORT_MODE__BRANCH)
+-			browser->has_symbols = sort_sym_from.list.next != NULL;
+-		else
+-			browser->has_symbols = sort_sym.list.next != NULL;
+ 	}
+ 
+ 	return browser;
+@@ -1386,7 +1381,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 			 */
+ 			goto out_free_stack;
+ 		case 'a':
+-			if (!browser->has_symbols) {
++			if (!sort__has_sym) {
+ 				ui_browser__warning(&browser->b, delay_secs * 2,
+ 			"Annotation is only available for symbolic views, "
+ 			"include \"sym*\" in --sort to use it.");
+@@ -1485,7 +1480,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 			continue;
+ 		}
+ 
+-		if (!browser->has_symbols)
++		if (!sort__has_sym)
+ 			goto add_exit_option;
+ 
+ 		if (sort__mode == SORT_MODE__BRANCH) {
+-- 
+1.7.11.7
+
