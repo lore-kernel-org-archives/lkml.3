@@ -1,110 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761368Ab3DCP2Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 11:28:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35976 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760987Ab3DCP2W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 11:28:22 -0400
-Message-ID: <515C4A89.6040903@canonical.com>
-Date: Wed, 03 Apr 2013 11:28:09 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1761343Ab3DCP3j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 11:29:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49687 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759408Ab3DCP3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 11:29:37 -0400
+Date: Wed, 3 Apr 2013 17:29:34 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Li Zefan <lizefan@huawei.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC][PATCH 1/7] memcg: use css_get in sock_update_memcg()
+Message-ID: <20130403152934.GL16471@dhcp22.suse.cz>
+References: <515BF233.6070308@huawei.com>
+ <515BF249.50607@huawei.com>
+ <515C2788.90907@parallels.com>
 MIME-Version: 1.0
-To: Piotr Haber <phaber@broadcom.com>
-CC: "John W. Linville" <linville@tuxdriver.com>, arend@broadcom.com,
-        pieterpg@broadcom.com, meuleman@broadcom.com,
-        LKML <linux-kernel@vger.kernel.org>, brudley@broadcom.com,
-        frankyl@broadcom.com, linux-wireless@vger.kernel.org,
-        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org
-Subject: Re: [v3.8, v3.9] [Regression] brcmsmac: move PHY functions
-References: <5155F107.6050408@canonical.com> <20130401144225.GC21859@tuxdriver.com> <5159A559.4000808@canonical.com> <515A9EAF.4010005@broadcom.com>
-In-Reply-To: <515A9EAF.4010005@broadcom.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515C2788.90907@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2013 05:02 AM, Piotr Haber wrote:
-> On 04/01/13 17:18, Joseph Salisbury wrote:
->> On 04/01/2013 10:42 AM, John W. Linville wrote:
->>> On Fri, Mar 29, 2013 at 03:52:39PM -0400, Joseph Salisbury wrote:
->>>> Hi Piotr,
->>>>
->>>> A bug was opened against the Ubuntu kernel[0].  After a kernel
->>>> bisect, it was found that reverting the following commit resolved
->>>> this bug:
->>>>
->>>> commit b83576341664957978e125f5f5db2f15496980b1
->>>> Author: Piotr Haber <phaber@broadcom.com>
->>>> Date:   Wed Nov 28 21:44:09 2012 +0100
->>>>
->>>>       brcmsmac: move PHY functions
->>>>
->>>> The regression was introduced as of v3.8-rc1.  The regression still
->>>> exists in v3.9-rc4.
->>>>
->>>> I see that you are the author of this patch, so I wanted to run this
->>>> by you.  I was thinking of requesting a revert for v3.9, but I
->>>> wanted to get your feedback first.
->>>>
->>>>
->>>> Thanks,
->>>>
->>>> Joe
->>>>
->>>> [0] http://pad.lv/1131914
->>> I recently reverted b6fc28a1, which is the follow-on to that patch.
->>> The revert is _not_ in 3.9-rc5.
->>>
->>> Could you try reverting that patch instead?  Does that fix the issue
->>> for you?
->>>
->>> John
->> Hi John,
->>
->> Thanks for the response.
->>
->> Yes, reverting commit b6fc28a1 does resolve this bug.  That is the appropriate fix for this issue.
->> Thanks for the assistance.
->>
->> Thanks,
->>
->> Joe
->>
->>
->>
->>
-> Hi Joe,
-> could you elaborate a little bit on your failure scenario?
-> In bug report you say it happens after suspend/resume, are there any other scenarios you see this
-> behaviour? (like disassociation/association without suspend)
-> Also you mention it comes back after some time - what is the time needed?
-> We had reports of problems on 4313 with this patch (that's why the revert was done) but so far i
-> assumed it was a total breakdown, in your case this seem like a transient issue.
-This only happens after a suspend/resume cycle.  I haven't seen the 
-issue happen with disassociation/association without suspend.  After 
-suspend, the connection will re-establish after about 15 minutes or so.
+On Wed 03-04-13 16:58:48, Glauber Costa wrote:
+> On 04/03/2013 01:11 PM, Li Zefan wrote:
+> > Use css_get/css_put instead of mem_cgroup_get/put.
+> > 
+> > Note, if at the same time someone is moving @current to a different
+> > cgroup and removing the old cgroup, css_tryget() may return false,
+> > and sock->sk_cgrp won't be initialized.
+> > 
+> > Signed-off-by: Li Zefan <lizefan@huawei.com>
+> > ---
+> >  mm/memcontrol.c | 8 ++++----
+> >  1 file changed, 4 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 23d0f6e..43ca91d 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -536,15 +536,15 @@ void sock_update_memcg(struct sock *sk)
+> >  		 */
+> >  		if (sk->sk_cgrp) {
+> >  			BUG_ON(mem_cgroup_is_root(sk->sk_cgrp->memcg));
+> > -			mem_cgroup_get(sk->sk_cgrp->memcg);
+> > +			css_get(&sk->sk_cgrp->memcg->css);
 
->
-> One more thing, could you provide info about your hardware by sending me contents of:
-> <debugfs_mount>/brcmsmac/bcma0:0/hardware
+I am not sure I understand this one. So we have a goup here (which means
+that somebody already took a reference on it, right?) and we are taking
+another reference. If this is released by sock_release_memcg then who
+releases the previous one? It is not directly related to the patch
+because this has been done previously already. Could you clarify
+Glauber, please?
 
-board vendor: 144f
-board type: 7179
-board revision: 1408
-board flags: 8402a01
-board flags2: 880
-firmware revision: 262032c
+> >  			return;
+> >  		}
+> >  
+> >  		rcu_read_lock();
+> >  		memcg = mem_cgroup_from_task(current);
+> >  		cg_proto = sk->sk_prot->proto_cgroup(memcg);
+> > -		if (!mem_cgroup_is_root(memcg) && memcg_proto_active(cg_proto)) {
+> > -			mem_cgroup_get(memcg);
+> > +		if (!mem_cgroup_is_root(memcg) &&
+> > +		    memcg_proto_active(cg_proto) && css_tryget(&memcg->css)) {
+> >  			sk->sk_cgrp = cg_proto;
+> >  		}
+> 
+> What happens if this tryget fails ? Won't we leak a reference here? We
+> will put regardless when the socket is released, and this may go
+> negative. No?
+ 
+AFAICS sock_release_memcg releases the reference only if sk->sk_cgrp and
+that one wouldn't be set if css_tryget fails.
 
-
-
-
->
-> Kind regards
-> Piotr
->
->
-
+-- 
+Michal Hocko
+SUSE Labs
