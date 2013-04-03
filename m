@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761774Ab3DCNlp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 09:41:45 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:57768 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759966Ab3DCNln convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
-	Wed, 3 Apr 2013 09:41:43 -0400
-Message-Id: <515C4DE202000078000CA5F3@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Wed, 03 Apr 2013 14:42:26 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "William Dauchy" <wdauchy@gmail.com>
-Cc: "Chen Gang" <gang.chen@asianux.com>, "roger.pau" <roger.pau@citrix.com>,
-        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-        "xen-devel" <xen-devel@lists.xen.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "dgdegra" <dgdegra@tycho.nsa.gov>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] drivers/block/xen-blkback: preq.dev is used
- without initialized
-References: <512EC22F.5020404@asianux.com>
- <CAJ75kXZc+GtYi7ULs96G3VkmyzkS5-qe702iXpNenpPj8GF5BQ@mail.gmail.com>
- <515C444002000078000CA5B5@nat28.tlf.novell.com>
- <CAJ75kXaHoydy4=ZTMHN8S=nyw7rRGdb4w2_Xf0oCLBQnJD6W-w@mail.gmail.com>
-In-Reply-To: <CAJ75kXaHoydy4=ZTMHN8S=nyw7rRGdb4w2_Xf0oCLBQnJD6W-w@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1761880Ab3DCNm3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 09:42:29 -0400
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:38013
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759440Ab3DCNm1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 09:42:27 -0400
+X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT002.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: PS-2(zz98dI936eIzz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275dhz2fh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: Matt Fleming <matt@console-pimps.org>
+CC: "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "ben@decadent.org.uk" <ben@decadent.org.uk>,
+        "jwboyer@redhat.com" <jwboyer@redhat.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "seth.forshee@canonical.com" <seth.forshee@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+Subject: Re: [PATCH 1/2] efi: Determine how much space is used by boot
+ services-only variables
+Thread-Topic: [PATCH 1/2] efi: Determine how much space is used by boot
+ services-only variables
+Thread-Index: AQHOLuuZAQK+HlxUokuQeY5w6zxM15jEevsAgAAJQ4A=
+Date: Wed, 3 Apr 2013 13:42:13 +0000
+Message-ID: <1364996531.19098.3.camel@x230>
+References: <515150EC.7040203@redhat.com>
+	 <1364829240-26475-1-git-send-email-matthew.garrett@nebula.com>
+	 <515C29EE.8050008@console-pimps.org>
+In-Reply-To: <515C29EE.8050008@console-pimps.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <7EC700C260EFDF49920F59DBB85DF813@namprd05.prod.outlook.com>
+MIME-Version: 1.0
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r33DgSwJ028470
 
->>> On 03.04.13 at 15:25, William Dauchy <wdauchy@gmail.com> wrote:
-> On Wed, Apr 3, 2013 at 3:01 PM, Jan Beulich <JBeulich@suse.com> wrote:
->> Iirc we requested the earlier commit to be removed from stable
->> trees, and I think Greg also did so.
-> 
-> I'm sorry but I'm unable to find a revert of 01c681d in stable tree.
+On Wed, 2013-04-03 at 14:09 +0100, Matt Fleming wrote:
 
-ChangeLog-3.8.3 for example has
+> We're fixing a regression in efivars.c, but only for those users that
+> boot via the EFI boot stub? That seems likely to upset some people.
 
-commit 32f4d10ed8fd7ef4cebbf02c5326e8bb6aeca9b1
-Author: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date:   Tue Mar 12 15:08:26 2013 -0700
+Not really - it just makes the estimates more accurate. Applying (2)
+without (1) should still fix the functional regression.
 
-    Revert "xen/blkback: Don't trust the handle from the frontend."
-    
-    This reverts commit 01c681d4c70d64cb72142a2823f27c4146a02e63 upstream
-    (ef56ca64ea733c3b88f0bb74b04da128b1dc35d8 in this tree), as it wasn't
-    supposed to have been applied to the stable tree.
-    
-    Cc: Jan Beulich <jbeulich@suse.com>
-    Cc: Ian Campbell <ian.campbell@citrix.com>
-    Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
-Jan
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
