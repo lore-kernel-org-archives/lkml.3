@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762207Ab3DCMfK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 08:35:10 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:42499 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759408Ab3DCMfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 08:35:09 -0400
-Date: Wed, 3 Apr 2013 08:34:52 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm, memcg: give exiting processes access to memory
- reserves
-Message-ID: <20130403123452.GK1953@cmpxchg.org>
-References: <alpine.DEB.2.02.1303271821120.5005@chino.kir.corp.google.com>
+	id S1762715Ab3DCMfb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 08:35:31 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:56205 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762394Ab3DCMf2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 08:35:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1303271821120.5005@chino.kir.corp.google.com>
+In-Reply-To: <1364503606-10597-3-git-send-email-maxime.ripard@free-electrons.com>
+References: <1364503606-10597-1-git-send-email-maxime.ripard@free-electrons.com>
+	<1364503606-10597-3-git-send-email-maxime.ripard@free-electrons.com>
+Date: Wed, 3 Apr 2013 14:35:27 +0200
+Message-ID: <CACRpkdapQB7=fem1x8v5nAzitAVMZAe=P4Eroz-wmmK1CQSMgg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ARM: remove mach .init_irq for irqchip_init users
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Alessandro Rubini <rubini@unipv.it>,
+        STEricsson <STEricsson_nomadik_linux@list.st.com>,
+        Jamie Iles <jamie@jamieiles.com>, Barry Song <baohua.song@csr.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 06:22:10PM -0700, David Rientjes wrote:
-> A memcg may livelock when oom if the process that grabs the hierarchy's
-> oom lock is never the first process with PF_EXITING set in the memcg's
-> task iteration.
-> 
-> The oom killer, both global and memcg, will defer if it finds an eligible
-> process that is in the process of exiting and it is not being ptraced.
-> The idea is to allow it to exit without using memory reserves before
-> needlessly killing another process.
-> 
-> This normally works fine except in the memcg case with a large number of
-> threads attached to the oom memcg.  In this case, the memcg oom killer
-> only gets called for the process that grabs the hierarchy's oom lock; all
-> others end up blocked on the memcg's oom waitqueue.  Thus, if the process
-> that grabs the hierarchy's oom lock is never the first PF_EXITING process
-> in the memcg's task iteration, the oom killer is constantly deferred
-> without anything making progress.
-> 
-> The fix is to give PF_EXITING processes access to memory reserves so that
-> we've marked them as oom killed without any iteration.  This allows
-> __mem_cgroup_try_charge() to succeed so that the process may exit.  This
-> makes the memcg oom killer exemption for TIF_MEMDIE tasks, now
-> immediately granted for processes with pending SIGKILLs and those in the
-> exit path, to be equivalent to what is done for the global oom killer.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
+On Thu, Mar 28, 2013 at 9:46 PM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> Now that the arm core code calls irqchip_init, we can remove it from all
+> the machines that were using it.
+>
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> Acked-by: Simon Horman <horms+renesas@verge.net.au>
+
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+For Nomadik.
+
+Yours,
+Linus Walleij
