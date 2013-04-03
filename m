@@ -1,111 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759489Ab3DCBMB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 21:12:01 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36260 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124Ab3DCBL7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 21:11:59 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <515B81B8.9020307@jp.fujitsu.com>
-Date: Wed, 3 Apr 2013 10:11:20 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1759574Ab3DCBMQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 21:12:16 -0400
+Received: from mga14.intel.com ([143.182.124.37]:60839 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754449Ab3DCBMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 21:12:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,396,1363158000"; 
+   d="scan'208";a="279942816"
+Message-ID: <515B81D6.6010006@intel.com>
+Date: Wed, 03 Apr 2013 09:11:50 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <linuxram@us.ibm.com>, <tmac@hp.com>,
-        <wency@cn.fujitsu.com>, <tangchen@cn.fujitsu.com>,
-        <jiang.liu@huawei.com>
-Subject: Re: [PATCH 1/3] resource: Add __adjust_resource() for internal use
-References: <1364919450-8741-1-git-send-email-toshi.kani@hp.com> <1364919450-8741-2-git-send-email-toshi.kani@hp.com>
-In-Reply-To: <1364919450-8741-2-git-send-email-toshi.kani@hp.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: "mingo@redhat.com" <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, Paul Turner <pjt@google.com>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        gregkh@linuxfoundation.org,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [patch v6 10/21] sched: get rq potential maximum utilization
+References: <1364654108-16307-1-git-send-email-alex.shi@intel.com> <1364654108-16307-11-git-send-email-alex.shi@intel.com> <CAKfTPtAb1byoZRJZPfvGGgQBEVDCNya3tC6NF83v0khiGV9dDw@mail.gmail.com>
+In-Reply-To: <CAKfTPtAb1byoZRJZPfvGGgQBEVDCNya3tC6NF83v0khiGV9dDw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Toshi,
+On 04/02/2013 10:38 PM, Vincent Guittot wrote:
+>> +static unsigned int max_rq_util(int cpu)
+>> > +{
+>> > +       struct rq *rq = cpu_rq(cpu);
+>> > +       unsigned int rt_util = scale_rt_util(cpu);
+>> > +       unsigned int cfs_util;
+>> > +       unsigned int nr_running;
+>> > +
+>> > +       cfs_util = (FULL_UTIL - rt_util) > rq->util ? rq->util
+>> > +                       : (FULL_UTIL - rt_util);
+> rt_util and rq->util don't use the same computation algorithm so the
+> results are hardly comparable or addable. In addition, some RT tasks
+> can have impacted the rq->util, so they will be accounted in both
+> side.
 
-2013/04/03 1:17, Toshi Kani wrote:
-> Added __adjust_resource(), which is called by adjust_resource()
-> internally after the resource_lock is held.  There is no interface
-> change to adjust_resource().  This change allows other functions
-> to call __adjust_resource() internally while the resource_lock is
-> held.
+Thanks Vincent!
+
+Yes, rt_util calculated with different way, but it has very similar
+meaning with rq->util. So compare them make sense.
+
+Yes, the rq->util and rt_util have some overlap, so we need to remove
+the overlap part, otherwise the total utlization of this cpu will beyond
+100%. that's not make sense. And since RT task always has higher
+priority than cfs task, here I keep the RT utilization and yield the cfs
+utilization.
 > 
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-
-The patch looks good.
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-
-Thanks,
-Yasuaki Ishimatsu
-
-> ---
->   kernel/resource.c |   35 ++++++++++++++++++++++-------------
->   1 file changed, 22 insertions(+), 13 deletions(-)
-> 
-> diff --git a/kernel/resource.c b/kernel/resource.c
-> index 73f35d4..ae246f9 100644
-> --- a/kernel/resource.c
-> +++ b/kernel/resource.c
-> @@ -706,24 +706,13 @@ void insert_resource_expand_to_fit(struct resource *root, struct resource *new)
->   	write_unlock(&resource_lock);
->   }
->   
-> -/**
-> - * adjust_resource - modify a resource's start and size
-> - * @res: resource to modify
-> - * @start: new start value
-> - * @size: new size
-> - *
-> - * Given an existing resource, change its start and size to match the
-> - * arguments.  Returns 0 on success, -EBUSY if it can't fit.
-> - * Existing children of the resource are assumed to be immutable.
-> - */
-> -int adjust_resource(struct resource *res, resource_size_t start, resource_size_t size)
-> +static int __adjust_resource(struct resource *res, resource_size_t start,
-> +				resource_size_t size)
->   {
->   	struct resource *tmp, *parent = res->parent;
->   	resource_size_t end = start + size - 1;
->   	int result = -EBUSY;
->   
-> -	write_lock(&resource_lock);
-> -
->   	if (!parent)
->   		goto skip;
->   
-> @@ -751,6 +740,26 @@ skip:
->   	result = 0;
->   
->    out:
-> +	return result;
-> +}
-> +
-> +/**
-> + * adjust_resource - modify a resource's start and size
-> + * @res: resource to modify
-> + * @start: new start value
-> + * @size: new size
-> + *
-> + * Given an existing resource, change its start and size to match the
-> + * arguments.  Returns 0 on success, -EBUSY if it can't fit.
-> + * Existing children of the resource are assumed to be immutable.
-> + */
-> +int adjust_resource(struct resource *res, resource_size_t start,
-> +			resource_size_t size)
-> +{
-> +	int result;
-> +
-> +	write_lock(&resource_lock);
-> +	result = __adjust_resource(res, start, size);
->   	write_unlock(&resource_lock);
->   	return result;
->   }
+> Vincent
 > 
 
 
+-- 
+Thanks Alex
