@@ -1,40 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762155Ab3DCMaq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 08:30:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7129 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759668Ab3DCMao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 08:30:44 -0400
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sourceware.org>
-Subject: Re: systemtap broken by removal of register_timer_hook
-References: <20130403075017.GA2534@suse.de>
-	<CAFTL4hyYezB2ZxM-GJ70VoxOeRSG64V6u+nX2hTuhF30R-GdPg__32168.962484184$1364986928$gmane$org@mail.gmail.com>
-From: fche@redhat.com (Frank Ch. Eigler)
-Date: Wed, 03 Apr 2013 08:29:48 -0400
-In-Reply-To: <CAFTL4hyYezB2ZxM-GJ70VoxOeRSG64V6u+nX2hTuhF30R-GdPg__32168.962484184$1364986928$gmane$org@mail.gmail.com> (Frederic Weisbecker's message of "Wed, 3 Apr 2013 13:01:23 +0200")
-Message-ID: <y0mvc83u79f.fsf@fche.csb>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
+	id S1762117Ab3DCMbu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 08:31:50 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:35236 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759574Ab3DCMbt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 08:31:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1364487492.10838.1.camel@phoenix>
+References: <1364487492.10838.1.camel@phoenix>
+Date: Wed, 3 Apr 2013 14:31:48 +0200
+Message-ID: <CACRpkdaQ2x+i8V8tLVW-zP0+eNWrN28321j0D0E+TcdbG+qoRg@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: coh901: Fix error checking in u300_gpio_to_irq
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic Weisbecker <fweisbec@gmail.com> writes:
+On Thu, Mar 28, 2013 at 5:18 PM, Axel Lin <axel.lin@ingics.com> wrote:
 
-> [...]
-> Sometimes I don't mind keeping around code in the kernel for out of
-> tree users, depending on the case. But in this specific matter we have
-> more standard ways to do this kind of hook: kprobes, static
-> tracepoints. A tracepoint on the timer tick would be useful BTW, and
-> you could reuse it.
+> The pointer "port" is always not NULL if gpio->port_list is not empty.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-Thanks for noticing!  IMO kprobes would be too heavyweight for this.
-A new static tracepoint would be fine, especially if it passes the
-same pt_regs* pointer as the former hook did.
+Excellent catch Axel, thanks!!
 
-- FChE
+Patch applied.
+
+Yours,
+Linus Walleij
