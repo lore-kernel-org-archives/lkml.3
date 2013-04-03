@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759474Ab3DCOU0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:20:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45099 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758431Ab3DCOUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:20:24 -0400
-Date: Wed, 3 Apr 2013 15:20:19 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Shuge <shugelinux@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-ext4@vger.kernel.org,
-        Kevin <kevin@allwinnertech.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Jens Axboe <axboe@kernel.dk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3] mm: Make snapshotting pages for stable writes a
- per-bio operation
-Message-ID: <20130403142019.GC5811@suse.de>
-References: <20130313011020.GA5313@blackbox.djwong.org>
- <20130313085021.GA29730@quack.suse.cz>
- <20130313194429.GE5313@blackbox.djwong.org>
- <20130313210216.GA7754@quack.suse.cz>
- <20130314224243.GI5313@blackbox.djwong.org>
- <20130315100105.GA4889@quack.suse.cz>
- <20130315232816.GN5313@blackbox.djwong.org>
- <20130318174134.GB7852@quack.suse.cz>
- <20130318230259.GP5313@blackbox.djwong.org>
- <20130402170143.GA8910@blackbox.djwong.org>
+	id S1759403Ab3DCOWe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:22:34 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:41682 "EHLO
+	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757561Ab3DCOWd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 10:22:33 -0400
+Message-ID: <515C3B1C.8020801@micron.com>
+Date: Wed, 3 Apr 2013 19:52:20 +0530
+From: Asai Thambi S P <asamymuthupa@micron.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130402170143.GA8910@blackbox.djwong.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jens Axboe <axboe@kernel.dk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Sam Bradshaw" <sbradshaw@micron.com>
+Subject: [PATCH 0/3] mtip32xx: recovery improvement and fix for a crash
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-19764.007
+X-TM-AS-Result: No--5.520000-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 10:01:43AM -0700, Darrick J. Wong wrote:
-> Hi,
-> 
-> A couple of weeks have gone by without further comments about this patch.
-> 
-> Are you interested in the minor cleanups and added comments, or is the v2 patch
-> in -next good enough?
-> 
-> Apparently Mel Gorman's interested in this patchset too.  Mel: Most of stable
-> pages part 2 are already in upstream for 3.9... except this piece.  Are you
-> interested in having this piece in 3.9 also?  Or is 3.10 good enough for
-> everyone?
-> 
+Hi Jens,
 
-My understanding is that it only affects ARM and DEBUG_VM so there is a
-relatively small chance of this generating spurious bug reports.  However,
-3.9 is still far enough away that I see no good reason to delay this patch
-until 3.10 either.
+This patchset includes the following. It was generated against your for-3.9/drivers
 
--- 
-Mel Gorman
-SUSE Labs
+* improved recovery for command timeout
+* fix for a crash during rmmod
+* add new debugfs entry 'device_status'
+
+
+Asai Thambi S P (3):
+  mtip32xx: recovery from command timeout
+  mtip32xx: return 0 from pci probe in case of rebuild
+  mtip32xx: Add debugfs entry device_status
+
+ drivers/block/mtip32xx/mtip32xx.c |  327 ++++++++++++++++++++++++++-----------
+ drivers/block/mtip32xx/mtip32xx.h |   18 ++-
+ 2 files changed, 243 insertions(+), 102 deletions(-)
