@@ -1,107 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762258Ab3DCQfO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 12:35:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42072 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759071Ab3DCQfM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 12:35:12 -0400
-Date: Wed, 3 Apr 2013 09:35:09 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Platform Driver <platform-driver-x86@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 1/1] Introduce Intel RAPL cooling device driver
-Message-ID: <20130403163509.GC21969@kroah.com>
-References: <1364940936-20846-1-git-send-email-jacob.jun.pan@linux.intel.com>
- <1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
- <20130402230042.GA8713@kroah.com>
- <20130402165340.61b7da02@chromoly>
- <20130403001300.GA13838@kroah.com>
- <20130402214818.50f1ae89@chromoly>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130402214818.50f1ae89@chromoly>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1762324Ab3DCQg7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 12:36:59 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58978 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761132Ab3DCQg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 12:36:58 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Ext4 Developers List <linux-ext4@vger.kernel.org>
+Cc: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christian Kujau <lists@nerdbynature.de>, CAI Qian <caiqian@redhat.com>,
+        sbest@redhat.com, Zheng Liu <wenqing.lz@taobao.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: [PATCH] ext4: fix big-endian bugs which could cause fs corruptions
+Date: Wed,  3 Apr 2013 12:36:42 -0400
+Message-Id: <1365007002-17528-1-git-send-email-tytso@mit.edu>
+X-Mailer: git-send-email 1.7.12.rc0.22.gcdd159b
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 09:48:18PM -0700, Jacob Pan wrote:
-> > Let's step back and start over, what exactly are you trying to tell
-> > userspace?  What data do you have that you need to express to it?  How
-> > do you want userspace to see/use it?
-> 
-> It is a good idea to step back and let me explain what I wanted to
-> do here for userspace.
-> 
-> I have two kinds of applications that might use this driver.
-> 1. simple use case where user sets a power limit for a RAPL domain.
-> e.g. set graphics unit power limit to 7w
-> 2. advanced use case where use can do fine tuning on top of simple
-> power limit,e.g. the dynamic response parameters of power control
-> logic, event notifications, etc.
-> 
-> For #1, this driver register with the abstract generic thermal layer
-> (/sys/class/thermal) and presents itself as a set of cooling devices
-> with a single knob per domain for power limits.
-> root@chromoly:/sys/class/thermal/cooling_device15# echo 7000 > cur_state 
+From: Zheng Liu <wenqing.lz@taobao.com>
 
-Great, how about submitting that functionality as patch 1 of your
-series?  That seems like a very "normal" thermal driver, right?
+From: Zheng Liu <wenqing.lz@taobao.com>
 
-> For #2, to give userspace complete control of the RAPL interface, which
-> is not generic, I put them under the device private sysfs area.
-> root@chromoly:/sys/class/thermal/cooling_device15/device# echo 1000 > time_window1 
+When an extent was zeroed out, we forgot to do convert from cpu to le16.
+It could make us hit a BUG_ON when we try to write dirty pages out.  So
+fix it.
 
-I totally fail to understand the difference.  What do you want to show
-to userspace that can't be expressed through the thermal interface
-today?  Perhaps the thermal interface could be expanded to provide more
-functionality that you need?  Why create a one-off API that will never
-be used again and require userspace programs to be written just to
-handle this one type of device?
+[ Also fix a bug found by Dmitry Monakhov where we were missing
+  le32_to_cpu() calls in the new indirect punch hole code.
 
-> As you mentioned about using device tree vs. fs, and how kobject are
-> used for fs. I do have the need to go between a generic thermal sysfs
-> and the true device tree. This is the reason why I used kobjects and
-> link them between device tree and its thermal sysfs representation.
+  There are a number of other big endian warnings found by static code
+  analyzers, but we'll wait for the next merge window to fix them all
+  up.  These fixes are designed to be Obviously Correct by code
+  inspection, and easy to demonstrate that it won't make any
+  difference (and hence, won't introduce any bugs) on little endian
+  architectures such as x86.  --tytso ]
 
-I don't understand your leap to using kobjects.
+Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: CAI Qian <caiqian@redhat.com>
+Reported-by: Christian Kujau <lists@nerdbynature.de>
+Cc: Dmitry Monakhov <dmonakhov@openvz.org>
+---
 
-> e.g. a RAPL package cooling device linked with its platform device
-> kobj. (device is linked with rapl_domains/package, the line is too long)
-> 
-> root@chromoly:/sys/class/thermal# ls -l cooling_device15/
-> total 0
-> -rw-r--r-- 1 root root 4096 Apr  2 15:03 cur_state
-> lrwxrwxrwx 1 root root    0 Apr  2 21:28 device
-> -> ../../../platform/intel_rapl/rapl_domains/package
-> -r--r--r-- 1 root root 4096 Apr  2 15:03 max_state
-> drwxr-xr-x 2 root root    0 Apr  2 21:28 power
-> lrwxrwxrwx 1 root root    0 Apr  2 15:03 subsystem
-> -> ../../../../class/thermal
-> -r--r--r-- 1 root root 4096 Apr  2 15:03 type
-> -rw-r--r-- 1 root root 4096 Apr  2 15:03 uevent
+This is what I plan to be sending to Linus very shortly.  If anyone
+could  test / review this patch ASAP, I'd really appreciate it, thanks!!
 
-I still don't understand.  What are you adding here, the device symlink?
-Or something else?
+ fs/ext4/extents.c  | 11 +++++++----
+ fs/ext4/indirect.c |  4 ++--
+ 2 files changed, 9 insertions(+), 6 deletions(-)
 
-> For userspace which is not satisfied with the simple use case of a
-> single knob for setting power limit, it can follow the link to find the
-> device tree entry. Then get access to the complete knobs, including
-> event notifications.
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 56efcaa..9c6d06d 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -2999,20 +2999,23 @@ static int ext4_split_extent_at(handle_t *handle,
+ 			if (split_flag & EXT4_EXT_DATA_VALID1) {
+ 				err = ext4_ext_zeroout(inode, ex2);
+ 				zero_ex.ee_block = ex2->ee_block;
+-				zero_ex.ee_len = ext4_ext_get_actual_len(ex2);
++				zero_ex.ee_len = cpu_to_le16(
++						ext4_ext_get_actual_len(ex2));
+ 				ext4_ext_store_pblock(&zero_ex,
+ 						      ext4_ext_pblock(ex2));
+ 			} else {
+ 				err = ext4_ext_zeroout(inode, ex);
+ 				zero_ex.ee_block = ex->ee_block;
+-				zero_ex.ee_len = ext4_ext_get_actual_len(ex);
++				zero_ex.ee_len = cpu_to_le16(
++						ext4_ext_get_actual_len(ex));
+ 				ext4_ext_store_pblock(&zero_ex,
+ 						      ext4_ext_pblock(ex));
+ 			}
+ 		} else {
+ 			err = ext4_ext_zeroout(inode, &orig_ex);
+ 			zero_ex.ee_block = orig_ex.ee_block;
+-			zero_ex.ee_len = ext4_ext_get_actual_len(&orig_ex);
++			zero_ex.ee_len = cpu_to_le16(
++						ext4_ext_get_actual_len(&orig_ex));
+ 			ext4_ext_store_pblock(&zero_ex,
+ 					      ext4_ext_pblock(&orig_ex));
+ 		}
+@@ -3272,7 +3275,7 @@ static int ext4_ext_convert_to_initialized(handle_t *handle,
+ 		if (err)
+ 			goto out;
+ 		zero_ex.ee_block = ex->ee_block;
+-		zero_ex.ee_len = ext4_ext_get_actual_len(ex);
++		zero_ex.ee_len = cpu_to_le16(ext4_ext_get_actual_len(ex));
+ 		ext4_ext_store_pblock(&zero_ex, ext4_ext_pblock(ex));
+ 
+ 		err = ext4_ext_get_access(handle, inode, path + depth);
+diff --git a/fs/ext4/indirect.c b/fs/ext4/indirect.c
+index b505a14..a041831 100644
+--- a/fs/ext4/indirect.c
++++ b/fs/ext4/indirect.c
+@@ -1539,9 +1539,9 @@ static int free_hole_blocks(handle_t *handle, struct inode *inode,
+ 		blk = *i_data;
+ 		if (level > 0) {
+ 			ext4_lblk_t first2;
+-			bh = sb_bread(inode->i_sb, blk);
++			bh = sb_bread(inode->i_sb, le32_to_cpu(blk));
+ 			if (!bh) {
+-				EXT4_ERROR_INODE_BLOCK(inode, blk,
++				EXT4_ERROR_INODE_BLOCK(inode, le32_to_cpu(blk),
+ 						       "Read failure");
+ 				return -EIO;
+ 			}
+-- 
+1.7.12.rc0.22.gcdd159b
 
-And what is in that device directory?  What is rapl_domains?  Why isn't
-that a normal 'struct device'?
-
-Still confused.
-
-greg k-h
