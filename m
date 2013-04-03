@@ -1,131 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760316Ab3DCIP4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 04:15:56 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54383 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760206Ab3DCIPx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 04:15:53 -0400
-Date: Wed, 3 Apr 2013 11:15:32 +0300
+	id S1760560Ab3DCIR2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 04:17:28 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53106 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760423Ab3DCIRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 04:17:25 -0400
+Date: Wed, 3 Apr 2013 11:17:04 +0300
 From: Felipe Balbi <balbi@ti.com>
 To: Vivek Gautam <gautamvivek1987@gmail.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>, <balbi@ti.com>,
+CC: <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
         <linux-usb@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>,
         <sarah.a.sharp@linux.intel.com>, <rob.herring@calxeda.com>,
-        <kgene.kim@samsung.com>, <dianders@chromium.org>, <t.figa@samsung.com>,
-        <p.paneri@samsung.com>
-Subject: Re: [PATCH v3 01/11] usb: phy: Add APIs for runtime power management
-Message-ID: <20130403081532.GE25837@arwen.pp.htv.fi>
+        <kgene.kim@samsung.com>, <kishon@ti.com>, <dianders@chromium.org>,
+        <t.figa@samsung.com>, <p.paneri@samsung.com>
+Subject: Re: [PATCH v3 02/11] USB: dwc3: Adjust runtime pm to allow
+ autosuspend
+Message-ID: <20130403081704.GF25837@arwen.pp.htv.fi>
 Reply-To: <balbi@ti.com>
 References: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com>
- <1364824448-14732-2-git-send-email-gautam.vivek@samsung.com>
- <515BB951.40702@ti.com>
- <CAFp+6iG8WdWHXVCANx77OiTXLeZ-4qE4jySWqPLhfR1KOEP4fw@mail.gmail.com>
+ <1364824448-14732-3-git-send-email-gautam.vivek@samsung.com>
+ <20130402082952.GG30286@arwen.pp.htv.fi>
+ <CAFp+6iFv43Xbck1cy8AcvGzBrxOECHLjowfV7askCCYgFFgNrQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6v9BRtpmy+umdQlo"
+	protocol="application/pgp-signature"; boundary="64j1qyTOoGvYcHb1"
 Content-Disposition: inline
-In-Reply-To: <CAFp+6iG8WdWHXVCANx77OiTXLeZ-4qE4jySWqPLhfR1KOEP4fw@mail.gmail.com>
+In-Reply-To: <CAFp+6iFv43Xbck1cy8AcvGzBrxOECHLjowfV7askCCYgFFgNrQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---6v9BRtpmy+umdQlo
+--64j1qyTOoGvYcHb1
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi,
 
-On Wed, Apr 03, 2013 at 11:48:39AM +0530, Vivek Gautam wrote:
-> >> Adding  APIs to handle runtime power management on PHY
-> >> devices. PHY consumers may need to wake-up/suspend PHYs
-> >> when they work across autosuspend.
+On Wed, Apr 03, 2013 at 11:35:43AM +0530, Vivek Gautam wrote:
+> >> The current code in the dwc3 probe effectively disables runtime pm
+> >> from ever working because it calls a get() that was never put() until
+> >> device removal.  Change the runtime pm code to match the standard
+> >> formula and allow runtime pm to function.
 > >>
 > >> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> >> CC: Doug Anderson <dianders@chromium.org>
 > >> ---
-> >>   include/linux/usb/phy.h |  141
-> >> +++++++++++++++++++++++++++++++++++++++++++++++
-> >>   1 files changed, 141 insertions(+), 0 deletions(-)
+> >>  drivers/usb/dwc3/core.c |    8 +++++++-
+> >>  1 files changed, 7 insertions(+), 1 deletions(-)
 > >>
-> >> diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
-> >> index 6b5978f..01bf9c1 100644
-> >> --- a/include/linux/usb/phy.h
-> >> +++ b/include/linux/usb/phy.h
-> >> @@ -297,4 +297,145 @@ static inline const char *usb_phy_type_string(en=
-um
-> >> usb_phy_type type)
-> >>                 return "UNKNOWN PHY TYPE";
-> >>         }
-> >>   }
-> >> +
-> >> +static inline void usb_phy_autopm_enable(struct usb_phy *x)
-> >> +{
-> >> +       if (!x || !x->dev) {
-> >> +               dev_err(x->dev, "no PHY or attached device available\n=
-");
-> >> +               return;
-> >> +               }
-> >> +
-> >> +       pm_runtime_enable(x->dev);
-> >> +}
+> >> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+> >> index e2325ad..3a6993c 100644
+> >> --- a/drivers/usb/dwc3/core.c
+> >> +++ b/drivers/usb/dwc3/core.c
+> >> @@ -491,6 +491,11 @@ static int dwc3_probe(struct platform_device *pde=
+v)
+> >>
+> >>       dwc->needs_fifo_resize =3D of_property_read_bool(node, "tx-fifo-=
+resize");
+> >>
+> >> +     /* Setting device state as 'suspended' initially,
 > >
-> >
-> > IMO we need not have wrapper APIs for runtime_enable and runtime_disable
-> > here. Generally runtime_enable and runtime_disable is done in probe and
-> > remove of a driver respectively. So it's better to leave the
-> > runtime_enable/runtime_disable to be done in *phy provider* driver than
-> > having an API for it to be done by *phy user* driver. Felipe, what do y=
-ou
-> > think?
+> > wrong comment style.
+> Yea :-(  will fix this.
 >=20
-> Thanks!!
-> That's very true, runtime_enable() and runtime_disable() calls are made by
-> *phy_provider* only. But a querry here.
-> Wouldn't in any case a PHY consumer might want to disable runtime_pm on P=
-HY ?
-> Say, when consumer failed to suspend the PHY properly
-> (*put_sync(phy->dev)* fails), how much sure is the consumer about the
-> state of PHY ?
+> >
+> >> +      * to make sure we know device state prior to
+> >> +      * pm_runtime_enable
+> >> +      */
+> >> +     pm_runtime_set_suspended(dev);
+> >
+> > didn't Alan mention this should be done at the Bus level ? In that case,
+> > shouldn't you have call pm_runtime_set_active/suspended() based on
+> > DT's status=3Dokay or status=3Ddisabled ? Or something similar ?
+>=20
+> True, we should be doing this at bus level. But he did also mention to
+> let pm core
+> know of the state of the device before enabling the runtime pm. Right ?
+> Moreover immediately after pm_runtime_enable(), we do pm_runtime_get_sync=
+()
+> so that device comes to active state.
+> I am possibly missing things out here, not able to grab this whole
+> picture completely :-(
+>=20
+> Wouldn't DT's status=3Ddisabled actually be disabling the device as a who=
+le ?
+> So, how much will runtime power management on the device be affecting ?
 
-no no, wait a minute. We might not want to enable runtime pm for the PHY
-until the UDC says it can handle runtime pm, no ? I guess this makes a
-bit of sense (at least in my head :-p).
-
-Imagine if PHY is runtime suspended but e.g. DWC3 isn't runtime pm
-enabled... Does it make sense to leave that control to the USB
-controller drivers ?
-
-I'm open for suggestions
+indeed, maybe we can keep it like this, but it would be nice to have OF
+core handle this for us based on whatever data.
 
 --=20
 balbi
 
---6v9BRtpmy+umdQlo
+--64j1qyTOoGvYcHb1
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRW+UkAAoJEIaOsuA1yqREKsUP/1oYpZl5k1Bge6wzca/3IXBr
-NiTF3t1/1qK9gHR5NJqru+DbHb3X8LqioD5vOsLoEa6lApB5yCBwhJtt8vcgOLT2
-sBhZQryRUtq8Bh4gSLI6GHKsAp6LnodjPzaRNBXsim27IyYB/vaPh00k5jiM4Pe4
-ZJw8FG4s+lZu2IhfUd7cpIliLDjsLA4Kiv4DmtLtttcyEwrSJSZ4SIdRhKHEuUYL
-pVM5puvXTUu0W/WVAPiKT6mA2yycdGyyJf0EJSrR8xpq0D+vcjKfgcVSRRKqpdaV
-PM/WbKAKMZYxkijuSBR6h5Kx6AW+3c4HTnHxNd6J5MraqmrqKdZghgWrDY7mfQGj
-Tg3aj4YPpdaRXHLTmKLYwIJHH+yJVSpflZbTGX/3bkJ0n3RGidm852eqMKzzPMQq
-vKMxHyzK98Fv08NueMZSJyLAYbw52zHA/3QsYF9qc98MfZcEtISgfRdhWF+9t3yq
-zKkzi3UrI7r5vkYDI9d8AQvJG0dSPhHrdOPY+01F6932S2kmjWrIPbyeGP9UWHbJ
-RcJRYtlZaJGGAvu1dMZpn4MHIuvZZNKnhJ0x/NBOGwv0go6uW9yfCPnvlPy+j/HL
-K+zb6FBsRJi/Khg8uJxZF81aT1URF2OUZVS+BejBbmCwJLKMB9A6IpP9HLvhx8+y
-OWtrYroRhU6/1TlfzlBF
-=ZjZ5
+iQIcBAEBAgAGBQJRW+WAAAoJEIaOsuA1yqREAbEQAJN7c56KGGLZ1Xx50kl5jg4v
+/YpRMCXHhOCNBYV5anbQcVWySbgRDovARenZf3P1nEhlSKeqTAX7wTO+boiTc7Dm
+759ChU7RHu9alumXwYOD/OHSvaTAYXn6IcWvktqv+5CXCzt3SPBFSdIpUxzxbMHb
+Y+WAliuVzSPT4ulNtiPTKa3i3MH0ELOAAPdkVTNGwsG46QVCg+WjscuJC96JyYhh
+zESvoD9hugEUszgujAKS4Z3rliIujTFUs5YY6VwbMLLjMXsr75TwVfogpUCAWj3h
+K8D47vxQ8pawC7PCJtzU2MjFwGFqwm4UfgvIKom3fS1dh5E1IRNY+KFD7gZ0G68C
+h2GeVOKh+D7RKkgCP8p8kzdfmLZ7r9v00RLycncpxkbfOOSnyahCDFWpanEMppGg
+DgI18OZruGWLwFBG69Vv55cgPuF9XbVsP4V3knAJnOSZjydZBhTiTp3uVGeiM0d+
+9xL09SNYhV432O+TFjRLRpsG7saS88Aj8zXXt2oSZh4oSkjmXQ/BuD2rgZ7OW762
++9sOLdNT0GlqyzPLji2sSvAIploofOS8uu//iwnrBs9crpF6B2bGYrh03uGS+Q1a
+/SA9V+9woIgt2Jl+far/NobuV0Zbgtyb0d9yTkFSfvMQcfSgq0eJVokOZWPDfXqG
+zlxwcDkbMCo0g2aJbn2h
+=PoH1
 -----END PGP SIGNATURE-----
 
---6v9BRtpmy+umdQlo--
+--64j1qyTOoGvYcHb1--
