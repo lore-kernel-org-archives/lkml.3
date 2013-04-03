@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759403Ab3DCOWe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:22:34 -0400
-Received: from masquerade.micron.com ([137.201.242.130]:41682 "EHLO
-	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757561Ab3DCOWd (ORCPT
+	id S1759838Ab3DCOWo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:22:44 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:49527 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759529Ab3DCOWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:22:33 -0400
-Message-ID: <515C3B1C.8020801@micron.com>
-Date: Wed, 3 Apr 2013 19:52:20 +0530
-From: Asai Thambi S P <asamymuthupa@micron.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 3 Apr 2013 10:22:41 -0400
+Date: Wed, 3 Apr 2013 07:22:38 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 0/3] check regulator_enable() return value
+Message-ID: <20130403142238.GB10021@kroah.com>
+References: <1364997747-20830-1-git-send-email-fabio.baltieri@linaro.org>
+ <20130403140622.GI14680@arwen.pp.htv.fi>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Sam Bradshaw" <sbradshaw@micron.com>
-Subject: [PATCH 0/3] mtip32xx: recovery improvement and fix for a crash
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-19764.007
-X-TM-AS-Result: No--5.520000-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130403140622.GI14680@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+On Wed, Apr 03, 2013 at 05:06:22PM +0300, Felipe Balbi wrote:
+> Hi,
+> 
+> On Wed, Apr 03, 2013 at 04:02:24PM +0200, Fabio Baltieri wrote:
+> > While testing your 'next' branch merged with today's next I got some new
+> > warnings, caused by a recently introduced __must_check in:
+> > 
+> > c8801a8 regulator: core: Mark all get and enable calls as __must_check
+> > 
+> > These patches introduces a check for regulator_enable() return value in
+> > all three affected USB phy drivers, and issue a dev_err() in case it
+> > fails.
+> > 
+> > TWL4030 and TWL6030 patches has been build-tested only.
+> 
+> Sorry but I can't change my tree anymore, we can send these during
+> v3.10-rc.
 
-This patchset includes the following. It was generated against your for-3.9/drivers
+Really?  You are going to send me a tree that adds build warnings?
 
-* improved recovery for command timeout
-* fix for a crash during rmmod
-* add new debugfs entry 'device_status'
+Please don't.
 
-
-Asai Thambi S P (3):
-  mtip32xx: recovery from command timeout
-  mtip32xx: return 0 from pci probe in case of rebuild
-  mtip32xx: Add debugfs entry device_status
-
- drivers/block/mtip32xx/mtip32xx.c |  327 ++++++++++++++++++++++++++-----------
- drivers/block/mtip32xx/mtip32xx.h |   18 ++-
- 2 files changed, 243 insertions(+), 102 deletions(-)
+greg k-h
