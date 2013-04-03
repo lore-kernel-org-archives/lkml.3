@@ -1,44 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186Ab3DCFZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 01:25:57 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:58522 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab3DCFZz (ORCPT
+	id S1762122Ab3DCFdl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 01:33:41 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47940 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762071Ab3DCFdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 01:25:55 -0400
+	Wed, 3 Apr 2013 01:33:39 -0400
+Message-ID: <515BBEF7.2030404@ti.com>
+Date: Wed, 3 Apr 2013 11:02:39 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <8456428.Vj8uefv4LI@vostro.rjw.lan>
-References: <5159C147.70800@sgi.com>
-	<20130402145536.GA31757@gulag1.americas.sgi.com>
-	<CAKohpokXbeRp-pHaJRAOjnF+R+wy8R9We67Yr2C2nyoVXyJd6w@mail.gmail.com>
-	<8456428.Vj8uefv4LI@vostro.rjw.lan>
-Date: Wed, 3 Apr 2013 10:55:54 +0530
-Message-ID: <CAKohpo=Um9LGhGtMB0z9C2jxmS3oHwV7i_Gmsq5rR80ZcGYyLw@mail.gmail.com>
-Subject: Re: [PATCH v6 1/2] cpufreq: split the cpufreq_driver_lock and use the rcu
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Nathan Zimmer <nzimmer@sgi.com>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: <linux-usb@vger.kernel.org>, <mchehab@redhat.com>,
+        <linux-doc@vger.kernel.org>, <tony@atomide.com>,
+        <grant.likely@secretlab.ca>, <linux@arm.linux.org.uk>,
+        <javier@dowhile0.org>, <cesarb@cesarb.net>, <arnd@arndb.de>,
+        <eballetbo@gmail.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <rob.herring@calxeda.com>, <swarren@nvidia.com>,
+        <sylvester.nawrocki@gmail.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <b-cousson@ti.com>,
+        <gregkh@linuxfoundation.org>, <broonie@opensource.wolfsonmicro.com>,
+        <linux-kernel@vger.kernel.org>, <balbi@ti.com>,
+        <santosh.shilimkar@ti.com>, <rob@landley.net>,
+        <akpm@linux-foundation.org>, <davem@davemloft.net>
+Subject: Re: [PATCH v4 1/6] drivers: phy: add generic PHY framework
+References: <1364449408-9510-1-git-send-email-kishon@ti.com> <1364449408-9510-2-git-send-email-kishon@ti.com> <5154658A.3080209@wwwdotorg.org> <515A98B3.7090405@ti.com> <515AFC06.8000502@wwwdotorg.org>
+In-Reply-To: <515AFC06.8000502@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 April 2013 04:27, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Tuesday, April 02, 2013 08:29:12 PM Viresh Kumar wrote:
->> On 2 April 2013 20:25, Nathan Zimmer <nzimmer@sgi.com> wrote:
->> > The lock is unneeded if we expect register and unregister driver to not be
->> > called from muliple threads at once.  I didn't make that assumption.
+On Tuesday 02 April 2013 09:10 PM, Stephen Warren wrote:
+> On 04/02/2013 02:37 AM, Kishon Vijay Abraham I wrote:
+>> Hi,
 >>
->> Hmm.. But doesn't rcu part take care of that too?? Two writers
->> updating stuff simultaneously?
+>> On Thursday 28 March 2013 09:15 PM, Stephen Warren wrote:
+>>> On 03/27/2013 11:43 PM, Kishon Vijay Abraham I wrote:
+>>>> The PHY framework provides a set of APIs for the PHY drivers to
+>>>> create/destroy a PHY and APIs for the PHY users to obtain a reference
+>>>> to the
+>>>
+>>>> diff --git a/Documentation/devicetree/bindings/phy/phy-bindings.txt
 >
-> RCU doesn't cover that in general.  Additional locking is needed to provide
-> synchronization between writers.
+>>>> +PHY subsystem refer Documentation/phy.txt
+>>>> +
+>>>> +PHY device node
+>>>> +===============
+>>>> +
+>>>> +Optional Properties:
+>>>> +#phy-cells:    Number of cells in a PHY specifier;  The meaning of all those
+>>>> +        cells is defined by the binding for the phy node. However
+>>>> +        in-order to return the correct PHY, the PHY susbsystem
+>>>> +        requires the first cell always refers to the port.
+>>>
+>>> Why impose that restriction? Other DT bindings do not.
+>>>
+>>> This is typically implemented by having each provider driver implement a
+>>> .of_xlate() operation, which parses all of the specifier cells, and
+>>> returns the ID of the object it represents. This allows bindings to use
+>>> whatever arbitrary representation they want.
+>>
+>> Do you mean something like this
+>>
+>> struct phy *of_phy_get(struct device *dev, int index)
+>> {
+>>      struct phy *phy = NULL;
+>>      struct phy_bind *phy_map = NULL;
+>>      struct of_phandle_args args;
+>>      struct device_node *node;
+>>
+>>      if (!dev->of_node) {
+>>          dev_dbg(dev, "device does not have a device node entry\n");
+>>          return ERR_PTR(-EINVAL);
+>>      }
+>>
+>>      ret = of_parse_phandle_with_args(dev->of_node, "phys", "#phy-cells",
+>>          index, &args);
+>>      if (ret) {
+>>          dev_dbg(dev, "failed to get phy in %s node\n",
+>>              dev->of_node->full_name);
+>>          return ERR_PTR(-ENODEV);
+>>      }
+>
+> Looks good.
+>
+>> //Here we have to get a reference to the phy in order to call of_xlate
+>> which seems a little hacky to me. I'm not sure how else can we call the
+>> provider driver :-(
+>>      phy = of_phy_lookup(dev, node);
+>>      if (IS_ERR(phy) || !try_module_get(phy->ops->owner)) {
+>>          phy = ERR_PTR(-EPROBE_DEFER);
+>>          goto err0;
+>>      }
+>
+> I think the concept of a "PHY provider" and a "PHY instance" are different.
+>
+> of_xlate should be called on a "PHY provider", and return a "PHY
+> instance". Hence, above you want to only look up a "PHY provider", so
+> there's no hackiness involved.
 
-Hmm.. I read the same from rcu documentation now...
+Cool. That makes it a lot clearer.
 
-Nathan, What about using a single spinlock (instead of two) that will take care
-of all locking requirements of cpufreq.c ... i.e. both cpufreq_cpu_data and
-cpufreq_driver_{register|unregister}... We don't need two locks actually.
+Thanks
+Kishon
