@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762987Ab3DCSFG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 14:05:06 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46919 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762890Ab3DCSFE (ORCPT
+	id S932125Ab3DCSFb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 14:05:31 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53537 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762994Ab3DCSF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 14:05:04 -0400
-Date: Wed, 3 Apr 2013 19:04:43 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Christopher Covington <cov@codeaurora.org>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: Fix task tracing
-Message-ID: <20130403180443.GB21167@mudshark.cambridge.arm.com>
-References: <1365012061-31660-1-git-send-email-cov@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365012061-31660-1-git-send-email-cov@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 3 Apr 2013 14:05:28 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/3] mfd: arizona: Wait for internal clocks to startup after reset
+Date: Wed,  3 Apr 2013 19:05:20 +0100
+Message-Id: <1365012321-7673-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1365012321-7673-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <20130403180423.GA6985@opensource.wolfsonmicro.com>
+ <1365012321-7673-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christopher,
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-On Wed, Apr 03, 2013 at 07:01:01PM +0100, Christopher Covington wrote:
-> For accurate accounting call contextidr_thread_switch before a
-> task is scheduled, rather than after.
-> 
-> Signed-off-by: Christopher Covington <cov@codeaurora.org>
-> ---
->  arch/arm64/kernel/process.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
-> index 0337cdb..c2cc249 100644
-> --- a/arch/arm64/kernel/process.c
-> +++ b/arch/arm64/kernel/process.c
-> @@ -311,11 +311,11 @@ struct task_struct *__switch_to(struct task_struct *prev,
->  	fpsimd_thread_switch(next);
->  	tls_thread_switch(next);
->  	hw_breakpoint_thread_switch(next);
-> +	contextidr_thread_switch(next);
->  
->  	/* the actual thread switch */
->  	last = cpu_switch_to(prev, next);
->  
-> -	contextidr_thread_switch(next);
->  	return last;
->  }
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/arizona-core.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-Catalin and I wondered about this and decided to go with the current
-approach in case a debugger, in response to the contextidr write, decided to
-go off and mine information about the *new* task using the sp.
+diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+index e4c8dc2..69e9796 100644
+--- a/drivers/mfd/arizona-core.c
++++ b/drivers/mfd/arizona-core.c
+@@ -519,8 +519,10 @@ int arizona_dev_init(struct arizona *arizona)
+ 		goto err_enable;
+ 	}
+ 
+-	if (arizona->pdata.reset)
++	if (arizona->pdata.reset) {
+ 		gpio_set_value_cansleep(arizona->pdata.reset, 1);
++		msleep(1);
++	}
+ 
+ 	regcache_cache_only(arizona->regmap, false);
+ 
+@@ -579,6 +581,8 @@ int arizona_dev_init(struct arizona *arizona)
+ 			goto err_reset;
+ 		}
+ 
++		msleep(1);
++
+ 		ret = regcache_sync(arizona->regmap);
+ 		if (ret != 0) {
+ 			dev_err(dev, "Failed to sync device: %d\n", ret);
+-- 
+1.7.10.4
 
-If we update the register before we've switched the registers, there's a
-sizeable window where the debugger will get confused.
-
-Do you have a real use-case that has triggered this patch?
-
-Cheers,
-
-Will
