@@ -1,158 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762939Ab3DCI5B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 04:57:01 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2589 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762279Ab3DCIqm (ORCPT
+	id S1760170Ab3DCI7R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 04:59:17 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56228 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758039Ab3DCI7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 04:46:42 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 03 Apr 2013 01:46:39 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: <gregkh@linuxfoundation.org>, <balbi@ti.com>, <stern@rowland.harvard.edu>,
-        <linux-tegra@vger.kernel.org>, <swarren@wwwdotorg.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH v2 1/7] ARM: tegra: finalize USB EHCI and PHY bindings
-Date: Wed, 3 Apr 2013 14:11:36 +0530
-Message-ID: <1364978502-22887-2-git-send-email-vbyravarasu@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1364978502-22887-1-git-send-email-vbyravarasu@nvidia.com>
-References: <1364978502-22887-1-git-send-email-vbyravarasu@nvidia.com>
-X-NVConfidentiality: public
+	Wed, 3 Apr 2013 04:59:15 -0400
+Date: Wed, 3 Apr 2013 11:58:58 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Fabio Baltieri <fabio.baltieri@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Praveena Nadahally <praveen.nadahally@stericsson.com>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        Sakethram Bommisetti <sakethram.bommisetti@stericsson.com>
+Subject: Re: [PATCH 04/12] usb: phy: ab8500-usb: fix eye diagram for ab8500
+ v2.0
+Message-ID: <20130403085858.GK25837@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1364978713-19612-1-git-send-email-fabio.baltieri@linaro.org>
+ <1364978713-19612-5-git-send-email-fabio.baltieri@linaro.org>
+ <20130403085336.GJ25837@arwen.pp.htv.fi>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9/GiYV45wF7IL3Iq"
+Content-Disposition: inline
+In-Reply-To: <20130403085336.GJ25837@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The existing Tegra USB bindings have a few issues:
+--9/GiYV45wF7IL3Iq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-1) Many properties are documented as being part of the EHCI controller
-node, yet they apply more to the PHY device. They should be moved.
+On Wed, Apr 03, 2013 at 11:53:36AM +0300, Felipe Balbi wrote:
+> On Wed, Apr 03, 2013 at 10:45:05AM +0200, Fabio Baltieri wrote:
+> > From: Sakethram Bommisetti <sakethram.bommisetti@stericsson.com>
+> >=20
+> > AB8500 v2.0 has eye diagram issues when drawing more than 100mA from
+> > VBUS.  Force charging current to 100mA in case of standard host.
+> >=20
+> > Signed-off-by: Sakethram Bommisetti <sakethram.bommisetti@stericsson.co=
+m>
+> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> > Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> > ---
+> >  drivers/usb/phy/phy-ab8500-usb.c | 14 ++++++++++++++
+> >  1 file changed, 14 insertions(+)
+> >=20
+> > diff --git a/drivers/usb/phy/phy-ab8500-usb.c b/drivers/usb/phy/phy-ab8=
+500-usb.c
+> > index 5b92a59..1fd0780 100644
+> > --- a/drivers/usb/phy/phy-ab8500-usb.c
+> > +++ b/drivers/usb/phy/phy-ab8500-usb.c
+> > @@ -485,6 +485,18 @@ static void ab8500_usb_phy_disable_work(struct wor=
+k_struct *work)
+> >  		ab8500_usb_peri_phy_dis(ab);
+> >  }
+> > =20
+> > +static unsigned ab8500_eyediagram_workaroud(struct ab8500_usb *ab, uns=
+igned mA)
+> > +{
+> > +	/* AB8500 V2 has eye diagram issues when drawing more than 100mA from
+>=20
+> wrong comment style. Please run *all* patches through checkpatch.pl
+> --strict and sparse. I can wait 2 more hours before closing my tree for
+> v3.10.
 
-2) Some registers in PHY1 are shared with PHY3, and hence PHY3 needs a
-reg entry to point at PHY1's register space. We can't assume the PHY1
-driver is present, so the PHY3 driver will directly access those
-registers.
+you know what ? this is simple enough, I'll fix it myself.
 
-3) The list of clocks required by the PHY was missing some required
-entries.
+--=20
+balbi
 
-4) UTMI PHY Timing parameters are added
+--9/GiYV45wF7IL3Iq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-5) VBUS control is now specified using a regulator rather than a plain GPIO
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-6) Added nvidia,is-wired property to indicate whether the device is
-hard wired on the board, or pluggable.
+iQIcBAEBAgAGBQJRW+9SAAoJEIaOsuA1yqRExpEP/3SJe5HNSAua89pA1S1L0nWw
+hgm8fZdfpWiGJ93Folwk4c4qln5p7xUaCuCbaaskbK8a5BigzZUQgsSMW8sut77y
+nccI+b577ucwzbZA6lTiyXfPhjJV5SAD7+ls9tedzv4nc0EfYni4NWUo7tiFBhwv
+EH4cHQmAvJtzGT3lMAQhq3JXi90B28DmxPCs5sdhOBwAE/pHRyc5eD5O6uA3BeH1
+fB6pthr+y4ll6JI+pdPsDbnD8jDc3zpQ4amUzautSYH75JdXovXFS+5RLAaP9nAC
+s4FPK9NKcjc5N5wjYQ4kolhh+p4o19XdZQf90fS3a0x3hnitydcY9SRjhcaqma94
+A/7y1mxU1Nk66P15jExQq+wVmpzC0FWUkVorpgybhrvn/jJzqxEqpW3W4YL/j+vT
+T+sNCs8Tyr4fnkzyHFwzTI++1JqcvNXehMtcWH/M7GZdj5q9Q+CzhVbaLAtBJ6qE
+7Fkd8ZzSzmFHOk+Rp0jZRhsk8whSQKaeaSsTwg4a4MhnJzyT1BFXrHAJaVIU6T/F
+r7H8z5eUutTYDzVXZqnnFoQAQEByue+N6JoAFrRa31zS00ddtcmvHFqVgprdjrN6
+VRA/ZZEVN2yqGnn8l9kkE6gjtR+Bx5yG5OlsmZK/hTHwF+6bWP/rXJIxPXq+dRmI
+nuue509QlGLYR1cvteys
+=BE9z
+-----END PGP SIGNATURE-----
 
-This patch fixes the binding definition to resolve these issues.
-
-Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
----
-delta from v1:
-1. added UTMI PHY timing params.
-2. replaced gadget with peripheral in dr_mode
-3. added nvidia,is-wired & vbus-supply params.
-
- .../bindings/usb/nvidia,tegra20-ehci.txt           |   27 +++-----------
- .../bindings/usb/nvidia,tegra20-usb-phy.txt        |   39 ++++++++++++++++++--
- 2 files changed, 41 insertions(+), 25 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra20-ehci.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra20-ehci.txt
-index 34c9528..df09330 100644
---- a/Documentation/devicetree/bindings/usb/nvidia,tegra20-ehci.txt
-+++ b/Documentation/devicetree/bindings/usb/nvidia,tegra20-ehci.txt
-@@ -6,27 +6,10 @@ Practice : Universal Serial Bus" with the following modifications
- and additions :
- 
- Required properties :
-- - compatible : Should be "nvidia,tegra20-ehci" for USB controllers
--   used in host mode.
-- - phy_type : Should be one of "ulpi" or "utmi".
-- - nvidia,vbus-gpio : If present, specifies a gpio that needs to be
--   activated for the bus to be powered.
-- - nvidia,phy : phandle of the PHY instance, the controller is connected to.
--
--Required properties for phy_type == ulpi:
--  - nvidia,phy-reset-gpio : The GPIO used to reset the PHY.
-+ - compatible : Should be "nvidia,tegra20-ehci".
-+ - nvidia,phy : phandle of the PHY that the controller is connected to.
-+ - clocks : Contains a single entry which defines the USB controller's clock.
- 
- Optional properties:
--  - dr_mode : dual role mode. Indicates the working mode for
--   nvidia,tegra20-ehci compatible controllers.  Can be "host", "peripheral",
--   or "otg".  Default to "host" if not defined for backward compatibility.
--      host means this is a host controller
--      peripheral means it is device controller
--      otg means it can operate as either ("on the go")
--  - nvidia,has-legacy-mode : boolean indicates whether this controller can
--    operate in legacy mode (as APX 2500 / 2600). In legacy mode some
--    registers are accessed through the APB_MISC base address instead of
--    the USB controller. Since this is a legacy issue it probably does not
--    warrant a compatible string of its own.
--  - nvidia,needs-double-reset : boolean is to be set for some of the Tegra2
--    USB ports, which need reset twice due to hardware issues.
-+ - nvidia,needs-double-reset : boolean is to be set for some of the Tegra20
-+   USB ports, which need reset twice due to hardware issues.
-diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt
-index 6bdaba2..6ae8405 100644
---- a/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt
-+++ b/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-phy.txt
-@@ -4,14 +4,47 @@ The device node for Tegra SOC USB PHY:
- 
- Required properties :
-  - compatible : Should be "nvidia,tegra20-usb-phy".
-- - reg : Address and length of the register set for the USB PHY interface.
-- - phy_type : Should be one of "ulpi" or "utmi".
-+ - reg : Defines the following set of registers, in the order listed:
-+   - The PHY's own register set.
-+     Always present.
-+   - The register set of the PHY containing the UTMI pad control registers.
-+     Present if-and-only-if phy_type == utmi.
-+ - phy_type : Should be one of "utmi", "ulpi" or "hsic".
-+ - clocks : Defines the clocks listed in the clock-names property.
-+ - clock-names : The following clock names must be present:
-+   - reg: The clock needed to access the PHY's own registers. This is the
-+     associated EHCI controller's clock. Always present.
-+   - pll_u: PLL_U. Always present.
-+   - timer: The timeout clock (clk_m). Present if phy_type == utmi.
-+   - utmi-pads: The clock needed to access the UTMI pad control registers.
-+     Present if phy_type == utmi.
-+   - ulpi-link: The clock Tegra provides to the ULPI PHY (cdev2).
-+     Present if phy_type == ulpi, and ULPI link mode is in use.
-+  - vbus-supply: regulator for VBUS
- 
- Required properties for phy_type == ulpi:
-   - nvidia,phy-reset-gpio : The GPIO used to reset the PHY.
- 
-+Required PHY timing params for utmi phy:
-+  - nvidia,hssync-start-delay : Number of 480 Mhz clock cycles to wait before
-+    start of sync launches RxActive
-+  - nvidia,elastic-limit : Variable FIFO Depth of elastic input store
-+  - nvidia,idle-wait-delay : Number of 480 Mhz clock cycles of idle to wait
-+    before declare IDLE.
-+  - nvidia,term-range-adj : Range adjusment on terminations
-+  - nvidia,xcvr-setup : HS driver output control
-+  - nvidia,xcvr-lsfslew : LS falling slew rate control.
-+  - nvidia,xcvr-lsrslew :  LS rising slew rate control.
-+
- Optional properties:
-   - nvidia,has-legacy-mode : boolean indicates whether this controller can
-     operate in legacy mode (as APX 2500 / 2600). In legacy mode some
-     registers are accessed through the APB_MISC base address instead of
--    the USB controller.
-\ No newline at end of file
-+    the USB controller.
-+  - dr_mode : dual role mode. Indicates the working mode for the PHY. Can be
-+    "host", "peripheral", or "otg". Defaults to "host" if not defined.
-+      host means this is a host controller
-+      peripheral means it is device controller
-+      otg means it can operate as either ("on the go")
-+  - nvidia,is-wired : boolean. Indicates whether we can do certain kind of power
-+    optimizations for the devices that are always connected. e.g. modem.
--- 
-1.7.0.4
-
+--9/GiYV45wF7IL3Iq--
