@@ -1,144 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab3DCEsX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 00:48:23 -0400
-Received: from mga03.intel.com ([143.182.124.21]:9931 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932071Ab3DCEsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 00:48:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,397,1363158000"; 
-   d="scan'208";a="222181901"
-Date: Tue, 2 Apr 2013 21:48:18 -0700
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Platform Driver <platform-driver-x86@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 1/1] Introduce Intel RAPL cooling device driver
-Message-ID: <20130402214818.50f1ae89@chromoly>
-In-Reply-To: <20130403001300.GA13838@kroah.com>
-References: <1364940936-20846-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
-	<20130402230042.GA8713@kroah.com>
-	<20130402165340.61b7da02@chromoly>
-	<20130403001300.GA13838@kroah.com>
-Organization: OTC
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1760995Ab3DCEuD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 00:50:03 -0400
+Received: from mo2.mail-out.ovh.net ([178.32.228.2]:38522 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760784Ab3DCEuB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 00:50:01 -0400
+Date: Wed, 3 Apr 2013 06:45:55 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Boris BREZILLON <linux-arm@overkiz.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: Re: [PATCH] ARM: at91/tc: fix clock source id for tc block > 1
+Message-ID: <20130403044555.GN20693@game.jcrosoft.org>
+References: <1364921211-15756-1-git-send-email-linux-arm@overkiz.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364921211-15756-1-git-send-email-linux-arm@overkiz.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 13041580096831794101
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiuddrkeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiuddrkeelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Apr 2013 17:13:00 -0700
-Greg KH <gregkh@linuxfoundation.org> wrote:
-
-> On Tue, Apr 02, 2013 at 04:53:40PM -0700, Jacob Pan wrote:
-> > On Tue, 2 Apr 2013 16:00:42 -0700
-> > Greg KH <gregkh@linuxfoundation.org> wrote:
-> > 
-> > > And, one final complaint, never use "raw" kobjects, for loads of
-> > > good reasons, not the least being you just prevented userspace
-> > > from seeing what is happening with your devices.  Use the driver
-> > > model, that's what it is there for, if you need "sub children",
-> > > or subdirectories.
-> > I chose to use to kobjects for the reason that userspace can see the
-> > device linking more clearly.
+On 18:46 Tue 02 Apr     , Boris BREZILLON wrote:
+> This patch fixes wrong clock request for TC block 2.
+> The second block was using t0_clk, t1_clk and t2_clk clks instead of
+> t3_clk, t4_clk and t5_clk clks.
 > 
-> Then use a 'struct device'.
+this is intended as we have 3 clock per device
+
+Best Regards,
+J.
 > 
-> > Let me try to paraphrase, I have two options:
-> > 1. if I use the platform device model instead of raw kobjects, I
-> > would have one platform device for each rapl domain. Then link
-> > individual platform device with the generic thermal layer sysfs.
+> Signed-off-by: Boris BREZILLON <linux-arm@overkiz.com>
+> ---
+>  drivers/misc/atmel_tclib.c |   24 ++++++++++++++++--------
+>  1 file changed, 16 insertions(+), 8 deletions(-)
 > 
-> I don't understand.
+> diff --git a/drivers/misc/atmel_tclib.c b/drivers/misc/atmel_tclib.c
+> index c8d8e38..768a988 100644
+> --- a/drivers/misc/atmel_tclib.c
+> +++ b/drivers/misc/atmel_tclib.c
+> @@ -142,6 +142,8 @@ static int __init tc_probe(struct platform_device *pdev)
+>  	struct atmel_tc *tc;
+>  	struct clk	*clk;
+>  	int		irq;
+> +	char		clk_id[7];
+> +	int		clk_offset;
+>  
+>  	if (!platform_get_resource(pdev, IORESOURCE_MEM, 0))
+>  		return -EINVAL;
+> @@ -156,25 +158,31 @@ static int __init tc_probe(struct platform_device *pdev)
+>  
+>  	tc->pdev = pdev;
+>  
+> -	clk = clk_get(&pdev->dev, "t0_clk");
+> -	if (IS_ERR(clk)) {
+> -		kfree(tc);
+> -		return -EINVAL;
+> -	}
+> -
+>  	/* Now take SoC information if available */
+>  	if (pdev->dev.of_node) {
+>  		const struct of_device_id *match;
+>  		match = of_match_node(atmel_tcb_dt_ids, pdev->dev.of_node);
+>  		if (match)
+>  			tc->tcb_config = match->data;
+> +		clk_offset = of_alias_get_id(tc->pdev->dev.of_node, "tcb");
+> +	} else
+> +		clk_offset = pdev->id;
+> +	clk_offset *= 3;
+> +
+> +	snprintf(clk_id, sizeof(clk_id), "t%d_clk", clk_offset++);
+> +	clk = clk_get(&pdev->dev, clk_id);
+> +	if (IS_ERR(clk)) {
+> +		kfree(tc);
+> +		return -EINVAL;
+>  	}
+>  
+>  	tc->clk[0] = clk;
+> -	tc->clk[1] = clk_get(&pdev->dev, "t1_clk");
+> +	snprintf(clk_id, sizeof(clk_id), "t%d_clk", clk_offset++);
+> +	tc->clk[1] = clk_get(&pdev->dev, clk_id);
+>  	if (IS_ERR(tc->clk[1]))
+>  		tc->clk[1] = clk;
+> -	tc->clk[2] = clk_get(&pdev->dev, "t2_clk");
+> +	snprintf(clk_id, sizeof(clk_id), "t%d_clk", clk_offset++);
+> +	tc->clk[2] = clk_get(&pdev->dev, clk_id);
+>  	if (IS_ERR(tc->clk[2]))
+>  		tc->clk[2] = clk;
+>  
+> -- 
+> 1.7.9.5
 > 
-> > 2. In the current patch, I have one platform driver, then expose per
-> > domain kobject that can be linked to the generic thermal layer.
-> > Common attributes of all domains are grouped under the kset. 
 > 
-> Then use a 'struct device' that is attached to that kset, no need to
-> use a platform device, as that's not what is needed here, right?
-> 
-> > I did consider both options. I thought using #2 option is better
-> > since it allow user to discover the topologies easier by following
-> > the sysfs link. If i use use #1, it would be hard to expose the
-> > common attributes and more code too. Perhpas I misread
-> > Documentation/kobjects.txt which i thought kobject/kset are perfect
-> > for presenting situation like this.
-> 
-> No, kobjects are for things not using the device tree, like
-> filesystems or other stuff.  You are in the device tree, so use a
-> 'struct device'. If you use a "raw" kobject, you do not notify
-> userspace what is going on, and you loose out on a bunch of other
-> stuff that the driver model provides you.
-> 
-> But do you even need to use anything at all?
-> 
-> Let's step back and start over, what exactly are you trying to tell
-> userspace?  What data do you have that you need to express to it?  How
-> do you want userspace to see/use it?
-> 
-> greg k-h
-
-It is a good idea to step back and let me explain what I wanted to
-do here for userspace.
-
-I have two kinds of applications that might use this driver.
-1. simple use case where user sets a power limit for a RAPL domain.
-e.g. set graphics unit power limit to 7w
-2. advanced use case where use can do fine tuning on top of simple
-power limit,e.g. the dynamic response parameters of power control
-logic, event notifications, etc.
-
-For #1, this driver register with the abstract generic thermal layer
-(/sys/class/thermal) and presents itself as a set of cooling devices
-with a single knob per domain for power limits.
-root@chromoly:/sys/class/thermal/cooling_device15# echo 7000 > cur_state 
-
-For #2, to give userspace complete control of the RAPL interface, which
-is not generic, I put them under the device private sysfs area.
-root@chromoly:/sys/class/thermal/cooling_device15/device# echo 1000 > time_window1 
-
-As you mentioned about using device tree vs. fs, and how kobject are
-used for fs. I do have the need to go between a generic thermal sysfs
-and the true device tree. This is the reason why I used kobjects and
-link them between device tree and its thermal sysfs representation.
-
-e.g. a RAPL package cooling device linked with its platform device
-kobj. (device is linked with rapl_domains/package, the line is too long)
-
-root@chromoly:/sys/class/thermal# ls -l cooling_device15/
-total 0
--rw-r--r-- 1 root root 4096 Apr  2 15:03 cur_state
-lrwxrwxrwx 1 root root    0 Apr  2 21:28 device
--> ../../../platform/intel_rapl/rapl_domains/package
--r--r--r-- 1 root root 4096 Apr  2 15:03 max_state
-drwxr-xr-x 2 root root    0 Apr  2 21:28 power
-lrwxrwxrwx 1 root root    0 Apr  2 15:03 subsystem
--> ../../../../class/thermal
--r--r--r-- 1 root root 4096 Apr  2 15:03 type
--rw-r--r-- 1 root root 4096 Apr  2 15:03 uevent
-
-For userspace which is not satisfied with the simple use case of a
-single knob for setting power limit, it can follow the link to find the
-device tree entry. Then get access to the complete knobs, including
-event notifications.
-
-I wanted to use generic thermal fs in that it gives a simple
-representation of the most usable feature of RAPL. Basically, RAPL
-domains can be enumerated by thermal control apps just as ACPI fans or
-processor cooling.
-
--- 
-Thanks,
-
-Jacob
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
