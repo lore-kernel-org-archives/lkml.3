@@ -1,173 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762822Ab3DCXgu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 19:36:50 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50969 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762313Ab3DCXfH (ORCPT
+	id S932196Ab3DCXmv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 19:42:51 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:51369 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761794Ab3DCXms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 19:35:07 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Michal Marek <mmarek@suse.cz>, Grant Likely <glikely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>
-Cc: arm@kernel.org, Shawn Guo <shawn.guo@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, linux-kbuild@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V2 2/7] kbuild: fixdep: support concatenated dep files
-Date: Wed,  3 Apr 2013 17:34:53 -0600
-Message-Id: <1365032098-22825-2-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1365032098-22825-1-git-send-email-swarren@wwwdotorg.org>
-References: <1365032098-22825-1-git-send-email-swarren@wwwdotorg.org>
-X-NVConfidentiality: public
+	Wed, 3 Apr 2013 19:42:48 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+ptITpGikQPWHtBUNA8IwF
+Date: Wed, 3 Apr 2013 16:42:43 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: b-cousson@ti.com, linux@arm.linux.org.uk, rnayak@ti.com, balbi@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Paul Walmsley <paul@pwsan.com>
+Subject: Re: [RFC][PATCH 1/2] ARM: OMAP4: clock: Add device tree support
+ for AUXCLKs
+Message-ID: <20130403234242.GE10155@atomide.com>
+References: <1363703220-4777-1-git-send-email-rogerq@ti.com>
+ <1363703220-4777-2-git-send-email-rogerq@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363703220-4777-2-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+Hi,
 
-The current use-case for fixdep is: a source file is run through a single
-processing step, which creates a single dependency file as a side-effect,
-which fixdep transforms into the file used by the kernel build process.
+* Roger Quadros <rogerq@ti.com> [130319 07:31]:
+> Register a device tree clock provider for AUX clocks
+> on the OMAP4 SoC. Also provide the binding information.
+> 
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  .../devicetree/bindings/clock/omap4-clock.txt      |   32 ++++++++++++++++++
+>  arch/arm/boot/dts/omap4.dtsi                       |    5 +++
+>  arch/arm/mach-omap2/board-generic.c                |    2 +-
+>  arch/arm/mach-omap2/cclock44xx_data.c              |   35 ++++++++++++++++++++
+>  arch/arm/mach-omap2/clock44xx.h                    |    1 +
+>  arch/arm/mach-omap2/common.h                       |    9 +++++
+>  arch/arm/mach-omap2/io.c                           |    6 +++
+>  7 files changed, 89 insertions(+), 1 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/clock/omap4-clock.txt
+> 
+...
 
-In order to transparently run the C pre-processor on device-tree files,
-we wish to run both gcc -E and dtc on a source file in a single rule.
-This generates two dependency files, which must be transformed together
-into the file used by the kernel build process. This change modifies
-fixdep so it can process the concatenation of multiple separate input
-dependency files, and produce a correct unified output.
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/omap4-clock.txt
 
-The code changes have the slight benefit of transforming the loop in
-parse_dep_file() into more of a lexer/tokenizer, with the loop body being
-more of a parser. Previously, some of this logic was mixed together
-before the loop. I also added some comments, which I hope are useful.
+Is this really specific to omap4 and auxclk only?
 
-Benchmarking shows that on a cross-compiled ARM tegra_defconfig build,
-there is less than 0.5 seconds speed decrease with this change, on top
-of a build time of ~2m24s. This is probably within the noise.
+Shouldn't it be just omap-clock.txt?
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- scripts/basic/fixdep.c |   93 +++++++++++++++++++++++++++++++-----------------
- 1 file changed, 61 insertions(+), 32 deletions(-)
+> --- a/arch/arm/mach-omap2/cclock44xx_data.c
+> +++ b/arch/arm/mach-omap2/cclock44xx_data.c
+> @@ -27,6 +27,7 @@
+>  #include <linux/clk-private.h>
+>  #include <linux/clkdev.h>
+>  #include <linux/io.h>
+> +#include <linux/of.h>
+>  
+>  #include "soc.h"
+>  #include "iomap.h"
+> @@ -1663,6 +1664,40 @@ static struct omap_clk omap44xx_clks[] = {
+>  	CLK(NULL,	"cpufreq_ck",	&dpll_mpu_ck,	CK_443X),
+>  };
+>  
+> +static struct clk *scrm_clks[] = {
+> +	&auxclk0_ck,
+> +	&auxclk1_ck,
+> +	&auxclk2_ck,
+> +	&auxclk3_ck,
+> +	&auxclk4_ck,
+> +	&auxclk5_ck,
+> +};
 
-diff --git a/scripts/basic/fixdep.c b/scripts/basic/fixdep.c
-index 7f6425e..078fe1d 100644
---- a/scripts/basic/fixdep.c
-+++ b/scripts/basic/fixdep.c
-@@ -320,49 +320,78 @@ static void parse_dep_file(void *map, size_t len)
- 	char *end = m + len;
- 	char *p;
- 	char s[PATH_MAX];
--	int first;
--
--	p = strchr(m, ':');
--	if (!p) {
--		fprintf(stderr, "fixdep: parse error\n");
--		exit(1);
--	}
--	memcpy(s, m, p-m); s[p-m] = 0;
--	m = p+1;
-+	int is_target;
-+	int saw_any_target = 0;
-+	int is_first_dep = 0;
- 
- 	clear_config();
- 
--	first = 1;
- 	while (m < end) {
-+		/* Skip any "white space" */
- 		while (m < end && (*m == ' ' || *m == '\\' || *m == '\n'))
- 			m++;
-+		/* Find next "white space" */
- 		p = m;
--		while (p < end && *p != ' ') p++;
--		if (p == end) {
--			do p--; while (!isalnum(*p));
-+		while (p < end && *p != ' ' && *p != '\\' && *p != '\n')
- 			p++;
-+		/* Is the token we found a target name? */
-+		is_target = (*(p-1) == ':');
-+		/* Don't write any target names into the dependency file */
-+		if (is_target) {
-+			/* The /next/ file is the first dependency */
-+			is_first_dep = 1;
-+		} else {
-+			/* Save this token/filename */
-+			memcpy(s, m, p-m);
-+			s[p - m] = 0;
-+
-+			/* Ignore certain dependencies */
-+			if (strrcmp(s, "include/generated/autoconf.h") &&
-+			    strrcmp(s, "arch/um/include/uml-config.h") &&
-+			    strrcmp(s, "include/linux/kconfig.h") &&
-+			    strrcmp(s, ".ver")) {
-+				/*
-+				 * Do not list the source file as dependency,
-+				 * so that kbuild is not confused if a .c file
-+				 * is rewritten into .S or vice versa. Storing
-+				 * it in source_* is needed for modpost to
-+				 * compute srcversions.
-+				 */
-+				if (is_first_dep) {
-+					/*
-+					 * If processing the concatenation of
-+					 * multiple dependency files, only
-+					 * process the first target name, which
-+					 * will be the original source name,
-+					 * and ignore any other target names,
-+					 * which will be intermediate temporary
-+					 * files.
-+					 */
-+					if (!saw_any_target) {
-+						saw_any_target = 1;
-+						printf("source_%s := %s\n\n",
-+							target, s);
-+						printf("deps_%s := \\\n",
-+							target);
-+					}
-+					is_first_dep = 0;
-+				} else
-+					printf("  %s \\\n", s);
-+				do_config_file(s);
-+			}
- 		}
--		memcpy(s, m, p-m); s[p-m] = 0;
--		if (strrcmp(s, "include/generated/autoconf.h") &&
--		    strrcmp(s, "arch/um/include/uml-config.h") &&
--		    strrcmp(s, "include/linux/kconfig.h") &&
--		    strrcmp(s, ".ver")) {
--			/*
--			 * Do not list the source file as dependency, so that
--			 * kbuild is not confused if a .c file is rewritten
--			 * into .S or vice versa. Storing it in source_* is
--			 * needed for modpost to compute srcversions.
--			 */
--			if (first) {
--				printf("source_%s := %s\n\n", target, s);
--				printf("deps_%s := \\\n", target);
--			} else
--				printf("  %s \\\n", s);
--			do_config_file(s);
--		}
--		first = 0;
-+		/*
-+		 * Start searching for next token immediately after the first
-+		 * "whitespace" character that follows this token.
-+		 */
- 		m = p + 1;
- 	}
-+
-+	if (!saw_any_target) {
-+		fprintf(stderr, "fixdep: parse error; no targets found\n");
-+		exit(1);
-+	}
-+
- 	printf("\n%s: $(deps_%s)\n\n", target, target);
- 	printf("$(deps_%s):\n", target);
- }
--- 
-1.7.10.4
+Hmm I don't like the idea of specifying the auxclk both in the
+cclock44xx_data.c and in DT..
 
+> +static struct clk_onecell_data scrm_data;
+> +
+> +#ifdef CONFIG_OF
+> +int __init omap4_clk_init_dt(void)
+> +{
+> +	struct device_node *np;
+> +
+> +	np = of_find_compatible_node(NULL, NULL, "ti,omap4-scrm");
+> +	if (np) {
+> +		scrm_data.clks = scrm_clks;
+> +		scrm_data.clk_num = ARRAY_SIZE(scrm_clks);
+> +		of_clk_add_provider(np, of_clk_src_onecell_get,	&scrm_data);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +#else
+> +
+> +int __init omap4_clk_init_dt(void)
+> +{
+> +	return 0;
+> +}
+> +#endif /* CONFIG_OF */
+> +
+>  int __init omap4xxx_clk_init(void)
+>  {
+>  	u32 cpu_clkflg;
+
+.. and I'm not too keen on adding driver specific stuff to this file.
+
+How about just add a minimal drivers/clk/omap/clk-xyz.c that takes
+the configuration from DT and is based on the binding we already have in
+Documentation/devicetree/bindings/clock/clock-bindings.txt?
+
+Then as we add new bindings there we can drop them from current
+cclock44xx_data.c, no? That is after omap4 is DT only..
+
+Regards,
+
+Tony
