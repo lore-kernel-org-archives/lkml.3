@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760644Ab3DCNL3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 09:11:29 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:12204 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758611Ab3DCNL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 09:11:28 -0400
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Christian Ruppert <christian.ruppert@abilis.com>
-Subject: [RFC] Add implicit barriers to irqsave/restore class of functions
-Date: Wed,  3 Apr 2013 15:10:22 +0200
-Message-Id: <1364994622-14110-1-git-send-email-christian.ruppert@abilis.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20130403130340.GA13826@ab42.lan>
-References: <20130403130340.GA13826@ab42.lan>
+	id S1761358Ab3DCNLk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 09:11:40 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:55102 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760752Ab3DCNLi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 09:11:38 -0400
+Message-ID: <515C2A86.6070606@console-pimps.org>
+Date: Wed, 03 Apr 2013 14:11:34 +0100
+From: Matt Fleming <matt@console-pimps.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Matthew Garrett <matthew.garrett@nebula.com>
+CC: matt.fleming@intel.com, ben@decadent.org.uk, jwboyer@redhat.com,
+        linux-efi@vger.kernel.org, seth.forshee@canonical.com,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH 2/2] efi: Distinguish between "remaining space" and actually
+ used space
+References: <515150EC.7040203@redhat.com> <1364829240-26475-1-git-send-email-matthew.garrett@nebula.com> <1364829240-26475-2-git-send-email-matthew.garrett@nebula.com>
+In-Reply-To: <1364829240-26475-2-git-send-email-matthew.garrett@nebula.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds implicit memory barriers to irqsave/restore functions of
-the ARC architecture port in line with what is done in other architectures.
+On 01/04/13 16:14, Matthew Garrett wrote:
+> @@ -452,8 +462,33 @@ check_var_size_locked(struct efivars *efivars, u32 attributes,
+>  	if (status != EFI_SUCCESS)
+>  		return status;
+>  
+> -	if (!storage_size || size > remaining_size || size > max_size ||
+> -	    (remaining_size - size) < (storage_size / 2))
+> +	list_for_each_entry(entry, &efivars->list, list) {
+> +		var = &entry->var;
+> +		status = get_var_data_locked(efivars, var);
+> +
+> +		if (status || !(var->Attributes & EFI_VARIABLE_NON_VOLATILE))
+> +			continue;
+> +
+> +		active_size += var->DataSize;
+> +		active_size += utf16_strsize(var->VariableName, 1024);
+> +		/*
+> +		 * There's some additional metadata associated with each
+> +		 * variable. Intel's reference implementation is 60 bytes -
+> +		 * bump that to 128 to account for vendor additions and
+> +		 * potential alignment constraints
+> +		 */
+> +		active_size += 128;
+> +	}
 
-It seems to fix several seemingly unrelated issues in our platform but for
-the moment it is insufficiently tested (and might even be incomplete).
-Please comment.
+This is the kind of thing I was referring to when I said, 
 
-Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
----
- arch/arc/include/asm/irqflags.h |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+  Hmm... I'm not convinced this will provide a long-term solution. Is there
+  anything that mandates that the size of all variables has to correlate
+  sensibly with the results from QueryVariableInfo()? Even if there is in
+  theory, I doubt it'll be true everywhere in practice, and trying to
+  workaround implementation bugs in our workarounds for other bugs is the
+  path to madness.
 
-diff --git a/arch/arc/include/asm/irqflags.h b/arch/arc/include/asm/irqflags.h
-index ccd8480..c8147d1 100644
---- a/arch/arc/include/asm/irqflags.h
-+++ b/arch/arc/include/asm/irqflags.h
-@@ -39,7 +39,7 @@ static inline long arch_local_irq_save(void)
- 	"	flag.nz %0		\n"
- 	: "=r"(temp), "=r"(flags)
- 	: "n"((STATUS_E1_MASK | STATUS_E2_MASK))
--	: "cc");
-+	: "memory", "cc");
- 
- 	return flags;
- }
-@@ -53,7 +53,7 @@ static inline void arch_local_irq_restore(unsigned long flags)
- 	__asm__ __volatile__(
- 	"	flag %0			\n"
- 	:
--	: "r"(flags));
-+	: "r"(flags) : "memory");
- }
- 
- /*
-@@ -73,7 +73,7 @@ static inline void arch_local_irq_disable(void)
- 	"	and %0, %0, %1		\n"
- 	"	flag %0			\n"
- 	: "=&r"(temp)
--	: "n"(~(STATUS_E1_MASK | STATUS_E2_MASK)));
-+	: "n"(~(STATUS_E1_MASK | STATUS_E2_MASK)) : "memory");
- }
- 
- /*
-@@ -85,7 +85,7 @@ static inline long arch_local_save_flags(void)
- 
- 	__asm__ __volatile__(
- 	"	lr  %0, [status32]	\n"
--	: "=&r"(temp));
-+	: "=&r"(temp) : : "memory");
- 
- 	return temp;
- }
+  We can't continue this approach where we attempt to guess how the firmware
+  implements variable storage, because as we've seen, there are various
+  schemes out there. 
+
+This looks like something that will differ between implementations, and the
+fact that it's appearing in our code is a sure sign that this isn't the way to
+go.
+
 -- 
-1.7.1
-
+Matt Fleming, Intel Open Source Technology Center
