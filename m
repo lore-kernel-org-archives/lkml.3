@@ -1,169 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932516Ab3DCOvg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:51:36 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18941 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932240Ab3DCOvd (ORCPT
+	id S932479Ab3DCOwB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:52:01 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:63605 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760264Ab3DCOpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:51:33 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 03 Apr 2013 07:50:27 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+	Wed, 3 Apr 2013 10:45:44 -0400
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Pritesh Raithatha <praithatha@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Andrew Chew <achew@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v9 08/14] clk: tegra: Add flags to tegra_clk_periph()
-Date: Wed, 3 Apr 2013 17:40:42 +0300
-Message-ID: <1365000110-8916-9-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+        Bjorn Helgaas <bhelgaas@google.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH v3 10/12] ARM: tegra: harmony: Initialize PCIe from DT
+Date: Wed,  3 Apr 2013 16:45:16 +0200
+Message-Id: <1365000318-28256-11-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.8.2
+In-Reply-To: <1365000318-28256-1-git-send-email-thierry.reding@avionic-design.de>
+References: <1365000318-28256-1-git-send-email-thierry.reding@avionic-design.de>
+X-Provags-ID: V02:K0:4H3lAOLAouA4fgU1nG5/ANqsB64br7T6/3++Mqp0HQ2
+ GBxK1YZoWwJprvNuLasQplv9NwgjvSt4XWOXHVATlJVDJZl0UJ
+ KT+Xl4L9g+qo9oc0zJj3owewWv1qQzYTwnM76ANtCQDs795H78
+ gvfl5aL+Cp9QGOoO49tybTIXpmbFiQAyvPElEO6uiK7B4Ti/bF
+ CNXexrgJOQPkwVSoL15jJDPX68kRK6oO52XlchIauEN+Cqd4iD
+ 3tfUPeTQ/r6uEhhpXmq23taXPF5hmhP56RtkuIp/MAtxOZQ/qB
+ XqEwL4m2+q+LLVbgSz5kSryKpKN1Xwj02+s8b2KE2AXxenfUM3
+ fK9/MlDVZ2Z2XdXizLo5V/i9vEJ7XgpsF43ArIlJNsnNhHwobc
+ I0OIdvzdgbrPHAV0WikuVSNM1mvaESZgfu0F8BCm3+YHZySCxI
+ NylVl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We will need some tegra peripheral clocks with the CLK_IGNORE_UNUSED flag,
-most notably mselect, which is a bridge between AXI and most peripherals.
+With the device tree support in place, probe the PCIe controller from
+the device tree and remove the corresponding workaround in the board
+file.
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 ---
- drivers/clk/tegra/clk-periph.c  |   11 ++++++-----
- drivers/clk/tegra/clk-tegra20.c |    2 +-
- drivers/clk/tegra/clk-tegra30.c |    2 +-
- drivers/clk/tegra/clk.h         |    9 ++++++---
- 4 files changed, 14 insertions(+), 10 deletions(-)
+ arch/arm/boot/dts/tegra20-harmony.dts | 20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/clk/tegra/clk-periph.c b/drivers/clk/tegra/clk-periph.c
-index 788486e..067abb3 100644
---- a/drivers/clk/tegra/clk-periph.c
-+++ b/drivers/clk/tegra/clk-periph.c
-@@ -170,14 +170,15 @@ const struct clk_ops tegra_clk_periph_nodiv_ops = {
- static struct clk *_tegra_clk_register_periph(const char *name,
- 			const char **parent_names, int num_parents,
- 			struct tegra_clk_periph *periph,
--			void __iomem *clk_base, u32 offset, bool div)
-+			void __iomem *clk_base, u32 offset, bool div,
-+			unsigned long flags)
- {
- 	struct clk *clk;
- 	struct clk_init_data init;
+diff --git a/arch/arm/boot/dts/tegra20-harmony.dts b/arch/arm/boot/dts/tegra20-harmony.dts
+index 5fb0888..8799d7a 100644
+--- a/arch/arm/boot/dts/tegra20-harmony.dts
++++ b/arch/arm/boot/dts/tegra20-harmony.dts
+@@ -334,7 +334,7 @@
+ 					regulator-always-on;
+ 				};
  
- 	init.name = name;
- 	init.ops = div ? &tegra_clk_periph_ops : &tegra_clk_periph_nodiv_ops;
--	init.flags = div ? 0 : CLK_SET_RATE_PARENT;
-+	init.flags = flags;
- 	init.parent_names = parent_names;
- 	init.num_parents = num_parents;
+-				ldo0 {
++				pci_clk_reg: ldo0 {
+ 					regulator-name = "vdd_ldo0,vddio_pex_clk";
+ 					regulator-min-microvolt = <3300000>;
+ 					regulator-max-microvolt = <3300000>;
+@@ -418,6 +418,20 @@
+ 		nvidia,invert-interrupt;
+ 	};
  
-@@ -202,10 +203,10 @@ static struct clk *_tegra_clk_register_periph(const char *name,
- struct clk *tegra_clk_register_periph(const char *name,
- 		const char **parent_names, int num_parents,
- 		struct tegra_clk_periph *periph, void __iomem *clk_base,
--		u32 offset)
-+		u32 offset, unsigned long flags)
- {
- 	return _tegra_clk_register_periph(name, parent_names, num_parents,
--			periph, clk_base, offset, true);
-+			periph, clk_base, offset, true, flags);
- }
++	pcie-controller {
++		pex-clk-supply = <&pci_clk_reg>;
++		vdd-supply = <&pci_vdd_reg>;
++		status = "okay";
++
++		pci@1,0 {
++			status = "okay";
++		};
++
++		pci@2,0 {
++			status = "okay";
++		};
++	};
++
+ 	usb@c5000000 {
+ 		status = "okay";
+ 	};
+@@ -601,7 +615,7 @@
+ 			enable-active-high;
+ 		};
  
- struct clk *tegra_clk_register_periph_nodiv(const char *name,
-@@ -214,5 +215,5 @@ struct clk *tegra_clk_register_periph_nodiv(const char *name,
- 		u32 offset)
- {
- 	return _tegra_clk_register_periph(name, parent_names, num_parents,
--			periph, clk_base, offset, false);
-+			periph, clk_base, offset, false, CLK_SET_RATE_PARENT);
- }
-diff --git a/drivers/clk/tegra/clk-tegra20.c b/drivers/clk/tegra/clk-tegra20.c
-index b6a747f..05c4995 100644
---- a/drivers/clk/tegra/clk-tegra20.c
-+++ b/drivers/clk/tegra/clk-tegra20.c
-@@ -1019,7 +1019,7 @@ static void __init tegra20_periph_clk_init(void)
- 		data = &tegra_periph_clk_list[i];
- 		clk = tegra_clk_register_periph(data->name, data->parent_names,
- 				data->num_parents, &data->periph,
--				clk_base, data->offset);
-+				clk_base, data->offset, data->flags);
- 		clk_register_clkdev(clk, data->con_id, data->dev_id);
- 		clks[data->clk_id] = clk;
- 	}
-diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
-index 9c43bb4..7e749b0 100644
---- a/drivers/clk/tegra/clk-tegra30.c
-+++ b/drivers/clk/tegra/clk-tegra30.c
-@@ -1668,7 +1668,7 @@ static void __init tegra30_periph_clk_init(void)
- 		data = &tegra_periph_clk_list[i];
- 		clk = tegra_clk_register_periph(data->name, data->parent_names,
- 				data->num_parents, &data->periph,
--				clk_base, data->offset);
-+				clk_base, data->offset, data->flags);
- 		clk_register_clkdev(clk, data->con_id, data->dev_id);
- 		clks[data->clk_id] = clk;
- 	}
-diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
-index 8cedb09..fd12b77 100644
---- a/drivers/clk/tegra/clk.h
-+++ b/drivers/clk/tegra/clk.h
-@@ -417,7 +417,7 @@ extern const struct clk_ops tegra_clk_periph_ops;
- struct clk *tegra_clk_register_periph(const char *name,
- 		const char **parent_names, int num_parents,
- 		struct tegra_clk_periph *periph, void __iomem *clk_base,
--		u32 offset);
-+		u32 offset, unsigned long flags);
- struct clk *tegra_clk_register_periph_nodiv(const char *name,
- 		const char **parent_names, int num_parents,
- 		struct tegra_clk_periph *periph, void __iomem *clk_base,
-@@ -460,12 +460,14 @@ struct tegra_periph_init_data {
- 	u32 offset;
- 	const char *con_id;
- 	const char *dev_id;
-+	unsigned long flags;
- };
+-		regulator@3 {
++		pci_vdd_reg: regulator@3 {
+ 			compatible = "regulator-fixed";
+ 			reg = <3>;
+ 			regulator-name = "vdd_1v05";
+@@ -609,8 +623,6 @@
+ 			regulator-max-microvolt = <1050000>;
+ 			gpio = <&pmic 2 0>;
+ 			enable-active-high;
+-			/* Hack until board-harmony-pcie.c is removed */
+-			status = "disabled";
+ 		};
  
- #define TEGRA_INIT_DATA_TABLE(_name, _con_id, _dev_id, _parent_names, _offset,\
- 			_mux_shift, _mux_mask, _mux_flags, _div_shift,	\
- 			_div_width, _div_frac_width, _div_flags, _regs,	\
--			_clk_num, _enb_refcnt, _gate_flags, _clk_id, _table) \
-+			_clk_num, _enb_refcnt, _gate_flags, _clk_id, _table,\
-+			_flags) \
- 	{								\
- 		.name = _name,						\
- 		.clk_id = _clk_id,					\
-@@ -480,6 +482,7 @@ struct tegra_periph_init_data {
- 		.offset = _offset,					\
- 		.con_id = _con_id,					\
- 		.dev_id = _dev_id,					\
-+		.flags = _flags						\
- 	}
- 
- #define TEGRA_INIT_DATA(_name, _con_id, _dev_id, _parent_names, _offset,\
-@@ -490,7 +493,7 @@ struct tegra_periph_init_data {
- 			_mux_shift, BIT(_mux_width) - 1, _mux_flags,	\
- 			_div_shift, _div_width, _div_frac_width, _div_flags, \
- 			_regs, _clk_num, _enb_refcnt, _gate_flags, _clk_id,\
--			NULL)
-+			NULL, 0)
- 
- /**
-  * struct clk_super_mux - super clock
+ 		regulator@4 {
 -- 
-1.7.7.rc0.72.g4b5ea.dirty
+1.8.2
 
