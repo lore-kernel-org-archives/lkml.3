@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760476Ab3DCQPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 12:15:33 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:44449 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758930Ab3DCQPc (ORCPT
+	id S1761722Ab3DCQSd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 12:18:33 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:48928 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758798Ab3DCQSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 12:15:32 -0400
+	Wed, 3 Apr 2013 12:18:30 -0400
+Message-ID: <515C5652.8070705@wwwdotorg.org>
+Date: Wed, 03 Apr 2013 10:18:26 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <51593E81.3030800@openvz.org>
-References: <20130314144936.10073.2403.stgit@zurg> <51593E81.3030800@openvz.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 3 Apr 2013 10:15:09 -0600
-Message-ID: <CAErSpo7uPodBTk1v4ch=Aycgx6OVkWDvw6-Wrwh3MrSaduHnkA@mail.gmail.com>
-Subject: Re: [PATCH bugfix 3.9] PCI: Don't try to disable Bus Master on
- disconnected PCI devices
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        kexec@lists.infradead.org, "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jeff Garzik <jgarzik@pobox.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] Kbuild: Avoid DTB rebuilds if source files are untouched
+References: <1364973141-16354-1-git-send-email-vgupta@synopsys.com> <515BD6B8.1020607@synopsys.com>
+In-Reply-To: <515BD6B8.1020607@synopsys.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc linux-pci]
+On 04/03/2013 01:14 AM, Vineet Gupta wrote:
+> forgot to CC linux-arch
+> 
+> On 04/03/2013 12:42 PM, Vineet Gupta wrote:
+>> Currently, for every ARC kernel build I see the following:
+>>
+>> --------------->8-----------------
+>>   DTB    arch/arc/boot/dts/angel4.dtb.S
+>>   AS      arch/arc/boot/dts/angel4.dtb.o
+>>   LD      arch/arc/boot/dts/built-in.o
+>> rm arch/arc/boot/dts/angel4.dtb.S        <-- forces rebuild next iter
+>>   CHK     kernel/config_data.h
+>> --------------->8-----------------
 
-On Mon, Apr 1, 2013 at 2:00 AM, Konstantin Khlebnikov
-<khlebnikov@openvz.org> wrote:
-> BUMP. This is degradation from 3.8, so this patch must be in 3.9.
->
-> I still don't like this forced clearing bus-master bit. But this hack
-> definitely fixes problems in kexec, so there is reason to keep it here.
+I assume that's because the file is an intermediate file, and only built
+due to a chain of build rules, and hence make clean it up itself after
+the build?
 
-Applied to for-linus for v3.9, thanks!
+>> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
 
-> Konstantin Khlebnikov wrote:
->>
->> This is fix for commit 7897e6022761ace7377f0f784fca059da55f5d71 from
->> v3.9-rc1
->> ("PCI: Disable Bus Master unconditionally in pci_device_shutdown()")
->> in turn that was fix for b566a22c23327f18ce941ffad0ca907e50a53d41 from
->> v3.5-rc1
->> ("PCI: disable Bus Master on PCI device shutdown")
->>
->> Unfortunately fixing one bug uncovers another:
->> ->shutdown() callback might switch device to deep sleep state.
->> PCI config space no longer available after that.
->>
->> Link: https://lkml.org/lkml/2013/3/12/529
->> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->> Reported-and-Tested-by: Vivek Goyal<vgoyal@redhat.com>
->> Cc: Bjorn Helgaas<bhelgaas@google.com>
->> Cc: Rafael J. Wysocki<rafael.j.wysocki@intel.com>
->> ---
->>   drivers/pci/pci-driver.c |    5 +++--
->>   1 file changed, 3 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
->> index 1fa1e48..79277fb 100644
->> --- a/drivers/pci/pci-driver.c
->> +++ b/drivers/pci/pci-driver.c
->> @@ -390,9 +390,10 @@ static void pci_device_shutdown(struct device *dev)
->>
->>         /*
->>          * Turn off Bus Master bit on the device to tell it to not
->> -        * continue to do DMA
->> +        * continue to do DMA. Don't touch devices in D3cold or unknown
->> states.
->>          */
->> -       pci_clear_master(pci_dev);
->> +       if (pci_dev->current_state <= PCI_D3hot)
->> +               pci_clear_master(pci_dev);
->>   }
->>
->>   #ifdef CONFIG_PM
->>
->
+>> +.PRECIOUS: $(obj)/%.dtb.S
+>> +
+>>  $(obj)/%.dtb.S: $(obj)/%.dtb
+>>  	$(call cmd,dt_S_dtb)
+
+I'm not sure if .PRECIOUS is correct here. That prevents make from
+deleting the file if make is CTRL-C'd in the middle of generating it.
+Couldn't that leave a stale/corrupt file around that'd break the build.
+Judging by:
+
+http://www.gnu.org/software/make/manual/html_node/Special-Targets.html
+
+I think .SECONDARY might be a better choice? Does that solve the problem
+you're seeing?
