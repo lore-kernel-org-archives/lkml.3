@@ -1,169 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760240Ab3DCOmd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:42:33 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:36772 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758541Ab3DCOmb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:42:31 -0400
+	id S1760325Ab3DCOmv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:42:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46488 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760335Ab3DCOmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 10:42:49 -0400
+Date: Wed, 3 Apr 2013 16:42:44 +0200
+From: Jan Kara <jack@suse.cz>
+To: Mel Gorman <mgorman@suse.de>
+Cc: "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Shuge <shugelinux@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-ext4@vger.kernel.org,
+        Kevin <kevin@allwinnertech.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Jens Axboe <axboe@kernel.dk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3] mm: Make snapshotting pages for stable writes a
+ per-bio operation
+Message-ID: <20130403144244.GC14667@quack.suse.cz>
+References: <20130313085021.GA29730@quack.suse.cz>
+ <20130313194429.GE5313@blackbox.djwong.org>
+ <20130313210216.GA7754@quack.suse.cz>
+ <20130314224243.GI5313@blackbox.djwong.org>
+ <20130315100105.GA4889@quack.suse.cz>
+ <20130315232816.GN5313@blackbox.djwong.org>
+ <20130318174134.GB7852@quack.suse.cz>
+ <20130318230259.GP5313@blackbox.djwong.org>
+ <20130402170143.GA8910@blackbox.djwong.org>
+ <20130403142019.GC5811@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20130403141831.GJ14680@arwen.pp.htv.fi>
-References: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com>
-	<1364824448-14732-2-git-send-email-gautam.vivek@samsung.com>
-	<515BB951.40702@ti.com>
-	<CAFp+6iG8WdWHXVCANx77OiTXLeZ-4qE4jySWqPLhfR1KOEP4fw@mail.gmail.com>
-	<20130403081532.GE25837@arwen.pp.htv.fi>
-	<CAFp+6iHXW8z2sc44c1hq2au_UnUyVZEr9D0t5BM4mfqcQKZgbA@mail.gmail.com>
-	<20130403135414.GG14680@arwen.pp.htv.fi>
-	<20130403135659.GH14680@arwen.pp.htv.fi>
-	<CAFp+6iEmJtS2vxz8YHXP+FbNsxK2bR94rDrrSiKbGRRuUhBA5g@mail.gmail.com>
-	<20130403141831.GJ14680@arwen.pp.htv.fi>
-Date: Wed, 3 Apr 2013 20:12:29 +0530
-Message-ID: <CAFp+6iGqmUK1r2CN-0jwoEhCuzVhxaRS1W3CMm0JhTPvDyh_rw@mail.gmail.com>
-Subject: Re: [PATCH v3 01/11] usb: phy: Add APIs for runtime power management
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: balbi@ti.com
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        stern@rowland.harvard.edu, sarah.a.sharp@linux.intel.com,
-        rob.herring@calxeda.com, kgene.kim@samsung.com, dianders@chromium.org,
-        t.figa@samsung.com, p.paneri@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130403142019.GC5811@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 3, 2013 at 7:48 PM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Wed, Apr 03, 2013 at 07:40:44PM +0530, Vivek Gautam wrote:
->> >> > >> >> +static inline void usb_phy_autopm_enable(struct usb_phy *x)
->> >> > >> >> +{
->> >> > >> >> +       if (!x || !x->dev) {
->> >> > >> >> +               dev_err(x->dev, "no PHY or attached device available\n");
->> >> > >> >> +               return;
->> >> > >> >> +               }
->> >> > >> >> +
->> >> > >> >> +       pm_runtime_enable(x->dev);
->> >> > >> >> +}
->> >> > >> >
->> >> > >> >
->> >> > >> > IMO we need not have wrapper APIs for runtime_enable and runtime_disable
->> >> > >> > here. Generally runtime_enable and runtime_disable is done in probe and
->> >> > >> > remove of a driver respectively. So it's better to leave the
->> >> > >> > runtime_enable/runtime_disable to be done in *phy provider* driver than
->> >> > >> > having an API for it to be done by *phy user* driver. Felipe, what do you
->> >> > >> > think?
->> >> > >>
->> >> > >> Thanks!!
->> >> > >> That's very true, runtime_enable() and runtime_disable() calls are made by
->> >> > >> *phy_provider* only. But a querry here.
->> >> > >> Wouldn't in any case a PHY consumer might want to disable runtime_pm on PHY ?
->> >> > >> Say, when consumer failed to suspend the PHY properly
->> >> > >> (*put_sync(phy->dev)* fails), how much sure is the consumer about the
->> >> > >> state of PHY ?
->> >> > >
->> >> > > no no, wait a minute. We might not want to enable runtime pm for the PHY
->> >> > > until the UDC says it can handle runtime pm, no ? I guess this makes a
->> >> > > bit of sense (at least in my head :-p).
->> >> > >
->> >> > > Imagine if PHY is runtime suspended but e.g. DWC3 isn't runtime pm
->> >> > > enabled... Does it make sense to leave that control to the USB
->> >> > > controller drivers ?
->> >> > >
->> >> > > I'm open for suggestions
->> >> >
->> >> > Of course unless the PHY consumer can handle runtime PM for PHY,
->> >> > PHY should not ideally be going into runtime_suspend.
->> >> >
->> >> > Actually trying out few things, here are my observations
->> >> >
->> >> > Enabling runtime_pm on PHY pushes PHY to go into runtime_suspend state.
->> >> > But a device detection wakes up DWC3 controller, and if i don't wake
->> >> > up PHY (using get_sync(phy->dev)) here
->> >> > in runtime_resume() callback of DWC3, i don't get PHY back in active state.
->> >> > So it becomes the duty of DWC3 controller to handle PHY's sleep and wake-up.
->> >> > Thereby it becomes logical that DWC3 controller has the right to
->> >> > enable runtime_pm
->> >> > of PHY.
->> >> >
->> >> > But there's a catch here. if there are multiple consumers of PHY (like
->> >> > USB2 type PHY can
->> >> > have DWC3 controller as well as EHCI/OHCI or even HSGadget) then in that case,
->> >> > only one of the consumer can enable runtime_pm on PHY. So who decides this.
->> >> >
->> >> > Aargh!! lot of confusion here :-(
->> >>
->> >>
->> >> hmmm, maybe add a flag to struct usb_phy and check it on
->> >> usb_phy_autopm_enable() ??
->> >>
->> >> How does usbcore handle it ? They request class drivers to pass
->> >> supports_autosuspend, but while we should have a similar flag, that's
->> >> not enough. We also need a flag to tell us when pm_runtime has already
->> >> been enabled.
->>
->> True
->>
->> >>
->> >> So how about:
->> >>
->> >> usb_phy_autopm_enable()
->> >> {
->> >>       if (!phy->suports_autosuspend)
->> >>               return -ENOSYS;
->> >>
->> >>       if (phy->autosuspend_enabled)
->> >>               return 0;
->> >>
->> >>       phy->autosuspend_enabled = true;
->> >>       return pm_runtime_enable(phy->dev);
->> >> }
->> >>
->> >> ???
->>
->> Great
->>
->> >
->> > and of course I missed the fact that pm_runtime_enable returns nothing
->> > :-) But you got my point.
->>
->> Yea, this is a way around this. :-)
->>
->> Just one more query :-)
->>
->> Lets suppose DWC3 enables runtime_pm on USB 2 type phy,
->> it will try to go into suspend state and thereby call runtime_suspend(), if any.
->> And PHY will come to active state only when its consumer wakes it up,
->> and this consumer is operational
->> only when its related PHY is in fully functional state.
->> So do we have a situation in which this PHY goes into low power state
->> in its runtime_suspend(),
->> resulting in non-detection of devices on further attach (since PHY is
->> in low power state) ?
->>
->> Will the controller (like EHCI/OHCI) be functional now ?
->
-> ehci/ohci need to cope with that by calling usb_phy_autopm_get_sync(),
-> right ? (so does DWC3 :-)
+On Wed 03-04-13 15:20:19, Mel Gorman wrote:
+> On Tue, Apr 02, 2013 at 10:01:43AM -0700, Darrick J. Wong wrote:
+> > Hi,
+> > 
+> > A couple of weeks have gone by without further comments about this patch.
+> > 
+> > Are you interested in the minor cleanups and added comments, or is the v2 patch
+> > in -next good enough?
+> > 
+> > Apparently Mel Gorman's interested in this patchset too.  Mel: Most of stable
+> > pages part 2 are already in upstream for 3.9... except this piece.  Are you
+> > interested in having this piece in 3.9 also?  Or is 3.10 good enough for
+> > everyone?
+> > 
+> 
+> My understanding is that it only affects ARM and DEBUG_VM so there is a
+> relatively small chance of this generating spurious bug reports.  However,
+> 3.9 is still far enough away that I see no good reason to delay this patch
+> until 3.10 either.
+  No, actually with direct IO, anything that needs stable pages is going to
+blow up quickly because pages attached to bio needn't be from page cache. So
+I think it should better make it into 3.9.
 
-Yes ofcourse.
-So PHYs (in their runtime_suspend) should not be pulled into a state
-wherein even the controllers become in-operational.
-Thereby no attach-detection, and controller doesn't wake up to be able
-to usb_phy_autopm_get_sync()
-
-Sorry for so much noise, i am acting like slow study ;-)
-
->
-> --
-> balbi
-
-
-
+									Honza
 -- 
-Thanks & Regards
-Vivek
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
