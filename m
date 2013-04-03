@@ -1,58 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762161Ab3DCFfj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 01:35:39 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:62789 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107Ab3DCFfi (ORCPT
+	id S1762183Ab3DCFiL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 01:38:11 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:42931 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154Ab3DCFiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 01:35:38 -0400
-Date: Tue, 2 Apr 2013 22:35:34 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH] sysfs: check if one entry has been removed before freeing
-Message-ID: <20130403053534.GA8091@kroah.com>
-References: <1364957903-10341-1-git-send-email-ming.lei@canonical.com>
- <20130403030403.GA26913@redhat.com>
- <CACVXFVPOC=d3-1UBu6UbqJXMS2gG=DXnBJeuLaFc3R4QKAzWyg@mail.gmail.com>
+	Wed, 3 Apr 2013 01:38:08 -0400
+Date: Wed, 3 Apr 2013 13:37:20 +0800
+From: Ram Pai <linuxram@us.ibm.com>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, tmac@hp.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        tangchen@cn.fujitsu.com, jiang.liu@huawei.com
+Subject: Re: [PATCH 2/3] resource: Add release_mem_region_adjustable()
+Message-ID: <20130403053720.GA26398@ram.oc3035372033.ibm.com>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <1364919450-8741-1-git-send-email-toshi.kani@hp.com>
+ <1364919450-8741-3-git-send-email-toshi.kani@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACVXFVPOC=d3-1UBu6UbqJXMS2gG=DXnBJeuLaFc3R4QKAzWyg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1364919450-8741-3-git-send-email-toshi.kani@hp.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040305-2398-0000-0000-000012E2EEC5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 03, 2013 at 11:52:39AM +0800, Ming Lei wrote:
-> On Wed, Apr 3, 2013 at 11:04 AM, Dave Jones <davej@redhat.com> wrote:
-> > On Wed, Apr 03, 2013 at 10:58:23AM +0800, Ming Lei wrote:
-> >
-> >  > diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-> >  > index 1bf016b..328ef9b 100644
-> >  > --- a/fs/sysfs/dir.c
-> >  > +++ b/fs/sysfs/dir.c
-> >  > @@ -268,6 +268,13 @@ void release_sysfs_dirent(struct sysfs_dirent * sd)
-> >  >       */
-> >  >      parent_sd = sd->s_parent;
-> >  >
-> >  > +    if (unlikely(!(sd->s_flags & SYSFS_FLAG_REMOVED))) {
-> >  > +            printk(KERN_ERR "sysfs: free using entry: %s/%s\n",
-> >  > +                    parent_sd ? parent_sd->s_name : "",
-> >  > +                    sd->s_name);
-> >  > +            BUG();
-> >  > +    }
-> >
-> > Please use WARN instead of BUG.  For an in-ram filesystem like
-> > sysfs, there's no real reason to lock-up the machine in this way
-> > making it harder to debug.
+On Tue, Apr 02, 2013 at 10:17:29AM -0600, Toshi Kani wrote:
+> Added release_mem_region_adjustable(), which releases a requested
+> region from a currently busy memory resource.  This interface
+> adjusts the matched memory resource accordingly if the requested
+> region does not match exactly but still fits into.
 > 
-> If WARN is used, the freed memory will be allocated to other
-> kernel components, then sysfs may change the memory and cause
-> destruction, so maybe it is better to use BUG to stop kernel.
+> This new interface is intended for memory hot-delete.  During
+> bootup, memory resources are inserted from the boot descriptor
+> table, such as EFI Memory Table and e820.  Each memory resource
+> entry usually covers the whole contigous memory range.  Memory
+> hot-delete request, on the other hand, may target to a particular
+> range of memory resource, and its size can be much smaller than
+> the whole contiguous memory.  Since the existing release interfaces
+> like __release_region() require a requested region to be exactly
+> matched to a resource entry, they do not allow a partial resource
+> to be released.
+> 
+> There is no change to the existing interfaces since their restriction
+> is valid for I/O resources.
+> 
+> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> ---
+>  include/linux/ioport.h |    2 +
+>  kernel/resource.c      |   87 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 89 insertions(+)
+> 
+> diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+> index 85ac9b9b..0fe1a82 100644
+> --- a/include/linux/ioport.h
+> +++ b/include/linux/ioport.h
+> @@ -192,6 +192,8 @@ extern struct resource * __request_region(struct resource *,
+>  extern int __check_region(struct resource *, resource_size_t, resource_size_t);
+>  extern void __release_region(struct resource *, resource_size_t,
+>  				resource_size_t);
+> +extern int release_mem_region_adjustable(struct resource *, resource_size_t,
+> +				resource_size_t);
+> 
+>  static inline int __deprecated check_region(resource_size_t s,
+>  						resource_size_t n)
+> diff --git a/kernel/resource.c b/kernel/resource.c
+> index ae246f9..789f160 100644
+> --- a/kernel/resource.c
+> +++ b/kernel/resource.c
+> @@ -1021,6 +1021,93 @@ void __release_region(struct resource *parent, resource_size_t start,
+>  }
+>  EXPORT_SYMBOL(__release_region);
+> 
+> +/**
+> + * release_mem_region_adjustable - release a previously reserved memory region
+> + * @parent: parent resource descriptor
+> + * @start: resource start address
+> + * @size: resource region size
+> + *
+> + * The requested region is released from a currently busy memory resource.
+> + * It adjusts the matched busy memory resource accordingly if the requested
+> + * region does not match exactly but still fits into.  Existing children of
+> + * the busy memory resource must be immutable in this request.
+> + *
+> + * Note, when the busy memory resource gets split into two entries, the code
+> + * assumes that all children remain in the lower address entry for simplicity.
+> + * Enhance this logic when necessary.
+> + */
+> +int release_mem_region_adjustable(struct resource *parent,
+> +			resource_size_t start, resource_size_t size)
+> +{
+> +	struct resource **p;
+> +	struct resource *res, *new;
+> +	resource_size_t end;
+> +	int ret = 0;
+> +
+> +	p = &parent->child;
+> +	end = start + size - 1;
+> +
+> +	write_lock(&resource_lock);
+> +
+> +	while ((res = *p)) {
+> +		if (res->start > start || res->end < end) {
 
-No, it's never ok to call BUG(), sorry, please fix this.
+This check looks sub-optimal; possbily wrong, to me.  if the res->start
+is greater than 'start', then obviously its sibling's start will
+also be greater than 'start'. So it will loop through all the
+resources unnecesarily.  you might want something like
 
-greg k-h
+		if (start >= res->end) {
+		
+> +			p = &res->sibling;
+> +			continue;
+> +		}
+> +
+> +		if (!(res->flags & IORESOURCE_MEM)) {
+> +			ret = -EINVAL;
+> +			break;
+> +		}
+> +
+> +		if (!(res->flags & IORESOURCE_BUSY)) {
+> +			p = &res->child;
+> +			continue;
+> +		}
+> +
+> +		if (res->start == start && res->end == end) {
+> +			/* free the whole entry */
+> +			*p = res->sibling;
+> +			kfree(res);
+
+This is incomplete. the prev resource's sibling should now point to
+this resource's sibling. The parent's child has to be updated if
+this resource is the first child resource. no?
+
+> +		} else if (res->start == start && res->end != end) {
+> +			/* adjust the start */
+> +			ret = __adjust_resource(res, end+1,
+> +						res->end - end);
+> +		} else if (res->start != start && res->end == end) {
+> +			/* adjust the end */
+> +			ret = __adjust_resource(res, res->start,
+> +						start - res->start);
+> +		} else {
+> +			/* split into two entries */
+> +			new = kzalloc(sizeof(struct resource), GFP_KERNEL);
+> +			if (!new) {
+> +				ret = -ENOMEM;
+> +				break;
+> +			}
+> +			new->name = res->name;
+> +			new->start = end + 1;
+> +			new->end = res->end;
+> +			new->flags = res->flags;
+> +			new->parent = res->parent;
+> +			new->sibling = res->sibling;
+> +			new->child = NULL;
+> +
+> +			ret = __adjust_resource(res, res->start,
+> +						start - res->start);
+> +			if (ret) {
+> +				kfree(new);
+> +				break;
+> +			}
+> +			res->sibling = new;
+> +		}
+> +
+> +		break;
+> +	}
+> +
+> +	write_unlock(&resource_lock);
+> +	return ret;
+> +}
+> +
+>  /*
+>   * Managed region resource
+>   */
+
+-- 
+Ram Pai
+
