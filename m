@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762502Ab3DCMcZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 08:32:25 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:60922 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759574Ab3DCMcY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 08:32:24 -0400
-Date: Wed, 03 Apr 2013 07:32:21 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [RFC] rootmpfs
-To: linux-kernel@vger.kernel.org
-References: <1364992208.18069.18@driftwood>
-In-Reply-To: <1364992208.18069.18@driftwood> (from rob@landley.net on Wed
-	Apr  3 07:30:08 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1364992341.18069.19@driftwood>
+	id S1762207Ab3DCMfK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 08:35:10 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:42499 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759408Ab3DCMfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 08:35:09 -0400
+Date: Wed, 3 Apr 2013 08:34:52 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm, memcg: give exiting processes access to memory
+ reserves
+Message-ID: <20130403123452.GK1953@cmpxchg.org>
+References: <alpine.DEB.2.02.1303271821120.5005@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-Zpt+bwX210o4fGYkF7To"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1303271821120.5005@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-Zpt+bwX210o4fGYkF7To
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Mar 27, 2013 at 06:22:10PM -0700, David Rientjes wrote:
+> A memcg may livelock when oom if the process that grabs the hierarchy's
+> oom lock is never the first process with PF_EXITING set in the memcg's
+> task iteration.
+> 
+> The oom killer, both global and memcg, will defer if it finds an eligible
+> process that is in the process of exiting and it is not being ptraced.
+> The idea is to allow it to exit without using memory reserves before
+> needlessly killing another process.
+> 
+> This normally works fine except in the memcg case with a large number of
+> threads attached to the oom memcg.  In this case, the memcg oom killer
+> only gets called for the process that grabs the hierarchy's oom lock; all
+> others end up blocked on the memcg's oom waitqueue.  Thus, if the process
+> that grabs the hierarchy's oom lock is never the first PF_EXITING process
+> in the memcg's task iteration, the oom killer is constantly deferred
+> without anything making progress.
+> 
+> The fix is to give PF_EXITING processes access to memory reserves so that
+> we've marked them as oom killed without any iteration.  This allows
+> __mem_cgroup_try_charge() to succeed so that the process may exit.  This
+> makes the memcg oom killer exemption for TIF_MEMDIE tasks, now
+> immediately granted for processes with pending SIGKILLs and those in the
+> exit path, to be equivalent to what is done for the global oom killer.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
-On 04/03/2013 07:30:08 AM, Rob Landley wrote:
-> Attached is my quick and dirty hack to make rootfs be tmpfs when =20
-> CONFIG_TMPFS is
-> enabled.
-
-For a somewhat quantum definition of "attached".
-
-Rob=
-
---=-Zpt+bwX210o4fGYkF7To
-Content-Type: text/x-patch; charset=us-ascii; name=rootmpfs2.patch
-Content-Disposition: attachment; filename=rootmpfs2.patch
-Content-Transfer-Encoding: quoted-printable
-
-diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
-index c24f1e1..f875bf2 100644
---- a/fs/ramfs/inode.c
-+++ b/fs/ramfs/inode.c
-@@ -244,10 +244,17 @@ struct dentry *ramfs_mount(struct file_system_type *f=
-s_type,
- 	return mount_nodev(fs_type, flags, data, ramfs_fill_super);
- }
-=20
--static struct dentry *rootfs_mount(struct file_system_type *fs_type,
-+int shmem_init(void);
-+int shmem_fill_super(struct super_block *sb, void *data, int silent);
-+static __init struct dentry *rootfs_mount(struct file_system_type *fs_type=
-,
- 	int flags, const char *dev_name, void *data)
- {
-+#ifdef CONFIG_TMPFS
-+	if (shmem_init()) return NULL;
-+	return mount_nodev(fs_type, flags, data, shmem_fill_super);
-+#else
- 	return mount_nodev(fs_type, flags|MS_NOUSER, data, ramfs_fill_super);
-+#endif
- }
-=20
- static void ramfs_kill_sb(struct super_block *sb)
-diff --git a/mm/shmem.c b/mm/shmem.c
-index 1c44af7..d2cb93e 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2785,6 +2785,8 @@ int __init shmem_init(void)
- {
- 	int error;
-=20
-+	if (shmem_inode_cachep) return 0;
-+
- 	error =3D bdi_init(&shmem_backing_dev_info);
- 	if (error)
- 		goto out4;
-=
-
---=-Zpt+bwX210o4fGYkF7To--
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
