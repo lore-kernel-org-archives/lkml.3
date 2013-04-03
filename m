@@ -1,66 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762325Ab3DCJOG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 05:14:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8574 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760506Ab3DCJN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 05:13:59 -0400
-Date: Wed, 3 Apr 2013 14:43:48 +0530 (IST)
-From: P J P <ppandit@redhat.com>
-X-X-Sender: pjp@javelin.pnq.redhat.com
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Petr Matousek <pmatouse@redhat.com>
-Subject: Re: [PATCH] To add NULL pointer check
-In-Reply-To: <1364975688.4353.7.camel@kjgkr>
-Message-ID: <alpine.LFD.2.03.1304031342550.23577@erqung.pbz>
-References: <alpine.LFD.2.03.1304021808410.12716@erqung.pbz> <1364958193.4353.4.camel@kjgkr> <alpine.LFD.2.03.1304031224180.21402@erqung.pbz> <1364975688.4353.7.camel@kjgkr>
+	id S1762929Ab3DCJOX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 05:14:23 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:47110 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760986Ab3DCJOU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 05:14:20 -0400
+Message-ID: <515BF284.7060401@huawei.com>
+Date: Wed, 3 Apr 2013 17:12:36 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: <linux-mm@kvack.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: [RFC][PATCH 3/7] memcg: use css_get/put when charging/uncharging
+ kmem
+References: <515BF233.6070308@huawei.com>
+In-Reply-To: <515BF233.6070308@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+-- On Wed, 3 Apr 2013, Jaegeuk Kim wrote --+
-| I'm confusing the question because f2fs doesn't use generic_writepages(), 
-| since f2fs_write_data_pages() is linked to a_ops->writepages. In 
-| do_writepages(), always f2fs_write_data_pages() is triggered instead of 
-| generic_writepages(). Isn't it?
+Use css_get/put instead of mem_cgroup_get/put.
 
-Before commit fa9150a84c, when `generic_writepages' returned 0, it did not 
-abort `f2fs_write_data_pages', as the proposed patch does. I was wondering if 
-that's intentional OR if the patch below does it right?
+We can't do a simple replacement, because here mem_cgroup_put()
+is called during mem_cgroup_css_free(), while mem_cgroup_css_free()
+won't be called until css refcnt goes down to 0.
 
-===
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 7bd22a2..7be750e 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -561,7 +561,7 @@ static int f2fs_write_data_pages(struct address_space 
-*mapping,
+Instead we increment css refcnt in mem_cgroup_css_offline(), and
+then check if there's still kmem charges. If not, css refcnt will
+be decremented, otherwise the refcnt will be decremented when
+kmem charges goes down to 0.
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ mm/memcontrol.c | 49 ++++++++++++++++++++++++++-----------------------
+ 1 file changed, 26 insertions(+), 23 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index dafacb8..877551d 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3004,7 +3004,7 @@ static void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
+ 		return;
+ 
+ 	if (memcg_kmem_test_and_clear_dead(memcg))
+-		mem_cgroup_put(memcg);
++		css_put(&memcg->css);
+ }
+ 
+ void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep)
+@@ -5089,14 +5089,6 @@ static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
+ 		 * starts accounting before all call sites are patched
+ 		 */
+ 		memcg_kmem_set_active(memcg);
+-
+-		/*
+-		 * kmem charges can outlive the cgroup. In the case of slab
+-		 * pages, for instance, a page contain objects from various
+-		 * processes, so it is unfeasible to migrate them away. We
+-		 * need to reference count the memcg because of that.
+-		 */
+-		mem_cgroup_get(memcg);
+ 	} else
+ 		ret = res_counter_set_limit(&memcg->kmem, val);
+ out:
+@@ -5129,12 +5121,11 @@ static int memcg_propagate_kmem(struct mem_cgroup *memcg)
+ 		goto out;
+ 
+ 	/*
+-	 * destroy(), called if we fail, will issue static_key_slow_inc() and
+-	 * mem_cgroup_put() if kmem is enabled. We have to either call them
+-	 * unconditionally, or clear the KMEM_ACTIVE flag. I personally find
+-	 * this more consistent, since it always leads to the same destroy path
++	 * destroy(), called if we fail, will issue static_key_slow_dec() if
++	 * kmem is enabled. We have to either call them unconditionally, or
++	 * clear the KMEM_ACTIVE flag. I personally find this more consistent,
++	 * since it always leads to the same destroy path
+ 	 */
+-	mem_cgroup_get(memcg);
+ 	static_key_slow_inc(&memcg_kmem_enabled_key);
+ 
+ 	mutex_lock(&set_limit_mutex);
+@@ -5823,23 +5814,33 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+ 	return mem_cgroup_sockets_init(memcg, ss);
+ };
+ 
+-static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
++static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
  {
-        struct inode *inode = mapping->host;
-        struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
--       int ret;
-+       int ret = 0;
-        long excess_nrtw = 0, desired_nrtw;
+-	mem_cgroup_sockets_destroy(memcg);
++	/*
++	 * kmem charges can outlive the cgroup. In the case of slab
++	 * pages, for instance, a page contain objects from various
++	 * processes, so it is unfeasible to migrate them away. We
++	 * need to reference count the memcg because of that.
++	 */
++	css_get(&memcg->css);
  
-        if (wbc->nr_to_write < MAX_DESIRED_PAGES_WP) {
-@@ -572,7 +572,9 @@ static int f2fs_write_data_pages(struct address_space *mapping,
++	/*
++	 * We need to call css_get() first, because memcg_uncharge_kmem()
++	 * will call css_put() if it sees the memcg is dead.
++	 */
+ 	memcg_kmem_mark_dead(memcg);
  
-        if (!S_ISDIR(inode->i_mode))
-                mutex_lock(&sbi->writepages);
--       ret = write_cache_pages(mapping, wbc, __f2fs_writepage, mapping);
-+       /* deal with chardevs and other special file */
-+       if (mapping->a_ops->writepage)
-+               ret = write_cache_pages(mapping, wbc, __f2fs_writepage, mapping);
-        if (!S_ISDIR(inode->i_mode))
-                mutex_unlock(&sbi->writepages);
-        f2fs_submit_bio(sbi, DATA, (wbc->sync_mode == WB_SYNC_ALL));
-===
-
-Thank you.
---
-Prasad J Pandit / Red Hat Security Response Team
-DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
+ 	if (res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0)
+ 		return;
+ 
+ 	/*
+-	 * Charges already down to 0, undo mem_cgroup_get() done in the charge
+-	 * path here, being careful not to race with memcg_uncharge_kmem: it is
+-	 * possible that the charges went down to 0 between mark_dead and the
+-	 * res_counter read, so in that case, we don't need the put
++	 * Charges already down to 0, undo css_get() done previosly,, being
++	 * careful not to race with memcg_uncharge_kmem: it is possible that
++	 * the charges went down to 0 between mark_dead and the res_counter
++	 * read, so in that case, we don't need the put
+ 	 */
+ 	if (memcg_kmem_test_and_clear_dead(memcg))
+-		mem_cgroup_put(memcg);
++		css_put(&memcg->css);
+ }
+ #else
+ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+@@ -5847,7 +5848,7 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+ 	return 0;
+ }
+ 
+-static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
++static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
+ {
+ }
+ #endif
+@@ -6274,6 +6275,8 @@ static void mem_cgroup_css_offline(struct cgroup *cont)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+ 
++	kmem_cgroup_css_offline(memcg);
++
+ 	mem_cgroup_invalidate_reclaim_iterators(memcg);
+ 	mem_cgroup_reparent_charges(memcg);
+ 	mem_cgroup_destroy_all_caches(memcg);
+@@ -6283,7 +6286,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+ 
+-	kmem_cgroup_destroy(memcg);
++	mem_cgroup_sockets_destroy(memcg);
+ 
+ 	mem_cgroup_put(memcg);
+ }
+-- 
+1.8.0.2
