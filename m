@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762611Ab3DCMAU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 08:00:20 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:17715 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760521Ab3DCMAR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 08:00:17 -0400
-Message-ID: <515C19E5.2060309@oracle.com>
-Date: Wed, 03 Apr 2013 20:00:37 +0800
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Reply-To: zhenzhong.duan@oracle.com
-Organization: oracle
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1761018Ab3DCMG1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 08:06:27 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:58869 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757321Ab3DCMGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 08:06:25 -0400
+Date: Wed, 3 Apr 2013 08:05:30 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Mel Gorman <mgorman@suse.de>
+Cc: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Excessive stall times on ext4 in 3.9-rc2
+Message-ID: <20130403120529.GA7741@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+	Jiri Slaby <jslaby@suse.cz>
+References: <20130402142717.GH32241@suse.de>
+ <20130402150651.GB31577@thunk.org>
+ <20130402151436.GC31577@thunk.org>
+ <20130403101925.GA7341@suse.de>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Feng Jin <joe.jin@oracle.com>, Tamon Shiose <tamon.shiose@oracle.com>
-Subject: Re: [PATCH] xen: Don't call arch_trigger_all_cpu_backtrace in dom0(pvm)
-References: <5155413E.6090002@oracle.com> <20130329134640.GG31356@phenom.dumpdata.com> <51591A8A.1060904@oracle.com> <20130401124118.GB11995@phenom.dumpdata.com>
-In-Reply-To: <20130401124118.GB11995@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130403101925.GA7341@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 03, 2013 at 11:19:25AM +0100, Mel Gorman wrote:
+> 
+> I'm running with -rc5 now. I have not noticed much interactivity problems
+> as such but the stall detection script reported that mutt stalled for
+> 20 seconds opening an inbox and imapd blocked for 59 seconds doing path
+> lookups, imaps blocked again for 12 seconds doing an atime update, an RSS
+> reader blocked for 3.5 seconds writing a file. etc.
 
-On 2013-04-01 20:41, Konrad Rzeszutek Wilk wrote:
-> On Mon, Apr 01, 2013 at 01:26:34PM +0800, Zhenzhong Duan wrote:
->> On 2013-03-29 21:46, Konrad Rzeszutek Wilk wrote:
->>> On Fri, Mar 29, 2013 at 03:22:38PM +0800, Zhenzhong Duan wrote:
->> The problem is even without overwrite, like xapic system,
->> xen_send_IPI_all doesn't work for nmi vector.
-> Can you tweak the x2apic_mode = 0 in enligthen.c for example?
-> Or clear the X86_FEATURE_X2APIC in the enlighten.c ? (Similar
-> to how the other features are cleared) Wouldn't
-> that stop x2apic_enabled from detecting x2APIC?
-Hi Konrad,
-I used the second method. x2apic is totally masked in dom0. Thanks Tamon 
-to do the test.
+If imaps blocked for 12 seconds during an atime update, combined with
+everything else, at a guess it got caught by something holding up a
+journal commit.  Could you try enabling the jbd2_run_stats tracepoint
+and grabbing the trace log?  This will give you statistics on how long
+(in milliseconds) each of the various phases of a jbd2 commit is
+taking, i.e.:
 
-Testing result:
+    jbd2/sdb1-8-327   [002] .... 39681.874661: jbd2_run_stats: dev 8,17 tid 7163786 wait 0 request_delay 0 running 3530 locked 0 flushing 0 logging 0 handle_count 75 blocks 8 blocks_logged 9
+     jbd2/sdb1-8-327   [003] .... 39682.514153: jbd2_run_stats: dev 8,17 tid 7163787 wait 0 request_delay 0 running 640 locked 0 flushing 0 logging 0 handle_count 39 blocks 12 blocks_logged 13
+     jbd2/sdb1-8-327   [000] .... 39687.665609: jbd2_run_stats: dev 8,17 tid 7163788 wait 0 request_delay 0 running 5150 locked 0 flushing 0 logging 0 handle_count 60 blocks 13 blocks_logged 14
+     jbd2/sdb1-8-327   [000] .... 39693.200453: jbd2_run_stats: dev 8,17 tid 7163789 wait 0 request_delay 0 running 4840 locked 0 flushing 0 logging 0 handle_count 53 blocks 10 blocks_logged 11
+     jbd2/sdb1-8-327   [001] .... 39695.061657: jbd2_run_stats: dev 8,17 tid 7163790 wait 0 request_delay 0 running 1860 locked 0 flushing 0 logging 0 handle_count 124 blocks 19 blocks_logged 20
 
-The server didn't get crashed by "echo l > /proc/sysrq-trigger". On this machine, VT-d is enabled in BIOS.
-However, no backtrace was shown.
+In the above sample each journal commit is running for no more than 5
+seconds or so (since that's the default jbd2 commit timeout; if a
+transaction is running for less than 5 seconds, then either we ran out
+of room in the journal, and the blocks_logged number will be high, or
+a commit was forced by something such as an fsync call).  
 
-[root@x4470m2-bur09-b ~]# uname -a
-Linux x4470m2-bur09-b.us.oracle.com 2.6.39-200.1.14.el5uek.bug16372098.test #1 SMP Tue Apr 2 21:09:27 PDT 2013 x86_64 x86_64 x86_64 GNU/Linux
-[root@x4470m2-bur09-b ~]# cat /proc/cpuinfo | grep x2apic
-[root@x4470m2-bur09-b ~]# dmesg | grep x2apic
-[root@x4470m2-bur09-b ~]# cat /proc/cmdline
-ro root=UUID=486fc42b-3383-462f-aca3-b1340fbd4ad9 console=tty1 console=ttyS0,9600n8
-[root@x4470m2-bur09-b ~]# echo l > /proc/sysrq-trigger
-[root@x4470m2-bur09-b ~]#
+If an atime update is getting blocked by 12 seconds, then it would be
+interesting to see if a journal commit is running for significantly
+longer than 5 seconds, or if one of the other commit phases is taking
+significant amounts of time.  (On the example above they are all
+taking no time, since I ran this on a relatively uncontended system;
+only a single git operation taking place.)
 
-/var/log/messages:
-(snip)
-Apr  3 14:14:33 x4470m2-bur09-b kernel: SysRq : Show backtrace of all active CPUs
-Apr  3 14:14:33 x4470m2-bur09-b kernel: sending NMI to all CPUs:
-(EOF)
+Something else that might be worth trying is grabbing a lock_stat
+report and see if something is sitting on an ext4 or jbd2 mutex for a
+long time.
 
-On the console, no backtrace either. I did it twice, and got the same results.
+Finally, as I mentioned I tried some rather simplistic tests and I
+didn't notice any difference between a 3.2 kernel and a 3.8/3.9-rc5
+kernel.  Assuming you can get a version of systemtap that
+simultaneously works on 3.2 and 3.9-rc5 :-P, and chance you could do a
+quick experiment and see if you're seeing a difference on your setup?
 
+Thanks!!
 
+					 - Ted
