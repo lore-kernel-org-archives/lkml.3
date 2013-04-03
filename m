@@ -1,101 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761878Ab3DCMWN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 08:22:13 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36169 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760643Ab3DCMWL (ORCPT
+	id S1761959Ab3DCMWV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 08:22:21 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:41537 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761939Ab3DCMWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 08:22:11 -0400
-Date: Wed, 3 Apr 2013 15:21:50 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Florian Fainelli <florian@openwrt.org>
-CC: <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        <arnd@arndb.de>, <gregkh@linuxfoundation.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 1/5 v2] USB: regroup all depends on USB within an if USB
- block
-Message-ID: <20130403122150.GZ25837@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <Pine.LNX.4.44L0.1304021359130.1314-100000@iolanthe.rowland.org>
- <515C1C61.50301@openwrt.org>
- <20130403121503.GY25837@arwen.pp.htv.fi>
- <515C1E0C.4070306@openwrt.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6JAe/4X0qssghT2u"
-Content-Disposition: inline
-In-Reply-To: <515C1E0C.4070306@openwrt.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 3 Apr 2013 08:22:15 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, namhyung.kim@lge.com
+Subject: [PATCH v6 0/2] perf: use hrtimer for event multiplexing
+Date: Wed,  3 Apr 2013 14:21:32 +0200
+Message-Id: <1364991694-5876-1-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---6JAe/4X0qssghT2u
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The current scheme of using the timer tick was fine
+for per-thread events. However, it was causing
+bias issues in system-wide mode (including for
+uncore PMUs). Event groups would not get their
+fair share of runtime on the PMU. With tickless
+kernels, if a core is idle there is no timer tick,
+and thus no event rotation (multiplexing). However,
+there are events (especially uncore events) which do
+count even though cores are asleep.
 
-On Wed, Apr 03, 2013 at 02:18:20PM +0200, Florian Fainelli wrote:
-> Le 04/03/13 14:15, Felipe Balbi a =E9crit :
-> >On Wed, Apr 03, 2013 at 02:11:13PM +0200, Florian Fainelli wrote:
-> >>Le 04/02/13 20:06, Alan Stern a =E9crit :
-> >>>On Tue, 2 Apr 2013, Florian Fainelli wrote:
-> >>>
-> >>>>This patch removes the depends on USB from all config symbols in
-> >>>>drivers/usb/host/Kconfig and replace that with an if USB / endif block
-> >>>>as suggested by Alan Stern. Some source ... Kconfig lines have been
-> >>>>shuffled around to permit a better regroupment of the Kconfig files
-> >>>>depending on "config USB" item. No functionnal change is introduced.
-> >>>
-> >>>This looks almost right.  The only problem I see is in
-> >>>drivers/usb/core/Kconfig.  The USB_OTG_WHITELIST and
-> >>>USB_OTG_BLACKLIST_HUB symbols don't have to depend on USB or USB_OTG,
-> >>>because they can be set if EXPERT is enabled.
-> >>>
-> >>>To avoid these issues, I think the best approach is to move all the
-> >>>USB_OTG* entries over to drivers/usb/otg/Kconfig, where by rights they
-> >>>should have been all along.
-> >>>
-> >>>Felipe, do you agree?
-> >>
-> >>Make sense, I will make this a sixth patch to this serie if this
-> >>sounds right with you?
-> >
-> >Pleae don't. Look at my 'next' branch. I deleted drivers/usb/otg/
-> >completely. OTG should be part of usbcore and I have plans of adding
-> >generic (and optional) OTG hooks in there.
->=20
-> Ok, then I will leave it as it is now and simply address the comment
-> your made initially, does that fit both you and Alan? Thanks!
+This patch changes the timer source for multiplexing.
+It introduces a per-cpu hrtimer. The advantage is that
+even when the core goes idle, it will come back to
+service the hrtimer, thus multiplexing on system-wide
+events works much better.
 
-Fine by me, if something else needs to go, then we can tackle it during
--rc or for v3.11.
+In order to minimize the impact of the hrtimer, it
+is turned on and off on demand. When the PMU on
+a CPU is overcommitted, the hrtimer is activated.
+It is stopped when the PMU is not overcommitted.
 
---=20
-balbi
+In order for this to work properly with HOTPLUG_CPU,
+we had to change the order of initialization in
+start_kernel() such that hrtimer_init() is run
+before perf_event_init().
 
---6JAe/4X0qssghT2u
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The second patch provide a sysctl control to
+adjust the multiplexing interval. Unit is
+milliseconds.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Here is a simple before/after example with
+two event groups which do require multiplexing.
+This is done in system-wide mode on an idle
+system. What matters here is the scaling factor
+in [] in not the total counts.
 
-iQIcBAEBAgAGBQJRXB7eAAoJEIaOsuA1yqRECboP/AiFom6B/6WgDPwvPch/1ZDG
-/S5tNF7Yq9PJt9Tl06AqQU3Srm8E923+wtJUQ9WUQr8tKFycJryi+9NeJA5CgW+g
-zuEYXywz4fn2wLzHoSir1+anS2rEPs/1bwPsyEKGSGLmK1M3NJqvQSLX3VbhhNgi
-k8FysKgBXl6yjc+Em5B0io7hF3iFCLzCfKsmcm52L1ZQxFHjMjiWXz2PajdC8+Qu
-lJtVemGnRCgTLZoQYFeT0rbOlItT2hE5wg3hXjYfSeru10TU8z98NFSUMPoNnO7v
-71voyxC7vlP9xZLEQBmCOYyQk+NNBg8DoQHQu3NTEFZUrAE3FtQZAB8/maxiO/w+
-QLU9JlhzEx3WmoRHOkIZPiKeWpN8bqR1HD95wrPhzSGr/YJsgGuSN3WzFwm53mDW
-//83aZ5O1xskkfm/sfQhey7RQg1eKSBKYzfjTeNcgKoQK9p+9CF9HCwqK6N3GRaG
-s4dMTkYZ+V/tOXSf1CuHk8unI50WBNwXuX6TvopxZEFy7ViM7U31QSxIboNT/c+o
-1J8n096uEw8oHcY372LRPWwlQfgOq4MHJOmAu9FqtXrJaGhL3u9RWaKQNVrVwwZW
-PqhpyuGKJzFVli/7h7h0z2DzDI3tiDbUfx+iUSuDeVAmy8DuyiB1otUxfUwaafZ3
-OvWb4Ia4wHuiI4puEXkD
-=MHO5
------END PGP SIGNATURE-----
+Before:
 
---6JAe/4X0qssghT2u--
+# perf stat -a -e ref-cycles,ref-cycles sleep 10
+ Performance counter stats for 'sleep 10':
+ 34,319,545 ref-cycles  [56.51%]
+ 31,917,229 ref-cycles  [43.50%]
+
+ 10.000827569 seconds time elapsed
+
+After:
+# perf stat -a -e ref-cycles,ref-cycles sleep 10
+ Performance counter stats for 'sleep 10':
+ 11,144,822,193 ref-cycles [50.00%]
+ 11,103,760,513 ref-cycles [50.00%]
+
+ 10.000672946 seconds time elapsed
+
+What matters here is the 50% not the actual
+count. Ref-cycles runs only on one fixed counter.
+With two instances, each should get 50% of the PMU
+which is now true. This helps mitigate the error
+introduced by the scaling.
+
+In this second version of the patchset, we now
+have the hrtimer_interval per PMU instance. The
+tunable is in /sys/devices/XXX/mux_interval_ms,
+where XXX is the name of the PMU instance. Due
+to initialization changes of each hrtimer, we
+had to introduce hrtimer_init_cpu() to initialize
+a hrtimer from another CPU.
+
+In the 3rd version, we simplify the code a bit
+by using hrtimer_active(). We stopped using
+the rotation_list for perf_cpu_hrtimer_cancel().
+We also fix an intialization problem.
+
+In the 4th version, we rebase to 3.8.0-rc7 and
+we kept SW event on the rotation list which is
+now used only for unthrottling. We also renamed
+the sysfs tunable to perf_event_mux_interval_ms
+to be more consistent with the existing sysctl
+entries.
+
+In the 5th version, we modified the code such
+that a new hrtimer interval is applied immediately
+to any active hrtimer as suggested by Jiri Olsa.
+Also got rid of the CPU notifier for hrtimer, it
+was useless and unreliable. The code is rebased to
+3.9.0-rc3.
+
+In the 6th version, we integrated peterz' comments
+and remove the irq masking/unmasking for the hrtimer
+handler. It was redundant for core hrtimer code which
+already block interrupts. We also rebased to 3.9.0-rc5.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+Stephane Eranian (2):
+  perf: use hrtimer for event multiplexing
+  perf: add sysfs entry to adjust multiplexing interval per PMU
+
+ include/linux/perf_event.h |    4 +-
+ init/main.c                |    2 +-
+ kernel/events/core.c       |  173 +++++++++++++++++++++++++++++++++++++++++---
+ 3 files changed, 167 insertions(+), 12 deletions(-)
+
+-- 
+1.7.9.5
+
