@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762599Ab3DCM37 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 08:29:59 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:63355 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762264Ab3DCM36 (ORCPT
+	id S1762224Ab3DCMaN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 08:30:13 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:50568 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759574Ab3DCMaL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 08:29:58 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: "Theodore Ts'o" <tytso@mit.edu>, Christian Kujau <lists@nerdbynature.de>,
-        CAI Qian <caiqian@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] ext4: fix a big-endian bug when an extent is zeroed out
-In-Reply-To: <20130403122058.GB7741@thunk.org>
-References: <87fvzaspr8.fsf@openvz.org> <874841142.414482.1364875584266.JavaMail.root@redhat.com> <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org> <877gkls1q7.fsf@openvz.org> <alpine.DEB.2.10.1304021430480.13746@trent.utfs.org> <87r4isd1vn.fsf@openvz.org> <alpine.DEB.2.10.1304021611020.13746@trent.utfs.org> <87li90q9mx.fsf@openvz.org> <87hajoq6s2.fsf@openvz.org> <20130403102204.GA15383@gmail.com> <20130403122058.GB7741@thunk.org>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Wed, 03 Apr 2013 16:29:52 +0400
-Message-ID: <87bo9vre4f.fsf@openvz.org>
+	Wed, 3 Apr 2013 08:30:11 -0400
+Date: Wed, 03 Apr 2013 07:30:08 -0500
+From: Rob Landley <rob@landley.net>
+Subject: [RFC] rootmpfs
+To: linux-kernel@vger.kernel.org
+X-Mailer: Balsa 2.4.11
+Message-Id: <1364992208.18069.18@driftwood>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Apr 2013 08:20:58 -0400, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Wed, Apr 03, 2013 at 06:22:04PM +0800, Zheng Liu wrote:
-> > Subject: [PATCH] ext4: fix a big-endian bug when an extent is zeroed out
-> > 
-> > From: Zheng Liu <wenqing.lz@taobao.com>
-> > 
-> > When an extent was zeroed out, we forgot to do convert from cpu to le16.
-> > It could make us hit a BUG_ON when we try to write dirty pages out.  So
-> > fix it.
-> > 
-> > Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
-> 
-> Thanks for finding this!  I think we should push this to Linus right
-> away, and not wait for the next merge window.  The bug has been here
-> for a long time, but it was unmasked by the fact that we unbroke
-> extent zeroing in 3.9-rcX.
-IMHO you have to pick this one http://patchwork.ozlabs.org/patch/233397
-because it also fix  ext_to_indirect_migration and inode's csum
-> 
-> I have two big questions.  (1) Shouldn't Eric Whitney have picked this
-> up with his ARM pandaboard testing, since IIRC it's big-endian as
-> well?  If not, is there something we can do to improve our testing wrt
-> to big-endian systems?
-> 
-> And (2) does it make sense to have an inline function
-> ext4_ext_set_len(len)?  It might save some lines of code, but more
-> importantly, it might make it less likely that we will overlook this
-> sort of bug in the future.
-Let's live it for now, later I'll cleanup/optimize this 'zero_ex'
-at least from from ext4_split_extent_at because at the end we are shure
-that 'ex' is fully mapped and initialized
-> 
-> 					- Ted
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Attached is my quick and dirty hack to make rootfs be tmpfs when  
+CONFIG_TMPFS is
+enabled. It can't be this easy or somebody would have done it in the  
+_eight_years_
+since https://lkml.org/lkml/2006/7/31/145
+
+Yes, it's got an #ifdef and out of place prototypes. Yes, it manually  
+calls a module
+init function and compensates by making it reentrant. But it works, and  
+when I
+"cat /dev/zero > filename" the filesystem fills _up_ instead of  
+panicing the kernel.
+
+So now that I've posted the error, would someone please tell me how I  
+_should_ have done it?
+
+Rob
+
+P.S. If I actually change the filesystem type to a name other than  
+"rootfs", it panics on the way up because various bits of the kernel  
+are looking for that magic name. Sigh.
+
+P.P.S. removing MS_NOUSER is actually intentional, there's a local cray  
+patch that does the same thing because otherwise you can't --bind mount  
+directories out of this filesystem, which is a thing they wanted to do.
