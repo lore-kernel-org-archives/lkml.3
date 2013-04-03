@@ -1,80 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762498Ab3DCRGT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 13:06:19 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:33049 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760213Ab3DCRGQ (ORCPT
+	id S1762560Ab3DCRGX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 13:06:23 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:36842 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760213Ab3DCRGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 13:06:16 -0400
+	Wed, 3 Apr 2013 13:06:20 -0400
+Date: Wed, 3 Apr 2013 14:06:10 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 03/10] perf sort: Add 'addr' sort key
+Message-ID: <20130403170610.GA5493@ghostprotocols.net>
+References: <1364991979-3008-1-git-send-email-namhyung@kernel.org>
+ <1364991979-3008-4-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <5144849A.8050907@metafoo.de>
-References: <1363364801-23684-1-git-send-email-ch.naveen@samsung.com>
-	<51439846.9090201@metafoo.de>
-	<CAD=FV=V+-DwCjGoookySCazazBBYOoRO+=G5Q_WXAw+SrXNc-A@mail.gmail.com>
-	<5144849A.8050907@metafoo.de>
-Date: Wed, 3 Apr 2013 10:06:14 -0700
-X-Google-Sender-Auth: yHxoJXnYms1MdD_Xvt_zEREJtYI
-Message-ID: <CAD=FV=VBYHyD6yXBrM1BV3gazDFT0oHgvJM0+5LU1w4AO16Yzg@mail.gmail.com>
-Subject: Re: [RFC: PATCH 2/2] iio: adc: exynos_adc: Handle timeout and race conditions
-From: Doug Anderson <dianders@chromium.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-iio <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Naveen Krishna <naveenkrishna.ch@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364991979-3008-4-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lars,
+What I expected was that the result was this:
 
-On Sat, Mar 16, 2013 at 7:41 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
-> I think you still need the mutex for serialization, otherwise the requests
-> would just cancel each other out. Btw. what happens if you start a conversion
-> while another is still in progress? Is it possible to abort a conversion?
+perf report --sort addr | grep -v ^# | sort -k2 -n | less
 
-I was thinking that the spinlock would just replace the mutex for the
-purposes of serialization.
+And in hexadecimal, can you fix this?
 
-I stepped back a bit, though, and I'm wondering if we're over-thinking
-things.  The timeout case should certainly be handled properly (thanks
-for pointing it out), but getting a timeout is really not expected and
-adding a lot of extra overhead to handle it elegantly seems a bit
-much?
+- Arnaldo
 
-Specifically, the mutex means that we have one user of the ADC at a
-time, and ADC conversion has nothing variable about it.  The user
-manual that I have access to talks about 12-bit conversion happening
-in 1 microsecond with a 5MHz input clock or 5 microseconds with a 1MHz
-input clock.  Even if someone has clocks configured very differently,
-it would be hard to imagine a conversion actually taking a full
-second.
+Em Wed, Apr 03, 2013 at 09:26:12PM +0900, Namhyung Kim escreveu:
+>  static void hists__set_unres_dso_col_len(struct hists *hists, int dso)
+> diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+> index 14c2fe20aa62..9599f805828f 100644
+> --- a/tools/perf/util/hist.h
+> +++ b/tools/perf/util/hist.h
+> @@ -43,12 +43,13 @@ enum hist_column {
+>  	HISTC_COMM,
+>  	HISTC_PARENT,
+>  	HISTC_CPU,
+> +	HISTC_SRCLINE,
 
-...so that means that if the timeout actually fires then something
-else fairly drastic has gone wrong.  It's _very_ unlikely that the IRQ
-will still go off for this conversion sometime in the future.
+Why move SRCLINE?
 
-To me, total modifications to what's landed already ought to be:
-
-* Change timeout to long (from unsigned long)
-
-* Make sure we return errors (negative results) from
-wait_for_completion_interruptible_timeout() properly.
-
-* If we get back a value of 0 from
-wait_for_completion_interruptible_timeout() then we should print a
-warning and attempt machinations to reset the ADC.  Without ever
-seeing real-world situtations that would cause a real timeout these
-machinations would be a bit of a guess (is resetting the adc useful
-when it's more likely that someone accidentally messed with the clock
-tree or power gated the ADC?)...  ...or perhaps a warning and a TODO
-in the code would be enough?
-
-
-Thoughts?
-
--Doug
+> +	HISTC_ADDR,
+>  	HISTC_MISPREDICT,
+>  	HISTC_SYMBOL_FROM,
+>  	HISTC_SYMBOL_TO,
+>  	HISTC_DSO_FROM,
+>  	HISTC_DSO_TO,
+> -	HISTC_SRCLINE,
+>  	HISTC_LOCAL_WEIGHT,
+>  	HISTC_GLOBAL_WEIGHT,
+>  	HISTC_MEM_DADDR_SYMBOL,
+> diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+> index 1dbf16949250..5640a95b3575 100644
+> --- a/tools/perf/util/sort.c
+> +++ b/tools/perf/util/sort.c
+> @@ -342,6 +342,34 @@ struct sort_entry sort_cpu = {
+>  	.se_width_idx	= HISTC_CPU,
+>  };
+>  
+> +/* --sort addr */
+> +
+> +static int64_t
+> +sort__addr_cmp(struct hist_entry *left, struct hist_entry *right)
+> +{
+> +	return right->ip - left->ip;
+> +}
+> +
+> +static int hist_entry__addr_snprintf(struct hist_entry *self, char *bf,
+> +				     size_t size, unsigned int width)
+> +{
+> +	struct map *map = self->ms.map;
+> +	u64 addr = self->ip;
+> +
+> +	if (map)
+> +		addr = map->unmap_ip(map, self->ip);
+> +
+> +	return repsep_snprintf(bf, size, "%#*llu", width, addr);
+> +}
+> +
+> +struct sort_entry sort_addr = {
+> +	.se_header      = "Address",
+> +	.se_cmp	        = sort__addr_cmp,
+> +	.se_snprintf    = hist_entry__addr_snprintf,
+> +	.se_width_idx	= HISTC_ADDR,
+> +};
+> +
+> +
+>  /* sort keys for branch stacks */
+>  
+>  static int64_t
+> @@ -871,6 +899,7 @@ static struct sort_dimension common_sort_dimensions[] = {
+>  	DIM(SORT_PARENT, "parent", sort_parent),
+>  	DIM(SORT_CPU, "cpu", sort_cpu),
+>  	DIM(SORT_SRCLINE, "srcline", sort_srcline),
+> +	DIM(SORT_ADDR, "addr", sort_addr),
+>  };
+>  
+>  #undef DIM
+> diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+> index 0232d476da87..0815e344f38c 100644
+> --- a/tools/perf/util/sort.h
+> +++ b/tools/perf/util/sort.h
+> @@ -138,6 +138,7 @@ enum sort_type {
+>  	SORT_PARENT,
+>  	SORT_CPU,
+>  	SORT_SRCLINE,
+> +	SORT_ADDR,
+>  
+>  	/* branch stack specific sort keys */
+>  	__SORT_BRANCH_STACK,
+> -- 
+> 1.7.11.7
