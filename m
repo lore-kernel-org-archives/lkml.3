@@ -1,170 +1,809 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759487Ab3DCN5W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 09:57:22 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58424 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757908Ab3DCN5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 09:57:20 -0400
-Date: Wed, 3 Apr 2013 16:56:59 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Vivek Gautam <gautamvivek1987@gmail.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>, <linux-usb@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <stern@rowland.harvard.edu>, <sarah.a.sharp@linux.intel.com>,
-        <rob.herring@calxeda.com>, <kgene.kim@samsung.com>,
-        <dianders@chromium.org>, <t.figa@samsung.com>, <p.paneri@samsung.com>
-Subject: Re: [PATCH v3 01/11] usb: phy: Add APIs for runtime power management
-Message-ID: <20130403135659.GH14680@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com>
- <1364824448-14732-2-git-send-email-gautam.vivek@samsung.com>
- <515BB951.40702@ti.com>
- <CAFp+6iG8WdWHXVCANx77OiTXLeZ-4qE4jySWqPLhfR1KOEP4fw@mail.gmail.com>
- <20130403081532.GE25837@arwen.pp.htv.fi>
- <CAFp+6iHXW8z2sc44c1hq2au_UnUyVZEr9D0t5BM4mfqcQKZgbA@mail.gmail.com>
- <20130403135414.GG14680@arwen.pp.htv.fi>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nywXBoy70X0GaB8B"
-Content-Disposition: inline
-In-Reply-To: <20130403135414.GG14680@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758978Ab3DCN7M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 09:59:12 -0400
+Received: from atlantis.wh2.tu-dresden.de ([141.30.228.39]:38770 "EHLO
+	atlantis.wh2.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757808Ab3DCN7L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 09:59:11 -0400
+From: Lars Poeschel <larsi@wh2.tu-dresden.de>
+To: poeschel@lemonage.de, thierry.reding@avionic-design.de, rob@landley.net,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: [PATCH v1] pwm: add sysfs interface
+Date: Wed,  3 Apr 2013 15:58:55 +0200
+Message-Id: <1364997536-9246-1-git-send-email-larsi@wh2.tu-dresden.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nywXBoy70X0GaB8B
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Lars Poeschel <poeschel@lemonage.de>
 
-Hi,
+This adds a simple sysfs interface to the pwm subsystem. It is
+heavily inspired by the gpio sysfs interface.
 
-On Wed, Apr 03, 2013 at 04:54:14PM +0300, Felipe Balbi wrote:
-> > >> >> +static inline void usb_phy_autopm_enable(struct usb_phy *x)
-> > >> >> +{
-> > >> >> +       if (!x || !x->dev) {
-> > >> >> +               dev_err(x->dev, "no PHY or attached device availa=
-ble\n");
-> > >> >> +               return;
-> > >> >> +               }
-> > >> >> +
-> > >> >> +       pm_runtime_enable(x->dev);
-> > >> >> +}
-> > >> >
-> > >> >
-> > >> > IMO we need not have wrapper APIs for runtime_enable and runtime_d=
-isable
-> > >> > here. Generally runtime_enable and runtime_disable is done in prob=
-e and
-> > >> > remove of a driver respectively. So it's better to leave the
-> > >> > runtime_enable/runtime_disable to be done in *phy provider* driver=
- than
-> > >> > having an API for it to be done by *phy user* driver. Felipe, what=
- do you
-> > >> > think?
-> > >>
-> > >> Thanks!!
-> > >> That's very true, runtime_enable() and runtime_disable() calls are m=
-ade by
-> > >> *phy_provider* only. But a querry here.
-> > >> Wouldn't in any case a PHY consumer might want to disable runtime_pm=
- on PHY ?
-> > >> Say, when consumer failed to suspend the PHY properly
-> > >> (*put_sync(phy->dev)* fails), how much sure is the consumer about the
-> > >> state of PHY ?
-> > >
-> > > no no, wait a minute. We might not want to enable runtime pm for the =
-PHY
-> > > until the UDC says it can handle runtime pm, no ? I guess this makes a
-> > > bit of sense (at least in my head :-p).
-> > >
-> > > Imagine if PHY is runtime suspended but e.g. DWC3 isn't runtime pm
-> > > enabled... Does it make sense to leave that control to the USB
-> > > controller drivers ?
-> > >
-> > > I'm open for suggestions
-> >=20
-> > Of course unless the PHY consumer can handle runtime PM for PHY,
-> > PHY should not ideally be going into runtime_suspend.
-> >=20
-> > Actually trying out few things, here are my observations
-> >=20
-> > Enabling runtime_pm on PHY pushes PHY to go into runtime_suspend state.
-> > But a device detection wakes up DWC3 controller, and if i don't wake
-> > up PHY (using get_sync(phy->dev)) here
-> > in runtime_resume() callback of DWC3, i don't get PHY back in active st=
-ate.
-> > So it becomes the duty of DWC3 controller to handle PHY's sleep and wak=
-e-up.
-> > Thereby it becomes logical that DWC3 controller has the right to
-> > enable runtime_pm
-> > of PHY.
-> >=20
-> > But there's a catch here. if there are multiple consumers of PHY (like
-> > USB2 type PHY can
-> > have DWC3 controller as well as EHCI/OHCI or even HSGadget) then in tha=
-t case,
-> > only one of the consumer can enable runtime_pm on PHY. So who decides t=
-his.
-> >=20
-> > Aargh!! lot of confusion here :-(
->=20
->=20
-> hmmm, maybe add a flag to struct usb_phy and check it on
-> usb_phy_autopm_enable() ??
->=20
-> How does usbcore handle it ? They request class drivers to pass
-> supports_autosuspend, but while we should have a similar flag, that's
-> not enough. We also need a flag to tell us when pm_runtime has already
-> been enabled.
->=20
-> So how about:
->=20
-> usb_phy_autopm_enable()
-> {
-> 	if (!phy->suports_autosuspend)
-> 		return -ENOSYS;
->=20
-> 	if (phy->autosuspend_enabled)
-> 		return 0;
->=20
-> 	phy->autosuspend_enabled =3D true;
-> 	return pm_runtime_enable(phy->dev);
-> }
->=20
-> ???
+        /sys/class/pwm
+                /export ... asks the kernel to export a PWM to userspace
+                /unexport ... to return a PWM to the kernel
+            /pwmN ... for each exported PWM #N
+            /duty_ns ... r/w, length of duty portion
+            /period_ns ... r/w, length of the pwm period
+            /polarity ... r/w, normal(0) or inverse(1) polarity
+                               only created if driver supports it
+            /run ... r/w, write 1 to start and 0 to stop the pwm
+        /pwmchipN ... for each pwmchip; #N is its first PWM
+            /base ... (r/o) same as N
+            /ngpio ... (r/o) number of PWM; numbered N .. MAX_PWMS
 
-and of course I missed the fact that pm_runtime_enable returns nothing
-:-) But you got my point.
+Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+---
+since PATCH RFC:
 
---=20
-balbi
+* updated documentation
+* added ABI doc
+* use default group functionality when exposing files to userspace
 
---nywXBoy70X0GaB8B
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ create mode 100644 Documentation/ABI/testing/sysfs-class-pwm
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/Documentation/ABI/testing/sysfs-class-pwm b/Documentation/ABI/testing/sysfs-class-pwm
+new file mode 100644
+index 0000000..e9be1a3
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-class-pwm
+@@ -0,0 +1,37 @@
++What:		/sys/class/pwm/
++Date:		March 2013
++KernelVersion:	3.11
++Contact:	Lars Poeschel <poeschel@lemonage.de>
++Description:
++
++  The sysfs interface for PWM is selectable as a Kconfig option.
++  If a driver successfully probed a pwm chip, it appears at
++  /sys/class/pwm/pwmchipN/ where N is the number of it's first PWM channel. A
++  single driver may probe multiple chips. PWMs are identified as they are
++  inside the kernel, using integers in the range 0..MAX_PWMS. To use an
++  individual PWM, you have to explicitly export it by writing it's kernel
++  global number into the /sys/class/pwm/export file. Write it's number to
++  /sys/class/pwm/unexport to make the pwm available for other uses.
++  After a PWM channel is exported, it is available under
++  /sys/class/pwm/pwmN/. Under this directory you can set the parameters for
++  this PWM channel and at least let it start running.
++  See below for the parameters.
++  It is recommended to set the period_ns at first and the duty_ns after that.
++
++  See Documentation/pwm.txt for more information.
++
++Directory structure:
++
++	/sys/class/pwm
++		/export ... asks the kernel to export a PWM to userspace
++		/unexport ... to return a PWM to the kernel
++		/pwmN ... for each exported PWM #N
++			/duty_ns ... r/w, length of duty portion
++			/period_ns ... r/w, length of the pwm period
++			/polarity ... r/w, normal(0) or inverse(1) polarity
++					only created if driver supports it
++			/run ... r/w, write 1 to start and 0 to stop the pwm
++		/pwmchipN ... for each pwmchip; #N is its first PWM
++			/base ... (r/o) same as N
++			/ngpio ... (r/o) number of PWM; numbered N .. MAX_PWMS
++
+diff --git a/Documentation/pwm.txt b/Documentation/pwm.txt
+index 7d2b4c9..b349d16 100644
+--- a/Documentation/pwm.txt
++++ b/Documentation/pwm.txt
+@@ -45,6 +45,52 @@ int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns);
+ 
+ To start/stop toggling the PWM output use pwm_enable()/pwm_disable().
+ 
++Using PWMs with the sysfs interface
++-----------------------------------
++
++You have to enable CONFIG_PWM_SYSFS in your kernel configuration to use
++the sysfs interface. It is exposed at /sys/class/pwm/. If there are pwm
++drivers loaded and these drivers successfully probed a chip, this chip
++is exported as pwmchipX . Note that a single driver can probe multiple chips.
++Inside the directory you can read these properties:
++
++base - This is the linux global start where the chips pwm channels get
++exposed.
++
++npwm - This is the number of pwm channels this chip supports.
++
++If you want to start using a pwm channel with sysfs first you have to
++export it. If you are finished with it and want to free the pwm for other
++uses, you can unexport it:
++
++export - Write the global pwm channel number to this file to start using
++the channel with sysfs.
++
++unexport - Write the global pwm channel number of the channel you are finshed
++with to this file to make the channel available for other uses.
++
++Once a pwm is exported a pwmX (X ranging from 0 to MAX_PWMS) directory appears
++with the following read/write properties inside to control the pwm:
++
++duty_ns - Write the number of nanoseconds the active portion of the pwm period
++should last to this file. This can not be longer than the period_ns.
++
++period_ns - Write the length of the pwm period in nanoseconds to this file.
++This includes the active and inactive portion of the pwm period and can not
++be smaller than duty_ns.
++
++polarity - The normal behaviour is to put out a high for the active portion of
++the pwm period. Write a 1 to this file to inverse the signal and output a low
++on the active portion. Write a 0 to switch back to the normal behaviour. The
++polarity can only be changed if the pwm is not running. This file is only
++visible if the underlying driver/device supports changing the polarity.
++
++run - Write a 1 to this file to start the pwm signal generation, write a 0 to
++stop it. Set your desired period_ns, duty_ns and polarity before starting the
++pwm.
++
++It is recommend to set the period_ns at first and duty_ns after that.
++
+ Implementing a PWM driver
+ -------------------------
+ 
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index e513cd9..2f4200a 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -28,6 +28,18 @@ menuconfig PWM
+ 
+ if PWM
+ 
++config PWM_SYSFS
++	bool "/sys/class/pwm/... (sysfs interface)"
++	depends on SYSFS
++	help
++	  Say Y here to use a sysfs interface to control PWMs.
++
++	  For every instance of an PWM capable device there is a pwmchipX
++	  directory exported to /sys/class/pwm. If you want to use a PWM, you
++	  have to export it to sysfs, which is done by writing the number into
++	  /sys/class/pwm/export. After that /sys/class/pwm/pwmX is ready to be
++	  used.
++
+ config PWM_AB8500
+ 	tristate "AB8500 PWM support"
+ 	depends on AB8500_CORE && ARCH_U8500
+diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+index 903138b..0f2e40c 100644
+--- a/drivers/pwm/core.c
++++ b/drivers/pwm/core.c
+@@ -30,8 +30,6 @@
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
+ 
+-#define MAX_PWMS 1024
+-
+ /* flags in the third cell of the DT PWM specifier */
+ #define PWM_SPEC_POLARITY	(1 << 0)
+ 
+@@ -42,6 +40,465 @@ static LIST_HEAD(pwm_chips);
+ static DECLARE_BITMAP(allocated_pwms, MAX_PWMS);
+ static RADIX_TREE(pwm_tree, GFP_KERNEL);
+ 
++
++#ifdef CONFIG_PWM_SYSFS
++
++/* lock protects against unexport_pwm() being called while
++ * sysfs files are active.
++ */
++static DEFINE_MUTEX(sysfs_lock);
++static struct class pwm_class;
++static struct pwm_device *pwm_table[MAX_PWMS];
++
++/*
++ * /sys/class/pwm/pwm... only for PWMs that are exported
++ *   /polarity
++ *      * only visible if the underlying driver has registered a
++ *        set_polarity function
++ *      * always readable
++ *      * may be written as "1" for inverted polarity or "0" for
++ *        normal polarity
++ *      * can only be written if PWM is not running
++ *   /period_ns
++ *      * always readable
++ *      * write with desired pwm period in nanoseconds
++ *      * may return with error depending on duty_ns
++ *   /duty_ns
++ *      * always readable
++ *      * write with desired duty portion in nanoseconds
++ *      * may return with error depending on period_ns
++ *   /run
++ *      * always readable
++ *      * write with "1" to start generating pwm signal, "0" to stop it
++ */
++static ssize_t pwm_polarity_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	const struct pwm_device *pwm = dev_get_drvdata(dev);
++	ssize_t	status;
++
++	mutex_lock(&sysfs_lock);
++
++	if (!test_bit(PWMF_EXPORT, &pwm->flags))
++		status = -EIO;
++	else
++		status = sprintf(buf, "%d\n", pwm->polarity);
++
++	mutex_unlock(&sysfs_lock);
++
++	return status;
++}
++
++static ssize_t pwm_polarity_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t size)
++{
++	struct pwm_device *pwm = dev_get_drvdata(dev);
++	ssize_t status;
++
++	mutex_lock(&sysfs_lock);
++
++	if (!test_bit(PWMF_EXPORT, &pwm->flags))
++		status = -EIO;
++	else {
++		long value;
++
++		status = kstrtol(buf, 0, &value);
++		if (status == 0) {
++			if (value == 0) {
++				if (pwm->polarity == PWM_POLARITY_NORMAL)
++					goto fail_unlock;
++				status = pwm_set_polarity(pwm,
++							PWM_POLARITY_NORMAL);
++			} else {
++				if (pwm->polarity == PWM_POLARITY_INVERSED)
++					goto fail_unlock;
++				status = pwm_set_polarity(pwm,
++							PWM_POLARITY_INVERSED);
++			}
++		}
++	}
++
++fail_unlock:
++	mutex_unlock(&sysfs_lock);
++	return status ? : size;
++}
++
++static const DEVICE_ATTR(polarity, 0644,
++		pwm_polarity_show, pwm_polarity_store);
++
++
++static ssize_t pwm_period_ns_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	const struct pwm_device *pwm = dev_get_drvdata(dev);
++	ssize_t	status;
++
++	mutex_lock(&sysfs_lock);
++
++	if (!test_bit(PWMF_EXPORT, &pwm->flags))
++		status = -EIO;
++	else
++		status = sprintf(buf, "%d\n", pwm->period);
++
++	mutex_unlock(&sysfs_lock);
++
++	return status;
++}
++
++static ssize_t pwm_period_ns_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t size)
++{
++	struct pwm_device *pwm = dev_get_drvdata(dev);
++	ssize_t status;
++
++	mutex_lock(&sysfs_lock);
++
++	if (!test_bit(PWMF_EXPORT, &pwm->flags))
++		status = -EIO;
++	else {
++		long value;
++
++		status = kstrtol(buf, 0, &value);
++		if (status == 0) {
++			if (pwm->duty < 0)
++				pwm->period = value;
++			else
++				status = pwm_config(pwm, pwm->duty, value);
++		}
++	}
++
++	mutex_unlock(&sysfs_lock);
++
++	return status ? : size;
++}
++
++static ssize_t pwm_duty_ns_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	const struct pwm_device *pwm = dev_get_drvdata(dev);
++	ssize_t	status;
++
++	mutex_lock(&sysfs_lock);
++
++	if (!test_bit(PWMF_EXPORT, &pwm->flags))
++		status = -EIO;
++	else
++		status = sprintf(buf, "%d\n", pwm->duty);
++
++	mutex_unlock(&sysfs_lock);
++
++	return status;
++}
++
++static ssize_t pwm_duty_ns_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t size)
++{
++	struct pwm_device *pwm = dev_get_drvdata(dev);
++	ssize_t status;
++
++	mutex_lock(&sysfs_lock);
++
++	if (!test_bit(PWMF_EXPORT, &pwm->flags))
++		status = -EIO;
++	else {
++		long value;
++
++		status = kstrtol(buf, 0, &value);
++		if (status == 0) {
++			if (pwm->period <= 0)
++				pwm->duty = value;
++			else
++				status = pwm_config(pwm, value, pwm->period);
++		}
++	}
++
++	mutex_unlock(&sysfs_lock);
++
++	return status ? : size;
++}
++
++static ssize_t pwm_run_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	const struct pwm_device *pwm = dev_get_drvdata(dev);
++	ssize_t	status;
++
++	mutex_lock(&sysfs_lock);
++
++	if (!test_bit(PWMF_EXPORT, &pwm->flags))
++		status = -EIO;
++	else
++		status = sprintf(buf, "%d\n",
++				!!test_bit(PWMF_ENABLED, &pwm->flags));
++
++	mutex_unlock(&sysfs_lock);
++
++	return status;
++}
++
++static ssize_t pwm_run_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t size)
++{
++	struct pwm_device *pwm = dev_get_drvdata(dev);
++	ssize_t	status;
++
++	mutex_lock(&sysfs_lock);
++
++	if (!test_bit(PWMF_EXPORT, &pwm->flags))
++		status = -EIO;
++	else {
++		long		value;
++
++		status = kstrtol(buf, 0, &value);
++		if (status == 0) {
++			if (value)
++				status = pwm_enable(pwm);
++			else
++				pwm_disable(pwm);
++		}
++	}
++
++	mutex_unlock(&sysfs_lock);
++
++	return status ? : size;
++}
++
++static struct device_attribute pwm_dev_attrs[] = {
++	__ATTR(period_ns, 0644, pwm_period_ns_show, pwm_period_ns_store),
++	__ATTR(duty_ns, 0644, pwm_duty_ns_show, pwm_duty_ns_store),
++	__ATTR(run, 0644, pwm_run_show, pwm_run_store),
++	__ATTR_NULL,
++};
++
++/*
++ * /sys/class/pwm/pwmchipN/
++ *   /base ... matching pwm_chip.base (N)
++ *   /ngpio ... matching pwm_chip.npwm
++ */
++
++static ssize_t chip_base_show(struct device *dev,
++			       struct device_attribute *attr, char *buf)
++{
++	const struct pwm_chip	*chip = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%d\n", chip->base);
++}
++
++static ssize_t chip_npwm_show(struct device *dev,
++			       struct device_attribute *attr, char *buf)
++{
++	const struct pwm_chip	*chip = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%u\n", chip->npwm);
++}
++
++static int pwm_export(struct pwm_device *pwm)
++{
++	struct device *dev;
++	int status;
++
++	mutex_lock(&sysfs_lock);
++
++	if (!test_bit(PWMF_REQUESTED, &pwm->flags) ||
++		test_bit(PWMF_EXPORT, &pwm->flags)) {
++		pr_debug("pwm %d unavailable (requested=%d, exported=%d)\n",
++			pwm->pwm,
++			test_bit(PWMF_REQUESTED, &pwm->flags),
++			test_bit(PWMF_EXPORT, &pwm->flags));
++
++		status = -EPERM;
++		goto fail_unlock;
++	}
++
++	pwm_class.class_attrs = NULL;
++	pwm_class.dev_attrs = pwm_dev_attrs;
++	dev = device_create(&pwm_class, pwm->chip->dev, MKDEV(0, 0),
++			pwm, "pwm%u", pwm->pwm);
++	if (IS_ERR(dev)) {
++		status = PTR_ERR(dev);
++		goto fail_unlock;
++	}
++
++	if (pwm->chip->ops->set_polarity) {
++		status = device_create_file(dev, &dev_attr_polarity);
++		if (status)
++			goto fail_unregister_device;
++	}
++
++	set_bit(PWMF_EXPORT, &pwm->flags);
++	mutex_unlock(&sysfs_lock);
++	return 0;
++
++fail_unregister_device:
++	device_unregister(dev);
++fail_unlock:
++	mutex_unlock(&sysfs_lock);
++	return status;
++}
++
++static int match_export(struct device *dev, void *data)
++{
++	return dev_get_drvdata(dev) == data;
++}
++
++/*
++ * /sys/class/pwm/export ... write-only
++ *	integer N ... number of pwm to export (full access)
++ * /sys/class/pwm/unexport ... write-only
++ *	integer N ... number of pwm to unexport
++ */
++static ssize_t export_store(struct class *class,
++				struct class_attribute *attr,
++				const char *buf, size_t len)
++{
++	long pwm;
++	int status;
++	struct pwm_device *dev;
++	struct pwm_chip *chip;
++
++	status = kstrtol(buf, 0, &pwm);
++	if (status < 0)
++		goto done;
++
++	if (!pwm_is_valid(pwm) || !pwm_table[pwm]) {
++		status = -ENODEV;
++		goto done;
++	}
++	chip = pwm_table[pwm]->chip;
++	if (!chip) {
++		status = -ENODEV;
++		goto done;
++	}
++	dev = pwm_request_from_chip(chip, pwm - chip->base, "sysfs");
++	if (IS_ERR(dev)) {
++		status = -ENODEV;
++		goto done;
++	}
++	status = pwm_export(dev);
++	if (status < 0)
++		pwm_free(dev);
++done:
++	if (status)
++		pr_debug("%s: status %d\n", __func__, status);
++	return status ? : len;
++}
++
++static ssize_t unexport_store(struct class *class,
++				struct class_attribute *attr,
++				const char *buf, size_t len)
++{
++	long pwm;
++	int status;
++	struct pwm_device *dev;
++	struct device *d;
++
++	status = kstrtol(buf, 0, &pwm);
++	if (status < 0)
++		goto done;
++
++	status = -EINVAL;
++
++	/* reject bogus pwms */
++	if (!pwm_is_valid(pwm))
++		goto done;
++
++	dev = pwm_table[pwm];
++	if (dev && test_and_clear_bit(PWMF_EXPORT, &dev->flags)) {
++		d = class_find_device(&pwm_class, NULL, dev, match_export);
++		if (d)
++			device_unregister(d);
++		status = 0;
++		pwm_put(dev);
++	}
++done:
++	if (status)
++		pr_debug("%s: status %d\n", __func__, status);
++	return status ? : len;
++}
++
++static struct class_attribute pwmchip_class_attrs[] = {
++	__ATTR(export, 0200, NULL, export_store),
++	__ATTR(unexport, 0200, NULL, unexport_store),
++	__ATTR_NULL,
++};
++
++static struct device_attribute pwmchip_dev_attrs[] = {
++	__ATTR(base, 0444, chip_base_show, NULL),
++	__ATTR(npwm, 0444, chip_npwm_show, NULL),
++	__ATTR_NULL,
++};
++
++static struct class pwm_class = {
++	.name =		"pwm",
++	.owner =	THIS_MODULE,
++	.class_attrs =	pwmchip_class_attrs,
++	.dev_attrs =	pwmchip_dev_attrs,
++};
++
++static int pwmchip_export(struct pwm_chip *chip)
++{
++	struct device *dev;
++
++	mutex_lock(&sysfs_lock);
++	pwm_class.class_attrs = pwmchip_class_attrs;
++	pwm_class.dev_attrs = pwmchip_dev_attrs;
++	dev = device_create(&pwm_class, chip->dev, MKDEV(0, 0), chip,
++				"pwmchip%d", chip->base);
++
++	chip->exported = (!IS_ERR(dev));
++	mutex_unlock(&sysfs_lock);
++
++	if (chip->exported)
++		return 0;
++
++	return PTR_ERR(dev);
++}
++
++static void pwmchip_unexport(struct pwm_chip *chip)
++{
++	int status, i;
++	struct device *dev;
++
++	mutex_lock(&sysfs_lock);
++	dev = class_find_device(&pwm_class, NULL, chip, match_export);
++	if (dev) {
++		put_device(dev);
++		device_unregister(dev);
++		for (i = chip->base; i < chip->base + chip->npwm; i++)
++			pwm_table[i] = NULL;
++		chip->exported = 0;
++		status = 0;
++	} else
++		status = -ENODEV;
++	mutex_unlock(&sysfs_lock);
++
++	if (status)
++		pr_debug("%s: pwm chip status %d\n", __func__, status);
++}
++
++static int __init pwmlib_sysfs_init(void)
++{
++	int status;
++
++	status = class_register(&pwm_class);
++
++	return status;
++}
++postcore_initcall(pwmlib_sysfs_init);
++
++#else
++static inline int pwmchip_export(struct pwm_chip *chip)
++{
++	return 0;
++}
++
++static inline void pwmchip_unexport(struct pwm_chip *chip)
++{
++}
++
++#endif /* CONFIG_PWM_SYSFS */
++
++
+ static struct pwm_device *pwm_to_device(unsigned int pwm)
+ {
+ 	return radix_tree_lookup(&pwm_tree, pwm);
+@@ -77,8 +534,10 @@ static void free_pwms(struct pwm_chip *chip)
+ 	for (i = 0; i < chip->npwm; i++) {
+ 		struct pwm_device *pwm = &chip->pwms[i];
+ 		radix_tree_delete(&pwm_tree, pwm->pwm);
++#ifdef CONFIG_PWM_SYSFS
++		pwm_table[i + chip->base]->chip = NULL;
++#endif
+ 	}
+-
+ 	bitmap_clear(allocated_pwms, chip->base, chip->npwm);
+ 
+ 	kfree(chip->pwms);
+@@ -258,6 +717,9 @@ int pwmchip_add(struct pwm_chip *chip)
+ 		pwm->chip = chip;
+ 		pwm->pwm = chip->base + i;
+ 		pwm->hwpwm = i;
++#ifdef CONFIG_PWM_SYSFS
++		pwm_table[i + chip->base] = pwm;
++#endif
+ 
+ 		radix_tree_insert(&pwm_tree, pwm->pwm, pwm);
+ 	}
+@@ -272,6 +734,8 @@ int pwmchip_add(struct pwm_chip *chip)
+ 	if (IS_ENABLED(CONFIG_OF))
+ 		of_pwmchip_add(chip);
+ 
++	ret = pwmchip_export(chip);
++
+ out:
+ 	mutex_unlock(&pwm_lock);
+ 	return ret;
+@@ -307,6 +771,7 @@ int pwmchip_remove(struct pwm_chip *chip)
+ 		of_pwmchip_remove(chip);
+ 
+ 	free_pwms(chip);
++	pwmchip_unexport(chip);
+ 
+ out:
+ 	mutex_unlock(&pwm_lock);
+@@ -400,10 +865,19 @@ EXPORT_SYMBOL_GPL(pwm_free);
+  */
+ int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
+ {
++	int status;
++
+ 	if (!pwm || duty_ns < 0 || period_ns <= 0 || duty_ns > period_ns)
+ 		return -EINVAL;
+ 
+-	return pwm->chip->ops->config(pwm->chip, pwm, duty_ns, period_ns);
++	status = pwm->chip->ops->config(pwm->chip, pwm, duty_ns, period_ns);
++#ifdef CONFIG_PWM_SYSFS
++	if (status == 0) {
++		pwm->period = period_ns;
++		pwm->duty = duty_ns;
++	}
++#endif
++	return status;
+ }
+ EXPORT_SYMBOL_GPL(pwm_config);
+ 
+@@ -416,6 +890,8 @@ EXPORT_SYMBOL_GPL(pwm_config);
+  */
+ int pwm_set_polarity(struct pwm_device *pwm, enum pwm_polarity polarity)
+ {
++	int status;
++
+ 	if (!pwm || !pwm->chip->ops)
+ 		return -EINVAL;
+ 
+@@ -425,7 +901,12 @@ int pwm_set_polarity(struct pwm_device *pwm, enum pwm_polarity polarity)
+ 	if (test_bit(PWMF_ENABLED, &pwm->flags))
+ 		return -EBUSY;
+ 
+-	return pwm->chip->ops->set_polarity(pwm->chip, pwm, polarity);
++	status = pwm->chip->ops->set_polarity(pwm->chip, pwm, polarity);
++#ifdef CONFIG_PWM_SYSFS
++	if (!status)
++		pwm->polarity = polarity;
++#endif
++	return status;
+ }
+ EXPORT_SYMBOL_GPL(pwm_set_polarity);
+ 
+@@ -749,6 +1230,9 @@ static void pwm_dbg_show(struct pwm_chip *chip, struct seq_file *s)
+ 		if (test_bit(PWMF_ENABLED, &pwm->flags))
+ 			seq_printf(s, " enabled");
+ 
++		if (test_bit(PWMF_EXPORT, &pwm->flags))
++			seq_printf(s, " sysfs_exported");
++
+ 		seq_printf(s, "\n");
+ 	}
+ }
+diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+index 6d661f3..afc22c6 100644
+--- a/include/linux/pwm.h
++++ b/include/linux/pwm.h
+@@ -4,10 +4,27 @@
+ #include <linux/err.h>
+ #include <linux/of.h>
+ 
++#define MAX_PWMS 1024
++
+ struct pwm_device;
+ struct seq_file;
+ 
+ #if IS_ENABLED(CONFIG_PWM) || IS_ENABLED(CONFIG_HAVE_PWM)
++
++/*
++ * "valid" PWM numbers are nonnegative and may be passed to
++ * setup routines like pwm_get().  only some valid numbers
++ * can successfully be requested and used.
++ *
++ * Invalid PWM numbers are useful for indicating no-such-PWM in
++ * platform data and other tables.
++ */
++
++static inline bool pwm_is_valid(int number)
++{
++	return number >= 0 && number < MAX_PWMS;
++}
++
+ /*
+  * pwm_request - request a PWM device
+  */
+@@ -75,7 +92,8 @@ enum pwm_polarity {
+ 
+ enum {
+ 	PWMF_REQUESTED = 1 << 0,
+-	PWMF_ENABLED = 1 << 1,
++	PWMF_ENABLED = 1 << 1, /* set running via /sys/class/pwm/pwmX/run */
++	PWMF_EXPORT = 1 << 2, /* exported via /sys/class/pwm/export */
+ };
+ 
+ struct pwm_device {
+@@ -87,6 +105,10 @@ struct pwm_device {
+ 	void			*chip_data;
+ 
+ 	unsigned int		period; /* in nanoseconds */
++#ifdef CONFIG_PWM_SYSFS
++	unsigned int		duty; /* in nanoseconds */
++	enum pwm_polarity	polarity;
++#endif
+ };
+ 
+ static inline void pwm_set_period(struct pwm_device *pwm, unsigned int period)
+@@ -159,6 +181,9 @@ struct pwm_chip {
+ 	struct pwm_device *	(*of_xlate)(struct pwm_chip *pc,
+ 					    const struct of_phandle_args *args);
+ 	unsigned int		of_pwm_n_cells;
++#ifdef CONFIG_PWM_SYSFS
++	unsigned		exported:1;
++#endif
+ };
+ 
+ #if IS_ENABLED(CONFIG_PWM)
+-- 
+1.7.10.4
 
-iQIcBAEBAgAGBQJRXDUrAAoJEIaOsuA1yqREtFEP+gL//Z+0QrVOfr5WOruzqmn5
-EUs9vo5wNDNOgNjilLhlRRAoTYiNfr+m9v7eS3ckcl+lT+oEwy1iXX6G3dmvBnT2
-J9TQs/wbrmDHviq+TYyZxF2QJ181Remj/D1nnglsOrUf5oyCDOhWMDEfH7ML/013
-AwvqbyYNJPvwd2sTMYVtuPZmKjRSJ55UDZ2YXikDf9P4vjMcAInSRnylmpM9mDe4
-lZZcBN6Guuvn68HxwDo8osE68fJyT2/YRiGIloleoave2In6PjbQR6LhJ0xmcLqF
-8nFg31mFoWALHU/IApGLsm03m5Zc62o0axV6iVc5Qp3LanxmOx5/vJnRscd1sZxP
-U8RKyaLagyVL8ZJeURF6LsBOgGczEVCC6moqdkx5lYwKRYl8cQtdVwrGfRTkMlco
-dczpuGIc7mSFwEnvgeW7h619G7KrNd58eFJ1/UFQAw1v1eufAk80Xsd55V0diLpn
-v7Y6E2i/3TbSYfNt7pgUZGT05LJJG86sjeN1JAFA3doP6YV6J+ZNmjWGdtoskvUY
-6SacIvcVxIQjfc4+xdDALDD7YF3Iui65PhKZOWsP7mWKIXCIdYyBtdQfCr+aFM/y
-YwgHC+PUwqOmI+qEwf4/2lNR4jDNcTyxHklBLlsPVqqzN7NtLSk/TzJxvFBN0K0t
-ey8bLFnw/9vfW6Eh8Z7U
-=HUtF
------END PGP SIGNATURE-----
-
---nywXBoy70X0GaB8B--
