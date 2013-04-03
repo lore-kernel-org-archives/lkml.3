@@ -1,38 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763247Ab3DCTXs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 15:23:48 -0400
-Received: from smtp302.alice.it ([82.57.200.118]:59397 "EHLO smtp302.alice.it"
+	id S1763309Ab3DCTYG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 15:24:06 -0400
+Received: from fieldses.org ([174.143.236.118]:33662 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763028Ab3DCTXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 15:23:47 -0400
-Message-ID: <13dd159896e.giulianapasquale@alice.it>
-Date: Wed, 3 Apr 2013 21:22:18 +0200 (CEST)
-From: Mrs Lin lin <giulianapasquale@alice.it>
-Reply-To: dhlgroup139@yahoo.com.tr
-Subject: HELLO! DEAR, CONTACT DHL EXPRESS
-Mime-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 41.216.50.160
-To: unlisted-recipients:; (no To-header on input)
+	id S1763263Ab3DCTYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 15:24:04 -0400
+Date: Wed, 3 Apr 2013 15:24:00 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, tj@kernel.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH v1 4/6] nfsd: convert nfs4_alloc_stid to use
+ idr_alloc_cyclic
+Message-ID: <20130403192400.GH6044@fieldses.org>
+References: <1364390288-30968-1-git-send-email-jlayton@redhat.com>
+ <1364390288-30968-5-git-send-email-jlayton@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364390288-30968-5-git-send-email-jlayton@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HELLO! DEAR, GOOD NEWS TO YOU,
+ACK.--b.
 
-I have registered the ATM MASTER CARD with DHL COMPANY this morning as we
-agreed and the delivery will take off tomorrow
-
-morning based on my agreement with DHL
-Director  Dr Kelly Hall MOST IMPORTANT: reconfirm your current delivery 
-address
-to him then contact him via the following email:{dhlgroup139@yahoo.com.tr}+229
-68010281
-
-I will not be reached till June 20th, 2013. Your amount in the Card is US$1.5
-Million and the Pin code of your ATM CARD is: {0609}
-
-Thanks
-Mrs Lin lin
+On Wed, Mar 27, 2013 at 09:18:06AM -0400, Jeff Layton wrote:
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> Cc: "J. Bruce Fields" <bfields@fieldses.org>
+> Cc: linux-nfs@vger.kernel.org
+> ---
+>  fs/nfsd/nfs4state.c | 9 ++-------
+>  1 file changed, 2 insertions(+), 7 deletions(-)
+> 
+> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+> index 2e27430..2efb034 100644
+> --- a/fs/nfsd/nfs4state.c
+> +++ b/fs/nfsd/nfs4state.c
+> @@ -234,7 +234,6 @@ static struct nfs4_stid *nfs4_alloc_stid(struct nfs4_client *cl, struct
+>  kmem_cache *slab)
+>  {
+>  	struct idr *stateids = &cl->cl_stateids;
+> -	static int min_stateid = 0;
+>  	struct nfs4_stid *stid;
+>  	int new_id;
+>  
+> @@ -242,7 +241,7 @@ kmem_cache *slab)
+>  	if (!stid)
+>  		return NULL;
+>  
+> -	new_id = idr_alloc(stateids, stid, min_stateid, 0, GFP_KERNEL);
+> +	new_id = idr_alloc_cyclic(stateids, stid, 0, 0, GFP_KERNEL);
+>  	if (new_id < 0)
+>  		goto out_free;
+>  	stid->sc_client = cl;
+> @@ -261,10 +260,6 @@ kmem_cache *slab)
+>  	 * amount of time until an id is reused, by ensuring they always
+>  	 * "increase" (mod INT_MAX):
+>  	 */
+> -
+> -	min_stateid = new_id+1;
+> -	if (min_stateid == INT_MAX)
+> -		min_stateid = 0;
+>  	return stid;
+>  out_free:
+>  	kfree(stid);
+> @@ -1287,7 +1282,7 @@ static struct nfs4_client *create_client(struct xdr_netobj name,
+>  		spin_unlock(&nn->client_lock);
+>  		return NULL;
+>  	}
+> -	idr_init(&clp->cl_stateids);
+> +	idr_init_cyclic(&clp->cl_stateids, 0);
+>  	atomic_set(&clp->cl_refcount, 0);
+>  	clp->cl_cb_state = NFSD4_CB_UNKNOWN;
+>  	INIT_LIST_HEAD(&clp->cl_idhash);
+> -- 
+> 1.7.11.7
+> 
