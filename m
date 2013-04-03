@@ -1,135 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760802Ab3DCJhf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 05:37:35 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:57392 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab3DCJhc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 05:37:32 -0400
-Message-ID: <515BF847.1000808@linux.vnet.ibm.com>
-Date: Wed, 03 Apr 2013 17:37:11 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
-        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
-        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
-        mgorman@suse.de, riel@redhat.com
-Subject: Re: [patch v3 0/8] sched: use runnable avg in load balance
-References: <1364873008-3169-1-git-send-email-alex.shi@intel.com> <515A877B.3020908@linux.vnet.ibm.com> <515BEC5F.60001@intel.com>
-In-Reply-To: <515BEC5F.60001@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040309-1618-0000-0000-0000039EA8BA
+	id S1763297Ab3DCJls (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 05:41:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58952 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1763283Ab3DCJlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 05:41:46 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <28255253.1085258.1364957623947.JavaMail.root@redhat.com>
+References: <28255253.1085258.1364957623947.JavaMail.root@redhat.com> <1484037905.443048.1364884090669.JavaMail.root@redhat.com> <19926.1364924330@warthog.procyon.org.uk>
+To: CAI Qian <caiqian@redhat.com>
+Cc: dhowells@redhat.com, rusty@rustcorp.com.au,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: NULL pointer at kset_find_obj
+Date: Wed, 03 Apr 2013 10:41:41 +0100
+Message-ID: <9518.1364982101@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 04:46 PM, Alex Shi wrote:
-> On 04/02/2013 03:23 PM, Michael Wang wrote:
->> | 15 GB   |      12 | 45393 |   | 43986 |
->> | 15 GB   |      16 | 45110 |   | 45719 |
->> | 15 GB   |      24 | 41415 |   | 36813 |	-11.11%
->> | 15 GB   |      32 | 35988 |   | 34025 |
->>
->> The reason may caused by wake_affine()'s higher overhead, and pgbench is
->> really sensitive to this stuff...
-> 
-> Michael:
-> I changed the threshold to 0.1ms it has same effect on aim7.
-> So could you try the following on pgbench?
+CAI Qian <caiqian@redhat.com> wrote:
 
-Hi, Alex
+> > Can you check back earlier in the dmesg to see whether the kernel tried to
+> > load the key?  -11 is presumably -EAGAIN - in which case no such key was
+> > found
+> > (rather than there being a cached lookup failure which is what -ENOKEY would
+> > indicate).  It is possible that you encountered the key-not-yet-valid problem
+> > due to your h/w clock showing a value prior to the start date on the key.
+> Hmm, unsure about how to check it, but here is the full log prior the panic,
+> http://people.redhat.com/qcai/stable/log.key
 
-I've done some rough test and the change point should in 60000~120000,
-I'm currently running a auto test with value 500000, 250000, 120000,
-60000, 30000, 15000, 6000, 3000, 1500, it will take some time to finish
-the test, and we will gain detail info for analysis.
+This bit here:
 
-BTW, you know we have festival in China, so the report may be delayed,
-forgive me on that ;-)
+    [    2.693861] Loading module verification certificates 
+    [    2.698920] X.509: Cert 8b7774b08bc4ee9637073434c10f0823f6fbe523 is not yet valid 
+    [    2.706444] MODSIGN: Problem loading in-kernel X.509 certificate (-129) 
 
-Regards,
-Michael Wang
+After those lines, you have indeed managed to load some modules:
 
-> 
-> 
-> diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
-> index bf8086b..a3c3d43 100644
-> --- a/include/linux/sched/sysctl.h
-> +++ b/include/linux/sched/sysctl.h
-> @@ -53,6 +53,7 @@ extern unsigned int sysctl_numa_balancing_settle_count;
-> 
->  #ifdef CONFIG_SCHED_DEBUG
->  extern unsigned int sysctl_sched_migration_cost;
-> +extern unsigned int sysctl_sched_burst_threshold;
->  extern unsigned int sysctl_sched_nr_migrate;
->  extern unsigned int sysctl_sched_time_avg;
->  extern unsigned int sysctl_timer_migration;
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index dbaa8ca..dd5a324 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -91,6 +91,7 @@ unsigned int sysctl_sched_wakeup_granularity = 1000000UL;
->  unsigned int normalized_sysctl_sched_wakeup_granularity = 1000000UL;
-> 
->  const_debug unsigned int sysctl_sched_migration_cost = 500000UL;
-> +const_debug unsigned int sysctl_sched_burst_threshold = 100000UL;
-> 
->  /*
->   * The exponential sliding  window over which load is averaged for shares
-> @@ -3103,12 +3104,24 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
->  	unsigned long weight;
->  	int balanced;
->  	int runnable_avg;
-> +	int burst = 0;
-> 
->  	idx	  = sd->wake_idx;
->  	this_cpu  = smp_processor_id();
->  	prev_cpu  = task_cpu(p);
-> -	load	  = source_load(prev_cpu, idx);
-> -	this_load = target_load(this_cpu, idx);
-> +
-> +	if (cpu_rq(this_cpu)->avg_idle < sysctl_sched_burst_threshold ||
-> +		cpu_rq(prev_cpu)->avg_idle < sysctl_sched_burst_threshold)
-> +		burst= 1;
-> +
-> +	/* use instant load for bursty waking up */
-> +	if (!burst) {
-> +		load = source_load(prev_cpu, idx);
-> +		this_load = target_load(this_cpu, idx);
-> +	} else {
-> +		load = cpu_rq(prev_cpu)->load.weight;
-> +		this_load = cpu_rq(this_cpu)->load.weight;
-> +	}
-> 
->  	/*
->  	 * If sync wakeup then subtract the (maximum possible)
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index afc1dc6..1f23457 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -327,6 +327,13 @@ static struct ctl_table kern_table[] = {
->  		.proc_handler	= proc_dointvec,
->  	},
->  	{
-> +		.procname	= "sched_burst_threshold_ns",
-> +		.data		= &sysctl_sched_burst_threshold,
-> +		.maxlen		= sizeof(unsigned int),
-> +		.mode		= 0644,
-> +		.proc_handler	= proc_dointvec,
-> +	},
-> +	{
->  		.procname	= "sched_nr_migrate",
->  		.data		= &sysctl_sched_nr_migrate,
->  		.maxlen		= sizeof(unsigned int),
-> 
+    [   35.218540] Modules linked in: kvm(F+) microcode(F+) i2c_nforce2(F) edac_core(F) k8temp(F) shpchp(F) serio_raw(F) pcspkr(F) xfs(F) libcrc32c(F) sd_mod(F) crc_t10dif(F) sr_mod(F) cdrom(F) mptsas(F) radeon(F) i2c_algo_bit(F) scsi_transport_sas(F) drm_kms_helper(F) mptscsih(F) ttm(F) drm(F) mptbase(F) i2c_core(F) usb_storage(F) dm_mirror(F) dm_region_hash(F) dm_log(F) dm_mod(F) 
 
+Each of which appears to have incurred the:
+
+    [   34.917174] Request for unknown module key 'Magrathea: Glacier signing key: 8b7774b08bc4ee9637073434c10f0823f6fbe523' err -11 
+
+error.
+
+So that seems to be what I thought it was, but it doesn't seem to have been a
+problem for most modules.
+
+David
