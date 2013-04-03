@@ -1,37 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762172Ab3DCQui (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 12:50:38 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:43768 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760213Ab3DCQuh (ORCPT
+	id S1762298Ab3DCQwh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 12:52:37 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:43241 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760213Ab3DCQwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 12:50:37 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: Christian Kujau <lists@nerdbynature.de>
-Cc: CAI Qian <caiqian@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
-        linux-ext4@vger.kernel.org, Zheng Liu <gnehzuil.liu@gmail.com>
-Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591! (powerpc too!)
-In-Reply-To: <alpine.DEB.2.10.1304030935230.13746@trent.utfs.org>
-References: <2133129347.8273339.1364549222854.JavaMail.root@redhat.com> <87ip46ss0o.fsf@openvz.org> <1211053180.322948.1364797847717.JavaMail.root@redhat.com> <87fvzaspr8.fsf@openvz.org> <874841142.414482.1364875584266.JavaMail.root@redhat.com> <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org> <877gkls1q7.fsf@openvz.org> <alpine.DEB.2.10.1304021430480.13746@trent.utfs.org> <87r4isd1vn.fsf@openvz.org> <alpine.DEB.2.10.1304021611020.13746@trent.utfs.org> <87li90q9mx.fsf@openvz.org> <87hajoq6s2.fsf@openvz.org> <87eherri5i.fsf@openvz.org> <alpine.DEB.2.10.1304030935230.13746@trent.utfs.org>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Wed, 03 Apr 2013 20:50:31 +0400
-Message-ID: <87r4irpnhk.fsf@openvz.org>
+	Wed, 3 Apr 2013 12:52:36 -0400
+Message-ID: <515C5E4D.3090403@gmail.com>
+Date: Thu, 04 Apr 2013 00:52:29 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Christian Kujau <lists@nerdbynature.de>
+CC: Dmitry Monakhov <dmonakhov@openvz.org>, CAI Qian <caiqian@redhat.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
+        linux-ext4@vger.kernel.org
+Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591! (powerpc too!)
+References: <2133129347.8273339.1364549222854.JavaMail.root@redhat.com> <87ip46ss0o.fsf@openvz.org> <1211053180.322948.1364797847717.JavaMail.root@redhat.com> <87fvzaspr8.fsf@openvz.org> <874841142.414482.1364875584266.JavaMail.root@redhat.com> <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org> <877gkls1q7.fsf@openvz.org> <alpine.DEB.2.10.1304021430480.13746@trent.utfs.org> <87r4isd1vn.fsf@openvz.org> <alpine.DEB.2.10.1304021611020.13746@trent.utfs.org> <87li90q9mx.fsf@openvz.org> <87hajoq6s2.fsf@openvz.org> <87eherri5i.fsf@openvz.org> <alpine.DEB.2.10.1304030935230.13746@trent.utfs.org>
+In-Reply-To: <alpine.DEB.2.10.1304030935230.13746@trent.utfs.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Apr 2013 09:46:56 -0700 (PDT), Christian Kujau <lists@nerdbynature.de> wrote:
+On 04/04/2013 12:46 AM, Christian Kujau wrote:
 > On Wed, 3 Apr 2013 at 15:02, Dmitry Monakhov wrote:
-> > Good news big endian cpu owners
-> > Please try following patches(second is most important):
-> > http://patchwork.ozlabs.org/patch/233396/
-> > http://patchwork.ozlabs.org/patch/233397/
-> > I hope this should fix all known issues
+>> Good news big endian cpu owners
+>> Please try following patches(second is most important):
+>> http://patchwork.ozlabs.org/patch/233396/
+>> http://patchwork.ozlabs.org/patch/233397/
+>> I hope this should fix all known issues
 > 
 > Zheng Liu also sent a patch:
 > 
@@ -39,9 +40,6 @@ On Wed, 3 Apr 2013 09:46:56 -0700 (PDT), Christian Kujau <lists@nerdbynature.de>
 > 
 > When I try to apply all three of those to 3.9-4c4, the 2nd one from Dmitry 
 > fails:
-Yes. becase my patch was against ext4.git/dev so just ignore it.
-Teodore have sent a patch http://patchwork.ozlabs.org/patch/233555/
-This is most probable candidate for final fix.
 > 
 > $ cat ~/dev/002-ext4_fix-cpu_vs_disk-conversions.diff | patch --dry-run -p1
 > patching file fs/ext4/extents.c
@@ -87,10 +85,12 @@ This is most probable candidate for final fix.
 > Hunk #1 succeeded at 1956 (offset 8 lines).
 > Hunk #2 succeeded at 2060 (offset 8 lines).
 > Hunk #3 succeeded at 2079 (offset 8 lines).
-> 
-> 
-> Christian.
-> -- 
-> BOFH excuse #451:
-> 
-> astropneumatic oscillations in the water-cooling
+
+I guess that is because Dmitry's patch is against dev branch of ext4
+tree.  Please applied my patch.  I think it could fix the bug.  That
+would be great if you could give this patch a try [1].
+
+1. http://patchwork.ozlabs.org/patch/233555/
+
+Thanks,
+						- Zheng
