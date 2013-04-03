@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459Ab3DCO4l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:56:41 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19407 "EHLO
+	id S1762774Ab3DCO5m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:57:42 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:19491 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762487Ab3DCO4j (ORCPT
+	with ESMTP id S1760957Ab3DCO5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:56:39 -0400
+	Wed, 3 Apr 2013 10:57:40 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 03 Apr 2013 07:55:35 -0700
+	by hqnvupgp08.nvidia.com on Wed, 03 Apr 2013 07:57:30 -0700
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
 To: Peter De Schrijver <pdeschrijver@nvidia.com>
 CC: <linux-arm-kernel@lists.infradead.org>,
@@ -27,8 +27,8 @@ CC: <linux-arm-kernel@lists.infradead.org>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 Subject: [PATCH v9 13/14] ARM: dt: Add references to tegra_car clocks
-Date: Wed, 3 Apr 2013 17:40:47 +0300
-Message-ID: <1365000110-8916-14-git-send-email-pdeschrijver@nvidia.com>
+Date: Wed, 3 Apr 2013 17:40:48 +0300
+Message-ID: <1365000110-8916-15-git-send-email-pdeschrijver@nvidia.com>
 X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
 In-Reply-To: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
 References: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
