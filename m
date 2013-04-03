@@ -1,451 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762409Ab3DCFq7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 01:46:59 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:62297 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760457Ab3DCFq5 (ORCPT
+	id S1762490Ab3DCFxz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 01:53:55 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:58415 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762453Ab3DCFxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 01:46:57 -0400
+	Wed, 3 Apr 2013 01:53:54 -0400
+Message-ID: <515BC3E0.1080802@linux.vnet.ibm.com>
+Date: Wed, 03 Apr 2013 13:53:36 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <1364799360-23145-5-git-send-email-jaegeuk.kim@samsung.com>
-References: <1364799360-23145-1-git-send-email-jaegeuk.kim@samsung.com>
-	<1364799360-23145-5-git-send-email-jaegeuk.kim@samsung.com>
-Date: Wed, 3 Apr 2013 14:46:57 +0900
-Message-ID: <CAKYAXd_+6A4nXNKbguqwgSFSJxBDM+5ZmZ+KErX0hpfwd-ieyA@mail.gmail.com>
-Subject: Re: [PATCH 5/9] f2fs: change GC bitmaps to apply the section granularity
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
+To: Alex Shi <alex.shi@intel.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
+        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
+        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
+        mgorman@suse.de, riel@redhat.com
+Subject: Re: [patch v3 0/8] sched: use runnable avg in load balance
+References: <1364873008-3169-1-git-send-email-alex.shi@intel.com> <515A877B.3020908@linux.vnet.ibm.com> <515A9859.6000606@intel.com> <515B97FF.2040409@linux.vnet.ibm.com> <515B9A7A.6030807@intel.com> <515BA0B7.2090906@linux.vnet.ibm.com> <515BAFE6.1020804@intel.com> <515BC04C.6050403@linux.vnet.ibm.com>
+In-Reply-To: <515BC04C.6050403@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040305-4790-0000-0000-000007ADE05E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/1, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
-> This patch removes a bitmap for victim segments selected by foreground GC,
-> and
-> modifies the other bitmap for victim segments selected by background GC.
->
-> 1) foreground GC bitmap
->  : We don't need to manage this, since we just only one previous victim
-> section
->    number instead of the whole victim history.
->    The f2fs uses the victim section number in order not to allocate
-> currently
->    GC'ed section to current active logs.
->
-> 2) background GC bitmap
->  : This bitmap is used to avoid selecting victims repeatedly by background
-> GCs.
->    In addition, the victims are able to be selected by foreground GCs,
-> since
->    there is no need to read victim blocks during foreground GCs.
->
->    By the fact that the foreground GC reclaims segments in a section unit,
-> it'd
->    be better to manage this bitmap based on the section granularity.
->
-> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-> ---
->  fs/f2fs/checkpoint.c |  2 --
->  fs/f2fs/debug.c      |  2 +-
->  fs/f2fs/f2fs.h       |  2 +-
->  fs/f2fs/gc.c         | 42 ++++++++++++++++++---------------
->  fs/f2fs/segment.c    | 66
-> ++++++++++++++++++++++++----------------------------
->  fs/f2fs/segment.h    | 11 ++++++++-
->  fs/f2fs/super.c      |  2 ++
->  7 files changed, 68 insertions(+), 59 deletions(-)
->
-> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-> index d947e66..93fd57d 100644
-> --- a/fs/f2fs/checkpoint.c
-> +++ b/fs/f2fs/checkpoint.c
-> @@ -748,8 +748,6 @@ void write_checkpoint(struct f2fs_sb_info *sbi, bool
-> is_umount)
->  	flush_nat_entries(sbi);
->  	flush_sit_entries(sbi);
->
-> -	reset_victim_segmap(sbi);
-> -
->  	/* unlock all the fs_lock[] in do_checkpoint() */
->  	do_checkpoint(sbi, is_umount);
->
-> diff --git a/fs/f2fs/debug.c b/fs/f2fs/debug.c
-> index 20b8794..c3bf343 100644
-> --- a/fs/f2fs/debug.c
-> +++ b/fs/f2fs/debug.c
-> @@ -153,7 +153,7 @@ static void update_mem_info(struct f2fs_sb_info *sbi)
->  	/* build dirty segmap */
->  	si->base_mem += sizeof(struct dirty_seglist_info);
->  	si->base_mem += NR_DIRTY_TYPE * f2fs_bitmap_size(TOTAL_SEGS(sbi));
-> -	si->base_mem += 2 * f2fs_bitmap_size(TOTAL_SEGS(sbi));
-> +	si->base_mem += f2fs_bitmap_size(TOTAL_SECS(sbi));
->
->  	/* buld nm */
->  	si->base_mem += sizeof(struct f2fs_nm_info);
-> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> index 77e2eb0..71eacd3 100644
-> --- a/fs/f2fs/f2fs.h
-> +++ b/fs/f2fs/f2fs.h
-> @@ -410,6 +410,7 @@ struct f2fs_sb_info {
->  	/* for cleaning operations */
->  	struct mutex gc_mutex;			/* mutex for GC */
->  	struct f2fs_gc_kthread	*gc_thread;	/* GC thread */
-> +	unsigned int cur_victim_sec;		/* current victim section num */
->
->  	/*
->  	 * for stat information.
-> @@ -979,7 +980,6 @@ int lookup_journal_in_cursum(struct f2fs_summary_block
-> *,
->  					int, unsigned int, int);
->  void flush_sit_entries(struct f2fs_sb_info *);
->  int build_segment_manager(struct f2fs_sb_info *);
-> -void reset_victim_segmap(struct f2fs_sb_info *);
->  void destroy_segment_manager(struct f2fs_sb_info *);
->
->  /*
-> diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-> index 2e3eb2d..01a1d60 100644
-> --- a/fs/f2fs/gc.c
-> +++ b/fs/f2fs/gc.c
-> @@ -160,18 +160,21 @@ static unsigned int get_max_cost(struct f2fs_sb_info
-> *sbi,
->  static unsigned int check_bg_victims(struct f2fs_sb_info *sbi)
->  {
->  	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
-> -	unsigned int segno;
-> +	unsigned int hint = 0;
-> +	unsigned int secno;
->
->  	/*
->  	 * If the gc_type is FG_GC, we can select victim segments
->  	 * selected by background GC before.
->  	 * Those segments guarantee they have small valid blocks.
->  	 */
-> -	segno = find_next_bit(dirty_i->victim_segmap[BG_GC],
-> -						TOTAL_SEGS(sbi), 0);
-> -	if (segno < TOTAL_SEGS(sbi)) {
-> -		clear_bit(segno, dirty_i->victim_segmap[BG_GC]);
-> -		return segno;
-> +next:
-> +	secno = find_next_bit(dirty_i->victim_secmap, TOTAL_SECS(sbi), hint++);
-> +	if (secno < TOTAL_SECS(sbi)) {
-> +		if (sec_usage_check(sbi, secno))
-> +			goto next;
-> +		clear_bit(secno, dirty_i->victim_secmap);
-> +		return secno * sbi->segs_per_sec;
->  	}
->  	return NULL_SEGNO;
->  }
-> @@ -234,7 +237,6 @@ static int get_victim_by_default(struct f2fs_sb_info
-> *sbi,
->  {
->  	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
->  	struct victim_sel_policy p;
-> -	unsigned int segno;
->  	int nsearched = 0;
->
->  	p.alloc_mode = alloc_mode;
-> @@ -253,6 +255,7 @@ static int get_victim_by_default(struct f2fs_sb_info
-> *sbi,
->
->  	while (1) {
->  		unsigned long cost;
-> +		unsigned int segno, secno;
-"secno" variable is used outside of the while loop also. So, instead
-of limiting the scope to "while loop".
-We can define this at the start of the function and use the same
-variable throughout the function.
+On 04/03/2013 01:38 PM, Michael Wang wrote:
+> On 04/03/2013 12:28 PM, Alex Shi wrote:
+> [snip]
+>>
+>> but the patch may cause some unfairness if this/prev cpu are not burst at 
+>> same time. So could like try the following patch?
+> 
+> I will try it later, some doubt below :)
+> 
+> [snip]
+>> +
+>> +	if (cpu_rq(this_cpu)->avg_idle < sysctl_sched_migration_cost ||
+>> +		cpu_rq(prev_cpu)->avg_idle < sysctl_sched_migration_cost)
+>> +		burst= 1;
+>> +
+>> +	/* use instant load for bursty waking up */
+>> +	if (!burst) {
+>> +		load = source_load(prev_cpu, idx);
+>> +		this_load = target_load(this_cpu, idx);
+>> +	} else {
+>> +		load = cpu_rq(prev_cpu)->load.weight;
+>> +		this_load = cpu_rq(this_cpu)->load.weight;
+> 
+> Ok, my understanding is, we want pull if 'prev_cpu' is burst, and don't
+> want pull if 'this_cpu' is burst, correct?
+> 
+> And we do this by guess the load higher or lower, is that right?
+> 
+> And I think target_load() is capable enough to choose the higher load,
+> if 'cpu_rq(cpu)->load.weight' is really higher, the results will be the
+> same.
+> 
+> So what about this:
+> 
+> 	/* prefer higher load if burst */
+> 	load = burst_prev ?
 
->
->  		segno = find_next_bit(p.dirty_segmap,
->  						TOTAL_SEGS(sbi), p.offset);
-> @@ -265,13 +268,11 @@ static int get_victim_by_default(struct f2fs_sb_info
-> *sbi,
->  			break;
->  		}
->  		p.offset = ((segno / p.ofs_unit) * p.ofs_unit) + p.ofs_unit;
-> +		secno = GET_SECNO(sbi, segno);
->
-> -		if (test_bit(segno, dirty_i->victim_segmap[FG_GC]))
-> +		if (sec_usage_check(sbi, secno))
->  			continue;
-> -		if (gc_type == BG_GC &&
-> -				test_bit(segno, dirty_i->victim_segmap[BG_GC]))
-> -			continue;
-> -		if (IS_CURSEC(sbi, GET_SECNO(sbi, segno)))
-> +		if (gc_type == BG_GC && test_bit(secno, dirty_i->victim_secmap))
->  			continue;
->
->  		cost = get_gc_cost(sbi, segno, &p);
-> @@ -291,13 +292,14 @@ static int get_victim_by_default(struct f2fs_sb_info
-> *sbi,
->  	}
->  got_it:
->  	if (p.min_segno != NULL_SEGNO) {
-> -		*result = (p.min_segno / p.ofs_unit) * p.ofs_unit;
->  		if (p.alloc_mode == LFS) {
-> -			int i;
-> -			for (i = 0; i < p.ofs_unit; i++)
-> -				set_bit(*result + i,
-> -					dirty_i->victim_segmap[gc_type]);
-> +			unsigned int secno = GET_SECNO(sbi, p.min_segno);
-> +			if (gc_type == FG_GC)
-> +				sbi->cur_victim_sec = secno;
-> +			else
-> +				set_bit(secno, dirty_i->victim_secmap);
->  		}
-> +		*result = (p.min_segno / p.ofs_unit) * p.ofs_unit;
->  	}
->  	mutex_unlock(&dirty_i->seglist_lock);
->
-> @@ -662,9 +664,11 @@ gc_more:
->  	for (i = 0; i < sbi->segs_per_sec; i++)
->  		do_garbage_collect(sbi, segno + i, &ilist, gc_type);
->
-> -	if (gc_type == FG_GC &&
-> -			get_valid_blocks(sbi, segno, sbi->segs_per_sec) == 0)
-> +	if (gc_type == FG_GC) {
-> +		sbi->cur_victim_sec = NULL_SEGNO;
->  		nfree++;
-> +		WARN_ON(get_valid_blocks(sbi, segno, sbi->segs_per_sec));
-> +	}
->
->  	if (has_not_enough_free_secs(sbi, nfree))
->  		goto gc_more;
-> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-> index b3486f3..d5244f6 100644
-> --- a/fs/f2fs/segment.c
-> +++ b/fs/f2fs/segment.c
-> @@ -69,8 +69,9 @@ static void __remove_dirty_segment(struct f2fs_sb_info
-> *sbi, unsigned int segno,
->  		if (test_and_clear_bit(segno,
->  					dirty_i->dirty_segmap[dirty_type]))
->  			dirty_i->nr_dirty[dirty_type]--;
-> -		clear_bit(segno, dirty_i->victim_segmap[FG_GC]);
-> -		clear_bit(segno, dirty_i->victim_segmap[BG_GC]);
-> +		if (get_valid_blocks(sbi, segno, sbi->segs_per_sec) == 0)
-> +			clear_bit(GET_SECNO(sbi, segno),
-> +						dirty_i->victim_secmap);
->  	}
->  }
->
-> @@ -296,13 +297,12 @@ static void write_sum_page(struct f2fs_sb_info *sbi,
->  	f2fs_put_page(page, 1);
->  }
->
-> -static unsigned int check_prefree_segments(struct f2fs_sb_info *sbi,
-> -					int ofs_unit, int type)
-> +static unsigned int check_prefree_segments(struct f2fs_sb_info *sbi, int
-> type)
->  {
->  	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
->  	unsigned long *prefree_segmap = dirty_i->dirty_segmap[PRE];
-> -	unsigned int segno, next_segno, i;
-> -	int ofs = 0;
-> +	unsigned int segno;
-> +	unsigned int ofs = 0;
->
->  	/*
->  	 * If there is not enough reserved sections,
-> @@ -318,23 +318,30 @@ static unsigned int check_prefree_segments(struct
-> f2fs_sb_info *sbi,
->  	if (IS_NODESEG(type))
->  		return NULL_SEGNO;
->  next:
-> -	segno = find_next_bit(prefree_segmap, TOTAL_SEGS(sbi), ofs++);
-> -	ofs = ((segno / ofs_unit) * ofs_unit) + ofs_unit;
-> +	segno = find_next_bit(prefree_segmap, TOTAL_SEGS(sbi), ofs);
-> +	ofs += sbi->segs_per_sec;
-> +
->  	if (segno < TOTAL_SEGS(sbi)) {
-> +		int i;
-> +
->  		/* skip intermediate segments in a section */
-> -		if (segno % ofs_unit)
-> +		if (segno % sbi->segs_per_sec)
->  			goto next;
->
-> -		/* skip if whole section is not prefree */
-> -		next_segno = find_next_zero_bit(prefree_segmap,
-> -						TOTAL_SEGS(sbi), segno + 1);
-> -		if (next_segno - segno < ofs_unit)
-> +		/* skip if the section is currently used */
-> +		if (sec_usage_check(sbi, GET_SECNO(sbi, segno)))
->  			goto next;
->
-> +		/* skip if whole section is not prefree */
-> +		for (i = 1; i < sbi->segs_per_sec; i++)
-> +			if (!test_bit(segno + i, prefree_segmap))
-> +				goto next;
-> +
->  		/* skip if whole section was not free at the last checkpoint */
-> -		for (i = 0; i < ofs_unit; i++)
-> -			if (get_seg_entry(sbi, segno)->ckpt_valid_blocks)
-> +		for (i = 0; i < sbi->segs_per_sec; i++)
-> +			if (get_seg_entry(sbi, segno + i)->ckpt_valid_blocks)
->  				goto next;
-> +
->  		return segno;
->  	}
->  	return NULL_SEGNO;
-> @@ -561,15 +568,13 @@ static void allocate_segment_by_default(struct
-> f2fs_sb_info *sbi,
->  						int type, bool force)
->  {
->  	struct curseg_info *curseg = CURSEG_I(sbi, type);
-> -	unsigned int ofs_unit;
->
->  	if (force) {
->  		new_curseg(sbi, type, true);
->  		goto out;
->  	}
->
-> -	ofs_unit = need_SSR(sbi) ? 1 : sbi->segs_per_sec;
-> -	curseg->next_segno = check_prefree_segments(sbi, ofs_unit, type);
-> +	curseg->next_segno = check_prefree_segments(sbi, type);
->
->  	if (curseg->next_segno != NULL_SEGNO)
->  		change_curseg(sbi, type, false);
-> @@ -1558,14 +1563,13 @@ static void init_dirty_segmap(struct f2fs_sb_info
-> *sbi)
->  	}
->  }
->
-> -static int init_victim_segmap(struct f2fs_sb_info *sbi)
-> +static int init_victim_secmap(struct f2fs_sb_info *sbi)
->  {
->  	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
-> -	unsigned int bitmap_size = f2fs_bitmap_size(TOTAL_SEGS(sbi));
-> +	unsigned int bitmap_size = f2fs_bitmap_size(TOTAL_SECS(sbi));
->
-> -	dirty_i->victim_segmap[FG_GC] = kzalloc(bitmap_size, GFP_KERNEL);
-> -	dirty_i->victim_segmap[BG_GC] = kzalloc(bitmap_size, GFP_KERNEL);
-> -	if (!dirty_i->victim_segmap[FG_GC] || !dirty_i->victim_segmap[BG_GC])
-> +	dirty_i->victim_secmap = kzalloc(bitmap_size, GFP_KERNEL);
-> +	if (!dirty_i->victim_secmap)
->  		return -ENOMEM;
->  	return 0;
->  }
-> @@ -1592,7 +1596,7 @@ static int build_dirty_segmap(struct f2fs_sb_info
-> *sbi)
->  	}
->
->  	init_dirty_segmap(sbi);
-> -	return init_victim_segmap(sbi);
-> +	return init_victim_secmap(sbi);
->  }
->
->  /*
-> @@ -1679,18 +1683,10 @@ static void discard_dirty_segmap(struct f2fs_sb_info
-> *sbi,
->  	mutex_unlock(&dirty_i->seglist_lock);
->  }
->
-> -void reset_victim_segmap(struct f2fs_sb_info *sbi)
-> -{
-> -	unsigned int bitmap_size = f2fs_bitmap_size(TOTAL_SEGS(sbi));
-> -	memset(DIRTY_I(sbi)->victim_segmap[FG_GC], 0, bitmap_size);
-> -}
-> -
-> -static void destroy_victim_segmap(struct f2fs_sb_info *sbi)
-> +static void destroy_victim_secmap(struct f2fs_sb_info *sbi)
->  {
->  	struct dirty_seglist_info *dirty_i = DIRTY_I(sbi);
-> -
-> -	kfree(dirty_i->victim_segmap[FG_GC]);
-> -	kfree(dirty_i->victim_segmap[BG_GC]);
-> +	kfree(dirty_i->victim_secmap);
->  }
->
->  static void destroy_dirty_segmap(struct f2fs_sb_info *sbi)
-> @@ -1705,7 +1701,7 @@ static void destroy_dirty_segmap(struct f2fs_sb_info
-> *sbi)
->  	for (i = 0; i < NR_DIRTY_TYPE; i++)
->  		discard_dirty_segmap(sbi, i);
->
-> -	destroy_victim_segmap(sbi);
-> +	destroy_victim_secmap(sbi);
->  	SM_I(sbi)->dirty_info = NULL;
->  	kfree(dirty_i);
->  }
-> diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
-> index fea9245..4c2cd9e 100644
-> --- a/fs/f2fs/segment.h
-> +++ b/fs/f2fs/segment.h
-> @@ -214,7 +214,7 @@ struct dirty_seglist_info {
->  	unsigned long *dirty_segmap[NR_DIRTY_TYPE];
->  	struct mutex seglist_lock;		/* lock for segment bitmaps */
->  	int nr_dirty[NR_DIRTY_TYPE];		/* # of dirty segments */
-> -	unsigned long *victim_segmap[2];	/* BG_GC, FG_GC */
-> +	unsigned long *victim_secmap;		/* background GC victims */
->  };
->
->  /* victim selection function for cleaning and SSR */
-> @@ -616,3 +616,12 @@ static inline block_t sum_blk_addr(struct f2fs_sb_info
-> *sbi, int base, int type)
->  		le32_to_cpu(F2FS_CKPT(sbi)->cp_pack_total_block_count)
->  				- (base + 1) + type;
->  }
-> +
-> +static inline int sec_usage_check(struct f2fs_sb_info *sbi, unsigned int
-> secno)
-> +{
-> +	if (IS_CURSEC(sbi, secno))
-> +		return -1;
-> +	if (sbi->cur_victim_sec == secno)
-> +		return -1;
-> +	return 0;
-> +}
+And this check could also be:
 
-we can combine two if condition and use bool value.
-So, Instead it should be changed like this:
-How about this ?
-static inline bool sec_usage_check(struct f2fs_sb_info * sbi, unsigned
-int secno)
+	load = burst_prev && !burst_this ?
 
-{
-     if (IS_CURSEC(sbi, secno) || (sbi->cur->victim_sec == secno))
-                return true;
-    return false;
-}
+if we don't prefer the pull when this_cpu also bursted.
 
+Regards,
+Michael Wang
 
+> 		target_load(prev_cpu, idx) : source_load(prev_cpu, idx);
+> 
+> 	this_load = target_load(this_cpu, idx);
+> 
+> Regards,
+> Michael Wang
+> 
+>> +	}
+>>
+>>  	/*
+>>  	 * If sync wakeup then subtract the (maximum possible)
+>>
+> 
 
-> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-> index 252890e..ea325c8 100644
-> --- a/fs/f2fs/super.c
-> +++ b/fs/f2fs/super.c
-> @@ -26,6 +26,7 @@
->
->  #include "f2fs.h"
->  #include "node.h"
-> +#include "segment.h"
->  #include "xattr.h"
->
->  static struct kmem_cache *f2fs_inode_cachep;
-> @@ -458,6 +459,7 @@ static void init_sb_info(struct f2fs_sb_info *sbi)
->  	sbi->root_ino_num = le32_to_cpu(raw_super->root_ino);
->  	sbi->node_ino_num = le32_to_cpu(raw_super->node_ino);
->  	sbi->meta_ino_num = le32_to_cpu(raw_super->meta_ino);
-> +	sbi->cur_victim_sec = NULL_SEGNO;
-instead of NULL_SEGNO, Could we use NULL_SECNO after declaring ? even
-though NULL_SECNO not defined but it should be defined to maintain the
-code readability and avoid confusion in sections and segments
-
-Thanks.
->
->  	for (i = 0; i < NR_COUNT_TYPE; i++)
->  		atomic_set(&sbi->nr_pages[i], 0);
-> --
-> 1.8.1.3.566.gaa39828
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
