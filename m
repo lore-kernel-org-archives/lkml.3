@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761289Ab3DCCgS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 22:36:18 -0400
-Received: from mga03.intel.com ([143.182.124.21]:1618 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760863Ab3DCCgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 22:36:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,397,1363158000"; 
-   d="scan'208";a="222152734"
-Message-ID: <515B958B.8000809@intel.com>
-Date: Wed, 03 Apr 2013 10:35:55 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S1761467Ab3DCCjX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 22:39:23 -0400
+Received: from mail.openmoko.org ([88.198.124.205]:58121 "EHLO
+	mail.openmoko.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759306Ab3DCCjV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 22:39:21 -0400
+Date: Tue, 2 Apr 2013 23:38:21 -0300
+From: Werner Almesberger <werner@almesberger.net>
+To: Alan Ott <alan@signal11.us>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        linux-zigbee-devel <linux-zigbee-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Linux-zigbee-devel] [PATCH 1/6] mac802154: Immediately retry
+ sending failed packets
+Message-ID: <20130403023821.GE28141@ws>
+References: <1364928481-1813-1-git-send-email-alan@signal11.us>
+ <1364928481-1813-2-git-send-email-alan@signal11.us>
+ <CAJmB2rCr5ds11+iN=W5GCKsUgdfb57uKg+mH4NY4CWw6EFCTbg@mail.gmail.com>
+ <515B3F78.2020301@signal11.us>
+ <515B4D79.40805@signal11.us>
+ <20130402231319.GD28141@ws>
+ <515B84EB.8020006@signal11.us>
 MIME-Version: 1.0
-To: Paul Turner <pjt@google.com>
-CC: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Borislav Petkov <bp@alien8.de>, Mike Galbraith <efault@gmx.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        gregkh@linuxfoundation.org,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch v6 10/21] sched: get rq potential maximum utilization
-References: <1364654108-16307-1-git-send-email-alex.shi@intel.com> <1364654108-16307-11-git-send-email-alex.shi@intel.com> <87a9phfgox.fsf@sejong.aot.lge.com> <515B90A5.7080403@intel.com> <CAPM31RKj0SJB6eCDSpH29OdfeNGDXqzoQQWhQP7t3gdxYx+wrQ@mail.gmail.com>
-In-Reply-To: <CAPM31RKj0SJB6eCDSpH29OdfeNGDXqzoQQWhQP7t3gdxYx+wrQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515B84EB.8020006@signal11.us>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 10:22 AM, Paul Turner wrote:
-> On Tue, Apr 2, 2013 at 7:15 PM, Alex Shi <alex.shi@intel.com> wrote:
->> On 04/02/2013 05:02 PM, Namhyung Kim wrote:
->>>>> +  cfs_util = (FULL_UTIL - rt_util) > rq->util ? rq->util
->>>>> +                  : (FULL_UTIL - rt_util);
->>>>> +  nr_running = rq->nr_running ? rq->nr_running : 1;
->>> This can be cleaned up with proper min/max().
->>>
->>>>> +
->>>>> +  return rt_util + cfs_util * nr_running;
->>> Should this nr_running consider tasks in cfs_rq only?
->>
->> use nr_running of cfs_rq seems better, but when use sched autogroup,
->> only cfs->nr_running just the active group number, not the total active
->> task number. :(
-> 
-> Why not just use cfs_rq->h_nr_running?  This is always the total
-> *tasks* in he hierarchy parented that cfs_rq.  (This also has the nice property
-> of not including group_entities.)
+Alan Ott wrote:
+> 1. Most supported devices have only single packet output buffer, so
+> blocking in the driver is the most straight-forward way to handle it.
+> The alternative is to make each driver have a workqueue for xmit() (to
+> lift the blocking out from atomic context). This makes each driver simpler.
 
-oh, yes, Thanks for the reminder! :)
-> 
->>
->>   Also it seems
->>> there's no upper bound so that it can possibly exceed FULL_UTIL.
->>
->>
->> --
->> Thanks Alex
+It does make following the program flow a little easier, but
+the difference isn't all that large if you think of it,
+particularly if you have to wait not only for I/O to finish
+but also for the device to send the packet.
 
+The latter will usually be signaled by some form of interrupt,
+so you're already in a situation where a callback to the higher
+layers of the stack would be very natural.
 
--- 
-Thanks Alex
+> Maybe at some point this will be done. Right now we have a ton of
+> pressing issues (in my opinion).
+
+Agreed on having no shortage of nasty issues :-) And I'd like
+to echo Dave's comment regarding netdev. Those ieee802154_dev
+always struck me as peculiar, with flow control just being one
+issue.
+
+And things get worse when you have a complex bus underneath
+your driver. For example, my USB-using atusb driver (*) has to
+do a great many things usbnet already does. And any other
+USB-based WPAN driver would be more or less in the same boat.
+Of course, one could reinvent that wheel as well and make a
+usbwpan, but ... :)
+
+(*) Sneak preview, still with a number of issues, not only style:
+    https://github.com/wpwrak/ben-wpan-linux/blob/master/drivers/net/ieee802154/atusb.c
+
+- Werner
