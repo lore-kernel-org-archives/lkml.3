@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762096Ab3DCIjJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 04:39:09 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:11629 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761488Ab3DCIjG (ORCPT
+	id S932098Ab3DCIpc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 04:45:32 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:40871 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762154Ab3DCIp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 04:39:06 -0400
-Message-ID: <515BEA61.9080100@huawei.com>
-Date: Wed, 3 Apr 2013 16:37:53 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Glauber Costa <glommer@parallels.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [PATCH -v2] memcg: don't do cleanup manually if mem_cgroup_css_online()
- fails
-References: <515A8A40.6020406@huawei.com> <20130402121600.GK24345@dhcp22.suse.cz> <20130402141646.GQ24345@dhcp22.suse.cz> <515AE948.1000704@parallels.com> <20130402142825.GA32520@dhcp22.suse.cz> <515AEC3A.2030401@parallels.com> <20130402150422.GB32520@dhcp22.suse.cz> <515BA6C9.2000704@huawei.com> <20130403074300.GA14384@dhcp22.suse.cz> <515BDEF2.1080900@huawei.com> <20130403081843.GC14384@dhcp22.suse.cz>
-In-Reply-To: <20130403081843.GC14384@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+	Wed, 3 Apr 2013 04:45:28 -0400
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Praveena Nadahally <praveen.nadahally@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH 00/12] second set of musb-ux500 and ab8500-usb updates
+Date: Wed,  3 Apr 2013 10:45:01 +0200
+Message-Id: <1364978713-19612-1-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> But memcg_update_cache_sizes calls memcg_kmem_clear_activated on the
->>> error path.
->>>
->>
->> But memcg_kmem_mark_dead() checks the ACCOUNT flag not the ACCOUNTED flag.
->> Am I missing something?
->>
-> 
-> Dang. You are right! Glauber, is there any reason why
-> memcg_kmem_mark_dead checks only KMEM_ACCOUNTED_ACTIVE rather than
-> KMEM_ACCOUNTED_MASK?
-> 
-> This all is very confusing to say the least.
-> 
-> Anyway, this all means that Li's first patch is correct. I am not sure I
-> like it though. I think that the refcount cleanup should be done as
-> close to where it has been taken as possible otherwise we will end up in
-> this "chase the nasty details" again and again. There are definitely two
-> bugs here. The one introduced by e4715f01 and the other one introduced
-> even earlier (I haven't checked that history yet). I think we should do
-> something like the 2 follow up patches but if you guys think that the smaller
-> patch from Li is more appropriate then I will not block it.
-> 
+Hello Felipe,
 
-Or we can queue my patch for 3.9, and then see if we want to change the
-tear down process, and if yes we make the change for 3.10.
+This is the second series of usb updates for Ux500 drivers, covering
+almost only ab8500-usb phy.
+
+Patches includes various fixes and errata workarounds, API updates (the
+devm_ stuff), and integration with modern subsystems (regulator and
+pinctrl).
+
+The whole series has been developed and tested on top of your "next"
+branch.
+
+I have to warn you that a couple of patches (regulator and pinctrl) have
+run-time dependencies on other frameworks's patches that are currently
+being reviewed...  Either way, none of that is required for vital
+functionalities, and all you get are a couple of printk warnings, so I
+don't think is worth to go through tree dependency pain as everything
+should come together nicely in linux-next.
+
+Thanks,
+Fabio
+
+
+Fabio Baltieri (6):
+  usb: musb: ux500_dma: drop references to U5500
+  usb: phy: ab8500-usb: convert to devm_kzalloc
+  usb: phy: ab8500-usb: add regulator support
+  usb: phy: ab8500-usb: split ab8500_usb_phy_ctrl
+  usb: phy: ab8500-usb: enable/disable regulator on phy events
+  usb: phy: ab8500-usb: fix last notifier arguments
+
+Mian Yousaf Kaukab (1):
+  usb: phy: ab8500-usb: fix unbalanced clock and regulator disable
+    warnings
+
+Patrice Chotard (1):
+  usb: phy: ab8500-usb: adopt pinctrl support
+
+Sakethram Bommisetti (4):
+  usb: phy: ab8500-usb: set phy tuning values
+  usb: phy: ab8500-usb: fix eye diagram for ab8500 v2.0
+  usb: phy: ab8500-usb: drop link status delayed work
+  usb: phy: ab8500-usb: call phy_dis_work only when necessary
+
+ drivers/usb/musb/ux500.c         |   1 -
+ drivers/usb/musb/ux500_dma.c     |   2 +-
+ drivers/usb/phy/phy-ab8500-usb.c | 366 +++++++++++++++++++++++++++++----------
+ 3 files changed, 276 insertions(+), 93 deletions(-)
+
+-- 
+1.8.1.3
 
