@@ -1,120 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932516Ab3DCIrM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 04:47:12 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10044 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932296Ab3DCIrF (ORCPT
+	id S932568Ab3DCIrZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 04:47:25 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:35713 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761712Ab3DCIrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 04:47:05 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 03 Apr 2013 01:47:01 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: <gregkh@linuxfoundation.org>, <balbi@ti.com>, <stern@rowland.harvard.edu>,
-        <linux-tegra@vger.kernel.org>, <swarren@wwwdotorg.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH v2 6/7] usb: phy: tegra: Add error handling & clean up.
-Date: Wed, 3 Apr 2013 14:11:41 +0530
-Message-ID: <1364978502-22887-7-git-send-email-vbyravarasu@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1364978502-22887-1-git-send-email-vbyravarasu@nvidia.com>
-References: <1364978502-22887-1-git-send-email-vbyravarasu@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 3 Apr 2013 04:47:21 -0400
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Praveena Nadahally <praveen.nadahally@stericsson.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH 05/12] usb: phy: ab8500-usb: add regulator support
+Date: Wed,  3 Apr 2013 10:45:06 +0200
+Message-Id: <1364978713-19612-6-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1364978713-19612-1-git-send-email-fabio.baltieri@linaro.org>
+References: <1364978713-19612-1-git-send-email-fabio.baltieri@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check return values from all GPIO APIs and handle errors accordingly.
-Remove clk_disable_unprepare which is no more needed.
+Add initial regulator support to ab8500-usb by introducing necessary
+devm_regulator_get().
 
-Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 ---
-delta from v2: no change.
+ drivers/usb/phy/phy-ab8500-usb.c | 36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
- drivers/usb/phy/phy-tegra-usb.c |   50 ++++++++++++++++++++++++++++++--------
- 1 files changed, 39 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
-index a2a89a9..01c5e23 100644
---- a/drivers/usb/phy/phy-tegra-usb.c
-+++ b/drivers/usb/phy/phy-tegra-usb.c
-@@ -542,9 +542,17 @@ static int ulpi_phy_power_on(struct tegra_usb_phy *phy)
- 	unsigned long val;
- 	void __iomem *base = phy->regs;
+diff --git a/drivers/usb/phy/phy-ab8500-usb.c b/drivers/usb/phy/phy-ab8500-usb.c
+index 1fd0780..4caa820 100644
+--- a/drivers/usb/phy/phy-ab8500-usb.c
++++ b/drivers/usb/phy/phy-ab8500-usb.c
+@@ -32,6 +32,7 @@
+ #include <linux/mfd/abx500.h>
+ #include <linux/mfd/abx500/ab8500.h>
+ #include <linux/usb/musb-ux500.h>
++#include <linux/regulator/consumer.h>
  
--	gpio_direction_output(phy->reset_gpio, 0);
-+	ret = gpio_direction_output(phy->reset_gpio, 0);
-+	if (ret < 0) {
-+		dev_err(phy->dev, "gpio %d direction not set\n", phy->reset_gpio);
-+		return ret;
-+	}
- 	msleep(5);
--	gpio_direction_output(phy->reset_gpio, 1);
-+	ret = gpio_direction_output(phy->reset_gpio, 1);
-+	if (ret < 0) {
-+		dev_err(phy->dev, "gpio %d direction not set\n", phy->reset_gpio);
-+		return ret;
-+	}
+ /* Bank AB8500_SYS_CTRL2_BLOCK */
+ #define AB8500_MAIN_WD_CTRL_REG 0x01
+@@ -126,6 +127,9 @@ struct ab8500_usb {
+ 	struct work_struct phy_dis_work;
+ 	unsigned long link_status_wait;
+ 	enum ab8500_usb_mode mode;
++	struct regulator *v_ape;
++	struct regulator *v_musb;
++	struct regulator *v_ulpi;
+ 	int previous_link_status_state;
+ };
  
- 	clk_prepare_enable(phy->clk);
- 	msleep(1);
-@@ -624,24 +632,44 @@ static int	tegra_phy_init(struct usb_phy *x)
- 			of_get_named_gpio(phy->dev->of_node,
- 					  "nvidia,phy-reset-gpio", 0);
- 		if (!gpio_is_valid(phy->reset_gpio)) {
--			pr_err("%s: invalid reset gpio: %d\n", __func__,
-+			dev_err(phy->dev, "invalid gpio: %d\n",
-+				phy->reset_gpio);
-+			err = phy->reset_gpio;
-+			goto cleanup_clk_get;
-+		}
-+
-+		err = gpio_request(phy->reset_gpio, "ulpi_phy_reset_b");
-+		if (err < 0) {
-+			dev_err(phy->dev, "request failed for gpio: %d\n",
- 			       phy->reset_gpio);
--			err = -EINVAL;
--			goto err1;
-+			goto cleanup_clk_get;
-+		}
-+
-+		err = gpio_direction_output(phy->reset_gpio, 0);
-+		if (err < 0) {
-+			dev_err(phy->dev, "gpio %d direction not set to output\n",
-+			       phy->reset_gpio);
-+			goto cleanup_gpio_req;
- 		}
--		gpio_request(phy->reset_gpio, "ulpi_phy_reset_b");
--		gpio_direction_output(phy->reset_gpio, 0);
-+
- 		phy->ulpi = otg_ulpi_create(&ulpi_viewport_access_ops, 0);
-+		if (!phy->ulpi) {
-+			dev_err(phy->dev, "otg_ulpi_create returned err\n");
-+			err = -ENOMEM;
-+			goto cleanup_gpio_req;
-+		}
-+
- 		phy->ulpi->io_priv = phy->regs + ULPI_VIEWPORT;
- 	} else {
- 		err = utmip_pad_open(phy);
- 		if (err < 0)
--			goto err1;
-+			return err;
- 	}
+@@ -589,6 +593,34 @@ static int ab8500_usb_set_host(struct usb_otg *otg, struct usb_bus *host)
  	return 0;
--err1:
--	clk_disable_unprepare(phy->pll_u);
--	clk_put(phy->pll_u);
-+cleanup_gpio_req:
-+	gpio_free(phy->reset_gpio);
-+cleanup_clk_get:
-+	clk_put(phy->clk);
- 	return err;
  }
  
++static int ab8500_usb_regulator_get(struct ab8500_usb *ab)
++{
++	int err;
++
++	ab->v_ape = devm_regulator_get(ab->dev, "v-ape");
++	if (IS_ERR(ab->v_ape)) {
++		dev_err(ab->dev, "Could not get v-ape supply\n");
++		err = PTR_ERR(ab->v_ape);
++		return err;
++	}
++
++	ab->v_ulpi = devm_regulator_get(ab->dev, "vddulpivio18");
++	if (IS_ERR(ab->v_ulpi)) {
++		dev_err(ab->dev, "Could not get vddulpivio18 supply\n");
++		err = PTR_ERR(ab->v_ulpi);
++		return err;
++	}
++
++	ab->v_musb = devm_regulator_get(ab->dev, "musb_1v8");
++	if (IS_ERR(ab->v_musb)) {
++		dev_err(ab->dev, "Could not get musb_1v8 supply\n");
++		err = PTR_ERR(ab->v_musb);
++		return err;
++	}
++
++	return 0;
++}
++
+ static int ab8500_usb_irq_setup(struct platform_device *pdev,
+ 		struct ab8500_usb *ab)
+ {
+@@ -686,6 +718,10 @@ static int ab8500_usb_probe(struct platform_device *pdev)
+ 	/* all: Disable phy when called from set_host and set_peripheral */
+ 	INIT_WORK(&ab->phy_dis_work, ab8500_usb_phy_disable_work);
+ 
++	err = ab8500_usb_regulator_get(ab);
++	if (err)
++		return err;
++
+ 	err = ab8500_usb_irq_setup(pdev, ab);
+ 	if (err < 0)
+ 		return err;
 -- 
-1.7.0.4
+1.8.1.3
 
