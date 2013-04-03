@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762224Ab3DCMaN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 08:30:13 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:50568 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759574Ab3DCMaL convert rfc822-to-8bit (ORCPT
+	id S1762667Ab3DCMaZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 08:30:25 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:33414 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761757Ab3DCMaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 08:30:11 -0400
-Date: Wed, 03 Apr 2013 07:30:08 -0500
-From: Rob Landley <rob@landley.net>
-Subject: [RFC] rootmpfs
-To: linux-kernel@vger.kernel.org
-X-Mailer: Balsa 2.4.11
-Message-Id: <1364992208.18069.18@driftwood>
+	Wed, 3 Apr 2013 08:30:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CACQ1gAhL8q_-4vJ=ivLQ=bbt5k9QHDd5dtKLWoXT8DsM0MFa0A@mail.gmail.com>
+References: <1364222843-30305-1-git-send-email-richard.genoud@gmail.com>
+	<1364222843-30305-4-git-send-email-richard.genoud@gmail.com>
+	<5153859A.8000801@wwwdotorg.org>
+	<CACQ1gAjEUsCuFThzAfoX3-PHn3h70=qw+uktHNd9cQDWeQZ1Jw@mail.gmail.com>
+	<5154594D.6000103@wwwdotorg.org>
+	<CACQ1gAhL8q_-4vJ=ivLQ=bbt5k9QHDd5dtKLWoXT8DsM0MFa0A@mail.gmail.com>
+Date: Wed, 3 Apr 2013 14:30:19 +0200
+Message-ID: <CACRpkdZw_hM2CYJENuJnzEgKLN10GqTvNvXj0cZ+3yFeY_kmcQ@mail.gmail.com>
+Subject: Re: [PATCH 3/4] pinctrl: disable and free setting in select_state in
+ case of error
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attached is my quick and dirty hack to make rootfs be tmpfs when  
-CONFIG_TMPFS is
-enabled. It can't be this easy or somebody would have done it in the  
-_eight_years_
-since https://lkml.org/lkml/2006/7/31/145
+On Thu, Mar 28, 2013 at 4:47 PM, Richard Genoud
+<richard.genoud@gmail.com> wrote:
+> 2013/3/28 Stephen Warren <swarren@wwwdotorg.org>:
 
-Yes, it's got an #ifdef and out of place prototypes. Yes, it manually  
-calls a module
-init function and compensates by making it reentrant. But it works, and  
-when I
-"cat /dev/zero > filename" the filesystem fills _up_ instead of  
-panicing the kernel.
+>> Again, pinconf_free_setting() is all about freeing any dynamically
+>> allocated storage required to represent the setting itself; it's not
+>> about (un-)programming HW.
+>>
+> got it.
+> I'll change that
 
-So now that I've posted the error, would someone please tell me how I  
-_should_ have done it?
+I guess the incremental patches have fixed most issues pointed out
+in this thread? Elese keep the add-on patches coming, as long as the
+end result looks OK to both of you I'm happy too.
 
-Rob
-
-P.S. If I actually change the filesystem type to a name other than  
-"rootfs", it panics on the way up because various bits of the kernel  
-are looking for that magic name. Sigh.
-
-P.P.S. removing MS_NOUSER is actually intentional, there's a local cray  
-patch that does the same thing because otherwise you can't --bind mount  
-directories out of this filesystem, which is a thing they wanted to do.
+Yours,
+Linus Walleij
