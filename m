@@ -1,37 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761958Ab3DCDR1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 23:17:27 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:34838 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761478Ab3DCDR0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 23:17:26 -0400
+	id S1760840Ab3DCDTw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 23:19:52 -0400
+Received: from mga11.intel.com ([192.55.52.93]:8217 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759066Ab3DCDTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 23:19:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,397,1363158000"; 
+   d="scan'208";a="312764395"
+Message-ID: <515B9FC0.3040101@intel.com>
+Date: Wed, 03 Apr 2013 11:19:28 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-In-Reply-To: <CAAQ0ZWQrrGhhwEMg_0ifMLZdgB4u6d7c4QqyejgRphRx5Mft6A@mail.gmail.com>
-References: <1364920232-9604-1-git-send-email-fabio.estevam@freescale.com>
-	<20130403022939.GL24039@S2101-09.ap.freescale.net>
-	<CAAQ0ZWQrrGhhwEMg_0ifMLZdgB4u6d7c4QqyejgRphRx5Mft6A@mail.gmail.com>
-Date: Wed, 3 Apr 2013 00:17:25 -0300
-Message-ID: <CAOMZO5CdXcCFh77q+BMJhjw8xZ5W0bnE0gXK+H-h4_AYT8kpiA@mail.gmail.com>
-Subject: Re: [PATCH] clocksource: mxs_timer: Add semicolon at end of line
-From: Fabio Estevam <festevam@gmail.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Alex Shi <alex.shi@intel.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
+        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
+        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
+        mgorman@suse.de, riel@redhat.com
+Subject: Re: [patch v3 3/8] sched: only count runnable avg on cfs_rq's nr_running
+References: <1364873008-3169-1-git-send-email-alex.shi@intel.com> <1364873008-3169-4-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1364873008-3169-4-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 2, 2013 at 11:56 PM, Shawn Guo <shawn.guo@linaro.org> wrote:
+On 04/02/2013 11:23 AM, Alex Shi wrote:
+> Old function count the runnable avg on rq's nr_running even there is
+> only rt task in rq. That is incorrect, so correct it to cfs_rq's
+> nr_running.
 
-> Ok, I'm seeing the error now on linux-next. It's not about compiler
-> but the commit 3d5a965 (clocksource: make CLOCKSOURCE_OF_DECLARE type
-> safe), which removes the semicolon at end of the
-> CLOCKSOURCE_OF_DECLARE definition.
+this patch is incorrect and removed in
+	https://github.com/alexshi/power-scheduling.git runnablelb
 
-Right, the removal of the semicolon at the end of
-CLOCKSOURCE_OF_DECLARE definition is intentional in commit 3d5a965.
