@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761886Ab3DCQD4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 12:03:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44996 "EHLO mx1.redhat.com"
+	id S1761634Ab3DCQGT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 12:06:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22138 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761098Ab3DCQDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 12:03:54 -0400
+	id S1757722Ab3DCQGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 12:06:18 -0400
 From: Anton Arapov <anton@redhat.com>
 To: Anton Arapov <anton@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -14,83 +14,87 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
         Ingo Molnar <mingo@elte.hu>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: [PATCH v1 2/9] uretprobes: Reserve the first slot in xol_vma for trampoline
-Date: Wed,  3 Apr 2013 18:00:32 +0200
-Message-Id: <1365004839-21982-3-git-send-email-anton@redhat.com>
+Subject: [PATCH v1 1/9] uretprobes: Introduce uprobe_consumer->ret_handler()
+Date: Wed,  3 Apr 2013 18:00:31 +0200
+Message-Id: <1365004839-21982-2-git-send-email-anton@redhat.com>
 In-Reply-To: <1365004839-21982-1-git-send-email-anton@redhat.com>
 References: <1365004839-21982-1-git-send-email-anton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allocate trampoline page, as the very first one in uprobed
-task xol area, and fill it with breakpoint opcode.
-
-Also introduce get_trampoline_vaddr() helper, to wrap the
-trampoline address extraction from area->vaddr. That removes
-confusion and eases the debug experience in case ->vaddr
-notion will be changed.
+Enclose return probes implementation, introduce ->ret_handler() and update
+existing code to rely on ->handler() *and* ->ret_handler() for uprobe and
+uretprobe respectively.
 
 v1 changes:
-* rework get_trampoline_vaddr() helper.
-* init xol_area->slot_count.
+* add bp_vaddr argument to ->ret_handler()
+
+RFCv5 changes:
+* don't remove uprobe in case there are no uprobe consumer(handler),
+  see handler_chain() changes.
+
+RFCv3 changes: (the patch is introduced in v3)
+* check whether at least one of the consumer's handlers were set.
+* a 'TODO' cap that will be removed once return probes be implemented.
+* introduce ->ret_handler().
 
 Signed-off-by: Anton Arapov <anton@redhat.com>
 ---
- kernel/events/uprobes.c | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ include/linux/uprobes.h |  3 +++
+ kernel/events/uprobes.c | 17 ++++++++++++++---
+ 2 files changed, 17 insertions(+), 3 deletions(-)
 
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 02b83db..4042cad 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -46,6 +46,9 @@ enum uprobe_filter_ctx {
+ 
+ struct uprobe_consumer {
+ 	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
++	int (*ret_handler)(struct uprobe_consumer *self,
++				unsigned long func,
++				struct pt_regs *regs);
+ 	bool (*filter)(struct uprobe_consumer *self,
+ 				enum uprobe_filter_ctx ctx,
+ 				struct mm_struct *mm);
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 27c964b..d3c8201 100644
+index 21d8a65..27c964b 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -1109,6 +1109,7 @@ static struct xol_area *get_xol_area(void)
- {
- 	struct mm_struct *mm = current->mm;
- 	struct xol_area *area;
-+	uprobe_opcode_t insn = UPROBE_SWBP_INSN;
+@@ -815,6 +815,14 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
+ 	struct uprobe *uprobe;
+ 	int ret;
  
- 	area = mm->uprobes_state.xol_area;
- 	if (area)
-@@ -1126,7 +1127,12 @@ static struct xol_area *get_xol_area(void)
- 	if (!area->page)
- 		goto free_bitmap;
++	/* Uprobe must have at least one set consumer */
++	if (!uc->handler && !uc->ret_handler)
++		return -EINVAL;
++
++	/* TODO: Implement return probes */
++	if (uc->ret_handler)
++		return -ENOSYS;
++
+ 	/* Racy, just to catch the obvious mistakes */
+ 	if (offset > i_size_read(inode))
+ 		return -EINVAL;
+@@ -1473,10 +1481,13 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
  
-+	/* allocate first slot of task's xol_area for the return probes */
-+	set_bit(0, area->bitmap);
-+	copy_to_page(area->page, 0, &insn, UPROBE_SWBP_INSN_SIZE);
-+	atomic_set(&area->slot_count, 1);
- 	init_waitqueue_head(&area->wq);
-+
- 	if (!xol_add_vma(area))
- 		return area;
+ 	down_read(&uprobe->register_rwsem);
+ 	for (uc = uprobe->consumers; uc; uc = uc->next) {
+-		int rc = uc->handler(uc, regs);
++		int rc = 0;
  
-@@ -1323,6 +1329,25 @@ static struct uprobe_task *get_utask(void)
- 	return current->utask;
- }
+-		WARN(rc & ~UPROBE_HANDLER_MASK,
+-			"bad rc=0x%x from %pf()\n", rc, uc->handler);
++		if (uc->handler) {
++			rc = uc->handler(uc, regs);
++			WARN(rc & ~UPROBE_HANDLER_MASK,
++				"bad rc=0x%x from %pf()\n", rc, uc->handler);
++		}
+ 		remove &= rc;
+ 	}
  
-+/*
-+ * Current area->vaddr notion assume the trampoline address is always
-+ * equal area->vaddr.
-+ *
-+ * Returns -1 in case the xol_area is not allocated.
-+ */
-+static unsigned long get_trampoline_vaddr(void)
-+{
-+	struct xol_area *area;
-+	unsigned long trampoline_vaddr = -1;
-+
-+	area = current->mm->uprobes_state.xol_area;
-+	smp_read_barrier_depends();
-+	if (area)
-+		trampoline_vaddr = area->vaddr;
-+
-+	return trampoline_vaddr;
-+}
-+
- /* Prepare to single-step probed instruction out of line. */
- static int
- pre_ssout(struct uprobe *uprobe, struct pt_regs *regs, unsigned long bp_vaddr)
 -- 
 1.8.1.4
 
