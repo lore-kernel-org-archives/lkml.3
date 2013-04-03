@@ -1,1031 +1,671 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760886Ab3DCOpg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:45:36 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10842 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759003Ab3DCOpd (ORCPT
+	id S1761006Ab3DCOpj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:45:39 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:55918 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760753Ab3DCOpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:45:33 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 03 Apr 2013 07:44:14 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+	Wed, 3 Apr 2013 10:45:36 -0400
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Pritesh Raithatha <praithatha@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Andrew Chew <achew@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v9 02/14] clk: tegra: Refactor PLL programming code
-Date: Wed, 3 Apr 2013 17:40:36 +0300
-Message-ID: <1365000110-8916-3-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+        Bjorn Helgaas <bhelgaas@google.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH v3 01/12] of/pci: Provide support for parsing PCI DT ranges property
+Date: Wed,  3 Apr 2013 16:45:07 +0200
+Message-Id: <1365000318-28256-2-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.8.2
+In-Reply-To: <1365000318-28256-1-git-send-email-thierry.reding@avionic-design.de>
+References: <1365000318-28256-1-git-send-email-thierry.reding@avionic-design.de>
+X-Provags-ID: V02:K0:dIbfrk742aEjINOqJH+a0n+LGYexMxnKFqyzMu/GKHu
+ DpBdnH9irtWAJfzj1pVh5CTn3dKg2JMiH3oiGavADYLbRlWy+6
+ ly/FfC2pAcIu/cn7u0wYaHi61fI6OCibOQGnHQBs+R7vSeJtOa
+ sFEp7nZqesHu9ul3kzn3U5J2abigNFoi83v1PPyHC2j1EykvK8
+ A5dFbiLf3zi0etIDWw6cC35x5Vb9+3jCkzZyvokfkZFz/3qeJq
+ 3HV5ixSYpY1B3OFNSJmmuHikz5svbJ2lNXCdEEXZYhoiK4bHiQ
+ NQENfOy6PqRaEDB4/vl5eoThA0MuWP+aRP+w8vQCYtVi5kffM8
+ 1+j0DSp+b8UqS/P9Tvad5dv2hpgB+8q2YjNW2c/+2f1orhIWIZ
+ x+u7eLPEOTJGP5gcXVxMgXZ0DkMWBYnZ0LjQJSg4pPuak4Zt7y
+ HKl9P
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refactor the PLL programming code to make it useable by the new PLL types
-introduced by Tegra114.
+From: Andrew Murray <Andrew.Murray@arm.com>
 
-The following changes were done:
+This patch factors out common implementation patterns to reduce overall kernel
+code and provide a means for host bridge drivers to directly obtain struct
+resources from the DT's ranges property without relying on architecture specific
+DT handling. This will make it easier to write archiecture independent host bridge
+drivers and mitigate against further duplication of DT parsing code.
 
-* Split programming the PLL into updating m,n,p and updating cpcon
-* Move locking from _update_pll_cpcon() to clk_pll_set_rate()
-* Introduce _get_pll_mnp() helper
-* Move check for identical m,n,p values to clk_pll_set_rate()
-* struct tegra_clk_pll_freq_table will always contain the values as defined
-  by the hardware.
-* Simplify the arguments to clk_pll_wait_for_lock()
-* Split _tegra_clk_register_pll()
+This patch can be used in the following way:
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+	struct of_pci_range_parser parser;
+	struct of_pci_range range;
+
+	if (of_pci_range_parser(&parser, np))
+		; //no ranges property
+
+	for_each_of_pci_range(&parser, &range) {
+
+		/*
+			directly access properties of the address range, e.g.:
+			range.pci_space, range.pci_addr, range.cpu_addr,
+			range.size, range.flags
+
+			alternatively obtain a struct resource, e.g.:
+			struct resource res;
+			of_pci_range_to_resource(&range, np, &res);
+		*/
+	}
+
+Additionally the implementation takes care of adjacent ranges and merges them
+into a single range (as was the case with powerpc and microblaze).
+
+The modifications to microblaze, mips and powerpc have not been tested.
+
+Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 ---
- drivers/clk/tegra/clk-pll.c     |  262 ++++++++++++++++++++++++---------------
- drivers/clk/tegra/clk-tegra20.c |  144 +++++++++++-----------
- drivers/clk/tegra/clk-tegra30.c |  234 +++++++++++++++++-----------------
- drivers/clk/tegra/clk.h         |    9 +-
- 4 files changed, 356 insertions(+), 293 deletions(-)
+ arch/microblaze/pci/pci-common.c | 110 ++++++++++++++-------------------------
+ arch/mips/pci/pci.c              |  50 ++++++------------
+ arch/powerpc/kernel/pci-common.c |  99 ++++++++++++-----------------------
+ drivers/of/address.c             |  63 ++++++++++++++++++++++
+ include/linux/of_address.h       |  42 +++++++++++++++
+ 5 files changed, 194 insertions(+), 170 deletions(-)
 
-diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
-index 165f247..3feefb1 100644
---- a/drivers/clk/tegra/clk-pll.c
-+++ b/drivers/clk/tegra/clk-pll.c
-@@ -1,5 +1,5 @@
- /*
-- * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
-+ * Copyright (c) 2012, 2013, NVIDIA CORPORATION.  All rights reserved.
-  *
-  * This program is free software; you can redistribute it and/or modify it
-  * under the terms and conditions of the GNU General Public License,
-@@ -113,20 +113,28 @@ static void clk_pll_enable_lock(struct tegra_clk_pll *pll)
- 	pll_writel_misc(val, pll);
- }
- 
--static int clk_pll_wait_for_lock(struct tegra_clk_pll *pll,
--				 void __iomem *lock_addr, u32 lock_bit_idx)
-+static int clk_pll_wait_for_lock(struct tegra_clk_pll *pll)
+diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
+index bdb8ea1..11dd9ac 100644
+--- a/arch/microblaze/pci/pci-common.c
++++ b/arch/microblaze/pci/pci-common.c
+@@ -657,67 +657,43 @@ void pci_resource_to_user(const struct pci_dev *dev, int bar,
+ void pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 				  struct device_node *dev, int primary)
  {
- 	int i;
--	u32 val;
-+	u32 val, lock_bit;
-+	void __iomem *lock_addr;
+-	const u32 *ranges;
+-	int rlen;
+-	int pna = of_n_addr_cells(dev);
+-	int np = pna + 5;
+ 	int memno = 0, isa_hole = -1;
+-	u32 pci_space;
+-	unsigned long long pci_addr, cpu_addr, pci_next, cpu_next, size;
+ 	unsigned long long isa_mb = 0;
+ 	struct resource *res;
++	struct of_pci_range range;
++	struct of_pci_range_parser parser;
++	u32 res_type;
  
- 	if (!(pll->flags & TEGRA_PLL_USE_LOCK)) {
- 		udelay(pll->params->lock_delay);
- 		return 0;
- 	}
+ 	pr_info("PCI host bridge %s %s ranges:\n",
+ 	       dev->full_name, primary ? "(primary)" : "");
  
-+	lock_addr = pll->clk_base;
-+	if (pll->flags & TEGRA_PLL_LOCK_MISC)
-+		lock_addr += pll->params->misc_reg;
-+	else
-+		lock_addr += pll->params->base_reg;
-+
-+	lock_bit = BIT(pll->params->lock_bit_idx);
-+
- 	for (i = 0; i < pll->params->lock_delay; i++) {
- 		val = readl_relaxed(lock_addr);
--		if (val & BIT(lock_bit_idx)) {
-+		if (val & lock_bit) {
- 			udelay(PLL_POST_LOCK_DELAY);
- 			return 0;
- 		}
-@@ -155,7 +163,7 @@ static int clk_pll_is_enabled(struct clk_hw *hw)
- 	return val & PLL_BASE_ENABLE ? 1 : 0;
- }
+-	/* Get ranges property */
+-	ranges = of_get_property(dev, "ranges", &rlen);
+-	if (ranges == NULL)
++	/* Check for ranges property */
++	if (of_pci_range_parser(&parser, dev))
+ 		return;
  
--static int _clk_pll_enable(struct clk_hw *hw)
-+static void _clk_pll_enable(struct clk_hw *hw)
- {
- 	struct tegra_clk_pll *pll = to_clk_pll(hw);
- 	u32 val;
-@@ -172,11 +180,6 @@ static int _clk_pll_enable(struct clk_hw *hw)
- 		val |= PMC_PLLP_WB0_OVERRIDE_PLLM_ENABLE;
- 		writel_relaxed(val, pll->pmc + PMC_PLLP_WB0_OVERRIDE);
- 	}
+-	/* Parse it */
+ 	pr_debug("Parsing ranges property...\n");
+-	while ((rlen -= np * 4) >= 0) {
++	for_each_of_pci_range(&parser, &range) {
+ 		/* Read next ranges element */
+-		pci_space = ranges[0];
+-		pci_addr = of_read_number(ranges + 1, 2);
+-		cpu_addr = of_translate_address(dev, ranges + 3);
+-		size = of_read_number(ranges + pna + 3, 2);
 -
--	clk_pll_wait_for_lock(pll, pll->clk_base + pll->params->base_reg,
--			      pll->params->lock_bit_idx);
+-		pr_debug("pci_space: 0x%08x pci_addr:0x%016llx ",
+-				pci_space, pci_addr);
+-		pr_debug("cpu_addr:0x%016llx size:0x%016llx\n",
+-					cpu_addr, size);
 -
--	return 0;
- }
+-		ranges += np;
++		pr_debug("pci_space: 0x%08x pci_addr: 0x%016llx ",
++				range.pci_space, range.pci_addr);
++		pr_debug("cpu_addr: 0x%016llx size: 0x%016llx\n",
++				range.cpu_addr, range.size);
  
- static void _clk_pll_disable(struct clk_hw *hw)
-@@ -204,7 +207,9 @@ static int clk_pll_enable(struct clk_hw *hw)
- 	if (pll->lock)
- 		spin_lock_irqsave(pll->lock, flags);
+ 		/* If we failed translation or got a zero-sized region
+ 		 * (some FW try to feed us with non sensical zero sized regions
+ 		 * such as power3 which look like some kind of attempt
+ 		 * at exposing the VGA memory hole)
+ 		 */
+-		if (cpu_addr == OF_BAD_ADDR || size == 0)
++		if (range.cpu_addr == OF_BAD_ADDR || range.size == 0)
+ 			continue;
  
--	ret = _clk_pll_enable(hw);
-+	_clk_pll_enable(hw);
-+
-+	ret = clk_pll_wait_for_lock(pll);
- 
- 	if (pll->lock)
- 		spin_unlock_irqrestore(pll->lock, flags);
-@@ -241,8 +246,6 @@ static int _get_table_rate(struct clk_hw *hw,
- 	if (sel->input_rate == 0)
- 		return -EINVAL;
- 
--	BUG_ON(sel->p < 1);
--
- 	cfg->input_rate = sel->input_rate;
- 	cfg->output_rate = sel->output_rate;
- 	cfg->m = sel->m;
-@@ -290,88 +293,109 @@ static int _calc_rate(struct clk_hw *hw, struct tegra_clk_pll_freq_table *cfg,
- 	     cfg->output_rate <<= 1)
- 		p_div++;
- 
--	cfg->p = 1 << p_div;
-+	cfg->p = p_div;
- 	cfg->m = parent_rate / cfreq;
- 	cfg->n = cfg->output_rate / cfreq;
- 	cfg->cpcon = OUT_OF_TABLE_CPCON;
- 
- 	if (cfg->m > divm_max(pll) || cfg->n > divn_max(pll) ||
--	    cfg->p > divp_max(pll) || cfg->output_rate > pll->params->vco_max) {
-+	    (1 << p_div) > divp_max(pll)
-+	    || cfg->output_rate > pll->params->vco_max) {
- 		pr_err("%s: Failed to set %s rate %lu\n",
- 		       __func__, __clk_get_name(hw->clk), rate);
- 		return -EINVAL;
- 	}
- 
-+	if (pll->flags & TEGRA_PLLU)
-+		cfg->p ^= 1;
-+
- 	return 0;
- }
- 
--static int _program_pll(struct clk_hw *hw, struct tegra_clk_pll_freq_table *cfg,
--			unsigned long rate)
-+static void _update_pll_mnp(struct tegra_clk_pll *pll,
-+			    struct tegra_clk_pll_freq_table *cfg)
- {
--	struct tegra_clk_pll *pll = to_clk_pll(hw);
--	unsigned long flags = 0;
--	u32 divp, val, old_base;
--	int state;
--
--	divp = __ffs(cfg->p);
--
--	if (pll->flags & TEGRA_PLLU)
--		divp ^= 1;
-+	u32 val;
- 
--	if (pll->lock)
--		spin_lock_irqsave(pll->lock, flags);
-+	val = pll_readl_base(pll);
- 
--	old_base = val = pll_readl_base(pll);
- 	val &= ~((divm_mask(pll) << pll->divm_shift) |
- 		 (divn_mask(pll) << pll->divn_shift) |
- 		 (divp_mask(pll) << pll->divp_shift));
- 	val |= ((cfg->m << pll->divm_shift) |
- 		(cfg->n << pll->divn_shift) |
--		(divp << pll->divp_shift));
--	if (val == old_base) {
--		if (pll->lock)
--			spin_unlock_irqrestore(pll->lock, flags);
--		return 0;
-+		(cfg->p << pll->divp_shift));
-+
-+	pll_writel_base(val, pll);
-+}
-+
-+static void _get_pll_mnp(struct tegra_clk_pll *pll,
-+			 struct tegra_clk_pll_freq_table *cfg)
-+{
-+	u32 val;
-+
-+	val = pll_readl_base(pll);
-+
-+	cfg->m = (val >> pll->divm_shift) & (divm_mask(pll));
-+	cfg->n = (val >> pll->divn_shift) & (divn_mask(pll));
-+	cfg->p = (val >> pll->divp_shift) & (divp_mask(pll));
-+}
-+
-+static void _update_pll_cpcon(struct tegra_clk_pll *pll,
-+			      struct tegra_clk_pll_freq_table *cfg,
-+			      unsigned long rate)
-+{
-+	u32 val;
-+
-+	val = pll_readl_misc(pll);
-+
-+	val &= ~(PLL_MISC_CPCON_MASK << PLL_MISC_CPCON_SHIFT);
-+	val |= cfg->cpcon << PLL_MISC_CPCON_SHIFT;
-+
-+	if (pll->flags & TEGRA_PLL_SET_LFCON) {
-+		val &= ~(PLL_MISC_LFCON_MASK << PLL_MISC_LFCON_SHIFT);
-+		if (cfg->n >= PLLDU_LFCON_SET_DIVN)
-+			val |= 1 << PLL_MISC_LFCON_SHIFT;
-+	} else if (pll->flags & TEGRA_PLL_SET_DCCON) {
-+		val &= ~(1 << PLL_MISC_DCCON_SHIFT);
-+		if (rate >= (pll->params->vco_max >> 1))
-+			val |= 1 << PLL_MISC_DCCON_SHIFT;
- 	}
- 
-+	pll_writel_misc(val, pll);
-+}
-+
-+static int _program_pll(struct clk_hw *hw, struct tegra_clk_pll_freq_table *cfg,
-+			unsigned long rate)
-+{
-+	struct tegra_clk_pll *pll = to_clk_pll(hw);
-+	int state, ret = 0;
-+
- 	state = clk_pll_is_enabled(hw);
- 
--	if (state) {
-+	if (state)
- 		_clk_pll_disable(hw);
--		val &= ~(PLL_BASE_BYPASS | PLL_BASE_ENABLE);
--	}
--	pll_writel_base(val, pll);
- 
--	if (pll->flags & TEGRA_PLL_HAS_CPCON) {
--		val = pll_readl_misc(pll);
--		val &= ~(PLL_MISC_CPCON_MASK << PLL_MISC_CPCON_SHIFT);
--		val |= cfg->cpcon << PLL_MISC_CPCON_SHIFT;
--		if (pll->flags & TEGRA_PLL_SET_LFCON) {
--			val &= ~(PLL_MISC_LFCON_MASK << PLL_MISC_LFCON_SHIFT);
--			if (cfg->n >= PLLDU_LFCON_SET_DIVN)
--				val |= 0x1 << PLL_MISC_LFCON_SHIFT;
--		} else if (pll->flags & TEGRA_PLL_SET_DCCON) {
--			val &= ~(0x1 << PLL_MISC_DCCON_SHIFT);
--			if (rate >= (pll->params->vco_max >> 1))
--				val |= 0x1 << PLL_MISC_DCCON_SHIFT;
+-		/* Now consume following elements while they are contiguous */
+-		for (; rlen >= np * sizeof(u32);
+-		     ranges += np, rlen -= np * 4) {
+-			if (ranges[0] != pci_space)
+-				break;
+-			pci_next = of_read_number(ranges + 1, 2);
+-			cpu_next = of_translate_address(dev, ranges + 3);
+-			if (pci_next != pci_addr + size ||
+-			    cpu_next != cpu_addr + size)
+-				break;
+-			size += of_read_number(ranges + pna + 3, 2);
 -		}
--		pll_writel_misc(val, pll);
--	}
-+	_update_pll_mnp(pll, cfg);
+-
+ 		/* Act based on address space type */
+ 		res = NULL;
+-		switch ((pci_space >> 24) & 0x3) {
+-		case 1:		/* PCI IO space */
++		res_type = range.flags & IORESOURCE_TYPE_BITS;
++		if (res_type == IORESOURCE_IO) {
+ 			pr_info("  IO 0x%016llx..0x%016llx -> 0x%016llx\n",
+-			       cpu_addr, cpu_addr + size - 1, pci_addr);
++				range.cpu_addr, range.cpu_addr + range.size - 1,
++				range.pci_addr);
  
--	if (pll->lock)
--		spin_unlock_irqrestore(pll->lock, flags);
-+	if (pll->flags & TEGRA_PLL_HAS_CPCON)
-+		_update_pll_cpcon(pll, cfg, rate);
+ 			/* We support only one IO range */
+ 			if (hose->pci_io_size) {
+@@ -725,11 +701,12 @@ void pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 				continue;
+ 			}
+ 			/* On 32 bits, limit I/O space to 16MB */
+-			if (size > 0x01000000)
+-				size = 0x01000000;
++			if (range.size > 0x01000000)
++				range.size = 0x01000000;
  
--	if (state)
--		clk_pll_enable(hw);
-+	if (state) {
-+		_clk_pll_enable(hw);
-+		ret = clk_pll_wait_for_lock(pll);
-+	}
+ 			/* 32 bits needs to map IOs here */
+-			hose->io_base_virt = ioremap(cpu_addr, size);
++			hose->io_base_virt = ioremap(range.cpu_addr,
++						range.size);
  
--	return 0;
-+	return ret;
- }
+ 			/* Expect trouble if pci_addr is not 0 */
+ 			if (primary)
+@@ -738,19 +715,18 @@ void pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 			/* pci_io_size and io_base_phys always represent IO
+ 			 * space starting at 0 so we factor in pci_addr
+ 			 */
+-			hose->pci_io_size = pci_addr + size;
+-			hose->io_base_phys = cpu_addr - pci_addr;
++			hose->pci_io_size = range.pci_addr + range.size;
++			hose->io_base_phys = range.cpu_addr - range.pci_addr;
  
- static int clk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
- 			unsigned long parent_rate)
- {
- 	struct tegra_clk_pll *pll = to_clk_pll(hw);
--	struct tegra_clk_pll_freq_table cfg;
-+	struct tegra_clk_pll_freq_table cfg, old_cfg;
-+	unsigned long flags = 0;
-+	int ret = 0;
+ 			/* Build resource */
+ 			res = &hose->io_resource;
+-			res->flags = IORESOURCE_IO;
+-			res->start = pci_addr;
+-			break;
+-		case 2:		/* PCI Memory space */
+-		case 3:		/* PCI 64 bits Memory space */
++			range.cpu_addr = range.pci_addr;
++		} else if (res_type == IORESOURCE_MEM) {
+ 			pr_info(" MEM 0x%016llx..0x%016llx -> 0x%016llx %s\n",
+-			       cpu_addr, cpu_addr + size - 1, pci_addr,
+-			       (pci_space & 0x40000000) ? "Prefetch" : "");
++				range.cpu_addr, range.cpu_addr + range.size - 1,
++				range.pci_addr,
++				(range.pci_space & 0x40000000) ?
++				"Prefetch" : "");
  
- 	if (pll->flags & TEGRA_PLL_FIXED) {
- 		if (rate != pll->fixed_rate) {
-@@ -387,7 +411,18 @@ static int clk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
- 	    _calc_rate(hw, &cfg, rate, parent_rate))
- 		return -EINVAL;
+ 			/* We support only 3 memory ranges */
+ 			if (memno >= 3) {
+@@ -758,13 +734,13 @@ void pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 				continue;
+ 			}
+ 			/* Handles ISA memory hole space here */
+-			if (pci_addr == 0) {
++			if (range.pci_addr == 0) {
+ 				isa_mb = cpu_addr;
+ 				isa_hole = memno;
+ 				if (primary || isa_mem_base == 0)
+-					isa_mem_base = cpu_addr;
+-				hose->isa_mem_phys = cpu_addr;
+-				hose->isa_mem_size = size;
++					isa_mem_base = range.cpu_addr;
++				hose->isa_mem_phys = range.cpu_addr;
++				hose->isa_mem_size = range.size;
+ 			}
  
--	return _program_pll(hw, &cfg, rate);
-+	if (pll->lock)
-+		spin_lock_irqsave(pll->lock, flags);
-+
-+	_get_pll_mnp(pll, &old_cfg);
-+
-+	if (old_cfg.m != cfg.m || old_cfg.n != cfg.n || old_cfg.p != cfg.p)
-+		ret = _program_pll(hw, &cfg, rate);
-+
-+	if (pll->lock)
-+		spin_unlock_irqrestore(pll->lock, flags);
-+
-+	return ret;
- }
+ 			/* We get the PCI/Mem offset from the first range or
+@@ -772,30 +748,22 @@ void pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 			 * hole. If they don't match, bugger.
+ 			 */
+ 			if (memno == 0 ||
+-			    (isa_hole >= 0 && pci_addr != 0 &&
++			    (isa_hole >= 0 && range.pci_addr != 0 &&
+ 			     hose->pci_mem_offset == isa_mb))
+-				hose->pci_mem_offset = cpu_addr - pci_addr;
+-			else if (pci_addr != 0 &&
+-				 hose->pci_mem_offset != cpu_addr - pci_addr) {
++				hose->pci_mem_offset = range.cpu_addr
++							- range.pci_addr;
++			else if (range.pci_addr != 0 &&
++				 hose->pci_mem_offset != range.cpu_addr
++							- range.pci_addr) {
+ 				pr_info(" \\--> Skipped (offset mismatch) !\n");
+ 				continue;
+ 			}
  
- static long clk_pll_round_rate(struct clk_hw *hw, unsigned long rate,
-@@ -409,7 +444,7 @@ static long clk_pll_round_rate(struct clk_hw *hw, unsigned long rate,
- 		return -EINVAL;
- 
- 	output_rate *= cfg.n;
--	do_div(output_rate, cfg.m * cfg.p);
-+	do_div(output_rate, cfg.m * (1 << cfg.p));
- 
- 	return output_rate;
- }
-@@ -418,10 +453,12 @@ static unsigned long clk_pll_recalc_rate(struct clk_hw *hw,
- 					 unsigned long parent_rate)
- {
- 	struct tegra_clk_pll *pll = to_clk_pll(hw);
--	u32 val = pll_readl_base(pll);
--	u32 divn = 0, divm = 0, divp = 0;
-+	struct tegra_clk_pll_freq_table cfg;
-+	u32 val;
- 	u64 rate = parent_rate;
- 
-+	val = pll_readl_base(pll);
-+
- 	if (val & PLL_BASE_BYPASS)
- 		return parent_rate;
- 
-@@ -435,16 +472,16 @@ static unsigned long clk_pll_recalc_rate(struct clk_hw *hw,
- 		return pll->fixed_rate;
+ 			/* Build resource */
+ 			res = &hose->mem_resources[memno++];
+-			res->flags = IORESOURCE_MEM;
+-			if (pci_space & 0x40000000)
+-				res->flags |= IORESOURCE_PREFETCH;
+-			res->start = cpu_addr;
+-			break;
+-		}
+-		if (res != NULL) {
+-			res->name = dev->full_name;
+-			res->end = res->start + size - 1;
+-			res->parent = NULL;
+-			res->sibling = NULL;
+-			res->child = NULL;
+ 		}
++		if (res != NULL)
++			of_pci_range_to_resource(&range, dev, res);
  	}
  
--	divp = (val >> pll->divp_shift) & (divp_mask(pll));
-+	_get_pll_mnp(pll, &cfg);
-+
- 	if (pll->flags & TEGRA_PLLU)
--		divp ^= 1;
-+		cfg.p ^= 1;
- 
--	divn = (val >> pll->divn_shift) & (divn_mask(pll));
--	divm = (val >> pll->divm_shift) & (divm_mask(pll));
--	divm *= (1 << divp);
-+	cfg.m *= 1 << cfg.p;
-+
-+	rate *= cfg.n;
-+	do_div(rate, cfg.m);
- 
--	rate *= divn;
--	do_div(rate, divm);
- 	return rate;
- }
- 
-@@ -538,8 +575,8 @@ static int clk_plle_enable(struct clk_hw *hw)
- 	val |= (PLL_BASE_BYPASS | PLL_BASE_ENABLE);
- 	pll_writel_base(val, pll);
- 
--	clk_pll_wait_for_lock(pll, pll->clk_base + pll->params->misc_reg,
--			      pll->params->lock_bit_idx);
-+	clk_pll_wait_for_lock(pll);
-+
- 	return 0;
- }
- 
-@@ -577,28 +614,17 @@ const struct clk_ops tegra_clk_plle_ops = {
- 	.enable = clk_plle_enable,
- };
- 
--static struct clk *_tegra_clk_register_pll(const char *name,
--		const char *parent_name, void __iomem *clk_base,
--		void __iomem *pmc, unsigned long flags,
--		unsigned long fixed_rate,
--		struct tegra_clk_pll_params *pll_params, u8 pll_flags,
--		struct tegra_clk_pll_freq_table *freq_table, spinlock_t *lock,
--		const struct clk_ops *ops)
-+static struct tegra_clk_pll *_tegra_init_pll(void __iomem *clk_base,
-+		void __iomem *pmc, unsigned long fixed_rate,
-+		struct tegra_clk_pll_params *pll_params, u32 pll_flags,
-+		struct tegra_clk_pll_freq_table *freq_table, spinlock_t *lock)
+ 	/* If there's an ISA hole and the pci_mem_offset is -not- matching
+diff --git a/arch/mips/pci/pci.c b/arch/mips/pci/pci.c
+index 0872f12..bee49a4 100644
+--- a/arch/mips/pci/pci.c
++++ b/arch/mips/pci/pci.c
+@@ -122,51 +122,33 @@ static void pcibios_scanbus(struct pci_controller *hose)
+ #ifdef CONFIG_OF
+ void pci_load_of_ranges(struct pci_controller *hose, struct device_node *node)
  {
- 	struct tegra_clk_pll *pll;
--	struct clk *clk;
--	struct clk_init_data init;
+-	const __be32 *ranges;
+-	int rlen;
+-	int pna = of_n_addr_cells(node);
+-	int np = pna + 5;
++	struct of_pci_range_range range;
++	struct of_pci_range_parser parser;
++	u32 res_type;
  
- 	pll = kzalloc(sizeof(*pll), GFP_KERNEL);
- 	if (!pll)
- 		return ERR_PTR(-ENOMEM);
+ 	pr_info("PCI host bridge %s ranges:\n", node->full_name);
+-	ranges = of_get_property(node, "ranges", &rlen);
+-	if (ranges == NULL)
+-		return;
+ 	hose->of_node = node;
  
--	init.name = name;
--	init.ops = ops;
--	init.flags = flags;
--	init.parent_names = (parent_name ? &parent_name : NULL);
--	init.num_parents = (parent_name ? 1 : 0);
+-	while ((rlen -= np * 4) >= 0) {
+-		u32 pci_space;
++	if (of_pci_range_parser(&parser, node))
++		return;
++
++	for_each_of_pci_range(&parser, &range) {
+ 		struct resource *res = NULL;
+-		u64 addr, size;
 -
- 	pll->clk_base = clk_base;
- 	pll->pmc = pmc;
+-		pci_space = be32_to_cpup(&ranges[0]);
+-		addr = of_translate_address(node, ranges + 3);
+-		size = of_read_number(ranges + pna + 3, 2);
+-		ranges += np;
+-		switch ((pci_space >> 24) & 0x3) {
+-		case 1:		/* PCI IO space */
++
++		res_type = range.flags & IORESOURCE_TYPE_BITS;
++		if (res_type == IORESOURCE_IO) {
+ 			pr_info("  IO 0x%016llx..0x%016llx\n",
+-					addr, addr + size - 1);
++				range.addr, range.addr + range.size - 1);
+ 			hose->io_map_base =
+-				(unsigned long)ioremap(addr, size);
++				(unsigned long)ioremap(range.addr, range.size);
+ 			res = hose->io_resource;
+-			res->flags = IORESOURCE_IO;
+-			break;
+-		case 2:		/* PCI Memory space */
+-		case 3:		/* PCI 64 bits Memory space */
++		} else if (res_type == IORESOURCE_MEM) {
+ 			pr_info(" MEM 0x%016llx..0x%016llx\n",
+-					addr, addr + size - 1);
++				range.addr, range.addr + range.size - 1);
+ 			res = hose->mem_resource;
+-			res->flags = IORESOURCE_MEM;
+-			break;
+-		}
+-		if (res != NULL) {
+-			res->start = addr;
+-			res->name = node->full_name;
+-			res->end = res->start + size - 1;
+-			res->parent = NULL;
+-			res->sibling = NULL;
+-			res->child = NULL;
+ 		}
++		if (res != NULL)
++			of_pci_range_to_resource(&range, node, res);
+ 	}
+ }
+ #endif
+diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
+index fa12ae4..878d530 100644
+--- a/arch/powerpc/kernel/pci-common.c
++++ b/arch/powerpc/kernel/pci-common.c
+@@ -676,61 +676,37 @@ void pci_resource_to_user(const struct pci_dev *dev, int bar,
+ void pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 				  struct device_node *dev, int primary)
+ {
+-	const u32 *ranges;
+-	int rlen;
+-	int pna = of_n_addr_cells(dev);
+-	int np = pna + 5;
+ 	int memno = 0, isa_hole = -1;
+-	u32 pci_space;
+-	unsigned long long pci_addr, cpu_addr, pci_next, cpu_next, size;
+ 	unsigned long long isa_mb = 0;
+ 	struct resource *res;
++	struct of_pci_range range;
++	struct of_pci_range_parser parser;
++	u32 res_type;
  
-@@ -615,34 +641,68 @@ static struct clk *_tegra_clk_register_pll(const char *name,
- 	pll->divm_shift = PLL_BASE_DIVM_SHIFT;
- 	pll->divm_width = PLL_BASE_DIVM_WIDTH;
+ 	printk(KERN_INFO "PCI host bridge %s %s ranges:\n",
+ 	       dev->full_name, primary ? "(primary)" : "");
  
-+	return pll;
+-	/* Get ranges property */
+-	ranges = of_get_property(dev, "ranges", &rlen);
+-	if (ranges == NULL)
++	/* Check for ranges property */
++	if (of_pci_range_parser(&parser, dev))
+ 		return;
+ 
+-	/* Parse it */
+-	while ((rlen -= np * 4) >= 0) {
+-		/* Read next ranges element */
+-		pci_space = ranges[0];
+-		pci_addr = of_read_number(ranges + 1, 2);
+-		cpu_addr = of_translate_address(dev, ranges + 3);
+-		size = of_read_number(ranges + pna + 3, 2);
+-		ranges += np;
+-
++	for_each_of_pci_range(&parser, &range) {
+ 		/* If we failed translation or got a zero-sized region
+ 		 * (some FW try to feed us with non sensical zero sized regions
+ 		 * such as power3 which look like some kind of attempt at exposing
+ 		 * the VGA memory hole)
+ 		 */
+-		if (cpu_addr == OF_BAD_ADDR || size == 0)
++		if (range.cpu_addr == OF_BAD_ADDR || range.size == 0)
+ 			continue;
+ 
+-		/* Now consume following elements while they are contiguous */
+-		for (; rlen >= np * sizeof(u32);
+-		     ranges += np, rlen -= np * 4) {
+-			if (ranges[0] != pci_space)
+-				break;
+-			pci_next = of_read_number(ranges + 1, 2);
+-			cpu_next = of_translate_address(dev, ranges + 3);
+-			if (pci_next != pci_addr + size ||
+-			    cpu_next != cpu_addr + size)
+-				break;
+-			size += of_read_number(ranges + pna + 3, 2);
+-		}
+-
+ 		/* Act based on address space type */
+ 		res = NULL;
+-		switch ((pci_space >> 24) & 0x3) {
+-		case 1:		/* PCI IO space */
++		res_type = range.flags & IORESOURCE_TYPE_BITS;
++		if (res_type == IORESOURCE_IO) {
+ 			printk(KERN_INFO
+ 			       "  IO 0x%016llx..0x%016llx -> 0x%016llx\n",
+-			       cpu_addr, cpu_addr + size - 1, pci_addr);
++				range.cpu_addr, range.cpu_addr + range.size - 1,
++				range.pci_addr);
+ 
+ 			/* We support only one IO range */
+ 			if (hose->pci_io_size) {
+@@ -740,11 +716,12 @@ void pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 			}
+ #ifdef CONFIG_PPC32
+ 			/* On 32 bits, limit I/O space to 16MB */
+-			if (size > 0x01000000)
+-				size = 0x01000000;
++			if (range.size > 0x01000000)
++				range.size = 0x01000000;
+ 
+ 			/* 32 bits needs to map IOs here */
+-			hose->io_base_virt = ioremap(cpu_addr, size);
++			hose->io_base_virt = ioremap(range.cpu_addr,
++						range.size);
+ 
+ 			/* Expect trouble if pci_addr is not 0 */
+ 			if (primary)
+@@ -754,20 +731,19 @@ void pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 			/* pci_io_size and io_base_phys always represent IO
+ 			 * space starting at 0 so we factor in pci_addr
+ 			 */
+-			hose->pci_io_size = pci_addr + size;
+-			hose->io_base_phys = cpu_addr - pci_addr;
++			hose->pci_io_size = range.pci_addr + range.size;
++			hose->io_base_phys = range.cpu_addr - range.pci_addr;
+ 
+ 			/* Build resource */
+ 			res = &hose->io_resource;
+-			res->flags = IORESOURCE_IO;
+-			res->start = pci_addr;
+-			break;
+-		case 2:		/* PCI Memory space */
+-		case 3:		/* PCI 64 bits Memory space */
++			range.cpu_addr = range.pci_addr;
++		} else if (res_type == IORESOURCE_MEM) {
+ 			printk(KERN_INFO
+ 			       " MEM 0x%016llx..0x%016llx -> 0x%016llx %s\n",
+-			       cpu_addr, cpu_addr + size - 1, pci_addr,
+-			       (pci_space & 0x40000000) ? "Prefetch" : "");
++				range.cpu_addr, range.cpu_addr + range.size - 1,
++				range.pci_addr,
++				(range.pci_space & 0x40000000) ?
++				"Prefetch" : "");
+ 
+ 			/* We support only 3 memory ranges */
+ 			if (memno >= 3) {
+@@ -776,13 +752,13 @@ void pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 				continue;
+ 			}
+ 			/* Handles ISA memory hole space here */
+-			if (pci_addr == 0) {
++			if (range.pci_addr == 0) {
+ 				isa_mb = cpu_addr;
+ 				isa_hole = memno;
+ 				if (primary || isa_mem_base == 0)
+-					isa_mem_base = cpu_addr;
+-				hose->isa_mem_phys = cpu_addr;
+-				hose->isa_mem_size = size;
++					isa_mem_base = range.cpu_addr;
++				hose->isa_mem_phys = range.cpu_addr;
++				hose->isa_mem_size = range.size;
+ 			}
+ 
+ 			/* We get the PCI/Mem offset from the first range or
+@@ -790,11 +766,13 @@ void pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 			 * hole. If they don't match, bugger.
+ 			 */
+ 			if (memno == 0 ||
+-			    (isa_hole >= 0 && pci_addr != 0 &&
++			(isa_hole >= 0 && range.pci_addr != 0 &&
+ 			     hose->pci_mem_offset == isa_mb))
+-				hose->pci_mem_offset = cpu_addr - pci_addr;
++				hose->pci_mem_offset = range.cpu_addr -
++							range.pci_addr;
+ 			else if (pci_addr != 0 &&
+-				 hose->pci_mem_offset != cpu_addr - pci_addr) {
++				hose->pci_mem_offset != range.cpu_addr -
++							range.pci_addr) {
+ 				printk(KERN_INFO
+ 				       " \\--> Skipped (offset mismatch) !\n");
+ 				continue;
+@@ -802,19 +780,10 @@ void pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 
+ 			/* Build resource */
+ 			res = &hose->mem_resources[memno++];
+-			res->flags = IORESOURCE_MEM;
+-			if (pci_space & 0x40000000)
+-				res->flags |= IORESOURCE_PREFETCH;
+-			res->start = cpu_addr;
+ 			break;
+ 		}
+-		if (res != NULL) {
+-			res->name = dev->full_name;
+-			res->end = res->start + size - 1;
+-			res->parent = NULL;
+-			res->sibling = NULL;
+-			res->child = NULL;
+-		}
++		if (res != NULL)
++			of_pci_range_to_resource(&range, dev, res);
+ 	}
+ 
+ 	/* If there's an ISA hole and the pci_mem_offset is -not- matching
+diff --git a/drivers/of/address.c b/drivers/of/address.c
+index 04da786..e87f45e 100644
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -227,6 +227,69 @@ int of_pci_address_to_resource(struct device_node *dev, int bar,
+ 	return __of_address_to_resource(dev, addrp, size, flags, NULL, r);
+ }
+ EXPORT_SYMBOL_GPL(of_pci_address_to_resource);
++
++int of_pci_range_parser(struct of_pci_range_parser *parser,
++			struct device_node *node)
++{
++	const int na = 3, ns = 2;
++	int rlen;
++
++	parser->node = node;
++	parser->pna = of_n_addr_cells(node);
++	parser->np = parser->pna + na + ns;
++
++	parser->range = of_get_property(node, "ranges", &rlen);
++	if (parser->range == NULL)
++		return -ENOENT;
++
++	parser->end = parser->range + rlen / sizeof(__be32);
++
++	return 0;
 +}
 +
-+static struct clk *_tegra_clk_register_pll(struct tegra_clk_pll *pll,
-+		const char *name, const char *parent_name, unsigned long flags,
-+		const struct clk_ops *ops)
++struct of_pci_range *of_pci_process_ranges(struct of_pci_range_parser *parser,
++						struct of_pci_range *range)
 +{
-+	struct clk_init_data init;
++	const int na = 3, ns = 2;
 +
-+	init.name = name;
-+	init.ops = ops;
-+	init.flags = flags;
-+	init.parent_names = (parent_name ? &parent_name : NULL);
-+	init.num_parents = (parent_name ? 1 : 0);
++	if (!parser->range || parser->range + parser->np > parser->end)
++		return NULL;
 +
- 	/* Data in .init is copied by clk_register(), so stack variable OK */
- 	pll->hw.init = &init;
++	range->pci_space = be32_to_cpup(parser->range);
++	range->flags = of_bus_pci_get_flags(parser->range);
++	range->pci_addr = of_read_number(parser->range + 1, ns);
++	range->cpu_addr = of_translate_address(parser->node,
++				parser->range + na);
++	range->size = of_read_number(parser->range + parser->pna + na, ns);
++
++	parser->range += parser->np;
++
++	/* Now consume following elements while they are contiguous */
++	while (parser->range + parser->np <= parser->end) {
++		u32 flags, pci_space;
++		u64 pci_addr, cpu_addr, size;
++
++		pci_space = be32_to_cpup(parser->range);
++		flags = of_bus_pci_get_flags(parser->range);
++		pci_addr = of_read_number(parser->range + 1, ns);
++		cpu_addr = of_translate_address(parser->node,
++				parser->range + na);
++		size = of_read_number(parser->range + parser->pna + na, ns);
++
++		if (flags != range->flags)
++			break;
++		if (pci_addr != range->pci_addr + range->size ||
++		    cpu_addr != range->cpu_addr + range->size)
++			break;
++
++		range->size += size;
++		parser->range += parser->np;
++	}
++
++	return range;
++}
++EXPORT_SYMBOL_GPL(of_pci_process_ranges);
++
+ #endif /* CONFIG_PCI */
  
--	clk = clk_register(NULL, &pll->hw);
--	if (IS_ERR(clk))
--		kfree(pll);
--
--	return clk;
-+	return clk_register(NULL, &pll->hw);
- }
+ /*
+diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+index 0506eb5..c7003a3 100644
+--- a/include/linux/of_address.h
++++ b/include/linux/of_address.h
+@@ -4,6 +4,32 @@
+ #include <linux/errno.h>
+ #include <linux/of.h>
  
- struct clk *tegra_clk_register_pll(const char *name, const char *parent_name,
- 		void __iomem *clk_base, void __iomem *pmc,
- 		unsigned long flags, unsigned long fixed_rate,
--		struct tegra_clk_pll_params *pll_params, u8 pll_flags,
-+		struct tegra_clk_pll_params *pll_params, u32 pll_flags,
- 		struct tegra_clk_pll_freq_table *freq_table, spinlock_t *lock)
++struct of_pci_range_parser {
++	struct device_node *node;
++	const __be32 *range, *end;
++	int np, pna;
++};
++
++struct of_pci_range {
++	u32 pci_space;
++	u64 pci_addr;
++	u64 cpu_addr;
++	u64 size;
++	u32 flags;
++};
++
++#define for_each_of_pci_range(parser, range) \
++	for (; of_pci_process_ranges(parser, range);)
++
++#define of_pci_range_to_resource(range, np, res) \
++	do { \
++		(res)->flags = (range)->flags; \
++		(res)->start = (range)->cpu_addr; \
++		(res)->end = (range)->cpu_addr + (range)->size - 1; \
++		(res)->parent = (res)->child = (res)->sibling = NULL; \
++		(res)->name = (np)->full_name; \
++	} while (0)
++
+ #ifdef CONFIG_OF_ADDRESS
+ extern u64 of_translate_address(struct device_node *np, const __be32 *addr);
+ extern bool of_can_translate_address(struct device_node *dev);
+@@ -27,6 +53,10 @@ static inline unsigned long pci_address_to_pio(phys_addr_t addr) { return -1; }
+ #define pci_address_to_pio pci_address_to_pio
+ #endif
+ 
++int of_pci_range_parser(struct of_pci_range_parser *parser,
++			struct device_node *node);
++struct of_pci_range *of_pci_process_ranges(struct of_pci_range_parser *parser,
++						struct of_pci_range *range);
+ #else /* CONFIG_OF_ADDRESS */
+ #ifndef of_address_to_resource
+ static inline int of_address_to_resource(struct device_node *dev, int index,
+@@ -53,6 +83,18 @@ static inline const __be32 *of_get_address(struct device_node *dev, int index,
  {
--	return _tegra_clk_register_pll(name, parent_name, clk_base, pmc,
--			flags, fixed_rate, pll_params, pll_flags, freq_table,
--			lock, &tegra_clk_pll_ops);
-+	struct tegra_clk_pll *pll;
-+	struct clk *clk;
-+
-+	pll = _tegra_init_pll(clk_base, pmc, fixed_rate, pll_params, pll_flags,
-+			      freq_table, lock);
-+	if (IS_ERR(pll))
-+		return ERR_CAST(pll);
-+
-+	clk = _tegra_clk_register_pll(pll, name, parent_name, flags,
-+				      &tegra_clk_pll_ops);
-+	if (IS_ERR(clk))
-+		kfree(pll);
-+
-+	return clk;
+ 	return NULL;
  }
- 
- struct clk *tegra_clk_register_plle(const char *name, const char *parent_name,
- 		void __iomem *clk_base, void __iomem *pmc,
- 		unsigned long flags, unsigned long fixed_rate,
--		struct tegra_clk_pll_params *pll_params, u8 pll_flags,
-+		struct tegra_clk_pll_params *pll_params, u32 pll_flags,
- 		struct tegra_clk_pll_freq_table *freq_table, spinlock_t *lock)
- {
--	return _tegra_clk_register_pll(name, parent_name, clk_base, pmc,
--			flags, fixed_rate, pll_params, pll_flags, freq_table,
--			lock, &tegra_clk_plle_ops);
-+	struct tegra_clk_pll *pll;
-+	struct clk *clk;
-+	pll_flags |= TEGRA_PLL_LOCK_MISC;
 +
-+	pll = _tegra_init_pll(clk_base, pmc, fixed_rate, pll_params, pll_flags,
-+			      freq_table, lock);
-+	if (IS_ERR(pll))
-+		return ERR_CAST(pll);
++int of_pci_range_parser(struct of_pci_range_parser *parser,
++			struct device_noed *node)
++{
++	return -1;
++}
 +
-+	clk = _tegra_clk_register_pll(pll, name, parent_name, flags,
-+				      &tegra_clk_plle_ops);
-+	if (IS_ERR(clk))
-+		kfree(pll);
-+
-+	return clk;
- }
-diff --git a/drivers/clk/tegra/clk-tegra20.c b/drivers/clk/tegra/clk-tegra20.c
-index 3738d33..13efdfb 100644
---- a/drivers/clk/tegra/clk-tegra20.c
-+++ b/drivers/clk/tegra/clk-tegra20.c
-@@ -248,125 +248,125 @@ static struct clk *clks[clk_max];
- static struct clk_onecell_data clk_data;
++struct of_pci_range *of_pci_process_ranges(struct of_pci_range_parser *parser,
++						struct of_pci_range *range)
++{
++	return NULL;
++}
+ #endif /* CONFIG_OF_ADDRESS */
  
- static struct tegra_clk_pll_freq_table pll_c_freq_table[] = {
--	{ 12000000, 600000000, 600, 12, 1, 8 },
--	{ 13000000, 600000000, 600, 13, 1, 8 },
--	{ 19200000, 600000000, 500, 16, 1, 6 },
--	{ 26000000, 600000000, 600, 26, 1, 8 },
-+	{ 12000000, 600000000, 600, 12, 0, 8 },
-+	{ 13000000, 600000000, 600, 13, 0, 8 },
-+	{ 19200000, 600000000, 500, 16, 0, 6 },
-+	{ 26000000, 600000000, 600, 26, 0, 8 },
- 	{ 0, 0, 0, 0, 0, 0 },
- };
  
- static struct tegra_clk_pll_freq_table pll_m_freq_table[] = {
--	{ 12000000, 666000000, 666, 12, 1, 8},
--	{ 13000000, 666000000, 666, 13, 1, 8},
--	{ 19200000, 666000000, 555, 16, 1, 8},
--	{ 26000000, 666000000, 666, 26, 1, 8},
--	{ 12000000, 600000000, 600, 12, 1, 8},
--	{ 13000000, 600000000, 600, 13, 1, 8},
--	{ 19200000, 600000000, 375, 12, 1, 6},
--	{ 26000000, 600000000, 600, 26, 1, 8},
-+	{ 12000000, 666000000, 666, 12, 0, 8},
-+	{ 13000000, 666000000, 666, 13, 0, 8},
-+	{ 19200000, 666000000, 555, 16, 0, 8},
-+	{ 26000000, 666000000, 666, 26, 0, 8},
-+	{ 12000000, 600000000, 600, 12, 0, 8},
-+	{ 13000000, 600000000, 600, 13, 0, 8},
-+	{ 19200000, 600000000, 375, 12, 0, 6},
-+	{ 26000000, 600000000, 600, 26, 0, 8},
- 	{ 0, 0, 0, 0, 0, 0 },
- };
- 
- static struct tegra_clk_pll_freq_table pll_p_freq_table[] = {
--	{ 12000000, 216000000, 432, 12, 2, 8},
--	{ 13000000, 216000000, 432, 13, 2, 8},
--	{ 19200000, 216000000, 90,   4, 2, 1},
--	{ 26000000, 216000000, 432, 26, 2, 8},
--	{ 12000000, 432000000, 432, 12, 1, 8},
--	{ 13000000, 432000000, 432, 13, 1, 8},
--	{ 19200000, 432000000, 90,   4, 1, 1},
--	{ 26000000, 432000000, 432, 26, 1, 8},
-+	{ 12000000, 216000000, 432, 12, 1, 8},
-+	{ 13000000, 216000000, 432, 13, 1, 8},
-+	{ 19200000, 216000000, 90,   4, 1, 1},
-+	{ 26000000, 216000000, 432, 26, 1, 8},
-+	{ 12000000, 432000000, 432, 12, 0, 8},
-+	{ 13000000, 432000000, 432, 13, 0, 8},
-+	{ 19200000, 432000000, 90,   4, 0, 1},
-+	{ 26000000, 432000000, 432, 26, 0, 8},
- 	{ 0, 0, 0, 0, 0, 0 },
- };
- 
- static struct tegra_clk_pll_freq_table pll_a_freq_table[] = {
--	{ 28800000, 56448000, 49, 25, 1, 1},
--	{ 28800000, 73728000, 64, 25, 1, 1},
--	{ 28800000, 24000000,  5,  6, 1, 1},
-+	{ 28800000, 56448000, 49, 25, 0, 1},
-+	{ 28800000, 73728000, 64, 25, 0, 1},
-+	{ 28800000, 24000000,  5,  6, 0, 1},
- 	{ 0, 0, 0, 0, 0, 0 },
- };
- 
- static struct tegra_clk_pll_freq_table pll_d_freq_table[] = {
--	{ 12000000, 216000000, 216, 12, 1, 4},
--	{ 13000000, 216000000, 216, 13, 1, 4},
--	{ 19200000, 216000000, 135, 12, 1, 3},
--	{ 26000000, 216000000, 216, 26, 1, 4},
-+	{ 12000000, 216000000, 216, 12, 0, 4},
-+	{ 13000000, 216000000, 216, 13, 0, 4},
-+	{ 19200000, 216000000, 135, 12, 0, 3},
-+	{ 26000000, 216000000, 216, 26, 0, 4},
- 
--	{ 12000000, 594000000, 594, 12, 1, 8},
--	{ 13000000, 594000000, 594, 13, 1, 8},
--	{ 19200000, 594000000, 495, 16, 1, 8},
--	{ 26000000, 594000000, 594, 26, 1, 8},
-+	{ 12000000, 594000000, 594, 12, 0, 8},
-+	{ 13000000, 594000000, 594, 13, 0, 8},
-+	{ 19200000, 594000000, 495, 16, 0, 8},
-+	{ 26000000, 594000000, 594, 26, 0, 8},
- 
--	{ 12000000, 1000000000, 1000, 12, 1, 12},
--	{ 13000000, 1000000000, 1000, 13, 1, 12},
--	{ 19200000, 1000000000, 625,  12, 1, 8},
--	{ 26000000, 1000000000, 1000, 26, 1, 12},
-+	{ 12000000, 1000000000, 1000, 12, 0, 12},
-+	{ 13000000, 1000000000, 1000, 13, 0, 12},
-+	{ 19200000, 1000000000, 625,  12, 0, 8},
-+	{ 26000000, 1000000000, 1000, 26, 0, 12},
- 
- 	{ 0, 0, 0, 0, 0, 0 },
- };
- 
- static struct tegra_clk_pll_freq_table pll_u_freq_table[] = {
--	{ 12000000, 480000000, 960, 12, 2, 0},
--	{ 13000000, 480000000, 960, 13, 2, 0},
--	{ 19200000, 480000000, 200, 4,  2, 0},
--	{ 26000000, 480000000, 960, 26, 2, 0},
-+	{ 12000000, 480000000, 960, 12, 0, 0},
-+	{ 13000000, 480000000, 960, 13, 0, 0},
-+	{ 19200000, 480000000, 200, 4,  0, 0},
-+	{ 26000000, 480000000, 960, 26, 0, 0},
- 	{ 0, 0, 0, 0, 0, 0 },
- };
- 
- static struct tegra_clk_pll_freq_table pll_x_freq_table[] = {
- 	/* 1 GHz */
--	{ 12000000, 1000000000, 1000, 12, 1, 12},
--	{ 13000000, 1000000000, 1000, 13, 1, 12},
--	{ 19200000, 1000000000, 625,  12, 1, 8},
--	{ 26000000, 1000000000, 1000, 26, 1, 12},
-+	{ 12000000, 1000000000, 1000, 12, 0, 12},
-+	{ 13000000, 1000000000, 1000, 13, 0, 12},
-+	{ 19200000, 1000000000, 625,  12, 0, 8},
-+	{ 26000000, 1000000000, 1000, 26, 0, 12},
- 
- 	/* 912 MHz */
--	{ 12000000, 912000000,  912,  12, 1, 12},
--	{ 13000000, 912000000,  912,  13, 1, 12},
--	{ 19200000, 912000000,  760,  16, 1, 8},
--	{ 26000000, 912000000,  912,  26, 1, 12},
-+	{ 12000000, 912000000,  912,  12, 0, 12},
-+	{ 13000000, 912000000,  912,  13, 0, 12},
-+	{ 19200000, 912000000,  760,  16, 0, 8},
-+	{ 26000000, 912000000,  912,  26, 0, 12},
- 
- 	/* 816 MHz */
--	{ 12000000, 816000000,  816,  12, 1, 12},
--	{ 13000000, 816000000,  816,  13, 1, 12},
--	{ 19200000, 816000000,  680,  16, 1, 8},
--	{ 26000000, 816000000,  816,  26, 1, 12},
-+	{ 12000000, 816000000,  816,  12, 0, 12},
-+	{ 13000000, 816000000,  816,  13, 0, 12},
-+	{ 19200000, 816000000,  680,  16, 0, 8},
-+	{ 26000000, 816000000,  816,  26, 0, 12},
- 
- 	/* 760 MHz */
--	{ 12000000, 760000000,  760,  12, 1, 12},
--	{ 13000000, 760000000,  760,  13, 1, 12},
--	{ 19200000, 760000000,  950,  24, 1, 8},
--	{ 26000000, 760000000,  760,  26, 1, 12},
-+	{ 12000000, 760000000,  760,  12, 0, 12},
-+	{ 13000000, 760000000,  760,  13, 0, 12},
-+	{ 19200000, 760000000,  950,  24, 0, 8},
-+	{ 26000000, 760000000,  760,  26, 0, 12},
- 
- 	/* 750 MHz */
--	{ 12000000, 750000000,  750,  12, 1, 12},
--	{ 13000000, 750000000,  750,  13, 1, 12},
--	{ 19200000, 750000000,  625,  16, 1, 8},
--	{ 26000000, 750000000,  750,  26, 1, 12},
-+	{ 12000000, 750000000,  750,  12, 0, 12},
-+	{ 13000000, 750000000,  750,  13, 0, 12},
-+	{ 19200000, 750000000,  625,  16, 0, 8},
-+	{ 26000000, 750000000,  750,  26, 0, 12},
- 
- 	/* 608 MHz */
--	{ 12000000, 608000000,  608,  12, 1, 12},
--	{ 13000000, 608000000,  608,  13, 1, 12},
--	{ 19200000, 608000000,  380,  12, 1, 8},
--	{ 26000000, 608000000,  608,  26, 1, 12},
-+	{ 12000000, 608000000,  608,  12, 0, 12},
-+	{ 13000000, 608000000,  608,  13, 0, 12},
-+	{ 19200000, 608000000,  380,  12, 0, 8},
-+	{ 26000000, 608000000,  608,  26, 0, 12},
- 
- 	/* 456 MHz */
--	{ 12000000, 456000000,  456,  12, 1, 12},
--	{ 13000000, 456000000,  456,  13, 1, 12},
--	{ 19200000, 456000000,  380,  16, 1, 8},
--	{ 26000000, 456000000,  456,  26, 1, 12},
-+	{ 12000000, 456000000,  456,  12, 0, 12},
-+	{ 13000000, 456000000,  456,  13, 0, 12},
-+	{ 19200000, 456000000,  380,  16, 0, 8},
-+	{ 26000000, 456000000,  456,  26, 0, 12},
- 
- 	/* 312 MHz */
--	{ 12000000, 312000000,  312,  12, 1, 12},
--	{ 13000000, 312000000,  312,  13, 1, 12},
--	{ 19200000, 312000000,  260,  16, 1, 8},
--	{ 26000000, 312000000,  312,  26, 1, 12},
-+	{ 12000000, 312000000,  312,  12, 0, 12},
-+	{ 13000000, 312000000,  312,  13, 0, 12},
-+	{ 19200000, 312000000,  260,  16, 0, 8},
-+	{ 26000000, 312000000,  312,  26, 0, 12},
- 
- 	{ 0, 0, 0, 0, 0, 0 },
- };
- 
- static struct tegra_clk_pll_freq_table pll_e_freq_table[] = {
--	{ 12000000, 100000000,  200,  24, 1, 0 },
-+	{ 12000000, 100000000,  200,  24, 0, 0 },
- 	{ 0, 0, 0, 0, 0, 0 },
- };
- 
-diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
-index 2d2b972..a7b955c 100644
---- a/drivers/clk/tegra/clk-tegra30.c
-+++ b/drivers/clk/tegra/clk-tegra30.c
-@@ -374,164 +374,164 @@ static const struct utmi_clk_param utmi_parameters[] = {
- };
- 
- static struct tegra_clk_pll_freq_table pll_c_freq_table[] = {
--	{ 12000000, 1040000000, 520,  6, 1, 8},
--	{ 13000000, 1040000000, 480,  6, 1, 8},
--	{ 16800000, 1040000000, 495,  8, 1, 8},	/* actual: 1039.5 MHz */
--	{ 19200000, 1040000000, 325,  6, 1, 6},
--	{ 26000000, 1040000000, 520, 13, 1, 8},
--
--	{ 12000000, 832000000, 416,  6, 1, 8},
--	{ 13000000, 832000000, 832, 13, 1, 8},
--	{ 16800000, 832000000, 396,  8, 1, 8},	/* actual: 831.6 MHz */
--	{ 19200000, 832000000, 260,  6, 1, 8},
--	{ 26000000, 832000000, 416, 13, 1, 8},
--
--	{ 12000000, 624000000, 624, 12, 1, 8},
--	{ 13000000, 624000000, 624, 13, 1, 8},
--	{ 16800000, 600000000, 520, 14, 1, 8},
--	{ 19200000, 624000000, 520, 16, 1, 8},
--	{ 26000000, 624000000, 624, 26, 1, 8},
--
--	{ 12000000, 600000000, 600, 12, 1, 8},
--	{ 13000000, 600000000, 600, 13, 1, 8},
--	{ 16800000, 600000000, 500, 14, 1, 8},
--	{ 19200000, 600000000, 375, 12, 1, 6},
--	{ 26000000, 600000000, 600, 26, 1, 8},
--
--	{ 12000000, 520000000, 520, 12, 1, 8},
--	{ 13000000, 520000000, 520, 13, 1, 8},
--	{ 16800000, 520000000, 495, 16, 1, 8},	/* actual: 519.75 MHz */
--	{ 19200000, 520000000, 325, 12, 1, 6},
--	{ 26000000, 520000000, 520, 26, 1, 8},
--
--	{ 12000000, 416000000, 416, 12, 1, 8},
--	{ 13000000, 416000000, 416, 13, 1, 8},
--	{ 16800000, 416000000, 396, 16, 1, 8},	/* actual: 415.8 MHz */
--	{ 19200000, 416000000, 260, 12, 1, 6},
--	{ 26000000, 416000000, 416, 26, 1, 8},
-+	{ 12000000, 1040000000, 520,  6, 0, 8},
-+	{ 13000000, 1040000000, 480,  6, 0, 8},
-+	{ 16800000, 1040000000, 495,  8, 0, 8},	/* actual: 1039.5 MHz */
-+	{ 19200000, 1040000000, 325,  6, 0, 6},
-+	{ 26000000, 1040000000, 520, 13, 0, 8},
-+
-+	{ 12000000, 832000000, 416,  6, 0, 8},
-+	{ 13000000, 832000000, 832, 13, 0, 8},
-+	{ 16800000, 832000000, 396,  8, 0, 8},	/* actual: 831.6 MHz */
-+	{ 19200000, 832000000, 260,  6, 0, 8},
-+	{ 26000000, 832000000, 416, 13, 0, 8},
-+
-+	{ 12000000, 624000000, 624, 12, 0, 8},
-+	{ 13000000, 624000000, 624, 13, 0, 8},
-+	{ 16800000, 600000000, 520, 14, 0, 8},
-+	{ 19200000, 624000000, 520, 16, 0, 8},
-+	{ 26000000, 624000000, 624, 26, 0, 8},
-+
-+	{ 12000000, 600000000, 600, 12, 0, 8},
-+	{ 13000000, 600000000, 600, 13, 0, 8},
-+	{ 16800000, 600000000, 500, 14, 0, 8},
-+	{ 19200000, 600000000, 375, 12, 0, 6},
-+	{ 26000000, 600000000, 600, 26, 0, 8},
-+
-+	{ 12000000, 520000000, 520, 12, 0, 8},
-+	{ 13000000, 520000000, 520, 13, 0, 8},
-+	{ 16800000, 520000000, 495, 16, 0, 8},	/* actual: 519.75 MHz */
-+	{ 19200000, 520000000, 325, 12, 0, 6},
-+	{ 26000000, 520000000, 520, 26, 0, 8},
-+
-+	{ 12000000, 416000000, 416, 12, 0, 8},
-+	{ 13000000, 416000000, 416, 13, 0, 8},
-+	{ 16800000, 416000000, 396, 16, 0, 8},	/* actual: 415.8 MHz */
-+	{ 19200000, 416000000, 260, 12, 0, 6},
-+	{ 26000000, 416000000, 416, 26, 0, 8},
- 	{ 0, 0, 0, 0, 0, 0 },
- };
- 
- static struct tegra_clk_pll_freq_table pll_m_freq_table[] = {
--	{ 12000000, 666000000, 666, 12, 1, 8},
--	{ 13000000, 666000000, 666, 13, 1, 8},
--	{ 16800000, 666000000, 555, 14, 1, 8},
--	{ 19200000, 666000000, 555, 16, 1, 8},
--	{ 26000000, 666000000, 666, 26, 1, 8},
--	{ 12000000, 600000000, 600, 12, 1, 8},
--	{ 13000000, 600000000, 600, 13, 1, 8},
--	{ 16800000, 600000000, 500, 14, 1, 8},
--	{ 19200000, 600000000, 375, 12, 1, 6},
--	{ 26000000, 600000000, 600, 26, 1, 8},
-+	{ 12000000, 666000000, 666, 12, 0, 8},
-+	{ 13000000, 666000000, 666, 13, 0, 8},
-+	{ 16800000, 666000000, 555, 14, 0, 8},
-+	{ 19200000, 666000000, 555, 16, 0, 8},
-+	{ 26000000, 666000000, 666, 26, 0, 8},
-+	{ 12000000, 600000000, 600, 12, 0, 8},
-+	{ 13000000, 600000000, 600, 13, 0, 8},
-+	{ 16800000, 600000000, 500, 14, 0, 8},
-+	{ 19200000, 600000000, 375, 12, 0, 6},
-+	{ 26000000, 600000000, 600, 26, 0, 8},
- 	{ 0, 0, 0, 0, 0, 0 },
- };
- 
- static struct tegra_clk_pll_freq_table pll_p_freq_table[] = {
--	{ 12000000, 216000000, 432, 12, 2, 8},
--	{ 13000000, 216000000, 432, 13, 2, 8},
--	{ 16800000, 216000000, 360, 14, 2, 8},
--	{ 19200000, 216000000, 360, 16, 2, 8},
--	{ 26000000, 216000000, 432, 26, 2, 8},
-+	{ 12000000, 216000000, 432, 12, 1, 8},
-+	{ 13000000, 216000000, 432, 13, 1, 8},
-+	{ 16800000, 216000000, 360, 14, 1, 8},
-+	{ 19200000, 216000000, 360, 16, 1, 8},
-+	{ 26000000, 216000000, 432, 26, 1, 8},
- 	{ 0, 0, 0, 0, 0, 0 },
- };
- 
- static struct tegra_clk_pll_freq_table pll_a_freq_table[] = {
--	{ 9600000, 564480000, 294, 5, 1, 4},
--	{ 9600000, 552960000, 288, 5, 1, 4},
--	{ 9600000, 24000000,  5,   2, 1, 1},
-+	{ 9600000, 564480000, 294, 5, 0, 4},
-+	{ 9600000, 552960000, 288, 5, 0, 4},
-+	{ 9600000, 24000000,  5,   2, 0, 1},
- 
--	{ 28800000, 56448000, 49, 25, 1, 1},
--	{ 28800000, 73728000, 64, 25, 1, 1},
--	{ 28800000, 24000000,  5,  6, 1, 1},
-+	{ 28800000, 56448000, 49, 25, 0, 1},
-+	{ 28800000, 73728000, 64, 25, 0, 1},
-+	{ 28800000, 24000000,  5,  6, 0, 1},
- 	{ 0, 0, 0, 0, 0, 0 },
- };
- 
- static struct tegra_clk_pll_freq_table pll_d_freq_table[] = {
--	{ 12000000, 216000000, 216, 12, 1, 4},
--	{ 13000000, 216000000, 216, 13, 1, 4},
--	{ 16800000, 216000000, 180, 14, 1, 4},
--	{ 19200000, 216000000, 180, 16, 1, 4},
--	{ 26000000, 216000000, 216, 26, 1, 4},
--
--	{ 12000000, 594000000, 594, 12, 1, 8},
--	{ 13000000, 594000000, 594, 13, 1, 8},
--	{ 16800000, 594000000, 495, 14, 1, 8},
--	{ 19200000, 594000000, 495, 16, 1, 8},
--	{ 26000000, 594000000, 594, 26, 1, 8},
--
--	{ 12000000, 1000000000, 1000, 12, 1, 12},
--	{ 13000000, 1000000000, 1000, 13, 1, 12},
--	{ 19200000, 1000000000, 625,  12, 1, 8},
--	{ 26000000, 1000000000, 1000, 26, 1, 12},
-+	{ 12000000, 216000000, 216, 12, 0, 4},
-+	{ 13000000, 216000000, 216, 13, 0, 4},
-+	{ 16800000, 216000000, 180, 14, 0, 4},
-+	{ 19200000, 216000000, 180, 16, 0, 4},
-+	{ 26000000, 216000000, 216, 26, 0, 4},
-+
-+	{ 12000000, 594000000, 594, 12, 0, 8},
-+	{ 13000000, 594000000, 594, 13, 0, 8},
-+	{ 16800000, 594000000, 495, 14, 0, 8},
-+	{ 19200000, 594000000, 495, 16, 0, 8},
-+	{ 26000000, 594000000, 594, 26, 0, 8},
-+
-+	{ 12000000, 1000000000, 1000, 12, 0, 12},
-+	{ 13000000, 1000000000, 1000, 13, 0, 12},
-+	{ 19200000, 1000000000, 625,  12, 0, 8},
-+	{ 26000000, 1000000000, 1000, 26, 0, 12},
- 
- 	{ 0, 0, 0, 0, 0, 0 },
- };
- 
- static struct tegra_clk_pll_freq_table pll_u_freq_table[] = {
--	{ 12000000, 480000000, 960, 12, 2, 12},
--	{ 13000000, 480000000, 960, 13, 2, 12},
--	{ 16800000, 480000000, 400, 7,  2, 5},
--	{ 19200000, 480000000, 200, 4,  2, 3},
--	{ 26000000, 480000000, 960, 26, 2, 12},
-+	{ 12000000, 480000000, 960, 12, 0, 12},
-+	{ 13000000, 480000000, 960, 13, 0, 12},
-+	{ 16800000, 480000000, 400, 7,  0, 5},
-+	{ 19200000, 480000000, 200, 4,  0, 3},
-+	{ 26000000, 480000000, 960, 26, 0, 12},
- 	{ 0, 0, 0, 0, 0, 0 },
- };
- 
- static struct tegra_clk_pll_freq_table pll_x_freq_table[] = {
- 	/* 1.7 GHz */
--	{ 12000000, 1700000000, 850,  6,  1, 8},
--	{ 13000000, 1700000000, 915,  7,  1, 8},	/* actual: 1699.2 MHz */
--	{ 16800000, 1700000000, 708,  7,  1, 8},	/* actual: 1699.2 MHz */
--	{ 19200000, 1700000000, 885,  10, 1, 8},	/* actual: 1699.2 MHz */
--	{ 26000000, 1700000000, 850,  13, 1, 8},
-+	{ 12000000, 1700000000, 850,  6,  0, 8},
-+	{ 13000000, 1700000000, 915,  7,  0, 8},	/* actual: 1699.2 MHz */
-+	{ 16800000, 1700000000, 708,  7,  0, 8},	/* actual: 1699.2 MHz */
-+	{ 19200000, 1700000000, 885,  10, 0, 8},	/* actual: 1699.2 MHz */
-+	{ 26000000, 1700000000, 850,  13, 0, 8},
- 
- 	/* 1.6 GHz */
--	{ 12000000, 1600000000, 800,  6,  1, 8},
--	{ 13000000, 1600000000, 738,  6,  1, 8},	/* actual: 1599.0 MHz */
--	{ 16800000, 1600000000, 857,  9,  1, 8},	/* actual: 1599.7 MHz */
--	{ 19200000, 1600000000, 500,  6,  1, 8},
--	{ 26000000, 1600000000, 800,  13, 1, 8},
-+	{ 12000000, 1600000000, 800,  6,  0, 8},
-+	{ 13000000, 1600000000, 738,  6,  0, 8},	/* actual: 1599.0 MHz */
-+	{ 16800000, 1600000000, 857,  9,  0, 8},	/* actual: 1599.7 MHz */
-+	{ 19200000, 1600000000, 500,  6,  0, 8},
-+	{ 26000000, 1600000000, 800,  13, 0, 8},
- 
- 	/* 1.5 GHz */
--	{ 12000000, 1500000000, 750,  6,  1, 8},
--	{ 13000000, 1500000000, 923,  8,  1, 8},	/* actual: 1499.8 MHz */
--	{ 16800000, 1500000000, 625,  7,  1, 8},
--	{ 19200000, 1500000000, 625,  8,  1, 8},
--	{ 26000000, 1500000000, 750,  13, 1, 8},
-+	{ 12000000, 1500000000, 750,  6,  0, 8},
-+	{ 13000000, 1500000000, 923,  8,  0, 8},	/* actual: 1499.8 MHz */
-+	{ 16800000, 1500000000, 625,  7,  0, 8},
-+	{ 19200000, 1500000000, 625,  8,  0, 8},
-+	{ 26000000, 1500000000, 750,  13, 0, 8},
- 
- 	/* 1.4 GHz */
--	{ 12000000, 1400000000, 700,  6,  1, 8},
--	{ 13000000, 1400000000, 969,  9,  1, 8},	/* actual: 1399.7 MHz */
--	{ 16800000, 1400000000, 1000, 12, 1, 8},
--	{ 19200000, 1400000000, 875,  12, 1, 8},
--	{ 26000000, 1400000000, 700,  13, 1, 8},
-+	{ 12000000, 1400000000, 700,  6,  0, 8},
-+	{ 13000000, 1400000000, 969,  9,  0, 8},	/* actual: 1399.7 MHz */
-+	{ 16800000, 1400000000, 1000, 12, 0, 8},
-+	{ 19200000, 1400000000, 875,  12, 0, 8},
-+	{ 26000000, 1400000000, 700,  13, 0, 8},
- 
- 	/* 1.3 GHz */
--	{ 12000000, 1300000000, 975,  9,  1, 8},
--	{ 13000000, 1300000000, 1000, 10, 1, 8},
--	{ 16800000, 1300000000, 928,  12, 1, 8},	/* actual: 1299.2 MHz */
--	{ 19200000, 1300000000, 812,  12, 1, 8},	/* actual: 1299.2 MHz */
--	{ 26000000, 1300000000, 650,  13, 1, 8},
-+	{ 12000000, 1300000000, 975,  9,  0, 8},
-+	{ 13000000, 1300000000, 1000, 10, 0, 8},
-+	{ 16800000, 1300000000, 928,  12, 0, 8},	/* actual: 1299.2 MHz */
-+	{ 19200000, 1300000000, 812,  12, 0, 8},	/* actual: 1299.2 MHz */
-+	{ 26000000, 1300000000, 650,  13, 0, 8},
- 
- 	/* 1.2 GHz */
--	{ 12000000, 1200000000, 1000, 10, 1, 8},
--	{ 13000000, 1200000000, 923,  10, 1, 8},	/* actual: 1199.9 MHz */
--	{ 16800000, 1200000000, 1000, 14, 1, 8},
--	{ 19200000, 1200000000, 1000, 16, 1, 8},
--	{ 26000000, 1200000000, 600,  13, 1, 8},
-+	{ 12000000, 1200000000, 1000, 10, 0, 8},
-+	{ 13000000, 1200000000, 923,  10, 0, 8},	/* actual: 1199.9 MHz */
-+	{ 16800000, 1200000000, 1000, 14, 0, 8},
-+	{ 19200000, 1200000000, 1000, 16, 0, 8},
-+	{ 26000000, 1200000000, 600,  13, 0, 8},
- 
- 	/* 1.1 GHz */
--	{ 12000000, 1100000000, 825,  9,  1, 8},
--	{ 13000000, 1100000000, 846,  10, 1, 8},	/* actual: 1099.8 MHz */
--	{ 16800000, 1100000000, 982,  15, 1, 8},	/* actual: 1099.8 MHz */
--	{ 19200000, 1100000000, 859,  15, 1, 8},	/* actual: 1099.5 MHz */
--	{ 26000000, 1100000000, 550,  13, 1, 8},
-+	{ 12000000, 1100000000, 825,  9,  0, 8},
-+	{ 13000000, 1100000000, 846,  10, 0, 8},	/* actual: 1099.8 MHz */
-+	{ 16800000, 1100000000, 982,  15, 0, 8},	/* actual: 1099.8 MHz */
-+	{ 19200000, 1100000000, 859,  15, 0, 8},	/* actual: 1099.5 MHz */
-+	{ 26000000, 1100000000, 550,  13, 0, 8},
- 
- 	/* 1 GHz */
--	{ 12000000, 1000000000, 1000, 12, 1, 8},
--	{ 13000000, 1000000000, 1000, 13, 1, 8},
--	{ 16800000, 1000000000, 833,  14, 1, 8},	/* actual: 999.6 MHz */
--	{ 19200000, 1000000000, 625,  12, 1, 8},
--	{ 26000000, 1000000000, 1000, 26, 1, 8},
-+	{ 12000000, 1000000000, 1000, 12, 0, 8},
-+	{ 13000000, 1000000000, 1000, 13, 0, 8},
-+	{ 16800000, 1000000000, 833,  14, 0, 8},	/* actual: 999.6 MHz */
-+	{ 19200000, 1000000000, 625,  12, 0, 8},
-+	{ 26000000, 1000000000, 1000, 26, 0, 8},
- 
- 	{ 0, 0, 0, 0, 0, 0 },
- };
-diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
-index 3c566e2..b9691dd 100644
---- a/drivers/clk/tegra/clk.h
-+++ b/drivers/clk/tegra/clk.h
-@@ -182,12 +182,14 @@ struct tegra_clk_pll_params {
-  * TEGRA_PLL_FIXED - We are not supposed to change output frequency
-  *     of some plls.
-  * TEGRA_PLLE_CONFIGURE - Configure PLLE when enabling.
-+ * TEGRA_PLL_LOCK_MISC - Lock bit is in the misc register instead of the
-+ *     base register.
-  */
- struct tegra_clk_pll {
- 	struct clk_hw	hw;
- 	void __iomem	*clk_base;
- 	void __iomem	*pmc;
--	u8		flags;
-+	u32		flags;
- 	unsigned long	fixed_rate;
- 	spinlock_t	*lock;
- 	u8		divn_shift;
-@@ -210,18 +212,19 @@ struct tegra_clk_pll {
- #define TEGRA_PLLM BIT(5)
- #define TEGRA_PLL_FIXED BIT(6)
- #define TEGRA_PLLE_CONFIGURE BIT(7)
-+#define TEGRA_PLL_LOCK_MISC BIT(8)
- 
- extern const struct clk_ops tegra_clk_pll_ops;
- extern const struct clk_ops tegra_clk_plle_ops;
- struct clk *tegra_clk_register_pll(const char *name, const char *parent_name,
- 		void __iomem *clk_base, void __iomem *pmc,
- 		unsigned long flags, unsigned long fixed_rate,
--		struct tegra_clk_pll_params *pll_params, u8 pll_flags,
-+		struct tegra_clk_pll_params *pll_params, u32 pll_flags,
- 		struct tegra_clk_pll_freq_table *freq_table, spinlock_t *lock);
- struct clk *tegra_clk_register_plle(const char *name, const char *parent_name,
- 		void __iomem *clk_base, void __iomem *pmc,
- 		unsigned long flags, unsigned long fixed_rate,
--		struct tegra_clk_pll_params *pll_params, u8 pll_flags,
-+		struct tegra_clk_pll_params *pll_params, u32 pll_flags,
- 		struct tegra_clk_pll_freq_table *freq_table, spinlock_t *lock);
- 
- /**
 -- 
-1.7.7.rc0.72.g4b5ea.dirty
+1.8.2
 
