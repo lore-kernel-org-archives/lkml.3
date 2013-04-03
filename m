@@ -1,100 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761634Ab3DCQGT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 12:06:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22138 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757722Ab3DCQGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 12:06:18 -0400
-From: Anton Arapov <anton@redhat.com>
-To: Anton Arapov <anton@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: [PATCH v1 1/9] uretprobes: Introduce uprobe_consumer->ret_handler()
-Date: Wed,  3 Apr 2013 18:00:31 +0200
-Message-Id: <1365004839-21982-2-git-send-email-anton@redhat.com>
-In-Reply-To: <1365004839-21982-1-git-send-email-anton@redhat.com>
-References: <1365004839-21982-1-git-send-email-anton@redhat.com>
+	id S1761543Ab3DCQHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 12:07:18 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:53532 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754857Ab3DCQHQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 12:07:16 -0400
+X-Originating-IP: 108.223.40.66
+Date: Wed, 3 Apr 2013 09:07:24 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Tony Chung <tonychung00@gmail.com>
+Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] watchdog: fix w83627hf_wdt clear timeout expired
+Message-ID: <20130403160724.GA31714@roeck-us.net>
+References: <1364795972-8649-1-git-send-email-tonychung00@gmail.com>
+ <1364795972-8649-2-git-send-email-tonychung00@gmail.com>
+ <20130402000741.GA4077@roeck-us.net>
+ <CAHyaeP1ExzMr8_KvSrmf6+urVROEHRePs_KA3CZ3bnU6Ov79LQ@mail.gmail.com>
+ <20130403042142.GA3640@roeck-us.net>
+ <CAHyaeP1tdNpqtOLOYpy-OyL2_myPSQAO3eQF5_k9ryuFW6bhAQ@mail.gmail.com>
+ <20130403155026.GA4549@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130403155026.GA4549@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enclose return probes implementation, introduce ->ret_handler() and update
-existing code to rely on ->handler() *and* ->ret_handler() for uprobe and
-uretprobe respectively.
+On Wed, Apr 03, 2013 at 08:50:26AM -0700, Guenter Roeck wrote:
+> On Wed, Apr 03, 2013 at 08:06:59AM -0700, Tony Chung wrote:
+> > On Tue, Apr 2, 2013 at 9:21 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> > 
+> > >
+> > >
+> > > What is the exact chip type in your system ? I want to have a look into the
+> > > datasheet; maybe I can find out how it can trigger without causing a reset.
+> > 
+> > Winbond 83627HF chip
+> > 
 
-v1 changes:
-* add bp_vaddr argument to ->ret_handler()
+Followup: what chip revision ?
 
-RFCv5 changes:
-* don't remove uprobe in case there are no uprobe consumer(handler),
-  see handler_chain() changes.
+Revision G or later have a new configuration bit, bit 3 of CR E7 on logical
+device A.
 
-RFCv3 changes: (the patch is introduced in v3)
-* check whether at least one of the consumer's handlers were set.
-* a 'TODO' cap that will be removed once return probes be implemented.
-* introduce ->ret_handler().
+SELWDTORST. Watch Dog Timer Reset Control.
+= 0 is reset by LPC_RST.
+= 1 is reset by PWR_OK.
 
-Signed-off-by: Anton Arapov <anton@redhat.com>
----
- include/linux/uprobes.h |  3 +++
- kernel/events/uprobes.c | 17 ++++++++++++++---
- 2 files changed, 17 insertions(+), 3 deletions(-)
+I could imagine that the WDT logic is never correctly initialized in your
+system, which might explain the behavior. If so, your code is indeed
+correct (or the best I could come up with too), as we would have to ensure
+that the wdt subsystem is initialized correctly by writing into all its registers.
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 02b83db..4042cad 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -46,6 +46,9 @@ enum uprobe_filter_ctx {
- 
- struct uprobe_consumer {
- 	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
-+	int (*ret_handler)(struct uprobe_consumer *self,
-+				unsigned long func,
-+				struct pt_regs *regs);
- 	bool (*filter)(struct uprobe_consumer *self,
- 				enum uprobe_filter_ctx ctx,
- 				struct mm_struct *mm);
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 21d8a65..27c964b 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -815,6 +815,14 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
- 	struct uprobe *uprobe;
- 	int ret;
- 
-+	/* Uprobe must have at least one set consumer */
-+	if (!uc->handler && !uc->ret_handler)
-+		return -EINVAL;
-+
-+	/* TODO: Implement return probes */
-+	if (uc->ret_handler)
-+		return -ENOSYS;
-+
- 	/* Racy, just to catch the obvious mistakes */
- 	if (offset > i_size_read(inode))
- 		return -EINVAL;
-@@ -1473,10 +1481,13 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
- 
- 	down_read(&uprobe->register_rwsem);
- 	for (uc = uprobe->consumers; uc; uc = uc->next) {
--		int rc = uc->handler(uc, regs);
-+		int rc = 0;
- 
--		WARN(rc & ~UPROBE_HANDLER_MASK,
--			"bad rc=0x%x from %pf()\n", rc, uc->handler);
-+		if (uc->handler) {
-+			rc = uc->handler(uc, regs);
-+			WARN(rc & ~UPROBE_HANDLER_MASK,
-+				"bad rc=0x%x from %pf()\n", rc, uc->handler);
-+		}
- 		remove &= rc;
- 	}
- 
--- 
-1.8.1.4
+Given that, I would suggest to re-submit the patch with a different explanation
+(we don't know if the wdt really started running, all we know is that the
+expired bit is set), and I'll give it an Acked-by. Something along the line of 
 
+"Observed that the Watchdog Timer Status bit can be set when the driver is
+ loaded. Reset it during initialization. The time-out value must be set to 0
+ explicitly in this case to prevent an immediate reset".
+
+Thanks,
+Guenter
+
+> > I believe BIOS has watchdog disabled otherwise it would have reboot the box.
+> > However, the timer just start counting.
+> > 
+> > Comparing to ipmi_watchdog, you can do this:
+> > modprobe ipmi_watchdog ... start_now=0 ...action=<>  nowayout=1
+> > 
+> > So it is possible to load the driver without start counting.
+> > 
+> That is a different driver, though. you don't have the start_now option here.
+> 
+> > Notice it is an else, so t is actually 0 already (i.e. expired or
+> > never start running):
+> 
+> Still no idea why that would cause the system to reboot when you reset
+> the trigger without setting t to 0 again (or why the system doesn't reset
+> in the first place if the watchdog already triggered).
+> 
+> I am not really sure what the best approach is here, so let's leave it
+> up to the maintainer to decide which way to go.
+> 
+> Thanks,
+> Guenter
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
