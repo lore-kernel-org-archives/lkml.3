@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760344Ab3DCPTk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 11:19:40 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:52259 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab3DCPTi (ORCPT
+	id S1759971Ab3DCPVt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 11:21:49 -0400
+Received: from smtp161.iad.emailsrvr.com ([207.97.245.161]:45053 "EHLO
+	smtp161.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757070Ab3DCPVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 11:19:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
-References: <20130402221329.915209206@linuxfoundation.org>
-Date: Wed, 3 Apr 2013 09:19:37 -0600
-Message-ID: <CAKocOOPdmjn32gv4MkiGttNqG+QZY6=meEzPO54UJNpdHA7doQ@mail.gmail.com>
-Subject: Re: [ 00/68] 3.4.39-stable review
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 3 Apr 2013 11:21:48 -0400
+X-Greylist: delayed 538 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Apr 2013 11:21:48 EDT
+Message-ID: <1365001967.3294.4.camel@X230>
+Subject: Re: [PATCH 2/3] usb: phy: twl4030-usb: check regulator_enable
+ return value
+From: Kalle Jokiniemi <kalle.jokiniemi@jollamobile.com>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Date: Wed, 03 Apr 2013 18:12:47 +0300
+In-Reply-To: <1364997747-20830-3-git-send-email-fabio.baltieri@linaro.org>
+References: <1364997747-20830-1-git-send-email-fabio.baltieri@linaro.org>
+	 <1364997747-20830-3-git-send-email-fabio.baltieri@linaro.org>
+Organization: Jolla Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 2, 2013 at 4:12 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> This is the start of the stable review cycle for the 3.4.39 release.
-> There are 68 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Thu Apr  4 22:12:59 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
->         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.39-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+On Wed, 2013-04-03 at 16:02 +0200, Fabio Baltieri wrote:
+> Since regulator_enable() is going to be marked as __must_check in the
+> next merge window, always check regulator_enable() return value and
+> print a warning if it fails.
 
-Patches applied cleanly to 3.0.71, 3.4.38, and 3.8.5
+Could go bananas with this and all kinds of recovery schemes, but nah..
+Looks good to me. FWIW,
 
-Reviewing patches - will let you know anything odd.
+Reviewed-by: Kalle Jokiniemi <kalle.jokiniemi@jollamobile.com>
 
-Compiled and booted on the following systems:
 
-HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz
-HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
 
-dmesgs for all releases look good. No regressions compared to the previous
-dmesgs for each of these releases.
-mips compile problem fixed
+> 
+> Cc: Kalle Jokiniemi <kalle.jokiniemi@jollamobile.com>
+> Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> ---
+>  drivers/usb/phy/phy-twl4030-usb.c | 18 +++++++++++++++---
+>  1 file changed, 15 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/usb/phy/phy-twl4030-usb.c b/drivers/usb/phy/phy-twl4030-usb.c
+> index 3f9858f..13e17ae 100644
+> --- a/drivers/usb/phy/phy-twl4030-usb.c
+> +++ b/drivers/usb/phy/phy-twl4030-usb.c
+> @@ -384,9 +384,17 @@ static void __twl4030_phy_power(struct twl4030_usb *twl, int on)
+>  
+>  static void twl4030_phy_power(struct twl4030_usb *twl, int on)
+>  {
+> +	int ret;
+> +
+>  	if (on) {
+> -		regulator_enable(twl->usb3v1);
+> -		regulator_enable(twl->usb1v8);
+> +		ret = regulator_enable(twl->usb3v1);
+> +		if (ret)
+> +			dev_err(twl->dev, "Failed to enable usb3v1\n");
+> +
+> +		ret = regulator_enable(twl->usb1v8);
+> +		if (ret)
+> +			dev_err(twl->dev, "Failed to enable usb1v8\n");
+> +
+>  		/*
+>  		 * Disabling usb3v1 regulator (= writing 0 to VUSB3V1_DEV_GRP
+>  		 * in twl4030) resets the VUSB_DEDICATED2 register. This reset
+> @@ -395,7 +403,11 @@ static void twl4030_phy_power(struct twl4030_usb *twl, int on)
+>  		 * is re-activated. This ensures that VUSB3V1 is really active.
+>  		 */
+>  		twl_i2c_write_u8(TWL_MODULE_PM_RECEIVER, 0, VUSB_DEDICATED2);
+> -		regulator_enable(twl->usb1v5);
+> +
+> +		ret = regulator_enable(twl->usb1v5);
+> +		if (ret)
+> +			dev_err(twl->dev, "Failed to enable usb1v5\n");
+> +
+>  		__twl4030_phy_power(twl, 1);
+>  		twl4030_usb_write(twl, PHY_CLK_CTRL,
+>  				  twl4030_usb_read(twl, PHY_CLK_CTRL) |
 
-Cross-compile tests results:
 
-alpha: defconfig passed on all
-arm: defconfig passed on all
-arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.8.y
-c6x: not applicable to 3.0.y, defconfig passed on 3.4.y, and 3.8.y.
-powerpc: wii_defconfig passed on all
-sh: defconfig passed on all
-sparc: defconfig passed on all
-tile: tilegx_defconfig passed on all
-mips: defconfig passed on all
-mipsel: defconfig passed on all
-
--- Shuah
