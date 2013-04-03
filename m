@@ -1,48 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763372Ab3DCUrj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 16:47:39 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:40462 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762735Ab3DCUrh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 16:47:37 -0400
+	id S1763377Ab3DCUtG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 16:49:06 -0400
+Received: from [89.144.129.18] ([89.144.129.18]:3171 "EHLO host2-askiran"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1762735Ab3DCUtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 16:49:04 -0400
+Reply-To: <info@Web-Mail.com>
+From: "Web-Mail Helpdesk" <info@Web-Mail.com>
+Subject: Warning!! 99% of your mail box quota used
+Date: Wed, 3 Apr 2013 21:04:05 +0100
 MIME-Version: 1.0
-In-Reply-To: <1364908916-29803-9-git-send-email-lee.jones@linaro.org>
-References: <1364908916-29803-1-git-send-email-lee.jones@linaro.org>
-	<1364908916-29803-9-git-send-email-lee.jones@linaro.org>
-Date: Wed, 3 Apr 2013 22:47:36 +0200
-Message-ID: <CACRpkdaRfBFMO+XnJVq9ccxsqw3+RS+OCPuF8ivrrRu=OxuJEQ@mail.gmail.com>
-Subject: Re: [PATCH 9/9] mfd: db8500-prcmu: Support platform dependant device selection
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 130403-1, 04/03/2013), Outbound message
+X-Antivirus-Status: Clean
+Message-ID: <auto-000004253244@host2-askiran>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 2, 2013 at 3:21 PM, Lee Jones <lee.jones@linaro.org> wrote:
+Warning!! You are currently operating at 99% of your mail box quota. You need to upgrade your email limit quota to 2GB within the next 48 hours to enable you store and receive large numbers of emails in your mailbox. Use the below web link to upgrade to 2GB:
 
-> The main aim for this cycle is to have the u8540 booting to a
-> console. However, the u8540 doesn't support all of the u8500
-> platform devices yet. After this stage is complete we can then
-> fill in the inadequacies, such as specific clock support at a
-> later date. To achieve this we're placing devices supported by
-> all platforms into a common device structure and the remaining
-> ones into a platform specific one.
->
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+click link below:
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+http://www.webmailadministrator.com/
 
-This should also go through the MFD tree.
+Failure to update this account after three days of receiving this warning will be tantamount to losing this account permanently
 
-Yours,
-Linus Walleij
+Thank you for using our email.
+Copyright 2013 Email Administrator
