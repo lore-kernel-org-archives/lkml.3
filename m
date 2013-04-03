@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763289Ab3DCTQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 15:16:28 -0400
-Received: from mail-qe0-f54.google.com ([209.85.128.54]:60771 "EHLO
-	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763270Ab3DCTQY (ORCPT
+	id S1763250Ab3DCTQj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 15:16:39 -0400
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:52231 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763185Ab3DCTQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 15:16:24 -0400
+	Wed, 3 Apr 2013 15:16:35 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
         akpm@linux-foundation.org, mingo@redhat.com, x86@kernel.org
@@ -18,10 +18,10 @@ Cc: rth@twiddle.net, linux@arm.linux.org.uk, msalter@redhat.com,
         liqin.chen@sunplusct.com, davem@davemloft.net, lethal@linux-sh.org,
         vgupta@synopsys.com, chris@zankel.net, cmetcalf@tilera.com,
         ysato@users.sourceforge.jp, gxt@mprc.pku.edu.cn, jdike@addtoit.com,
-        Tejun Heo <tj@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 5/7] dump_stack: implement arch-specific hardware description in task dumps
-Date: Wed,  3 Apr 2013 12:14:55 -0700
-Message-Id: <1365016497-32033-6-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>, Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [PATCH 6/7] dump_stack: unify debug information printed by show_regs()
+Date: Wed,  3 Apr 2013 12:14:56 -0700
+Message-Id: <1365016497-32033-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365016497-32033-1-git-send-email-tj@kernel.org>
 References: <1365016497-32033-1-git-send-email-tj@kernel.org>
@@ -29,232 +29,750 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86 and ia64 can acquire extra hardware identification information
-from DMI and print it along with task dumps; however, the usage isn't
-consistent.
+show_regs() is inherently arch-dependent but it does make sense to
+print generic debug information and some archs already do albeit in
+slightly different forms.  This patch introduces a generic function to
+print debug information from show_regs() so that different archs print
+out the same information and it's much easier to modify what's
+printed.
 
-* x86 show_regs() collects vendor, product and board strings and print
-  them out with PID, comm and utsname.  Some of the information is
-  printed again later in the same dump.
+show_regs_print_info() prints out the same debug info as dump_stack()
+does plus task and thread_info pointers.
 
-* warn_slowpath_common() explicitly accesses the DMI board and prints
-  it out with "Hardware name:" label.  This applies to both x86 and
-  ia64 but is irrelevant on all other archs.
+* Archs which didn't print debug info now do.
 
-* ia64 doesn't show DMI information on other non-WARN dumps.
+  alpha, arc, blackfin, c6x, cris, frv, h8300, hexagon, ia64, m32r,
+  metag, microblaze, mn10300, openrisc, parisc, score, sh64, sparc,
+  um, xtensa
 
-This patch introduces arch-specific hardware description used by
-dump_stack().  It can be set by calling dump_stack_set_arch_desc()
-during boot and, if exists, printed out in a separate line with
-"Hardware name:" label.
+* Already prints debug info.  Replaced with show_regs_print_info().
+  The printed information is superset of what used to be there.
 
-dmi_set_dump_stack_arch_desc() is added which sets arch-specific
-description from DMI data.  It uses dmi_ids_string[] which is set from
-dmi_present() used for DMI debug message.  It is superset of the
-information x86 show_regs() is using.  The function is called from x86
-and ia64 boot code right after dmi_scan_machine().
+  arm, arm64, avr32, mips, powerpc, sh32, tile, unicore32, x86
 
-This makes the explicit DMI handling in warn_slowpath_common()
-unnecessary.  Removed.
+* s390 is special in that it used to print arch-specific information
+  along with generic debug info.  Heiko and Martin think that the
+  arch-specific extra isn't worth keeping s390 specfic implementation.
+  Converted to use the generic version.
 
-show_regs() isn't yet converted to use generic debug information
-printing and this patch doesn't remove the duplicate DMI handling in
-x86 show_regs().  The next patch will unify show_regs() handling and
-remove the duplication.
+Note that now all archs print the debug info before actual register
+dumps.
 
-An example WARN dump follows.
+An example BUG() dump follows.
 
- WARNING: at /work/os/work/kernel/workqueue.c:4841 init_workqueues+0x35/0x505()
+ kernel BUG at /work/os/work/kernel/workqueue.c:4841!
+ invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
  Modules linked in:
- CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.9.0-rc1-work+ #3
+ CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.9.0-rc1-work+ #7
  Hardware name: empty empty/S3992, BIOS 080011  10/26/2007
-  0000000000000009 ffff88007c861e08 ffffffff81c614dc ffff88007c861e48
-  ffffffff8108f500 ffffffff82228240 0000000000000040 ffffffff8234a08e
-  0000000000000000 0000000000000000 0000000000000000 ffff88007c861e58
+ task: ffff88007c85e040 ti: ffff88007c860000 task.ti: ffff88007c860000
+ RIP: 0010:[<ffffffff8234a07e>]  [<ffffffff8234a07e>] init_workqueues+0x4/0x6
+ RSP: 0000:ffff88007c861ec8  EFLAGS: 00010246
+ RAX: ffff88007c861fd8 RBX: ffffffff824466a8 RCX: 0000000000000001
+ RDX: 0000000000000046 RSI: 0000000000000001 RDI: ffffffff8234a07a
+ RBP: ffff88007c861ec8 R08: 0000000000000000 R09: 0000000000000000
+ R10: 0000000000000001 R11: 0000000000000000 R12: ffffffff8234a07a
+ R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+ FS:  0000000000000000(0000) GS:ffff88007dc00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: ffff88015f7ff000 CR3: 00000000021f1000 CR4: 00000000000007f0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Stack:
+  ffff88007c861ef8 ffffffff81000312 ffffffff824466a8 ffff88007c85e650
+  0000000000000003 0000000000000000 ffff88007c861f38 ffffffff82335e5d
+  ffff88007c862080 ffffffff8223d8c0 ffff88007c862080 ffffffff81c47760
  Call Trace:
-  [<ffffffff81c614dc>] dump_stack+0x19/0x1b
-  [<ffffffff8108f500>] warn_slowpath_common+0x70/0xa0
-  [<ffffffff8108f54a>] warn_slowpath_null+0x1a/0x20
-  [<ffffffff8234a0c3>] init_workqueues+0x35/0x505
+  [<ffffffff81000312>] do_one_initcall+0x122/0x170
+  [<ffffffff82335e5d>] kernel_init_freeable+0x9b/0x1c8
+  [<ffffffff81c47760>] ? rest_init+0x140/0x140
+  [<ffffffff81c4776e>] kernel_init+0xe/0xf0
+  [<ffffffff81c6be9c>] ret_from_fork+0x7c/0xb0
+  [<ffffffff81c47760>] ? rest_init+0x140/0x140
   ...
 
-v2: Use the same string as the debug message from dmi_present() which
-    also contains BIOS information.  Move hardware name into its own
-    line as warn_slowpath_common() did.  This change was suggested by
-    Bjorn Helgaas.
+v2: Typo fix in x86-32.
+
+v3: CPU number dropped from show_regs_print_info() as
+    dump_stack_print_info() has been updated to print it.  s390
+    specific implementation dropped as requested by s390 maintainers.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: David S. Miller <davem@davemloft.net>
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
 ---
- arch/ia64/kernel/setup.c    |  1 +
- arch/x86/kernel/setup.c     |  1 +
- drivers/firmware/dmi_scan.c | 13 +++++++++++++
- include/linux/dmi.h         |  2 ++
- include/linux/printk.h      |  5 +++++
- kernel/panic.c              |  6 ------
- kernel/printk.c             | 26 ++++++++++++++++++++++++++
- 7 files changed, 48 insertions(+), 6 deletions(-)
+ arch/alpha/kernel/process.c         |  1 +
+ arch/arc/kernel/troubleshoot.c      |  1 +
+ arch/arm/kernel/process.c           |  8 ++------
+ arch/arm64/kernel/process.c         |  7 +------
+ arch/avr32/kernel/process.c         |  5 ++---
+ arch/blackfin/kernel/trace.c        |  2 ++
+ arch/c6x/kernel/traps.c             |  1 +
+ arch/cris/arch-v10/kernel/process.c |  3 +++
+ arch/cris/arch-v32/kernel/process.c |  3 +++
+ arch/frv/kernel/traps.c             |  3 +--
+ arch/h8300/kernel/process.c         |  2 ++
+ arch/hexagon/kernel/vm_events.c     |  2 ++
+ arch/ia64/kernel/process.c          |  4 ++--
+ arch/m32r/kernel/process.c          |  2 ++
+ arch/metag/kernel/process.c         |  2 ++
+ arch/microblaze/kernel/process.c    |  2 ++
+ arch/mips/kernel/traps.c            |  2 +-
+ arch/mn10300/kernel/process.c       |  1 +
+ arch/openrisc/kernel/process.c      |  1 +
+ arch/parisc/kernel/traps.c          |  2 ++
+ arch/powerpc/kernel/process.c       |  8 ++------
+ arch/s390/kernel/dumpstack.c        |  9 +--------
+ arch/score/kernel/traps.c           |  2 ++
+ arch/sh/kernel/process_32.c         |  6 +-----
+ arch/sh/kernel/process_64.c         |  1 +
+ arch/sparc/kernel/process_32.c      |  2 ++
+ arch/sparc/kernel/process_64.c      |  2 ++
+ arch/tile/kernel/process.c          |  3 +--
+ arch/um/sys-ppc/sysrq.c             |  2 ++
+ arch/unicore32/kernel/process.c     |  6 +-----
+ arch/x86/include/asm/bug.h          |  3 ---
+ arch/x86/kernel/dumpstack_32.c      |  4 +---
+ arch/x86/kernel/dumpstack_64.c      |  6 +-----
+ arch/x86/kernel/process.c           | 24 ------------------------
+ arch/x86/kernel/process_32.c        |  2 --
+ arch/x86/kernel/process_64.c        |  1 -
+ arch/xtensa/kernel/traps.c          |  2 ++
+ include/linux/printk.h              |  5 +++++
+ kernel/printk.c                     | 16 ++++++++++++++++
+ 39 files changed, 74 insertions(+), 84 deletions(-)
 
-diff --git a/arch/ia64/kernel/setup.c b/arch/ia64/kernel/setup.c
-index 2029cc0..13bfdd2 100644
---- a/arch/ia64/kernel/setup.c
-+++ b/arch/ia64/kernel/setup.c
-@@ -1063,6 +1063,7 @@ check_bugs (void)
- static int __init run_dmi_scan(void)
+diff --git a/arch/alpha/kernel/process.c b/arch/alpha/kernel/process.c
+index 63d27fb..7085cb8 100644
+--- a/arch/alpha/kernel/process.c
++++ b/arch/alpha/kernel/process.c
+@@ -194,6 +194,7 @@ machine_power_off(void)
+ void
+ show_regs(struct pt_regs *regs)
  {
- 	dmi_scan_machine();
-+	dmi_set_dump_stack_arch_desc();
- 	return 0;
++	show_regs_print_info(KERN_DEFAULT);
+ 	dik_show_regs(regs, NULL);
  }
- core_initcall(run_dmi_scan);
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 90d8cc9..91b9e7c 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -970,6 +970,7 @@ void __init setup_arch(char **cmdline_p)
- 		efi_init();
  
- 	dmi_scan_machine();
-+	dmi_set_dump_stack_arch_desc();
+diff --git a/arch/arc/kernel/troubleshoot.c b/arch/arc/kernel/troubleshoot.c
+index dd7c0b7..158bbeb 100644
+--- a/arch/arc/kernel/troubleshoot.c
++++ b/arch/arc/kernel/troubleshoot.c
+@@ -167,6 +167,7 @@ void show_regs(struct pt_regs *regs)
+ 		return;
+ 
+ 	print_task_path_n_nm(tsk, buf);
++	show_regs_print_info(KERN_INFO);
+ 
+ 	if (current->thread.cause_code)
+ 		show_ecr_verbose(regs);
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index cbd0f51..7925de3 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -273,11 +273,8 @@ void __show_regs(struct pt_regs *regs)
+ 	unsigned long flags;
+ 	char buf[64];
+ 
+-	printk("CPU: %d    %s  (%s %.*s)\n",
+-		raw_smp_processor_id(), print_tainted(),
+-		init_utsname()->release,
+-		(int)strcspn(init_utsname()->version, " "),
+-		init_utsname()->version);
++	show_regs_print_info(KERN_DEFAULT);
++
+ 	print_symbol("PC is at %s\n", instruction_pointer(regs));
+ 	print_symbol("LR is at %s\n", regs->ARM_lr);
+ 	printk("pc : [<%08lx>]    lr : [<%08lx>]    psr: %08lx\n"
+@@ -332,7 +329,6 @@ void __show_regs(struct pt_regs *regs)
+ void show_regs(struct pt_regs * regs)
+ {
+ 	printk("\n");
+-	printk("Pid: %d, comm: %20s\n", task_pid_nr(current), current->comm);
+ 	__show_regs(regs);
+ 	dump_stack();
+ }
+diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
+index 0337cdb..4f812bb 100644
+--- a/arch/arm64/kernel/process.c
++++ b/arch/arm64/kernel/process.c
+@@ -178,11 +178,7 @@ void __show_regs(struct pt_regs *regs)
+ {
+ 	int i;
+ 
+-	printk("CPU: %d    %s  (%s %.*s)\n",
+-		raw_smp_processor_id(), print_tainted(),
+-		init_utsname()->release,
+-		(int)strcspn(init_utsname()->version, " "),
+-		init_utsname()->version);
++	show_regs_print_info(KERN_DEFAULT);
+ 	print_symbol("PC is at %s\n", instruction_pointer(regs));
+ 	print_symbol("LR is at %s\n", regs->regs[30]);
+ 	printk("pc : [<%016llx>] lr : [<%016llx>] pstate: %08llx\n",
+@@ -199,7 +195,6 @@ void __show_regs(struct pt_regs *regs)
+ void show_regs(struct pt_regs * regs)
+ {
+ 	printk("\n");
+-	printk("Pid: %d, comm: %20s\n", task_pid_nr(current), current->comm);
+ 	__show_regs(regs);
+ }
+ 
+diff --git a/arch/avr32/kernel/process.c b/arch/avr32/kernel/process.c
+index c1cafdb..63c9e8c 100644
+--- a/arch/avr32/kernel/process.c
++++ b/arch/avr32/kernel/process.c
+@@ -224,6 +224,8 @@ void show_regs_log_lvl(struct pt_regs *regs, const char *log_lvl)
+ 	unsigned long lr = regs->lr;
+ 	unsigned long mode = (regs->sr & MODE_MASK) >> MODE_SHIFT;
+ 
++	show_regs_print_info(log_lvl);
++
+ 	if (!user_mode(regs)) {
+ 		sp = (unsigned long)regs + FRAME_SIZE_FULL;
+ 
+@@ -261,9 +263,6 @@ void show_regs_log_lvl(struct pt_regs *regs, const char *log_lvl)
+ 	       regs->sr & SR_I0M ? '0' : '.',
+ 	       regs->sr & SR_GM ? 'G' : 'g');
+ 	printk("%sCPU Mode: %s\n", log_lvl, cpu_modes[mode]);
+-	printk("%sProcess: %s [%d] (task: %p thread: %p)\n",
+-	       log_lvl, current->comm, current->pid, current,
+-	       task_thread_info(current));
+ }
+ 
+ void show_regs(struct pt_regs *regs)
+diff --git a/arch/blackfin/kernel/trace.c b/arch/blackfin/kernel/trace.c
+index f7f7a18..c36efa0 100644
+--- a/arch/blackfin/kernel/trace.c
++++ b/arch/blackfin/kernel/trace.c
+@@ -853,6 +853,8 @@ void show_regs(struct pt_regs *fp)
+ 	unsigned char in_atomic = (bfin_read_IPEND() & 0x10) || in_atomic();
+ 
+ 	pr_notice("\n");
++	show_regs_print_info(KERN_NOTICE);
++
+ 	if (CPUID != bfin_cpuid())
+ 		pr_notice("Compiled for cpu family 0x%04x (Rev %d), "
+ 			"but running on:0x%04x (Rev %d)\n",
+diff --git a/arch/c6x/kernel/traps.c b/arch/c6x/kernel/traps.c
+index d0b96ef..dcc2c2f 100644
+--- a/arch/c6x/kernel/traps.c
++++ b/arch/c6x/kernel/traps.c
+@@ -31,6 +31,7 @@ void __init trap_init(void)
+ void show_regs(struct pt_regs *regs)
+ {
+ 	pr_err("\n");
++	show_regs_print_info(KERN_ERR);
+ 	pr_err("PC: %08lx SP: %08lx\n", regs->pc, regs->sp);
+ 	pr_err("Status: %08lx ORIG_A4: %08lx\n", regs->csr, regs->orig_a4);
+ 	pr_err("A0: %08lx  B0: %08lx\n", regs->a0, regs->b0);
+diff --git a/arch/cris/arch-v10/kernel/process.c b/arch/cris/arch-v10/kernel/process.c
+index b101875..9087bbf 100644
+--- a/arch/cris/arch-v10/kernel/process.c
++++ b/arch/cris/arch-v10/kernel/process.c
+@@ -175,6 +175,9 @@ unsigned long get_wchan(struct task_struct *p)
+ void show_regs(struct pt_regs * regs)
+ {
+ 	unsigned long usp = rdusp();
++
++	show_regs_print_info(KERN_DEFAULT);
++
+ 	printk("IRP: %08lx SRP: %08lx DCCR: %08lx USP: %08lx MOF: %08lx\n",
+ 	       regs->irp, regs->srp, regs->dccr, usp, regs->mof );
+ 	printk(" r0: %08lx  r1: %08lx   r2: %08lx  r3: %08lx\n",
+diff --git a/arch/cris/arch-v32/kernel/process.c b/arch/cris/arch-v32/kernel/process.c
+index 2b23ef0..09fd16c 100644
+--- a/arch/cris/arch-v32/kernel/process.c
++++ b/arch/cris/arch-v32/kernel/process.c
+@@ -170,6 +170,9 @@ get_wchan(struct task_struct *p)
+ void show_regs(struct pt_regs * regs)
+ {
+ 	unsigned long usp = rdusp();
++
++	show_regs_print_info(KERN_DEFAULT);
++
+         printk("ERP: %08lx SRP: %08lx  CCS: %08lx USP: %08lx MOF: %08lx\n",
+ 		regs->erp, regs->srp, regs->ccs, usp, regs->mof);
+ 
+diff --git a/arch/frv/kernel/traps.c b/arch/frv/kernel/traps.c
+index cfcd802..4bff48c 100644
+--- a/arch/frv/kernel/traps.c
++++ b/arch/frv/kernel/traps.c
+@@ -497,6 +497,7 @@ void show_regs(struct pt_regs *regs)
+ 	int loop;
+ 
+ 	printk("\n");
++	show_regs_print_info(KERN_DEFAULT);
+ 
+ 	printk("Frame: @%08lx [%s]\n",
+ 	       (unsigned long) regs,
+@@ -511,8 +512,6 @@ void show_regs(struct pt_regs *regs)
+ 		else
+ 			printk(" | ");
+ 	}
+-
+-	printk("Process %s (pid: %d)\n", current->comm, current->pid);
+ }
+ 
+ void die_if_kernel(const char *str, ...)
+diff --git a/arch/h8300/kernel/process.c b/arch/h8300/kernel/process.c
+index b609f63..8f235a3 100644
+--- a/arch/h8300/kernel/process.c
++++ b/arch/h8300/kernel/process.c
+@@ -110,6 +110,8 @@ void machine_power_off(void)
+ 
+ void show_regs(struct pt_regs * regs)
+ {
++	show_regs_print_info(KERN_DEFAULT);
++
+ 	printk("\nPC: %08lx  Status: %02x",
+ 	       regs->pc, regs->ccr);
+ 	printk("\nORIG_ER0: %08lx ER0: %08lx ER1: %08lx",
+diff --git a/arch/hexagon/kernel/vm_events.c b/arch/hexagon/kernel/vm_events.c
+index 3e44530..741aaa9 100644
+--- a/arch/hexagon/kernel/vm_events.c
++++ b/arch/hexagon/kernel/vm_events.c
+@@ -33,6 +33,8 @@
+  */
+ void show_regs(struct pt_regs *regs)
+ {
++	show_regs_print_info(KERN_EMERG);
++
+ 	printk(KERN_EMERG "restart_r0: \t0x%08lx   syscall_nr: %ld\n",
+ 	       regs->restart_r0, regs->syscall_nr);
+ 	printk(KERN_EMERG "preds: \t\t0x%08lx\n", regs->preds);
+diff --git a/arch/ia64/kernel/process.c b/arch/ia64/kernel/process.c
+index 87c7a26..a79eead 100644
+--- a/arch/ia64/kernel/process.c
++++ b/arch/ia64/kernel/process.c
+@@ -101,8 +101,8 @@ show_regs (struct pt_regs *regs)
+ 	unsigned long ip = regs->cr_iip + ia64_psr(regs)->ri;
+ 
+ 	print_modules();
+-	printk("\nPid: %d, CPU %d, comm: %20s\n", task_pid_nr(current),
+-			smp_processor_id(), current->comm);
++	printk("\n");
++	show_regs_print_info(KERN_DEFAULT);
+ 	printk("psr : %016lx ifs : %016lx ip  : [<%016lx>]    %s (%s)\n",
+ 	       regs->cr_ipsr, regs->cr_ifs, ip, print_tainted(),
+ 	       init_utsname()->release);
+diff --git a/arch/m32r/kernel/process.c b/arch/m32r/kernel/process.c
+index bde899e..892a1d9 100644
+--- a/arch/m32r/kernel/process.c
++++ b/arch/m32r/kernel/process.c
+@@ -91,6 +91,8 @@ void machine_power_off(void)
+ void show_regs(struct pt_regs * regs)
+ {
+ 	printk("\n");
++	show_regs_print_info(KERN_DEFAULT);
++
+ 	printk("BPC[%08lx]:PSW[%08lx]:LR [%08lx]:FP [%08lx]\n", \
+ 	  regs->bpc, regs->psw, regs->lr, regs->fp);
+ 	printk("BBPC[%08lx]:BBPSW[%08lx]:SPU[%08lx]:SPI[%08lx]\n", \
+diff --git a/arch/metag/kernel/process.c b/arch/metag/kernel/process.c
+index c6efe62..cfe4e7f 100644
+--- a/arch/metag/kernel/process.c
++++ b/arch/metag/kernel/process.c
+@@ -152,6 +152,8 @@ void show_regs(struct pt_regs *regs)
+ 		"D1.7 "
+ 	};
+ 
++	show_regs_print_info(KERN_INFO);
++
+ 	pr_info(" pt_regs @ %p\n", regs);
+ 	pr_info(" SaveMask = 0x%04hx\n", regs->ctx.SaveMask);
+ 	pr_info(" Flags = 0x%04hx (%c%c%c%c)\n", regs->ctx.Flags,
+diff --git a/arch/microblaze/kernel/process.c b/arch/microblaze/kernel/process.c
+index fa0ea60..d55700c 100644
+--- a/arch/microblaze/kernel/process.c
++++ b/arch/microblaze/kernel/process.c
+@@ -20,6 +20,8 @@
+ 
+ void show_regs(struct pt_regs *regs)
+ {
++	show_regs_print_info(KERN_INFO);
++
+ 	pr_info(" Registers dump: mode=%X\r\n", regs->pt_mode);
+ 	pr_info(" r1=%08lX, r2=%08lX, r3=%08lX, r4=%08lX\n",
+ 				regs->r1, regs->r2, regs->r3, regs->r4);
+diff --git a/arch/mips/kernel/traps.c b/arch/mips/kernel/traps.c
+index d2a31ac..af1d99c 100644
+--- a/arch/mips/kernel/traps.c
++++ b/arch/mips/kernel/traps.c
+@@ -231,7 +231,7 @@ static void __show_regs(const struct pt_regs *regs)
+ 	unsigned int cause = regs->cp0_cause;
+ 	int i;
+ 
+-	printk("Cpu %d\n", smp_processor_id());
++	show_regs_print_info(KERN_DEFAULT);
  
  	/*
- 	 * VMware detection requires dmi to be available, so this
-diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-index 5022307..b95159b 100644
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -525,6 +525,19 @@ void __init dmi_scan_machine(void)
+ 	 * Saved main processor registers
+diff --git a/arch/mn10300/kernel/process.c b/arch/mn10300/kernel/process.c
+index 84f4e97..1223770 100644
+--- a/arch/mn10300/kernel/process.c
++++ b/arch/mn10300/kernel/process.c
+@@ -155,6 +155,7 @@ void machine_power_off(void)
+ 
+ void show_regs(struct pt_regs *regs)
+ {
++	show_regs_print_info(KERN_DEFAULT);
  }
  
- /**
-+ * dmi_set_dump_stack_arch_desc - set arch description for dump_stack()
-+ *
-+ * Invoke dump_stack_set_arch_desc() with DMI system information so that
-+ * DMI identifiers are printed out on task dumps.  Arch boot code should
-+ * call this function after dmi_scan_machine() if it wants to print out DMI
-+ * identifiers on task dumps.
-+ */
-+void __init dmi_set_dump_stack_arch_desc(void)
-+{
-+	dump_stack_set_arch_desc("%s", dmi_ids_string);
-+}
-+
-+/**
-  *	dmi_matches - check if dmi_system_id structure matches system DMI data
-  *	@dmi: pointer to the dmi_system_id structure to check
-  */
-diff --git a/include/linux/dmi.h b/include/linux/dmi.h
-index f156cca..b6eb7a0 100644
---- a/include/linux/dmi.h
-+++ b/include/linux/dmi.h
-@@ -99,6 +99,7 @@ extern const char * dmi_get_system_info(int field);
- extern const struct dmi_device * dmi_find_device(int type, const char *name,
- 	const struct dmi_device *from);
- extern void dmi_scan_machine(void);
-+extern void dmi_set_dump_stack_arch_desc(void);
- extern bool dmi_get_date(int field, int *yearp, int *monthp, int *dayp);
- extern int dmi_name_in_vendors(const char *str);
- extern int dmi_name_in_serial(const char *str);
-@@ -114,6 +115,7 @@ static inline const char * dmi_get_system_info(int field) { return NULL; }
- static inline const struct dmi_device * dmi_find_device(int type, const char *name,
- 	const struct dmi_device *from) { return NULL; }
- static inline void dmi_scan_machine(void) { return; }
-+static inline void dmi_set_dump_stack_arch_desc(void) { }
- static inline bool dmi_get_date(int field, int *yearp, int *monthp, int *dayp)
+ /*
+diff --git a/arch/openrisc/kernel/process.c b/arch/openrisc/kernel/process.c
+index 00c233b..386af25 100644
+--- a/arch/openrisc/kernel/process.c
++++ b/arch/openrisc/kernel/process.c
+@@ -90,6 +90,7 @@ void show_regs(struct pt_regs *regs)
  {
- 	if (yearp)
+ 	extern void show_registers(struct pt_regs *regs);
+ 
++	show_regs_print_info(KERN_DEFAULT);
+ 	/* __PHX__ cleanup this mess */
+ 	show_registers(regs);
+ }
+diff --git a/arch/parisc/kernel/traps.c b/arch/parisc/kernel/traps.c
+index e64cf5f..f702bff 100644
+--- a/arch/parisc/kernel/traps.c
++++ b/arch/parisc/kernel/traps.c
+@@ -126,6 +126,8 @@ void show_regs(struct pt_regs *regs)
+ 	user = user_mode(regs);
+ 	level = user ? KERN_DEBUG : KERN_CRIT;
+ 
++	show_regs_print_info(level);
++
+ 	print_gr(level, regs);
+ 
+ 	for (i = 0; i < 8; i += 4)
+diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
+index 2e6f83a..fd1b300 100644
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -829,6 +829,8 @@ void show_regs(struct pt_regs * regs)
+ {
+ 	int i, trap;
+ 
++	show_regs_print_info(KERN_DEFAULT);
++
+ 	printk("NIP: "REG" LR: "REG" CTR: "REG"\n",
+ 	       regs->nip, regs->link, regs->ctr);
+ 	printk("REGS: %p TRAP: %04lx   %s  (%s)\n",
+@@ -848,12 +850,6 @@ void show_regs(struct pt_regs * regs)
+ #else
+ 		printk("DAR: "REG", DSISR: %08lx\n", regs->dar, regs->dsisr);
+ #endif
+-	printk("TASK = %p[%d] '%s' THREAD: %p",
+-	       current, task_pid_nr(current), current->comm, task_thread_info(current));
+-
+-#ifdef CONFIG_SMP
+-	printk(" CPU: %d", raw_smp_processor_id());
+-#endif /* CONFIG_SMP */
+ 
+ 	for (i = 0;  i < 32;  i++) {
+ 		if ((i % REGS_PER_LINE) == 0)
+diff --git a/arch/s390/kernel/dumpstack.c b/arch/s390/kernel/dumpstack.c
+index 2f1f639..2982974 100644
+--- a/arch/s390/kernel/dumpstack.c
++++ b/arch/s390/kernel/dumpstack.c
+@@ -166,14 +166,7 @@ void show_registers(struct pt_regs *regs)
+ 
+ void show_regs(struct pt_regs *regs)
+ {
+-	printk("CPU: %d %s %s %.*s\n",
+-	       task_thread_info(current)->cpu, print_tainted(),
+-	       init_utsname()->release,
+-	       (int)strcspn(init_utsname()->version, " "),
+-	       init_utsname()->version);
+-	printk("Process %s (pid: %d, task: %p, ksp: %p)\n",
+-	       current->comm, current->pid, current,
+-	       (void *) current->thread.ksp);
++	show_regs_print_info(KERN_DEFAULT);
+ 	show_registers(regs);
+ 	/* Show stack backtrace if pt_regs is from kernel mode */
+ 	if (!user_mode(regs))
+diff --git a/arch/score/kernel/traps.c b/arch/score/kernel/traps.c
+index a38f435..1517a7d 100644
+--- a/arch/score/kernel/traps.c
++++ b/arch/score/kernel/traps.c
+@@ -117,6 +117,8 @@ static void show_code(unsigned int *pc)
+  */
+ void show_regs(struct pt_regs *regs)
+ {
++	show_regs_print_info(KERN_DEFAULT);
++
+ 	printk("r0 : %08lx %08lx %08lx %08lx %08lx %08lx %08lx %08lx\n",
+ 		regs->regs[0], regs->regs[1], regs->regs[2], regs->regs[3],
+ 		regs->regs[4], regs->regs[5], regs->regs[6], regs->regs[7]);
+diff --git a/arch/sh/kernel/process_32.c b/arch/sh/kernel/process_32.c
+index 73eb66f..ebd3933 100644
+--- a/arch/sh/kernel/process_32.c
++++ b/arch/sh/kernel/process_32.c
+@@ -32,11 +32,7 @@
+ void show_regs(struct pt_regs * regs)
+ {
+ 	printk("\n");
+-	printk("Pid : %d, Comm: \t\t%s\n", task_pid_nr(current), current->comm);
+-	printk("CPU : %d        \t\t%s  (%s %.*s)\n\n",
+-	       smp_processor_id(), print_tainted(), init_utsname()->release,
+-	       (int)strcspn(init_utsname()->version, " "),
+-	       init_utsname()->version);
++	show_regs_print_info(KERN_DEFAULT);
+ 
+ 	print_symbol("PC is at %s\n", instruction_pointer(regs));
+ 	print_symbol("PR is at %s\n", regs->pr);
+diff --git a/arch/sh/kernel/process_64.c b/arch/sh/kernel/process_64.c
+index e611c85..174d124 100644
+--- a/arch/sh/kernel/process_64.c
++++ b/arch/sh/kernel/process_64.c
+@@ -40,6 +40,7 @@ void show_regs(struct pt_regs *regs)
+ 	unsigned long long ah, al, bh, bl, ch, cl;
+ 
+ 	printk("\n");
++	show_regs_print_info(KERN_DEFAULT);
+ 
+ 	ah = (regs->pc) >> 32;
+ 	al = (regs->pc) & 0xffffffff;
+diff --git a/arch/sparc/kernel/process_32.c b/arch/sparc/kernel/process_32.c
+index fe99fbd..9e78f9a 100644
+--- a/arch/sparc/kernel/process_32.c
++++ b/arch/sparc/kernel/process_32.c
+@@ -123,6 +123,8 @@ void show_regs(struct pt_regs *r)
+ {
+ 	struct reg_window32 *rw = (struct reg_window32 *) r->u_regs[14];
+ 
++	show_regs_print_info(KERN_DEFAULT);
++
+         printk("PSR: %08lx PC: %08lx NPC: %08lx Y: %08lx    %s\n",
+ 	       r->psr, r->pc, r->npc, r->y, print_tainted());
+ 	printk("PC: <%pS>\n", (void *) r->pc);
+diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
+index cdb80b2..2415a95 100644
+--- a/arch/sparc/kernel/process_64.c
++++ b/arch/sparc/kernel/process_64.c
+@@ -186,6 +186,8 @@ static void show_regwindow(struct pt_regs *regs)
+ 
+ void show_regs(struct pt_regs *regs)
+ {
++	show_regs_print_info(KERN_DEFAULT);
++
+ 	printk("TSTATE: %016lx TPC: %016lx TNPC: %016lx Y: %08x    %s\n", regs->tstate,
+ 	       regs->tpc, regs->tnpc, regs->y, print_tainted());
+ 	printk("TPC: <%pS>\n", (void *) regs->tpc);
+diff --git a/arch/tile/kernel/process.c b/arch/tile/kernel/process.c
+index caf93ae..302691d 100644
+--- a/arch/tile/kernel/process.c
++++ b/arch/tile/kernel/process.c
+@@ -620,8 +620,7 @@ void show_regs(struct pt_regs *regs)
+ 	int i;
+ 
+ 	pr_err("\n");
+-	pr_err(" Pid: %d, comm: %20s, CPU: %d\n",
+-	       tsk->pid, tsk->comm, smp_processor_id());
++	show_regs_print_info(KERN_ERR);
+ #ifdef __tilegx__
+ 	for (i = 0; i < 51; i += 3)
+ 		pr_err(" r%-2d: "REGFMT" r%-2d: "REGFMT" r%-2d: "REGFMT"\n",
+diff --git a/arch/um/sys-ppc/sysrq.c b/arch/um/sys-ppc/sysrq.c
+index f889449..1ff1ad7 100644
+--- a/arch/um/sys-ppc/sysrq.c
++++ b/arch/um/sys-ppc/sysrq.c
+@@ -11,6 +11,8 @@
+ void show_regs(struct pt_regs_subarch *regs)
+ {
+ 	printk("\n");
++	show_regs_print_info(KERN_DEFAULT);
++
+ 	printk("show_regs(): insert regs here.\n");
+ #if 0
+         printk("\n");
+diff --git a/arch/unicore32/kernel/process.c b/arch/unicore32/kernel/process.c
+index 872d7e2..c412484 100644
+--- a/arch/unicore32/kernel/process.c
++++ b/arch/unicore32/kernel/process.c
+@@ -159,11 +159,7 @@ void __show_regs(struct pt_regs *regs)
+ 	unsigned long flags;
+ 	char buf[64];
+ 
+-	printk(KERN_DEFAULT "CPU: %d    %s  (%s %.*s)\n",
+-		raw_smp_processor_id(), print_tainted(),
+-		init_utsname()->release,
+-		(int)strcspn(init_utsname()->version, " "),
+-		init_utsname()->version);
++	show_regs_print_info(KERN_DEFAULT);
+ 	print_symbol("PC is at %s\n", instruction_pointer(regs));
+ 	print_symbol("LR is at %s\n", regs->UCreg_lr);
+ 	printk(KERN_DEFAULT "pc : [<%08lx>]    lr : [<%08lx>]    psr: %08lx\n"
+diff --git a/arch/x86/include/asm/bug.h b/arch/x86/include/asm/bug.h
+index 11e1152..2f03ff0 100644
+--- a/arch/x86/include/asm/bug.h
++++ b/arch/x86/include/asm/bug.h
+@@ -37,7 +37,4 @@ do {								\
+ 
+ #include <asm-generic/bug.h>
+ 
+-
+-extern void show_regs_common(void);
+-
+ #endif /* _ASM_X86_BUG_H */
+diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
+index 1038a41..f2a1770 100644
+--- a/arch/x86/kernel/dumpstack_32.c
++++ b/arch/x86/kernel/dumpstack_32.c
+@@ -86,11 +86,9 @@ void show_regs(struct pt_regs *regs)
+ {
+ 	int i;
+ 
++	show_regs_print_info(KERN_EMERG);
+ 	__show_regs(regs, !user_mode_vm(regs));
+ 
+-	pr_emerg("Process %.*s (pid: %d, ti=%p task=%p task.ti=%p)\n",
+-		 TASK_COMM_LEN, current->comm, task_pid_nr(current),
+-		 current_thread_info(), current, task_thread_info(current));
+ 	/*
+ 	 * When in-kernel, we also print out the stack and code at the
+ 	 * time of the fault..
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index b653675..addb207 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -249,14 +249,10 @@ void show_regs(struct pt_regs *regs)
+ {
+ 	int i;
+ 	unsigned long sp;
+-	const int cpu = smp_processor_id();
+-	struct task_struct *cur = current;
+ 
+ 	sp = regs->sp;
+-	printk("CPU %d ", cpu);
++	show_regs_print_info(KERN_DEFAULT);
+ 	__show_regs(regs, 1);
+-	printk(KERN_DEFAULT "Process %s (pid: %d, threadinfo %p, task %p)\n",
+-	       cur->comm, cur->pid, task_thread_info(cur), cur);
+ 
+ 	/*
+ 	 * When in-kernel, we also print out the stack and code at the
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 14ae100..7646378 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -121,30 +121,6 @@ void exit_thread(void)
+ 	drop_fpu(me);
+ }
+ 
+-void show_regs_common(void)
+-{
+-	const char *vendor, *product, *board;
+-
+-	vendor = dmi_get_system_info(DMI_SYS_VENDOR);
+-	if (!vendor)
+-		vendor = "";
+-	product = dmi_get_system_info(DMI_PRODUCT_NAME);
+-	if (!product)
+-		product = "";
+-
+-	/* Board Name is optional */
+-	board = dmi_get_system_info(DMI_BOARD_NAME);
+-
+-	printk(KERN_DEFAULT "Pid: %d, comm: %.20s %s %s %.*s %s %s%s%s\n",
+-	       current->pid, current->comm, print_tainted(),
+-	       init_utsname()->release,
+-	       (int)strcspn(init_utsname()->version, " "),
+-	       init_utsname()->version,
+-	       vendor, product,
+-	       board ? "/" : "",
+-	       board ? board : "");
+-}
+-
+ void flush_thread(void)
+ {
+ 	struct task_struct *tsk = current;
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index b5a8905..7305f7d 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -84,8 +84,6 @@ void __show_regs(struct pt_regs *regs, int all)
+ 		savesegment(gs, gs);
+ 	}
+ 
+-	show_regs_common();
+-
+ 	printk(KERN_DEFAULT "EIP: %04x:[<%08lx>] EFLAGS: %08lx CPU: %d\n",
+ 			(u16)regs->cs, regs->ip, regs->flags,
+ 			smp_processor_id());
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 0f49677..355ae06 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -62,7 +62,6 @@ void __show_regs(struct pt_regs *regs, int all)
+ 	unsigned int fsindex, gsindex;
+ 	unsigned int ds, cs, es;
+ 
+-	show_regs_common();
+ 	printk(KERN_DEFAULT "RIP: %04lx:[<%016lx>] ", regs->cs & 0xffff, regs->ip);
+ 	printk_address(regs->ip, 1);
+ 	printk(KERN_DEFAULT "RSP: %04lx:%016lx  EFLAGS: %08lx\n", regs->ss,
+diff --git a/arch/xtensa/kernel/traps.c b/arch/xtensa/kernel/traps.c
+index 384b7c7..458186d 100644
+--- a/arch/xtensa/kernel/traps.c
++++ b/arch/xtensa/kernel/traps.c
+@@ -383,6 +383,8 @@ void show_regs(struct pt_regs * regs)
+ {
+ 	int i, wmask;
+ 
++	show_regs_print_info(KERN_DEFAULT);
++
+ 	wmask = regs->wmask & ~1;
+ 
+ 	for (i = 0; i < 16; i++) {
 diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 7ce1f87..47827c0 100644
+index 47827c0..6af944a 100644
 --- a/include/linux/printk.h
 +++ b/include/linux/printk.h
-@@ -145,6 +145,7 @@ extern void wake_up_klogd(void);
- 
- void log_buf_kexec_setup(void);
+@@ -147,6 +147,7 @@ void log_buf_kexec_setup(void);
  void __init setup_log_buf(int early);
-+void dump_stack_set_arch_desc(const char *fmt, ...);
+ void dump_stack_set_arch_desc(const char *fmt, ...);
  void dump_stack_print_info(const char *log_lvl);
++void show_regs_print_info(const char *log_lvl);
  #else
  static inline __printf(1, 0)
-@@ -184,6 +185,10 @@ static inline void setup_log_buf(int early)
- {
- }
- 
-+static inline void dump_stack_set_arch_desc(const char *fmt, ...)
-+{
-+}
-+
+ int vprintk(const char *s, va_list args)
+@@ -192,6 +193,10 @@ static inline void dump_stack_set_arch_desc(const char *fmt, ...)
  static inline void dump_stack_print_info(const char *log_lvl)
  {
  }
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 7c57cc9..167ec09 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -22,7 +22,6 @@
- #include <linux/sysrq.h>
- #include <linux/init.h>
- #include <linux/nmi.h>
--#include <linux/dmi.h>
++
++static inline void show_regs_print_info(const char *log_lvl)
++{
++}
+ #endif
  
- #define PANIC_TIMER_STEP 100
- #define PANIC_BLINK_SPD 18
-@@ -400,13 +399,8 @@ struct slowpath_args {
- static void warn_slowpath_common(const char *file, int line, void *caller,
- 				 unsigned taint, struct slowpath_args *args)
- {
--	const char *board;
--
- 	printk(KERN_WARNING "------------[ cut here ]------------\n");
- 	printk(KERN_WARNING "WARNING: at %s:%d %pS()\n", file, line, caller);
--	board = dmi_get_system_info(DMI_PRODUCT_NAME);
--	if (board)
--		printk(KERN_WARNING "Hardware name: %s\n", board);
- 
- 	if (args)
- 		vprintk(args->fmt, args->args);
+ extern void dump_stack(void) __cold;
 diff --git a/kernel/printk.c b/kernel/printk.c
-index a00a285..f404b56 100644
+index f404b56..48bad34 100644
 --- a/kernel/printk.c
 +++ b/kernel/printk.c
-@@ -2852,6 +2852,28 @@ void kmsg_dump_rewind(struct kmsg_dumper *dumper)
+@@ -2894,4 +2894,20 @@ void dump_stack_print_info(const char *log_lvl)
+ 		       log_lvl, dump_stack_arch_desc_str);
  }
- EXPORT_SYMBOL_GPL(kmsg_dump_rewind);
  
-+static char dump_stack_arch_desc_str[128];
-+
 +/**
-+ * dump_stack_set_arch_desc - set arch-specific str to show with task dumps
-+ * @fmt: printf-style format string
-+ * @...: arguments for the format string
++ * show_regs_print_info - print generic debug info for show_regs()
++ * @log_lvl: log level
 + *
-+ * The configured string will be printed right after utsname during task
-+ * dumps.  Usually used to add arch-specific system identifiers.  If an
-+ * arch wants to make use of such an ID string, it should initialize this
-+ * as soon as possible during boot.
++ * show_regs() implementations can use this function to print out generic
++ * debug information.
 + */
-+void __init dump_stack_set_arch_desc(const char *fmt, ...)
++void show_regs_print_info(const char *log_lvl)
 +{
-+	va_list args;
++	dump_stack_print_info(log_lvl);
 +
-+	va_start(args, fmt);
-+	vsnprintf(dump_stack_arch_desc_str, sizeof(dump_stack_arch_desc_str),
-+		  fmt, args);
-+	va_end(args);
++	printk("%stask: %p ti: %p task.ti: %p\n",
++	       log_lvl, current, current_thread_info(),
++	       task_thread_info(current));
 +}
 +
- /**
-  * dump_stack_print_info - print generic debug info for dump_stack()
-  * @log_lvl: log level
-@@ -2866,6 +2888,10 @@ void dump_stack_print_info(const char *log_lvl)
- 	       print_tainted(), init_utsname()->release,
- 	       (int)strcspn(init_utsname()->version, " "),
- 	       init_utsname()->version);
-+
-+	if (dump_stack_arch_desc_str[0] != '\0')
-+		printk("%sHardware name: %s\n",
-+		       log_lvl, dump_stack_arch_desc_str);
- }
- 
  #endif
 -- 
 1.8.1.4
