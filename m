@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760486Ab3DCB3N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 21:29:13 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33661 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759992Ab3DCB3M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 21:29:12 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <515B85D0.6030403@jp.fujitsu.com>
-Date: Wed, 3 Apr 2013 10:28:48 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1760602Ab3DCBp5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 21:45:57 -0400
+Received: from muin.pair.com ([209.68.1.55]:53562 "EHLO muin.pair.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760238Ab3DCBp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 21:45:56 -0400
+X-Greylist: delayed 599 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Apr 2013 21:45:56 EDT
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <linuxram@us.ibm.com>, <tmac@hp.com>,
-        <wency@cn.fujitsu.com>, <tangchen@cn.fujitsu.com>,
-        <jiang.liu@huawei.com>
-Subject: Re: [PATCH 3/3] mm: Change __remove_pages() to call release_mem_region_adjustable()
-References: <1364919450-8741-1-git-send-email-toshi.kani@hp.com> <1364919450-8741-4-git-send-email-toshi.kani@hp.com>
-In-Reply-To: <1364919450-8741-4-git-send-email-toshi.kani@hp.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130402161812.GI15687@8bytes.org>
+References: <1364500442-20927-1-git-send-email-Varun.Sethi@freescale.com>
+	<1364500442-20927-6-git-send-email-Varun.Sethi@freescale.com>
+	<20130402161812.GI15687@8bytes.org>
+Date: Tue, 2 Apr 2013 20:35:54 -0500
+Message-ID: <CAOZdJXWS50mpgMYu8o8K11yQFU6y-vNwxd9zPkqSd7euGt7XQg@mail.gmail.com>
+Subject: Re: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu implementation.
+From: Timur Tabi <timur@tabi.org>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Varun Sethi <Varun.Sethi@freescale.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Kumar Gala <galak@kernel.crashing.org>, stuart.yoder@freescale.com,
+        iommu@lists.linux-foundation.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        scottwood@freescale.com,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Toshi,
+On Tue, Apr 2, 2013 at 11:18 AM, Joerg Roedel <joro@8bytes.org> wrote:
 
-2013/04/03 1:17, Toshi Kani wrote:
-> Changed __remove_pages() to call release_mem_region_adjustable().
-> This allows a requested memory range to be released from
-> the iomem_resource table even if it does not match exactly to
-> an resource entry but still fits into.  The resource entries
-> initialized at bootup usually cover the whole contiguous
-> memory ranges and may not necessarily match with the size of
-> memory hot-delete requests.
-> 
-> If release_mem_region_adjustable() failed, __remove_pages() logs
-> an error message and continues to proceed as it was the case
-> with release_mem_region().  release_mem_region(), which is defined
-> to __release_region(), logs an error message and returns no error
-> since a void function.
-> 
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > +     panic("\n");
+>
+> A kernel panic seems like an over-reaction to an access violation.
 
-The patch looks good.
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+We have no way to determining what code caused the violation, so we
+can't just kill the process.  I agree it seems like overkill, but what
+else should we do?  Does the IOMMU layer have a way for the IOMMU
+driver to stop the device that caused the problem?
 
-Thanks,
-Yasuaki Ishimatsu
+> Besides the device that caused the violation the system should still
+> work, no?
 
-> ---
->   mm/memory_hotplug.c |   11 +++++++++--
->   1 file changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index 57decb2..c916582 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -705,8 +705,10 @@ EXPORT_SYMBOL_GPL(__add_pages);
->   int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
->   		 unsigned long nr_pages)
->   {
-> -	unsigned long i, ret = 0;
-> +	unsigned long i;
->   	int sections_to_remove;
-> +	resource_size_t start, size;
-> +	int ret = 0;
->   
->   	/*
->   	 * We can only remove entire sections
-> @@ -714,7 +716,12 @@ int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
->   	BUG_ON(phys_start_pfn & ~PAGE_SECTION_MASK);
->   	BUG_ON(nr_pages % PAGES_PER_SECTION);
->   
-> -	release_mem_region(phys_start_pfn << PAGE_SHIFT, nr_pages * PAGE_SIZE);
-> +	start = phys_start_pfn << PAGE_SHIFT;
-> +	size = nr_pages * PAGE_SIZE;
-> +	ret = release_mem_region_adjustable(&iomem_resource, start, size);
-> +	if (ret)
-> +		pr_warn("Unable to release resource <%016llx-%016llx> (%d)\n",
-> +				start, start + size - 1, ret);
->   
->   	sections_to_remove = nr_pages / PAGES_PER_SECTION;
->   	for (i = 0; i < sections_to_remove; i++) {
-> 
+Not really.  The PAMU was designed to add IOMMU support to legacy
+devices, which have no concept of an MMU.  If the PAMU detects an
+access violation, there's no way for the device to recover, because it
+has no idea that a violation has occurred.  It's going to keep on
+writing to bad data.
 
+Maybe we need a mechanism where a driver can register a callback
+function to handle IOMMU exceptions?
 
+> > +     /*
+> > +      * In case of devices with multiple LIODNs just store
+> > +      * the info for the first LIODN as all
+> > +      * LIODNs share the same domain
+> > +      */
+> > +     if (!old_domain_info)
+> > +             dev->archdata.iommu_domain = info;
+> > +     spin_unlock(&device_domain_lock);
+>
+> Don't you have to tell the hardware that a device was added to a domain?
+> I don't see that, what I am missing?
+
+I'm not sure I understand.  What "hardware" do you think needs to be notified?
+
+The PAMU reads everything it needs from the PAACT, which we update.
+The PAMU does not know anything about the devices that it monitors,
+and the devices don't know anything about the PAMU.
