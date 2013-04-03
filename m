@@ -1,170 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762978Ab3DCSQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 14:16:56 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:38366 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762536Ab3DCSQx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 14:16:53 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH] netdev/phy: Implement ieee802.3 clause 45 in mdio-octeon.c
-Date: Wed,  3 Apr 2013 11:16:48 -0700
-Message-Id: <1365013008-10914-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1762951Ab3DCSTZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 14:19:25 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:59008 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758971Ab3DCSTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 14:19:23 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] ext4 updates for 3.9-rc6
+cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 03 Apr 2013 14:19:20 -0400
+Message-ID: <nsxd2ub79zr.fsf@closure.thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@mit.edu
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
 
-The Octeon SMI/MDIO interfaces can do clause 45 communications, so
-implement this in the driver.
+The following changes since commit 07961ac7c0ee8b546658717034fe692fd12eefa9:
 
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- drivers/net/phy/mdio-octeon.c | 89 +++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 86 insertions(+), 3 deletions(-)
+  Linux 3.9-rc5 (2013-03-31 15:12:43 -0700)
 
-diff --git a/drivers/net/phy/mdio-octeon.c b/drivers/net/phy/mdio-octeon.c
-index c2c878d..f4f3abf 100644
---- a/drivers/net/phy/mdio-octeon.c
-+++ b/drivers/net/phy/mdio-octeon.c
-@@ -3,7 +3,7 @@
-  * License.  See the file "COPYING" in the main directory of this archive
-  * for more details.
-  *
-- * Copyright (C) 2009,2011 Cavium, Inc.
-+ * Copyright (C) 2009-2012 Cavium, Inc.
-  */
- 
- #include <linux/platform_device.h>
-@@ -27,23 +27,93 @@
- #define SMI_CLK		0x18
- #define SMI_EN		0x20
- 
-+enum octeon_mdiobus_mode {
-+	UNINIT = 0,
-+	C22,
-+	C45
-+};
-+
- struct octeon_mdiobus {
- 	struct mii_bus *mii_bus;
- 	u64 register_base;
- 	resource_size_t mdio_phys;
- 	resource_size_t regsize;
-+	enum octeon_mdiobus_mode mode;
- 	int phy_irq[PHY_MAX_ADDR];
- };
- 
-+static void octeon_mdiobus_set_mode(struct octeon_mdiobus *p,
-+				    enum octeon_mdiobus_mode m)
-+{
-+	union cvmx_smix_clk smi_clk;
-+
-+	if (m == p->mode)
-+		return;
-+
-+	smi_clk.u64 = cvmx_read_csr(p->register_base + SMI_CLK);
-+	smi_clk.s.mode = (m == C45) ? 1 : 0;
-+	smi_clk.s.preamble = 1;
-+	cvmx_write_csr(p->register_base + SMI_CLK, smi_clk.u64);
-+	p->mode = m;
-+}
-+
-+static int octeon_mdiobus_c45_addr(struct octeon_mdiobus *p,
-+				   int phy_id, int regnum)
-+{
-+	union cvmx_smix_cmd smi_cmd;
-+	union cvmx_smix_wr_dat smi_wr;
-+	int timeout = 1000;
-+
-+	octeon_mdiobus_set_mode(p, C45);
-+
-+	smi_wr.u64 = 0;
-+	smi_wr.s.dat = regnum & 0xffff;
-+	cvmx_write_csr(p->register_base + SMI_WR_DAT, smi_wr.u64);
-+
-+	regnum = (regnum >> 16) & 0x1f;
-+
-+	smi_cmd.u64 = 0;
-+	smi_cmd.s.phy_op = 0; /* MDIO_CLAUSE_45_ADDRESS */
-+	smi_cmd.s.phy_adr = phy_id;
-+	smi_cmd.s.reg_adr = regnum;
-+	cvmx_write_csr(p->register_base + SMI_CMD, smi_cmd.u64);
-+
-+	do {
-+		/*
-+		 * Wait 1000 clocks so we don't saturate the RSL bus
-+		 * doing reads.
-+		 */
-+		__delay(1000);
-+		smi_wr.u64 = cvmx_read_csr(p->register_base + SMI_WR_DAT);
-+	} while (smi_wr.s.pending && --timeout);
-+
-+	if (timeout <= 0)
-+		return -EIO;
-+	return 0;
-+}
-+
- static int octeon_mdiobus_read(struct mii_bus *bus, int phy_id, int regnum)
- {
- 	struct octeon_mdiobus *p = bus->priv;
- 	union cvmx_smix_cmd smi_cmd;
- 	union cvmx_smix_rd_dat smi_rd;
-+	unsigned int op = 1; /* MDIO_CLAUSE_22_READ */
- 	int timeout = 1000;
- 
-+	if (regnum & MII_ADDR_C45) {
-+		int r = octeon_mdiobus_c45_addr(p, phy_id, regnum);
-+		if (r < 0)
-+			return r;
-+
-+		regnum = (regnum >> 16) & 0x1f;
-+		op = 3; /* MDIO_CLAUSE_45_READ */
-+	} else {
-+		octeon_mdiobus_set_mode(p, C22);
-+	}
-+
-+
- 	smi_cmd.u64 = 0;
--	smi_cmd.s.phy_op = 1; /* MDIO_CLAUSE_22_READ */
-+	smi_cmd.s.phy_op = op; /* MDIO_CLAUSE_22_READ */
- 	smi_cmd.s.phy_adr = phy_id;
- 	smi_cmd.s.reg_adr = regnum;
- 	cvmx_write_csr(p->register_base + SMI_CMD, smi_cmd.u64);
-@@ -69,14 +139,27 @@ static int octeon_mdiobus_write(struct mii_bus *bus, int phy_id,
- 	struct octeon_mdiobus *p = bus->priv;
- 	union cvmx_smix_cmd smi_cmd;
- 	union cvmx_smix_wr_dat smi_wr;
-+	unsigned int op = 0; /* MDIO_CLAUSE_22_WRITE */
- 	int timeout = 1000;
- 
-+
-+	if (regnum & MII_ADDR_C45) {
-+		int r = octeon_mdiobus_c45_addr(p, phy_id, regnum);
-+		if (r < 0)
-+			return r;
-+
-+		regnum = (regnum >> 16) & 0x1f;
-+		op = 1; /* MDIO_CLAUSE_45_WRITE */
-+	} else {
-+		octeon_mdiobus_set_mode(p, C22);
-+	}
-+
- 	smi_wr.u64 = 0;
- 	smi_wr.s.dat = val;
- 	cvmx_write_csr(p->register_base + SMI_WR_DAT, smi_wr.u64);
- 
- 	smi_cmd.u64 = 0;
--	smi_cmd.s.phy_op = 0; /* MDIO_CLAUSE_22_WRITE */
-+	smi_cmd.s.phy_op = op;
- 	smi_cmd.s.phy_adr = phy_id;
- 	smi_cmd.s.reg_adr = regnum;
- 	cvmx_write_csr(p->register_base + SMI_CMD, smi_cmd.u64);
--- 
-1.7.11.7
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus_stable
+
+for you to fetch changes up to 8cde7ad17e4f4ff8d12ff60dd09c0a291cb0b61c:
+
+  ext4: fix big-endian bugs which could cause fs corruptions (2013-04-03 12:37:17 -0400)
+
+----------------------------------------------------------------
+Unfortunately, we introduced some big-endian bugs during the last
+merge window.  Fortunately, Cai and Christian noticed before 3.9
+shipped.
+
+----------------------------------------------------------------
+Zheng Liu (1):
+      ext4: fix big-endian bugs which could cause fs corruptions
+
+ fs/ext4/extents.c  | 11 +++++++----
+ fs/ext4/indirect.c |  4 ++--
+ 2 files changed, 9 insertions(+), 6 deletions(-)
 
