@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763224Ab3DCTPn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 15:15:43 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:54065 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763207Ab3DCTPk (ORCPT
+	id S1763252Ab3DCTQB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 15:16:01 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:50178 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763221Ab3DCTP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 15:15:40 -0400
+	Wed, 3 Apr 2013 15:15:59 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
         akpm@linux-foundation.org, mingo@redhat.com, x86@kernel.org
@@ -19,9 +19,9 @@ Cc: rth@twiddle.net, linux@arm.linux.org.uk, msalter@redhat.com,
         vgupta@synopsys.com, chris@zankel.net, cmetcalf@tilera.com,
         ysato@users.sourceforge.jp, gxt@mprc.pku.edu.cn, jdike@addtoit.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/7] x86: don't show trace beyond show_stack(NULL, NULL)
-Date: Wed,  3 Apr 2013 12:14:51 -0700
-Message-Id: <1365016497-32033-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 2/7] sparc32: make show_stack() acquire %fp if @_ksp is not specified
+Date: Wed,  3 Apr 2013 12:14:52 -0700
+Message-Id: <1365016497-32033-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365016497-32033-1-git-send-email-tj@kernel.org>
 References: <1365016497-32033-1-git-send-email-tj@kernel.org>
@@ -29,44 +29,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-show_stack(current or NULL, NULL) is used to print the backtrace of
-the current task.  As trace beyond the function itself isn't of much
-interest to anyone, don't show it by determining sp and bp in
-show_stack()'s frame and passing them to show_stack_log_lvl().
+show_stack(current or NULL, NULL) is used by arch-independent code to
+dump backtrace of the current task; however, sparc32 show_stack()
+doesn't implement it and wouldn't print any backtrace when NULL @_ksp
+is specfied.
 
-This brings show_stack(NULL, NULL)'s behavior in line with
-dump_stack().
+Make show_stack() acquire and use %fp if @tsk is NULL or current and
+@_ksp is NULL.  This makes %fp fetching in dump_stack() unnecessary.
+Make it use NULL for @_ksp instead.
+
+Only compile tested.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: David S. Miller <davem@davemloft.net>
 ---
- arch/x86/kernel/dumpstack.c | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ arch/sparc/kernel/process_32.c | 16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index c8797d5..dd1a7c3 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -176,7 +176,19 @@ void show_trace(struct task_struct *task, struct pt_regs *regs,
+diff --git a/arch/sparc/kernel/process_32.c b/arch/sparc/kernel/process_32.c
+index 62eede1..0d57b24 100644
+--- a/arch/sparc/kernel/process_32.c
++++ b/arch/sparc/kernel/process_32.c
+@@ -153,11 +153,13 @@ void show_stack(struct task_struct *tsk, unsigned long *_ksp)
+ 	struct reg_window32 *rw;
+ 	int count = 0;
  
- void show_stack(struct task_struct *task, unsigned long *sp)
+-	if (tsk != NULL)
+-		task_base = (unsigned long) task_stack_page(tsk);
+-	else
+-		task_base = (unsigned long) current_thread_info();
++	if (!tsk)
++		tsk = current;
+ 
++	if (tsk == current && !_ksp)
++		__asm__ __volatile__("mov	%%fp, %0" : "=r" (_ksp));
++
++	task_base = (unsigned long) task_stack_page(tsk);
+ 	fp = (unsigned long) _ksp;
+ 	do {
+ 		/* Bogus frame pointer? */
+@@ -175,11 +177,7 @@ void show_stack(struct task_struct *tsk, unsigned long *_ksp)
+ 
+ void dump_stack(void)
  {
--	show_stack_log_lvl(task, NULL, sp, 0, "");
-+	unsigned long bp = 0;
-+	unsigned long stack;
-+
-+	/*
-+	 * Stack frames below this one aren't interesting.  Don't show them
-+	 * if we're printing for %current.
-+	 */
-+	if (!sp && (!task || task == current)) {
-+		sp = &stack;
-+		bp = stack_frame(current, NULL);
-+	}
-+
-+	show_stack_log_lvl(task, NULL, sp, bp, "");
+-	unsigned long *ksp;
+-
+-	__asm__ __volatile__("mov	%%fp, %0"
+-			     : "=r" (ksp));
+-	show_stack(current, ksp);
++	show_stack(current, NULL);
  }
  
- /*
+ EXPORT_SYMBOL(dump_stack);
 -- 
 1.8.1.4
 
