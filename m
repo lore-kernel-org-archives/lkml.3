@@ -1,42 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763309Ab3DCTYG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 15:24:06 -0400
-Received: from fieldses.org ([174.143.236.118]:33662 "EHLO fieldses.org"
+	id S932200Ab3DCTYd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 15:24:33 -0400
+Received: from fieldses.org ([174.143.236.118]:33666 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763263Ab3DCTYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 15:24:04 -0400
-Date: Wed, 3 Apr 2013 15:24:00 -0400
+	id S1763172Ab3DCTYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 15:24:32 -0400
+Date: Wed, 3 Apr 2013 15:24:29 -0400
 From: "J. Bruce Fields" <bfields@fieldses.org>
 To: Jeff Layton <jlayton@redhat.com>
 Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, tj@kernel.org,
         linux-nfs@vger.kernel.org
-Subject: Re: [PATCH v1 4/6] nfsd: convert nfs4_alloc_stid to use
+Subject: Re: [PATCH v2 4/6] nfsd: convert nfs4_alloc_stid to use
  idr_alloc_cyclic
-Message-ID: <20130403192400.GH6044@fieldses.org>
-References: <1364390288-30968-1-git-send-email-jlayton@redhat.com>
- <1364390288-30968-5-git-send-email-jlayton@redhat.com>
+Message-ID: <20130403192429.GI6044@fieldses.org>
+References: <1364412578-7462-1-git-send-email-jlayton@redhat.com>
+ <1364412578-7462-5-git-send-email-jlayton@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1364390288-30968-5-git-send-email-jlayton@redhat.com>
+In-Reply-To: <1364412578-7462-5-git-send-email-jlayton@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACK.--b.
+Err, and ack v2.--b.
 
-On Wed, Mar 27, 2013 at 09:18:06AM -0400, Jeff Layton wrote:
+On Wed, Mar 27, 2013 at 03:29:36PM -0400, Jeff Layton wrote:
 > Signed-off-by: Jeff Layton <jlayton@redhat.com>
 > Cc: "J. Bruce Fields" <bfields@fieldses.org>
 > Cc: linux-nfs@vger.kernel.org
 > ---
->  fs/nfsd/nfs4state.c | 9 ++-------
->  1 file changed, 2 insertions(+), 7 deletions(-)
+>  fs/nfsd/nfs4state.c | 7 +------
+>  1 file changed, 1 insertion(+), 6 deletions(-)
 > 
 > diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> index 2e27430..2efb034 100644
+> index 2e27430..417c848 100644
 > --- a/fs/nfsd/nfs4state.c
 > +++ b/fs/nfsd/nfs4state.c
 > @@ -234,7 +234,6 @@ static struct nfs4_stid *nfs4_alloc_stid(struct nfs4_client *cl, struct
@@ -67,15 +67,6 @@ On Wed, Mar 27, 2013 at 09:18:06AM -0400, Jeff Layton wrote:
 >  	return stid;
 >  out_free:
 >  	kfree(stid);
-> @@ -1287,7 +1282,7 @@ static struct nfs4_client *create_client(struct xdr_netobj name,
->  		spin_unlock(&nn->client_lock);
->  		return NULL;
->  	}
-> -	idr_init(&clp->cl_stateids);
-> +	idr_init_cyclic(&clp->cl_stateids, 0);
->  	atomic_set(&clp->cl_refcount, 0);
->  	clp->cl_cb_state = NFSD4_CB_UNKNOWN;
->  	INIT_LIST_HEAD(&clp->cl_idhash);
 > -- 
 > 1.7.11.7
 > 
