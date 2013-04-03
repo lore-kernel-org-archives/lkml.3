@@ -1,114 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762486Ab3DCXqr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 19:46:47 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:65452 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761774Ab3DCXqq (ORCPT
+	id S1762604Ab3DCXtU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 19:49:20 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:46390 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757659Ab3DCXtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 19:46:46 -0400
-X-AuditID: 9c930197-b7b50ae00000018c-e5-515cbf64f83b
-Date: Thu, 4 Apr 2013 08:46:44 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Sangseok Lee <sangseok.lee@lge.com>
-Subject: Re: [RFC 1/4] mm: Per process reclaim
-Message-ID: <20130403234644.GC7675@blaptop>
-References: <1364192494-22185-1-git-send-email-minchan@kernel.org>
- <CAHO5Pa0srsWS6ukpxUo=EqCOxRmYa7c_7PDg1YPh7gcMGWPpaw@mail.gmail.com>
+	Wed, 3 Apr 2013 19:49:18 -0400
+Message-ID: <515CBFFA.3090907@pobox.com>
+Date: Wed, 03 Apr 2013 19:49:14 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHO5Pa0srsWS6ukpxUo=EqCOxRmYa7c_7PDg1YPh7gcMGWPpaw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Krzysztof Mazur <krzysiek@podlesie.net>
+CC: Ronald <ronald645@gmail.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gwendal@google.com, jgarzik@redhat.com
+Subject: Re: ata: HDIO_DRIVE_* ioctl() Linux 3.9 regression
+References: <CAF1_xX3Ox6=fKomLpvrDxMZ9edB0=2SrVDDPrU0nivD_Yj6KHw@mail.gmail.com> <20130327125114.GA22214@shrek.podlesie.net>
+In-Reply-To: <20130327125114.GA22214@shrek.podlesie.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 03, 2013 at 12:10:22PM +0200, Michael Kerrisk wrote:
-> Hello Minchan,
-> 
-> On Mon, Mar 25, 2013 at 7:21 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > These day, there are many platforms avaiable in the embedded market
-> > and they are smarter than kernel which has very limited information
-> > about working set so they want to involve memory management more heavily
-> > like android's lowmemory killer and ashmem or recent many lowmemory
-> > notifier(there was several trial for various company NOKIA, SAMSUNG,
-> > Linaro, Google ChromeOS, Redhat).
-> >
-> > One of the simple imagine scenario about userspace's intelligence is that
-> > platform can manage tasks as forground and backgroud so it would be
-> > better to reclaim background's task pages for end-user's *responsibility*
-> > although it has frequent referenced pages.
-> >
-> > This patch adds new knob "reclaim under proc/<pid>/" so task manager
-> > can reclaim any target process anytime, anywhere. It could give another
-> > method to platform for using memory efficiently.
-> >
-> > It can avoid process killing for getting free memory, which was really
-> > terrible experience because I lost my best score of game I had ever
-> > after I switch the phone call while I enjoyed the game.
-> >
-> > Writing 1 to /proc/pid/reclaim reclaims only file pages.
-> > Writing 2 to /proc/pid/reclaim reclaims only anonymous pages.
-> > Writing 3 to /proc/pid/reclaim reclaims all pages from target process.
-> 
-> This interface seems to work as advertized, at least from some light
-> testing that I've done.
+On 03/27/2013 08:51 AM, Krzysztof Mazur wrote:
+> On Mon, Mar 25, 2013 at 06:26:50PM +0100, Ronald wrote:
+>> In reply to [1]: I have the same issue. Git bisect took 50+ rebuilds xD
+>>
+>> Smartd does not work anymore since 84a9a8cd9 ([libata] Set proper SK
+>> when CK_COND is set.).
+>>
+>> I hope I'm not stepping on anyone's toe's by chosing the same title.
+>> I'm not subscribed to this list.
+>>
+>> Just wanted to add a 'me2'
+>>
+>> [1] http://www.spinics.net/lists/linux-ide/msg45268.html
+>
+> It seems that the SAM_STAT_CHECK_CONDITION is not cleared
+> causing -EIO, because that patch modified sensebuf and
+> the check for clearing SAM_STAT_CHECK_CONDITION is no longer valid.
+>
+> diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+> index 318b413..ff44787 100644
+> --- a/drivers/ata/libata-scsi.c
+> +++ b/drivers/ata/libata-scsi.c
+> @@ -532,8 +532,8 @@ int ata_cmd_ioctl(struct scsi_device *scsidev, void __user *arg)
+>   			struct scsi_sense_hdr sshdr;
+>   			scsi_normalize_sense(sensebuf, SCSI_SENSE_BUFFERSIZE,
+>   					     &sshdr);
+> -			if (sshdr.sense_key == 0 &&
+> -			    sshdr.asc == 0 && sshdr.ascq == 0)
+> +			if (sshdr.sense_key == RECOVERED_ERROR &&
+> +			    sshdr.asc == 0 && sshdr.ascq == 0x1d)
+>   				cmd_result &= ~SAM_STAT_CHECK_CONDITION;
+>   		}
+>
+> @@ -618,8 +618,8 @@ int ata_task_ioctl(struct scsi_device *scsidev, void __user *arg)
+>   			struct scsi_sense_hdr sshdr;
+>   			scsi_normalize_sense(sensebuf, SCSI_SENSE_BUFFERSIZE,
+>   						&sshdr);
+> -			if (sshdr.sense_key == 0 &&
+> -				sshdr.asc == 0 && sshdr.ascq == 0)
+> +			if (sshdr.sense_key == RECOVERED_ERROR &&
+> +			    sshdr.asc == 0 && sshdr.ascq == 0x1d)
+>   				cmd_result &= ~SAM_STAT_CHECK_CONDITION;
 
-Thanks for the testing!
+applied
 
-> 
-> However, the interface is a quite blunt instrument. Would there be any
-> virtue in extending it so that an address range could be written to
-> /proc/PID/reclaim? Used in conjunction with /proc/PID/maps, a manager
-> process might then choose to trigger reclaim of just selected regions
-> of a processes address space. Thus, one might reclaim file backed
-> pages in a range using:
-> 
->     echo '2 start-address end-address' > /proc/PID/reclaim
-> 
-> What do you think?
 
-It is really nice idea because some platform use a address space with
-mulitple object. Simply, multiple application could work in a address space
-but they use separate virtual address range in a address space.
-In such model, per-process reclaim isn't vaild any more so your idea
-would be nice for it.
 
-One nitpick is that I'd like to use (address, size) instead of (start_address
-, end_address) because we always confuse that end_address itself is
-inclusive or not in the range.
-
-And I am thinking another options like this
-
-RECLAIM_SOFT_[FILE|ANON] 
-
-It reclaims pages which are not workset.
-
-RECLAIM_HARD_[FILE|ANON]
-
-It reclaims pages of range unconditionally although pages are shared by
-several processes.
-
-But before that, I'd like to hear other guys's opinion.
-
-> 
-> Thanks,
-> 
-> Michael
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
