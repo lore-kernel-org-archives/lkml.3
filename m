@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762891Ab3DCGkD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 02:40:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63927 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758254Ab3DCGkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 02:40:01 -0400
-Date: Wed, 3 Apr 2013 12:09:52 +0530 (IST)
-From: P J P <ppandit@redhat.com>
-X-X-Sender: pjp@javelin.pnq.redhat.com
-To: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Petr Matousek <pmatouse@redhat.com>
-Subject: Re: [PATCH] To add NULL pointer check
-In-Reply-To: <1364958193.4353.4.camel@kjgkr>
-Message-ID: <alpine.LFD.2.03.1304031203050.21402@erqung.pbz>
-References: <alpine.LFD.2.03.1304021808410.12716@erqung.pbz> <1364958193.4353.4.camel@kjgkr>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1760335Ab3DCGmc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 02:42:32 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:55596 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753955Ab3DCGma (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 02:42:30 -0400
+Date: Wed, 3 Apr 2013 17:42:19 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Layton <jlayton@redhat.com>
+Subject: linux-next: build failure after merge of the final tree (nfsd tree
+ related)
+Message-Id: <20130403174219.0786d27109633a30d89b38bf@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__3_Apr_2013_17_42_19_+1100_bf1RPF65+WHvsVRm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Jaegeuk,
-+-- On Wed, 3 Apr 2013, Jaegeuk Kim wrote --+
-| Therefore, I think f2fs_write_data_pages() is better to handle this. Please 
-| review the modified patch. Thanks,
-| 
-| diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-| index 47a2d7c..cf9ff5f 100644
-| --- a/fs/f2fs/data.c
-| +++ b/fs/f2fs/data.c
-| @@ -559,6 +559,10 @@ static int f2fs_write_data_pages(struct
-| address_space *mapping,
-|  	int ret;
-|  	long excess_nrtw = 0, desired_nrtw;
-|  
-| +	/* deal with chardevs and other special file */
-| +	if (!mapping->a_ops->writepage)
-| +		return 0;
-| +
-|  	if (wbc->nr_to_write < MAX_DESIRED_PAGES_WP) {
-|  		desired_nrtw = MAX_DESIRED_PAGES_WP;
-|  		excess_nrtw = desired_nrtw - wbc->nr_to_write;
-| 
+--Signature=_Wed__3_Apr_2013_17_42_19_+1100_bf1RPF65+WHvsVRm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-  Yeah, I considered this, it saves us a call to `write_cache_pages'; But then 
-thought it'll help if `__f2fs_writepage' is called from other place later.
+Hi all,
 
-I agree, above patch serves too.
+After merging the final tree, today's linux-next build (arm defconfig)
+failed like this:
 
-Thank you.
---
-Prasad J Pandit / Red Hat Security Response Team
-DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
+fs/built-in.o: In function `nfsd_reply_cache_stats_show':
+super.c:(.text+0x87308): undefined reference to `__udivdi3'
+
+Probably caused by commit 187da2f90879 ("nfsd: keep track of the max and
+average time to search the cache") which adds a divide by u64
+(num_searches).
+
+I have reverted that commit and the following one for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__3_Apr_2013_17_42_19_+1100_bf1RPF65+WHvsVRm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRW89LAAoJEECxmPOUX5FE1XEQAIOv1tXX/4oOh7ImoAiFDa08
+06mtbZmXkQ7QNA0V15KiS6kv8/xNIdn32vdvyxqSr+SeqdAcp7BzC3tFCv2IgXDz
+jLhsvwXvanWM7n1NsDloL3H6HNNCQNpedyopfniHn6q70LR7uB1u4ddHrK/1LiKM
+fLWh85e+d7YI5ikEdarKWYgTdXOwJgdQViZV2DPqlGIppZTMGDwKuLmuVmsQOAa4
+Hbp3i5zyA+fRiasPJ24ENyWraPoKlVkkwzACCEMeSTbDSIGmsc60Z0SN7qLvDOVv
+N0hF4OAOdfNQcHqeh54EsmwShuKockTUBCNFux1MuDaVvMYF0L5rWMsDk29hyfFp
+8TscKvyuLbpu5t7gfYVGFCUh3CIfRHYrwtC+fF7sPsEs3cONyIk9VXLny8ALtnBe
+uCyei7pOSkEOOoauv9ayJP3OwPRCm4jwQv9VE98L1rjujnDNbohxW2OdkipYfSMb
+IxTSDefaa5uIUqjCgAxHRN7cEULDtvc23s0j9b9K0cEqgmk7bl2hm2zV1E9sB88J
+hnIKMethcqv2QcF7n16A8gHeNw782NhzBF8B3dhyblE4LXyMwSb/honVefCKrUD4
+fKu1zWLxPMtlCBl5ekIc81JkVFVX1j4ANCFK2exdgEqXG6Tm1Y8zTVOYBb0p8HGy
+v1HQqn8X6HZ0wK51RxnZ
+=8blL
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__3_Apr_2013_17_42_19_+1100_bf1RPF65+WHvsVRm--
