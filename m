@@ -1,96 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762298Ab3DCQwh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 12:52:37 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:43241 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760213Ab3DCQwg (ORCPT
+	id S1762377Ab3DCQxb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 12:53:31 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:2563 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761939Ab3DCQx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 12:52:36 -0400
-Message-ID: <515C5E4D.3090403@gmail.com>
-Date: Thu, 04 Apr 2013 00:52:29 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 3 Apr 2013 12:53:29 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI1432Izz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-WSS-ID: 0MKOUX1-01-2TO-02
+X-M-MSG: 
+Date: Wed, 3 Apr 2013 11:53:24 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: Borislav Petkov <bp@alien8.de>, Thomas Renninger <trenn@suse.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, <cpufreq@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH V3 2/2] cpufreq: AMD "frequency sensitivity feedback"
+ powersave bias for ondemand governor
+Message-ID: <20130403165324.GB17919@jshin-Toonie>
+References: <1364926304-1799-1-git-send-email-jacob.shin@amd.com>
+ <20130402192352.GC17675@pd.tnic>
+ <20130402200337.GA17919@jshin-Toonie>
+ <2932884.BNCEuERbdR@skinner.arch.suse.de>
+ <20130402210124.GI17675@pd.tnic>
 MIME-Version: 1.0
-To: Christian Kujau <lists@nerdbynature.de>
-CC: Dmitry Monakhov <dmonakhov@openvz.org>, CAI Qian <caiqian@redhat.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
-        linux-ext4@vger.kernel.org
-Subject: Re: s390x: kernel BUG at fs/ext4/inode.c:1591! (powerpc too!)
-References: <2133129347.8273339.1364549222854.JavaMail.root@redhat.com> <87ip46ss0o.fsf@openvz.org> <1211053180.322948.1364797847717.JavaMail.root@redhat.com> <87fvzaspr8.fsf@openvz.org> <874841142.414482.1364875584266.JavaMail.root@redhat.com> <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org> <877gkls1q7.fsf@openvz.org> <alpine.DEB.2.10.1304021430480.13746@trent.utfs.org> <87r4isd1vn.fsf@openvz.org> <alpine.DEB.2.10.1304021611020.13746@trent.utfs.org> <87li90q9mx.fsf@openvz.org> <87hajoq6s2.fsf@openvz.org> <87eherri5i.fsf@openvz.org> <alpine.DEB.2.10.1304030935230.13746@trent.utfs.org>
-In-Reply-To: <alpine.DEB.2.10.1304030935230.13746@trent.utfs.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130402210124.GI17675@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2013 12:46 AM, Christian Kujau wrote:
-> On Wed, 3 Apr 2013 at 15:02, Dmitry Monakhov wrote:
->> Good news big endian cpu owners
->> Please try following patches(second is most important):
->> http://patchwork.ozlabs.org/patch/233396/
->> http://patchwork.ozlabs.org/patch/233397/
->> I hope this should fix all known issues
+On Tue, Apr 02, 2013 at 11:01:24PM +0200, Borislav Petkov wrote:
+> On Tue, Apr 02, 2013 at 10:51:51PM +0200, Thomas Renninger wrote:
+> > powersave_bias is undocumented in Documentation/cpu-freq/...
+> > I guess its use-case is for people who want to get some percent more
+> > power savings out of their laptop and do not care of the one or other
+> > percent performance.
+> > In fact I would like to get rid of this extra code and I expect nobody would 
+> > miss it.
+> > I might miss a configuration tool where someone went through the code,
+> > documented things and allows users to set powersave_bias values through
+> > some /etc/* config files.
+> > Yep, if you want anyone to make use of this, it should better get
+> > embedded in more general, at least general ondemand code.
 > 
-> Zheng Liu also sent a patch:
+> Yeah, it all sounds like we want to enable this by default on systems
+> which support it. Maybe with an off-switch for people who want plain
+> ondemand decisions.
 > 
->   [PATCH] ext4: fix a big-endian bug when an extent is zeroed out
-> 
-> When I try to apply all three of those to 3.9-4c4, the 2nd one from Dmitry 
-> fails:
-> 
-> $ cat ~/dev/002-ext4_fix-cpu_vs_disk-conversions.diff | patch --dry-run -p1
-> patching file fs/ext4/extents.c
-> Hunk #2 FAILED at 2999.
-> Hunk #3 FAILED at 3272.
-> Hunk #4 FAILED at 4639.
-> 3 out of 4 hunks FAILED -- saving rejects to file fs/ext4/extents.c.rej
-> patching file fs/ext4/indirect.c
-> Hunk #1 succeeded at 1539 (offset 215 lines).
-> patching file fs/ext4/inode.c
-> patching file fs/ext4/mmp.c
-> patching file fs/ext4/namei.c
-> patching file fs/ext4/super.c
-> Hunk #1 succeeded at 1951 (offset -3 lines).
-> patching file fs/ext4/xattr.c
-> patching file include/trace/events/ext4.h
-> Hunk #1 succeeded at 1956 (offset 8 lines).
-> Hunk #2 succeeded at 2060 (offset 8 lines).
-> Hunk #3 succeeded at 2079 (offset 8 lines).
-> 
-> With only Dimitry's patchesm this happens, to -rc4:
-> 
-> $ cat ~/dev/001-ext4_fix-usless-declarations.diff | patch -p1
-> patching file fs/ext4/ialloc.c
-> patching file fs/ext4/ioctl.c
-> Hunk #1 succeeded at 359 (offset 4 lines).
-> patching file fs/ext4/mballoc.c
-> patching file fs/ext4/move_extent.c
-> 
-> $ cat ~/dev/002-ext4_fix-cpu_vs_disk-conversions.diff | patch --dry-run -p1
-> patching file fs/ext4/extents.c
-> Hunk #4 FAILED at 4639.
-> 1 out of 4 hunks FAILED -- saving rejects to file fs/ext4/extents.c.rej
-> patching file fs/ext4/indirect.c
-> Hunk #1 succeeded at 1539 (offset 215 lines).
-> patching file fs/ext4/inode.c
-> patching file fs/ext4/mmp.c
-> patching file fs/ext4/namei.c
-> patching file fs/ext4/super.c
-> Hunk #1 succeeded at 1951 (offset -3 lines).
-> patching file fs/ext4/xattr.c
-> patching file include/trace/events/ext4.h
-> Hunk #1 succeeded at 1956 (offset 8 lines).
-> Hunk #2 succeeded at 2060 (offset 8 lines).
-> Hunk #3 succeeded at 2079 (offset 8 lines).
+> The remaining systems with ripped out powersave_bias would get plain
+> ondemand governor decisions. Provided, of course, nobody uses
+> powersave_bias and the functionality doesn't make any sense anyway.
 
-I guess that is because Dmitry's patch is against dev branch of ext4
-tree.  Please applied my patch.  I think it could fix the bug.  That
-would be great if you could give this patch a try [1].
+Rafael, any thoughts on removing powersave_bias altogether ?
 
-1. http://patchwork.ozlabs.org/patch/233555/
+If we remove it, then is it acceptable to add an alternate callback/
+handler registration to ondemand governor to account for hardware
+feedback ?
 
-Thanks,
-						- Zheng
+Or, if we don't want to remove powersave_bias,
+
+Then Thomas, Boris, would it be acceptable if enable the frequency
+feedback feature by default with a sane powersave_bias tunable value ?
+And also add proper documentation for both vanila powersave_bias and
+powersave_bias with AMD frequency sensitivity loaded to
+Documentation/cpu-freq/ondemand ?
+
+> 
+> Thanks.
+> 
+> -- 
+> Regards/Gruss,
+>     Boris.
+> 
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
+> 
+
