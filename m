@@ -1,89 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758541Ab3DCIIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 04:08:16 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:47358 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757945Ab3DCIIB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 04:08:01 -0400
-Message-ID: <515BE38B.2060602@parallels.com>
-Date: Wed, 3 Apr 2013 12:08:43 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1758777Ab3DCIIl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 04:08:41 -0400
+Received: from mga09.intel.com ([134.134.136.24]:35415 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758607Ab3DCIIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 04:08:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,399,1363158000"; 
+   d="scan'208";a="288641710"
+Message-ID: <515BE358.2010108@intel.com>
+Date: Wed, 03 Apr 2013 16:07:52 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [PATCH -v2] memcg: don't do cleanup manually if mem_cgroup_css_online()
- fails
-References: <515A8A40.6020406@huawei.com> <20130402121600.GK24345@dhcp22.suse.cz> <20130402141646.GQ24345@dhcp22.suse.cz> <515AE948.1000704@parallels.com> <20130402142825.GA32520@dhcp22.suse.cz> <515AEC3A.2030401@parallels.com> <20130402150422.GB32520@dhcp22.suse.cz>
-In-Reply-To: <20130402150422.GB32520@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Paul Turner <pjt@google.com>
+CC: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        gregkh@linuxfoundation.org,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch v6 10/21] sched: get rq potential maximum utilization
+References: <1364654108-16307-1-git-send-email-alex.shi@intel.com> <1364654108-16307-11-git-send-email-alex.shi@intel.com> <87a9phfgox.fsf@sejong.aot.lge.com> <515B90A5.7080403@intel.com> <CAPM31RKj0SJB6eCDSpH29OdfeNGDXqzoQQWhQP7t3gdxYx+wrQ@mail.gmail.com>
+In-Reply-To: <CAPM31RKj0SJB6eCDSpH29OdfeNGDXqzoQQWhQP7t3gdxYx+wrQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2013 07:04 PM, Michal Hocko wrote:
-> On Tue 02-04-13 18:33:30, Glauber Costa wrote:
->> On 04/02/2013 06:28 PM, Michal Hocko wrote:
->>> On Tue 02-04-13 18:20:56, Glauber Costa wrote:
->>>> On 04/02/2013 06:16 PM, Michal Hocko wrote:
->>>>>  mem_cgroup_css_online
->>>>>       memcg_init_kmem
->>>>>         mem_cgroup_get		# refcnt = 2
->>>>>           memcg_update_all_caches
->>>>>             memcg_update_cache_size	# fails with ENOMEM
->>>>
->>>> Here is the thing: this one in kmem only happens for kmem enabled
->>>> memcgs. For those, we tend to do a get once, and put only when the last
->>>> kmem reference is gone.
->>>>
->>>> For non-kmem memcgs, refcnt will be 1 here, and will be balanced out by
->>>> the mem_cgroup_put() in css_free.
+On 04/03/2013 10:22 AM, Paul Turner wrote:
+> On Tue, Apr 2, 2013 at 7:15 PM, Alex Shi <alex.shi@intel.com> wrote:
+>> On 04/02/2013 05:02 PM, Namhyung Kim wrote:
+>>>>> +  cfs_util = (FULL_UTIL - rt_util) > rq->util ? rq->util
+>>>>> +                  : (FULL_UTIL - rt_util);
+>>>>> +  nr_running = rq->nr_running ? rq->nr_running : 1;
+>>> This can be cleaned up with proper min/max().
 >>>
->>> So we need this, right?
->>> ---
->>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->>> index f608546..2ef875d 100644
->>> --- a/mm/memcontrol.c
->>> +++ b/mm/memcontrol.c
->>> @@ -5306,6 +5306,8 @@ static int memcg_propagate_kmem(struct mem_cgroup *memcg)
->>>  	ret = memcg_update_cache_sizes(memcg);
->>>  	mutex_unlock(&set_limit_mutex);
->>>  out:
->>> +	if (ret)
->>> +		mem_cgroup_put(memcg);
->>>  	return ret;
->>>  }
->>>  #endif /* CONFIG_MEMCG_KMEM */
->>> @@ -6417,16 +6419,6 @@ mem_cgroup_css_online(struct cgroup *cont)
->>>  
->>>  	error = memcg_init_kmem(memcg, &mem_cgroup_subsys);
->>>  	mutex_unlock(&memcg_create_mutex);
->>> -	if (error) {
->>> -		/*
->>> -		 * We call put now because our (and parent's) refcnts
->>> -		 * are already in place. mem_cgroup_put() will internally
->>> -		 * call __mem_cgroup_free, so return directly
->>> -		 */
->>> -		mem_cgroup_put(memcg);
->>> -		if (parent->use_hierarchy)
->>> -			mem_cgroup_put(parent);
->>> -	}
->>>  	return error;
->>>  }
->>>  
->>>
->> Yes, indeed you are very right - and thanks for looking at such depth.
+>>>>> +
+>>>>> +  return rt_util + cfs_util * nr_running;
+>>> Should this nr_running consider tasks in cfs_rq only?
+>>
+>> use nr_running of cfs_rq seems better, but when use sched autogroup,
+>> only cfs->nr_running just the active group number, not the total active
+>> task number. :(
 > 
-> So what about the patch bellow? It seems that I provoked all this mess
-> but my brain managed to push it away so I do not remember why I thought
-> the parent needs reference drop... It is "only" 3.9 thing fortunately.
-> ---
+> Why not just use cfs_rq->h_nr_running?  This is always the total
+> *tasks* in he hierarchy parented that cfs_rq.  (This also has the nice property
+> of not including group_entities.)
+> 
 
-Li being fine with it, I am fine with it.
+Thanks for Namhyung and PJT's suggestions!
+patch updated!
 
+>From 5f6fc3129784db5fb96b8bb7014fe41ee7e059c5 Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Sun, 24 Mar 2013 21:47:59 +0800
+Subject: [PATCH 09/21] sched: get rq potential maximum utilization
+
+Since the rt task priority is higher than fair tasks, cfs_rq utilization
+is just the left of rt utilization.
+
+When there are some cfs tasks in queue, the potential utilization may
+be yielded, so mulitiplying cfs task number to get max potential
+utilization of cfs. Then the rq utilization is sum of rt util and cfs
+util.
+
+Thanks for Paul Turner and Namhyung's reminder!
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ kernel/sched/fair.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c47933f..70a99c9 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3350,6 +3350,27 @@ struct sg_lb_stats {
+ 	unsigned int group_util;	/* sum utilization of group */
+ };
+ 
++static unsigned long scale_rt_util(int cpu);
++
++/*
++ * max_rq_util - get the possible maximum cpu utilization
++ */
++static unsigned int max_rq_util(int cpu)
++{
++	struct rq *rq = cpu_rq(cpu);
++	unsigned int rt_util = scale_rt_util(cpu);
++	unsigned int cfs_util;
++	unsigned int nr_running;
++
++	/* yield cfs utilization to rt's, if total utilization > 100% */
++	cfs_util = min(rq->util, (unsigned int)(FULL_UTIL - rt_util));
++
++	/* count transitory task utilization */
++	nr_running = max(rq->cfs.h_nr_running, (unsigned int)1);
++
++	return rt_util + cfs_util * nr_running;
++}
++
+ /*
+  * sched_balance_self: balance the current task (running on cpu) in domains
+  * that have the 'flag' flag set. In practice, this is SD_BALANCE_FORK and
+-- 
+1.7.12
+
+
+-- 
+Thanks Alex
