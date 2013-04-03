@@ -1,143 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090Ab3DCSYN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 14:24:13 -0400
-Received: from fieldses.org ([174.143.236.118]:41897 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762912Ab3DCSYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 14:24:11 -0400
-Date: Wed, 3 Apr 2013 14:24:10 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nfsd4: Fix NULL dereference in legacy_recdir_name_error()
-Message-ID: <20130403182410.GC6044@fieldses.org>
-References: <s5hfvz71swh.wl%tiwai@suse.de>
+	id S1763024Ab3DCS1k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 14:27:40 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56899 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762912Ab3DCS1i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 14:27:38 -0400
+Message-ID: <515C7495.8060106@wwwdotorg.org>
+Date: Wed, 03 Apr 2013 12:27:33 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hfvz71swh.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Pritesh Raithatha <praithatha@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>, Andrew Chew <achew@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 00/14] Tegra114 clockframework
+References: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com> <515C6C6E.6060302@wwwdotorg.org>
+In-Reply-To: <515C6C6E.6060302@wwwdotorg.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 03, 2013 at 06:27:26PM +0200, Takashi Iwai wrote:
-> The recent rewrite of NFSv4 recovery client tracking options per net
-> (commit 9a9c6478) introduced Oops when it faces an error for recdir
-> generation.
+On 04/03/2013 11:52 AM, Stephen Warren wrote:
+> On 04/03/2013 08:40 AM, Peter De Schrijver wrote:
+>> This is the nineth version of the Tegra114 clockframework. It is based on the
+>> next-20130320-fixed branch of
+>> git://nv-tegra.nvidia.com/user/swarren/linux-2.6.git,
+... [it depends on]
+>> http://patchwork.ozlabs.org/patch/233415/
+> 
+> That is Joseph's "clocksource: tegra: enable arch_timer". Is this
+> actually a dependency, or an optimization, or ...?
+> 
+> Rob Herring objected to that patch since it isn't necessary if his
+> series "ARM arch, sp804 and integrator timer CLKSRC_OF support" is applied.
+> 
+> If I apply just your (Peter's) CCF series without Joseph's or Rob's
+> patches, will everything still work, or is this a hard dependency to
+> create a working system?
 
-Thanks.  Looks like that could hit a lot of people actually, so I'll
-pass that along for 3.9 soon.--b.
+I manage to get this series applied on top of my local dev branch, based
+on next-20130328 (it was painful). Testing indicates that there is no
+dependency on Joseph's patch mentioned above; I could boot, log in, and
+play audio (with local patches) with /or/ without Joseph's patch applied.
 
-> 
->   NFSD: unable to generate recoverydir name (-2).
->   NFSD: disabling legacy clientid tracking. Reboot recovery will not function correctly!
->   BUG: unable to handle kernel NULL pointer dereference at 00000000000007a8
->   IP: [<ffffffffa060c6c7>] nfsd4_client_tracking_exit+0x17/0x70 [nfsd]
->   PGD 0
->   Oops: 0000 [#1] PREEMPT SMP
->   Modules linked in: nfsd fuse nfsv3 nfs_acl nfsv4 auth_rpcgss nfs lockd sunrpc cpufreq_conservative cpufreq_userspace cpufreq_powersave snd_hda_codec_hdmi snd_hda_codec_realtek intel_powerclamp acpi_cpufreq mperf coretemp ghash_clmulni_intel aesni_intel kvm_intel snd_hda_intel ablk_helper snd_hda_codec snd_hwdep kvm snd_pcm cryptd lrw aes_x86_64 snd_timer xts gf128mul e1000e snd sr_mod iTCO_wdt microcode cdrom usb_storage dcdbas iTCO_vendor_support i2c_i801 cdc_acm sg ptp lpc_ich mei soundcore pps_core mfd_core snd_page_alloc pciehp pci_hotplug autofs4 btrfs raid6_pq zlib_deflate xor libcrc32c i915 crc32c_intel drm_kms_helper drm xhci_hcd i2c_algo_bit thermal button video processor thermal_sys scsi_dh_rdac scsi_dh_hp_sw scsi_dh_emc scsi_dh_alua scsi_dh
->   CPU 1
->   Pid: 19567, comm: nfsd Not tainted 3.9.0-rc5-test+ #3 Dell Inc. OptiPlex 9010/0M9KCM
->   RIP: 0010:[<ffffffffa060c6c7>]  [<ffffffffa060c6c7>] nfsd4_client_tracking_exit+0x17/0x70 [nfsd]
->   RSP: 0018:ffff880181099c28  EFLAGS: 00010202
->   RAX: ffff8801810900c0 RBX: 0000000000000004 RCX: 0000000000000006
->   RDX: 0000000000000007 RSI: 0000000000000046 RDI: 0000000000000000
->   RBP: ffff880181099c38 R08: 000000000000000a R09: 000000000000039f
->   R10: 0000000000000000 R11: 000000000000039e R12: 0000000000000000
->   R13: ffffffff81a87280 R14: ffff88014c819220 R15: ffff88020b75d200
->   FS:  0000000000000000(0000) GS:ffff88021e240000(0000) knlGS:0000000000000000
->   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->   CR2: 00000000000007a8 CR3: 0000000001a0d000 CR4: 00000000001407e0
->   DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->   DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->   Process nfsd (pid: 19567, threadinfo ffff880181098000, task ffff8801810900c0)
->   Stack:
->    00000000fffffffe ffff88020b75d200 ffff880181099c58 ffffffffa060c75c
->    ffffffff81a87280 ffff880002ba7000 ffff880181099cc8 ffffffffa060cb37
->    ffff880181099d20 ffff88014c819220 0000000000000001 ffff88020b75d200
->   Call Trace:
->    [<ffffffffa060c75c>] legacy_recdir_name_error+0x3c/0x40 [nfsd]
->    [<ffffffffa060cb37>] nfsd4_create_clid_dir+0xe7/0x200 [nfsd]
->    [<ffffffffa0600323>] ? nfs4_preprocess_seqid_op+0x63/0x160 [nfsd]
->    [<ffffffffa060ccaf>] nfsd4_client_record_create+0x5f/0x80 [nfsd]
->    [<ffffffffa0604eef>] nfsd4_open_confirm+0x12f/0x1b0 [nfsd]
->    [<ffffffffa05f35cf>] nfsd4_proc_compound+0x55f/0x770 [nfsd]
->    [<ffffffffa05e0ded>] nfsd_dispatch+0xdd/0x220 [nfsd]
->    [<ffffffffa04e58b8>] svc_process_common+0x328/0x6d0 [sunrpc]
->    [<ffffffffa04e5fbc>] svc_process+0x10c/0x160 [sunrpc]
->    [<ffffffffa05e079f>] nfsd+0xbf/0x130 [nfsd]
->    [<ffffffffa05e06e0>] ? nfsd_destroy+0x90/0x90 [nfsd]
->    [<ffffffff8106a4cb>] kthread+0xbb/0xc0
->    [<ffffffff8106a410>] ? kthread_create_on_node+0x130/0x130
->    [<ffffffff815b373c>] ret_from_fork+0x7c/0xb0
->    [<ffffffff8106a410>] ? kthread_create_on_node+0x130/0x130
->   Code: e0 49 8b 84 24 48 01 00 00 e9 25 ff ff ff 66 0f 1f 44 00 00 55 48 89 e5 41 54 49 89 fc 53 8b 1d 44 b4 00 00 e8 bb a9 a5 e0 85 db <49> 8b 84 24 a8 07 00 00 74 43 3b 18 77 3f 83 eb 01 48 63 db 48
->   RIP  [<ffffffffa060c6c7>] nfsd4_client_tracking_exit+0x17/0x70 [nfsd]
->    RSP <ffff880181099c28>
->   CR2: 00000000000007a8
->   ---[ end trace 5dd4307598e98cef ]---
-> 
-> This patch fixes it by passing the proper net instance instead of
-> NULL.
-> 
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> Cc: <stable@vger.kernel.org> [v3.8+]
-> ---
->  fs/nfsd/nfs4recover.c | 11 +++++------
->  1 file changed, 5 insertions(+), 6 deletions(-)
-> 
-> diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
-> index 899ca26..ae0d5c9 100644
-> --- a/fs/nfsd/nfs4recover.c
-> +++ b/fs/nfsd/nfs4recover.c
-> @@ -146,7 +146,7 @@ out_no_tfm:
->   * then disable recovery tracking.
->   */
->  static void
-> -legacy_recdir_name_error(int error)
-> +legacy_recdir_name_error(struct net *net, int error)
->  {
->  	printk(KERN_ERR "NFSD: unable to generate recoverydir "
->  			"name (%d).\n", error);
-> @@ -160,8 +160,7 @@ legacy_recdir_name_error(int error)
->  		printk(KERN_ERR "NFSD: disabling legacy clientid tracking. "
->  			"Reboot recovery will not function correctly!\n");
->  
-> -		/* the argument is ignored by the legacy exit function */
-> -		nfsd4_client_tracking_exit(NULL);
-> +		nfsd4_client_tracking_exit(net);
->  	}
->  }
->  
-> @@ -184,7 +183,7 @@ nfsd4_create_clid_dir(struct nfs4_client *clp)
->  
->  	status = nfs4_make_rec_clidname(dname, &clp->cl_name);
->  	if (status)
-> -		return legacy_recdir_name_error(status);
-> +		return legacy_recdir_name_error(clp->net, status);
->  
->  	status = nfs4_save_creds(&original_cred);
->  	if (status < 0)
-> @@ -341,7 +340,7 @@ nfsd4_remove_clid_dir(struct nfs4_client *clp)
->  
->  	status = nfs4_make_rec_clidname(dname, &clp->cl_name);
->  	if (status)
-> -		return legacy_recdir_name_error(status);
-> +		return legacy_recdir_name_error(clp->net, status);
->  
->  	status = mnt_want_write_file(nn->rec_file);
->  	if (status)
-> @@ -601,7 +600,7 @@ nfsd4_check_legacy_client(struct nfs4_client *clp)
->  
->  	status = nfs4_make_rec_clidname(dname, &clp->cl_name);
->  	if (status) {
-> -		legacy_recdir_name_error(status);
-> +		legacy_recdir_name_error(clp->net, status);
->  		return status;
->  	}
->  
-> -- 
-> 1.8.1.4
-> 
+However, I still find that I need to revert f7db706 ARM: "7674/1: smp:
+Avoid dummy clockevent being preferred over real hardware clock-event",
+or I get a hard system hang right after the root fs is mounted. As such,
+I not sure if it's worthwhile applying this series since it's unlikely
+to actually work once merged into Torvalds' tree.
+
+Do you have any idea what the problem is here?
+
+I'll try rebasing my local test branch on top of the latest linux-next
+just in case some other fix solved this already, but I'm not going to
+hold my breath.
