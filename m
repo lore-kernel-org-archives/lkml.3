@@ -1,112 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761542Ab3DCCoE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 22:44:04 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:56925 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759066Ab3DCCoB (ORCPT
+	id S1760911Ab3DCCqw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 22:46:52 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:32799 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754524Ab3DCCqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 22:44:01 -0400
-Date: Wed, 3 Apr 2013 13:43:49 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
-        <dri-devel@lists.freedesktop.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: linux-next: manual merge of the drm-intel tree with Linus' tree
-Message-Id: <20130403134349.e009a401ab6ec761edbfedd7@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__3_Apr_2013_13_43_49_+1100_N9erHEL0pEpypmp_"
+	Tue, 2 Apr 2013 22:46:50 -0400
+Message-ID: <515B97FF.2040409@linux.vnet.ibm.com>
+Date: Wed, 03 Apr 2013 10:46:23 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Alex Shi <alex.shi@intel.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
+        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
+        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
+        mgorman@suse.de, riel@redhat.com
+Subject: Re: [patch v3 0/8] sched: use runnable avg in load balance
+References: <1364873008-3169-1-git-send-email-alex.shi@intel.com> <515A877B.3020908@linux.vnet.ibm.com> <515A9859.6000606@intel.com>
+In-Reply-To: <515A9859.6000606@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040302-4790-0000-0000-000007AD5D36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__3_Apr_2013_13_43_49_+1100_N9erHEL0pEpypmp_
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 04/02/2013 04:35 PM, Alex Shi wrote:
+[snip]
+>>
+>> The reason may caused by wake_affine()'s higher overhead, and pgbench is
+>> really sensitive to this stuff...
+> 
+> Thanks for testing. Could you like to remove the last patch and test it
+> again? I want to know if the last patch has effect on pgbench.
 
-Hi all,
+Done, here the results of pgbench without the last patch on my box:
 
-Today's linux-next merge of the drm-intel tree got a conflict in
-drivers/gpu/drm/i915/intel_panel.c between commit b1289371fcd5 ("Revert
-"drm/i915: write backlight harder"") from Linus' tree and commit
-31ad8ec6a614 ("drm/i915: group backlight related stuff into a struct")
-from the drm-intel tree.
+| db_size | clients |  tps  |   |  tps  |
++---------+---------+-------+   +-------+
+| 22 MB   |       1 | 10662 |   | 10679 |
+| 22 MB   |       2 | 21483 |   | 21471 |
+| 22 MB   |       4 | 42046 |   | 41957 |
+| 22 MB   |       8 | 55807 |   | 55684 |
+| 22 MB   |      12 | 50768 |   | 52074 |
+| 22 MB   |      16 | 49880 |   | 52879 |
+| 22 MB   |      24 | 45904 |   | 53406 |
+| 22 MB   |      32 | 43420 |   | 54088 |	+24.57%
+| 7484 MB |       1 |  7965 |   |  7725 |
+| 7484 MB |       2 | 19354 |   | 19405 |
+| 7484 MB |       4 | 37552 |   | 37246 |
+| 7484 MB |       8 | 48655 |   | 50613 |
+| 7484 MB |      12 | 45778 |   | 47639 |
+| 7484 MB |      16 | 45659 |   | 48707 |
+| 7484 MB |      24 | 42192 |   | 46469 |
+| 7484 MB |      32 | 36385 |   | 46346 |	+27.38%
+| 15 GB   |       1 |  7677 |   |  7727 |
+| 15 GB   |       2 | 19227 |   | 19199 |
+| 15 GB   |       4 | 37335 |   | 37372 |
+| 15 GB   |       8 | 48130 |   | 50333 |
+| 15 GB   |      12 | 45393 |   | 47590 |
+| 15 GB   |      16 | 45110 |   | 48091 |
+| 15 GB   |      24 | 41415 |   | 47415 |
+| 15 GB   |      32 | 35988 |   | 45749 |	+27.12%
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Very nice improvement, I'd like to test it with the wake-affine throttle
+patch later, let's see what will happen ;-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Any idea on why the last one caused the regression?
 
-diff --cc drivers/gpu/drm/i915/intel_panel.c
-index bee8cb6,0e7e873..0000000
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@@ -318,9 -321,16 +321,13 @@@ void intel_panel_enable_backlight(struc
-  {
-  	struct drm_i915_private *dev_priv =3D dev->dev_private;
- =20
-- 	if (dev_priv->backlight_level =3D=3D 0)
-- 		dev_priv->backlight_level =3D intel_panel_get_max_backlight(dev);
-+ 	if (dev_priv->backlight.level =3D=3D 0) {
-+ 		dev_priv->backlight.level =3D intel_panel_get_max_backlight(dev);
-+ 		if (dev_priv->backlight.device)
-+ 			dev_priv->backlight.device->props.brightness =3D
-+ 				dev_priv->backlight.level;
-+ 	}
- =20
- -	dev_priv->backlight.enabled =3D true;
- -	intel_panel_actually_set_backlight(dev, dev_priv->backlight.level);
- -
-  	if (INTEL_INFO(dev)->gen >=3D 4) {
-  		uint32_t reg, tmp;
- =20
-@@@ -356,12 -366,12 +363,12 @@@
-  	}
- =20
-  set_level:
- -	/* Check the current backlight level and try to set again if it's zero.
- -	 * On some machines, BLC_PWM_CPU_CTL is cleared to zero automatically
- -	 * when BLC_PWM_CPU_CTL2 and BLC_PWM_PCH_CTL1 are written.
- +	/* Call below after setting BLC_PWM_CPU_CTL2 and BLC_PWM_PCH_CTL1.
- +	 * BLC_PWM_CPU_CTL may be cleared to zero automatically when these
- +	 * registers are set.
-  	 */
-- 	dev_priv->backlight_enabled =3D true;
-- 	intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
- -	if (!intel_panel_get_backlight(dev))
- -		intel_panel_actually_set_backlight(dev, dev_priv->backlight.level);
-++	dev_priv->backlight.enabled =3D true;
-++	intel_panel_actually_set_backlight(dev, dev_priv->backlight.level);
-  }
- =20
-  static void intel_panel_init_backlight(struct drm_device *dev)
+Regards,
+Michael Wang
 
---Signature=_Wed__3_Apr_2013_13_43_49_+1100_N9erHEL0pEpypmp_
-Content-Type: application/pgp-signature
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRW5dlAAoJEECxmPOUX5FEZLgQAJBQT2X7MKrbQSxU3986/Y6f
-WepYxMTnDv0acaJRf/78cYEz+JIpV428pLYqjg6W4SAIUixVE0PlHuCSc2s9E8/X
-gOBOqMTUram5odiaD9XqbXdlhwwSL3yYfNWeSAybtFLAq0A4ICTHrb4JeImcrCwx
-0DCo6NI6RXaHkGuiST2dFDUtVlIzHoDAFQrPVLI3sr5FlKKH9LZOBSaOT5KCTLGd
-HPS0SVJTmsFDzcpzDm/IRiZXAlRAoNP7Uxv2oAUkZf5EteeJUY8J0RfAaFVfMI3Q
-gdWv1k3xejr0s2GVsy5tpTAN9ih6BVG2eAwR+N597aFrzvx8yC4ytURNvB6xw0/V
-HznVwRTKEp2X5oQeWJj/272r513nyPTN7r6QnTjkZayG6Hr2A+FfzT3dHKekd8xB
-cAkE4NiTQY+5wRwgTh9K31gqLKW0g4xp2Vl3+cVowvGRZPHMlVzjp/rBw/NPVx6S
-BXdqERzKS66303e2n950VRXMzgQLm7MyxQjnKJFkyGJq/bdNGNwO5V0ttFom5Hj0
-ur/UiCusKfz+M4VqKIA1pcGhNsssGHkgg7xiFKKYpD9dISEgYusMmkAko0AjuI9Q
-oNvfuBrSGdrceiuMM8hpPFCQZB8Mj7JOb5hFtK+AVo2AXGYb7ZQ5SdiUdqMGepmp
-7HY/vDnw2yBJafZcTAxd
-=Yymz
------END PGP SIGNATURE-----
-
---Signature=_Wed__3_Apr_2013_13_43_49_+1100_N9erHEL0pEpypmp_--
