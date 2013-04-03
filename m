@@ -1,127 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761666Ab3DCMyv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 08:54:51 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35733 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759584Ab3DCMys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 08:54:48 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
-        <akpm@linux-foundation.org>, <swarren@wwwdotorg.org>,
-        <sylvester.nawrocki@gmail.com>, <rob@landley.net>
-CC: <netdev@vger.kernel.org>, <davem@davemloft.net>, <cesarb@cesarb.net>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <tony@atomide.com>,
-        <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <b-cousson@ti.com>, <linux@arm.linux.org.uk>, <eballetbo@gmail.com>,
-        <javier@dowhile0.org>, <kishon@ti.com>, <mchehab@redhat.com>,
-        <santosh.shilimkar@ti.com>, <broonie@opensource.wolfsonmicro.com>,
-        <swarren@nvidia.com>, <linux-doc@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v5 2/6] usb: phy: omap-usb2: use the new generic PHY framework
-Date: Wed, 3 Apr 2013 18:23:50 +0530
-Message-ID: <1364993634-6378-3-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1364993634-6378-1-git-send-email-kishon@ti.com>
-References: <1364993634-6378-1-git-send-email-kishon@ti.com>
+	id S1762821Ab3DCM6U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 08:58:20 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:36395 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761572Ab3DCM6T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 08:58:19 -0400
+Message-ID: <515C2788.90907@parallels.com>
+Date: Wed, 3 Apr 2013 16:58:48 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Li Zefan <lizefan@huawei.com>
+CC: <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC][PATCH 1/7] memcg: use css_get in sock_update_memcg()
+References: <515BF233.6070308@huawei.com> <515BF249.50607@huawei.com>
+In-Reply-To: <515BF249.50607@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Used the generic PHY framework API to create the PHY. omap_usb2_suspend
-is split into omap_usb_suspend and omap_usb_resume in order to align
-with the new framework.
+On 04/03/2013 01:11 PM, Li Zefan wrote:
+> Use css_get/css_put instead of mem_cgroup_get/put.
+> 
+> Note, if at the same time someone is moving @current to a different
+> cgroup and removing the old cgroup, css_tryget() may return false,
+> and sock->sk_cgrp won't be initialized.
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> ---
+>  mm/memcontrol.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 23d0f6e..43ca91d 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -536,15 +536,15 @@ void sock_update_memcg(struct sock *sk)
+>  		 */
+>  		if (sk->sk_cgrp) {
+>  			BUG_ON(mem_cgroup_is_root(sk->sk_cgrp->memcg));
+> -			mem_cgroup_get(sk->sk_cgrp->memcg);
+> +			css_get(&sk->sk_cgrp->memcg->css);
+>  			return;
+>  		}
+>  
+>  		rcu_read_lock();
+>  		memcg = mem_cgroup_from_task(current);
+>  		cg_proto = sk->sk_prot->proto_cgroup(memcg);
+> -		if (!mem_cgroup_is_root(memcg) && memcg_proto_active(cg_proto)) {
+> -			mem_cgroup_get(memcg);
+> +		if (!mem_cgroup_is_root(memcg) &&
+> +		    memcg_proto_active(cg_proto) && css_tryget(&memcg->css)) {
+>  			sk->sk_cgrp = cg_proto;
+>  		}
 
-However using the old USB PHY library cannot be completely removed
-because OTG is intertwined with PHY and moving to the new framework
-will break OTG. Once we have a separate OTG state machine, we
-can get rid of the USB PHY library.
-
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/usb/phy/omap-usb2.c |   48 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 48 insertions(+)
-
-diff --git a/drivers/usb/phy/omap-usb2.c b/drivers/usb/phy/omap-usb2.c
-index 844ab68..4e48db4 100644
---- a/drivers/usb/phy/omap-usb2.c
-+++ b/drivers/usb/phy/omap-usb2.c
-@@ -28,6 +28,7 @@
- #include <linux/pm_runtime.h>
- #include <linux/delay.h>
- #include <linux/usb/omap_control_usb.h>
-+#include <linux/phy/phy.h>
- 
- /**
-  * omap_usb2_set_comparator - links the comparator present in the sytem with
-@@ -119,9 +120,49 @@ static int omap_usb2_suspend(struct usb_phy *x, int suspend)
- 	return 0;
- }
- 
-+static int omap_usb_suspend(struct phy *x)
-+{
-+	struct omap_usb *phy = dev_get_drvdata(&x->dev);
-+
-+	if (!phy->is_suspended) {
-+		omap_control_usb_phy_power(phy->control_dev, 0);
-+		pm_runtime_put_sync(phy->dev);
-+		phy->is_suspended = 1;
-+	}
-+
-+	return 0;
-+}
-+
-+static int omap_usb_resume(struct phy *x)
-+{
-+	u32 ret;
-+	struct omap_usb *phy = dev_get_drvdata(&x->dev);
-+
-+	if (phy->is_suspended) {
-+		ret = pm_runtime_get_sync(phy->dev);
-+		if (ret < 0) {
-+			dev_err(phy->dev, "get_sync failed with err %d\n",
-+									ret);
-+			return ret;
-+		}
-+		omap_control_usb_phy_power(phy->control_dev, 1);
-+		phy->is_suspended = 0;
-+	}
-+
-+	return 0;
-+}
-+
-+static struct phy_ops ops = {
-+	.suspend	= omap_usb_suspend,
-+	.resume		= omap_usb_resume,
-+	.of_xlate	= of_phy_xlate,
-+	.owner		= THIS_MODULE,
-+};
-+
- static int omap_usb2_probe(struct platform_device *pdev)
- {
- 	struct omap_usb			*phy;
-+	struct phy			*generic_phy;
- 	struct usb_otg			*otg;
- 
- 	phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
-@@ -144,6 +185,13 @@ static int omap_usb2_probe(struct platform_device *pdev)
- 	phy->phy.otg		= otg;
- 	phy->phy.type		= USB_PHY_TYPE_USB2;
- 
-+	generic_phy = devm_phy_create(phy->dev, "omap-usb2", pdev->dev.of_node,
-+		USB_PHY_TYPE_USB2, &ops, phy);
-+	if (IS_ERR(generic_phy)) {
-+		dev_dbg(&pdev->dev, "Failed to create PHY\n");
-+		return PTR_ERR(generic_phy);
-+	}
-+
- 	phy->control_dev = omap_get_control_dev();
- 	if (IS_ERR(phy->control_dev)) {
- 		dev_dbg(&pdev->dev, "Failed to get control device\n");
--- 
-1.7.10.4
+What happens if this tryget fails ? Won't we leak a reference here? We
+will put regardless when the socket is released, and this may go
+negative. No?
 
