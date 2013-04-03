@@ -1,96 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760600Ab3DCJHi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 05:07:38 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:12773 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758716Ab3DCJHe convert rfc822-to-8bit (ORCPT
+	id S1759753Ab3DCJKv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 05:10:51 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43270 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758532Ab3DCJKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 05:07:34 -0400
-X-Greylist: delayed 844 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Apr 2013 05:07:34 EDT
-Date: Wed, 3 Apr 2013 10:53:14 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: tglx@linutronix.de, Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] timer: Fix possible issues with non serialized
- timer_pending( )
-Message-ID: <20130403085313.GA9321@ab42.lan>
-References: <1364553218-31255-1-git-send-email-vgupta@synopsys.com>
+	Wed, 3 Apr 2013 05:10:48 -0400
+X-AuditID: 9c930197-b7b50ae00000018c-f4-515bf212ac9d
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 6/9] perf sort: Add 'addr' sort key
+References: <1364816125-12212-1-git-send-email-namhyung@kernel.org>
+	<1364816125-12212-7-git-send-email-namhyung@kernel.org>
+	<20130401204022.GB1022@krava.redhat.com>
+	<87wqslfzk4.fsf@sejong.aot.lge.com>
+	<20130402084014.GA26618@krava.redhat.com>
+Date: Wed, 03 Apr 2013 18:10:41 +0900
+In-Reply-To: <20130402084014.GA26618@krava.redhat.com> (Jiri Olsa's message of
+	"Tue, 2 Apr 2013 10:40:14 +0200")
+Message-ID: <87txnodlny.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1364553218-31255-1-git-send-email-vgupta@synopsys.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have tested the patch in several configurations and boards using
-tests which previously crashed the kernel in less than an hour. The
-crashes in question could not be reproduced in long term tests (3 days)
-and nightly tests with the patch. I can thus confirm that this fixes a
-real issue.
+Hi Jiri,
 
-On Fri, Mar 29, 2013 at 04:03:38PM +0530, Vineet Gupta wrote:
-> When stress testing ARC Linux from 3.9-rc3, we've hit a serialization
-> issue when mod_timer() races with itself. This is on a FPGA board and
-> kernel .config among others has !SMP and !PREEMPT_COUNT.
-> 
-> The issue happens in mod_timer( ) because timer_pending( ) based early
-> exit check is NOT done inside the timer base spinlock - as a networking
-> optimization.
-> 
-> The value used in there, timer->entry.next is also used further in call
-> chain (all inlines though) for actual list manipulation. However if the
-> register containing this pointer remains live across the spinlock (in a
-> UP setup with !PREEMPT_COUNT there's nothing forcing gcc to reload) then
-> a stale value of next pointer causes incorrect list manipulation,
-> observed with following sequence in our tests.
-> 
-> [...]
-> 
-> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> Reported-by: Christian Ruppert <christian.ruppert@abilis.com>
-Tested-by: Christian Ruppert <christian.ruppert@abilis.com>
+On Tue, 2 Apr 2013 10:40:14 +0200, Jiri Olsa wrote:
+> On Tue, Apr 02, 2013 at 11:15:23AM +0900, Namhyung Kim wrote:
+>> On Mon, 1 Apr 2013 22:40:23 +0200, Jiri Olsa wrote:
+>> > On Mon, Apr 01, 2013 at 08:35:22PM +0900, Namhyung Kim wrote:
+>> >> From: Namhyung Kim <namhyung.kim@lge.com>
+>> >> 
+>> >> New addr sort key provides a way to sort the entries by the symbol
+>> >> addresses.  It can be helpful to figure out symbol resolution problem
+>> >> when a dso cannot do it properly as well as finding hotpath in a dso
+>> >> and/or a function.
+>> >
+>> > maybe it's just the recent mem profiling patches, but wouldn't
+>> > it be better to use 'ip' instead of 'addr'?
+>> >
+>> > also it's following code getting the data:
+>> > ...
+>> >         if (sample_type & PERF_SAMPLE_IP)
+>> >                 data->ip = perf_instruction_pointer(regs);
+>> > ...
+>> >
+>> > same for the "perf sort: Add 'addr_to/from' sort key" patch
+>> 
+>> I'm not sure I understand what you mean exactly.
+>> 
+>> I used hist_entry->ip but it was set by al->addr which was converted
+>> from the original sample ip to a relative ip by map->map_ip().
+>> 
+>> I can change it to use ->unmap_ip() before printing.  Is that your
+>> concern?
+>
+> what I meant was the 'addr' name itself for -s option, like use:
+>   '-s ip' instead of '-s addr'
 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Christian Ruppert <christian.ruppert@abilis.com>
-> Cc: Pierrick Hascoet <pierrick.hascoet@abilis.com>
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  include/linux/timer.h |   11 ++++++++++-
->  1 file changed, 10 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/timer.h b/include/linux/timer.h
-> index 8c5a197..1537104 100644
-> --- a/include/linux/timer.h
-> +++ b/include/linux/timer.h
-> @@ -168,7 +168,16 @@ static inline void init_timer_on_stack_key(struct timer_list *timer,
->   */
->  static inline int timer_pending(const struct timer_list * timer)
->  {
-> -	return timer->entry.next != NULL;
-> +	int pending = timer->entry.next != NULL;
-> +
-> +	/*
-> +	 * The check above enables timer fast path - early exit.
-> +	 * However most of the call sites are not protected by timer->base
-> +	 * spinlock. If the caller (say mod_timer) races with itself, it
-> +	 * can use the stale "next" pointer. See commit log for details.
-> +	 */
-> +	barrier();
-> +	return pending;
->  }
->  
->  extern void add_timer_on(struct timer_list *timer, int cpu);
-> -- 
-> 1.7.10.4
-> 
+Well, I don't know what's better.  But the 'addr' looks more natural to
+me and it's requested originally.  And the 'ip' can have multiple
+meaning. :)
 
--- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+Thanks,
+Namhyung
+
