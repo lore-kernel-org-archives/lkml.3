@@ -1,170 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762267Ab3DCXfE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 19:35:04 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:18486 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761367Ab3DCXfC (ORCPT
+	id S932091Ab3DCXfK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 19:35:10 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35679 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761367Ab3DCXfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 19:35:02 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, linuxram@us.ibm.com,
-        guz.fnst@cn.fujitsu.com, tmac@hp.com, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, tangchen@cn.fujitsu.com, jiang.liu@huawei.com,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [UPDATE][PATCH 2/3] resource: Add release_mem_region_adjustable()
-Date: Wed,  3 Apr 2013 17:23:25 -0600
-Message-Id: <1365031405-25206-1-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.7.11.7
+	Wed, 3 Apr 2013 19:35:05 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Michal Marek <mmarek@suse.cz>, Grant Likely <glikely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>
+Cc: arm@kernel.org, Shawn Guo <shawn.guo@linaro.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, linux-kbuild@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH V2 1/7] kbuild: create an "include chroot" for DT bindings
+Date: Wed,  3 Apr 2013 17:34:52 -0600
+Message-Id: <1365032098-22825-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.10.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added release_mem_region_adjustable(), which releases a requested
-region from a currently busy memory resource.  This interface
-adjusts the matched memory resource accordingly if the requested
-region does not match exactly but still fits into.
+From: Stephen Warren <swarren@nvidia.com>
 
-This new interface is intended for memory hot-delete.  During
-bootup, memory resources are inserted from the boot descriptor
-table, such as EFI Memory Table and e820.  Each memory resource
-entry usually covers the whole contigous memory range.  Memory
-hot-delete request, on the other hand, may target to a particular
-range of memory resource, and its size can be much smaller than
-the whole contiguous memory.  Since the existing release interfaces
-like __release_region() require a requested region to be exactly
-matched to a resource entry, they do not allow a partial resource
-to be released.
+The recent dtc+cpp support allows header files and C pre-processor
+defines/macros to be used when compiling device tree files. These
+headers will typically define various constants that are part of the
+device tree bindings.
 
-There is no change to the existing interfaces since their restriction
-is valid for I/O resources.
+The original patch which set up the dtc+cpp include path only considered
+using those headers from device tree files. However, most are also
+useful for kernel code which needs to interpret the device tree.
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+In both the DT files and the kernel, I'd like to include the DT-related
+headers in the same way, for example, <dt-bindings/gpio/tegra-gpio.h>.
+That will simplify any text which discusses the DT header locations.
+
+Creating a <dt-bindings/> for kernel source to use is as simple as
+placing files into include/dt-bindings/.
+
+However, when compiling DT files, the include path should be restricted
+so that only the dt-bindings path is available; arbitrary kernel headers
+shouldn't be exposed. For this reason, create a specific include
+directory for use by dtc+cpp, and symlink dt-bindings from there to the
+actual location of include/dt-bindings/. For want of a better location,
+place this "include chroot" into the existing dts/ directory.
+
+arch/*/boot/dts/include/dt-bindings -> ../../../../../include/dt-bindings
+
+Some headers used by device tree files may not be useful to the kernel;
+they may be used simply to aid in constructing the DT file (e.g. macros
+to create a node), but not define any information that the kernel needs
+to share. These may be placed directly into arch/*/boot/dts/ along with
+the DT files themselves.
+
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Hiroshi Doyu <hdoyu@nvidia.com>
+Acked-by: Michal Marek <mmarek@suse.cz>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Acked-by: Rob Herring <rob.herring@calxeda.com>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
+Grant, Rob, Michal, I'm hoping for acks or comments from you so this
+series can be placed into a topic branch in the arm-soc repo, for others
+to build on during the 3.10 kernel cycle. Thanks.
 
-Updated per code reviews from Yasuaki Ishimatsu, Ram Pai and
-Gu Zheng.
-
+This first patch was previously posted separately as V2. I'm including
+it here to keep it with the whole series. I hope this series can be
+applied as a topic branch in arm-soc.
 ---
- include/linux/ioport.h |    2 +
- kernel/resource.c      |   93 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 95 insertions(+)
+ arch/arm/boot/dts/include/dt-bindings |    1 +
+ scripts/Makefile.lib                  |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+ create mode 120000 arch/arm/boot/dts/include/dt-bindings
 
-diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-index 85ac9b9b..0fe1a82 100644
---- a/include/linux/ioport.h
-+++ b/include/linux/ioport.h
-@@ -192,6 +192,8 @@ extern struct resource * __request_region(struct resource *,
- extern int __check_region(struct resource *, resource_size_t, resource_size_t);
- extern void __release_region(struct resource *, resource_size_t,
- 				resource_size_t);
-+extern int release_mem_region_adjustable(struct resource *, resource_size_t,
-+				resource_size_t);
+diff --git a/arch/arm/boot/dts/include/dt-bindings b/arch/arm/boot/dts/include/dt-bindings
+new file mode 120000
+index 0000000..08c00e4
+--- /dev/null
++++ b/arch/arm/boot/dts/include/dt-bindings
+@@ -0,0 +1 @@
++../../../../../include/dt-bindings
+\ No newline at end of file
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index 07125e6..af35521 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -158,7 +158,7 @@ ld_flags       = $(LDFLAGS) $(ldflags-y)
  
- static inline int __deprecated check_region(resource_size_t s,
- 						resource_size_t n)
-diff --git a/kernel/resource.c b/kernel/resource.c
-index ae246f9..c7966c3 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -1021,6 +1021,99 @@ void __release_region(struct resource *parent, resource_size_t start,
- }
- EXPORT_SYMBOL(__release_region);
+ dtc_cpp_flags  = -Wp,-MD,$(depfile) -nostdinc                            \
+ 		 -I$(srctree)/arch/$(SRCARCH)/boot/dts                   \
+-		 -I$(srctree)/arch/$(SRCARCH)/include/dts                \
++		 -I$(srctree)/arch/$(SRCARCH)/boot/dts/include           \
+ 		 -undef -D__DTS__
  
-+/**
-+ * release_mem_region_adjustable - release a previously reserved memory region
-+ * @parent: parent resource descriptor
-+ * @start: resource start address
-+ * @size: resource region size
-+ *
-+ * The requested region is released from a currently busy memory resource.
-+ * It adjusts the matched busy memory resource accordingly if the requested
-+ * region does not match exactly but still fits into.  Existing children of
-+ * the busy memory resource must be immutable in this request.
-+ *
-+ * Note, when the busy memory resource gets split into two entries, the code
-+ * assumes that all children remain in the lower address entry for simplicity.
-+ * Enhance this logic when necessary.
-+ */
-+int release_mem_region_adjustable(struct resource *parent,
-+			resource_size_t start, resource_size_t size)
-+{
-+	struct resource **p;
-+	struct resource *res, *new;
-+	resource_size_t end;
-+	int ret = -EINVAL;
-+
-+	end = start + size - 1;
-+	if ((start < parent->start) || (end > parent->end))
-+		return -EINVAL;
-+
-+	p = &parent->child;
-+	write_lock(&resource_lock);
-+
-+	while ((res = *p)) {
-+		if (res->start >= end)
-+			break;
-+
-+		/* look for the next resource if it does not fit into */
-+		if (res->start > start || res->end < end) {
-+			p = &res->sibling;
-+			continue;
-+		}
-+
-+		if (!(res->flags & IORESOURCE_MEM))
-+			break;
-+
-+		if (!(res->flags & IORESOURCE_BUSY)) {
-+			p = &res->child;
-+			continue;
-+		}
-+
-+		/* found the target resource; let's adjust accordingly */
-+		if (res->start == start && res->end == end) {
-+			/* free the whole entry */
-+			*p = res->sibling;
-+			kfree(res);
-+			ret = 0;
-+		} else if (res->start == start && res->end != end) {
-+			/* adjust the start */
-+			ret = __adjust_resource(res, end + 1,
-+						res->end - end);
-+		} else if (res->start != start && res->end == end) {
-+			/* adjust the end */
-+			ret = __adjust_resource(res, res->start,
-+						start - res->start);
-+		} else {
-+			/* split into two entries */
-+			new = kzalloc(sizeof(struct resource), GFP_KERNEL);
-+			if (!new) {
-+				ret = -ENOMEM;
-+				break;
-+			}
-+			new->name = res->name;
-+			new->start = end + 1;
-+			new->end = res->end;
-+			new->flags = res->flags;
-+			new->parent = res->parent;
-+			new->sibling = res->sibling;
-+			new->child = NULL;
-+
-+			ret = __adjust_resource(res, res->start,
-+						start - res->start);
-+			if (ret) {
-+				kfree(new);
-+				break;
-+			}
-+			res->sibling = new;
-+		}
-+
-+		break;
-+	}
-+
-+	write_unlock(&resource_lock);
-+	return ret;
-+}
-+
- /*
-  * Managed region resource
-  */
+ # Finds the multi-part object the current object will be linked into
+-- 
+1.7.10.4
+
