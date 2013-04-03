@@ -1,291 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762186Ab3DCMWr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 08:22:47 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:34996 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761359Ab3DCMWT (ORCPT
+	id S1761939Ab3DCM0Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 08:26:24 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48225 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761171Ab3DCM0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 08:22:19 -0400
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
-        jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH v6 1/2] perf: use hrtimer for event multiplexing
-Date: Wed,  3 Apr 2013 14:21:33 +0200
-Message-Id: <1364991694-5876-2-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1364991694-5876-1-git-send-email-eranian@google.com>
-References: <1364991694-5876-1-git-send-email-eranian@google.com>
+	Wed, 3 Apr 2013 08:26:22 -0400
+X-AuditID: 9c93016f-b7c18ae000002f5f-7a-515c1fecd821
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCHSET 00/10] perf tools: Cleanup for sort keys (v2)
+Date: Wed,  3 Apr 2013 21:26:09 +0900
+Message-Id: <1364991979-3008-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current scheme of using the timer tick was fine
-for per-thread events. However, it was causing
-bias issues in system-wide mode (including for
-uncore PMUs). Event groups would not get their
-fair share of runtime on the PMU. With tickless
-kernels, if a core is idle there is no timer tick,
-and thus no event rotation (multiplexing). However,
-there are events (especially uncore events) which do
-count even though cores are asleep.
+Hello,
 
-This patch changes the timer source for multiplexing.
-It introduces a per-PMU per-cpu hrtimer. The advantage
-is that even when a core goes idle, it will come back
-to service the hrtimer, thus multiplexing on system-wide
-events works much better.
+This is a second version of my sort key cleanup series.  I Added
+helper function for adding sort key and used unmap_ip() function for
+printing symbol address as Jiri commented.  But didn't change name of
+the sort keys to 'ip'.  If you really think I should change, I'm okay
+to do it though.  I also cleaned up sort__has_sym and sort key eliding
+code in this version.
 
-The per-PMU implementation (suggested by PeterZ) enables
-adjusting the multiplexing interval per PMU. The preferred
-interval is stashed into the struct pmu. If not set, it
-will be forced to the default interval value.
+You can get it from 'perf/sort-v4' branch on my tree at:
 
-In order to minimize the impact of the hrtimer, it
-is turned on and off on demand. When the PMU on
-a CPU is overcommited, the hrtimer is activated.
-It is stopped when the PMU is not overcommitted.
+  git://git.kernel.org/pub/scm/linux/kernel/namhyung/linux-perf.git
 
-In order for this to work properly, we had to change
-the order of initialization in start_kernel() such
-that hrtimer_init() is run before perf_event_init().
 
-The default interval in milliseconds is set to a
-timer tick just like with the old code. We will
-provide a sysctl to tune this in another patch.
+Any comments are welcome, thanks.
+Namhyung
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- include/linux/perf_event.h |    3 +-
- init/main.c                |    2 +-
- kernel/events/core.c       |  114 ++++++++++++++++++++++++++++++++++++++++----
- 3 files changed, 109 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index e0373d2..72e3dc3 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -501,8 +501,9 @@ struct perf_cpu_context {
- 	struct perf_event_context	*task_ctx;
- 	int				active_oncpu;
- 	int				exclusive;
-+	struct hrtimer			hrtimer;
-+	ktime_t				hrtimer_interval;
- 	struct list_head		rotation_list;
--	int				jiffies_interval;
- 	struct pmu			*unique_pmu;
- 	struct perf_cgroup		*cgrp;
- };
-diff --git a/init/main.c b/init/main.c
-index d9c02e1..52870f2 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -544,7 +544,6 @@ asmlinkage void __init start_kernel(void)
- 		local_irq_disable();
- 	}
- 	idr_init_cache();
--	perf_event_init();
- 	rcu_init();
- 	radix_tree_init();
- 	/* init some links before init_ISA_irqs() */
-@@ -556,6 +555,7 @@ asmlinkage void __init start_kernel(void)
- 	softirq_init();
- 	timekeeping_init();
- 	time_init();
-+	perf_event_init();
- 	profile_init();
- 	call_function_init();
- 	if (!irqs_disabled())
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 98c0845..d22f408 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -169,6 +169,8 @@ int sysctl_perf_event_sample_rate __read_mostly = DEFAULT_MAX_SAMPLE_RATE;
- static int max_samples_per_tick __read_mostly =
- 	DIV_ROUND_UP(DEFAULT_MAX_SAMPLE_RATE, HZ);
- 
-+static int perf_rotate_context(struct perf_cpu_context *cpuctx);
-+
- int perf_proc_update_handler(struct ctl_table *table, int write,
- 		void __user *buffer, size_t *lenp,
- 		loff_t *ppos)
-@@ -642,6 +644,98 @@ perf_cgroup_mark_enabled(struct perf_event *event,
- }
- #endif
- 
-+/*
-+ * set default to be dependent on timer tick just
-+ * like original code
-+ */
-+#define PERF_CPU_HRTIMER (1000 / HZ)
-+/*
-+ * function must be called with interrupts disbled
-+ */
-+static enum hrtimer_restart perf_cpu_hrtimer_handler(struct hrtimer *hr)
-+{
-+	struct perf_cpu_context *cpuctx;
-+	enum hrtimer_restart ret = HRTIMER_NORESTART;
-+	int rotations = 0;
-+
-+	WARN_ON(!irqs_disabled());
-+
-+	cpuctx = container_of(hr, struct perf_cpu_context, hrtimer);
-+
-+	rotations = perf_rotate_context(cpuctx);
-+
-+	/*
-+	 * arm timer if needed
-+	 */
-+	if (rotations) {
-+		hrtimer_forward_now(hr, cpuctx->hrtimer_interval);
-+		ret = HRTIMER_RESTART;
-+	}
-+
-+	return ret;
-+}
-+
-+/* CPU is going down */
-+void perf_cpu_hrtimer_cancel(int cpu)
-+{
-+	struct perf_cpu_context *cpuctx;
-+	struct pmu *pmu;
-+	unsigned long flags;
-+
-+	if (WARN_ON(cpu != smp_processor_id()))
-+		return;
-+
-+	local_irq_save(flags);
-+
-+	rcu_read_lock();
-+
-+	list_for_each_entry_rcu(pmu, &pmus, entry) {
-+		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
-+
-+		if (pmu->task_ctx_nr == perf_sw_context)
-+			continue;
-+
-+		hrtimer_cancel(&cpuctx->hrtimer);
-+	}
-+
-+	rcu_read_unlock();
-+
-+	local_irq_restore(flags);
-+}
-+
-+static void __perf_cpu_hrtimer_init(struct perf_cpu_context *cpuctx, int cpu)
-+{
-+	struct hrtimer *hr = &cpuctx->hrtimer;
-+	struct pmu *pmu = cpuctx->ctx.pmu;
-+
-+	/* no multiplexing needed for SW PMU */
-+	if (pmu->task_ctx_nr == perf_sw_context)
-+		return;
-+
-+	cpuctx->hrtimer_interval =
-+		ns_to_ktime(NSEC_PER_MSEC * PERF_CPU_HRTIMER);
-+
-+	hrtimer_init(hr, CLOCK_MONOTONIC, HRTIMER_MODE_REL_PINNED);
-+	hr->function = perf_cpu_hrtimer_handler;
-+}
-+
-+static void perf_cpu_hrtimer_restart(struct perf_cpu_context *cpuctx)
-+{
-+	struct hrtimer *hr = &cpuctx->hrtimer;
-+	struct pmu *pmu = cpuctx->ctx.pmu;
-+
-+	/* not for SW PMU */
-+	if (pmu->task_ctx_nr == perf_sw_context)
-+		return;
-+
-+	if (hrtimer_active(hr))
-+		return;
-+
-+	if (!hrtimer_callback_running(hr))
-+		__hrtimer_start_range_ns(hr, cpuctx->hrtimer_interval,
-+					 0, HRTIMER_MODE_REL_PINNED, 0);
-+}
-+
- void perf_pmu_disable(struct pmu *pmu)
- {
- 	int *count = this_cpu_ptr(pmu->pmu_disable_count);
-@@ -1486,6 +1580,7 @@ group_sched_in(struct perf_event *group_event,
- 
- 	if (event_sched_in(group_event, cpuctx, ctx)) {
- 		pmu->cancel_txn(pmu);
-+		perf_cpu_hrtimer_restart(cpuctx);
- 		return -EAGAIN;
- 	}
- 
-@@ -1532,6 +1627,8 @@ group_sched_in(struct perf_event *group_event,
- 
- 	pmu->cancel_txn(pmu);
- 
-+	perf_cpu_hrtimer_restart(cpuctx);
-+
- 	return -EAGAIN;
- }
- 
-@@ -1787,8 +1884,10 @@ static int __perf_event_enable(void *info)
- 		 * If this event can't go on and it's part of a
- 		 * group, then the whole group has to come off.
- 		 */
--		if (leader != event)
-+		if (leader != event) {
- 			group_sched_out(leader, cpuctx, ctx);
-+			perf_cpu_hrtimer_restart(cpuctx);
-+		}
- 		if (leader->attr.pinned) {
- 			update_group_times(leader);
- 			leader->state = PERF_EVENT_STATE_ERROR;
-@@ -2535,7 +2634,7 @@ static void rotate_ctx(struct perf_event_context *ctx)
-  * because they're strictly cpu affine and rotate_start is called with IRQs
-  * disabled, while rotate_context is called from IRQ context.
-  */
--static void perf_rotate_context(struct perf_cpu_context *cpuctx)
-+static int perf_rotate_context(struct perf_cpu_context *cpuctx)
- {
- 	struct perf_event_context *ctx = NULL;
- 	int rotate = 0, remove = 1;
-@@ -2574,6 +2673,8 @@ static void perf_rotate_context(struct perf_cpu_context *cpuctx)
- done:
- 	if (remove)
- 		list_del_init(&cpuctx->rotation_list);
-+
-+	return rotate;
- }
- 
- void perf_event_task_tick(void)
-@@ -2595,10 +2696,6 @@ void perf_event_task_tick(void)
- 		ctx = cpuctx->task_ctx;
- 		if (ctx)
- 			perf_adjust_freq_unthr_context(ctx, throttled);
--
--		if (cpuctx->jiffies_interval == 1 ||
--				!(jiffies % cpuctx->jiffies_interval))
--			perf_rotate_context(cpuctx);
- 	}
- }
- 
-@@ -6029,7 +6126,9 @@ int perf_pmu_register(struct pmu *pmu, char *name, int type)
- 		lockdep_set_class(&cpuctx->ctx.lock, &cpuctx_lock);
- 		cpuctx->ctx.type = cpu_context;
- 		cpuctx->ctx.pmu = pmu;
--		cpuctx->jiffies_interval = 1;
-+
-+		__perf_cpu_hrtimer_init(cpuctx, cpu);
-+
- 		INIT_LIST_HEAD(&cpuctx->rotation_list);
- 		cpuctx->unique_pmu = pmu;
- 	}
-@@ -7415,7 +7514,6 @@ perf_cpu_notify(struct notifier_block *self, unsigned long action, void *hcpu)
- 	case CPU_DOWN_PREPARE:
- 		perf_event_exit_cpu(cpu);
- 		break;
--
- 	default:
- 		break;
- 	}
+Namhyung Kim (10):
+  perf sort: Factor out common code in sort_dimension__add()
+  perf sort: Separate out memory-specific sort keys
+  perf sort: Add 'addr' sort key
+  perf sort: Add 'addr_to/from' sort key
+  perf sort: Update documentation for sort keys
+  perf hists: Move column length setting code
+  perf sort: Cleanup sort__has_sym setting
+  perf top: Use sort__has_sym
+  perf hist browser: Use sort__has_sym
+  perf sort: Consolidate sort_entry__setup_elide()
+
+ tools/perf/Documentation/perf-diff.txt   |   2 +-
+ tools/perf/Documentation/perf-report.txt |   5 +-
+ tools/perf/Documentation/perf-top.txt    |   2 +-
+ tools/perf/builtin-diff.c                |   6 +-
+ tools/perf/builtin-report.c              |  28 +----
+ tools/perf/builtin-top.c                 |  19 +--
+ tools/perf/ui/browsers/hists.c           |   9 +-
+ tools/perf/util/hist.c                   |  17 +--
+ tools/perf/util/hist.h                   |   5 +-
+ tools/perf/util/sort.c                   | 201 +++++++++++++++++++++++++------
+ tools/perf/util/sort.h                   |  25 ++--
+ tools/perf/util/top.h                    |   1 -
+ 12 files changed, 218 insertions(+), 102 deletions(-)
+
 -- 
-1.7.9.5
+1.7.11.7
 
