@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762370Ab3DCM0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 08:26:31 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60530 "EHLO
+	id S1762468Ab3DCM0e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 08:26:34 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48225 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760148Ab3DCM01 (ORCPT
+	with ESMTP id S1762376Ab3DCM0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 08:26:27 -0400
-X-AuditID: 9c93016f-b7c18ae000002f5f-9a-515c1ff001c4
+	Wed, 3 Apr 2013 08:26:32 -0400
+X-AuditID: 9c93016f-b7c18ae000002f5f-a8-515c1ff2352d
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>,
         Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>
-Subject: [PATCH 03/10] perf sort: Add 'addr' sort key
-Date: Wed,  3 Apr 2013 21:26:12 +0900
-Message-Id: <1364991979-3008-4-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 10/10] perf sort: Consolidate sort_entry__setup_elide()
+Date: Wed,  3 Apr 2013 21:26:19 +0900
+Message-Id: <1364991979-3008-11-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1364991979-3008-1-git-send-email-namhyung@kernel.org>
 References: <1364991979-3008-1-git-send-email-namhyung@kernel.org>
@@ -29,112 +29,158 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-New addr sort key provides a way to sort the entries by the symbol
-addresses.  It can be helpful to figure out symbol resolution problem
-when a dso cannot do it properly as well as finding hotpath in a dso
-and/or a function.
+The same code was duplicate to places, factor them out to common
+sort__setup_elide().
 
-Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=55561
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/hist.c |  2 ++
- tools/perf/util/hist.h |  3 ++-
- tools/perf/util/sort.c | 29 +++++++++++++++++++++++++++++
- tools/perf/util/sort.h |  1 +
- 4 files changed, 34 insertions(+), 1 deletion(-)
+ tools/perf/builtin-diff.c   |  4 +---
+ tools/perf/builtin-report.c | 20 +-------------------
+ tools/perf/builtin-top.c    |  4 +---
+ tools/perf/util/sort.c      | 45 +++++++++++++++++++++++++++++++++++++++++++--
+ tools/perf/util/sort.h      |  3 +--
+ 5 files changed, 47 insertions(+), 29 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 72b4eec820c3..c098d6ebab1f 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -52,6 +52,8 @@ void hists__reset_col_len(struct hists *hists)
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 03b56c542bb6..316bf13e59c7 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -611,9 +611,7 @@ int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
  
- 	for (col = 0; col < HISTC_NR_COLS; ++col)
- 		hists__set_col_len(hists, col, 0);
-+
-+	hists__set_col_len(hists, HISTC_ADDR, BITS_PER_LONG / 4 + 2);
+ 	setup_pager();
+ 
+-	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", NULL);
+-	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", NULL);
+-	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", NULL);
++	sort__setup_elide(NULL);
+ 
+ 	return __cmd_diff();
  }
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index c95fd92fbd44..bff244fa4b5d 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -937,25 +937,7 @@ repeat:
+ 		report.symbol_filter_str = argv[0];
+ 	}
  
- static void hists__set_unres_dso_col_len(struct hists *hists, int dso)
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 14c2fe20aa62..9599f805828f 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -43,12 +43,13 @@ enum hist_column {
- 	HISTC_COMM,
- 	HISTC_PARENT,
- 	HISTC_CPU,
-+	HISTC_SRCLINE,
-+	HISTC_ADDR,
- 	HISTC_MISPREDICT,
- 	HISTC_SYMBOL_FROM,
- 	HISTC_SYMBOL_TO,
- 	HISTC_DSO_FROM,
- 	HISTC_DSO_TO,
--	HISTC_SRCLINE,
- 	HISTC_LOCAL_WEIGHT,
- 	HISTC_GLOBAL_WEIGHT,
- 	HISTC_MEM_DADDR_SYMBOL,
+-	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", stdout);
+-
+-	if (sort__mode == SORT_MODE__BRANCH) {
+-		sort_entry__setup_elide(&sort_dso_from, symbol_conf.dso_from_list, "dso_from", stdout);
+-		sort_entry__setup_elide(&sort_dso_to, symbol_conf.dso_to_list, "dso_to", stdout);
+-		sort_entry__setup_elide(&sort_sym_from, symbol_conf.sym_from_list, "sym_from", stdout);
+-		sort_entry__setup_elide(&sort_sym_to, symbol_conf.sym_to_list, "sym_to", stdout);
+-	} else {
+-		if (report.mem_mode) {
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "symbol_daddr", stdout);
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso_daddr", stdout);
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "mem", stdout);
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "local_weight", stdout);
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "tlb", stdout);
+-			sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "snoop", stdout);
+-		}
+-		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", stdout);
+-		sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", stdout);
+-	}
++	sort__setup_elide(stdout);
+ 
+ 	ret = __cmd_report(&report);
+ 	if (ret == K_SWITCH_INPUT_DATA) {
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 4aa504baaf0b..fe4acf568483 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1201,9 +1201,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (symbol__init() < 0)
+ 		return -1;
+ 
+-	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", stdout);
+-	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", stdout);
+-	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", stdout);
++	sort__setup_elide(stdout);
+ 
+ 	get_term_dimensions(&top.winsize);
+ 	if (top.print_entries == 0) {
 diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 1dbf16949250..5640a95b3575 100644
+index 213831133e08..86ae94d8782e 100644
 --- a/tools/perf/util/sort.c
 +++ b/tools/perf/util/sort.c
-@@ -342,6 +342,34 @@ struct sort_entry sort_cpu = {
- 	.se_width_idx	= HISTC_CPU,
- };
+@@ -1,5 +1,6 @@
+ #include "sort.h"
+ #include "hist.h"
++#include "symbol.h"
  
-+/* --sort addr */
+ regex_t		parent_regex;
+ const char	default_parent_pattern[] = "^sys_|^do_page_fault";
+@@ -1085,8 +1086,9 @@ int setup_sorting(void)
+ 	return ret;
+ }
+ 
+-void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
+-			     const char *list_name, FILE *fp)
++static void sort_entry__setup_elide(struct sort_entry *self,
++				    struct strlist *list,
++				    const char *list_name, FILE *fp)
+ {
+ 	if (list && strlist__nr_entries(list) == 1) {
+ 		if (fp != NULL)
+@@ -1095,3 +1097,42 @@ void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
+ 		self->elide = true;
+ 	}
+ }
 +
-+static int64_t
-+sort__addr_cmp(struct hist_entry *left, struct hist_entry *right)
++void sort__setup_elide(FILE *output)
 +{
-+	return right->ip - left->ip;
++	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++				"dso", output);
++	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list,
++				"comm", output);
++	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list,
++				"symbol", output);
++
++	if (sort__mode == SORT_MODE__BRANCH) {
++		sort_entry__setup_elide(&sort_dso_from,
++					symbol_conf.dso_from_list,
++					"dso_from", output);
++		sort_entry__setup_elide(&sort_dso_to,
++					symbol_conf.dso_to_list,
++					"dso_to", output);
++		sort_entry__setup_elide(&sort_sym_from,
++					symbol_conf.sym_from_list,
++					"sym_from", output);
++		sort_entry__setup_elide(&sort_sym_to,
++					symbol_conf.sym_to_list,
++					"sym_to", output);
++	} else if (sort__mode == SORT_MODE__MEMORY) {
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"symbol_daddr", output);
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"dso_daddr", output);
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"mem", output);
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"local_weight", output);
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"tlb", output);
++		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list,
++					"snoop", output);
++	}
++
 +}
-+
-+static int hist_entry__addr_snprintf(struct hist_entry *self, char *bf,
-+				     size_t size, unsigned int width)
-+{
-+	struct map *map = self->ms.map;
-+	u64 addr = self->ip;
-+
-+	if (map)
-+		addr = map->unmap_ip(map, self->ip);
-+
-+	return repsep_snprintf(bf, size, "%#*llu", width, addr);
-+}
-+
-+struct sort_entry sort_addr = {
-+	.se_header      = "Address",
-+	.se_cmp	        = sort__addr_cmp,
-+	.se_snprintf    = hist_entry__addr_snprintf,
-+	.se_width_idx	= HISTC_ADDR,
-+};
-+
-+
- /* sort keys for branch stacks */
- 
- static int64_t
-@@ -871,6 +899,7 @@ static struct sort_dimension common_sort_dimensions[] = {
- 	DIM(SORT_PARENT, "parent", sort_parent),
- 	DIM(SORT_CPU, "cpu", sort_cpu),
- 	DIM(SORT_SRCLINE, "srcline", sort_srcline),
-+	DIM(SORT_ADDR, "addr", sort_addr),
- };
- 
- #undef DIM
 diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 0232d476da87..0815e344f38c 100644
+index 1f945a3b2e5b..c80aac4ae3a2 100644
 --- a/tools/perf/util/sort.h
 +++ b/tools/perf/util/sort.h
-@@ -138,6 +138,7 @@ enum sort_type {
- 	SORT_PARENT,
- 	SORT_CPU,
- 	SORT_SRCLINE,
-+	SORT_ADDR,
+@@ -184,7 +184,6 @@ extern struct list_head hist_entry__sort_list;
  
- 	/* branch stack specific sort keys */
- 	__SORT_BRANCH_STACK,
+ int setup_sorting(void);
+ extern int sort_dimension__add(const char *);
+-void sort_entry__setup_elide(struct sort_entry *self, struct strlist *list,
+-			     const char *list_name, FILE *fp);
++void sort__setup_elide(FILE *fp);
+ 
+ #endif	/* __PERF_SORT_H */
 -- 
 1.7.11.7
 
