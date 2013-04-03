@@ -1,144 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762021Ab3DCIc1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 04:32:27 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:51728 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761975Ab3DCIcY (ORCPT
+	id S1762096Ab3DCIjJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 04:39:09 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:11629 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761488Ab3DCIjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 04:32:24 -0400
-Message-ID: <515BE915.4010706@atmel.com>
-Date: Wed, 3 Apr 2013 10:32:21 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Wed, 3 Apr 2013 04:39:06 -0400
+Message-ID: <515BEA61.9080100@huawei.com>
+Date: Wed, 3 Apr 2013 16:37:53 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Boris BREZILLON <linux-arm@overkiz.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: at91/tc: fix clock source id for tc block > 1
-References: <1364921211-15756-1-git-send-email-linux-arm@overkiz.com> <20130403044555.GN20693@game.jcrosoft.org> <515BD992.50009@atmel.com> <515BE17C.8050903@overkiz.com>
-In-Reply-To: <515BE17C.8050903@overkiz.com>
-X-Enigmail-Version: 1.4.6
+To: Michal Hocko <mhocko@suse.cz>
+CC: Glauber Costa <glommer@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [PATCH -v2] memcg: don't do cleanup manually if mem_cgroup_css_online()
+ fails
+References: <515A8A40.6020406@huawei.com> <20130402121600.GK24345@dhcp22.suse.cz> <20130402141646.GQ24345@dhcp22.suse.cz> <515AE948.1000704@parallels.com> <20130402142825.GA32520@dhcp22.suse.cz> <515AEC3A.2030401@parallels.com> <20130402150422.GB32520@dhcp22.suse.cz> <515BA6C9.2000704@huawei.com> <20130403074300.GA14384@dhcp22.suse.cz> <515BDEF2.1080900@huawei.com> <20130403081843.GC14384@dhcp22.suse.cz>
+In-Reply-To: <20130403081843.GC14384@dhcp22.suse.cz>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 09:59 AM, Boris BREZILLON :
-> On 03/04/2013 09:26, Nicolas Ferre wrote:
->> On 04/03/2013 06:45 AM, Jean-Christophe PLAGNIOL-VILLARD :
->>> On 18:46 Tue 02 Apr     , Boris BREZILLON wrote:
->>>> This patch fixes wrong clock request for TC block 2.
->>>> The second block was using t0_clk, t1_clk and t2_clk clks instead of
->>>> t3_clk, t4_clk and t5_clk clks.
->>>>
->>> this is intended as we have 3 clock per device
-> You're right.
->>
->> True.
->> Boris, did you hit an issue with former code that your patch is solving?
->> What is the reason for this patch?
-> I should have taken a closer look at the code before sending this patch.
-> I mistook clk name for conid devid association.
-> 
-> As I am enabling the tc block 1 clocks in the bootstrap code, I thought
-> this was the reason for these clocks to be enabled after the kernel boot.
-> 
-> But I tried to disable these clocks in the bootstrap and this works fine.
-> 
-> Sorry if I bothered you.
-
-Not bothered at all Boris! This is exactly how I like to see the
-community working together.
-
-Please feel free to send more and more patches about AT91: this is
-always valuable for us.
-
-Best regards,
-
->>>> Signed-off-by: Boris BREZILLON <linux-arm@overkiz.com>
->>>> ---
->>>>   drivers/misc/atmel_tclib.c |   24 ++++++++++++++++--------
->>>>   1 file changed, 16 insertions(+), 8 deletions(-)
->>>>
->>>> diff --git a/drivers/misc/atmel_tclib.c b/drivers/misc/atmel_tclib.c
->>>> index c8d8e38..768a988 100644
->>>> --- a/drivers/misc/atmel_tclib.c
->>>> +++ b/drivers/misc/atmel_tclib.c
->>>> @@ -142,6 +142,8 @@ static int __init tc_probe(struct
->>>> platform_device *pdev)
->>>>       struct atmel_tc *tc;
->>>>       struct clk    *clk;
->>>>       int        irq;
->>>> +    char        clk_id[7];
->>>> +    int        clk_offset;
->>>>
->>>>       if (!platform_get_resource(pdev, IORESOURCE_MEM, 0))
->>>>           return -EINVAL;
->>>> @@ -156,25 +158,31 @@ static int __init tc_probe(struct
->>>> platform_device *pdev)
->>>>
->>>>       tc->pdev = pdev;
->>>>
->>>> -    clk = clk_get(&pdev->dev, "t0_clk");
->>>> -    if (IS_ERR(clk)) {
->>>> -        kfree(tc);
->>>> -        return -EINVAL;
->>>> -    }
->>>> -
->>>>       /* Now take SoC information if available */
->>>>       if (pdev->dev.of_node) {
->>>>           const struct of_device_id *match;
->>>>           match = of_match_node(atmel_tcb_dt_ids, pdev->dev.of_node);
->>>>           if (match)
->>>>               tc->tcb_config = match->data;
->>>> +        clk_offset = of_alias_get_id(tc->pdev->dev.of_node, "tcb");
->>>> +    } else
->>>> +        clk_offset = pdev->id;
->>>> +    clk_offset *= 3;
->>>> +
->>>> +    snprintf(clk_id, sizeof(clk_id), "t%d_clk", clk_offset++);
->>>> +    clk = clk_get(&pdev->dev, clk_id);
->>>> +    if (IS_ERR(clk)) {
->>>> +        kfree(tc);
->>>> +        return -EINVAL;
->>>>       }
->>>>
->>>>       tc->clk[0] = clk;
->>>> -    tc->clk[1] = clk_get(&pdev->dev, "t1_clk");
->>>> +    snprintf(clk_id, sizeof(clk_id), "t%d_clk", clk_offset++);
->>>> +    tc->clk[1] = clk_get(&pdev->dev, clk_id);
->>>>       if (IS_ERR(tc->clk[1]))
->>>>           tc->clk[1] = clk;
->>>> -    tc->clk[2] = clk_get(&pdev->dev, "t2_clk");
->>>> +    snprintf(clk_id, sizeof(clk_id), "t%d_clk", clk_offset++);
->>>> +    tc->clk[2] = clk_get(&pdev->dev, clk_id);
->>>>       if (IS_ERR(tc->clk[2]))
->>>>           tc->clk[2] = clk;
->>>>
->>>> -- 
->>>> 1.7.9.5
->>>>
->>>>
->>>> _______________________________________________
->>>> linux-arm-kernel mailing list
->>>> linux-arm-kernel@lists.infradead.org
->>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>> But memcg_update_cache_sizes calls memcg_kmem_clear_activated on the
+>>> error path.
 >>>
 >>
+>> But memcg_kmem_mark_dead() checks the ACCOUNT flag not the ACCOUNTED flag.
+>> Am I missing something?
 >>
 > 
+> Dang. You are right! Glauber, is there any reason why
+> memcg_kmem_mark_dead checks only KMEM_ACCOUNTED_ACTIVE rather than
+> KMEM_ACCOUNTED_MASK?
 > 
+> This all is very confusing to say the least.
+> 
+> Anyway, this all means that Li's first patch is correct. I am not sure I
+> like it though. I think that the refcount cleanup should be done as
+> close to where it has been taken as possible otherwise we will end up in
+> this "chase the nasty details" again and again. There are definitely two
+> bugs here. The one introduced by e4715f01 and the other one introduced
+> even earlier (I haven't checked that history yet). I think we should do
+> something like the 2 follow up patches but if you guys think that the smaller
+> patch from Li is more appropriate then I will not block it.
 > 
 
+Or we can queue my patch for 3.9, and then see if we want to change the
+tear down process, and if yes we make the change for 3.10.
 
--- 
-Nicolas Ferre
