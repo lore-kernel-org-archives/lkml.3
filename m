@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762846Ab3DCO6p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:58:45 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19566 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761666Ab3DCO6n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:58:43 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 03 Apr 2013 07:58:31 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Pritesh Raithatha <praithatha@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Andrew Chew <achew@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v9 14/14] clk: tegra: Remove forced clk_enable of uartd
-Date: Wed, 3 Apr 2013 17:40:49 +0300
-Message-ID: <1365000110-8916-16-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
+	id S1762861Ab3DCO72 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:59:28 -0400
+Received: from bender.cm4all.net ([87.106.27.49]:39916 "EHLO bender.cm4all.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760724Ab3DCO70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 10:59:26 -0400
+X-Greylist: delayed 596 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Apr 2013 10:59:26 EDT
+Subject: [PATCH] fscache: extended "dying" check before emitting
+ EV_INVALIDATE
+To: dhowells@redhat.com, linux-cachefs@redhat.com
+From: Max Kellermann <mk@cm4all.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 03 Apr 2013 16:48:57 +0200
+Message-ID: <20130403144857.22351.67546.stgit@rabbit.intern.cm-ag>
+User-Agent: StGit/0.16-39-g0831
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The UART driver enables the console uart clock, so we don't need to do that
-anymore in this file.
+Before emitting an FSCACHE_OBJECT_EV_INVALIDATE event, the function
+__fscache_invalidate() checks whether the fscache_object is currently
+"dying".  This checks only the current state, not the queued events
+that will very soon lead to the object's death.
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+The problem is that fscache_object_state_machine() will
+BUG("Unsupported event") when there is object->events includes
+EV_INVALIDATE during "terminal_transit".  Even if we would ignore that
+check, we could run into "Unexpected event in dead state" later
+because object->work may still be queued.
+
+The solution is to check for EV_RETIRE and EV_RELEASE; if one of those
+two terminal events is already queued, don't bother to queue
+EV_INVALIDATE.
+
+Signed-off-by: Max Kellermann <mk@cm4all.com>
 ---
- drivers/clk/tegra/clk-tegra114.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/fscache/cookie.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/clk/tegra/clk-tegra114.c b/drivers/clk/tegra/clk-tegra114.c
-index e2a7fa1..0db81dd 100644
---- a/drivers/clk/tegra/clk-tegra114.c
-+++ b/drivers/clk/tegra/clk-tegra114.c
-@@ -2011,7 +2011,7 @@ static __initdata struct tegra_clk_init_table init_table[] = {
- 	{uarta, pll_p, 408000000, 0},
- 	{uartb, pll_p, 408000000, 0},
- 	{uartc, pll_p, 408000000, 0},
--	{uartd, pll_p, 408000000, 1},
-+	{uartd, pll_p, 408000000, 0},
- 	{pll_a, clk_max, 564480000, 1},
- 	{pll_a_out0, clk_max, 11289600, 1},
- 	{extern1, pll_a_out0, 0, 1},
--- 
-1.7.7.rc0.72.g4b5ea.dirty
+diff --git a/fs/fscache/cookie.c b/fs/fscache/cookie.c
+index 8dcb114..ed80d7f 100644
+--- a/fs/fscache/cookie.c
++++ b/fs/fscache/cookie.c
+@@ -402,7 +402,8 @@ void __fscache_invalidate(struct fscache_cookie *cookie)
+ 			object = hlist_entry(cookie->backing_objects.first,
+ 					     struct fscache_object,
+ 					     cookie_link);
+-			if (object->state < FSCACHE_OBJECT_DYING)
++			if (object->state < FSCACHE_OBJECT_DYING &&
++			    (object->events & (FSCACHE_OBJECT_EV_RETIRE|FSCACHE_OBJECT_EV_RELEASE)) == 0)
+ 				fscache_raise_event(
+ 					object, FSCACHE_OBJECT_EV_INVALIDATE);
+ 		}
 
