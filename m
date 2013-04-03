@@ -1,117 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762907Ab3DCRsZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 13:48:25 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:53999 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756109Ab3DCRsV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 13:48:21 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Sourav Poddar <sourav.poddar@ti.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Rajendra nayak <rnayak@ti.com>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <linux-serial@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH/Resend 2/2] arm: mach-omap2: prevent UART console idle on suspend while using "no_console_suspend"
-In-Reply-To: <515AA9CD.5000004@ti.com> (Sourav Poddar's message of "Tue, 2 Apr
-	2013 15:20:05 +0530")
-References: <1363612924-349-1-git-send-email-sourav.poddar@ti.com>
-	<87fvzsilnv.fsf@linaro.org> <5149A221.5@ti.com>
-	<5149A63C.4000102@ti.com> <515AA9CD.5000004@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-Date: Wed, 03 Apr 2013 10:48:18 -0700
-Message-ID: <87txnnzesd.fsf@linaro.org>
+	id S1762895Ab3DCRuk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 13:50:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42002 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762748Ab3DCRui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 13:50:38 -0400
+Date: Wed, 3 Apr 2013 19:45:52 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Anton Arapov <anton@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
+        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
+Subject: Re: [PATCH v1 0/9] uretprobes: Return uprobes implementation
+Message-ID: <20130403174552.GA9984@redhat.com>
+References: <1365004839-21982-1-git-send-email-anton@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365004839-21982-1-git-send-email-anton@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sourav Poddar <sourav.poddar@ti.com> writes:
+On 04/03, Anton Arapov wrote:
+>
+> Anton Arapov (9):
+>   uretprobes: Introduce uprobe_consumer->ret_handler()
+>   uretprobes: Reserve the first slot in xol_vma for trampoline
+>   uretprobes/x86: Hijack return address
+>   uretprobes/ppc: Hijack return address
+>   uretprobes: Return probe entry, prepare_uretprobe()
+>   uretprobes: Return probe exit, invoke handlers
+>   uretprobes: Limit the depth of return probe nestedness
+>   uretprobes: Remove -ENOSYS as return probes implemented
+>   uretprobes: Documentation update
+>
+>  Documentation/trace/uprobetracer.txt | 126 +++++++++++++---------
+>  arch/powerpc/include/asm/uprobes.h   |   1 +
+>  arch/powerpc/kernel/uprobes.c        |  13 +++
+>  arch/x86/include/asm/uprobes.h       |   1 +
+>  arch/x86/kernel/uprobes.c            |  29 +++++
+>  include/linux/uprobes.h              |   7 ++
+>  kernel/events/uprobes.c              | 202 +++++++++++++++++++++++++++++++++--
+>  7 files changed, 320 insertions(+), 59 deletions(-)
 
-> Hi Kevin,
-> On Wednesday 20 March 2013 05:36 PM, Sourav Poddar wrote:
->> Realised the list  to whom the patch was send got dropped. Ccing
->> them all..
->> On Wednesday 20 March 2013 05:18 PM, Sourav Poddar wrote:
->>> Hi Kevin,
->>> On Tuesday 19 March 2013 12:24 AM, Kevin Hilman wrote:
->>>> Sourav Poddar<sourav.poddar@ti.com>  writes:
->>>>
->>>>> With dt boot, uart wakeup after suspend is non functional on
->>>>> omap4/5 while using
->>>>> "no_console_suspend" in the bootargs. With "no_console_suspend"
->>>>> used, od->flags
->>>>> should be ORed with "OMAP_DEVICE_NO_IDLE_ON_SUSPEND", thereby not
->>>>> allowing the console
->>>>> to idle in the suspend path. For non-dt case, this was taken care
->>>>> by platform data.
->>>>>
->>>>> Tested on omap5430evm, omap4430sdp.
->>>>>
->>>>> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
->>>>> Cc: Felipe Balbi<balbi@ti.com>
->>>>> Cc: Rajendra nayak<rnayak@ti.com>
->>>>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
->>>> This patch creates a dependency between omap_device (generic,
->>>> device-independent code) and a specific driver (UART.)
->>>>
->>>> If you need to do something like this that's DT boot specific, then
->>>> we probably need some late initcall in serial.c to handle this.
->>>> It does
->>>> not belong in omap_device.
->>>>
->>> The following function "omap_device_disable_idle_on_suspend(pdev)"
->>> should only
->>> be called once the omap device has been build, which in the case of
->>> device tree is
->>> done in omap_device.c file. Moreover, the above call should be
->>> executed conditionally
->>> and should depend on the following two parameter.
->>>
->>> [1]  a. Whether "no_console_suspend" is set and
->>>      b.  the device build is a console uart.
->>>
->>> When I look closely into the serial.c file, I realised that
->>> "core_initcall(omap_serial_early_init)" gets called irrespective
->>> of dt/non dt boot and will take care of most of the stuff(checking
->>> whether
->>> "no_console_suspend" is used and which uart is used as a console
->>> uart) which the
->>> $subject patch is proposing.
->>>
->>> But the problem is that we need to exchange the parsed information
->>> from serial.c to the omap_device file for the condtional execution of
->>> "omap_device_disable_idle_on_suspend"
->>>
->>> In this case,
->>> from "serial.c" we need
->>>     1. no_console_suspend = true
->>>     2. strcpy(console_name, oh_name), where oh_name corresponds to
->>> the console uart.
->>>
->>> then in "omap_device.c" do
->>>     if (no_console_suspend && !strcmp(oh->name, console_name))
->>>                 omap_device_disable_idle_on_suspend(pdev);
->>>
->>> Please correct if I am understanding it incorrectly.
->>>
->>> If the above understanding looks good to you, is there a way we can
->>> make this
->>> exchange of information happen between serial.c and omap_device.c file?
-> Any input on this?
-> As I explained earlier, that there is a need to parse information in
-> serial.c and use that in
-> omap_device.c only after the device is build.
+Looks fine to me. I am going to add this to
+git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
 
-As I explained earlier, any device specific hacks inside omap_device
-should be a red flag that something has gone wrong.
+Ananth. "4/9 uretprobes/ppc" looks "obviously correct", but could you
+please review and ack/nack ?
 
-How about fixing the UART driver/core to not runtime suspend if
-no_console_suspend is given?  
+To remind, this series depends on other changes in uprobes core
+and kernel/trace/trace_uprobe.c, please see the full stat below.
 
-Then we can get rid of this no_idle_on_suspend hack all together since
-UART is the only remaining user.
+I'll wait for the comments a bit, after that I'll ask Ingo to
+pull if nobody objects.
 
-Kevin
+Anton Arapov (9):
+      uretprobes: Introduce uprobe_consumer->ret_handler()
+      uretprobes: Reserve the first slot in xol_vma for trampoline
+      uretprobes/x86: Hijack return address
+      uretprobes/ppc: Hijack return address
+      uretprobes: Return probe entry, prepare_uretprobe()
+      uretprobes: Return probe exit, invoke handlers
+      uretprobes: Limit the depth of return probe nestedness
+      uretprobes: Remove -ENOSYS as return probes implemented
+      uretprobes: Documentation update
+
+Oleg Nesterov (15):
+      uprobes: Turn copy_opcode() into copy_from_page()
+      uprobes: Change __copy_insn() to use copy_from_page()
+      uprobes: Kill the unnecesary filp != NULL check in __copy_insn()
+      uprobes: Introduce copy_to_page()
+      uprobes: Change write_opcode() to use copy_*page()
+      uprobes/tracing: Kill the pointless task_pt_regs() calls
+      uprobes/tracing: Kill the pointless seq_print_ip_sym() call
+      uprobes/tracing: Kill the pointless local_save_flags/preempt_count calls
+      uprobes/tracing: Generalize struct uprobe_trace_entry_head
+      uprobes/tracing: Introduce uprobe_{trace,perf}_print() helpers
+      uprobes/tracing: Introduce is_ret_probe() and uretprobe_dispatcher()
+      uprobes/tracing: Make uprobe_{trace,perf}_print() uretprobe-friendly
+      uprobes/tracing: Make register_uprobe_event() paths uretprobe-friendly
+      uprobes/tracing: Make seq_printf() code uretprobe-friendly
+      uprobes/tracing: Change create_trace_uprobe() to support uretprobes
+
+ Documentation/trace/uprobetracer.txt |  114 +++++++++-------
+ arch/powerpc/include/asm/uprobes.h   |    1 +
+ arch/powerpc/kernel/uprobes.c        |   13 ++
+ arch/x86/include/asm/uprobes.h       |    1 +
+ arch/x86/kernel/uprobes.c            |   29 ++++
+ include/linux/uprobes.h              |    7 +
+ kernel/events/uprobes.c              |  251 ++++++++++++++++++++++++++++------
+ kernel/trace/trace.h                 |    5 -
+ kernel/trace/trace_uprobe.c          |  205 ++++++++++++++++++++--------
+ 9 files changed, 480 insertions(+), 146 deletions(-)
+
