@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759169Ab3DCLKy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 07:10:54 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:46536 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757387Ab3DCLKw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 07:10:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130402234648.8177.86213@quantum>
-References: <1363603397-2762-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1364050010-23919-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<20130402234648.8177.86213@quantum>
-Date: Wed, 3 Apr 2013 13:10:52 +0200
-Message-ID: <CABJ1b_RtBtLP6jQ1wt8xuLKhvRG2jPr0zcgGWYeWQUUxTd3h7w@mail.gmail.com>
-Subject: Re: [PATCH v4] clk: add si5351 i2c common clock driver
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Dom Cobley <popcornmix@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rabeeh Khoury <rabeeh@solid-run.com>, Daniel Mack <zonque@gmail.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759728Ab3DCLLD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 07:11:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45533 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759519Ab3DCLLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 07:11:00 -0400
+Date: Wed, 3 Apr 2013 07:10:54 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (nfsd
+ tree related)
+Message-ID: <20130403071054.45a02a88@tlielax.poochiereds.net>
+In-Reply-To: <20130403174219.0786d27109633a30d89b38bf@canb.auug.org.au>
+References: <20130403174219.0786d27109633a30d89b38bf@canb.auug.org.au>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/m51IO3YnGshhLAqu8U8rpYD"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 3, 2013 at 1:46 AM, Mike Turquette <mturquette@linaro.org> wrote:
-> Quoting Sebastian Hesselbarth (2013-03-23 07:46:50)
->> diff --git a/drivers/clk/clk-si5351.c b/drivers/clk/clk-si5351.c
->> new file mode 100644
->> index 0000000..9d0c210
->> --- /dev/null
->> +++ b/drivers/clk/clk-si5351.c
->> @@ -0,0 +1,1411 @@
->> +/*
->> + * clk-si5351.c: Silicon Laboratories Si5351A/B/C I2C Clock Generator
->> + *
->> + * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> + * Rabeeh Khoury <rabeeh@solid-run.com>
->> + *
->> + * References:
->> + * [1] "Si5351A/B/C Data Sheet"
->> + *     http://www.silabs.com/Support%20Documents/TechnicalDocs/Si5351.pdf
->> + * [2] "Manually Generating an Si5351 Register Map"
->> + *     http://www.silabs.com/Support%20Documents/TechnicalDocs/AN619.pdf
->> + *
->> + * This program is free software; you can redistribute  it and/or modify it
->> + * under  the terms of  the GNU General  Public License as published by the
->> + * Free Software Foundation;  either version 2 of the  License, or (at your
->> + * option) any later version.
->> + */
->> +
->> +#include <linux/module.h>
->> +#include <linux/kernel.h>
->> +#include <linux/clk-private.h>
->
-> I hope that this is supposed to be clk-provider.h.  I don't plan on
-> taking in any more clock drivers that depend on clk-private.h.  I didn't
-> see any reason for this patch to not use clk-provider.h.
+--Sig_/m51IO3YnGshhLAqu8U8rpYD
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-True except for two things:
-- The driver sets clk flags for the hierarchy after parsing the DT and
-there is no helper __clk_set_flags()
-- For single parent clks (pxtal, pclkin) I reuse &clk->name for .parent_names
+On Wed, 3 Apr 2013 17:42:19 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-For the latter I would have to add two static char *[1] somewhere, not
-a big deal. But the for the flags,
-I guess there will be no __clk_set_flags helper? Then I'd have to
-parse the DT in advance to have the
-correct flags ready at clk registration.
+> Hi all,
+>=20
+> After merging the final tree, today's linux-next build (arm defconfig)
+> failed like this:
+>=20
+> fs/built-in.o: In function `nfsd_reply_cache_stats_show':
+> super.c:(.text+0x87308): undefined reference to `__udivdi3'
+>=20
+> Probably caused by commit 187da2f90879 ("nfsd: keep track of the max and
+> average time to search the cache") which adds a divide by u64
+> (num_searches).
+>=20
+> I have reverted that commit and the following one for today.
 
-Sebastian
+Thanks, known problem...
+
+Looks like Bruce's tree has an older version of that patch series. I
+think we just need to get him to drop that one and merge the new one.
+
+--=20
+Jeff Layton <jlayton@redhat.com>
+
+--Sig_/m51IO3YnGshhLAqu8U8rpYD
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRXA4+AAoJEAAOaEEZVoIVQVYQAL9rpTSNOj3kSmSktRfh1aQW
+jTyjlpN0QlXTqzu1PpsEBvO3ugEuGFEutT70J6rfVql1ZznwodjbvJaJnVku7gUE
+b2Wn/ZsjtZU7i2x7aUhUcLjFjZABNS7zoG72ofx4/3MLtjSHCGCUf8qMlP+5u0sS
++CG6Oq4ayI4Edlcl9xfaii/a6pJns3JdnQP4iy/4SkriL6Vf0XMXjgo0ZwwW4leT
+BO4DHXdrJDQHiUYomu9oxMb6F/M5IhN3zGsrplbGViVLusk5znJT7iPI96/rsUEO
+3iMnefdIFCGuIYnltAkCcztobyhL3kAjJUg70d//gu8uE4AVw4kOwRPL08LUjySc
+LbNfRvvxmx7kcoywK8Y7chZtENIOAER/m/KoT9O2qf1qWJRzYE1zDwz+HxhBLMg/
+4Nk3J2JpaUOAh9WAUFvw2ApETJE+CcWY7fvLqH5t1861qogagiKrDc3vhnJa1FkP
+TmhosWlJ9HUYil0+VCI3XQMxsDwnTN0eBJVX0q/FIZ6R72ZbU1fJmkR37hmNx1Qq
+smeUmxR0mv9VHHDsh4HMSLnYFVcOF7m/ASchMYYrm1ezZp1DXcX6qJtXqqeiotyl
+T+75OGe9lXZ/OSmuHBNE5LnbCuaDz3HQq+9EQ1WkLwGc/1v6C1KZUkTc7H0P8eo5
+yJ2SfZ1nXmHHzul2h4jW
+=5ZdX
+-----END PGP SIGNATURE-----
+
+--Sig_/m51IO3YnGshhLAqu8U8rpYD--
