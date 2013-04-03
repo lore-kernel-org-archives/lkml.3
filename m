@@ -1,87 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932617Ab3DCHpw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 03:45:52 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:46263 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762890Ab3DCHpv (ORCPT
+	id S1760262Ab3DCHuG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 03:50:06 -0400
+Received: from vsp-authed02.binero.net ([195.74.38.226]:35280 "HELO
+	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753561Ab3DCHuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 03:45:51 -0400
-Message-ID: <515BDE2C.9030904@atmel.com>
-Date: Wed, 3 Apr 2013 09:45:48 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
+	Wed, 3 Apr 2013 03:50:05 -0400
+Message-ID: <515BDF23.9000508@gaisler.com>
+Date: Wed, 03 Apr 2013 09:49:55 +0200
+From: Andreas Larson <andreas@gaisler.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: Re: [GIT PULL] at91: DT changes for 3.10 #2
-References: <1364569179-24773-1-git-send-email-nicolas.ferre@atmel.com> <20130402184947.GA8015@quad.lixom.net>
-In-Reply-To: <20130402184947.GA8015@quad.lixom.net>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+CC: Anton Vorontsov <anton@enomsg.org>, Rob Herring <rob.herring@calxeda.com>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        software@gaisler.com
+Subject: Re: [PATCH v5 1/3] gpio: gpio-generic: Add 16 and 32 bit big endian
+ byte order support
+References: <1363355140-28216-1-git-send-email-andreas@gaisler.com> <1363355140-28216-2-git-send-email-andreas@gaisler.com> <20130319004012.GA1004@lizard.gateway.2wire.net> <CACRpkdY6D3hvBm13Y41NTbnAav03guB7LEB4RHnRanFXjj_UJw@mail.gmail.com>
+In-Reply-To: <CACRpkdY6D3hvBm13Y41NTbnAav03guB7LEB4RHnRanFXjj_UJw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2013 08:49 PM, Olof Johansson :
-> On Fri, Mar 29, 2013 at 03:59:39PM +0100, Nicolas Ferre wrote:
->> Arnd, Olof,
+On 2013-03-27 09:58, Linus Walleij wrote:
+> On Tue, Mar 19, 2013 at 1:40 AM, Anton Vorontsov <anton@enomsg.org> wrote:
+>> On Fri, Mar 15, 2013 at 02:45:38PM +0100, Andreas Larsson wrote:
+>>> There is no general support for 64-bit big endian accesses, so that is
+>>> left unsupported.
+>>>
+>>> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
 >>
->> Here is a pull-request for AT91 that is dedicated to Device Tree
->> modifications. It is stacked on the material that you already have
->> for 3.10 in your arm-soc/at91/dt branch.
->> Following our discussion with Arnd, I added the non-urgent patches that I
->> already proposed too late for 3.9. I also included the moving of macb node
->> and kept the original patch.
+>> This looks perfect, thanks a lot!
 >>
->> Thanks, best regards,
->>
->> The following changes since commit 6901d947be5ba1245a0f63271355b95f9056a362:
->>
->>   ARM: at91/at91sam9x5cm: add 1-wire chip on CM board (2013-03-21 16:07:15 +0100)
->>
->> are available in the git repository at:
->>
->>   git://github.com/at91linux/linux-at91.git tags/at91-dt
->>
->> for you to fetch changes up to cc2e191b0ccc5a987fdb29261ab9c264c608924d:
->>
->>   ARM: at91/dt: fix macb node declaration (2013-03-29 10:02:04 +0100)
->>
->> ----------------------------------------------------------------
->> One macb DT node move for 9x5 family: 9g15 doesn't
->> have an Ethernet interface.
->> Little fixes mainly related to at91sam9x5 DT and the
->> RTC addition.
->> Addition of the Acme Systems Aria G25 board.
->>
->> ----------------------------------------------------------------
->> Douglas Gilbert (1):
->>       ARM: at91: add Acme Systems Aria G25 board
-> 
-> Hi,
-> 
-> I just replied to the above patch -- please prefix the dts files with the
-> platform so it's easier to navigate the directory.
+>> Acked-by: Anton Vorontsov <anton@enomsg.org>
+>
+> Looks good to me as well, but since this was discussed with Grant
+> I want his review on this before I merge it.
 
-Yes, I have to make sure that everybody agree on our side...
+I take it that you are happy with the other two patches as well?
 
-> Otherwise the branch contents looks good, so send a fresh request when you've
-> respun.
-> 
-> Also, the new dts isn't added to the Makefile, please add it.
+Grant, any chance of getting this into the 3.10 merge window?
 
-Ok, I will do. Maybe I can also stack a DT related patch about ADC
-support that I was planning to add in another pull-request covering the
-same topic.
+Cheers,
+Andreas Larsson
 
-Thanks, best regards,
--- 
-Nicolas Ferre
