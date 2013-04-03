@@ -1,133 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762550Ab3DCKGj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 06:06:39 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:62722 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760739Ab3DCKEo (ORCPT
+	id S1762716Ab3DCKKo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 06:10:44 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:56290 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760461Ab3DCKKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 06:04:44 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Douglas Gilbert <dgilbert@interlog.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [RFC v2 3/4] rtc-at91rm9200: add shadow interrupt mask
-Date: Wed,  3 Apr 2013 12:03:34 +0200
-Message-Id: <1364983415-20298-4-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1364983415-20298-1-git-send-email-jhovold@gmail.com>
-References: <1364982862-19759-1-git-send-email-jhovold@gmail.com>
- <1364983415-20298-1-git-send-email-jhovold@gmail.com>
+	Wed, 3 Apr 2013 06:10:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <1364192494-22185-1-git-send-email-minchan@kernel.org>
+References: <1364192494-22185-1-git-send-email-minchan@kernel.org>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Wed, 3 Apr 2013 12:10:22 +0200
+X-Google-Sender-Auth: oroW2cfbspseVKXg1OvPdfvE8TM
+Message-ID: <CAHO5Pa0srsWS6ukpxUo=EqCOxRmYa7c_7PDg1YPh7gcMGWPpaw@mail.gmail.com>
+Subject: Re: [RFC 1/4] mm: Per process reclaim
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Sangseok Lee <sangseok.lee@lge.com>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add shadow interrupt-mask register which can be used on SoCs where the
-actual hardware register is broken.
+Hello Minchan,
 
-Note that some care needs to be taken to make sure the shadow mask
-corresponds to the actual hardware state. The added overhead is not an
-issue for the non-broken SoCs due to the relatively infrequent
-interrupt-mask updates. We do, however, only use the shadow mask value
-as a fall-back when it actually needed as there is still a theoretical
-possibility that the mask is incorrect (see the code for details).
+On Mon, Mar 25, 2013 at 7:21 AM, Minchan Kim <minchan@kernel.org> wrote:
+> These day, there are many platforms avaiable in the embedded market
+> and they are smarter than kernel which has very limited information
+> about working set so they want to involve memory management more heavily
+> like android's lowmemory killer and ashmem or recent many lowmemory
+> notifier(there was several trial for various company NOKIA, SAMSUNG,
+> Linaro, Google ChromeOS, Redhat).
+>
+> One of the simple imagine scenario about userspace's intelligence is that
+> platform can manage tasks as forground and backgroud so it would be
+> better to reclaim background's task pages for end-user's *responsibility*
+> although it has frequent referenced pages.
+>
+> This patch adds new knob "reclaim under proc/<pid>/" so task manager
+> can reclaim any target process anytime, anywhere. It could give another
+> method to platform for using memory efficiently.
+>
+> It can avoid process killing for getting free memory, which was really
+> terrible experience because I lost my best score of game I had ever
+> after I switch the phone call while I enjoyed the game.
+>
+> Writing 1 to /proc/pid/reclaim reclaims only file pages.
+> Writing 2 to /proc/pid/reclaim reclaims only anonymous pages.
+> Writing 3 to /proc/pid/reclaim reclaims all pages from target process.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- drivers/rtc/rtc-at91rm9200.c | 50 +++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 49 insertions(+), 1 deletion(-)
+This interface seems to work as advertized, at least from some light
+testing that I've done.
 
-diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
-index 46576ff..ac5f8ed 100644
---- a/drivers/rtc/rtc-at91rm9200.c
-+++ b/drivers/rtc/rtc-at91rm9200.c
-@@ -30,6 +30,7 @@
- #include <linux/io.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-+#include <linux/spinlock.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -43,6 +44,7 @@
- #define AT91_RTC_EPOCH		1900UL	/* just like arch/arm/common/rtctime.c */
- 
- struct at91_rtc_config {
-+	bool use_shadow_imr;
- };
- 
- static const struct at91_rtc_config *at91_rtc_config;
-@@ -50,20 +52,66 @@ static DECLARE_COMPLETION(at91_rtc_updated);
- static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
- static void __iomem *at91_rtc_regs;
- static int irq;
-+static DEFINE_SPINLOCK(at91_rtc_lock);
-+static u32 at91_rtc_shadow_imr;
- 
- static void at91_rtc_write_ier(u32 mask)
- {
-+	unsigned long flags;
-+
-+	/*
-+	 * Lock needed to make sure shadow mask is updated before interrupts
-+	 * are enabled.
-+	 */
-+	spin_lock_irqsave(&at91_rtc_lock, flags);
-+	at91_rtc_shadow_imr |= mask;
- 	at91_rtc_write(AT91_RTC_IER, mask);
-+	spin_unlock_irqrestore(&at91_rtc_lock, flags);
- }
- 
- static void at91_rtc_write_idr(u32 mask)
- {
-+	unsigned long flags;
-+
-+	/*
-+	 * Lock needed to make sure shadow mask is not updated before
-+	 * interrupts have been disabled.
-+	 */
-+	spin_lock_irqsave(&at91_rtc_lock, flags);
- 	at91_rtc_write(AT91_RTC_IDR, mask);
-+	/*
-+	 * Register read back (of any RTC-register) needed to make sure
-+	 * IDR-register write has reached the peripheral before updating
-+	 * shadow mask.
-+	 *
-+	 * Note that there is still a possibility that the mask is updated
-+	 * before interrupts have actually been disabled in hardware. The only
-+	 * way to be certain would be to poll the IMR-register, which is is
-+	 * the very register we are trying to emulate. The register read back
-+	 * is a reasonable heuristic.
-+	 */
-+	at91_rtc_read(AT91_RTC_SR);
-+	at91_rtc_shadow_imr &= ~mask;
-+	spin_unlock_irqrestore(&at91_rtc_lock, flags);
- }
- 
- static u32 at91_rtc_read_imr(void)
- {
--	return at91_rtc_read(AT91_RTC_IMR);
-+	unsigned long flags;
-+	u32 mask;
-+
-+	if (at91_rtc_config->use_shadow_imr) {
-+		/*
-+		 * Lock not strictly necessary on UP.
-+		 */
-+		spin_lock_irqsave(&at91_rtc_lock, flags);
-+		mask = at91_rtc_shadow_imr;
-+		spin_unlock_irqrestore(&at91_rtc_lock, flags);
-+	} else {
-+		mask = at91_rtc_read(AT91_RTC_IMR);
-+	}
-+
-+	return mask;
- }
- 
- /*
--- 
-1.8.1.5
+However, the interface is a quite blunt instrument. Would there be any
+virtue in extending it so that an address range could be written to
+/proc/PID/reclaim? Used in conjunction with /proc/PID/maps, a manager
+process might then choose to trigger reclaim of just selected regions
+of a processes address space. Thus, one might reclaim file backed
+pages in a range using:
 
+    echo '2 start-address end-address' > /proc/PID/reclaim
+
+What do you think?
+
+Thanks,
+
+Michael
