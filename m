@@ -1,71 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762518Ab3DCRMN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 13:12:13 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:59393 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762162Ab3DCRMK (ORCPT
+	id S1762709Ab3DCRMs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 13:12:48 -0400
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:45323 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762377Ab3DCRMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 13:12:10 -0400
-Message-ID: <515C62E6.1070004@console-pimps.org>
-Date: Wed, 03 Apr 2013 18:12:06 +0100
-From: Matt Fleming <matt@console-pimps.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Wed, 3 Apr 2013 13:12:47 -0400
 MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "ben@decadent.org.uk" <ben@decadent.org.uk>,
-        "jwboyer@redhat.com" <jwboyer@redhat.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "seth.forshee@canonical.com" <seth.forshee@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH 2/2] efi: Distinguish between "remaining space" and actually
- used space
-References: <515150EC.7040203@redhat.com>  <1364829240-26475-1-git-send-email-matthew.garrett@nebula.com>  <1364829240-26475-2-git-send-email-matthew.garrett@nebula.com>  <515C2A86.6070606@console-pimps.org> <1364996911.19098.9.camel@x230>
-In-Reply-To: <1364996911.19098.9.camel@x230>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130403131842.GA5939@redhat.com>
+References: <1364923183-316-1-git-send-email-yinghai@kernel.org>
+	<1364923183-316-4-git-send-email-yinghai@kernel.org>
+	<20130402180606.GI29506@redhat.com>
+	<CAE9FiQUKqv_t-99JN_t=EGop2-Wbjd4Yb9vYvU_SbbNctG6Yeg@mail.gmail.com>
+	<CAE9FiQXEa0-WS8+E6LGy8CenoHX5qF1MpjBgejQx9-EvG_1rGw@mail.gmail.com>
+	<20130402191130.GB31760@redhat.com>
+	<CAE9FiQViU_X-idHyFmRFQXmP23oWN63XkAr3KmXsfys1VBR53g@mail.gmail.com>
+	<20130402201148.GJ29506@redhat.com>
+	<CAE9FiQURMNjPYYze-tPn4Ssrc4TqMqTuvwRRhoVYEnGLF4Z0cQ@mail.gmail.com>
+	<20130403131842.GA5939@redhat.com>
+Date: Wed, 3 Apr 2013 10:12:46 -0700
+X-Google-Sender-Auth: Y7iuTivfIy93nvIPTW-iNZC-YC0
+Message-ID: <CAE9FiQUO-fLY-k_gmw6cg56YEN52VRvZuXr+f1EnywKr_cGc4Q@mail.gmail.com>
+Subject: Re: [PATCH 3/4] x86, kdump: Retore crashkernel= to allocate low
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/13 14:48, Matthew Garrett wrote:
-> On Wed, 2013-04-03 at 14:11 +0100, Matt Fleming wrote:
-> 
->> This looks like something that will differ between implementations, and the
->> fact that it's appearing in our code is a sure sign that this isn't the way to
->> go.
-> 
-> Our choices right now are:
-> 
-> 1) Break machines that don't garbage collect on every reboot
-> 2) Leave Samsungs (and some Lenovos?) vulnerable to bricking
-> 3) Maintain a whitelist or blacklist that will inevitably be inadequate,
-> either breaking otherwise working machines or risking bricking of broken
-> ones
-> 4) Attempt to implement something that'll work in all cases
+On Wed, Apr 3, 2013 at 6:18 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Tue, Apr 02, 2013 at 01:36:02PM -0700, Yinghai Lu wrote:
+>
+> [..]
+>> > You are just describing what your code does. There is no theme or
+>> > justification behind this behavior. There is no uniformity. A user can
+>> > question that so far you used to honor last crashkernel= parameter and
+>> > suddenly in 3.9 that's no more the case. Out of blue crashkernel=X,high is
+>> > overriding crashkernel=X and it is not obivious why.
+>>
+>> Let me repeat again:
+>> we keep crashkernel=X old behavior with old kexec-tools.
+>> crashkernel=X;high is for new kexec-tools that support loading high.
+>>
+>> If the user want to use ,high but still with old kexec-tools, that is
+>> not going to work.
+>>
+>> Can we just keep it separated?
+>
+> Kernel does not know about old kexec-tools or new kexec-tools. Neither
+> kernel can enforce what command line options are passed by user. So
+> kernel needs to define a clean interface here which is easily understood
+> and is extensible also in future.
 
-The solution you're proposing has the same downsides as 3) - we risk
-having to tweak things either way. The difference is that in the case of
-3) the tweaking is adding entries to the whitelist, whereas tweaking
-your solution has more chance of introducing further unwanted
-regressions because you'd be tweaking an algorithm, an algorithm that
-relies on the internal implementation of the variable storage code.
+Looks you are chasing wrong direction.
 
-> Dealing with firmware is hard. This fixes (1) without leaving us with
-> (2), which seems like a net win.
+Those four patches fixes the regression that Wang and you reported,
+User don't need to change their kexec-tools and boot command lines
+kdump still works.
 
-I'm not convinced that implementing 3) would inevitably lead to 2),
-provided that we apply a bit of common sense when adding entries. I'm
-not advocating some kind of flag day where we add umpteen machines to
-the whitelist.
+We will never can stop user doing crazy thing with their system.
 
-For reference, I just pushed two patches to the 'whitelist' branch at,
+>
+> [..]
+>> >
+>> > If user wants 128M in low memory, they will just specify
+>> > crashkernel=128M;low
+>>
+>> in the kernel-parameter.txt, already says ;low is need to used with ;high.
+>
+> But why are we tying ;low to ;high. One should be easily extend
+> crashkernel=X to be able to reserve memory above 4G if specified amount
+> is not available below 4G. In that case also one might want to reserve
+> some low memory?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git
+I want to keep crashkernel=X to the old behavior.
 
-which should hopefully illustrate the kind of thing that I'm talking about.
+If you want to have crashkernel=X to allocate high above 4G, old kexec-tools
+will not work with new kernel.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+>
+> For that matter crashkernel=range1:size,range2:size syntax should be
+> extendible too to reserve memory above 4G if desired size of memory
+> is not available in low memory.
+>
+> Now in those cases too, one would like to have 72M of low memory
+> reserved. So ;low shoud not be tied to ;high necessarily.
+>
+> In fact current code does not care whetehr ;high was specified or not.
+> If memory is reserved above 4G, ;low code will kick in.
+
+No, that is not right.
+
+only when ;high is specified, kernel will try to allocate high above 4G.
+
+
+>
+>>
+>> >
+>> > If they want to control multiple ranges of memory, then that's the feature
+>> > we currently don't support. Currently we support only reserving one range
+>> > of memory.
+>> >
+>> > If you want to support multiple ranges of memory,then do it properly.
+>> > Parse all crashkernel= options, prepare a list of memory to be reserved
+>> > and unreserved, resolve all the conflicts between various options and
+>> > then reserve the memory. But that does not seem to be a requirement at
+>> > this point of time.
+>>
+>> No we does not support multiple ranges, as it will need more changes
+>> in kexec-tools.
+>>
+>> Can we stop here with those four patches?
+>>
+>> Later, we can extend it if it is really needed.
+>
+> crashkernel= options are already confusing. I think we with this patchset
+> we will just make them even more confusing and future extensions
+> difficult.
+
+So keep crashkernel= without high and low to old behavior.
+
+>
+> We really need to stick to the notion of only one crashkernel= option
+> is accepted and that is last one on command line. And if need be,
+> we need to work on multi range reservation feature where we process
+> and reserve ranges as specified by all crashkernel= parameters on
+> command line.
+
+That is kept.
+
+and only last high is honored
+
+>
+> Creating new combinations where some crashkernel= are preferred over
+> others and some crashkernel= options work with only selected crashkernel=
+> options, is asking for trouble, especially keeping in mind future
+> extensions.
+
+I don't think so.
+
+old conf that works before still use crashkernel= with high and low.
+old conf that does not work, could switch to crashkernel=;high/low
+with new kexec-tools
+
+>
+> I prefer following for 3.9.
+>
+> - process only right most crashkernel= option.
+
+what is "right most" ?
+only last crashkernel=X is honored?
+I restored that already with those four patches.
+
+> - implement crashkernel_no_auto_low option to opt out of auto reserved
+>   low memory
+
+No, that is ugly.
+
+> - implement crashkernel=X;high to support high memory reservations.
+>
+> And now old kexec-tools user can use crashkernel=X while users needing
+> high memory reservation can use crashkernel=X;high.
+
+The four patches did not do that?
+
+>
+> If you really want to support user defined crashkernel=X;low along with
+> crashkernel=Y;high, that is really a multi range reservation feature and
+> need to be implemented properly instead of coming up with short cuts.
+
+No it is not.
+
+It's *you* want me to change "Crash kernel low" to "Crash kernel".
+
+Do we need to drop second patch? So will still keep
+"Crash kernel low" in /proc/iomem?
+
+Thanks
+
+Yinghai
