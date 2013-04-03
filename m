@@ -1,101 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763107Ab3DCJYE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 05:24:04 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5604 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762946Ab3DCJYA (ORCPT
+	id S1763136Ab3DCJY1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 05:24:27 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:33854 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762338Ab3DCJYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 05:24:00 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 03 Apr 2013 02:22:12 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <broonie@opensource.wolfsonmicro.com>, <swarren@wwwdotorg.org>
-CC: <lars@metafoo.de>, <alsa-devel@alsa-project.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tiwai@suse.de>, <perex@perex.cz>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] sound: soc: tegra: do not provide PAUSE/RESUME in hardware info
-Date: Wed, 3 Apr 2013 14:49:41 +0530
-Message-ID: <1364980781-2204-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Wed, 3 Apr 2013 05:24:02 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] pinctrl/abx500: fix ab8505 alternate function
+Date: Wed, 3 Apr 2013 11:23:34 +0200
+Message-ID: <1364981014-423-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra PCM driver uses the dmaengine based DMA driver and Tegra DMA
-driver does not support the pause/resume functionality as hardware
-does not support it.
+From: Patrice Chotard <patrice.chotard@st.com>
 
-ALSA driver support the sw based pause/resume functionality if hardware
-does not support it and in this case, hw driver should not provide
-the hardware info with PAUSE/RESUME bit enable.
+This fix allows to correctly select default and
+alternate pin mode.
 
-Remmoving the SNDRV_PCM_INFO_PAUSE and SNDRV_PCM_INFO_RESUME from hardware
-info and using the snd_dmaengine_pcm_trigger() for pcm_trigger callback.
+By default for all ABx500 family chip, pin default
+mode is selected by clearing corresponding bit in
+GPIOSELx register except for pins which support
+alternate function, in this case, corresponding bit
+must be set.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+But, due to an unlogical hardware implementation,
+for one particular pin (GPIO11) reverse setting
+must be done. For that, update the alternate function
+array by declaring that this pin supports alternate
+function.
+
+Reported-by: Ramesh Chandrasekaran <ramesh.chandrasekaran@stericsson.com>
+Signed-off-by: Patrice Chotard <patrice.chotard@st.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
-Lars reported that if driver/chip dma driver does not support the pause/resume
-then need not to export this info through the hw capability and leave this
-implementation to alsa driver.
+ drivers/pinctrl/pinctrl-ab8505.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Making the change accordingly.
-
- sound/soc/tegra/tegra_pcm.c |   24 +-----------------------
- 1 files changed, 1 insertions(+), 23 deletions(-)
-
-diff --git a/sound/soc/tegra/tegra_pcm.c b/sound/soc/tegra/tegra_pcm.c
-index e67af0b..117cccc 100644
---- a/sound/soc/tegra/tegra_pcm.c
-+++ b/sound/soc/tegra/tegra_pcm.c
-@@ -43,8 +43,6 @@
- static const struct snd_pcm_hardware tegra_pcm_hardware = {
- 	.info			= SNDRV_PCM_INFO_MMAP |
- 				  SNDRV_PCM_INFO_MMAP_VALID |
--				  SNDRV_PCM_INFO_PAUSE |
--				  SNDRV_PCM_INFO_RESUME |
- 				  SNDRV_PCM_INFO_INTERLEAVED,
- 	.formats		= SNDRV_PCM_FMTBIT_S16_LE,
- 	.channels_min		= 2,
-@@ -121,26 +119,6 @@ static int tegra_pcm_hw_free(struct snd_pcm_substream *substream)
- 	return 0;
- }
+diff --git a/drivers/pinctrl/pinctrl-ab8505.c b/drivers/pinctrl/pinctrl-ab8505.c
+index 3a4238e..8ae076a 100644
+--- a/drivers/pinctrl/pinctrl-ab8505.c
++++ b/drivers/pinctrl/pinctrl-ab8505.c
+@@ -284,7 +284,7 @@ struct alternate_functions ab8505_alternate_functions[AB8505_GPIO_MAX_NUMBER + 1
  
--static int tegra_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
--{
--	switch (cmd) {
--	case SNDRV_PCM_TRIGGER_START:
--	case SNDRV_PCM_TRIGGER_RESUME:
--	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
--		return snd_dmaengine_pcm_trigger(substream,
--					SNDRV_PCM_TRIGGER_START);
--
--	case SNDRV_PCM_TRIGGER_STOP:
--	case SNDRV_PCM_TRIGGER_SUSPEND:
--	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
--		return snd_dmaengine_pcm_trigger(substream,
--					SNDRV_PCM_TRIGGER_STOP);
--	default:
--		return -EINVAL;
--	}
--	return 0;
--}
--
- static int tegra_pcm_mmap(struct snd_pcm_substream *substream,
- 				struct vm_area_struct *vma)
- {
-@@ -158,7 +136,7 @@ static struct snd_pcm_ops tegra_pcm_ops = {
- 	.ioctl		= snd_pcm_lib_ioctl,
- 	.hw_params	= tegra_pcm_hw_params,
- 	.hw_free	= tegra_pcm_hw_free,
--	.trigger	= tegra_pcm_trigger,
-+	.trigger	= snd_dmaengine_pcm_trigger,
- 	.pointer	= snd_dmaengine_pcm_pointer,
- 	.mmap		= tegra_pcm_mmap,
- };
+ 	ALTERNATE_FUNCTIONS(9, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO9, bit 0 reserved */
+ 	ALTERNATE_FUNCTIONS(10,      1,      0, UNUSED, 1, 0, 0), /* GPIO10, altA and altB controlled by bit 0 */
+-	ALTERNATE_FUNCTIONS(11,      2, UNUSED, UNUSED, 0, 0, 0), /* GPIO11, altA controlled by bit 2 */
++	ALTERNATE_FUNCTIONS(11,      2,      1, UNUSED, 0, 0, 0), /* GPIO11, altA controlled by bit 2 */
+ 	ALTERNATE_FUNCTIONS(12, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO12, bit3 reseved */
+ 	ALTERNATE_FUNCTIONS(13,      4,      3,      4, 1, 0, 2), /* GPIO13, altA altB and altC controlled by bit 3 and 4 */
+ 	ALTERNATE_FUNCTIONS(14,      5, UNUSED, UNUSED, 0, 0, 0), /* GPIO14, altA controlled by bit 5 */
 -- 
-1.7.1.1
+1.7.11.3
 
