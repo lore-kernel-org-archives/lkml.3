@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762380Ab3DCIsD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 04:48:03 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:48054 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762331Ab3DCIrz (ORCPT
+	id S1762434Ab3DCIsJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 04:48:09 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:40940 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762384Ab3DCIsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 04:47:55 -0400
+	Wed, 3 Apr 2013 04:48:07 -0400
 From: Fabio Baltieri <fabio.baltieri@linaro.org>
 To: Felipe Balbi <balbi@ti.com>
 Cc: Linus Walleij <linus.walleij@linaro.org>,
         Praveena Nadahally <praveen.nadahally@stericsson.com>,
         linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
         Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH 08/12] usb: phy: ab8500-usb: fix unbalanced clock and regulator disable warnings
-Date: Wed,  3 Apr 2013 10:45:09 +0200
-Message-Id: <1364978713-19612-9-git-send-email-fabio.baltieri@linaro.org>
+Subject: [PATCH 09/12] usb: phy: ab8500-usb: fix last notifier arguments
+Date: Wed,  3 Apr 2013 10:45:10 +0200
+Message-Id: <1364978713-19612-10-git-send-email-fabio.baltieri@linaro.org>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1364978713-19612-1-git-send-email-fabio.baltieri@linaro.org>
 References: <1364978713-19612-1-git-send-email-fabio.baltieri@linaro.org>
@@ -24,36 +23,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
+Fix last ab->phy.notifier call to use vbus_draw as notifier argument, as
+that's used in ab8500_charger to control charging current.
 
-To prevent clock and regulator frameworks from complaining, only disable
-the host or peripheral phy if they were enabled.
+Also drop a related TODO comment, and the additional
+ux500_musb_set_vbus(musb, 0), as with this patch it was causing an
+erratic behaviour of gadget ep0 state machine.
 
-Reported-by: Sakethram Bommisetti <sakethram.bommisetti@stericsson.com>
-Signed-off-by: Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 ---
- drivers/usb/phy/phy-ab8500-usb.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/musb/ux500.c         |  1 -
+ drivers/usb/phy/phy-ab8500-usb.c | 10 +++-------
+ 2 files changed, 3 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/usb/musb/ux500.c b/drivers/usb/musb/ux500.c
+index 88795f5..2c80004 100644
+--- a/drivers/usb/musb/ux500.c
++++ b/drivers/usb/musb/ux500.c
+@@ -114,7 +114,6 @@ static int musb_otg_notifications(struct notifier_block *nb,
+ 		break;
+ 	case UX500_MUSB_VBUS:
+ 		dev_dbg(musb->controller, "VBUS Connect\n");
+-		ux500_musb_set_vbus(musb, 0);
+ 		break;
+ 	case UX500_MUSB_NONE:
+ 		dev_dbg(musb->controller, "VBUS Disconnect\n");
 diff --git a/drivers/usb/phy/phy-ab8500-usb.c b/drivers/usb/phy/phy-ab8500-usb.c
-index 803ad93..b7f6639 100644
+index b7f6639..ff27058 100644
 --- a/drivers/usb/phy/phy-ab8500-usb.c
 +++ b/drivers/usb/phy/phy-ab8500-usb.c
-@@ -887,8 +887,10 @@ static int ab8500_usb_remove(struct platform_device *pdev)
+@@ -577,16 +577,12 @@ static int ab8500_usb_set_power(struct usb_phy *phy, unsigned mA)
  
- 	usb_remove_phy(&ab->phy);
+ 	ab->vbus_draw = mA;
  
--	ab8500_usb_host_phy_dis(ab);
--	ab8500_usb_peri_phy_dis(ab);
-+	if (ab->mode == USB_HOST)
-+		ab8500_usb_host_phy_dis(ab);
-+	else if (ab->mode == USB_PERIPHERAL)
-+		ab8500_usb_peri_phy_dis(ab);
+-	if (mA)
+-		atomic_notifier_call_chain(&ab->phy.notifier,
+-				UX500_MUSB_ENUMERATED, ab->phy.otg->gadget);
++	atomic_notifier_call_chain(&ab->phy.notifier,
++			UX500_MUSB_VBUS, &ab->vbus_draw);
++
+ 	return 0;
+ }
  
- 	platform_set_drvdata(pdev, NULL);
- 
+-/* TODO: Implement some way for charging or other drivers to read
+- * ab->vbus_draw.
+- */
+-
+ static int ab8500_usb_set_suspend(struct usb_phy *x, int suspend)
+ {
+ 	/* TODO */
 -- 
 1.8.1.3
 
