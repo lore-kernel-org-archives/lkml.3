@@ -1,82 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761128Ab3DCKsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 06:48:21 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18849 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760829Ab3DCKsT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 06:48:19 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 03 Apr 2013 03:48:19 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 3 Apr 2013 16:18:13 +0530
-Subject: RE: [PATCH] usb: host: tegra: Reset Tegra USB controller before init
-Thread-Topic: [PATCH] usb: host: tegra: Reset Tegra USB controller before
- init
-Thread-Index: Ac4vtzsDm0V62DriQduW8oNObR+9kwAoTvKg
-Message-ID: <D958900912E20642BCBC71664EFECE3E6E50BE4611@BGMAIL02.nvidia.com>
-References: <1362033418-7332-1-git-send-email-vbyravarasu@nvidia.com>
- <512F9F0B.1040303@wwwdotorg.org>
- <D958900912E20642BCBC71664EFECE3E6E4F7216C0@BGMAIL02.nvidia.com>
- <5134D210.3060405@wwwdotorg.org> <20130305003423.GA23996@kroah.com>
- <D958900912E20642BCBC71664EFECE3E6E50BE434F@BGMAIL02.nvidia.com>
- <515AF9E9.1020603@wwwdotorg.org>
-In-Reply-To: <515AF9E9.1020603@wwwdotorg.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1762524Ab3DCKzG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 06:55:06 -0400
+Received: from mga14.intel.com ([143.182.124.37]:18266 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761846Ab3DCKzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 06:55:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,401,1363158000"; 
+   d="scan'208";a="280138726"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-acpi@vger.kernel.org
+Subject: [PATCH] gpiolib-acpi: introduce acpi_get_gpio_by_index() helper
+Date: Wed,  3 Apr 2013 13:56:54 +0300
+Message-Id: <1364986614-15711-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> Sent: Tuesday, April 02, 2013 9:02 PM
-> To: Venu Byravarasu
-> Cc: gregkh@linuxfoundation.org; stern@rowland.harvard.edu; linux-
-> usb@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] usb: host: tegra: Reset Tegra USB controller before init
-> 
-> On 04/02/2013 01:12 AM, Venu Byravarasu wrote:
-> >> gregkh@linuxfoundation.org wrote at Tuesday, March 05, 2013 6:04 AM:
-> >> On Mon, Mar 04, 2013 at 09:55:44AM -0700, Stephen Warren wrote:
-> >>> On 03/04/2013 12:55 AM, Venu Byravarasu wrote:
-> >>>> Stephen Warren wrote at Thursday, February 28, 2013 11:47 PM:
-> >>>>> On 02/27/2013 11:36 PM, Venu Byravarasu wrote:
-> >>>>>> To clear any configurations made by U-Boot on Tegra USB controller,
-> >>>>>> reset it before init in probe.
-> ...
-> >> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >
-> > Hi Greg,
-> >
-> > Stephen initially thought that the patch can be taken through tegra tree,
-> along with
-> > other patches posted at  http://marc.info/?l=linux-
-> tegra&m=136361016003625&w=2 .
-> > As some other issues are blocking that patch series, can this change be
-> merged
-> > independent of that patch series via USB tree?
-> >
-> > The original change can be seen at http://marc.info/?l=linux-
-> usb&m=136203353205291&w=2
-> 
-> Venu, you should simply repost the patch; I'm sure its not in anyone's
-> email inbox any more.
- 
-Resent the patch, with ACKs added.
-Latest patch can be seen at: http://marc.info/?l=linux-tegra&m=136498598329081&w=2 
+Instead of open-coding ACPI GPIO resource lookup in each driver, we provide
+a helper function analogous to Device Tree version that allows drivers to
+specify which GPIO resource they are interested (using an index to the GPIO
+resources). The function then finds out the correct resource, translates
+the ACPI GPIO number to the corresponding Linux GPIO number and returns
+that.
 
-Thanks,
-Venu
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ Documentation/acpi/enumeration.txt |   32 ++++++++++++++-
+ drivers/gpio/gpiolib-acpi.c        |   77 ++++++++++++++++++++++++++++++++++++
+ include/linux/acpi_gpio.h          |   17 ++++++++
+ 3 files changed, 125 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
+index 94a6561..b0d5410 100644
+--- a/Documentation/acpi/enumeration.txt
++++ b/Documentation/acpi/enumeration.txt
+@@ -199,6 +199,8 @@ the device to the driver. For example:
+ 	{
+ 		Name (SBUF, ResourceTemplate()
+ 		{
++			...
++			// Used to power on/off the device
+ 			GpioIo (Exclusive, PullDefault, 0x0000, 0x0000,
+ 				IoRestrictionOutputOnly, "\\_SB.PCI0.GPI0",
+ 				0x00, ResourceConsumer,,)
+@@ -206,10 +208,20 @@ the device to the driver. For example:
+ 				// Pin List
+ 				0x0055
+ 			}
++
++			// Interrupt for the device
++			GpioInt (Edge, ActiveHigh, ExclusiveAndWake, PullNone,
++				 0x0000, "\\_SB.PCI0.GPI0", 0x00, ResourceConsumer,,)
++			{
++				// Pin list
++				0x0058
++			}
++
+ 			...
+ 
+-			Return (SBUF)
+ 		}
++
++		Return (SBUF)
+ 	}
+ 
+ These GPIO numbers are controller relative and path "\\_SB.PCI0.GPI0"
+@@ -220,6 +232,24 @@ The driver can do this by including <linux/acpi_gpio.h> and then calling
+ acpi_get_gpio(path, gpio). This will return the Linux GPIO number or
+ negative errno if there was no translation found.
+ 
++In a simple case of just getting the Linux GPIO number from device
++resources one can use acpi_get_gpio_by_index() helper function. It takes
++pointer to the device and index of the GpioIo/GpioInt descriptor in the
++device resources list. For example:
++
++	int gpio_irq, gpio_power;
++	int ret;
++
++	gpio_irq = acpi_get_gpio_by_index(dev, 1, NULL);
++	if (gpio_irq < 0)
++		/* handle error */
++
++	gpio_power = acpi_get_gpio_by_index(dev, 0, NULL);
++	if (gpio_power < 0)
++		/* handle error */
++
++	/* Now we can use the GPIO numbers */
++
+ Other GpioIo parameters must be converted first by the driver to be
+ suitable to the gpiolib before passing them.
+ 
+diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
+index a063eb0..b66df3b 100644
+--- a/drivers/gpio/gpiolib-acpi.c
++++ b/drivers/gpio/gpiolib-acpi.c
+@@ -54,6 +54,83 @@ int acpi_get_gpio(char *path, int pin)
+ }
+ EXPORT_SYMBOL_GPL(acpi_get_gpio);
+ 
++struct acpi_gpio_lookup {
++	struct acpi_gpio_info info;
++	int index;
++	int gpio;
++	int n;
++};
++
++static int acpi_find_gpio(struct acpi_resource *ares, void *data)
++{
++	struct acpi_gpio_lookup *lookup = data;
++
++	if (ares->type != ACPI_RESOURCE_TYPE_GPIO)
++		return 1;
++
++	if (lookup->n++ == lookup->index && lookup->gpio < 0) {
++		const struct acpi_resource_gpio *agpio = &ares->data.gpio;
++
++		lookup->gpio = acpi_get_gpio(agpio->resource_source.string_ptr,
++					     agpio->pin_table[0]);
++		lookup->info.gpioint =
++			agpio->connection_type == ACPI_RESOURCE_GPIO_TYPE_INT;
++	}
++
++	return 1;
++}
++
++/**
++ * acpi_get_gpio_by_index() - get a GPIO number from device resources
++ * @dev: pointer to a device to get GPIO from
++ * @index: index of GpioIo/GpioInt resource (starting from %0)
++ * @info: info pointer to fill in (optional)
++ *
++ * Function goes through ACPI resources for @dev and based on @index looks
++ * up a GpioIo/GpioInt resource, translates it to the Linux GPIO number,
++ * and returns it. @index matches GpioIo/GpioInt resources only so if there
++ * are total %3 GPIO resources, the index goes from %0 to %2.
++ *
++ * If the GPIO cannot be translated or there is an error, negative errno is
++ * returned.
++ *
++ * Note: if the GPIO resource has multiple entries in the pin list, this
++ * function only returns the first.
++ */
++int acpi_get_gpio_by_index(struct device *dev, int index,
++			   struct acpi_gpio_info *info)
++{
++	struct acpi_gpio_lookup lookup;
++	struct list_head resource_list;
++	struct acpi_device *adev;
++	acpi_handle handle;
++	int ret;
++
++	if (!dev)
++		return -EINVAL;
++
++	handle = ACPI_HANDLE(dev);
++	if (!handle || acpi_bus_get_device(handle, &adev))
++		return -ENODEV;
++
++	memset(&lookup, 0, sizeof(lookup));
++	lookup.index = index;
++	lookup.gpio = -ENODEV;
++
++	INIT_LIST_HEAD(&resource_list);
++	ret = acpi_dev_get_resources(adev, &resource_list, acpi_find_gpio,
++				     &lookup);
++	if (ret < 0)
++		return ret;
++
++	acpi_dev_free_resource_list(&resource_list);
++
++	if (lookup.gpio >= 0 && info)
++		*info = lookup.info;
++
++	return lookup.gpio;
++}
++EXPORT_SYMBOL_GPL(acpi_get_gpio_by_index);
+ 
+ static irqreturn_t acpi_gpio_irq_handler(int irq, void *data)
+ {
+diff --git a/include/linux/acpi_gpio.h b/include/linux/acpi_gpio.h
+index b76ebd0..598ea41 100644
+--- a/include/linux/acpi_gpio.h
++++ b/include/linux/acpi_gpio.h
+@@ -1,12 +1,23 @@
+ #ifndef _LINUX_ACPI_GPIO_H_
+ #define _LINUX_ACPI_GPIO_H_
+ 
++#include <linux/device.h>
+ #include <linux/errno.h>
+ #include <linux/gpio.h>
+ 
++/**
++ * struct acpi_gpio_info - ACPI GPIO specific information
++ * @gpioint: if %true this GPIO is of type GpioInt otherwise type is GpioIo
++ */
++struct acpi_gpio_info {
++	bool gpioint;
++};
++
+ #ifdef CONFIG_GPIO_ACPI
+ 
+ int acpi_get_gpio(char *path, int pin);
++int acpi_get_gpio_by_index(struct device *dev, int index,
++			   struct acpi_gpio_info *info);
+ void acpi_gpiochip_request_interrupts(struct gpio_chip *chip);
+ 
+ #else /* CONFIG_GPIO_ACPI */
+@@ -16,6 +27,12 @@ static inline int acpi_get_gpio(char *path, int pin)
+ 	return -ENODEV;
+ }
+ 
++static inline int acpi_get_gpio_by_index(struct device *dev, int index,
++					 struct acpi_gpio_info *info)
++{
++	return -ENODEV;
++}
++
+ static inline void acpi_gpiochip_request_interrupts(struct gpio_chip *chip) { }
+ 
+ #endif /* CONFIG_GPIO_ACPI */
+-- 
+1.7.10.4
+
