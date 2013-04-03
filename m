@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762420Ab3DCGCW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 02:02:22 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:39331 "EHLO
+	id S1762578Ab3DCGDM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 02:03:12 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:39459 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760062Ab3DCGCV (ORCPT
+	with ESMTP id S1762028Ab3DCGDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 02:02:21 -0400
+	Wed, 3 Apr 2013 02:03:11 -0400
 From: Wenyou Yang <wenyou.yang@atmel.com>
 To: <linux-arm-kernel@lists.infradead.org>
 CC: <grant.likely@secretlab.ca>, <broonie@opensource.wolfsonmicro.com>,
         <richard.genoud@gmail.com>, <plagnioj@jcrosoft.com>,
         <nicolas.ferre@atmel.com>, <JM.Lin@atmel.com>, <wenyou.yang@atmel.com>,
         <spi-devel-general@lists.sourceforge.net>, <linux@arm.linux.org.uk>,
-        <linux@maxim.org.za>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v8 5/8] ARM: at91: add clocks for spi dt entries
-Date: Wed, 3 Apr 2013 14:01:22 +0800
-Message-ID: <1364968882-24132-1-git-send-email-wenyou.yang@atmel.com>
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v8 6/8] ARM: dts: add spi nodes for atmel SoC
+Date: Wed, 3 Apr 2013 14:02:18 +0800
+Message-ID: <1364968938-24198-1-git-send-email-wenyou.yang@atmel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1364968581-23700-1-git-send-email-wenyou.yang@atmel.com>
 References: <1364968581-23700-1-git-send-email-wenyou.yang@atmel.com>
@@ -29,71 +29,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Richard Genoud <richard.genoud@gmail.com>
 
 Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-[<wenyou.yang@atmel.com: declare the spi clocks for sam9260, at91sam9g45, and at91sam9n12]
+[wenyou.yang@atmel.com: add spi nodes for sam9260, sam9263, sam9g45 and sam9n12]
+[wenyou.yang@atmel.com: remove spi property "cs-gpios" to the board dts files]
 [wenyou.yang@atmel.com: submit the patch]
 Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 Cc: linux@arm.linux.org.uk
-Cc: linux@maxim.org.za
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/mach-at91/at91sam9260.c |    2 ++
- arch/arm/mach-at91/at91sam9g45.c |    2 ++
- arch/arm/mach-at91/at91sam9n12.c |    2 ++
- arch/arm/mach-at91/at91sam9x5.c  |    2 ++
- 4 files changed, 8 insertions(+)
+ arch/arm/boot/dts/at91sam9260.dtsi |   18 ++++++++++++++++++
+ arch/arm/boot/dts/at91sam9263.dtsi |   18 ++++++++++++++++++
+ arch/arm/boot/dts/at91sam9g45.dtsi |   18 ++++++++++++++++++
+ arch/arm/boot/dts/at91sam9n12.dtsi |   18 ++++++++++++++++++
+ arch/arm/boot/dts/at91sam9x5.dtsi  |   18 ++++++++++++++++++
+ 5 files changed, 90 insertions(+)
 
-diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
-index b67cd53..44199bc 100644
---- a/arch/arm/mach-at91/at91sam9260.c
-+++ b/arch/arm/mach-at91/at91sam9260.c
-@@ -232,6 +232,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID("t2_clk", "fffdc000.timer", &tc5_clk),
- 	CLKDEV_CON_DEV_ID("hclk", "500000.ohci", &ohci_clk),
- 	CLKDEV_CON_DEV_ID("mci_clk", "fffa8000.mmc", &mmc_clk),
-+	CLKDEV_CON_DEV_ID("spi_clk", "fffc8000.spi", &spi0_clk),
-+	CLKDEV_CON_DEV_ID("spi_clk", "fffcc000.spi", &spi1_clk),
- 	/* fake hclk clock */
- 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &ohci_clk),
- 	CLKDEV_CON_ID("pioA", &pioA_clk),
-diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
-index d3addee..2ec5efe 100644
---- a/arch/arm/mach-at91/at91sam9g45.c
-+++ b/arch/arm/mach-at91/at91sam9g45.c
-@@ -262,6 +262,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID("mci_clk", "fffd0000.mmc", &mmc1_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "fff84000.i2c", &twi0_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "fff88000.i2c", &twi1_clk),
-+	CLKDEV_CON_DEV_ID("spi_clk", "fffa4000.spi", &spi0_clk),
-+	CLKDEV_CON_DEV_ID("spi_clk", "fffa8000.spi", &spi1_clk),
- 	/* fake hclk clock */
- 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &uhphs_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "fffff200.gpio", &pioA_clk),
-diff --git a/arch/arm/mach-at91/at91sam9n12.c b/arch/arm/mach-at91/at91sam9n12.c
-index 5dfc8fd..ccd0783 100644
---- a/arch/arm/mach-at91/at91sam9n12.c
-+++ b/arch/arm/mach-at91/at91sam9n12.c
-@@ -172,6 +172,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID("dma_clk", "ffffec00.dma-controller", &dma_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "f8010000.i2c", &twi0_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "f8014000.i2c", &twi1_clk),
-+	CLKDEV_CON_DEV_ID("spi_clk", "f0000000.spi", &spi0_clk),
-+	CLKDEV_CON_DEV_ID("spi_clk", "f0004000.spi", &spi1_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "fffff400.gpio", &pioAB_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioAB_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioCD_clk),
-diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
-index 44a9a62..a200d8a 100644
---- a/arch/arm/mach-at91/at91sam9x5.c
-+++ b/arch/arm/mach-at91/at91sam9x5.c
-@@ -237,6 +237,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID(NULL, "f8010000.i2c", &twi0_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "f8014000.i2c", &twi1_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "f8018000.i2c", &twi2_clk),
-+	CLKDEV_CON_DEV_ID("spi_clk", "f0000000.spi", &spi0_clk),
-+	CLKDEV_CON_DEV_ID("spi_clk", "f0004000.spi", &spi1_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "fffff400.gpio", &pioAB_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "fffff600.gpio", &pioAB_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "fffff800.gpio", &pioCD_clk),
+diff --git a/arch/arm/boot/dts/at91sam9260.dtsi b/arch/arm/boot/dts/at91sam9260.dtsi
+index cb7bcc5..6e31dc8 100644
+--- a/arch/arm/boot/dts/at91sam9260.dtsi
++++ b/arch/arm/boot/dts/at91sam9260.dtsi
+@@ -471,6 +471,24 @@
+ 				status = "disabled";
+ 			};
+ 
++			spi0: spi@fffc8000 {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				compatible = "atmel,at91rm9200-spi";
++				reg = <0xfffc8000 0x200>;
++				interrupts = <12 4 3>;
++				status = "disabled";
++			};
++
++			spi1: spi@fffcc000 {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				compatible = "atmel,at91rm9200-spi";
++				reg = <0xfffcc000 0x200>;
++				interrupts = <13 4 3>;
++				status = "disabled";
++			};
++
+ 			adc0: adc@fffe0000 {
+ 				compatible = "atmel,at91sam9260-adc";
+ 				reg = <0xfffe0000 0x100>;
+diff --git a/arch/arm/boot/dts/at91sam9263.dtsi b/arch/arm/boot/dts/at91sam9263.dtsi
+index 271d4de..6c6d9ae 100644
+--- a/arch/arm/boot/dts/at91sam9263.dtsi
++++ b/arch/arm/boot/dts/at91sam9263.dtsi
+@@ -462,6 +462,24 @@
+ 				reg = <0xfffffd40 0x10>;
+ 				status = "disabled";
+ 			};
++
++			spi0: spi@fffa4000 {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				compatible = "atmel,at91rm9200-spi";
++				reg = <0xfffa4000 0x200>;
++				interrupts = <14 4 3>;
++				status = "disabled";
++			};
++
++			spi1: spi@fffa8000 {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				compatible = "atmel,at91rm9200-spi";
++				reg = <0xfffa8000 0x200>;
++				interrupts = <15 4 3>;
++				status = "disabled";
++			};
+ 		};
+ 
+ 		nand0: nand@40000000 {
+diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
+index 6b1d4ca..e085b8a 100644
+--- a/arch/arm/boot/dts/at91sam9g45.dtsi
++++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+@@ -531,6 +531,24 @@
+ 				reg = <0xfffffd40 0x10>;
+ 				status = "disabled";
+ 			};
++
++			spi0: spi@fffa4000 {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				compatible = "atmel,at91rm9200-spi";
++				reg = <0xfffa4000 0x200>;
++				interrupts = <14 4 3>;
++				status = "disabled";
++			};
++
++			spi1: spi@fffa8000 {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				compatible = "atmel,at91rm9200-spi";
++				reg = <0xfffa8000 0x200>;
++				interrupts = <15 4 3>;
++				status = "disabled";
++			};
+ 		};
+ 
+ 		nand0: nand@40000000 {
+diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
+index 7750f98..f3f87ef3 100644
+--- a/arch/arm/boot/dts/at91sam9n12.dtsi
++++ b/arch/arm/boot/dts/at91sam9n12.dtsi
+@@ -373,6 +373,24 @@
+ 				#size-cells = <0>;
+ 				status = "disabled";
+ 			};
++
++			spi0: spi@f0000000 {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				compatible = "atmel,at91rm9200-spi";
++				reg = <0xf0000000 0x100>;
++				interrupts = <13 4 3>;
++				status = "disabled";
++			};
++
++			spi1: spi@f0004000 {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				compatible = "atmel,at91rm9200-spi";
++				reg = <0xf0004000 0x100>;
++				interrupts = <14 4 3>;
++				status = "disabled";
++			};
+ 		};
+ 
+ 		nand0: nand@40000000 {
+diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
+index a98c0d5..77ce2e1 100644
+--- a/arch/arm/boot/dts/at91sam9x5.dtsi
++++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+@@ -529,6 +529,24 @@
+ 					trigger-value = <0x6>;
+ 				};
+ 			};
++
++			spi0: spi@f0000000 {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				compatible = "atmel,at91rm9200-spi";
++				reg = <0xf0000000 0x100>;
++				interrupts = <13 4 3>;
++				status = "disabled";
++			};
++
++			spi1: spi@f0004000 {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				compatible = "atmel,at91rm9200-spi";
++				reg = <0xf0004000 0x100>;
++				interrupts = <14 4 3>;
++				status = "disabled";
++			};
+ 		};
+ 
+ 		nand0: nand@40000000 {
 -- 
 1.7.9.5
 
