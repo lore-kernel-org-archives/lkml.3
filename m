@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508Ab3DCUP7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 16:15:59 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:58734 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762579Ab3DCUP6 (ORCPT
+	id S932550Ab3DCUXs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 16:23:48 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:39711 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932459Ab3DCUXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 16:15:58 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] pinctrl/abx500: fix ab9540 alternate function
-Date: Wed, 3 Apr 2013 22:15:44 +0200
-Message-ID: <1365020144-28781-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Wed, 3 Apr 2013 16:23:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <515C701E.1000402@prisktech.co.nz>
+References: <1364970291-17721-1-git-send-email-linux@prisktech.co.nz>
+	<CACRpkdZAtgpfA5rZ_C=eKDDOE9aDm=3k1QDava=EGL2BaoV+0g@mail.gmail.com>
+	<515C701E.1000402@prisktech.co.nz>
+Date: Wed, 3 Apr 2013 22:23:46 +0200
+Message-ID: <CACRpkdapvxK6ad4PGasb0XKjPYJabpvwZhx+o72iwbCZFkkZFg@mail.gmail.com>
+Subject: Re: [PATCHv5 0/7] arm: vt8500: Add support for pinctrl/gpio module
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vt8500-wm8505-linux-kernel@googlegroups.com" 
+	<vt8500-wm8505-linux-kernel@googlegroups.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Patrice Chotard <patrice.chotard@st.com>
+On Wed, Apr 3, 2013 at 8:08 PM, Tony Prisk <linux@prisktech.co.nz> wrote:
+> On 04/04/13 02:40, Linus Walleij wrote:
 
-This fix allows to correctly select default and
-alternate pin mode.
+>> This v5 series:
+>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>>
+>> I guess it will go in through the VT8500 tree eventually?
+>>
+>> Maybe you could put Stephen's BCMring patch on top when sending
+>> it in (also Acked-by) so we can avoid having that dangling.
+>>
+>> Yours,
+>> Linus Walleij
+>
+> We don't have a VT8500 tree. Originally I planned for it to go through you,
+> but it could go through arm-soc if they want to take it.
 
-By default for all ABx500 family chip, pin default
-mode is selected by clearing corresponding bit in
-GPIOSELx register except for pins which support
-alternate function, in this case, corresponding bit
-must be set.
+You should definately be sending VT8500 series like this through
+ARM SoC. Prepare a pull request or patch series and
+send to arm@kernel.org.
 
-But, due to an unlogical hardware implementation,
-for one particular pin (GPIO11) reverse setting
-must be done. For that, update the alternate function
-array by declaring that this pin supports alternate
-function.
-Same issue has been fixed in pinctrl-ab8505.c
-
-Signed-off-by: Patrice Chotard <patrice.chotard@st.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/pinctrl-ab9540.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/pinctrl/pinctrl-ab9540.c b/drivers/pinctrl/pinctrl-ab9540.c
-index 7610bd0..80f3173 100644
---- a/drivers/pinctrl/pinctrl-ab9540.c
-+++ b/drivers/pinctrl/pinctrl-ab9540.c
-@@ -393,7 +393,7 @@ struct alternate_functions ab9540alternate_functions[AB9540_GPIO_MAX_NUMBER + 1]
- 	/* GPIOSEL2 - bits 0 and 3 are reserved */
- 	ALTERNATE_FUNCTIONS(9, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO9 */
- 	ALTERNATE_FUNCTIONS(10,      1,      0, UNUSED, 1, 0, 0), /* GPIO10, altA and altB controlled by bit 0 */
--	ALTERNATE_FUNCTIONS(11,      2, UNUSED, UNUSED, 0, 0, 0), /* GPIO11, altA controlled by bit 1 */
-+	ALTERNATE_FUNCTIONS(11,      2,	     1, UNUSED, 0, 0, 0), /* GPIO11, altA controlled by bit 1 */
- 	ALTERNATE_FUNCTIONS(12, UNUSED, UNUSED, UNUSED, 0, 0, 0), /* no GPIO12 */
- 	ALTERNATE_FUNCTIONS(13,      4,      3,      4, 1, 0, 2), /* GPIO13, altA altB and altC controlled by bit 3 and 4 */
- 	ALTERNATE_FUNCTIONS(14,      5, UNUSED, UNUSED, 0, 0, 0), /* GPIO14, altA controlled by bit 5 */
--- 
-1.7.11.3
-
+Thanks,
+Linus Walleij
