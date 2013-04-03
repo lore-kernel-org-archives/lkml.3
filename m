@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762722Ab3DCR3k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 13:29:40 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:63327 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756011Ab3DCR3j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 13:29:39 -0400
-Message-ID: <515C66FE.7030501@linaro.org>
-Date: Wed, 03 Apr 2013 10:29:34 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1762801Ab3DCRac (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 13:30:32 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54002 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756011Ab3DCRaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 13:30:30 -0400
+Date: Wed, 3 Apr 2013 19:30:28 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Thomas Renninger <trenn@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH V3 2/2] cpufreq: AMD "frequency sensitivity feedback"
+ powersave bias for ondemand governor
+Message-ID: <20130403173028.GB4716@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jacob Shin <jacob.shin@amd.com>, Thomas Renninger <trenn@suse.de>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+	linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Viresh Kumar <viresh.kumar@linaro.org>
+References: <1364926304-1799-1-git-send-email-jacob.shin@amd.com>
+ <20130402192352.GC17675@pd.tnic>
+ <20130402200337.GA17919@jshin-Toonie>
+ <2932884.BNCEuERbdR@skinner.arch.suse.de>
+ <20130402210124.GI17675@pd.tnic>
+ <20130403165324.GB17919@jshin-Toonie>
+ <20130403170456.GA4723@pd.tnic>
+ <20130403171738.GC17919@jshin-Toonie>
 MIME-Version: 1.0
-To: Pawel Moll <pawel.moll@arm.com>
-CC: Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: [RFC] perf: need to expose sched_clock to correlate user samples
- with kernel samples
-References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>  <1350408232.2336.42.camel@laptop>	<1359728280.8360.15.camel@hornet>  <CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com>  <51118797.9080800@linaro.org>	<alpine.LFD.2.02.1302182132230.22263@ionos>  <5123C3AF.8060100@linaro.org>	<1361356160.10155.22.camel@laptop>  <51285BF1.2090208@linaro.org>	<1361801441.4007.40.camel@laptop>  <CABPqkBS4TELhoUGrO+moca2fPUoqGjiYCdHJc=H8CjLomPWWDQ@mail.gmail.com>  <1363291021.3100.144.camel@hornet> <51586315.7080006@gmail.com>  <5159D221.70304@linaro.org> <1364889256.16858.1.camel@laptop>  <515B0502.8070408@linaro.org> <1365009558.26858.19.camel@hornet>
-In-Reply-To: <1365009558.26858.19.camel@hornet>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130403171738.GC17919@jshin-Toonie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 10:19 AM, Pawel Moll wrote:
-> On Tue, 2013-04-02 at 17:19 +0100, John Stultz wrote:
->> But if we're going to have to do
->> this via a clockid, I'm going to want it to be done via a dynamic posix
->> clockid, so its clear its tightly tied with perf and not considered a
->> generic interface (and I can clearly point folks having problems to the
->> perf maintainers ;).
-> Ok, so how about the code below?
+On Wed, Apr 03, 2013 at 12:17:38PM -0500, Jacob Shin wrote:
+> Writing 0 to powersave_bias or unloading the AMD driver could do that.
 >
-> There are two distinct parts of the "solution":
->
-> 1. The dynamic posix clock, as you suggested. Then one can get the perf
-> timestamp by doing:
->
-> 	clock_fd = open("/dev/perf-clock", O_RDONLY);
-> 	clock_gettime(FD_TO_CLOCKID(clock_fd), &ts)
->
-> 2. A sort-of-hack in the get_posix_clock() function making it possible
-> to do the same using the perf event file descriptor, eg.:
->
-> 	fd = sys_perf_event_open(&attr, -1, 0, -1, 0);
-> 	clock_gettime(FD_TO_CLOCKID(fd), &ts)
+> When the AMD driver loads, it will give a sane default value to
+> powersave_bias to enable it, when it unloads, it will put it back to
+> 0.
 
-#2 makes my nose wrinkle. Forgive me for being somewhat ignorant on the 
-perf interfaces, but why is the second portion necessary or beneficial?
+... and on systems without hw feedback, it will keep powersave_bias to 0
+by default, retaining the old behavior.
 
-thanks
--john
+Yeah, sounds like a plan.
 
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
