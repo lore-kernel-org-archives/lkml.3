@@ -1,156 +1,278 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762381Ab3DCOtJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:49:09 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:55069 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761594Ab3DCOp7 (ORCPT
+	id S932326Ab3DCOtc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:49:32 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11190 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932116Ab3DCOt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:45:59 -0400
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
+	Wed, 3 Apr 2013 10:49:28 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 03 Apr 2013 07:49:15 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
         Stephen Warren <swarren@wwwdotorg.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v3 04/12] PCI: Introduce new MSI chip infrastructure
-Date: Wed,  3 Apr 2013 16:45:10 +0200
-Message-Id: <1365000318-28256-5-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.8.2
-In-Reply-To: <1365000318-28256-1-git-send-email-thierry.reding@avionic-design.de>
-References: <1365000318-28256-1-git-send-email-thierry.reding@avionic-design.de>
-X-Provags-ID: V02:K0:UANQsPNbqmgzaekUG2cRAm/03AW/cP5jJ2tVcy+yldg
- WdauCYoqR/psDvLg0ul9HEGz+vcxKNIMF63veVWLONBLhzOz1o
- LqX4HMUF6KmgarYlU6EttWWWzVGpNTa8udgTVGQnS8r7FYvp+z
- bCln8AtM0VVcQyCYeCZyw6BC08xgfu4FkYHTppWwHMtmQY0zM8
- /hJCVTXZ+qy60WivFxh8MapBNYKTED8O9Zva8vYD4t8cljFkiI
- 5cIAxTmNpb4w/GwhJ1OHfVf2kcyPPzJ5o+SCsihRZhBWIfzhK1
- v4vqkGY7/ZG9EivDY4JgI3lq68hTBTwxsmNL6e/5sN9k+o2uLq
- JTIOn7MWezZJikvTLUsppBbK6jqnSk98oOCBJW3kPbFlsCs87c
- mrfTZjSlunGCWWuP8B+Ez0VRDKFDj19RJLiHcU4vCPInSS08+b
- P+WWH
+        Russell King <linux@arm.linux.org.uk>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Pritesh Raithatha <praithatha@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>, Andrew Chew <achew@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v9 06/14] clk: tegra: move from a lock bit idx to a lock mask
+Date: Wed, 3 Apr 2013 17:40:40 +0300
+Message-ID: <1365000110-8916-7-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new struct msi_chip is used to associated an MSI controller with a
-PCI bus. It is automatically handed down from the root to its children
-during bus enumeration.
+PLLC2 and PLLC3 on Tegra114 have separate phaselock and frequencylock bits.
+So switch to a lock mask to be able to test both at the same time.
 
-This patch provides default (weak) implementations for the architecture-
-specific MSI functions (arch_setup_msi_irq(), arch_teardown_msi_irq()
-and arch_msi_check_device()) which check if a PCI device's bus has an
-attached MSI chip and forward the call appropriately.
-
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- drivers/pci/msi.c   | 35 +++++++++++++++++++++++++++++++----
- drivers/pci/probe.c |  1 +
- include/linux/msi.h | 10 ++++++++++
- include/linux/pci.h |  1 +
- 4 files changed, 43 insertions(+), 4 deletions(-)
+ drivers/clk/tegra/clk-pll.c     |    6 +++---
+ drivers/clk/tegra/clk-tegra20.c |   20 ++++++++++----------
+ drivers/clk/tegra/clk-tegra30.c |   22 +++++++++++-----------
+ drivers/clk/tegra/clk.h         |    2 +-
+ 4 files changed, 25 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 00cc78c..fce3549 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -26,14 +26,41 @@
- 
- static int pci_msi_enable = 1;
- 
--/* Arch hooks */
-+int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
-+{
-+	struct msi_chip *chip = dev->bus->msi;
-+
-+	if (chip && chip->setup_irq) {
-+		int err;
-+
-+		err = chip->setup_irq(chip, dev, desc);
-+		if (err < 0)
-+			return err;
-+
-+		irq_set_chip_data(desc->irq, chip);
-+		return err;
-+	}
-+
-+	return -EINVAL;
-+}
- 
--#ifndef arch_msi_check_device
--int arch_msi_check_device(struct pci_dev *dev, int nvec, int type)
-+void __weak arch_teardown_msi_irq(unsigned int irq)
+diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
+index ccb367e..0b96352 100644
+--- a/drivers/clk/tegra/clk-pll.c
++++ b/drivers/clk/tegra/clk-pll.c
+@@ -119,7 +119,7 @@ static void clk_pll_enable_lock(struct tegra_clk_pll *pll)
+ static int clk_pll_wait_for_lock(struct tegra_clk_pll *pll)
  {
-+	struct msi_chip *chip = irq_get_chip_data(irq);
-+
-+	if (chip && chip->teardown_irq)
-+		chip->teardown_irq(chip, irq);
-+}
-+
-+int __weak arch_msi_check_device(struct pci_dev *dev, int nvec, int type)
-+{
-+	struct msi_chip *chip = dev->bus->msi;
-+
-+	if (chip && chip->check_device)
-+		return chip->check_device(chip, dev, nvec, type);
-+
- 	return 0;
- }
--#endif
+ 	int i;
+-	u32 val, lock_bit;
++	u32 val, lock_mask;
+ 	void __iomem *lock_addr;
  
- #ifndef arch_setup_msi_irqs
- # define arch_setup_msi_irqs default_setup_msi_irqs
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index b494066..9307550 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -634,6 +634,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+ 	if (!(pll->flags & TEGRA_PLL_USE_LOCK)) {
+@@ -133,11 +133,11 @@ static int clk_pll_wait_for_lock(struct tegra_clk_pll *pll)
+ 	else
+ 		lock_addr += pll->params->base_reg;
  
- 	child->parent = parent;
- 	child->ops = parent->ops;
-+	child->msi = parent->msi;
- 	child->sysdata = parent->sysdata;
- 	child->bus_flags = parent->bus_flags;
+-	lock_bit = BIT(pll->params->lock_bit_idx);
++	lock_mask = pll->params->lock_mask;
  
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index ce93a34..ea4a5be 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -58,5 +58,15 @@ extern int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
- extern void arch_teardown_msi_irqs(struct pci_dev *dev);
- extern int arch_msi_check_device(struct pci_dev* dev, int nvec, int type);
+ 	for (i = 0; i < pll->params->lock_delay; i++) {
+ 		val = readl_relaxed(lock_addr);
+-		if (val & lock_bit) {
++		if ((val & lock_mask) == lock_mask) {
+ 			udelay(PLL_POST_LOCK_DELAY);
+ 			return 0;
+ 		}
+diff --git a/drivers/clk/tegra/clk-tegra20.c b/drivers/clk/tegra/clk-tegra20.c
+index b1a49cb..b6a747f 100644
+--- a/drivers/clk/tegra/clk-tegra20.c
++++ b/drivers/clk/tegra/clk-tegra20.c
+@@ -86,8 +86,8 @@
+ #define PLLE_BASE 0xe8
+ #define PLLE_MISC 0xec
  
-+struct msi_chip {
-+	struct module *owner;
-+	struct device *dev;
-+
-+	int (*setup_irq)(struct msi_chip *chip, struct pci_dev *dev,
-+			 struct msi_desc *desc);
-+	void (*teardown_irq)(struct msi_chip *chip, unsigned int irq);
-+	int (*check_device)(struct msi_chip *chip, struct pci_dev *dev,
-+			    int nvec, int type);
-+};
+-#define PLL_BASE_LOCK 27
+-#define PLLE_MISC_LOCK 11
++#define PLL_BASE_LOCK BIT(27)
++#define PLLE_MISC_LOCK BIT(11)
  
- #endif /* LINUX_MSI_H */
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index f42cdc6..7e44085 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -431,6 +431,7 @@ struct pci_bus {
- 	struct resource busn_res;	/* bus numbers routed to this bus */
+ #define PLL_MISC_LOCK_ENABLE 18
+ #define PLLDU_MISC_LOCK_ENABLE 22
+@@ -380,7 +380,7 @@ static struct tegra_clk_pll_params pll_c_params = {
+ 	.vco_max = 1400000000,
+ 	.base_reg = PLLC_BASE,
+ 	.misc_reg = PLLC_MISC,
+-	.lock_bit_idx = PLL_BASE_LOCK,
++	.lock_mask = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLL_MISC_LOCK_ENABLE,
+ 	.lock_delay = 300,
+ };
+@@ -394,7 +394,7 @@ static struct tegra_clk_pll_params pll_m_params = {
+ 	.vco_max = 1200000000,
+ 	.base_reg = PLLM_BASE,
+ 	.misc_reg = PLLM_MISC,
+-	.lock_bit_idx = PLL_BASE_LOCK,
++	.lock_mask = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLL_MISC_LOCK_ENABLE,
+ 	.lock_delay = 300,
+ };
+@@ -408,7 +408,7 @@ static struct tegra_clk_pll_params pll_p_params = {
+ 	.vco_max = 1400000000,
+ 	.base_reg = PLLP_BASE,
+ 	.misc_reg = PLLP_MISC,
+-	.lock_bit_idx = PLL_BASE_LOCK,
++	.lock_mask = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLL_MISC_LOCK_ENABLE,
+ 	.lock_delay = 300,
+ };
+@@ -422,7 +422,7 @@ static struct tegra_clk_pll_params pll_a_params = {
+ 	.vco_max = 1400000000,
+ 	.base_reg = PLLA_BASE,
+ 	.misc_reg = PLLA_MISC,
+-	.lock_bit_idx = PLL_BASE_LOCK,
++	.lock_mask = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLL_MISC_LOCK_ENABLE,
+ 	.lock_delay = 300,
+ };
+@@ -436,7 +436,7 @@ static struct tegra_clk_pll_params pll_d_params = {
+ 	.vco_max = 1000000000,
+ 	.base_reg = PLLD_BASE,
+ 	.misc_reg = PLLD_MISC,
+-	.lock_bit_idx = PLL_BASE_LOCK,
++	.lock_mask = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLLDU_MISC_LOCK_ENABLE,
+ 	.lock_delay = 1000,
+ };
+@@ -456,7 +456,7 @@ static struct tegra_clk_pll_params pll_u_params = {
+ 	.vco_max = 960000000,
+ 	.base_reg = PLLU_BASE,
+ 	.misc_reg = PLLU_MISC,
+-	.lock_bit_idx = PLL_BASE_LOCK,
++	.lock_mask = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLLDU_MISC_LOCK_ENABLE,
+ 	.lock_delay = 1000,
+ 	.pdiv_tohw = pllu_p,
+@@ -471,7 +471,7 @@ static struct tegra_clk_pll_params pll_x_params = {
+ 	.vco_max = 1200000000,
+ 	.base_reg = PLLX_BASE,
+ 	.misc_reg = PLLX_MISC,
+-	.lock_bit_idx = PLL_BASE_LOCK,
++	.lock_mask = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLL_MISC_LOCK_ENABLE,
+ 	.lock_delay = 300,
+ };
+@@ -485,7 +485,7 @@ static struct tegra_clk_pll_params pll_e_params = {
+ 	.vco_max = 0,
+ 	.base_reg = PLLE_BASE,
+ 	.misc_reg = PLLE_MISC,
+-	.lock_bit_idx = PLLE_MISC_LOCK,
++	.lock_mask = PLLE_MISC_LOCK,
+ 	.lock_enable_bit_idx = PLLE_MISC_LOCK_ENABLE,
+ 	.lock_delay = 0,
+ };
+diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
+index 102bcbb..9c43bb4 100644
+--- a/drivers/clk/tegra/clk-tegra30.c
++++ b/drivers/clk/tegra/clk-tegra30.c
+@@ -116,8 +116,8 @@
+ #define PLLDU_MISC_LOCK_ENABLE 22
+ #define PLLE_MISC_LOCK_ENABLE 9
  
- 	struct pci_ops	*ops;		/* configuration access functions */
-+	struct msi_chip	*msi;		/* MSI controller */
- 	void		*sysdata;	/* hook for sys-specific extension */
- 	struct proc_dir_entry *procdir;	/* directory entry in /proc/bus/pci */
+-#define PLL_BASE_LOCK 27
+-#define PLLE_MISC_LOCK 11
++#define PLL_BASE_LOCK BIT(27)
++#define PLLE_MISC_LOCK BIT(11)
  
+ #define PLLE_AUX 0x48c
+ #define PLLC_OUT 0x84
+@@ -559,7 +559,7 @@ static struct tegra_clk_pll_params pll_c_params = {
+ 	.vco_max = 1400000000,
+ 	.base_reg = PLLC_BASE,
+ 	.misc_reg = PLLC_MISC,
+-	.lock_bit_idx = PLL_BASE_LOCK,
++	.lock_mask = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLL_MISC_LOCK_ENABLE,
+ 	.lock_delay = 300,
+ };
+@@ -573,7 +573,7 @@ static struct tegra_clk_pll_params pll_m_params = {
+ 	.vco_max = 1200000000,
+ 	.base_reg = PLLM_BASE,
+ 	.misc_reg = PLLM_MISC,
+-	.lock_bit_idx = PLL_BASE_LOCK,
++	.lock_mask = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLL_MISC_LOCK_ENABLE,
+ 	.lock_delay = 300,
+ };
+@@ -587,7 +587,7 @@ static struct tegra_clk_pll_params pll_p_params = {
+ 	.vco_max = 1400000000,
+ 	.base_reg = PLLP_BASE,
+ 	.misc_reg = PLLP_MISC,
+-	.lock_bit_idx = PLL_BASE_LOCK,
++	.lock_mask = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLL_MISC_LOCK_ENABLE,
+ 	.lock_delay = 300,
+ };
+@@ -601,7 +601,7 @@ static struct tegra_clk_pll_params pll_a_params = {
+ 	.vco_max = 1400000000,
+ 	.base_reg = PLLA_BASE,
+ 	.misc_reg = PLLA_MISC,
+-	.lock_bit_idx = PLL_BASE_LOCK,
++	.lock_mask = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLL_MISC_LOCK_ENABLE,
+ 	.lock_delay = 300,
+ };
+@@ -615,7 +615,7 @@ static struct tegra_clk_pll_params pll_d_params = {
+ 	.vco_max = 1000000000,
+ 	.base_reg = PLLD_BASE,
+ 	.misc_reg = PLLD_MISC,
+-	.lock_bit_idx = PLL_BASE_LOCK,
++	.lock_mask = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLLDU_MISC_LOCK_ENABLE,
+ 	.lock_delay = 1000,
+ };
+@@ -629,7 +629,7 @@ static struct tegra_clk_pll_params pll_d2_params = {
+ 	.vco_max = 1000000000,
+ 	.base_reg = PLLD2_BASE,
+ 	.misc_reg = PLLD2_MISC,
+-	.lock_bit_idx = PLL_BASE_LOCK,
++	.lock_mask = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLLDU_MISC_LOCK_ENABLE,
+ 	.lock_delay = 1000,
+ };
+@@ -643,7 +643,7 @@ static struct tegra_clk_pll_params pll_u_params = {
+ 	.vco_max = 960000000,
+ 	.base_reg = PLLU_BASE,
+ 	.misc_reg = PLLU_MISC,
+-	.lock_bit_idx = PLL_BASE_LOCK,
++	.lock_mask = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLLDU_MISC_LOCK_ENABLE,
+ 	.lock_delay = 1000,
+ 	.pdiv_tohw = pllu_p,
+@@ -658,7 +658,7 @@ static struct tegra_clk_pll_params pll_x_params = {
+ 	.vco_max = 1700000000,
+ 	.base_reg = PLLX_BASE,
+ 	.misc_reg = PLLX_MISC,
+-	.lock_bit_idx = PLL_BASE_LOCK,
++	.lock_mask = PLL_BASE_LOCK,
+ 	.lock_enable_bit_idx = PLL_MISC_LOCK_ENABLE,
+ 	.lock_delay = 300,
+ };
+@@ -672,7 +672,7 @@ static struct tegra_clk_pll_params pll_e_params = {
+ 	.vco_max = 2400000000U,
+ 	.base_reg = PLLE_BASE,
+ 	.misc_reg = PLLE_MISC,
+-	.lock_bit_idx = PLLE_MISC_LOCK,
++	.lock_mask = PLLE_MISC_LOCK,
+ 	.lock_enable_bit_idx = PLLE_MISC_LOCK_ENABLE,
+ 	.lock_delay = 300,
+ };
+diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
+index 925da45..3b498e0 100644
+--- a/drivers/clk/tegra/clk.h
++++ b/drivers/clk/tegra/clk.h
+@@ -154,7 +154,7 @@ struct tegra_clk_pll_params {
+ 	u32		base_reg;
+ 	u32		misc_reg;
+ 	u32		lock_reg;
+-	u32		lock_bit_idx;
++	u32		lock_mask;
+ 	u32		lock_enable_bit_idx;
+ 	int		lock_delay;
+ 	int		max_p;
 -- 
-1.8.2
+1.7.7.rc0.72.g4b5ea.dirty
 
