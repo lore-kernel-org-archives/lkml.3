@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763005Ab3DCSGs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 14:06:48 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:55931 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762890Ab3DCSGq (ORCPT
+	id S1763028Ab3DCSHA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 14:07:00 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:56326 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762997Ab3DCSG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 14:06:46 -0400
-Message-ID: <515C6DCD.50902@mit.edu>
-Date: Wed, 03 Apr 2013 10:58:37 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Wed, 3 Apr 2013 14:06:58 -0400
+Date: Wed, 3 Apr 2013 11:06:56 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: kbuild test robot <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sysfs: fix compile warning in i386
+Message-ID: <20130403180656.GA7407@kroah.com>
+References: <515BAE6E.4040502@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Sven Joachim <svenjoac@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Ding Tianhong <dingtianhong@huawei.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [ 105/124] af_unix: dont send SCM_CREDENTIAL when dest socket
- is NULL
-References: <20130402221104.163133110@linuxfoundation.org>  <20130402221116.307254752@linuxfoundation.org>  <87vc833kpf.fsf@turtle.gmx.de> <1364997630.13853.19.camel@edumazet-glaptop>  <87a9pfzm33.fsf@turtle.gmx.de> <1365003300.13853.25.camel@edumazet-glaptop>
-In-Reply-To: <1365003300.13853.25.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515BAE6E.4040502@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 08:35 AM, Eric Dumazet wrote:
-> On Wed, 2013-04-03 at 17:10 +0200, Sven Joachim wrote:
->> On 2013-04-03 16:00 +0200, Eric Dumazet wrote:
+On Wed, Apr 03, 2013 at 12:22:06PM +0800, Zhang Yanfei wrote:
+> This patch fixes compile warning in i386:
 > 
->>
->>> It might be a wrong sender (application bug or bad identity), and udevd
->>> correctly discards the incoming message.
->>
->> How would I find out the culprit?
+> drivers/base/cpu.c: In function 'show_crash_notes_size':
+> drivers/base/cpu.c:142:2: warning: format '%lu' expects argument of type 'long unsigned int', but argument 3 has type 'unsigned int' [-Wformat]
 > 
-> Change udevd to display the pid as well, and hopefully track the sender.
+> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> ---
+>  drivers/base/cpu.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
 > 
-> udevd receives uid and pid in the credentials.
+> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+> index a55b590..ee38cc2 100644
+> --- a/drivers/base/cpu.c
+> +++ b/drivers/base/cpu.c
+> @@ -138,8 +138,10 @@ static ssize_t show_crash_notes_size(struct device *dev,
+>  				     char *buf)
+>  {
+>  	ssize_t rc;
+> +	unsigned long size;
+>  
+> -	rc = sprintf(buf, "%lu\n", sizeof(note_buf_t));
+> +	size = sizeof(note_buf_t);
+> +	rc = sprintf(buf, "%lu\n", size);
 
-This sounds suspiciously like an SCM_CREDENTIALS bug triggered by a
-race.  There's a fix (that needs both a new version from me and a review
-by someone) here:
+No, use %z, like Arnd did in his patch, that makes it correct for all
+arches.  I'll take his patch instead.
 
-http://www.spinics.net/lists/netdev/msg229948.html
+thanks,
 
---Andy
+greg k-h
