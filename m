@@ -1,181 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761970Ab3DCIb4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 04:31:56 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:8701 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761524Ab3DCI3P (ORCPT
+	id S1762021Ab3DCIc1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 04:32:27 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:51728 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761975Ab3DCIcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 04:29:15 -0400
-From: <oskar.andero@sonymobile.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <masami.hiramatsu.pt@hitachi.com>, <davem@davemloft.net>,
-        <anil.s.keshavamurthy@intel.com>, <ananth@in.ibm.com>,
-        <radovan.lekanovic@sonymobile.com>, <bjorn.davidsson@sonymobile.com>,
-        <oskar.andero@sonymobile.com>,
-        Toby Collett <toby.collett@sonymobile.com>
-Subject: [PATCH 1/4] kprobes: delay blacklist symbol lookup until we actually need it
-Date: Wed, 3 Apr 2013 10:28:51 +0200
-Message-ID: <1364977734-32267-2-git-send-email-oskar.andero@sonymobile.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1364977734-32267-1-git-send-email-oskar.andero@sonymobile.com>
-References: <1364977734-32267-1-git-send-email-oskar.andero@sonymobile.com>
+	Wed, 3 Apr 2013 04:32:24 -0400
+Message-ID: <515BE915.4010706@atmel.com>
+Date: Wed, 3 Apr 2013 10:32:21 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Boris BREZILLON <linux-arm@overkiz.com>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: at91/tc: fix clock source id for tc block > 1
+References: <1364921211-15756-1-git-send-email-linux-arm@overkiz.com> <20130403044555.GN20693@game.jcrosoft.org> <515BD992.50009@atmel.com> <515BE17C.8050903@overkiz.com>
+In-Reply-To: <515BE17C.8050903@overkiz.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Toby Collett <toby.collett@sonymobile.com>
+On 04/03/2013 09:59 AM, Boris BREZILLON :
+> On 03/04/2013 09:26, Nicolas Ferre wrote:
+>> On 04/03/2013 06:45 AM, Jean-Christophe PLAGNIOL-VILLARD :
+>>> On 18:46 Tue 02 Apr     , Boris BREZILLON wrote:
+>>>> This patch fixes wrong clock request for TC block 2.
+>>>> The second block was using t0_clk, t1_clk and t2_clk clks instead of
+>>>> t3_clk, t4_clk and t5_clk clks.
+>>>>
+>>> this is intended as we have 3 clock per device
+> You're right.
+>>
+>> True.
+>> Boris, did you hit an issue with former code that your patch is solving?
+>> What is the reason for this patch?
+> I should have taken a closer look at the code before sending this patch.
+> I mistook clk name for conid devid association.
+> 
+> As I am enabling the tc block 1 clocks in the bootstrap code, I thought
+> this was the reason for these clocks to be enabled after the kernel boot.
+> 
+> But I tried to disable these clocks in the bootstrap and this works fine.
+> 
+> Sorry if I bothered you.
 
-The symbol lookup can take a long time and kprobes is
-initialised very early in boot, so delay symbol lookup
-until the blacklist is first used.
+Not bothered at all Boris! This is exactly how I like to see the
+community working together.
 
-Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
-Signed-off-by: Toby Collett <toby.collett@sonymobile.com>
-Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
----
- kernel/kprobes.c | 91 +++++++++++++++++++++++++++++++++-----------------------
- 1 file changed, 53 insertions(+), 38 deletions(-)
+Please feel free to send more and more patches about AT91: this is
+always valuable for us.
 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index e35be53..71a6bee 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -68,6 +68,7 @@
- #endif
- 
- static int kprobes_initialized;
-+static int kprobe_blacklist_initialized;
- static struct hlist_head kprobe_table[KPROBE_TABLE_SIZE];
- static struct hlist_head kretprobe_inst_table[KPROBE_TABLE_SIZE];
- 
-@@ -102,6 +103,53 @@ static struct kprobe_blackpoint kprobe_blacklist[] = {
- 	{NULL}    /* Terminator */
- };
- 
-+/* it can take some time ( > 100ms ) to initialise the
-+ * blacklist so we delay this until we actually need it
-+ */
-+static void init_kprobe_blacklist(void)
-+{
-+	int i;
-+	unsigned long offset = 0, size = 0;
-+	char *modname, namebuf[128];
-+	const char *symbol_name;
-+	void *addr;
-+	struct kprobe_blackpoint *kb;
-+
-+	/*
-+	 * Lookup and populate the kprobe_blacklist.
-+	 *
-+	 * Unlike the kretprobe blacklist, we'll need to determine
-+	 * the range of addresses that belong to the said functions,
-+	 * since a kprobe need not necessarily be at the beginning
-+	 * of a function.
-+	 */
-+	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
-+		kprobe_lookup_name(kb->name, addr);
-+		if (!addr)
-+			continue;
-+
-+		kb->start_addr = (unsigned long)addr;
-+		symbol_name = kallsyms_lookup(kb->start_addr,
-+				&size, &offset, &modname, namebuf);
-+		if (!symbol_name)
-+			kb->range = 0;
-+		else
-+			kb->range = size;
-+	}
-+
-+	if (kretprobe_blacklist_size) {
-+		/* lookup the function address from its name */
-+		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
-+			kprobe_lookup_name(kretprobe_blacklist[i].name,
-+					   kretprobe_blacklist[i].addr);
-+			if (!kretprobe_blacklist[i].addr)
-+				printk("kretprobe: lookup failed: %s\n",
-+				       kretprobe_blacklist[i].name);
-+		}
-+	}
-+	kprobe_blacklist_initialized = 1;
-+}
-+
- #ifdef __ARCH_WANT_KPROBES_INSN_SLOT
- /*
-  * kprobe->ainsn.insn points to the copy of the instruction to be
-@@ -1331,6 +1379,9 @@ static int __kprobes in_kprobes_functions(unsigned long addr)
- 	if (addr >= (unsigned long)__kprobes_text_start &&
- 	    addr < (unsigned long)__kprobes_text_end)
- 		return -EINVAL;
-+
-+	if (!kprobe_blacklist_initialized)
-+		init_kprobe_blacklist();
- 	/*
- 	 * If there exists a kprobe_blacklist, verify and
- 	 * fail any probe registration in the prohibited area
-@@ -1816,6 +1867,8 @@ int __kprobes register_kretprobe(struct kretprobe *rp)
- 	void *addr;
- 
- 	if (kretprobe_blacklist_size) {
-+		if (!kprobe_blacklist_initialized)
-+			init_kprobe_blacklist();
- 		addr = kprobe_addr(&rp->kp);
- 		if (IS_ERR(addr))
- 			return PTR_ERR(addr);
-@@ -2065,11 +2118,6 @@ static struct notifier_block kprobe_module_nb = {
- static int __init init_kprobes(void)
- {
- 	int i, err = 0;
--	unsigned long offset = 0, size = 0;
--	char *modname, namebuf[128];
--	const char *symbol_name;
--	void *addr;
--	struct kprobe_blackpoint *kb;
- 
- 	/* FIXME allocate the probe table, currently defined statically */
- 	/* initialize all list heads */
-@@ -2079,39 +2127,6 @@ static int __init init_kprobes(void)
- 		raw_spin_lock_init(&(kretprobe_table_locks[i].lock));
- 	}
- 
--	/*
--	 * Lookup and populate the kprobe_blacklist.
--	 *
--	 * Unlike the kretprobe blacklist, we'll need to determine
--	 * the range of addresses that belong to the said functions,
--	 * since a kprobe need not necessarily be at the beginning
--	 * of a function.
--	 */
--	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
--		kprobe_lookup_name(kb->name, addr);
--		if (!addr)
--			continue;
--
--		kb->start_addr = (unsigned long)addr;
--		symbol_name = kallsyms_lookup(kb->start_addr,
--				&size, &offset, &modname, namebuf);
--		if (!symbol_name)
--			kb->range = 0;
--		else
--			kb->range = size;
--	}
--
--	if (kretprobe_blacklist_size) {
--		/* lookup the function address from its name */
--		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
--			kprobe_lookup_name(kretprobe_blacklist[i].name,
--					   kretprobe_blacklist[i].addr);
--			if (!kretprobe_blacklist[i].addr)
--				printk("kretprobe: lookup failed: %s\n",
--				       kretprobe_blacklist[i].name);
--		}
--	}
--
- #if defined(CONFIG_OPTPROBES)
- #if defined(__ARCH_WANT_KPROBES_INSN_SLOT)
- 	/* Init kprobe_optinsn_slots */
+Best regards,
+
+>>>> Signed-off-by: Boris BREZILLON <linux-arm@overkiz.com>
+>>>> ---
+>>>>   drivers/misc/atmel_tclib.c |   24 ++++++++++++++++--------
+>>>>   1 file changed, 16 insertions(+), 8 deletions(-)
+>>>>
+>>>> diff --git a/drivers/misc/atmel_tclib.c b/drivers/misc/atmel_tclib.c
+>>>> index c8d8e38..768a988 100644
+>>>> --- a/drivers/misc/atmel_tclib.c
+>>>> +++ b/drivers/misc/atmel_tclib.c
+>>>> @@ -142,6 +142,8 @@ static int __init tc_probe(struct
+>>>> platform_device *pdev)
+>>>>       struct atmel_tc *tc;
+>>>>       struct clk    *clk;
+>>>>       int        irq;
+>>>> +    char        clk_id[7];
+>>>> +    int        clk_offset;
+>>>>
+>>>>       if (!platform_get_resource(pdev, IORESOURCE_MEM, 0))
+>>>>           return -EINVAL;
+>>>> @@ -156,25 +158,31 @@ static int __init tc_probe(struct
+>>>> platform_device *pdev)
+>>>>
+>>>>       tc->pdev = pdev;
+>>>>
+>>>> -    clk = clk_get(&pdev->dev, "t0_clk");
+>>>> -    if (IS_ERR(clk)) {
+>>>> -        kfree(tc);
+>>>> -        return -EINVAL;
+>>>> -    }
+>>>> -
+>>>>       /* Now take SoC information if available */
+>>>>       if (pdev->dev.of_node) {
+>>>>           const struct of_device_id *match;
+>>>>           match = of_match_node(atmel_tcb_dt_ids, pdev->dev.of_node);
+>>>>           if (match)
+>>>>               tc->tcb_config = match->data;
+>>>> +        clk_offset = of_alias_get_id(tc->pdev->dev.of_node, "tcb");
+>>>> +    } else
+>>>> +        clk_offset = pdev->id;
+>>>> +    clk_offset *= 3;
+>>>> +
+>>>> +    snprintf(clk_id, sizeof(clk_id), "t%d_clk", clk_offset++);
+>>>> +    clk = clk_get(&pdev->dev, clk_id);
+>>>> +    if (IS_ERR(clk)) {
+>>>> +        kfree(tc);
+>>>> +        return -EINVAL;
+>>>>       }
+>>>>
+>>>>       tc->clk[0] = clk;
+>>>> -    tc->clk[1] = clk_get(&pdev->dev, "t1_clk");
+>>>> +    snprintf(clk_id, sizeof(clk_id), "t%d_clk", clk_offset++);
+>>>> +    tc->clk[1] = clk_get(&pdev->dev, clk_id);
+>>>>       if (IS_ERR(tc->clk[1]))
+>>>>           tc->clk[1] = clk;
+>>>> -    tc->clk[2] = clk_get(&pdev->dev, "t2_clk");
+>>>> +    snprintf(clk_id, sizeof(clk_id), "t%d_clk", clk_offset++);
+>>>> +    tc->clk[2] = clk_get(&pdev->dev, clk_id);
+>>>>       if (IS_ERR(tc->clk[2]))
+>>>>           tc->clk[2] = clk;
+>>>>
+>>>> -- 
+>>>> 1.7.9.5
+>>>>
+>>>>
+>>>> _______________________________________________
+>>>> linux-arm-kernel mailing list
+>>>> linux-arm-kernel@lists.infradead.org
+>>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>>
+>>
+>>
+> 
+> 
+> 
+
+
 -- 
-1.8.1.5
-
+Nicolas Ferre
