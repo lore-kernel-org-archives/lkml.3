@@ -1,132 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759396Ab3DCBKb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 21:10:31 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47625 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759238Ab3DCBK3 (ORCPT
+	id S1759470Ab3DCBLL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 21:11:11 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:48772 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754081Ab3DCBLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 21:10:29 -0400
-Date: Wed, 3 Apr 2013 12:10:16 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, Wolfram Sang <wsa@the-dreams.de>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: linux-next: manual merge of the v4l-dvb tree with the 2c tree
-Message-Id: <20130403121016.f86c8b90472878f9918706c2@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__3_Apr_2013_12_10_16_+1100_7+ZbNlAdar6UAExF"
+	Tue, 2 Apr 2013 21:11:08 -0400
+X-AuditID: 9c93016f-b7c18ae000002f5f-0c-515b81a8a9c6
+Date: Wed, 3 Apr 2013 10:11:04 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Ying Han <yinghan@google.com>,
+        Christoph Lameter <cl@linux.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2, RFC 20/30] ramfs: enable transparent huge page cache
+Message-ID: <20130403011104.GF16026@blaptop>
+References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1363283435-7666-21-git-send-email-kirill.shutemov@linux.intel.com>
+ <20130402162813.0B4CBE0085@blue.fi.intel.com>
+ <alpine.LNX.2.00.1304021422460.19363@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1304021422460.19363@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__3_Apr_2013_12_10_16_+1100_7+ZbNlAdar6UAExF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 02, 2013 at 03:15:23PM -0700, Hugh Dickins wrote:
+> On Tue, 2 Apr 2013, Kirill A. Shutemov wrote:
+> > Kirill A. Shutemov wrote:
+> > > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > > 
+> > > ramfs is the most simple fs from page cache point of view. Let's start
+> > > transparent huge page cache enabling here.
+> > > 
+> > > For now we allocate only non-movable huge page. It's not yet clear if
+> > > movable page is safe here and what need to be done to make it safe.
+> > > 
+> > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > > ---
+> > >  fs/ramfs/inode.c |    6 +++++-
+> > >  1 file changed, 5 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
+> > > index c24f1e1..da30b4f 100644
+> > > --- a/fs/ramfs/inode.c
+> > > +++ b/fs/ramfs/inode.c
+> > > @@ -61,7 +61,11 @@ struct inode *ramfs_get_inode(struct super_block *sb,
+> > >  		inode_init_owner(inode, dir, mode);
+> > >  		inode->i_mapping->a_ops = &ramfs_aops;
+> > >  		inode->i_mapping->backing_dev_info = &ramfs_backing_dev_info;
+> > > -		mapping_set_gfp_mask(inode->i_mapping, GFP_HIGHUSER);
+> > > +		/*
+> > > +		 * TODO: what should be done to make movable safe?
+> > > +		 */
+> > > +		mapping_set_gfp_mask(inode->i_mapping,
+> > > +				GFP_TRANSHUGE & ~__GFP_MOVABLE);
+> > 
+> > Hugh, I've found old thread with the reason why we have GFP_HIGHUSER here, not
+> > GFP_HIGHUSER_MOVABLE:
+> > 
+> > http://lkml.org/lkml/2006/11/27/156
+> > 
+> > It seems the origin reason is not longer valid, correct?
+> 
+> Incorrect, I believe: so far as I know, the original reason remains
+> valid - though it would only require a couple of good small changes
+> to reverse that - or perhaps you have already made these changes?
+> 
+> The original reason is that ramfs pages are not migratable,
+> therefore they should be allocated from an unmovable area.
+> 
+> As I understand it (and I would have preferred to run a test to check
+> my understanding before replying, but don't have time for that), ramfs
+> pages cannot be migrated for two reasons, neither of them a good reason.
+> 
+> One reason (okay, it wouldn't have been quite this way in 2006) is that
+> ramfs (rightly) calls mapping_set_unevictable(), so its pages will fail
+> the page_evictable() test, so they will be marked PageUnevictable, so
+> __isolate_lru_page() will refuse to isolate them for migration (except
+> for CMA).
 
-Hi Mauro,
+True.
 
-Today's linux-next merge of the v4l-dvb tree got a conflict in
-drivers/staging/media/go7007/go7007-driver.c between commit bf51a8c5e0b6
-("i2c: Ignore return value of i2c_del_adapter()") from the i2c tree and
-commit d5d3a7cc127d ("[media] go7007: fix unregister/disconnect
-handling") from the v4l-dvb tree.
+> 
+> I am strongly in favour of removing that limitation from
+> __isolate_lru_page() (and the thread you pointed - thank you - shows Mel
+> and Christoph were both in favour too); and note that there is no such
+> restriction in the confusingly similar but different isolate_lru_page().
+> 
+> Some people do worry that migrating Mlocked pages would introduce the
+> occasional possibility of a minor fault (with migration_entry_wait())
+> on an Mlocked region which never faulted before.  I tend to dismiss
+> that worry, but maybe I'm wrong to do so: maybe there should be a
+> tunable for realtimey people to set, to prohibit page migration from
+> mlocked areas; but the default should be to allow it.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+I agree.
+Just FYI for mlocked page migration
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I tried migratioin of mlocked page and Johannes and Mel had a concern
+about that.
+http://lkml.indiana.edu/hypermail/linux/kernel/1109.0/00175.html
 
-diff --cc drivers/staging/media/go7007/go7007-driver.c
-index 6f83c52,a5ca99d..0000000
---- a/drivers/staging/media/go7007/go7007-driver.c
-+++ b/drivers/staging/media/go7007/go7007-driver.c
-@@@ -201,13 -208,50 +208,47 @@@ static int init_i2c_module(struct i2c_a
-  {
-  	struct go7007 *go =3D i2c_get_adapdata(adapter);
-  	struct v4l2_device *v4l2_dev =3D &go->v4l2_dev;
--=20
-- 	if (v4l2_i2c_new_subdev(v4l2_dev, adapter, type, addr, NULL))
-+ 	struct v4l2_subdev *sd;
-+ 	struct i2c_board_info info;
-+=20
-+ 	memset(&info, 0, sizeof(info));
-+ 	strlcpy(info.type, i2c->type, sizeof(info.type));
-+ 	info.addr =3D i2c->addr;
-+ 	info.flags =3D i2c->flags;
-+=20
-+ 	sd =3D v4l2_i2c_new_subdev_board(v4l2_dev, adapter, &info, NULL);
-+ 	if (sd) {
-+ 		if (i2c->is_video)
-+ 			go->sd_video =3D sd;
-+ 		if (i2c->is_audio)
-+ 			go->sd_audio =3D sd;
-  		return 0;
-+ 	}
-+=20
-+ 	printk(KERN_INFO "go7007: probing for module i2c:%s failed\n", i2c->type=
-);
-+ 	return -EINVAL;
-+ }
-+=20
-+ /*
-+  * Detach and unregister the encoder.  The go7007 struct won't be freed
-+  * until v4l2 finishes releasing its resources and all associated fds are
-+  * closed by applications.
-+  */
-+ static void go7007_remove(struct v4l2_device *v4l2_dev)
-+ {
-+ 	struct go7007 *go =3D container_of(v4l2_dev, struct go7007, v4l2_dev);
-+=20
-+ 	v4l2_device_unregister(v4l2_dev);
-+ 	if (go->hpi_ops->release)
-+ 		go->hpi_ops->release(go);
-+ 	if (go->i2c_adapter_online) {
- -		if (i2c_del_adapter(&go->i2c_adapter) =3D=3D 0)
- -			go->i2c_adapter_online =3D 0;
- -		else
- -			v4l2_err(&go->v4l2_dev,
- -				"error removing I2C adapter!\n");
-++		i2c_del_adapter(&go->i2c_adapter);
-++		go->i2c_adapter_online =3D 0;
-+ 	}
- =20
-- 	dev_info(&adapter->dev,
-- 		 "go7007: probing for module i2c:%s failed\n", type);
-- 	return -1;
-+ 	kfree(go->boot_fw);
-+ 	go7007_v4l2_remove(go);
-+ 	kfree(go);
-  }
- =20
-  /*
+But later, Peter already acked it and I guess by reading the thread that
+Hugh was in favour when page migration was merged first time.
 
---Signature=_Wed__3_Apr_2013_12_10_16_+1100_7+ZbNlAdar6UAExF
-Content-Type: application/pgp-signature
+http://marc.info/?l=linux-mm&m=133697873414205&w=2
+http://marc.info/?l=linux-mm&m=133700341823358&w=2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Many people said mlock means memory-resident, NOT pinning so it could
+allow minor fault while Mel still had a concern except CMA.
+http://marc.info/?l=linux-mm&m=133674219714419&w=2
 
-iQIcBAEBCAAGBQJRW4F4AAoJEECxmPOUX5FEAA4P/R4AZc3x9E23OHasR1FVoBwO
-I4cLc5liZQlpeoPfvJN4+ysXCd6qZgs9bUTjei+vwUJWQbIFRUzKla8GwPcOAldT
-j4MHRT3R+QJ1dN2wPpbB+MDtRgJu8VhmMtz1bV91kZ5QK9I3UPJkN8FreBQX2tVr
-eWHgO1Fqgkdot83jlKUTRlt0bwwOaD0qmRl5WMGNM5wUHVGmTRgBpGfOjnYVs4++
-0wJjVOUsWNteleVxpogTE9WcVSgqJ+YdGA42D21Y73NInUnNU+xVbJjnenG7mgKv
-loganuuOWNdlmLy1whtMPziOvrE/yIji18X+9/RBOh7YbGA76VosLTh69jyqWuYn
-fgw66PY12qeLHoqh52453LwsjrqRTiKnTRrgAbeLc64ZaNkRvsRJGoOCcBNTkIar
-cVHDTFe5Bt5Bpq1Ywd4u8wM+d5LDUl5dkbiTgKolV91YC48Jq+pnZNF2tdaJvw5p
-0aBxaZJ8CsS7Be977Zc+e8zngGsnO3CwUdYgHOEr/dUCh3SFJF9PniWg1HXqvZvp
-fPc6XeahgFxz0wci2wLNyFAokMTYnSaq+ZKepXzdM43E6WoKNg12FmF6N8ARQbxT
-DFUktI7GoEIHaYs6VlEfoYMkA1QKYNNXN+odIkZa9ZzbWWPSsAW/zdPMHzqTZiSe
-68k/j/mz3GvBS4Tm6MHI
-=wkCh
------END PGP SIGNATURE-----
+> 
+> (Of course, we could separate ramfs's mapping_unevictable case from
+> the Mlocked case; but I'd prefer to continue to treat them the same.)
 
---Signature=_Wed__3_Apr_2013_12_10_16_+1100_7+ZbNlAdar6UAExF--
+Fair enough.
+
+> 
+> The other reason it looks as if ramfs pages cannot be migrated, is
+> that it does not set a suitable ->migratepage method, so would be
+> handled by fallback_migrate_page(), whose PageDirty test will end
+> up failing the migration with -EBUSY or -EINVAL - if I read it
+> correctly.
+
+True.
+
+> 
+> Perhaps other such reasons would surface once those are fixed.
+> But until ramfs pages can be migrated, they should not be allocated
+> with __GFP_MOVABLE.  (I've been writing about the migratability of
+> small pages: I expect you have the migratability of THPages in flux.)
+
+Agreed.
+
+> 
+> Hugh
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
