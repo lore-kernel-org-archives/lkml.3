@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761368Ab3DCI11 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 04:27:27 -0400
-Received: from mga14.intel.com ([143.182.124.37]:47983 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761313Ab3DCI1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 04:27:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,399,1363158000"; 
-   d="scan'208";a="280078869"
-Subject: [PATCH] [SCSI] libsas: fix handling vacant phy in sas_set_ex_phy()
-To: James Bottomley <JBottomley@parallels.com>
-From: Lukasz Dorau <lukasz.dorau@intel.com>
-Cc: Pawel Baldysiak <pawel.baldysiak@intel.com>,
-        Dave Jiang <dave.jiang@intel.com>,
-        Maciej Patelczyk <maciej.patelczyk@intel.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 03 Apr 2013 10:27:17 +0200
-Message-ID: <20130403082717.13404.40145.stgit@gklab-154-244.igk.intel.com>
-User-Agent: StGit/0.15
+	id S1761441Ab3DCI1y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 04:27:54 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:35148 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761201Ab3DCI1v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 04:27:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1364976769.4353.11.camel@kjgkr>
+References: <1364799360-23145-1-git-send-email-jaegeuk.kim@samsung.com>
+	<1364799360-23145-3-git-send-email-jaegeuk.kim@samsung.com>
+	<CAKYAXd_rkU5t=OOxjTu0CtKHfrTYkbJuJ2ZFNd=aaRsuToHU7A@mail.gmail.com>
+	<1364976769.4353.11.camel@kjgkr>
+Date: Wed, 3 Apr 2013 17:27:51 +0900
+Message-ID: <CAKYAXd9SEhxpqiGRqO_h+EkdqcmJ8Mm_cJtmrmYowmG1700njg@mail.gmail.com>
+Subject: Re: [PATCH 3/9 v2] f2fs: remove redundant lock_page calls
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a result of the SMP discover function is PHY VACANT,
-the content of discover response structure (dr) is not valid.
-It sometimes happens that dr->attached_sas_addr can contain
-even SAS address of other phy. In such case an invalid phy
-is created, what causes NULL pointer dereference during
-destruction of expander's phys.
+2013/4/3, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+Hi. Jaegeuk.
+> Hi,
+>
+> Agreed, and send v2.
+>
+> Change log from v1:
+>  o remain read_node_page and remove the lock part
+>
+> From 04006aecac2882c574fe8a7de926bc52c73a8ad1 Mon Sep 17 00:00:00 2001
+> From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> Date: Sun, 31 Mar 2013 12:47:20 +0900
+> Subject: [PATCH] f2fs: remove redundant lock_page calls
+> Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+> linux-f2fs-devel@lists.sourceforge.net
+>
+> In get_node_page, we do not need to call lock_page all the time.
+>
+> If the node page is cached as uptodate,
+>
+> 1. grab_cache_page locks the page,
+> 2. read_node_page unlocks the page, and
+> 3. lock_page is called for further process.
+>
+> Let's avoid this.
+>
+> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Yes, Looks good!
+Reviewed-by: Namjae Jeon <namjae.jeon@samsung.com>
 
-So if a result of SMP function is PHY VACANT, the content of discover
-response structure (dr) must not be copied to phy structure.
-
-This patch fixes the following bug:
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
-IP: [<ffffffff811c9002>] sysfs_find_dirent+0x12/0x90
-Call Trace:
-  [<ffffffff811c95f5>] sysfs_get_dirent+0x35/0x80
-  [<ffffffff811cb55e>] sysfs_unmerge_group+0x1e/0xb0
-  [<ffffffff813329f4>] dpm_sysfs_remove+0x24/0x90
-  [<ffffffff8132b0f4>] device_del+0x44/0x1d0
-  [<ffffffffa016fc59>] sas_rphy_delete+0x9/0x20 [scsi_transport_sas]
-  [<ffffffffa01a16f6>] sas_destruct_devices+0xe6/0x110 [libsas]
-  [<ffffffff8107ac7c>] process_one_work+0x16c/0x350
-  [<ffffffff8107d84a>] worker_thread+0x17a/0x410
-  [<ffffffff81081b76>] kthread+0x96/0xa0
-  [<ffffffff81464944>] kernel_thread_helper+0x4/0x10
-
-Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
-Signed-off-by: Pawel Baldysiak <pawel.baldysiak@intel.com>
-Reviewed-by: Maciej Patelczyk <maciej.patelczyk@intel.com>
-Cc: Dave Jiang <dave.jiang@intel.com>
-Cc: James Bottomley <JBottomley@parallels.com>
-Cc: <linux-scsi@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>
-Cc: <stable@vger.kernel.org>
----
- drivers/scsi/libsas/sas_expander.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
-index e071e08..93ee4ef 100644
---- a/drivers/scsi/libsas/sas_expander.c
-+++ b/drivers/scsi/libsas/sas_expander.c
-@@ -235,6 +235,17 @@ static void sas_set_ex_phy(struct domain_device *dev, int phy_id, void *rsp)
- 	linkrate  = phy->linkrate;
- 	memcpy(sas_addr, phy->attached_sas_addr, SAS_ADDR_SIZE);
- 
-+	/* Handle vacant phy - rest of dr data is not valid so skip it */
-+	if (phy->phy_state == PHY_VACANT) {
-+		memset(phy->attached_sas_addr, 0, SAS_ADDR_SIZE);
-+		phy->attached_dev_type = NO_DEVICE;
-+		if (!test_bit(SAS_HA_ATA_EH_ACTIVE, &ha->state)) {
-+			phy->phy_id = phy_id;
-+			goto skip;
-+		} else
-+			goto out;
-+	}
-+
- 	phy->attached_dev_type = to_dev_type(dr);
- 	if (test_bit(SAS_HA_ATA_EH_ACTIVE, &ha->state))
- 		goto out;
-@@ -272,6 +283,7 @@ static void sas_set_ex_phy(struct domain_device *dev, int phy_id, void *rsp)
- 	phy->phy->maximum_linkrate = dr->pmax_linkrate;
- 	phy->phy->negotiated_linkrate = phy->linkrate;
- 
-+ skip:
- 	if (new_phy)
- 		if (sas_phy_add(phy->phy)) {
- 			sas_phy_free(phy->phy);
-
+Thanks.
+> ---
