@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761748Ab3DCI34 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 04:29:56 -0400
-Received: from smtpout04.project42.k12.ne.us ([204.234.17.77]:46326 "EHLO
-	SMTPOut03.project42.k12.ne.us" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761034Ab3DCI3u convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 04:29:50 -0400
-X-Greylist: delayed 1309 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Apr 2013 04:29:50 EDT
-User-Agent: SOGoMail 1.3.18
-reply-to: dh351406@gmail.com
-X-Forward: SOGo01.project42.k12.ne.us
+	id S1761808Ab3DCIaU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 04:30:20 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:35976 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761772Ab3DCIaQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 04:30:16 -0400
+Message-ID: <515BE8C3.6040205@parallels.com>
+Date: Wed, 3 Apr 2013 12:30:59 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-from: "Kristie Shay" <kristie.shay@esu10.org>
-subject: Inheritance
-message-id: <54e3-515be300-83-2e873ac0@99847976>
-content-type: text/plain; charset="utf-8"
-date: Wed, 03 Apr 2013 03:06:08 -0500
-content-transfer-encoding: 8BIT
-To: unlisted-recipients:; (no To-header on input)
+To: Michal Hocko <mhocko@suse.cz>
+CC: Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [PATCH -v2] memcg: don't do cleanup manually if mem_cgroup_css_online()
+ fails
+References: <515A8A40.6020406@huawei.com> <20130402121600.GK24345@dhcp22.suse.cz> <20130402141646.GQ24345@dhcp22.suse.cz> <515AE948.1000704@parallels.com> <20130402142825.GA32520@dhcp22.suse.cz> <515AEC3A.2030401@parallels.com> <20130402150422.GB32520@dhcp22.suse.cz> <515BA6C9.2000704@huawei.com> <20130403074300.GA14384@dhcp22.suse.cz> <515BDEF2.1080900@huawei.com> <20130403081843.GC14384@dhcp22.suse.cz>
+In-Reply-To: <20130403081843.GC14384@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/03/2013 12:18 PM, Michal Hocko wrote:
+> Dang. You are right! Glauber, is there any reason why
+> memcg_kmem_mark_dead checks only KMEM_ACCOUNTED_ACTIVE rather than
+> KMEM_ACCOUNTED_MASK?
+> 
+> This all is very confusing to say the least.
+Yes, it is.
 
--- 
-Dear,
+In kmemcg we need to differentiate between "active" and "activated"
+states due to static branches management. This is only important in the
+first activation, to make sure the static branches patching are
+synchronized.
 
-My name is Barr. Kristie Shay, the attorney to your late relative who has brought you this good fortune, I have sent you this same letter a week ago,but I’m not sure the letter got to you promptly since I haven’t heard from you, hence I am resending it again. This is to notify you of the $1.2million deposited in Lloyd Bank here in the UK by a family member of yours who died some years ago without a will to the funds.
+>From this point on, the ACTIVE flag is the one we should be looking at.
 
-I am contacting you so you contact the bank officer who is directly in charge of the bank account where the funds was deposited for claims, you are legally able to inherit the funds, with no fear of governmental restrictions.
+Again, I fully agree it is complicated, but being that a property of the
+static branches (we tried to fix it in the static branches itself but
+without a lot of luck, since by their design they patch one site at a
+time). I tried to overcome this by testing handcrafted errors and
+documenting the states as well as I could.
 
-Contact Donald Herold.
-
-Email: dh351406@gmail.com
-
-Barr. Kristie Shay.
-
+But that not always work *that* well. Maybe we can use the results of
+this discussion to document the tear down process a bit more?
