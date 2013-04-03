@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762377Ab3DCQxb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 12:53:31 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:2563 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761939Ab3DCQx3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 12:53:29 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dI1432Izz1f42h1fc6h1ee6h1de0h1202h1e76h1d1ah1d2ahzzz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-X-WSS-ID: 0MKOUX1-01-2TO-02
-X-M-MSG: 
-Date: Wed, 3 Apr 2013 11:53:24 -0500
-From: Jacob Shin <jacob.shin@amd.com>
-To: Borislav Petkov <bp@alien8.de>, Thomas Renninger <trenn@suse.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, <cpufreq@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH V3 2/2] cpufreq: AMD "frequency sensitivity feedback"
- powersave bias for ondemand governor
-Message-ID: <20130403165324.GB17919@jshin-Toonie>
-References: <1364926304-1799-1-git-send-email-jacob.shin@amd.com>
- <20130402192352.GC17675@pd.tnic>
- <20130402200337.GA17919@jshin-Toonie>
- <2932884.BNCEuERbdR@skinner.arch.suse.de>
- <20130402210124.GI17675@pd.tnic>
+	id S1762356Ab3DCRAP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 13:00:15 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:35533 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757417Ab3DCRAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 13:00:13 -0400
+Date: Wed, 3 Apr 2013 12:00:12 -0500
+From: Robin Holt <holt@sgi.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Robin Holt <holt@sgi.com>, Cliff Wickman <cpw@sgi.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org,
+        wli@holomorphy.com
+Subject: Re: [PATCH] mm, x86: Do not zero hugetlbfs pages at boot. -v2
+Message-ID: <20130403170012.GY29151@sgi.com>
+References: <E1UDME8-00041J-B4@eag09.americas.sgi.com>
+ <20130314085138.GA11636@dhcp22.suse.cz>
+ <20130403024344.GA4384@sgi.com>
+ <20130403140247.GJ16471@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130402210124.GI17675@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <20130403140247.GJ16471@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 11:01:24PM +0200, Borislav Petkov wrote:
-> On Tue, Apr 02, 2013 at 10:51:51PM +0200, Thomas Renninger wrote:
-> > powersave_bias is undocumented in Documentation/cpu-freq/...
-> > I guess its use-case is for people who want to get some percent more
-> > power savings out of their laptop and do not care of the one or other
-> > percent performance.
-> > In fact I would like to get rid of this extra code and I expect nobody would 
-> > miss it.
-> > I might miss a configuration tool where someone went through the code,
-> > documented things and allows users to set powersave_bias values through
-> > some /etc/* config files.
-> > Yep, if you want anyone to make use of this, it should better get
-> > embedded in more general, at least general ondemand code.
+On Wed, Apr 03, 2013 at 04:02:47PM +0200, Michal Hocko wrote:
+> On Tue 02-04-13 21:43:44, Robin Holt wrote:
+> [...]
+> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > index ca9a7c6..7683f6a 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -1185,7 +1185,7 @@ int __weak alloc_bootmem_huge_page(struct hstate *h)
+> >  	while (nr_nodes) {
+> >  		void *addr;
+> >  
+> > -		addr = __alloc_bootmem_node_nopanic(
+> > +		addr = __alloc_bootmem_node_nopanic_notzeroed(
+> >  				NODE_DATA(hstate_next_node_to_alloc(h,
+> >  						&node_states[N_MEMORY])),
+> >  				huge_page_size(h), huge_page_size(h), 0);
 > 
-> Yeah, it all sounds like we want to enable this by default on systems
-> which support it. Maybe with an off-switch for people who want plain
-> ondemand decisions.
-> 
-> The remaining systems with ripped out powersave_bias would get plain
-> ondemand governor decisions. Provided, of course, nobody uses
-> powersave_bias and the functionality doesn't make any sense anyway.
+> Ohh, and powerpc seems to have its own opinion how to allocate huge
+> pages. See arch/powerpc/mm/hugetlbpage.c
 
-Rafael, any thoughts on removing powersave_bias altogether ?
+Do I need to address their allocations?  Can I leave that part of the
+changes as something powerpc can address if they are affected by this?
 
-If we remove it, then is it acceptable to add an alternate callback/
-handler registration to ondemand governor to account for hardware
-feedback ?
-
-Or, if we don't want to remove powersave_bias,
-
-Then Thomas, Boris, would it be acceptable if enable the frequency
-feedback feature by default with a sane powersave_bias tunable value ?
-And also add proper documentation for both vanila powersave_bias and
-powersave_bias with AMD frequency sensitivity loaded to
-Documentation/cpu-freq/ondemand ?
-
-> 
-> Thanks.
-> 
-> -- 
-> Regards/Gruss,
->     Boris.
-> 
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
-> 
-
+Robin
