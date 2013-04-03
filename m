@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761418Ab3DCCea (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 22:34:30 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:52883 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757022Ab3DCCe3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 22:34:29 -0400
-Message-ID: <1364956458.1328.5.camel@phoenix>
-Subject: [PATCH 4/4] regulator: ab8500: Set match pointer and match_size for
- ab8505 and ab8540
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 03 Apr 2013 10:34:18 +0800
-In-Reply-To: <1364956243.1328.1.camel@phoenix>
-References: <1364956243.1328.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S1761289Ab3DCCgS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 22:36:18 -0400
+Received: from mga03.intel.com ([143.182.124.21]:1618 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760863Ab3DCCgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 22:36:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,397,1363158000"; 
+   d="scan'208";a="222152734"
+Message-ID: <515B958B.8000809@intel.com>
+Date: Wed, 03 Apr 2013 10:35:55 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Paul Turner <pjt@google.com>
+CC: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        gregkh@linuxfoundation.org,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch v6 10/21] sched: get rq potential maximum utilization
+References: <1364654108-16307-1-git-send-email-alex.shi@intel.com> <1364654108-16307-11-git-send-email-alex.shi@intel.com> <87a9phfgox.fsf@sejong.aot.lge.com> <515B90A5.7080403@intel.com> <CAPM31RKj0SJB6eCDSpH29OdfeNGDXqzoQQWhQP7t3gdxYx+wrQ@mail.gmail.com>
+In-Reply-To: <CAPM31RKj0SJB6eCDSpH29OdfeNGDXqzoQQWhQP7t3gdxYx+wrQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/ab8500.c |    4 ++++
- 1 file changed, 4 insertions(+)
+On 04/03/2013 10:22 AM, Paul Turner wrote:
+> On Tue, Apr 2, 2013 at 7:15 PM, Alex Shi <alex.shi@intel.com> wrote:
+>> On 04/02/2013 05:02 PM, Namhyung Kim wrote:
+>>>>> +  cfs_util = (FULL_UTIL - rt_util) > rq->util ? rq->util
+>>>>> +                  : (FULL_UTIL - rt_util);
+>>>>> +  nr_running = rq->nr_running ? rq->nr_running : 1;
+>>> This can be cleaned up with proper min/max().
+>>>
+>>>>> +
+>>>>> +  return rt_util + cfs_util * nr_running;
+>>> Should this nr_running consider tasks in cfs_rq only?
+>>
+>> use nr_running of cfs_rq seems better, but when use sched autogroup,
+>> only cfs->nr_running just the active group number, not the total active
+>> task number. :(
+> 
+> Why not just use cfs_rq->h_nr_running?  This is always the total
+> *tasks* in he hierarchy parented that cfs_rq.  (This also has the nice property
+> of not including group_entities.)
 
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 73d84d8..d3170ae 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -3021,11 +3021,15 @@ static int ab8500_regulator_probe(struct platform_device *pdev)
- 		regulator_info_size = ARRAY_SIZE(ab8505_regulator_info);
- 		reg_init = ab8505_reg_init;
- 		reg_init_size = AB8505_NUM_REGULATOR_REGISTERS;
-+		match = ab8505_regulator_match;
-+		match_size = ARRAY_SIZE(ab8505_regulator_match);
- 	} else if (is_ab8540(ab8500)) {
- 		regulator_info = ab8540_regulator_info;
- 		regulator_info_size = ARRAY_SIZE(ab8540_regulator_info);
- 		reg_init = ab8540_reg_init;
- 		reg_init_size = AB8540_NUM_REGULATOR_REGISTERS;
-+		match = ab8540_regulator_match;
-+		match_size = ARRAY_SIZE(ab8540_regulator_match);
- 	} else {
- 		regulator_info = ab8500_regulator_info;
- 		regulator_info_size = ARRAY_SIZE(ab8500_regulator_info);
+oh, yes, Thanks for the reminder! :)
+> 
+>>
+>>   Also it seems
+>>> there's no upper bound so that it can possibly exceed FULL_UTIL.
+>>
+>>
+>> --
+>> Thanks Alex
+
+
 -- 
-1.7.10.4
-
-
-
+Thanks Alex
