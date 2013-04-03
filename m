@@ -1,44 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932579Ab3DCUjw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 16:39:52 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:56944 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932295Ab3DCUju (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 16:39:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <1364908916-29803-5-git-send-email-lee.jones@linaro.org>
-References: <1364908916-29803-1-git-send-email-lee.jones@linaro.org>
-	<1364908916-29803-5-git-send-email-lee.jones@linaro.org>
-Date: Wed, 3 Apr 2013 22:39:50 +0200
-Message-ID: <CACRpkdbh-DJti2ny=uBe-b_vGkQBNL=emMuZ6+_cE5jvRsA4sA@mail.gmail.com>
-Subject: Re: [PATCH 5/9] ARM: ux500: Over-ride TCDM size when booting the
- DB8540 platform
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1763319Ab3DCUm0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 16:42:26 -0400
+Received: from mga14.intel.com ([143.182.124.37]:18449 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760603Ab3DCUmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 16:42:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,403,1363158000"; 
+   d="scan'208";a="222522400"
+From: Huzefa Kankroliwala <huzefa.nomanx.kankroliwala@intel.com>
+To: jkosina@suse.cz
+Cc: benjamin.tissoires@gmail.com, mika.westerberg@intel.com,
+        linux-kernel@vger.kernel.org,
+        Huzefa Kankroliwala <huzefa.nomanx.kankroliwala@intel.com>
+Subject: [PATCH v2] i2c-hid: fix length for set/get report in i2c hid
+Date: Wed,  3 Apr 2013 05:45:21 -0700
+Message-Id: <1364993121-18800-1-git-send-email-huzefa.nomanx.kankroliwala@intel.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 2, 2013 at 3:21 PM, Lee Jones <lee.jones@linaro.org> wrote:
+With the current i2c hid driver set/get report does not work
+as expected, for e.g sensor hub properties like power state,
+frequency etc is not set properly on the device as a result
+we do not get events.
+The problem is that i2c hid driver in function i2c_hid_request
+sets length equal to default buffer size for which the sensor
+hub does not respond on get/set commands. Use report length
+and calculate it based on report size and id.
 
-> The PRCMU's Tightly Coupled Data Memory on the DB8540 platform is
-> 8kB larger than it's predecessor's. We need to reflect that in its
-> Device Tree. By re-specifying the address and size of the device
-> we effectively over-ride the previous values with more accurate
-> ones.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Huzefa Kankroliwala <huzefa.nomanx.kankroliwala@intel.com>
+---
+ drivers/hid/i2c-hid/i2c-hid.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-Need to change the name of the file it hits to ccu8540 before
-it applies...
+diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+index 935f387..2b1799a 100644
+--- a/drivers/hid/i2c-hid/i2c-hid.c
++++ b/drivers/hid/i2c-hid/i2c-hid.c
+@@ -567,18 +567,17 @@ static void i2c_hid_request(struct hid_device *hid, struct hid_report *rep,
+ 		int reqtype)
+ {
+ 	struct i2c_client *client = hid->driver_data;
+-	struct i2c_hid *ihid = i2c_get_clientdata(client);
+ 	char *buf;
+ 	int ret;
++	int len = i2c_hid_get_report_length(rep) - 2;
+ 
+-	buf = kzalloc(ihid->bufsize, GFP_KERNEL);
++	buf = kzalloc(len, GFP_KERNEL);
+ 	if (!buf)
+ 		return;
+ 
+ 	switch (reqtype) {
+ 	case HID_REQ_GET_REPORT:
+-		ret = i2c_hid_get_raw_report(hid, rep->id, buf, ihid->bufsize,
+-					     rep->type);
++		ret = i2c_hid_get_raw_report(hid, rep->id, buf, len, rep->type);
+ 		if (ret < 0)
+ 			dev_err(&client->dev, "%s: unable to get report: %d\n",
+ 				__func__, ret);
+@@ -587,7 +586,7 @@ static void i2c_hid_request(struct hid_device *hid, struct hid_report *rep,
+ 		break;
+ 	case HID_REQ_SET_REPORT:
+ 		hid_output_report(rep, buf);
+-		i2c_hid_output_raw_report(hid, buf, ihid->bufsize, rep->type);
++		i2c_hid_output_raw_report(hid, buf, len, rep->type);
+ 		break;
+ 	}
+ 
+-- 
+1.7.4.1
 
-Yours,
-Linus Walleij
