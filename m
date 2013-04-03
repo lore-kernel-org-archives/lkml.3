@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762892Ab3DCRkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 13:40:40 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:58178 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759397Ab3DCRkj (ORCPT
+	id S1762898Ab3DCRmL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 13:42:11 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47908 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759397Ab3DCRmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 13:40:39 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, jimwall@q.com,
-        brian@crystalfontz.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH] gpio: pca953x: fix irq_domain_add_simple usage
-Date: Wed,  3 Apr 2013 19:40:14 +0200
-Message-Id: <1365010814-3263-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 3 Apr 2013 13:42:10 -0400
+Date: Wed, 3 Apr 2013 18:42:08 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] regulator: ab8500: Remove set_voltage_time_sel and
+ delay to fix build error
+Message-ID: <20130403174208.GL11305@opensource.wolfsonmicro.com>
+References: <1364956243.1328.1.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NZiXfHLGvOGtDZMn"
+Content-Disposition: inline
+In-Reply-To: <1364956243.1328.1.camel@phoenix>
+X-Cookie: Today is what happened to yesterday.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We actually have to pass chip as the host_data parameter of
-irq_domain_add_simple() as later on, it is used to initialize chip_data
-in pca953x_gpio_irq_map(). Failing to do so is leading to a NULL pointer
-dereference after calling irq_data_get_irq_chip_data() in
-pca953x_irq_mask(), pca953x_irq_unmask(), pca953x_irq_bus_lock(),
-pca953x_irq_bus_sync_unlock() and pca953x_irq_set_type().
 
-Fixes regression introduced by commit
-0e8f2fdacf1d44651aa7e57063c76142d1f4988b (gpio: pca953x: use simple
-irqdomain)
+--NZiXfHLGvOGtDZMn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
+On Wed, Apr 03, 2013 at 10:30:43AM +0800, Axel Lin wrote:
+> The delay field is removed from struct ab8500_regulator_info in commit 29234928
+> "regulator: ab8500: Remove set_voltage_time_sel and delay setting".
 
-This would probably be good to introduce that patch in the next 3.9 rc as the
-regression leads to a lot of breakage (and cursing).
+I've now finished applying all Lee's outstanding patches (which weren't
+sent to the list...) - could you please recheck if the first two of
+these patches are still revlevant and that the last two are addressed
+properly as per Lee's mails?  Thanks.
 
- drivers/gpio/gpio-pca953x.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+--NZiXfHLGvOGtDZMn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
-index e2dcac5..ea26e59 100644
---- a/drivers/gpio/gpio-pca953x.c
-+++ b/drivers/gpio/gpio-pca953x.c
-@@ -575,7 +575,7 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
- 						chip->gpio_chip.ngpio,
- 						irq_base,
- 						&pca953x_irq_simple_ops,
--						NULL);
-+						chip);
- 		if (!chip->domain)
- 			return -ENODEV;
- 
--- 
-1.7.10.4
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJRXGnlAAoJELSic+t+oim9MYoP/RvcvddAg3sHaHFGH/lHdKOS
+gQKPmUlTcvE3XvBynjmTZLTbS6Aaq/i0lAFZhnjmBpaqQJTwcPahCFKVT6YIhZz+
+XUa9q1KjufLUPrKlHkNK4g7kNmF1N6QMA9S0f9bzmrN+My1sjUgmrCpOxFmSvajQ
+BCd+p/dvhroLW7nk4pB8/EUUF2jwI9uS3YRiY/NsWSsRwjg9MqzBshz0TA6K09PM
+qVQ8dvXs11LYBZLgRwxouf70FpCoTd5zx6/ZtPmlemYNnLj5JbKUBT/eL8C2kKgG
+lnAPQ87mRbiWipvrkLPR48gFQuXyenfrwafMITXeOVVy1kFsPAUmlsGe/TeIJBg2
+U4pNWNzHE3CupoikVbsjqMHGGXIM37hGBCOTN3SQ5XANZyQ/YfFDQ22Zgz3BHtqy
+JGMsU2QPPih8vKSA9VIcUeJu0cj2jcUY4BPSvGVh0ZSbRwge36beGtSX9i5U/tB7
+QnZUJ1ShHJw6TSkRiTrVBRQ+pV7a5jq6E76h6u0NhDn+MEkyIfh1u27wwJ5qwbWb
+na8JCGF+As4qprZ1PswoSn+PbY5sgxaBIWYqZVywbNFMO51J4cMV19EH1hP5YONi
+Cv98Qqpas8X5Awx4DBTTWG9g7vpYNDBYDsGmv6rmTDEfm8l7ArWcEwn0WQr/YGgj
+S7q4sXqwerIW/1vjAa9E
+=T2Z4
+-----END PGP SIGNATURE-----
+
+--NZiXfHLGvOGtDZMn--
