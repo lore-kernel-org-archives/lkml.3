@@ -1,331 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330Ab3DCXxQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 19:53:16 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:58666 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761774Ab3DCXwp (ORCPT
+	id S1762953Ab3DCXxt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 19:53:49 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:44130 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762898Ab3DCXxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 19:52:45 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Arun Sharma <asharma@fb.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jason Evans <je@fb.com>, sanjay@google.com,
-        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>
-Subject: [RFC PATCH 3/4] vrange: Support fvrange() syscall for file based volatile ranges
-Date: Wed,  3 Apr 2013 16:52:22 -0700
-Message-Id: <1365033144-15156-4-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1365033144-15156-1-git-send-email-john.stultz@linaro.org>
-References: <1365033144-15156-1-git-send-email-john.stultz@linaro.org>
+	Wed, 3 Apr 2013 19:53:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <1362423859-18516-1-git-send-email-nhorman@tuxdriver.com>
+References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com> <1362423859-18516-1-git-send-email-nhorman@tuxdriver.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 3 Apr 2013 17:53:27 -0600
+Message-ID: <CAErSpo4=L9q+q5hqP2Avw6uceQwZiPuOzadhsqGpu6aP53PMbQ@mail.gmail.com>
+Subject: Re: [PATCH v2] irq: add quirk for broken interrupt remapping on 55XX chipsets
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Prarit Bhargava <prarit@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Don Dutile <ddutile@redhat.com>,
+        Asit Mallick <asit.k.mallick@intel.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        iommu@lists.linux-foundation.org, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add vrange support on addres_space structures, and add fvrange()
-syscall for creating ranges on address_space structures.
+[+cc David and iommu list, Yinghai, Jiang]
 
-Cc: linux-mm@kvack.org
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Arun Sharma <asharma@fb.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Dave Hansen <dave@sr71.net>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Neil Brown <neilb@suse.de>
-Cc: Mike Hommey <mh@glandium.org>
-Cc: Taras Glek <tglek@mozilla.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Jason Evans <je@fb.com>
-Cc: sanjay@google.com
-Cc: Paul Turner <pjt@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan@kernel.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- arch/x86/syscalls/syscall_64.tbl |    1 +
- fs/file_table.c                  |    5 +++
- fs/inode.c                       |    2 ++
- include/linux/fs.h               |    2 ++
- include/linux/vrange.h           |   19 +++++++++-
- include/linux/vrange_types.h     |    1 +
- mm/vrange.c                      |   72 +++++++++++++++++++++++++++++++++++++-
- 7 files changed, 100 insertions(+), 2 deletions(-)
+On Mon, Mar 4, 2013 at 12:04 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
+> A few years back intel published a spec update:
+> http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
+>
+> For the 5520 and 5500 chipsets which contained an errata (specificially errata
+> 53), which noted that these chipsets can't properly do interrupt remapping, and
+> as a result the recommend that interrupt remapping be disabled in bios.  While
+> many vendors have a bios update to do exactly that, not all do, and of course
+> not all users update their bios to a level that corrects the problem.  As a
+> result, occasionally interrupts can arrive at a cpu even after affinity for that
+> interrupt has be moved, leading to lost or spurrious interrupts (usually
+> characterized by the message:
+> kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
+>
+> There have been several incidents recently of people seeing this error, and
+> investigation has shown that they have system for which their BIOS level is such
+> that this feature was not properly turned off.  As such, it would be good to
+> give them a reminder that their systems are vulnurable to this problem.
+>
+> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> CC: Prarit Bhargava <prarit@redhat.com>
+> CC: Don Zickus <dzickus@redhat.com>
+> CC: Don Dutile <ddutile@redhat.com>
+> CC: Bjorn Helgaas <bhelgaas@google.com>
+> CC: Asit Mallick <asit.k.mallick@intel.com>
+> CC: linux-pci@vger.kernel.org
+>
+> ---
+>
+> Change notes:
+>
+> v2)
+>
+> * Moved the quirk to the x86 arch, since consensus seems to be that the 55XX
+> chipset series is x86 only.  I decided however to keep the quirk as a regular
+> quirk, not an early_quirk.  Early quirks have no way currently to determine if
+> BIOS has properly disabled the feature in the iommu, at least not without
+> significant hacking, and since its quite possible this will be a short lived
+> quirk, should Don Z's workaround code prove successful (and it looks like it may
+> well), I don't think that necessecary.
+>
+> * Removed the WARNING banner from the quirk, and added the HW_ERR token to the
+> string, I opted to leave the newlines in place however, as I really couldnt
+> find a way to keep the text on a single line is still legible from a code
+> perspective.  I think theres enough language in there that using cscope on just
+> about any substring however will turn it up, and again, this may be a short
+> lived quirk.
+> ---
+>  arch/x86/kernel/quirks.c | 18 ++++++++++++++++++
+>  include/linux/pci_ids.h  |  2 ++
+>  2 files changed, 20 insertions(+)
+>
+> diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
+> index 26ee48a..a718ea2 100644
+> --- a/arch/x86/kernel/quirks.c
+> +++ b/arch/x86/kernel/quirks.c
+> @@ -5,6 +5,7 @@
+>  #include <linux/irq.h>
+>
+>  #include <asm/hpet.h>
+> +#include "../../../drivers/iommu/irq_remapping.h"
+>
+>  #if defined(CONFIG_X86_IO_APIC) && defined(CONFIG_SMP) && defined(CONFIG_PCI)
+>
+> @@ -567,3 +568,20 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F5,
+>                         quirk_amd_nb_node);
+>
+>  #endif
+> +
+> +static void intel_remapping_check(struct pci_dev *dev)
+> +{
+> +       u8 revision;
+> +
+> +       pci_read_config_byte(dev, PCI_REVISION_ID, &revision);
+> +
+> +       if ((revision == 0x13) && irq_remapping_enabled) {
+> +                pr_warn(HW_ERR "This system BIOS has enabled interrupt remapping\n"
+> +                        "on a chipset that contains an errata making that\n"
+> +                        "feature unstable.  Please reboot with nointremap\n"
+> +                        "added to the kernel command line and contact\n"
+> +                        "your BIOS vendor for an update");
+> +       }
+> +}
+> +DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_5520_IOHUB, intel_remapping_check);
+> +DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_5500_IOHUB, intel_remapping_check);
 
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index dc332bd..910d9f3 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -321,6 +321,7 @@
- 312	common	kcmp			sys_kcmp
- 313	common	finit_module		sys_finit_module
- 314	common	vrange			sys_vrange
-+315	common	fvrange			sys_fvrange
- 
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
-diff --git a/fs/file_table.c b/fs/file_table.c
-index cd4d87a..61c8aaa 100644
---- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -26,6 +26,7 @@
- #include <linux/hardirq.h>
- #include <linux/task_work.h>
- #include <linux/ima.h>
-+#include <linux/vrange.h>
- 
- #include <linux/atomic.h>
- 
-@@ -244,6 +245,10 @@ static void __fput(struct file *file)
- 			file->f_op->fasync(-1, file, 0);
- 	}
- 	ima_file_free(file);
-+
-+	/* drop all vranges on last close */
-+	mapping_exit_vrange(inode->i_mapping);
-+
- 	if (file->f_op && file->f_op->release)
- 		file->f_op->release(inode, file);
- 	security_file_free(file);
-diff --git a/fs/inode.c b/fs/inode.c
-index f5f7c06..4707c95 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -17,6 +17,7 @@
- #include <linux/prefetch.h>
- #include <linux/buffer_head.h> /* for inode_has_buffers */
- #include <linux/ratelimit.h>
-+#include <linux/vrange.h>
- #include "internal.h"
- 
- /*
-@@ -350,6 +351,7 @@ void address_space_init_once(struct address_space *mapping)
- 	spin_lock_init(&mapping->private_lock);
- 	mapping->i_mmap = RB_ROOT;
- 	INIT_LIST_HEAD(&mapping->i_mmap_nonlinear);
-+	mapping_init_vrange(mapping);
- }
- EXPORT_SYMBOL(address_space_init_once);
- 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 2c28271..6f86c7c 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -27,6 +27,7 @@
- #include <linux/lockdep.h>
- #include <linux/percpu-rwsem.h>
- #include <linux/blk_types.h>
-+#include <linux/vrange_types.h>
- 
- #include <asm/byteorder.h>
- #include <uapi/linux/fs.h>
-@@ -411,6 +412,7 @@ struct address_space {
- 	struct rb_root		i_mmap;		/* tree of private and shared mappings */
- 	struct list_head	i_mmap_nonlinear;/*list VM_NONLINEAR mappings */
- 	struct mutex		i_mmap_mutex;	/* protect tree, count, list */
-+	struct vrange_root	vroot;
- 	/* Protected by tree_lock together with the radix tree */
- 	unsigned long		nrpages;	/* number of total pages */
- 	pgoff_t			writeback_index;/* writeback starts here */
-diff --git a/include/linux/vrange.h b/include/linux/vrange.h
-index b9b219c..91960eb 100644
---- a/include/linux/vrange.h
-+++ b/include/linux/vrange.h
-@@ -3,6 +3,7 @@
- 
- #include <linux/vrange_types.h>
- #include <linux/mm.h>
-+#include <linux/fs.h>
- 
- #define vrange_entry(ptr) \
- 	container_of(ptr, struct vrange, node.rb)
-@@ -11,10 +12,19 @@
- 
- static inline void mm_init_vrange(struct mm_struct *mm)
- {
-+	mm->vroot.type = VRANGE_ANON;
- 	mm->vroot.v_rb = RB_ROOT;
- 	mutex_init(&mm->vroot.v_lock);
- }
- 
-+static inline void mapping_init_vrange(struct address_space *mapping)
-+{
-+	mapping->vroot.type = VRANGE_FILE;
-+	mapping->vroot.v_rb = RB_ROOT;
-+	mutex_init(&mapping->vroot.v_lock);
-+}
-+
-+
- static inline void vrange_lock(struct vrange_root *vroot)
- {
- 	mutex_lock(&vroot->v_lock);
-@@ -25,15 +35,22 @@ static inline void vrange_unlock(struct vrange_root *vroot)
- 	mutex_unlock(&vroot->v_lock);
- }
- 
--static inline struct mm_struct *vrange_get_owner_mm(struct vrange *vrange)
-+static inline int vrange_type(struct vrange *vrange)
- {
-+	return vrange->owner->type;
-+}
- 
-+static inline struct mm_struct *vrange_get_owner_mm(struct vrange *vrange)
-+{
-+	if (vrange_type(vrange) != VRANGE_ANON)
-+		return NULL;
- 	return container_of(vrange->owner, struct mm_struct, vroot);
- }
- 
- 
- void vrange_init(void);
- extern void mm_exit_vrange(struct mm_struct *mm);
-+extern void mapping_exit_vrange(struct address_space *mapping);
- int discard_vpage(struct page *page);
- bool vrange_address(struct mm_struct *mm, unsigned long start,
- 			unsigned long end);
-diff --git a/include/linux/vrange_types.h b/include/linux/vrange_types.h
-index bede336..c7154e4 100644
---- a/include/linux/vrange_types.h
-+++ b/include/linux/vrange_types.h
-@@ -7,6 +7,7 @@
- struct vrange_root {
- 	struct rb_root v_rb;		/* vrange rb tree */
- 	struct mutex v_lock;		/* Protect v_rb */
-+	enum {VRANGE_ANON, VRANGE_FILE} type; /* range root type */
- };
- 
- 
-diff --git a/mm/vrange.c b/mm/vrange.c
-index 9facbbc..671909c 100644
---- a/mm/vrange.c
-+++ b/mm/vrange.c
-@@ -14,6 +14,7 @@
- #include <linux/swapops.h>
- #include <linux/mmu_notifier.h>
- #include <linux/migrate.h>
-+#include <linux/file.h>
- 
- struct vrange_walker_private {
- 	struct zone *zone;
-@@ -234,6 +235,20 @@ void mm_exit_vrange(struct mm_struct *mm)
- 	}
- }
- 
-+void mapping_exit_vrange(struct address_space *mapping)
-+{
-+	struct vrange *range;
-+	struct rb_node *next;
-+
-+	next = rb_first(&mapping->vroot.v_rb);
-+	while (next) {
-+		range = vrange_entry(next);
-+		next = rb_next(next);
-+		__remove_range(range);
-+		put_vrange(range);
-+	}
-+}
-+
- /*
-  * The vrange(2) system call.
-  *
-@@ -291,6 +306,51 @@ out:
- }
- 
- 
-+SYSCALL_DEFINE5(fvrange, int, fd, size_t, offset,
-+		size_t, len, int, mode, int, behavior)
-+{
-+	struct fd f = fdget(fd);
-+	struct address_space *mapping;
-+	u64 start = offset;
-+	u64 end;
-+	int ret = -EINVAL;
-+
-+	if (!f.file)
-+		return -EBADF;
-+
-+	if (S_ISFIFO(file_inode(f.file)->i_mode)) {
-+		ret = -ESPIPE;
-+		goto out;
-+	}
-+
-+	mapping = f.file->f_mapping;
-+	if (!mapping || len < 0) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (start & ~PAGE_MASK)
-+		goto out;
-+
-+
-+	len &= PAGE_MASK;
-+	if (!len)
-+		goto out;
-+
-+	end = start + len;
-+	if (end < start)
-+		goto out;
-+
-+	if (mode == VRANGE_VOLATILE)
-+		ret = add_vrange(&mapping->vroot, start, end - 1);
-+	else if (mode == VRANGE_NOVOLATILE)
-+		ret = remove_vrange(&mapping->vroot, start, end - 1);
-+out:
-+	fdput(f);
-+	return ret;
-+}
-+
-+
- static bool __vrange_address(struct mm_struct *mm,
- 			unsigned long start, unsigned long end)
- {
-@@ -641,6 +701,9 @@ unsigned int discard_vrange(struct zone *zone, struct vrange *vrange,
- 
- 	mm = vrange_get_owner_mm(vrange);
- 
-+	if (!mm)
-+		goto out;
-+
- 	if (!down_read_trylock(&mm->mmap_sem))
- 		goto out;
- 
-@@ -683,6 +746,12 @@ static struct vrange *get_victim_vrange(void)
- 	list_for_each_prev_safe(cur, tmp, &lru_vrange) {
- 		vrange = list_entry(cur, struct vrange, lru);
- 		mm = vrange_get_owner_mm(vrange);
-+
-+		if (!mm) {
-+			vrange = NULL;
-+			continue;
-+		}
-+
- 		/* the process is exiting so pass it */
- 		if (atomic_read(&mm->mm_users) == 0) {
- 			list_del_init(&vrange->lru);
-@@ -720,7 +789,8 @@ static void put_victim_range(struct vrange *vrange)
- 	struct mm_struct *mm = vrange_get_owner_mm(vrange);
- 
- 	put_vrange(vrange);
--	mmdrop(mm);
-+	if (mm)
-+		mmdrop(mm);
- }
- 
- unsigned int discard_vrange_pages(struct zone *zone, int nr_to_discard)
--- 
-1.7.10.4
+This started as an IOMMU change, and I'm not an expert in that area,
+so I added David and the IOMMU list.  I'd rather have him deal with
+this than me.
 
+Is this something we can just *fix* in the kernel, e.g., by turning
+off interrupt remapping ourselves, or does it have to be done before
+the OS boots?
+
+> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+> index 31717bd..54027a6 100644
+> --- a/include/linux/pci_ids.h
+> +++ b/include/linux/pci_ids.h
+> @@ -2732,6 +2732,8 @@
+>  #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_RANK_REV2  0x2db2
+>  #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_TC_REV2    0x2db3
+>  #define PCI_DEVICE_ID_INTEL_82855PM_HB 0x3340
+> +#define PCI_DEVICE_ID_INTEL_5500_IOHUB 0x3403
+> +#define PCI_DEVICE_ID_INTEL_5520_IOHUB 0x3406
+
+For constants only used in one place, we just use the bare constant
+(0x3403) in the quirk rather than editing pci_ids.h (see comment at
+the top of that file).
+
+>  #define PCI_DEVICE_ID_INTEL_IOAT_TBG4  0x3429
+>  #define PCI_DEVICE_ID_INTEL_IOAT_TBG5  0x342a
+>  #define PCI_DEVICE_ID_INTEL_IOAT_TBG6  0x342b
+> --
+> 1.7.11.7
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
