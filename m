@@ -1,104 +1,478 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759116Ab3DCAWw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 20:22:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59710 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759036Ab3DCAWu (ORCPT
+	id S1759250Ab3DCAXN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 20:23:13 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:64466 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759203Ab3DCAXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 20:22:50 -0400
-Date: Tue, 2 Apr 2013 17:21:57 -0700
-From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-73f460408ca9b6e917f32c89c9a85c586f17f732@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bp@suse.de, hpa@linux.intel.com
-In-Reply-To: <1362428180-8865-6-git-send-email-bp@alien8.de>
-References: <1362428180-8865-6-git-send-email-bp@alien8.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86, quirks:
-  Shut-up a long-standing gcc warning
-Git-Commit-ID: 73f460408ca9b6e917f32c89c9a85c586f17f732
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 2 Apr 2013 20:23:11 -0400
+X-AuditID: 9c93016f-b7c18ae000002f5f-f1-515b766dc078
+Date: Wed, 3 Apr 2013 09:23:09 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Sangseok Lee <sangseok.lee@lge.com>
+Subject: Re: [RFC 4/4] mm: Enhance per process reclaim
+Message-ID: <20130403002309.GD16026@blaptop>
+References: <1364192494-22185-1-git-send-email-minchan@kernel.org>
+ <1364192494-22185-4-git-send-email-minchan@kernel.org>
+ <CAHO5Pa1LiBw8P5On0X3__49P8zeY4xwEU63KBoKWEpLTOHjeTw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 17:22:02 -0700 (PDT)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAHO5Pa1LiBw8P5On0X3__49P8zeY4xwEU63KBoKWEpLTOHjeTw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  73f460408ca9b6e917f32c89c9a85c586f17f732
-Gitweb:     http://git.kernel.org/tip/73f460408ca9b6e917f32c89c9a85c586f17f732
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Mon, 4 Mar 2013 21:16:20 +0100
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 2 Apr 2013 16:03:34 -0700
+Hey Michael,
 
-x86, quirks: Shut-up a long-standing gcc warning
+On Tue, Apr 02, 2013 at 03:25:25PM +0200, Michael Kerrisk wrote:
+> Minchan,
+> 
+> On Mon, Mar 25, 2013 at 7:21 AM, Minchan Kim <minchan@kernel.org> wrote:
+> >
+> > Some pages could be shared by several processes. (ex, libc)
+> > In case of that, it's too bad to reclaim them from the beginnig.
+> >
+> > This patch causes VM to keep them on memory until last task
+> > try to reclaim them so shared pages will be reclaimed only if
+> > all of task has gone swapping out.
+> >
+> > This feature doesn't handle non-linear mapping on ramfs because
+> > it's very time-consuming and doesn't make sure of reclaiming and
+> > not common.
+> 
+> Against what tree does this patch apply? I've tries various trees,
+> including MMOTM of 26 March, and encounter this error:
+> 
+>   CC      mm/ksm.o
+> mm/ksm.c: In function ‘try_to_unmap_ksm’:
+> mm/ksm.c:1970:32: error: ‘vma’ undeclared (first use in this function)
+> mm/ksm.c:1970:32: note: each undeclared identifier is reported only
+> once for each function it appears in
+> make[1]: *** [mm/ksm.o] Error 1
+> make: *** [mm] Error 2
 
-So gcc nags about those since forever in randconfig builds.
+I did it based on mmotm-2013-03-22-15-21 and you found build problem.
+Could you apply below patch? I will fix up below in next spin.
+Thanks for the testing!
 
-arch/x86/kernel/quirks.c: In function ‘ati_ixp4x0_rev’:
-arch/x86/kernel/quirks.c:361:4: warning: ‘b’ is used uninitialized in this function [-Wuninitialized]
-arch/x86/kernel/quirks.c: In function ‘ati_force_enable_hpet’:
-arch/x86/kernel/quirks.c:367:4: warning: ‘d’ may be used uninitialized in this function [-Wuninitialized]
-arch/x86/kernel/quirks.c:357:6: note: ‘d’ was declared here
-arch/x86/kernel/quirks.c:407:21: warning: ‘val’ may be used uninitialized in this function [-Wuninitialized]
+>From 0934270618ccd4883d6bb05653c664a385fb9441 Mon Sep 17 00:00:00 2001
+From: Minchan Kim <minchan@kernel.org>
+Date: Wed, 3 Apr 2013 09:19:49 +0900
+Subject: [PATCH] fix: compile error for CONFIG_KSM
 
-This function quirk is called on a SB400 chipset only anyway so the
-distant possibility of a PCI access failing becomes almost impossible
-there. Even if it did fail, then something else more serious is the
-problem.
-
-So zero-out the variables so that gcc shuts up but do a coarse check
-on the PCI accesses at the end and signal whether any of them had an
-error. They shouldn't but in case they do, we'll at least know and we
-can address it.
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1362428180-8865-6-git-send-email-bp@alien8.de
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- arch/x86/kernel/quirks.c | 18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ include/linux/rmap.h | 2 ++
+ mm/ksm.c             | 2 +-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-index 26ee48a..04ee1e2 100644
---- a/arch/x86/kernel/quirks.c
-+++ b/arch/x86/kernel/quirks.c
-@@ -354,18 +354,22 @@ static void ati_force_hpet_resume(void)
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index 6c7d030..7bcf090 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -14,6 +14,8 @@ extern int isolate_lru_page(struct page *page);
+ extern void putback_lru_page(struct page *page);
+ extern unsigned long reclaim_pages_from_list(struct list_head *page_list,
+ 					     struct vm_area_struct *vma);
++extern unsigned long vma_address(struct page *page,
++				struct vm_area_struct *vma);
  
- static u32 ati_ixp4x0_rev(struct pci_dev *dev)
- {
--	u32 d;
--	u8  b;
-+	int err = 0;
-+	u32 d = 0;
-+	u8  b = 0;
+ /*
+  * The anon_vma heads a list of private "related" vmas, to scan if
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 1a90d13..44de936 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -1967,7 +1967,7 @@ int try_to_unmap_ksm(struct page *page, enum ttu_flags flags,
  
--	pci_read_config_byte(dev, 0xac, &b);
-+	err = pci_read_config_byte(dev, 0xac, &b);
- 	b &= ~(1<<5);
--	pci_write_config_byte(dev, 0xac, b);
--	pci_read_config_dword(dev, 0x70, &d);
-+	err |= pci_write_config_byte(dev, 0xac, b);
-+	err |= pci_read_config_dword(dev, 0x70, &d);
- 	d |= 1<<8;
--	pci_write_config_dword(dev, 0x70, d);
--	pci_read_config_dword(dev, 0x8, &d);
-+	err |= pci_write_config_dword(dev, 0x70, d);
-+	err |= pci_read_config_dword(dev, 0x8, &d);
- 	d &= 0xff;
- 	dev_printk(KERN_DEBUG, &dev->dev, "SB4X0 revision 0x%x\n", d);
-+
-+	WARN_ON_ONCE(err);
-+
- 	return d;
- }
- 
+ 	if (target_vma) {
+ 		unsigned long address = vma_address(page, target_vma);
+-		ret = try_to_unmap_one(page, vma, address, flags);
++		ret = try_to_unmap_one(page, target_vma, address, flags);
+ 		goto out;
+ 	}
+ again:
+-- 
+1.8.2
+
+> 
+> Cheers,
+> 
+> Michael
+> 
+> 
+> > Signed-off-by: Sangseok Lee <sangseok.lee@lge.com>
+> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > ---
+> >  fs/proc/task_mmu.c   |  2 +-
+> >  include/linux/ksm.h  |  6 ++++--
+> >  include/linux/rmap.h |  8 +++++---
+> >  mm/ksm.c             |  9 +++++++-
+> >  mm/memory-failure.c  |  2 +-
+> >  mm/migrate.c         |  6 ++++--
+> >  mm/rmap.c            | 58 +++++++++++++++++++++++++++++++++++++---------------
+> >  mm/vmscan.c          | 14 +++++++++++--
+> >  8 files changed, 77 insertions(+), 28 deletions(-)
+> >
+> > diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> > index c3713a4..7f6aaf5 100644
+> > --- a/fs/proc/task_mmu.c
+> > +++ b/fs/proc/task_mmu.c
+> > @@ -1154,7 +1154,7 @@ cont:
+> >                         break;
+> >         }
+> >         pte_unmap_unlock(pte - 1, ptl);
+> > -       reclaim_pages_from_list(&page_list);
+> > +       reclaim_pages_from_list(&page_list, vma);
+> >         if (addr != end)
+> >                 goto cont;
+> >
+> > diff --git a/include/linux/ksm.h b/include/linux/ksm.h
+> > index 45c9b6a..d8e556b 100644
+> > --- a/include/linux/ksm.h
+> > +++ b/include/linux/ksm.h
+> > @@ -75,7 +75,8 @@ struct page *ksm_might_need_to_copy(struct page *page,
+> >
+> >  int page_referenced_ksm(struct page *page,
+> >                         struct mem_cgroup *memcg, unsigned long *vm_flags);
+> > -int try_to_unmap_ksm(struct page *page, enum ttu_flags flags);
+> > +int try_to_unmap_ksm(struct page *page,
+> > +                       enum ttu_flags flags, struct vm_area_struct *vma);
+> >  int rmap_walk_ksm(struct page *page, int (*rmap_one)(struct page *,
+> >                   struct vm_area_struct *, unsigned long, void *), void *arg);
+> >  void ksm_migrate_page(struct page *newpage, struct page *oldpage);
+> > @@ -115,7 +116,8 @@ static inline int page_referenced_ksm(struct page *page,
+> >         return 0;
+> >  }
+> >
+> > -static inline int try_to_unmap_ksm(struct page *page, enum ttu_flags flags)
+> > +static inline int try_to_unmap_ksm(struct page *page,
+> > +                       enum ttu_flags flags, struct vm_area_struct *target_vma)
+> >  {
+> >         return 0;
+> >  }
+> > diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+> > index a24e34e..6c7d030 100644
+> > --- a/include/linux/rmap.h
+> > +++ b/include/linux/rmap.h
+> > @@ -12,7 +12,8 @@
+> >
+> >  extern int isolate_lru_page(struct page *page);
+> >  extern void putback_lru_page(struct page *page);
+> > -extern unsigned long reclaim_pages_from_list(struct list_head *page_list);
+> > +extern unsigned long reclaim_pages_from_list(struct list_head *page_list,
+> > +                                            struct vm_area_struct *vma);
+> >
+> >  /*
+> >   * The anon_vma heads a list of private "related" vmas, to scan if
+> > @@ -192,7 +193,8 @@ int page_referenced_one(struct page *, struct vm_area_struct *,
+> >
+> >  #define TTU_ACTION(x) ((x) & TTU_ACTION_MASK)
+> >
+> > -int try_to_unmap(struct page *, enum ttu_flags flags);
+> > +int try_to_unmap(struct page *, enum ttu_flags flags,
+> > +                       struct vm_area_struct *vma);
+> >  int try_to_unmap_one(struct page *, struct vm_area_struct *,
+> >                         unsigned long address, enum ttu_flags flags);
+> >
+> > @@ -259,7 +261,7 @@ static inline int page_referenced(struct page *page, int is_locked,
+> >         return 0;
+> >  }
+> >
+> > -#define try_to_unmap(page, refs) SWAP_FAIL
+> > +#define try_to_unmap(page, refs, vma) SWAP_FAIL
+> >
+> >  static inline int page_mkclean(struct page *page)
+> >  {
+> > diff --git a/mm/ksm.c b/mm/ksm.c
+> > index 7f629e4..1a90d13 100644
+> > --- a/mm/ksm.c
+> > +++ b/mm/ksm.c
+> > @@ -1949,7 +1949,8 @@ out:
+> >         return referenced;
+> >  }
+> >
+> > -int try_to_unmap_ksm(struct page *page, enum ttu_flags flags)
+> > +int try_to_unmap_ksm(struct page *page, enum ttu_flags flags,
+> > +                       struct vm_area_struct *target_vma)
+> >  {
+> >         struct stable_node *stable_node;
+> >         struct hlist_node *hlist;
+> > @@ -1963,6 +1964,12 @@ int try_to_unmap_ksm(struct page *page, enum ttu_flags flags)
+> >         stable_node = page_stable_node(page);
+> >         if (!stable_node)
+> >                 return SWAP_FAIL;
+> > +
+> > +       if (target_vma) {
+> > +               unsigned long address = vma_address(page, target_vma);
+> > +               ret = try_to_unmap_one(page, vma, address, flags);
+> > +               goto out;
+> > +       }
+> >  again:
+> >         hlist_for_each_entry(rmap_item, hlist, &stable_node->hlist, hlist) {
+> >                 struct anon_vma *anon_vma = rmap_item->anon_vma;
+> > diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+> > index ceb0c7f..f3928e4 100644
+> > --- a/mm/memory-failure.c
+> > +++ b/mm/memory-failure.c
+> > @@ -955,7 +955,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+> >         if (hpage != ppage)
+> >                 lock_page(ppage);
+> >
+> > -       ret = try_to_unmap(ppage, ttu);
+> > +       ret = try_to_unmap(ppage, ttu, NULL);
+> >         if (ret != SWAP_SUCCESS)
+> >                 printk(KERN_ERR "MCE %#lx: failed to unmap page (mapcount=%d)\n",
+> >                                 pfn, page_mapcount(ppage));
+> > diff --git a/mm/migrate.c b/mm/migrate.c
+> > index 6fa4ebc..aafbc66 100644
+> > --- a/mm/migrate.c
+> > +++ b/mm/migrate.c
+> > @@ -820,7 +820,8 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
+> >         }
+> >
+> >         /* Establish migration ptes or remove ptes */
+> > -       try_to_unmap(page, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
+> > +       try_to_unmap(page, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS,
+> > +                       NULL);
+> >
+> >  skip_unmap:
+> >         if (!page_mapped(page))
+> > @@ -947,7 +948,8 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+> >         if (PageAnon(hpage))
+> >                 anon_vma = page_get_anon_vma(hpage);
+> >
+> > -       try_to_unmap(hpage, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
+> > +       try_to_unmap(hpage, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS,
+> > +                                               NULL);
+> >
+> >         if (!page_mapped(hpage))
+> >                 rc = move_to_new_page(new_hpage, hpage, 1, mode);
+> > diff --git a/mm/rmap.c b/mm/rmap.c
+> > index 6280da8..a880f24 100644
+> > --- a/mm/rmap.c
+> > +++ b/mm/rmap.c
+> > @@ -1435,13 +1435,16 @@ bool is_vma_temporary_stack(struct vm_area_struct *vma)
+> >
+> >  /**
+> >   * try_to_unmap_anon - unmap or unlock anonymous page using the object-based
+> > - * rmap method
+> > + * rmap method if @vma is NULL
+> >   * @page: the page to unmap/unlock
+> >   * @flags: action and flags
+> > + * @target_vma: vma for unmapping a @page
+> >   *
+> >   * Find all the mappings of a page using the mapping pointer and the vma chains
+> >   * contained in the anon_vma struct it points to.
+> >   *
+> > + * If @target_vma isn't NULL, this function unmap a page from the vma
+> > + *
+> >   * This function is only called from try_to_unmap/try_to_munlock for
+> >   * anonymous pages.
+> >   * When called from try_to_munlock(), the mmap_sem of the mm containing the vma
+> > @@ -1449,12 +1452,19 @@ bool is_vma_temporary_stack(struct vm_area_struct *vma)
+> >   * vm_flags for that VMA.  That should be OK, because that vma shouldn't be
+> >   * 'LOCKED.
+> >   */
+> > -static int try_to_unmap_anon(struct page *page, enum ttu_flags flags)
+> > +static int try_to_unmap_anon(struct page *page, enum ttu_flags flags,
+> > +                                       struct vm_area_struct *target_vma)
+> >  {
+> > +       int ret = SWAP_AGAIN;
+> > +       unsigned long address;
+> >         struct anon_vma *anon_vma;
+> >         pgoff_t pgoff;
+> >         struct anon_vma_chain *avc;
+> > -       int ret = SWAP_AGAIN;
+> > +
+> > +       if (target_vma) {
+> > +               address = vma_address(page, target_vma);
+> > +               return try_to_unmap_one(page, target_vma, address, flags);
+> > +       }
+> >
+> >         anon_vma = page_lock_anon_vma_read(page);
+> >         if (!anon_vma)
+> > @@ -1463,7 +1473,6 @@ static int try_to_unmap_anon(struct page *page, enum ttu_flags flags)
+> >         pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+> >         anon_vma_interval_tree_foreach(avc, &anon_vma->rb_root, pgoff, pgoff) {
+> >                 struct vm_area_struct *vma = avc->vma;
+> > -               unsigned long address;
+> >
+> >                 /*
+> >                  * During exec, a temporary VMA is setup and later moved.
+> > @@ -1491,6 +1500,7 @@ static int try_to_unmap_anon(struct page *page, enum ttu_flags flags)
+> >   * try_to_unmap_file - unmap/unlock file page using the object-based rmap method
+> >   * @page: the page to unmap/unlock
+> >   * @flags: action and flags
+> > + * @target_vma: vma for unmapping @page
+> >   *
+> >   * Find all the mappings of a page using the mapping pointer and the vma chains
+> >   * contained in the address_space struct it points to.
+> > @@ -1502,7 +1512,8 @@ static int try_to_unmap_anon(struct page *page, enum ttu_flags flags)
+> >   * vm_flags for that VMA.  That should be OK, because that vma shouldn't be
+> >   * 'LOCKED.
+> >   */
+> > -static int try_to_unmap_file(struct page *page, enum ttu_flags flags)
+> > +static int try_to_unmap_file(struct page *page, enum ttu_flags flags,
+> > +                               struct vm_area_struct *target_vma)
+> >  {
+> >         struct address_space *mapping = page->mapping;
+> >         pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
+> > @@ -1512,16 +1523,27 @@ static int try_to_unmap_file(struct page *page, enum ttu_flags flags)
+> >         unsigned long max_nl_cursor = 0;
+> >         unsigned long max_nl_size = 0;
+> >         unsigned int mapcount;
+> > +       unsigned long address;
+> >
+> >         if (PageHuge(page))
+> >                 pgoff = page->index << compound_order(page);
+> >
+> >         mutex_lock(&mapping->i_mmap_mutex);
+> > -       vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
+> > -               unsigned long address = vma_address(page, vma);
+> > -               ret = try_to_unmap_one(page, vma, address, flags);
+> > -               if (ret != SWAP_AGAIN || !page_mapped(page))
+> > +       if (target_vma) {
+> > +               /* We don't handle non-linear vma on ramfs */
+> > +               if (unlikely(!list_empty(&mapping->i_mmap_nonlinear)))
+> >                         goto out;
+> > +
+> > +               address = vma_address(page, target_vma);
+> > +               ret = try_to_unmap_one(page, target_vma, address, flags);
+> > +               goto out;
+> > +       } else {
+> > +               vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
+> > +                       address = vma_address(page, vma);
+> > +                       ret = try_to_unmap_one(page, vma, address, flags);
+> > +                       if (ret != SWAP_AGAIN || !page_mapped(page))
+> > +                               goto out;
+> > +               }
+> >         }
+> >
+> >         if (list_empty(&mapping->i_mmap_nonlinear))
+> > @@ -1602,9 +1624,12 @@ out:
+> >   * try_to_unmap - try to remove all page table mappings to a page
+> >   * @page: the page to get unmapped
+> >   * @flags: action and flags
+> > + * @vma : target vma for reclaim
+> >   *
+> >   * Tries to remove all the page table entries which are mapping this
+> >   * page, used in the pageout path.  Caller must hold the page lock.
+> > + * If @vma is not NULL, this function try to remove @page from only @vma
+> > + * without peeking all mapped vma for @page.
+> >   * Return values are:
+> >   *
+> >   * SWAP_SUCCESS        - we succeeded in removing all mappings
+> > @@ -1612,7 +1637,8 @@ out:
+> >   * SWAP_FAIL   - the page is unswappable
+> >   * SWAP_MLOCK  - page is mlocked.
+> >   */
+> > -int try_to_unmap(struct page *page, enum ttu_flags flags)
+> > +int try_to_unmap(struct page *page, enum ttu_flags flags,
+> > +                               struct vm_area_struct *vma)
+> >  {
+> >         int ret;
+> >
+> > @@ -1620,11 +1646,11 @@ int try_to_unmap(struct page *page, enum ttu_flags flags)
+> >         VM_BUG_ON(!PageHuge(page) && PageTransHuge(page));
+> >
+> >         if (unlikely(PageKsm(page)))
+> > -               ret = try_to_unmap_ksm(page, flags);
+> > +               ret = try_to_unmap_ksm(page, flags, vma);
+> >         else if (PageAnon(page))
+> > -               ret = try_to_unmap_anon(page, flags);
+> > +               ret = try_to_unmap_anon(page, flags, vma);
+> >         else
+> > -               ret = try_to_unmap_file(page, flags);
+> > +               ret = try_to_unmap_file(page, flags, vma);
+> >         if (ret != SWAP_MLOCK && !page_mapped(page))
+> >                 ret = SWAP_SUCCESS;
+> >         return ret;
+> > @@ -1650,11 +1676,11 @@ int try_to_munlock(struct page *page)
+> >         VM_BUG_ON(!PageLocked(page) || PageLRU(page));
+> >
+> >         if (unlikely(PageKsm(page)))
+> > -               return try_to_unmap_ksm(page, TTU_MUNLOCK);
+> > +               return try_to_unmap_ksm(page, TTU_MUNLOCK, NULL);
+> >         else if (PageAnon(page))
+> > -               return try_to_unmap_anon(page, TTU_MUNLOCK);
+> > +               return try_to_unmap_anon(page, TTU_MUNLOCK, NULL);
+> >         else
+> > -               return try_to_unmap_file(page, TTU_MUNLOCK);
+> > +               return try_to_unmap_file(page, TTU_MUNLOCK, NULL);
+> >  }
+> >
+> >  void __put_anon_vma(struct anon_vma *anon_vma)
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 367d0f4..df9c4d3 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -92,6 +92,13 @@ struct scan_control {
+> >          * are scanned.
+> >          */
+> >         nodemask_t      *nodemask;
+> > +
+> > +       /*
+> > +        * Reclaim pages from a vma. If the page is shared by other tasks
+> > +        * it is zapped from a vma without reclaim so it ends up remaining
+> > +        * on memory until last task zap it.
+> > +        */
+> > +       struct vm_area_struct *target_vma;
+> >  };
+> >
+> >  #define lru_to_page(_head) (list_entry((_head)->prev, struct page, lru))
+> > @@ -793,7 +800,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+> >                  * processes. Try to unmap it here.
+> >                  */
+> >                 if (page_mapped(page) && mapping) {
+> > -                       switch (try_to_unmap(page, ttu_flags)) {
+> > +                       switch (try_to_unmap(page,
+> > +                                       ttu_flags, sc->target_vma)) {
+> >                         case SWAP_FAIL:
+> >                                 goto activate_locked;
+> >                         case SWAP_AGAIN:
+> > @@ -1000,13 +1008,15 @@ unsigned long reclaim_clean_pages_from_list(struct zone *zone,
+> >  }
+> >
+> >  #ifdef CONFIG_PROCESS_RECLAIM
+> > -unsigned long reclaim_pages_from_list(struct list_head *page_list)
+> > +unsigned long reclaim_pages_from_list(struct list_head *page_list,
+> > +                                       struct vm_area_struct *vma)
+> >  {
+> >         struct scan_control sc = {
+> >                 .gfp_mask = GFP_KERNEL,
+> >                 .priority = DEF_PRIORITY,
+> >                 .may_unmap = 1,
+> >                 .may_swap = 1,
+> > +               .target_vma = vma,
+> >         };
+> >
+> >         unsigned long nr_reclaimed;
+> > --
+> > 1.8.2
+> >
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
