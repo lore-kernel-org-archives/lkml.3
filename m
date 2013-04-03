@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763028Ab3DCSHA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 14:07:00 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:56326 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762997Ab3DCSG6 (ORCPT
+	id S1762991Ab3DCSIE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 14:08:04 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:54837 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762700Ab3DCSIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 14:06:58 -0400
-Date: Wed, 3 Apr 2013 11:06:56 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: kbuild test robot <fengguang.wu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sysfs: fix compile warning in i386
-Message-ID: <20130403180656.GA7407@kroah.com>
-References: <515BAE6E.4040502@cn.fujitsu.com>
+	Wed, 3 Apr 2013 14:08:02 -0400
+Message-ID: <515C701E.1000402@prisktech.co.nz>
+Date: Thu, 04 Apr 2013 07:08:30 +1300
+From: Tony Prisk <linux@prisktech.co.nz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515BAE6E.4040502@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vt8500-wm8505-linux-kernel@googlegroups.com" 
+	<vt8500-wm8505-linux-kernel@googlegroups.com>
+Subject: Re: [PATCHv5 0/7] arm: vt8500: Add support for pinctrl/gpio module
+References: <1364970291-17721-1-git-send-email-linux@prisktech.co.nz> <CACRpkdZAtgpfA5rZ_C=eKDDOE9aDm=3k1QDava=EGL2BaoV+0g@mail.gmail.com>
+In-Reply-To: <CACRpkdZAtgpfA5rZ_C=eKDDOE9aDm=3k1QDava=EGL2BaoV+0g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 03, 2013 at 12:22:06PM +0800, Zhang Yanfei wrote:
-> This patch fixes compile warning in i386:
-> 
-> drivers/base/cpu.c: In function 'show_crash_notes_size':
-> drivers/base/cpu.c:142:2: warning: format '%lu' expects argument of type 'long unsigned int', but argument 3 has type 'unsigned int' [-Wformat]
-> 
-> Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  drivers/base/cpu.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-> index a55b590..ee38cc2 100644
-> --- a/drivers/base/cpu.c
-> +++ b/drivers/base/cpu.c
-> @@ -138,8 +138,10 @@ static ssize_t show_crash_notes_size(struct device *dev,
->  				     char *buf)
->  {
->  	ssize_t rc;
-> +	unsigned long size;
->  
-> -	rc = sprintf(buf, "%lu\n", sizeof(note_buf_t));
-> +	size = sizeof(note_buf_t);
-> +	rc = sprintf(buf, "%lu\n", size);
+On 04/04/13 02:40, Linus Walleij wrote:
+> On Wed, Apr 3, 2013 at 8:24 AM, Tony Prisk <linux@prisktech.co.nz> wrote:
+>
+>> v5 changes:
+>> Changed as requested by Rob Herring:
+>> Added of_find_property_value_of_size() to drivers/of/base.c to remove some
+>> code that was being duplicated.
+>>
+>> Changed as requested by Stephen Warren:
+>> Redid the kfree(maps) code as devm_kzalloc would cause issues. We now kzalloc
+>> maps all at once, and configs as required. A call to wmt_pctl_dt_free_map() is
+>> used to kfree the allocated blocks if we fail early.
+> This v5 series:
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>
+> I guess it will go in through the VT8500 tree eventually?
+>
+> Maybe you could put Stephen's BCMring patch on top when sending
+> it in (also Acked-by) so we can avoid having that dangling.
+>
+> Yours,
+> Linus Walleij
+We don't have a VT8500 tree. Originally I planned for it to go through 
+you, but it could go through arm-soc if they want to take it.
 
-No, use %z, like Arnd did in his patch, that makes it correct for all
-arches.  I'll take his patch instead.
-
-thanks,
-
-greg k-h
+Regards
+Tony P
