@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759491Ab3DCOYM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:24:12 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:54774 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837Ab3DCOYJ (ORCPT
+	id S1760034Ab3DCOYn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:24:43 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:46676 "EHLO
+	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758541Ab3DCOYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:24:09 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>, <linux-sh@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH-mmotm] sh4: make the bios early console support depend on EARLY_PRINTK
-Date: Wed, 3 Apr 2013 10:23:09 -0400
-Message-ID: <1364998989-27357-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.8.1.2
+	Wed, 3 Apr 2013 10:24:42 -0400
+Message-ID: <515C3BA3.5090208@micron.com>
+Date: Wed, 3 Apr 2013 19:54:35 +0530
+From: Asai Thambi S P <asamymuthupa@micron.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Jens Axboe <axboe@kernel.dk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Sam Bradshaw" <sbradshaw@micron.com>
+Subject: [PATCH 2/3] mtip32xx: return 0 from pci probe in case of rebuild
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-19764.007
+X-TM-AS-Result: No--5.287700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit "early_printk: consolidate random copies of identical code"
-introduces a build failure for the lboxre2_defconfig because arch/sh
-unconditionally assumes that there will be an early_console struct
-present that it can populate with bios routines to drive the
-early printk support.
 
-Making this whole block conditional on EARLY_PRINTK solves the
-problem and gets rid of unused runtime code for when the feature
-is disabled at the same time.
+Fix to return 0 from pci probe in case of rebuild. If not, pci consider
+probe has failed, and crash during rmmod.
 
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
 ---
+ drivers/block/mtip32xx/mtip32xx.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Related mmotm patches:
-   * early_printk-consolidate-random-copies-of-identical-code.patch
-   * early_printk-consolidate-random-copies-of-identical-code-v3.patch
-   * early_printk-consolidate-random-copies-of-identical-code-v3-fix.patch
-   * include-linux-printkh-include-stdargh.patch
-   
- arch/sh/kernel/sh_bios.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/arch/sh/kernel/sh_bios.c b/arch/sh/kernel/sh_bios.c
-index a5b51b9..fe584e5 100644
---- a/arch/sh/kernel/sh_bios.c
-+++ b/arch/sh/kernel/sh_bios.c
-@@ -104,6 +104,7 @@ void sh_bios_vbr_reload(void)
- 		);
- }
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index 5becdaa..7e1aeb3 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -4300,6 +4300,8 @@ static int mtip_pci_probe(struct pci_dev *pdev,
+ 	instance++;
+ 	if (rv != MTIP_FTL_REBUILD_MAGIC)
+ 		set_bit(MTIP_DDF_INIT_DONE_BIT, &dd->dd_flag);
++	else
++		rv = 0; /* device in rebuild state, return 0 from probe */
+ 	goto done;
  
-+#ifdef CONFIG_EARLY_PRINTK
- /*
-  *	Print a string through the BIOS
-  */
-@@ -168,3 +169,4 @@ static int __init setup_early_printk(char *buf)
- 	return 0;
- }
- early_param("earlyprintk", setup_early_printk);
-+#endif
+ block_initialize_err:
 -- 
-1.8.1.2
+1.7.1
 
