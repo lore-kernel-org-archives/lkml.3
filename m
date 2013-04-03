@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761013Ab3DCNBc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 09:01:32 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:29804 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab3DCNBb (ORCPT
+	id S1760992Ab3DCNFI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 09:05:08 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:43640 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757056Ab3DCNFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 09:01:31 -0400
-X-Spam-Score: -100.7
-Message-ID: <515C2808.70406@asianux.com>
-Date: Wed, 03 Apr 2013 21:00:56 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 3 Apr 2013 09:05:06 -0400
+Message-ID: <515C2923.5020803@parallels.com>
+Date: Wed, 3 Apr 2013 17:05:39 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Christopher Covington <cov@codeaurora.org>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        "anup.patel@linaro.org" <anup.patel@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Suggestion] ARM64:kernel: compiling issue for early_console.
-References: <5152DB83.8080703@asianux.com> <20130327115509.GA1603@MacBook-Pro.local> <5152DFF1.2090000@asianux.com> <515BE49C.8040601@asianux.com> <515C14FD.4040703@codeaurora.org>
-In-Reply-To: <515C14FD.4040703@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Li Zefan <lizefan@huawei.com>
+CC: <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC][PATCH 2/7] memcg: don't use mem_cgroup_get() when creating
+ a kmemcg cache
+References: <515BF233.6070308@huawei.com> <515BF275.5080408@huawei.com>
+In-Reply-To: <515BF275.5080408@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月03日 19:39, Christopher Covington wrote:
-> Maybe somebody else does have a fix, but Catalin mentioned he was going on
-> vacation for two weeks on March 28th in "[GIT PULL] Preparatory GIC patches
-> for arm64 support".
+On 04/03/2013 01:12 PM, Li Zefan wrote:
+> Use css_get()/css_put() instead of mem_cgroup_get()/mem_cgroup_put().
 > 
-  ok, I can wait.
-
->> >   if really no one fix it within this week, I should try (since I find it).
-> I'm sure a fix would be appreciated.
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> ---
+>  mm/memcontrol.c | 10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
 > 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 43ca91d..dafacb8 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3191,7 +3191,7 @@ void memcg_release_cache(struct kmem_cache *s)
+>  	list_del(&s->memcg_params->list);
+>  	mutex_unlock(&memcg->slab_caches_mutex);
+>  
+> -	mem_cgroup_put(memcg);
+> +	css_put(&memcg->css);
+>  out:
+>  	kfree(s->memcg_params);
+>  }
+> @@ -3350,16 +3350,18 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+>  
+>  	mutex_lock(&memcg_cache_mutex);
+>  	new_cachep = cachep->memcg_params->memcg_caches[idx];
+> -	if (new_cachep)
+> +	if (new_cachep) {
+> +		css_put(&memcg->css);
+>  		goto out;
+> +	}
+>  
+>  	new_cachep = kmem_cache_dup(memcg, cachep);
+>  	if (new_cachep == NULL) {
+>  		new_cachep = cachep;
+> +		css_put(&memcg->css);
+>  		goto out;
+>  	}
+>  
+> -	mem_cgroup_get(memcg);
+>  	atomic_set(&new_cachep->memcg_params->nr_pages , 0);
+>  
+>  	cachep->memcg_params->memcg_caches[idx] = new_cachep;
+> @@ -3449,8 +3451,6 @@ static void memcg_create_cache_work_func(struct work_struct *w)
+>  
+>  	cw = container_of(w, struct create_work, work);
+>  	memcg_create_kmem_cache(cw->memcg, cw->cachep);
+> -	/* Drop the reference gotten when we enqueued. */
+> -	css_put(&cw->memcg->css);
+>  	kfree(cw);
+>  }
+>  
+> 
+At first look, this one seems all right.
 
-  ok, thanks. I prefer to wait (at least for the end of Catalin's vacation).
-
-
->> > On 2013年03月27日 20:02, Chen Gang wrote:
->>> >> On 2013年03月27日 19:55, Catalin Marinas wrote:
->>>> >>>
->>>> >>> I saw some patches from tglx on unifying the various early printk
->>>> >>> implementations, though not sure whether it's those patches causing it
->>>> >>> (in which case arm64 needs to be updated as well).
-> I looked briefly and wasn't able to find this patchset.
-
-  ok, thank for your results.
-
-
--- 
-Chen Gang
-
-Asianux Corporation
