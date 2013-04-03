@@ -1,87 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761661Ab3DCPbg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 11:31:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49900 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761293Ab3DCPbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 11:31:34 -0400
-Date: Wed, 3 Apr 2013 17:31:33 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC][PATCH 2/7] memcg: don't use mem_cgroup_get() when creating
- a kmemcg cache
-Message-ID: <20130403153133.GM16471@dhcp22.suse.cz>
-References: <515BF233.6070308@huawei.com>
- <515BF275.5080408@huawei.com>
+	id S1761775Ab3DCPca (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 11:32:30 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:55110 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761434Ab3DCPc2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 11:32:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515BF275.5080408@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1365001386-29970-1-git-send-email-nzimmer@sgi.com>
+References: <AKohpo=Um9LGhGtMB0z9C2jxmS3oHwV7i_Gmsq5rR80ZcGYyLw@mail.gmail.com>
+	<1365001386-29970-1-git-send-email-nzimmer@sgi.com>
+Date: Wed, 3 Apr 2013 21:02:27 +0530
+Message-ID: <CAKohpon1QiCfJhWBi_f7U1EU410JMGHq+QnpEPJ+rdiUjsKsQA@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: convert the cpufreq_driver to use the rcu
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 03-04-13 17:12:21, Li Zefan wrote:
-> Use css_get()/css_put() instead of mem_cgroup_get()/mem_cgroup_put().
-> 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
-> ---
->  mm/memcontrol.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 43ca91d..dafacb8 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3191,7 +3191,7 @@ void memcg_release_cache(struct kmem_cache *s)
->  	list_del(&s->memcg_params->list);
->  	mutex_unlock(&memcg->slab_caches_mutex);
->  
-> -	mem_cgroup_put(memcg);
-> +	css_put(&memcg->css);
->  out:
->  	kfree(s->memcg_params);
->  }
-> @@ -3350,16 +3350,18 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
->  
->  	mutex_lock(&memcg_cache_mutex);
->  	new_cachep = cachep->memcg_params->memcg_caches[idx];
-> -	if (new_cachep)
-> +	if (new_cachep) {
-> +		css_put(&memcg->css);
->  		goto out;
-> +	}
->  
->  	new_cachep = kmem_cache_dup(memcg, cachep);
->  	if (new_cachep == NULL) {
->  		new_cachep = cachep;
-> +		css_put(&memcg->css);
->  		goto out;
->  	}
->  
-> -	mem_cgroup_get(memcg);
->  	atomic_set(&new_cachep->memcg_params->nr_pages , 0);
->  
->  	cachep->memcg_params->memcg_caches[idx] = new_cachep;
-> @@ -3449,8 +3451,6 @@ static void memcg_create_cache_work_func(struct work_struct *w)
->  
->  	cw = container_of(w, struct create_work, work);
->  	memcg_create_kmem_cache(cw->memcg, cw->cachep);
-> -	/* Drop the reference gotten when we enqueued. */
-> -	css_put(&cw->memcg->css);
->  	kfree(cw);
+Please always mention Version number and history. Not everybody
+remembers what changed after last version.
+
+On 3 April 2013 20:33, Nathan Zimmer <nzimmer@sgi.com> wrote:
+> We eventually would like to remove the rwlock cpufreq_driver_lock or convert
+> it back to a spinlock and protect the read sections with RCU.  The first step in
+
+Why do we want to convert it back to spinlock?
+
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+
+>  bool have_governor_per_policy(void)
+>  {
+> -       return cpufreq_driver->have_governor_per_policy;
+> +       bool have_governor;
+
+Name it have_governor_per_policy, it looks wrong otherwise.
+
+> +       rcu_read_lock();
+> +       have_governor = rcu_dereference(cpufreq_driver)->have_governor_per_policy;
+> +       rcu_read_unlock();
+> +       return have_governor;
 >  }
 
-You are putting references but I do not see any single css_{try}get
-here. /me puzzled.
+>  static ssize_t show_scaling_driver(struct cpufreq_policy *policy, char *buf)
+>  {
+> -       return scnprintf(buf, CPUFREQ_NAME_PLEN, "%s\n", cpufreq_driver->name);
+> +       char *name;
+> +       rcu_read_lock();
+> +       name = rcu_dereference(cpufreq_driver)->name;
+> +       rcu_read_unlock();
+> +       return scnprintf(buf, CPUFREQ_NAME_PLEN, "%s\n", name);
+>  }
 
--- 
-Michal Hocko
-SUSE Labs
+This is the definition of struct cpufreq_driver:
+
+struct cpufreq_driver {
+	struct module           *owner;
+	char			name[CPUFREQ_NAME_LEN];
+
+       ...
+};
+
+Purpose of rcu read_lock/unlock are to define the rcu critical section
+after which rcu layer is free to free the memory allocated to earlier
+instance of cpufreq_driver.
+
+So, after the unlock() call you _should_not_ use the memory allocated to
+cpufreq_driver instance. And here, you are using memory allocated to name[]
+after the unlock() call.
+
+Which looks to be wrong... I left other parts of driver upto you to fix for this
+"rule of thumb".
+
+Sorry for not pointing this earlier but rcu is as new to me as it is
+to you. I know
+you must be frustrated with so many versions of this patch, and everytime we
+get a new problem to you... Don't get disheartened with it.. Keep the good work
+going :)
+
+--
+viresh
