@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762869Ab3DCRh6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 13:37:58 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37320 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759403Ab3DCRh5 (ORCPT
+	id S1762892Ab3DCRkk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 13:40:40 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:58178 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759397Ab3DCRkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 13:37:57 -0400
-Date: Wed, 3 Apr 2013 18:37:56 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        yongjun_wei@trendmicro.com.cn, spi-devel-general@lists.sourceforge.net,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] mxs/spi: fix error return code in mxs_spi_probe()
-Message-ID: <20130403173755.GJ11305@opensource.wolfsonmicro.com>
-References: <CAPgLHd9u8Nhfa-7dp_atXfLb-vRBzdqVbrCbPSd5xMmh2Q5THg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Re2uCLPLNzqOLVJA"
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd9u8Nhfa-7dp_atXfLb-vRBzdqVbrCbPSd5xMmh2Q5THg@mail.gmail.com>
-X-Cookie: Today is what happened to yesterday.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 3 Apr 2013 13:40:39 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, jimwall@q.com,
+        brian@crystalfontz.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH] gpio: pca953x: fix irq_domain_add_simple usage
+Date: Wed,  3 Apr 2013 19:40:14 +0200
+Message-Id: <1365010814-3263-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We actually have to pass chip as the host_data parameter of
+irq_domain_add_simple() as later on, it is used to initialize chip_data
+in pca953x_gpio_irq_map(). Failing to do so is leading to a NULL pointer
+dereference after calling irq_data_get_irq_chip_data() in
+pca953x_irq_mask(), pca953x_irq_unmask(), pca953x_irq_bus_lock(),
+pca953x_irq_bus_sync_unlock() and pca953x_irq_set_type().
 
---Re2uCLPLNzqOLVJA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Fixes regression introduced by commit
+0e8f2fdacf1d44651aa7e57063c76142d1f4988b (gpio: pca953x: use simple
+irqdomain)
 
-On Wed, Apr 03, 2013 at 09:06:40PM +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->=20
-> Fix to return a negative error code from the error handling
-> case instead of 0, as returned elsewhere in this function.
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
 
-Applied, thanks.
+This would probably be good to introduce that patch in the next 3.9 rc as the
+regression leads to a lot of breakage (and cursing).
 
---Re2uCLPLNzqOLVJA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ drivers/gpio/gpio-pca953x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
+index e2dcac5..ea26e59 100644
+--- a/drivers/gpio/gpio-pca953x.c
++++ b/drivers/gpio/gpio-pca953x.c
+@@ -575,7 +575,7 @@ static int pca953x_irq_setup(struct pca953x_chip *chip,
+ 						chip->gpio_chip.ngpio,
+ 						irq_base,
+ 						&pca953x_irq_simple_ops,
+-						NULL);
++						chip);
+ 		if (!chip->domain)
+ 			return -ENODEV;
+ 
+-- 
+1.7.10.4
 
-iQIcBAEBAgAGBQJRXGjsAAoJELSic+t+oim91l8P/0d0WQyespmZGJxLLkIZFG+f
-r4gyoMQXJAglqI0C9yZwThMbCJU2mBMZoqKFiL8EIygGyMQ0+hk/98bkPdhiz6sD
-JWm9ilHz/xLmgnuJjt+WdRVaFdohGRxdlKkLq1iOgPdzSzGvcyJee34xbqaMTHty
-xfIhAT0eYvJJFsYVQPPG7L24ZKFH3jY6lce6Nb04iCEffa/MGeMyufu2pY7OTHjS
-ZOljcKvM1ST6bteiAgimEE7lZIf1OZSpNT4JRUV8j1Me7RuO08CpWb6LXZ8kxoxk
-5ZsTcxcTmjB12mTlapcyPj2QU2ImmgvIY+8Q/WZYyHfGnzWIzu/bWqKYxU7fxNpi
-Zs9VrxGRDqHMF8L8HlU/bbj4+/UQEwpb9ui1DeZavLAJgE+fxMICiuk4OfiBLJuK
-91jiFF1O9CHJApbL2g3t7SQYLFIxliiuUJ7dD5WbUpt+VgW6QImEACUjJv5MsGUi
-5IDBQUhblerE5RjU7WvVaMMTw6D4sfYOBa98wGIKh9Krox7HPBJgQN2UDHlaeX2H
-03GxjrkoQTqswmpnOXBzQw5ylwk0XcQ4OindHGOoiWHALvAZ/kF+f4oADd0HaK4P
-Cq+RlYDQpvs1PQEgHdo86juBdxx132vtiJEk/kkU1ZFP3YpFbE1sZcavHZvzoCG6
-5WLHGCo7q7XGiyIU1++R
-=iEIB
------END PGP SIGNATURE-----
-
---Re2uCLPLNzqOLVJA--
