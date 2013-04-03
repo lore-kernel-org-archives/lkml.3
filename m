@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760879Ab3DCJsP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 05:48:15 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55445 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758908Ab3DCJsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 05:48:13 -0400
-X-IronPort-AV: E=Sophos;i="4.87,400,1363104000"; 
-   d="scan'208";a="6995581"
-From: Gao feng <gaofeng@cn.fujitsu.com>
-To: viro@zeniv.linux.org.uk, eparis@redhat.com
-Cc: linux-kernel@vger.kernel.org, Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH] audit: don't check if kauditd is valid everytime
-Date: Wed, 3 Apr 2013 17:38:15 +0800
-Message-Id: <1364981895-3125-1-git-send-email-gaofeng@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/03 17:40:15,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/03 17:47:10,
-	Serialize complete at 2013/04/03 17:47:10
+	id S1761867Ab3DCJs6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 05:48:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59572 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761000Ab3DCJs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 05:48:56 -0400
+Date: Wed, 3 Apr 2013 11:48:53 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-mm@kvack.org
+Cc: Li Zefan <lizefan@huawei.com>, Glauber Costa <glommer@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH 2/2] memcg, kmem: clean up reference count handling on
+ the error path
+Message-ID: <20130403094853.GG16471@dhcp22.suse.cz>
+References: <20130403085056.GD14384@dhcp22.suse.cz>
+ <1364979234-16427-1-git-send-email-mhocko@suse.cz>
+ <1364979234-16427-2-git-send-email-mhocko@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364979234-16427-2-git-send-email-mhocko@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We only need to check if kauditd is valid after we start
-it, if kauditd is invalid, we will set kauditd_task to NULL.
-So next time, we will start kauditd again.
+On Wed 03-04-13 10:53:54, Michal Hocko wrote:
+> mem_cgroup_css_online calls mem_cgroup_put if memcg_init_kmem
+> fails. This is not correct because only memcg_propagate_kmem takes an
+> additional reference while mem_cgroup_sockets_init is allowed to fail as
+> well (although no current implementation fails) but it doesn't take any
+> reference. This all suggests that it should be memcg_propagate_kmem that
+> should clean up after itself so this patch moves mem_cgroup_put over
+> there.
+> Unfortunately this is not that easy (as pointed out by Li Zefan) because
+> memcg_kmem_mark_dead marks the group dead (KMEM_ACCOUNTED_DEAD) if it
+> is marked active (KMEM_ACCOUNTED_ACTIVE) which is the case even if
+> memcg_propagate_kmem fails so the additional reference is dropped in
+> that case in kmem_cgroup_destroy which means that the reference would be
+> dropped two times.
+> 
+> The easiest way then would be to simply remove mem_cgrroup_put from
+> mem_cgroup_css_online and rely on kmem_cgroup_destroy doing the right
+> thing.
 
-It means if kauditd_task is not NULL,it must be valid.
+Forgot to mention that this one could be marked for stable for 3.8
 
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
----
- kernel/audit.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>  mm/memcontrol.c |    8 --------
+>  1 file changed, 8 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 6de6d70..65b2850 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -6417,14 +6417,6 @@ mem_cgroup_css_online(struct cgroup *cont)
+>  
+>  	error = memcg_init_kmem(memcg, &mem_cgroup_subsys);
+>  	mutex_unlock(&memcg_create_mutex);
+> -	if (error) {
+> -		/*
+> -		 * We call put now because our (and parent's) refcnts
+> -		 * are already in place. mem_cgroup_put() will internally
+> -		 * call __mem_cgroup_free, so return directly
+> -		 */
+> -		mem_cgroup_put(memcg);
+> -	}
+>  	return error;
+>  }
+>  
+> -- 
+> 1.7.10.4
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index d596e53..9816a1b 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -660,14 +660,14 @@ static int audit_receive_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 
- 	/* As soon as there's any sign of userspace auditd,
- 	 * start kauditd to talk to it */
--	if (!kauditd_task)
-+	if (!kauditd_task) {
- 		kauditd_task = kthread_run(kauditd_thread, NULL, "kauditd");
--	if (IS_ERR(kauditd_task)) {
--		err = PTR_ERR(kauditd_task);
--		kauditd_task = NULL;
--		return err;
-+		if (IS_ERR(kauditd_task)) {
-+			err = PTR_ERR(kauditd_task);
-+			kauditd_task = NULL;
-+			return err;
-+		}
- 	}
--
- 	loginuid = audit_get_loginuid(current);
- 	sessionid = audit_get_sessionid(current);
- 	security_task_getsecid(current, &sid);
 -- 
-1.7.11.7
-
+Michal Hocko
+SUSE Labs
