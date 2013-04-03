@@ -1,213 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762864Ab3DCRgR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 13:36:17 -0400
-Received: from mga03.intel.com ([143.182.124.21]:24816 "EHLO mga03.intel.com"
+	id S1762882Ab3DCRhE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 13:37:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22880 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758593Ab3DCRgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 13:36:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,402,1363158000"; 
-   d="scan'208";a="222438119"
-Date: Wed, 3 Apr 2013 10:35:51 -0700
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Platform Driver <platform-driver-x86@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 1/1] Introduce Intel RAPL cooling device driver
-Message-ID: <20130403103551.16e62eb6@chromoly>
-In-Reply-To: <20130403163509.GC21969@kroah.com>
-References: <1364940936-20846-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
-	<20130402230042.GA8713@kroah.com>
-	<20130402165340.61b7da02@chromoly>
-	<20130403001300.GA13838@kroah.com>
-	<20130402214818.50f1ae89@chromoly>
-	<20130403163509.GC21969@kroah.com>
-Organization: OTC
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758593Ab3DCRhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 13:37:01 -0400
+Date: Wed, 3 Apr 2013 13:36:51 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/4] x86, kdump: Retore crashkernel= to allocate low
+Message-ID: <20130403173651.GF5939@redhat.com>
+References: <1364923183-316-4-git-send-email-yinghai@kernel.org>
+ <20130402180606.GI29506@redhat.com>
+ <CAE9FiQUKqv_t-99JN_t=EGop2-Wbjd4Yb9vYvU_SbbNctG6Yeg@mail.gmail.com>
+ <CAE9FiQXEa0-WS8+E6LGy8CenoHX5qF1MpjBgejQx9-EvG_1rGw@mail.gmail.com>
+ <20130402191130.GB31760@redhat.com>
+ <CAE9FiQViU_X-idHyFmRFQXmP23oWN63XkAr3KmXsfys1VBR53g@mail.gmail.com>
+ <20130402201148.GJ29506@redhat.com>
+ <CAE9FiQURMNjPYYze-tPn4Ssrc4TqMqTuvwRRhoVYEnGLF4Z0cQ@mail.gmail.com>
+ <20130403131842.GA5939@redhat.com>
+ <CAE9FiQUO-fLY-k_gmw6cg56YEN52VRvZuXr+f1EnywKr_cGc4Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQUO-fLY-k_gmw6cg56YEN52VRvZuXr+f1EnywKr_cGc4Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Apr 2013 09:35:09 -0700
-Greg KH <gregkh@linuxfoundation.org> wrote:
+On Wed, Apr 03, 2013 at 10:12:46AM -0700, Yinghai Lu wrote:
 
-> On Tue, Apr 02, 2013 at 09:48:18PM -0700, Jacob Pan wrote:
-> > > Let's step back and start over, what exactly are you trying to
-> > > tell userspace?  What data do you have that you need to express
-> > > to it?  How do you want userspace to see/use it?
-> > 
-> > It is a good idea to step back and let me explain what I wanted to
-> > do here for userspace.
-> > 
-> > I have two kinds of applications that might use this driver.
-> > 1. simple use case where user sets a power limit for a RAPL domain.
-> > e.g. set graphics unit power limit to 7w
-> > 2. advanced use case where use can do fine tuning on top of simple
-> > power limit,e.g. the dynamic response parameters of power control
-> > logic, event notifications, etc.
-> > 
-> > For #1, this driver register with the abstract generic thermal layer
-> > (/sys/class/thermal) and presents itself as a set of cooling devices
-> > with a single knob per domain for power limits.
-> > root@chromoly:/sys/class/thermal/cooling_device15# echo 7000 >
-> > cur_state 
+[..]
+> >> Can we just keep it separated?
+> >
+> > Kernel does not know about old kexec-tools or new kexec-tools. Neither
+> > kernel can enforce what command line options are passed by user. So
+> > kernel needs to define a clean interface here which is easily understood
+> > and is extensible also in future.
 > 
-> Great, how about submitting that functionality as patch 1 of your
-> series?  That seems like a very "normal" thermal driver, right?
-> 
-yes, that would be a normal thermal cooling device driver. I will do
-that first. Thanks for the suggestion.
-> > For #2, to give userspace complete control of the RAPL interface,
-> > which is not generic, I put them under the device private sysfs
-> > area. root@chromoly:/sys/class/thermal/cooling_device15/device#
-> > echo 1000 > time_window1 
-> 
-> I totally fail to understand the difference.  What do you want to show
-> to userspace that can't be expressed through the thermal interface
-> today?
-The difference is one single knob (long term power limit) in the thermal
-interface vs multiple fine grained control and data in the complete RAPL
-interface.
+> Looks you are chasing wrong direction.
 
-Here is what a complete RAPL interface for package domain looks like.
-root@chromoly:/sys/class/thermal/cooling_device15/device# grep . *
-domain_name:package
-energy:22396031
-lock:0
-max_power:0
-max_window:0
-min_power:0
-pl1_clamp:0
-pl1_enable:1
-pl2_clamp:0
-pl2_enable:1
-power:7841
-power_limit1:25000
-power_limit2:31250
-thermal_spec_power:17000
-throttle_time: 
-time_window1:28000
-time_window2:0
+I don't think so. Once we are defining bunch of crashkernel= parameters
+we need to make sure it is well understood how do they work together.
 
-
->  Perhaps the thermal interface could be expanded to provide
-> more functionality that you need?
-yes, some of them such as limits. But not all the data in the list
-above are suitable for thermal interface. That is why I am trying to
-balance between abstracted generic data and RAPL specific data while
-still allow linking between the two.
-
-The way I envisioned how a thermal/power management app would use is:
-1. go through generic thermal layer sysfs and find available RAPL
-domains
-2. if the app wants to do more fine grained control, it follows the
-device symlink to locate the RAPL domain specific sysfs area.
-
->  Why create a one-off API that will
-> never be used again and require userspace programs to be written just
-> to handle this one type of device?
 > 
-why is that a one-off API? RAPL interface is maintained identical across
-Intel CPUs after Sandy Bridges. I agree with you that it is still one
-type of device with some of its data unique. Should i create a RAPL
-class device?
+> Those four patches fixes the regression that Wang and you reported,
+> User don't need to change their kexec-tools and boot command lines
+> kdump still works.
 
-> > As you mentioned about using device tree vs. fs, and how kobject are
-> > used for fs. I do have the need to go between a generic thermal
-> > sysfs and the true device tree. This is the reason why I used
-> > kobjects and link them between device tree and its thermal sysfs
-> > representation.
-> 
-> I don't understand your leap to using kobjects.
-> 
-I use kobjects mainly for its symlink to allow userspace locate the
-'true' device behind generic thermal layers' cooling device.
+I am not objecting to that. I am objecting to introducing unexpected
+behavior in crashkernel= command line space and ignoring how does
+it co-exist with existing syntax.
 
+> 
+> We will never can stop user doing crazy thing with their system.
 
-> > e.g. a RAPL package cooling device linked with its platform device
-> > kobj. (device is linked with rapl_domains/package, the line is too
-> > long)
-> > 
-> > root@chromoly:/sys/class/thermal# ls -l cooling_device15/
-> > total 0
-> > -rw-r--r-- 1 root root 4096 Apr  2 15:03 cur_state
-> > lrwxrwxrwx 1 root root    0 Apr  2 21:28 device
-> > -> ../../../platform/intel_rapl/rapl_domains/package
-> > -r--r--r-- 1 root root 4096 Apr  2 15:03 max_state
-> > drwxr-xr-x 2 root root    0 Apr  2 21:28 power
-> > lrwxrwxrwx 1 root root    0 Apr  2 15:03 subsystem
-> > -> ../../../../class/thermal
-> > -r--r--r-- 1 root root 4096 Apr  2 15:03 type
-> > -rw-r--r-- 1 root root 4096 Apr  2 15:03 uevent
+Yes, but we need to make sure if bunch of crashkernel= are passed on
+kernel command line then behavior is well defined and extensible for
+future usage.
+
+[..]
+> > But why are we tying ;low to ;high. One should be easily extend
+> > crashkernel=X to be able to reserve memory above 4G if specified amount
+> > is not available below 4G. In that case also one might want to reserve
+> > some low memory?
 > 
-> I still don't understand.  What are you adding here, the device
-> symlink? Or something else?
+> I want to keep crashkernel=X to the old behavior.
 > 
-> > For userspace which is not satisfied with the simple use case of a
-> > single knob for setting power limit, it can follow the link to find
-> > the device tree entry. Then get access to the complete knobs,
-> > including event notifications.
+> If you want to have crashkernel=X to allocate high above 4G, old kexec-tools
+> will not work with new kernel.
+
+It does not work anyway. Because current crashkernel=X will fail to
+reserve memory if sufficient memory is not available below 896MB. So no
+surprises there.
+
+It will help new kexec-tools continue to work with crashkernel=X even
+in high memory ranges.
+
+> >
+> > For that matter crashkernel=range1:size,range2:size syntax should be
+> > extendible too to reserve memory above 4G if desired size of memory
+> > is not available in low memory.
+> >
+> > Now in those cases too, one would like to have 72M of low memory
+> > reserved. So ;low shoud not be tied to ;high necessarily.
+> >
+> > In fact current code does not care whetehr ;high was specified or not.
+> > If memory is reserved above 4G, ;low code will kick in.
 > 
-> And what is in that device directory? 
+> No, that is not right.
+> 
+> only when ;high is specified, kernel will try to allocate high above 4G.
+
+As of today. But one can always extend crashkernel=X to allocate from
+high addresses if memory is not available in low addresses without
+breaking old tools.
+
+Current ;low logic does not care whether high reservation was done using
+crashkernel=X or crashkernel=X;high. And it should not. Tying ;low with
+;high is the problem. Each crashkernel= directive should be able to 
+specify its own range to reserve with constraints. There is no dependency
+on other crashkernel= options passed. And that keeps the behavior well
+defined.
+
+If we start introducing dependency between various crashkernel= options
+our behavior matrix will explode and it will be very difficult to explain
+how does it work.
+
+[..]
+> > We really need to stick to the notion of only one crashkernel= option
+> > is accepted and that is last one on command line. And if need be,
+> > we need to work on multi range reservation feature where we process
+> > and reserve ranges as specified by all crashkernel= parameters on
+> > command line.
+> 
+> That is kept.
+> 
+> and only last high is honored
+
+What about rest of the crashkernel=. I am not sure why are you not
+seeing that you are stepping onto to already defined crashkernel=
+command line option and breaking its semantics.
+
+If you were defining crashkernel_foo, I couldn't care less.
+
+Given the fact you are using crashkernel=, you need to take already
+defined parameters in to consideration and stick to those semantics.
+
+- Either support single range reservation and always use rightmost
+  crashkernel= option.
+
+- Or support multiple ranges and process all the crashkernel= options
+  as specified on command line.
+
+Please don't define more modes here.
  
-the device directory contains the complete RAPL interface
-representation. paste the example of package domain again.
-
-root@chromoly:/sys/class/thermal/cooling_device15/device# grep . *
-domain_name:package
-energy:22396031
-lock:0
-max_power:0
-max_window:0
-min_power:0
-pl1_clamp:0
-pl1_enable:1
-pl2_clamp:0
-pl2_enable:1
-power:7841
-power_limit1:25000
-power_limit2:31250
-thermal_spec_power:17000
-grep: throttle_time: Input/output error
-time_window1:28000
-time_window2:0
-
-> What is rapl_domains?  Why
-> isn't that a normal 'struct device'?
->
-RAPL domains can be viewed as sub devices of RAPL interface. On a given
-platform they can be a complete or partial list of 
-package, power plane 0 (processor core), power plane 1 (graphics),
-dram controller, pch, etc.
-
-Yes, I can create a RAPL class and create_device for each domain based
-on 'struct device'. I can still use the kobj symlink to link to generic
-thermal layer. I just thought it is an overkill as compared to
-simply using kobjects and kset.
-
-I don't understand the benefit of using 'struct device' in this
-case. RAPL interface as a whole has its device, I am not creating
-standalone kobjects.
-
-
-> Still confused.
 > 
-> greg k-h
+> >
+> > Creating new combinations where some crashkernel= are preferred over
+> > others and some crashkernel= options work with only selected crashkernel=
+> > options, is asking for trouble, especially keeping in mind future
+> > extensions.
+> 
+> I don't think so.
+> 
+> old conf that works before still use crashkernel= with high and low.
+> old conf that does not work, could switch to crashkernel=;high/low
+> with new kexec-tools
 
-[Jacob Pan]
+Please come out of this old conf and new conf mode. That is specific
+usage of interface you are providing. But interface semantics should
+still be well defined. And currently they are not.
 
--- 
-Thanks,
+> 
+> >
+> > I prefer following for 3.9.
+> >
+> > - process only right most crashkernel= option.
+> 
+> what is "right most" ?
+> only last crashkernel=X is honored?
+> I restored that already with those four patches.
 
-Jacob
+only last crashkernel= is honored. It could be either crashkernel=X
+or crashkernel=X;high or crashkernel=X;<option1>;<option2>;....
+
+Point being crashkernel= space is taken and there is scope for defining
+more options to it as our needs grow. 
+
+> 
+> > - implement crashkernel_no_auto_low option to opt out of auto reserved
+> >   low memory
+> 
+> No, that is ugly.
+
+It might be but it is better than special casing ;high or ;low.
+
+> 
+> > - implement crashkernel=X;high to support high memory reservations.
+> >
+> > And now old kexec-tools user can use crashkernel=X while users needing
+> > high memory reservation can use crashkernel=X;high.
+> 
+> The four patches did not do that?
+
+I am objecting to.
+
+- Not parsing right most crashkernel=
+- Tying ;high and ;low together.
+
+> 
+> >
+> > If you really want to support user defined crashkernel=X;low along with
+> > crashkernel=Y;high, that is really a multi range reservation feature and
+> > need to be implemented properly instead of coming up with short cuts.
+> 
+> No it is not.
+> 
+> It's *you* want me to change "Crash kernel low" to "Crash kernel".
+> 
+> Do we need to drop second patch? So will still keep
+> "Crash kernel low" in /proc/iomem?
+
+No. I want to keep everything named "Crash kernel". There is no point
+in naming low memory as "Crash kernel low".
+
+Just that right now we don't support reserving multiple range feature,
+execpt the exception of a low memory reserved automatically. And we
+are providing a parameter to disable reservation of low memory.
+
+If we don't support multiple ranges, don't try to special case it by
+;high and ;low combination. Then one needs to parse all crashkernel=
+options passed on command line (including crashkernel=X) and reserve
+all the ranges as specified by various crashkernel= options.
+
+You can't say, well ;high is specified so I am going to process only
+crashkernel=X;high and crashkernel=Y;low and ignore rest of the
+crashkernel= options. That does not make sense to me.
+
+Thanks
+Vivek
