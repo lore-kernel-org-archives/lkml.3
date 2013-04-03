@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760034Ab3DCOYn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:24:43 -0400
-Received: from masquerade.micron.com ([137.201.242.130]:46676 "EHLO
+	id S1759718Ab3DCO0h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:26:37 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:31565 "EHLO
 	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758541Ab3DCOYm (ORCPT
+	with ESMTP id S1758624Ab3DCO0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:24:42 -0400
-Message-ID: <515C3BA3.5090208@micron.com>
-Date: Wed, 3 Apr 2013 19:54:35 +0530
+	Wed, 3 Apr 2013 10:26:35 -0400
+Message-ID: <515C3C0D.80005@micron.com>
+Date: Wed, 3 Apr 2013 19:56:21 +0530
 From: Asai Thambi S P <asamymuthupa@micron.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
 To: Jens Axboe <axboe@kernel.dk>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "Sam Bradshaw" <sbradshaw@micron.com>
-Subject: [PATCH 2/3] mtip32xx: return 0 from pci probe in case of rebuild
+Subject: [PATCH 3/3] mtip32xx: Add debugfs entry device_status
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-19764.007
-X-TM-AS-Result: No--5.287700-0.000000-31
+X-TM-AS-Result: No--5.162200-0.000000-31
 X-TM-AS-User-Approved-Sender: Yes
 X-TM-AS-User-Blocked-Sender: No
 X-MT-CheckInternalSenderRule: True
@@ -27,28 +27,298 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds a new debugfs entry 'device_status' in
+/sys/kernel/debug/rssd. The value of this entry shows
+devices online and those in the process of removing.
 
-Fix to return 0 from pci probe in case of rebuild. If not, pci consider
-probe has failed, and crash during rmmod.
-
+Signed-off-by: Sam Bradshaw <sbradshaw@micron.com>
 Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
 ---
- drivers/block/mtip32xx/mtip32xx.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/block/mtip32xx/mtip32xx.c |  148 +++++++++++++++++++++++++++++++++++-
+ drivers/block/mtip32xx/mtip32xx.h |   18 +++--
+ 2 files changed, 154 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index 5becdaa..7e1aeb3 100644
+index 7e1aeb3..03555ec 100644
 --- a/drivers/block/mtip32xx/mtip32xx.c
 +++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -4300,6 +4300,8 @@ static int mtip_pci_probe(struct pci_dev *pdev,
- 	instance++;
- 	if (rv != MTIP_FTL_REBUILD_MAGIC)
+@@ -81,12 +81,17 @@
+ /* Device instance number, incremented each time a device is probed. */
+ static int instance;
+ 
++struct list_head online_list;
++struct list_head removing_list;
++spinlock_t dev_lock;
++
+ /*
+  * Global variable used to hold the major block device number
+  * allocated in mtip_init().
+  */
+ static int mtip_major;
+ static struct dentry *dfs_parent;
++static struct dentry *dfs_device_status;
+ 
+ static u32 cpu_use[NR_CPUS];
+ 
+@@ -2707,6 +2712,100 @@ static ssize_t mtip_hw_show_status(struct device *dev,
+ 
+ static DEVICE_ATTR(status, S_IRUGO, mtip_hw_show_status, NULL);
+ 
++/* debugsfs entries */
++
++static ssize_t show_device_status(struct device_driver *drv, char *buf)
++{
++	int size = 0;
++	struct driver_data *dd, *tmp;
++	unsigned long flags;
++	char id_buf[42];
++	u16 status = 0;
++
++	spin_lock_irqsave(&dev_lock, flags);
++	size += sprintf(&buf[size], "Devices Present:\n");
++	list_for_each_entry_safe(dd, tmp, &online_list, online_list) {
++		if (dd && dd->pdev) {
++			if (dd->port &&
++			    dd->port->identify &&
++			    dd->port->identify_valid) {
++				strlcpy(id_buf,
++					(char *) (dd->port->identify + 10), 21);
++				status = *(dd->port->identify + 141);
++			} else {
++				memset(id_buf, 0, 42);
++				status = 0;
++			}
++
++			if (dd->port &&
++			    test_bit(MTIP_PF_REBUILD_BIT, &dd->port->flags)) {
++				size += sprintf(&buf[size],
++					" device %s %s (ftl rebuild %d %%)\n",
++					dev_name(&dd->pdev->dev),
++					id_buf,
++					status);
++			} else {
++				size += sprintf(&buf[size],
++					" device %s %s\n",
++					dev_name(&dd->pdev->dev),
++					id_buf);
++			}
++		}
++	}
++
++	size += sprintf(&buf[size], "Devices Being Removed:\n");
++	list_for_each_entry_safe(dd, tmp, &removing_list, remove_list) {
++		if (dd && dd->pdev) {
++			if (dd->port &&
++			    dd->port->identify &&
++			    dd->port->identify_valid) {
++				strlcpy(id_buf,
++					(char *) (dd->port->identify+10), 21);
++				status = *(dd->port->identify + 141);
++			} else {
++				memset(id_buf, 0, 42);
++				status = 0;
++			}
++
++			if (dd->port &&
++			    test_bit(MTIP_PF_REBUILD_BIT, &dd->port->flags)) {
++				size += sprintf(&buf[size],
++					" device %s %s (ftl rebuild %d %%)\n",
++					dev_name(&dd->pdev->dev),
++					id_buf,
++					status);
++			} else {
++				size += sprintf(&buf[size],
++					" device %s %s\n",
++					dev_name(&dd->pdev->dev),
++					id_buf);
++			}
++		}
++	}
++	spin_unlock_irqrestore(&dev_lock, flags);
++
++	return size;
++}
++
++static ssize_t mtip_hw_read_device_status(struct file *f, char __user *ubuf,
++						size_t len, loff_t *offset)
++{
++	int size = *offset;
++	char buf[MTIP_DFS_MAX_BUF_SIZE];
++
++	if (!len || *offset)
++		return 0;
++
++	size += show_device_status(NULL, buf);
++
++	*offset = size <= len ? size : len;
++	size = copy_to_user(ubuf, buf, *offset);
++	if (size)
++		return -EFAULT;
++
++	return *offset;
++}
++
+ static ssize_t mtip_hw_read_registers(struct file *f, char __user *ubuf,
+ 				  size_t len, loff_t *offset)
+ {
+@@ -2801,6 +2900,13 @@ static ssize_t mtip_hw_read_flags(struct file *f, char __user *ubuf,
+ 	return *offset;
+ }
+ 
++static const struct file_operations mtip_device_status_fops = {
++	.owner  = THIS_MODULE,
++	.open   = simple_open,
++	.read   = mtip_hw_read_device_status,
++	.llseek = no_llseek,
++};
++
+ static const struct file_operations mtip_regs_fops = {
+ 	.owner  = THIS_MODULE,
+ 	.open   = simple_open,
+@@ -4158,6 +4264,7 @@ static int mtip_pci_probe(struct pci_dev *pdev,
+ 	const struct cpumask *node_mask;
+ 	int cpu, i = 0, j = 0;
+ 	int my_node = NUMA_NO_NODE;
++	unsigned long flags;
+ 
+ 	/* Allocate memory for this devices private data. */
+ 	my_node = pcibus_to_node(pdev->bus);
+@@ -4215,6 +4322,9 @@ static int mtip_pci_probe(struct pci_dev *pdev,
+ 	dd->pdev	= pdev;
+ 	dd->numa_node	= my_node;
+ 
++	INIT_LIST_HEAD(&dd->online_list);
++	INIT_LIST_HEAD(&dd->remove_list);
++
+ 	memset(dd->workq_name, 0, 32);
+ 	snprintf(dd->workq_name, 31, "mtipq%d", dd->instance);
+ 
+@@ -4302,6 +4412,12 @@ static int mtip_pci_probe(struct pci_dev *pdev,
  		set_bit(MTIP_DDF_INIT_DONE_BIT, &dd->dd_flag);
-+	else
-+		rv = 0; /* device in rebuild state, return 0 from probe */
+ 	else
+ 		rv = 0; /* device in rebuild state, return 0 from probe */
++
++	/* Add to online list even if in ftl rebuild */
++	spin_lock_irqsave(&dev_lock, flags);
++	list_add(&dd->online_list, &online_list);
++	spin_unlock_irqrestore(&dev_lock, flags);
++
  	goto done;
  
  block_initialize_err:
+@@ -4335,9 +4451,15 @@ static void mtip_pci_remove(struct pci_dev *pdev)
+ {
+ 	struct driver_data *dd = pci_get_drvdata(pdev);
+ 	int counter = 0;
++	unsigned long flags;
+ 
+ 	set_bit(MTIP_DDF_REMOVE_PENDING_BIT, &dd->dd_flag);
+ 
++	spin_lock_irqsave(&dev_lock, flags);
++	list_del_init(&dd->online_list);
++	list_add(&dd->remove_list, &removing_list);
++	spin_unlock_irqrestore(&dev_lock, flags);
++
+ 	if (mtip_check_surprise_removal(pdev)) {
+ 		while (!test_bit(MTIP_DDF_CLEANUP_BIT, &dd->dd_flag)) {
+ 			counter++;
+@@ -4363,6 +4485,10 @@ static void mtip_pci_remove(struct pci_dev *pdev)
+ 
+ 	pci_disable_msi(pdev);
+ 
++	spin_lock_irqsave(&dev_lock, flags);
++	list_del_init(&dd->remove_list);
++	spin_unlock_irqrestore(&dev_lock, flags);
++
+ 	kfree(dd);
+ 	pcim_iounmap_regions(pdev, 1 << MTIP_ABAR);
+ }
+@@ -4510,6 +4636,11 @@ static int __init mtip_init(void)
+ 
+ 	pr_info(MTIP_DRV_NAME " Version " MTIP_DRV_VERSION "\n");
+ 
++	spin_lock_init(&dev_lock);
++
++	INIT_LIST_HEAD(&online_list);
++	INIT_LIST_HEAD(&removing_list);
++
+ 	/* Allocate a major block device number to use with this driver. */
+ 	error = register_blkdev(0, MTIP_DRV_NAME);
+ 	if (error <= 0) {
+@@ -4519,11 +4650,18 @@ static int __init mtip_init(void)
+ 	}
+ 	mtip_major = error;
+ 
+-	if (!dfs_parent) {
+-		dfs_parent = debugfs_create_dir("rssd", NULL);
+-		if (IS_ERR_OR_NULL(dfs_parent)) {
+-			pr_warn("Error creating debugfs parent\n");
+-			dfs_parent = NULL;
++	dfs_parent = debugfs_create_dir("rssd", NULL);
++	if (IS_ERR_OR_NULL(dfs_parent)) {
++		pr_warn("Error creating debugfs parent\n");
++		dfs_parent = NULL;
++	}
++	if (dfs_parent) {
++		dfs_device_status = debugfs_create_file("device_status",
++					S_IRUGO, dfs_parent, NULL,
++					&mtip_device_status_fops);
++		if (IS_ERR_OR_NULL(dfs_device_status)) {
++			pr_err("Error creating device_status node\n");
++			dfs_device_status = NULL;
+ 		}
+ 	}
+ 
+diff --git a/drivers/block/mtip32xx/mtip32xx.h b/drivers/block/mtip32xx/mtip32xx.h
+index 3bffff5..8e8334c 100644
+--- a/drivers/block/mtip32xx/mtip32xx.h
++++ b/drivers/block/mtip32xx/mtip32xx.h
+@@ -129,9 +129,9 @@ enum {
+ 	MTIP_PF_EH_ACTIVE_BIT       = 1, /* error handling */
+ 	MTIP_PF_SE_ACTIVE_BIT       = 2, /* secure erase */
+ 	MTIP_PF_DM_ACTIVE_BIT       = 3, /* download microcde */
+-	MTIP_PF_PAUSE_IO      =	((1 << MTIP_PF_IC_ACTIVE_BIT) | \
+-				(1 << MTIP_PF_EH_ACTIVE_BIT) | \
+-				(1 << MTIP_PF_SE_ACTIVE_BIT) | \
++	MTIP_PF_PAUSE_IO      =	((1 << MTIP_PF_IC_ACTIVE_BIT) |
++				(1 << MTIP_PF_EH_ACTIVE_BIT) |
++				(1 << MTIP_PF_SE_ACTIVE_BIT) |
+ 				(1 << MTIP_PF_DM_ACTIVE_BIT)),
+ 
+ 	MTIP_PF_SVC_THD_ACTIVE_BIT  = 4,
+@@ -144,9 +144,9 @@ enum {
+ 	MTIP_DDF_REMOVE_PENDING_BIT = 1,
+ 	MTIP_DDF_OVER_TEMP_BIT      = 2,
+ 	MTIP_DDF_WRITE_PROTECT_BIT  = 3,
+-	MTIP_DDF_STOP_IO      = ((1 << MTIP_DDF_REMOVE_PENDING_BIT) | \
+-				(1 << MTIP_DDF_SEC_LOCK_BIT) | \
+-				(1 << MTIP_DDF_OVER_TEMP_BIT) | \
++	MTIP_DDF_STOP_IO      = ((1 << MTIP_DDF_REMOVE_PENDING_BIT) |
++				(1 << MTIP_DDF_SEC_LOCK_BIT) |
++				(1 << MTIP_DDF_OVER_TEMP_BIT) |
+ 				(1 << MTIP_DDF_WRITE_PROTECT_BIT)),
+ 
+ 	MTIP_DDF_CLEANUP_BIT        = 5,
+@@ -180,7 +180,7 @@ struct mtip_work {
+ 
+ #define MTIP_TRIM_TIMEOUT_MS		240000
+ #define MTIP_MAX_TRIM_ENTRIES		8
+-#define MTIP_MAX_TRIM_ENTRY_LEN 	0xfff8
++#define MTIP_MAX_TRIM_ENTRY_LEN		0xfff8
+ 
+ struct mtip_trim_entry {
+ 	u32 lba;   /* starting lba of region */
+@@ -501,6 +501,10 @@ struct driver_data {
+ 	atomic_t irq_workers_active;
+ 
+ 	int isr_binding;
++
++	struct list_head online_list; /* linkage for online list */
++
++	struct list_head remove_list; /* linkage for removing list */
+ };
+ 
+ #endif
 -- 
 1.7.1
 
