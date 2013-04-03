@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761959Ab3DCOBL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:01:11 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48340 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758711Ab3DCOBJ (ORCPT
+	id S1760213Ab3DCOCn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:02:43 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:34181 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758816Ab3DCOCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:01:09 -0400
-X-Sasl-enc: xzMoD49f5Ia9n/M7SPLQ3bq9EmKLUvWixnU8ShrEwh5n 1364997668
-From: Alan Ott <alan@signal11.us>
-To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Ott <alan@signal11.us>
-Subject: [PATCH v2 3/4] mac802154: Increase tx_buffer_len
-Date: Wed,  3 Apr 2013 10:00:57 -0400
-Message-Id: <1364997658-16498-4-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.11.2
-In-Reply-To: <1364997658-16498-1-git-send-email-alan@signal11.us>
-References: <1364928481-1813-1-git-send-email-alan@signal11.us>
- <1364997658-16498-1-git-send-email-alan@signal11.us>
+	Wed, 3 Apr 2013 10:02:40 -0400
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH 0/3] check regulator_enable() return value
+Date: Wed,  3 Apr 2013 16:02:24 +0200
+Message-Id: <1364997747-20830-1-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Increase the buffer length from 10 to 300 packets. Consider that traffic on
-mac802154 devices will often be 6LoWPAN, and a full-length (1280 octet)
-IPv6 packet will fragment into 15 6LoWPAN fragments (because the MTU of
-IEEE 802.15.4 is 127).  A 300-packet queue is really 20 full-length IPv6
-packets.
+Hello Felipe,
 
-With a queue length of 10, an entire IPv6 packet was unable to get queued
-at one time, causing fragments to be dropped, and making reassembly
-impossible.
+While testing your 'next' branch merged with today's next I got some new
+warnings, caused by a recently introduced __must_check in:
 
-Signed-off-by: Alan Ott <alan@signal11.us>
----
- net/mac802154/wpan.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+c8801a8 regulator: core: Mark all get and enable calls as __must_check
 
-diff --git a/net/mac802154/wpan.c b/net/mac802154/wpan.c
-index 7d3f659..2ca2f4d 100644
---- a/net/mac802154/wpan.c
-+++ b/net/mac802154/wpan.c
-@@ -360,7 +360,7 @@ void mac802154_wpan_setup(struct net_device *dev)
- 	dev->header_ops		= &mac802154_header_ops;
- 	dev->needed_tailroom	= 2; /* FCS */
- 	dev->mtu		= IEEE802154_MTU;
--	dev->tx_queue_len	= 10;
-+	dev->tx_queue_len	= 300;
- 	dev->type		= ARPHRD_IEEE802154;
- 	dev->flags		= IFF_NOARP | IFF_BROADCAST;
- 	dev->watchdog_timeo	= 0;
+These patches introduces a check for regulator_enable() return value in
+all three affected USB phy drivers, and issue a dev_err() in case it
+fails.
+
+TWL4030 and TWL6030 patches has been build-tested only.
+
+Thanks,
+Fabio
+
+
+Fabio Baltieri (3):
+  usb: phy: ab8500-usb: check regulator_enable return value
+  usb: phy: twl4030-usb: check regulator_enable return value
+  usb: phy: twl6030-usb: check regulator_enable return value
+
+ drivers/usb/phy/phy-ab8500-usb.c  | 12 +++++++++---
+ drivers/usb/phy/phy-twl4030-usb.c | 18 +++++++++++++++---
+ drivers/usb/phy/phy-twl6030-usb.c | 11 +++++++++--
+ 3 files changed, 33 insertions(+), 8 deletions(-)
+
 -- 
-1.7.11.2
+1.8.1.3
 
