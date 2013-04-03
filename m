@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762626Ab3DCQCh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 12:02:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23330 "EHLO mx1.redhat.com"
+	id S1762694Ab3DCQCv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 12:02:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22224 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761450Ab3DCQCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 12:02:34 -0400
+	id S1760957Ab3DCQCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 12:02:35 -0400
 From: Anton Arapov <anton@redhat.com>
 To: Anton Arapov <anton@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -14,127 +14,64 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
         Ingo Molnar <mingo@elte.hu>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: [PATCH v1 6/9] uretprobes: Return probe exit, invoke handlers
-Date: Wed,  3 Apr 2013 18:00:36 +0200
-Message-Id: <1365004839-21982-7-git-send-email-anton@redhat.com>
-In-Reply-To: <1365004839-21982-1-git-send-email-anton@redhat.com>
-References: <1365004839-21982-1-git-send-email-anton@redhat.com>
+Subject: [PATCH v1 0/9] uretprobes: Return uprobes implementation
+Date: Wed,  3 Apr 2013 18:00:30 +0200
+Message-Id: <1365004839-21982-1-git-send-email-anton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Uretprobe handlers are invoked when the trampoline is hit, on completion the
-trampoline is replaced with the saved return address and the uretprobe instance
-deleted.
+Hello All!
 
-v1 changes:
-* pass bp_vaddr to ret_handler()
-* simplify handle_uretprobe()
+Uretprobes' core implementation. Enables a function's return probes in uprobe-
+based event tracing.
 
-RFCv6 changes:
-* rework handle_uretprobe()
+Patchset introduce additional handler (ret_handler) in uprobe consumer that
+defines uretprobe.
 
-RFCv5 changes:
-* switch to simply linked list ->return_uprobes
-* rework handle_uretprobe()
+There is a regular uprobe with return probe handler behind every uretprobe.
+Once hit the uprobe that has ret_handler set, we hijack the return address of
+the probed function and replace it with the address of trampoline. Trampoline
+is a preallocated page in probed task's xol area that filled with breakpoint
+opcode. In turn, when the return breakpoint is hit, we invoke the ret_handler.
 
-RFCv4 changes:
-* check, whether utask is not NULL in handle_uretprobe()
-* get rid of area->rp_trampoline_vaddr
-* minor handle_uretprobe() fixups
+The patchset shouldn't be difficult to read and hopefully the comments to
+commits will help. Please, review.
 
-RFCv3 changes:
-* protected uprobe with refcounter. See put_uprobe() in handle_uretprobe()
-  that reflects increment in prepare_uretprobe()
+patchset in git:
+  http://github.com/arapov/linux-aa/commits/uretprobes_v1
 
-RFCv2 changes:
-* get rid of ->return_consumers member from struct uprobe, introduce
-  ret_handler() in consumer instead
+previous versions:
+  v0: https://lkml.org/lkml/2013/3/22/218
 
-Signed-off-by: Anton Arapov <anton@redhat.com>
----
- kernel/events/uprobes.c | 60 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 59 insertions(+), 1 deletion(-)
+RFC reviews:
+  RFCv4: https://lkml.org/lkml/2013/3/4/246
+  RFCv3: https://lkml.org/lkml/2013/2/28/148
+  RFCv2: https://lkml.org/lkml/2013/1/9/157
+  RFCv1: https://lkml.org/lkml/2012/12/21/133
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 08ecfff..d129c1d 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1609,6 +1609,57 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
- 	up_read(&uprobe->register_rwsem);
- }
+thanks,
+Anton.
+
+Anton Arapov (9):
+  uretprobes: Introduce uprobe_consumer->ret_handler()
+  uretprobes: Reserve the first slot in xol_vma for trampoline
+  uretprobes/x86: Hijack return address
+  uretprobes/ppc: Hijack return address
+  uretprobes: Return probe entry, prepare_uretprobe()
+  uretprobes: Return probe exit, invoke handlers
+  uretprobes: Limit the depth of return probe nestedness
+  uretprobes: Remove -ENOSYS as return probes implemented
+  uretprobes: Documentation update
  
-+static void
-+handler_uretprobe_chain(struct return_instance *ri, struct pt_regs *regs)
-+{
-+	struct uprobe *uprobe = ri->uprobe;
-+	struct uprobe_consumer *uc;
-+
-+	down_read(&uprobe->register_rwsem);
-+	for (uc = uprobe->consumers; uc; uc = uc->next) {
-+		if (uc->ret_handler)
-+			uc->ret_handler(uc, ri->func, regs);
-+	}
-+	up_read(&uprobe->register_rwsem);
-+}
-+
-+static bool handler_uretprobe(struct pt_regs *regs)
-+{
-+	struct uprobe_task *utask;
-+	struct return_instance *ri, *tmp;
-+	bool chained;
-+
-+	utask = current->utask;
-+	if (!utask)
-+		return false;
-+
-+	ri = utask->return_instances;
-+	if (!ri)
-+		return false;
-+
-+	instruction_pointer_set(regs, ri->orig_ret_vaddr);
-+
-+	for (;;) {
-+		handler_uretprobe_chain(ri, regs);
-+
-+		chained = ri->chained;
-+		put_uprobe(ri->uprobe);
-+
-+		tmp = ri;
-+		ri = ri->next;
-+		kfree(tmp);
-+
-+		if (!chained)
-+			break;
-+
-+		BUG_ON(!ri);
-+	}
-+
-+	utask->return_instances = ri;
-+
-+	return true;
-+}
-+
- /*
-  * Run handler and ask thread to singlestep.
-  * Ensure all non-fatal signals cannot interrupt thread while it singlesteps.
-@@ -1620,8 +1671,15 @@ static void handle_swbp(struct pt_regs *regs)
- 	int uninitialized_var(is_swbp);
- 
- 	bp_vaddr = uprobe_get_swbp_addr(regs);
--	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
-+	if (bp_vaddr == get_trampoline_vaddr()) {
-+		if (handler_uretprobe(regs))
-+			return;
- 
-+		pr_warn("uprobe: unable to handle uretprobe pid/tgid=%d/%d\n",
-+						current->pid, current->tgid);
-+	}
-+
-+	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
- 	if (!uprobe) {
- 		if (is_swbp > 0) {
- 			/* No matching uprobe; signal SIGTRAP. */
+ Documentation/trace/uprobetracer.txt | 126 +++++++++++++---------
+ arch/powerpc/include/asm/uprobes.h   |   1 +
+ arch/powerpc/kernel/uprobes.c        |  13 +++
+ arch/x86/include/asm/uprobes.h       |   1 +
+ arch/x86/kernel/uprobes.c            |  29 +++++
+ include/linux/uprobes.h              |   7 ++
+ kernel/events/uprobes.c              | 202 +++++++++++++++++++++++++++++++++--
+ 7 files changed, 320 insertions(+), 59 deletions(-)
+
 -- 
 1.8.1.4
-
