@@ -1,232 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752407Ab3DCEGt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 00:06:49 -0400
-Received: from mail-ia0-f180.google.com ([209.85.210.180]:56752 "EHLO
-	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752089Ab3DCEGr (ORCPT
+	id S1755508Ab3DCEVg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 00:21:36 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:65358 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754402Ab3DCEVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 00:06:47 -0400
-Date: Tue, 2 Apr 2013 21:02:46 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: cgroups@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH v3] memcg: Add memory.pressure_level events
-Message-ID: <20130403040246.GA32229@lizard.gateway.2wire.net>
-References: <20130322071351.GA3971@lizard.gateway.2wire.net>
- <20130326134656.4e0e0aefcf881bffae769b1e@linux-foundation.org>
+	Wed, 3 Apr 2013 00:21:35 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 2 Apr 2013 21:21:42 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Tony Chung <tonychung00@gmail.com>
+Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] watchdog: fix w83627hf_wdt clear timeout expired
+Message-ID: <20130403042142.GA3640@roeck-us.net>
+References: <1364795972-8649-1-git-send-email-tonychung00@gmail.com>
+ <1364795972-8649-2-git-send-email-tonychung00@gmail.com>
+ <20130402000741.GA4077@roeck-us.net>
+ <CAHyaeP1ExzMr8_KvSrmf6+urVROEHRePs_KA3CZ3bnU6Ov79LQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130326134656.4e0e0aefcf881bffae769b1e@linux-foundation.org>
+In-Reply-To: <CAHyaeP1ExzMr8_KvSrmf6+urVROEHRePs_KA3CZ3bnU6Ov79LQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 26, 2013 at 01:46:56PM -0700, Andrew Morton wrote:
-[...]
-> > +The file memory.pressure_level is only used to setup an eventfd,
-> > +read/write operations are no implemented.
-[...]
-> Did we tell people how to use the eventfd interface anywhere?
-
-Good point. In v4 I added a detailed instructions on how to setup the file
-descriptors.
-
-> >  1. Add support for accounting huge pages (as a separate controller)
-> >  2. Make per-cgroup scanner reclaim not-shared pages first
-> > diff --git a/include/linux/vmpressure.h b/include/linux/vmpressure.h
-> > --- /dev/null
-> > +++ b/include/linux/vmpressure.h
-> > @@ -0,0 +1,47 @@
-> > +#ifndef __LINUX_VMPRESSURE_H
-> > +#define __LINUX_VMPRESSURE_H
-> > +
-> > +#include <linux/mutex.h>
-> > +#include <linux/list.h>
-> > +#include <linux/workqueue.h>
-> > +#include <linux/gfp.h>
-> > +#include <linux/types.h>
-> > +#include <linux/cgroup.h>
-> > +
-> > +struct vmpressure {
-> > +	unsigned int scanned;
-> > +	unsigned int reclaimed;
-> > +	/* The lock is used to keep the scanned/reclaimed above in sync. */
-> > +	struct mutex sr_lock;
-> > +
-> > +	struct list_head events;
+On Mon, Apr 01, 2013 at 09:59:00PM -0700, Tony Chung wrote:
+> Thanks Guenter!
+> I agree with you.  My first reaction was also about a small watchdog
+> server that will start in early boot process.  There are pros and
+> cons.   For example, there are many types of watchdog devices such as
+> ipmi_watchdog which can accept more than  255 seconds for timeout. So
+> you really need udev to pick the correct watchdog driver.  It could be
+> very complex.
 > 
-> A comment describing what goes at `events' would be nice.  Reference
-> "struct vmpressure_event".
+> Our requirement don't need watchdog protection during the boot process
+> until application is fully up but a driver should not assume anything.
 
-Done.
+Ok, but then the BIOS should not enable the watchdog.
 
-> > +	/* Have to grab the lock on events traversal or modifications. */
-> > +	struct mutex events_lock;
-> > +
-> > +	struct work_struct work;
-> > +};
-> >
-> > ...
-> >
-> > +/*
-> > + * The window size is the number of scanned pages before we try to analyze
-> > + * the scanned/reclaimed ratio (or difference).
-> > + *
-> > + * It is used as a rate-limit tunable for the "low" level notification,
-> > + * and for averaging medium/critical levels. Using small window sizes can
-> > + * cause lot of false positives, but too big window size will delay the
-> > + * notifications.
-> > + *
-> > + * TODO: Make the window size depend on machine size, as we do for vmstat
-> > + * thresholds.
+>  Anyway, an unexpected reboot is definitely a bug that need to be
+> fixed.   It is really easily reproducible.  Depending on your hardware
+
+Agreed.
+
+> and BIOS settings, just reboot the boot, wait for 5 minutes and then
+> run "insmod w83627hf_wdt.ko".  The box just reboot by itself.  The
+> watchdog sever is not even started.
 > 
-> Here "the window size" refers to vmpressure_win, yes?
+Doesn't happen for me, as the watchdog is initially not enabled in my system,
+and bit 4 is never set. And when it gets set, the system immediately reboots.
 
-Yup.
-
-(To make it clear, in the new version I added a direct reference to the
-vmpressure_win.)
-
-> > + */
-> > +static const unsigned int vmpressure_win = SWAP_CLUSTER_MAX * 16;
-> > +static const unsigned int vmpressure_level_med = 60;
-> > +static const unsigned int vmpressure_level_critical = 95;
-> > +static const unsigned int vmpressure_level_critical_prio = 3;
+> This line is actually the original fix that is running over a year:
+>     outb_p(0, WDT_EFDR);    /* disable to prevent reboot */
 > 
-> vmpressure_level_critical_prio is a bit mysterious and undocumented. 
-> Please document it here and/or at vmpressure_prio().
+Unfortunately this turns off the watchdog if it was running and has triggered.
 
-I added documentation in v4.
-
-> > +void vmpressure(gfp_t gfp, struct mem_cgroup *memcg,
-> > +		unsigned long scanned, unsigned long reclaimed)
+> When I tried to cleanup it up,  I thought I don't need it but it
+> turned out it was still needed.
+> When I changed it from 0xC0 to 0xD0, it still reboot.
 > 
-> Exported function and a primary inteface.  Needs nice documentation, please ;)
+So it looks like the watchdog triggered, for some reason did not cause
+a reset, but resetting the trigger flag does.
 
-Sure thing, all exported function now come with kernel-doc comments.
+Ultimately, the new code turns the watchdog off if it was running, has already
+triggered, but did not cause a reset. The ultimate effect is that the system
+will hang if it gets stuck before the watchdog application is started later on.
+Maybe that is not your application, but others wil defintely want that
+protection.
 
-[...]
-> > +	 */
-> > +	if (!(gfp & (__GFP_HIGHMEM | __GFP_MOVABLE | __GFP_IO | __GFP_FS)))
-> 
-> I'm surprised at __GFP_HIGHMEM's inclusion.  On some machines the great
-> majority of user memory is in highmem.  What's up?
+So I don't think the solution is correct. We should find out why the watchdog
+trigger did not cause a reset. Also, I think it would be better in this
+situation (if watchdog has triggered) to restart it with the default timeout.
 
-In the new revision I included this comment:
+What is the exact chip type in your system ? I want to have a look into the
+datasheet; maybe I can find out how it can trigger without causing a reset.
 
-        /*
-         * Here we only want to account pressure that userland is able to
-         * help us with. For example, suppose that DMA zone is under
-         * pressure; if we notify userland about that kind of pressure,
-         * then it will be mostly a waste as it will trigger unnecessary
-         * freeing of memory by userland (since userland is more likely to
-         * have HIGHMEM/MOVABLE pages instead of the DMA fallback). That
-         * is why we include only movable, highmem and FS/IO pages.
-         * Indirect reclaim (kswapd) sets sc->gfp_mask to GFP_KERNEL, so
-         * we account it too.
-         */
-        if (!(gfp & (__GFP_HIGHMEM | __GFP_MOVABLE | __GFP_IO | __GFP_FS)))
-                return;
-
-> > +	if (!scanned)
-> > +		return;
-> > +
-> > +	mutex_lock(&vmpr->sr_lock);
-> > +	vmpr->scanned += scanned;
-> > +	vmpr->reclaimed += reclaimed;
-> 
-> See, here we're accumulating into a 32-bit variable quantities which used
-> to be held in 64-bit variables.    The overflow risk gets higher...
-
-I see. I fixed this.
-
-> > +	mutex_unlock(&vmpr->sr_lock);
-> > +
-> > +	if (scanned < vmpressure_win || work_pending(&vmpr->work))
-> > +		return;
-> > +	schedule_work(&vmpr->work);
-> > +}
-> > +
-> > +void vmpressure_prio(gfp_t gfp, struct mem_cgroup *memcg, int prio)
-> 
-> Documentation please.
-
-Yup, done.
-
-> > +{
-> > +	if (prio > vmpressure_level_critical_prio)
-> > +		return;
-> > +
-> > +	/*
-> > +	 * OK, the prio is below the threshold, updating vmpressure
-> 
-> But you never told me what that threshold is for!  And I have no means
-> of working out why you chose "3", nor the effects of altering it, etc.
-
-True. This is explained it in a comment now.
-
-[...]
-> > +int vmpressure_register_event(struct cgroup *cg, struct cftype *cft,
-> > +			      struct eventfd_ctx *eventfd, const char *args)
-> 
-> Document the interface, please.
-
-Done.
-
-> > +{
-> > +	struct vmpressure *vmpr = cg_to_vmpr(cg);
-> > +	struct vmpressure_event *ev;
-> > +	int lvl;
-> 
-> These abbreviations are rather unlinuxy.  wk->work, vmpr->vmpressure,
-> lvl->level, etc.
-
-Yeah, I agree. Although, 'vmpressure' as a function-scope variable is
-kinda too long, the code becomes really hard to read. But in memcg struct
-and global namespace I now use the full 'vmpressure' name.
-
-> > +	for (lvl = 0; lvl < VMPRESSURE_NUM_LEVELS; lvl++) {
-> > +		if (!strcmp(vmpressure_str_levels[lvl], args))
-> > +			break;
-> > +	}
-> > +
-> > +	if (lvl >= VMPRESSURE_NUM_LEVELS)
-> > +		return -EINVAL;
-> > +
-> > +	ev = kzalloc(sizeof(*ev), GFP_KERNEL);
-> > +	if (!ev)
-> > +		return -ENOMEM;
-> > +
-> > +	ev->efd = eventfd;
-> > +	ev->level = lvl;
-> > +
-> > +	mutex_lock(&vmpr->events_lock);
-> > +	list_add(&ev->node, &vmpr->events);
-> 
-> What's the upper bound on the length of this list?
-
-As of now, it is controlled by the cgroup core, so I would say the number
-of opened FDs, and if that is a problem, it should be fixed for everyone.
-The good thing is that the list is per-cgroup, it is not global.
-
-
-Thanks for the review, Andrew!
-
-Anton
+Thanks,
+Guenter
