@@ -1,51 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763221Ab3DCTW2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 15:22:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1243 "EHLO mx1.redhat.com"
+	id S1763247Ab3DCTXs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 15:23:48 -0400
+Received: from smtp302.alice.it ([82.57.200.118]:59397 "EHLO smtp302.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762237Ab3DCTW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 15:22:27 -0400
-Message-ID: <515C80EB.8070801@redhat.com>
-Date: Wed, 03 Apr 2013 15:20:11 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] hugetlbfs: stop setting VM_DONTDUMP in initializing
- vma(VM_HUGETLB)
-References: <1365014138-19589-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1365014138-19589-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1365014138-19589-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1763028Ab3DCTXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 15:23:47 -0400
+Message-ID: <13dd159896e.giulianapasquale@alice.it>
+Date: Wed, 3 Apr 2013 21:22:18 +0200 (CEST)
+From: Mrs Lin lin <giulianapasquale@alice.it>
+Reply-To: dhlgroup139@yahoo.com.tr
+Subject: HELLO! DEAR, CONTACT DHL EXPRESS
+Mime-Version: 1.0
+Content-Type: text/plain;charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: 41.216.50.160
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 02:35 PM, Naoya Horiguchi wrote:
-> Currently we fail to include any data on hugepages into coredump,
-> because VM_DONTDUMP is set on hugetlbfs's vma. This behavior was recently
-> introduced by commit 314e51b98 "mm: kill vma flag VM_RESERVED and
-> mm->reserved_vm counter". This looks to me a serious regression,
-> so let's fix it.
->
-> ChangeLog v3:
->   - move 'return 0' into a separate patch
->
-> ChangeLog v2:
->   - add 'return 0' in hugepage memory check
->
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Acked-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Acked-by: Michal Hocko <mhocko@suse.cz>
-> Cc: stable@vger.kernel.org
+HELLO! DEAR, GOOD NEWS TO YOU,
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+I have registered the ATM MASTER CARD with DHL COMPANY this morning as we
+agreed and the delivery will take off tomorrow
 
+morning based on my agreement with DHL
+Director  Dr Kelly Hall MOST IMPORTANT: reconfirm your current delivery 
+address
+to him then contact him via the following email:{dhlgroup139@yahoo.com.tr}+229
+68010281
+
+I will not be reached till June 20th, 2013. Your amount in the Card is US$1.5
+Million and the Pin code of your ATM CARD is: {0609}
+
+Thanks
+Mrs Lin lin
