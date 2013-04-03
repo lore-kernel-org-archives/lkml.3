@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763366Ab3DCVOM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 17:14:12 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:34376 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759074Ab3DCVOL (ORCPT
+	id S1763375Ab3DCVXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 17:23:09 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:48153 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760462Ab3DCVXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 17:14:11 -0400
-Date: Wed, 3 Apr 2013 23:14:06 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/3] fix hugetlb memory check in vma_dump_size()
-Message-ID: <20130403211354.GA27611@dhcp22.suse.cz>
-References: <1365014138-19589-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1365014138-19589-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+	Wed, 3 Apr 2013 17:23:06 -0400
+Message-ID: <515C9DB7.9000908@wwwdotorg.org>
+Date: Wed, 03 Apr 2013 15:23:03 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365014138-19589-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Tony Prisk <linux@prisktech.co.nz>, Rob Herring <robherring2@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vt8500-wm8505-linux-kernel@googlegroups.com" 
+	<vt8500-wm8505-linux-kernel@googlegroups.com>
+Subject: Re: [PATCHv5 0/7] arm: vt8500: Add support for pinctrl/gpio module
+References: <1364970291-17721-1-git-send-email-linux@prisktech.co.nz> <CACRpkdZAtgpfA5rZ_C=eKDDOE9aDm=3k1QDava=EGL2BaoV+0g@mail.gmail.com>
+In-Reply-To: <CACRpkdZAtgpfA5rZ_C=eKDDOE9aDm=3k1QDava=EGL2BaoV+0g@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 03-04-13 14:35:37, Naoya Horiguchi wrote:
-> Documentation/filesystems/proc.txt says about coredump_filter bitmask,
+On 04/03/2013 07:40 AM, Linus Walleij wrote:
+> On Wed, Apr 3, 2013 at 8:24 AM, Tony Prisk <linux@prisktech.co.nz> wrote:
 > 
->   Note bit 0-4 doesn't effect any hugetlb memory. hugetlb memory are only
->   effected by bit 5-6.
+>> v5 changes:
+>> Changed as requested by Rob Herring:
+>> Added of_find_property_value_of_size() to drivers/of/base.c to remove some
+>> code that was being duplicated.
+>>
+>> Changed as requested by Stephen Warren:
+>> Redid the kfree(maps) code as devm_kzalloc would cause issues. We now kzalloc
+>> maps all at once, and configs as required. A call to wmt_pctl_dt_free_map() is
+>> used to kfree the allocated blocks if we fail early.
 > 
-> However current code can go into the subsequent flag checks of bit 0-4
-> for vma(VM_HUGETLB). So this patch inserts 'return' and makes it work
-> as written in the document.
+> This v5 series:
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
 > 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: stable@vger.kernel.org
+> I guess it will go in through the VT8500 tree eventually?
+> 
+> Maybe you could put Stephen's BCMring patch on top when sending
+> it in (also Acked-by) so we can avoid having that dangling.
 
-Just for the record. It should be stable for 3.7+ since (314e51b98)
-becuase then have lost VM_RESERVED check which used to stop hugetlb
-mappings.
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  fs/binfmt_elf.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git v3.9-rc3.orig/fs/binfmt_elf.c v3.9-rc3/fs/binfmt_elf.c
-> index 3939829..86af964 100644
-> --- v3.9-rc3.orig/fs/binfmt_elf.c
-> +++ v3.9-rc3/fs/binfmt_elf.c
-> @@ -1137,6 +1137,7 @@ static unsigned long vma_dump_size(struct vm_area_struct *vma,
->  			goto whole;
->  		if (!(vma->vm_flags & VM_SHARED) && FILTER(HUGETLB_PRIVATE))
->  			goto whole;
-> +		return 0;
->  	}
->  
->  	/* Do not dump I/O mapped devices or special mappings */
-> -- 
-> 1.7.11.7
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+s/bcmring/bcm2835/ :-)
