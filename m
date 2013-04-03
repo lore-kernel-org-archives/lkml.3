@@ -1,125 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762074Ab3DCOq0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:46:26 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18294 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759137Ab3DCOqW (ORCPT
+	id S1761353Ab3DCOqJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:46:09 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:63954 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761496Ab3DCOp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:46:22 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 03 Apr 2013 07:45:17 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+	Wed, 3 Apr 2013 10:45:56 -0400
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
         Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Pritesh Raithatha <praithatha@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Andrew Chew <achew@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v9 03/14] clk: tegra: Add TEGRA_PLL_BYPASS flag
-Date: Wed, 3 Apr 2013 17:40:37 +0300
-Message-ID: <1365000110-8916-4-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+        Bjorn Helgaas <bhelgaas@google.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH v3 11/12] ARM: tegra: trimslice: Initialize PCIe from DT
+Date: Wed,  3 Apr 2013 16:45:17 +0200
+Message-Id: <1365000318-28256-12-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.8.2
+In-Reply-To: <1365000318-28256-1-git-send-email-thierry.reding@avionic-design.de>
+References: <1365000318-28256-1-git-send-email-thierry.reding@avionic-design.de>
+X-Provags-ID: V02:K0:trOP8LBb4LNP9JfOnczvJM4gVUGbXQ+YSgPrSfEi+sg
+ UVu4iH7GSrGYPa4HZTOZkGmOYqIPGHrN47iAukLuodJu/kqnWk
+ Z0OPftfcy7sBgGaM7wN/PIwoxAyLV1WuLzsWENt0L3oWPLJFkY
+ q68UbU28VMd97gkjtNkO4rhvVj2zwyf3DOU7v/dHIeauE8QALH
+ eFJ8IOoF9FLUvLxnwEUUS8L73q1qd0aLdhpp5nLbTbqmnb9IKS
+ 0vgdY5kitIidvqQmhwcn97tSvXz5OI8EQSGYx5UMsbs0VIUixT
+ hDXJeaJtfwtSHFeR1MO/9JD5gooLbqALieJPGVlpvgz5WZcI5G
+ 5xYcE1LrSJtxT7qCioNEty0P0HB0VeL8q4FSywIGvtUFKW4EaV
+ 5Se2G0L7Gk8FwKqcg4J7Bjip4aoLOLG+D30ZiXmsLujHhM6hzQ
+ q7uec
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not all PLLs in Tegra114 have a bypass bit. Adapt the common code to only use
-this bit when available.
+With the device tree support in place, probe the PCIe controller from
+the device tree and remove the corresponding workaround in the board
+file.
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 ---
- drivers/clk/tegra/clk-pll.c |   12 ++++++++----
- drivers/clk/tegra/clk.h     |    2 ++
- 2 files changed, 10 insertions(+), 4 deletions(-)
+Changes in v2:
+- add missing dummy regulator nodes by Stephen Warren
+- rename port 0 DT node and disable unused port 1
 
-diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
-index 3feefb1..4ee6d03 100644
---- a/drivers/clk/tegra/clk-pll.c
-+++ b/drivers/clk/tegra/clk-pll.c
-@@ -171,7 +171,8 @@ static void _clk_pll_enable(struct clk_hw *hw)
- 	clk_pll_enable_lock(pll);
+ arch/arm/boot/dts/tegra20-trimslice.dts | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+
+diff --git a/arch/arm/boot/dts/tegra20-trimslice.dts b/arch/arm/boot/dts/tegra20-trimslice.dts
+index 955bf49..dc081c3 100644
+--- a/arch/arm/boot/dts/tegra20-trimslice.dts
++++ b/arch/arm/boot/dts/tegra20-trimslice.dts
+@@ -300,6 +300,16 @@
+ 		};
+ 	};
  
- 	val = pll_readl_base(pll);
--	val &= ~PLL_BASE_BYPASS;
-+	if (pll->flags & TEGRA_PLL_BYPASS)
-+		val &= ~PLL_BASE_BYPASS;
- 	val |= PLL_BASE_ENABLE;
- 	pll_writel_base(val, pll);
++	pcie-controller {
++		status = "okay";
++		pex-clk-supply = <&pci_clk_reg>;
++		vdd-supply = <&pci_vdd_reg>;
++
++		pci@1,0 {
++			status = "okay";
++		};
++	};
++
+ 	usb@c5000000 {
+ 		status = "okay";
+ 		nvidia,vbus-gpio = <&gpio 170 0>; /* gpio PV2 */
+@@ -357,6 +367,24 @@
+ 			regulator-max-microvolt = <1800000>;
+ 			regulator-always-on;
+ 		};
++
++		pci_clk_reg: regulator@2 {
++			compatible = "regulator-fixed";
++			reg = <2>;
++			regulator-name = "pci_clk";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			regulator-always-on;
++		};
++
++		pci_vdd_reg: regulator@3 {
++			compatible = "regulator-fixed";
++			reg = <3>;
++			regulator-name = "pci_vdd";
++			regulator-min-microvolt = <1050000>;
++			regulator-max-microvolt = <1050000>;
++			regulator-always-on;
++		};
+ 	};
  
-@@ -188,7 +189,9 @@ static void _clk_pll_disable(struct clk_hw *hw)
- 	u32 val;
- 
- 	val = pll_readl_base(pll);
--	val &= ~(PLL_BASE_BYPASS | PLL_BASE_ENABLE);
-+	if (pll->flags & TEGRA_PLL_BYPASS)
-+		val &= ~PLL_BASE_BYPASS;
-+	val &= ~PLL_BASE_ENABLE;
- 	pll_writel_base(val, pll);
- 
- 	if (pll->flags & TEGRA_PLLM) {
-@@ -459,7 +462,7 @@ static unsigned long clk_pll_recalc_rate(struct clk_hw *hw,
- 
- 	val = pll_readl_base(pll);
- 
--	if (val & PLL_BASE_BYPASS)
-+	if ((pll->flags & TEGRA_PLL_BYPASS) && (val & PLL_BASE_BYPASS))
- 		return parent_rate;
- 
- 	if ((pll->flags & TEGRA_PLL_FIXED) && !(val & PLL_BASE_OVERRIDE)) {
-@@ -671,6 +674,7 @@ struct clk *tegra_clk_register_pll(const char *name, const char *parent_name,
- 	struct tegra_clk_pll *pll;
- 	struct clk *clk;
- 
-+	pll_flags |= TEGRA_PLL_BYPASS;
- 	pll = _tegra_init_pll(clk_base, pmc, fixed_rate, pll_params, pll_flags,
- 			      freq_table, lock);
- 	if (IS_ERR(pll))
-@@ -692,8 +696,8 @@ struct clk *tegra_clk_register_plle(const char *name, const char *parent_name,
- {
- 	struct tegra_clk_pll *pll;
- 	struct clk *clk;
--	pll_flags |= TEGRA_PLL_LOCK_MISC;
- 
-+	pll_flags |= TEGRA_PLL_LOCK_MISC | TEGRA_PLL_BYPASS;
- 	pll = _tegra_init_pll(clk_base, pmc, fixed_rate, pll_params, pll_flags,
- 			      freq_table, lock);
- 	if (IS_ERR(pll))
-diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
-index b9691dd..fff520a 100644
---- a/drivers/clk/tegra/clk.h
-+++ b/drivers/clk/tegra/clk.h
-@@ -184,6 +184,7 @@ struct tegra_clk_pll_params {
-  * TEGRA_PLLE_CONFIGURE - Configure PLLE when enabling.
-  * TEGRA_PLL_LOCK_MISC - Lock bit is in the misc register instead of the
-  *     base register.
-+ * TEGRA_PLL_BYPASS - PLL has bypass bit
-  */
- struct tegra_clk_pll {
- 	struct clk_hw	hw;
-@@ -213,6 +214,7 @@ struct tegra_clk_pll {
- #define TEGRA_PLL_FIXED BIT(6)
- #define TEGRA_PLLE_CONFIGURE BIT(7)
- #define TEGRA_PLL_LOCK_MISC BIT(8)
-+#define TEGRA_PLL_BYPASS BIT(9)
- 
- extern const struct clk_ops tegra_clk_pll_ops;
- extern const struct clk_ops tegra_clk_plle_ops;
+ 	sound {
 -- 
-1.7.7.rc0.72.g4b5ea.dirty
+1.8.2
 
