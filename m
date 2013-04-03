@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760498Ab3DCPXn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 11:23:43 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:51206 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758907Ab3DCPXl (ORCPT
+	id S1760469Ab3DCPZZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 11:25:25 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43369 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757901Ab3DCPZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 11:23:41 -0400
-Message-ID: <515C496A.6050809@openwrt.org>
-Date: Wed, 03 Apr 2013 17:23:22 +0200
-From: Florian Fainelli <florian@openwrt.org>
-Organization: OpenWrt
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Wed, 3 Apr 2013 11:25:23 -0400
+Date: Wed, 3 Apr 2013 17:16:54 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Christian Gmeiner <christian.gmeiner@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        linux-i2c@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3/3] watchdog: Add Congatec CGEB watchdog driver
+Message-ID: <20130403151654.GY1906@pengutronix.de>
+References: <1360663374-30951-1-git-send-email-s.hauer@pengutronix.de>
+ <1360663374-30951-4-git-send-email-s.hauer@pengutronix.de>
+ <CAH9NwWd7YdtK0urutisVgKoE7NmPFLpG3wFG5W6P7o45vUqAng@mail.gmail.com>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Eric Whitney <enwlinux@gmail.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        Christian Kujau <lists@nerdbynature.de>, CAI Qian <caiqian@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] ext4: fix a big-endian bug when an extent is zeroed out
-References: <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org> <877gkls1q7.fsf@openvz.org> <alpine.DEB.2.10.1304021430480.13746@trent.utfs.org> <87r4isd1vn.fsf@openvz.org> <alpine.DEB.2.10.1304021611020.13746@trent.utfs.org> <87li90q9mx.fsf@openvz.org> <87hajoq6s2.fsf@openvz.org> <20130403102204.GA15383@gmail.com> <20130403122058.GB7741@thunk.org> <20130403143406.GA3006@wallace> <20130403144114.GB13668@thunk.org>
-In-Reply-To: <20130403144114.GB13668@thunk.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAH9NwWd7YdtK0urutisVgKoE7NmPFLpG3wFG5W6P7o45vUqAng@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 17:15:33 up 284 days,  6:27, 113 users,  load average: 2.52, 4.00,
+ 5.56
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Mar 26, 2013 at 11:16:35AM +0100, Christian Gmeiner wrote:
+> 2013/2/12 Sascha Hauer <s.hauer@pengutronix.de>:
+> > --
+> 
+> There seems to be a problem:
+> 
+> Mar 26 16:11:25 OT kernel: [   80.207514] cgeb-watchdog
+> cgeb-watchdog.0: registered
+> Mar 26 16:11:38 OT watchdog[2519]: stopping daemon (5.9)
+> Mar 26 16:11:43 OT watchdog[2750]: starting daemon (5.9):
+> Mar 26 16:11:43 OT watchdog[2750]: int=1s realtime=yes sync=no soft=no
+> mla=0 mem=0
+> Mar 26 16:11:43 OT watchdog[2750]: ping: no machine to check
+> Mar 26 16:11:43 OT watchdog[2750]: file: no file to check
+> Mar 26 16:11:43 OT watchdog[2750]: pidfile: no server process to check
+> Mar 26 16:11:43 OT watchdog[2750]: interface: no interface to check
+> Mar 26 16:11:43 OT watchdog[2750]: test=none(0) repair=none(0)
+> alive=/dev/watchdog heartbeat=none temp=none to=root no_act=no
+> Mar 26 16:11:43 OT watchdog[2750]: cannot set timeout 60 (errno = 95 =
+> 'Operation not supported')
 
-Le 04/03/13 16:41, Theodore Ts'o a écrit :
-> On Wed, Apr 03, 2013 at 10:34:06AM -0400, Eric Whitney wrote:
->>
->> The TI OMAP4 processor on my Pandaboard test system is little endian.
->
-> Ah... so basically, we need to find a test platform which allows us to
-> boot arbitrary kernels and allows us to have root access (which means
-> it's unlikely we'll be able to do this via remote access) and which
-> doesn't have exotic power requirements (which as far as I know rules
-> out pSeries and zSeries systems....)
->
-> It would also be nice if we could run tests in finite time, which
-> probably rules out the Hercules emulator (it runs at one-tenth zSeries
-> processor speeds, which doesn't win speed competitions by default, and
-> I suspect their storage speeds are even worse).
->
-> Anyone else have any suggestions?  Or anyone willing to help us run
-> ext4 regression tests on the ext4 dev tree, so we can find these
-> problems before we merge into mainline?
+As mentioned in my other mail the watchdog core no longer sets
+wdd->timeout which results in the above message. Should be fixed
+with the next version.
 
-Qemu emulates various mainline PowerPC, MIPS and SPARC big-endian 
-systems pretty efficiently and it should not be too hard neither to 
-script nor to get a recent kernel up and running on these platforms.
+Sascha
 
-My 2 cents.
---
-Florian
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
