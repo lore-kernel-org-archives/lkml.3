@@ -1,40 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761722Ab3DCN0Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 09:26:16 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:37943 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760794Ab3DCN0P (ORCPT
+	id S1761618Ab3DCN2H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 09:28:07 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:34595 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760094Ab3DCN2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 09:26:15 -0400
+	Wed, 3 Apr 2013 09:28:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <515C444002000078000CA5B5@nat28.tlf.novell.com>
-References: <512EC22F.5020404@asianux.com> <CAJ75kXZc+GtYi7ULs96G3VkmyzkS5-qe702iXpNenpPj8GF5BQ@mail.gmail.com>
- <515C444002000078000CA5B5@nat28.tlf.novell.com>
-From: William Dauchy <wdauchy@gmail.com>
-Date: Wed, 3 Apr 2013 15:25:54 +0200
-Message-ID: <CAJ75kXaHoydy4=ZTMHN8S=nyw7rRGdb4w2_Xf0oCLBQnJD6W-w@mail.gmail.com>
-Subject: Re: [PATCH v2] drivers/block/xen-blkback: preq.dev is used without initialized
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Chen Gang <gang.chen@asianux.com>, "roger.pau" <roger.pau@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        xen-devel <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        dgdegra <dgdegra@tycho.nsa.gov>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1364562678-8945-1-git-send-email-acourbot@nvidia.com>
+References: <1364562678-8945-1-git-send-email-acourbot@nvidia.com>
+Date: Wed, 3 Apr 2013 15:28:03 +0200
+Message-ID: <CACRpkdak79-KuSXdRb7B83Xe+6-f-gNK12Q+EVbXNPSwJLqgrw@mail.gmail.com>
+Subject: Re: [PATCH 0/3] gpio: remove GENERIC_GPIO completely
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
+        Romain Naour <romain.naour@openwide.fr>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jan,
+On Fri, Mar 29, 2013 at 2:11 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
 
-On Wed, Apr 3, 2013 at 3:01 PM, Jan Beulich <JBeulich@suse.com> wrote:
-> Iirc we requested the earlier commit to be removed from stable
-> trees, and I think Greg also did so.
+> Since I have received no death threat from architecture maintainers I'd like to
+> proceed with the remainder of this work so that it doesn't go half-baked into
+> 3.10. These three patches finish the removal of the GENERIC_GPIO config option
+> which has been made equivalent to GPIOLIB in the previous series. It does so by
+> first changing all references to GENERIC_GPIO into GPIOLIB in driver code and
+> configuration files, and then removing the unused option from the Kconfig files
+> where it is declared.
+>
+> The last patch in the series confirms gpiolib in its new role as GPIO framework
+> by renaming CONFIG_GPIOLIB into CONFIG_GPIO, following the model used by other
+> frameworks. This name changing might rise concern but it seems more logical to
+> me and the historical gpiolib name is still mentioned in the documentation to
+> relieve the confusion.
+>
+> If I can get a few acks on these (or at least the first two ones) I'd like to
+> include them into my next branch as soon as possible so points of breakage can
+> be fixed. There are indeed a few new users of GENERIC_GPIO (CC Romain, I sent a
+> warning but saw no action so far) in the next tree and compilation will break
+> for them.
+>
+> Another issue, I could not update the Chinese documentation in a satisfying
+> manner due to my absence of Chinese skills. Hope that will be forgiven.
+>
+> Alexandre Courbot (3):
+>   Convert selectors of GENERIC_GPIO to GPIOLIB
+>   Remove GENERIC_GPIO config option
+>   Rename CONFIG_GPIOLIB to CONFIG_GPIO
 
-I'm sorry but I'm unable to find a revert of 01c681d in stable tree.
+The series:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Regards,
---
-William
+Yours,
+Linus Walleij
