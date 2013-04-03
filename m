@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763408Ab3DCKYw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 06:24:52 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:53024 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762371Ab3DCKYu (ORCPT
+	id S1763480Ab3DCK2T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 06:28:19 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:38081 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762545Ab3DCK2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 06:24:50 -0400
-Message-ID: <1364984688.1830.4.camel@x61.thuisdomein>
-Subject: Re: [PATCH 1/1] Introduce Intel RAPL cooling device driver
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Platform Driver <platform-driver-x86@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Date: Wed, 03 Apr 2013 12:24:48 +0200
-In-Reply-To: <1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1364940936-20846-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	 <1364940936-20846-2-git-send-email-jacob.jun.pan@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Wed, 3 Apr 2013 06:28:17 -0400
+Message-ID: <515C043B.4070401@console-pimps.org>
+Date: Wed, 03 Apr 2013 11:28:11 +0100
+From: Matt Fleming <matt@console-pimps.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Daniel Vacek <neelx.g@gmail.com>
+CC: Matthew Garrett <mjg@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        matt.fleming@intel.com, linux-efi@vger.kernel.org, ben@decadent.org.uk,
+        linux-kernel@vger.kernel.org, x86@kernel.org, stable@vger.kernel.org
+Subject: Re: Patch "efi: Build EFI stub with EFI-appropriate options" has
+ been added to the 3.6-stable tree
+References: <13511021101759@kroah.org> <CAA7rmPF4oZjvwQ5LU1pJAydWhbwmCmzgUudUvQ5_YPpS_Rnjvg@mail.gmail.com> <1364614121.3557.11.camel@deadeye.wl.decadent.org.uk> <CAA7rmPFxzoOgcrYRetyx3hY-Y_cj0jzuY=sGAj-v2X59vCrrDg@mail.gmail.com>
+In-Reply-To: <CAA7rmPFxzoOgcrYRetyx3hY-Y_cj0jzuY=sGAj-v2X59vCrrDg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Apr 2013 10:24:48.0341 (UTC) FILETIME=[77F7E050:01CE3055]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-02 at 15:15 -0700, Jacob Pan wrote:
-> --- a/drivers/platform/x86/Kconfig
-> +++ b/drivers/platform/x86/Kconfig
-> @@ -781,4 +781,12 @@ config APPLE_GMUX
->  	  graphics as well as the backlight. Currently only backlight
->  	  control is supported by the driver.
->  
-> +config INTEL_RAPL
-> +	tristate "Intel RAPL Support"
-> +	depends on X86 && THERMAL
+On 30/03/13 10:04, Daniel Vacek wrote:
+> On Sat, Mar 30, 2013 at 4:28 AM, Ben Hutchings <ben@decadent.org.uk> wrote:
+>> Daniel, this is an obvious fix but I noticed it still hasn't been
+>> applied.  Please can you re-send with the proper Signed-off-by line?
+> 
+> Resending patch. It got lost somewhere. Thanks for pushing Ben.
+> 
+> From 53864fe932aa87be62f1c70944c386cff9bb9130 Mon Sep 17 00:00:00 2001
+> From: Daniel Vacek <neelx.g@gmail.com>
+> Date: Thu, 18 Oct 2012 22:06:26 +0200
+> Subject: [PATCH] efi: fix typo in Makefile
+> 
+> Fix a little typo.
+> 
+> Signed-off-by: Daniel Vacek <neelx.g@gmail.com>
+> Acked-by: Matthew Garrett <mjg@redhat.com>
+> ---
+>  arch/x86/boot/compressed/Makefile |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-drivers/platform/x86/Kconfig is sourced from drivers/platform/Kconfig.
-The relevant line is wrapped in an "if X86" and "endif" pair. So X86 is
-superfluous here.
-"
-> +	default y
-> +	---help---
-> +	  RAPL, AKA, Running Average Power Limit provides mechanisms to enforce
-> +	  and monitor per domain power consumption limits of supported Intel CPUs.
-> +
->  endif # X86_PLATFORM_DEVICES
+I applied this by hand. Your patch appears to be whitespace damaged. Also, I
+expanded the commit message and turned it into,
 
+  efi: fix typo in Makefile
 
-Paul Bolle
+  commit 9dead5bbb825 ("efi: Build EFI stub with EFI-appropriate options")
+  contains a typo which means that the efi_stub_$(BITS).o code is still not
+  compiled with -fshort-wchar and -mno-red-zone.
 
+  Fix it with s/KBUILD_CLFAGS/KBUILD_CFLAGS/
+
+-- 
+Matt Fleming, Intel Open Source Technology Center
