@@ -1,38 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761472Ab3DCPde (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 11:33:34 -0400
-Received: from [89.144.129.18] ([89.144.129.18]:2206 "EHLO host2-askiran"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1760144Ab3DCPdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 11:33:33 -0400
-Reply-To: <info@Web-Mail.com>
-From: "Web-Mail Helpdesk" <info@Web-Mail.com>
-Subject: Warning!! 99% of your mail box quota used
-Date: Wed, 3 Apr 2013 15:46:15 +0100
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+	id S1761547Ab3DCPfH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 11:35:07 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:36717 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759456Ab3DCPfF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 11:35:05 -0400
+Message-ID: <1365003300.13853.25.camel@edumazet-glaptop>
+Subject: Re: [ 105/124] af_unix: dont send SCM_CREDENTIAL when dest socket
+ is NULL
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Sven Joachim <svenjoac@gmx.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Ding Tianhong <dingtianhong@huawei.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Wed, 03 Apr 2013 08:35:00 -0700
+In-Reply-To: <87a9pfzm33.fsf@turtle.gmx.de>
+References: <20130402221104.163133110@linuxfoundation.org>
+	 <20130402221116.307254752@linuxfoundation.org>
+	 <87vc833kpf.fsf@turtle.gmx.de> <1364997630.13853.19.camel@edumazet-glaptop>
+	 <87a9pfzm33.fsf@turtle.gmx.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 130403-0, 04/03/2013), Outbound message
-X-Antivirus-Status: Clean
-Message-ID: <auto-000004168894@host2-askiran>
-To: unlisted-recipients:; (no To-header on input)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Warning!! You are currently operating at 99% of your mail box quota. You need to upgrade your email limit quota to 2GB within the next 48 hours to enable you store and receive large numbers of emails in your mailbox. Use the below web link to upgrade to 2GB:
+On Wed, 2013-04-03 at 17:10 +0200, Sven Joachim wrote:
+> On 2013-04-03 16:00 +0200, Eric Dumazet wrote:
 
-click link below:
+> 
+> > It might be a wrong sender (application bug or bad identity), and udevd
+> > correctly discards the incoming message.
+> 
+> How would I find out the culprit?
 
-http://www.webmailadministrator.com/
+Change udevd to display the pid as well, and hopefully track the sender.
 
-Failure to update this account after three days of receiving this warning will be tantamount to losing this account permanently
+udevd receives uid and pid in the credentials.
 
-Thank you for using our email.
-Copyright 2013 Email Administrator
+
+
