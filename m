@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761060Ab3DCQIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 12:08:14 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:61728 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754857Ab3DCQIN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 12:08:13 -0400
-Date: Wed, 3 Apr 2013 09:08:11 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [PATCH] sysfs: check if one entry has been removed before freeing
-Message-ID: <20130403160811.GA21383@kroah.com>
-References: <1364957903-10341-1-git-send-email-ming.lei@canonical.com>
- <20130403030403.GA26913@redhat.com>
- <CACVXFVPOC=d3-1UBu6UbqJXMS2gG=DXnBJeuLaFc3R4QKAzWyg@mail.gmail.com>
- <20130403053534.GA8091@kroah.com>
- <CACVXFVMV6cFhrybrE_oNSthzPF71xOE7dbwTK9GP+x08d3TpQA@mail.gmail.com>
+	id S1761695Ab3DCQIx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 12:08:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5818 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758556Ab3DCQIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 12:08:52 -0400
+Date: Wed, 3 Apr 2013 19:07:48 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Roland Dreier <roland@kernel.org>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
+Subject: Re: [PATCHv2] rdma: add a new IB_ACCESS_GIFT flag
+Message-ID: <20130403160748.GA24874@redhat.com>
+References: <20130324155153.GA8597@redhat.com>
+ <20130402155104.GA27382@redhat.com>
+ <CAL1RGDUe1=Xd1mpNajiLY08fJ+gBKAMDGeX3SVkS+egOQyiCxQ@mail.gmail.com>
+ <20130402170521.GA30295@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACVXFVMV6cFhrybrE_oNSthzPF71xOE7dbwTK9GP+x08d3TpQA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130402170521.GA30295@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 03, 2013 at 03:05:37PM +0800, Ming Lei wrote:
-> On Wed, Apr 3, 2013 at 1:35 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Wed, Apr 03, 2013 at 11:52:39AM +0800, Ming Lei wrote:
-> >> On Wed, Apr 3, 2013 at 11:04 AM, Dave Jones <davej@redhat.com> wrote:
-> >> > On Wed, Apr 03, 2013 at 10:58:23AM +0800, Ming Lei wrote:
-> >> >
-> >> >  > diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-> >> >  > index 1bf016b..328ef9b 100644
-> >> >  > --- a/fs/sysfs/dir.c
-> >> >  > +++ b/fs/sysfs/dir.c
-> >> >  > @@ -268,6 +268,13 @@ void release_sysfs_dirent(struct sysfs_dirent * sd)
-> >> >  >       */
-> >> >  >      parent_sd = sd->s_parent;
-> >> >  >
-> >> >  > +    if (unlikely(!(sd->s_flags & SYSFS_FLAG_REMOVED))) {
-> >> >  > +            printk(KERN_ERR "sysfs: free using entry: %s/%s\n",
-> >> >  > +                    parent_sd ? parent_sd->s_name : "",
-> >> >  > +                    sd->s_name);
-> >> >  > +            BUG();
-> >> >  > +    }
-> >> >
-> >> > Please use WARN instead of BUG.  For an in-ram filesystem like
-> >> > sysfs, there's no real reason to lock-up the machine in this way
-> >> > making it harder to debug.
-> >>
-> >> If WARN is used, the freed memory will be allocated to other
-> >> kernel components, then sysfs may change the memory and cause
-> >> destruction, so maybe it is better to use BUG to stop kernel.
-> >
-> > No, it's never ok to call BUG(), sorry, please fix this.
+On Tue, Apr 02, 2013 at 08:05:21PM +0300, Michael S. Tsirkin wrote:
+> On Tue, Apr 02, 2013 at 09:57:38AM -0700, Roland Dreier wrote:
+> > On Tue, Apr 2, 2013 at 8:51 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> > >> At the moment registering an MR breaks COW.  This breaks memory
+> > >> overcommit for users such as KVM: we have a lot of COW pages, e.g.
+> > >> instances of the zero page or pages shared using KSM.
+> > >>
+> > >> If the application does not care that adapter sees stale data (for
+> > >> example, it tracks writes reregisters and resends), it can use a new
+> > >> IBV_ACCESS_GIFT flag to prevent registration from breaking COW.
+> > >>
+> > >> The semantics are similar to that of SPLICE_F_GIFT thus the name.
+> > >>
+> > >> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > >
+> > > Roland, Michael is yet to test this but could you please
+> > > confirm whether this looks acceptable to you?
+> > 
+> > The patch itself is reasonable I guess, given the needs of this particular app.
+> > 
+> > I'm not particularly happy with the name of the flag.  The analogy
+> > with SPLICE_F_GIFT doesn't seem particularly strong and I'm not
+> > convinced even the splice flag name is very understandable.  But in
+> > the RDMA case there's not really any sense in which we're "gifting"
+> > memory to the adapter -- we're just telling the library "please don't
+> > trigger copy-on-write" and it doesn't seem particularly easy for users
+> > to understand that from the flag name.
+> > 
+> >  - R.
 > 
-> Sorry, could you explain it in a bit detail? IMO, it is really a bug
-> when code runs here, and there are much similar BUG_ON()
-> uses in current sysfs code too.
+> The point really is that any writes by application
+> won't be seen until re-registration, right?
+> OK, what's a better name?  IBV_ACCESS_NON_COHERENT?
+> Please tell me what is preferable and we'll go ahead with it.
 
-Then make it a WARN() call, like David said, to give us a chance to get
-the report from a user so we can fix it.  If the machine crashes after
-that, fine, but hopefully we will get a oops report out of it.
+Um. ping? We are at -rc5 and things need to fall into place
+if we are to have it in 3.10 ...
 
-greg k-h
+> -- 
+> MST
