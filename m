@@ -1,136 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762774Ab3DCO5m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:57:42 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19491 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760957Ab3DCO5k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:57:40 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 03 Apr 2013 07:57:30 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Pritesh Raithatha <praithatha@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Andrew Chew <achew@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v9 13/14] ARM: dt: Add references to tegra_car clocks
-Date: Wed, 3 Apr 2013 17:40:48 +0300
-Message-ID: <1365000110-8916-15-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-In-Reply-To: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1762831Ab3DCO6P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:58:15 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:55874 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762612Ab3DCO6O convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Wed, 3 Apr 2013 10:58:14 -0400
+Message-Id: <515C5FD002000078000CA6DA@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Wed, 03 Apr 2013 15:58:56 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: <mingo@elte.hu>, "Matt Fleming" <matt.fleming@intel.com>,
+        <tglx@linutronix.de>, <mjg@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: fix rebuild with EFI_STUB enabled
+References: <515C5D2502000078000CA6AD@nat28.tlf.novell.com>
+ <5a3182e0-580a-42f4-a17f-925836cca7d2@email.android.com>
+In-Reply-To: <5a3182e0-580a-42f4-a17f-925836cca7d2@email.android.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add references to tegra_car clocks for the basic device nodes. Also remove
-the clock-frequency property of the serial node as the UART driver can now
-use the clock framework to obtain the frequency.
+>>> On 03.04.13 at 16:48, "H. Peter Anvin" <hpa@zytor.com> wrote:
+> This looks awesome for 3.10, but getting a minimal fix for 3.9/stable would 
+> be good, too.
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- arch/arm/boot/dts/tegra114-dalmore.dts |    1 -
- arch/arm/boot/dts/tegra114-pluto.dts   |    1 -
- arch/arm/boot/dts/tegra114.dtsi        |    8 +++++++-
- 3 files changed, 7 insertions(+), 3 deletions(-)
+Do you really view this as relevant for stable? Considering that this
+had been this way for a while with apparently no-one having noticed,
+I wouldn't think so. Nor would I see a strong need for this to go into
+3.9.
 
-diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
-index a61974e..52f1b45 100644
---- a/arch/arm/boot/dts/tegra114-dalmore.dts
-+++ b/arch/arm/boot/dts/tegra114-dalmore.dts
-@@ -715,7 +715,6 @@
- 
- 	serial@70006300 {
- 		status = "okay";
--		clock-frequency = <408000000>;
- 	};
- 
- 	pmc {
-diff --git a/arch/arm/boot/dts/tegra114-pluto.dts b/arch/arm/boot/dts/tegra114-pluto.dts
-index 9bea8f5..31955d7 100644
---- a/arch/arm/boot/dts/tegra114-pluto.dts
-+++ b/arch/arm/boot/dts/tegra114-pluto.dts
-@@ -12,7 +12,6 @@
- 
- 	serial@70006300 {
- 		status = "okay";
--		clock-frequency = <408000000>;
- 	};
- 
- 	pmc {
-diff --git a/arch/arm/boot/dts/tegra114.dtsi b/arch/arm/boot/dts/tegra114.dtsi
-index 5302044..33831a0 100644
---- a/arch/arm/boot/dts/tegra114.dtsi
-+++ b/arch/arm/boot/dts/tegra114.dtsi
-@@ -31,10 +31,11 @@
- 			      0 42 0x04
- 			      0 121 0x04
- 			      0 122 0x04>;
-+		clocks = <&tegra_car 5>;
- 	};
- 
- 	tegra_car: clock {
--		compatible = "nvidia,tegra114-car, nvidia,tegra30-car";
-+		compatible = "nvidia,tegra114-car";
- 		reg = <0x60006000 0x1000>;
- 		#clock-cells = <1>;
- 	};
-@@ -120,6 +121,7 @@
- 		interrupts = <0 36 0x04>;
- 		nvidia,dma-request-selector = <&apbdma 8>;
- 		status = "disabled";
-+		clocks = <&tegra_car 6>;
- 	};
- 
- 	uartb: serial@70006040 {
-@@ -129,6 +131,7 @@
- 		interrupts = <0 37 0x04>;
- 		nvidia,dma-request-selector = <&apbdma 9>;
- 		status = "disabled";
-+		clocks = <&tegra_car 192>;
- 	};
- 
- 	uartc: serial@70006200 {
-@@ -138,6 +141,7 @@
- 		interrupts = <0 46 0x04>;
- 		nvidia,dma-request-selector = <&apbdma 10>;
- 		status = "disabled";
-+		clocks = <&tegra_car 55>;
- 	};
- 
- 	uartd: serial@70006300 {
-@@ -147,6 +151,7 @@
- 		interrupts = <0 90 0x04>;
- 		nvidia,dma-request-selector = <&apbdma 19>;
- 		status = "disabled";
-+		clocks = <&tegra_car 65>;
- 	};
- 
- 	pwm: pwm {
-@@ -288,6 +293,7 @@
- 		compatible = "nvidia,tegra114-rtc", "nvidia,tegra20-rtc";
- 		reg = <0x7000e000 0x100>;
- 		interrupts = <0 2 0x04>;
-+		clocks = <&tegra_car 4>;
- 	};
- 
- 	kbc {
--- 
-1.7.7.rc0.72.g4b5ea.dirty
+Jan
+
+> Jan Beulich <JBeulich@suse.com> wrote:
+> 
+>>eboot.o and efi_stub_$(BITS).o didn't get added to "targets", and hence
+>>their .cmd files don't get included by the build machinery, leading to
+>>the files always getting rebuilt.
+>>
+>>Rather than adding the two files individually, take the opportunity and
+>>add $(VMLINUX_OBJS) to "targets" instead, thus allowing the assignment
+>>at the top of the file to be shrunk quite a bit.
+>>
+>>At the same time, remove a pointless flags override line - the variable
+>>assigned to was misspelled anyway, and the options added are
+>>meaningless for assembly sources.
+>>
+>>Signed-off-by: Jan Beulich <jbeulich@suse.com>
+>>Cc: Matthew Garrett <mjg@redhat.com>
+>>Cc: Matt Fleming <matt.fleming@intel.com>
+>>---
+>> arch/x86/boot/compressed/Makefile |    5 ++---
+>> 1 file changed, 2 insertions(+), 3 deletions(-)
+>>
+>>--- 3.9-rc5/arch/x86/boot/compressed/Makefile
+>>+++ 3.9-rc5-x86-EFI-stub-rebuild/arch/x86/boot/compressed/Makefile
+>>@@ -4,7 +4,7 @@
+>> # create a compressed vmlinux image from the original vmlinux
+>> #
+>> 
+>>-targets := vmlinux.lds vmlinux vmlinux.bin vmlinux.bin.gz
+>>vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.xz vmlinux.bin.lzo
+>>head_$(BITS).o misc.o string.o cmdline.o early_serial_console.o piggy.o
+>>+targets := vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2
+>>vmlinux.bin.lzma vmlinux.bin.xz vmlinux.bin.lzo
+>> 
+>> KBUILD_CFLAGS := -m$(BITS) -D__KERNEL__ $(LINUX_INCLUDE) -O2
+>> KBUILD_CFLAGS += -fno-strict-aliasing -fPIC
+>>@@ -29,7 +29,6 @@ VMLINUX_OBJS = $(obj)/vmlinux.lds $(obj)
+>> 	$(obj)/piggy.o
+>> 
+>> $(obj)/eboot.o: KBUILD_CFLAGS += -fshort-wchar -mno-red-zone
+>>-$(obj)/efi_stub_$(BITS).o: KBUILD_CLFAGS += -fshort-wchar
+>>-mno-red-zone
+>> 
+>> ifeq ($(CONFIG_EFI_STUB), y)
+>> 	VMLINUX_OBJS += $(obj)/eboot.o $(obj)/efi_stub_$(BITS).o
+>>@@ -43,7 +42,7 @@ OBJCOPYFLAGS_vmlinux.bin :=  -R .comment
+>> $(obj)/vmlinux.bin: vmlinux FORCE
+>> 	$(call if_changed,objcopy)
+>> 
+>>-targets += vmlinux.bin.all vmlinux.relocs
+>>+targets += $(patsubst $(obj)/%,%,$(VMLINUX_OBJS)) vmlinux.bin.all
+>>vmlinux.relocs
+>> 
+>> CMD_RELOCS = arch/x86/tools/relocs
+>> quiet_cmd_relocs = RELOCS  $@
+> 
+> -- 
+> Sent from my mobile phone. Please excuse brevity and lack of formatting.
+
+
 
