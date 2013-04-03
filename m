@@ -1,82 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763020Ab3DCSQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 14:16:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63356 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762817Ab3DCSQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 14:16:54 -0400
-Date: Wed, 3 Apr 2013 14:16:43 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (nfsd
- tree related)
-Message-ID: <20130403141643.1872e17e@tlielax.poochiereds.net>
-In-Reply-To: <20130403180519.GA6044@fieldses.org>
-References: <20130403174219.0786d27109633a30d89b38bf@canb.auug.org.au>
-	<20130403071054.45a02a88@tlielax.poochiereds.net>
-	<20130403113301.GA13951@fieldses.org>
-	<20130403073857.78c2a24f@tlielax.poochiereds.net>
-	<20130403180519.GA6044@fieldses.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1762978Ab3DCSQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 14:16:56 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:38366 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762536Ab3DCSQx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 14:16:53 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: [PATCH] netdev/phy: Implement ieee802.3 clause 45 in mdio-octeon.c
+Date: Wed,  3 Apr 2013 11:16:48 -0700
+Message-Id: <1365013008-10914-1-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Apr 2013 14:05:19 -0400
-"J. Bruce Fields" <bfields@fieldses.org> wrote:
+From: David Daney <david.daney@cavium.com>
 
-> On Wed, Apr 03, 2013 at 07:38:57AM -0400, Jeff Layton wrote:
-> > On Wed, 3 Apr 2013 07:33:01 -0400
-> > "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> > 
-> > > On Wed, Apr 03, 2013 at 07:10:54AM -0400, Jeff Layton wrote:
-> > > > On Wed, 3 Apr 2013 17:42:19 +1100
-> > > > Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > > > 
-> > > > > Hi all,
-> > > > > 
-> > > > > After merging the final tree, today's linux-next build (arm defconfig)
-> > > > > failed like this:
-> > > > > 
-> > > > > fs/built-in.o: In function `nfsd_reply_cache_stats_show':
-> > > > > super.c:(.text+0x87308): undefined reference to `__udivdi3'
-> > > > > 
-> > > > > Probably caused by commit 187da2f90879 ("nfsd: keep track of the max and
-> > > > > average time to search the cache") which adds a divide by u64
-> > > > > (num_searches).
-> > > > > 
-> > > > > I have reverted that commit and the following one for today.
-> > > > 
-> > > > Thanks, known problem...
-> > > > 
-> > > > Looks like Bruce's tree has an older version of that patch series. I
-> > > > think we just need to get him to drop that one and merge the new one.
-> > > 
-> > > Arrgh, sorry--could you remind me which is the new one?
-> > > 
-> > 
-> > It was the one I sent on 3/19. Those patches (plus a couple more) are
-> > also in the current nfsd-3.10 branch of my git tree too, so it may be
-> > easiest to just pick them from there.
-> 
-> I hate rewriting that branch, but OK, done: does my for-3.10 look right
-> to you now?
-> 
-> (It's still missing some of your latest patches.)
-> 
-> --b.
+The Octeon SMI/MDIO interfaces can do clause 45 communications, so
+implement this in the driver.
 
-Yeah, sorry for that... I didn't find the problem with __udivdi3
-until after I had asked you to merge the earlier set. Mea culpa...
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ drivers/net/phy/mdio-octeon.c | 89 +++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 86 insertions(+), 3 deletions(-)
 
-Latest branch looks good. It would be good to get the later patches in
-too, but those are less important than the DRC ones.
-
-Thanks,
+diff --git a/drivers/net/phy/mdio-octeon.c b/drivers/net/phy/mdio-octeon.c
+index c2c878d..f4f3abf 100644
+--- a/drivers/net/phy/mdio-octeon.c
++++ b/drivers/net/phy/mdio-octeon.c
+@@ -3,7 +3,7 @@
+  * License.  See the file "COPYING" in the main directory of this archive
+  * for more details.
+  *
+- * Copyright (C) 2009,2011 Cavium, Inc.
++ * Copyright (C) 2009-2012 Cavium, Inc.
+  */
+ 
+ #include <linux/platform_device.h>
+@@ -27,23 +27,93 @@
+ #define SMI_CLK		0x18
+ #define SMI_EN		0x20
+ 
++enum octeon_mdiobus_mode {
++	UNINIT = 0,
++	C22,
++	C45
++};
++
+ struct octeon_mdiobus {
+ 	struct mii_bus *mii_bus;
+ 	u64 register_base;
+ 	resource_size_t mdio_phys;
+ 	resource_size_t regsize;
++	enum octeon_mdiobus_mode mode;
+ 	int phy_irq[PHY_MAX_ADDR];
+ };
+ 
++static void octeon_mdiobus_set_mode(struct octeon_mdiobus *p,
++				    enum octeon_mdiobus_mode m)
++{
++	union cvmx_smix_clk smi_clk;
++
++	if (m == p->mode)
++		return;
++
++	smi_clk.u64 = cvmx_read_csr(p->register_base + SMI_CLK);
++	smi_clk.s.mode = (m == C45) ? 1 : 0;
++	smi_clk.s.preamble = 1;
++	cvmx_write_csr(p->register_base + SMI_CLK, smi_clk.u64);
++	p->mode = m;
++}
++
++static int octeon_mdiobus_c45_addr(struct octeon_mdiobus *p,
++				   int phy_id, int regnum)
++{
++	union cvmx_smix_cmd smi_cmd;
++	union cvmx_smix_wr_dat smi_wr;
++	int timeout = 1000;
++
++	octeon_mdiobus_set_mode(p, C45);
++
++	smi_wr.u64 = 0;
++	smi_wr.s.dat = regnum & 0xffff;
++	cvmx_write_csr(p->register_base + SMI_WR_DAT, smi_wr.u64);
++
++	regnum = (regnum >> 16) & 0x1f;
++
++	smi_cmd.u64 = 0;
++	smi_cmd.s.phy_op = 0; /* MDIO_CLAUSE_45_ADDRESS */
++	smi_cmd.s.phy_adr = phy_id;
++	smi_cmd.s.reg_adr = regnum;
++	cvmx_write_csr(p->register_base + SMI_CMD, smi_cmd.u64);
++
++	do {
++		/*
++		 * Wait 1000 clocks so we don't saturate the RSL bus
++		 * doing reads.
++		 */
++		__delay(1000);
++		smi_wr.u64 = cvmx_read_csr(p->register_base + SMI_WR_DAT);
++	} while (smi_wr.s.pending && --timeout);
++
++	if (timeout <= 0)
++		return -EIO;
++	return 0;
++}
++
+ static int octeon_mdiobus_read(struct mii_bus *bus, int phy_id, int regnum)
+ {
+ 	struct octeon_mdiobus *p = bus->priv;
+ 	union cvmx_smix_cmd smi_cmd;
+ 	union cvmx_smix_rd_dat smi_rd;
++	unsigned int op = 1; /* MDIO_CLAUSE_22_READ */
+ 	int timeout = 1000;
+ 
++	if (regnum & MII_ADDR_C45) {
++		int r = octeon_mdiobus_c45_addr(p, phy_id, regnum);
++		if (r < 0)
++			return r;
++
++		regnum = (regnum >> 16) & 0x1f;
++		op = 3; /* MDIO_CLAUSE_45_READ */
++	} else {
++		octeon_mdiobus_set_mode(p, C22);
++	}
++
++
+ 	smi_cmd.u64 = 0;
+-	smi_cmd.s.phy_op = 1; /* MDIO_CLAUSE_22_READ */
++	smi_cmd.s.phy_op = op; /* MDIO_CLAUSE_22_READ */
+ 	smi_cmd.s.phy_adr = phy_id;
+ 	smi_cmd.s.reg_adr = regnum;
+ 	cvmx_write_csr(p->register_base + SMI_CMD, smi_cmd.u64);
+@@ -69,14 +139,27 @@ static int octeon_mdiobus_write(struct mii_bus *bus, int phy_id,
+ 	struct octeon_mdiobus *p = bus->priv;
+ 	union cvmx_smix_cmd smi_cmd;
+ 	union cvmx_smix_wr_dat smi_wr;
++	unsigned int op = 0; /* MDIO_CLAUSE_22_WRITE */
+ 	int timeout = 1000;
+ 
++
++	if (regnum & MII_ADDR_C45) {
++		int r = octeon_mdiobus_c45_addr(p, phy_id, regnum);
++		if (r < 0)
++			return r;
++
++		regnum = (regnum >> 16) & 0x1f;
++		op = 1; /* MDIO_CLAUSE_45_WRITE */
++	} else {
++		octeon_mdiobus_set_mode(p, C22);
++	}
++
+ 	smi_wr.u64 = 0;
+ 	smi_wr.s.dat = val;
+ 	cvmx_write_csr(p->register_base + SMI_WR_DAT, smi_wr.u64);
+ 
+ 	smi_cmd.u64 = 0;
+-	smi_cmd.s.phy_op = 0; /* MDIO_CLAUSE_22_WRITE */
++	smi_cmd.s.phy_op = op;
+ 	smi_cmd.s.phy_adr = phy_id;
+ 	smi_cmd.s.reg_adr = regnum;
+ 	cvmx_write_csr(p->register_base + SMI_CMD, smi_cmd.u64);
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.7.11.7
+
