@@ -1,72 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761695Ab3DCQIx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 12:08:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5818 "EHLO mx1.redhat.com"
+	id S1761966Ab3DCQJR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 12:09:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32492 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758556Ab3DCQIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 12:08:52 -0400
-Date: Wed, 3 Apr 2013 19:07:48 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Roland Dreier <roland@kernel.org>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
-Subject: Re: [PATCHv2] rdma: add a new IB_ACCESS_GIFT flag
-Message-ID: <20130403160748.GA24874@redhat.com>
-References: <20130324155153.GA8597@redhat.com>
- <20130402155104.GA27382@redhat.com>
- <CAL1RGDUe1=Xd1mpNajiLY08fJ+gBKAMDGeX3SVkS+egOQyiCxQ@mail.gmail.com>
- <20130402170521.GA30295@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130402170521.GA30295@redhat.com>
+	id S1759071Ab3DCQJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 12:09:14 -0400
+From: Anton Arapov <anton@redhat.com>
+To: Anton Arapov <anton@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
+        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
+Subject: [PATCH v1 9/9] uretprobes: Documentation update
+Date: Wed,  3 Apr 2013 18:00:39 +0200
+Message-Id: <1365004839-21982-10-git-send-email-anton@redhat.com>
+In-Reply-To: <1365004839-21982-1-git-send-email-anton@redhat.com>
+References: <1365004839-21982-1-git-send-email-anton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 08:05:21PM +0300, Michael S. Tsirkin wrote:
-> On Tue, Apr 02, 2013 at 09:57:38AM -0700, Roland Dreier wrote:
-> > On Tue, Apr 2, 2013 at 8:51 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> > >> At the moment registering an MR breaks COW.  This breaks memory
-> > >> overcommit for users such as KVM: we have a lot of COW pages, e.g.
-> > >> instances of the zero page or pages shared using KSM.
-> > >>
-> > >> If the application does not care that adapter sees stale data (for
-> > >> example, it tracks writes reregisters and resends), it can use a new
-> > >> IBV_ACCESS_GIFT flag to prevent registration from breaking COW.
-> > >>
-> > >> The semantics are similar to that of SPLICE_F_GIFT thus the name.
-> > >>
-> > >> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > >
-> > > Roland, Michael is yet to test this but could you please
-> > > confirm whether this looks acceptable to you?
-> > 
-> > The patch itself is reasonable I guess, given the needs of this particular app.
-> > 
-> > I'm not particularly happy with the name of the flag.  The analogy
-> > with SPLICE_F_GIFT doesn't seem particularly strong and I'm not
-> > convinced even the splice flag name is very understandable.  But in
-> > the RDMA case there's not really any sense in which we're "gifting"
-> > memory to the adapter -- we're just telling the library "please don't
-> > trigger copy-on-write" and it doesn't seem particularly easy for users
-> > to understand that from the flag name.
-> > 
-> >  - R.
-> 
-> The point really is that any writes by application
-> won't be seen until re-registration, right?
-> OK, what's a better name?  IBV_ACCESS_NON_COHERENT?
-> Please tell me what is preferable and we'll go ahead with it.
+add the uretprobe syntax and update an example
 
-Um. ping? We are at -rc5 and things need to fall into place
-if we are to have it in 3.10 ...
+Signed-off-by: Anton Arapov <anton@redhat.com>
+---
+ Documentation/trace/uprobetracer.txt | 114 ++++++++++++++++++++---------------
+ 1 file changed, 67 insertions(+), 47 deletions(-)
 
-> -- 
-> MST
+diff --git a/Documentation/trace/uprobetracer.txt b/Documentation/trace/uprobetracer.txt
+index 24ce682..d9c3e68 100644
+--- a/Documentation/trace/uprobetracer.txt
++++ b/Documentation/trace/uprobetracer.txt
+@@ -1,6 +1,8 @@
+-		Uprobe-tracer: Uprobe-based Event Tracing
+-		=========================================
+-                 Documentation written by Srikar Dronamraju
++            Uprobe-tracer: Uprobe-based Event Tracing
++            =========================================
++
++           Documentation written by Srikar Dronamraju
++
+ 
+ Overview
+ --------
+@@ -13,78 +15,94 @@ current_tracer. Instead of that, add probe points via
+ /sys/kernel/debug/tracing/events/uprobes/<EVENT>/enabled.
+ 
+ However unlike kprobe-event tracer, the uprobe event interface expects the
+-user to calculate the offset of the probepoint in the object
++user to calculate the offset of the probepoint in the object.
+ 
+ Synopsis of uprobe_tracer
+ -------------------------
+-  p[:[GRP/]EVENT] PATH:SYMBOL[+offs] [FETCHARGS]	: Set a probe
++  p[:[GRP/]EVENT] PATH:SYMBOL[+offs] [FETCHARGS] : Set a uprobe
++  r[:[GRP/]EVENT] PATH:SYMBOL[+offs] [FETCHARGS] : Set a return uprobe (uretprobe)
++  -:[GRP/]EVENT                                  : Clear uprobe or uretprobe event
+ 
+- GRP		: Group name. If omitted, use "uprobes" for it.
+- EVENT		: Event name. If omitted, the event name is generated
+-		  based on SYMBOL+offs.
+- PATH		: path to an executable or a library.
+- SYMBOL[+offs]	: Symbol+offset where the probe is inserted.
++  GRP           : Group name. If omitted, "uprobes" is the default value.
++  EVENT         : Event name. If omitted, the event name is generated based
++                  on SYMBOL+offs.
++  PATH          : Path to an executable or a library.
++  SYMBOL[+offs] : Symbol+offset where the probe is inserted.
+ 
+- FETCHARGS	: Arguments. Each probe can have up to 128 args.
+-  %REG		: Fetch register REG
++  FETCHARGS     : Arguments. Each probe can have up to 128 args.
++   %REG         : Fetch register REG
+ 
+ Event Profiling
+ ---------------
+- You can check the total number of probe hits and probe miss-hits via
++You can check the total number of probe hits and probe miss-hits via
+ /sys/kernel/debug/tracing/uprobe_profile.
+- The first column is event name, the second is the number of probe hits,
++The first column is event name, the second is the number of probe hits,
+ the third is the number of probe miss-hits.
+ 
+ Usage examples
+ --------------
+-To add a probe as a new event, write a new definition to uprobe_events
+-as below.
++ * Add a probe as a new uprobe event, write a new definition to uprobe_events
++as below: (sets a uprobe at an offset of 0x4245c0 in the executable /bin/bash)
++
++    echo 'p: /bin/bash:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
++
++ * Add a probe as a new uretprobe event:
++
++    echo 'r: /bin/bash:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
++
++ * Unset registered event:
+ 
+-  echo 'p: /bin/bash:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
++    echo '-:bash_0x4245c0' >> /sys/kernel/debug/tracing/uprobe_events
+ 
+- This sets a uprobe at an offset of 0x4245c0 in the executable /bin/bash
++ * Print out the events that are registered:
+ 
+-  echo > /sys/kernel/debug/tracing/uprobe_events
++    cat /sys/kernel/debug/tracing/uprobe_events
+ 
+- This clears all probe points.
++ * Clear all events:
+ 
+-The following example shows how to dump the instruction pointer and %ax
+-a register at the probed text address.  Here we are trying to probe
+-function zfree in /bin/zsh
++    echo > /sys/kernel/debug/tracing/uprobe_events
++
++Following example shows how to dump the instruction pointer and %ax register
++at the probed text address. Probe zfree function in /bin/zsh:
+ 
+     # cd /sys/kernel/debug/tracing/
+-    # cat /proc/`pgrep  zsh`/maps | grep /bin/zsh | grep r-xp
++    # cat /proc/`pgrep zsh`/maps | grep /bin/zsh | grep r-xp
+     00400000-0048a000 r-xp 00000000 08:03 130904 /bin/zsh
+     # objdump -T /bin/zsh | grep -w zfree
+     0000000000446420 g    DF .text  0000000000000012  Base        zfree
+ 
+-0x46420 is the offset of zfree in object /bin/zsh that is loaded at
+-0x00400000. Hence the command to probe would be :
++  0x46420 is the offset of zfree in object /bin/zsh that is loaded at
++  0x00400000. Hence the command to uprobe would be:
++
++    # echo 'p:zfree_entry /bin/zsh:0x46420 %ip %ax' > uprobe_events
++
++  And the same for the uretprobe would be:
+ 
+-    # echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events
++    # echo 'r:zfree_exit /bin/zsh:0x46420 %ip %ax' >> uprobe_events
+ 
+-Please note: User has to explicitly calculate the offset of the probepoint
++Please note: User has to explicitly calculate the offset of the probe-point
+ in the object. We can see the events that are registered by looking at the
+ uprobe_events file.
+ 
+     # cat uprobe_events
+-    p:uprobes/p_zsh_0x46420 /bin/zsh:0x00046420 arg1=%ip arg2=%ax
++    p:uprobes/zfree_entry /bin/zsh:0x00046420 arg1=%ip arg2=%ax
++    r:uprobes/zfree_exit /bin/zsh:0x00046420 arg1=%ip arg2=%ax
+ 
+-The format of events can be seen by viewing the file events/uprobes/p_zsh_0x46420/format
++Format of events can be seen by viewing the file events/uprobes/zfree_entry/format
+ 
+-    # cat events/uprobes/p_zsh_0x46420/format
+-    name: p_zsh_0x46420
++    # cat events/uprobes/zfree_entry/format
++    name: zfree_entry
+     ID: 922
+     format:
+-	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
+-	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
+-	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
+-	field:int common_pid;	offset:4;	size:4;	signed:1;
+-	field:int common_padding;	offset:8;	size:4;	signed:1;
++         field:unsigned short common_type;         offset:0;  size:2; signed:0;
++         field:unsigned char common_flags;         offset:2;  size:1; signed:0;
++         field:unsigned char common_preempt_count; offset:3;  size:1; signed:0;
++         field:int common_pid;                     offset:4;  size:4; signed:1;
++         field:int common_padding;                 offset:8;  size:4; signed:1;
+ 
+-	field:unsigned long __probe_ip;	offset:12;	size:4;	signed:0;
+-	field:u32 arg1;	offset:16;	size:4;	signed:0;
+-	field:u32 arg2;	offset:20;	size:4;	signed:0;
++         field:unsigned long __probe_ip;           offset:12; size:4; signed:0;
++         field:u32 arg1;                           offset:16; size:4; signed:0;
++         field:u32 arg2;                           offset:20; size:4; signed:0;
+ 
+     print fmt: "(%lx) arg1=%lx arg2=%lx", REC->__probe_ip, REC->arg1, REC->arg2
+ 
+@@ -94,6 +112,7 @@ Right after definition, each event is disabled by default. For tracing these
+     # echo 1 > events/uprobes/enable
+ 
+ Lets disable the event after sleeping for some time.
++
+     # sleep 20
+     # echo 0 > events/uprobes/enable
+ 
+@@ -104,10 +123,11 @@ And you can see the traced information via /sys/kernel/debug/tracing/trace.
+     #
+     #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+     #              | |       |          |         |
+-                 zsh-24842 [006] 258544.995456: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
+-                 zsh-24842 [007] 258545.000270: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
+-                 zsh-24842 [002] 258545.043929: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
+-                 zsh-24842 [004] 258547.046129: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
+-
+-Each line shows us probes were triggered for a pid 24842 with ip being
+-0x446421 and contents of ax register being 79.
++                 zsh-24842 [006] 258544.995456: zfree_entry: (0x446420) arg1=446420 arg2=79
++                 zsh-24842 [007] 258545.000270: zfree_exit:  (0x446540 <- 0x446420) arg1=446540 arg2=0
++                 zsh-24842 [002] 258545.043929: zfree_entry: (0x446420) arg1=446420 arg2=79
++                 zsh-24842 [004] 258547.046129: zfree_exit:  (0x446540 <- 0x446420) arg1=446540 arg2=0
++
++Output shows us uprobe was triggered for a pid 24842 with ip being 0x446420
++and contents of ax register being 79. And uretprobe was triggered with ip at
++0x446540 with counterpart function entry at 0x446420.
+-- 
+1.8.1.4
+
