@@ -1,187 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762709Ab3DCRMs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 13:12:48 -0400
-Received: from mail-ia0-f178.google.com ([209.85.210.178]:45323 "EHLO
-	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762377Ab3DCRMr (ORCPT
+	id S1762706Ab3DCRQj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 13:16:39 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38211 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762172Ab3DCRQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 13:12:47 -0400
+	Wed, 3 Apr 2013 13:16:38 -0400
+Message-ID: <515C63F3.5070401@wwwdotorg.org>
+Date: Wed, 03 Apr 2013 11:16:35 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130403131842.GA5939@redhat.com>
-References: <1364923183-316-1-git-send-email-yinghai@kernel.org>
-	<1364923183-316-4-git-send-email-yinghai@kernel.org>
-	<20130402180606.GI29506@redhat.com>
-	<CAE9FiQUKqv_t-99JN_t=EGop2-Wbjd4Yb9vYvU_SbbNctG6Yeg@mail.gmail.com>
-	<CAE9FiQXEa0-WS8+E6LGy8CenoHX5qF1MpjBgejQx9-EvG_1rGw@mail.gmail.com>
-	<20130402191130.GB31760@redhat.com>
-	<CAE9FiQViU_X-idHyFmRFQXmP23oWN63XkAr3KmXsfys1VBR53g@mail.gmail.com>
-	<20130402201148.GJ29506@redhat.com>
-	<CAE9FiQURMNjPYYze-tPn4Ssrc4TqMqTuvwRRhoVYEnGLF4Z0cQ@mail.gmail.com>
-	<20130403131842.GA5939@redhat.com>
-Date: Wed, 3 Apr 2013 10:12:46 -0700
-X-Google-Sender-Auth: Y7iuTivfIy93nvIPTW-iNZC-YC0
-Message-ID: <CAE9FiQUO-fLY-k_gmw6cg56YEN52VRvZuXr+f1EnywKr_cGc4Q@mail.gmail.com>
-Subject: Re: [PATCH 3/4] x86, kdump: Retore crashkernel= to allocate low
-From: Yinghai Lu <yinghai@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Bibek Basu <bbasu@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pritesh Raithatha <praithatha@nvidia.com>
+Subject: Re: [PATCH] pinctrl: tegra: add suspend-resume support
+References: <1364490685-21831-1-git-send-email-bbasu@nvidia.com> <5154827B.8010701@wwwdotorg.org> <CACRpkdYLSVkfAxVBMBnkyePujaoQQqB27UiG+-r2APkEDrfLrA@mail.gmail.com>
+In-Reply-To: <CACRpkdYLSVkfAxVBMBnkyePujaoQQqB27UiG+-r2APkEDrfLrA@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 3, 2013 at 6:18 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Tue, Apr 02, 2013 at 01:36:02PM -0700, Yinghai Lu wrote:
->
-> [..]
->> > You are just describing what your code does. There is no theme or
->> > justification behind this behavior. There is no uniformity. A user can
->> > question that so far you used to honor last crashkernel= parameter and
->> > suddenly in 3.9 that's no more the case. Out of blue crashkernel=X,high is
->> > overriding crashkernel=X and it is not obivious why.
+On 04/03/2013 08:09 AM, Linus Walleij wrote:
+> On Thu, Mar 28, 2013 at 6:48 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> 
+>> Why can't we just use the device suspend/resume functions rather than
+>> global (syscore) suspend/resume functions? Presumably this is to ensure
+>> that all other drivers suspend first, then the pinctrl driver does, and
+>> the reverse for resume. Can't we rely on deferred probe to ensure that
+>> instead?
 >>
->> Let me repeat again:
->> we keep crashkernel=X old behavior with old kexec-tools.
->> crashkernel=X;high is for new kexec-tools that support loading high.
->>
->> If the user want to use ,high but still with old kexec-tools, that is
->> not going to work.
->>
->> Can we just keep it separated?
->
-> Kernel does not know about old kexec-tools or new kexec-tools. Neither
-> kernel can enforce what command line options are passed by user. So
-> kernel needs to define a clean interface here which is easily understood
-> and is extensible also in future.
+>> To make that work, we might need every affected driver to define a dummy
+>> pinmux state in DT that references the pinctrl driver, to make sure they
+>> all get probed after the pinctrl driver.
+> 
+> Hm that reminds me of that policy change I suggested a while back to
+> do this instead of using hogs where possible.
+> 
+> It has the nice side-effect that when we inspect the debugfs info
+> all pins will be properly owned by respective consuming device.
 
-Looks you are chasing wrong direction.
+True, in theory that would also work.
 
-Those four patches fixes the regression that Wang and you reported,
-User don't need to change their kexec-tools and boot command lines
-kdump still works.
+However, in practice with Tegra's pinmux, it has to all be set up at
+once to avoid any conflicts, so hogging is really the only practical way
+to use it in most cases.
 
-We will never can stop user doing crazy thing with their system.
+This is because in many cases, a single controller could have its
+signals routed out to many different pins (or sets of pins), rather than
+just having one possible location where each controller could be routed
+to. In other words, the pinmux is m:n rather than m:1.
 
->
-> [..]
->> >
->> > If user wants 128M in low memory, they will just specify
->> > crashkernel=128M;low
->>
->> in the kernel-parameter.txt, already says ;low is need to used with ;high.
->
-> But why are we tying ;low to ;high. One should be easily extend
-> crashkernel=X to be able to reserve memory above 4G if specified amount
-> is not available below 4G. In that case also one might want to reserve
-> some low memory?
+It's possible program the registers so that the same signal is connected
+to (or from depending on signal direction) multiple pins at once. If
+this is done, the behaviour is unspecified; who knows which pin will
+actually receive (or provide) that signal?
 
-I want to keep crashkernel=X to the old behavior.
+This can easily happen if the whole pinmux is not initialized fully in
+one pass, i.e. through hogs. For example, the HW default may be for e.g.
+UART1 to get routed to pins A, and B, whereas a particular board may
+assume that UART1 is routed to pins X, Y. So, SW must program pins X, Y
+to mux in UART1. However, if pins A, B aren't also re-programmed away
+from the UART1 option, then UART 1 on X, Y may not actually work. In
+this case, we can't rely on some other driver having
+acquire/re-programmed pins A, B, unless it's the hog of the pin
+controller itself. Hence, the only sensible solution is for the pin
+controller to hog absolutely everything.
 
-If you want to have crashkernel=X to allocate high above 4G, old kexec-tools
-will not work with new kernel.
-
->
-> For that matter crashkernel=range1:size,range2:size syntax should be
-> extendible too to reserve memory above 4G if desired size of memory
-> is not available in low memory.
->
-> Now in those cases too, one would like to have 72M of low memory
-> reserved. So ;low shoud not be tied to ;high necessarily.
->
-> In fact current code does not care whetehr ;high was specified or not.
-> If memory is reserved above 4G, ;low code will kick in.
-
-No, that is not right.
-
-only when ;high is specified, kernel will try to allocate high above 4G.
-
-
->
->>
->> >
->> > If they want to control multiple ranges of memory, then that's the feature
->> > we currently don't support. Currently we support only reserving one range
->> > of memory.
->> >
->> > If you want to support multiple ranges of memory,then do it properly.
->> > Parse all crashkernel= options, prepare a list of memory to be reserved
->> > and unreserved, resolve all the conflicts between various options and
->> > then reserve the memory. But that does not seem to be a requirement at
->> > this point of time.
->>
->> No we does not support multiple ranges, as it will need more changes
->> in kexec-tools.
->>
->> Can we stop here with those four patches?
->>
->> Later, we can extend it if it is really needed.
->
-> crashkernel= options are already confusing. I think we with this patchset
-> we will just make them even more confusing and future extensions
-> difficult.
-
-So keep crashkernel= without high and low to old behavior.
-
->
-> We really need to stick to the notion of only one crashkernel= option
-> is accepted and that is last one on command line. And if need be,
-> we need to work on multi range reservation feature where we process
-> and reserve ranges as specified by all crashkernel= parameters on
-> command line.
-
-That is kept.
-
-and only last high is honored
-
->
-> Creating new combinations where some crashkernel= are preferred over
-> others and some crashkernel= options work with only selected crashkernel=
-> options, is asking for trouble, especially keeping in mind future
-> extensions.
-
-I don't think so.
-
-old conf that works before still use crashkernel= with high and low.
-old conf that does not work, could switch to crashkernel=;high/low
-with new kexec-tools
-
->
-> I prefer following for 3.9.
->
-> - process only right most crashkernel= option.
-
-what is "right most" ?
-only last crashkernel=X is honored?
-I restored that already with those four patches.
-
-> - implement crashkernel_no_auto_low option to opt out of auto reserved
->   low memory
-
-No, that is ugly.
-
-> - implement crashkernel=X;high to support high memory reservations.
->
-> And now old kexec-tools user can use crashkernel=X while users needing
-> high memory reservation can use crashkernel=X;high.
-
-The four patches did not do that?
-
->
-> If you really want to support user defined crashkernel=X;low along with
-> crashkernel=Y;high, that is really a multi range reservation feature and
-> need to be implemented properly instead of coming up with short cuts.
-
-No it is not.
-
-It's *you* want me to change "Crash kernel low" to "Crash kernel".
-
-Do we need to drop second patch? So will still keep
-"Crash kernel low" in /proc/iomem?
-
-Thanks
-
-Yinghai
+The only exception would be for dynamic pin-muxing (e.g. pinctrl-based
+I2C muxing), where hopefully everything is chosen carefully to avoid
+this kind of issue.
