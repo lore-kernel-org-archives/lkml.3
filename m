@@ -1,210 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761966Ab3DCQJR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 12:09:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32492 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759071Ab3DCQJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 12:09:14 -0400
-From: Anton Arapov <anton@redhat.com>
-To: Anton Arapov <anton@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: [PATCH v1 9/9] uretprobes: Documentation update
-Date: Wed,  3 Apr 2013 18:00:39 +0200
-Message-Id: <1365004839-21982-10-git-send-email-anton@redhat.com>
-In-Reply-To: <1365004839-21982-1-git-send-email-anton@redhat.com>
-References: <1365004839-21982-1-git-send-email-anton@redhat.com>
+	id S1760476Ab3DCQPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 12:15:33 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:44449 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758930Ab3DCQPc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 12:15:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <51593E81.3030800@openvz.org>
+References: <20130314144936.10073.2403.stgit@zurg> <51593E81.3030800@openvz.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 3 Apr 2013 10:15:09 -0600
+Message-ID: <CAErSpo7uPodBTk1v4ch=Aycgx6OVkWDvw6-Wrwh3MrSaduHnkA@mail.gmail.com>
+Subject: Re: [PATCH bugfix 3.9] PCI: Don't try to disable Bus Master on
+ disconnected PCI devices
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        kexec@lists.infradead.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jeff Garzik <jgarzik@pobox.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add the uretprobe syntax and update an example
+[+cc linux-pci]
 
-Signed-off-by: Anton Arapov <anton@redhat.com>
----
- Documentation/trace/uprobetracer.txt | 114 ++++++++++++++++++++---------------
- 1 file changed, 67 insertions(+), 47 deletions(-)
+On Mon, Apr 1, 2013 at 2:00 AM, Konstantin Khlebnikov
+<khlebnikov@openvz.org> wrote:
+> BUMP. This is degradation from 3.8, so this patch must be in 3.9.
+>
+> I still don't like this forced clearing bus-master bit. But this hack
+> definitely fixes problems in kexec, so there is reason to keep it here.
 
-diff --git a/Documentation/trace/uprobetracer.txt b/Documentation/trace/uprobetracer.txt
-index 24ce682..d9c3e68 100644
---- a/Documentation/trace/uprobetracer.txt
-+++ b/Documentation/trace/uprobetracer.txt
-@@ -1,6 +1,8 @@
--		Uprobe-tracer: Uprobe-based Event Tracing
--		=========================================
--                 Documentation written by Srikar Dronamraju
-+            Uprobe-tracer: Uprobe-based Event Tracing
-+            =========================================
-+
-+           Documentation written by Srikar Dronamraju
-+
- 
- Overview
- --------
-@@ -13,78 +15,94 @@ current_tracer. Instead of that, add probe points via
- /sys/kernel/debug/tracing/events/uprobes/<EVENT>/enabled.
- 
- However unlike kprobe-event tracer, the uprobe event interface expects the
--user to calculate the offset of the probepoint in the object
-+user to calculate the offset of the probepoint in the object.
- 
- Synopsis of uprobe_tracer
- -------------------------
--  p[:[GRP/]EVENT] PATH:SYMBOL[+offs] [FETCHARGS]	: Set a probe
-+  p[:[GRP/]EVENT] PATH:SYMBOL[+offs] [FETCHARGS] : Set a uprobe
-+  r[:[GRP/]EVENT] PATH:SYMBOL[+offs] [FETCHARGS] : Set a return uprobe (uretprobe)
-+  -:[GRP/]EVENT                                  : Clear uprobe or uretprobe event
- 
-- GRP		: Group name. If omitted, use "uprobes" for it.
-- EVENT		: Event name. If omitted, the event name is generated
--		  based on SYMBOL+offs.
-- PATH		: path to an executable or a library.
-- SYMBOL[+offs]	: Symbol+offset where the probe is inserted.
-+  GRP           : Group name. If omitted, "uprobes" is the default value.
-+  EVENT         : Event name. If omitted, the event name is generated based
-+                  on SYMBOL+offs.
-+  PATH          : Path to an executable or a library.
-+  SYMBOL[+offs] : Symbol+offset where the probe is inserted.
- 
-- FETCHARGS	: Arguments. Each probe can have up to 128 args.
--  %REG		: Fetch register REG
-+  FETCHARGS     : Arguments. Each probe can have up to 128 args.
-+   %REG         : Fetch register REG
- 
- Event Profiling
- ---------------
-- You can check the total number of probe hits and probe miss-hits via
-+You can check the total number of probe hits and probe miss-hits via
- /sys/kernel/debug/tracing/uprobe_profile.
-- The first column is event name, the second is the number of probe hits,
-+The first column is event name, the second is the number of probe hits,
- the third is the number of probe miss-hits.
- 
- Usage examples
- --------------
--To add a probe as a new event, write a new definition to uprobe_events
--as below.
-+ * Add a probe as a new uprobe event, write a new definition to uprobe_events
-+as below: (sets a uprobe at an offset of 0x4245c0 in the executable /bin/bash)
-+
-+    echo 'p: /bin/bash:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
-+
-+ * Add a probe as a new uretprobe event:
-+
-+    echo 'r: /bin/bash:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
-+
-+ * Unset registered event:
- 
--  echo 'p: /bin/bash:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
-+    echo '-:bash_0x4245c0' >> /sys/kernel/debug/tracing/uprobe_events
- 
-- This sets a uprobe at an offset of 0x4245c0 in the executable /bin/bash
-+ * Print out the events that are registered:
- 
--  echo > /sys/kernel/debug/tracing/uprobe_events
-+    cat /sys/kernel/debug/tracing/uprobe_events
- 
-- This clears all probe points.
-+ * Clear all events:
- 
--The following example shows how to dump the instruction pointer and %ax
--a register at the probed text address.  Here we are trying to probe
--function zfree in /bin/zsh
-+    echo > /sys/kernel/debug/tracing/uprobe_events
-+
-+Following example shows how to dump the instruction pointer and %ax register
-+at the probed text address. Probe zfree function in /bin/zsh:
- 
-     # cd /sys/kernel/debug/tracing/
--    # cat /proc/`pgrep  zsh`/maps | grep /bin/zsh | grep r-xp
-+    # cat /proc/`pgrep zsh`/maps | grep /bin/zsh | grep r-xp
-     00400000-0048a000 r-xp 00000000 08:03 130904 /bin/zsh
-     # objdump -T /bin/zsh | grep -w zfree
-     0000000000446420 g    DF .text  0000000000000012  Base        zfree
- 
--0x46420 is the offset of zfree in object /bin/zsh that is loaded at
--0x00400000. Hence the command to probe would be :
-+  0x46420 is the offset of zfree in object /bin/zsh that is loaded at
-+  0x00400000. Hence the command to uprobe would be:
-+
-+    # echo 'p:zfree_entry /bin/zsh:0x46420 %ip %ax' > uprobe_events
-+
-+  And the same for the uretprobe would be:
- 
--    # echo 'p /bin/zsh:0x46420 %ip %ax' > uprobe_events
-+    # echo 'r:zfree_exit /bin/zsh:0x46420 %ip %ax' >> uprobe_events
- 
--Please note: User has to explicitly calculate the offset of the probepoint
-+Please note: User has to explicitly calculate the offset of the probe-point
- in the object. We can see the events that are registered by looking at the
- uprobe_events file.
- 
-     # cat uprobe_events
--    p:uprobes/p_zsh_0x46420 /bin/zsh:0x00046420 arg1=%ip arg2=%ax
-+    p:uprobes/zfree_entry /bin/zsh:0x00046420 arg1=%ip arg2=%ax
-+    r:uprobes/zfree_exit /bin/zsh:0x00046420 arg1=%ip arg2=%ax
- 
--The format of events can be seen by viewing the file events/uprobes/p_zsh_0x46420/format
-+Format of events can be seen by viewing the file events/uprobes/zfree_entry/format
- 
--    # cat events/uprobes/p_zsh_0x46420/format
--    name: p_zsh_0x46420
-+    # cat events/uprobes/zfree_entry/format
-+    name: zfree_entry
-     ID: 922
-     format:
--	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
--	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
--	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
--	field:int common_pid;	offset:4;	size:4;	signed:1;
--	field:int common_padding;	offset:8;	size:4;	signed:1;
-+         field:unsigned short common_type;         offset:0;  size:2; signed:0;
-+         field:unsigned char common_flags;         offset:2;  size:1; signed:0;
-+         field:unsigned char common_preempt_count; offset:3;  size:1; signed:0;
-+         field:int common_pid;                     offset:4;  size:4; signed:1;
-+         field:int common_padding;                 offset:8;  size:4; signed:1;
- 
--	field:unsigned long __probe_ip;	offset:12;	size:4;	signed:0;
--	field:u32 arg1;	offset:16;	size:4;	signed:0;
--	field:u32 arg2;	offset:20;	size:4;	signed:0;
-+         field:unsigned long __probe_ip;           offset:12; size:4; signed:0;
-+         field:u32 arg1;                           offset:16; size:4; signed:0;
-+         field:u32 arg2;                           offset:20; size:4; signed:0;
- 
-     print fmt: "(%lx) arg1=%lx arg2=%lx", REC->__probe_ip, REC->arg1, REC->arg2
- 
-@@ -94,6 +112,7 @@ Right after definition, each event is disabled by default. For tracing these
-     # echo 1 > events/uprobes/enable
- 
- Lets disable the event after sleeping for some time.
-+
-     # sleep 20
-     # echo 0 > events/uprobes/enable
- 
-@@ -104,10 +123,11 @@ And you can see the traced information via /sys/kernel/debug/tracing/trace.
-     #
-     #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
-     #              | |       |          |         |
--                 zsh-24842 [006] 258544.995456: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
--                 zsh-24842 [007] 258545.000270: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
--                 zsh-24842 [002] 258545.043929: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
--                 zsh-24842 [004] 258547.046129: p_zsh_0x46420: (0x446420) arg1=446421 arg2=79
--
--Each line shows us probes were triggered for a pid 24842 with ip being
--0x446421 and contents of ax register being 79.
-+                 zsh-24842 [006] 258544.995456: zfree_entry: (0x446420) arg1=446420 arg2=79
-+                 zsh-24842 [007] 258545.000270: zfree_exit:  (0x446540 <- 0x446420) arg1=446540 arg2=0
-+                 zsh-24842 [002] 258545.043929: zfree_entry: (0x446420) arg1=446420 arg2=79
-+                 zsh-24842 [004] 258547.046129: zfree_exit:  (0x446540 <- 0x446420) arg1=446540 arg2=0
-+
-+Output shows us uprobe was triggered for a pid 24842 with ip being 0x446420
-+and contents of ax register being 79. And uretprobe was triggered with ip at
-+0x446540 with counterpart function entry at 0x446420.
--- 
-1.8.1.4
+Applied to for-linus for v3.9, thanks!
 
+> Konstantin Khlebnikov wrote:
+>>
+>> This is fix for commit 7897e6022761ace7377f0f784fca059da55f5d71 from
+>> v3.9-rc1
+>> ("PCI: Disable Bus Master unconditionally in pci_device_shutdown()")
+>> in turn that was fix for b566a22c23327f18ce941ffad0ca907e50a53d41 from
+>> v3.5-rc1
+>> ("PCI: disable Bus Master on PCI device shutdown")
+>>
+>> Unfortunately fixing one bug uncovers another:
+>> ->shutdown() callback might switch device to deep sleep state.
+>> PCI config space no longer available after that.
+>>
+>> Link: https://lkml.org/lkml/2013/3/12/529
+>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>> Reported-and-Tested-by: Vivek Goyal<vgoyal@redhat.com>
+>> Cc: Bjorn Helgaas<bhelgaas@google.com>
+>> Cc: Rafael J. Wysocki<rafael.j.wysocki@intel.com>
+>> ---
+>>   drivers/pci/pci-driver.c |    5 +++--
+>>   1 file changed, 3 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+>> index 1fa1e48..79277fb 100644
+>> --- a/drivers/pci/pci-driver.c
+>> +++ b/drivers/pci/pci-driver.c
+>> @@ -390,9 +390,10 @@ static void pci_device_shutdown(struct device *dev)
+>>
+>>         /*
+>>          * Turn off Bus Master bit on the device to tell it to not
+>> -        * continue to do DMA
+>> +        * continue to do DMA. Don't touch devices in D3cold or unknown
+>> states.
+>>          */
+>> -       pci_clear_master(pci_dev);
+>> +       if (pci_dev->current_state <= PCI_D3hot)
+>> +               pci_clear_master(pci_dev);
+>>   }
+>>
+>>   #ifdef CONFIG_PM
+>>
+>
