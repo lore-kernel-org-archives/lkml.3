@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762801Ab3DCRac (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 13:30:32 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:54002 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756011Ab3DCRaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 13:30:30 -0400
-Date: Wed, 3 Apr 2013 19:30:28 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Thomas Renninger <trenn@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH V3 2/2] cpufreq: AMD "frequency sensitivity feedback"
- powersave bias for ondemand governor
-Message-ID: <20130403173028.GB4716@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Jacob Shin <jacob.shin@amd.com>, Thomas Renninger <trenn@suse.de>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-	linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Viresh Kumar <viresh.kumar@linaro.org>
-References: <1364926304-1799-1-git-send-email-jacob.shin@amd.com>
- <20130402192352.GC17675@pd.tnic>
- <20130402200337.GA17919@jshin-Toonie>
- <2932884.BNCEuERbdR@skinner.arch.suse.de>
- <20130402210124.GI17675@pd.tnic>
- <20130403165324.GB17919@jshin-Toonie>
- <20130403170456.GA4723@pd.tnic>
- <20130403171738.GC17919@jshin-Toonie>
+	id S1762799Ab3DCRcZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 13:32:25 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:42691 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758784Ab3DCRcY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 13:32:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130403171738.GC17919@jshin-Toonie>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAE9FiQUO-fLY-k_gmw6cg56YEN52VRvZuXr+f1EnywKr_cGc4Q@mail.gmail.com>
+References: <1364923183-316-1-git-send-email-yinghai@kernel.org>
+	<1364923183-316-4-git-send-email-yinghai@kernel.org>
+	<20130402180606.GI29506@redhat.com>
+	<CAE9FiQUKqv_t-99JN_t=EGop2-Wbjd4Yb9vYvU_SbbNctG6Yeg@mail.gmail.com>
+	<CAE9FiQXEa0-WS8+E6LGy8CenoHX5qF1MpjBgejQx9-EvG_1rGw@mail.gmail.com>
+	<20130402191130.GB31760@redhat.com>
+	<CAE9FiQViU_X-idHyFmRFQXmP23oWN63XkAr3KmXsfys1VBR53g@mail.gmail.com>
+	<20130402201148.GJ29506@redhat.com>
+	<CAE9FiQURMNjPYYze-tPn4Ssrc4TqMqTuvwRRhoVYEnGLF4Z0cQ@mail.gmail.com>
+	<20130403131842.GA5939@redhat.com>
+	<CAE9FiQUO-fLY-k_gmw6cg56YEN52VRvZuXr+f1EnywKr_cGc4Q@mail.gmail.com>
+Date: Wed, 3 Apr 2013 10:32:23 -0700
+X-Google-Sender-Auth: b4Tyxh6r-TZgy5TBC305NTYtBOM
+Message-ID: <CAE9FiQXg2+DCd0BGRyKo4KWsMXdPZz74OjpQrUP=ciok2AZhuA@mail.gmail.com>
+Subject: Re: [PATCH 3/4] x86, kdump: Retore crashkernel= to allocate low
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 03, 2013 at 12:17:38PM -0500, Jacob Shin wrote:
-> Writing 0 to powersave_bias or unloading the AMD driver could do that.
+On Wed, Apr 3, 2013 at 10:12 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Wed, Apr 3, 2013 at 6:18 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
 >
-> When the AMD driver loads, it will give a sane default value to
-> powersave_bias to enable it, when it unloads, it will put it back to
-> 0.
+>> - implement crashkernel_no_auto_low option to opt out of auto reserved
+>>   low memory
+>
+> No, that is ugly.
+...
+>
+> It's *you* want me to change "Crash kernel low" to "Crash kernel".
+>
+> Do we need to drop second patch? So will still keep
+> "Crash kernel low" in /proc/iomem?
 
-... and on systems without hw feedback, it will keep powersave_bias to 0
-by default, retaining the old behavior.
+also we can drop the last patch and keep "crashkernel_high=" and
+"crashkernel_low="
 
-Yeah, sounds like a plan.
+as you even like to introduce "crashkernel_no_auto_low".
 
-Thanks.
+Thanks
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Yinghai
