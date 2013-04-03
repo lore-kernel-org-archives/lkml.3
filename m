@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762491Ab3DCRFA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 13:05:00 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:45263 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758580Ab3DCRE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 13:04:58 -0400
-Date: Wed, 3 Apr 2013 19:04:56 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Thomas Renninger <trenn@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH V3 2/2] cpufreq: AMD "frequency sensitivity feedback"
- powersave bias for ondemand governor
-Message-ID: <20130403170456.GA4723@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Jacob Shin <jacob.shin@amd.com>, Thomas Renninger <trenn@suse.de>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-	linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Viresh Kumar <viresh.kumar@linaro.org>
-References: <1364926304-1799-1-git-send-email-jacob.shin@amd.com>
- <20130402192352.GC17675@pd.tnic>
- <20130402200337.GA17919@jshin-Toonie>
- <2932884.BNCEuERbdR@skinner.arch.suse.de>
- <20130402210124.GI17675@pd.tnic>
- <20130403165324.GB17919@jshin-Toonie>
+	id S1762498Ab3DCRGT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 13:06:19 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:33049 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760213Ab3DCRGQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 13:06:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130403165324.GB17919@jshin-Toonie>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5144849A.8050907@metafoo.de>
+References: <1363364801-23684-1-git-send-email-ch.naveen@samsung.com>
+	<51439846.9090201@metafoo.de>
+	<CAD=FV=V+-DwCjGoookySCazazBBYOoRO+=G5Q_WXAw+SrXNc-A@mail.gmail.com>
+	<5144849A.8050907@metafoo.de>
+Date: Wed, 3 Apr 2013 10:06:14 -0700
+X-Google-Sender-Auth: yHxoJXnYms1MdD_Xvt_zEREJtYI
+Message-ID: <CAD=FV=VBYHyD6yXBrM1BV3gazDFT0oHgvJM0+5LU1w4AO16Yzg@mail.gmail.com>
+Subject: Re: [RFC: PATCH 2/2] iio: adc: exynos_adc: Handle timeout and race conditions
+From: Doug Anderson <dianders@chromium.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-iio <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Naveen Krishna <naveenkrishna.ch@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 03, 2013 at 11:53:24AM -0500, Jacob Shin wrote:
-> Then Thomas, Boris, would it be acceptable if enable the frequency
-> feedback feature by default with a sane powersave_bias tunable value?
-> And also add proper documentation for both vanila powersave_bias
-> and powersave_bias with AMD frequency sensitivity loaded to
-> Documentation/cpu-freq/ondemand ?
+Lars,
 
-Yeah, this was what I was proposing, basically. The only question here
-is, would anyone want to disable freq decisions on systems with hw
-feedback? If yes, then you'd need to be able to disable the feedback
-thing, maybe have a magic value for powersave_bias...
+On Sat, Mar 16, 2013 at 7:41 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+> I think you still need the mutex for serialization, otherwise the requests
+> would just cancel each other out. Btw. what happens if you start a conversion
+> while another is still in progress? Is it possible to abort a conversion?
 
-Thanks.
+I was thinking that the spinlock would just replace the mutex for the
+purposes of serialization.
 
--- 
-Regards/Gruss,
-    Boris.
+I stepped back a bit, though, and I'm wondering if we're over-thinking
+things.  The timeout case should certainly be handled properly (thanks
+for pointing it out), but getting a timeout is really not expected and
+adding a lot of extra overhead to handle it elegantly seems a bit
+much?
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Specifically, the mutex means that we have one user of the ADC at a
+time, and ADC conversion has nothing variable about it.  The user
+manual that I have access to talks about 12-bit conversion happening
+in 1 microsecond with a 5MHz input clock or 5 microseconds with a 1MHz
+input clock.  Even if someone has clocks configured very differently,
+it would be hard to imagine a conversion actually taking a full
+second.
+
+...so that means that if the timeout actually fires then something
+else fairly drastic has gone wrong.  It's _very_ unlikely that the IRQ
+will still go off for this conversion sometime in the future.
+
+To me, total modifications to what's landed already ought to be:
+
+* Change timeout to long (from unsigned long)
+
+* Make sure we return errors (negative results) from
+wait_for_completion_interruptible_timeout() properly.
+
+* If we get back a value of 0 from
+wait_for_completion_interruptible_timeout() then we should print a
+warning and attempt machinations to reset the ADC.  Without ever
+seeing real-world situtations that would cause a real timeout these
+machinations would be a bit of a guess (is resetting the adc useful
+when it's more likely that someone accidentally messed with the clock
+tree or power gated the ADC?)...  ...or perhaps a warning and a TODO
+in the code would be enough?
+
+
+Thoughts?
+
+-Doug
