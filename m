@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761343Ab3DCP3j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 11:29:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49687 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759408Ab3DCP3h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 11:29:37 -0400
-Date: Wed, 3 Apr 2013 17:29:34 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Li Zefan <lizefan@huawei.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC][PATCH 1/7] memcg: use css_get in sock_update_memcg()
-Message-ID: <20130403152934.GL16471@dhcp22.suse.cz>
-References: <515BF233.6070308@huawei.com>
- <515BF249.50607@huawei.com>
- <515C2788.90907@parallels.com>
+	id S1761587Ab3DCP36 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 11:29:58 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:63829 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760829Ab3DCP35 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 11:29:57 -0400
+X-Originating-IP: 108.223.40.66
+Date: Wed, 3 Apr 2013 08:30:00 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Christian Gmeiner <christian.gmeiner@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org,
+        linux-i2c@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3/3] watchdog: Add Congatec CGEB watchdog driver
+Message-ID: <20130403153000.GA30641@roeck-us.net>
+References: <1360663374-30951-1-git-send-email-s.hauer@pengutronix.de>
+ <1360663374-30951-4-git-send-email-s.hauer@pengutronix.de>
+ <CAH9NwWd7YdtK0urutisVgKoE7NmPFLpG3wFG5W6P7o45vUqAng@mail.gmail.com>
+ <20130326143331.GA5529@roeck-us.net>
+ <20130403150952.GX1906@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <515C2788.90907@parallels.com>
+In-Reply-To: <20130403150952.GX1906@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 03-04-13 16:58:48, Glauber Costa wrote:
-> On 04/03/2013 01:11 PM, Li Zefan wrote:
-> > Use css_get/css_put instead of mem_cgroup_get/put.
-> > 
-> > Note, if at the same time someone is moving @current to a different
-> > cgroup and removing the old cgroup, css_tryget() may return false,
-> > and sock->sk_cgrp won't be initialized.
-> > 
-> > Signed-off-by: Li Zefan <lizefan@huawei.com>
-> > ---
-> >  mm/memcontrol.c | 8 ++++----
-> >  1 file changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index 23d0f6e..43ca91d 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -536,15 +536,15 @@ void sock_update_memcg(struct sock *sk)
-> >  		 */
-> >  		if (sk->sk_cgrp) {
-> >  			BUG_ON(mem_cgroup_is_root(sk->sk_cgrp->memcg));
-> > -			mem_cgroup_get(sk->sk_cgrp->memcg);
-> > +			css_get(&sk->sk_cgrp->memcg->css);
+On Wed, Apr 03, 2013 at 05:09:52PM +0200, Sascha Hauer wrote:
+[ ... ]
 
-I am not sure I understand this one. So we have a goup here (which means
-that somebody already took a reference on it, right?) and we are taking
-another reference. If this is released by sock_release_memcg then who
-releases the previous one? It is not directly related to the patch
-because this has been done previously already. Could you clarify
-Glauber, please?
-
-> >  			return;
-> >  		}
-> >  
-> >  		rcu_read_lock();
-> >  		memcg = mem_cgroup_from_task(current);
-> >  		cg_proto = sk->sk_prot->proto_cgroup(memcg);
-> > -		if (!mem_cgroup_is_root(memcg) && memcg_proto_active(cg_proto)) {
-> > -			mem_cgroup_get(memcg);
-> > +		if (!mem_cgroup_is_root(memcg) &&
-> > +		    memcg_proto_active(cg_proto) && css_tryget(&memcg->css)) {
-> >  			sk->sk_cgrp = cg_proto;
-> >  		}
+> > 
+> > On a side note, if the driver supports devicetree, it might make sense to call
+> > watchdog_init_timeout, since it initializes the timeout from devicetree data.
 > 
-> What happens if this tryget fails ? Won't we leak a reference here? We
-> will put regardless when the socket is released, and this may go
-> negative. No?
- 
-AFAICS sock_release_memcg releases the reference only if sk->sk_cgrp and
-that one wouldn't be set if css_tryget fails.
+> The driver does not support devicetree.
+> 
+I should have said "the system". Calling watchdog_init_timeout is the only thing
+a watchdog driver has to do to support devicetree.
 
--- 
-Michal Hocko
-SUSE Labs
+Thanks,
+Guenter
