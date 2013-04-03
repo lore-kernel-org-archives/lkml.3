@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762986Ab3DCJPO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 05:15:14 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:47739 "EHLO
+	id S1761253Ab3DCJNo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 05:13:44 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:46513 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760803Ab3DCJPK (ORCPT
+	with ESMTP id S1760803Ab3DCJNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 05:15:10 -0400
-Message-ID: <515BF2E3.4000605@huawei.com>
-Date: Wed, 3 Apr 2013 17:14:11 +0800
+	Wed, 3 Apr 2013 05:13:40 -0400
+Message-ID: <515BF249.50607@huawei.com>
+Date: Wed, 3 Apr 2013 17:11:37 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
@@ -18,7 +18,7 @@ CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
         Michal Hocko <mhocko@suse.cz>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Johannes Weiner <hannes@cmpxchg.org>
-Subject: [RFC][PATCH 7/7] memcg: kill memcg refcnt
+Subject: [RFC][PATCH 1/7] memcg: use css_get in sock_update_memcg()
 References: <515BF233.6070308@huawei.com>
 In-Reply-To: <515BF233.6070308@huawei.com>
 Content-Type: text/plain; charset="GB2312"
@@ -29,76 +29,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now memcg has the same life cycle as the corresponding cgroup.
-Kill the useless refcnt.
+Use css_get/css_put instead of mem_cgroup_get/put.
+
+Note, if at the same time someone is moving @current to a different
+cgroup and removing the old cgroup, css_tryget() may return false,
+and sock->sk_cgrp won't be initialized.
 
 Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- mm/memcontrol.c | 24 +-----------------------
- 1 file changed, 1 insertion(+), 23 deletions(-)
+ mm/memcontrol.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 45129cd..9714a16 100644
+index 23d0f6e..43ca91d 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -297,8 +297,6 @@ struct mem_cgroup {
- 	bool		oom_lock;
- 	atomic_t	under_oom;
+@@ -536,15 +536,15 @@ void sock_update_memcg(struct sock *sk)
+ 		 */
+ 		if (sk->sk_cgrp) {
+ 			BUG_ON(mem_cgroup_is_root(sk->sk_cgrp->memcg));
+-			mem_cgroup_get(sk->sk_cgrp->memcg);
++			css_get(&sk->sk_cgrp->memcg->css);
+ 			return;
+ 		}
  
--	atomic_t	refcnt;
--
- 	int	swappiness;
- 	/* OOM-Killer disable */
- 	int		oom_kill_disable;
-@@ -501,9 +499,6 @@ enum res_type {
-  */
- static DEFINE_MUTEX(memcg_create_mutex);
- 
--static void mem_cgroup_get(struct mem_cgroup *memcg);
--static void mem_cgroup_put(struct mem_cgroup *memcg);
--
- static inline
- struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *s)
- {
-@@ -6117,22 +6112,6 @@ static void free_rcu(struct rcu_head *rcu_head)
- 	schedule_work(&memcg->work_freeing);
+ 		rcu_read_lock();
+ 		memcg = mem_cgroup_from_task(current);
+ 		cg_proto = sk->sk_prot->proto_cgroup(memcg);
+-		if (!mem_cgroup_is_root(memcg) && memcg_proto_active(cg_proto)) {
+-			mem_cgroup_get(memcg);
++		if (!mem_cgroup_is_root(memcg) &&
++		    memcg_proto_active(cg_proto) && css_tryget(&memcg->css)) {
+ 			sk->sk_cgrp = cg_proto;
+ 		}
+ 		rcu_read_unlock();
+@@ -558,7 +558,7 @@ void sock_release_memcg(struct sock *sk)
+ 		struct mem_cgroup *memcg;
+ 		WARN_ON(!sk->sk_cgrp->memcg);
+ 		memcg = sk->sk_cgrp->memcg;
+-		mem_cgroup_put(memcg);
++		css_put(&sk->sk_cgrp->memcg->css);
+ 	}
  }
  
--static void mem_cgroup_get(struct mem_cgroup *memcg)
--{
--	atomic_inc(&memcg->refcnt);
--}
--
--static void __mem_cgroup_put(struct mem_cgroup *memcg, int count)
--{
--	if (atomic_sub_and_test(count, &memcg->refcnt))
--		call_rcu(&memcg->rcu_freeing, free_rcu);
--}
--
--static void mem_cgroup_put(struct mem_cgroup *memcg)
--{
--	__mem_cgroup_put(memcg, 1);
--}
--
- /*
-  * Returns the parent mem_cgroup in memcgroup hierarchy with hierarchy enabled.
-  */
-@@ -6192,7 +6171,6 @@ mem_cgroup_css_alloc(struct cgroup *cont)
- 
- 	memcg->last_scanned_node = MAX_NUMNODES;
- 	INIT_LIST_HEAD(&memcg->oom_notify);
--	atomic_set(&memcg->refcnt, 1);
- 	memcg->move_charge_at_immigrate = 0;
- 	mutex_init(&memcg->thresholds_lock);
- 	spin_lock_init(&memcg->move_lock);
-@@ -6279,7 +6257,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
- 
- 	mem_cgroup_sockets_destroy(memcg);
- 
--	mem_cgroup_put(memcg);
-+	call_rcu(&memcg->rcu_freeing, free_rcu);
- }
- 
- #ifdef CONFIG_MMU
 -- 
 1.8.0.2
