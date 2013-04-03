@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761017Ab3DCDDu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 23:03:50 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:45573 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757997Ab3DCDDt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 23:03:49 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r3333fae027073, This message is released by code: ctlocs8528
-From: hayeswang <hayeswang@realtek.com>
-To: "'Francois Romieu'" <romieu@fr.zoreil.com>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <1364824539-4156-1-git-send-email-hayeswang@realtek.com> <1364891022-3220-1-git-send-email-hayeswang@realtek.com> <1364891022-3220-6-git-send-email-hayeswang@realtek.com> <20130402222728.GA16612@electric-eye.fr.zoreil.com>
-Subject: RE: [PATCH v2 net-next 6/8] r8169: add a new chip for RTL8111G
-Date: Wed, 3 Apr 2013 11:03:45 +0800
-Message-ID: <5A289D0C2A6C44158FB4CC5226F8E920@realtek.com.tw>
+	id S1761826Ab3DCDEM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 23:04:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18704 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761742Ab3DCDEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Apr 2013 23:04:10 -0400
+Date: Tue, 2 Apr 2013 23:04:03 -0400
+From: Dave Jones <davej@redhat.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: [PATCH] sysfs: check if one entry has been removed before freeing
+Message-ID: <20130403030403.GA26913@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Ming Lei <ming.lei@canonical.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	linux-kernel@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>
+References: <1364957903-10341-1-git-send-email-ming.lei@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Ac4v8UUWTEXe4kX2Q3ayRvqzyhF/vQAIlu0g
-In-Reply-To: <20130402222728.GA16612@electric-eye.fr.zoreil.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364957903-10341-1-git-send-email-ming.lei@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Francois Romieu [mailto:romieu@fr.zoreil.com] 
-> Sent: Wednesday, April 03, 2013 6:27 AM
-> To: Hayeswang
-> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v2 net-next 6/8] r8169: add a new chip 
-> for RTL8111G
-> 
-> Hayes Wang <hayeswang@realtek.com> :
-> > Add a new chip for RTL8111G series.
-> 
-> It does not need any of the workarounds in patch #5, right ?
+On Wed, Apr 03, 2013 at 10:58:23AM +0800, Ming Lei wrote:
  
-Excuse me, I don't sure what is your question. Do you mean if the patch "[PATCH
-v2 net-next 5/8] r8169: Update the RTL8111G parameters" is necessary before the
-current patch? According to the settings from our hw engineers, some settings of
-the new chip are the same with the previous 8111g chip using the new parameters.
-It would work without patch #5. However, it is necessary to be updated finally,
-so I add this patch after patch #5.
- 
-Best Regards,
-Hayes
+ > diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+ > index 1bf016b..328ef9b 100644
+ > --- a/fs/sysfs/dir.c
+ > +++ b/fs/sysfs/dir.c
+ > @@ -268,6 +268,13 @@ void release_sysfs_dirent(struct sysfs_dirent * sd)
+ >  	 */
+ >  	parent_sd = sd->s_parent;
+ >  
+ > +	if (unlikely(!(sd->s_flags & SYSFS_FLAG_REMOVED))) {
+ > +		printk(KERN_ERR "sysfs: free using entry: %s/%s\n",
+ > +			parent_sd ? parent_sd->s_name : "",
+ > +			sd->s_name);
+ > +		BUG();
+ > +	}
+
+Please use WARN instead of BUG.  For an in-ram filesystem like
+sysfs, there's no real reason to lock-up the machine in this way
+making it harder to debug.
+
+	Dave
 
