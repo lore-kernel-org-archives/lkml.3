@@ -1,48 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761355Ab3DCCak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 22:30:40 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:51692 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761280Ab3DCCai (ORCPT
+	id S1761384Ab3DCCav (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 22:30:51 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:60590 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760771Ab3DCCat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 22:30:38 -0400
-Date: Tue, 02 Apr 2013 22:30:36 -0400 (EDT)
-Message-Id: <20130402.223036.1483788180825619960.davem@davemloft.net>
-To: alan@signal11.us
-Cc: werner@almesberger.net, netdev@vger.kernel.org,
-        linux-zigbee-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [Linux-zigbee-devel] [PATCH 1/6] mac802154: Immediately retry
- sending failed packets
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <515B9318.8090101@signal11.us>
-References: <515B8D09.9050304@signal11.us>
-	<20130402.220315.1782012687105065631.davem@davemloft.net>
-	<515B9318.8090101@signal11.us>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 2 Apr 2013 22:30:49 -0400
+Message-ID: <1364956243.1328.1.camel@phoenix>
+Subject: [PATCH 1/4] regulator: ab8500: Remove set_voltage_time_sel and
+ delay to fix build error
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Wed, 03 Apr 2013 10:30:43 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Tue, 02 Apr 2013 19:30:38 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Ott <alan@signal11.us>
-Date: Tue, 02 Apr 2013 22:25:28 -0400
+The delay field is removed from struct ab8500_regulator_info in commit 29234928
+"regulator: ab8500: Remove set_voltage_time_sel and delay setting".
 
-> The workqueue in mac802154 is only needed because the current mac802154
-> xmit() function is designed to be blocking and synchronous.
-> 
-> Prior to my patch (#3/6), that very same workqueue would actually queue
-> up packets (without bound). That's what my patch fixes.
-> 
-> The workqueue in mac802154 also serializes the access to the device for
-> other functions like setting the channel, ensuring that in the driver
-> code, one doesn't have to mutex everything. I'm not sure if that's the
-> "right" way to do it, but that's the way it was when I got here.
+In additional, current delay setting does not make sense at all.
+ab8500_regulator_mode_ops is for fixed voltage only, which does not need
+set_voltage_time_sel. All ab8540_aux3_regulator_volt_mode_ops users do not have
+delay settings so set_voltage_time_sel actually returns 0.
 
-This is entirely duplicating existing facilities.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/ab8500.c |   14 --------------
+ 1 file changed, 14 deletions(-)
 
-Your desire to allow blockability during xmit() on the basis of mutual
-exclusion is not well founded.
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index ef12d3d..abdfbd4 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -633,15 +633,6 @@ static int ab8540_aux3_regulator_set_voltage_sel(struct regulator_dev *rdev,
+ 	return ret;
+ }
+ 
+-static int ab8500_regulator_set_voltage_time_sel(struct regulator_dev *rdev,
+-					     unsigned int old_sel,
+-					     unsigned int new_sel)
+-{
+-	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+-
+-	return info->delay;
+-}
+-
+ static struct regulator_ops ab8500_regulator_volt_mode_ops = {
+ 	.enable			= ab8500_regulator_enable,
+ 	.disable		= ab8500_regulator_disable,
+@@ -664,7 +655,6 @@ static struct regulator_ops ab8540_aux3_regulator_volt_mode_ops = {
+ 	.get_voltage_sel = ab8540_aux3_regulator_get_voltage_sel,
+ 	.set_voltage_sel = ab8540_aux3_regulator_set_voltage_sel,
+ 	.list_voltage	= regulator_list_voltage_table,
+-	.set_voltage_time_sel = ab8500_regulator_set_voltage_time_sel,
+ };
+ 
+ static struct regulator_ops ab8500_regulator_volt_ops = {
+@@ -674,7 +664,6 @@ static struct regulator_ops ab8500_regulator_volt_ops = {
+ 	.get_voltage_sel = ab8500_regulator_get_voltage_sel,
+ 	.set_voltage_sel = ab8500_regulator_set_voltage_sel,
+ 	.list_voltage	= regulator_list_voltage_table,
+-	.set_voltage_time_sel = ab8500_regulator_set_voltage_time_sel,
+ };
+ 
+ static struct regulator_ops ab8500_regulator_mode_ops = {
+@@ -1092,7 +1081,6 @@ static struct ab8500_regulator_info
+ 			.n_voltages	= 1,
+ 			.volt_table	= fixed_2000000_voltage,
+ 		},
+-		.delay			= 10000,
+ 		.load_lp_uA		= 1000,
+ 		.update_bank		= 0x03,
+ 		.update_reg		= 0x80,
+@@ -1357,7 +1345,6 @@ static struct ab8500_regulator_info
+ 			.n_voltages	= 1,
+ 			.volt_table	= fixed_2000000_voltage,
+ 		},
+-		.delay			= 10000,
+ 		.load_lp_uA		= 1000,
+ 		.update_bank		= 0x03,
+ 		.update_reg		= 0x80,
+@@ -1606,7 +1593,6 @@ static struct ab8500_regulator_info
+ 			.owner		= THIS_MODULE,
+ 			.n_voltages	= 1,
+ 		},
+-		.delay			= 10000,
+ 		.load_lp_uA		= 1000,
+ 		.update_bank		= 0x03,
+ 		.update_reg		= 0x80,
+-- 
+1.7.10.4
+
+
+
