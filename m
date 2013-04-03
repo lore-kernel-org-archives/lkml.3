@@ -1,71 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760335Ab3DCGmc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 02:42:32 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55596 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753955Ab3DCGma (ORCPT
+	id S1762100Ab3DCGn6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 02:43:58 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:56733 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761659Ab3DCGn4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 02:42:30 -0400
-Date: Wed, 3 Apr 2013 17:42:19 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeff Layton <jlayton@redhat.com>
-Subject: linux-next: build failure after merge of the final tree (nfsd tree
- related)
-Message-Id: <20130403174219.0786d27109633a30d89b38bf@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__3_Apr_2013_17_42_19_+1100_bf1RPF65+WHvsVRm"
+	Wed, 3 Apr 2013 02:43:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <ore61p9gvaic2j0fc083dpbd.1364970699079@email.android.com>
+References: <ore61p9gvaic2j0fc083dpbd.1364970699079@email.android.com>
+Date: Wed, 3 Apr 2013 12:13:56 +0530
+Message-ID: <CAKohponUuwiQ9EiKq66Mgf7zZxonxHs=DNbhx=uydDVB5bed6w@mail.gmail.com>
+Subject: Re: [PATCH v3 linux-next] cpufreq: ondemand: Calculate gradient of
+ CPU load to early increase frequency
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: stratosk <stratosk@semaphore.gr>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__3_Apr_2013_17_42_19_+1100_bf1RPF65+WHvsVRm
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 3 April 2013 12:01, stratosk <stratosk@semaphore.gr> wrote:
+> I'm sorry, I don't understand.
+> The goal of this patch is not energy saving.
 
-Hi all,
+He probably misunderstood it...
 
-After merging the final tree, today's linux-next build (arm defconfig)
-failed like this:
+> The goal is to detect CPU load as soon as possible to increase frequency.
+>
+> Could you please clarify this?
 
-fs/built-in.o: In function `nfsd_reply_cache_stats_show':
-super.c:(.text+0x87308): undefined reference to `__udivdi3'
-
-Probably caused by commit 187da2f90879 ("nfsd: keep track of the max and
-average time to search the cache") which adds a divide by u64
-(num_searches).
-
-I have reverted that commit and the following one for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__3_Apr_2013_17_42_19_+1100_bf1RPF65+WHvsVRm
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRW89LAAoJEECxmPOUX5FE1XEQAIOv1tXX/4oOh7ImoAiFDa08
-06mtbZmXkQ7QNA0V15KiS6kv8/xNIdn32vdvyxqSr+SeqdAcp7BzC3tFCv2IgXDz
-jLhsvwXvanWM7n1NsDloL3H6HNNCQNpedyopfniHn6q70LR7uB1u4ddHrK/1LiKM
-fLWh85e+d7YI5ikEdarKWYgTdXOwJgdQViZV2DPqlGIppZTMGDwKuLmuVmsQOAa4
-Hbp3i5zyA+fRiasPJ24ENyWraPoKlVkkwzACCEMeSTbDSIGmsc60Z0SN7qLvDOVv
-N0hF4OAOdfNQcHqeh54EsmwShuKockTUBCNFux1MuDaVvMYF0L5rWMsDk29hyfFp
-8TscKvyuLbpu5t7gfYVGFCUh3CIfRHYrwtC+fF7sPsEs3cONyIk9VXLny8ALtnBe
-uCyei7pOSkEOOoauv9ayJP3OwPRCm4jwQv9VE98L1rjujnDNbohxW2OdkipYfSMb
-IxTSDefaa5uIUqjCgAxHRN7cEULDtvc23s0j9b9K0cEqgmk7bl2hm2zV1E9sB88J
-hnIKMethcqv2QcF7n16A8gHeNw782NhzBF8B3dhyblE4LXyMwSb/honVefCKrUD4
-fKu1zWLxPMtlCBl5ekIc81JkVFVX1j4ANCFK2exdgEqXG6Tm1Y8zTVOYBb0p8HGy
-v1HQqn8X6HZ0wK51RxnZ
-=8blL
------END PGP SIGNATURE-----
-
---Signature=_Wed__3_Apr_2013_17_42_19_+1100_bf1RPF65+WHvsVRm--
+But he is looking for some numbers to prove your patch. Some numbers
+that shows performance is better with your changes...
