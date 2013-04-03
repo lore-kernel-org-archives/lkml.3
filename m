@@ -1,92 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763035Ab3DCSGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 14:06:13 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53535 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762890Ab3DCSF0 (ORCPT
+	id S1763005Ab3DCSGs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 14:06:48 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:55931 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762890Ab3DCSGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 14:05:26 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 1/3] mfd: arizona: Hold device in reset while ramping supplies
-Date: Wed,  3 Apr 2013 19:05:19 +0100
-Message-Id: <1365012321-7673-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20130403180423.GA6985@opensource.wolfsonmicro.com>
-References: <20130403180423.GA6985@opensource.wolfsonmicro.com>
+	Wed, 3 Apr 2013 14:06:46 -0400
+Message-ID: <515C6DCD.50902@mit.edu>
+Date: Wed, 03 Apr 2013 10:58:37 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Sven Joachim <svenjoac@gmx.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Ding Tianhong <dingtianhong@huawei.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [ 105/124] af_unix: dont send SCM_CREDENTIAL when dest socket
+ is NULL
+References: <20130402221104.163133110@linuxfoundation.org>  <20130402221116.307254752@linuxfoundation.org>  <87vc833kpf.fsf@turtle.gmx.de> <1364997630.13853.19.camel@edumazet-glaptop>  <87a9pfzm33.fsf@turtle.gmx.de> <1365003300.13853.25.camel@edumazet-glaptop>
+In-Reply-To: <1365003300.13853.25.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acquire the /RESET GPIO before we enable regulators and hold the device
-in reset while the regulators power up in order to improve robustness
-during the initial power up.
+On 04/03/2013 08:35 AM, Eric Dumazet wrote:
+> On Wed, 2013-04-03 at 17:10 +0200, Sven Joachim wrote:
+>> On 2013-04-03 16:00 +0200, Eric Dumazet wrote:
+> 
+>>
+>>> It might be a wrong sender (application bug or bad identity), and udevd
+>>> correctly discards the incoming message.
+>>
+>> How would I find out the culprit?
+> 
+> Change udevd to display the pid as well, and hopefully track the sender.
+> 
+> udevd receives uid and pid in the credentials.
 
-Also fix the error path so that the device is left in reset while we're
-at it.
+This sounds suspiciously like an SCM_CREDENTIALS bug triggered by a
+race.  There's a fix (that needs both a new version from me and a review
+by someone) here:
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/arizona-core.c |   26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+http://www.spinics.net/lists/netdev/msg229948.html
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 26ac372..e4c8dc2 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -494,6 +494,17 @@ int arizona_dev_init(struct arizona *arizona)
- 		goto err_early;
- 	}
- 
-+	if (arizona->pdata.reset) {
-+		/* Start out with /RESET low to put the chip into reset */
-+		ret = gpio_request_one(arizona->pdata.reset,
-+				       GPIOF_DIR_OUT | GPIOF_INIT_LOW,
-+				       "arizona /RESET");
-+		if (ret != 0) {
-+			dev_err(dev, "Failed to request /RESET: %d\n", ret);
-+			goto err_early;
-+		}
-+	}
-+
- 	ret = regulator_bulk_enable(arizona->num_core_supplies,
- 				    arizona->core_supplies);
- 	if (ret != 0) {
-@@ -508,18 +519,8 @@ int arizona_dev_init(struct arizona *arizona)
- 		goto err_enable;
- 	}
- 
--	if (arizona->pdata.reset) {
--		/* Start out with /RESET low to put the chip into reset */
--		ret = gpio_request_one(arizona->pdata.reset,
--				       GPIOF_DIR_OUT | GPIOF_INIT_LOW,
--				       "arizona /RESET");
--		if (ret != 0) {
--			dev_err(dev, "Failed to request /RESET: %d\n", ret);
--			goto err_dcvdd;
--		}
--
-+	if (arizona->pdata.reset)
- 		gpio_set_value_cansleep(arizona->pdata.reset, 1);
--	}
- 
- 	regcache_cache_only(arizona->regmap, false);
- 
-@@ -759,10 +760,9 @@ err_irq:
- 	arizona_irq_exit(arizona);
- err_reset:
- 	if (arizona->pdata.reset) {
--		gpio_set_value_cansleep(arizona->pdata.reset, 1);
-+		gpio_set_value_cansleep(arizona->pdata.reset, 0);
- 		gpio_free(arizona->pdata.reset);
- 	}
--err_dcvdd:
- 	regulator_disable(arizona->dcvdd);
- err_enable:
- 	regulator_bulk_disable(arizona->num_core_supplies,
--- 
-1.7.10.4
-
+--Andy
