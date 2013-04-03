@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758886Ab3DCARd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 20:17:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59650 "EHLO
+	id S1758667Ab3DCASw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 20:18:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59665 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758737Ab3DCARb (ORCPT
+	with ESMTP id S1756919Ab3DCASu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 20:17:31 -0400
-Date: Tue, 2 Apr 2013 17:17:13 -0700
-From: tip-bot for Paul Moore <tipbot@zytor.com>
-Message-ID: <tip-8b4b9f27e57584f3d90e0bb84cf800ad81cfe3a1@git.kernel.org>
+	Tue, 2 Apr 2013 20:18:50 -0400
+Date: Tue, 2 Apr 2013 17:18:24 -0700
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-8e3c2a8cf647e2f3a1e9d38009b0d1c02145822f@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        wad@chromium.org, pmoore@redhat.com, stable@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com
+        tglx@linutronix.de, hpa@linux.intel.com, bp@alien8.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        wad@chromium.org, pmoore@redhat.com, tglx@linutronix.de,
-        stable@vger.kernel.org, hpa@linux.intel.com
-In-Reply-To: <20130215172143.12549.10292.stgit@localhost>
-References: <20130215172143.12549.10292.stgit@localhost>
+        tglx@linutronix.de, bp@alien8.de, hpa@linux.intel.com
+In-Reply-To: <1362428180-8865-3-git-send-email-bp@alien8.de>
+References: <1362428180-8865-3-git-send-email-bp@alien8.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86:
-  remove the x32 syscall bitmask from syscall_get_nr()
-Git-Commit-ID: 8b4b9f27e57584f3d90e0bb84cf800ad81cfe3a1
+Subject: [tip:x86/cleanups] x86: Drop KERNEL_IMAGE_START
+Git-Commit-ID: 8e3c2a8cf647e2f3a1e9d38009b0d1c02145822f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,72 +27,60 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 17:17:18 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 02 Apr 2013 17:18:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8b4b9f27e57584f3d90e0bb84cf800ad81cfe3a1
-Gitweb:     http://git.kernel.org/tip/8b4b9f27e57584f3d90e0bb84cf800ad81cfe3a1
-Author:     Paul Moore <pmoore@redhat.com>
-AuthorDate: Fri, 15 Feb 2013 12:21:43 -0500
+Commit-ID:  8e3c2a8cf647e2f3a1e9d38009b0d1c02145822f
+Gitweb:     http://git.kernel.org/tip/8e3c2a8cf647e2f3a1e9d38009b0d1c02145822f
+Author:     Borislav Petkov <bp@alien8.de>
+AuthorDate: Mon, 4 Mar 2013 21:16:17 +0100
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 2 Apr 2013 14:38:09 -0700
+CommitDate: Tue, 2 Apr 2013 16:03:29 -0700
 
-x86: remove the x32 syscall bitmask from syscall_get_nr()
+x86: Drop KERNEL_IMAGE_START
 
-Commit fca460f95e928bae373daa8295877b6905bc62b8 simplified the x32
-implementation by creating a syscall bitmask, equal to 0x40000000, that
-could be applied to x32 syscalls such that the masked syscall number
-would be the same as a x86_64 syscall.  While that patch was a nice
-way to simplify the code, it went a bit too far by adding the mask to
-syscall_get_nr(); returning the masked syscall numbers can cause
-confusion with callers that expect syscall numbers matching the x32
-ABI, e.g. unmasked syscall numbers.
+We have KERNEL_IMAGE_START and __START_KERNEL_map which both contain the
+start of the kernel text mapping's virtual address. Remove the prior one
+which has been replicated a lot less times around the tree.
 
-This patch fixes this by simply removing the mask from syscall_get_nr()
-while preserving the other changes from the original commit.  While
-there are several syscall_get_nr() callers in the kernel, most simply
-check that the syscall number is greater than zero, in this case this
-patch will have no effect.  Of those remaining callers, they appear
-to be few, seccomp and ftrace, and from my testing of seccomp without
-this patch the original commit definitely breaks things; the seccomp
-filter does not correctly filter the syscalls due to the difference in
-syscall numbers in the BPF filter and the value from syscall_get_nr().
-Applying this patch restores the seccomp BPF filter functionality on
-x32.
+No functionality change.
 
-I've tested this patch with the seccomp BPF filters as well as ftrace
-and everything looks reasonable to me; needless to say general usage
-seemed fine as well.
-
-Signed-off-by: Paul Moore <pmoore@redhat.com>
-Link: http://lkml.kernel.org/r/20130215172143.12549.10292.stgit@localhost
-Cc: <stable@vger.kernel.org>
-Cc: Will Drewry <wad@chromium.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+Link: http://lkml.kernel.org/r/1362428180-8865-3-git-send-email-bp@alien8.de
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/syscall.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/page_64_types.h | 1 -
+ arch/x86/kernel/head64.c             | 6 +++---
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
-index 1ace47b..2e188d6 100644
---- a/arch/x86/include/asm/syscall.h
-+++ b/arch/x86/include/asm/syscall.h
-@@ -29,13 +29,13 @@ extern const unsigned long sys_call_table[];
+diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+index 8b491e6..6c896fb 100644
+--- a/arch/x86/include/asm/page_64_types.h
++++ b/arch/x86/include/asm/page_64_types.h
+@@ -48,6 +48,5 @@
+  * arch/x86/kernel/head_64.S), and it is mapped here:
   */
- static inline int syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
- {
--	return regs->orig_ax & __SYSCALL_MASK;
-+	return regs->orig_ax;
- }
+ #define KERNEL_IMAGE_SIZE	(512 * 1024 * 1024)
+-#define KERNEL_IMAGE_START	_AC(0xffffffff80000000, UL)
  
- static inline void syscall_rollback(struct task_struct *task,
- 				    struct pt_regs *regs)
- {
--	regs->ax = regs->orig_ax & __SYSCALL_MASK;
-+	regs->ax = regs->orig_ax;
- }
- 
- static inline long syscall_get_error(struct task_struct *task,
+ #endif /* _ASM_X86_PAGE_64_DEFS_H */
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index c5e403f..101ac1a9 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -144,10 +144,10 @@ void __init x86_64_start_kernel(char * real_mode_data)
+ 	 * Build-time sanity checks on the kernel image and module
+ 	 * area mappings. (these are purely build-time and produce no code)
+ 	 */
+-	BUILD_BUG_ON(MODULES_VADDR < KERNEL_IMAGE_START);
+-	BUILD_BUG_ON(MODULES_VADDR-KERNEL_IMAGE_START < KERNEL_IMAGE_SIZE);
++	BUILD_BUG_ON(MODULES_VADDR < __START_KERNEL_map);
++	BUILD_BUG_ON(MODULES_VADDR - __START_KERNEL_map < KERNEL_IMAGE_SIZE);
+ 	BUILD_BUG_ON(MODULES_LEN + KERNEL_IMAGE_SIZE > 2*PUD_SIZE);
+-	BUILD_BUG_ON((KERNEL_IMAGE_START & ~PMD_MASK) != 0);
++	BUILD_BUG_ON((__START_KERNEL_map & ~PMD_MASK) != 0);
+ 	BUILD_BUG_ON((MODULES_VADDR & ~PMD_MASK) != 0);
+ 	BUILD_BUG_ON(!(MODULES_VADDR > __START_KERNEL));
+ 	BUILD_BUG_ON(!(((MODULES_END - 1) & PGDIR_MASK) ==
