@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762434Ab3DCIsJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 04:48:09 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:40940 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762384Ab3DCIsH (ORCPT
+	id S1762509Ab3DCIsZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 04:48:25 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:48774 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762461Ab3DCIsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 04:48:07 -0400
+	Wed, 3 Apr 2013 04:48:19 -0400
 From: Fabio Baltieri <fabio.baltieri@linaro.org>
 To: Felipe Balbi <balbi@ti.com>
 Cc: Linus Walleij <linus.walleij@linaro.org>,
         Praveena Nadahally <praveen.nadahally@stericsson.com>,
         linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Patrice Chotard <patrice.chotard@st.com>,
         Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH 09/12] usb: phy: ab8500-usb: fix last notifier arguments
-Date: Wed,  3 Apr 2013 10:45:10 +0200
-Message-Id: <1364978713-19612-10-git-send-email-fabio.baltieri@linaro.org>
+Subject: [PATCH 10/12] usb: phy: ab8500-usb: adopt pinctrl support
+Date: Wed,  3 Apr 2013 10:45:11 +0200
+Message-Id: <1364978713-19612-11-git-send-email-fabio.baltieri@linaro.org>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1364978713-19612-1-git-send-email-fabio.baltieri@linaro.org>
 References: <1364978713-19612-1-git-send-email-fabio.baltieri@linaro.org>
@@ -23,56 +24,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix last ab->phy.notifier call to use vbus_draw as notifier argument, as
-that's used in ab8500_charger to control charging current.
+From: Patrice Chotard <patrice.chotard@st.com>
 
-Also drop a related TODO comment, and the additional
-ux500_musb_set_vbus(musb, 0), as with this patch it was causing an
-erratic behaviour of gadget ep0 state machine.
+Amend the ab8500-usb driver to optionally take a pin control handle and
+set the state of the pins to "default" on ab8500_usb_phy_enable and to
+"sleep" on ab8500_usb_phy_disable.
 
+The pinctrl handle is released on ab8500_usb_phy_disable because USB
+pins are shared with ab8505_micro_usb_iddet driver.
+
+Signed-off-by: Patrice Chotard <patrice.chotard@st.com>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 ---
- drivers/usb/musb/ux500.c         |  1 -
- drivers/usb/phy/phy-ab8500-usb.c | 10 +++-------
- 2 files changed, 3 insertions(+), 8 deletions(-)
+ drivers/usb/phy/phy-ab8500-usb.c | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-diff --git a/drivers/usb/musb/ux500.c b/drivers/usb/musb/ux500.c
-index 88795f5..2c80004 100644
---- a/drivers/usb/musb/ux500.c
-+++ b/drivers/usb/musb/ux500.c
-@@ -114,7 +114,6 @@ static int musb_otg_notifications(struct notifier_block *nb,
- 		break;
- 	case UX500_MUSB_VBUS:
- 		dev_dbg(musb->controller, "VBUS Connect\n");
--		ux500_musb_set_vbus(musb, 0);
- 		break;
- 	case UX500_MUSB_NONE:
- 		dev_dbg(musb->controller, "VBUS Disconnect\n");
 diff --git a/drivers/usb/phy/phy-ab8500-usb.c b/drivers/usb/phy/phy-ab8500-usb.c
-index b7f6639..ff27058 100644
+index ff27058..0875e2b 100644
 --- a/drivers/usb/phy/phy-ab8500-usb.c
 +++ b/drivers/usb/phy/phy-ab8500-usb.c
-@@ -577,16 +577,12 @@ static int ab8500_usb_set_power(struct usb_phy *phy, unsigned mA)
+@@ -33,6 +33,7 @@
+ #include <linux/mfd/abx500/ab8500.h>
+ #include <linux/usb/musb-ux500.h>
+ #include <linux/regulator/consumer.h>
++#include <linux/pinctrl/consumer.h>
  
- 	ab->vbus_draw = mA;
+ /* Bank AB8500_SYS_CTRL2_BLOCK */
+ #define AB8500_MAIN_WD_CTRL_REG 0x01
+@@ -132,6 +133,8 @@ struct ab8500_usb {
+ 	struct regulator *v_ulpi;
+ 	int saved_v_ulpi;
+ 	int previous_link_status_state;
++	struct pinctrl *pinctrl;
++	struct pinctrl_state *pins_sleep;
+ };
  
--	if (mA)
--		atomic_notifier_call_chain(&ab->phy.notifier,
--				UX500_MUSB_ENUMERATED, ab->phy.otg->gadget);
-+	atomic_notifier_call_chain(&ab->phy.notifier,
-+			UX500_MUSB_VBUS, &ab->vbus_draw);
+ static inline struct ab8500_usb *phy_to_ab(struct usb_phy *x)
+@@ -240,6 +243,11 @@ static void ab8500_usb_phy_enable(struct ab8500_usb *ab, bool sel_host)
+ 	bit = sel_host ? AB8500_BIT_PHY_CTRL_HOST_EN :
+ 		AB8500_BIT_PHY_CTRL_DEVICE_EN;
+ 
++	/* mux and configure USB pins to DEFAULT state */
++	ab->pinctrl = pinctrl_get_select(ab->dev, PINCTRL_STATE_DEFAULT);
++	if (IS_ERR(ab->pinctrl))
++		dev_err(ab->dev, "could not get/set default pinstate\n");
 +
- 	return 0;
+ 	ab8500_usb_regulator_enable(ab);
+ 
+ 	abx500_mask_and_set_register_interruptible(ab->dev,
+@@ -263,6 +271,22 @@ static void ab8500_usb_phy_disable(struct ab8500_usb *ab, bool sel_host)
+ 	ab8500_usb_wd_workaround(ab);
+ 
+ 	ab8500_usb_regulator_disable(ab);
++
++	if (!IS_ERR(ab->pinctrl)) {
++		/* configure USB pins to SLEEP state */
++		ab->pins_sleep = pinctrl_lookup_state(ab->pinctrl,
++				PINCTRL_STATE_SLEEP);
++
++		if (IS_ERR(ab->pins_sleep))
++			dev_dbg(ab->dev, "could not get sleep pinstate\n");
++		else if (pinctrl_select_state(ab->pinctrl, ab->pins_sleep))
++			dev_err(ab->dev, "could not set pins to sleep state\n");
++
++		/* as USB pins are shared with idddet, release them to allow
++		 * iddet to request them
++		 */
++		pinctrl_put(ab->pinctrl);
++	}
  }
  
--/* TODO: Implement some way for charging or other drivers to read
-- * ab->vbus_draw.
-- */
--
- static int ab8500_usb_set_suspend(struct usb_phy *x, int suspend)
- {
- 	/* TODO */
+ #define ab8500_usb_host_phy_en(ab)	ab8500_usb_phy_enable(ab, true)
 -- 
 1.8.1.3
 
