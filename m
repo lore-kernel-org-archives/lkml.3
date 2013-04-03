@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760089Ab3DCMLe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 08:11:34 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:54611 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758607Ab3DCMLc (ORCPT
+	id S1760233Ab3DCMOX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 08:14:23 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:33541 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759154Ab3DCMOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 08:11:32 -0400
-Message-ID: <515C1C61.50301@openwrt.org>
-Date: Wed, 03 Apr 2013 14:11:13 +0200
-From: Florian Fainelli <florian@openwrt.org>
-Organization: OpenWrt
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Wed, 3 Apr 2013 08:14:22 -0400
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Felipe Balbi <balbi@ti.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>, arnd@arndb.de,
-        gregkh@linuxfoundation.org, USB list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 1/5 v2] USB: regroup all depends on USB within an if USB
- block
-References: <Pine.LNX.4.44L0.1304021359130.1314-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1304021359130.1314-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1364451516.15039.11.camel@gitbox>
+References: <1364447397-29005-1-git-send-email-swarren@wwwdotorg.org>
+	<1364451516.15039.11.camel@gitbox>
+Date: Wed, 3 Apr 2013 14:14:21 +0200
+Message-ID: <CACRpkdbrhYJ8PrVpb9G0Zz8NPqD_NQ52peSEFU=1SmfPZGaPig@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: bcm2835: make use of of_property_read_u32_index()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        linux-rpi-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 04/02/13 20:06, Alan Stern a écrit :
-> On Tue, 2 Apr 2013, Florian Fainelli wrote:
+On Thu, Mar 28, 2013 at 7:18 AM, Tony Prisk <linux@prisktech.co.nz> wrote:
+> On Wed, 2013-03-27 at 23:09 -0600, Stephen Warren wrote:
+>> Use the new standard API of_property_read_u32_index() instead of open-
+>> coding it.
+>>
+>> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
+>> ---
+>> Note: This depends on the proposed patch "of: Add support for reading
+>> a u32 from a multi-value property" by Tony Prisk.
+>>
+>> BTW, I realized why I didn't create that standard API, but wrote custom
+>> prop_u32() instead; the code has already looked up the properties, and
+>> validated their length, so prop_u32() can simply index into the property
+>> data, whereas of_property_read_u32_index() needs to go search for the
+>> property and re-validate it every time, so there's a bunch more overhead.
+>> It also means duplicating the property name, although I could use a
+>> define for that. I'm not entirely convinced that using this standard API
+>> is a win in this case. LinusW, Tony, what do you think?
+>> ---
 >
->> This patch removes the depends on USB from all config symbols in
->> drivers/usb/host/Kconfig and replace that with an if USB / endif block
->> as suggested by Alan Stern. Some source ... Kconfig lines have been
->> shuffled around to permit a better regroupment of the Kconfig files
->> depending on "config USB" item. No functionnal change is introduced.
+> When I was writing the function I had a similar thought about the fact
+> we need to work out the length first, which as you mentioned, requires
+> all the prior work on the property anyway.
 >
-> This looks almost right.  The only problem I see is in
-> drivers/usb/core/Kconfig.  The USB_OTG_WHITELIST and
-> USB_OTG_BLACKLIST_HUB symbols don't have to depend on USB or USB_OTG,
-> because they can be set if EXPERT is enabled.
+> I didn't bring it up, because I thought someone might say 'hey, you
+> should add a function to get the count as well' :)
 >
-> To avoid these issues, I think the best approach is to move all the
-> USB_OTG* entries over to drivers/usb/otg/Kconfig, where by rights they
-> should have been all along.
->
-> Felipe, do you agree?
+> In both the brcm and vt8500 use cases, we will have the issue of
+> multiple lookups on the same property using 'generic' functions. Price
+> we have to pay for generic code?
 
-Make sense, I will make this a sixth patch to this serie if this sounds 
-right with you?
---
-Florian
+My take on this is that if you look in for example:
+drivers/of/platform.c you find that for every node in the device
+tree when it creates a platform device with a resource it will
+for example call of_address_to_resource() twice. The same
+for IRQs IIRC.
+
+So basically this behaviour is inherent in all OF/DT code,
+and no point trying to work around it.
+
+I don't know if there is a way to fix the problem at the root,
+like have the DT parser annotate nodes with the number of
+resources of each type (like a decorated tree) so it can be
+looked up quickly somehow. I'm not smart enough on DT for
+such things...
+
+Yours,
+Linus Walleij
