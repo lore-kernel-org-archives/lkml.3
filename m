@@ -1,92 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760289Ab3DCWi1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 18:38:27 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:38324 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759246Ab3DCWiY (ORCPT
+	id S1761122Ab3DCXBX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 19:01:23 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:64105 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760034Ab3DCXBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 18:38:24 -0400
+	Wed, 3 Apr 2013 19:01:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <2699206.HmPyNvCpNR@vostro.rjw.lan>
-References: <2282655.IicBMMa6jN@vostro.rjw.lan> <1396732.fV788D0xgr@vostro.rjw.lan>
- <2699206.HmPyNvCpNR@vostro.rjw.lan>
+In-Reply-To: <1364444938-19801-1-git-send-email-yinghai@kernel.org>
+References: <1364444938-19801-1-git-send-email-yinghai@kernel.org>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 3 Apr 2013 16:38:03 -0600
-Message-ID: <CAErSpo4DLswMWVRXUhXx6VcVk27YXpqjbNsnTF4jGv7eunv5hg@mail.gmail.com>
-Subject: Re: [Update][PATCH] PCI / ACPI: Always resume devices on ACPI wakeup notifications
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        "Accardi, Kristen C" <kristen.c.accardi@intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Date: Wed, 3 Apr 2013 17:00:59 -0600
+Message-ID: <CAErSpo5s59VB5-9r3Ns5w5i2orfaYDujGs4YL0r-kSziJuc41A@mail.gmail.com>
+Subject: Re: [PATCH] PCI, ACPI: Don't query OSC support with all possible controls
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bob Moore <robert.moore@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 3:07 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Subject: PCI / ACPI: Always resume devices on ACPI wakeup notifications
->
-> It turns out that the _Lxx control methods provided by some BIOSes
-> clear the PME Status bit of PCI devices they handle, which means that
-> pci_acpi_wake_dev() cannot really use that bit to check whether or
-> not the device has signalled wakeup.
->
-> One symptom of the problem is, for example, that when an affected PCI
-> USB controller is runtime-suspended, then plugging in a new USB device
-> into one of the controller's ports will not wake up the controller,
-> which should happen.
->
-> For this reason, make pci_acpi_wake_dev() always attempt to resume
-> the device it is called for regardless of the device's PME Status bit
-> value (that bit still has to be cleared if set at this point,
-> though).
->
-> Reported-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Acked-by: Matthew Garrett <mjg59@srcf.ucam.org>
-> Cc: 3.7+ <stable@vger.kernel.org>
-> ---
->
-> The changelog in this version is slightly better than in the previous one, IMHO.
+[+cc Bob for spec typo question]
 
-I applied this to for-linus for v3.9.  Thanks!
-
-> ---
->  drivers/pci/pci-acpi.c |   15 ++++++++-------
->  1 file changed, 8 insertions(+), 7 deletions(-)
+On Wed, Mar 27, 2013 at 10:28 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> Found problem on system that firmware that could handle pci aer.
+> Firmware get error reporting after pci injecting error, before os boots.
+> But after os boots, firmware can not get report anymore, even pci=noaer
+> is passed.
 >
-> Index: linux-pm/drivers/pci/pci-acpi.c
-> ===================================================================
-> --- linux-pm.orig/drivers/pci/pci-acpi.c
-> +++ linux-pm/drivers/pci/pci-acpi.c
-> @@ -53,14 +53,15 @@ static void pci_acpi_wake_dev(acpi_handl
->                 return;
+> Root cause: BIOS _OSC has problem with query bit checking.
+> It turns out that BIOS vendor is copying example code from ACPI Spec.
+> In ACPI Spec 5.0, page 290:
+>
+>         If (Not(And(CDW1,1))) // Query flag clear?
+>         {       // Disable GPEs for features granted native control.
+>                 If (And(CTRL,0x01)) // Hot plug control granted?
+>                 {
+>                         Store(0,HPCE) // clear the hot plug SCI enable bit
+>                         Store(1,HPCS) // clear the hot plug SCI status bit
+>                 }
+>         ...
 >         }
 >
-> -       if (!pci_dev->pm_cap || !pci_dev->pme_support
-> -            || pci_check_pme_status(pci_dev)) {
-> -               if (pci_dev->pme_poll)
-> -                       pci_dev->pme_poll = false;
-> +       /* Clear PME Status if set. */
-> +       if (pci_dev->pme_support)
-> +               pci_check_pme_status(pci_dev);
+> When Query flag is set, And(CDW1,1) will be 1, Not(1) will return 0xfffffffe.
+> So it will get into code path that should be for control set only.
+> BIOS acpi code should be changed to "If (LEqual(And(CDW1,1), 0)))"
+
+Isn't this just a typo in the spec?  Shouldn't it be using "LNot"
+instead of "Not"?
+
+         If (LNot(And(CDW1,1))) // Query flag clear?
+
+Of course, that doesn't change the need for your Linux change, though
+a comment about the hazard might be nice for future readers.
+
+> Current kernel code is using _OSC query to notify firmware about support
+> from OS and then use _OSC to set control bits.
+> During query support, current code is using all possible controls.
+> So will execute code that should be only for control set stage.
 >
-> -               pci_wakeup_event(pci_dev);
-> -               pm_runtime_resume(&pci_dev->dev);
-> -       }
-> +       if (pci_dev->pme_poll)
-> +               pci_dev->pme_poll = false;
-> +
-> +       pci_wakeup_event(pci_dev);
-> +       pm_runtime_resume(&pci_dev->dev);
+> That will have problem when pci=noaer or aer firmware_first is used.
+> As firmware have that control set for os aer already in query support stage,
+> but later will not os aer handling.
 >
->         if (pci_dev->subordinate)
->                 pci_pme_wakeup_bus(pci_dev->subordinate);
+> We should avoid passing all possible controls, just use osc_control_set
+> instead.
+> That should workaround BIOS bugs with affected systems on the field
+> as more bios vendors are copying sample code from ACPI spec.
 >
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: stable@kernel.org
+>
+> ---
+>  drivers/acpi/pci_root.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> Index: linux-2.6/drivers/acpi/pci_root.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/acpi/pci_root.c
+> +++ linux-2.6/drivers/acpi/pci_root.c
+> @@ -201,8 +201,8 @@ static acpi_status acpi_pci_query_osc(st
+>                 *control &= OSC_PCI_CONTROL_MASKS;
+>                 capbuf[OSC_CONTROL_TYPE] = *control | root->osc_control_set;
+>         } else {
+> -               /* Run _OSC query for all possible controls. */
+> -               capbuf[OSC_CONTROL_TYPE] = OSC_PCI_CONTROL_MASKS;
+> +               /* Run _OSC query only with existing controls. */
+> +               capbuf[OSC_CONTROL_TYPE] = root->osc_control_set;
+>         }
+>
+>         status = acpi_pci_run_osc(root->device->handle, capbuf, &result);
