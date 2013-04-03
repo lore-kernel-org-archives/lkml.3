@@ -1,37 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760704Ab3DCBya (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Apr 2013 21:54:30 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:37056 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759439Ab3DCBy3 (ORCPT
+	id S1760743Ab3DCB4c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Apr 2013 21:56:32 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51282 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757063Ab3DCB4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Apr 2013 21:54:29 -0400
-Date: Wed, 3 Apr 2013 09:53:47 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Lubomir Rintel <lkundrak@v3.sk>
-Cc: linux-kernel@vger.kernel.org, Dom Cobley <popcornmix@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, Matt Mackall <mpm@selenic.com>,
-        linux-rpi-kernel@lists.infradead.org
-Subject: Re: [PATCH v3] hw_random: Add Broadcom BCM2835 RNG driver
-Message-ID: <20130403015347.GE20205@gondor.apana.org.au>
-References: <1364135980-27750-1-git-send-email-lkundrak@v3.sk>
- <1364451578-5331-1-git-send-email-lkundrak@v3.sk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364451578-5331-1-git-send-email-lkundrak@v3.sk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 2 Apr 2013 21:56:31 -0400
+Date: Tue, 02 Apr 2013 21:56:25 -0400 (EDT)
+Message-Id: <20130402.215625.1555279506975246223.davem@davemloft.net>
+To: alan@signal11.us
+Cc: werner@almesberger.net, netdev@vger.kernel.org,
+        linux-zigbee-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [Linux-zigbee-devel] [PATCH 1/6] mac802154: Immediately retry
+ sending failed packets
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <515B84EB.8020006@signal11.us>
+References: <515B4D79.40805@signal11.us>
+	<20130402231319.GD28141@ws>
+	<515B84EB.8020006@signal11.us>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Tue, 02 Apr 2013 18:56:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 28, 2013 at 07:19:38AM +0100, Lubomir Rintel wrote:
-> This adds a driver for random number generator present on Broadcom BCM2835 SoC,
-> used in Raspberry Pi and Roku 2 devices.
+From: Alan Ott <alan@signal11.us>
+Date: Tue, 02 Apr 2013 21:24:59 -0400
 
-Patch applied.  Thanks!
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+> I like it for a couple of reasons.
+> 1. Most supported devices have only single packet output buffer, so
+> blocking in the driver is the most straight-forward way to handle it.
+> The alternative is to make each driver have a workqueue for xmit() (to
+> lift the blocking out from atomic context). This makes each driver simpler.
+> 
+> 2. All of the flow control can be handled one time in the mac802154 layer.
+
+We have a perfectly working flow control mechanism in the generic
+networking queuing layer.  Please use it instead of inventing things.
+
+If it does not meet your needs, fix it, rather than go off and do
+your own thing.  That way everyone benfits, not just you.
