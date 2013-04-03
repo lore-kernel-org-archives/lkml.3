@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760088Ab3DCPTJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 11:19:09 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:54703 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757070Ab3DCPTH (ORCPT
+	id S1760344Ab3DCPTk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 11:19:40 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:52259 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753561Ab3DCPTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 11:19:07 -0400
+	Wed, 3 Apr 2013 11:19:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130402224711.840825715@linuxfoundation.org>
-References: <20130402224711.840825715@linuxfoundation.org>
-Date: Wed, 3 Apr 2013 09:19:05 -0600
-Message-ID: <CAKocOONbGWoxnnx+55A8j+dmHH_3LwXfHZ7_vdgnYJEpo9UcZw@mail.gmail.com>
-Subject: Re: [ 00/56] 3.0.72-stable review
+In-Reply-To: <20130402221329.915209206@linuxfoundation.org>
+References: <20130402221329.915209206@linuxfoundation.org>
+Date: Wed, 3 Apr 2013 09:19:37 -0600
+Message-ID: <CAKocOOPdmjn32gv4MkiGttNqG+QZY6=meEzPO54UJNpdHA7doQ@mail.gmail.com>
+Subject: Re: [ 00/68] 3.4.39-stable review
 From: Shuah Khan <shuahkhan@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
@@ -22,18 +22,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 2, 2013 at 4:49 PM, Greg Kroah-Hartman
+On Tue, Apr 2, 2013 at 4:12 PM, Greg Kroah-Hartman
 <gregkh@linuxfoundation.org> wrote:
-> This is the start of the stable review cycle for the 3.0.72 release.
-> There are 56 patches in this series, all will be posted as a response
+> This is the start of the stable review cycle for the 3.4.39 release.
+> There are 68 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
 >
-> Responses should be made by Thu Apr  4 22:46:30 UTC 2013.
+> Responses should be made by Thu Apr  4 22:12:59 UTC 2013.
 > Anything received after that time might be too late.
 >
 > The whole patch series can be found in one patch at:
->         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.72-rc1.gz
+>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.39-rc1.gz
 > and the diffstat can be found below.
 >
 > thanks,
@@ -50,8 +50,8 @@ Compiled and booted on the following systems:
 HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz
 HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
 
-dmesgs for all releases look good. No regressions compared to the
-previous dmesgs for each of these releases.
+dmesgs for all releases look good. No regressions compared to the previous
+dmesgs for each of these releases.
 mips compile problem fixed
 
 Cross-compile tests results:
