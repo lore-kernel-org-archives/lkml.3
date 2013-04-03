@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762605Ab3DCIsr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 04:48:47 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:33190 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762574Ab3DCIsm (ORCPT
+	id S1762707Ab3DCIvG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 04:51:06 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:33849 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932462Ab3DCIrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 04:48:42 -0400
+	Wed, 3 Apr 2013 04:47:10 -0400
 From: Fabio Baltieri <fabio.baltieri@linaro.org>
 To: Felipe Balbi <balbi@ti.com>
 Cc: Linus Walleij <linus.walleij@linaro.org>,
@@ -14,9 +14,9 @@ Cc: Linus Walleij <linus.walleij@linaro.org>,
         linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
         Sakethram Bommisetti <sakethram.bommisetti@stericsson.com>,
         Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH 12/12] usb: phy: ab8500-usb: call phy_dis_work only when necessary
-Date: Wed,  3 Apr 2013 10:45:13 +0200
-Message-Id: <1364978713-19612-13-git-send-email-fabio.baltieri@linaro.org>
+Subject: [PATCH 04/12] usb: phy: ab8500-usb: fix eye diagram for ab8500 v2.0
+Date: Wed,  3 Apr 2013 10:45:05 +0200
+Message-Id: <1364978713-19612-5-git-send-email-fabio.baltieri@linaro.org>
 X-Mailer: git-send-email 1.8.1.3
 In-Reply-To: <1364978713-19612-1-git-send-email-fabio.baltieri@linaro.org>
 References: <1364978713-19612-1-git-send-email-fabio.baltieri@linaro.org>
@@ -26,64 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sakethram Bommisetti <sakethram.bommisetti@stericsson.com>
 
-Modify ab8500_usb_set_peripheral() and ab8500_usb_set_host() code to
-schedule phy_dis_work only when necessary in order to prevent regulator
-count mismatch during reboot/shutdown.
+AB8500 v2.0 has eye diagram issues when drawing more than 100mA from
+VBUS.  Force charging current to 100mA in case of standard host.
 
 Signed-off-by: Sakethram Bommisetti <sakethram.bommisetti@stericsson.com>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 ---
- drivers/usb/phy/phy-ab8500-usb.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+ drivers/usb/phy/phy-ab8500-usb.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
 diff --git a/drivers/usb/phy/phy-ab8500-usb.c b/drivers/usb/phy/phy-ab8500-usb.c
-index 30adfee..81d1a5a 100644
+index 5b92a59..1fd0780 100644
 --- a/drivers/usb/phy/phy-ab8500-usb.c
 +++ b/drivers/usb/phy/phy-ab8500-usb.c
-@@ -613,17 +613,16 @@ static int ab8500_usb_set_peripheral(struct usb_otg *otg,
+@@ -485,6 +485,18 @@ static void ab8500_usb_phy_disable_work(struct work_struct *work)
+ 		ab8500_usb_peri_phy_dis(ab);
+ }
  
- 	ab = phy_to_ab(otg->phy);
- 
-+	ab->phy.otg->gadget = gadget;
++static unsigned ab8500_eyediagram_workaroud(struct ab8500_usb *ab, unsigned mA)
++{
++	/* AB8500 V2 has eye diagram issues when drawing more than 100mA from
++	 * VBUS.  Set charging current to 100mA in case of standard host
++	 */
++	if (is_ab8500_2p0_or_earlier(ab->ab8500))
++		if (mA > 100)
++			mA = 100;
 +
- 	/* Some drivers call this function in atomic context.
- 	 * Do not update ab8500 registers directly till this
- 	 * is fixed.
- 	 */
- 
--	if (!gadget) {
--		otg->gadget = NULL;
-+	if ((ab->mode != USB_IDLE) && (!gadget)) {
-+		ab->mode = USB_IDLE;
- 		schedule_work(&ab->phy_dis_work);
--	} else {
--		otg->gadget = gadget;
--		otg->phy->state = OTG_STATE_B_IDLE;
- 	}
- 
- 	return 0;
-@@ -638,16 +637,16 @@ static int ab8500_usb_set_host(struct usb_otg *otg, struct usb_bus *host)
- 
- 	ab = phy_to_ab(otg->phy);
- 
-+	ab->phy.otg->host = host;
++	return mA;
++}
 +
- 	/* Some drivers call this function in atomic context.
- 	 * Do not update ab8500 registers directly till this
- 	 * is fixed.
- 	 */
+ static int ab8500_usb_set_power(struct usb_phy *phy, unsigned mA)
+ {
+ 	struct ab8500_usb *ab;
+@@ -494,6 +506,8 @@ static int ab8500_usb_set_power(struct usb_phy *phy, unsigned mA)
  
--	if (!host) {
--		otg->host = NULL;
-+	if ((ab->mode != USB_IDLE) && (!host)) {
-+		ab->mode = USB_IDLE;
- 		schedule_work(&ab->phy_dis_work);
--	} else {
--		otg->host = host;
- 	}
+ 	ab = phy_to_ab(phy);
  
- 	return 0;
++	mA = ab8500_eyediagram_workaroud(ab, mA);
++
+ 	ab->vbus_draw = mA;
+ 
+ 	if (mA)
 -- 
 1.8.1.3
 
