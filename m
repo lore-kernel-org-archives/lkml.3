@@ -1,117 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762324Ab3DCQg7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 12:36:59 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:58978 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761132Ab3DCQg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 12:36:58 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Ext4 Developers List <linux-ext4@vger.kernel.org>
-Cc: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christian Kujau <lists@nerdbynature.de>, CAI Qian <caiqian@redhat.com>,
-        sbest@redhat.com, Zheng Liu <wenqing.lz@taobao.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Dmitry Monakhov <dmonakhov@openvz.org>
-Subject: [PATCH] ext4: fix big-endian bugs which could cause fs corruptions
-Date: Wed,  3 Apr 2013 12:36:42 -0400
-Message-Id: <1365007002-17528-1-git-send-email-tytso@mit.edu>
-X-Mailer: git-send-email 1.7.12.rc0.22.gcdd159b
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1762415Ab3DCQhH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 12:37:07 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:36664 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762370Ab3DCQhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 12:37:04 -0400
+Message-ID: <515C5AB6.5090109@sgi.com>
+Date: Wed, 3 Apr 2013 11:37:10 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: <rjw@sisk.pl>, <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq: convert the cpufreq_driver to use the rcu
+References: <AKohpo=Um9LGhGtMB0z9C2jxmS3oHwV7i_Gmsq5rR80ZcGYyLw@mail.gmail.com> <1365001386-29970-1-git-send-email-nzimmer@sgi.com> <CAKohpon1QiCfJhWBi_f7U1EU410JMGHq+QnpEPJ+rdiUjsKsQA@mail.gmail.com>
+In-Reply-To: <CAKohpon1QiCfJhWBi_f7U1EU410JMGHq+QnpEPJ+rdiUjsKsQA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.162.233.145]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zheng Liu <wenqing.lz@taobao.com>
+On 04/03/2013 10:32 AM, Viresh Kumar wrote:
+> Please always mention Version number and history. Not everybody
+> remembers what changed after last version.
+Your right.  I was rushing and forgot.
+I need to develop the habit of adding some history to my git commits 
+when I amend them.
 
-From: Zheng Liu <wenqing.lz@taobao.com>
+>
+> On 3 April 2013 20:33, Nathan Zimmer <nzimmer@sgi.com> wrote:
+>> We eventually would like to remove the rwlock cpufreq_driver_lock or convert
+>> it back to a spinlock and protect the read sections with RCU.  The first step in
+> Why do we want to convert it back to spinlock?
+Documentation/spinlocks.txt:84
+I am not sure why but there is the directive I am following.
+>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>>   bool have_governor_per_policy(void)
+>>   {
+>> -       return cpufreq_driver->have_governor_per_policy;
+>> +       bool have_governor;
+> Name it have_governor_per_policy, it looks wrong otherwise.
+>
+>> +       rcu_read_lock();
+>> +       have_governor = rcu_dereference(cpufreq_driver)->have_governor_per_policy;
+>> +       rcu_read_unlock();
+>> +       return have_governor;
+>>   }
+Will do.
+>>   static ssize_t show_scaling_driver(struct cpufreq_policy *policy, char *buf)
+>>   {
+>> -       return scnprintf(buf, CPUFREQ_NAME_PLEN, "%s\n", cpufreq_driver->name);
+>> +       char *name;
+>> +       rcu_read_lock();
+>> +       name = rcu_dereference(cpufreq_driver)->name;
+>> +       rcu_read_unlock();
+>> +       return scnprintf(buf, CPUFREQ_NAME_PLEN, "%s\n", name);
+>>   }
+> This is the definition of struct cpufreq_driver:
+>
+> struct cpufreq_driver {
+> 	struct module           *owner;
+> 	char			name[CPUFREQ_NAME_LEN];
+>
+>         ...
+> };
+>
+> Purpose of rcu read_lock/unlock are to define the rcu critical section
+> after which rcu layer is free to free the memory allocated to earlier
+> instance of cpufreq_driver.
+>
+> So, after the unlock() call you _should_not_ use the memory allocated to
+> cpufreq_driver instance. And here, you are using memory allocated to name[]
+> after the unlock() call.
+Ok I'll fix this spot.
 
-When an extent was zeroed out, we forgot to do convert from cpu to le16.
-It could make us hit a BUG_ON when we try to write dirty pages out.  So
-fix it.
+> Which looks to be wrong... I left other parts of driver upto you to fix for this
+> "rule of thumb".
+In places like show_bios_limit and cpufreq_add_dev_interface we know 
+that the memory will still
+be there since the cpufreq_driver->owner is held.
 
-[ Also fix a bug found by Dmitry Monakhov where we were missing
-  le32_to_cpu() calls in the new indirect punch hole code.
+> Sorry for not pointing this earlier but rcu is as new to me as it is
+> to you. I know
+> you must be frustrated with so many versions of this patch, and everytime we
+> get a new problem to you... Don't get disheartened with it.. Keep the good work
+> going :)
+Making a learners mistake isn't really discouraging to me, even when I 
+do it twice.
 
-  There are a number of other big endian warnings found by static code
-  analyzers, but we'll wait for the next merge window to fix them all
-  up.  These fixes are designed to be Obviously Correct by code
-  inspection, and easy to demonstrate that it won't make any
-  difference (and hence, won't introduce any bugs) on little endian
-  architectures such as x86.  --tytso ]
-
-Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reported-by: CAI Qian <caiqian@redhat.com>
-Reported-by: Christian Kujau <lists@nerdbynature.de>
-Cc: Dmitry Monakhov <dmonakhov@openvz.org>
----
-
-This is what I plan to be sending to Linus very shortly.  If anyone
-could  test / review this patch ASAP, I'd really appreciate it, thanks!!
-
- fs/ext4/extents.c  | 11 +++++++----
- fs/ext4/indirect.c |  4 ++--
- 2 files changed, 9 insertions(+), 6 deletions(-)
-
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 56efcaa..9c6d06d 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2999,20 +2999,23 @@ static int ext4_split_extent_at(handle_t *handle,
- 			if (split_flag & EXT4_EXT_DATA_VALID1) {
- 				err = ext4_ext_zeroout(inode, ex2);
- 				zero_ex.ee_block = ex2->ee_block;
--				zero_ex.ee_len = ext4_ext_get_actual_len(ex2);
-+				zero_ex.ee_len = cpu_to_le16(
-+						ext4_ext_get_actual_len(ex2));
- 				ext4_ext_store_pblock(&zero_ex,
- 						      ext4_ext_pblock(ex2));
- 			} else {
- 				err = ext4_ext_zeroout(inode, ex);
- 				zero_ex.ee_block = ex->ee_block;
--				zero_ex.ee_len = ext4_ext_get_actual_len(ex);
-+				zero_ex.ee_len = cpu_to_le16(
-+						ext4_ext_get_actual_len(ex));
- 				ext4_ext_store_pblock(&zero_ex,
- 						      ext4_ext_pblock(ex));
- 			}
- 		} else {
- 			err = ext4_ext_zeroout(inode, &orig_ex);
- 			zero_ex.ee_block = orig_ex.ee_block;
--			zero_ex.ee_len = ext4_ext_get_actual_len(&orig_ex);
-+			zero_ex.ee_len = cpu_to_le16(
-+						ext4_ext_get_actual_len(&orig_ex));
- 			ext4_ext_store_pblock(&zero_ex,
- 					      ext4_ext_pblock(&orig_ex));
- 		}
-@@ -3272,7 +3275,7 @@ static int ext4_ext_convert_to_initialized(handle_t *handle,
- 		if (err)
- 			goto out;
- 		zero_ex.ee_block = ex->ee_block;
--		zero_ex.ee_len = ext4_ext_get_actual_len(ex);
-+		zero_ex.ee_len = cpu_to_le16(ext4_ext_get_actual_len(ex));
- 		ext4_ext_store_pblock(&zero_ex, ext4_ext_pblock(ex));
- 
- 		err = ext4_ext_get_access(handle, inode, path + depth);
-diff --git a/fs/ext4/indirect.c b/fs/ext4/indirect.c
-index b505a14..a041831 100644
---- a/fs/ext4/indirect.c
-+++ b/fs/ext4/indirect.c
-@@ -1539,9 +1539,9 @@ static int free_hole_blocks(handle_t *handle, struct inode *inode,
- 		blk = *i_data;
- 		if (level > 0) {
- 			ext4_lblk_t first2;
--			bh = sb_bread(inode->i_sb, blk);
-+			bh = sb_bread(inode->i_sb, le32_to_cpu(blk));
- 			if (!bh) {
--				EXT4_ERROR_INODE_BLOCK(inode, blk,
-+				EXT4_ERROR_INODE_BLOCK(inode, le32_to_cpu(blk),
- 						       "Read failure");
- 				return -EIO;
- 			}
--- 
-1.7.12.rc0.22.gcdd159b
+> --
+> viresh
 
