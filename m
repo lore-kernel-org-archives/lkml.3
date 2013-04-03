@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763130Ab3DCTI0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 15:08:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37626 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762939Ab3DCTIY (ORCPT
+	id S1763146Ab3DCTJD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 15:09:03 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:25532 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762073Ab3DCTJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 15:08:24 -0400
-Message-ID: <515C7E20.5060402@canonical.com>
-Date: Wed, 03 Apr 2013 15:08:16 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-CC: David Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [v3.8 Regression]  Merge tag 'v3.7-rc2' into drm-intel-next-queued
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 3 Apr 2013 15:09:01 -0400
+Message-ID: <1365016137.2897.26.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH] netdev/phy: Implement ieee802.3 clause 45 in
+ mdio-octeon.c
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Daney <ddaney.cavm@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>
+Date: Wed, 3 Apr 2013 20:08:57 +0100
+In-Reply-To: <1365013008-10914-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1365013008-10914-1-git-send-email-ddaney.cavm@gmail.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19764.005
+X-TM-AS-Result: No--9.007700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On Wed, 2013-04-03 at 11:16 -0700, David Daney wrote:
+> From: David Daney <david.daney@cavium.com>
+> 
+> The Octeon SMI/MDIO interfaces can do clause 45 communications, so
+> implement this in the driver.
+> 
+> Signed-off-by: David Daney <david.daney@cavium.com>
+> ---
+>  drivers/net/phy/mdio-octeon.c | 89 +++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 86 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/net/phy/mdio-octeon.c b/drivers/net/phy/mdio-octeon.c
+> index c2c878d..f4f3abf 100644
+> --- a/drivers/net/phy/mdio-octeon.c
+> +++ b/drivers/net/phy/mdio-octeon.c
+[...]
+>  static int octeon_mdiobus_read(struct mii_bus *bus, int phy_id, int regnum)
+>  {
+>  	struct octeon_mdiobus *p = bus->priv;
+>  	union cvmx_smix_cmd smi_cmd;
+>  	union cvmx_smix_rd_dat smi_rd;
+> +	unsigned int op = 1; /* MDIO_CLAUSE_22_READ */
+>  	int timeout = 1000;
+>  
+> +	if (regnum & MII_ADDR_C45) {
+> +		int r = octeon_mdiobus_c45_addr(p, phy_id, regnum);
+> +		if (r < 0)
+> +			return r;
+> +
+> +		regnum = (regnum >> 16) & 0x1f;
+> +		op = 3; /* MDIO_CLAUSE_45_READ */
+> +	} else {
+> +		octeon_mdiobus_set_mode(p, C22);
+> +	}
+> +
+> +
+>  	smi_cmd.u64 = 0;
+> -	smi_cmd.s.phy_op = 1; /* MDIO_CLAUSE_22_READ */
+> +	smi_cmd.s.phy_op = op; /* MDIO_CLAUSE_22_READ */
+[...]
 
-A bug was opened against the Ubuntu kernel[0].  After a kernel bisect, 
-it was found the following was the first bad commit:
+This comment should now be removed.
 
+Ben.
 
-commit c2fb7916927e989ea424e61ce5fe617e54878827
-Merge: 29de6ce 6f0c058
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Mon Oct 22 14:34:51 2012 +0200
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-     Merge tag 'v3.7-rc2' into drm-intel-next-queued
-
-
-
-The regression was introduced as of v3.8-rc1.  However, further testing 
-also shows this bug is now fixed in v3.9-rc4.
-
-I see that you are the author of this patch, so I wanted see if I can 
-get your feedback.  Do you happen to have an idea what may have fixed 
-this in v3.9-rc4, so we can send a request to stable, if not already 
-done?  Otherwise, I can perform a reverse bisect to see which commit 
-fixed this.
-
-
-Thanks,
-
-Joe
-
-[0] http://pad.lv/1109309
