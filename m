@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762220Ab3DCOCS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 10:02:18 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:41831 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758805Ab3DCOCP (ORCPT
+	id S1761959Ab3DCOBL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 10:01:11 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48340 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758711Ab3DCOBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 10:02:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130312221030.GB27330@kroah.com>
-References: <20130301194355.578429064@linuxfoundation.org> <1362172344.20156.15.camel@x61.thuisdomein>
- <1362253682.3768.136.camel@deadeye.wl.decadent.org.uk> <1362263724.1334.18.camel@x61.thuisdomein>
- <1362265843.3768.162.camel@deadeye.wl.decadent.org.uk> <1362306002.1334.29.camel@x61.thuisdomein>
- <5134617F02000078000C2AD8@nat28.tlf.novell.com> <1362388302.16460.5.camel@x61.thuisdomein>
- <5134741702000078000C2B3E@nat28.tlf.novell.com> <20130304150246.GA15794@phenom.dumpdata.com>
- <20130312221030.GB27330@kroah.com>
-From: William Dauchy <wdauchy@gmail.com>
-Date: Wed, 3 Apr 2013 16:01:54 +0200
-Message-ID: <CAJ75kXZDTpJUnKp+UJ+3kib9Wog0yRgXn1m+DDgHaMwr=1=4UA@mail.gmail.com>
-Subject: Re: [ 34/77] xen/blkback: Dont trust the handle from the frontend.
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <JBeulich@suse.com>, Paul Bolle <pebolle@tiscali.nl>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 3 Apr 2013 10:01:09 -0400
+X-Sasl-enc: xzMoD49f5Ia9n/M7SPLQ3bq9EmKLUvWixnU8ShrEwh5n 1364997668
+From: Alan Ott <alan@signal11.us>
+To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Ott <alan@signal11.us>
+Subject: [PATCH v2 3/4] mac802154: Increase tx_buffer_len
+Date: Wed,  3 Apr 2013 10:00:57 -0400
+Message-Id: <1364997658-16498-4-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <1364997658-16498-1-git-send-email-alan@signal11.us>
+References: <1364928481-1813-1-git-send-email-alan@signal11.us>
+ <1364997658-16498-1-git-send-email-alan@signal11.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 12, 2013 at 11:10 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
->> > >> IOW I don't see why this got proposed for stable at all.
->> > >
->> > > So, you suggest to just drop this patch for v3.8.3, don't you?
->> >
->> > I do, yes. But I'd suggest to get Konrad to agree.
->>
->> Yes. Lets drop it.
->
-> Now reverted, thanks.
+Increase the buffer length from 10 to 300 packets. Consider that traffic on
+mac802154 devices will often be 6LoWPAN, and a full-length (1280 octet)
+IPv6 packet will fragment into 15 6LoWPAN fragments (because the MTU of
+IEEE 802.15.4 is 127).  A 300-packet queue is really 20 full-length IPv6
+packets.
 
-Seems like still present in 3.4.x branch. Is that a mistake?
+With a queue length of 10, an entire IPv6 packet was unable to get queued
+at one time, causing fragments to be dropped, and making reassembly
+impossible.
 
-Regards,
---
-William
+Signed-off-by: Alan Ott <alan@signal11.us>
+---
+ net/mac802154/wpan.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/mac802154/wpan.c b/net/mac802154/wpan.c
+index 7d3f659..2ca2f4d 100644
+--- a/net/mac802154/wpan.c
++++ b/net/mac802154/wpan.c
+@@ -360,7 +360,7 @@ void mac802154_wpan_setup(struct net_device *dev)
+ 	dev->header_ops		= &mac802154_header_ops;
+ 	dev->needed_tailroom	= 2; /* FCS */
+ 	dev->mtu		= IEEE802154_MTU;
+-	dev->tx_queue_len	= 10;
++	dev->tx_queue_len	= 300;
+ 	dev->type		= ARPHRD_IEEE802154;
+ 	dev->flags		= IFF_NOARP | IFF_BROADCAST;
+ 	dev->watchdog_timeo	= 0;
+-- 
+1.7.11.2
+
