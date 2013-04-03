@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762721Ab3DCXgN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 19:36:13 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52545 "EHLO
+	id S1762748Ab3DCXge (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 19:36:34 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45220 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762171Ab3DCXfP (ORCPT
+	with ESMTP id S1762368Ab3DCXfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 19:35:15 -0400
+	Wed, 3 Apr 2013 19:35:09 -0400
 From: Stephen Warren <swarren@wwwdotorg.org>
 To: Michal Marek <mmarek@suse.cz>, Grant Likely <glikely@secretlab.ca>,
         Rob Herring <robherring2@gmail.com>
@@ -15,9 +15,9 @@ Cc: arm@kernel.org, Shawn Guo <shawn.guo@linaro.org>,
         devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V2 6/7] ARM: dt: add header to define IRQ flags
-Date: Wed,  3 Apr 2013 17:34:57 -0600
-Message-Id: <1365032098-22825-6-git-send-email-swarren@wwwdotorg.org>
+Subject: [PATCH V2 3/7] kbuild: cmd_dtc_cpp: extract deps from both gcc -E and dtc
+Date: Wed,  3 Apr 2013 17:34:54 -0600
+Message-Id: <1365032098-22825-3-git-send-email-swarren@wwwdotorg.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1365032098-22825-1-git-send-email-swarren@wwwdotorg.org>
 References: <1365032098-22825-1-git-send-email-swarren@wwwdotorg.org>
@@ -28,45 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Warren <swarren@nvidia.com>
 
-Many IRQ device tree bindings use the same flags. Create a header to
-define those.
+Prior to this change, when compiling *.dts to *.dtb, the dependency
+output from dtc would be used, and when compiling *.dtsp to *.dtb, the
+dependency output from gcc -E alone would be used, despite dtc also
+being invoked (on a temporary file that was guaranteed to have no
+dependencies).
+
+With this change, when compiling *.dtsp to *.dtb, the dependency files
+from both gcc -E and dtc are used. This will allow cmd_dtc_cpp to
+replace cmd_dtc in a future change. In turn, that will allow the C pre-
+processor to be run transparently on *.dts, without the need to a
+separate rule or file extension to trigger it.
 
 Signed-off-by: Stephen Warren <swarren@nvidia.com>
 ---
-v2: No change.
-v1: Moved header. Added include guard.
-    (this patch was previously posted separately, hence there are
-    changes in v1!)
----
- include/dt-bindings/interrupt-controller/irq.h |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
- create mode 100644 include/dt-bindings/interrupt-controller/irq.h
+ scripts/Makefile.lib |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/include/dt-bindings/interrupt-controller/irq.h b/include/dt-bindings/interrupt-controller/irq.h
-new file mode 100644
-index 0000000..33a1003
---- /dev/null
-+++ b/include/dt-bindings/interrupt-controller/irq.h
-@@ -0,0 +1,19 @@
-+/*
-+ * This header provides constants for most IRQ bindings.
-+ *
-+ * Most IRQ bindings include a flags cell as part of the IRQ specifier.
-+ * In most cases, the format of the flags cell uses the standard values
-+ * defined in this header.
-+ */
-+
-+#ifndef _DT_BINDINGS_INTERRUPT_CONTROLLER_IRQ_H
-+#define _DT_BINDINGS_INTERRUPT_CONTROLLER_IRQ_H
-+
-+#define IRQ_TYPE_NONE		0
-+#define IRQ_TYPE_EDGE_RISING	1
-+#define IRQ_TYPE_EDGE_FALLING	2
-+#define IRQ_TYPE_EDGE_BOTH	(IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING)
-+#define IRQ_TYPE_LEVEL_HIGH	4
-+#define IRQ_TYPE_LEVEL_LOW	8
-+
-+#endif
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index af35521..6104335 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -156,7 +156,7 @@ cpp_flags      = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
+ 
+ ld_flags       = $(LDFLAGS) $(ldflags-y)
+ 
+-dtc_cpp_flags  = -Wp,-MD,$(depfile) -nostdinc                            \
++dtc_cpp_flags  = -Wp,-MD,$(depfile).pre -nostdinc                        \
+ 		 -I$(srctree)/arch/$(SRCARCH)/boot/dts                   \
+ 		 -I$(srctree)/arch/$(SRCARCH)/boot/dts/include           \
+ 		 -undef -D__DTS__
+@@ -278,7 +278,8 @@ dtc-tmp = $(subst $(comma),_,$(dot-target).dts)
+ 
+ quiet_cmd_dtc_cpp = DTC+CPP $@
+ cmd_dtc_cpp = $(CPP) $(dtc_cpp_flags) -x assembler-with-cpp -o $(dtc-tmp) $< ; \
+-	$(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) $(dtc-tmp)
++	$(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) -d $(depfile).dtc $(dtc-tmp) ; \
++	cat $(depfile).pre $(depfile).dtc > $(depfile)
+ 
+ $(obj)/%.dtb: $(src)/%.dtsp FORCE
+ 	$(call if_changed_dep,dtc_cpp)
 -- 
 1.7.10.4
 
