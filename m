@@ -1,120 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab3DCIqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 04:46:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:58528 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932216Ab3DCIqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 04:46:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,399,1363158000"; 
-   d="scan'208";a="288656088"
-Message-ID: <515BEC5F.60001@intel.com>
-Date: Wed, 03 Apr 2013 16:46:23 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	id S932516Ab3DCIrM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 04:47:12 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10044 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932296Ab3DCIrF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 04:47:05 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 03 Apr 2013 01:47:01 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: <gregkh@linuxfoundation.org>, <balbi@ti.com>, <stern@rowland.harvard.edu>,
+        <linux-tegra@vger.kernel.org>, <swarren@wwwdotorg.org>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Venu Byravarasu <vbyravarasu@nvidia.com>
+Subject: [PATCH v2 6/7] usb: phy: tegra: Add error handling & clean up.
+Date: Wed, 3 Apr 2013 14:11:41 +0530
+Message-ID: <1364978502-22887-7-git-send-email-vbyravarasu@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1364978502-22887-1-git-send-email-vbyravarasu@nvidia.com>
+References: <1364978502-22887-1-git-send-email-vbyravarasu@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
-        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
-        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
-        mgorman@suse.de, riel@redhat.com
-Subject: Re: [patch v3 0/8] sched: use runnable avg in load balance
-References: <1364873008-3169-1-git-send-email-alex.shi@intel.com> <515A877B.3020908@linux.vnet.ibm.com>
-In-Reply-To: <515A877B.3020908@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2013 03:23 PM, Michael Wang wrote:
-> | 15 GB   |      12 | 45393 |   | 43986 |
-> | 15 GB   |      16 | 45110 |   | 45719 |
-> | 15 GB   |      24 | 41415 |   | 36813 |	-11.11%
-> | 15 GB   |      32 | 35988 |   | 34025 |
-> 
-> The reason may caused by wake_affine()'s higher overhead, and pgbench is
-> really sensitive to this stuff...
+Check return values from all GPIO APIs and handle errors accordingly.
+Remove clk_disable_unprepare which is no more needed.
 
-Michael:
-I changed the threshold to 0.1ms it has same effect on aim7.
-So could you try the following on pgbench?
+Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+---
+delta from v2: no change.
 
+ drivers/usb/phy/phy-tegra-usb.c |   50 ++++++++++++++++++++++++++++++--------
+ 1 files changed, 39 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
-index bf8086b..a3c3d43 100644
---- a/include/linux/sched/sysctl.h
-+++ b/include/linux/sched/sysctl.h
-@@ -53,6 +53,7 @@ extern unsigned int sysctl_numa_balancing_settle_count;
+diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
+index a2a89a9..01c5e23 100644
+--- a/drivers/usb/phy/phy-tegra-usb.c
++++ b/drivers/usb/phy/phy-tegra-usb.c
+@@ -542,9 +542,17 @@ static int ulpi_phy_power_on(struct tegra_usb_phy *phy)
+ 	unsigned long val;
+ 	void __iomem *base = phy->regs;
  
- #ifdef CONFIG_SCHED_DEBUG
- extern unsigned int sysctl_sched_migration_cost;
-+extern unsigned int sysctl_sched_burst_threshold;
- extern unsigned int sysctl_sched_nr_migrate;
- extern unsigned int sysctl_sched_time_avg;
- extern unsigned int sysctl_timer_migration;
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index dbaa8ca..dd5a324 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -91,6 +91,7 @@ unsigned int sysctl_sched_wakeup_granularity = 1000000UL;
- unsigned int normalized_sysctl_sched_wakeup_granularity = 1000000UL;
- 
- const_debug unsigned int sysctl_sched_migration_cost = 500000UL;
-+const_debug unsigned int sysctl_sched_burst_threshold = 100000UL;
- 
- /*
-  * The exponential sliding  window over which load is averaged for shares
-@@ -3103,12 +3104,24 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	unsigned long weight;
- 	int balanced;
- 	int runnable_avg;
-+	int burst = 0;
- 
- 	idx	  = sd->wake_idx;
- 	this_cpu  = smp_processor_id();
- 	prev_cpu  = task_cpu(p);
--	load	  = source_load(prev_cpu, idx);
--	this_load = target_load(this_cpu, idx);
-+
-+	if (cpu_rq(this_cpu)->avg_idle < sysctl_sched_burst_threshold ||
-+		cpu_rq(prev_cpu)->avg_idle < sysctl_sched_burst_threshold)
-+		burst= 1;
-+
-+	/* use instant load for bursty waking up */
-+	if (!burst) {
-+		load = source_load(prev_cpu, idx);
-+		this_load = target_load(this_cpu, idx);
-+	} else {
-+		load = cpu_rq(prev_cpu)->load.weight;
-+		this_load = cpu_rq(this_cpu)->load.weight;
+-	gpio_direction_output(phy->reset_gpio, 0);
++	ret = gpio_direction_output(phy->reset_gpio, 0);
++	if (ret < 0) {
++		dev_err(phy->dev, "gpio %d direction not set\n", phy->reset_gpio);
++		return ret;
++	}
+ 	msleep(5);
+-	gpio_direction_output(phy->reset_gpio, 1);
++	ret = gpio_direction_output(phy->reset_gpio, 1);
++	if (ret < 0) {
++		dev_err(phy->dev, "gpio %d direction not set\n", phy->reset_gpio);
++		return ret;
 +	}
  
- 	/*
- 	 * If sync wakeup then subtract the (maximum possible)
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index afc1dc6..1f23457 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -327,6 +327,13 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- 	{
-+		.procname	= "sched_burst_threshold_ns",
-+		.data		= &sysctl_sched_burst_threshold,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
- 		.procname	= "sched_nr_migrate",
- 		.data		= &sysctl_sched_nr_migrate,
- 		.maxlen		= sizeof(unsigned int),
+ 	clk_prepare_enable(phy->clk);
+ 	msleep(1);
+@@ -624,24 +632,44 @@ static int	tegra_phy_init(struct usb_phy *x)
+ 			of_get_named_gpio(phy->dev->of_node,
+ 					  "nvidia,phy-reset-gpio", 0);
+ 		if (!gpio_is_valid(phy->reset_gpio)) {
+-			pr_err("%s: invalid reset gpio: %d\n", __func__,
++			dev_err(phy->dev, "invalid gpio: %d\n",
++				phy->reset_gpio);
++			err = phy->reset_gpio;
++			goto cleanup_clk_get;
++		}
++
++		err = gpio_request(phy->reset_gpio, "ulpi_phy_reset_b");
++		if (err < 0) {
++			dev_err(phy->dev, "request failed for gpio: %d\n",
+ 			       phy->reset_gpio);
+-			err = -EINVAL;
+-			goto err1;
++			goto cleanup_clk_get;
++		}
++
++		err = gpio_direction_output(phy->reset_gpio, 0);
++		if (err < 0) {
++			dev_err(phy->dev, "gpio %d direction not set to output\n",
++			       phy->reset_gpio);
++			goto cleanup_gpio_req;
+ 		}
+-		gpio_request(phy->reset_gpio, "ulpi_phy_reset_b");
+-		gpio_direction_output(phy->reset_gpio, 0);
++
+ 		phy->ulpi = otg_ulpi_create(&ulpi_viewport_access_ops, 0);
++		if (!phy->ulpi) {
++			dev_err(phy->dev, "otg_ulpi_create returned err\n");
++			err = -ENOMEM;
++			goto cleanup_gpio_req;
++		}
++
+ 		phy->ulpi->io_priv = phy->regs + ULPI_VIEWPORT;
+ 	} else {
+ 		err = utmip_pad_open(phy);
+ 		if (err < 0)
+-			goto err1;
++			return err;
+ 	}
+ 	return 0;
+-err1:
+-	clk_disable_unprepare(phy->pll_u);
+-	clk_put(phy->pll_u);
++cleanup_gpio_req:
++	gpio_free(phy->reset_gpio);
++cleanup_clk_get:
++	clk_put(phy->clk);
+ 	return err;
+ }
+ 
 -- 
-Thanks Alex
+1.7.0.4
+
