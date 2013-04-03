@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761620Ab3DCFIy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 01:08:54 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46545 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761553Ab3DCFIx (ORCPT
+	id S1761668Ab3DCFKd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 01:10:33 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:29762 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761625Ab3DCFKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 01:08:53 -0400
-Message-ID: <515BB951.40702@ti.com>
-Date: Wed, 3 Apr 2013 10:38:33 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 3 Apr 2013 01:10:31 -0400
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "richard.genoud@gmail.com" <richard.genoud@gmail.com>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "Lin, JM" <JM.Lin@atmel.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v7 06/14] spi/spi-atmel: add flag to controller data for
+ lock operations
+Thread-Topic: [PATCH v7 06/14] spi/spi-atmel: add flag to controller data
+ for lock operations
+Thread-Index: AQHOJHZIj9hcRKjFiU2tm/F1XXDcQJjA74OAgAMZ8tA=
+Date: Wed, 3 Apr 2013 05:09:53 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A24364150E8CC7B@penmbx01>
+References: <1363678866-3567-1-git-send-email-wenyou.yang@atmel.com>
+ <1363679163-3897-1-git-send-email-wenyou.yang@atmel.com>
+ <20130401134613.GY18636@opensource.wolfsonmicro.com>
+In-Reply-To: <20130401134613.GY18636@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: Vivek Gautam <gautam.vivek@samsung.com>, <balbi@ti.com>
-CC: <linux-usb@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>,
-        <sarah.a.sharp@linux.intel.com>, <rob.herring@calxeda.com>,
-        <kgene.kim@samsung.com>, <dianders@chromium.org>, <t.figa@samsung.com>,
-        <p.paneri@samsung.com>
-Subject: Re: [PATCH v3 01/11] usb: phy: Add APIs for runtime power management
-References: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com> <1364824448-14732-2-git-send-email-gautam.vivek@samsung.com>
-In-Reply-To: <1364824448-14732-2-git-send-email-gautam.vivek@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r335Aa8n025484
 
-Hi,
+Hi, Mark,
 
-On Monday 01 April 2013 07:24 PM, Vivek Gautam wrote:
-> Adding  APIs to handle runtime power management on PHY
-> devices. PHY consumers may need to wake-up/suspend PHYs
-> when they work across autosuspend.
->
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> ---
->   include/linux/usb/phy.h |  141 +++++++++++++++++++++++++++++++++++++++++++++++
->   1 files changed, 141 insertions(+), 0 deletions(-)
->
-> diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
-> index 6b5978f..01bf9c1 100644
-> --- a/include/linux/usb/phy.h
-> +++ b/include/linux/usb/phy.h
-> @@ -297,4 +297,145 @@ static inline const char *usb_phy_type_string(enum usb_phy_type type)
->   		return "UNKNOWN PHY TYPE";
->   	}
->   }
-> +
-> +static inline void usb_phy_autopm_enable(struct usb_phy *x)
-> +{
-> +	if (!x || !x->dev) {
-> +		dev_err(x->dev, "no PHY or attached device available\n");
-> +		return;
-> +		}
-> +
-> +	pm_runtime_enable(x->dev);
-> +}
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
+> Sent: 2013Äê4ÔÂ1ÈÕ 21:46
+> To: Yang, Wenyou
+> Cc: linux-arm-kernel@lists.infradead.org; grant.likely@secretlab.ca;
+> richard.genoud@gmail.com; plagnioj@jcrosoft.com; Ferre, Nicolas; Lin, JM;
+> spi-devel-general@lists.sourceforge.net; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v7 06/14] spi/spi-atmel: add flag to controller data for lock
+> operations
+> 
+> On Tue, Mar 19, 2013 at 03:46:03PM +0800, Wenyou Yang wrote:
+> 
+> > +static void atmel_spi_lock(struct atmel_spi *as) {
+> > +		spin_lock_irqsave(&as->lock, as->flags); }
+> 
+> Coding style.
+I will change it in next version.
 
-IMO we need not have wrapper APIs for runtime_enable and runtime_disable 
-here. Generally runtime_enable and runtime_disable is done in probe and 
-remove of a driver respectively. So it's better to leave the 
-runtime_enable/runtime_disable to be done in *phy provider* driver than 
-having an API for it to be done by *phy user* driver. Felipe, what do 
-you think?
+> 
+> > -	spin_unlock(&as->lock);
+> > +	atmel_spi_unlock(as);
+> >  	msg->complete(msg->context);
+> > -	spin_lock(&as->lock);
+> > +	atmel_spi_lock(as);
+> 
+> This replaces non-irqsave versions with irqsave versions of the lock.
+> Is this safe/correct?  If it is I'd have expected some sort of mention of it in the
+> commit log.
+I will add some commit log.
 
-Thanks
-Kishon
+Best Regards,
+Wenyou Yang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
