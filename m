@@ -1,127 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763097Ab3DCSjN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 14:39:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38013 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763060Ab3DCSjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 14:39:11 -0400
-Message-ID: <515C7720.2020503@redhat.com>
-Date: Wed, 03 Apr 2013 11:38:24 -0700
-From: Josh Stone <jistone@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: "Frank Ch. Eigler" <fche@redhat.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sourceware.org>
-Subject: Re: systemtap broken by removal of register_timer_hook
-References: <20130403075017.GA2534@suse.de> <CAFTL4hyYezB2ZxM-GJ70VoxOeRSG64V6u+nX2hTuhF30R-GdPg__32168.962484184$1364986928$gmane$org@mail.gmail.com> <y0mvc83u79f.fsf@fche.csb> <CAFTL4hxx_GHoa4uguSAtY0A=cC43qJPKvpqaoguS-WAjFj+HSw@mail.gmail.com> <20130403144428.GA15432@redhat.com>
-In-Reply-To: <20130403144428.GA15432@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1763106Ab3DCSoD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 14:44:03 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:45595 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760626Ab3DCSoA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 14:44:00 -0400
+Message-ID: <1365014637.13853.36.camel@edumazet-glaptop>
+Subject: Re: [ 105/124] af_unix: dont send SCM_CREDENTIAL when dest socket
+ is NULL
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Sven Joachim <svenjoac@gmx.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Ding Tianhong <dingtianhong@huawei.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Wed, 03 Apr 2013 11:43:57 -0700
+In-Reply-To: <515C6DCD.50902@mit.edu>
+References: <20130402221104.163133110@linuxfoundation.org>
+	  <20130402221116.307254752@linuxfoundation.org>
+	  <87vc833kpf.fsf@turtle.gmx.de>
+	 <1364997630.13853.19.camel@edumazet-glaptop>
+	  <87a9pfzm33.fsf@turtle.gmx.de>
+	 <1365003300.13853.25.camel@edumazet-glaptop> <515C6DCD.50902@mit.edu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 07:44 AM, Frank Ch. Eigler wrote:
-> Hi -
-> 
-> On Wed, Apr 03, 2013 at 02:49:53PM +0200, Frederic Weisbecker wrote:
-> 
->> Sounds good, would you like to propose a version? We are also
->> interested in a timer tick event tracepoint for dynticks debugging.
-> 
-> How about this?
-> 
-> Author: Frank Ch. Eigler <fche@redhat.com>
-> Date:   Wed Apr 3 10:35:21 2013 -0400
-> 
->     profiling: add profile_tick tracepoint
->     
->     Commit ba6fdda4 removed the timer_hook mechanism for modules to listen
->     to profiling timer ticks (without having to set up more complicated
->     perf mechanisms).  To reduce the impact on out-of-tree users, a
->     TRACE_EVENT-flavoured tracepoint is added in its place.  Tested with
->     perf and systemtap.
+On Wed, 2013-04-03 at 10:58 -0700, Andy Lutomirski wrote:
 
-One nice benefit over register_timer_hook() is that a tracepoint allows
-multiple consumers, like the old register_profile_notifier() did.
-
->     
->     Cc: Frederic Weisbecker <fweisbec@gmail.com>
->     Cc: Ingo Molnar <mingo@kernel.org>
->     Cc: Mel Gorman <mgorman@suse.de>
->     Signed-off-by: Frank Ch. Eigler <fche@redhat.com>
 > 
-> diff --git a/include/trace/events/profile.h b/include/trace/events/profile.h
-> new file mode 100644
-> index 0000000..b48b6fe
-> --- /dev/null
-> +++ b/include/trace/events/profile.h
-> @@ -0,0 +1,35 @@
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM profile
-> +
-> +#if !defined(_TRACE_PROFILE_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_PROFILE_H
-> +
-> +#include <linux/tracepoint.h>
-> +
-> +
-> +struct pt_regs;
-> +
-> +/**
-> + * profile_tick - called when the profiling timer ticks
-> + * @regs:	pointer to struct pt_regs*
-> + */
-> +
-> +TRACE_EVENT(profile_tick,
-> +	TP_PROTO(int type, struct pt_regs *regs),
-> +	TP_ARGS(type, regs),
-> +	TP_STRUCT__entry(
-> +		__field( int,			type	)
-> +		__field( struct pt_regs*,	regs	)
-> +	),
-> +	TP_fast_assign(
-> +		__entry->type	= type;
-> +		__entry->regs	= regs;
-> +	),
-> +	TP_printk("type=%d regs=%p", __entry->type, __entry->regs)
-> +);
-
-I agree that full regs are good for the tracepoint in general, but I
-doubt that this pointer is useful for the printk.  Maybe instead print
-instruction_pointer(__entry->regs)?
-
-> +
-> +
-> +#endif /*  _TRACE_PROFILE_H */
-> +
-> +/* This part must be outside protection */
-> +#include <trace/define_trace.h>
-> diff --git a/kernel/profile.c b/kernel/profile.c
-> index dc3384e..d61f921 100644
-> --- a/kernel/profile.c
-> +++ b/kernel/profile.c
-> @@ -29,6 +29,9 @@
->  #include <asm/irq_regs.h>
->  #include <asm/ptrace.h>
->  
-> +#define CREATE_TRACE_POINTS
-> +#include <trace/events/profile.h>
-> +
->  struct profile_hit {
->  	u32 pc, hits;
->  };
-> @@ -414,6 +417,8 @@ void profile_tick(int type)
->  {
->  	struct pt_regs *regs = get_irq_regs();
->  
-> +	trace_profile_tick(type, regs);
-> +
->  	if (!user_mode(regs) && prof_cpu_mask != NULL &&
->  	    cpumask_test_cpu(smp_processor_id(), prof_cpu_mask))
->  		profile_hit(type, (void *)profile_pc(regs));
+> This sounds suspiciously like an SCM_CREDENTIALS bug triggered by a
+> race.  There's a fix (that needs both a new version from me and a review
+> by someone) here:
 > 
+> http://www.spinics.net/lists/netdev/msg229948.html
+
+Hmm... this is not a stable candidate, IMHO.
+
+This has to be fixed (if needed) in a more easy way. 
+
+What about this one liner ?
+
+CC Eric W. Biederman  as he wrote commit
+dbe9a4173ea53b72b2c3
+(scm: Don't use struct ucred in NETLINK_CB and struct scm_cookie.)
+
+diff --git a/include/net/scm.h b/include/net/scm.h
+index 975cca0..42359d8 100644
+--- a/include/net/scm.h
++++ b/include/net/scm.h
+@@ -120,7 +120,7 @@ static __inline__ void scm_recv(struct socket *sock, struct msghdr *msg,
+ 		return;
+ 	}
+ 
+-	if (test_bit(SOCK_PASSCRED, &sock->flags)) {
++	if (test_bit(SOCK_PASSCRED, &sock->flags) && scm->creds.pid) {
+ 		struct user_namespace *current_ns = current_user_ns();
+ 		struct ucred ucreds = {
+ 			.pid = scm->creds.pid,
+
 
