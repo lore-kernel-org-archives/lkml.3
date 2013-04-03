@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932550Ab3DCUXs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 16:23:48 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:39711 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932459Ab3DCUXr (ORCPT
+	id S1763314Ab3DCU20 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 16:28:26 -0400
+Received: from mail-ia0-f182.google.com ([209.85.210.182]:39691 "EHLO
+	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760535Ab3DCU2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 16:23:47 -0400
+	Wed, 3 Apr 2013 16:28:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <515C701E.1000402@prisktech.co.nz>
-References: <1364970291-17721-1-git-send-email-linux@prisktech.co.nz>
-	<CACRpkdZAtgpfA5rZ_C=eKDDOE9aDm=3k1QDava=EGL2BaoV+0g@mail.gmail.com>
-	<515C701E.1000402@prisktech.co.nz>
-Date: Wed, 3 Apr 2013 22:23:46 +0200
-Message-ID: <CACRpkdapvxK6ad4PGasb0XKjPYJabpvwZhx+o72iwbCZFkkZFg@mail.gmail.com>
-Subject: Re: [PATCHv5 0/7] arm: vt8500: Add support for pinctrl/gpio module
+In-Reply-To: <515C63F3.5070401@wwwdotorg.org>
+References: <1364490685-21831-1-git-send-email-bbasu@nvidia.com>
+	<5154827B.8010701@wwwdotorg.org>
+	<CACRpkdYLSVkfAxVBMBnkyePujaoQQqB27UiG+-r2APkEDrfLrA@mail.gmail.com>
+	<515C63F3.5070401@wwwdotorg.org>
+Date: Wed, 3 Apr 2013 22:28:23 +0200
+Message-ID: <CACRpkdYcdHHGp9Y7ryPzZgNqsi208c4hPB5yNWsUkEUw2Apd+A@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: tegra: add suspend-resume support
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Bibek Basu <bbasu@nvidia.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vt8500-wm8505-linux-kernel@googlegroups.com" 
-	<vt8500-wm8505-linux-kernel@googlegroups.com>
+        Pritesh Raithatha <praithatha@nvidia.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 3, 2013 at 8:08 PM, Tony Prisk <linux@prisktech.co.nz> wrote:
-> On 04/04/13 02:40, Linus Walleij wrote:
+On Wed, Apr 3, 2013 at 7:16 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
->> This v5 series:
->> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->>
->> I guess it will go in through the VT8500 tree eventually?
->>
->> Maybe you could put Stephen's BCMring patch on top when sending
->> it in (also Acked-by) so we can avoid having that dangling.
->>
->> Yours,
->> Linus Walleij
->
-> We don't have a VT8500 tree. Originally I planned for it to go through you,
-> but it could go through arm-soc if they want to take it.
+> It's possible program the registers so that the same signal is connected
+> to (or from depending on signal direction) multiple pins at once. If
+> this is done, the behaviour is unspecified; who knows which pin will
+> actually receive (or provide) that signal?
 
-You should definately be sending VT8500 series like this through
-ARM SoC. Prepare a pull request or patch series and
-send to arm@kernel.org.
+In the dbx500 this will actually make the signal come out on both
+pins. So there are several muxes connected to the same internal
+rail. I can imagine a few odd ways that would work differently though...
 
-Thanks,
+We could use this to connect two UARTs to the console, not very
+useful, but hey, dual screens...
+
+I wonder what happens if both consoles hit enter at the same instant.
+Probably nasty electronic states are possible.
+
+Yours,
 Linus Walleij
