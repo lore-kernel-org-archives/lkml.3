@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762787Ab3DCXwn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 19:52:43 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:45172 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757659Ab3DCXwl (ORCPT
+	id S1762923Ab3DCXwu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 19:52:50 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:63309 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762783Ab3DCXwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 19:52:41 -0400
+	Wed, 3 Apr 2013 19:52:46 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
@@ -22,9 +22,9 @@ Cc: John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
         Michel Lespinasse <walken@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Minchan Kim <minchan@kernel.org>
-Subject: [RFC PATCH 1/4] vrange: Make various vrange.c local functions static
-Date: Wed,  3 Apr 2013 16:52:20 -0700
-Message-Id: <1365033144-15156-2-git-send-email-john.stultz@linaro.org>
+Subject: [RFC PATCH 4/4] vrange: Enable purging of file backed volatile ranges
+Date: Wed,  3 Apr 2013 16:52:23 -0700
+Message-Id: <1365033144-15156-5-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1365033144-15156-1-git-send-email-john.stultz@linaro.org>
 References: <1365033144-15156-1-git-send-email-john.stultz@linaro.org>
@@ -32,7 +32,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make a number of local functions in vrange.c static.
+Rework the victim range selection to also support
+file backed volatile ranges.
 
 Cc: linux-mm@kvack.org
 Cc: Michael Kerrisk <mtk.manpages@gmail.com>
@@ -55,94 +56,200 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Minchan Kim <minchan@kernel.org>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- mm/vrange.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ include/linux/vrange.h |    8 ++++
+ mm/vrange.c            |  118 +++++++++++++++++++++++++++++++++---------------
+ 2 files changed, 89 insertions(+), 37 deletions(-)
 
+diff --git a/include/linux/vrange.h b/include/linux/vrange.h
+index 91960eb..bada2bd 100644
+--- a/include/linux/vrange.h
++++ b/include/linux/vrange.h
+@@ -47,6 +47,14 @@ static inline struct mm_struct *vrange_get_owner_mm(struct vrange *vrange)
+ 	return container_of(vrange->owner, struct mm_struct, vroot);
+ }
+ 
++static inline
++struct address_space *vrange_get_owner_mapping(struct vrange *vrange)
++{
++	if (vrange_type(vrange) != VRANGE_FILE)
++		return NULL;
++	return container_of(vrange->owner, struct address_space, vroot);
++}
++
+ 
+ void vrange_init(void);
+ extern void mm_exit_vrange(struct mm_struct *mm);
 diff --git a/mm/vrange.c b/mm/vrange.c
-index c0c5d50..d07884d 100644
+index 671909c..b652513 100644
 --- a/mm/vrange.c
 +++ b/mm/vrange.c
-@@ -45,7 +45,7 @@ static inline void __set_vrange(struct vrange *range,
- 	range->node.last = end_idx;
- }
- 
--void lru_add_vrange(struct vrange *vrange)
-+static void lru_add_vrange(struct vrange *vrange)
- {
- 	spin_lock(&lru_lock);
- 	WARN_ON(!list_empty(&vrange->lru));
-@@ -53,7 +53,7 @@ void lru_add_vrange(struct vrange *vrange)
- 	spin_unlock(&lru_lock);
- }
- 
--void lru_remove_vrange(struct vrange *vrange)
-+static void lru_remove_vrange(struct vrange *vrange)
- {
- 	spin_lock(&lru_lock);
- 	if (!list_empty(&vrange->lru))
-@@ -130,7 +130,7 @@ static inline void range_resize(struct rb_root *root,
- 	__add_range(range, root, mm);
- }
- 
--int add_vrange(struct mm_struct *mm,
-+static int add_vrange(struct mm_struct *mm,
- 			unsigned long start, unsigned long end)
- {
- 	struct rb_root *root;
-@@ -172,7 +172,7 @@ out:
- 	return 0;
- }
- 
--int remove_vrange(struct mm_struct *mm,
-+static int remove_vrange(struct mm_struct *mm,
- 		unsigned long start, unsigned long end)
- {
- 	struct rb_root *root;
-@@ -292,7 +292,7 @@ out:
+@@ -690,8 +690,9 @@ static unsigned int discard_vma_pages(struct zone *zone, struct mm_struct *mm,
  	return ret;
  }
  
--bool __vrange_address(struct mm_struct *mm,
-+static bool __vrange_address(struct mm_struct *mm,
- 			unsigned long start, unsigned long end)
- {
- 	struct rb_root *root = &mm->v_rb;
-@@ -387,7 +387,7 @@ static void __vrange_purge(struct mm_struct *mm,
- 	}
- }
- 
--int try_to_discard_one(struct page *page, struct vm_area_struct *vma,
-+static int try_to_discard_one(struct page *page, struct vm_area_struct *vma,
- 		unsigned long address)
- {
- 	struct mm_struct *mm = vma->vm_mm;
-@@ -602,7 +602,7 @@ static int vrange_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 
- }
- 
--unsigned int discard_vma_pages(struct zone *zone, struct mm_struct *mm,
-+static unsigned int discard_vma_pages(struct zone *zone, struct mm_struct *mm,
- 		struct vm_area_struct *vma, unsigned long start,
- 		unsigned long end, unsigned int nr_to_discard)
- {
-@@ -669,7 +669,7 @@ out:
-  * Get next victim vrange from LRU and hold a vrange refcount
-  * and vrange->mm's refcount.
-  */
--struct vrange *get_victim_vrange(void)
-+static struct vrange *get_victim_vrange(void)
+-unsigned int discard_vrange(struct zone *zone, struct vrange *vrange,
+-				int nr_to_discard)
++static unsigned int discard_anon_vrange(struct zone *zone,
++					struct vrange *vrange,
++					int nr_to_discard)
  {
  	struct mm_struct *mm;
- 	struct vrange *vrange = NULL;
-@@ -711,7 +711,7 @@ struct vrange *get_victim_vrange(void)
- 	return vrange;
+ 	unsigned long start = vrange->node.start;
+@@ -732,52 +733,91 @@ out:
+ 	return nr_discarded;
  }
  
--void put_victim_range(struct vrange *vrange)
-+static void put_victim_range(struct vrange *vrange)
++static unsigned int discard_file_vrange(struct zone *zone,
++					struct vrange *vrange,
++					int nr_to_discard)
++{
++	struct address_space *mapping;
++	unsigned long start = vrange->node.start;
++	unsigned long end = vrange->node.last;
++	unsigned long count = ((end-start) >> PAGE_CACHE_SHIFT);
++
++	mapping = vrange_get_owner_mapping(vrange);
++
++	truncate_inode_pages_range(mapping, start, end);
++	vrange->purged = true;
++
++	return count;
++}
++
++unsigned int discard_vrange(struct zone *zone, struct vrange *vrange,
++				int nr_to_discard)
++{
++	if (vrange_type(vrange) == VRANGE_ANON)
++		return discard_anon_vrange(zone, vrange, nr_to_discard);
++	return discard_file_vrange(zone, vrange, nr_to_discard);
++}
++
++
++/* Take a vrange refcount and depending on the type
++ * the vrange->owner's mm refcount or inode refcount
++ */
++static int hold_victim_vrange(struct vrange *vrange)
++{
++	if (vrange_type(vrange) == VRANGE_ANON) {
++		struct mm_struct *mm = vrange_get_owner_mm(vrange);
++
++
++		if (atomic_read(&mm->mm_users) == 0)
++			return -1;
++
++
++		if (!atomic_inc_not_zero(&vrange->refcount))
++			return -1;
++		/*
++		 * we need to access mmap_sem further routine so
++		 * need to get a refcount of mm.
++		 * NOTE: We guarantee mm_count isn't zero in here because
++		 * if we found vrange from LRU list, it means we are
++		 * before exit_vrange or remove_vrange.
++		 */
++		atomic_inc(&mm->mm_count);
++	} else {
++		struct address_space *mapping;
++		mapping = vrange_get_owner_mapping(vrange);
++
++		if (!atomic_inc_not_zero(&vrange->refcount))
++			return -1;
++		__iget(mapping->host);
++	}
++
++	return 0;
++}
++
++
++
+ /*
+- * Get next victim vrange from LRU and hold a vrange refcount
+- * and vrange->mm's refcount.
++ * Get next victim vrange from LRU and hold needed refcounts.
+  */
+ static struct vrange *get_victim_vrange(void)
  {
+-	struct mm_struct *mm;
+ 	struct vrange *vrange = NULL;
+ 	struct list_head *cur, *tmp;
+ 
+ 	spin_lock(&lru_lock);
+ 	list_for_each_prev_safe(cur, tmp, &lru_vrange) {
+ 		vrange = list_entry(cur, struct vrange, lru);
+-		mm = vrange_get_owner_mm(vrange);
+-
+-		if (!mm) {
+-			vrange = NULL;
+-			continue;
+-		}
+ 
+-		/* the process is exiting so pass it */
+-		if (atomic_read(&mm->mm_users) == 0) {
++		if (hold_victim_vrange(vrange)) {
+ 			list_del_init(&vrange->lru);
+ 			vrange = NULL;
+ 			continue;
+ 		}
+ 
+-		/* vrange is freeing so continue to loop */
+-		if (!atomic_inc_not_zero(&vrange->refcount)) {
+-			list_del_init(&vrange->lru);
+-			vrange = NULL;
+-			continue;
+-		}
+-
+-		/*
+-		 * we need to access mmap_sem further routine so
+-		 * need to get a refcount of mm.
+-		 * NOTE: We guarantee mm_count isn't zero in here because
+-		 * if we found vrange from LRU list, it means we are
+-		 * before mm_exit_vrange or remove_vrange.
+-		 */
+-		atomic_inc(&mm->mm_count);
+-
+ 		/* Isolate vrange */
+ 		list_del_init(&vrange->lru);
+ 		break;
++
+ 	}
+ 
+ 	spin_unlock(&lru_lock);
+@@ -786,11 +826,18 @@ static struct vrange *get_victim_vrange(void)
+ 
+ static void put_victim_range(struct vrange *vrange)
+ {
+-	struct mm_struct *mm = vrange_get_owner_mm(vrange);
+-
  	put_vrange(vrange);
- 	mmdrop(vrange->mm);
+-	if (mm)
++
++	if (vrange_type(vrange) == VRANGE_ANON) {
++		struct mm_struct *mm = vrange_get_owner_mm(vrange);
++
+ 		mmdrop(mm);
++	} else {
++		struct address_space *mapping;
++
++		mapping = vrange_get_owner_mapping(vrange);
++		iput(mapping->host);
++	}
+ }
+ 
+ unsigned int discard_vrange_pages(struct zone *zone, int nr_to_discard)
+@@ -799,11 +846,8 @@ unsigned int discard_vrange_pages(struct zone *zone, int nr_to_discard)
+ 	unsigned int nr_discarded = 0;
+ 
+ 	start_vrange = vrange = get_victim_vrange();
+-	if (start_vrange) {
+-		struct mm_struct *mm = vrange_get_owner_mm(vrange);
+-		atomic_inc(&start_vrange->refcount);
+-		atomic_inc(&mm->mm_count);
+-	}
++	if (start_vrange)
++		hold_victim_vrange(start_vrange);
+ 
+ 	while (vrange) {
+ 		nr_discarded += discard_vrange(zone, vrange, nr_to_discard);
 -- 
 1.7.10.4
 
