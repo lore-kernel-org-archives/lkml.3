@@ -1,88 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763324Ab3DCTQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 15:16:58 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45131 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763014Ab3DCTQ4 (ORCPT
+	id S932172Ab3DCTRb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 15:17:31 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:19391
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762074Ab3DCTR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 15:16:56 -0400
-Message-ID: <515C8024.30204@wwwdotorg.org>
-Date: Wed, 03 Apr 2013 13:16:52 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 3 Apr 2013 15:17:29 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2fh95h668h839hd24hf0ah119dh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah906i1155h)
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH] clk: Properly handle notifier return values
+Date: Wed, 3 Apr 2013 12:17:12 -0700
+X-Mailer: git-send-email 1.8.2
+X-RCIS-Action: ALLOW
 MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: gregkh@linuxfoundation.org, balbi@ti.com, stern@rowland.harvard.edu,
-        linux-tegra@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/7] ARM: tegra: update device trees for USB binding
- rework
-References: <1364978502-22887-1-git-send-email-vbyravarasu@nvidia.com> <1364978502-22887-3-git-send-email-vbyravarasu@nvidia.com>
-In-Reply-To: <1364978502-22887-3-git-send-email-vbyravarasu@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+Message-ID: <a2f153b2-9266-4ddc-94a9-3efbcbe9768c@CH1EHSMHS018.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 02:41 AM, Venu Byravarasu wrote:
-> This patch updates all Tegra board files so that they contain all the
-> properties required by the updated USB DT binding. Note that this patch
-> only adds the new properties and does not yet remove the old properties,
-> in order to maintain bisectability. The old properties will be removed
-> once the driver has been updated to assume the new bindings.
+Notifiers may return NOTIFY_(OK|DONE|STOP|BAD). The CCF uses an
+inconsistent mix of checking against NOTIFY_STOP or NOTIFY_BAD.
+This inconsistency leaves errors undetected in some cases:
+clk_set_parent() calls __clk_speculate_rates(), which stops when it
+hits a NOTIFIER_BAD (STOP is ignored), and passes this value back to the
+caller.
+clk_set_parent() compares this return value against NOTIFY_STOP only,
+ignoring NOTIFY_BAD returns.
 
-The binding documentation says that the vbus-supply property is required
-in all cases. However, many of the DT files still don't have that
-property even after this patch. That's inconsistent.
+Use NOTIFY_STOP_MASK to detect a negative notifier return value and
+document all four return value options.
 
-> diff --git a/arch/arm/boot/dts/tegra20-iris-512.dts b/arch/arm/boot/dts/tegra20-iris-512.dts
-> index 52f1103..c99eccc 100644
-> --- a/arch/arm/boot/dts/tegra20-iris-512.dts
-> +++ b/arch/arm/boot/dts/tegra20-iris-512.dts
-> @@ -41,6 +41,10 @@
->  		dr_mode = "otg";
->  	};
->  
-> +	usb-phy@c5000000 {
-> +		dr_mode = "otg";
-> +	};
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+ drivers/clk/clk.c   | 10 +++++-----
+ include/linux/clk.h |  8 ++++----
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
-Since this port claims to be OTG-capable, presumably a vbus-supply
-property is mandatory here? If you don't know enough about the board to
-correctly set up such a regulator, lets just mark this port as host-only
-for now; we can switch it back to OTG-mode later once someone implements
-the required regulator. This won't lose any functionality, since we
-don't support OTG-mode yet anyway. However, it will allow the device
-tree to be correct/consistent in the mean time.
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index ed87b24..68bd38c 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -876,16 +876,16 @@ static int __clk_speculate_rates(struct clk *clk, unsigned long parent_rate)
+ 	else
+ 		new_rate = parent_rate;
+ 
+-	/* abort the rate change if a driver returns NOTIFY_BAD */
++	/* abort rate change if a driver returns NOTIFY_BAD or NOTIFY_STOP */
+ 	if (clk->notifier_count)
+ 		ret = __clk_notify(clk, PRE_RATE_CHANGE, clk->rate, new_rate);
+ 
+-	if (ret == NOTIFY_BAD)
++	if (ret & NOTIFY_STOP_MASK)
+ 		goto out;
+ 
+ 	hlist_for_each_entry(child, &clk->children, child_node) {
+ 		ret = __clk_speculate_rates(child, new_rate);
+-		if (ret == NOTIFY_BAD)
++		if (ret & NOTIFY_STOP_MASK)
+ 			break;
+ 	}
+ 
+@@ -978,7 +978,7 @@ static struct clk *clk_propagate_rate_change(struct clk *clk, unsigned long even
+ 
+ 	if (clk->notifier_count) {
+ 		ret = __clk_notify(clk, event, clk->rate, clk->new_rate);
+-		if (ret == NOTIFY_BAD)
++		if (ret & NOTIFY_STOP_MASK)
+ 			fail_clk = clk;
+ 	}
+ 
+@@ -1296,7 +1296,7 @@ int clk_set_parent(struct clk *clk, struct clk *parent)
+ 		ret = __clk_speculate_rates(clk, parent->rate);
+ 
+ 	/* abort if a driver objects */
+-	if (ret == NOTIFY_STOP)
++	if (ret & NOTIFY_STOP_MASK)
+ 		goto out;
+ 
+ 	/* only re-parent if the clock is not in use */
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index b3ac22d..9a6d045 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -28,16 +28,16 @@ struct clk;
+  * PRE_RATE_CHANGE - called immediately before the clk rate is changed,
+  *     to indicate that the rate change will proceed.  Drivers must
+  *     immediately terminate any operations that will be affected by the
+- *     rate change.  Callbacks may either return NOTIFY_DONE or
+- *     NOTIFY_STOP.
++ *     rate change.  Callbacks may either return NOTIFY_DONE, NOTIFY_OK,
++ *     NOTIFY_STOP or NOTIFY_BAD.
+  *
+  * ABORT_RATE_CHANGE: called if the rate change failed for some reason
+  *     after PRE_RATE_CHANGE.  In this case, all registered notifiers on
+  *     the clk will be called with ABORT_RATE_CHANGE. Callbacks must
+- *     always return NOTIFY_DONE.
++ *     always return NOTIFY_DONE or NOTIFY_OK.
+  *
+  * POST_RATE_CHANGE - called after the clk rate change has successfully
+- *     completed.  Callbacks must always return NOTIFY_DONE.
++ *     completed.  Callbacks must always return NOTIFY_DONE or NOTIFY_OK.
+  *
+  */
+ #define PRE_RATE_CHANGE			BIT(0)
+-- 
+1.8.2
 
-> diff --git a/arch/arm/boot/dts/tegra20-seaboard.dts b/arch/arm/boot/dts/tegra20-seaboard.dts
 
-> +	usb-phy@c5000000 {
-> +		vbus-supply = <&vbus_reg>;
-> +		dr_mode = "otg";
-> +	};
-
-Where is the nvidia,vbus-gpio property? Since your code changes don't
-actually implement use of the vbus-supply property yet, they will expect
-the vbus-gpio property to exist in the PHY node.
-
-> diff --git a/arch/arm/boot/dts/tegra20-trimslice.dts b/arch/arm/boot/dts/tegra20-trimslice.dts
-> index 955bf49..8f2bb9b 100644
-> --- a/arch/arm/boot/dts/tegra20-trimslice.dts
-> +++ b/arch/arm/boot/dts/tegra20-trimslice.dts
-> @@ -305,17 +305,21 @@
->  		nvidia,vbus-gpio = <&gpio 170 0>; /* gpio PV2 */
->  	};
->  
-> +	usb-phy@c5000000 {
-> +		vbus-supply = <&vbus_reg>;
-> +	};
-
-Same here; isn't nvidia,vbus-gpio needed in the PHY node until the
-driver is converted to use vbus-supply?
-
-I guess this is a case of a host-only port where there is SW-control
-over VBUS...
