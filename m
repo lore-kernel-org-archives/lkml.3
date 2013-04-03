@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762116Ab3DCPsq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 11:48:46 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44827 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761206Ab3DCPso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 11:48:44 -0400
-Date: Wed, 3 Apr 2013 18:48:07 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        <gregkh@linuxfoundation.org>, <akpm@linux-foundation.org>,
-        <swarren@wwwdotorg.org>, <sylvester.nawrocki@gmail.com>,
-        <rob@landley.net>, <netdev@vger.kernel.org>, <davem@davemloft.net>,
-        <cesarb@cesarb.net>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tony@atomide.com>, <grant.likely@secretlab.ca>,
-        <rob.herring@calxeda.com>, <b-cousson@ti.com>,
-        <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
-        <mchehab@redhat.com>, <santosh.shilimkar@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
-        <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 2/6] usb: phy: omap-usb2: use the new generic PHY
- framework
-Message-ID: <20130403154807.GE19093@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1364993634-6378-1-git-send-email-kishon@ti.com>
- <1364993634-6378-3-git-send-email-kishon@ti.com>
- <20130403134827.GF14680@arwen.pp.htv.fi>
- <201304031455.47864.arnd@arndb.de>
+	id S1762171Ab3DCPuW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 11:50:22 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:53168 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761095Ab3DCPuV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 11:50:21 -0400
+X-Originating-IP: 108.223.40.66
+Date: Wed, 3 Apr 2013 08:50:26 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Tony Chung <tonychung00@gmail.com>
+Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] watchdog: fix w83627hf_wdt clear timeout expired
+Message-ID: <20130403155026.GA4549@roeck-us.net>
+References: <1364795972-8649-1-git-send-email-tonychung00@gmail.com>
+ <1364795972-8649-2-git-send-email-tonychung00@gmail.com>
+ <20130402000741.GA4077@roeck-us.net>
+ <CAHyaeP1ExzMr8_KvSrmf6+urVROEHRePs_KA3CZ3bnU6Ov79LQ@mail.gmail.com>
+ <20130403042142.GA3640@roeck-us.net>
+ <CAHyaeP1tdNpqtOLOYpy-OyL2_myPSQAO3eQF5_k9ryuFW6bhAQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xA/XKXTdy9G3iaIz"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201304031455.47864.arnd@arndb.de>
+In-Reply-To: <CAHyaeP1tdNpqtOLOYpy-OyL2_myPSQAO3eQF5_k9ryuFW6bhAQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---xA/XKXTdy9G3iaIz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Apr 03, 2013 at 08:06:59AM -0700, Tony Chung wrote:
+> On Tue, Apr 2, 2013 at 9:21 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> 
+> >
+> >
+> > What is the exact chip type in your system ? I want to have a look into the
+> > datasheet; maybe I can find out how it can trigger without causing a reset.
+> 
+> Winbond 83627HF chip
+> 
+> I believe BIOS has watchdog disabled otherwise it would have reboot the box.
+> However, the timer just start counting.
+> 
+> Comparing to ipmi_watchdog, you can do this:
+> modprobe ipmi_watchdog ... start_now=0 ...action=<>  nowayout=1
+> 
+> So it is possible to load the driver without start counting.
+> 
+That is a different driver, though. you don't have the start_now option here.
 
-Hi,
+> Notice it is an else, so t is actually 0 already (i.e. expired or
+> never start running):
 
-On Wed, Apr 03, 2013 at 02:55:47PM +0000, Arnd Bergmann wrote:
-> On Wednesday 03 April 2013, Felipe Balbi wrote:
-> > const ? Maybe provide a:
-> >=20
-> > #define DEFINE_PHY_OPS(name)    \
-> > const struct phy_ops #name_phy_ops =3D {
-> >=20
-> > macro ? This will force people to add the const keyword :-)
->=20
-> Forcing people to use const structures is good, but I think it would be
-> better without the macro, just by marking the argument in=20
-> devm_phy_create() as const.
+Still no idea why that would cause the system to reboot when you reset
+the trigger without setting t to 0 again (or why the system doesn't reset
+in the first place if the watchdog already triggered).
 
-that won't force the definition of the struct to be const, however. But
-I get your point.
+I am not really sure what the best approach is here, so let's leave it
+up to the maintainer to decide which way to go.
 
---=20
-balbi
-
---xA/XKXTdy9G3iaIz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRXE83AAoJEIaOsuA1yqREQ+sQAKeGj69voh941wu/KTn7tFb4
-D0RrvEHfbTUhaNkpsTUfurdzKk3k3GuH59HvfK9zoei36ogCIlSCwZKWWs4I9Yii
-IBpXzJp9n0fZUWLMdOrJgf/JOhouLuRJ1d5u5UTeAmRBtQT3dq89EEG1sixJCNBA
-QBGTW0bNdXAE2oglFG7EH2HMGeTxSJM49v2z+Lusv1bbbog8qjAOz+pL0WHBttzi
-h8wKxp8yOzrmCQ4ktsiin68JFV1AuaLS+BVdbxbtgKVdDDaJ7lvqfRHnmnBSOy27
-23Z2Vl36Gv299sZOiNEaYFI9z0ubNJc5N4YCVefGHPkn0+6Y/BeMrk8tXAnUnZq2
-HeCtlCLxtp7HmrvRt48paDOheQc7jcamPcMktIm5QhAD1uzRwVtk34XVMY1AEWKF
-TK3u7YJiy3THqXlvUvrYz+sPrpBFUEDK15Rcn/Cmk8H0gqpBtdCBU0HWHqeK//Jb
-vmpvmXzpWwPPWUYWDqumf3YyAonYz/oDCmaJR/mbuIMKK5A4IIcHiqGoU11j4BUI
-JU0yPf0n9BE8KEcZXKJy3LdRr6MOgSF3XZOZl4425pucdLnZNUJ1ILGHM7/6wkCx
-ILTlo6mtHSU3RE5do6JCw2EwqnK5lAAsrRUGtpuIQOclt2h4npWpYe+s3XR4fxz0
-xiUXWZKeY3w7HHLXlToJ
-=xgLX
------END PGP SIGNATURE-----
-
---xA/XKXTdy9G3iaIz--
+Thanks,
+Guenter
