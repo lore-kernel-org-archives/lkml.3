@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762511Ab3DDPa4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 11:30:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46009 "EHLO mx2.suse.de"
+	id S1762456Ab3DDPay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 11:30:54 -0400
+Received: from mga01.intel.com ([192.55.52.88]:9667 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762457Ab3DDPaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 11:30:55 -0400
-Date: Thu, 4 Apr 2013 17:30:51 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC][PATCH 5/7] cgroup: make sure parent won't be destroyed
- before its children
-Message-ID: <20130404153051.GL29911@dhcp22.suse.cz>
-References: <515BF233.6070308@huawei.com>
- <515BF2A4.1070703@huawei.com>
- <20130404113750.GH29911@dhcp22.suse.cz>
- <20130404133706.GA9425@htj.dyndns.org>
- <20130404152028.GK29911@dhcp22.suse.cz>
- <20130404152213.GL9425@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130404152213.GL9425@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1762362Ab3DDPax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 11:30:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,409,1363158000"; 
+   d="scan'208";a="313646382"
+Message-ID: <1365089540.626.16.camel@sauron.fi.intel.com>
+Subject: [GIT PULL] UBIFS changes for 3.9-rc6
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-mtd <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 04 Apr 2013 18:32:20 +0300
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 04-04-13 08:22:13, Tejun Heo wrote:
-> On Thu, Apr 04, 2013 at 05:20:28PM +0200, Michal Hocko wrote:
-> > > But what harm does an additional reference do?
-> > 
-> > No harm at all. I just wanted to be sure that this is not yet another
-> > "for memcg" hack. So if this is useful for other controllers then I have
-> > no objections of course.
-> 
-> I think it makes sense in general, so let's do it in cgroup core.
+Hi Linus,
 
-Ok
+please, pull a single UBIFS fix for v3.9.
 
-> I suppose it'd be easier for this to be routed together with other
-> memcg changes?
+The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
 
-Probably yes.
+  Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
 
-> Thanks.
-> 
-> -- 
-> tejun
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+are available in the git repository at:
+
+  git://git.infradead.org/linux-ubifs.git tags/upstream-3.9-rc6
+
+for you to fetch changes up to 67e753ca41782913d805ff4a8a2b0f60b26b7915:
+
+  UBIFS: make space fixup work in the remount case (2013-03-14 11:20:22 +0200)
+
+----------------------------------------------------------------
+Make the space fixup feature work in the case when the file-system is first
+mounted R/O and then remounted R/W.
+
+----------------------------------------------------------------
+Artem Bityutskiy (1):
+      UBIFS: make space fixup work in the remount case
+
+ fs/ubifs/super.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
 -- 
-Michal Hocko
-SUSE Labs
+Best Regards,
+Artem Bityutskiy
+
