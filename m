@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763358Ab3DDQkz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:40:55 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:40152 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1762912Ab3DDQky (ORCPT
+	id S1763297Ab3DDQlJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:41:09 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52422
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762587Ab3DDQlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:40:54 -0400
-Message-ID: <515DAD0D.1010806@semaphore.gr>
-Date: Thu, 04 Apr 2013 19:40:45 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH linux-next] regmap: cache: Fix format specifier in dev_dbg
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	Thu, 4 Apr 2013 12:41:05 -0400
+Message-ID: <1365093662.2609.111.camel@laptop>
+Subject: Re: [PATCH v2 2/3] mutex: add support for reservation style locks,
+ v2
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        linux-arch@vger.kernel.org, daniel.vetter@ffwll.ch, x86@kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, robclark@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu, linux-media@vger.kernel.org
+Date: Thu, 04 Apr 2013 18:41:02 +0200
+In-Reply-To: <20130404133123.GW2228@phenom.ffwll.local>
+References: <20130228102452.15191.22673.stgit@patser>
+	 <20130228102502.15191.14146.stgit@patser>
+	 <1364900432.18374.24.camel@laptop> <515AF1C1.7080508@canonical.com>
+	 <1364921954.20640.22.camel@laptop> <1365076908.2609.94.camel@laptop>
+	 <20130404133123.GW2228@phenom.ffwll.local>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix format specifier in dev_dbg and suppress the following warning
+On Thu, 2013-04-04 at 15:31 +0200, Daniel Vetter wrote:
+> The thing is now that you're not expected to hold these locks for a
+> long
+> time - if you need to synchronously stall while holding a lock
+> performance
+> will go down the gutters anyway. And since most current
+> gpus/co-processors
+> still can't really preempt fairness isn't that high a priority,
+> either.
+> So we didn't think too much about that.
 
-drivers/base/regmap/regcache.c: In function
-‘regcache_sync_block_raw_flush’:
-drivers/base/regmap/regcache.c:593:2: warning: format ‘%d’ expects
-argument of type ‘int’, but argument 4 has type ‘size_t’ [-Wformat]
-
-Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
----
- drivers/base/regmap/regcache.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
-index d81f605..a469748 100644
---- a/drivers/base/regmap/regcache.c
-+++ b/drivers/base/regmap/regcache.c
-@@ -590,7 +590,7 @@ static int regcache_sync_block_raw_flush(struct regmap *map, const void **data,
- 
- 	count = cur - base;
- 
--	dev_dbg(map->dev, "Writing %d bytes for %d registers from 0x%x-0x%x\n",
-+	dev_dbg(map->dev, "Writing %zu bytes for %d registers from 0x%x-0x%x\n",
- 		count * val_bytes, count, base, cur - 1);
- 
- 	map->cache_bypass = 1;
--- 
-1.8.1.4
+Yeah but you're proposing a new synchronization primitive for the core
+kernel.. all such 'fun' details need to be considered, not only those
+few that bear on the one usecase.
 
