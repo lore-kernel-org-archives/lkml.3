@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764243Ab3DDHw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 03:52:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62123 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763871Ab3DDHw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 03:52:57 -0400
-Message-ID: <515D312A.8000909@redhat.com>
-Date: Thu, 04 Apr 2013 09:52:10 +0200
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S932712Ab3DDHzU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 03:55:20 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:35735 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1764249Ab3DDHzS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 03:55:18 -0400
 MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1304040946170.30938@pobox.suse.cz>
+References: <1364993121-18800-1-git-send-email-huzefa.nomanx.kankroliwala@intel.com>
+	<alpine.LNX.2.00.1304040946170.30938@pobox.suse.cz>
+Date: Thu, 4 Apr 2013 09:55:16 +0200
+Message-ID: <CAN+gG=GuEuzekoMAsRiGJNs73PFzRK8oxjjRB4xP1kQeBp0DCw@mail.gmail.com>
+Subject: Re: [PATCH v2] i2c-hid: fix length for set/get report in i2c hid
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 To: Jiri Kosina <jkosina@suse.cz>
-CC: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3.7+] HID: magicmouse: fix race between input_register()
- and probe()
-References: <1364893912-29578-1-git-send-email-benjamin.tissoires@redhat.com> <alpine.LNX.2.00.1304040951020.30938@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1304040951020.30938@pobox.suse.cz>
+Cc: Huzefa Kankroliwala <huzefa.nomanx.kankroliwala@intel.com>,
+        mika.westerberg@intel.com, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2013 09:51 AM, Jiri Kosina wrote:
-> On Tue, 2 Apr 2013, Benjamin Tissoires wrote:
-> 
->> Since kernel 3.7, it appears that the input registration occured before
->> the end of magicmouse_setup_input(). This is shown by receiving a lot of
->> "EV_SYN SYN_REPORT 1" instead of normal "EV_SYN SYN_REPORT 0".
->> This value means that the output buffer is full, and the user space
->> is loosing events.
+On Thu, Apr 4, 2013 at 9:47 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Wed, 3 Apr 2013, Huzefa Kankroliwala wrote:
+>
+>> With the current i2c hid driver set/get report does not work
+>> as expected, for e.g sensor hub properties like power state,
+>> frequency etc is not set properly on the device as a result
+>> we do not get events.
+>> The problem is that i2c hid driver in function i2c_hid_request
+>> sets length equal to default buffer size for which the sensor
+>> hub does not respond on get/set commands. Use report length
+>> and calculate it based on report size and id.
 >>
->> Using .input_configured guarantees that the race is not occuring, and that
->> the call of "input_set_events_per_packet(input, 60)" is taken into account
->> by input_register().
->>
->> Fixes:
->> https://bugzilla.redhat.com/show_bug.cgi?id=908604
->>
->> Reported-and-Tested-By: Clarke Wixon <cwixon@usa.net>
->> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
->> ---
->>
->> Hi Jiri,
->>
->> this one can goes to stable (so 3.8) as well.
-> 
-> Applied, and will push for 3.9 still.
+>> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+>> Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>> Signed-off-by: Huzefa Kankroliwala <huzefa.nomanx.kankroliwala@intel.com>
+>
+> This is based on some old version of the driver though. Could you please
+> rebase it so that it applies on top of for-next branch of
+>
+>         git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git
+>
+> and resend? (actually rebasing on Linus' current tree would be absolutely
+> sufficient).
 
-Ok, thanks Jiri.
+Actually, the patch goes smoothly on your for-next branch on my computer...
+And there is no point rebasing it on top of Linus' tree as the
+i2c_hid_request() callback is scheduled for 3.10.
 
-Cheers,
+Could you double check Jiri?
+
+Thanks,
 Benjamin
 
-> 
+>
 > Thanks.
-> 
-
+>
+> --
+> Jiri Kosina
+> SUSE Labs
