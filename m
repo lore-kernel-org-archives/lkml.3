@@ -1,35 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757424Ab3DDKFn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 06:05:43 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37911 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752069Ab3DDKFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 06:05:42 -0400
-Message-ID: <515D5073.7070207@ti.com>
-Date: Thu, 4 Apr 2013 13:05:39 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1757643Ab3DDKFs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 06:05:48 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:43884 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757493Ab3DDKFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 06:05:45 -0400
+Date: Thu, 4 Apr 2013 11:05:39 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 1/2] mfd: db8500-prcmu: Return early if the TCPM cannot
+ be located
+Message-ID: <20130404100539.GA8921@gmail.com>
+References: <1365067877-29459-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-To: Sachin Kamat <sachin.kamat@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>
-Subject: Re: [PATCH 1/2] mfd: omap-usb-host: Convert to devm_ioremap_resource()
-References: <1365068715-15868-1-git-send-email-sachin.kamat@linaro.org>
-In-Reply-To: <1365068715-15868-1-git-send-email-sachin.kamat@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1365067877-29459-1-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2013 12:45 PM, Sachin Kamat wrote:
-> Use the newly introduced devm_ioremap_resource() instead of
-> devm_request_and_ioremap() which provides more consistent error handling.
-> 
-> devm_ioremap_resource() provides its own error messages; so all explicit
-> error messages can be removed from the failure code paths.
-> 
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> Cc: Roger Quadros <rogerq@ti.com>
+On Thu, 04 Apr 2013, Lee Jones wrote:
 
-Acked-by: Roger Quadros <rogerq@ti.com>
+> Currently we check to see if we obtained the Tightly Coupled Program
+> Memory (TCPM) base and only execute the code within the check if we
+> have it. It's more traditional to return early if we don't have it.
+> This way we can flatten most of the function's code down to a single
+> tab spacing.
+> 
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/mfd/db8500-prcmu.c |   40 +++++++++++++++++++++-------------------
+>  1 file changed, 21 insertions(+), 19 deletions(-)
+
+Withdrawn.
+
+I'll resubmit.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
