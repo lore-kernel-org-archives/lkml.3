@@ -1,161 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760133Ab3DDNGt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 09:06:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40210 "EHLO mx2.suse.de"
+	id S1760091Ab3DDNJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 09:09:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14200 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759968Ab3DDNGs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 09:06:48 -0400
-Subject: Re: [PATCH RFC] kvm: add PV MMIO EVENTFD
-Mime-Version: 1.0 (Apple Message framework v1278)
+	id S1759955Ab3DDNJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 09:09:28 -0400
+Date: Thu, 4 Apr 2013 15:10:04 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Turner <pjt@google.com>
+Subject: Re: [PATCH -tip 0/4] do not make cputime scaling in kernel
+Message-ID: <20130404131003.GE1367@redhat.com>
+References: <1365066635-2959-1-git-send-email-sgruszka@redhat.com>
+ <CAFTL4hx-k42Af1qhpf+0jra6HZ3LBxL=1A8J3xabzjWLAxH9GQ@mail.gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <20130404125649.GI17919@redhat.com>
-Date: Thu, 4 Apr 2013 15:06:42 +0200
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Christoffer Dall <c.dall@virtualopensystems.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <8E65D34D-2DA7-4C2E-9C3E-BE3A7DBC3279@suse.de>
-References: <20130404104846.GA6227@redhat.com> <6D40C5F1-849E-4F32-B391-E1A1BFA8C59D@suse.de> <20130404120825.GD17919@redhat.com> <959E147D-EB7B-4F4B-9F84-4F1BBA98DEF8@suse.de> <20130404123806.GG17919@redhat.com> <EF153515-9835-4FB9-B6BC-73D0BDC86492@suse.de> <20130404124501.GH17919@redhat.com> <1B68D701-103D-4B1A-8F5E-3916753699CB@suse.de> <20130404125649.GI17919@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-X-Mailer: Apple Mail (2.1278)
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hx-k42Af1qhpf+0jra6HZ3LBxL=1A8J3xabzjWLAxH9GQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 04.04.2013, at 14:56, Gleb Natapov wrote:
-
-> On Thu, Apr 04, 2013 at 02:49:39PM +0200, Alexander Graf wrote:
->> 
->> On 04.04.2013, at 14:45, Gleb Natapov wrote:
->> 
->>> On Thu, Apr 04, 2013 at 02:39:51PM +0200, Alexander Graf wrote:
->>>> 
->>>> On 04.04.2013, at 14:38, Gleb Natapov wrote:
->>>> 
->>>>> On Thu, Apr 04, 2013 at 02:32:08PM +0200, Alexander Graf wrote:
->>>>>> 
->>>>>> On 04.04.2013, at 14:08, Gleb Natapov wrote:
->>>>>> 
->>>>>>> On Thu, Apr 04, 2013 at 01:57:34PM +0200, Alexander Graf wrote:
->>>>>>>> 
->>>>>>>> On 04.04.2013, at 12:50, Michael S. Tsirkin wrote:
->>>>>>>> 
->>>>>>>>> With KVM, MMIO is much slower than PIO, due to the need to
->>>>>>>>> do page walk and emulation. But with EPT, it does not have to be: we
->>>>>>>>> know the address from the VMCS so if the address is unique, we can look
->>>>>>>>> up the eventfd directly, bypassing emulation.
->>>>>>>>> 
->>>>>>>>> Add an interface for userspace to specify this per-address, we can
->>>>>>>>> use this e.g. for virtio.
->>>>>>>>> 
->>>>>>>>> The implementation adds a separate bus internally. This serves two
->>>>>>>>> purposes:
->>>>>>>>> - minimize overhead for old userspace that does not use PV MMIO
->>>>>>>>> - minimize disruption in other code (since we don't know the length,
->>>>>>>>> devices on the MMIO bus only get a valid address in write, this
->>>>>>>>> way we don't need to touch all devices to teach them handle
->>>>>>>>> an dinvalid length)
->>>>>>>>> 
->>>>>>>>> At the moment, this optimization is only supported for EPT on x86 and
->>>>>>>>> silently ignored for NPT and MMU, so everything works correctly but
->>>>>>>>> slowly.
->>>>>>>>> 
->>>>>>>>> TODO: NPT, MMU and non x86 architectures.
->>>>>>>>> 
->>>>>>>>> The idea was suggested by Peter Anvin.  Lots of thanks to Gleb for
->>>>>>>>> pre-review and suggestions.
->>>>>>>>> 
->>>>>>>>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->>>>>>>> 
->>>>>>>> This still uses page fault intercepts which are orders of magnitudes slower than hypercalls. Why don't you just create a PV MMIO hypercall that the guest can use to invoke MMIO accesses towards the host based on physical addresses with explicit length encodings?
->>>>>>>> 
->>>>>>> It is slower, but not an order of magnitude slower. It become faster
->>>>>>> with newer HW.
->>>>>>> 
->>>>>>>> That way you simplify and speed up all code paths, exceeding the speed of PIO exits even. It should also be quite easily portable, as all other platforms have hypercalls available as well.
->>>>>>>> 
->>>>>>> We are trying to avoid PV as much as possible (well this is also PV,
->>>>>>> but not guest visible
->>>>>> 
->>>>>> Also, how is this not guest visible? Who sets KVM_IOEVENTFD_FLAG_PV_MMIO? The comment above its definition indicates that the guest does so, so it is guest visible.
->>>>>> 
->>>>> QEMU sets it.
->>>> 
->>>> How does QEMU know?
->>>> 
->>> Knows what? When to create such eventfd? virtio device knows.
->> 
->> Where does it know from?
->> 
-> It does it always.
+On Thu, Apr 04, 2013 at 02:31:42PM +0200, Frederic Weisbecker wrote:
+> 2013/4/4 Stanislaw Gruszka <sgruszka@redhat.com>:
+> > This patch series removes cputime scaling from kernel. It can be easily
+> > done in user space using floating point if we provide sum_exec_runtime,
+> > what patches 2/4 and 3/4 do. I have procps patch which utilize that:
+> >
+> > http://people.redhat.com/sgruszka/procps-use-sum_exec_runtime.patch
+> >
+> > I will post it, if this patch set will be queued.
+> >
+> > Change affect also getrusage() and times() syscals, but I don't think
+> > kernel give guarantees about utime/stime precision, in a matter of fact
+> > before commit b27f03d4bdc145a09fb7b0c0e004b29f1ee555fa, we do not
+> > perform any scaling and we provided raw cputime values to user space.
+> >
+> > Providing sum_exec_runtime via proc is done against malware that utilize
+> > lot of cpu time but hide itself from top program.
+> >
+> > This affect kernels not compiled with CONFIG_VIRT_CPU_ACCOUNTING_{GEN,NATIVE},
+> > if user choose to compile kernel with some of those options, he/she will
+> > have more precise cputime accounting, what is documented in Kconfig.
+> >
 > 
->>> 
->>>>> 
->>>>>> +/*
->>>>>> + * PV_MMIO - Guest can promise us that all accesses touching this address
->>>>>> + * are writes of specified length, starting at the specified address.
->>>>>> + * If not - it's a Guest bug.
->>>>>> + * Can not be used together with either PIO or DATAMATCH.
->>>>>> + */
->>>>>> 
->>>>> Virtio spec will state that access to a kick register needs to be of
->>>>> specific length. This is reasonable thing for HW to ask.
->>>> 
->>>> This is a spec change. So the guest would have to indicate that it adheres to a newer spec. Thus it's a guest visible change.
->>>> 
->>> There is not virtio spec that has kick register in MMIO. The spec is in
->>> the works AFAIK. Actually PIO will not be deprecated and my suggestion
->> 
->> So the guest would indicate that it supports a newer revision of the spec (in your case, that it supports MMIO). How is that any different from exposing that it supports a PV MMIO hcall?
->> 
-> Guest will indicate nothing. New driver will use MMIO if PIO is bar is
-> not configured. All driver will not work for virtio devices with MMIO
-> bar, but not PIO bar.
-
-I can't parse that, sorry :).
-
+> I don't know. I'm not convinced userland is the right place to perform
+> this kind of check. The kernel perhaps doesn't give guarantee about
+> utime/stime precision but now users may have got used to that scaled
+> behaviour. It's also a matter of security, a malicous app can hide
+> from the tick to make its activity less visible from tools like top.
 > 
->>> is to move to MMIO only when PIO address space is exhausted. For PCI it
->>> will be never, for PCI-e it will be after ~16 devices.
->> 
->> Ok, let's go back a step here. Are you actually able to measure any speed in performance with this patch applied and without when going through MMIO kicks?
->> 
->> 
-> That's the question for MST. I think he did only micro benchmarks till
-> now and he already posted his result here:
-> 
-> mmio-wildcard-eventfd:pci-mem 3529
-> mmio-pv-eventfd:pci-mem 1878
-> portio-wildcard-eventfd:pci-io 1846
-> 
-> So the patch speedup mmio by almost 100% and it is almost the same as PIO.
+> It's sortof an ABI breakage to remove such an implicit protection. And
+> fixing that from userspace with a lib or so won't change that fact.
 
-Those numbers don't align at all with what I measured.
+I think number of fields in /proc/PID/stat is not part of ABI. For
+example commit 5b172087f99189416d5f47fd7ab5e6fb762a9ba3 add various
+new fields at the end of the file. What is imported to keep unchanged
+ABI is not changing order or meaning of fields we already have.
 
-MST, could you please do a real world latency benchmark with virtio-net and
+Regarding top, I added those additional fields to allow top to detect
+those malicious software. Patched top will work well with old and new
+(patched) kernel. Problem is old top with new kernel, but I believe
+users who care about security update they software regularly.
 
-  * normal ioeventfd
-  * mmio-pv eventfd
-  * hcall eventfd
+Besides for most cases (not counting hostile software), those
+statistical stime/utime accounting give good approximation of CPU
+time utilizing by each process.
+ 
+> How about that 128bits based idea? I'm adding Paul Turner in Cc
+> because he seemed to agree with doing it using 128bits maths.
 
-to give us some idea how much performance we would gain from each approach? Thoughput should be completely unaffected anyway, since virtio just coalesces kicks internally.
+For problem that I try to solve 128bits math is not necessary, assuming
+we can do multiplication in user space. Taking into account how easily
+things can be done in user space using floating point math, I prefer not
+to add complexity in kernel. This solution make kernel simpler and
+faster.
 
-I'm also slightly puzzled why the wildcard eventfd mechanism is so significantly slower, while it was only a few percent on my test system. What are the numbers you're listing above? Cycles? How many cycles do you execute in a second?
-
-
-Alex
-
+Stanislaw
