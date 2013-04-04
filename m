@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760971Ab3DDM5K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 08:57:10 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:46197 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760805Ab3DDM5H (ORCPT
+	id S1761008Ab3DDM5T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 08:57:19 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:33658 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760249Ab3DDM5P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 08:57:07 -0400
+	Thu, 4 Apr 2013 08:57:15 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
@@ -14,10 +14,10 @@ Cc: robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org
-Subject: [PATCH 14/18] cpufreq: sh: move cpufreq driver to drivers/cpufreq
-Date: Thu,  4 Apr 2013 18:24:22 +0530
-Message-Id: <3167220d1e262ff22078993a5beec55e82dfd951.1365079581.git.viresh.kumar@linaro.org>
+        Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: [PATCH 15/18] cpufreq: unicore2: move cpufreq driver to drivers/cpufreq
+Date: Thu,  4 Apr 2013 18:24:23 +0530
+Message-Id: <55922b72ea0a445240f676a7046f1cf1cf00fbc1.1365079581.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1365079581.git.viresh.kumar@linaro.org>
 References: <cover.1365079581.git.viresh.kumar@linaro.org>
@@ -27,114 +27,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves cpufreq driver of SUPERH architecture to drivers/cpufreq.
+This patch moves cpufreq driver of UNICORE-2 architecture to drivers/cpufreq.
 
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-sh@vger.kernel.org
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Acked-by: Paul Mundt <lethal@linux-sh.org>
+Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
 ---
- arch/sh/Kconfig                                        | 18 ------------------
- arch/sh/kernel/Makefile                                |  1 -
- drivers/cpufreq/Kconfig                                | 18 ++++++++++++++++++
- drivers/cpufreq/Makefile                               |  1 +
- .../kernel/cpufreq.c => drivers/cpufreq/sh-cpufreq.c   |  2 --
- 5 files changed, 19 insertions(+), 21 deletions(-)
- rename arch/sh/kernel/cpufreq.c => drivers/cpufreq/sh-cpufreq.c (99%)
+ arch/unicore32/kernel/Makefile                                         | 1 -
+ drivers/cpufreq/Makefile                                               | 1 +
+ arch/unicore32/kernel/cpu-ucv2.c => drivers/cpufreq/unicore2-cpufreq.c | 2 +-
+ 3 files changed, 2 insertions(+), 2 deletions(-)
+ rename arch/unicore32/kernel/cpu-ucv2.c => drivers/cpufreq/unicore2-cpufreq.c (96%)
 
-diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
-index 5e85963..06e3163 100644
---- a/arch/sh/Kconfig
-+++ b/arch/sh/Kconfig
-@@ -624,25 +624,7 @@ config SH_CLK_CPG_LEGACY
- endmenu
+diff --git a/arch/unicore32/kernel/Makefile b/arch/unicore32/kernel/Makefile
+index fa497e0..607a72f 100644
+--- a/arch/unicore32/kernel/Makefile
++++ b/arch/unicore32/kernel/Makefile
+@@ -9,7 +9,6 @@ obj-y				+= setup.o signal.o sys.o stacktrace.o traps.o
+ obj-$(CONFIG_MODULES)		+= ksyms.o module.o
+ obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
  
- menu "CPU Frequency scaling"
--
- source "drivers/cpufreq/Kconfig"
--
--config SH_CPU_FREQ
--	tristate "SuperH CPU Frequency driver"
--	depends on CPU_FREQ
--	select CPU_FREQ_TABLE
--	help
--	  This adds the cpufreq driver for SuperH. Any CPU that supports
--	  clock rate rounding through the clock framework can use this
--	  driver. While it will make the kernel slightly larger, this is
--	  harmless for CPUs that don't support rate rounding. The driver
--	  will also generate a notice in the boot log before disabling
--	  itself if the CPU in question is not capable of rate rounding.
--
--	  For details, take a look at <file:Documentation/cpu-freq>.
--
--	  If unsure, say N.
--
- endmenu
+-obj-$(CONFIG_CPU_FREQ)		+= cpu-ucv2.o
+ obj-$(CONFIG_UNICORE_FPU_F64)	+= fpu-ucf64.o
  
- source "arch/sh/drivers/Kconfig"
-diff --git a/arch/sh/kernel/Makefile b/arch/sh/kernel/Makefile
-index f259b37..261c8bf 100644
---- a/arch/sh/kernel/Makefile
-+++ b/arch/sh/kernel/Makefile
-@@ -31,7 +31,6 @@ obj-$(CONFIG_VSYSCALL)		+= vsyscall/
- obj-$(CONFIG_SMP)		+= smp.o
- obj-$(CONFIG_SH_STANDARD_BIOS)	+= sh_bios.o
- obj-$(CONFIG_KGDB)		+= kgdb.o
--obj-$(CONFIG_SH_CPU_FREQ)	+= cpufreq.o
- obj-$(CONFIG_MODULES)		+= sh_ksyms_$(BITS).o module.o
- obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
- obj-$(CONFIG_CRASH_DUMP)	+= crash_dump.o
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index 5030df5..602d5db 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -258,5 +258,23 @@ depends on PPC32 || PPC64
- source "drivers/cpufreq/Kconfig.powerpc"
- endmenu
- 
-+menu "SH CPU Frequency scaling"
-+depends on SUPERH
-+config SH_CPU_FREQ
-+	tristate "SuperH CPU Frequency driver"
-+	select CPU_FREQ_TABLE
-+	help
-+	  This adds the cpufreq driver for SuperH. Any CPU that supports
-+	  clock rate rounding through the clock framework can use this
-+	  driver. While it will make the kernel slightly larger, this is
-+	  harmless for CPUs that don't support rate rounding. The driver
-+	  will also generate a notice in the boot log before disabling
-+	  itself if the CPU in question is not capable of rate rounding.
-+
-+	  For details, take a look at <file:Documentation/cpu-freq>.
-+
-+	  If unsure, say N.
-+endmenu
-+
- endif
- endmenu
+ # obj-y for architecture PKUnity v3
 diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index f6226d1..12607d9 100644
+index 12607d9..e47acff 100644
 --- a/drivers/cpufreq/Makefile
 +++ b/drivers/cpufreq/Makefile
-@@ -88,3 +88,4 @@ obj-$(CONFIG_CRIS_MACH_ARTPEC3)		+= cris-artpec3-cpufreq.o
- obj-$(CONFIG_ETRAXFS)			+= cris-etraxfs-cpufreq.o
+@@ -89,3 +89,4 @@ obj-$(CONFIG_ETRAXFS)			+= cris-etraxfs-cpufreq.o
  obj-$(CONFIG_IA64_ACPI_CPUFREQ)		+= ia64-acpi-cpufreq.o
  obj-$(CONFIG_LOONGSON2_CPUFREQ)		+= loongson2_cpufreq.o
-+obj-$(CONFIG_SH_CPU_FREQ)		+= sh-cpufreq.o
-diff --git a/arch/sh/kernel/cpufreq.c b/drivers/cpufreq/sh-cpufreq.c
-similarity index 99%
-rename from arch/sh/kernel/cpufreq.c
-rename to drivers/cpufreq/sh-cpufreq.c
-index 88c8fee..73adb64 100644
---- a/arch/sh/kernel/cpufreq.c
-+++ b/drivers/cpufreq/sh-cpufreq.c
-@@ -1,6 +1,4 @@
+ obj-$(CONFIG_SH_CPU_FREQ)		+= sh-cpufreq.o
++obj-$(CONFIG_UNICORE32)			+= unicore2-cpufreq.o
+diff --git a/arch/unicore32/kernel/cpu-ucv2.c b/drivers/cpufreq/unicore2-cpufreq.c
+similarity index 96%
+rename from arch/unicore32/kernel/cpu-ucv2.c
+rename to drivers/cpufreq/unicore2-cpufreq.c
+index ba5a71c..12fc904 100644
+--- a/arch/unicore32/kernel/cpu-ucv2.c
++++ b/drivers/cpufreq/unicore2-cpufreq.c
+@@ -1,5 +1,5 @@
  /*
-- * arch/sh/kernel/cpufreq.c
-- *
-  * cpufreq driver for the SuperH processors.
+- * linux/arch/unicore32/kernel/cpu-ucv2.c: clock scaling for the UniCore-II
++ * clock scaling for the UniCore-II
   *
-  * Copyright (C) 2002 - 2012 Paul Mundt
+  * Code specific to PKUnity SoC and UniCore ISA
+  *
 -- 
 1.7.12.rc2.18.g61b472e
 
