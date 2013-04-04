@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762495Ab3DDPxr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 11:53:47 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:54649 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1762404Ab3DDPxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 11:53:46 -0400
-From: Nathan Zimmer <nzimmer@sgi.com>
-To: viro@zeniv.linux.org.uk, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Nathan Zimmer <nzimmer@sgi.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Woodhouse <dwmw2@infradead.org>, <stable@vger.kernel.org>
-Subject: [PATCH resend] fs/proc: Move kfree outside pde_unload_lock
-Date: Thu,  4 Apr 2013 10:53:39 -0500
-Message-Id: <1365090819-25448-1-git-send-email-nzimmer@sgi.com>
+	id S1762541Ab3DDPyT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 11:54:19 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:36859 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762404Ab3DDPyR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 11:54:17 -0400
+From: Daniel J Blueman <daniel@numascale-asia.com>
+To: Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Steffen Persvold <sp@numascale.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>
+Subject: [PATCH] x86, amd, mce: Prevent potential cpu-online oops
+Date: Thu,  4 Apr 2013 23:52:00 +0800
+Message-Id: <1365090720-12652-1-git-send-email-daniel@numascale-asia.com>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <515D9F8A.2060505@sgi.com>
-References: <515D9F8A.2060505@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This moves a kfree outside a spinlock to help scaling on larger (512 core)
-systems.  This should be some relief until we can move the section to use
-the rcu.
+On platforms where all Northbridges may not be visible (due to routing, eg on
+NumaConnect systems), prevent oopsing due to stale pointer access when
+offlining cores.
 
-I ran a simple test which just reads from /proc/cpuinfo.
-Lower is better, as you can see the worst case scenario is improved.
+Signed-off-by: Steffen Persvold <sp@numascale.com>
+Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
 
-	baseline	moved kfree
-tasks	read-sec	read-sec
-1	0.0141		0.0141
-2	0.0140		0.0140
-4	0.0140		0.0141
-8	0.0145		0.0145
-16	0.0553		0.0548
-32	0.1688		0.1622
-64	0.5017		0.3856
-128	1.7005		0.9710
-256	5.2513		2.6519
-512	8.0529		6.2976
-
-Cc: "Eric W. Biederman" <ebiederm@xmission.com> 
-Cc: Andrew Morton <akpm@linux-foundation.org> 
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: <stable@vger.kernel.org>
-Acked-by: Alexey Dobriyan <adobriyan@gmail.com>
-Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
 ---
- fs/proc/inode.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce_amd.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/fs/proc/inode.c b/fs/proc/inode.c
-index 439ae688..863608b 100644
---- a/fs/proc/inode.c
-+++ b/fs/proc/inode.c
-@@ -403,11 +403,10 @@ static int proc_reg_release(struct inode *inode, struct file *file)
- 	}
- 	pde->pde_users++;
- 	release = pde->proc_fops->release;
--	if (pdeo) {
-+	if (pdeo)
- 		list_del(&pdeo->lh);
--		kfree(pdeo);
--	}
- 	spin_unlock(&pde->pde_unload_lock);
-+	kfree(pdeo);
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+index 1ac581f..53a58c2 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+@@ -578,8 +578,11 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
+ 	if (shared_bank[bank]) {
+ 		nb = node_to_amd_nb(amd_get_nb_id(cpu));
  
- 	if (release)
- 		rv = release(inode, file);
++		if (WARN_ON_ONCE(!nb))
++			goto out;
++
+ 		/* threshold descriptor already initialized on this node? */
+-		if (nb && nb->bank4) {
++		if (nb->bank4) {
+ 			/* yes, use it */
+ 			b = nb->bank4;
+ 			err = kobject_add(b->kobj, &dev->kobj, name);
+@@ -613,10 +616,8 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
+ 		atomic_set(&b->cpus, 1);
+ 
+ 		/* nb is already initialized, see above */
+-		if (nb) {
+-			WARN_ON(nb->bank4);
+-			nb->bank4 = b;
+-		}
++		WARN_ON(nb->bank4);
++		nb->bank4 = b;
+ 	}
+ 
+ 	err = allocate_threshold_blocks(cpu, bank, 0,
 -- 
-1.8.1.2
+1.7.4.1
 
