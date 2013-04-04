@@ -1,40 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764432Ab3DDSUj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 14:20:39 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59575 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764061Ab3DDSUi (ORCPT
+	id S1764471Ab3DDSU5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 14:20:57 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:35291 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1764452Ab3DDSUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 14:20:38 -0400
-Message-ID: <515DC473.8000104@wwwdotorg.org>
-Date: Thu, 04 Apr 2013 12:20:35 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 4 Apr 2013 14:20:54 -0400
 MIME-Version: 1.0
-To: Prashant Gaikwad <pgaikwad@nvidia.com>
-CC: mturquette@linaro.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clk: tegra: Use common of_clk_init() function
-References: <1365066351-2395-1-git-send-email-pgaikwad@nvidia.com>
-In-Reply-To: <1365066351-2395-1-git-send-email-pgaikwad@nvidia.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <20130404173626.GQ9425@htj.dyndns.org>
+References: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
+	<1362897887-30808-4-git-send-email-yinghai@kernel.org>
+	<20130404173626.GQ9425@htj.dyndns.org>
+Date: Thu, 4 Apr 2013 11:20:54 -0700
+X-Google-Sender-Auth: WqMc0nHuBLpRTMWk3_hTIyYHMyg
+Message-ID: <CAE9FiQUco7bnwg-_UwjEsEAmwRje8j5JYycrvhR_bWTwOQDuxQ@mail.gmail.com>
+Subject: Re: [PATCH v2 03/20] x86, ACPI, mm: Kill max_low_pfn_mapped
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, Jacob Shin <jacob.shin@amd.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2013 03:05 AM, Prashant Gaikwad wrote:
-> Use common of_clk_init() function for clocks initialization.
-> 
-> Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
-> ---
-> 
-> Stephen, if T114 clock series is not going to make in 3.10 then I would
-> like Mike to take this patch. If T114 clock series makes it then I have
-> to rebase this patch on top of it.
+On Thu, Apr 4, 2013 at 10:36 AM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> On Sat, Mar 09, 2013 at 10:44:30PM -0800, Yinghai Lu wrote:
+>> Now we have arch_pfn_mapped array, and max_low_pfn_mapped should not
+>> be used anymore.
+>>
+>> User should use arch_pfn_mapped or just 1UL<<(32-PAGE_SHIFT) instead.
+>>
+>> Only user is ACPI_INITRD_TABLE_OVERRIDE, and it should not use that,
+>> as later accessing is using early_ioremap(). Change to try to 4G below
+>> and then 4G above.
+> ...
+>> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+>> index 586e7e9..c08cdb6 100644
+>> --- a/drivers/acpi/osl.c
+>> +++ b/drivers/acpi/osl.c
+>> @@ -624,9 +624,13 @@ void __init acpi_initrd_override(void *data, size_t size)
+>>       if (table_nr == 0)
+>>               return;
+>>
+>> -     acpi_tables_addr =
+>> -             memblock_find_in_range(0, max_low_pfn_mapped << PAGE_SHIFT,
+>> -                                    all_tables_size, PAGE_SIZE);
+>> +     /* under 4G at first, then above 4G */
+>> +     acpi_tables_addr = memblock_find_in_range(0, (1ULL<<32) - 1,
+>> +                                     all_tables_size, PAGE_SIZE);
+>> +     if (!acpi_tables_addr)
+>> +             acpi_tables_addr = memblock_find_in_range(0,
+>> +                                     ~(phys_addr_t)0,
+>> +                                     all_tables_size, PAGE_SIZE);
+>
+> So, it's changing the allocation from <=4G to <=4G first and then >4G.
+> The only explanation given is "as later accessing is using
+> early_ioremap()", but I can't see why that can be a reason for that.
+> early_ioremap() doesn't care whether the given physaddr is under 4G or
+> not, it unconditionally maps it into fixmap, so whether the allocated
+> address is below or above 4G doesn't make any difference.
+>
+> Changing the allowed range of the allocation should be a separate
+> patch.  It has some chance of its own breakage and the change itself
+> isn't really related to this one.
 
-I'm still just hopeful that it the Tegra114 support can get into 3.10;
-all I'm waiting on is Mike's ack to apply it. Let's hold off on this
-patch until after that. Thanks.
+Ok, will separate that  "try above 4G" to another patch.
+
+>
+> Please try to elaborate the reasoning behind "why", so that readers of
+> the description don't have to deduce (oh well, guess) your intentions
+> behind the changes.  As much as it would help the readers, it'd also
+> help you even more as you would have had to explicitly write something
+> like "the table is accessed with early_ioremap() so the address
+> doesn't need to be restricted under 4G; however, to avoid unnecessary
+> remappings, first try <= 4G and then > 4G."  Then, you would be
+> compelled to check whether the statement you explicitly wrote is true,
+> which isn't in this case and you would also realize that the change
+> isn't trivial and doesn't really belong with this patch.  By not doing
+> the due diligence, you're offloading what you should have done to
+> others, which isn't very nice.
+>
+> I think the descriptions are better in this posting than the last time
+> but it's still lacking, so, please putfff more effort into describing
+> the changes and reasoning behind them.
+
+ok.
+
+Thanks a lot.
+
+Yinghai
