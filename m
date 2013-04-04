@@ -1,129 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763424Ab3DDVGV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 17:06:21 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:57055 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761986Ab3DDVGT (ORCPT
+	id S1763703Ab3DDVLv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 17:11:51 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55719 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761986Ab3DDVLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 17:06:19 -0400
+	Thu, 4 Apr 2013 17:11:49 -0400
+Message-ID: <515DEC92.9010602@wwwdotorg.org>
+Date: Thu, 04 Apr 2013 15:11:46 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <7b09fa09-8ab7-4189-b86b-59fa6a9fbe0e@email.android.com>
-References: <1365106055-22939-1-git-send-email-keescook@chromium.org>
-	<1365106055-22939-4-git-send-email-keescook@chromium.org>
-	<515DDEC0.9000109@zytor.com>
-	<CAGXu5j+FqZpXURougB_Sd4zmF3bsqsT=m-om5eEM5WCsRX014g@mail.gmail.com>
-	<c3d1db06-5196-4828-b0a4-7f6517c7b68a@email.android.com>
-	<CAGXu5j+BHcVW2vsQ6xdF2hBCvvckf9Cmf_Lpz4+-tauSyY1Ucw@mail.gmail.com>
-	<7b09fa09-8ab7-4189-b86b-59fa6a9fbe0e@email.android.com>
-Date: Thu, 4 Apr 2013 14:06:19 -0700
-X-Google-Sender-Auth: mnM0MuBbrBIR5B228cEunlXQ5UE
-Message-ID: <CAGXu5jLqqy0CbsmrwWPnmEJ1kPRhZ2TiaEcqxPUJPVEj0f_q9w@mail.gmail.com>
-Subject: Re: [PATCH 3/3] x86: kernel base offset ASLR
-From: Kees Cook <keescook@chromium.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Laurent Meunier <laurent.meunier@st.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v2] pinctrl/pinconfig: add debug interface
+References: <1365018447-28062-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1365018447-28062-1-git-send-email-linus.walleij@stericsson.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If an attacker targets multiple distinct systems across a wide range
-of system owners, instead of landing the exploit against all of them,
-they'll get less than 1% of them, and crash all the rest, removing
-them (for a while) from the target pool. Without KASLR, they would
-have landed 100% of the attacks.
+On 04/03/2013 01:47 PM, Linus Walleij wrote:
+> From: Laurent Meunier <laurent.meunier@st.com>
+> 
+> This update adds a debugfs interface to modify a pin configuration
+> for a given state in the pinctrl map. This allows to modify the
+> configuration for a non-active state, typically sleep state.
+> This configuration is not applied right away, but only when the state
+> will be entered.
+> 
+> This solution is mandated for us by HW validation: in order
+> to test and verify several pin configurations during sleep without
+> recompiling the software.
+> 
+> diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
 
-If an attacker targets multiple systems belonging to a single system
-owner, most service providers, if they have that many machines, will
-have some level of system monitoring. And when 99% of the hosts go
-down, they're going to notice.
+> +enum pinconf_dbg_request_type {
+> +	PINCONF_DBG_REQ_TYPE_INVALID,
+> +	PINCONF_DBG_REQ_TYPE_MODIFY,
+> +};
 
-KASLR is certainly not a silver bullet, but it dramatically changes
-the landscape of what kinds of attacks can be used.
+I'm not sure why that really needs an enum yet, since only one operation
+is supported.
 
--Kees
+> +struct dbg_cfg {
+> +	enum pinconf_dbg_request_type req_type;
+> +	enum pinctrl_map_type map_type;
+> +	char dev_name[MAX_NAME_LEN+1];
+> +	char state_name[MAX_NAME_LEN+1];
+> +	char pin_name[MAX_NAME_LEN+1];
+> +	char config[MAX_NAME_LEN+1];
+> +};
 
-On Thu, Apr 4, 2013 at 2:01 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> What system monitoring?  Most systems don't have much...
->
-> Kees Cook <keescook@chromium.org> wrote:
->
->>On Thu, Apr 4, 2013 at 1:58 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> It seems to me that you are assuming that the attacker is targeting a
->>specific system, but a bot might as well target 256 different systems
->>and see what sticks...
->>
->>Certainly, but system monitoring will show 255 crashed machines, which
->>is a huge blip on any radar. :)
->>
->>-Kees
->>
->>>
->>> Kees Cook <keescook@chromium.org> wrote:
->>>
->>>>On Thu, Apr 4, 2013 at 1:12 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>>>> On 04/04/2013 01:07 PM, Kees Cook wrote:
->>>>>> However, the benefits of
->>>>>> this feature in certain environments exceed the perceived
->>>>weaknesses[2].
->>>>>
->>>>> Could you clarify?
->>>>
->>>>I would summarize the discussion of KASLR weaknesses into to two
->>>>general observations:
->>>>1- it depends on address location secrecy and leaks are common/easy.
->>>>2- it has low entropy so attack success rates may be high.
->>>>
->>>>For "1", as Julien mentions, remote attacks and attacks from a
->>>>significantly contained process (via seccomp-bpf) minimizes the leak
->>>>exposure. For local attacks, cache timing attacks and other things
->>>>also exist, but the ASLR can be improved to defend against that too.
->>>>So, KASLR is useful on systems that are virtualization hosts,
->>>>providing remote services, or running locally confined processes.
->>>>
->>>>For "2", I think that the comparison to userspace ASLR entropy isn't
->>>>as direct. For userspace, most systems don't tend to have any kind of
->>>>watchdog on segfaulting processes, so a remote attacker could just
->>>>keep trying an attack until they got lucky, in which case low entropy
->>>>is a serious problem. In the case of KASLR, a single attack failure
->>>>means the system goes down, which makes mounting an attack much more
->>>>difficult. I think 8 bits is fine to start with, and I think start
->>>>with a base offset ASLR is a good first step. We can improve things
->>in
->>>>the future.
->>>>
->>>>-Kees
->>>>
->>>>--
->>>>Kees Cook
->>>>Chrome OS Security
->>>
->>> --
->>> Sent from my mobile phone. Please excuse brevity and lack of
->>formatting.
->>
->>
->>
->>--
->>Kees Cook
->>Chrome OS Security
->
-> --
-> Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Many of those fields are only used internally to
+pinconf_dbg_config_write(). Can't they be stored on the stack there
+rather than globally.
 
+> +/**
+> + * pinconf_dbg_config_print() - display the pinctrl config from the pinctrl
+> + * map, of a pin/state pair based on pinname and state that have been
+> + * selected with the debugfs entries pinconf-name and pinconf-state
+> + * @s: contains the 32bits config to be written
+> + * @d: not used
+> + */
 
+This comment seems stale; I don't believe there are any pinconf-name and
+pinconf-state files; aren't they part of the data written to the one
+debugfs file each time?
 
---
-Kees Cook
-Chrome OS Security
+> +static int pinconf_dbg_config_print(struct seq_file *s, void *d)
+
+> +		if (strncmp(map->dev_name, dbg->dev_name, MAX_NAME_LEN) != 0)
+
+Wouldn't it be simpler to always ensure dbg->dev_name was
+NULL-terminated, and just use !strcmp() here? Same for dbg->state_name
+below. Same comment for the other function below.
+
+> +	mutex_unlock(&pinctrl_mutex);
+
+Don't you need the lock held to call confops->xxx() below, to make sure
+that the driver isn't unregistered between finding it, and calling the
+confops function?
+
+> +	if (!found) {
+> +		seq_printf(s, "No config found for dev/state/pin, expected:\n");
+> +		seq_printf(s, "modify config_pins devname " \
+> +			   "state pinname value\n");
+> +	}
+
+Hmmm. At least including the parsed values that were being searched for
+might be useful?
+
+> +		confops->pin_config_config_dbg_show(pctldev,
+> +						    s, config);
+
+I think that function name is wrong; two "config_" in a row. Does this
+compile?
+
+> +/**
+> + * pinconf_dbg_config_write() - overwrite the pinctrl config in the pinctrl
+> + * map, of a pin/state pair based on pinname and state that have been
+> + * selected with the debugfs entries pinconf-name and pinconf-state
+
+Similar stale comment.
+
+> + * @user_buf: contains 'modify configs_pin devicename state pinname newvalue'
+
+It might be useful to say which parts of that are literal strings and
+which are variables/values to be changed?
+
+> +static int pinconf_dbg_config_write(struct file *file,
+> +	const char __user *user_buf, size_t count, loff_t *ppos)
+
+> +	/* Get arg: 'modify' */
+> +	if (!strncmp(b, "modify ", strlen("modify "))) {
+> +		dbg->req_type = PINCONF_DBG_REQ_TYPE_MODIFY;
+> +		b += strlen("modify ");
+> +	} else {
+> +		return -EINVAL;
+> +	}
+
+There's rather a lot of duplication of strings and strlen calls there.
+Why not:
+
+a) Start using strsep() for the very first fields too, so everything is
+consistent.
+
+b) Put the error-path first.
+
+In other words:
+
+	token = strsep(&b, " ");
+	if (!token)
+		return -EINVAL;
+	if (!strcmp(token, "modify"))
+		return -EINVAL;
+
+> +	/* Get arg type: "config_pin" type supported so far */
+> +	if (!strncmp(b, "config_pins ", strlen("config_pins "))) {
+> +		dbg->map_type = PIN_MAP_TYPE_CONFIGS_PIN;
+> +		b += strlen("config_pins ");
+> +	} else {
+> +		return -EINVAL;
+> +	}
+
+That could be transformed the same way.
+
+> +	/* get arg 'device_name' */
+> +	token = strsep(&b, " ");
+> +	if (token == NULL)
+> +		return -EINVAL;
+> +	if (strlen(token) < MAX_NAME_LEN)
+> +		sscanf(token, "%s", dbg->dev_name);
+> +	else
+> +		return -EINVAL;
+
+It might make sense to put the error-handling first, and why sscanf not
+strcpy? So:
+
+	token = strsep(&b, " ");
+	if (token == NULL)
+		return -EINVAL;
+	if (strlen(token) >= MAX_NAME_LEN)
+		return -EINVAL;
+	strcpy(dbg->dev_name, token);
+
+(or even just use strncpy followed by explicit NULL termination and
+truncate text that's too long, or kstrdup() it to avoid limits?)
+
+> +	if (confops && confops->pin_config_dbg_parse) {
+> +		for (i = 0; i < configs->num_configs; i++) {
+> +			confops->pin_config_dbg_parse(pctldev,
+> +						    dbg->config,
+> +						    &configs->configs[i]);
+
+I assume that "parse" function is intended to actually write the new
+result into configs->configs[i]. That's more than parsing.
+s/dbg_parse/dbg_modify/ perhaps to make this more explicit, and also
+mention this in the kerneldoc for the confops structure in the header?
