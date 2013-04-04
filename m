@@ -1,62 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759203Ab3DDJks (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 05:40:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:58521 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759171Ab3DDJkq (ORCPT
+	id S1759265Ab3DDJmQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 05:42:16 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:44307 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759122Ab3DDJmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 05:40:46 -0400
-Message-ID: <515D4A7F.5070102@cip.cs.fau.de>
-Date: Thu, 04 Apr 2013 11:40:15 +0200
-From: Sebastian Wankerl <sisewank@cip.cs.fau.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Thu, 4 Apr 2013 05:42:13 -0400
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Sebastian Wankerl <sisewank@cip.cs.fau.de>, linux-kernel@vger.kernel.org,
-        Philip Kranz <philip.kranz@googlemail.com>,
-        i4passt@lists.informatik.uni-erlangen.de
-Subject: Re: [PATCH] Add non-zero module sections to sysfs
-References: <1364994499-23708-1-git-send-email-sisewank@cip.cs.fau.de> <87mwtf3ya1.fsf@rustcorp.com.au>
-In-Reply-To: <87mwtf3ya1.fsf@rustcorp.com.au>
+In-Reply-To: <20130404093820.GI21804@intel.com>
+References: <1364986614-15711-1-git-send-email-mika.westerberg@linux.intel.com>
+	<CAN+gG=F4LMHMsOqVh+BikSLKBJ8V7ni-p4hKi7yRb4jjD7gv0w@mail.gmail.com>
+	<20130404093820.GI21804@intel.com>
+Date: Thu, 4 Apr 2013 11:42:11 +0200
+Message-ID: <CAN+gG=F7T6ujLuNu2hfEKfrDwBCG9xM_e3P9Fan0Awj7EYmJyA@mail.gmail.com>
+Subject: Re: [PATCH] gpiolib-acpi: introduce acpi_get_gpio_by_index() helper
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        linux-acpi@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:88uC/L2McYLmA2Y5pP+BfaE1krgj++SowBFKPCzaN3s
- Cpob18q2rsKiXNOxsEreP21thBoDJZZ7bC7NnG1CBWAvFwdM50
- wwqAHNGuktvfh8/Bt4Rp/4o2w+MZUux8xBd8kYGw7DrGxBa+F3
- O5r2dAkw3wF8s0OdAJ0IiEKkVJOJBZBZ2aNDHRWyrNioD7bE7v
- Fbu+KmVlspquaYUgcN1Kmla/33kXYasTwf4lv7XWqoGU43i6mH
- SHCufUQlEkwktEQTSQuRJNdsXz5+UqcfpQjRyCpDPtit6tWRlX
- h2DmdE0MctGVkDHxP1fGEnd4i5qns5wC9XHhmCmPthaZVJH9U1
- OR8Ih8gpZvNAhtOt3lNwNAZpuwqtm23uZIfRWjhp6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/13 03:00, Rusty Russell wrote:
-> Sebastian Wankerl <sisewank@cip.cs.fau.de> writes:
->> Add non-zero module sections to sysfs on architectures unequal to PARISC.
->> KGDB needs all module sections for proper module debugging. Therefore, commit 
->> 35dead4235e2b67da7275b4122fed37099c2f462 is revoked except for PARISC
->> architecture.
-> #ifdef CONFIG_PARISC in the middle of kernel/module.c is super-ugly, and
-> wrong.
+On Thu, Apr 4, 2013 at 11:38 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> On Thu, Apr 04, 2013 at 11:19:53AM +0200, Benjamin Tissoires wrote:
+>> Hi Mika,
+>>
+>> On Wed, Apr 3, 2013 at 12:56 PM, Mika Westerberg
+>> <mika.westerberg@linux.intel.com> wrote:
+>> > Instead of open-coding ACPI GPIO resource lookup in each driver, we provide
+>> > a helper function analogous to Device Tree version that allows drivers to
+>> > specify which GPIO resource they are interested (using an index to the GPIO
+>> > resources). The function then finds out the correct resource, translates
+>> > the ACPI GPIO number to the corresponding Linux GPIO number and returns
+>> > that.
+>> >
+>> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+>> > ---
+>> >  Documentation/acpi/enumeration.txt |   32 ++++++++++++++-
+>> >  drivers/gpio/gpiolib-acpi.c        |   77 ++++++++++++++++++++++++++++++++++++
+>> >  include/linux/acpi_gpio.h          |   17 ++++++++
+>> >  3 files changed, 125 insertions(+), 1 deletion(-)
+>> >
+>> > diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
+>> > index 94a6561..b0d5410 100644
+>> > --- a/Documentation/acpi/enumeration.txt
+>> > +++ b/Documentation/acpi/enumeration.txt
+>> > @@ -199,6 +199,8 @@ the device to the driver. For example:
+>> >         {
+>> >                 Name (SBUF, ResourceTemplate()
+>> >                 {
+>> > +                       ...
+>> > +                       // Used to power on/off the device
+>> >                         GpioIo (Exclusive, PullDefault, 0x0000, 0x0000,
+>> >                                 IoRestrictionOutputOnly, "\\_SB.PCI0.GPI0",
+>> >                                 0x00, ResourceConsumer,,)
+>> > @@ -206,10 +208,20 @@ the device to the driver. For example:
+>> >                                 // Pin List
+>> >                                 0x0055
+>> >                         }
+>> > +
+>> > +                       // Interrupt for the device
+>> > +                       GpioInt (Edge, ActiveHigh, ExclusiveAndWake, PullNone,
+>> > +                                0x0000, "\\_SB.PCI0.GPI0", 0x00, ResourceConsumer,,)
+>>
+>> Sorry for coming late in the GPIO ACPI discussion, but when I see this
+>> documentation, I wonder:
+>> wouldn't it be feasible to find the correct GPIO by its type? Here, we
+>> have a GpioIo and a GpioInt, and I bet this would be sometime more
+>> useful to request the first GpioInt without knowing the correct order
+>> of declarations.
+>
+> Why not. But then again you can always check the type returned in the
+> acpi_gpio_info structure and pick the first GpioInt (if you have multiple
+> GPIO resources).
+>
+>> It may be feasible by walking the tree, but a helper would be of great
+>> help (thinking at i2c-hid here, which can not rely on indexes in the
+>> DSDT).
+>
+> Well, index is the only thing we can rely on unfortunately. There's nothing
+> like names or anything like that.
+>
+> What I've seen from ACPI enumerated i2c-hid devices there is only one GPIO
+> resource (GpioInt) declared.
 
-I don't see why this is wrong. It used to load all sections to sysfs
-until the patch mentioned. Actually, it is the PARISC build chain which
-is broken.
+Ok, thanks for the answer. I guess the idea would be to pick the index
+0, check the type, and try indexes 1 or 2 if it's not GpioInt. I bet
+there will be devices with more than one Gpio as most of I2C input
+device have a reset line (except if Microsoft forces them not to have
+one).
 
-> My preference would be to fix kgdb.  If the section is empty, what need
-> does it have to examine it?
-
-GDB needs to know all sections of the binary and its addresses. It is
-generally useful to be able to check up all sections of the binary
-regardless if they are empty or not so one can see the binary's
-structure. The alternative would be to redo the work by saving the ELF
-header in an additional internal data structure that is not exported.
-However, this approach is more ugly as it results in code which is
-actually redundant.
-
-Thanks,
-Sebastian
-
+Cheers,
+Benjamin
