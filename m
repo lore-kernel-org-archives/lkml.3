@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932432Ab3DDBmN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 21:42:13 -0400
-Received: from mga11.intel.com ([192.55.52.93]:8963 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761598Ab3DDBmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 21:42:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,404,1363158000"; 
-   d="scan'208";a="313340274"
-Date: Thu, 4 Apr 2013 09:42:09 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Christopher Li <sparse@chrisli.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: kernel/workqueue.c:4434:61: sparse: expression using sizeof bool
-Message-ID: <20130404014209.GB7328@localhost>
-References: <5156dabb.76yJdh7eK0MDrdWo%fengguang.wu@intel.com>
- <20130403215718.GH3411@htj.dyndns.org>
-MIME-Version: 1.0
+	id S1762424Ab3DDBo4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 21:44:56 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:52065 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761107Ab3DDBoz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 21:44:55 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130403215718.GH3411@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: GPS driver for Linux - kernel or user-space driver?
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <20130404011915.GA20339@kroah.com>
+Date: Wed, 3 Apr 2013 18:44:51 -0700
+Cc: Tim Bird <tim.bird@am.sony.com>,
+        linux kernel <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A000CE96-F47C-4E59-B0B1-74295779A13B@holtmann.org>
+References: <515CCEB3.4020309@am.sony.com> <20130404010604.GC19599@kroah.com> <52ACDBA8-BAEC-4687-94D7-586F494A7373@holtmann.org> <20130404011915.GA20339@kroah.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1503)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC Christopher and LKML.
+Hi Greg,
 
-On Wed, Apr 03, 2013 at 02:57:18PM -0700, Tejun Heo wrote:
-> Hello, Fengguang.
-
-Hi Tejun!
-
-> On Sat, Mar 30, 2013 at 08:29:47PM +0800, kbuild test robot wrote:
-> > tree:   git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-better-dbg
-> > head:   ea44ca757342b769c176fd6d0b3fb525b22eeda9
-> > commit: c04655aeae70173688bca4c62b35737ab6958e82 workqueue: include workqueue info when printing debug dump of a worker task
-> > date:   10 hours ago
-> > 
-> > 
-> > sparse warnings: (new ones prefixed by >>)
-> > 
-> >    kernel/workqueue.c:287:8: sparse: symbol 'cpu_worker_pools' was not declared. Should it be static?
-> >    kernel/workqueue.c:300:25: sparse: symbol 'system_highpri_wq' was not declared. Should it be static?
-> > >> kernel/workqueue.c:4434:61: sparse: expression using sizeof bool
-> >    kernel/workqueue.c:2060:32: sparse: context imbalance in 'manage_workers' - unexpected unlock
-> > 
-> > vim +4434 kernel/workqueue.c
-> > 
-> ...
-> >   4433		/* copy worker description */
-> > > 4434		probe_kernel_read(&desc_valid, &worker->desc_valid, sizeof(desc_valid));
-> >   4435		if (desc_valid)
+>>>> I've been approached by a developer at Sony who wants to publish an
+>>>> open source driver for a Sony GPS receiver module.
+>>> 
+>>> What does the device look like?  USB device?  UART?  Something else?
+>>> 
+>>>> I've looked in the kernel source, and only see one standalone GPS
+>>>> driver, for Garmin.  It appears that most GPS support in Linux is done
+>>>> via user-space drivers.  Many GPS hardware modules appear to be
+>>>> accessed via a serial line, or USB/serial port.  The Sony
+>>>> module is pretty much the same, accepting commands and delivering
+>>>> data via a uart from the chip.
+>>>> 
+>>>> I planning to recommend writing a user-space driver (based on
+>>>> gpsd and/or the Android GPS HAL specification).  But I'm worried
+>>>> I'm missing something.  Is this the correct approach, or is there
+>>>> an established kernel API for GPS modules - such that I should
+>>>> recommend that this developer writes a kernel module instead
+>>>> of, or in addition to, the user-space support for the hardware?
+>>> 
+>>> If it's just a uart-like device, just write a serial driver and drive it
+>>> from gpsd.  That way seems to be the simplest and then the kernel just
+>>> becomes a dumb-pipe, which is fine.
+>> 
+>> the one thing that still bugs me is that detecting an UART with GPS
+>> functionality behind it is extremely bad experience. If we could get
+>> something like DEVTYPE=gps support for the TTY layer, that would be
+>> helpful.
 > 
-> I don't know what to make of this warning.  Yes, it's probing a bool
-> variable and of course using sizeof(bool) to do that.  Why does sparse
-> complain about this?
+> I would love that, but there's tons of USB gps devices that we don't
+> know if they are a USB serial device, or a GPS device as the device id
+> is the same (companies just embed a usb to serial chip in their
+> devices.)
+> 
+> So, someone has to guess, right now it's userspace.
+> 
+> Unless you have a better idea?
 
-I guess sparse warns on sizeof(bool) because it is compiler defined.
-It may be 1, 4, or even 8 depending on the gcc version and platform.
+we could at least try to fix the good ones where we have proper vendor and product IDs dedicated for these devices. Or where things can be labeled through device tree or some similar methods. The less guess work userspace has to do, the smooth the experience will be.
 
-Thanks,
-Fengguang
+Regards
+
+Marcel
+
