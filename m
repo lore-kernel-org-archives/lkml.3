@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759019Ab3DDJib (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 05:38:31 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:50043 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758957Ab3DDJi3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 05:38:29 -0400
-Message-ID: <515D4A0D.7070302@suse.cz>
-Date: Thu, 04 Apr 2013 11:38:21 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	id S1759117Ab3DDJiw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 05:38:52 -0400
+Received: from mga14.intel.com ([143.182.124.37]:25602 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759069Ab3DDJiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 05:38:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,407,1363158000"; 
+   d="scan'208";a="280676335"
+Date: Thu, 4 Apr 2013 11:38:47 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Anton Vorontsov <cbou@mail.ru>, linux-kernel@vger.kernel.org,
+        Keerthy <j-keerthy@ti.com>, Kyle Manna <kyle@kylemanna.com>
+Subject: Re: [PATCH 1/2] mfd: twl4030-madc: Add support for raw value in
+ twl4030_madc_conversion
+Message-ID: <20130404093847.GC17363@zurbaran>
+References: <1360969010-8571-1-git-send-email-pali.rohar@gmail.com>
+ <201303022323.06091@pali>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
-References: <20130129202848.GE25415@pd.tnic> <5109A8F1.9040707@suse.cz> <5109B11C.2010400@suse.cz> <5170962.qHnbnlVDfx@vostro.rjw.lan> <20130131070926.GC4926@pd.tnic> <510A2B1C.1060108@suse.cz> <20130131131805.GG4926@pd.tnic> <20130131132400.GH4926@pd.tnic> <5130A55E.8030508@suse.cz> <515D2C79.7040904@suse.cz> <20130404093302.GB32271@pd.tnic>
-In-Reply-To: <20130404093302.GB32271@pd.tnic>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201303022323.06091@pali>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2013 11:33 AM, Borislav Petkov wrote:
-> On Thu, Apr 04, 2013 at 09:32:09AM +0200, Jiri Slaby wrote:
->> And yesterday I plugged in an ethernet cable for a wihle and guess
->> what happened today: Uhhuh. NMI received for unknown reason 2c on CPU
->> 0.
->>
->> Still holds that this is the first time since Jan.
-> 
-> Yeah, you could try my sure-fire way to trigger it:
-> 
-> * boot the box without any "nmi_watchdog" tweaks on the kernel cmdline -
-> i.e. it should be enabled.
-> 
-> * turn off NMI watchdog through powertop or directly through
-> /proc/sys/kernel/nmi_watchdog
-> 
-> * suspend to disk
-> 
-> Now when you resume, you should either see unknown reason 2c or 3c.
+Hi Pali,
 
-Oh, this reminds me that this time it might be unrelated to yesterday's
-use of ethernet. Because today, I resumed the system by a kernel which I
-didn't pass nmi_watchdog=0 to.
+On Sat, Mar 02, 2013 at 11:23:05PM +0100, Pali Rohár wrote:
+> On Friday 15 February 2013 23:56:49 Pali Rohár wrote:
+> > Driver twl4030-madc has hardcoded channel types (10 - battery
+> > current, 1 - battery temperature) and also conversation data
+> > in variable twl4030_divider_ratios. These hardcoded channels
+> > are incorrect for Nokia RX-51 board (where is channel 0 -
+> > battery temperature).
+> > 
+> > For Nokia RX-51 there is rx51_battery power_supply driver
+> > which reporting battery information via
+> > twl4030_madc_conversion. But this driver needs raw values
+> > (not converted via some hardcoded functions). So this patch
+> > adding new parameter "raw" to struct twl4030_madc_request
+> > which tell twl4030-madc driver to not convert values, but
+> > rather return raw.
+> > 
+> > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> > ---
+> >  drivers/mfd/twl4030-madc.c       |   14 ++++++++++----
+> >  include/linux/i2c/twl4030-madc.h |    2 ++
+> >  2 files changed, 12 insertions(+), 4 deletions(-)
+> > 
+> 
+> Hello, can somebody review this twl4030-madc patch?
+I'll look at all my pending MFD patches starting from tomorrow.
 
-Hmm. So you can silently ignore the report I sent today :).
-
-And sure, the way you describe above "works" for me to trigger the
-issue... I just wanted to note the ethernet may interfere.
-
-Anyway, I will bake some hack to disable NMI before jumping to the
-resumed kernel and will see what happens...
+Cheers,
+Samuel.
 
 -- 
-js
-suse labs
+Intel Open Source Technology Centre
+http://oss.intel.com/
