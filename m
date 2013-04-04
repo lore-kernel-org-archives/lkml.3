@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763191Ab3DDCE3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 22:04:29 -0400
-Received: from mga03.intel.com ([143.182.124.21]:29715 "EHLO mga03.intel.com"
+	id S932828Ab3DDCEt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 22:04:49 -0400
+Received: from mga03.intel.com ([143.182.124.21]:29711 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932785Ab3DDCCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 22:02:37 -0400
+	id S932802Ab3DDCCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 22:02:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,404,1363158000"; 
-   d="scan'208";a="280534496"
+   d="scan'208";a="280534450"
 From: Alex Shi <alex.shi@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
@@ -20,9 +20,9 @@ Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
         rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
         tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
         riel@redhat.com
-Subject: [patch v7 14/21] sched: add power/performance balance allow flag
-Date: Thu,  4 Apr 2013 10:00:55 +0800
-Message-Id: <1365040862-8390-15-git-send-email-alex.shi@intel.com>
+Subject: [patch v7 12/21] sched: using avg_idle to detect bursty wakeup
+Date: Thu,  4 Apr 2013 10:00:53 +0800
+Message-Id: <1365040862-8390-13-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1365040862-8390-1-git-send-email-alex.shi@intel.com>
 References: <1365040862-8390-1-git-send-email-alex.shi@intel.com>
@@ -30,44 +30,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a sched domain is idle enough for regular power balance, LBF_POWER_BAL
-will be set, LBF_PERF_BAL will be clean. If a sched domain is busy,
-their value will be set oppositely.
+Sleeping task has no utiliation, when they were bursty waked up, the
+zero utilization make scheduler out of balance, like aim7 benchmark.
 
-If the domain is suitable for power balance, but balance should not
-be down by this cpu(this cpu is already idle or full), both of flags
-are cleared to wait a suitable cpu to do power balance.
-That mean no any balance, neither power balance nor performance balance
-will be done on this cpu.
+rq->avg_idle is 'to used to accommodate bursty loads in a dirt simple
+dirt cheap manner' -- Mike Galbraith.
 
-Above logical will be implemented by incoming patches.
+With this cheap and smart bursty indicator, we can find the wake up
+burst, and use nr_running as instant utilization in this scenario.
+
+For other scenarios, we still use the precise CPU utilization to
+judage if a domain is eligible for power scheduling.
+
+Thanks for Mike Galbraith's idea!
+Thanks for Namhyung's suggestion to compact the burst into
+max_rq_util()!
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/fair.c | 3 +++
- 1 file changed, 3 insertions(+)
+ kernel/sched/fair.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6145ed2..f861427 100644
+index f610313..a729939 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -4013,6 +4013,8 @@ static unsigned long __read_mostly max_load_balance_interval = HZ/10;
- #define LBF_ALL_PINNED	0x01
- #define LBF_NEED_BREAK	0x02
- #define LBF_SOME_PINNED 0x04
-+#define LBF_POWER_BAL	0x08	/* if power balance allowed */
-+#define LBF_PERF_BAL	0x10	/* if performance balance allowed */
+@@ -3363,6 +3363,10 @@ static unsigned int max_rq_util(int cpu)
+ 	unsigned int cfs_util;
+ 	unsigned int nr_running;
  
- struct lb_env {
- 	struct sched_domain	*sd;
-@@ -5175,6 +5177,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 		.idle		= idle,
- 		.loop_break	= sched_nr_migrate_break,
- 		.cpus		= cpus,
-+		.flags		= LBF_PERF_BAL,
- 	};
++	/* use nr_running as instant utilization for burst cpu */
++	if (cpu_rq(cpu)->avg_idle < sysctl_sched_burst_threshold)
++		return rq->nr_running * FULL_UTIL;
++
+ 	/* yield cfs utilization to rt's, if total utilization > 100% */
+ 	cfs_util = min(rq->util, (unsigned int)(FULL_UTIL - rt_util));
  
- 	cpumask_copy(cpus, cpu_active_mask);
 -- 
 1.7.12
 
