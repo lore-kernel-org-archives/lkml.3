@@ -1,79 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763927Ab3DDHvc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 03:51:32 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:10180 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763751Ab3DDHva (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1763793Ab3DDHva (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 4 Apr 2013 03:51:30 -0400
-Message-ID: <515D30F6.9010004@huawei.com>
-Date: Thu, 4 Apr 2013 15:51:18 +0800
-From: dingtianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+Received: from ozlabs.org ([203.10.76.45]:56545 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1763745Ab3DDHv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 03:51:27 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Bob Liu <lliubbo@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: make[2]: execvp: /bin/bash: Argument list too long
+In-Reply-To: <87boadpluf.fsf@rustcorp.com.au>
+References: <5148064c.NHUmXnvVxwyYN+nc%fengguang.wu@intel.com> <20130318235058.8c3c78ec.akpm@linux-foundation.org> <20130319131025.GC2706@phenom.dumpdata.com> <20130319150204.GA11928@localhost> <87vc8mpxys.fsf@rustcorp.com.au> <20130319204313.041b6c71.akpm@linux-foundation.org> <87boadpluf.fsf@rustcorp.com.au>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Thu, 04 Apr 2013 17:35:41 +1030
+Message-ID: <87li8y3hdm.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "David S. Miller" <davem@davemloft.net>, Sven Joachim <svenjoac@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Andy Lutomirski <luto@amacapital.net>, Karel Srot <ksrot@redhat.com>,
-        <netdev@vger.kernel.org>, Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH 1/2] Revert "af_unix: dont send SCM_CREDENTIAL when dest
- socket is NULL"
-References: <20130402221104.163133110@linuxfoundation.org> <20130402221116.307254752@linuxfoundation.org> <87vc833kpf.fsf@turtle.gmx.de> <87k3ojnosa.fsf@xmission.com> <1365034777.13853.46.camel@edumazet-glaptop> <1365035424.13853.48.camel@edumazet-glaptop> <878v4zjei0.fsf@xmission.com> <87li8zhwkw.fsf_-_@xmission.com>
-In-Reply-To: <87li8zhwkw.fsf_-_@xmission.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.199]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/4/4 10:13, Eric W. Biederman wrote:
-> 
-> This reverts commit 14134f6584212d585b310ce95428014b653dfaf6.
-> 
-> The problem that the above patch was meant to address is that af_unix
-> messages are not being coallesced because we are sending unnecesarry
-> credentials.  Not sending credentials in maybe_add_creds totally
-> breaks unconnected unix domain sockets that wish to send credentails
-> to other sockets.
-> 
+Rusty Russell <rusty@rustcorp.com.au> writes:
+> If this passes review, I'll split properly into three patches.
+>
+> Thanks,
+> Rusty.
 
-thanks for check the question and make a fix solution, but I still doubt that if unconnected unix
-domain socket wish to send credentails to oher sockets, why dont set
-SOCK_PASSCRED on sock->flags, I think the user need to decide the param
-and shouldnt send creds by default way.
+Noone commented, so split into 3 and into modules-next it goes...
 
-Ding
+Cheers,
+Rusty.
 
-> In practice this break some versions of udev because they receive a
-> message and the sending uid is bogus so they drop the message.
-> 
-> Cc: stable@vger.kernel.org
-> Reported-by: Sven Joachim <svenjoac@gmx.de>
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> ---
->  net/unix/af_unix.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-> index 971282b..f153a8d 100644
-> --- a/net/unix/af_unix.c
-> +++ b/net/unix/af_unix.c
-> @@ -1412,8 +1412,8 @@ static void maybe_add_creds(struct sk_buff *skb, const struct socket *sock,
->  	if (UNIXCB(skb).cred)
->  		return;
->  	if (test_bit(SOCK_PASSCRED, &sock->flags) ||
-> -	    (other->sk_socket &&
-> -	    test_bit(SOCK_PASSCRED, &other->sk_socket->flags))) {
-> +	    !other->sk_socket ||
-> +	    test_bit(SOCK_PASSCRED, &other->sk_socket->flags)) {
->  		UNIXCB(skb).pid  = get_pid(task_tgid(current));
->  		UNIXCB(skb).cred = get_current_cred();
->  	}
-> 
-
-
+> modpost: handle huge numbers of modules.
+>
+> (FIXME: Split into multiple patches).
+>
+> strace shows:
+> 72102 execve("/bin/sh", ["/bin/sh", "-c", "echo '  scripts/mod/modpost -m -a
+> -o /cc/wfg/sound-compiletest/Module.symvers      -s'; scripts/
+> mod/modpost -m -a -o /cc/wfg/sound-compiletest/Module.symvers      -s vmlinux
+> arch/x86/crypto/ablk_helper.o arch/x86/crypto/aes-i586.o arch
+> /x86/crypto/aesni-intel.o arch/x86/crypto/crc32-pclmul.o
+> ...
+> drivers/ata/sata_promise.o "...], [/* 119 vars */] <unfinished ...>
+> 71827 wait4(-1,  <unfinished ...>
+> 72102 <... execve resumed> )            = -1 E2BIG (Argument list too long)
+>
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+>
+> diff --git a/scripts/Makefile.modpost b/scripts/Makefile.modpost
+> index cf82c83..8dcdca2 100644
+> --- a/scripts/Makefile.modpost
+> +++ b/scripts/Makefile.modpost
+> @@ -60,7 +60,8 @@ kernelsymfile := $(objtree)/Module.symvers
+>  modulesymfile := $(firstword $(KBUILD_EXTMOD))/Module.symvers
+>  
+>  # Step 1), find all modules listed in $(MODVERDIR)/
+> -__modules := $(sort $(shell grep -h '\.ko$$' /dev/null $(wildcard $(MODVERDIR)/*.mod)))
+> +MODLISTCMD := find $(MODVERDIR) -name '*.mod' | xargs -r grep -h '\.ko$$' | sort -u
+> +__modules := $(shell $(MODLISTCMD))
+>  modules   := $(patsubst %.o,%.ko, $(wildcard $(__modules:.ko=.o)))
+>  
+>  # Stop after building .o files if NOFINAL is set. Makes compile tests quicker
+> @@ -78,12 +79,13 @@ modpost = scripts/mod/modpost                    \
+>   $(if $(CONFIG_DEBUG_SECTION_MISMATCH),,-S)      \
+>   $(if $(KBUILD_EXTMOD)$(KBUILD_MODPOST_WARN),-w)
+>  
+> +# We can go over command line length here, so be careful.
+>  quiet_cmd_modpost = MODPOST $(words $(filter-out vmlinux FORCE, $^)) modules
+> -      cmd_modpost = $(modpost) -s
+> +      cmd_modpost = $(MODLISTCMD) | sed 's/\.ko$$/.o/' | $(modpost) -s -T -
+>  
+>  PHONY += __modpost
+>  __modpost: $(modules:.ko=.o) FORCE
+> -	$(call cmd,modpost) $(wildcard vmlinux) $(filter-out FORCE,$^)
+> +	$(call cmd,modpost) $(wildcard vmlinux)
+>  
+>  quiet_cmd_kernel-mod = MODPOST $@
+>        cmd_kernel-mod = $(modpost) $@
+> diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+> index f6913db..1f90961 100644
+> --- a/scripts/mod/modpost.c
+> +++ b/scripts/mod/modpost.c
+> @@ -15,6 +15,8 @@
+>  #include <stdio.h>
+>  #include <ctype.h>
+>  #include <string.h>
+> +#include <limits.h>
+> +#include <stdbool.h>
+>  #include "modpost.h"
+>  #include "../../include/generated/autoconf.h"
+>  #include "../../include/linux/license.h"
+> @@ -78,6 +80,14 @@ PRINTF void merror(const char *fmt, ...)
+>  	va_end(arglist);
+>  }
+>  
+> +static inline bool strends(const char *str, const char *postfix)
+> +{
+> +	if (strlen(str) < strlen(postfix))
+> +		return false;
+> +
+> +	return strcmp(str + strlen(str) - strlen(postfix), postfix) == 0;
+> +}
+> +
+>  static int is_vmlinux(const char *modname)
+>  {
+>  	const char *myname;
+> @@ -113,22 +123,20 @@ static struct module *find_module(char *modname)
+>  	return mod;
+>  }
+>  
+> -static struct module *new_module(char *modname)
+> +static struct module *new_module(const char *modname)
+>  {
+>  	struct module *mod;
+> -	char *p, *s;
+> +	char *p;
+>  
+>  	mod = NOFAIL(malloc(sizeof(*mod)));
+>  	memset(mod, 0, sizeof(*mod));
+>  	p = NOFAIL(strdup(modname));
+>  
+>  	/* strip trailing .o */
+> -	s = strrchr(p, '.');
+> -	if (s != NULL)
+> -		if (strcmp(s, ".o") == 0) {
+> -			*s = '\0';
+> -			mod->is_dot_o = 1;
+> -		}
+> +	if (strends(p, ".o")) {
+> +		p[strlen(p) - 2] = '\0';
+> +		mod->is_dot_o = 1;
+> +	}
+>  
+>  	/* add to list */
+>  	mod->name = p;
+> @@ -1756,6 +1764,27 @@ static void read_symbols(char *modname)
+>  		mod->unres = alloc_symbol("module_layout", 0, mod->unres);
+>  }
+>  
+> +static void read_symbols_from_files(const char *filename)
+> +{
+> +	FILE *in = stdin;
+> +	char fname[PATH_MAX];
+> +
+> +	if (strcmp(filename, "-") != 0) {
+> +		in = fopen(filename, "r");
+> +		if (!in)
+> +			fatal("Can't open filenames file %s: %m", filename);
+> +	}
+> +
+> +	while (fgets(fname, PATH_MAX, in) != NULL) {
+> +		if (strends(fname, "\n"))
+> +			fname[strlen(fname)-1] = '\0';
+> +		read_symbols(fname);
+> +	}
+> +
+> +	if (in != stdin)
+> +		fclose(in);
+> +}
+> +
+>  #define SZ 500
+>  
+>  /* We first write the generated file into memory using the
+> @@ -2117,13 +2146,13 @@ int main(int argc, char **argv)
+>  	struct module *mod;
+>  	struct buffer buf = { };
+>  	char *kernel_read = NULL, *module_read = NULL;
+> -	char *dump_write = NULL;
+> +	char *dump_write = NULL, *files_source = NULL;
+>  	int opt;
+>  	int err;
+>  	struct ext_sym_list *extsym_iter;
+>  	struct ext_sym_list *extsym_start = NULL;
+>  
+> -	while ((opt = getopt(argc, argv, "i:I:e:msSo:awM:K:")) != -1) {
+> +	while ((opt = getopt(argc, argv, "i:I:e:msST:o:awM:K:")) != -1) {
+>  		switch (opt) {
+>  		case 'i':
+>  			kernel_read = optarg;
+> @@ -2155,6 +2184,9 @@ int main(int argc, char **argv)
+>  		case 'S':
+>  			sec_mismatch_verbose = 0;
+>  			break;
+> +		case 'T':
+> +			files_source = optarg;
+> +			break;
+>  		case 'w':
+>  			warn_unresolved = 1;
+>  			break;
+> @@ -2177,6 +2209,9 @@ int main(int argc, char **argv)
+>  	while (optind < argc)
+>  		read_symbols(argv[optind++]);
+>  
+> +	if (files_source)
+> +		read_symbols_from_files(files_source);
+> +
+>  	for (mod = modules; mod; mod = mod->next) {
+>  		if (mod->skip)
+>  			continue;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
