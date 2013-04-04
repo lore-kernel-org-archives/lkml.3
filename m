@@ -1,89 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760812Ab3DDNAp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 09:00:45 -0400
-Received: from co1ehsobe003.messaging.microsoft.com ([216.32.180.186]:50169
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760365Ab3DDNA3 (ORCPT
+	id S1760717Ab3DDNBs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 09:01:48 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8523 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760589Ab3DDNBq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 09:00:29 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zz98dI9371I936eI542I1432Id799h4015Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275dhz2dh2a8h668h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Alex Williamson <alex.williamson@redhat.com>,
-        Joerg Roedel <joro@8bytes.org>
-CC: Yoder Stuart-B08248 <B08248@freescale.com>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>
-Subject: RE: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu
- implementation.
-Thread-Topic: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu
- implementation.
-Thread-Index: AQHOK+8t5MYhVlGTF0iQ16GsJktLA5jDI3qAgAGvMoCAATtRIA==
-Date: Thu, 4 Apr 2013 13:00:23 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D45883B@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1364500442-20927-1-git-send-email-Varun.Sethi@freescale.com>
-	 <1364500442-20927-6-git-send-email-Varun.Sethi@freescale.com>
-	 <20130402161812.GI15687@8bytes.org> <1365012091.2882.252.camel@bling.home>
-In-Reply-To: <1365012091.2882.252.camel@bling.home>
+	Thu, 4 Apr 2013 09:01:46 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 04 Apr 2013 06:00:49 -0700
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 4 Apr 2013 18:31:39 +0530
+Subject: RE: [PATCH v2 2/7] ARM: tegra: update device trees for USB binding
+ rework
+Thread-Topic: [PATCH v2 2/7] ARM: tegra: update device trees for USB binding
+ rework
+Thread-Index: Ac4wn9kSLQIWH5RERdaKt6+GuKlmkQAkEQ+g
+Message-ID: <D958900912E20642BCBC71664EFECE3E6E50BE48AE@BGMAIL02.nvidia.com>
+References: <1364978502-22887-1-git-send-email-vbyravarasu@nvidia.com>
+ <1364978502-22887-3-git-send-email-vbyravarasu@nvidia.com>
+ <515C8024.30204@wwwdotorg.org>
+In-Reply-To: <515C8024.30204@wwwdotorg.org>
 Accept-Language: en-US
-Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.214.249.237]
-Content-Type: text/plain; charset="utf-8"
+acceptlanguage: en-US
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r34D0hYl002809
-
-
 
 > -----Original Message-----
-> From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> Sent: Wednesday, April 03, 2013 11:32 PM
-> To: Joerg Roedel
-> Cc: Sethi Varun-B16395; Yoder Stuart-B08248; Wood Scott-B07421;
-> iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org; linux-
-> kernel@vger.kernel.org; galak@kernel.crashing.org;
-> benh@kernel.crashing.org
-> Subject: Re: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu
-> implementation.
+> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> Sent: Thursday, April 04, 2013 12:47 AM
+> To: Venu Byravarasu
+> Cc: gregkh@linuxfoundation.org; balbi@ti.com;
+> stern@rowland.harvard.edu; linux-tegra@vger.kernel.org; linux-
+> usb@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v2 2/7] ARM: tegra: update device trees for USB binding
+> rework
 > 
-> On Tue, 2013-04-02 at 18:18 +0200, Joerg Roedel wrote:
-> > Cc'ing Alex Williamson
+> On 04/03/2013 02:41 AM, Venu Byravarasu wrote:
+> > This patch updates all Tegra board files so that they contain all the
+> 
+> The binding documentation says that the vbus-supply property is required
+> in all cases. However, many of the DT files still don't have that
+> property even after this patch. That's inconsistent.
+
+Will edit the binding to have the vbus-supply only for otg cases. 
+
+> 
+> > diff --git a/arch/arm/boot/dts/tegra20-iris-512.dts
+> b/arch/arm/boot/dts/tegra20-iris-512.dts
+> > index 52f1103..c99eccc 100644
+> > --- a/arch/arm/boot/dts/tegra20-iris-512.dts
+> > +++ b/arch/arm/boot/dts/tegra20-iris-512.dts
+> > @@ -41,6 +41,10 @@
+> >  		dr_mode = "otg";
+> >  	};
 > >
-> > Alex, can you please review the iommu-group part of this patch?
+> > +	usb-phy@c5000000 {
+> > +		dr_mode = "otg";
+> > +	};
 > 
-> Sure, it looks pretty reasonable.  AIUI, all PCI devices are below some
-> kind of host bridge that is either new and supports partitioning or old
-> and doesn't.  I don't know if that's a visibility or isolation
-> requirement, perhaps PCI ACS-ish.  In the new host bridge case, each
-> device gets a group.  This seems not to have any quirks for multifunction
-> devices though.  On AMD and Intel IOMMUs we test multifunction device ACS
-> support to determine whether all the functions should be in the same
-> group.  Is there any reason to trust multifunction devices on PAMU?
+> Since this port claims to be OTG-capable, presumably a vbus-supply
+> property is mandatory here? If you don't know enough about the board to
+> correctly set up such a regulator, lets just mark this port as host-only
+> for now; we can switch it back to OTG-mode later once someone implements
+> the required regulator. This won't lose any functionality, since we
+> don't support OTG-mode yet anyway. However, it will allow the device
+> tree to be correct/consistent in the mean time.
+ 
+Agree completely.
+Will update the patch accordingly and send for review.
+
 > 
-[Sethi Varun-B16395] In the case where we can partition endpoints we can distinguish transactions based on the bus,device,function number combination. This support is available in the PCIe controller (host bridge).
+> > diff --git a/arch/arm/boot/dts/tegra20-seaboard.dts
+> b/arch/arm/boot/dts/tegra20-seaboard.dts
+> 
+> > +	usb-phy@c5000000 {
+> > +		vbus-supply = <&vbus_reg>;
+> > +		dr_mode = "otg";
+> > +	};
+> 
+> Where is the nvidia,vbus-gpio property? Since your code changes don't
+> actually implement use of the vbus-supply property yet, they will expect
+> the vbus-gpio property to exist in the PHY node.
 
-> I also find it curious what happens to the iommu group of the host
-> bridge.  In the partitionable case the host bridge group is removed, in
-> the non-partitionable case the host bridge group becomes the group for
-> the children, removing the host bridge.  It's unique to PAMU so far that
-> these host bridges are even in an iommu group (x86 only adds pci
-> devices), but I don't see it as necessarily wrong leaving it in either
-> scenario.  Does it solve some problem to remove them from the groups?
-> Thanks,
-[Sethi Varun-B16395] The PCIe controller isn't a partitionable entity, it would always be owned by the host.
+As of now Vbus-gpio is being used by EHCI driver only.
+As anyways we wanted to use vbus-supply, will implement its
+support in PHY driver and remove vbus-gpio from EHCI node. 
+Hence did not add vbus-gpio to PHY DT nodes.
 
--Varun
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
