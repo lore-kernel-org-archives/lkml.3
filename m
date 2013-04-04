@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764606Ab3DDTXb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 15:23:31 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41333 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1764588Ab3DDTX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 15:23:29 -0400
-Date: Thu, 4 Apr 2013 21:23:23 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH V4 2/2] cpufreq: AMD "frequency sensitivity feedback"
- powersave bias for ondemand governor
-Message-ID: <20130404192323.GI32271@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Jacob Shin <jacob.shin@amd.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-	cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	Viresh Kumar <viresh.kumar@linaro.org>,
-	Thomas Renninger <trenn@suse.de>
-References: <1365092344-11310-1-git-send-email-jacob.shin@amd.com>
- <1365092344-11310-3-git-send-email-jacob.shin@amd.com>
+	id S1764630Ab3DDT30 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 15:29:26 -0400
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:40998 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1764616Ab3DDT3X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 15:29:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1365092344-11310-3-git-send-email-jacob.shin@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130404180721.GT9425@htj.dyndns.org>
+References: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
+	<1362897887-30808-6-git-send-email-yinghai@kernel.org>
+	<20130404180721.GT9425@htj.dyndns.org>
+Date: Thu, 4 Apr 2013 12:29:22 -0700
+X-Google-Sender-Auth: rWz84K_lD5fA7vuOHAr_xR_eaZs
+Message-ID: <CAE9FiQUD4OdpU5FFyt+gM0vQBw26+yP7zoAR5MsRmrNxVa2rfQ@mail.gmail.com>
+Subject: Re: [PATCH v2 05/20] x86, ACPI: Split acpi_initrd_override to
+ find/copy two functions
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 11:19:04AM -0500, Jacob Shin wrote:
-> Future AMD processors, starting with Family 16h, can provide software
-> with feedback on how the workload may respond to frequency change --
-> memory-bound workloads will not benefit from higher frequency, where
-> as compute-bound workloads will. This patch enables this "frequency
-> sensitivity feedback" to aid the ondemand governor to make better
-> frequency change decisions by hooking into the powersave bias.
-> 
-> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+On Thu, Apr 4, 2013 at 11:07 AM, Tejun Heo <tj@kernel.org> wrote:
+>>
+>> Also move down two functions declaration to avoid #ifdef in setup.c
+>>
+>> ACPI_INITRD_TABLE_OVERRIDE depends one ACPI and BLK_DEV_INITRD.
+>> So could move declaration out from #ifdef CONFIG_ACPI protection.
+>
+> Heh, I couldn't really follow the above.  How about something like the
+> following.
+>
+>  While a dummy version of acpi_initrd_override() was defined when
+>  !CONFIG_ACPI_INITRD_TABLE_OVERRIDE, the prototype and dummy version
+>  were conditionalized inside CONFIG_ACPI.  This forced setup_arch() to
+>  have its own #ifdefs around acpi_initrd_override() as otherwise build
+>  would fail when !CONFIG_ACPI.  Move the prototypes and dummy
+>  implementations of the newly split functions below CONFIG_ACPI block
+>  in acpi.h so that we can do away with #ifdefs in its user.
 
-Looks good to me.
+update changelog with your changes.
 
-Acked-by: Borislav Petkov <bp@suse.de>
+Thanks
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Yinghai
