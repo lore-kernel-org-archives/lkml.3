@@ -1,49 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763297Ab3DDQlJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:41:09 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52422
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762587Ab3DDQlF (ORCPT
+	id S1763216Ab3DDQlq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:41:46 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:50886 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1762536Ab3DDQlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:41:05 -0400
-Message-ID: <1365093662.2609.111.camel@laptop>
-Subject: Re: [PATCH v2 2/3] mutex: add support for reservation style locks,
- v2
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-arch@vger.kernel.org, daniel.vetter@ffwll.ch, x86@kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, robclark@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu, linux-media@vger.kernel.org
-Date: Thu, 04 Apr 2013 18:41:02 +0200
-In-Reply-To: <20130404133123.GW2228@phenom.ffwll.local>
-References: <20130228102452.15191.22673.stgit@patser>
-	 <20130228102502.15191.14146.stgit@patser>
-	 <1364900432.18374.24.camel@laptop> <515AF1C1.7080508@canonical.com>
-	 <1364921954.20640.22.camel@laptop> <1365076908.2609.94.camel@laptop>
-	 <20130404133123.GW2228@phenom.ffwll.local>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Apr 2013 12:41:44 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19zphEXOFEGh6dGgir1K8zf
+Date: Thu, 4 Apr 2013 09:41:38 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: b-cousson@ti.com, linux@arm.linux.org.uk, rnayak@ti.com, balbi@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Paul Walmsley <paul@pwsan.com>,
+        "Menon, Nishanth" <nm@ti.com>
+Subject: Re: [RFC][PATCH 1/2] ARM: OMAP4: clock: Add device tree support
+ for AUXCLKs
+Message-ID: <20130404164137.GH10155@atomide.com>
+References: <1363703220-4777-1-git-send-email-rogerq@ti.com>
+ <1363703220-4777-2-git-send-email-rogerq@ti.com>
+ <20130403234242.GE10155@atomide.com>
+ <515D2D30.3000306@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515D2D30.3000306@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-04 at 15:31 +0200, Daniel Vetter wrote:
-> The thing is now that you're not expected to hold these locks for a
-> long
-> time - if you need to synchronously stall while holding a lock
-> performance
-> will go down the gutters anyway. And since most current
-> gpus/co-processors
-> still can't really preempt fairness isn't that high a priority,
-> either.
-> So we didn't think too much about that.
+* Roger Quadros <rogerq@ti.com> [130404 00:39]:
+> On 04/04/2013 02:42 AM, Tony Lindgren wrote:
+> >> --- a/arch/arm/mach-omap2/cclock44xx_data.c
+> >> +++ b/arch/arm/mach-omap2/cclock44xx_data.c
+> >> @@ -27,6 +27,7 @@
+> >>  #include <linux/clk-private.h>
+> >>  #include <linux/clkdev.h>
+> >>  #include <linux/io.h>
+> >> +#include <linux/of.h>
+> >>  
+> >>  #include "soc.h"
+> >>  #include "iomap.h"
+> >> @@ -1663,6 +1664,40 @@ static struct omap_clk omap44xx_clks[] = {
+> >>  	CLK(NULL,	"cpufreq_ck",	&dpll_mpu_ck,	CK_443X),
+> >>  };
+> >>  
+> >> +static struct clk *scrm_clks[] = {
+> >> +	&auxclk0_ck,
+> >> +	&auxclk1_ck,
+> >> +	&auxclk2_ck,
+> >> +	&auxclk3_ck,
+> >> +	&auxclk4_ck,
+> >> +	&auxclk5_ck,
+> >> +};
+> > 
+> > Hmm I don't like the idea of specifying the auxclk both in the
+> > cclock44xx_data.c and in DT..
+> 
+> Right, but till we have all clocks moved to DT we only need this
+> approach for general purpose clocks that are not mapped to devices
+> by hwmod.
 
-Yeah but you're proposing a new synchronization primitive for the core
-kernel.. all such 'fun' details need to be considered, not only those
-few that bear on the one usecase.
+For v3.10, let's just make sure that USB works with DT as then
+after v3.10 we can make omap4 DT only and get rid of estimated
+7K lines of code and data. I guess this is the last piece missing
+for that, or are we also missing something else?
 
+Can't you set up a clock alias for your device so it can find the
+auxclk when requesting it with the dev entry?
+
+For the DT clock driver if needed for v3.10, how about just do a
+minimal drivers/clock/omap/ that uses the standard binding?
+Then that driver can just do clk_get() from cclock44xx_data.c
+for now? And then later on we'll just move all the clocks to a
+combination of DT + /lib/firmware.
+
+> e.g. auxclk are required to be specified in DT nodes for USB PHY.
+> Without this we can't get USB host working on Panda.
+
+OK. So if the USB PHY has a dev entry, can't you just set up a
+clock alias in struct omap_clk omap44xx_clks[] for it?
+ 
+> As Rajendra points out, it seems moving entire clock data to DT is not
+> going to happen soon. So this is the simplistic way things can work.
+
+Right but seems like we can get started there without moving
+them all at once.
+
+Regards,
+
+Tony
