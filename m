@@ -1,230 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761882Ab3DDOb0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 10:31:26 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:48393 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761868Ab3DDObY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 10:31:24 -0400
-Date: Thu, 4 Apr 2013 19:55:39 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Anton Arapov <anton@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [PATCH 4/4] uprobes/tracing: generalize struct
- uprobe_trace_entry_head
-Message-ID: <20130404142539.GD8986@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20130329181520.GA20670@redhat.com>
- <20130329181548.GA20700@redhat.com>
+	id S1761891Ab3DDObg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 10:31:36 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:47014 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761856Ab3DDObe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 10:31:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20130329181548.GA20700@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040414-5806-0000-0000-000020987F9C
+In-Reply-To: <CAFTL4hwbANveEoY40fNhMt1CJpCoNYfAFj7NghPRTqixCeodHQ@mail.gmail.com>
+References: <1364996263-12198-1-git-send-email-vincent.guittot@linaro.org>
+	<CAFTL4hwbANveEoY40fNhMt1CJpCoNYfAFj7NghPRTqixCeodHQ@mail.gmail.com>
+Date: Thu, 4 Apr 2013 16:31:31 +0200
+Message-ID: <CAFTL4hw+XBZnFB3ODHgeXyM95S2d-bNX=634vhu50-ZPF3VyiA@mail.gmail.com>
+Subject: Re: [PATCH Resend v5] sched: fix init NOHZ_IDLE flag
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linaro-kernel@lists.linaro.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2013-03-29 19:15:48]:
+2013/4/4 Frederic Weisbecker <fweisbec@gmail.com>:
+> 2013/4/3 Vincent Guittot <vincent.guittot@linaro.org>:
+>> On my smp platform which is made of 5 cores in 2 clusters, I have the
+>> nr_busy_cpu field of sched_group_power struct that is not null when the
+>> platform is fully idle. The root cause is:
+>> During the boot sequence, some CPUs reach the idle loop and set their
+>> NOHZ_IDLE flag while waiting for others CPUs to boot. But the nr_busy_cpus
+>> field is initialized later with the assumption that all CPUs are in the busy
+>> state whereas some CPUs have already set their NOHZ_IDLE flag.
+>>
+>> More generally, the NOHZ_IDLE flag must be initialized when new sched_domains
+>> are created in order to ensure that NOHZ_IDLE and nr_busy_cpus are aligned.
+>>
+>> This condition can be ensured by adding a synchronize_rcu between the
+>> destruction of old sched_domains and the creation of new ones so the NOHZ_IDLE
+>> flag will not be updated with old sched_domain once it has been initialized.
+>> But this solution introduces a additionnal latency in the rebuild sequence
+>> that is called during cpu hotplug.
+>>
+>> As suggested by Frederic Weisbecker, another solution is to have the same
+>> rcu lifecycle for both NOHZ_IDLE and sched_domain struct. I have introduce
+>> a new sched_domain_rq struct that is the entry point for both sched_domains
+>> and objects that must follow the same lifecycle like NOHZ_IDLE flags. They
+>> will share the same RCU lifecycle and will be always synchronized.
+>>
+>> The synchronization is done at the cost of :
+>>  - an additional indirection for accessing the first sched_domain level
+>>  - an additional indirection and a rcu_dereference before accessing to the
+>>    NOHZ_IDLE flag.
+>>
+>> Change since v4:
+>>  - link both sched_domain and NOHZ_IDLE flag in one RCU object so
+>>    their states are always synchronized.
+>>
+>> Change since V3;
+>>  - NOHZ flag is not cleared if a NULL domain is attached to the CPU
+>>  - Remove patch 2/2 which becomes useless with latest modifications
+>>
+>> Change since V2:
+>>  - change the initialization to idle state instead of busy state so a CPU that
+>>    enters idle during the build of the sched_domain will not corrupt the
+>>    initialization state
+>>
+>> Change since V1:
+>>  - remove the patch for SCHED softirq on an idle core use case as it was
+>>    a side effect of the other use cases.
+>>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> ---
+>>  include/linux/sched.h |    6 +++
+>>  kernel/sched/core.c   |  105 ++++++++++++++++++++++++++++++++++++++++++++-----
+>>  kernel/sched/fair.c   |   35 +++++++++++------
+>>  kernel/sched/sched.h  |   24 +++++++++--
+>>  4 files changed, 145 insertions(+), 25 deletions(-)
+>>
+>> diff --git a/include/linux/sched.h b/include/linux/sched.h
+>> index d35d2b6..2a52188 100644
+>> --- a/include/linux/sched.h
+>> +++ b/include/linux/sched.h
+>> @@ -959,6 +959,12 @@ struct sched_domain {
+>>         unsigned long span[0];
+>>  };
+>>
+>> +struct sched_domain_rq {
+>> +       struct sched_domain *sd;
+>
+> Why not make it part of the structure content instead of pointing to it?
 
-> struct uprobe_trace_entry_head has a single member for reporting,
-> "unsigned long ip". If we want to support uretprobes we need to
-> create another struct which has "func" and "ret_ip" and duplicate
-> a lot of functions, like trace_kprobe.c does.
-> 
-> To avoid this copy-and-paste horror we turn ->ip into ->vaddr[]
-> and add couple of trivial helpers to calculate sizeof/data. This
-> uglifies the code a bit, but this allows us to avoid a lot more
-> complications later, when we add the support for ret-probes.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-
-Also copying Masami.
-
-> ---
->  kernel/trace/trace.h        |    5 ---
->  kernel/trace/trace_uprobe.c |   61 ++++++++++++++++++++++++------------------
->  2 files changed, 35 insertions(+), 31 deletions(-)
-> 
-> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> index 57d7e53..6ca57cf 100644
-> --- a/kernel/trace/trace.h
-> +++ b/kernel/trace/trace.h
-> @@ -103,11 +103,6 @@ struct kretprobe_trace_entry_head {
->  	unsigned long		ret_ip;
->  };
-> 
-> -struct uprobe_trace_entry_head {
-> -	struct trace_entry	ent;
-> -	unsigned long		ip;
-> -};
-> -
->  /*
->   * trace_flag_type is an enumeration that holds different
->   * states when a trace occurs. These are:
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index 43d258d..92a4b08 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -28,6 +28,17 @@
-> 
->  #define UPROBE_EVENT_SYSTEM	"uprobes"
-> 
-> +struct uprobe_trace_entry_head {
-> +	struct trace_entry	ent;
-> +	unsigned long		vaddr[];
-> +};
-> +
-> +#define SIZEOF_TRACE_ENTRY(nr)	\
-> +	(sizeof(struct uprobe_trace_entry_head) + sizeof(unsigned long) * (nr))
-> +
-> +#define DATAOF_TRACE_ENTRY(entry, nr)	\
-> +	((void*)&(entry)->vaddr[nr])
-> +
->  struct trace_uprobe_filter {
->  	rwlock_t		rwlock;
->  	int			nr_systemwide;
-> @@ -491,20 +502,19 @@ static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
->  	struct uprobe_trace_entry_head *entry;
->  	struct ring_buffer_event *event;
->  	struct ring_buffer *buffer;
-> -	u8 *data;
-> +	void *data;
->  	int size, i;
->  	struct ftrace_event_call *call = &tu->call;
-> 
-> -	size = sizeof(*entry) + tu->size;
-> -
-> +	size = SIZEOF_TRACE_ENTRY(1) + tu->size;
->  	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
->  						  size, 0, 0);
->  	if (!event)
->  		return 0;
-> 
->  	entry = ring_buffer_event_data(event);
-> -	entry->ip = instruction_pointer(regs);
-> -	data = (u8 *)&entry[1];
-> +	entry->vaddr[0] = instruction_pointer(regs);
-> +	data = DATAOF_TRACE_ENTRY(entry, 1);
->  	for (i = 0; i < tu->nr_args; i++)
->  		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
-> 
-> @@ -518,22 +528,22 @@ static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
->  static enum print_line_t
->  print_uprobe_event(struct trace_iterator *iter, int flags, struct trace_event *event)
->  {
-> -	struct uprobe_trace_entry_head *field;
-> +	struct uprobe_trace_entry_head *entry;
->  	struct trace_seq *s = &iter->seq;
->  	struct trace_uprobe *tu;
->  	u8 *data;
->  	int i;
-> 
-> -	field = (struct uprobe_trace_entry_head *)iter->ent;
-> +	entry = (struct uprobe_trace_entry_head *)iter->ent;
->  	tu = container_of(event, struct trace_uprobe, call.event);
-> 
-> -	if (!trace_seq_printf(s, "%s: (0x%lx)", tu->call.name, field->ip))
-> +	if (!trace_seq_printf(s, "%s: (0x%lx)", tu->call.name, entry->vaddr[0]))
->  		goto partial;
-> 
-> -	data = (u8 *)&field[1];
-> +	data = DATAOF_TRACE_ENTRY(entry, 1);
->  	for (i = 0; i < tu->nr_args; i++) {
->  		if (!tu->args[i].type->print(s, tu->args[i].name,
-> -					     data + tu->args[i].offset, field))
-> +					     data + tu->args[i].offset, entry))
->  			goto partial;
->  	}
-> 
-> @@ -585,16 +595,17 @@ static void probe_event_disable(struct trace_uprobe *tu, int flag)
-> 
->  static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
->  {
-> -	int ret, i;
-> +	int ret, i, size;
->  	struct uprobe_trace_entry_head field;
-> -	struct trace_uprobe *tu = (struct trace_uprobe *)event_call->data;
-> +	struct trace_uprobe *tu = event_call->data;
-> 
-> -	DEFINE_FIELD(unsigned long, ip, FIELD_STRING_IP, 0);
-> +	DEFINE_FIELD(unsigned long, vaddr[0], FIELD_STRING_IP, 0);
-> +	size = SIZEOF_TRACE_ENTRY(1);
->  	/* Set argument names as fields */
->  	for (i = 0; i < tu->nr_args; i++) {
->  		ret = trace_define_field(event_call, tu->args[i].type->fmttype,
->  					 tu->args[i].name,
-> -					 sizeof(field) + tu->args[i].offset,
-> +					 size + tu->args[i].offset,
->  					 tu->args[i].type->size,
->  					 tu->args[i].type->is_signed,
->  					 FILTER_OTHER);
-> @@ -748,33 +759,31 @@ static int uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
->  	struct ftrace_event_call *call = &tu->call;
->  	struct uprobe_trace_entry_head *entry;
->  	struct hlist_head *head;
-> -	u8 *data;
-> -	int size, __size, i;
-> -	int rctx;
-> +	unsigned long ip;
-> +	void *data;
-> +	int size, rctx, i;
-> 
->  	if (!uprobe_perf_filter(&tu->consumer, 0, current->mm))
->  		return UPROBE_HANDLER_REMOVE;
-> 
-> -	__size = sizeof(*entry) + tu->size;
-> -	size = ALIGN(__size + sizeof(u32), sizeof(u64));
-> -	size -= sizeof(u32);
-> +	size = SIZEOF_TRACE_ENTRY(1);
-> +	size = ALIGN(size + tu->size + sizeof(u32), sizeof(u64)) - sizeof(u32);
->  	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE, "profile buffer not large enough"))
->  		return 0;
-> 
->  	preempt_disable();
-> -
->  	entry = perf_trace_buf_prepare(size, call->event.type, regs, &rctx);
->  	if (!entry)
->  		goto out;
-> 
-> -	entry->ip = instruction_pointer(regs);
-> -	data = (u8 *)&entry[1];
-> +	ip = instruction_pointer(regs);
-> +	entry->vaddr[0] = ip;
-> +	data = DATAOF_TRACE_ENTRY(entry, 1);
->  	for (i = 0; i < tu->nr_args; i++)
->  		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
-> 
->  	head = this_cpu_ptr(call->perf_events);
-> -	perf_trace_buf_submit(entry, size, rctx, entry->ip, 1, regs, head, NULL);
-> -
-> +	perf_trace_buf_submit(entry, size, rctx, ip, 1, regs, head, NULL);
->   out:
->  	preempt_enable();
->  	return 0;
-> @@ -784,7 +793,7 @@ static int uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
->  static
->  int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type, void *data)
->  {
-> -	struct trace_uprobe *tu = (struct trace_uprobe *)event->data;
-> +	struct trace_uprobe *tu = event->data;
-> 
->  	switch (type) {
->  	case TRACE_REG_REGISTER:
-> -- 
-> 1.5.5.1
-> 
-
--- 
-Thanks and Regards
-Srikar Dronamraju
-
+I just realize that would make destroy_sched_domains() too complicated
+because only the leaf sched_domain belong to a sched_domain_rq.
+Nevermind.
