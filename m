@@ -1,55 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761464Ab3DDSa7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 14:30:59 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:39775 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760994Ab3DDSa5 (ORCPT
+	id S1761794Ab3DDSfq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 14:35:46 -0400
+Received: from mail-da0-f53.google.com ([209.85.210.53]:49604 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761631Ab3DDSfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 14:30:57 -0400
-Date: Thu, 4 Apr 2013 11:30:47 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 06/20] x86, ACPI: Store override acpi tables phys addr
- in cpio files info array
-Message-ID: <20130404183047.GV9425@htj.dyndns.org>
-References: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
- <1362897887-30808-7-git-send-email-yinghai@kernel.org>
- <20130404182742.GU9425@htj.dyndns.org>
+	Thu, 4 Apr 2013 14:35:44 -0400
+Date: Thu, 4 Apr 2013 11:35:10 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jan Stancek <jstancek@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ian Lance Taylor <iant@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mm: prevent mmap_cache race in find_vma()
+Message-ID: <alpine.LNX.2.00.1304041120510.26822@eggly.anvils>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130404182742.GU9425@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 11:27:42AM -0700, Tejun Heo wrote:
-> > +		/*
-> > +		 * have to use unsigned long, otherwise 32bit spit warning
-> > +		 * and it is ok to unsigned long, as bootloader would not
-> > +		 * load initrd above 4G for 32bit kernel.
-> > +		 */
-> > +		unsigned long addr = (unsigned long)acpi_initrd_files[no].data;
-> 
-> I can't say I like this.  It's stuffing phys_addr_t into void *.  It
-> might work okay but the code is a bit misleading / confusing.  "void
-> *" shouldn't contain a physical address.  Maybe the alternatives are
-> uglier, I don't know.  If you can think of a reasonable way to not do
-> this, it would be great.
+From: Jan Stancek <jstancek@redhat.com>
 
-Also the comment contradicts with what you wrote in the next patch.
+find_vma() can be called by multiple threads with read lock
+held on mm->mmap_sem and any of them can update mm->mmap_cache.
+Prevent compiler from re-fetching mm->mmap_cache, because other
+readers could update it in the meantime:
 
-  Boot loader could load initrd above max_low_pfn.
+               thread 1                             thread 2
+                                        |
+  find_vma()                            |  find_vma()
+    struct vm_area_struct *vma = NULL;  |
+    vma = mm->mmap_cache;               |
+    if (!(vma && vma->vm_end > addr     |
+        && vma->vm_start <= addr)) {    |
+                                        |    mm->mmap_cache = vma;
+    return vma;                         |
+     ^^ compiler may optimize this      |
+        local variable out and re-read  |
+        mm->mmap_cache                  |
 
-Hmmm?
+This issue can be reproduced with gcc-4.8.0-1 on s390x by running
+mallocstress testcase from LTP, which triggers:
+  kernel BUG at mm/rmap.c:1088!
+    Call Trace:
+     ([<000003d100c57000>] 0x3d100c57000)
+      [<000000000023a1c0>] do_wp_page+0x2fc/0xa88
+      [<000000000023baae>] handle_pte_fault+0x41a/0xac8
+      [<000000000023d832>] handle_mm_fault+0x17a/0x268
+      [<000000000060507a>] do_protection_exception+0x1e2/0x394
+      [<0000000000603a04>] pgm_check_handler+0x138/0x13c
+      [<000003fffcf1f07a>] 0x3fffcf1f07a
+    Last Breaking-Event-Address:
+      [<000000000024755e>] page_add_new_anon_rmap+0xc2/0x168
 
+Thanks to Jakub Jelinek for his insight on gcc and helping to
+track this down.
+
+Signed-off-by: Jan Stancek <jstancek@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: stable@vger.kernel.org
+---
+This is Jan's valuable patch, posted a couple of days ago, which then
+triggered "some discussion" of ACCESS_ONCE() on linux-mm.  I've marked
+it for stable: should go back years, but 3.5 changed the indentation.
+
+ mm/mmap.c  |    2 +-
+ mm/nommu.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 6466699..0db0de1 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1940,7 +1940,7 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
+ 
+ 	/* Check the cache first. */
+ 	/* (Cache hit rate is typically around 35%.) */
+-	vma = mm->mmap_cache;
++	vma = ACCESS_ONCE(mm->mmap_cache);
+ 	if (!(vma && vma->vm_end > addr && vma->vm_start <= addr)) {
+ 		struct rb_node *rb_node;
+ 
+diff --git a/mm/nommu.c b/mm/nommu.c
+index e193280..2f3ea74 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -821,7 +821,7 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
+ 	struct vm_area_struct *vma;
+ 
+ 	/* check the cache first */
+-	vma = mm->mmap_cache;
++	vma = ACCESS_ONCE(mm->mmap_cache);
+ 	if (vma && vma->vm_start <= addr && vma->vm_end > addr)
+ 		return vma;
+ 
 -- 
-tejun
+1.7.1
