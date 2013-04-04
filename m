@@ -1,118 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762509Ab3DDO4N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 10:56:13 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:13335 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762317Ab3DDOzJ (ORCPT
+	id S1762564Ab3DDO5I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 10:57:08 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:13370 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762538Ab3DDO5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 10:55:09 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>
-Subject: [PATCH RFC 3/3] mutex: dynamically disable mutex spinning at high load
-Date: Thu,  4 Apr 2013 10:54:18 -0400
-Message-Id: <1365087258-7169-4-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1365087258-7169-1-git-send-email-Waiman.Long@hp.com>
-References: <1365087258-7169-1-git-send-email-Waiman.Long@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
+	Thu, 4 Apr 2013 10:57:05 -0400
+From: Oskar Andero <oskar.andero@sonymobile.com>
+Date: Thu, 4 Apr 2013 16:57:02 +0200
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+CC: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "Makarov, Aleksej" <Aleksej.Makarov@sonymobile.com>,
+        Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
+Subject: Re: [PATCH] input: don't call input_dev_release_keys() in resume
+Message-ID: <20130404145702.GE2481@caracas.corpusers.net>
+References: <1362664882-16194-1-git-send-email-oskar.andero@sonymobile.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1362664882-16194-1-git-send-email-oskar.andero@sonymobile.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Linux mutex code has a MUTEX_SPIN_ON_OWNER configuration
-option that was enabled by default in major distributions like Red
-Hat. Allowing threads waiting on mutex to spin while the mutex owner
-is running will theoretically reduce latency on the acquisition of
-mutex at the expense of energy efficiency as the spinning threads
-are doing no useful work.
+On 15:01 Thu 07 Mar     , oskar.andero@sonymobile.com wrote:
+> From: Aleksej Makarov <aleksej.makarov@sonymobile.com>
+> 
+> When waking up the platform by pressing a specific key, sending a
+> release on that key makes it impossible to react on the event in
+> user-space.
+> 
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
+> Signed-off-by: Aleksej Makarov <aleksej.makarov@sonymobile.com>
+> Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
+> ---
+>  drivers/input/input.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/input/input.c b/drivers/input/input.c
+> index c044699..61ce19f 100644
+> --- a/drivers/input/input.c
+> +++ b/drivers/input/input.c
+> @@ -1690,7 +1690,10 @@ static int input_dev_resume(struct device *dev)
+>  {
+>  	struct input_dev *input_dev = to_input_dev(dev);
+>  
+> -	input_reset_device(input_dev);
+> +	mutex_lock(&input_dev->mutex);
+> +	if (input_dev->users)
+> +		input_dev_toggle(input_dev, true);
+> +	mutex_unlock(&input_dev->mutex);
+>  
+>  	return 0;
+>  }
+> -- 
+> 1.7.8.6
+> 
 
-This is not a problem on a lightly loaded system where the CPU may
-be idle anyway. On a highly loaded system, the spinning tasks may be
-blocking other tasks from running even if they have higher priority
-because the spinning was done with preemption disabled.
+Ping. Any input on the patch above?
 
-This patch will disable mutex spinning if the current load is high
-enough. The load is considered high if there are 2 or more active tasks
-waiting to run on the current CPU. If there is only one task waiting,
-it will check the average load at the past minute (calc_load_tasks).
-If it is more than double the number of active CPUs, the load is
-considered high too.  This is a rather simple metric that does not
-incur that much additional overhead.
-
-The AIM7 benchmarks were run on 3.7.10 derived kernels to show the
-performance changes with this patch on a 8-socket 80-core system
-with hyperthreading off.  The table below shows the mean % change
-in performance over a range of users for some AIM7 workloads with
-just the less atomic operation patch (patch 1) vs the less atomic
-operation patch plus this one (patches 1+3).
-
-+--------------+-----------------+-----------------+-----------------+
-|   Workload   | mean % change   | mean % change   | mean % change   |
-|              | 10-100 users    | 200-1000 users  | 1100-2000 users |
-+--------------+-----------------+-----------------+-----------------+
-| alltests     |      0.0%       |     -0.1%       |    +5.0%        |
-| five_sec     |     +1.5%       |     +1.3%       |    +1.3%        |
-| fserver      |     +1.5%       |    +25.4%       |    +9.6%        |
-| high_systime |     +0.1%       |      0.0%       |    +0.8%        |
-| new_fserver  |     +0.2%       |    +11.9%       |   +14.1%        |
-| shared       |     -1.2%       |     +0.3%       |    +1.8%        |
-| short        |     +6.4%       |     +2.5%       |    +3.0%        |
-+--------------+-----------------+-----------------+-----------------+
-
-It can be seen that this patch provides some big performance
-improvement for the fserver and new_fserver workloads while is still
-generally positive for the other AIM7 workloads.
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-Reviewed-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
----
- kernel/sched/core.c |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 7f12624..f667d63 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3021,9 +3021,31 @@ static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
-  */
- int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
- {
-+	unsigned int nrun;
-+
- 	if (!sched_feat(OWNER_SPIN))
- 		return 0;
- 
-+	/*
-+	 * Mutex spinning should be temporarily disabled if the load on
-+	 * the current CPU is high. The load is considered high if there
-+	 * are 2 or more active tasks waiting to run on this CPU. On the
-+	 * other hand, if there is another task waiting and the global
-+	 * load (calc_load_tasks - including uninterruptible tasks) is
-+	 * bigger than 2X the # of CPUs available, it is also considered
-+	 * to be high load.
-+	 */
-+	nrun = this_rq()->nr_running;
-+	if (nrun >= 3)
-+		return 0;
-+	else if (nrun == 2) {
-+		long active = atomic_long_read(&calc_load_tasks);
-+		int  ncpu   = num_online_cpus();
-+
-+		if (active > 2*ncpu)
-+			return 0;
-+	}
-+
- 	rcu_read_lock();
- 	while (owner_running(lock, owner)) {
- 		if (need_resched())
--- 
-1.7.1
-
+-Oskar
