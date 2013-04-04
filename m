@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763838Ab3DDGtI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 02:49:08 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:44059 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756163Ab3DDGtF (ORCPT
+	id S932782Ab3DDGu7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 02:50:59 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:51663 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756429Ab3DDGu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 02:49:05 -0400
-Date: Thu, 4 Apr 2013 14:48:49 +0800
-From: Ram Pai <linuxram@us.ibm.com>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, tmac@hp.com,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
-        tangchen@cn.fujitsu.com, jiang.liu@huawei.com
-Subject: Re: [PATCH 2/3] resource: Add release_mem_region_adjustable()
-Message-ID: <20130404064849.GA5709@ram.oc3035372033.ibm.com>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <1364919450-8741-1-git-send-email-toshi.kani@hp.com>
- <1364919450-8741-3-git-send-email-toshi.kani@hp.com>
- <20130403053720.GA26398@ram.oc3035372033.ibm.com>
- <1365018905.11159.113.camel@misato.fc.hp.com>
+	Thu, 4 Apr 2013 02:50:58 -0400
+Message-ID: <515D2240.9060501@linux.vnet.ibm.com>
+Date: Thu, 04 Apr 2013 12:18:32 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365018905.11159.113.camel@misato.fc.hp.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040406-2398-0000-0000-000012E87BC1
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH 4/5] sched: don't consider upper se in sched_slice()
+References: <1364457537-15114-1-git-send-email-iamjoonsoo.kim@lge.com> <1364457537-15114-5-git-send-email-iamjoonsoo.kim@lge.com> <51553EF5.90702@linux.vnet.ibm.com> <20130401040820.GA12015@lge.com> <5159320C.4050903@linux.vnet.ibm.com> <20130402022556.GD16699@lge.com> <515A64BB.5050005@linux.vnet.ibm.com> <20130402092647.GE16699@lge.com> <515B163B.8050509@linux.vnet.ibm.com> <20130404004231.GA10683@lge.com>
+In-Reply-To: <20130404004231.GA10683@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 13040406-5490-0000-0000-00000338FF21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 03, 2013 at 01:55:05PM -0600, Toshi Kani wrote:
-> On Wed, 2013-04-03 at 13:37 +0800, Ram Pai wrote:
-> > On Tue, Apr 02, 2013 at 10:17:29AM -0600, Toshi Kani wrote:
-> > > +	while ((res = *p)) {
+Hi Joonsoo,
 
-...snip...
-
-> > > +		if (res->start > start || res->end < end) {
-> > 
-> > This check looks sub-optimal; possbily wrong, to me.  if the res->start
-> > is greater than 'start', then obviously its sibling's start will
-> > also be greater than 'start'. So it will loop through all the
-> > resources unnecesarily.
-> 
-> I think this check is necessary to check if the requested range fits
-> into a resource.  It needs to check both sides to verify this.  I will
-> add some comment on this check.
-> 
-> >   you might want something like
-> > 
-> > 		if (start >= res->end) {
-> 
-> I agree that this list is sorted, so we can optimize an error case (i.e.
-> no matching entry is found) with an additional check.  I will add the
-> following check at the beginning of the while loop.  
-> 
->                 if (res->start >= end)
->                         break;
-> 
-> I also realized that the function returns 0 when no matching entry is
-> found.  I will change it to return -EINVAL as well.  
-
-ok. this will take care of it.
+On 04/04/2013 06:12 AM, Joonsoo Kim wrote:
+> Hello, Preeti.
 
 > 
-> > 		
-> > > +			p = &res->sibling;
-> > > +			continue;
-> > > +		}
-> > > +
-> > > +		if (!(res->flags & IORESOURCE_MEM)) {
-> > > +			ret = -EINVAL;
-> > > +			break;
-> > > +		}
-> > > +
-> > > +		if (!(res->flags & IORESOURCE_BUSY)) {
-> > > +			p = &res->child;
-> > > +			continue;
-> > > +		}
-> > > +
-> > > +		if (res->start == start && res->end == end) {
-> > > +			/* free the whole entry */
-> > > +			*p = res->sibling;
-> > > +			kfree(res);
-> > 
-> > This is incomplete. the prev resource's sibling should now point to
-> > this resource's sibling. The parent's child has to be updated if
-> > this resource is the first child resource. no?
-> 
-> If this resource is the first child, *p is set to &parent->child.  So,
-> it will update the parents' child.
+> So, how about extending a sched_period with rq->nr_running, instead of
+> cfs_rq->nr_running? It is my quick thought and I think that we can ensure
+> to run atleast once in this extending sched_period.
 
-But if the resource is not the parent's first child? will it update the
-previous siblings ->sibling ?
+Yeah this seems to be correct.This would ensure sched_min_granularity
+also. So then in the scenarion where there are 2 tgs in a runqueue with
+10 tasks each,when we calculate the sched_slice of any task,the
+__sched_period() would return 4*20 = 80ms.
 
--- 
-Ram Pai
+The sched_slice of each of the task would be 80/20 = 4ms. But what about
+the sched_slice of each task group? How would that be calculated then?
+
+Let us take the above example and walk through this problem.This would
+probably help us spot the issues involved with this.
+
+> And, do we leave a problem if we cannot guaranteed atleast once property?
+
+This would depend on the results of the benchmarks with the changes.I am
+unable to comment on this off the top of my head.
+
+Thank you
+
+Regards
+Preeti U Murthy
+
+
+
 
