@@ -1,118 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764426Ab3DDSSu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 14:18:50 -0400
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:48435 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764387Ab3DDSSs (ORCPT
+	id S1764459Ab3DDSTG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 14:19:06 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53877 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1764443Ab3DDSTC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 14:18:48 -0400
-Message-ID: <515DC3FE.1010405@redhat.com>
-Date: Thu, 04 Apr 2013 20:18:38 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Thu, 4 Apr 2013 14:19:02 -0400
+Message-ID: <515DC413.8050600@wwwdotorg.org>
+Date: Thu, 04 Apr 2013 12:18:59 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-CC: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: PING^3 Re: [PATCH v2 00/14] Corrections and customization of the
- SG_IO command whitelist (CVE-2012-4542)
-References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com> <5124F600.9030908@redhat.com> <514CDB6F.9030505@redhat.com>
-In-Reply-To: <514CDB6F.9030505@redhat.com>
-X-Enigmail-Version: 1.5.1
+To: Prashant Gaikwad <pgaikwad@nvidia.com>
+CC: mturquette@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clk: tegra: Add missing cdev1 and cdev2 clocks
+References: <1365066333-2361-1-git-send-email-pgaikwad@nvidia.com>
+In-Reply-To: <1365066333-2361-1-git-send-email-pgaikwad@nvidia.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 22/03/2013 23:30, Paolo Bonzini ha scritto:
-> Il 20/02/2013 17:12, Paolo Bonzini ha scritto:
->> Il 06/02/2013 16:15, Paolo Bonzini ha scritto:
->>> This series regards the whitelist that is used for the SG_IO ioctl.  This
->>> whitelist has three problems:
->>>
->>> * the bitmap of allowed commands is designed for MMC devices (roughly,
->>>   "play/burn CDs without requiring root") but some opcodes overlap across SCSI
->>>   device classes and have different meanings for different classes.
->>>
->>> * also because the bitmap of allowed commands is designed for MMC devices
->>>   only, some commands are missing even though they are generally useful and
->>>   not insecure.  At least not more insecure than anything else you can
->>>   do if you have access to /dev/sdX or /dev/stX nodes.
->>>
->>> * the whitelist can be disabled per-process but not per-disk.  In addition,
->>>   the required capability (CAP_SYS_RAWIO) gives access to a range of other 
->>>   resources, enough to make it insecure.
->>>
->>> The series corrects these problems.  Patches 1-4 solve the first problem,
->>> which also has an assigned CVE, by using different bitmaps for the various
->>> device classes.  Patches 5-11 solve the second by adding more commands
->>> to the bitmaps.  Patches 12 and 13 solve the third, and were already
->>> posted but ignored by the maintainers despite multiple pings.
->>>
->>> Note: checkpatch hates the formatting of the command table.  I know about this,
->>> and ensured that there are no errors in the rest of the code.  The current
->>> formatting is IMHO quite handy, and roughly based on the files available
->>> from the SCSI standard body.
->>>
->>> Ok for the next merge window?
->>>
->>> Paolo
->>>
->>> v1->v2: remove 2 MMC commands and 6 SBC commands (see patches 6 and 9
->>>         for details).  Added patch 14 and added a few more scanner
->>>         commands based on SANE (scanners are not whitelisted by default,
->>>         also were not in v1, but this makes it possible to opt into the
->>>         whitelist out of paranoia).  Removed C++ comments.  Removed the
->>>         large #if 0'd list of commands that the kernel does not pass
->>>         though.  Marked blk_set_cmd_filter_defaults as __init.
->>
->> Ping...
->>
->> Jens/James, is anyone going to pick this up for 3.9?
-> 
-> Another month has passed, Ping^2...
+On 04/04/2013 03:05 AM, Prashant Gaikwad wrote:
+> Register cdev1 and cdev2 peripheral clocks.
 
-Ping^3, any hope for 3.10?
+Can you please explain the relationship between the following clocks:
 
-Paolo
+cdev1
+extern1
+clk_out1
 
-> 
-> Paolo
-> 
->> Paolo
->>
->>>
->>> Paolo Bonzini (14):
->>>   sg_io: pass request_queue to blk_verify_command
->>>   sg_io: reorganize list of allowed commands
->>>   sg_io: use different default filters for each device class
->>>   sg_io: resolve conflicts between commands assigned to multiple
->>>     classes (CVE-2012-4542)
->>>   sg_io: whitelist a few more commands for rare & obsolete device types
->>>   sg_io: whitelist another command for multimedia devices
->>>   sg_io: whitelist a few more commands for media changers
->>>   sg_io: whitelist a few more commands for tapes
->>>   sg_io: whitelist a few more commands for disks
->>>   sg_io: whitelist a few obsolete commands
->>>   sg_io: mark blk_set_cmd_filter_defaults as __init
->>>   sg_io: remove remnants of sysfs SG_IO filters
->>>   sg_io: introduce unpriv_sgio queue flag
->>>   sg_io: use unpriv_sgio to disable whitelisting for scanners
->>>
->>>  Documentation/block/queue-sysfs.txt |    8 +
->>>  block/blk-sysfs.c                   |   33 +++
->>>  block/bsg.c                         |    2 +-
->>>  block/scsi_ioctl.c                  |  369 ++++++++++++++++++++++++++---------
->>>  drivers/scsi/scsi_scan.c            |   14 ++-
->>>  drivers/scsi/sg.c                   |    6 +-
->>>  include/linux/blkdev.h              |    8 +-
->>>  include/linux/genhd.h               |    9 -
->>>  include/scsi/scsi.h                 |    3 +
->>>  9 files changed, 344 insertions(+), 108 deletions(-)
->>>
->>
-> 
-
+The latter two clocks already exist in this driver. I think that
+clk_out1 is meant to represent cdev1 already, although it's set up to
+point at some PMC registers, rather than the CAR CLK_ENB registers.
