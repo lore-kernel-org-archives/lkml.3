@@ -1,241 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763909Ab3DDRh5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 13:37:57 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:54675 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763661Ab3DDRh4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 13:37:56 -0400
-Message-ID: <515DBA70.8010606@linaro.org>
-Date: Thu, 04 Apr 2013 10:37:52 -0700
-From: John Stultz <john.stultz@linaro.org>
+	id S1764092Ab3DDRkN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 13:40:13 -0400
+Received: from www.sr71.net ([198.145.64.142]:37507 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1763865Ab3DDRkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 13:40:11 -0400
+Message-ID: <515DBB00.20208@sr71.net>
+Date: Thu, 04 Apr 2013 10:40:16 -0700
+From: Dave Hansen <dave@sr71.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Arun Sharma <asharma@fb.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jason Evans <je@fb.com>, sanjay@google.com,
-        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH 0/4] Support vranges on files
-References: <1365033144-15156-1-git-send-email-john.stultz@linaro.org> <20130404065509.GE7675@blaptop>
-In-Reply-To: <20130404065509.GE7675@blaptop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: sched/cputime: sig->prev_stime underflow
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 11:55 PM, Minchan Kim wrote:
-> On Wed, Apr 03, 2013 at 04:52:19PM -0700, John Stultz wrote:
->> Next we introduce a parallel fvrange() syscall for creating
->> volatile ranges directly against files.
-> Okay. It seems you want to replace ashmem interface with fvrange.
-> I dobut we have to eat a slot for system call. Can't we add "int fd"
-> in vrange systemcall without inventing new wheel?
+With the 3.9-rcs (and probably much earlier) I'm seeing some weird top
+output where the cpu time "spent" is millions of hours:
 
-Sure, that would be doable. I just added the new syscall to make the 
-differences in functionality clear.
-Once the subtleties are understood, we can condense things down if we 
-think its best.
+445 root      20   0     0    0    0 S    0  0.0  5124095h kworker/45:1
+404 root      20   0     0    0    0 S    0  0.0  5124095h kworker/4:1
 
+I see it mostly with kernel threads, but it doesn't seem to happen on my
+distro kernel (3.5 era).  The suspect code is in thread_group_times():
 
->> And finally, we change the range pruging logic to be able to
->> handle both anonymous and file volatile ranges.
-> Okay. Then, what's the semantic file-vrange?
->
-> There is a file F. Process A mapped some part of file into his
-> address space. Then, Process B calls fvrange same part.
-> As I looked over your code, it purges the range although process B
-> is using now. Right? Is it your intention? Maybe isn't.
+	sig->prev_stime = max(sig->prev_stime, rtime - sig->prev_utime);
 
-Not sure if you're example has a type-o and you meant "process A is 
-using it"?  If so, yes. The point is the volatility is shared and 
-consistent across all users of the file, in the same way the data in the 
-file is shared. If process B punched a hole in the file, process A would 
-see the effect immediately. With volatile ranges, the hole punching is 
-just delayed and possibly done later by the kernel, in effect on behalf 
-of process B, so the behavior is the same.
+In my case, I caught it with rtime=34 and sig->prev_utime=35.  This code
+_looks_ to be pretty mature, coming in at commit 0cf55e1e in 2009.  The
+system I'm running on _does_ have some non-sync'd TSCs, but they are at
+least being detected, so I expect the fallout to be minimal:
 
-Consider the case where we could have two processes mmap a tmpfs file in 
-order to create a circular buffer shared between them. You could then 
-have a producer/consumer relationship with two processes where any data 
-not between the head & tail offsets were marked volatile. The producer 
-would mark tail+size non-volatile, write the data, and update the tail 
-offset. The consumer would read data from the head offset, mark the 
-just-read range as volatile, and update the offset.
+	tsc: Marking TSC unstable due to check_tsc_sync_source failed
 
-In this example, the producer would be the only process to mark data 
-non-volatile, while the consumer would be the only one marking ranges 
-volatile. Thus the state of volatility would need to be an attribute of 
-the file, not the process, in the same way the shared data is.
+config:
 
-Is that clear?
+	http://sr71.net/~dave/linux/config-bigbox-04042013.txt
 
-
-
-> Let's define fvrange's semantic same with anon-vrange.
-> If there is a process using range with non-volatile, at least,
-> we shouldn't purge at all.
-
-So this I'm not in agreement with.
-
-Anonymous pages are for the most part not shared, except via COW. And 
-for the COW case, yes, I agree, we shouldn't purge those pages.
-
-Similarly (and I have yet to handle this in the code), for private 
-mapped files, those pages shouldn't be purged either (or purging them 
-shouldn't affect the private mapped pages - not sure which direction to 
-go here).
-
-But for shared mapped files, we need to keep the volatility state shared 
-as well.
-
-
->> Now there are some quirks still to be resolved with the approach
->> used here. The biggest one being the vrange() call can't be used to
->> create volatile ranges against mmapped files. Instead only the
-> Why?
-
-As explained above, the volatility is shared like the data. The current 
-vrange() code creates per-mm volatile ranges, which aren't shared.
-
-
->
->> fvrange() can be used to create file backed volatile ranges.
-> I could't understand your point. It would be better to explain
-> my thought firstly then, you could point out something I am missing
-> now. Look below.
->
->> This could be overcome by iterating across all the process VMAs to
->> determine if they're anonymous or file based, and if file-based,
->> create a VMA sized volatile range on the mapping pointed to by the
->> VMA.
-> It needs just when we start to discard pages. Simply, it is related
-> to reclaim path, NOT system call path so it's not a problem.
-
-The reason we can't defer this to only the reclaim path is if volatile 
-ranges on shared mappings are stored in the mm_struct, if process A sets 
-up a volatile range on a shared mapping, but stores the volatility in 
-its own mm, then process B wants to clear the volatility on the range, 
-process B would have to iterate over all processes that have those file 
-vmas mapped and change them.
-
-Additionally if process A sets up a volatile range on a shared mapped 
-file, then quits, the volatility state dies with that process.
-
-Either way, its not just a simple matter of handling data on your own 
-mm_struct. That's fine for the process' own anonymous memory, but 
-doesn't work for shared file mappings.
-
-
->
->> But this would have downsides, as Minchan has been clear that he wants
->> to optmize the vrange() calls so that it is very cheap to create and
->> destroy volatile ranges. Having simple per-process ranges be created
->> means we don't have to iterate across the vmas in the range to
->> determine if they're anonymous or file backed. Instead the current
->> vrange() code just creates per process ranges (which may or may not
->> cover mmapped file data), but will only purge anonymous pages in
->> that range. This keeps the vrange() call cheap.
-> Right.
->
->> Additionally, just creating or destroying a single range is very
->> simple to do, and requires a fixed amount of memory known up front.
->> Thus we can allocate needed data prior to making any modifications.
->>
->> But If we were to create a range that crosses anonymous and file
->> backed pages, it must create or destroy multiple per-process or
->> per-file ranges. This could require an unknown number of allocations,
-> This is a part I can fail to parse your opinion.
-
-So if we were in the vrange() code to iterate over all the VMAs in the 
-range, creating VMA sizes ranges on either the mm_struct or the backing 
-address_space where appropriate, its possible that we could hit an 
-ENOMEM half way through the operation. This would leaving the range in 
-an inconsistent state: partially marked, and potentially causing us to 
-lose the purged state on the subranges.
-
-
-
->
->> opening the possibility of getting an ENOMEM half-way through the
->> operation, leaving the volatile range partially created or destroyed.
->>
->> So to keep this simple for this first pass, for now we have two
->> syscalls for two types of volatile ranges.
->
-> My idea is following as
->
->          vrange(fd, start, len, mode, behavior)
->
-> A) fd = 0
-
-Well we'd probably need to use -1 or something that would be an invalid 
-fd here.
-
-And really, I think having separate interfaces might be good, just as 
-there are separate madvise() and fadvise() calls (and when all this is 
-done, we may need to re-visit the new syscall vs new madvise/fadvise 
-flags decision).
-
->
-> 1) system call context - vrange system call registers new vrange
->     in mm_struct.
-> 2) Add new vrange into LRU
-> 3) reclaim context - walk with rmap to confirm all processes make
->     the range with volatile -> discard
->
-> B) fd = 1
-The fd would just need to be valid right, not 1.
-
-> 1) system call context - vrange system call registers new vrange
->     in address_space
-> 2) Add new vrange into LRU
-> 3) reclaim context - walk with rmap to confirm all processes make
->     the range with volatile -> discard
->
-> What's the problem in this logic?
-
-The problem is only if in the first case, the volatile range being 
-created crosses over both anonymous and shared file mmap pages. In that 
-case we have to create appropriate sub-ranges on the mm_struct, and 
-sub-ranges on the address_space of the mmaped file.
-
-This isn't impossible to do, but again, the handling of errors mid-way 
-through creating subranges is problematic (there may be yet a way around 
-it, I just haven't thought of it yet).
-
-
-Thus with my patches, I simplified the problem a bit by partitioning it 
-into two separate problems and two separate interfaces: Volatile ranges 
-that are created by the vrange() call won't affect mmaped pages, only 
-anonymous pages. We may create a range that covers them, but the 
-volatility isn't shared with other processes and the purging logic still 
-skips file pages. If you want to to create a volatile range on file 
-pages, you have to use fvrange().
-
-Of course, my patchset has its own inconsistencies too, since if a range 
-is marked non-volatile that covers a mmapped file that has been marked 
-volatile, that volatility would persist. So I probably should return an 
-error if the vrange call covers any mmapped files.
-
-
-Also, to be clear, I'm not saying that we *have* to partition these 
-operations into two separate behaviors, but I think having two separate 
-behaviors at first helps makes clear the subtleties of the differences 
-between them.
-
-
-Let me know if any of this helps your understanding. :)
-
-thanks
--john
+The dumb fix here would seem to be to just check "rtime <
+sig->prev_utime".  Any thoughts?
