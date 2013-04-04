@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760934Ab3DDM5C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 08:57:02 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:65404 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760852Ab3DDM47 (ORCPT
+	id S1760971Ab3DDM5K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 08:57:10 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:46197 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760805Ab3DDM5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 08:56:59 -0400
+	Thu, 4 Apr 2013 08:57:07 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
@@ -14,10 +14,10 @@ Cc: robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Subject: [PATCH 13/18] cpufreq: mips: move cpufreq driver to drivers/cpufreq
-Date: Thu,  4 Apr 2013 18:24:21 +0530
-Message-Id: <a4974a6f4ec6c81250aecd58ddd38683b408f8af.1365079581.git.viresh.kumar@linaro.org>
+        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org
+Subject: [PATCH 14/18] cpufreq: sh: move cpufreq driver to drivers/cpufreq
+Date: Thu,  4 Apr 2013 18:24:22 +0530
+Message-Id: <3167220d1e262ff22078993a5beec55e82dfd951.1365079581.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1365079581.git.viresh.kumar@linaro.org>
 References: <cover.1365079581.git.viresh.kumar@linaro.org>
@@ -27,158 +27,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves cpufreq driver of MIPS architecture to drivers/cpufreq.
+This patch moves cpufreq driver of SUPERH architecture to drivers/cpufreq.
 
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-sh@vger.kernel.org
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Acked-by: John Crispin <blogic@openwrt.org>
+Acked-by: Paul Mundt <lethal@linux-sh.org>
 ---
- arch/mips/Kconfig                                  |  9 ++++-
- arch/mips/kernel/Makefile                          |  2 --
- arch/mips/kernel/cpufreq/Kconfig                   | 41 ----------------------
- arch/mips/kernel/cpufreq/Makefile                  |  5 ---
- drivers/cpufreq/Kconfig                            | 18 ++++++++++
- drivers/cpufreq/Makefile                           |  1 +
- .../kernel => drivers}/cpufreq/loongson2_cpufreq.c |  0
- 7 files changed, 27 insertions(+), 49 deletions(-)
- delete mode 100644 arch/mips/kernel/cpufreq/Kconfig
- delete mode 100644 arch/mips/kernel/cpufreq/Makefile
- rename {arch/mips/kernel => drivers}/cpufreq/loongson2_cpufreq.c (100%)
+ arch/sh/Kconfig                                        | 18 ------------------
+ arch/sh/kernel/Makefile                                |  1 -
+ drivers/cpufreq/Kconfig                                | 18 ++++++++++++++++++
+ drivers/cpufreq/Makefile                               |  1 +
+ .../kernel/cpufreq.c => drivers/cpufreq/sh-cpufreq.c   |  2 --
+ 5 files changed, 19 insertions(+), 21 deletions(-)
+ rename arch/sh/kernel/cpufreq.c => drivers/cpufreq/sh-cpufreq.c (99%)
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index cd2e21f..22e8417 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -2539,7 +2539,14 @@ source "kernel/power/Kconfig"
- 
+diff --git a/arch/sh/Kconfig b/arch/sh/Kconfig
+index 5e85963..06e3163 100644
+--- a/arch/sh/Kconfig
++++ b/arch/sh/Kconfig
+@@ -624,25 +624,7 @@ config SH_CLK_CPG_LEGACY
  endmenu
  
--source "arch/mips/kernel/cpufreq/Kconfig"
-+config MIPS_EXTERNAL_TIMER
-+	bool
-+
-+if CPU_SUPPORTS_CPUFREQ && MIPS_EXTERNAL_TIMER
-+menu "CPU Power Management"
-+source "drivers/cpufreq/Kconfig"
-+endmenu
-+endif
- 
- source "net/Kconfig"
- 
-diff --git a/arch/mips/kernel/Makefile b/arch/mips/kernel/Makefile
-index f81d98f..c69ca65 100644
---- a/arch/mips/kernel/Makefile
-+++ b/arch/mips/kernel/Makefile
-@@ -92,8 +92,6 @@ CFLAGS_cpu-bugs64.o	= $(shell if $(CC) $(KBUILD_CFLAGS) -Wa,-mdaddi -c -o /dev/n
- 
- obj-$(CONFIG_HAVE_STD_PC_SERIAL_PORT)	+= 8250-platform.o
- 
--obj-$(CONFIG_MIPS_CPUFREQ)	+= cpufreq/
+ menu "CPU Frequency scaling"
 -
- obj-$(CONFIG_PERF_EVENTS)	+= perf_event.o
- obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event_mipsxx.o
- 
-diff --git a/arch/mips/kernel/cpufreq/Kconfig b/arch/mips/kernel/cpufreq/Kconfig
-deleted file mode 100644
-index 58c601e..0000000
---- a/arch/mips/kernel/cpufreq/Kconfig
-+++ /dev/null
-@@ -1,41 +0,0 @@
--#
--# CPU Frequency scaling
--#
+ source "drivers/cpufreq/Kconfig"
 -
--config MIPS_EXTERNAL_TIMER
--	bool
--
--config MIPS_CPUFREQ
--	bool
--	default y
--	depends on CPU_SUPPORTS_CPUFREQ && MIPS_EXTERNAL_TIMER
--
--if MIPS_CPUFREQ
--
--menu "CPU Frequency scaling"
--
--source "drivers/cpufreq/Kconfig"
--
--if CPU_FREQ
--
--comment "CPUFreq processor drivers"
--
--config LOONGSON2_CPUFREQ
--	tristate "Loongson2 CPUFreq Driver"
+-config SH_CPU_FREQ
+-	tristate "SuperH CPU Frequency driver"
+-	depends on CPU_FREQ
 -	select CPU_FREQ_TABLE
--	depends on MIPS_CPUFREQ
 -	help
--	  This option adds a CPUFreq driver for loongson processors which
--	  support software configurable cpu frequency.
+-	  This adds the cpufreq driver for SuperH. Any CPU that supports
+-	  clock rate rounding through the clock framework can use this
+-	  driver. While it will make the kernel slightly larger, this is
+-	  harmless for CPUs that don't support rate rounding. The driver
+-	  will also generate a notice in the boot log before disabling
+-	  itself if the CPU in question is not capable of rate rounding.
 -
--	  Loongson2F and it's successors support this feature.
+-	  For details, take a look at <file:Documentation/cpu-freq>.
 -
--	  For details, take a look at <file:Documentation/cpu-freq/>.
+-	  If unsure, say N.
 -
--	  If in doubt, say N.
--
--endif	# CPU_FREQ
--
--endmenu
--
--endif	# MIPS_CPUFREQ
-diff --git a/arch/mips/kernel/cpufreq/Makefile b/arch/mips/kernel/cpufreq/Makefile
-deleted file mode 100644
-index 05a5715..0000000
---- a/arch/mips/kernel/cpufreq/Makefile
-+++ /dev/null
-@@ -1,5 +0,0 @@
--#
--# Makefile for the Linux/MIPS cpufreq.
--#
--
--obj-$(CONFIG_LOONGSON2_CPUFREQ) += loongson2_cpufreq.o
+ endmenu
+ 
+ source "arch/sh/drivers/Kconfig"
+diff --git a/arch/sh/kernel/Makefile b/arch/sh/kernel/Makefile
+index f259b37..261c8bf 100644
+--- a/arch/sh/kernel/Makefile
++++ b/arch/sh/kernel/Makefile
+@@ -31,7 +31,6 @@ obj-$(CONFIG_VSYSCALL)		+= vsyscall/
+ obj-$(CONFIG_SMP)		+= smp.o
+ obj-$(CONFIG_SH_STANDARD_BIOS)	+= sh_bios.o
+ obj-$(CONFIG_KGDB)		+= kgdb.o
+-obj-$(CONFIG_SH_CPU_FREQ)	+= cpufreq.o
+ obj-$(CONFIG_MODULES)		+= sh_ksyms_$(BITS).o module.o
+ obj-$(CONFIG_KEXEC)		+= machine_kexec.o relocate_kernel.o
+ obj-$(CONFIG_CRASH_DUMP)	+= crash_dump.o
 diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index a2f1600..5030df5 100644
+index 5030df5..602d5db 100644
 --- a/drivers/cpufreq/Kconfig
 +++ b/drivers/cpufreq/Kconfig
-@@ -235,6 +235,24 @@ config IA64_ACPI_CPUFREQ
- 
+@@ -258,5 +258,23 @@ depends on PPC32 || PPC64
+ source "drivers/cpufreq/Kconfig.powerpc"
  endmenu
  
-+menu "MIPS CPUFreq processor drivers"
-+depends on MIPS
-+
-+config LOONGSON2_CPUFREQ
-+	tristate "Loongson2 CPUFreq Driver"
++menu "SH CPU Frequency scaling"
++depends on SUPERH
++config SH_CPU_FREQ
++	tristate "SuperH CPU Frequency driver"
 +	select CPU_FREQ_TABLE
 +	help
-+	  This option adds a CPUFreq driver for loongson processors which
-+	  support software configurable cpu frequency.
++	  This adds the cpufreq driver for SuperH. Any CPU that supports
++	  clock rate rounding through the clock framework can use this
++	  driver. While it will make the kernel slightly larger, this is
++	  harmless for CPUs that don't support rate rounding. The driver
++	  will also generate a notice in the boot log before disabling
++	  itself if the CPU in question is not capable of rate rounding.
 +
-+	  Loongson2F and it's successors support this feature.
++	  For details, take a look at <file:Documentation/cpu-freq>.
 +
-+	  For details, take a look at <file:Documentation/cpu-freq/>.
-+
-+	  If in doubt, say N.
-+
++	  If unsure, say N.
 +endmenu
 +
- menu "PowerPC CPU frequency scaling drivers"
- depends on PPC32 || PPC64
- source "drivers/cpufreq/Kconfig.powerpc"
+ endif
+ endmenu
 diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index aaa018c..f6226d1 100644
+index f6226d1..12607d9 100644
 --- a/drivers/cpufreq/Makefile
 +++ b/drivers/cpufreq/Makefile
-@@ -87,3 +87,4 @@ obj-$(CONFIG_BLACKFIN)			+= blackfin-cpufreq.o
- obj-$(CONFIG_CRIS_MACH_ARTPEC3)		+= cris-artpec3-cpufreq.o
+@@ -88,3 +88,4 @@ obj-$(CONFIG_CRIS_MACH_ARTPEC3)		+= cris-artpec3-cpufreq.o
  obj-$(CONFIG_ETRAXFS)			+= cris-etraxfs-cpufreq.o
  obj-$(CONFIG_IA64_ACPI_CPUFREQ)		+= ia64-acpi-cpufreq.o
-+obj-$(CONFIG_LOONGSON2_CPUFREQ)		+= loongson2_cpufreq.o
-diff --git a/arch/mips/kernel/cpufreq/loongson2_cpufreq.c b/drivers/cpufreq/loongson2_cpufreq.c
-similarity index 100%
-rename from arch/mips/kernel/cpufreq/loongson2_cpufreq.c
-rename to drivers/cpufreq/loongson2_cpufreq.c
+ obj-$(CONFIG_LOONGSON2_CPUFREQ)		+= loongson2_cpufreq.o
++obj-$(CONFIG_SH_CPU_FREQ)		+= sh-cpufreq.o
+diff --git a/arch/sh/kernel/cpufreq.c b/drivers/cpufreq/sh-cpufreq.c
+similarity index 99%
+rename from arch/sh/kernel/cpufreq.c
+rename to drivers/cpufreq/sh-cpufreq.c
+index 88c8fee..73adb64 100644
+--- a/arch/sh/kernel/cpufreq.c
++++ b/drivers/cpufreq/sh-cpufreq.c
+@@ -1,6 +1,4 @@
+ /*
+- * arch/sh/kernel/cpufreq.c
+- *
+  * cpufreq driver for the SuperH processors.
+  *
+  * Copyright (C) 2002 - 2012 Paul Mundt
 -- 
 1.7.12.rc2.18.g61b472e
 
