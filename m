@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932929Ab3DDHiu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 03:38:50 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:35554 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764043Ab3DDHfi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 03:35:38 -0400
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: linux-rdma <linux-rdma@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Roland Dreier <roland@kernel.org>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Alexander Nezhinsky <alexandern@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC-v3 1/9] target: Add export of target_get_sess_cmd symbol
-Date: Thu,  4 Apr 2013 07:24:08 +0000
-Message-Id: <1365060256-21506-2-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1365060256-21506-1-git-send-email-nab@linux-iscsi.org>
-References: <1365060256-21506-1-git-send-email-nab@linux-iscsi.org>
+	id S933336Ab3DDHrc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 03:47:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53093 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933318Ab3DDHrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 03:47:31 -0400
+Date: Thu, 4 Apr 2013 09:47:29 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Huzefa Kankroliwala <huzefa.nomanx.kankroliwala@intel.com>
+Cc: benjamin.tissoires@gmail.com, mika.westerberg@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] i2c-hid: fix length for set/get report in i2c hid
+In-Reply-To: <1364993121-18800-1-git-send-email-huzefa.nomanx.kankroliwala@intel.com>
+Message-ID: <alpine.LNX.2.00.1304040946170.30938@pobox.suse.cz>
+References: <1364993121-18800-1-git-send-email-huzefa.nomanx.kankroliwala@intel.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+On Wed, 3 Apr 2013, Huzefa Kankroliwala wrote:
 
-Export target_get_sess_cmd() symbol so that it can be used by
-iscsi-target.
+> With the current i2c hid driver set/get report does not work
+> as expected, for e.g sensor hub properties like power state,
+> frequency etc is not set properly on the device as a result
+> we do not get events.
+> The problem is that i2c hid driver in function i2c_hid_request
+> sets length equal to default buffer size for which the sensor
+> hub does not respond on get/set commands. Use report length
+> and calculate it based on report size and id.
+> 
+> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> Signed-off-by: Huzefa Kankroliwala <huzefa.nomanx.kankroliwala@intel.com>
 
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
----
- drivers/target/target_core_transport.c |    4 ++--
- include/target/target_core_fabric.h    |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+This is based on some old version of the driver though. Could you please 
+rebase it so that it applies on top of for-next branch of
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index 493e9e5..f8388b4 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -65,7 +65,6 @@ static void transport_complete_task_attr(struct se_cmd *cmd);
- static void transport_handle_queue_full(struct se_cmd *cmd,
- 		struct se_device *dev);
- static int transport_generic_get_mem(struct se_cmd *cmd);
--static int target_get_sess_cmd(struct se_session *, struct se_cmd *, bool);
- static void transport_put_cmd(struct se_cmd *cmd);
- static void target_complete_ok_work(struct work_struct *work);
- 
-@@ -2179,7 +2178,7 @@ EXPORT_SYMBOL(transport_generic_free_cmd);
-  * @se_cmd:	command descriptor to add
-  * @ack_kref:	Signal that fabric will perform an ack target_put_sess_cmd()
-  */
--static int target_get_sess_cmd(struct se_session *se_sess, struct se_cmd *se_cmd,
-+int target_get_sess_cmd(struct se_session *se_sess, struct se_cmd *se_cmd,
- 			       bool ack_kref)
- {
- 	unsigned long flags;
-@@ -2208,6 +2207,7 @@ out:
- 	spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
- 	return ret;
- }
-+EXPORT_SYMBOL(target_get_sess_cmd);
- 
- static void target_release_cmd_kref(struct kref *kref)
- {
-diff --git a/include/target/target_core_fabric.h b/include/target/target_core_fabric.h
-index aaa1ee6..ba3471b 100644
---- a/include/target/target_core_fabric.h
-+++ b/include/target/target_core_fabric.h
-@@ -120,7 +120,7 @@ bool	transport_wait_for_tasks(struct se_cmd *);
- int	transport_check_aborted_status(struct se_cmd *, int);
- int	transport_send_check_condition_and_sense(struct se_cmd *,
- 		sense_reason_t, int);
--
-+int	target_get_sess_cmd(struct se_session *, struct se_cmd *, bool);
- int	target_put_sess_cmd(struct se_session *, struct se_cmd *);
- void	target_sess_cmd_list_set_waiting(struct se_session *);
- void	target_wait_for_sess_cmds(struct se_session *, int);
+	git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git
+
+and resend? (actually rebasing on Linus' current tree would be absolutely 
+sufficient).
+
+Thanks.
+
 -- 
-1.7.2.5
-
+Jiri Kosina
+SUSE Labs
