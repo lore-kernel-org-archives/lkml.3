@@ -1,48 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765203Ab3DDWXg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 18:23:36 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:34738 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765160Ab3DDWXe convert rfc822-to-8bit (ORCPT
+	id S1765232Ab3DDWXr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 18:23:47 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:53875 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765209Ab3DDWXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 18:23:34 -0400
-From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-Subject: Re: 3.8.3 and 3.9git occasional watchdog oops
-Date: Fri, 5 Apr 2013 00:23:30 +0200
-User-Agent: KMail/1.13.7 (Linux/3.9.0-rc5-00184-gb6a9b7f; KDE/4.10.2; x86_64; ; )
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201303142154.20501.arekm@maven.pl>
-In-Reply-To: <201303142154.20501.arekm@maven.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201304050023.31143.a.miskiewicz@gmail.com>
+	Thu, 4 Apr 2013 18:23:45 -0400
+Subject: Re: [RFC-v3 9/9] iser-target: Add iSCSI Extensions for RDMA (iSER)
+ target driver
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Or Gerlitz <ogerlitz@mellanox.com>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-rdma <linux-rdma@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Roland Dreier <roland@kernel.org>,
+        Alexander Nezhinsky <alexandern@mellanox.com>
+In-Reply-To: <515D4D0E.40005@mellanox.com>
+References: <1365060256-21506-1-git-send-email-nab@linux-iscsi.org>
+	 <1365060256-21506-10-git-send-email-nab@linux-iscsi.org>
+	 <515D4D0E.40005@mellanox.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 04 Apr 2013 15:23:42 -0700
+Message-ID: <1365114222.11833.81.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 14 of March 2013, Arkadiusz Miśkiewicz wrote:
-> Hi.
+On Thu, 2013-04-04 at 12:51 +0300, Or Gerlitz wrote:
+> On 04/04/2013 10:24, Nicholas A. Bellinger wrote:
+> > +static int
+> > +isert_put_response(struct iscsi_conn *conn, struct iscsi_cmd *cmd)
+> > +{
+> > +	struct isert_cmd *isert_cmd = container_of(cmd,
+> > +					struct isert_cmd, iscsi_cmd);
+> > +	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
+> > +	struct ib_send_wr *send_wr = &isert_cmd->tx_desc.send_wr;
+> > +	struct iscsi_scsi_rsp *hdr = (struct iscsi_scsi_rsp *)
+> > +				&isert_cmd->tx_desc.iscsi_header;
+> > +
+> > +	isert_create_send_desc(isert_conn, isert_cmd, &isert_cmd->tx_desc);
+> > +	iscsit_build_rsp_pdu(cmd, conn, true, hdr);
+> > +	isert_init_tx_hdrs(isert_conn, &isert_cmd->tx_desc);
+> > +	/*
+> > +	 * Attach SENSE DATA payload to iSCSI Response PDU
+> > +	 */
+> > +	if (cmd->se_cmd.sense_buffer &&
+> > +	    ((cmd->se_cmd.se_cmd_flags & SCF_TRANSPORT_TASK_SENSE) ||
+> > +	    (cmd->se_cmd.se_cmd_flags & SCF_EMULATED_TASK_SENSE))) {
+> > +		struct ib_device *ib_dev = isert_conn->conn_cm_id->device;
+> > +		struct ib_sge *tx_dsg = &isert_cmd->tx_desc.tx_sg[1];
+> > +		u32 padding, sense_len;
+> > +
+> > +		put_unaligned_be16(cmd->se_cmd.scsi_sense_length,
+> > +				   cmd->sense_buffer);
+> > +		cmd->se_cmd.scsi_sense_length += sizeof(__be16);
+> > +
+> > +		padding = -(cmd->se_cmd.scsi_sense_length) & 3;
+> > +		hton24(hdr->dlength, (u32)cmd->se_cmd.scsi_sense_length);
+> > +		sense_len = cmd->se_cmd.scsi_sense_length + padding;
+> > +
+> > +		isert_cmd->sense_buf_dma = ib_dma_map_single(ib_dev,
+> > +				(void *)cmd->sense_buffer, sense_len,
+> > +				DMA_TO_DEVICE);
+> > +
+> > +		isert_cmd->sense_buf_len = sense_len;
+> > +		ib_dma_sync_single_for_cpu(ib_dev, isert_cmd->sense_buf_dma,
+> > +					   sense_len, DMA_TO_DEVICE);
+> > +		ib_dma_sync_single_for_device(ib_dev, isert_cmd->sense_buf_dma,
+> > +					      sense_len, DMA_TO_DEVICE);
+> > +
 > 
-> Just hit watchdog related oops in 3.8.3 kernel. Unfortunately photos only.
+> you just called dma_map_single, and not going to touch the buffer before 
+> posting it to the wire,
+> there's no point to sync it for the cpu and for the device, remove these 
+> calls.
 > 
-> http://ixion.pld-linux.org/~arekm/watchdog-oops-3.8.3/IMG_8942.JPG
-> http://ixion.pld-linux.org/~arekm/watchdog-oops-3.8.3/IMG_8941.JPG
 
-3.9git from today isn't any better unfortunately:
+Dropped.
 
-http://ixion.pld-linux.org/~arekm/watchdog-oops-3.9git.jpg
+Thanks Or!
 
-> 
-> oops started after I enabled systemd watchdog functionality. Cannot
-> reproduce easily.
-> 
-> watchdog here (thinkpad t400) is:
->  iTCO_wdt: Found a ICH9M-E TCO device (Version=2, TCOBASE=0x1060)
-
-
--- 
-Arkadiusz Miśkiewicz, arekm / maven.pl
