@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760748Ab3DDNCQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 09:02:16 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760328Ab3DDNCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 09:02:13 -0400
-From: Richard Weinberger <richard@nod.at>
-To: matt.fleming@intel.com
-Cc: cbouatmailru@gmail.com, ccross@android.com, keescook@chromium.org,
-        tony.luck@intel.com, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, matthew.garrett@nebula.com,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 2/2] efivars: Implement no_storage_paranoia parameter
-Date: Thu,  4 Apr 2013 15:01:40 +0200
-Message-Id: <1365080500-13677-2-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1365080500-13677-1-git-send-email-richard@nod.at>
-References: <1365080500-13677-1-git-send-email-richard@nod.at>
+	id S1760780Ab3DDNC3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 09:02:29 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:61902 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760141Ab3DDNC1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 09:02:27 -0400
+X-Originating-IP: 108.223.40.66
+Date: Thu, 4 Apr 2013 06:02:25 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Jean Delvare <khali@linux-fr.org>, Mike Frysinger <vapier@gentoo.org>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Blackfin: bf537: rename "CONFIG_ADT75"
+Message-ID: <20130404130225.GA3145@roeck-us.net>
+References: <1365071466.1830.29.camel@x61.thuisdomein>
+ <20130404134003.016dcee3@endymion.delvare>
+ <20130404120734.GA23162@roeck-us.net>
+ <1365080383.1830.46.camel@x61.thuisdomein>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365080383.1830.46.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using this parameter one can disable the storage_size/2 check if
-he is really sure that the UEFI does sane gc.
+On Thu, Apr 04, 2013 at 02:59:43PM +0200, Paul Bolle wrote:
+> On Thu, 2013-04-04 at 05:07 -0700, Guenter Roeck wrote:
+> > On Thu, Apr 04, 2013 at 01:40:03PM +0200, Jean Delvare wrote: 
+> > > This breakage is telling us something about the weird approach taken in
+> > > this file, methinks.
+> > > 
+> > Yes, they have persistent problems with renamed or moved drivers. I somewhat
+> > understood the need for SPI chips, but even there it seemed to me there should
+> > be a better solution.
+> 
+> The output of the (local) scripts I use mention about a dozen more
+> (possible) problems in both Blackfin's stamp.c files. I'm roughly
+> working my way back in git history, slowly, so those problems are
+> probably older.
+> 
+> Since I know from previous cleaning up efforts that the Blackfin people
+> know they have non-working code (eg, code not actually buildable since
+> it has no working Kconfig support) I do not give Blackfin much priority.
+> But this patch (and the other two related to the v3.2 release) were
+> obvious oversights that I could as well fix right away.
+> 
+Makes me shiver ...
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- drivers/firmware/efivars.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 8e87f8d..0e1d669 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -105,8 +105,10 @@ MODULE_VERSION(EFIVARS_VERSION);
- 
- static bool efivars_pstore_disable =
- 	IS_ENABLED(CONFIG_EFI_VARS_PSTORE_DEFAULT_DISABLE);
-+static bool efivars_no_storage_paranoia;
- 
- module_param_named(pstore_disable, efivars_pstore_disable, bool, 0644);
-+module_param_named(no_storage_paranoia, efivars_no_storage_paranoia, bool, 0644);
- 
- /*
-  * The maximum size of VariableName + Data = 1024
-@@ -450,7 +452,10 @@ check_var_size_locked(struct efivars *efivars, u32 attributes,
- 		return status;
- 
- 	if (!storage_size || size > remaining_size ||
--	    (max_size && size > max_size) ||
-+	    (max_size && size > max_size))
-+		return EFI_OUT_OF_RESOURCES;
-+
-+	if (!efivars_no_storage_paranoia &&
- 	    (remaining_size - size) < (storage_size / 2))
- 		return EFI_OUT_OF_RESOURCES;
- 
--- 
-1.8.1.4
-
+Guenter
