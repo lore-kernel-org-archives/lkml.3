@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762513Ab3DDVAG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 17:00:06 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:65341 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762277Ab3DDVAE (ORCPT
+	id S1762851Ab3DDVAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 17:00:52 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:51629 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762183Ab3DDVAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 17:00:04 -0400
+	Thu, 4 Apr 2013 17:00:51 -0400
 MIME-Version: 1.0
 In-Reply-To: <c3d1db06-5196-4828-b0a4-7f6517c7b68a@email.android.com>
 References: <1365106055-22939-1-git-send-email-keescook@chromium.org>
@@ -14,13 +14,12 @@ References: <1365106055-22939-1-git-send-email-keescook@chromium.org>
 	<515DDEC0.9000109@zytor.com>
 	<CAGXu5j+FqZpXURougB_Sd4zmF3bsqsT=m-om5eEM5WCsRX014g@mail.gmail.com>
 	<c3d1db06-5196-4828-b0a4-7f6517c7b68a@email.android.com>
-Date: Thu, 4 Apr 2013 14:00:03 -0700
-X-Google-Sender-Auth: zN0D7DNwh0ImUSeUQ544yosD4Uc
-Message-ID: <CAGXu5j+BHcVW2vsQ6xdF2hBCvvckf9Cmf_Lpz4+-tauSyY1Ucw@mail.gmail.com>
+Date: Thu, 4 Apr 2013 14:00:50 -0700
+Message-ID: <CAKyRK=gNeEjBQ7zbJphMcE=sps-fOwtddYMQt-e3q=Dc9nVo0g@mail.gmail.com>
 Subject: Re: [PATCH 3/3] x86: kernel base offset ASLR
-From: Kees Cook <keescook@chromium.org>
+From: Julien Tinnes <jln@google.com>
 To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
         "kernel-hardening@lists.openwall.com" 
 	<kernel-hardening@lists.openwall.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -30,20 +29,20 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Matt Fleming <matt.fleming@intel.com>,
         Eric Northup <digitaleric@google.com>,
         Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+        Will Drewry <wad@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Natural evolution: when the cluster is the computer, kernel panics are
+recoverable like segfaults in a multi-process OS.
+
+You have a point and 8 bits isn't perfect, but it's already useful
+regardless, in certain scenarios.
+
 On Thu, Apr 4, 2013 at 1:58 PM, H. Peter Anvin <hpa@zytor.com> wrote:
 > It seems to me that you are assuming that the attacker is targeting a specific system, but a bot might as well target 256 different systems and see what sticks...
-
-Certainly, but system monitoring will show 255 crashed machines, which
-is a huge blip on any radar. :)
-
--Kees
-
 >
 > Kees Cook <keescook@chromium.org> wrote:
 >
@@ -85,9 +84,3 @@ is a huge blip on any radar. :)
 >
 > --
 > Sent from my mobile phone. Please excuse brevity and lack of formatting.
-
-
-
---
-Kees Cook
-Chrome OS Security
