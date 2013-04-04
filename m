@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759379Ab3DDJqH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 05:46:07 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:35877 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759336Ab3DDJqF (ORCPT
+	id S1759453Ab3DDJvU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 05:51:20 -0400
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:41558 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759411Ab3DDJvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 05:46:05 -0400
-Message-ID: <515D4BD5.7020107@mellanox.com>
-Date: Thu, 4 Apr 2013 12:45:57 +0300
+	Thu, 4 Apr 2013 05:51:17 -0400
+Message-ID: <515D4D0E.40005@mellanox.com>
+Date: Thu, 4 Apr 2013 12:51:10 +0300
 From: Or Gerlitz <ogerlitz@mellanox.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
@@ -31,39 +31,64 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 04/04/2013 10:24, Nicholas A. Bellinger wrote:
-
-> +#define ISER_RECV_DATA_SEG_LEN  8192
-> +#define ISER_RX_PAYLOAD_SIZE    (ISER_HEADERS_LEN + ISER_RECV_DATA_SEG_LEN)
-> [...]
-> +#define ISER_RX_PAD_SIZE	(16384 - (ISER_RX_PAYLOAD_SIZE + \
-> +					sizeof(u64) + sizeof(struct ib_sge)))
-
-We're eating here too much ram for the pad, you need 8K + something, so 
-the pad can count down
-from 12K and not 16K which means each such element will consume three 
-pages and not four.
-
-> +struct iser_rx_desc {
-> +	struct iser_hdr iser_header;
-> +	struct iscsi_hdr iscsi_header;
-> +	char		data[ISER_RECV_DATA_SEG_LEN];
-> +	u64		dma_addr;
-> +	struct ib_sge	rx_sg;
-> +	char		pad[ISER_RX_PAD_SIZE];
-> +} __packed;
+> +static int
+> +isert_put_response(struct iscsi_conn *conn, struct iscsi_cmd *cmd)
+> +{
+> +	struct isert_cmd *isert_cmd = container_of(cmd,
+> +					struct isert_cmd, iscsi_cmd);
+> +	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
+> +	struct ib_send_wr *send_wr = &isert_cmd->tx_desc.send_wr;
+> +	struct iscsi_scsi_rsp *hdr = (struct iscsi_scsi_rsp *)
+> +				&isert_cmd->tx_desc.iscsi_header;
 > +
-> +struct isert_rx_desc {
-> +	struct isert_conn	*desc_conn;
-> +	struct work_struct	desc_work;
-> +	struct iser_rx_desc	desc;
-> +} __packed;
+> +	isert_create_send_desc(isert_conn, isert_cmd, &isert_cmd->tx_desc);
+> +	iscsit_build_rsp_pdu(cmd, conn, true, hdr);
+> +	isert_init_tx_hdrs(isert_conn, &isert_cmd->tx_desc);
+> +	/*
+> +	 * Attach SENSE DATA payload to iSCSI Response PDU
+> +	 */
+> +	if (cmd->se_cmd.sense_buffer &&
+> +	    ((cmd->se_cmd.se_cmd_flags & SCF_TRANSPORT_TASK_SENSE) ||
+> +	    (cmd->se_cmd.se_cmd_flags & SCF_EMULATED_TASK_SENSE))) {
+> +		struct ib_device *ib_dev = isert_conn->conn_cm_id->device;
+> +		struct ib_sge *tx_dsg = &isert_cmd->tx_desc.tx_sg[1];
+> +		u32 padding, sense_len;
+> +
+> +		put_unaligned_be16(cmd->se_cmd.scsi_sense_length,
+> +				   cmd->sense_buffer);
+> +		cmd->se_cmd.scsi_sense_length += sizeof(__be16);
+> +
+> +		padding = -(cmd->se_cmd.scsi_sense_length) & 3;
+> +		hton24(hdr->dlength, (u32)cmd->se_cmd.scsi_sense_length);
+> +		sense_len = cmd->se_cmd.scsi_sense_length + padding;
+> +
+> +		isert_cmd->sense_buf_dma = ib_dma_map_single(ib_dev,
+> +				(void *)cmd->sense_buffer, sense_len,
+> +				DMA_TO_DEVICE);
+> +
+> +		isert_cmd->sense_buf_len = sense_len;
+> +		ib_dma_sync_single_for_cpu(ib_dev, isert_cmd->sense_buf_dma,
+> +					   sense_len, DMA_TO_DEVICE);
+> +		ib_dma_sync_single_for_device(ib_dev, isert_cmd->sense_buf_dma,
+> +					      sense_len, DMA_TO_DEVICE);
+> +
 
-You have way enough room in the pad field of struct iser_rx_desc to 
-place there the two fields
-added by struct isert_rx_desc (and you only use struct iser_rx_desc from 
-within isert_rx_desc) --> any reason
-not to unify  them?
+you just called dma_map_single, and not going to touch the buffer before 
+posting it to the wire,
+there's no point to sync it for the cpu and for the device, remove these 
+calls.
 
 
+> +		tx_dsg->addr	= isert_cmd->sense_buf_dma;
+> +		tx_dsg->length	= sense_len;
+> +		tx_dsg->lkey	= isert_conn->conn_mr->lkey;
+> +		isert_cmd->tx_desc.num_sge = 2;
+> +	}
+> +
+> +	isert_init_send_wr(isert_cmd, send_wr);
+> +
+> +	pr_debug("Posting SCSI Response IB_WR_SEND >>>>>>>>>>>>>>>>>>>>>>\n");
+> +
+> +	return isert_post_response(isert_conn, isert_cmd);
+> +}
 
-Or.
