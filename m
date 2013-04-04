@@ -1,174 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765600Ab3DDXvH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 19:51:07 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:32213 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764407Ab3DDXr5 (ORCPT
+	id S1765561Ab3DDXvz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 19:51:55 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:33373 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765254Ab3DDXvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 19:47:57 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3 12/22] x86, mm, numa: Move node_map_pfn alignment() to x86
-Date: Thu,  4 Apr 2013 16:46:16 -0700
-Message-Id: <1365119186-23487-13-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
-References: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Thu, 4 Apr 2013 19:51:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130404160130.GA2577@udknight>
+References: <20130404160130.GA2577@udknight>
+From: Julian Calaby <julian.calaby@gmail.com>
+Date: Fri, 5 Apr 2013 10:51:30 +1100
+Message-ID: <CAGRGNgXj7mSF0Fgyjek4Xcc34N26WHtt4HMmHk7DOopaEPrYFw@mail.gmail.com>
+Subject: Re: [PATCH] lib80211: make lib80211 can be enabled independently
+To: Wang YanQing <udknight@gmail.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move node_map_pfn_alignment() to arch/x86/mm as no other user for it.
+Hi Wang,
 
-Will update it to use numa_meminfo instead of memblock.
+On Fri, Apr 5, 2013 at 3:01 AM, Wang YanQing <udknight@gmail.com> wrote:
+>
+> Current we can only enable lib80211 by enable a driver
+> in tree use it which will select it, but some out tree's
+> drivers also use it, so I think it has sense to make lib80211
+> can be enabled independently.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/mm/numa.c | 50 ++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/mm.h |  1 -
- mm/page_alloc.c    | 50 --------------------------------------------------
- 3 files changed, 50 insertions(+), 51 deletions(-)
+Just as a bit of explanation for Johannes' NACK:
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index b7173f6..24155b2 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -477,6 +477,56 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
- 	return true;
- }
- 
-+/**
-+ * node_map_pfn_alignment - determine the maximum internode alignment
-+ *
-+ * This function should be called after node map is populated and sorted.
-+ * It calculates the maximum power of two alignment which can distinguish
-+ * all the nodes.
-+ *
-+ * For example, if all nodes are 1GiB and aligned to 1GiB, the return value
-+ * would indicate 1GiB alignment with (1 << (30 - PAGE_SHIFT)).  If the
-+ * nodes are shifted by 256MiB, 256MiB.  Note that if only the last node is
-+ * shifted, 1GiB is enough and this function will indicate so.
-+ *
-+ * This is used to test whether pfn -> nid mapping of the chosen memory
-+ * model has fine enough granularity to avoid incorrect mapping for the
-+ * populated node map.
-+ *
-+ * Returns the determined alignment in pfn's.  0 if there is no alignment
-+ * requirement (single node).
-+ */
-+unsigned long __init node_map_pfn_alignment(void)
-+{
-+	unsigned long accl_mask = 0, last_end = 0;
-+	unsigned long start, end, mask;
-+	int last_nid = -1;
-+	int i, nid;
-+
-+	for_each_mem_pfn_range(i, MAX_NUMNODES, &start, &end, &nid) {
-+		if (!start || last_nid < 0 || last_nid == nid) {
-+			last_nid = nid;
-+			last_end = end;
-+			continue;
-+		}
-+
-+		/*
-+		 * Start with a mask granular enough to pin-point to the
-+		 * start pfn and tick off bits one-by-one until it becomes
-+		 * too coarse to separate the current node from the last.
-+		 */
-+		mask = ~((1 << __ffs(start)) - 1);
-+		while (mask && last_end <= (start & (mask << 1)))
-+			mask <<= 1;
-+
-+		/* accumulate all internode masks */
-+		accl_mask |= mask;
-+	}
-+
-+	/* convert mask to number of pages */
-+	return ~accl_mask + 1;
-+}
-+
- static int __init numa_register_memblks(struct numa_meminfo *mi)
- {
- 	unsigned long uninitialized_var(pfn_align);
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 192806c..77a71fb 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1322,7 +1322,6 @@ extern void free_initmem(void);
-  * CONFIG_HAVE_MEMBLOCK_NODE_MAP.
-  */
- extern void free_area_init_nodes(unsigned long *max_zone_pfn);
--unsigned long node_map_pfn_alignment(void);
- extern unsigned long absent_pages_in_range(unsigned long start_pfn,
- 						unsigned long end_pfn);
- extern void get_pfn_range_for_nid(unsigned int nid,
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 580d919..f368db4 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4725,56 +4725,6 @@ static inline void setup_nr_node_ids(void)
- }
- #endif
- 
--/**
-- * node_map_pfn_alignment - determine the maximum internode alignment
-- *
-- * This function should be called after node map is populated and sorted.
-- * It calculates the maximum power of two alignment which can distinguish
-- * all the nodes.
-- *
-- * For example, if all nodes are 1GiB and aligned to 1GiB, the return value
-- * would indicate 1GiB alignment with (1 << (30 - PAGE_SHIFT)).  If the
-- * nodes are shifted by 256MiB, 256MiB.  Note that if only the last node is
-- * shifted, 1GiB is enough and this function will indicate so.
-- *
-- * This is used to test whether pfn -> nid mapping of the chosen memory
-- * model has fine enough granularity to avoid incorrect mapping for the
-- * populated node map.
-- *
-- * Returns the determined alignment in pfn's.  0 if there is no alignment
-- * requirement (single node).
-- */
--unsigned long __init node_map_pfn_alignment(void)
--{
--	unsigned long accl_mask = 0, last_end = 0;
--	unsigned long start, end, mask;
--	int last_nid = -1;
--	int i, nid;
--
--	for_each_mem_pfn_range(i, MAX_NUMNODES, &start, &end, &nid) {
--		if (!start || last_nid < 0 || last_nid == nid) {
--			last_nid = nid;
--			last_end = end;
--			continue;
--		}
--
--		/*
--		 * Start with a mask granular enough to pin-point to the
--		 * start pfn and tick off bits one-by-one until it becomes
--		 * too coarse to separate the current node from the last.
--		 */
--		mask = ~((1 << __ffs(start)) - 1);
--		while (mask && last_end <= (start & (mask << 1)))
--			mask <<= 1;
--
--		/* accumulate all internode masks */
--		accl_mask |= mask;
--	}
--
--	/* convert mask to number of pages */
--	return ~accl_mask + 1;
--}
--
- /* Find the lowest pfn for a node */
- static unsigned long __init find_min_pfn_for_node(int nid)
- {
--- 
-1.8.1.4
+1. The only reason lib80211 still exists is because a couple of
+in-tree drivers still use it. If this weren't the case, the code would
+have been removed a long time ago as it's been completely replaced by
+mac80211 and cfg80211. All modern drivers _must_ use mac80211 or
+cfg80211 without exception.
+2. In general, there is no official in-kernel support for
+out-of-kernel drivers, regardless of quality, status or importance.
+3. I believe that the in-tree brcmsmac driver already supports the
+Broadcom card you reference.
 
+Thanks,
+
+--
+Julian Calaby
+
+Email: julian.calaby@gmail.com
+Profile: http://www.google.com/profiles/julian.calaby/
+.Plan: http://sites.google.com/site/juliancalaby/
