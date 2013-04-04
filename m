@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761311Ab3DDNvW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 09:51:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18018 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760635Ab3DDNvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 09:51:21 -0400
-Date: Thu, 4 Apr 2013 09:51:08 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/4] x86, kdump: Retore crashkernel= to allocate low
-Message-ID: <20130404135108.GB16459@redhat.com>
-References: <CAE9FiQViU_X-idHyFmRFQXmP23oWN63XkAr3KmXsfys1VBR53g@mail.gmail.com>
- <20130402201148.GJ29506@redhat.com>
- <CAE9FiQURMNjPYYze-tPn4Ssrc4TqMqTuvwRRhoVYEnGLF4Z0cQ@mail.gmail.com>
- <20130403131842.GA5939@redhat.com>
- <CAE9FiQUO-fLY-k_gmw6cg56YEN52VRvZuXr+f1EnywKr_cGc4Q@mail.gmail.com>
- <CAE9FiQXg2+DCd0BGRyKo4KWsMXdPZz74OjpQrUP=ciok2AZhuA@mail.gmail.com>
- <20130403174734.GG5939@redhat.com>
- <CAE9FiQU96BjThKbOGBhc6RHBey2+bvM6J6ZYaLb=xGuwahTuLQ@mail.gmail.com>
- <20130403210019.GH5939@redhat.com>
- <CAE9FiQXnDu9R9YkTS9=726ztK049O=xfSgPhwTWxT+0xz3gnAA@mail.gmail.com>
+	id S1761341Ab3DDNx7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 09:53:59 -0400
+Received: from mail-da0-f48.google.com ([209.85.210.48]:45858 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761221Ab3DDNx6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 09:53:58 -0400
+Date: Thu, 4 Apr 2013 06:53:53 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Li Zefan <lizefan@huawei.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC][PATCH 5/7] cgroup: make sure parent won't be destroyed
+ before its children
+Message-ID: <20130404133706.GA9425@htj.dyndns.org>
+References: <515BF233.6070308@huawei.com>
+ <515BF2A4.1070703@huawei.com>
+ <20130404113750.GH29911@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQXnDu9R9YkTS9=726ztK049O=xfSgPhwTWxT+0xz3gnAA@mail.gmail.com>
+In-Reply-To: <20130404113750.GH29911@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 03, 2013 at 05:56:00PM -0700, Yinghai Lu wrote:
+Hey,
 
-[..]
+On Thu, Apr 04, 2013 at 01:37:50PM +0200, Michal Hocko wrote:
+> On Wed 03-04-13 17:13:08, Li Zefan wrote:
+> > Suppose we rmdir a cgroup and there're still css refs, this cgroup won't
+> > be freed. Then we rmdir the parent cgroup, and the parent is freed due
+> > to css ref draining to 0. Now it would be a disaster if the child cgroup
+> > tries to access its parent.
 > 
-> One big rang under 4G is working well till second kernel need more than 512M
-> on bigger system with more memory.
+> Hmm, I am not sure what is the correct layer for this to handle - cgroup
+> core or memcg. But we have enforced that in mem_cgroup_css_online where
+> we take an additional reference to the memcg.
+> 
+> Handling it in the memcg code would have an advantage of limiting an
+> additional reference only to use_hierarchy cases which is sufficient
+> as we never touch the parent otherwise (parent_mem_cgroup).
 
-Currently one range is allocated below 896MB (and not 4G). So if we extend
-crashkernel=X to first try below 896MB and then reserve below 4G, we are
-just fine. And in fact we should be able to extend to even look beyond
-4G if nothing suitable is available below 4G.
+But what harm does an additional reference do?  And given that there
+are cgroup core interfaces which access ->parent, I think it'd be a
+good idea that parent always exists while there are children.
 
-Thanks
-Vivek
+Thanks.
+
+-- 
+tejun
