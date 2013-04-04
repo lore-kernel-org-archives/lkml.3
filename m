@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764222Ab3DDR7m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 13:59:42 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:32999 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764208Ab3DDR7l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 13:59:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130404174830.GR9425@htj.dyndns.org>
-References: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
-	<1362897887-30808-3-git-send-email-yinghai@kernel.org>
-	<20130404174830.GR9425@htj.dyndns.org>
-Date: Thu, 4 Apr 2013 10:59:40 -0700
-X-Google-Sender-Auth: CKyDhpqXfECNiHWfBU3jpjM7Tsg
-Message-ID: <CAE9FiQVYCHVmLcDZaOuN4WaodKBUJ4xjrr7ssxMk3iqAPSscUA@mail.gmail.com>
-Subject: Re: [PATCH v2 02/20] x86, microcode: Use common get_ramdisk_image()
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1764262Ab3DDSBP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 14:01:15 -0400
+Received: from arrakis.dune.hu ([78.24.191.176]:59925 "EHLO arrakis.dune.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1764216Ab3DDSBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 14:01:11 -0400
+From: Gabor Juhos <juhosg@openwrt.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        Gabor Juhos <juhosg@openwrt.org>
+Subject: [PATCH 2/2] MIPS: implement pcibios_get_phb_of_node
+Date: Thu,  4 Apr 2013 20:01:23 +0200
+Message-Id: <1365098483-26821-2-git-send-email-juhosg@openwrt.org>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1365098483-26821-1-git-send-email-juhosg@openwrt.org>
+References: <1365098483-26821-1-git-send-email-juhosg@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 4, 2013 at 10:48 AM, Tejun Heo <tj@kernel.org> wrote:
-> On Sat, Mar 09, 2013 at 10:44:29PM -0800, Yinghai Lu wrote:
->> Use common get_ramdisk_image() to get ramdisk start phys address.
->>
->> We need this to get correct ramdisk adress for 64bit bzImage that
->> initrd can be loaded above 4G by kexec-tools.
->
-> Is this a bug fix?  Can it actually happen?
+The of_node field of the device assigned to a
+PCI bus is used during scanning of the PCI bus.
+However on MIPS, the of_node field is assigned
+only after the bus has been scanned.
 
-Yes, it could happen.
-When second kernel have early microcode updating support, and it would search
-wrong wrong place for ramdisk.
+Implement the architecture specific version of
+'pcibios_get_phb_of_node'. Which ensures that the
+PCI driver core will initialize the of_node field
+before starting the scan.
 
-Thanks
+Also remove the local assignment of bus->dev.of_node,
+it is not needed after the patch.
 
-Yinghai
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+---
+ arch/mips/pci/pci.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/arch/mips/pci/pci.c b/arch/mips/pci/pci.c
+index 0872f12..594e60d 100644
+--- a/arch/mips/pci/pci.c
++++ b/arch/mips/pci/pci.c
+@@ -115,7 +115,6 @@ static void pcibios_scanbus(struct pci_controller *hose)
+ 			pci_bus_assign_resources(bus);
+ 			pci_enable_bridges(bus);
+ 		}
+-		bus->dev.of_node = hose->of_node;
+ 	}
+ }
+ 
+@@ -169,6 +168,13 @@ void pci_load_of_ranges(struct pci_controller *hose, struct device_node *node)
+ 		}
+ 	}
+ }
++
++struct device_node *pcibios_get_phb_of_node(struct pci_bus *bus)
++{
++	struct pci_controller *hose = bus->sysdata;
++
++	return of_node_get(hose->of_node);
++}
+ #endif
+ 
+ static DEFINE_MUTEX(pci_scan_mutex);
+-- 
+1.7.10
+
