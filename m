@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760070Ab3DDMdv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 08:33:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38751 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759756Ab3DDMdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 08:33:49 -0400
-Date: Thu, 4 Apr 2013 14:33:47 +0200
-From: Jan Kara <jack@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
-Subject: Re: linux-next: manual merge of the akpm tree with the vfs tree
-Message-ID: <20130404123347.GB26535@quack.suse.cz>
-References: <20130404171211.3d359e39ca54e074f122d541@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130404171211.3d359e39ca54e074f122d541@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1759960Ab3DDMdr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 08:33:47 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64428 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759834Ab3DDMcp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 08:32:45 -0400
+From: Serban Constantinescu <serban.constantinescu@arm.com>
+To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
+        Dave.Butcher@arm.com
+Cc: Serban Constantinescu <serban.constantinescu@arm.com>
+Subject: [PATCH 5/8] staging: android: binder: fix BINDER_SET_MAX_THREADS declaration
+Date: Thu,  4 Apr 2013 13:32:35 +0100
+Message-Id: <1365078758-28674-6-git-send-email-serban.constantinescu@arm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1365078758-28674-1-git-send-email-serban.constantinescu@arm.com>
+References: <1365078758-28674-1-git-send-email-serban.constantinescu@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 04-04-13 17:12:11, Stephen Rothwell wrote:
-> Hi Andrew,
-> 
-> Today's linux-next merge of the akpm tree got conflicts in mm/filemap.c,
-> fs/xfs/xfs_file.c, fs/splice.c, fs/ocfs2/file.c, fs/ntfs/file.c,
-> fs/fuse/file.c, fs/cifs/file.c and fs/btrfs/file.c between commit
-> 36bd5dc0c4e2 ("lift sb_start_write/sb_end_write out of ->aio_write()")
-> from the vfs tree and commit "fs: return EAGAIN when O_NONBLOCK write
-> should block on frozen fs" from the akpm tree.
-> 
-> The former was removing the code modified by the letter, so I just
-> dropped the akpm tree patch and the following "ocfs2: add freeze
-> protection to ocfs2_file_splice_write()".
-  Yeah, Al has been changing the area significantly. Andrew, you can drop
-the three relevant patches from -mm since they'll have to be redone. ocfs2
-should be actually fixed by Al's changes, psacct freeze remains but fixing
-it will become trivial...
+This change will fix the BINDER_SET_MAX_THREADS ioctl to use __s32
+instead of size_t for setting the max threads. Thus using the same
+handler for 32 and 64bit kernels.
 
-								Honza
+This value is stored internally in struct binder_proc as an int and
+is set to 15 on open_binder() in the libbinder API (thus no need for
+a 64bit size_t on 64bit platforms).
+
+The change does not affect existing 32bit ABI.
+
+Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
+---
+ drivers/staging/android/binder.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
+index 8012921..5b9909f 100644
+--- a/drivers/staging/android/binder.h
++++ b/drivers/staging/android/binder.h
+@@ -86,7 +86,7 @@ struct binder_version {
+ 
+ #define BINDER_WRITE_READ		_IOWR('b', 1, struct binder_write_read)
+ #define	BINDER_SET_IDLE_TIMEOUT		_IOW('b', 3, __s64)
+-#define	BINDER_SET_MAX_THREADS		_IOW('b', 5, size_t)
++#define	BINDER_SET_MAX_THREADS		_IOW('b', 5, __s32)
+ #define	BINDER_SET_IDLE_PRIORITY	_IOW('b', 6, __s32)
+ #define	BINDER_SET_CONTEXT_MGR		_IOW('b', 7, __s32)
+ #define	BINDER_THREAD_EXIT		_IOW('b', 8, __s32)
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.9.5
+
