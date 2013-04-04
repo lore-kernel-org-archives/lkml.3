@@ -1,141 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762376Ab3DDOzN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 10:55:13 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:13331 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762241Ab3DDOzJ (ORCPT
+	id S1762405Ab3DDOz1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 10:55:27 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:45610 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762388Ab3DDOzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 10:55:09 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>, Waiman Long <Waiman.Long@hp.com>,
-        linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>
-Subject: [PATCH RFC 2/3] mutex: restrict mutex spinning to only one task per mutex
-Date: Thu,  4 Apr 2013 10:54:17 -0400
-Message-Id: <1365087258-7169-3-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1365087258-7169-1-git-send-email-Waiman.Long@hp.com>
-References: <1365087258-7169-1-git-send-email-Waiman.Long@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
+	Thu, 4 Apr 2013 10:55:24 -0400
+Date: Thu, 4 Apr 2013 07:55:14 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>
+Subject: [PATCH] workqueue: avoid false negative WARN_ON() in
+ destroy_workqueue()
+Message-ID: <20130404145514.GJ9425@htj.dyndns.org>
+References: <1365041143-3088-1-git-send-email-laijs@cn.fujitsu.com>
+ <1365041143-3088-7-git-send-email-laijs@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365041143-3088-7-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current mutex spinning code allow multiple tasks to spin on a
-single mutex concurrently. There are two major problems with this
-approach:
+>From 5c529597e922c26910fe49b8d5f93aeaca9a2415 Mon Sep 17 00:00:00 2001
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+Date: Thu, 4 Apr 2013 10:05:38 +0800
 
- 1. This is not very energy efficient as the spinning tasks are not
-    doing useful work. The spinning tasks may also block other more
-    important or useful tasks from running as preemption is disabled.
-    Only one of the spinners will get the mutex at any time. The
-    other spinners will have to wait for much longer to get it.
+destroy_workqueue() performs several sanity checks before proceeding
+with destruction of a workqueue.  One of the checks verifies that
+refcnt of each pwq (pool_workqueue) is over 1 as at that point there
+should be no in-flight work items and the only holder of pwq refs is
+the workqueue itself.
 
- 2. The mutex data structure on x86-64 should be 32 bytes. The spinning
-    code spin on lock->owner which, in most cases, should be in the same
-    64-byte cache line as the lock->wait_lock spinlock. As a result,
-    the mutex spinners are contending the same cacheline with other
-    CPUs trying to get the spinlock leading to increased time spent
-    on the spinlock as well as on the mutex spinning.
+This worked fine as a workqueue used to hold only one reference to its
+pwqs; however, since 4c16bd327c ("workqueue: implement NUMA affinity
+for unbound workqueues"), a workqueue may hold multiple references to
+its default pwq triggering this sanity check spuriously.
 
-These problems are worse on system with large number of CPUs. One way
-to reduce the effect of these two problems is to allow only one task
-to be spinning on a mutex at any time.
+Fix it by not triggering the pwq->refcnt assertion on default pwqs.
 
-This patch adds a new spinner field in the mutex.h to limit the
-number of spinner to only one task. That will increase the size of
-the mutex by 8 bytes in a 64-bit environment (4 bytes in a 32-bit
-environment).
+An example spurious WARN trigger follows.
 
-The AIM7 benchmarks were run on 3.7.10 derived kernels to show the
-performance changes with this patch on a 8-socket 80-core system
-with hyperthreading off.  The table below shows the mean % change
-in performance over a range of users for some AIM7 workloads with
-just the less atomic operation patch (patch 1) vs the less atomic
-operation patch plus this one (patches 1+2).
+ WARNING: at kernel/workqueue.c:4201 destroy_workqueue+0x6a/0x13e()
+ Hardware name: 4286C12
+ Modules linked in: sdhci_pci sdhci mmc_core usb_storage i915 drm_kms_helper drm i2c_algo_bit i2c_core video
+ Pid: 361, comm: umount Not tainted 3.9.0-rc5+ #29
+ Call Trace:
+  [<c04314a7>] warn_slowpath_common+0x7c/0x93
+  [<c04314e0>] warn_slowpath_null+0x22/0x24
+  [<c044796a>] destroy_workqueue+0x6a/0x13e
+  [<c056dc01>] ext4_put_super+0x43/0x2c4
+  [<c04fb7b8>] generic_shutdown_super+0x4b/0xb9
+  [<c04fb848>] kill_block_super+0x22/0x60
+  [<c04fb960>] deactivate_locked_super+0x2f/0x56
+  [<c04fc41b>] deactivate_super+0x2e/0x31
+  [<c050f1e6>] mntput_no_expire+0x103/0x108
+  [<c050fdce>] sys_umount+0x2a2/0x2c4
+  [<c050fe0e>] sys_oldumount+0x1e/0x20
+  [<c085ba4d>] sysenter_do_call+0x12/0x38
 
-+--------------+-----------------+-----------------+-----------------+
-|   Workload   | mean % change   | mean % change   | mean % change   |
-|              | 10-100 users    | 200-1000 users  | 1100-2000 users |
-+--------------+-----------------+-----------------+-----------------+
-| alltests     |     -0.2%       |     -3.8%       |    -4.2%        |
-| five_sec     |     -0.6%       |     -2.0%       |    -2.4%        |
-| fserver      |     +2.2%       |    +16.2%       |    +2.2%        |
-| high_systime |     -0.3%       |     -4.3%       |    -3.0%        |
-| new_fserver  |     +3.9%       |    +16.0%       |    +9.5%        |
-| shared       |     -1.7%       |     -5.0%       |    -4.0%        |
-| short        |     -7.7%       |     +0.2%       |    +1.3%        |
-+--------------+-----------------+-----------------+-----------------+
+tj: Rewrote description.
 
-It can be seen that this patch improves performance for the fserver and
-new_fserver workloads while suffering some slight drop in performance
-for the other workloads.
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-Reviewed-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
 ---
- include/linux/mutex.h |    3 +++
- kernel/mutex.c        |   12 ++++++++++++
- 2 files changed, 15 insertions(+), 0 deletions(-)
+Applied to wq/for-3.10.
 
-diff --git a/include/linux/mutex.h b/include/linux/mutex.h
-index 9121595..dd8fdb8 100644
---- a/include/linux/mutex.h
-+++ b/include/linux/mutex.h
-@@ -50,6 +50,9 @@ struct mutex {
- 	atomic_t		count;
- 	spinlock_t		wait_lock;
- 	struct list_head	wait_list;
-+#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
-+	struct task_struct	*spinner;
-+#endif
- #if defined(CONFIG_DEBUG_MUTEXES) || defined(CONFIG_SMP)
- 	struct task_struct	*owner;
- #endif
-diff --git a/kernel/mutex.c b/kernel/mutex.c
-index 5e5ea03..965f59f 100644
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -158,7 +158,12 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 	 *
- 	 * We can't do this for DEBUG_MUTEXES because that relies on wait_lock
- 	 * to serialize everything.
-+	 *
-+	 * Only first task is allowed to spin on a given mutex and that
-+	 * task will put its task_struct pointer into the spinner field.
- 	 */
-+	if (lock->spinner || (cmpxchg(&lock->spinner, NULL, current) != NULL))
-+		goto slowpath;
- 
- 	for (;;) {
- 		struct task_struct *owner;
-@@ -175,6 +180,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
- 			lock_acquired(&lock->dep_map, ip);
- 			mutex_set_owner(lock);
-+			lock->spinner = NULL;
- 			preempt_enable();
- 			return 0;
+Thanks.
+
+ kernel/workqueue.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index dd2a4c4..c273376 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -4201,7 +4201,7 @@ void destroy_workqueue(struct workqueue_struct *wq)
+ 			}
  		}
-@@ -196,6 +202,12 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		 */
- 		arch_mutex_cpu_relax();
- 	}
-+
-+	/*
-+	 * Done with spinning
-+	 */
-+	lock->spinner = NULL;
-+slowpath:
- #endif
- 	spin_lock_mutex(&lock->wait_lock, flags);
  
+-		if (WARN_ON(pwq->refcnt > 1) ||
++		if (WARN_ON((pwq != wq->dfl_pwq) && (pwq->refcnt > 1)) ||
+ 		    WARN_ON(pwq->nr_active) ||
+ 		    WARN_ON(!list_empty(&pwq->delayed_works))) {
+ 			mutex_unlock(&wq->mutex);
 -- 
-1.7.1
+1.8.1.4
 
