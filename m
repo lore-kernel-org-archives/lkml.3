@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759565Ab3DDMHD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 08:07:03 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:61342 "EHLO
+	id S1759498Ab3DDMH0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 08:07:26 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:52351 "EHLO
 	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759439Ab3DDMHA (ORCPT
+	with ESMTP id S1758615Ab3DDMHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 08:07:00 -0400
+	Thu, 4 Apr 2013 08:07:25 -0400
 X-Originating-IP: 108.223.40.66
-Date: Thu, 4 Apr 2013 05:07:07 -0700
+Date: Thu, 4 Apr 2013 05:07:34 -0700
 From: Guenter Roeck <linux@roeck-us.net>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Mike Frysinger <vapier@gentoo.org>, Jonathan Cameron <jic23@cam.ac.uk>,
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Mike Frysinger <vapier@gentoo.org>,
         Michael Hennerich <michael.hennerich@analog.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
         uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Blackfin: bf537: rename "CONFIG_AD7314"
-Message-ID: <20130404120707.GA27590@roeck-us.net>
-References: <1365070105.1830.21.camel@x61.thuisdomein>
- <1365070623.1830.24.camel@x61.thuisdomein>
+Subject: Re: [PATCH] Blackfin: bf537: rename "CONFIG_ADT75"
+Message-ID: <20130404120734.GA23162@roeck-us.net>
+References: <1365071466.1830.29.camel@x61.thuisdomein>
+ <20130404134003.016dcee3@endymion.delvare>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365070623.1830.24.camel@x61.thuisdomein>
+In-Reply-To: <20130404134003.016dcee3@endymion.delvare>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 12:17:03PM +0200, Paul Bolle wrote:
-> [Forwarded to a recent address of Guenter, as the ericsson address
-> bounces.]
-> 
-> Paul Bolle
-> 
-> On Thu, 2013-04-04 at 12:08 +0200, Paul Bolle wrote:
-> > In v3.2 the Analog Devices AD7314 temperature sensor driver was removed
-> > as an IIO driver and added as a HWMON driver. But it was apparently
-> > overlooked to rename two references to CONFIG_AD7314 to
-> > CONFIG_SENSORS_AD7314. Do so now. Use the IS_ENABLED() macro, while
+On Thu, Apr 04, 2013 at 01:40:03PM +0200, Jean Delvare wrote:
+> On Thu, 04 Apr 2013 12:31:06 +0200, Paul Bolle wrote:
+> > In v3.2 the Analog Devices ADT75 temperature sensor driver was removed
+> > as an IIO driver and support for it was added to the LM75 HWMON driver.
+> > But it was apparently overlooked to rename one reference to CONFIG_ADT75
+> > to CONFIG_SENSORS_LM75. Do so now. Use the IS_ENABLED() macro, while
 > > we're at it.
 > > 
 > > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 > > ---
-> > 0) Entirely untested.
+> > 0) Also untested.
 > > 
-> > 1) See commits 4f3a659581cabf1be441d6467b523be914615496 ("hwmon: AD7314
-> > driver (ported from IIO)") and 48a2c3799b7141c271a771d3249142a104faeefc
-> > ("staging:iio:adc:ad7314 removal. Supported via hwmon.") for the two
-> > patches involved.
+> > 1) See commits e96f9d89e6213c7630a3323cd0c754e7f2619564 ("hwmon: (lm75)
+> > Add support for Analog Devices ADT75") and
+> > cdea0bec8d37f2943ae500512b0c178bc76de6e3 ("iio: adc: remove ADT75 driver
+> > - hwmon/lm75 will take over ADT75 support") for the two patches involved
+> > in this operation.
 > > 
-> >  arch/blackfin/mach-bf537/boards/stamp.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
+> >  arch/blackfin/mach-bf537/boards/stamp.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> This breakage is telling us something about the weird approach taken in
+> this file, methinks.
+> 
+Yes, they have persistent problems with renamed or moved drivers. I somewhat
+understood the need for SPI chips, but even there it seemed to me there should
+be a better solution.
+
 > > diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
-> > index 23bb55d..b40b849 100644
+> > index b40b849..9735345 100644
 > > --- a/arch/blackfin/mach-bf537/boards/stamp.c
 > > +++ b/arch/blackfin/mach-bf537/boards/stamp.c
-> > @@ -681,7 +681,7 @@ static struct bfin5xx_spi_chip ad2s1210_spi_chip_info = {
-> >  };
-> >  #endif
-> >  
-> > -#if defined(CONFIG_AD7314) || defined(CONFIG_AD7314_MODULE)
-> > +#if IS_ENABLED(CONFIG_SENSORS_AD7314)
-> >  static struct bfin5xx_spi_chip ad7314_spi_chip_info = {
-> >  	.enable_dma = 0,
-> >  };
-> > @@ -1039,7 +1039,7 @@ static struct spi_board_info bfin_spi_board_info[] __initdata = {
+> > @@ -2221,7 +2221,7 @@ static struct i2c_board_info __initdata bfin_i2c_board_info[] = {
 > >  	},
 > >  #endif
 > >  
-> > -#if defined(CONFIG_AD7314) || defined(CONFIG_AD7314_MODULE)
-> > +#if IS_ENABLED(CONFIG_SENSORS_AD7314)
+> > -#if defined(CONFIG_ADT75) || defined(CONFIG_ADT75_MODULE)
+> > +#if IS_ENABLED(CONFIG_SENSORS_LM75)
 > >  	{
-> >  		.modalias = "ad7314",
-> >  		.max_speed_hz = 1000000,
+> >  		I2C_BOARD_INFO("adt75", 0x9),
 > 
-Acked-by: Guenter Roeck <linux@roeck-us.net>
+> Unrelated to this patch, but this is very odd, as the ADT75 can't have
+> slave address 0x09. This address is almost exclusively used by battery
+> chargers AFAIK.
+> 
+Either not really an ADT75, or it should have been 0x49.
 
-Really wonder ... there should be a better solution than all those ifdefs.
+Couple of lines down, CONFIG_ADT7410 has the same problem.
 
 Guenter
+
+> >  		.irq = IRQ_PG5,
+> 
+> The patch itself looks good.
+> 
+> Reviewed-by: Jean Delvare <khali@linux-fr.org>
+> 
+> -- 
+> Jean Delvare
+> 
