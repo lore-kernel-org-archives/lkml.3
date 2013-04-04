@@ -1,365 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764101Ab3DDRtD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 13:49:03 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7110 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763664Ab3DDRtB (ORCPT
+	id S1764166Ab3DDRu0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 13:50:26 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:53168 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1764142Ab3DDRuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 13:49:01 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 04 Apr 2013 10:47:58 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: <mturquette@linaro.org>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH v9b 10/14] ARM: tegra: Define Tegra114 CAR binding
-Date: Thu, 4 Apr 2013 20:48:28 +0300
-Message-ID: <1365097717-11874-1-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-X-NVConfidentiality: public
+	Thu, 4 Apr 2013 13:50:22 -0400
+Date: Thu, 4 Apr 2013 10:50:17 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 04/20] x86, ACPI: Increase override tables number limit
+Message-ID: <20130404175017.GS9425@htj.dyndns.org>
+References: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
+ <1362897887-30808-5-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362897887-30808-5-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The device tree binding models Tegra114 CAR (Clock And Reset) as a single
-monolithic clock provider.
+On Sat, Mar 09, 2013 at 10:44:31PM -0800, Yinghai Lu wrote:
+> Current acpi tables in initrd is limited to 10, that is too small.
+> 64 should be good enough as we have 35 sigs and could have several
+> SSDT.
+> 
+> Two problems in current code prevent us from increasing limit:
+> 1. that cpio file info array is put in stack, as every element is 32
+>    bytes, could run out of stack if we have that array size to 64.
+>    We can move it out from stack, and make it as global and put it in
+>    __initdata section.
+> 2. early_ioremap only can remap 256k one time. Current code is mapping
+>    10 tables one time. If we increase that limit, whole size could be
+>    more than 256k, early_ioremap will fail with that.
+>    We can map table one by one during copying, instead of mapping
+>    all them one time.
+> 
+> -v2: According to tj, split it out to separated patch, also
+>      rename array name to acpi_initrd_files.
+> 
+> Signed-off-by: Yinghai <yinghai@kernel.org>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: linux-acpi@vger.kernel.org
 
---
+Acked-by: Tejun Heo <tj@kernel.org>
 
-Mike,
+> @@ -648,14 +647,14 @@ void __init acpi_initrd_override(void *data, size_t size)
+>  	memblock_reserve(acpi_tables_addr, acpi_tables_addr + all_tables_size);
+>  	arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
+>  
+> -	p = early_ioremap(acpi_tables_addr, all_tables_size);
+> -
 
-This is a small binding doc update only. Hence I didn't make an entire new
-patch series, but just an updated version of this patch. Please apply this
-instead of '[PATCH v9 10/14] ARM: tegra: Define Tegra114 CAR binding'
-(http://www.spinics.net/lists/linux-tegra/msg10910.html).
-The rest of the series is not affected. 
+It'd be nice to have a brief comment here explaining why we're mapping
+each table separately.
 
-Thanks in advance,
+>  	for (no = 0; no < table_nr; no++) {
+> -		memcpy(p + total_offset, early_initrd_files[no].data,
+> -		       early_initrd_files[no].size);
+> -		total_offset += early_initrd_files[no].size;
+> +		phys_addr_t size = acpi_initrd_files[no].size;
+> +
+> +		p = early_ioremap(acpi_tables_addr + total_offset, size);
+> +		memcpy(p, acpi_initrd_files[no].data, size);
+> +		early_iounmap(p, size);
+> +		total_offset += size;
+>  	}
+> -	early_iounmap(p, all_tables_size);
 
-Peter.
+Thanks.
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- .../bindings/clock/nvidia,tegra114-car.txt         |  303 ++++++++++++++++++++
- 1 files changed, 303 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/nvidia,tegra114-car.txt
-
-diff --git a/Documentation/devicetree/bindings/clock/nvidia,tegra114-car.txt b/Documentation/devicetree/bindings/clock/nvidia,tegra114-car.txt
-new file mode 100644
-index 0000000..d6cb083
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/nvidia,tegra114-car.txt
-@@ -0,0 +1,303 @@
-+NVIDIA Tegra114 Clock And Reset Controller
-+
-+This binding uses the common clock binding:
-+Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+The CAR (Clock And Reset) Controller on Tegra is the HW module responsible
-+for muxing and gating Tegra's clocks, and setting their rates.
-+
-+Required properties :
-+- compatible : Should be "nvidia,tegra114-car"
-+- reg : Should contain CAR registers location and length
-+- clocks : Should contain phandle and clock specifiers for two clocks:
-+  the 32 KHz "32k_in", and the board-specific oscillator "osc".
-+- #clock-cells : Should be 1.
-+  In clock consumers, this cell represents the clock ID exposed by the CAR.
-+
-+  The first 160 clocks are numbered to match the bits in the CAR's CLK_OUT_ENB
-+  registers. These IDs often match those in the CAR's RST_DEVICES registers,
-+  but not in all cases. Some bits in CLK_OUT_ENB affect multiple clocks. In
-+  this case, those clocks are assigned IDs above 160 in order to highlight
-+  this issue. Implementations that interpret these clock IDs as bit values
-+  within the CLK_OUT_ENB or RST_DEVICES registers should be careful to
-+  explicitly handle these special cases.
-+
-+  The balance of the clocks controlled by the CAR are assigned IDs of 160 and
-+  above.
-+
-+  0	unassigned
-+  1	unassigned
-+  2	unassigned
-+  3	unassigned
-+  4	rtc
-+  5	timer
-+  6	uarta
-+  7	unassigned	(register bit affects uartb and vfir)
-+  8	unassigned
-+  9	sdmmc2
-+  10	unassigned	(register bit affects spdif_in and spdif_out)
-+  11	i2s1
-+  12	i2c1
-+  13	ndflash
-+  14	sdmmc1
-+  15	sdmmc4
-+  16	unassigned
-+  17	pwm
-+  18	i2s2
-+  19	epp
-+  20	unassigned	(register bit affects vi and vi_sensor)
-+  21	2d
-+  22	usbd
-+  23	isp
-+  24	3d
-+  25	unassigned
-+  26	disp2
-+  27	disp1
-+  28	host1x
-+  29	vcp
-+  30	i2s0
-+  31	unassigned
-+
-+  32	unassigned
-+  33	unassigned
-+  34	apbdma
-+  35	unassigned
-+  36	kbc
-+  37	unassigned
-+  38	unassigned
-+  39	unassigned	(register bit affects fuse and fuse_burn)
-+  40	kfuse
-+  41	sbc1
-+  42	nor
-+  43	unassigned
-+  44	sbc2
-+  45	unassigned
-+  46	sbc3
-+  47	i2c5
-+  48	dsia
-+  49	unassigned
-+  50	mipi
-+  51	hdmi
-+  52	csi
-+  53	unassigned
-+  54	i2c2
-+  55	uartc
-+  56	mipi-cal
-+  57	emc
-+  58	usb2
-+  59	usb3
-+  60	msenc
-+  61	vde
-+  62	bsea
-+  63	bsev
-+
-+  64	unassigned
-+  65	uartd
-+  66	unassigned
-+  67	i2c3
-+  68	sbc4
-+  69	sdmmc3
-+  70	unassigned
-+  71	owr
-+  72	afi
-+  73	csite
-+  74	unassigned
-+  75	unassigned
-+  76	la
-+  77	trace
-+  78	soc_therm
-+  79	dtv
-+  80	ndspeed
-+  81	i2cslow
-+  82	dsib
-+  83	tsec
-+  84	unassigned
-+  85	unassigned
-+  86	unassigned
-+  87	unassigned
-+  88	unassigned
-+  89	xusb_host
-+  90	unassigned
-+  91	msenc
-+  92	csus
-+  93	unassigned
-+  94	unassigned
-+  95	unassigned	(bit affects xusb_dev and xusb_dev_src)
-+
-+  96	unassigned
-+  97	unassigned
-+  98	unassigned
-+  99	mselect
-+  100	tsensor
-+  101	i2s3
-+  102	i2s4
-+  103	i2c4
-+  104	sbc5
-+  105	sbc6
-+  106	d_audio
-+  107	apbif
-+  108	dam0
-+  109	dam1
-+  110	dam2
-+  111	hda2codec_2x
-+  112	unassigned
-+  113	audio0_2x
-+  114	audio1_2x
-+  115	audio2_2x
-+  116	audio3_2x
-+  117	audio4_2x
-+  118	spdif_2x
-+  119	actmon
-+  120	extern1
-+  121	extern2
-+  122	extern3
-+  123	unassigned
-+  124	unassigned
-+  125	hda
-+  126	unassigned
-+  127	se
-+
-+  128	hda2hdmi
-+  129	unassigned
-+  130	unassigned
-+  131	unassigned
-+  132	unassigned
-+  133	unassigned
-+  134	unassigned
-+  135	unassigned
-+  136	unassigned
-+  137	unassigned
-+  138	unassigned
-+  139	unassigned
-+  140	unassigned
-+  141	unassigned
-+  142	unassigned
-+  143	unassigned	(bit affects xusb_falcon_src, xusb_fs_src,
-+			 xusb_host_src and xusb_ss_src)
-+  144	cilab
-+  145	cilcd
-+  146	cile
-+  147	dsialp
-+  148	dsiblp
-+  149	unassigned
-+  150	dds
-+  151	unassigned
-+  152	dp2
-+  153	amx
-+  154	adx
-+  155	unassigned	(bit affects dfll_ref and dfll_soc)
-+  156	xusb_ss
-+
-+  192	uartb
-+  193	vfir
-+  194	spdif_in
-+  195	spdif_out
-+  196	vi
-+  197	vi_sensor
-+  198	fuse
-+  199	fuse_burn
-+  200	clk_32k
-+  201	clk_m
-+  202	clk_m_div2
-+  203	clk_m_div4
-+  204	pll_ref
-+  205	pll_c
-+  206	pll_c_out1
-+  207	pll_c2
-+  208	pll_c3
-+  209	pll_m
-+  210	pll_m_out1
-+  211	pll_p
-+  212	pll_p_out1
-+  213	pll_p_out2
-+  214	pll_p_out3
-+  215	pll_p_out4
-+  216	pll_a
-+  217	pll_a_out0
-+  218	pll_d
-+  219	pll_d_out0
-+  220	pll_d2
-+  221	pll_d2_out0
-+  222	pll_u
-+  223	pll_u_480M
-+  224	pll_u_60M
-+  225	pll_u_48M
-+  226	pll_u_12M
-+  227	pll_x
-+  228	pll_x_out0
-+  229	pll_re_vco
-+  230	pll_re_out
-+  231	pll_e_out0
-+  232	spdif_in_sync
-+  233	i2s0_sync
-+  234	i2s1_sync
-+  235	i2s2_sync
-+  236	i2s3_sync
-+  237	i2s4_sync
-+  238	vimclk_sync
-+  239	audio0
-+  240	audio1
-+  241	audio2
-+  242	audio3
-+  243	audio4
-+  244	spdif
-+  245	clk_out_1
-+  246	clk_out_2
-+  247	clk_out_3
-+  248	blink
-+  252	xusb_host_src
-+  253	xusb_falcon_src
-+  254	xusb_fs_src
-+  255	xusb_ss_src
-+  256	xusb_dev_src
-+  257	xusb_dev
-+  258	xusb_hs_src
-+  259	sclk
-+  260	hclk
-+  261	pclk
-+  262	cclk_g
-+  263	cclk_lp
-+  264	dfll_ref
-+  265	dfll_soc
-+
-+Example SoC include file:
-+
-+/ {
-+	tegra_car: clock {
-+		compatible = "nvidia,tegra114-car";
-+		reg = <0x60006000 0x1000>;
-+		#clock-cells = <1>;
-+	};
-+
-+	usb@c5004000 {
-+		clocks = <&tegra_car 58>; /* usb2 */
-+	};
-+};
-+
-+Example board file:
-+
-+/ {
-+	clocks {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		osc: clock@0 {
-+			compatible = "fixed-clock";
-+			reg = <0>;
-+			#clock-cells = <0>;
-+			clock-frequency = <12000000>;
-+		};
-+
-+		clk_32k: clock@1 {
-+			compatible = "fixed-clock";
-+			reg = <1>;
-+			#clock-cells = <0>;
-+			clock-frequency = <32768>;
-+		};
-+	};
-+
-+	&tegra_car {
-+		clocks = <&clk_32k> <&osc>;
-+	};
-+};
 -- 
-1.7.7.rc0.72.g4b5ea.dirty
-
+tejun
