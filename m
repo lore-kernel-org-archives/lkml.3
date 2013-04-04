@@ -1,46 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763190Ab3DDV7u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 17:59:50 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:55502 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760720Ab3DDV7r (ORCPT
+	id S1762959Ab3DDWAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 18:00:52 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:54791 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760720Ab3DDWAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 17:59:47 -0400
-Subject: Re: [RFC-v3 9/9] iser-target: Add iSCSI Extensions for RDMA (iSER)
- target driver
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Or Gerlitz <ogerlitz@mellanox.com>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Roland Dreier <roland@kernel.org>,
-        Alexander Nezhinsky <alexandern@mellanox.com>
-In-Reply-To: <515D45F6.9040903@mellanox.com>
-References: <1365060256-21506-1-git-send-email-nab@linux-iscsi.org>
-	 <1365060256-21506-10-git-send-email-nab@linux-iscsi.org>
-	 <515D45F6.9040903@mellanox.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 04 Apr 2013 14:59:44 -0700
-Message-ID: <1365112784.11833.60.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Apr 2013 18:00:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <1363217302-14383-3-git-send-email-yinghai@kernel.org>
+References: <1363217302-14383-1-git-send-email-yinghai@kernel.org> <1363217302-14383-3-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 4 Apr 2013 16:00:30 -0600
+Message-ID: <CAErSpo6rmxMrX8EWiaut3wLSCu7LvmstyadEnTRu4Bv5MVyXJw@mail.gmail.com>
+Subject: Re: [PATCH v3 02/27] PCI: Add pci_dev_resource_idx() helper
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ram Pai <linuxram@us.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-04 at 12:20 +0300, Or Gerlitz wrote:
-> On 04/04/2013 10:24, Nicholas A. Bellinger wrote:
-> > +
-> > +void isert_cq_tx_callback(struct ib_cq *, void *);
-> > +void isert_cq_rx_callback(struct ib_cq *, void *);
-> > +void isert_free_rx_descriptors(struct isert_conn *);
-> any reason not to have these as static functions (same for isert_cq_rx_work)
+On Wed, Mar 13, 2013 at 5:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> Use resource pointer to get index in pci resources array/list.
+>
+> -v2: export symbol for acpiphp compiling error, found by
+>        Steven Newbury <steve@snewbury.org.uk>
+>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  drivers/pci/probe.c |    9 +++++++++
+>  include/linux/pci.h |    1 +
+>  2 files changed, 10 insertions(+)
+>
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 9cb3eb3..1df75f7 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -114,6 +114,15 @@ struct resource *pci_dev_resource_n(struct pci_dev *dev, int n)
+>  }
+>  EXPORT_SYMBOL(pci_dev_resource_n);
+>
+> +int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res)
+> +{
+> +       if (res >= dev->resource &&
+> +           res <= dev->resource + (PCI_NUM_RESOURCES - 1))
+> +               return res - dev->resource;
+> +
+> +       return -1;
+> +}
 
-Nope.  Looking at re-orig now to avoid the use of function prototypes
-here, and marking everything as static..
+I'm dubious about the whole idea of a resource *index*.  I'd like to
+get away from that concept completely.
 
---nab
+Some uses of this are just for printing and are obviously unnecessary
+(get_res_add_size()).
 
+Other places we pass around the index, e.g.,
+reassign_resources_sorted() passes it to pci_assign_resource() and
+pci_reassign_resource(), and eventually we just pass the index to
+pci_dev_resource_n() to get back what we started with.  I'd rather
+just pass around a pointer instead of this half pointer/half index
+strategy.
+
+We might need a "struct pci_resource" or something that contains the
+type (BAR, IOV, bridge window, etc), a BAR number, etc.  There's
+already a "struct pci_resource" in cpqphp, but that's isolated to
+cpqphp and could be easily changed if you wanted that name.
+
+It's going to be very confusing to have a "struct pci_dev_resource"
+and a "pci_dev_resource_n()" that have nothing to do with each other.
+
+>  static u64 pci_size(u64 base, u64 maxbase, u64 mask)
+>  {
+>         u64 size = mask & maxbase;      /* Find the significant bits */
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 00d5367..aefff8b 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -339,6 +339,7 @@ struct pci_dev {
+>  };
+>
+>  struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
+> +int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res);
+>
+>  static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
+>  {
+> --
+> 1.7.10.4
+>
