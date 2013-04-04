@@ -1,45 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761214Ab3DDNu0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 09:50:26 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:34918 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761158Ab3DDNuZ (ORCPT
+	id S1761264Ab3DDNug (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 09:50:36 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:42074 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761236Ab3DDNuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 09:50:25 -0400
+	Thu, 4 Apr 2013 09:50:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <201304041345.41971.arnd@arndb.de>
-References: <201304041345.41971.arnd@arndb.de>
-Date: Thu, 4 Apr 2013 15:50:23 +0200
-Message-ID: <CAFTL4hxMVJnk-EWbAcSZz4XmOCnYJdXtkvtRf6P0KWY_EzFCNQ@mail.gmail.com>
-Subject: Re: posix_cpu_timer: initialize "now" variable
-From: Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <201304041302.09995.arnd@arndb.de>
+References: <cover.1365079581.git.viresh.kumar@linaro.org>
+	<0f989533f2e47d4d632710029bf0273082bafee3.1365079581.git.viresh.kumar@linaro.org>
+	<201304041302.09995.arnd@arndb.de>
+Date: Thu, 4 Apr 2013 19:20:31 +0530
+Message-ID: <CAKohpok_ftPoME0tFRMWMM9A2mNSOpQSvbJut0=AzhCuB-Yjrg@mail.gmail.com>
+Subject: Re: [PATCH 18/18] cpufreq: powerpc/platforms/cell: move cpufreq
+ driver to drivers/cpufreq
+From: Viresh Kumar <viresh.kumar@linaro.org>
 To: Arnd Bergmann <arnd@arndb.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: rjw@sisk.pl, robin.randhawa@arm.com, Steve.Bannister@arm.com,
+        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
+        arvind.chauhan@arm.com, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org
+Content-Type: multipart/mixed; boundary=e89a8f64274e0e557204d9894144
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/4 Arnd Bergmann <arnd@arndb.de>:
-> Patch 6d0e025 "posix_cpu_timer: consolidate expiry time type" in linux-next
-> introduces a new compiler warning:
->
-> kernel/posix-cpu-timers.c: In function 'posix_cpu_timer_schedule':
-> kernel/posix-cpu-timers.c:1127:19: warning: 'now' may be used uninitialized in this function [-Wmaybe-uninitialized]
->     clear_dead_task(timer, now);
->
-> As far as I can tell, that warning is about an actual bug an not
-> a false positive, as that variable is clearly never initialized
-> when it gets used in line 1127.
->
-> Here is a patch that makes the warning go away for me, no idea if this is
-> the right solution or not.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+--e89a8f64274e0e557204d9894144
+Content-Type: text/plain; charset=ISO-8859-1
 
-I posted a fix two days ago: https://lkml.org/lkml/2013/3/30/63
+On 4 April 2013 18:32, Arnd Bergmann <arnd@arndb.de> wrote:
+> Moving the files is good, but I don't see a reason to make the cbe_cpufreq.h
+> header globally visible in include/linux/. Isn't it just used by as the
+> interface between ppc_cbe_cpufreq_pmi.c  and ppc_cbe_cpufreq.c?
 
-Thanks.
+When i moved it initially i thought it is also used by
+arch/powerpc/platforms/cell/cpufreq_spudemand.c and hence moved it
+to include/linux and never realized i am wrong..
+
+Here is the fixup (And attached complete patch: original+fixup for Rafael
+to apply):
+
+Compile tested only.
+
+---
+ drivers/cpufreq/ppc_cbe_cpufreq.c                    | 3 ++-
+ {include/linux => drivers/cpufreq}/ppc_cbe_cpufreq.h | 0
+ drivers/cpufreq/ppc_cbe_cpufreq_pervasive.c          | 3 ++-
+ drivers/cpufreq/ppc_cbe_cpufreq_pmi.c                | 3 ++-
+ 4 files changed, 6 insertions(+), 3 deletions(-)
+ rename {include/linux => drivers/cpufreq}/ppc_cbe_cpufreq.h (100%)
+
+diff --git a/drivers/cpufreq/ppc_cbe_cpufreq.c
+b/drivers/cpufreq/ppc_cbe_cpufreq.c
+index 138d88c..56e0c17 100644
+--- a/drivers/cpufreq/ppc_cbe_cpufreq.c
++++ b/drivers/cpufreq/ppc_cbe_cpufreq.c
+@@ -23,12 +23,13 @@
+ #include <linux/cpufreq.h>
+ #include <linux/module.h>
+ #include <linux/of_platform.h>
+-#include <linux/ppc_cbe_cpufreq.h>
+
+ #include <asm/machdep.h>
+ #include <asm/prom.h>
+ #include <asm/cell-regs.h>
+
++#include "ppc_cbe_cpufreq.h"
++
+ static DEFINE_MUTEX(cbe_switch_mutex);
+
+
+diff --git a/include/linux/ppc_cbe_cpufreq.h b/drivers/cpufreq/ppc_cbe_cpufreq.h
+similarity index 100%
+rename from include/linux/ppc_cbe_cpufreq.h
+rename to drivers/cpufreq/ppc_cbe_cpufreq.h
+diff --git a/drivers/cpufreq/ppc_cbe_cpufreq_pervasive.c
+b/drivers/cpufreq/ppc_cbe_cpufreq_pervasive.c
+index 6708710..84d2f2c 100644
+--- a/drivers/cpufreq/ppc_cbe_cpufreq_pervasive.c
++++ b/drivers/cpufreq/ppc_cbe_cpufreq_pervasive.c
+@@ -25,12 +25,13 @@
+
+ #include <linux/io.h>
+ #include <linux/kernel.h>
+-#include <linux/ppc_cbe_cpufreq.h>
+ #include <linux/time.h>
+ #include <asm/machdep.h>
+ #include <asm/hw_irq.h>
+ #include <asm/cell-regs.h>
+
++#include "ppc_cbe_cpufreq.h"
++
+ /* to write to MIC register */
+ static u64 MIC_Slow_Fast_Timer_table[] = {
+ 	[0 ... 7] = 0x007fc00000000000ull,
+diff --git a/drivers/cpufreq/ppc_cbe_cpufreq_pmi.c
+b/drivers/cpufreq/ppc_cbe_cpufreq_pmi.c
+index 448b888..d29e8da 100644
+--- a/drivers/cpufreq/ppc_cbe_cpufreq_pmi.c
++++ b/drivers/cpufreq/ppc_cbe_cpufreq_pmi.c
+@@ -25,7 +25,6 @@
+ #include <linux/timer.h>
+ #include <linux/module.h>
+ #include <linux/of_platform.h>
+-#include <linux/ppc_cbe_cpufreq.h>
+
+ #include <asm/processor.h>
+ #include <asm/prom.h>
+@@ -36,6 +35,8 @@
+ #include <asm/time.h>
+ #endif
+
++#include "ppc_cbe_cpufreq.h"
++
+ static u8 pmi_slow_mode_limit[MAX_CBE];
+
+ bool cbe_cpufreq_has_pmi = false;
+
+--e89a8f64274e0e557204d9894144
+Content-Type: application/octet-stream; 
+	name="0001-cpufreq-powerpc-platforms-cell-move-cpufreq-driver-t.patch"
+Content-Disposition: attachment; 
+	filename="0001-cpufreq-powerpc-platforms-cell-move-cpufreq-driver-t.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hf3zef4b0
+
+RnJvbSA0NzI3NWE2Yjg3NDM1OWYxYjQyZmJlYTNlOWQxMDM3MjA0OWVlNmM2IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpNZXNzYWdlLUlkOiA8NDcyNzVhNmI4NzQzNTlmMWI0MmZiZWEzZTlkMTAz
+NzIwNDllZTZjNi4xMzY1MDgzMzM2LmdpdC52aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRnJvbTog
+VmlyZXNoIEt1bWFyIDx2aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KRGF0ZTogTW9uLCAyNSBNYXIg
+MjAxMyAxMToyMDoyMyArMDUzMApTdWJqZWN0OiBbUEFUQ0hdIGNwdWZyZXE6IHBvd2VycGMvcGxh
+dGZvcm1zL2NlbGw6IG1vdmUgY3B1ZnJlcSBkcml2ZXIgdG8KIGRyaXZlcnMvY3B1ZnJlcQoKVGhp
+cyBwYXRjaCBtb3ZlcyBjcHVmcmVxIGRyaXZlciBvZiBwb3dlcnBjIHBsYXRmb3Jtcy9jZWxsIHRv
+IGRyaXZlcnMvY3B1ZnJlcS4KCkNjOiBBcm5kIEJlcmdtYW5uIDxhcm5kQGFybmRiLmRlPgpDYzog
+QmVuamFtaW4gSGVycmVuc2NobWlkdCA8YmVuaEBrZXJuZWwuY3Jhc2hpbmcub3JnPgpDYzogbGlu
+dXhwcGMtZGV2QGxpc3RzLm96bGFicy5vcmcKU2lnbmVkLW9mZi1ieTogVmlyZXNoIEt1bWFyIDx2
+aXJlc2gua3VtYXJAbGluYXJvLm9yZz4KLS0tCiBhcmNoL3Bvd2VycGMvcGxhdGZvcm1zL2NlbGwv
+S2NvbmZpZyAgICAgICAgICAgICAgICB8IDI2ICstLS0tLS0tLS0tLS0tLS0tLS0tLS0KIGFyY2gv
+cG93ZXJwYy9wbGF0Zm9ybXMvY2VsbC9NYWtlZmlsZSAgICAgICAgICAgICAgIHwgIDMgLS0tCiBk
+cml2ZXJzL2NwdWZyZXEvS2NvbmZpZy5wb3dlcnBjICAgICAgICAgICAgICAgICAgICB8IDE4ICsr
+KysrKysrKysrKysrKwogZHJpdmVycy9jcHVmcmVxL01ha2VmaWxlICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgfCAgMyArKysKIC4uLi9jcHVmcmVxL3BwY19jYmVfY3B1ZnJlcS5jICAgICAgICAg
+ICAgICAgICAgICAgIHwgIDMgKystCiAuLi4vY3B1ZnJlcS9wcGNfY2JlX2NwdWZyZXEuaCAgICAg
+ICAgICAgICAgICAgICAgICB8ICA0ICsrLS0KIC4uLi9jcHVmcmVxL3BwY19jYmVfY3B1ZnJlcV9w
+ZXJ2YXNpdmUuYyAgICAgICAgICAgIHwgIDIgKy0KIC4uLi9jcHVmcmVxL3BwY19jYmVfY3B1ZnJl
+cV9wbWkuYyAgICAgICAgICAgICAgICAgIHwgIDIgKy0KIDggZmlsZXMgY2hhbmdlZCwgMjggaW5z
+ZXJ0aW9ucygrKSwgMzMgZGVsZXRpb25zKC0pCiByZW5hbWUgYXJjaC9wb3dlcnBjL3BsYXRmb3Jt
+cy9jZWxsL2NiZV9jcHVmcmVxLmMgPT4gZHJpdmVycy9jcHVmcmVxL3BwY19jYmVfY3B1ZnJlcS5j
+ICg5OSUpCiByZW5hbWUgYXJjaC9wb3dlcnBjL3BsYXRmb3Jtcy9jZWxsL2NiZV9jcHVmcmVxLmgg
+PT4gZHJpdmVycy9jcHVmcmVxL3BwY19jYmVfY3B1ZnJlcS5oICg4MiUpCiByZW5hbWUgYXJjaC9w
+b3dlcnBjL3BsYXRmb3Jtcy9jZWxsL2NiZV9jcHVmcmVxX3BlcnZhc2l2ZS5jID0+IGRyaXZlcnMv
+Y3B1ZnJlcS9wcGNfY2JlX2NwdWZyZXFfcGVydmFzaXZlLmMgKDk5JSkKIHJlbmFtZSBhcmNoL3Bv
+d2VycGMvcGxhdGZvcm1zL2NlbGwvY2JlX2NwdWZyZXFfcG1pLmMgPT4gZHJpdmVycy9jcHVmcmVx
+L3BwY19jYmVfY3B1ZnJlcV9wbWkuYyAoOTklKQoKZGlmZiAtLWdpdCBhL2FyY2gvcG93ZXJwYy9w
+bGF0Zm9ybXMvY2VsbC9LY29uZmlnIGIvYXJjaC9wb3dlcnBjL3BsYXRmb3Jtcy9jZWxsL0tjb25m
+aWcKaW5kZXggNTNhYWVmZS4uOTk3OGY1OSAxMDA2NDQKLS0tIGEvYXJjaC9wb3dlcnBjL3BsYXRm
+b3Jtcy9jZWxsL0tjb25maWcKKysrIGIvYXJjaC9wb3dlcnBjL3BsYXRmb3Jtcy9jZWxsL0tjb25m
+aWcKQEAgLTExMywzNCArMTEzLDEwIEBAIGNvbmZpZyBDQkVfVEhFUk0KIAlkZWZhdWx0IG0KIAlk
+ZXBlbmRzIG9uIENCRV9SQVMgJiYgU1BVX0JBU0UKIAotY29uZmlnIENCRV9DUFVGUkVRCi0JdHJp
+c3RhdGUgIkNCRSBmcmVxdWVuY3kgc2NhbGluZyIKLQlkZXBlbmRzIG9uIENCRV9SQVMgJiYgQ1BV
+X0ZSRVEKLQlkZWZhdWx0IG0KLQloZWxwCi0JICBUaGlzIGFkZHMgdGhlIGNwdWZyZXEgZHJpdmVy
+IGZvciBDZWxsIEJFIHByb2Nlc3NvcnMuCi0JICBGb3IgZGV0YWlscywgdGFrZSBhIGxvb2sgYXQg
+PGZpbGU6RG9jdW1lbnRhdGlvbi9jcHUtZnJlcS8+LgotCSAgSWYgeW91IGRvbid0IGhhdmUgc3Vj
+aCBwcm9jZXNzb3IsIHNheSBOCi0KLWNvbmZpZyBDQkVfQ1BVRlJFUV9QTUlfRU5BQkxFCi0JYm9v
+bCAiQ0JFIGZyZXF1ZW5jeSBzY2FsaW5nIHVzaW5nIFBNSSBpbnRlcmZhY2UiCi0JZGVwZW5kcyBv
+biBDQkVfQ1BVRlJFUQotCWRlZmF1bHQgbgotCWhlbHAKLQkgIFNlbGVjdCB0aGlzLCBpZiB5b3Ug
+d2FudCB0byB1c2UgdGhlIFBNSSBpbnRlcmZhY2UKLQkgIHRvIHN3aXRjaCBmcmVxdWVuY2llcy4g
+VXNpbmcgUE1JLCB0aGUKLQkgIHByb2Nlc3NvciB3aWxsIG5vdCBvbmx5IGJlIGFibGUgdG8gcnVu
+IGF0IGxvd2VyIHNwZWVkLAotCSAgYnV0IGFsc28gYXQgbG93ZXIgY29yZSB2b2x0YWdlLgotCi1j
+b25maWcgQ0JFX0NQVUZSRVFfUE1JCi0JdHJpc3RhdGUKLQlkZXBlbmRzIG9uIENCRV9DUFVGUkVR
+X1BNSV9FTkFCTEUKLQlkZWZhdWx0IENCRV9DUFVGUkVRCi0KIGNvbmZpZyBQUENfUE1JCiAJdHJp
+c3RhdGUKIAlkZWZhdWx0IHkKLQlkZXBlbmRzIG9uIENCRV9DUFVGUkVRX1BNSSB8fCBQUENfSUJN
+X0NFTExfUE9XRVJCVVRUT04KKwlkZXBlbmRzIG9uIENQVV9GUkVRX0NCRV9QTUkgfHwgUFBDX0lC
+TV9DRUxMX1BPV0VSQlVUVE9OCiAJaGVscAogCSAgUE1JIChQbGF0Zm9ybSBNYW5hZ2VtZW50IElu
+dGVycnVwdCkgaXMgYSB3YXkgdG8KIAkgIGNvbW11bmljYXRlIHdpdGggdGhlIEJNQyAoQmFzZWJv
+YXJkIE1hbmFnZW1lbnQgQ29udHJvbGxlcikuCmRpZmYgLS1naXQgYS9hcmNoL3Bvd2VycGMvcGxh
+dGZvcm1zL2NlbGwvTWFrZWZpbGUgYi9hcmNoL3Bvd2VycGMvcGxhdGZvcm1zL2NlbGwvTWFrZWZp
+bGUKaW5kZXggYTRhODkzNS4uZmUwNTNlNyAxMDA2NDQKLS0tIGEvYXJjaC9wb3dlcnBjL3BsYXRm
+b3Jtcy9jZWxsL01ha2VmaWxlCisrKyBiL2FyY2gvcG93ZXJwYy9wbGF0Zm9ybXMvY2VsbC9NYWtl
+ZmlsZQpAQCAtNSw5ICs1LDYgQEAgb2JqLSQoQ09ORklHX1BQQ19DRUxMX05BVElWRSkJCSs9IGlv
+bW11Lm8gc2V0dXAubyBzcGlkZXItcGljLm8gXAogb2JqLSQoQ09ORklHX0NCRV9SQVMpCQkJKz0g
+cmFzLm8KIAogb2JqLSQoQ09ORklHX0NCRV9USEVSTSkJCQkrPSBjYmVfdGhlcm1hbC5vCi1vYmot
+JChDT05GSUdfQ0JFX0NQVUZSRVFfUE1JKQkJKz0gY2JlX2NwdWZyZXFfcG1pLm8KLW9iai0kKENP
+TkZJR19DQkVfQ1BVRlJFUSkJCSs9IGNiZS1jcHVmcmVxLm8KLWNiZS1jcHVmcmVxLXkJCQkJKz0g
+Y2JlX2NwdWZyZXFfcGVydmFzaXZlLm8gY2JlX2NwdWZyZXEubwogb2JqLSQoQ09ORklHX0NCRV9D
+UFVGUkVRX1NQVV9HT1ZFUk5PUikJKz0gY3B1ZnJlcV9zcHVkZW1hbmQubwogCiBvYmotJChDT05G
+SUdfUFBDX0lCTV9DRUxMX1BPV0VSQlVUVE9OKQkrPSBjYmVfcG93ZXJidXR0b24ubwpkaWZmIC0t
+Z2l0IGEvZHJpdmVycy9jcHVmcmVxL0tjb25maWcucG93ZXJwYyBiL2RyaXZlcnMvY3B1ZnJlcS9L
+Y29uZmlnLnBvd2VycGMKaW5kZXggMmU1YTAwNy4uOWUxYWU5NCAxMDA2NDQKLS0tIGEvZHJpdmVy
+cy9jcHVmcmVxL0tjb25maWcucG93ZXJwYworKysgYi9kcml2ZXJzL2NwdWZyZXEvS2NvbmZpZy5w
+b3dlcnBjCkBAIC0xLDMgKzEsMjEgQEAKK2NvbmZpZyBDUFVfRlJFUV9DQkUKKwl0cmlzdGF0ZSAi
+Q0JFIGZyZXF1ZW5jeSBzY2FsaW5nIgorCWRlcGVuZHMgb24gQ0JFX1JBUyAmJiBQUENfQ0VMTAor
+CWRlZmF1bHQgbQorCWhlbHAKKwkgIFRoaXMgYWRkcyB0aGUgY3B1ZnJlcSBkcml2ZXIgZm9yIENl
+bGwgQkUgcHJvY2Vzc29ycy4KKwkgIEZvciBkZXRhaWxzLCB0YWtlIGEgbG9vayBhdCA8ZmlsZTpE
+b2N1bWVudGF0aW9uL2NwdS1mcmVxLz4uCisJICBJZiB5b3UgZG9uJ3QgaGF2ZSBzdWNoIHByb2Nl
+c3Nvciwgc2F5IE4KKworY29uZmlnIENQVV9GUkVRX0NCRV9QTUkKKwlib29sICJDQkUgZnJlcXVl
+bmN5IHNjYWxpbmcgdXNpbmcgUE1JIGludGVyZmFjZSIKKwlkZXBlbmRzIG9uIENQVV9GUkVRX0NC
+RQorCWRlZmF1bHQgbgorCWhlbHAKKwkgIFNlbGVjdCB0aGlzLCBpZiB5b3Ugd2FudCB0byB1c2Ug
+dGhlIFBNSSBpbnRlcmZhY2UgdG8gc3dpdGNoCisJICBmcmVxdWVuY2llcy4gVXNpbmcgUE1JLCB0
+aGUgcHJvY2Vzc29yIHdpbGwgbm90IG9ubHkgYmUgYWJsZSB0byBydW4gYXQKKwkgIGxvd2VyIHNw
+ZWVkLCBidXQgYWxzbyBhdCBsb3dlciBjb3JlIHZvbHRhZ2UuCisKIGNvbmZpZyBDUFVfRlJFUV9N
+QVBMRQogCWJvb2wgIlN1cHBvcnQgZm9yIE1hcGxlIDk3MEZYIEV2YWx1YXRpb24gQm9hcmQiCiAJ
+ZGVwZW5kcyBvbiBQUENfTUFQTEUKZGlmZiAtLWdpdCBhL2RyaXZlcnMvY3B1ZnJlcS9NYWtlZmls
+ZSBiL2RyaXZlcnMvY3B1ZnJlcS9NYWtlZmlsZQppbmRleCA3YjE2MDkyZi4uYmZlZmEyMiAxMDA2
+NDQKLS0tIGEvZHJpdmVycy9jcHVmcmVxL01ha2VmaWxlCisrKyBiL2RyaXZlcnMvY3B1ZnJlcS9N
+YWtlZmlsZQpAQCAtNzgsNiArNzgsOSBAQCBvYmotJChDT05GSUdfQVJDSF9URUdSQSkJCSs9IHRl
+Z3JhLWNwdWZyZXEubwogCiAjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjCiAjIFBvd2VyUEMgcGxh
+dGZvcm0gZHJpdmVycworb2JqLSQoQ09ORklHX0NQVV9GUkVRX0NCRSkJCSs9IHBwYy1jYmUtY3B1
+ZnJlcS5vCitwcGMtY2JlLWNwdWZyZXEteQkJCSs9IHBwY19jYmVfY3B1ZnJlcV9wZXJ2YXNpdmUu
+byBwcGNfY2JlX2NwdWZyZXEubworb2JqLSQoQ09ORklHX0NQVV9GUkVRX0NCRV9QTUkpCQkrPSBw
+cGNfY2JlX2NwdWZyZXFfcG1pLm8KIG9iai0kKENPTkZJR19DUFVfRlJFUV9NQVBMRSkJCSs9IG1h
+cGxlLWNwdWZyZXEubwogb2JqLSQoQ09ORklHX0NQVV9GUkVRX1BNQUMpCQkrPSBwbWFjMzItY3B1
+ZnJlcS5vCiBvYmotJChDT05GSUdfQ1BVX0ZSRVFfUE1BQzY0KQkJKz0gcG1hYzY0LWNwdWZyZXEu
+bwpkaWZmIC0tZ2l0IGEvYXJjaC9wb3dlcnBjL3BsYXRmb3Jtcy9jZWxsL2NiZV9jcHVmcmVxLmMg
+Yi9kcml2ZXJzL2NwdWZyZXEvcHBjX2NiZV9jcHVmcmVxLmMKc2ltaWxhcml0eSBpbmRleCA5OSUK
+cmVuYW1lIGZyb20gYXJjaC9wb3dlcnBjL3BsYXRmb3Jtcy9jZWxsL2NiZV9jcHVmcmVxLmMKcmVu
+YW1lIHRvIGRyaXZlcnMvY3B1ZnJlcS9wcGNfY2JlX2NwdWZyZXEuYwppbmRleCA3MThjNmEzLi5l
+NTc3YTFkIDEwMDY0NAotLS0gYS9hcmNoL3Bvd2VycGMvcGxhdGZvcm1zL2NlbGwvY2JlX2NwdWZy
+ZXEuYworKysgYi9kcml2ZXJzL2NwdWZyZXEvcHBjX2NiZV9jcHVmcmVxLmMKQEAgLTI3LDcgKzI3
+LDggQEAKICNpbmNsdWRlIDxhc20vbWFjaGRlcC5oPgogI2luY2x1ZGUgPGFzbS9wcm9tLmg+CiAj
+aW5jbHVkZSA8YXNtL2NlbGwtcmVncy5oPgotI2luY2x1ZGUgImNiZV9jcHVmcmVxLmgiCisKKyNp
+bmNsdWRlICJwcGNfY2JlX2NwdWZyZXEuaCIKIAogc3RhdGljIERFRklORV9NVVRFWChjYmVfc3dp
+dGNoX211dGV4KTsKIApkaWZmIC0tZ2l0IGEvYXJjaC9wb3dlcnBjL3BsYXRmb3Jtcy9jZWxsL2Ni
+ZV9jcHVmcmVxLmggYi9kcml2ZXJzL2NwdWZyZXEvcHBjX2NiZV9jcHVmcmVxLmgKc2ltaWxhcml0
+eSBpbmRleCA4MiUKcmVuYW1lIGZyb20gYXJjaC9wb3dlcnBjL3BsYXRmb3Jtcy9jZWxsL2NiZV9j
+cHVmcmVxLmgKcmVuYW1lIHRvIGRyaXZlcnMvY3B1ZnJlcS9wcGNfY2JlX2NwdWZyZXEuaAppbmRl
+eCBjMWQ4NmJmLi5iNGMwMGE1IDEwMDY0NAotLS0gYS9hcmNoL3Bvd2VycGMvcGxhdGZvcm1zL2Nl
+bGwvY2JlX2NwdWZyZXEuaAorKysgYi9kcml2ZXJzL2NwdWZyZXEvcHBjX2NiZV9jcHVmcmVxLmgK
+QEAgLTEsNSArMSw1IEBACiAvKgotICogY2JlX2NwdWZyZXEuaAorICogcHBjX2NiZV9jcHVmcmVx
+LmgKICAqCiAgKiBUaGlzIGZpbGUgY29udGFpbnMgdGhlIGRlZmluaXRpb25zIHVzZWQgYnkgdGhl
+IGNiZV9jcHVmcmVxIGRyaXZlci4KICAqCkBAIC0xNyw3ICsxNyw3IEBAIGludCBjYmVfY3B1ZnJl
+cV9nZXRfcG1vZGUoaW50IGNwdSk7CiAKIGludCBjYmVfY3B1ZnJlcV9zZXRfcG1vZGVfcG1pKGlu
+dCBjcHUsIHVuc2lnbmVkIGludCBwbW9kZSk7CiAKLSNpZiBkZWZpbmVkKENPTkZJR19DQkVfQ1BV
+RlJFUV9QTUkpIHx8IGRlZmluZWQoQ09ORklHX0NCRV9DUFVGUkVRX1BNSV9NT0RVTEUpCisjaWYg
+ZGVmaW5lZChDT05GSUdfQ1BVX0ZSRVFfQ0JFX1BNSSkgfHwgZGVmaW5lZChDT05GSUdfQ1BVX0ZS
+RVFfQ0JFX1BNSV9NT0RVTEUpCiBleHRlcm4gYm9vbCBjYmVfY3B1ZnJlcV9oYXNfcG1pOwogI2Vs
+c2UKICNkZWZpbmUgY2JlX2NwdWZyZXFfaGFzX3BtaSAoMCkKZGlmZiAtLWdpdCBhL2FyY2gvcG93
+ZXJwYy9wbGF0Zm9ybXMvY2VsbC9jYmVfY3B1ZnJlcV9wZXJ2YXNpdmUuYyBiL2RyaXZlcnMvY3B1
+ZnJlcS9wcGNfY2JlX2NwdWZyZXFfcGVydmFzaXZlLmMKc2ltaWxhcml0eSBpbmRleCA5OSUKcmVu
+YW1lIGZyb20gYXJjaC9wb3dlcnBjL3BsYXRmb3Jtcy9jZWxsL2NiZV9jcHVmcmVxX3BlcnZhc2l2
+ZS5jCnJlbmFtZSB0byBkcml2ZXJzL2NwdWZyZXEvcHBjX2NiZV9jcHVmcmVxX3BlcnZhc2l2ZS5j
+CmluZGV4IDIwNDcyZTQuLjg0ZDJmMmMgMTAwNjQ0Ci0tLSBhL2FyY2gvcG93ZXJwYy9wbGF0Zm9y
+bXMvY2VsbC9jYmVfY3B1ZnJlcV9wZXJ2YXNpdmUuYworKysgYi9kcml2ZXJzL2NwdWZyZXEvcHBj
+X2NiZV9jcHVmcmVxX3BlcnZhc2l2ZS5jCkBAIC0zMCw3ICszMCw3IEBACiAjaW5jbHVkZSA8YXNt
+L2h3X2lycS5oPgogI2luY2x1ZGUgPGFzbS9jZWxsLXJlZ3MuaD4KIAotI2luY2x1ZGUgImNiZV9j
+cHVmcmVxLmgiCisjaW5jbHVkZSAicHBjX2NiZV9jcHVmcmVxLmgiCiAKIC8qIHRvIHdyaXRlIHRv
+IE1JQyByZWdpc3RlciAqLwogc3RhdGljIHU2NCBNSUNfU2xvd19GYXN0X1RpbWVyX3RhYmxlW10g
+PSB7CmRpZmYgLS1naXQgYS9hcmNoL3Bvd2VycGMvcGxhdGZvcm1zL2NlbGwvY2JlX2NwdWZyZXFf
+cG1pLmMgYi9kcml2ZXJzL2NwdWZyZXEvcHBjX2NiZV9jcHVmcmVxX3BtaS5jCnNpbWlsYXJpdHkg
+aW5kZXggOTklCnJlbmFtZSBmcm9tIGFyY2gvcG93ZXJwYy9wbGF0Zm9ybXMvY2VsbC9jYmVfY3B1
+ZnJlcV9wbWkuYwpyZW5hbWUgdG8gZHJpdmVycy9jcHVmcmVxL3BwY19jYmVfY3B1ZnJlcV9wbWku
+YwppbmRleCA2MGEwN2E0Li5kMjllOGRhIDEwMDY0NAotLS0gYS9hcmNoL3Bvd2VycGMvcGxhdGZv
+cm1zL2NlbGwvY2JlX2NwdWZyZXFfcG1pLmMKKysrIGIvZHJpdmVycy9jcHVmcmVxL3BwY19jYmVf
+Y3B1ZnJlcV9wbWkuYwpAQCAtMzUsNyArMzUsNyBAQAogI2luY2x1ZGUgPGFzbS90aW1lLmg+CiAj
+ZW5kaWYKIAotI2luY2x1ZGUgImNiZV9jcHVmcmVxLmgiCisjaW5jbHVkZSAicHBjX2NiZV9jcHVm
+cmVxLmgiCiAKIHN0YXRpYyB1OCBwbWlfc2xvd19tb2RlX2xpbWl0W01BWF9DQkVdOwogCi0tIAox
+LjcuMTIucmMyLjE4Lmc2MWI0NzJlCgo=
+--e89a8f64274e0e557204d9894144--
