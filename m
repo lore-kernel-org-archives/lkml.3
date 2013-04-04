@@ -1,105 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763377Ab3DDFSG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 01:18:06 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:63035 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763351Ab3DDFSE (ORCPT
+	id S1763401Ab3DDFSY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 01:18:24 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40864 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763351Ab3DDFSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 01:18:04 -0400
-Message-ID: <515D0D29.8030203@prisktech.co.nz>
-Date: Thu, 04 Apr 2013 18:18:33 +1300
-From: Tony Prisk <linux@prisktech.co.nz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: arm@kernel.org, "Bergmann, Arnd" <arnd@arndb.de>,
-        "Johansson, Olof" <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        "List, VT8500" <vt8500-wm8505-linux-kernel@googlegroups.com>
-Subject: [GIT PULL] arm: vt8500: Add support for pinctrl/gpio module
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Apr 2013 01:18:20 -0400
+Date: Thu, 4 Apr 2013 16:18:06 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Markus Pargmann <mpa@pengutronix.de>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: linux-next: manual merge of the imx-mxs tree with the pm tree
+Message-Id: <20130404161806.8f53f96c7197b978bfa1b63e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__4_Apr_2013_16_18_06_+1100_k1W1XwSTcwo_wo2."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 8bb9660418e05bb1845ac1a2428444d78e322cc7:
+--Signature=_Thu__4_Apr_2013_16_18_06_+1100_k1W1XwSTcwo_wo2.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-   Linux 3.9-rc4 (2013-03-23 16:52:44 -0700)
+Hi Shawn,
 
-are available in the git repository at:
+Today's linux-next merge of the imx-mxs tree got a conflict in
+arch/arm/mach-imx/cpufreq.c between commits b43a7ffbf33b ("cpufreq:
+Notify all policy->cpus in cpufreq_notify_transition()") and eb2f50ff93f0
+("cpufreq: drivers: Remove unnecessary assignments of policy-> members")
+from the pm tree and commit 180cb7d6ab8c ("ARM: imx: Remove cpufreq
+driver") from the imx-mxs tree.
 
-   git://server.prisktech.co.nz/git/linuxwmt.git tags/vt8500/pinctrl
+The latter removed the file, so I just did that and can carry the fix as
+necessary (no action is required).
 
-for you to fetch changes up to ce63d6d4bb9f601de32d4b99f925a65182521873:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-   pinctrl: bcm2835: make use of of_property_read_u32_index() 
-(2013-04-04 18:05:26 +1300)
+--Signature=_Thu__4_Apr_2013_16_18_06_+1100_k1W1XwSTcwo_wo2.
+Content-Type: application/pgp-signature
 
-----------------------------------------------------------------
-arm: vt8500: Add pinctrl driver for arch-vt8500
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-This series adds support for the pinctrl/gpio module on all arch-vt8500
-supported SoCs. It also drops the existing GPIO only driver and binding.
+iQIcBAEBCAAGBQJRXQ0OAAoJEECxmPOUX5FE20EQAKFQF8Gws5T7lGD/0/6huFRq
+lyWxCfe0yrIwEIsghb9GcR8uVJWEMd8y4ZshPp8bB749iYgtil1EN+qHfTbVnEKC
+UW9ZP5Jca1HgzE0+fWpBypfTcvuSfAp9S8Uq0oHvFMHc0s3IJNksa7jFhcbSFJ94
+3mSo+2K7pzdzJ2cGGKgovF1q888DtFI+NOxdSdNfqB9sOKGgYV2NjavFeLm7SfR6
+syEZ6vHAQNRHa7sw5bAhz7AN7MyuoEmKZf3N0Q3d7WDD9V3xN2nSK+L2tg/tdlfJ
+S3CRcDRkVpf3NSK4E+SlDHUBK2rOTPQRq9sDHUiHOTUsj84q5ZrAVNw37s3t1Yf1
+1cp7qhl1DITwJdTXVAtd6qlaLQmW+f63aGQeItAaGUmjNmCCyzYol5E5SxNvFPb8
+PcHpH14eejm6qZ9H15uDh88HH1zK2rYfoH2cp+W9aI0BR+3xeCUO4xppdnDsm8dA
++fDF9fJc4uQihd93JW91Pu5VF9gQn+L2BAUmMFcYx9zFedeT6OO6Omv4oD4efdJd
+FFxJeoat+S8rQhjZ/+00A8rgHC+5MOmOcAQJlw51tEYni3J4tPvYdTDN8ivopVli
+gFrDJOplldBI5EnDGAmmppHsxOgsJI6GSWVHaJlR0eY1+lho49eEiSzQ631cmk6L
+nnF1eUC2pzTCMy1LZ0OB
+=DlIA
+-----END PGP SIGNATURE-----
 
-As part of the review process, some tidy up is also done to
-drivers/of/base.c to remove some code that is being constantly duplicated.
-
-Also, a patch for the bcm2835 pinctrl driver is included to take advantage
-of the new of/base.c code from Stephen W.
-
-----------------------------------------------------------------
-Stephen Warren (1):
-       pinctrl: bcm2835: make use of of_property_read_u32_index()
-
-Tony Prisk (7):
-       of: Add support for reading a u32 from a multi-value property.
-       of: Remove duplicated code for validating property and value
-       arm: vt8500: Increase available GPIOs on arch-vt8500
-       pinctrl: gpio: vt8500: Add pincontrol driver for arch-vt8500
-       arm: dts: vt8500: Update Wondermedia SoC dtsi files for pinctrl 
-driver
-       arm: vt8500: Remove gpio devicetree nodes
-       gpio: vt8500: Remove arch-vt8500 gpio driver
-
-  .../devicetree/bindings/gpio/gpio-vt8500.txt       |   24 -
-  .../devicetree/bindings/pinctrl/pinctrl-vt8500.txt |   57 ++
-  arch/arm/Kconfig                                   |    3 +-
-  arch/arm/boot/dts/vt8500.dtsi                      |   10 +-
-  arch/arm/boot/dts/wm8505.dtsi                      |   10 +-
-  arch/arm/boot/dts/wm8650.dtsi                      |   10 +-
-  arch/arm/boot/dts/wm8850.dtsi                      |   10 +-
-  arch/arm/mach-vt8500/Kconfig                       |    1 +
-  drivers/gpio/Kconfig                               |    6 -
-  drivers/gpio/Makefile                              |    1 -
-  drivers/gpio/gpio-vt8500.c                         |  355 -----------
-  drivers/of/base.c                                  |  111 ++--
-  drivers/pinctrl/Kconfig                            |    1 +
-  drivers/pinctrl/Makefile                           |    1 +
-  drivers/pinctrl/pinctrl-bcm2835.c                  |   19 +-
-  drivers/pinctrl/vt8500/Kconfig                     |   52 ++
-  drivers/pinctrl/vt8500/Makefile                    |    8 +
-  drivers/pinctrl/vt8500/pinctrl-vt8500.c            |  501 ++++++++++++++++
-  drivers/pinctrl/vt8500/pinctrl-wm8505.c            |  532 ++++++++++++++++
-  drivers/pinctrl/vt8500/pinctrl-wm8650.c            |  370 ++++++++++++
-  drivers/pinctrl/vt8500/pinctrl-wm8750.c            |  409 +++++++++++++
-  drivers/pinctrl/vt8500/pinctrl-wm8850.c            |  388 ++++++++++++
-  drivers/pinctrl/vt8500/pinctrl-wmt.c               |  632 
-++++++++++++++++++++
-  drivers/pinctrl/vt8500/pinctrl-wmt.h               |   79 +++
-  include/linux/of.h                                 |    9 +
-  25 files changed, 3153 insertions(+), 446 deletions(-)
-  delete mode 100644 Documentation/devicetree/bindings/gpio/gpio-vt8500.txt
-  create mode 100644 
-Documentation/devicetree/bindings/pinctrl/pinctrl-vt8500.txt
-  delete mode 100644 drivers/gpio/gpio-vt8500.c
-  create mode 100644 drivers/pinctrl/vt8500/Kconfig
-  create mode 100644 drivers/pinctrl/vt8500/Makefile
-  create mode 100644 drivers/pinctrl/vt8500/pinctrl-vt8500.c
-  create mode 100644 drivers/pinctrl/vt8500/pinctrl-wm8505.c
-  create mode 100644 drivers/pinctrl/vt8500/pinctrl-wm8650.c
-  create mode 100644 drivers/pinctrl/vt8500/pinctrl-wm8750.c
-  create mode 100644 drivers/pinctrl/vt8500/pinctrl-wm8850.c
-  create mode 100644 drivers/pinctrl/vt8500/pinctrl-wmt.c
-  create mode 100644 drivers/pinctrl/vt8500/pinctrl-wmt.h
+--Signature=_Thu__4_Apr_2013_16_18_06_+1100_k1W1XwSTcwo_wo2.--
