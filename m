@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760347Ab3DDMwJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 08:52:09 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:6463 "EHLO
+	id S1760393Ab3DDMwY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 08:52:24 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:6517 "EHLO
 	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759950Ab3DDMwF (ORCPT
+	by vger.kernel.org with ESMTP id S1760316Ab3DDMwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 08:52:05 -0400
+	Thu, 4 Apr 2013 08:52:08 -0400
 From: Oskar Andero <oskar.andero@sonymobile.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-arch@vger.kernel.org>, <masami.hiramatsu.pt@hitachi.com>,
         <davem@davemloft.net>, <anil.s.keshavamurthy@intel.com>,
         <ananth@in.ibm.com>, <radovan.lekanovic@sonymobile.com>,
-        <bjorn.davidsson@sonymobile.com>, <oskar.andero@sonymobile.com>,
-        Toby Collett <toby.collett@sonymobile.com>
-Subject: [PATCH v2 1/4] kprobes: delay blacklist symbol lookup until we actually need it
-Date: Thu, 4 Apr 2013 14:51:26 +0200
-Message-ID: <1365079889-21525-2-git-send-email-oskar.andero@sonymobile.com>
+        <bjorn.davidsson@sonymobile.com>, <oskar.andero@sonymobile.com>
+Subject: [PATCH v2 4/4] kprobes: replace printk with pr_-functions
+Date: Thu, 4 Apr 2013 14:51:29 +0200
+Message-ID: <1365079889-21525-5-git-send-email-oskar.andero@sonymobile.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1365079889-21525-1-git-send-email-oskar.andero@sonymobile.com>
 References: <1365079889-21525-1-git-send-email-oskar.andero@sonymobile.com>
@@ -26,165 +25,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Toby Collett <toby.collett@sonymobile.com>
-
-The symbol lookup can take a long time and kprobes is
-initialised very early in boot, so delay symbol lookup
-until the blacklist is first used.
+Instead of using printk use pr_info/pr_err/pr_warn. This was
+detected by the checkpatch.pl script.
 
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: David S. Miller <davem@davemloft.net>
-Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
-Signed-off-by: Toby Collett <toby.collett@sonymobile.com>
 Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- kernel/kprobes.c | 98 ++++++++++++++++++++++++++++++++++----------------------
- 1 file changed, 60 insertions(+), 38 deletions(-)
+ kernel/kprobes.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index e35be53..0a270e5 100644
+index 58c9f4e..d61cbad 100644
 --- a/kernel/kprobes.c
 +++ b/kernel/kprobes.c
-@@ -68,6 +68,7 @@
- #endif
+@@ -168,7 +168,7 @@ static void init_kprobe_blacklist(void)
+ 			kprobe_lookup_name(kretprobe_blacklist[i].name,
+ 					   kretprobe_blacklist[i].addr);
+ 			if (!kretprobe_blacklist[i].addr)
+-				printk("kretprobe: lookup failed: %s\n",
++				pr_err("kretprobe: lookup failed: %s\n",
+ 				       kretprobe_blacklist[i].name);
+ 		}
+ 	}
+@@ -780,7 +780,7 @@ static void reuse_unused_kprobe(struct kprobe *ap)
+ 	 */
+ 	op = container_of(ap, struct optimized_kprobe, kp);
+ 	if (unlikely(list_empty(&op->list)))
+-		printk(KERN_WARNING "Warning: found a stray unused "
++		pr_warn("Warning: found a stray unused "
+ 			"aggrprobe@%p\n", ap->addr);
+ 	/* Enable the probe again */
+ 	ap->flags &= ~KPROBE_FLAG_DISABLED;
+@@ -887,7 +887,7 @@ static void __kprobes optimize_all_kprobes(void)
+ 			if (!kprobe_disabled(p))
+ 				optimize_kprobe(p);
+ 	}
+-	printk(KERN_INFO "Kprobes globally optimized\n");
++	pr_info("Kprobes globally optimized\n");
+ }
  
- static int kprobes_initialized;
-+static int kprobe_blacklist_initialized;
- static struct hlist_head kprobe_table[KPROBE_TABLE_SIZE];
- static struct hlist_head kretprobe_inst_table[KPROBE_TABLE_SIZE];
+ /* This should be called with kprobe_mutex locked */
+@@ -911,7 +911,7 @@ static void __kprobes unoptimize_all_kprobes(void)
+ 	}
+ 	/* Wait for unoptimizing completion */
+ 	wait_for_kprobe_optimizer();
+-	printk(KERN_INFO "Kprobes globally unoptimized\n");
++	pr_info("Kprobes globally unoptimized\n");
+ }
  
-@@ -102,6 +103,60 @@ static struct kprobe_blackpoint kprobe_blacklist[] = {
- 	{NULL}    /* Terminator */
- };
- 
-+/* it can take some time ( > 100ms ) to initialise the
-+ * blacklist so we delay this until we actually need it
-+ */
-+static void init_kprobe_blacklist(void)
-+{
-+	int i;
-+	unsigned long offset = 0, size = 0;
-+	char *modname, namebuf[128];
-+	const char *symbol_name;
-+	void *addr;
-+	struct kprobe_blackpoint *kb;
-+
-+	mutex_lock(&kprobe_mutex);
-+	if (kprobe_blacklist_initialized)
-+		goto out;
-+
-+	/*
-+	 * Lookup and populate the kprobe_blacklist.
-+	 *
-+	 * Unlike the kretprobe blacklist, we'll need to determine
-+	 * the range of addresses that belong to the said functions,
-+	 * since a kprobe need not necessarily be at the beginning
-+	 * of a function.
-+	 */
-+	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
-+		kprobe_lookup_name(kb->name, addr);
-+		if (!addr)
-+			continue;
-+
-+		kb->start_addr = (unsigned long)addr;
-+		symbol_name = kallsyms_lookup(kb->start_addr,
-+				&size, &offset, &modname, namebuf);
-+		if (!symbol_name)
-+			kb->range = 0;
-+		else
-+			kb->range = size;
-+	}
-+
-+	if (kretprobe_blacklist_size) {
-+		/* lookup the function address from its name */
-+		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
-+			kprobe_lookup_name(kretprobe_blacklist[i].name,
-+					   kretprobe_blacklist[i].addr);
-+			if (!kretprobe_blacklist[i].addr)
-+				printk("kretprobe: lookup failed: %s\n",
-+				       kretprobe_blacklist[i].name);
-+		}
-+	}
-+	kprobe_blacklist_initialized = 1;
-+
-+out:
-+	mutex_unlock(&kprobe_mutex);
-+}
-+
- #ifdef __ARCH_WANT_KPROBES_INSN_SLOT
- /*
-  * kprobe->ainsn.insn points to the copy of the instruction to be
-@@ -1331,6 +1386,9 @@ static int __kprobes in_kprobes_functions(unsigned long addr)
- 	if (addr >= (unsigned long)__kprobes_text_start &&
- 	    addr < (unsigned long)__kprobes_text_end)
- 		return -EINVAL;
-+
-+	if (unlikely(!kprobe_blacklist_initialized))
-+		init_kprobe_blacklist();
- 	/*
- 	 * If there exists a kprobe_blacklist, verify and
- 	 * fail any probe registration in the prohibited area
-@@ -1816,6 +1874,8 @@ int __kprobes register_kretprobe(struct kretprobe *rp)
- 	void *addr;
- 
- 	if (kretprobe_blacklist_size) {
-+		if (unlikely(!kprobe_blacklist_initialized))
-+			init_kprobe_blacklist();
- 		addr = kprobe_addr(&rp->kp);
- 		if (IS_ERR(addr))
- 			return PTR_ERR(addr);
-@@ -2065,11 +2125,6 @@ static struct notifier_block kprobe_module_nb = {
- static int __init init_kprobes(void)
+ int sysctl_kprobes_optimization;
+@@ -982,7 +982,7 @@ static void __kprobes __disarm_kprobe(struct kprobe *p, bool reopt)
+ /* There should be no unused kprobes can be reused without optimization */
+ static void reuse_unused_kprobe(struct kprobe *ap)
  {
- 	int i, err = 0;
--	unsigned long offset = 0, size = 0;
--	char *modname, namebuf[128];
--	const char *symbol_name;
--	void *addr;
--	struct kprobe_blackpoint *kb;
+-	printk(KERN_ERR "Error: There should be no unused kprobe here.\n");
++	pr_err("Error: There should be no unused kprobe here.\n");
+ 	BUG_ON(kprobe_unused(ap));
+ }
  
- 	/* FIXME allocate the probe table, currently defined statically */
- 	/* initialize all list heads */
-@@ -2079,39 +2134,6 @@ static int __init init_kprobes(void)
- 		raw_spin_lock_init(&(kretprobe_table_locks[i].lock));
+@@ -2096,8 +2096,8 @@ EXPORT_SYMBOL_GPL(enable_kprobe);
+ 
+ void __kprobes dump_kprobe(struct kprobe *kp)
+ {
+-	printk(KERN_WARNING "Dumping kprobe:\n");
+-	printk(KERN_WARNING "Name: %s\nAddress: %p\nOffset: %x\n",
++	pr_warn("Dumping kprobe:\n");
++	pr_warn("Name: %s\nAddress: %p\nOffset: %x\n",
+ 	       kp->symbol_name, kp->addr, kp->offset);
+ }
+ 
+@@ -2293,7 +2293,7 @@ static void __kprobes arm_all_kprobes(void)
  	}
  
--	/*
--	 * Lookup and populate the kprobe_blacklist.
--	 *
--	 * Unlike the kretprobe blacklist, we'll need to determine
--	 * the range of addresses that belong to the said functions,
--	 * since a kprobe need not necessarily be at the beginning
--	 * of a function.
--	 */
--	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
--		kprobe_lookup_name(kb->name, addr);
--		if (!addr)
--			continue;
--
--		kb->start_addr = (unsigned long)addr;
--		symbol_name = kallsyms_lookup(kb->start_addr,
--				&size, &offset, &modname, namebuf);
--		if (!symbol_name)
--			kb->range = 0;
--		else
--			kb->range = size;
--	}
--
--	if (kretprobe_blacklist_size) {
--		/* lookup the function address from its name */
--		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
--			kprobe_lookup_name(kretprobe_blacklist[i].name,
--					   kretprobe_blacklist[i].addr);
--			if (!kretprobe_blacklist[i].addr)
--				printk("kretprobe: lookup failed: %s\n",
--				       kretprobe_blacklist[i].name);
--		}
--	}
--
- #if defined(CONFIG_OPTPROBES)
- #if defined(__ARCH_WANT_KPROBES_INSN_SLOT)
- 	/* Init kprobe_optinsn_slots */
+ 	kprobes_all_disarmed = false;
+-	printk(KERN_INFO "Kprobes globally enabled\n");
++	pr_info("Kprobes globally enabled\n");
+ 
+ already_enabled:
+ 	mutex_unlock(&kprobe_mutex);
+@@ -2315,7 +2315,7 @@ static void __kprobes disarm_all_kprobes(void)
+ 	}
+ 
+ 	kprobes_all_disarmed = true;
+-	printk(KERN_INFO "Kprobes globally disabled\n");
++	pr_info("Kprobes globally disabled\n");
+ 
+ 	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
+ 		head = &kprobe_table[i];
 -- 
 1.8.1.5
 
