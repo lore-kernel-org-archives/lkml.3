@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765232Ab3DDWXr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 18:23:47 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:53875 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765209Ab3DDWXp (ORCPT
+	id S1765229Ab3DDWYO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 18:24:14 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:39975 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761463Ab3DDWYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 18:23:45 -0400
-Subject: Re: [RFC-v3 9/9] iser-target: Add iSCSI Extensions for RDMA (iSER)
- target driver
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Or Gerlitz <ogerlitz@mellanox.com>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Roland Dreier <roland@kernel.org>,
-        Alexander Nezhinsky <alexandern@mellanox.com>
-In-Reply-To: <515D4D0E.40005@mellanox.com>
-References: <1365060256-21506-1-git-send-email-nab@linux-iscsi.org>
-	 <1365060256-21506-10-git-send-email-nab@linux-iscsi.org>
-	 <515D4D0E.40005@mellanox.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 04 Apr 2013 15:23:42 -0700
-Message-ID: <1365114222.11833.81.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Apr 2013 18:24:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <1363217302-14383-5-git-send-email-yinghai@kernel.org>
+References: <1363217302-14383-1-git-send-email-yinghai@kernel.org> <1363217302-14383-5-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 4 Apr 2013 16:23:50 -0600
+Message-ID: <CAErSpo7S3cu_OB0Hz9XtH6UN+4JssvOO9D_kykzemQ30PB7L-w@mail.gmail.com>
+Subject: Re: [PATCH v3 04/27] PCI: Add is_pci_*_resource_idx() helpers
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ram Pai <linuxram@us.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-04 at 12:51 +0300, Or Gerlitz wrote:
-> On 04/04/2013 10:24, Nicholas A. Bellinger wrote:
-> > +static int
-> > +isert_put_response(struct iscsi_conn *conn, struct iscsi_cmd *cmd)
-> > +{
-> > +	struct isert_cmd *isert_cmd = container_of(cmd,
-> > +					struct isert_cmd, iscsi_cmd);
-> > +	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
-> > +	struct ib_send_wr *send_wr = &isert_cmd->tx_desc.send_wr;
-> > +	struct iscsi_scsi_rsp *hdr = (struct iscsi_scsi_rsp *)
-> > +				&isert_cmd->tx_desc.iscsi_header;
-> > +
-> > +	isert_create_send_desc(isert_conn, isert_cmd, &isert_cmd->tx_desc);
-> > +	iscsit_build_rsp_pdu(cmd, conn, true, hdr);
-> > +	isert_init_tx_hdrs(isert_conn, &isert_cmd->tx_desc);
-> > +	/*
-> > +	 * Attach SENSE DATA payload to iSCSI Response PDU
-> > +	 */
-> > +	if (cmd->se_cmd.sense_buffer &&
-> > +	    ((cmd->se_cmd.se_cmd_flags & SCF_TRANSPORT_TASK_SENSE) ||
-> > +	    (cmd->se_cmd.se_cmd_flags & SCF_EMULATED_TASK_SENSE))) {
-> > +		struct ib_device *ib_dev = isert_conn->conn_cm_id->device;
-> > +		struct ib_sge *tx_dsg = &isert_cmd->tx_desc.tx_sg[1];
-> > +		u32 padding, sense_len;
-> > +
-> > +		put_unaligned_be16(cmd->se_cmd.scsi_sense_length,
-> > +				   cmd->sense_buffer);
-> > +		cmd->se_cmd.scsi_sense_length += sizeof(__be16);
-> > +
-> > +		padding = -(cmd->se_cmd.scsi_sense_length) & 3;
-> > +		hton24(hdr->dlength, (u32)cmd->se_cmd.scsi_sense_length);
-> > +		sense_len = cmd->se_cmd.scsi_sense_length + padding;
-> > +
-> > +		isert_cmd->sense_buf_dma = ib_dma_map_single(ib_dev,
-> > +				(void *)cmd->sense_buffer, sense_len,
-> > +				DMA_TO_DEVICE);
-> > +
-> > +		isert_cmd->sense_buf_len = sense_len;
-> > +		ib_dma_sync_single_for_cpu(ib_dev, isert_cmd->sense_buf_dma,
-> > +					   sense_len, DMA_TO_DEVICE);
-> > +		ib_dma_sync_single_for_device(ib_dev, isert_cmd->sense_buf_dma,
-> > +					      sense_len, DMA_TO_DEVICE);
-> > +
-> 
-> you just called dma_map_single, and not going to touch the buffer before 
-> posting it to the wire,
-> there's no point to sync it for the cpu and for the device, remove these 
-> calls.
-> 
+On Wed, Mar 13, 2013 at 5:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> According to resource pointer find out if the resource is some type resource
+> like bridge, sriov, or std.
+>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  include/linux/pci.h |   23 +++++++++++++++++++++++
+>  1 file changed, 23 insertions(+)
+>
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 127a856..efb348b 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -92,6 +92,29 @@ enum {
+>         DEVICE_COUNT_RESOURCE = PCI_NUM_RESOURCES,
+>  };
+>
+> +static inline bool is_pci_std_resource_idx(int i)
+> +{
+> +       return i >= PCI_STD_RESOURCES && i <= PCI_STD_RESOURCE_END;
+> +}
+> +
+> +static inline bool is_pci_rom_resource_idx(int i)
+> +{
+> +       return i == PCI_ROM_RESOURCE;
+> +}
+> +
+> +static inline bool is_pci_iov_resource_idx(int i)
+> +{
+> +#ifdef CONFIG_PCI_IOV
+> +       return i >= PCI_IOV_RESOURCES && i <= PCI_IOV_RESOURCE_END;
+> +#endif
+> +       return false;
+> +}
+> +
+> +static inline bool is_pci_bridge_resource_idx(int i)
+> +{
+> +       return i >= PCI_BRIDGE_RESOURCES && i <= PCI_BRIDGE_RESOURCE_END;
+> +}
+> +
+>  typedef int __bitwise pci_power_t;
+>
+>  #define PCI_D0         ((pci_power_t __force) 0)
 
-Dropped.
+1) I don't like adding more "_idx()" interfaces.
 
-Thanks Or!
+2) The only one of these that's even used is "is_pci_bridge_resource_idx()"
 
+3) I think adding a wrapper struct with a "type" or "flags" field
+would make this trivial, e.g., "pres->flags & PCI_RESOURCE_WINDOW" or
+something.
