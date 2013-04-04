@@ -1,120 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab3DDKB2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 06:01:28 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:59278 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759Ab3DDKB1 (ORCPT
+	id S1756986Ab3DDKCO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 06:02:14 -0400
+Received: from atlantis.wh2.tu-dresden.de ([141.30.228.39]:58130 "EHLO
+	atlantis.wh2.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755750Ab3DDKCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 06:01:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130404095716.GJ21804@intel.com>
-References: <1364986614-15711-1-git-send-email-mika.westerberg@linux.intel.com>
-	<CAN+gG=F4LMHMsOqVh+BikSLKBJ8V7ni-p4hKi7yRb4jjD7gv0w@mail.gmail.com>
-	<20130404093820.GI21804@intel.com>
-	<CAN+gG=F7T6ujLuNu2hfEKfrDwBCG9xM_e3P9Fan0Awj7EYmJyA@mail.gmail.com>
-	<20130404095716.GJ21804@intel.com>
-Date: Thu, 4 Apr 2013 12:01:23 +0200
-Message-ID: <CAN+gG=Edb-iTLeafeDw+E33rJWthSM8Qr37yQJNOG9p45_rrbw@mail.gmail.com>
-Subject: Re: [PATCH] gpiolib-acpi: introduce acpi_get_gpio_by_index() helper
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 4 Apr 2013 06:02:12 -0400
+From: Lars Poeschel <larsi@wh2.tu-dresden.de>
+To: poeschel@lemonage.de, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        rob@landley.net, linus.walleij@linaro.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        jacmet@sunsite.dk, broonie@opensource.wolfsonmicro.com
+Subject: [PATCH v4] gpio: mcp23s08: convert driver to DT
+Date: Thu,  4 Apr 2013 12:02:02 +0200
+Message-Id: <1365069722-15408-1-git-send-email-larsi@wh2.tu-dresden.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 4, 2013 at 11:57 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> On Thu, Apr 04, 2013 at 11:42:11AM +0200, Benjamin Tissoires wrote:
->> On Thu, Apr 4, 2013 at 11:38 AM, Mika Westerberg
->> <mika.westerberg@linux.intel.com> wrote:
->> > On Thu, Apr 04, 2013 at 11:19:53AM +0200, Benjamin Tissoires wrote:
->> >> Hi Mika,
->> >>
->> >> On Wed, Apr 3, 2013 at 12:56 PM, Mika Westerberg
->> >> <mika.westerberg@linux.intel.com> wrote:
->> >> > Instead of open-coding ACPI GPIO resource lookup in each driver, we provide
->> >> > a helper function analogous to Device Tree version that allows drivers to
->> >> > specify which GPIO resource they are interested (using an index to the GPIO
->> >> > resources). The function then finds out the correct resource, translates
->> >> > the ACPI GPIO number to the corresponding Linux GPIO number and returns
->> >> > that.
->> >> >
->> >> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->> >> > ---
->> >> >  Documentation/acpi/enumeration.txt |   32 ++++++++++++++-
->> >> >  drivers/gpio/gpiolib-acpi.c        |   77 ++++++++++++++++++++++++++++++++++++
->> >> >  include/linux/acpi_gpio.h          |   17 ++++++++
->> >> >  3 files changed, 125 insertions(+), 1 deletion(-)
->> >> >
->> >> > diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
->> >> > index 94a6561..b0d5410 100644
->> >> > --- a/Documentation/acpi/enumeration.txt
->> >> > +++ b/Documentation/acpi/enumeration.txt
->> >> > @@ -199,6 +199,8 @@ the device to the driver. For example:
->> >> >         {
->> >> >                 Name (SBUF, ResourceTemplate()
->> >> >                 {
->> >> > +                       ...
->> >> > +                       // Used to power on/off the device
->> >> >                         GpioIo (Exclusive, PullDefault, 0x0000, 0x0000,
->> >> >                                 IoRestrictionOutputOnly, "\\_SB.PCI0.GPI0",
->> >> >                                 0x00, ResourceConsumer,,)
->> >> > @@ -206,10 +208,20 @@ the device to the driver. For example:
->> >> >                                 // Pin List
->> >> >                                 0x0055
->> >> >                         }
->> >> > +
->> >> > +                       // Interrupt for the device
->> >> > +                       GpioInt (Edge, ActiveHigh, ExclusiveAndWake, PullNone,
->> >> > +                                0x0000, "\\_SB.PCI0.GPI0", 0x00, ResourceConsumer,,)
->> >>
->> >> Sorry for coming late in the GPIO ACPI discussion, but when I see this
->> >> documentation, I wonder:
->> >> wouldn't it be feasible to find the correct GPIO by its type? Here, we
->> >> have a GpioIo and a GpioInt, and I bet this would be sometime more
->> >> useful to request the first GpioInt without knowing the correct order
->> >> of declarations.
->> >
->> > Why not. But then again you can always check the type returned in the
->> > acpi_gpio_info structure and pick the first GpioInt (if you have multiple
->> > GPIO resources).
->> >
->> >> It may be feasible by walking the tree, but a helper would be of great
->> >> help (thinking at i2c-hid here, which can not rely on indexes in the
->> >> DSDT).
->> >
->> > Well, index is the only thing we can rely on unfortunately. There's nothing
->> > like names or anything like that.
->> >
->> > What I've seen from ACPI enumerated i2c-hid devices there is only one GPIO
->> > resource (GpioInt) declared.
->>
->> Ok, thanks for the answer. I guess the idea would be to pick the index
->> 0, check the type, and try indexes 1 or 2 if it's not GpioInt. I bet
->> there will be devices with more than one Gpio as most of I2C input
->> device have a reset line (except if Microsoft forces them not to have
->> one).
->
-> One option is to provide acpi_get_gpio_all() that returns all GPIOs and
-> their corresponding types. That should allow clients like i2c-hid to find
-> the right GPIO (I'm hoping that there will be only one GpioInt associated
-> with these devices).
+From: Lars Poeschel <poeschel@lemonage.de>
 
-That could do the trick.
-However, I won't be able to test it. I still don't have access to any
-ACPI 5 device with i2c-hid devices...
+This converts the mcp23s08 driver to be able to be used with device
+tree.
+There is a "spi-present-mask" device tree property, that allows to
+use multiple of this spi chips on the same chipselect.
 
-As for the multiple GpioInt: I hope too. But I can not see why would
-somebody put several GpioInt to a HID device (GpioIo are more expected
-to be present). The spec is not compliant with this idea, but we never
-know :)
+Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+---
+v4:
+- removed the ability to specify the pullup from device tree
+- updated binding doc
 
-Cheers,
-Benjamin
+v3:
+- removed mcp,chips device tree property in favour of a
+    mcp,spi-present-mask and a flag for the pullup of every gpio
+- seperated the match table. Now there is one for i2c and one for spi
+- do the of reading stuff on stack of the probe function - no devm
+    any more
+
+v2:
+- squashed booth patches together
+- fixed build warning, when CONFIG_OF is not defined
+- use of_match_ptr macro for of_match_table
+
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
+
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt b/Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
+new file mode 100644
+index 0000000..629d0ef
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio-mcp23s08.txt
+@@ -0,0 +1,47 @@
++Microchip MCP2308/MCP23S08/MCP23017/MCP23S17 driver for
++8-/16-bit I/O expander with serial interface (I2C/SPI)
++
++Required properties:
++- compatible : Should be
++    - "mcp,mcp23s08" for  8 GPIO SPI version
++    - "mcp,mcp23s17" for 16 GPIO SPI version
++    - "mcp,mcp23008" for  8 GPIO I2C version or
++    - "mcp,mcp23017" for 16 GPIO I2C version of the chip
++- #gpio-cells : Should be two.
++  - first cell is the pin number
++  - second cell is used to specify flags. Flags are currently unused.
++- gpio-controller : Marks the device node as a GPIO controller.
++- reg : For an address on its bus. I2C uses this a the I2C address of the chip.
++        SPI uses this to specify the chipselect line which the chip is
++        connected to. The driver and the SPI variant of the chip support
++        multiple chips on the same chipselect. Have a look at
++        mcp,spi-present-mask below.
++
++Required device specific properties (only for SPI chips):
++- mcp,spi-present-mask : This is a present flag, that makes only sense for SPI
++        chips - as the name suggests. Multiple SPI chips can share the same
++        SPI chipselect. Set a bit in bit0-7 in this mask to 1 if there is a
++        chip connected with the corresponding spi address set. For example if
++        you have a chip with address 3 connected, you have to set bit3 to 1,
++        which is 0x08. mcp23s08 chip variant only supports bits 0-3. It is not
++        possible to mix mcp23s08 and mcp23s17 on the same chipselect. Set at
++        least one bit to 1 for SPI chips.
++- spi-max-frequency = The maximum frequency this chip is able to handle
++
++Example I2C:
++gpiom1: gpio@20 {
++        compatible = "mcp,mcp23017";
++        gpio-controller;
++        #gpio-cells = <2>;
++        reg = <0x20>;
++};
++
++Example SPI:
++gpiom1: gpio@0 {
++        compatible = "mcp,mcp23s17";
++        gpio-controller;
++        #gpio-cells = <2>;
++        spi-present-mask = <0x01>;
++        reg = <0>;
++        spi-max-frequency = <1000000>;
++};
+diff --git a/drivers/gpio/gpio-mcp23s08.c b/drivers/gpio/gpio-mcp23s08.c
+index 3cea0ea..6a4470b 100644
+--- a/drivers/gpio/gpio-mcp23s08.c
++++ b/drivers/gpio/gpio-mcp23s08.c
+@@ -12,6 +12,8 @@
+ #include <linux/spi/mcp23s08.h>
+ #include <linux/slab.h>
+ #include <asm/byteorder.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
+ 
+ /**
+  * MCP types supported by driver
+@@ -383,6 +385,10 @@ static int mcp23s08_probe_one(struct mcp23s08 *mcp, struct device *dev,
+ 	mcp->chip.direction_output = mcp23s08_direction_output;
+ 	mcp->chip.set = mcp23s08_set;
+ 	mcp->chip.dbg_show = mcp23s08_dbg_show;
++#ifdef CONFIG_OF
++	mcp->chip.of_gpio_n_cells = 2;
++	mcp->chip.of_node = dev->of_node;
++#endif
+ 
+ 	switch (type) {
+ #ifdef CONFIG_SPI_MASTER
+@@ -473,6 +479,35 @@ fail:
+ 
+ /*----------------------------------------------------------------------*/
+ 
++#ifdef CONFIG_OF
++#ifdef CONFIG_SPI_MASTER
++static struct of_device_id mcp23s08_spi_of_match[] = {
++	{
++		.compatible = "mcp,mcp23s08", .data = (void *) MCP_TYPE_S08,
++	},
++	{
++		.compatible = "mcp,mcp23s17", .data = (void *) MCP_TYPE_S17,
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(of, mcp23s08_spi_of_match);
++#endif
++
++#if IS_ENABLED(CONFIG_I2C)
++static struct of_device_id mcp23s08_i2c_of_match[] = {
++	{
++		.compatible = "mcp,mcp23008", .data = (void *) MCP_TYPE_008,
++	},
++	{
++		.compatible = "mcp,mcp23017", .data = (void *) MCP_TYPE_017,
++	},
++	{ },
++};
++MODULE_DEVICE_TABLE(of, mcp23s08_i2c_of_match);
++#endif
++#endif /* CONFIG_OF */
++
++
+ #if IS_ENABLED(CONFIG_I2C)
+ 
+ static int mcp230xx_probe(struct i2c_client *client,
+@@ -480,12 +515,23 @@ static int mcp230xx_probe(struct i2c_client *client,
+ {
+ 	struct mcp23s08_platform_data *pdata;
+ 	struct mcp23s08 *mcp;
+-	int status;
+-
+-	pdata = client->dev.platform_data;
+-	if (!pdata || !gpio_is_valid(pdata->base)) {
+-		dev_dbg(&client->dev, "invalid or missing platform data\n");
+-		return -EINVAL;
++	int status, base, pullups;
++	const struct of_device_id *match;
++
++	match = of_match_device(of_match_ptr(mcp23s08_i2c_of_match),
++					&client->dev);
++	if (match) {
++		base = -1;
++		pullups = 0;
++	} else {
++		pdata = client->dev.platform_data;
++		if (!pdata || !gpio_is_valid(pdata->base)) {
++			dev_dbg(&client->dev,
++					"invalid or missing platform data\n");
++			return -EINVAL;
++		}
++		base = pdata->base;
++		pullups = pdata->chip[0].pullups;
+ 	}
+ 
+ 	mcp = kzalloc(sizeof *mcp, GFP_KERNEL);
+@@ -493,8 +539,7 @@ static int mcp230xx_probe(struct i2c_client *client,
+ 		return -ENOMEM;
+ 
+ 	status = mcp23s08_probe_one(mcp, &client->dev, client, client->addr,
+-				    id->driver_data, pdata->base,
+-				    pdata->chip[0].pullups);
++				    id->driver_data, base, pullups);
+ 	if (status)
+ 		goto fail;
+ 
+@@ -531,6 +576,7 @@ static struct i2c_driver mcp230xx_driver = {
+ 	.driver = {
+ 		.name	= "mcp230xx",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(mcp23s08_i2c_of_match),
+ 	},
+ 	.probe		= mcp230xx_probe,
+ 	.remove		= mcp230xx_remove,
+@@ -565,28 +611,55 @@ static int mcp23s08_probe(struct spi_device *spi)
+ 	unsigned			chips = 0;
+ 	struct mcp23s08_driver_data	*data;
+ 	int				status, type;
+-	unsigned			base;
+-
+-	type = spi_get_device_id(spi)->driver_data;
+-
+-	pdata = spi->dev.platform_data;
+-	if (!pdata || !gpio_is_valid(pdata->base)) {
+-		dev_dbg(&spi->dev, "invalid or missing platform data\n");
+-		return -EINVAL;
+-	}
++	unsigned			base = -1,
++					ngpio = 0,
++					pullups[ARRAY_SIZE(pdata->chip)];
++	const struct			of_device_id *match;
++	u32				spi_present_mask = 0;
++
++	match = of_match_device(of_match_ptr(mcp23s08_spi_of_match), &spi->dev);
++	if (match) {
++		type = (int)match->data;
++		status = of_property_read_u32(spi->dev.of_node,
++				"mcp,spi-present-mask", &spi_present_mask);
++		if (status) {
++			dev_err(&spi->dev, "DT has no spi-present-mask\n");
++			return -ENODEV;
++		}
++		if ((spi_present_mask <= 0) || (spi_present_mask >= 256)) {
++			dev_err(&spi->dev, "invalid spi-present-mask\n");
++			return -ENODEV;
++		}
+ 
+-	for (addr = 0; addr < ARRAY_SIZE(pdata->chip); addr++) {
+-		if (!pdata->chip[addr].is_present)
+-			continue;
+-		chips++;
+-		if ((type == MCP_TYPE_S08) && (addr > 3)) {
+-			dev_err(&spi->dev,
+-				"mcp23s08 only supports address 0..3\n");
++		for (addr = 0; addr < ARRAY_SIZE(pdata->chip); addr++)
++			pullups[addr] = 0;
++	} else {
++		type = spi_get_device_id(spi)->driver_data;
++		pdata = spi->dev.platform_data;
++		if (!pdata || !gpio_is_valid(pdata->base)) {
++			dev_dbg(&spi->dev,
++					"invalid or missing platform data\n");
+ 			return -EINVAL;
+ 		}
++
++		for (addr = 0; addr < ARRAY_SIZE(pdata->chip); addr++) {
++			if (!pdata->chip[addr].is_present)
++				continue;
++			chips++;
++			if ((type == MCP_TYPE_S08) && (addr > 3)) {
++				dev_err(&spi->dev,
++					"mcp23s08 only supports address 0..3\n");
++				return -EINVAL;
++			}
++			spi_present_mask |= 1 << addr;
++			pullups[addr] = pdata->chip[addr].pullups;
++		}
++
++		if (!chips)
++			return -ENODEV;
++
++		base = pdata->base;
+ 	}
+-	if (!chips)
+-		return -ENODEV;
+ 
+ 	data = kzalloc(sizeof *data + chips * sizeof(struct mcp23s08),
+ 			GFP_KERNEL);
+@@ -594,21 +667,22 @@ static int mcp23s08_probe(struct spi_device *spi)
+ 		return -ENOMEM;
+ 	spi_set_drvdata(spi, data);
+ 
+-	base = pdata->base;
+ 	for (addr = 0; addr < ARRAY_SIZE(pdata->chip); addr++) {
+-		if (!pdata->chip[addr].is_present)
++		if (!(spi_present_mask & (1 << addr)))
+ 			continue;
+ 		chips--;
+ 		data->mcp[addr] = &data->chip[chips];
+ 		status = mcp23s08_probe_one(data->mcp[addr], &spi->dev, spi,
+ 					    0x40 | (addr << 1), type, base,
+-					    pdata->chip[addr].pullups);
++					    pullups[addr]);
+ 		if (status < 0)
+ 			goto fail;
+ 
+-		base += (type == MCP_TYPE_S17) ? 16 : 8;
++		if (base != -1)
++			base += (type == MCP_TYPE_S17) ? 16 : 8;
++		ngpio += (type == MCP_TYPE_S17) ? 16 : 8;
+ 	}
+-	data->ngpio = base - pdata->base;
++	data->ngpio = ngpio;
+ 
+ 	/* NOTE:  these chips have a relatively sane IRQ framework, with
+ 	 * per-signal masking and level/edge triggering.  It's not yet
+@@ -668,6 +742,7 @@ static struct spi_driver mcp23s08_driver = {
+ 	.driver = {
+ 		.name	= "mcp23s08",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(mcp23s08_spi_of_match),
+ 	},
+ };
+ 
+-- 
+1.7.10.4
+
