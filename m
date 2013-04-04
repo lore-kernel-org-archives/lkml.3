@@ -1,92 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764289Ab3DDSB0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 14:01:26 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52240 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764235Ab3DDSBX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 14:01:23 -0400
-Message-ID: <515DBFEF.8060607@wwwdotorg.org>
-Date: Thu, 04 Apr 2013 12:01:19 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/7] ARM: tegra: update device trees for USB binding
- rework
-References: <1364978502-22887-1-git-send-email-vbyravarasu@nvidia.com> <1364978502-22887-3-git-send-email-vbyravarasu@nvidia.com> <515C8024.30204@wwwdotorg.org> <D958900912E20642BCBC71664EFECE3E6E50BE48AE@BGMAIL02.nvidia.com>
-In-Reply-To: <D958900912E20642BCBC71664EFECE3E6E50BE48AE@BGMAIL02.nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1764231Ab3DDSBN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 14:01:13 -0400
+Received: from arrakis.dune.hu ([78.24.191.176]:59917 "EHLO arrakis.dune.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1764208Ab3DDSBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 14:01:11 -0400
+From: Gabor Juhos <juhosg@openwrt.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        Gabor Juhos <juhosg@openwrt.org>
+Subject: [PATCH 1/2] pci/of: remove weak annotation of pcibios_get_phb_of_node
+Date: Thu,  4 Apr 2013 20:01:22 +0200
+Message-Id: <1365098483-26821-1-git-send-email-juhosg@openwrt.org>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2013 07:01 AM, Venu Byravarasu wrote:
->> -----Original Message-----
->> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
->> Sent: Thursday, April 04, 2013 12:47 AM
->> To: Venu Byravarasu
->> Cc: gregkh@linuxfoundation.org; balbi@ti.com;
->> stern@rowland.harvard.edu; linux-tegra@vger.kernel.org; linux-
->> usb@vger.kernel.org; linux-kernel@vger.kernel.org
->> Subject: Re: [PATCH v2 2/7] ARM: tegra: update device trees for USB binding
->> rework
->>
->> On 04/03/2013 02:41 AM, Venu Byravarasu wrote:
->>> This patch updates all Tegra board files so that they contain all the
->>
->> The binding documentation says that the vbus-supply property is required
->> in all cases. However, many of the DT files still don't have that
->> property even after this patch. That's inconsistent.
-> 
-> Will edit the binding to have the vbus-supply only for otg cases. 
+Due to the __weak annotation in the forward declaration
+of the 'pcibios_get_phb_of_node' function GCC will emit
+a weak symbol for this functions even if the actual
+implementation does not use the weak attribute.
 
->>> diff --git a/arch/arm/boot/dts/tegra20-seaboard.dts b/arch/arm/boot/dts/tegra20-seaboard.dts
->>
->>> +	usb-phy@c5000000 {
->>> +		vbus-supply = <&vbus_reg>;
->>> +		dr_mode = "otg";
->>> +	};
->>
->> Where is the nvidia,vbus-gpio property? Since your code changes don't
->> actually implement use of the vbus-supply property yet, they will expect
->> the vbus-gpio property to exist in the PHY node.
-> 
-> As of now Vbus-gpio is being used by EHCI driver only.
-> As anyways we wanted to use vbus-supply, will implement its
-> support in PHY driver and remove vbus-gpio from EHCI node. 
-> Hence did not add vbus-gpio to PHY DT nodes.
+If an architecture tries to override the function
+by providing its own implementation there will be
+multiple weak symbols with the same name in the
+object files. When the kernel is linked from the
+object files the linking order determines which
+implementation will be used in the final image.
 
-Ah right. I thought that this patch series moved the use of vbus-gpio
-from the EHCI to the PHY driver, just like it moved the handling of
-other properties such as dr_mode. I guess that's not actually true.
+On x86 and on powerpc the architecture specific
+version gets used:
 
-Just so we're clear, I'd expect the following then:
+  $ readelf -s  arch/x86/kernel/built-in.o drivers/pci/built-in.o \
+    vmlinux.o | grep pcibios_get_phb_of_node
+    3338: 00029b80    86 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
+    1701: 00012710    77 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
+   52072: 0002a170    86 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
+  $
 
-* Update binding to remove references to vbus-gpio from EHCI binding,
-add references to vbus-supply to PHY binding.
+  $ powerpc-openwrt-linux-uclibc-readelf -s arch/powerpc/kernel/built-in.o \
+    drivers/pci/built-in.o vmlinux.o | grep pcibios_get_phb_of_node
+    1001: 0000cbb8    12 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
+    1484: 0001471c    88 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
+   28652: 0000d6f8    12 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
+  $
 
-* Update DT to add vbus-supply to PHY nodes, but don't remove vbus-gpio
-from EHCI nodes.
+However on MIPS, the linker puts the default
+implementation into the final image:
 
-* The code in this series doesn't actually change the vbus-* usage yet.
+  $ mipsel-openwrt-linux-readelf -s arch/mips/pci/built-in.o \
+    drivers/pci/built-in.o vmlinux.o | grep pcibios_get_phb_of_node
+      86: 0000046c    12 FUNC    WEAK   DEFAULT    2 pcibios_get_phb_of_node
+    1430: 00012e2c   104 FUNC    WEAK   DEFAULT    2 pcibios_get_phb_of_node
+   31898: 0017e4ec   104 FUNC    WEAK   DEFAULT    2 pcibios_get_phb_of_node
+  $
 
-...
+Rename the default implementation and remove the
+__weak annotation of that. This ensures that there
+will be no multiple weak symbols with the same name
+in the object files. In order to keep the expected
+behaviour, call the architecture specific function
+if the weak symbol is resolved.
 
-* Once this series is finalized, create another follow-on patch that
-adds vbus-supply handling in to the PHY driver, and removes vbus-gpio
-handling from the EHCI driver.
+Also move the renamed function to the top instead
+of adding a new forward declaration for that.
 
-* Finally, remove vbus-gpio from the DT files.
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+---
+Notes:
 
-I think we're in agreement on this now, and this series mostly already
-does exactly that. I just wanted to spell it out explicitly to make sure.
+Unfortunately I'm not a binutils/gcc expert, so
+I don't know if this is the expected behaviour
+of those or not.
+
+Removing the __weak annotation from the forward
+declaration of 'pcibios_get_phb_of_node' in
+'include/linux/pci.h' also fixes the problem.
+
+The microblaze architecture also provides its own
+implementation. The behaviour of that is not tested
+but I assume that the linker chooses the arch specific
+implementation on that as well similarly to the
+x86/powerpc.
+
+The MIPS version is implemented in the followup
+patch.
+
+Removing the __weak annotation from the forward
+declaration of 'pcibios_get_phb_of_node' in
+'include/linux/pci.h' also fixes the problem.
+
+-Gabor
+---
+ drivers/pci/of.c |   41 +++++++++++++++++++++++------------------
+ 1 file changed, 23 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/pci/of.c b/drivers/pci/of.c
+index f092993..5794840 100644
+--- a/drivers/pci/of.c
++++ b/drivers/pci/of.c
+@@ -15,10 +15,32 @@
+ #include <linux/of_pci.h>
+ #include "pci.h"
+ 
++static struct device_node *__pcibios_get_phb_of_node(struct pci_bus *bus)
++{
++	/* This should only be called for PHBs */
++	if (WARN_ON(bus->self || bus->parent))
++		return NULL;
++
++	if (pcibios_get_phb_of_node)
++		return pcibios_get_phb_of_node(bus);
++
++	/* Look for a node pointer in either the intermediary device we
++	 * create above the root bus or it's own parent. Normally only
++	 * the later is populated.
++	 */
++	if (bus->bridge->of_node)
++		return of_node_get(bus->bridge->of_node);
++	if (bus->bridge->parent && bus->bridge->parent->of_node)
++		return of_node_get(bus->bridge->parent->of_node);
++
++	return NULL;
++}
++
+ void pci_set_of_node(struct pci_dev *dev)
+ {
+ 	if (!dev->bus->dev.of_node)
+ 		return;
++
+ 	dev->dev.of_node = of_pci_find_child_device(dev->bus->dev.of_node,
+ 						    dev->devfn);
+ }
+@@ -32,7 +54,7 @@ void pci_release_of_node(struct pci_dev *dev)
+ void pci_set_bus_of_node(struct pci_bus *bus)
+ {
+ 	if (bus->self == NULL)
+-		bus->dev.of_node = pcibios_get_phb_of_node(bus);
++		bus->dev.of_node = __pcibios_get_phb_of_node(bus);
+ 	else
+ 		bus->dev.of_node = of_node_get(bus->self->dev.of_node);
+ }
+@@ -42,20 +64,3 @@ void pci_release_bus_of_node(struct pci_bus *bus)
+ 	of_node_put(bus->dev.of_node);
+ 	bus->dev.of_node = NULL;
+ }
+-
+-struct device_node * __weak pcibios_get_phb_of_node(struct pci_bus *bus)
+-{
+-	/* This should only be called for PHBs */
+-	if (WARN_ON(bus->self || bus->parent))
+-		return NULL;
+-
+-	/* Look for a node pointer in either the intermediary device we
+-	 * create above the root bus or it's own parent. Normally only
+-	 * the later is populated.
+-	 */
+-	if (bus->bridge->of_node)
+-		return of_node_get(bus->bridge->of_node);
+-	if (bus->bridge->parent && bus->bridge->parent->of_node)
+-		return of_node_get(bus->bridge->parent->of_node);
+-	return NULL;
+-}
+-- 
+1.7.10
+
