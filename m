@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761945Ab3DDOeV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 10:34:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38610 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761924Ab3DDOeR (ORCPT
+	id S1762048Ab3DDOi6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 10:38:58 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:23098 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761861Ab3DDOi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 10:34:17 -0400
-Date: Thu, 4 Apr 2013 07:34:12 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7] workqueue, use default pwq when fail to allocate
- node pwd
-Message-ID: <20130404143412.GH9425@htj.dyndns.org>
-References: <1365041143-3088-1-git-send-email-laijs@cn.fujitsu.com>
- <1365041143-3088-5-git-send-email-laijs@cn.fujitsu.com>
+	Thu, 4 Apr 2013 10:38:56 -0400
+Message-ID: <515D9041.8080000@oracle.com>
+Date: Thu, 04 Apr 2013 10:37:53 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130310 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365041143-3088-5-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Mel Gorman <mgorman@suse.de>,
+        Dave Jones <davej@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: mm: BUG in do_huge_pmd_wp_page
+References: <51559150.3040407@oracle.com> <515D882E.6040001@oracle.com> <20130404143048.02672E0085@blue.fi.intel.com>
+In-Reply-To: <20130404143048.02672E0085@blue.fi.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 10:05:36AM +0800, Lai Jiangshan wrote:
-> When we fail to allocate the node pwq, we can use the default pwq
-> for the node.
+On 04/04/2013 10:30 AM, Kirill A. Shutemov wrote:
+> Sasha Levin wrote:
+>> Ping? I'm seeing a whole bunch of these with current -next.
 > 
-> Thus we can avoid failure after allocated default pwq, and remove
-> some code for failure path.
+> Do you have a way to reproduce?
 
-I don't know about this one.  The reason why we fall back to the
-default one during CPU UP/DONW is because we don't want to interfere
-with CPU hotplug which doesn't really have much to do with specific
-workqueues and shouldn't fail even when things go pretty hairy -
-e.g. if the user turned off the screen of his/her phone or a laptop is
-thrown into the backpack with lid closed, CPU_DOWNs during suspend
-better not fail from memory allocation.
+Not really, trinity just manages to make it happen quite often.
 
-apply_workqueue_attrs() is different.  We *want* to notify the issuer
-that something went wrong affnd the action requested couldn't be
-fulfilled in full.  We don't want to hide a failure.  It'll show up as
-a silent performance degradation that nobody knows why it's happening.
+I can add something in the code to spew more debug info when it
+happens though, I just couldn't come up with anything that might
+be useful.
 
-So, nope, doesn't look like a good idea to me.
 
-Thanks.
-
--- 
-tejun
+Thanks,
+Sasha
