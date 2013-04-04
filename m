@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763297Ab3DDVDS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 17:03:18 -0400
-Received: from smtp04.smtpout.orange.fr ([80.12.242.126]:26217 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762862Ab3DDVDR (ORCPT
+	id S1763216Ab3DDVEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 17:04:08 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:35219 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762445Ab3DDVEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 17:03:17 -0400
-Message-ID: <515DCE6D.7080203@free.fr>
-Date: Thu, 04 Apr 2013 21:03:09 +0200
-From: Eric Valette <eric.valette@free.fr>
-Reply-To: eric.valette@free.fr
-Organization: Chez moi
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: David Woodhouse <dwmw2@infradead.org>
-CC: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Subject: Re: Strange trace in dmesg on kernel 3.8.5
-References: <515DD32F.3030509@free.fr> <20130404194404.GA8082@pd.tnic> <1365108338.3072.3.camel@shinybook.infradead.org>
-In-Reply-To: <1365108338.3072.3.camel@shinybook.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Apr 2013 17:04:06 -0400
+From: Julius Werner <jwerner@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-usb@vger.kernel.org, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Julius Werner <jwerner@chromium.org>
+Subject: [PATCH] usb: xhci-dbg: Display endpoint number and direction in context dump
+Date: Thu,  4 Apr 2013 14:03:04 -0700
+Message-Id: <1365109384-5333-1-git-send-email-jwerner@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2013 22:45, David Woodhouse wrote:
-> On Thu, 2013-04-04 at 21:44 +0200, Borislav Petkov wrote:
->>> ahci 0000:00:1f.2: DMA-API: device driver maps memory fromstack
->>> [addr=ffff88040df2da50]
-> I fixed this already. 
->
-> https://git.kernel.org/cgit/linux/kernel/git/jgarzik/libata-dev.git/commit/?h=upstream-fixes&id=8e725c7f8a60feaa88edacd4dee2c754d5ae7706
->
-Thanks for the support. I will apply the patch manually and wait for 3.8.6
+When CONFIG_XHCI_HCD_DEBUGGING is activated, the XHCI driver can dump
+device and input contexts to the console. The endpoint contexts in that
+dump are labeled "Endpoint N Context", where N is DCI - 1... this is
+very confusing, especially for people who are not that familiar with
+the XHCI specification. Let's change this to display the endpoint number
+and direction, which are much more commonly used concepts in USB (and
+map to XHCI DCIs 1-to-1).
 
--- eric
+Signed-off-by: Julius Werner <jwerner@chromium.org>
+---
+ drivers/usb/host/xhci-dbg.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/usb/host/xhci-dbg.c b/drivers/usb/host/xhci-dbg.c
+index 5f3a7c7..98b1bee 100644
+--- a/drivers/usb/host/xhci-dbg.c
++++ b/drivers/usb/host/xhci-dbg.c
+@@ -507,7 +507,8 @@ static void xhci_dbg_ep_ctx(struct xhci_hcd *xhci,
+ 		dma_addr_t dma = ctx->dma +
+ 			((unsigned long)ep_ctx - (unsigned long)ctx->bytes);
  
+-		xhci_dbg(xhci, "Endpoint %02d Context:\n", i);
++		xhci_dbg(xhci, "Endpoint %02d %s Context:\n",
++				DIV_ROUND_UP(i, 2), i % 2 ? "OUT" : "IN");
+ 		xhci_dbg(xhci, "@%p (virt) @%08llx (dma) %#08x - ep_info\n",
+ 				&ep_ctx->ep_info,
+ 				(unsigned long long)dma, ep_ctx->ep_info);
+-- 
+1.8.1.3
 
