@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763163Ab3DDQdQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:33:16 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52371
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762997Ab3DDQdN (ORCPT
+	id S1763224Ab3DDQd2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:33:28 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:42300 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763115Ab3DDQd0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:33:13 -0400
-Message-ID: <1365093180.2609.103.camel@laptop>
-Subject: Re: [PATCH v2 2/3] mutex: add support for reservation style locks,
- v2
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-arch@vger.kernel.org, daniel.vetter@ffwll.ch, x86@kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, robclark@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu, linux-media@vger.kernel.org
-Date: Thu, 04 Apr 2013 18:33:00 +0200
-In-Reply-To: <20130404133123.GW2228@phenom.ffwll.local>
-References: <20130228102452.15191.22673.stgit@patser>
-	 <20130228102502.15191.14146.stgit@patser>
-	 <1364900432.18374.24.camel@laptop> <515AF1C1.7080508@canonical.com>
-	 <1364921954.20640.22.camel@laptop> <1365076908.2609.94.camel@laptop>
-	 <20130404133123.GW2228@phenom.ffwll.local>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+	Thu, 4 Apr 2013 12:33:26 -0400
+Message-ID: <1365093202.26858.111.camel@hornet>
+Subject: Re: [RFC] perf: need to expose sched_clock to correlate user
+ samples with kernel samples
+From: Pawel Moll <pawel.moll@arm.com>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Robert Richter <robert.richter@amd.com>
+Date: Thu, 04 Apr 2013 17:33:22 +0100
+In-Reply-To: <20130404073700.GA1860@localhost.localdomain>
+References: <CABPqkBS4TELhoUGrO+moca2fPUoqGjiYCdHJc=H8CjLomPWWDQ@mail.gmail.com>
+	 <1363291021.3100.144.camel@hornet> <51586315.7080006@gmail.com>
+	 <5159D221.70304@linaro.org> <1364889256.16858.1.camel@laptop>
+	 <515B0502.8070408@linaro.org> <1365009558.26858.19.camel@hornet>
+	 <515C66FE.7030501@linaro.org> <1365010502.26858.32.camel@hornet>
+	 <515C6C01.9070905@linaro.org> <20130404073700.GA1860@localhost.localdomain>
+X-Mailer: Evolution 3.6.2-0ubuntu0.1
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Apr 2013 16:33:22.0689 (UTC) FILETIME=[1F8F5710:01CE3152]
+X-MC-Unique: 113040417332422001
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-04 at 15:31 +0200, Daniel Vetter wrote:
-> We do add some form of owner tracking by storing the reservation
-> ticket
-> of the current holder into every ww_mutex. So when task-Y in your
-> above
-> example tries to acquire lock A it notices that it's behind in the
-> global
-> queue and immedieately returns -EAGAIN to indicate the deadlock.
+On Thu, 2013-04-04 at 08:37 +0100, Richard Cochran wrote:
+> > I get the reasoning around reusing the fd we already have, but is
+> > the possibility of a dynamic chardev pathname really a big concern?
 > 
-> Aside, there's a bit of fun in that ttm uses -EDEADLCK for when you
-> try to
-> reserve the same buffer twice - it can easily detect that by comparing
-> the
-> lock owner ticket with the provided one and if it matches bail out. 
+> I have been following this thread, and, not knowing very much about
+> perf, I would think that the userland can easily open a second file
+> (the dynamic posix clock chardev) in order to get these time stamps.
 
-Sure, but this should bear no influence on the design of the mutex
-primitive. At most we should ensure this situation is recognizable.
+Sure it can - I've tested it. It's just a bit cumbersome in my opinion
+(there is nothing else perf-related in /dev). I can agree to disagree if
+you think otherwise :-)
 
-> Hence we've kept the special -EDEADLCK semantics even for the ww_mutex
-> stuff.
-
-There's EDEADLK and EDEADLOCK, EDEADLCK does alas not exist :-)
-
-> > Now this gets a little more interesting if we change the scenario a
-> > little:
-> > 
-> >       task-O  task-Y
-> >         A
-> >               B
-> >         B <-- blocks on Y
-> >               * <-- could be A
+> > Maybe can we extend the dynamic posix clock code to work on more
+> > then just the chardev? Although I worry about multiplexing too much
+> > functionality on the file.
 > 
-> The current code at least simple blocks task-O on B until task-Y
-> unlocks
-> B. Deadlocks cannot happen since if task-Y ever tries to acquire a
-> lock
-> which is held by an older task (e.g. lock A) it will bail out with
-> -EAGAIN.
+> I don't yet see a need for that, but if we do, then it should work in
+> a generic way, and not as a list of special cases, like we saw in the
+> patch.
 
-Agreed, O would have to wait until Y unlocks B. It was a 'detail' I
-skimped over for the sake of brevity. I was merely trying to illustrate
-the ways in which we must bring Y to return -EDEADLK (or -EAGAIN in
-your version).
+By all means - and even more generic way than it is now (why character
+devices not any other file?). I'll give it a try.
+
+Paweł
+
+
 
