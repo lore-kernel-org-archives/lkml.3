@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763560Ab3DDHUX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 03:20:23 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:50838 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763038Ab3DDHUW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 03:20:22 -0400
-Date: Thu, 4 Apr 2013 08:20:16 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 4/9] ARM: ux500: Move Snowball's thermal DT node into
- existing PRCMU one
-Message-ID: <20130404072016.GA3004@gmail.com>
-References: <1364908916-29803-1-git-send-email-lee.jones@linaro.org>
- <1364908916-29803-4-git-send-email-lee.jones@linaro.org>
- <CACRpkdar=xD34yaMP2gOfUPkpxOhDymS6zTedKOEW7j2DNHusA@mail.gmail.com>
- <CACRpkda08Joe9aXRgYDUs622GELL+O1vZSnzzCBa++m1zZZi=g@mail.gmail.com>
+	id S1763728Ab3DDHWI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 03:22:08 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:37829 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1763173Ab3DDHWF (ORCPT
+	<rfc822;	linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 03:22:05 -0400
+Date: Thu, 04 Apr 2013 10:21:55 +0300
+Subject: Re: [PATCH v3 linux-next] cpufreq: ondemand: Calculate gradient of
+ CPU load to early increase frequency
+Message-ID: <6abgl9p3kyb9lrgptch39iyw.1365060115568@email.android.com>
+From: stratosk <stratosk@semaphore.gr>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkda08Joe9aXRgYDUs622GELL+O1vZSnzzCBa++m1zZZi=g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r347MB3V000968
 
-On Wed, 03 Apr 2013, Linus Walleij wrote:
+I agree that we will have false alarms but this will not be a total waste of power since the load will be more than 50 (the default grad_up_threshold value).
 
-> On Wed, Apr 3, 2013 at 10:38 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> > On Tue, Apr 2, 2013 at 3:21 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> >
-> >> When the thermal DT node was inserted a new PRCMU node was created;
-> >> however, one already exists in the Snowball DTS file. Here we
-> >> amalgamate the two into a single consolidated node.
-> >>
-> >> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> >
-> > Patch applied.
-> 
-> After applying this I get this:
-> 
->   DTC     arch/arm/boot/dts/snowball.dtb
-> Error: /home/elinwal/linux-stericsson/arch/arm/boot/dts/snowball.dts:351.3-352.1
-> syntax error
-> FATAL ERROR: Unable to parse input tree
-> make[3]: *** [arch/arm/boot/dts/snowball.dtb] Error 1
-> make[2]: *** [dtbs] Error 2
-> make[1]: *** [sub-make] Error 2
-> make[1]: Leaving directory `/home/elinwal/linux-stericsson'
-> make: *** [build-dtbs] Error 2
-> 
-> Does not appear prior to applying patch.
+So, I don't think there will be *significant* increase in power. Though, I don't know a way to prove this with numbers.
 
-That doesn't really tell me anything.
+Thanks,
+Stratos
 
-Can you paste the hunk to which the error is referring please?
+Viresh Kumar <viresh.kumar@linaro.org> wrote:
 
-> It doesn't quiet apply cleanly either, what is this based on?
-
-It's based on 'arm-soc/fixes', which should be appearing in Mainline
-rc:s any day now.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>On 4 April 2013 12:17, stratosk <stratosk@semaphore.gr> wrote:
+>> Why do you suspect significant increased power? With ondemand  the CPU will go down to lowest freq as soon as the load will decreased. And the measurement shows that the CPU load will decrease faster (because of faster calculation).
+>
+>I suspect it because we are increasing freq based on the assumption:
+>"If increase in load from last calculation is more then threshold, then
+>we must use high freq"..
+>
+>So, this rise can be false alarm multiple times and we might not see
+>a load increase after moving to high freq and so we are running at
+>high/max freq without any need of it. And so more power.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
