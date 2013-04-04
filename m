@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762382Ab3DDPUd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 11:20:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45669 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762351Ab3DDPUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 11:20:32 -0400
-Date: Thu, 4 Apr 2013 17:20:28 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
+	id S1761644Ab3DDPWW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 11:22:22 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:53504 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761409Ab3DDPWU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 11:22:20 -0400
+Date: Thu, 4 Apr 2013 08:22:13 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
 Cc: Li Zefan <lizefan@huawei.com>, linux-mm@kvack.org,
         LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
         Glauber Costa <glommer@parallels.com>,
@@ -16,50 +17,33 @@ Cc: Li Zefan <lizefan@huawei.com>, linux-mm@kvack.org,
         Johannes Weiner <hannes@cmpxchg.org>
 Subject: Re: [RFC][PATCH 5/7] cgroup: make sure parent won't be destroyed
  before its children
-Message-ID: <20130404152028.GK29911@dhcp22.suse.cz>
+Message-ID: <20130404152213.GL9425@htj.dyndns.org>
 References: <515BF233.6070308@huawei.com>
  <515BF2A4.1070703@huawei.com>
  <20130404113750.GH29911@dhcp22.suse.cz>
  <20130404133706.GA9425@htj.dyndns.org>
+ <20130404152028.GK29911@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130404133706.GA9425@htj.dyndns.org>
+In-Reply-To: <20130404152028.GK29911@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 04-04-13 06:53:53, Tejun Heo wrote:
-> Hey,
+On Thu, Apr 04, 2013 at 05:20:28PM +0200, Michal Hocko wrote:
+> > But what harm does an additional reference do?
 > 
-> On Thu, Apr 04, 2013 at 01:37:50PM +0200, Michal Hocko wrote:
-> > On Wed 03-04-13 17:13:08, Li Zefan wrote:
-> > > Suppose we rmdir a cgroup and there're still css refs, this cgroup won't
-> > > be freed. Then we rmdir the parent cgroup, and the parent is freed due
-> > > to css ref draining to 0. Now it would be a disaster if the child cgroup
-> > > tries to access its parent.
-> > 
-> > Hmm, I am not sure what is the correct layer for this to handle - cgroup
-> > core or memcg. But we have enforced that in mem_cgroup_css_online where
-> > we take an additional reference to the memcg.
-> > 
-> > Handling it in the memcg code would have an advantage of limiting an
-> > additional reference only to use_hierarchy cases which is sufficient
-> > as we never touch the parent otherwise (parent_mem_cgroup).
-> 
-> But what harm does an additional reference do?
+> No harm at all. I just wanted to be sure that this is not yet another
+> "for memcg" hack. So if this is useful for other controllers then I have
+> no objections of course.
 
-No harm at all. I just wanted to be sure that this is not yet another
-"for memcg" hack. So if this is useful for other controllers then I have
-no objections of course.
+I think it makes sense in general, so let's do it in cgroup core.  I
+suppose it'd be easier for this to be routed together with other memcg
+changes?
 
-> And given that there are cgroup core interfaces which access ->parent,
-> I think it'd be a good idea that parent always exists while there are
-> children.
-> 
-> Thanks.
+Thanks.
 
 -- 
-Michal Hocko
-SUSE Labs
+tejun
