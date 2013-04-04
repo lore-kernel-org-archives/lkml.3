@@ -1,136 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758148Ab3DDLZN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 07:25:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34386 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758054Ab3DDLZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 07:25:11 -0400
-Date: Thu, 4 Apr 2013 13:25:05 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC][PATCH 4/7] memcg: use css_get/put for swap memcg
-Message-ID: <20130404112505.GG29911@dhcp22.suse.cz>
-References: <515BF233.6070308@huawei.com>
- <515BF296.3080406@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515BF296.3080406@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758319Ab3DDLZl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 07:25:41 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:54471 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758183Ab3DDLZk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 07:25:40 -0400
+Message-ID: <1365074738.1830.38.camel@x61.thuisdomein>
+Subject: [PATCH] MIPS: Alchemy: Fix typo "CONFIG_DEBUG_PCI"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Date: Thu, 04 Apr 2013 13:25:38 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Apr 2013 11:25:38.0348 (UTC) FILETIME=[21F47EC0:01CE3127]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 03-04-13 17:12:54, Li Zefan wrote:
-> Use css_get/put instead of mem_cgroup_get/put.
-> 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
+Also add a newline to a debugging printk that this fix enables.
 
-Looks good to me. Swapped in pages still use css_tryget so they would
-fallback to recharge in __mem_cgroup_try_charge_swapin if the group was
-removed.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Entirely untested. Adding the newline adds a checkpatch warning for
+over 80 characters lines.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+1) Typo was added in v3.2, through commit
+7517de348663b08a808aff44b5300e817157a568 ("MIPS: Alchemy: Redo PCI as
+platform driver").
 
-Thanks!
+ arch/mips/pci/pci-alchemy.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> ---
->  mm/memcontrol.c | 26 ++++++++++++++++----------
->  1 file changed, 16 insertions(+), 10 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 877551d..ad576e8 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -4137,12 +4137,12 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype,
->  	unlock_page_cgroup(pc);
->  	/*
->  	 * even after unlock, we have memcg->res.usage here and this memcg
-> -	 * will never be freed.
-> +	 * will never be freed, so it's safe to call css_get().
->  	 */
->  	memcg_check_events(memcg, page);
->  	if (do_swap_account && ctype == MEM_CGROUP_CHARGE_TYPE_SWAPOUT) {
->  		mem_cgroup_swap_statistics(memcg, true);
-> -		mem_cgroup_get(memcg);
-> +		css_get(&memcg->css);
->  	}
->  	/*
->  	 * Migration does not charge the res_counter for the
-> @@ -4242,7 +4242,7 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
->  
->  	/*
->  	 * record memcg information,  if swapout && memcg != NULL,
-> -	 * mem_cgroup_get() was called in uncharge().
-> +	 * css_get() was called in uncharge().
->  	 */
->  	if (do_swap_account && swapout && memcg)
->  		swap_cgroup_record(ent, css_id(&memcg->css));
-> @@ -4273,7 +4273,7 @@ void mem_cgroup_uncharge_swap(swp_entry_t ent)
->  		if (!mem_cgroup_is_root(memcg))
->  			res_counter_uncharge(&memcg->memsw, PAGE_SIZE);
->  		mem_cgroup_swap_statistics(memcg, false);
-> -		mem_cgroup_put(memcg);
-> +		css_put(&memcg->css);
->  	}
->  	rcu_read_unlock();
->  }
-> @@ -4307,11 +4307,14 @@ static int mem_cgroup_move_swap_account(swp_entry_t entry,
->  		 * This function is only called from task migration context now.
->  		 * It postpones res_counter and refcount handling till the end
->  		 * of task migration(mem_cgroup_clear_mc()) for performance
-> -		 * improvement. But we cannot postpone mem_cgroup_get(to)
-> -		 * because if the process that has been moved to @to does
-> -		 * swap-in, the refcount of @to might be decreased to 0.
-> +		 * improvement. But we cannot postpone css_get(to)  because if
-> +		 * the process that has been moved to @to does swap-in, the
-> +		 * refcount of @to might be decreased to 0.
-> +		 *
-> +		 * We are in attach() phase, so the cgroup is guaranteed to be
-> +		 * alive, so we can just call css_get().
->  		 */
-> -		mem_cgroup_get(to);
-> +		css_get(&to->css);
->  		return 0;
->  	}
->  	return -EINVAL;
-> @@ -6597,6 +6600,7 @@ static void __mem_cgroup_clear_mc(void)
->  {
->  	struct mem_cgroup *from = mc.from;
->  	struct mem_cgroup *to = mc.to;
-> +	int i;
->  
->  	/* we must uncharge all the leftover precharges from mc.to */
->  	if (mc.precharge) {
-> @@ -6617,7 +6621,9 @@ static void __mem_cgroup_clear_mc(void)
->  		if (!mem_cgroup_is_root(mc.from))
->  			res_counter_uncharge(&mc.from->memsw,
->  						PAGE_SIZE * mc.moved_swap);
-> -		__mem_cgroup_put(mc.from, mc.moved_swap);
-> +
-> +		for (i = 0; i < mc.moved_swap; i++)
-> +			css_put(&mc.from->css);
->  
->  		if (!mem_cgroup_is_root(mc.to)) {
->  			/*
-> @@ -6627,7 +6633,7 @@ static void __mem_cgroup_clear_mc(void)
->  			res_counter_uncharge(&mc.to->res,
->  						PAGE_SIZE * mc.moved_swap);
->  		}
-> -		/* we've already done mem_cgroup_get(mc.to) */
-> +		/* we've already done css_get(mc.to) */
->  		mc.moved_swap = 0;
->  	}
->  	memcg_oom_recover(from);
-> -- 
-> 1.8.0.2
-
+diff --git a/arch/mips/pci/pci-alchemy.c b/arch/mips/pci/pci-alchemy.c
+index 38a80c8..d1faece 100644
+--- a/arch/mips/pci/pci-alchemy.c
++++ b/arch/mips/pci/pci-alchemy.c
+@@ -19,7 +19,7 @@
+ #include <asm/mach-au1x00/au1000.h>
+ #include <asm/tlbmisc.h>
+ 
+-#ifdef CONFIG_DEBUG_PCI
++#ifdef CONFIG_PCI_DEBUG
+ #define DBG(x...) printk(KERN_DEBUG x)
+ #else
+ #define DBG(x...) do {} while (0)
+@@ -162,7 +162,7 @@ static int config_access(unsigned char access_type, struct pci_bus *bus,
+ 	if (status & (1 << 29)) {
+ 		*data = 0xffffffff;
+ 		error = -1;
+-		DBG("alchemy-pci: master abort on cfg access %d bus %d dev %d",
++		DBG("alchemy-pci: master abort on cfg access %d bus %d dev %d\n",
+ 		    access_type, bus->number, device);
+ 	} else if ((status >> 28) & 0xf) {
+ 		DBG("alchemy-pci: PCI ERR detected: dev %d, status %lx\n",
 -- 
-Michal Hocko
-SUSE Labs
+1.7.11.7v
+
