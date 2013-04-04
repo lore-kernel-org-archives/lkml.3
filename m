@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933006Ab3DDCDG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 22:03:06 -0400
-Received: from mga03.intel.com ([143.182.124.21]:29737 "EHLO mga03.intel.com"
+	id S932900Ab3DDCCr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 22:02:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:29715 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932881Ab3DDCDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 22:03:02 -0400
+	id S932647Ab3DDCCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 22:02:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,404,1363158000"; 
-   d="scan'208";a="280534634"
+   d="scan'208";a="280534542"
 From: Alex Shi <alex.shi@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
@@ -20,9 +20,9 @@ Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
         rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
         tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
         riel@redhat.com
-Subject: [patch v7 21/21] sched: make sure select_tas_rq_fair get a cpu
-Date: Thu,  4 Apr 2013 10:01:02 +0800
-Message-Id: <1365040862-8390-22-git-send-email-alex.shi@intel.com>
+Subject: [patch v7 17/21] sched: add new members of sd_lb_stats
+Date: Thu,  4 Apr 2013 10:00:58 +0800
+Message-Id: <1365040862-8390-18-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1365040862-8390-1-git-send-email-alex.shi@intel.com>
 References: <1365040862-8390-1-git-send-email-alex.shi@intel.com>
@@ -30,80 +30,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Added 4 new members in sb_lb_stats, that will be used in incomming
+power aware balance.
 
-Problem:
+group_min; 	//least utliszation group in domain
+min_load_per_task; //load_per_task in group_min
+leader_util;	// sum utilizations of group_leader
+min_util;	// sum utilizations of group_min
 
-select_task_rq_fair() returns a target CPU/ waking CPU if no balancing is
-required. However with the current power aware scheduling in this path, an
-invalid CPU might be returned.
-
-If get_cpu_for_power_policy() fails to find a new_cpu for the forked task,
-then there is a possibility that the new_cpu could continue to be -1, till
-the end of the select_task_rq_fair() if the search for a new cpu ahead in
-this function also fails. Since this scenario is unexpected by
-the callers of  select_task_rq_fair(),this needs to be fixed.
-
-Fix:
-
-Do not intermix the variables meant to reflect the target CPU of power save
-and performance policies. If the target CPU of powersave is successful in being
-found, return it. Else allow the performance policy to take a call on the
-target CPU.
-
-The above scenario was caught when a kernel crash resulted with a bad data access
-interrupt, during a kernbench run on a 2 socket,16 core machine,with each core
-having SMT-4
-
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/fair.c | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ kernel/sched/fair.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 3a0284b..142c1ee 100644
+index 86221e7..9326c22 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -3529,6 +3529,7 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int flags)
- 	int cpu = smp_processor_id();
- 	int prev_cpu = task_cpu(p);
- 	int new_cpu = cpu;
-+	int power_cpu = -1;
- 	int want_affine = 0;
- 	int sync = flags & WF_SYNC;
- 	struct sd_lb_stats sds;
-@@ -3560,16 +3561,16 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int flags)
- 		if (tmp->flags & sd_flag) {
- 			sd = tmp;
- 
--			new_cpu = get_cpu_for_power_policy(sd, cpu, p, &sds,
-+			power_cpu = get_cpu_for_power_policy(sd, cpu, p, &sds,
- 						sd_flag & SD_BALANCE_WAKE);
--			if (new_cpu != -1)
-+			if (power_cpu != -1)
- 				goto unlock;
- 		}
- 	}
- 
- 	if (affine_sd) {
--		new_cpu = get_cpu_for_power_policy(affine_sd, cpu, p, &sds, 1);
--		if (new_cpu != -1)
-+		power_cpu = get_cpu_for_power_policy(affine_sd, cpu, p, &sds, 1);
-+		if (power_cpu != -1)
- 			goto unlock;
- 
- 		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
-@@ -3619,8 +3620,10 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int flags)
- 	}
- unlock:
- 	rcu_read_unlock();
-+	if (power_cpu == -1)
-+                return new_cpu;
- 
--	return new_cpu;
-+	return power_cpu;
- }
+@@ -3333,6 +3333,10 @@ struct sd_lb_stats {
+ 	/* Varibles of power awaring scheduling */
+ 	unsigned int  sd_util;	/* sum utilization of this domain */
+ 	struct sched_group *group_leader; /* Group which relieves group_min */
++	struct sched_group *group_min;	/* Least loaded group in sd */
++	unsigned long min_load_per_task; /* load_per_task in group_min */
++	unsigned int  leader_util;	/* sum utilizations of group_leader */
++	unsigned int  min_util;		/* sum utilizations of group_min */
+ };
  
  /*
 -- 
