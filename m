@@ -1,93 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765302Ab3DDWan (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 18:30:43 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:40947 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765257Ab3DDWam (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 18:30:42 -0400
-Date: Thu, 4 Apr 2013 15:30:34 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Stancek <jstancek@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Ian Lance Taylor <iant@google.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: prevent mmap_cache race in find_vma()
-Message-ID: <20130404223034.GQ28522@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LNX.2.00.1304041120510.26822@eggly.anvils>
- <CA+55aFwCG2h1ijWTCJ38LVcUyczDAfk72c4MVSU+_-BiLoMOOw@mail.gmail.com>
- <alpine.LNX.2.00.1304041149030.29847@eggly.anvils>
+	id S1765317Ab3DDWau (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 18:30:50 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:42452 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1765257Ab3DDWar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 18:30:47 -0400
+Message-ID: <515DFF08.3060005@linux.vnet.ibm.com>
+Date: Thu, 04 Apr 2013 17:30:32 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1304041149030.29847@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, Bob Liu <lliubbo@gmail.com>
+Subject: Re: [PATCHv8 5/8] mm: break up swap_writepage() for frontswap backends
+References: <1365113446-25647-1-git-send-email-sjenning@linux.vnet.ibm.com> <1365113446-25647-6-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1365113446-25647-6-git-send-email-sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040422-2398-0000-0000-000012EEA96D
+x-cbid: 13040422-7182-0000-0000-0000061822EC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 12:01:52PM -0700, Hugh Dickins wrote:
-> On Thu, 4 Apr 2013, Linus Torvalds wrote:
-> > On Thu, Apr 4, 2013 at 11:35 AM, Hugh Dickins <hughd@google.com> wrote:
-> > >
-> > > find_vma() can be called by multiple threads with read lock
-> > > held on mm->mmap_sem and any of them can update mm->mmap_cache.
-> > > Prevent compiler from re-fetching mm->mmap_cache, because other
-> > > readers could update it in the meantime:
-> > 
-> > Ack. I do wonder if we should mark the unlocked update too some way
-> > (also in find_vma()), although it's probably not a problem in practice
-> > since there's no way the compiler can reasonably really do anything
-> > odd with it. We *could* make that an ACCESS_ONCE() write too just to
-> > highlight the fact that it's an unlocked write to this optimistic data
-> > structure.
+On 04/04/2013 05:10 PM, Seth Jennings wrote:
+> swap_writepage() is currently where frontswap hooks into the swap
+> write path to capture pages with the frontswap_store() function.
+> However, if a frontswap backend wants to "resume" the writeback of
+> a page to the swap device, it can't call swap_writepage() as
+> the page will simply reenter the backend.
 > 
-> Hah, you beat me to it.
+> This patch separates swap_writepage() into a top and bottom half, the
+> bottom half named __swap_writepage() to allow a frontswap backend,
+> like zswap, to resume writeback beyond the frontswap_store() hook.
 > 
-> I wanted to get Jan's patch in first, seeing as it actually fixes his
-> observed issue; and it is very nice to have such a good description of
-> one of those, when ACCESS_ONCE() is usually just an insurance policy.
+> __add_to_swap_cache() is also made non-static so that the page for
+> which writeback is to be resumed can be added to the swap cache.
 > 
-> But then I was researching the much rarer "ACCESS_ONCE(x) = y" usage
-> (popular in drivers/net/wireless/ath/ath9k and kernel/rcutree* and
-> sound/firewire, but few places else).
-> 
-> When Paul reminded us of it yesterday, I came to wonder if actually
-> every use of ACCESS_ONCE in the read form should strictly be matched
-> by ACCESS_ONCE whenever modifying the location.
+> Acked-by: Minchan Kim <minchan@kernel.org>
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
->From a hygiene/insurance/documentation point of view, I agree.  Of course,
-it is OK to use things like cmpxchg() in place of ACCESS_ONCE().
+Adding Cc Bob Liu.
 
-The possible exceptions that come to mind are (1) if the access in
-question is done holding a lock that excludes all other accesses to that
-location, (2) if the access in question happens during initialization
-before any other CPU has access to that location, and (3) if the access
-in question happens during cleanup after all other CPUs have lost access
-to that location.  Any others?
+I just remembered that Bob had done a repost of the 5 and 6 patches,
+outside the zswap thread,  with a small change to avoid a checkpatch
+warning.  I didn't pull that change into my version, but I should have.
 
-/me goes to look to see if the RCU code follows this good advice...
+It doesn't make a functional difference, so this patch can still go
+forward and the checkpatch warning can be cleaned up in a subsequent
+patch.  If another revision of the patchset is needed for other
+reasons, I'll pull this change into the next version.
 
-							Thanx, Paul
+I think Dan and Bob would be ok with their tags being applied to 5 and 6:
 
-> My uneducated guess is that strictly it ought to, in the sense of
-> insurance policy; but that (apart from that strange split writing
-> issue which came up a couple of months ago) in practice our compilers
-> have not "advanced" to the point of making this an issue yet.
-> 
-> > 
-> > Anyway, applied.
-> 
-> Thanks,
-> Hugh
-> 
+Acked-by: Bob Liu <bob.liu@oracle.com>
+Reviewed-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+
+That ok?
+
+Thanks,
+Seth
 
