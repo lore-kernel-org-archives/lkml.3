@@ -1,115 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763341Ab3DDFFB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 01:05:01 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:34853 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763259Ab3DDFE7 (ORCPT
+	id S1763377Ab3DDFSG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 01:18:06 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:63035 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763351Ab3DDFSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 01:04:59 -0400
+	Thu, 4 Apr 2013 01:18:04 -0400
+Message-ID: <515D0D29.8030203@prisktech.co.nz>
+Date: Thu, 04 Apr 2013 18:18:33 +1300
+From: Tony Prisk <linux@prisktech.co.nz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <20130403172751.GC10089@xanatos>
-References: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com>
-	<20130403172751.GC10089@xanatos>
-Date: Thu, 4 Apr 2013 10:34:57 +0530
-Message-ID: <CAFp+6iGnDUSOjVgu9ZCAPF9rUDWD5r9ZttBtTo864Q2ACvKFrA@mail.gmail.com>
-Subject: Re: [PATCH v3 00/11] usb: dwc3/xhci/phy: Enable runtime power management
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, balbi@ti.com,
-        stern@rowland.harvard.edu, rob.herring@calxeda.com,
-        kgene.kim@samsung.com, kishon@ti.com, dianders@chromium.org,
-        t.figa@samsung.com, p.paneri@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: arm@kernel.org, "Bergmann, Arnd" <arnd@arndb.de>,
+        "Johansson, Olof" <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        "List, VT8500" <vt8500-wm8505-linux-kernel@googlegroups.com>
+Subject: [GIT PULL] arm: vt8500: Add support for pinctrl/gpio module
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sarah,
+The following changes since commit 8bb9660418e05bb1845ac1a2428444d78e322cc7:
 
+   Linux 3.9-rc4 (2013-03-23 16:52:44 -0700)
 
-On Wed, Apr 3, 2013 at 10:57 PM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
-> Question: Do you still need this patch for 3.10?
+are available in the git repository at:
 
-Felipe's 'next' is closed for 3.10, so this series won't be making it
-to 3.10 now, as a whole. :-(
+   git://server.prisktech.co.nz/git/linuxwmt.git tags/vt8500/pinctrl
 
->
-> http://marc.info/?l=linux-usb&m=136057666911621&w=2
->
-> Does this patchset build on top of that?
+for you to fetch changes up to ce63d6d4bb9f601de32d4b99f925a65182521873:
 
-Yea, it builds fine on top of the above mentioned patch.
-I would suggest that we pull the xhci-plat patch in this series when the
-complete patch-set getting in.
-btw, its your decision ;-)
+   pinctrl: bcm2835: make use of of_property_read_u32_index() 
+(2013-04-04 18:05:26 +1300)
 
->
-> I'm really behind on my patches for 3.10, sorry.
->
-> Sarah Sharp
->
-> On Mon, Apr 01, 2013 at 07:23:59PM +0530, Vivek Gautam wrote:
->> This patch-series enables runtime power management on xhci-plat,
->> dwc3-core, dwc3-exynos as well as on Samsung's USB 2.0 type and
->> USB 3.0 type PHYs.
->>
->> Based on 'next' branch of Felipe Balbi's USB tree.
->>
->> Changes from v2:
->>  - Using separate functions for USB PHY runtime power management, instead of
->>    using macros.
->>  - Adding 'pm_runtime_set_suspended()' api call in dwc3 core layer before
->>    enabling runtime pm. (Ideally, we should be explicitly make device
->>    'suspended' or 'active' before enabling runtime pm on it).
->>  - Checking return code for 'put_sync' and 'get_sync' of USB-PHYs when
->>    waking up or suspending them from dwc3 core's runtime_pm callbacks.
->>  - Removed buggy pm_runtime_put() calls from driver's (xhci, dwc3 and PHY)
->>    remove functions.
->>  - Adding a patch to enable runtime power management of Samsung's USB 2.0 PHY
->>    (usb: phy: samsung: Enable runtime power management on usb2phy)
->>
->> Changes from v1:
->>  - Adding required PHY APIs to handle runtime power management
->>    instead of directly twiddling with phy->dev.
->>  - Handling runtime power management of usb PHYs in dwc3 core
->>    driver instead of in any glue layer.
->>  - Splitting the patch:
->>    [PATCH 4/4] usb: phy: samsung: Enable runtime power management on samsung-usb
->>    into required number to bifurcate functionality.
->>
->> Vivek Gautam (11):
->>   usb: phy: Add APIs for runtime power management
->>   USB: dwc3: Adjust runtime pm to allow autosuspend
->>   usb: dwc3: Enable runtime pm only after PHYs are initialized
->>   usb: dwc3: Add runtime power management callbacks
->>   usb: dwc3: exynos: Enable runtime power management
->>   usb: xhci: Enable runtime pm in xhci-plat
->>   usb: phy: samsung: Enable runtime power management on usb2phy
->>   usb: phy: samsung: Enable runtime power management on usb3phy
->>   usb: phy: samsung: Add support for external reference clock
->>   usb: phy: samsung: Add support for PHY ref_clk gpio
->>   usb: phy: samsung: Add support for PHY refclk switching
->>
->>  drivers/usb/dwc3/core.c            |   59 ++++++++++++++--
->>  drivers/usb/dwc3/dwc3-exynos.c     |   12 +++
->>  drivers/usb/host/xhci-plat.c       |    6 ++
->>  drivers/usb/phy/phy-samsung-usb.c  |   26 +++++++
->>  drivers/usb/phy/phy-samsung-usb.h  |    1 +
->>  drivers/usb/phy/phy-samsung-usb2.c |    5 ++
->>  drivers/usb/phy/phy-samsung-usb3.c |  119 +++++++++++++++++++++++++++++--
->>  include/linux/usb/phy.h            |  141 ++++++++++++++++++++++++++++++++++++
->>  8 files changed, 358 insertions(+), 11 deletions(-)
->>
->> --
->> 1.7.6.5
->>
+----------------------------------------------------------------
+arm: vt8500: Add pinctrl driver for arch-vt8500
 
+This series adds support for the pinctrl/gpio module on all arch-vt8500
+supported SoCs. It also drops the existing GPIO only driver and binding.
 
+As part of the review process, some tidy up is also done to
+drivers/of/base.c to remove some code that is being constantly duplicated.
 
--- 
-Thanks & Regards
-Vivek
+Also, a patch for the bcm2835 pinctrl driver is included to take advantage
+of the new of/base.c code from Stephen W.
+
+----------------------------------------------------------------
+Stephen Warren (1):
+       pinctrl: bcm2835: make use of of_property_read_u32_index()
+
+Tony Prisk (7):
+       of: Add support for reading a u32 from a multi-value property.
+       of: Remove duplicated code for validating property and value
+       arm: vt8500: Increase available GPIOs on arch-vt8500
+       pinctrl: gpio: vt8500: Add pincontrol driver for arch-vt8500
+       arm: dts: vt8500: Update Wondermedia SoC dtsi files for pinctrl 
+driver
+       arm: vt8500: Remove gpio devicetree nodes
+       gpio: vt8500: Remove arch-vt8500 gpio driver
+
+  .../devicetree/bindings/gpio/gpio-vt8500.txt       |   24 -
+  .../devicetree/bindings/pinctrl/pinctrl-vt8500.txt |   57 ++
+  arch/arm/Kconfig                                   |    3 +-
+  arch/arm/boot/dts/vt8500.dtsi                      |   10 +-
+  arch/arm/boot/dts/wm8505.dtsi                      |   10 +-
+  arch/arm/boot/dts/wm8650.dtsi                      |   10 +-
+  arch/arm/boot/dts/wm8850.dtsi                      |   10 +-
+  arch/arm/mach-vt8500/Kconfig                       |    1 +
+  drivers/gpio/Kconfig                               |    6 -
+  drivers/gpio/Makefile                              |    1 -
+  drivers/gpio/gpio-vt8500.c                         |  355 -----------
+  drivers/of/base.c                                  |  111 ++--
+  drivers/pinctrl/Kconfig                            |    1 +
+  drivers/pinctrl/Makefile                           |    1 +
+  drivers/pinctrl/pinctrl-bcm2835.c                  |   19 +-
+  drivers/pinctrl/vt8500/Kconfig                     |   52 ++
+  drivers/pinctrl/vt8500/Makefile                    |    8 +
+  drivers/pinctrl/vt8500/pinctrl-vt8500.c            |  501 ++++++++++++++++
+  drivers/pinctrl/vt8500/pinctrl-wm8505.c            |  532 ++++++++++++++++
+  drivers/pinctrl/vt8500/pinctrl-wm8650.c            |  370 ++++++++++++
+  drivers/pinctrl/vt8500/pinctrl-wm8750.c            |  409 +++++++++++++
+  drivers/pinctrl/vt8500/pinctrl-wm8850.c            |  388 ++++++++++++
+  drivers/pinctrl/vt8500/pinctrl-wmt.c               |  632 
+++++++++++++++++++++
+  drivers/pinctrl/vt8500/pinctrl-wmt.h               |   79 +++
+  include/linux/of.h                                 |    9 +
+  25 files changed, 3153 insertions(+), 446 deletions(-)
+  delete mode 100644 Documentation/devicetree/bindings/gpio/gpio-vt8500.txt
+  create mode 100644 
+Documentation/devicetree/bindings/pinctrl/pinctrl-vt8500.txt
+  delete mode 100644 drivers/gpio/gpio-vt8500.c
+  create mode 100644 drivers/pinctrl/vt8500/Kconfig
+  create mode 100644 drivers/pinctrl/vt8500/Makefile
+  create mode 100644 drivers/pinctrl/vt8500/pinctrl-vt8500.c
+  create mode 100644 drivers/pinctrl/vt8500/pinctrl-wm8505.c
+  create mode 100644 drivers/pinctrl/vt8500/pinctrl-wm8650.c
+  create mode 100644 drivers/pinctrl/vt8500/pinctrl-wm8750.c
+  create mode 100644 drivers/pinctrl/vt8500/pinctrl-wm8850.c
+  create mode 100644 drivers/pinctrl/vt8500/pinctrl-wmt.c
+  create mode 100644 drivers/pinctrl/vt8500/pinctrl-wmt.h
