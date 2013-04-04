@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764454Ab3DDSVq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 14:21:46 -0400
-Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:49963 "EHLO
-	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1764368Ab3DDSVp (ORCPT
+	id S1764488Ab3DDSZB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 14:25:01 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:52000 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1764474Ab3DDSZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 14:21:45 -0400
-X-Greylist: delayed 689 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Apr 2013 14:21:45 EDT
-Date: Thu, 4 Apr 2013 18:10:14 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Michal Marek <mmarek@suse.cz>
-Subject: Re: [RFC GIT PULL] nohz: Kconfig layout improvements
-In-Reply-To: <1364993190-13784-1-git-send-email-fweisbec@gmail.com>
-Message-ID: <0000013dd63de989-c6980852-2aac-4597-ba34-3b2efaa24c17-000000@email.amazonses.com>
-References: <1364993190-13784-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 4 Apr 2013 14:25:00 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.04.04-54.240.9.42
+From: Fabien Gaud <fgaud@sfu.ca>
+Date: Thu, 4 Apr 2013 20:24:28 +0200
+X-Google-Sender-Auth: onTJUurhed3Xo6CxPluVCa0Kt8E
+Message-ID: <CAO4k2LcFjs-q=bUNB5eai5uP_4H_ga3wV7EZe4yindyF-bWFeQ@mail.gmail.com>
+Subject: Carrefour: memory traffic management for NUMA multicore systems
+To: linux-kernel@vger.kernel.org,
+        "Alexandra (Sasha) Fedorova" <fedorova@sfu.ca>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems that nohz still has no effect.
+Hello everyone,
 
-3.9-rc5 + patches. Affinity of init set to 0,1 so no
-tasks are running on 9. The "latencytest" used here is part of my
-lldiag-0.15 toolkit.
+We are researchers from Simon Fraser Unviversity (Canada) and CNRS/INP
+Grenoble/Universite Joseph Fourier (France). We are working on memory
+traffic management for NUMA multicore architectures. We published a
+paper at ASPLOS (http://asplos13.rice.edu/) on that subject and we
+think that this might interest you.
 
-First test without any special kernel parameters. nohz off right?
+Basically, we found in our paper that it is more important to balance
+memory pressure on memory controllers than to increase locality
+because memory controller congestion and interconnect congestion drive
+up memory access latencies. We designed Carrefour, a memory management
+algorithm that first tries to balance the load on memory controllers
+and second tries to improve locality (note that this is not necessary
+contradictory).
 
-$ nice -5 taskset -c 9 latencytest
+Carrefour is based on classic memory management techniques (page
+migration, page interleaving, page replication). The algorithm works
+as follow:
+First, we decide if memory management is required, using global
+statistics gathered with hardware counters.
+Second, we decide for each page which technique to apply, using per
+page statistics gathered with IBS (specific to AMD processor, INTEL
+has a similar solution with PEBS).
 
-CPUs: Freq=2.90Ghz Processors=32 Cores=8 cacheline_size=64 Intel(R)
-Xeon(R) CPU E5-2690 0 @ 2.90GHz
-16775106 samples below 1000 nsec
-13 involuntary context switches
-1019 (0.00607411%) variances in 10.00 seconds: minimum 1.07us maximum 12.32us average 3.30us stddev 0.63us
+We have significant improvements on many different applications.
+Especially, we usually have  a low overhead when memory management is
+not required and better performance than autonuma when it is.
 
-HZ=100 so the 1019 variances are likely timer interrupts.
+If you are interested, here is a link to our paper:
+http://www.cs.sfu.ca/~fedorova/papers/asplos284-dashti.pdf and, for a
+brief overview, some slides:
+http://www.fabiengaud.net/resources/dashti13traffic-slides.pdf
 
+If you are interested in the code, it is available here :
+https://github.com/Carrefour. Carrefour is divided in three modules: a
+patched kernel that supports page replication, a kernel module and a
+runtime.
+Page replication has been implemented in Linux 3.6. It has not been
+tested on many configurations, so it is likely to have bugs. We know
+that there's at least a problem with vmalloc. We did not test KSM, but
+I suspect that it will not work well too. Nevertheless, it is stable
+on our machines with our configuration. The current implementation has
+not been optimized for many-node machines (we tested it on two 4-node
+machines with respectively 16 and 24 cores). Especially, for a
+"replicated" process, we create one pgd per node and most of the
+algorithms are O(nr_nodes).
+The runtime is the part that decides whether we need Carrefour or not.
+The module is the part that collects IBS samples and decides what to
+do for each page. The module uses hooks on functions that are not
+exported and I agree that is not a very clean implementation.
 
+We hope that our work will interest you. We believe that some
+important insights could be used in future autonuma/balance-numa
+versions, like balancing memory accesses to reduce congestion on
+memory controllers and interconnects or use hardware counters to
+assist the memory management algorithm and reduce its overhead.
 
-
-After nohz setup
-
-/proc/cmdline:
-
-BOOT_IMAGE=/vmlinuz-3.9.0-rc5+ root=/dev/mapper/vg01-root ro console=tty0 console=ttyS0,115200 idle=mwait rcu_nocb_poll rcu_nocbs=2-31 nohz_extended=2-31
-
-$ nice -5 taskset -c 9 latencytest
-CPUs: Freq=2.90Ghz Processors=32 Cores=8 cacheline_size=64 Intel(R)
-Xeon(R) CPU E5-2690 0 @ 2.90GHz
-16779362 samples below 1000 nsec
-13 involuntary context switches
-1037 (0.00617983%) variances in 10.00 seconds: minimum 1.00us maximum 10.61us average 3.30us stddev 0.98us
-
-
-
-If I move the RCU threads off the cpu then I get a slightly better result:
-
-$ nice -5 taskset -c 9 latencytest
-CPUs: Freq=2.90Ghz Processors=32 Cores=8 cacheline_size=64 Intel(R)
-Xeon(R) CPU E5-2690 0 @ 2.90GHz
-16796039 samples below 1000 nsec
-12 involuntary context switches
-1020 (0.00607249%) variances in 10.00 seconds: minimum 1.00us maximum 11.58us average 2.77us stddev 0.55us
-
-
-
-Why is the tick not stopping? How do I diagnose this? (I can start
-patching the kernel again like last time but isnt there a better way?)
-
-
+Fabien Gaud
