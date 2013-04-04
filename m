@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763465Ab3DDF3n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 01:29:43 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54738 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750849Ab3DDF3l (ORCPT
+	id S1763475Ab3DDFay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 01:30:54 -0400
+Received: from kiruna.synopsys.com ([198.182.44.80]:33596 "EHLO
+	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752840Ab3DDFax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 01:29:41 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 3 Apr 2013 22:29:45 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Tony Chung <tonychung00@gmail.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 2/2] watchdog: fix w83627hf_wdt  clear timeout expired
-Message-ID: <20130404052945.GA21371@roeck-us.net>
-References: <1365050384-9130-1-git-send-email-tonychung00@gmail.com>
- <1365050384-9130-2-git-send-email-tonychung00@gmail.com>
+	Thu, 4 Apr 2013 01:30:53 -0400
+Message-ID: <515D0FFB.4030803@synopsys.com>
+Date: Thu, 4 Apr 2013 11:00:35 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365050384-9130-2-git-send-email-tonychung00@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
+        Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH] Kbuild: Avoid DTB rebuilds if source files are untouched
+References: <1364973141-16354-1-git-send-email-vgupta@synopsys.com> <515BD6B8.1020607@synopsys.com> <515C5652.8070705@wwwdotorg.org>
+In-Reply-To: <515C5652.8070705@wwwdotorg.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.228]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 03, 2013 at 09:39:44PM -0700, Tony Chung wrote:
-> 
-> Observed that the Watchdog Timer Status bit can be set when the driver is
-> loaded. Reset it during initialization. The time-out value must be set to 0
-> explicitly in this case to prevent an immediate reset.
-> 
-> Depending on the motherboard and with watchdog disabled in the BIOS, this reset problem can easily be reproduced by the following steps:
-> 1.  reboot the system 
-> 2.  wait for 5+ minutes 
-> 3.  don't start any watchdog server.
-> 4.  just run "modprobe w83627hf_wdt"
-> 
-> If the system load the driver after 5  minutes, it rebooted immediately because of timer expired.  For example, fsck could take more than 5 minutes to run, 
-> then the computer reboot as soon as the driver was loaded.
-> 
-[ the above aplies to your system, so I would not add that to the commit log,
-but that it up to Wim to decide ]
+On 04/03/2013 09:48 PM, Stephen Warren wrote:
+> On 04/03/2013 01:14 AM, Vineet Gupta wrote:
+>> forgot to CC linux-arch
+>>
+>> On 04/03/2013 12:42 PM, Vineet Gupta wrote:
+>>> Currently, for every ARC kernel build I see the following:
+>>>
+>>> --------------->8-----------------
+>>>   DTB    arch/arc/boot/dts/angel4.dtb.S
+>>>   AS      arch/arc/boot/dts/angel4.dtb.o
+>>>   LD      arch/arc/boot/dts/built-in.o
+>>> rm arch/arc/boot/dts/angel4.dtb.S        <-- forces rebuild next iter
+>>>   CHK     kernel/config_data.h
+>>> --------------->8-----------------
+> I assume that's because the file is an intermediate file, and only built
+> due to a chain of build rules, and hence make clean it up itself after
+> the build?
 
-> Signed-off-by: Tony Chung <tonychung00@gmail.com>
+Indeed - I should have made that explicit in the Changelog.
 
-Acked-by: Guenter Roeck <linux@roeck-us.net>
+>>> +.PRECIOUS: $(obj)/%.dtb.S
+>>> +
+>>>  $(obj)/%.dtb.S: $(obj)/%.dtb
+>>>  	$(call cmd,dt_S_dtb)
+> I'm not sure if .PRECIOUS is correct here. That prevents make from
+> deleting the file if make is CTRL-C'd in the middle of generating it.
+> Couldn't that leave a stale/corrupt file around that'd break the build.
+> Judging by:
+>
+> http://www.gnu.org/software/make/manual/html_node/Special-Targets.html
+>
+> I think .SECONDARY might be a better choice? Does that solve the problem
+> you're seeing?
 
-> ---
->  drivers/watchdog/w83627hf_wdt.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/watchdog/w83627hf_wdt.c b/drivers/watchdog/w83627hf_wdt.c
-> index 8f1111d..7eaa226 100644
-> --- a/drivers/watchdog/w83627hf_wdt.c
-> +++ b/drivers/watchdog/w83627hf_wdt.c
-> @@ -168,14 +168,16 @@ static void w83627hf_init(void)
->  		pr_info("Watchdog already running. Resetting timeout to %d sec\n",
->  			wdt_get_timeout_secs(timeout));
->  		outb_p(timeout, WDT_EFDR);    /* Write back to CRF6 */
-> +	} else {
-> +		outb_p(0, WDT_EFDR);    /* disable to prevent reboot */
->  	}
->  
->  	w83627hf_setup_crf5();
->  
->  	outb_p(0xF7, WDT_EFER); /* Select CRF7 */
->  	t = inb_p(WDT_EFDR);      /* read CRF7 */
-> -	t &= ~0xC0;               /* disable keyboard & mouse turning off
-> -				    watchdog */
-> +	t &= ~0xD0;               /* clear timeout occurred and disable keyboard
-> +				     & mouse turning off watchdog */
->  	outb_p(t, WDT_EFDR);    /* Write back to CRF7 */
->  
->  	w83627hf_unselect_wd_register();
-> -- 
-> 1.7.0.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Technically .SECONDARY is better - however it doesn't seem to work.
+Running make with various debug toggles doesn't seem to be helping with why
+.PRECIOUS works but not this.
+That is also likely reason for a bunch of other .PRECIOUS entries in the same file
+but no .SECONDARY.
+
+I presume this is something not specific to ARC kernel or my host.
+Can you try the .SECONDARY locally to see if it works for you.
+
+Thx,
+-Vineet
