@@ -1,125 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764272Ab3DDIMT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 04:12:19 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:47110 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763487Ab3DDIMP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 04:12:15 -0400
+	id S933484Ab3DDIRI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 04:17:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54655 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1764005Ab3DDIRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 04:17:04 -0400
+Date: Thu, 4 Apr 2013 10:17:02 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Robin Holt <holt@sgi.com>
+Cc: Cliff Wickman <cpw@sgi.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, x86@kernel.org, wli@holomorphy.com
+Subject: Re: [PATCH] mm, x86: Do not zero hugetlbfs pages at boot. -v2
+Message-ID: <20130404081702.GD29911@dhcp22.suse.cz>
+References: <E1UDME8-00041J-B4@eag09.americas.sgi.com>
+ <20130314085138.GA11636@dhcp22.suse.cz>
+ <20130403024344.GA4384@sgi.com>
+ <20130403140049.GI16471@dhcp22.suse.cz>
+ <20130403172132.GZ29151@sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <515C6D87.2060106@linaro.org>
-References: <CABPqkBQALeD=iO9x-N0nw+shhqa1kmUaj=sCvx+MvoAPGQ-y9A@mail.gmail.com>
-	<1350408232.2336.42.camel@laptop>
-	<1359728280.8360.15.camel@hornet>
-	<CABPqkBSVeU_JP2KpVZLepKDJX=-g6A45Y5MoNphd6+DaU2PQzQ@mail.gmail.com>
-	<51118797.9080800@linaro.org>
-	<alpine.LFD.2.02.1302182132230.22263@ionos>
-	<5123C3AF.8060100@linaro.org>
-	<1361356160.10155.22.camel@laptop>
-	<51285BF1.2090208@linaro.org>
-	<1361801441.4007.40.camel@laptop>
-	<CABPqkBS4TELhoUGrO+moca2fPUoqGjiYCdHJc=H8CjLomPWWDQ@mail.gmail.com>
-	<1363291021.3100.144.camel@hornet>
-	<51586315.7080006@gmail.com>
-	<5159D221.70304@linaro.org>
-	<515A0A3A.2040105@gmail.com>
-	<CABPqkBStMd-VT8aoPhFV-rxiLOrH7h2HtS9O9FBkd+ggd5X+xQ@mail.gmail.com>
-	<515C34BF.6060508@gmail.com>
-	<CABPqkBS_z8zzSn=N_Q+AGbo1kV2EMOoF4dz2Aze=rPNB2n_n2g@mail.gmail.com>
-	<515C393C.8030405@gmail.com>
-	<CABPqkBQjur31gpPWTavjSP5nbc7u8mQwqsRRctYiHnPXz0d=_A@mail.gmail.com>
-	<515C6D87.2060106@linaro.org>
-Date: Thu, 4 Apr 2013 10:12:14 +0200
-Message-ID: <CABPqkBRaCgb3Gp8_DT_S5rd9BcpTVeKgY2Ozk_yyAQP4W4SR1Q@mail.gmail.com>
-Subject: Re: [RFC] perf: need to expose sched_clock to correlate user samples
- with kernel samples
-From: Stephane Eranian <eranian@google.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: David Ahern <dsahern@gmail.com>, Pawel Moll <pawel.moll@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130403172132.GZ29151@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 3, 2013 at 7:57 PM, John Stultz <john.stultz@linaro.org> wrote:
-> On 04/03/2013 07:22 AM, Stephane Eranian wrote:
->>
->> On Wed, Apr 3, 2013 at 4:14 PM, David Ahern <dsahern@gmail.com> wrote:
->>>
->>> On 4/3/13 8:00 AM, Stephane Eranian wrote:
->>>>>
->>>>> Why not have perf convert its
->>>>> perf_clock timestamps into monotonic or realtime when dumping events?
->
->
-> So this is exactly what I've been wondering through all this.
->
-> Perf can keep track of events using its own time domain (which is
-> understandably required due to performance and locking issues), but when
-> exporting those timestamps to userland, could it not do the same (likely
-> imperfect) conversion to existing userland time domains (like
-> CLOCK_MONOTONIC)?
->
->
->
->>>> Can monotonic timestamps be obtained from NMI context in the kernel?
->>>
->>>
->>> I don't understand the context of the question.
->>>
->>> I am not suggesting perf_clock be changed. I am working on correlating
->>> existing perf_clock timestamps to clocks typically used by apps (REALTIME
->>> and time-of-day but also applies to MONOTONIC).
->>>
->> But for that, you'd need to expose to users the correlation between
->> the two clocks.
->> And now you'd fixed two clock sources definitions not just one.
->
->
-> I'm not sure I follow this. If perf exported data came with CLOCK_MONOTONIC
-> timestamps, no correlation would need to be exposed.  perf would just have
-> to do the extra overhead of doing the conversion on export.
->
-There is no explicit export operation in perf.  You record a sample when
-the counter overflows and generates an NMI interrupt. In the NMI interrupt
-handler, the sample record is written to the sampling buffer. That is when
-the timestamp is generated. The sampling buffer is directly accessible to
-users via mmap(). The perf tool just dumps the raw sampling buffer into
-a file, no sample record is modified or even looked at. The processing
-of the samples is done offline (via perf report) and could be done on
-another machine. In other words, the perf.data file is self-contained.
+On Wed 03-04-13 12:21:32, Robin Holt wrote:
+> On Wed, Apr 03, 2013 at 04:00:49PM +0200, Michal Hocko wrote:
+> > On Tue 02-04-13 21:43:44, Robin Holt wrote:
+> > [...]
+> > > diff --git a/mm/bootmem.c b/mm/bootmem.c
+> > > index 2b0bcb0..b2e4027 100644
+> > > --- a/mm/bootmem.c
+> > > +++ b/mm/bootmem.c
+> > > @@ -705,12 +705,16 @@ void * __init __alloc_bootmem(unsigned long size, unsigned long align,
+> > >  
+> > >  void * __init ___alloc_bootmem_node_nopanic(pg_data_t *pgdat,
+> > >  				unsigned long size, unsigned long align,
+> > > -				unsigned long goal, unsigned long limit)
+> > > +				unsigned long goal, unsigned long limit,
+> > > +				int zeroed)
+> > >  {
+> > >  	void *ptr;
+> > >  
+> > >  	if (WARN_ON_ONCE(slab_is_available()))
+> > > -		return kzalloc(size, GFP_NOWAIT);
+> > > +		if (zeroed)
+> > > +			return kzalloc(size, GFP_NOWAIT);
+> > > +		else
+> > > +			return kmalloc(size, GFP_NOWAIT);
+> > >  again:
+> > >  
+> > >  	/* do not panic in alloc_bootmem_bdata() */
+> > 
+> > You need to update alloc_bootmem_bdata and alloc_bootmem_core as well.
+> > Otherwise this is a no-op for early allocations when slab is not
+> > available which is the case unless something is broken.
+> 
+> Michal,
+> 
+> Does this do what you would expect?  
 
-Are you suggesting that the perf tool or kernel could expose a constant
-correlation factor between perf timestamp and MONOTONIC and that
-this constant could be record by the perf tool in the perf.data file and
-used later on by the perf report command?
+yes, it looks right when I quickly glanced over it. I haven't checked
+deeply yet. I would suggest reposting and adding more *bootmem people
+into CC (e.g. Johannes Weiner, Yinghai Lu, Tejun Heo and maybe others).
 
+> I compiled this for ia64, but I have not tested it at all.
+> 
+> Robin
+> 
+> ---
+>  mm/bootmem.c | 30 +++++++++++++++++++-----------
+>  1 file changed, 19 insertions(+), 11 deletions(-)
+> 
+> diff --git a/mm/bootmem.c b/mm/bootmem.c
+> index b2e4027..350e0ab 100644
+> --- a/mm/bootmem.c
+> +++ b/mm/bootmem.c
+> @@ -497,7 +497,8 @@ static unsigned long __init align_off(struct bootmem_data *bdata,
+>  
+>  static void * __init alloc_bootmem_bdata(struct bootmem_data *bdata,
+>  					unsigned long size, unsigned long align,
+> -					unsigned long goal, unsigned long limit)
+> +					unsigned long goal, unsigned long limit,
+> +					int zeroed)
+>  {
+>  	unsigned long fallback = 0;
+>  	unsigned long min, max, start, sidx, midx, step;
+> @@ -584,7 +585,8 @@ find_block:
+>  
+>  		region = phys_to_virt(PFN_PHYS(bdata->node_min_pfn) +
+>  				start_off);
+> -		memset(region, 0, size);
+> +		if (zeroed)
+> +			memset(region, 0, size);
+>  		/*
+>  		 * The min_count is set to 0 so that bootmem allocated blocks
+>  		 * are never reported as leaks.
+> @@ -605,13 +607,18 @@ find_block:
+>  static void * __init alloc_bootmem_core(unsigned long size,
+>  					unsigned long align,
+>  					unsigned long goal,
+> -					unsigned long limit)
+> +					unsigned long limit,
+> +					int zeroed)
+>  {
+>  	bootmem_data_t *bdata;
+>  	void *region;
+>  
+> -	if (WARN_ON_ONCE(slab_is_available()))
+> -		return kzalloc(size, GFP_NOWAIT);
+> +	if (WARN_ON_ONCE(slab_is_available())) {
+> +		if (zeroed)
+> +			return kzalloc(size, GFP_NOWAIT);
+> +		else
+> +			return kmalloc(size, GFP_NOWAIT);
+> +	}
+>  
+>  	list_for_each_entry(bdata, &bdata_list, list) {
+>  		if (goal && bdata->node_low_pfn <= PFN_DOWN(goal))
+> @@ -619,7 +626,7 @@ static void * __init alloc_bootmem_core(unsigned long size,
+>  		if (limit && bdata->node_min_pfn >= PFN_DOWN(limit))
+>  			break;
+>  
+> -		region = alloc_bootmem_bdata(bdata, size, align, goal, limit);
+> +		region = alloc_bootmem_bdata(bdata, size, align, goal, limit, zeroed);
+>  		if (region)
+>  			return region;
+>  	}
+> @@ -635,7 +642,7 @@ static void * __init ___alloc_bootmem_nopanic(unsigned long size,
+>  	void *ptr;
+>  
+>  restart:
+> -	ptr = alloc_bootmem_core(size, align, goal, limit);
+> +	ptr = alloc_bootmem_core(size, align, goal, limit, 1);
+>  	if (ptr)
+>  		return ptr;
+>  	if (goal) {
+> @@ -710,22 +717,23 @@ void * __init ___alloc_bootmem_node_nopanic(pg_data_t *pgdat,
+>  {
+>  	void *ptr;
+>  
+> -	if (WARN_ON_ONCE(slab_is_available()))
+> +	if (WARN_ON_ONCE(slab_is_available())) {
+>  		if (zeroed)
+>  			return kzalloc(size, GFP_NOWAIT);
+>  		else
+>  			return kmalloc(size, GFP_NOWAIT);
+> +	}
+>  again:
+>  
+>  	/* do not panic in alloc_bootmem_bdata() */
+>  	if (limit && goal + size > limit)
+>  		limit = 0;
+>  
+> -	ptr = alloc_bootmem_bdata(pgdat->bdata, size, align, goal, limit);
+> +	ptr = alloc_bootmem_bdata(pgdat->bdata, size, align, goal, limit, zeroed);
+>  	if (ptr)
+>  		return ptr;
+>  
+> -	ptr = alloc_bootmem_core(size, align, goal, limit);
+> +	ptr = alloc_bootmem_core(size, align, goal, limit, zeroed);
+>  	if (ptr)
+>  		return ptr;
+>  
+> @@ -813,7 +821,7 @@ void * __init __alloc_bootmem_node_high(pg_data_t *pgdat, unsigned long size,
+>  
+>  		new_goal = MAX_DMA32_PFN << PAGE_SHIFT;
+>  		ptr = alloc_bootmem_bdata(pgdat->bdata, size, align,
+> -						 new_goal, 0);
+> +						 new_goal, 0, 1);
+>  		if (ptr)
+>  			return ptr;
+>  	}
+> -- 
+> 1.8.1.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-
->
->
->>> You are wanting the reverse -- have apps emit perf_clock timestamps. I
->>> was
->>> just wondering what is the advantage of this approach?
->>>
->> Well, that's how I interpreted your question ;-<
->>
->> If you could have perf_clock use monotonic then we would not have this
->> discussion.
->> The correlation would be trivial.
->
->
-> I think the suggestion is not to have the perf_clock use CLOCK_MONOTONIC,
-> but the perf interfaces export CLOCK_MONOTONIC.
->
-> thanks
-> -john
->
+-- 
+Michal Hocko
+SUSE Labs
