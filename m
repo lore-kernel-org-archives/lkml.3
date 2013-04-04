@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764179Ab3DDT6s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 15:58:48 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:46522 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763740Ab3DDT6r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 15:58:47 -0400
+	id S1763778Ab3DDUBW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 16:01:22 -0400
+Received: from numascale.com ([213.162.240.84]:41627 "EHLO numascale.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1763121Ab3DDUBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 16:01:20 -0400
+Message-ID: <515DDC0F.7070406@numascale.com>
+Date: Thu, 04 Apr 2013 22:01:19 +0200
+From: Steffen Persvold <sp@numascale.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5j+jpXrcLDyAV+p81pjapaQeKQTMz4+JXjKj03DV-yoC=w@mail.gmail.com>
-References: <1363618233-6375-1-git-send-email-nschichan@freebox.fr>
-	<1363618233-6375-2-git-send-email-nschichan@freebox.fr>
-	<CAGXu5j+jpXrcLDyAV+p81pjapaQeKQTMz4+JXjKj03DV-yoC=w@mail.gmail.com>
-Date: Thu, 4 Apr 2013 14:58:46 -0500
-Message-ID: <CABqD9hZp7FiQjvLrauV1rkUqgXZyCxmbOKA+6rzpDNEEfJ0NPw@mail.gmail.com>
-Subject: Re: [PATCH V2 1/3] seccomp: add generic code for jitted seccomp filters.
-From: Will Drewry <wad@chromium.org>
-To: Nicolas Schichan <nschichan@freebox.fr>
-Cc: Mircea Gherzan <mgherzan@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@alien8.de>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Tony Luck <tony.luck@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, amd, mce: Prevent potential cpu-online oops
+References: <1365090720-12652-1-git-send-email-daniel@numascale-asia.com> <20130404161340.GF32271@pd.tnic> <515DC0FA.1040408@numascale.com> <20130404190731.GG32271@pd.tnic>
+In-Reply-To: <20130404190731.GG32271@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - numascale.com
+X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: sp@numascale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 1, 2013 at 4:53 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Mon, Mar 18, 2013 at 7:50 AM, Nicolas Schichan <nschichan@freebox.fr> wrote:
->> Architecture must select HAVE_SECCOMP_FILTER_JIT and implement
->> seccomp_jit_compile() and seccomp_jit_free() if they intend to support
->> jitted seccomp filters.
+On 4/4/2013 9:07 PM, Borislav Petkov wrote:
+> On Thu, Apr 04, 2013 at 08:05:46PM +0200, Steffen Persvold wrote:
+>> It made more sense (to me) to skip the creation of MC4 all together
+>> if you can't find the matching northbridge since you can't reliably
+>> do the dec_and_test() reference counting on the shared bank when you
+>> don't have the common NB struct for all the shared cores.
 >>
->> struct seccomp_filter has been moved to <linux/seccomp.h> to make its
->> content available to the jit compilation code.
->>
->> In a way similar to the net BPF, the jit compilation code is expected
->> to updates struct seccomp_filter.bpf_func pointer to the generated
->> code.
->>
->> Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
+>> Or am I just smoking the wrong stuff ?
 >
-> Acked-by: Kees Cook <keescook@chromium.org>
+> No, actually *this* explanation should've been in the commit message.
+> You numascale people do crazy things with the hardware :) so explaining
+> yourself more verbosely is an absolute must if anyone is to understand
+> why you're changing the code.
+
+Ok :)
+
 >
-> I'd love to see this for x86 too. I suspect it'd be a small change
-> after this series lands.
+> So please write a detailed commit message why you need this change,
+> don't be afraid to talk about the big picture.
 
-Agreed - and thanks for working through the necessary changes!
+Will do.
 
-Acked-By: Will Drewry <wad@chromium.org>
-(for the series)
+>
+> Also, I'm guessing this is urgent stuff and it needs to go into 3.9?
+> Yes, no? If yes, this patch should probably be tagged for stable.
+
+Yes. We found the issue on -stable at first (3.8.2 iirc) because it 
+doesn't have the multi-domain support we needed (which is added in 3.9).
+
+>
+> Also, please redo this patch against tip:x86/ras which already has
+> patches touching mce_amd.c.
+
+Ok.
+
+>
+> Oh, and lastly, needless to say, it needs to be tested on a "normal",
+> i.e. !numascale AMD multinode box, in case you haven't done so yet. :-)
+>
+
+It has been tested on "normal" platforms and NumaConnect platforms 
+(Fam10h and Fam15h AMD processors, SCM and MCM versions).
+
+Cheers,
+Steffen
