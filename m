@@ -1,369 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759969Ab3DDKmE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 06:42:04 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:44553 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756934Ab3DDKl7 (ORCPT
+	id S1759999Ab3DDKmr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 06:42:47 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:46487 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759974Ab3DDKmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 06:41:59 -0400
-X-AuditID: cbfec7f4-b7f4c6d0000018de-95-515d58f4ee3c
-Message-id: <515D58F2.7030404@samsung.com>
-Date: Thu, 04 Apr 2013 12:41:54 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: balbi@ti.com, gregkh@linuxfoundation.org, arnd@arndb.de,
-        akpm@linux-foundation.org, swarren@wwwdotorg.org, rob@landley.net,
-        netdev@vger.kernel.org, davem@davemloft.net, cesarb@cesarb.net,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tony@atomide.com,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, b-cousson@ti.com,
-        linux@arm.linux.org.uk, eballetbo@gmail.com, javier@dowhile0.org,
-        mchehab@redhat.com, santosh.shilimkar@ti.com,
-        broonie@opensource.wolfsonmicro.com, swarren@nvidia.com,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 1/6] drivers: phy: add generic PHY framework
-References: <1364993634-6378-1-git-send-email-kishon@ti.com>
- <1364993634-6378-2-git-send-email-kishon@ti.com> <515CA337.1010504@gmail.com>
- <515D462F.9050109@ti.com>
-In-reply-to: <515D462F.9050109@ti.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t/xa7pfImIDDX5+krGYs34Nm8XfScfY
-	Lb7d3sRscfB+vcW/2afYLGZdC7KYc76FxeLA7IesFhd+r2SzeHVmI5tF8+L1bBbXfs9gs7jw
-	tIfNYtPja6wWC9uWsFhc3jWHzWL2kn4Wi0XLWpktbl/mtdhz9DC7xbEFYhaHVxxgslj3cjqL
-	xeu+NcwWN6a3sFq8OtjGYrH/ipeDtEdLcw+bx+9fkxg9vn2dxOKx4PMVdo8jt2cwe2xZeZPJ
-	4+/sVmaPnbPusnu8Wj2T1ePEjN8sHvvnrmH32Lyk3uP8jIWMHr3N79g8Xk78zebxft9VtgCR
-	KC6blNSczLLUIn27BK6MxY1TWAsOhVTs29PF2MB416GLkZNDQsBE4smZg6wQtpjEhXvr2boY
-	uTiEBJYySnTtP8cC4XxilHiwCSTDycEroCXxamUDC4jNIqAqcbLlMDuIzSZgKNF7tI8RxBYV
-	CJBYvOQcO0S9oMSPyffA6kWAek/v/MEMMpRZoIdV4vqFo2AJYQFniVlNh6FWr2CU6P1xAayb
-	U0BNouv0NLD7mAV0JPa3TmODsOUlNq95yzyBUWAWkiWzkJTNQlK2gJF5FaNoamlyQXFSeq6h
-	XnFibnFpXrpecn7uJkZIWviyg3HxMatDjAIcjEo8vCv9YwKFWBPLiitzDzFKcDArifCeDYoN
-	FOJNSaysSi3Kjy8qzUktPsTIxMEp1cA4Re/36sWn2Nj3VWwTkL4sM2E7m39X8q3f4X8c3DNX
-	V0u0H2i3XfTCaH6Q6vFLrjLbLv20bLbwcTx29FfJk+9VU6d94+budX3UyrKxe2pYUYtG4Sbb
-	DrOPTE9jF5RmMmvbqc1d01GqelJs+vllBv8SLmrWqz+WeT1na11z/bG7jnpLHmfEzEhUYinO
-	SDTUYi4qTgQA7Eb8qOkCAAA=
+	Thu, 4 Apr 2013 06:42:45 -0400
+X-AuditID: 85900ec0-d2ec7b900000151e-1a-515d5922deb6
+Subject: [PATCH -tip ] kprobes: Move __kprobes definition into compiler.h
+To: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Timo Juhani Lindfors <timo.lindfors@iki.fi>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Jiri Kosina <jkosina@suse.cz>,
+        Ingo Molnar <mingo@kernel.org>,
+        Nadia Yvette Chambers <nyc@holomorphy.com>,
+        yrl.pp-manager.tt@hitachi.com, "David S. Miller" <davem@davemloft.net>
+Date: Thu, 04 Apr 2013 19:40:50 +0900
+Message-ID: <20130404104049.21071.20908.stgit@mhiramat-M0-7522>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Currently, __kprobes is defined in linux/kprobes.h which
+is too big to be included in small or basic headers
+only for using this attribute.
 
-On 04/04/2013 11:21 AM, Kishon Vijay Abraham I wrote:
-> On Thursday 04 April 2013 03:16 AM, Sylwester Nawrocki wrote:
->> On 04/03/2013 02:53 PM, Kishon Vijay Abraham I wrote:
+This moves __kprobes definition into linux/compiler.h
+in which other compiler attributes are defined.
 
->>> +4. Getting a reference to the PHY
->>> +
->>> +Before the controller can make use of the PHY, it has to get a
->>> reference to
->>> +it. This framework provides 6 APIs to get a reference to the PHY.
->>> +
->>> +struct phy *phy_get(struct device *dev, int index);
->>> +struct phy *devm_phy_get(struct device *dev, int index);
->>> +struct phy *of_phy_get(struct device *dev, const char *phandle, int
->>> index);
->>> +struct phy *devm_of_phy_get(struct device *dev, const char *phandle,
->>> int index);
->>
->> Why do we need separate functions for dt and non-dt ? Couldn't it be
->> handled
->> internally by the framework ? So the PHY users can use same calls for dt
->> and non-dt, like in case of e.g. the regulators API ?
-> 
-> yeah. Indeed it makes sense to do it that way.
->
->> Also signatures of some functions are different now:
->>
->> extern struct phy *phy_get(struct device *dev, int index);
->> extern struct phy *devm_phy_get(struct device *dev, int index);
->> extern struct phy *of_phy_get(struct device *dev, int index);
->> extern struct phy *devm_of_phy_get(struct device *dev, int index);
-> 
-> My bad :-(
-> 
->> BTW, I think "extern" could be dropped, does it have any significance in
->> function declarations in header files ?
-> 
-> it shouldn't have any effect I guess. It's harmless nevertheless.
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Timo Juhani Lindfors <timo.lindfors@iki.fi>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Nadia Yvette Chambers <nyc@holomorphy.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/compiler.h |    6 ++++++
+ include/linux/kprobes.h  |    6 +-----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-Yup.
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index 10b8f23..9382db2 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -351,4 +351,10 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+  */
+ #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
+ 
++#ifdef CONFIG_KPROBES
++/* Attach to insert probes on any functions which should be ignored */
++#define __kprobes	__attribute__((__section__(".kprobes.text")))
++#else
++#define __kprobes
++#endif
+ #endif /* __LINUX_COMPILER_H */
+diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+index 4b6ef4d..ca1d27a 100644
+--- a/include/linux/kprobes.h
++++ b/include/linux/kprobes.h
+@@ -29,6 +29,7 @@
+  *		<jkenisto@us.ibm.com>  and Prasanna S Panchamukhi
+  *		<prasanna@in.ibm.com> added function-return probes.
+  */
++#include <linux/compiler.h>	/* for __kprobes */
+ #include <linux/linkage.h>
+ #include <linux/list.h>
+ #include <linux/notifier.h>
+@@ -49,16 +50,11 @@
+ #define KPROBE_REENTER		0x00000004
+ #define KPROBE_HIT_SSDONE	0x00000008
+ 
+-/* Attach to insert probes on any functions which should be ignored*/
+-#define __kprobes	__attribute__((__section__(".kprobes.text")))
+-
+ #else /* CONFIG_KPROBES */
+ typedef int kprobe_opcode_t;
+ struct arch_specific_insn {
+ 	int dummy;
+ };
+-#define __kprobes
+-
+ #endif /* CONFIG_KPROBES */
+ 
+ struct kprobe;
 
->>> +struct phy *of_phy_get_byname(struct device *dev, const char *string);
->>> +struct phy *devm_of_phy_get_byname(struct device *dev, const char
->>> *string);
-
->>> --- /dev/null
->>> +++ b/drivers/phy/phy-core.c
->>> @@ -0,0 +1,616 @@
->>
->>> +static struct phy *of_phy_lookup(struct device_node *node)
->>> +{
->>> +    struct phy *phy;
->>> +    struct device *dev;
->>> +    struct class_dev_iter iter;
->>> +
->>> +    class_dev_iter_init(&iter, phy_class, NULL, NULL);
->>
->> There is currently nothing preventing a call to this function before
->> phy_class is initialized. It happened during my tests, and the nice
->> stack dump showed that it was the PHY user attempting to get the PHY
->> before the framework got initialized. So either phy_core_init should
->> be a subsys_initcall or we need a better protection against phy_class
->> being NULL or ERR_PTR in more places.
-> 
-> Whats the initcall used in your PHY user? Looks like more people prefer having
-
-It happened in a regular platform driver probe() callback.
-
-> module_init and any issue because of it should be fixed in PHY providers and
-> PHY users.
-
-OK. In fact this uncovered some issues in the MIPI DSI interface driver
-(some unexpected interrupts). But this should just be fixed in those drivers
-anyway. Now the DSI interface driver needs to wait for the PHY to be
-registered and ready, so the initialization will likely be changed regardless
-the framework initializes in module_init or earlier.
-
->>> +    while ((dev = class_dev_iter_next(&iter))) {
->>> +        phy = container_of(dev, struct phy, dev);
->>> +        if (node != phy->of_node)
->>> +            continue;
->>> +
->>> +        class_dev_iter_exit(&iter);
->>> +        return phy;
->>> +    }
->>> +
->>> +    class_dev_iter_exit(&iter);
->>> +    return ERR_PTR(-EPROBE_DEFER);
->>> +}
->>
->>> +/**
->>> + * of_phy_get() - lookup and obtain a reference to a phy by phandle
->>> + * @dev: device that requests this phy
->>> + * @index: the index of the phy
->>> + *
->>> + * Returns the phy associated with the given phandle value,
->>> + * after getting a refcount to it or -ENODEV if there is no such phy or
->>> + * -EPROBE_DEFER if there is a phandle to the phy, but the device is
->>> + * not yet loaded.
->>> + */
->>> +struct phy *of_phy_get(struct device *dev, int index)
->>> +{
->>> +    int ret;
->>> +    struct phy *phy = NULL;
->>> +    struct phy_bind *phy_map = NULL;
->>> +    struct of_phandle_args args;
->>> +    struct device_node *node;
->>> +
->>> +    if (!dev->of_node) {
->>> +        dev_dbg(dev, "device does not have a device node entry\n");
->>> +        return ERR_PTR(-EINVAL);
->>> +    }
->>> +
->>> +    ret = of_parse_phandle_with_args(dev->of_node, "phys", "#phy-cells",
->>> +        index,&args);
->>> +    if (ret) {
->>> +        dev_dbg(dev, "failed to get phy in %s node\n",
->>> +            dev->of_node->full_name);
->>> +        return ERR_PTR(-ENODEV);
->>> +    }
->>> +
->>> +    phy = of_phy_lookup(args.np);
->>> +    if (IS_ERR(phy) || !try_module_get(phy->ops->owner)) {
->>> +        phy = ERR_PTR(-EPROBE_DEFER);
->>> +        goto err0;
->>> +    }
->>> +
->>> +    phy = phy->ops->of_xlate(phy,&args);
->>> +    if (IS_ERR(phy))
->>> +        goto err1;
->>> +
->>> +    phy_map = phy_bind(dev_name(dev), index, dev_name(&phy->dev));
->>> +    if (!IS_ERR(phy_map)) {
->>> +        phy_map->phy = phy;
->>> +        phy_map->auto_bind = true;
->>
->> Shouldn't it be done with the phy_bind_mutex held ? I guess an unlocked
->> version of the phy_bind functions is needed, so it can be used internally.
-> 
-> The locking is done inside phy_bind function. I'm not sure but I vaguely
-> remember getting a dump stack (incorrect mutex ordering or something) when
-> trying to have phy_bind_mutex here. I can check it again.
-
-Yes, IIUC the locking needs to be reworked a bit so "phy_map" is not modified
-without the mutex held.
-
->>> +    }
->>> +
->>> +    get_device(&phy->dev);
->>> +
->>> +err1:
->>> +    module_put(phy->ops->owner);
->>> +
->>> +err0:
->>> +    of_node_put(node);
->>> +
->>> +    return phy;
->>> +}
->>> +EXPORT_SYMBOL_GPL(of_phy_get);
->>
->>> +/**
->>> + * phy_create() - create a new phy
->>> + * @dev: device that is creating the new phy
->>> + * @label: label given to phy
->>> + * @of_node: device node of the phy
->>> + * @type: specifies the phy type
->>> + * @ops: function pointers for performing phy operations
->>> + * @priv: private data from phy driver
->>> + *
->>> + * Called to create a phy using phy framework.
->>> + */
->>> +struct phy *phy_create(struct device *dev, const char *label,
->>> +    struct device_node *of_node, int type, struct phy_ops *ops,
->>> +    void *priv)
->>> +{
->>> +    int ret;
->>> +    struct phy *phy;
->>> +    struct phy_bind *phy_bind;
->>> +    const char *devname = NULL;
->>> +
->>> +    if (!dev) {
->>> +        dev_err(dev, "no device provided for PHY\n");
->>> +        ret = -EINVAL;
->>> +        goto err0;
->>> +    }
->>> +
->>> +    if (!ops || !ops->of_xlate || !priv) {
->>> +        dev_err(dev, "no PHY ops/PHY data provided\n");
->>> +        ret = -EINVAL;
->>> +        goto err0;
->>> +    }
->>> +
->>> +    if (!phy_class)
->>> +        phy_core_init();
->>> +
->>> +    phy = kzalloc(sizeof(*phy), GFP_KERNEL);
->>> +    if (!phy) {
->>> +        ret = -ENOMEM;
->>> +        goto err0;
->>> +    }
->>> +
->>> +    devname = dev_name(dev);
->>
->> OK, a sort of serious issue here is that you can't call phy_create()
->> multiple times for same PHY provider device.
-> 
-> Ah.. right.
-
-The other question I had was why we needed struct device object for each
-PHY. And if it wouldn't be enough to have only struct device * in
-struct phy, and the real device would be the PHY provider only. I might
-be missing some reasons behind this decision though, as I have not been
-following your work since the beginning.
-
->> device_add() further will fail as sysfs won't let you create multiple
->> objects with same name. So I would assume we need to add a new argument
->> to phy_create() or rename @type to e.g. @phy_id, which could be
->> concatenated with dev_name(dev) to create a unique name of the phy
->> device.
-> 
-> hmm.. ok
->>
->> And how is the PHY provider supposed to identify a PHY in its common PHY
->> ops, now when the struct phy port field is removed ? I have temporarily
->> (ab)used the type field in order to select proper registers within the
->> phy ops.
-> 
-> Can't it be handled in the PHY provider driver without using struct phy *?
-
-You need to select registers/bit fields corresponding to a specific PHY,
-since the phy ops are common. So we need to know exactly with which phy
-we deal at the moment and I can't see any other option to figure out that
-than by dereferencing struct phy *... ;)
-
-> Moreover the PHY ops passes on the *phy to phy provider right? Not sure I
-
-Yes, all you get in the ops is phy *. I wanted to avoid global variables
-in the provider driver and be able to get to any provider private data
-from phy * only.
-
-If I use something like below for the PHY provider private data then from
-struct phy * only I would need to get an index. This could be looked up by
-iterating over phys[] array, but that seems an unnecessary complication.
-Maybe there are better/easier ways to resolve it, without adding a new
-field to struct phy.
-
-struct phy_povider_priv {
-	struct phy *phys[4];
-	...
-};
-
-static in phy_power_on(struct phy *phy)
-{
-	struct phy_provider_priv *priv = dev_get_drvdata(&phy->dev);
-	int phy_id = ...
-	....
-}
-...
-struct phy_ops ops = {
-	.power_on = phy_power_on,
-	...
-};
-
-> understand you here.
->
->>> +    device_initialize(&phy->dev);
->>> +
->>> +    phy->dev.class = phy_class;
->>> +    phy->dev.parent = dev;
->>> +    phy->label = label;
->>
->> What about duplicating the string here ? That would make the API a bit
->> more convenient and the callers wouldn't be required to keep all the
->> labels around.
-> 
-> you mean use dev_name? The device names are sometime more cryptic so preferred
-> to have it like this.
-
-No, I meant something like:
-
-phy->label = kstrdup(label, GFP_KERNEL);
-
->>> +static int phy_core_init(void)
->>> +{
->>> +    if (phy_class)
->>> +        return 0;
->>> +
->>> +    phy_class = class_create(THIS_MODULE, "phy");
->>> +    if (IS_ERR(phy_class)) {
->>> +        pr_err("failed to create phy class -->  %ld\n",
->>> +            PTR_ERR(phy_class));
->>> +        return PTR_ERR(phy_class);
->>> +    }
->>> +
->>> +    phy_class->dev_release = phy_release;
->>> +    phy_class->dev_attrs = phy_dev_attrs;
->>> +
->>> +    return 0;
->>> +}
->>> +module_init(phy_core_init);
->>
->> Having this framework initialized before the PHY provider and consumer
->> drivers could save some unnecessary probe deferrals. I was wondering,
->> what is really an advantage of having it as module_init(), rather than
->> subsys_initcall() ?
-> 
-> I'm not sure of the exact reason but after the advent of EPROBE_DEFER, everyone
-> recommends to use module_init only.
-
-Ah...OK. We just need to ensure the resources are properly checked before
-they are used then.
-
-> Thanks for the detailed review.
-
-Regards,
-Sylwester
