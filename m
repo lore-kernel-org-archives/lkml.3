@@ -1,68 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932399Ab3DDAnI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 20:43:08 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45082 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761851Ab3DDAnH (ORCPT
+	id S932500Ab3DDAo7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 20:44:59 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53824 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932071Ab3DDAo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 20:43:07 -0400
-Message-ID: <515CCC8C.5030007@jp.fujitsu.com>
-Date: Thu, 04 Apr 2013 09:42:52 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/3] fix hugetlb memory check in vma_dump_size()
-References: <1365014138-19589-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1365014138-19589-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1365014138-19589-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Apr 2013 20:44:58 -0400
+Date: Thu, 4 Apr 2013 11:44:44 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, Gabor Juhos <juhosg@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: linux-next: manual merge of the net-next tree with the wireless
+ tree
+Message-Id: <20130404114444.de4e40c24f4e1a0e4c0b7328@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__4_Apr_2013_11_44_44_+1100_v3v+zd8ZXeCgqXdk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/04/04 3:35), Naoya Horiguchi wrote:
-> Documentation/filesystems/proc.txt says about coredump_filter bitmask,
-> 
->    Note bit 0-4 doesn't effect any hugetlb memory. hugetlb memory are only
->    effected by bit 5-6.
-> 
-> However current code can go into the subsequent flag checks of bit 0-4
-> for vma(VM_HUGETLB). So this patch inserts 'return' and makes it work
-> as written in the document.
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: stable@vger.kernel.org
-> ---
->   fs/binfmt_elf.c | 1 +
->   1 file changed, 1 insertion(+)
-> 
-> diff --git v3.9-rc3.orig/fs/binfmt_elf.c v3.9-rc3/fs/binfmt_elf.c
-> index 3939829..86af964 100644
-> --- v3.9-rc3.orig/fs/binfmt_elf.c
-> +++ v3.9-rc3/fs/binfmt_elf.c
-> @@ -1137,6 +1137,7 @@ static unsigned long vma_dump_size(struct vm_area_struct *vma,
->   			goto whole;
->   		if (!(vma->vm_flags & VM_SHARED) && FILTER(HUGETLB_PRIVATE))
->   			goto whole;
-> +		return 0;
->   	}
->   
->   	/* Do not dump I/O mapped devices or special mappings */
-> 
+--Signature=_Thu__4_Apr_2013_11_44_44_+1100_v3v+zd8ZXeCgqXdk
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for splitting this fix. Now it's easier to keep track of this fix.
+Hi all,
 
-Reviewed-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/wireless/rt2x00/rt2x00pci.c between commit 69a2bac8984c
+("rt2x00: rt2x00pci: fix build error on Ralink RT3x5x SoCs") from the
+wireless tree and commit 1f9061d27d3d ("drivers:net: dma_alloc_coherent:
+use __GFP_ZERO instead of memset(, 0)") from the net-next tree.
 
-Thanks.
-HATAYAMA, Daisuke
+The former moved the code modified by the latter into a different file,
+so I added the following merge fix patch and can carry the fix as
+necessary (no action is required).
 
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 4 Apr 2013 11:42:05 +1100
+Subject: [PATCH] drivers:net: fix up for code movement from rt2x00pci.c
 
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/net/wireless/rt2x00/rt2x00mmio.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/net/wireless/rt2x00/rt2x00mmio.c b/drivers/net/wireles=
+s/rt2x00/rt2x00mmio.c
+index d84a680..9fe9a36 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00mmio.c
++++ b/drivers/net/wireless/rt2x00/rt2x00mmio.c
+@@ -123,12 +123,10 @@ static int rt2x00pci_alloc_queue_dma(struct rt2x00_de=
+v *rt2x00dev,
+ 	 */
+ 	addr =3D dma_alloc_coherent(rt2x00dev->dev,
+ 				  queue->limit * queue->desc_size,
+-				  &dma, GFP_KERNEL);
++				  &dma, GFP_KERNEL | __GFP_ZERO);
+ 	if (!addr)
+ 		return -ENOMEM;
+=20
+-	memset(addr, 0, queue->limit * queue->desc_size);
+-
+ 	/*
+ 	 * Initialize all queue entries to contain valid addresses.
+ 	 */
+--=20
+1.8.1
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__4_Apr_2013_11_44_44_+1100_v3v+zd8ZXeCgqXdk
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRXMz8AAoJEECxmPOUX5FExBIP/jewPg6JVgi3GQuJ5zp4GFmv
+thlXnE13eSG/g5O3AiuMCM+QXwhtuWMTHUSn8KXLPqZQqur6QrTYYAtWUFKB3i6u
+xTSlx8DU722PSEFhkbdIjnoeKBqFHatQrk4CWk2GRBFGdvpZjH+bzSlKvqYK49Dr
+fYU6i/labWNTgpUY7apzdkFNuKmYRBrQmwZwGYNfMX4LLWkR61oMO6jzyNRFWj8f
+G3zQqnc+8hzq9DkPzPcBS7/C3gWjOb4fZPfVsydYdwt6WGSPZ+lZdyxD00+n9MhH
+gNQVaC1vkf6rkIs+24OHaK9l2seZz3B181CZr0n8JWkcBlSh3euOa+0B25+BJRZ6
+0aZNA5RoDglwgKMDI9n2Qlcfm+5XalqVMMk9A/QvwHc84qO1uCTYqjV0XXklhapI
+NZjcwvbay8o8FJ+q5L76SnbgGE8Ko5QI4Qndl87NzJvstbZarUkpm4ZZR/+FuBhW
+Ih4KLMp/toeM5Rpy3DYFKIuOTC97IvYT45QWRunecUVGF9QIdi9oAKcqUeN9gJ0g
+JIV8evPWGjvGf/+Aq31BusZFErKsmnweiJtPDSCb2aEVroM0HS5zjtHq8TxPx53e
+rOjqeSqvNLlV6HAE7hHXFfljWWaV3adjmyq5opysYncH0pOZmdWR48kkdv2bUvj6
+on2CSbvYhrrl0j8TJPBc
+=9fJF
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__4_Apr_2013_11_44_44_+1100_v3v+zd8ZXeCgqXdk--
