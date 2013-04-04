@@ -1,106 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751415Ab3DDES5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 00:18:57 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:56578 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab3DDES4 (ORCPT
+	id S1753292Ab3DDEZc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 00:25:32 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:38010 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287Ab3DDEZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 00:18:56 -0400
-Date: Thu, 4 Apr 2013 15:18:45 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thierry Reding <thierry@gilfi.de>, Greg KH <greg@kroah.com>
-Subject: linux-next: manual merge of the usb-gadget tree with the usb tree
-Message-Id: <20130404151845.406517e19f29380ccb90ac35@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__4_Apr_2013_15_18_45_+1100_XVBF8hBQEkFNVApt"
+	Thu, 4 Apr 2013 00:25:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <514821AA.2060201@st.com>
+References: <1363674681-4015-1-git-send-email-sachin.kamat@linaro.org>
+	<514821AA.2060201@st.com>
+Date: Thu, 4 Apr 2013 09:55:31 +0530
+Message-ID: <CAK9yfHzGvFcjWv7KQc2A32AE90mYzC1cNPb6jCb4+1+BUGVp9Q@mail.gmail.com>
+Subject: Re: [PATCH 1/5] pinctrl: abx500: Staticize some symbols
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "linus.walleij@linaro.org" <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__4_Apr_2013_15_18_45_+1100_XVBF8hBQEkFNVApt
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Linus,
 
-Hi Felipe,
+On 19 March 2013 13:58, Patrice CHOTARD <patrice.chotard@st.com> wrote:
+> On 03/19/2013 07:31 AM, Sachin Kamat wrote:
+>
+>> These symbols are used only in this file. Without this patch
+>> we get the following warnings:
+>> drivers/pinctrl/pinctrl-abx500.c:520:5: warning:
+>> symbol 'abx500_gpio_request' was not declared. Should it be static?
+>> drivers/pinctrl/pinctrl-abx500.c:527:6: warning:
+>> symbol 'abx500_gpio_free' was not declared. Should it be static?
+>> drivers/pinctrl/pinctrl-abx500.c:614:5: warning:
+>> symbol 'abx500_gpio_request_enable' was not declared. Should it be static?
+>> drivers/pinctrl/pinctrl-abx500.c:714:5: warning:
+>> symbol 'abx500_pin_config_get' was not declared. Should it be static?
+>> drivers/pinctrl/pinctrl-abx500.c:721:5: warning:
+>> symbol 'abx500_pin_config_set' was not declared. Should it be static?
+>>
+>> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+>> Cc: Patrice Chotard <patrice.chotard@st.com>
+>> ---
+>> This series is compile tested against linux-next tree (20130319).
+>> ---
+>>  drivers/pinctrl/pinctrl-abx500.c |   10 +++++-----
+>>  1 files changed, 5 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/pinctrl/pinctrl-abx500.c b/drivers/pinctrl/pinctrl-abx500.c
+>> index 0cf3fa4..9b8db91 100644
+>> --- a/drivers/pinctrl/pinctrl-abx500.c
+>> +++ b/drivers/pinctrl/pinctrl-abx500.c
+>> @@ -517,14 +517,14 @@ static inline void abx500_gpio_dbg_show_one(struct seq_file *s,
+>>  #define abx500_gpio_dbg_show NULL
+>>  #endif
+>>
+>> -int abx500_gpio_request(struct gpio_chip *chip, unsigned offset)
+>> +static int abx500_gpio_request(struct gpio_chip *chip, unsigned offset)
+>>  {
+>>       int gpio = chip->base + offset;
+>>
+>>       return pinctrl_request_gpio(gpio);
+>>  }
+>>
+>> -void abx500_gpio_free(struct gpio_chip *chip, unsigned offset)
+>> +static void abx500_gpio_free(struct gpio_chip *chip, unsigned offset)
+>>  {
+>>       int gpio = chip->base + offset;
+>>
+>> @@ -611,7 +611,7 @@ static void abx500_pmx_disable(struct pinctrl_dev *pctldev,
+>>       dev_dbg(pct->dev, "disable group %s, %u pins\n", g->name, g->npins);
+>>  }
+>>
+>> -int abx500_gpio_request_enable(struct pinctrl_dev *pctldev,
+>> +static int abx500_gpio_request_enable(struct pinctrl_dev *pctldev,
+>>                              struct pinctrl_gpio_range *range,
+>>                              unsigned offset)
+>>  {
+>> @@ -711,14 +711,14 @@ static const struct pinctrl_ops abx500_pinctrl_ops = {
+>>       .pin_dbg_show = abx500_pin_dbg_show,
+>>  };
+>>
+>> -int abx500_pin_config_get(struct pinctrl_dev *pctldev,
+>> +static int abx500_pin_config_get(struct pinctrl_dev *pctldev,
+>>                         unsigned pin,
+>>                         unsigned long *config)
+>>  {
+>>       return -ENOSYS;
+>>  }
+>>
+>> -int abx500_pin_config_set(struct pinctrl_dev *pctldev,
+>> +static int abx500_pin_config_set(struct pinctrl_dev *pctldev,
+>>                         unsigned pin,
+>>                         unsigned long config)
+>>  {
+>
+>
+> Acked-by: Patrice Chotard <patrice.chotard@st.com>
 
-Today's linux-next merge of the usb-gadget tree got a conflict in
-drivers/usb/host/ehci-tegra.c between commit 369a9a9d2af7 ("usb: host:
-ehci-tegra: Fix oops in error cleanup") from the usb tree and commit
-4261b8f3538c ("usb: host: ehci-tegra: fix PHY error handling") from the
-usb-gadget tree.
+Gentle ping on this series.
 
-I fixed it up (I think - see below) and can carry the fix as necessary
-(no action is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/usb/host/ehci-tegra.c
-index 4f3cfb8,1d2488c..0000000
---- a/drivers/usb/host/ehci-tegra.c
-+++ b/drivers/usb/host/ehci-tegra.c
-@@@ -770,19 -765,15 +770,17 @@@ static int tegra_ehci_probe(struct plat
-  	if (!irq) {
-  		dev_err(&pdev->dev, "Failed to get IRQ\n");
-  		err =3D -ENODEV;
- -		goto fail;
- +		goto fail_phy;
-  	}
- =20
-  	if (pdata->operating_mode =3D=3D TEGRA_USB_OTG) {
-  		tegra->transceiver =3D
-  			devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
-- 		if (!IS_ERR_OR_NULL(tegra->transceiver))
-+ 		if (!IS_ERR(tegra->transceiver))
-  			otg_set_host(tegra->transceiver->otg, &hcd->self);
- +	} else {
- +		tegra->transceiver =3D ERR_PTR(-ENODEV);
-  	}
-- #endif
- =20
-  	err =3D usb_add_hcd(hcd, irq, IRQF_SHARED);
-  	if (err) {
-@@@ -801,11 -792,8 +799,9 @@@
-  	return err;
- =20
-  fail:
-- #ifdef CONFIG_USB_OTG_UTILS
-- 	if (!IS_ERR_OR_NULL(tegra->transceiver))
-+ 	if (!IS_ERR(tegra->transceiver))
-  		otg_set_host(tegra->transceiver->otg, NULL);
-- #endif
- +fail_phy:
-  	usb_phy_shutdown(hcd->phy);
-  fail_io:
-  	clk_disable_unprepare(tegra->clk);
-
---Signature=_Thu__4_Apr_2013_15_18_45_+1100_XVBF8hBQEkFNVApt
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRXP8lAAoJEECxmPOUX5FExtwP/2nEPhlhqwQ791y9zGq8fMZy
-WKf0pzPuEjEUEk2HvwrfSYC3sn8lyD6TZPJ35VD7E5jMj8WCeDeErR7rnJWQ6rgH
-LFRF480UQBZXYwmtmH1GbCr2hkA/soleZ4NRsbfBPkbC0HJQvF5Eob4MxIQJNP+e
-Hpy4r3wc5X0ltDpf1mUw6z7wnl+SZ7JxfOrqvXoJsjFc5Yk64f8AyOHEYk9pbzDn
-gpWt8Hml4Eq8oNpoy7vG02pD2Ll8yvMJwThQVQufNO1sVUKddqPKqThWuMZFB1RT
-7FhMJ33vy74OvuBDinNXmkked8EQ5Z3+rAem8B2fN04UZ/lvXTtzWsyfr9AiM1s3
-FbRyi4F7CmwOwi2sjU9xRHybtNn/zVSbZ/NlDOj6u6x07woea8TpAjpMv9U8bjZq
-+s4zfsRMr8XAktiYXdJqh0aHFm8dxG6gAFzWgGg+Ct1rfn1ZHy2mlWWpamBc6lTZ
-kDgjcBEatTk/2HYdFd1cec9QZeBcziiyxaEzRVKdjJEv0Fdb2KMziQ0M2qXM+PCe
-OeoPRQeofVIzFK58m0JZCEdHrqY1FsNJfDp4MtBRMlcHH+jHq+fKycYhXEBeTYYR
-RgkY0ramdMhtyisIrYviOTK4xvNxku6KSHO/9ikoEoLoOUKAsCHS6LGAeAl3va39
-PIrCic2lj795BoGxQ83b
-=iy1S
------END PGP SIGNATURE-----
-
---Signature=_Thu__4_Apr_2013_15_18_45_+1100_XVBF8hBQEkFNVApt--
+-- 
+With warm regards,
+Sachin
