@@ -1,79 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763638Ab3DDGal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 02:30:41 -0400
-Received: from mga11.intel.com ([192.55.52.93]:22807 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763424Ab3DDGak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 02:30:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,405,1363158000"; 
-   d="scan'208";a="313415653"
-Message-ID: <515D1F4E.1080306@intel.com>
-Date: Thu, 04 Apr 2013 09:35:58 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1763655Ab3DDGar (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 02:30:47 -0400
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:35215 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763642Ab3DDGao (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 02:30:44 -0400
 MIME-Version: 1.0
-To: Sergey Yanovich <ynvich@gmail.com>
-CC: Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH v2] wait while adding MMC host to ensure root mounts
-References: <1363223183-3772-1-git-send-email-ynvich@gmail.com>  <1363224194-7366-1-git-send-email-ynvich@gmail.com>  <87620jmkoe.fsf@octavius.laptop.org>  <CAPDyKFp27MUOjhydLXf92vN3cua=XcX4oTJnMGfOJPpBhtwM8Q@mail.gmail.com>  <87ppylf429.fsf@octavius.laptop.org> <515ADEDE.3050707@intel.com> <1364912689.3399.7.camel@host5.opentask.org>
-In-Reply-To: <1364912689.3399.7.camel@host5.opentask.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAKohpo=EPbGocbNaZcNtGuZy4Tst5jH4rPviQ6L=YuZceDnKMw@mail.gmail.com>
+References: <cover.1364229828.git.viresh.kumar@linaro.org>
+	<4180fd5b43906421fc155126e8b7bea5fb3ff375.1364229828.git.viresh.kumar@linaro.org>
+	<CAKohpo=LOJ3DfaGzCm6a6ev2+dNUgEpJd+04pGMhdSpkyZNR9A@mail.gmail.com>
+	<CAKohpomRMkKouiy+iJUiheTcPGCDVLbxppL5f4oc-WMu2E5T8g@mail.gmail.com>
+	<1364985034.16520.12.camel@pasglop>
+	<CAKohpo=EPbGocbNaZcNtGuZy4Tst5jH4rPviQ6L=YuZceDnKMw@mail.gmail.com>
+Date: Thu, 4 Apr 2013 12:00:43 +0530
+Message-ID: <CAP245DU68CCR9pDSryCv=tu00NjXkvEoerp6H6H9fQaYJgQA1g@mail.gmail.com>
+Subject: Re: [PATCH 9/9] powerpc: cpufreq: move cpufreq driver to drivers/cpufreq
+From: Amit Kucheria <amit.kucheria@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>, deepthi@linux.vnet.ibm.com
+Cc: Olof Johansson <olof@lixom.net>, linuxppc-dev@lists.ozlabs.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Robin Randhawa <robin.randhawa@arm.com>, linux-pm@vger.kernel.org,
+        Liviu Dudau <Liviu.Dudau@arm.com>, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, Steve Bannister <Steve.Bannister@arm.com>,
+        Arvind Chauhan <arvind.chauhan@arm.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Charles Garcia-Tobin <charles.garcia-tobin@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/04/13 17:24, Sergey Yanovich wrote:
-> On Tue, 2013-04-02 at 16:36 +0300, Adrian Hunter wrote:
->> On my system it is significant:
+On Thu, Apr 4, 2013 at 11:55 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 3 April 2013 16:00, Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+>> On Wed, 2013-04-03 at 15:00 +0530, Viresh Kumar wrote:
+>>> On 31 March 2013 09:33, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>
+>>> > Benjamin/Paul/Olof,
+>>> >
+>>> > Any comments on this?
+>>>
+>>> Ping!!
 >>
->> Before the patch:
->>
->> [    1.625623] VFS: Mounted root (ext4 filesystem) readonly on device 179:2.
->>
->> After the patch:
->>
->> [    1.935851] VFS: Mounted root (ext4 filesystem) readonly on device 179:2.
->>
->> That is an addition of 310 ms which is 19% performance degradation.
-> 
-> Are you sure the delay is caused by mmc?
+>> I'm on vacation until end of April. No objection to the patch but
+>> somebody needs to test it.
+>
+> Hi,
+>
+> Can somebody else from powerpc world give it a try?
 
-Yes
+Deepthi, can you help?
 
-> 
-> On my intel laptop (userspace is Debian/unstable):
-> [    1.542339] EXT4-fs (sda2): mounted filesystem with ordered data mode. Opts: (null)
-> ...
-> [    2.735851] mmc0: new high speed SD card at address e624
-> [    2.742289] mmcblk0: mmc0:e624 SU02G 1.84 GiB 
-> [    2.752317]  mmcblk0: p1
-
-
-No,  I am booting from eMMC.
-
-> 
->> Please revert the patch.
-> 
-> Chris, could provide a pointer on how to improve the patch?
-> 
-> Maybe introduce mmc_is_hosting_root() and do something like:
-> 
-> -	mmc_flush_scheduled_work();
-> +	if (mmc_is_hosting_root())
-> +		mmc_flush_scheduled_work();
-
-No, I am booting from eMMC.  Perhaps a host capability:
-
-	if (host->caps2 & MMC_CAP2_ROOTWAIT)
-		mmc_flush_scheduled_work();
-
+> OR
+>
+> @Rafael: Can we get this pushed in linux-next as is and then people would
+> be forced to test it and in case there are any complains, i will fix them or
+> you can revert it?
