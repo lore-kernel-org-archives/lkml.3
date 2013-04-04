@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763399Ab3DDQuu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:50:50 -0400
-Received: from mail-da0-f42.google.com ([209.85.210.42]:45244 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762941Ab3DDQus (ORCPT
+	id S1763355Ab3DDQxR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:53:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54565 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763133Ab3DDQxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:50:48 -0400
-Date: Thu, 4 Apr 2013 09:50:42 -0700
+	Thu, 4 Apr 2013 12:53:16 -0400
+Date: Thu, 4 Apr 2013 09:53:11 -0700
 From: Tejun Heo <tj@kernel.org>
-To: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: flushing uninitialized work item in radeon init failure path
-Message-ID: <20130404165042.GO9425@htj.dyndns.org>
+To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: next-20130325 - INFO: trying to register non-static key.
+Message-ID: <20130404165311.GP9425@htj.dyndns.org>
+References: <11740.1364321163@turing-police.cc.vt.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <11740.1364321163@turing-police.cc.vt.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hello, Valdis.
 
-The following happens on my test machine which has an on-board VGA
-which is not connected.  The failure is expected but, in the failure
-path, it calls radeon_irq_kms_fini() which flushes @rdev->*_work when
-@rdev seemingly hasn't gone through radeon_irq_kms_init(), ending up
-trying to flush uninitialized work items triggering the following
-lockdep warning.  Well, at least, that's what I think is happening.
+On Tue, Mar 26, 2013 at 02:06:03PM -0400, Valdis Kletnieks wrote:
+> Seen in the dmesg for next-20130325, but looks like it's been doing
+> it since at least next-20130218.
+> 
+> [   50.162584] dell_wmi: Received unknown WMI event (0x11)
+> [   51.167629] INFO: trying to register non-static key.
+> [   51.167636] the code is fine but needs lockdep annotation.
+> [   51.167639] turning off the locking correctness validator.
+> [   51.167644] Pid: 594, comm: kworker/0:3 Tainted: G        W  O 3.9.0-rc4-next-20130325 #67
+> [   51.167646] Call Trace:
+> [   51.167656]  [<ffffffff81073847>] register_lock_class+0x108/0x2ba
+> [   51.167662]  [<ffffffff81075113>] __lock_acquire+0x126/0xde2
+> [   51.167667]  [<ffffffff810755de>] ? __lock_acquire+0x5f1/0xde2
+> [   51.167671]  [<ffffffff81076111>] lock_acquire+0xc7/0x14a
+> [   51.167677]  [<ffffffff810498dd>] ? process_one_work+0x1fd/0x4ae
+> [   51.167681]  [<ffffffff81049949>] process_one_work+0x269/0x4ae
+> [   51.167686]  [<ffffffff810498dd>] ? process_one_work+0x1fd/0x4ae
+> [   51.167691]  [<ffffffff8104ae2c>] worker_thread+0x2d6/0x3dc
+> [   51.167696]  [<ffffffff8104ab56>] ? rescuer_thread+0x343/0x343
+> [   51.167701]  [<ffffffff81050394>] kthread+0x9d/0xa5
+> [   51.167706]  [<ffffffff810502f7>] ? __kthread_parkme+0x60/0x60
+> [   51.167712]  [<ffffffff815fdf6c>] ret_from_fork+0x7c/0xb0
+> [   51.167717]  [<ffffffff810502f7>] ? __kthread_parkme+0x60/0x60
+> 
+> 'git blame' doesn't seem to shout anything.  Commit 112202d90 touched code
+> in that area semi-recently, but I don't actually see a problem with it.
+> 
+> (I admit not being sure how long this has been an issue - discovered I
+> had a local config screw-up that meant lockdep wasn't on for quite some
+> time).
 
- [drm] Initialized drm 1.1.0 20060810
- [drm] radeon kernel modesetting enabled.
- radeon 0000:00:0c.0: enabling device (0080 -> 0083)
- [drm] initializing kernel modesetting (RV100 0x1002:0x515E 0x1002:0x515E).
- [drm] register mmio base: 0xFEBE0000
- [drm] register mmio size: 65536
- radeon 0000:00:0c.0: Invalid ROM contents
- radeon 0000:00:0c.0: Invalid ROM contents
- [drm:radeon_get_bios] *ERROR* Unable to locate a BIOS ROM
- radeon 0000:00:0c.0: Card not posted and no BIOS - ignoring
- radeon 0000:00:0c.0: Fatal error during GPU init
- [drm] radeon: finishing device.
- [TTM] Memory type 2 has not been initialized
- [drm] radeon: cp finalized
- INFO: trying to register non-static key.
- the code is fine but needs lockdep annotation.
- turning off the locking correctness validator.
- Pid: 50, comm: kworker/0:1 Not tainted 3.9.0-rc5-work+ #1
- Call Trace:
-  [<ffffffff810f9830>] __lock_acquire+0x1840/0x1c50
-  [<ffffffff810faba6>] ? mark_held_locks+0x86/0x110
-  [<ffffffff81c678a0>] ? retint_restore_args+0xe/0xe
-  [<ffffffff810fad45>] ? trace_hardirqs_on_caller+0x115/0x1a0
-  [<ffffffff8143635e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-  [<ffffffff810fa255>] lock_acquire+0x95/0x1e0
-  [<ffffffff810b3315>] ? flush_work+0x5/0x270
-  [<ffffffff810b335c>] flush_work+0x4c/0x270
-  [<ffffffff810b3315>] ? flush_work+0x5/0x270
-  [<ffffffff81c59b7b>] ? printk+0x4d/0x4f
-  [<ffffffff8155677f>] radeon_irq_kms_fini+0x2f/0x70
-  [<ffffffff815604bf>] r100_fini+0x4f/0x90
-  [<ffffffff81529362>] radeon_device_fini+0x42/0x100
-  [<ffffffff8152abdc>] radeon_driver_unload_kms+0x3c/0x60
-  [<ffffffff8152acbd>] radeon_driver_load_kms+0xbd/0x160
-  [<ffffffff8150320e>] drm_get_pci_dev+0x17e/0x2a0
-  [<ffffffff81527dfb>] radeon_pci_probe+0xab/0xd0
-  [<ffffffff8144c863>] local_pci_probe+0x23/0x40
-  [<ffffffff810b07e8>] work_for_cpu_fn+0x18/0x30
-  [<ffffffff810b44f6>] process_one_work+0x1f6/0x670
-  [<ffffffff810b448a>] ? process_one_work+0x18a/0x670
-  [<ffffffff810b499c>] process_scheduled_works+0x2c/0x40
-  [<ffffffff810b4eb2>] worker_thread+0x2b2/0x380
-  [<ffffffff810b4c00>] ? rescuer_thread+0x250/0x250
-  [<ffffffff810ba7ea>] kthread+0xea/0xf0
-  [<ffffffff810ba700>] ? __init_kthread_worker+0x70/0x70
-  [<ffffffff81c682dc>] ret_from_fork+0x7c/0xb0
-  [<ffffffff810ba700>] ? __init_kthread_worker+0x70/0x70
- radeon: probe of 0000:00:0c.0 failed with error -22
+It's likely caused by the workqueue user not initializing the work
+item properly; unfortunately, I can't tell who the offending user is
+from the trace.  Can you please reproduce the problem on the following
+git branch and report the output?
 
-Thanks.
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-unify-dump
+
+Thanks!
 
 -- 
 tejun
