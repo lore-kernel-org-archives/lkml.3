@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761746Ab3DDOZE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 10:25:04 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:51783
+	id S1761731Ab3DDO1y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 10:27:54 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:51807
 	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761650Ab3DDOZB (ORCPT
+	by vger.kernel.org with ESMTP id S1761625Ab3DDO1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 10:25:01 -0400
-Message-ID: <1365085489.28127.64.camel@i7.infradead.org>
-Subject: Re: [PATCH] intel-iommu: Synchronize gcmd value with global command
- register
+	Thu, 4 Apr 2013 10:27:52 -0400
+Message-ID: <1365085649.28127.66.camel@i7.infradead.org>
+Subject: Re: [PATCH v2] irq: add quirk for broken interrupt remapping on
+ 55XX chipsets
 From: David Woodhouse <dwmw2@infradead.org>
-To: Takao Indoh <indou.takao@jp.fujitsu.com>
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org
-Date: Thu, 04 Apr 2013 15:24:49 +0100
-In-Reply-To: <515D1429.40707@jp.fujitsu.com>
-References: <1363829556-2128-1-git-send-email-indou.takao@jp.fujitsu.com>
-	 <20130326144629.GB2727@8bytes.org> <51527D74.9080209@jp.fujitsu.com>
-	 <20130327103122.GK30540@8bytes.org> <51591EEE.60401@jp.fujitsu.com>
-	 <20130402140546.GA15687@8bytes.org> <515BD638.8070307@jp.fujitsu.com>
-	 <1364977479.28127.15.camel@i7.infradead.org>
-	 <515D1429.40707@jp.fujitsu.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>, Prarit Bhargava <prarit@redhat.com>,
+        Don Zickus <dzickus@redhat.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Asit Mallick <asit.k.mallick@intel.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        iommu@lists.linux-foundation.org, Yinghai Lu <yinghai@kernel.org>
+Date: Thu, 04 Apr 2013 15:27:29 +0100
+In-Reply-To: <CAErSpo4=L9q+q5hqP2Avw6uceQwZiPuOzadhsqGpu6aP53PMbQ@mail.gmail.com>
+References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
+	 <1362423859-18516-1-git-send-email-nhorman@tuxdriver.com>
+	 <CAErSpo4=L9q+q5hqP2Avw6uceQwZiPuOzadhsqGpu6aP53PMbQ@mail.gmail.com>
 Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
-	boundary="=-aBo0SsQ/x6G9RWeeOz9a"
+	boundary="=-GWBWnoCyMHWEzvdvYbSD"
 X-Mailer: Evolution 3.6.3 (3.6.3-2.fc18) 
 Mime-Version: 1.0
 X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by bombadil.infradead.org
@@ -33,33 +34,30 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-aBo0SsQ/x6G9RWeeOz9a
+--=-GWBWnoCyMHWEzvdvYbSD
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, 2013-04-04 at 14:48 +0900, Takao Indoh wrote:
->=20
-> - DMAR fault messages floods and second kernel does not boot. Recently I
->   saw similar report. https://lkml.org/lkml/2013/3/8/120
+On Wed, 2013-04-03 at 17:53 -0600, Bjorn Helgaas wrote:
+> );
+> > +
+> > +       if ((revision =3D=3D 0x13) && irq_remapping_enabled) {
+> > +                pr_warn(HW_ERR "This system BIOS has enabled interrupt=
+ remapping\n"
+> > +                        "on a chipset that contains an errata making t=
+hat\n"
+> > +                        "feature unstable.  Please reboot with nointre=
+map\n"
+> > +                        "added to the kernel command line and contact\=
+n"
+> > +                        "your BIOS vendor for an update");
 
-Right. So the fix for that is to make the subsequent errors silent,
-until/unless we actually get a request to create a mapping for the given
-device.
-
-> - igb driver detectes error on linkup and kdump via network fails.
-
-That's a driver bug, IIRC. It was failing to completely reset the
-hardware. It's fixed now, isn't it?
-
-> - On a certain platform, though kdump itself works, PCIe error like
->   Unexpected Completion is detected and it gets hardware degraded.
-
-More information required.
+This should be WARN_TAINT(TAINT_FIRMWARE_WORKAROUND). And 'an erratum'.
 
 --=20
 dwmw2
 
---=-aBo0SsQ/x6G9RWeeOz9a
+--=-GWBWnoCyMHWEzvdvYbSD
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -160,20 +158,20 @@ kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
 MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
 dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
 eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
-MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTMwNDA0MTQyNDQ5WjAjBgkqhkiG9w0BCQQx
-FgQUyhGJiyHhwwDv8tCbvgE2EpVnIh8wgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
+MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTMwNDA0MTQyNzI5WjAjBgkqhkiG9w0BCQQx
+FgQUY1uysk0UfDM/+AwipmSb3/crBJ4wgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
 SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
 ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
 ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
 TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
 aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
-aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQBdCKjef5ymwIgvNcuz2A1bvyB2
-ikrbQLDrn59oOqRSpFvCnZiDfm+34mgjjsrYuFzt+qMp6YJmmHRzLU4Zl55jCO99PmQ2zG6A413u
-24WgrS4DcUZHEml38gzFYHqAQeUrepWIeE4VmW2rAwvVFScjeCCQcSZGBFW+Z8wqe/9mgCu9f4UC
-wcnLCK9uGChUpS7WVsNxxj2dlPmldm8Os+SSQskg5lE+8OY3apIciumInq6e/gK7Q/Z+U0IWTz6H
-7KO8vGQmsZMxGF04xGRXWAZLOPS1P0YokpCGhP4WFFx/CCidltcERcw0mRSxd7U4j4IejNPghemE
-yTpUAaKIMg7CAAAAAAAA
+aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQBXa6zom88BQ3SrpvcbeDOwaMF8
+PLuWU2Ken7dSTcMpJQk64n+mPO4zIuH9koBMROkJ6nQncwfdhzpLmeQD8ZyHhfqA97pDXFvVqcaX
+d2iyTEiQ7aoSNMst0GiVtp2qnJV1VVh9DCbzjYDc9JQMNHcwfHhkVNc08ghbM9zdq4sEpj/AZ2If
+oBBHnb7lZ9zoElDdMoiqS2kSal5mDolt7D76uHVhSzEmw7oEx2gf0SHWzF+hki/mH4bcFa+mIc/S
+J4PNFaPiRaWh08LGA+dU0I8IQXUCO51/JQz/oDqRyZodv0wdNA0d5J5lzRAfd65KtzUw8WqEExkl
+54wcPpyn6e33AAAAAAAA
 
 
---=-aBo0SsQ/x6G9RWeeOz9a--
+--=-GWBWnoCyMHWEzvdvYbSD--
 
