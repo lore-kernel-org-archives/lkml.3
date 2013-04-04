@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765622Ab3DDXw1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 19:52:27 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:43394 "EHLO
+	id S1765603Ab3DDXw0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 19:52:26 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:43395 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765042Ab3DDXr4 (ORCPT
+	with ESMTP id S1765055Ab3DDXr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 4 Apr 2013 19:47:56 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,89 +13,95 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
-Subject: [PATCH v3 07/22] x86, ACPI: Store override acpi tables phys addr in cpio files info array
-Date: Thu,  4 Apr 2013 16:46:11 -0700
-Message-Id: <1365119186-23487-8-git-send-email-yinghai@kernel.org>
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH v3 16/22] x86, mm, numa: Move emulation handling down.
+Date: Thu,  4 Apr 2013 16:46:20 -0700
+Message-Id: <1365119186-23487-17-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
 References: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In 32bit we will find table with phys address during 32bit flat mode
-in head_32.S, because at that time we don't need set page table to
-access initrd.
+It needs to allocate buffer for new numa_meminfo and distance matrix,
+so move it down.
 
-For copying we could use early_ioremap() with phys directly before mem mapping
-is set.
+Also we change the behavoir:
+before this patch, if user input wrong data in command line, it
+will fall back to next numa probing or disabling numa.
+after this patch, if user input wrong data in command line, it will
+stay with numa info from probing before, like acpi srat or amd_numa.
 
-To keep 32bit and 64bit consistent, use phys_addr for all.
-
--v2: introduce file_pos to save phys address instead of abusing cpio_data
-	that tj is not happy with.
+We need to call numa_check_memblks to reject wrong user inputs early,
+so keep the original numa_meminfo not changed.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org
+Cc: David Rientjes <rientjes@google.com>
 ---
- drivers/acpi/osl.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ arch/x86/mm/numa.c           | 6 +++---
+ arch/x86/mm/numa_emulation.c | 2 +-
+ arch/x86/mm/numa_internal.h  | 2 ++
+ 3 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index 21714fb..ee5c531 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -570,7 +570,11 @@ static const char * const table_sigs[] = {
- #define ACPI_HEADER_SIZE sizeof(struct acpi_table_header)
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 1d5fa08..90fd123 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -537,7 +537,7 @@ static unsigned long __init node_map_pfn_alignment(struct numa_meminfo *mi)
+ }
+ #endif
  
- #define ACPI_OVERRIDE_TABLES 64
--static struct cpio_data __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
-+struct file_pos {
-+	phys_addr_t data;
-+	phys_addr_t size;
-+};
-+static struct file_pos __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
- 
- void __init acpi_initrd_override_find(void *data, size_t size)
+-static int __init numa_check_memblks(struct numa_meminfo *mi)
++int __init numa_check_memblks(struct numa_meminfo *mi)
  {
-@@ -615,7 +619,7 @@ void __init acpi_initrd_override_find(void *data, size_t size)
- 			table->signature, cpio_path, file.name, table->length);
+ 	nodemask_t nodes_parsed;
+ 	unsigned long pfn_align;
+@@ -607,8 +607,6 @@ static int __init numa_init(int (*init_func)(void))
+ 	if (ret < 0)
+ 		return ret;
  
- 		all_tables_size += table->length;
--		acpi_initrd_files[table_nr].data = file.data;
-+		acpi_initrd_files[table_nr].data = __pa_nodebug(file.data);
- 		acpi_initrd_files[table_nr].size = file.size;
- 		table_nr++;
+-	numa_emulation(&numa_meminfo, numa_distance_cnt);
+-
+ 	ret = numa_check_memblks(&numa_meminfo);
+ 	if (ret < 0)
+ 		return ret;
+@@ -672,6 +670,8 @@ void __init x86_numa_init(void)
+ 
+ 	early_x86_numa_init();
+ 
++	numa_emulation(&numa_meminfo, numa_distance_cnt);
++
+ 	node_possible_map = numa_nodes_parsed;
+ 	numa_nodemask_from_meminfo(&node_possible_map, mi);
+ 
+diff --git a/arch/x86/mm/numa_emulation.c b/arch/x86/mm/numa_emulation.c
+index dbbbb47..5a0433d 100644
+--- a/arch/x86/mm/numa_emulation.c
++++ b/arch/x86/mm/numa_emulation.c
+@@ -348,7 +348,7 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
+ 	if (ret < 0)
+ 		goto no_emu;
+ 
+-	if (numa_cleanup_meminfo(&ei) < 0) {
++	if (numa_cleanup_meminfo(&ei) < 0 || numa_check_memblks(&ei) < 0) {
+ 		pr_warning("NUMA: Warning: constructed meminfo invalid, disabling emulation\n");
+ 		goto no_emu;
  	}
-@@ -624,7 +628,7 @@ void __init acpi_initrd_override_find(void *data, size_t size)
- void __init acpi_initrd_override_copy(void)
- {
- 	int no, total_offset = 0;
--	char *p;
-+	char *p, *q;
+diff --git a/arch/x86/mm/numa_internal.h b/arch/x86/mm/numa_internal.h
+index ad86ec9..bb2fbcc 100644
+--- a/arch/x86/mm/numa_internal.h
++++ b/arch/x86/mm/numa_internal.h
+@@ -21,6 +21,8 @@ void __init numa_reset_distance(void);
  
- 	if (!all_tables_size)
- 		return;
-@@ -659,12 +663,15 @@ void __init acpi_initrd_override_copy(void)
- 	 * one by one during copying.
- 	 */
- 	for (no = 0; no < ACPI_OVERRIDE_TABLES; no++) {
-+		phys_addr_t addr = acpi_initrd_files[no].data;
- 		phys_addr_t size = acpi_initrd_files[no].size;
+ void __init x86_numa_init(void);
  
- 		if (!size)
- 			break;
-+		q = early_ioremap(addr, size);
- 		p = early_ioremap(acpi_tables_addr + total_offset, size);
--		memcpy(p, acpi_initrd_files[no].data, size);
-+		memcpy(p, q, size);
-+		early_iounmap(q, size);
- 		early_iounmap(p, size);
- 		total_offset += size;
- 	}
++int __init numa_check_memblks(struct numa_meminfo *mi);
++
+ #ifdef CONFIG_NUMA_EMU
+ void __init numa_emulation(struct numa_meminfo *numa_meminfo,
+ 			   int numa_dist_cnt);
 -- 
 1.8.1.4
 
