@@ -1,137 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763599Ab3DDREJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 13:04:09 -0400
-Received: from smtp.infotech.no ([82.134.31.41]:33784 "EHLO smtp.infotech.no"
+	id S1763621Ab3DDREp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 13:04:45 -0400
+Received: from mout.gmx.net ([212.227.17.22]:51956 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763521Ab3DDREH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 13:04:07 -0400
-Message-ID: <515DB248.6070105@interlog.com>
-Date: Thu, 04 Apr 2013 13:03:04 -0400
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1763473Ab3DDREn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 13:04:43 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX19+TUx0p9h+OdjaAkGELHFYacivqghvHsBSVBcQqb
+	YFybORVlg1Wm5P
+Message-ID: <515DB2A6.7020902@gmx.de>
+Date: Thu, 04 Apr 2013 19:04:38 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130309 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: linux-arm-kernel@lists.infradead.org, jhovold@gmail.com,
-        robertcnelson@gmail.com,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] ARM: at91: add Acme Systems Aria G25 board
-References: <20130402184947.GA8015@quad.lixom.net> <1365090153-1807-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1365090153-1807-1-git-send-email-nicolas.ferre@atmel.com>
-Content-Type: multipart/mixed;
- boundary="------------040402050103090900030309"
+To: user-mode-linux-user@lists.sourceforge.net
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: user mode linux: trinity syscall "madvise" triggers quickly BUG:
+ Bad page map
+X-Enigmail-Version: 1.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------040402050103090900030309
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+if SLUB is used (SLAB works fine till now with this syscall).
 
-On 13-04-04 11:42 AM, Nicolas Ferre wrote:
-> From: Douglas Gilbert <dgilbert@interlog.com>
->
-> Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
-> Hi all,
->
-> Here is the third revision of this patch. I plan to include it in a
-> pull-request real-soon-now!
->
-> v3: - move to "at91-" prefix for .dts[i] files
->      - remove the rtc activation code because of the ongoing discussions
->        about this IP and its DT binding.
->
+What I get with the this trinity command line
 
-Nicolas,
-It's a pity that the rtc activation code is removed.
-At worst:
-                         rtc@fffffeb0 {
-                                 status = "okay";
-                         };
+$> trinity --children 2 -c madvise
 
-does nothing. Also it is unlikely to be changed by any
-movement on the rtc-at91rm9200 front.
+for a 32 bit Gentoo Linux (both as host and as guest) 
+and host kernel 3.8.5 and guest kernel 3.9-rc5 is the following :
 
 
-The lack of use of uart1 is for my own, private reasons.
-I think it would be more generally useful to show uart1's
-definition and disable it as shown in the attached patch
-fragment.
+2013-04-04T19:00:29.220+02:00 trinity kernel: BUG: Bad page map in process trinity-child1  pte:0032d045 pmd:3932e1e1
+2013-04-04T19:00:29.220+02:00 trinity kernel: page:0a73f5a0 count:1 mapcount:-1 mapping:  (null) index:0x0
+2013-04-04T19:00:29.220+02:00 trinity kernel: page flags: 0x404(referenced|reserved)
+2013-04-04T19:00:29.220+02:00 trinity kernel: addr:00100000 vm_flags:00040055 anon_vma:  (null) mapping:  (null) index:100
+2013-04-04T19:00:29.220+02:00 trinity kernel: vma->vm_ops->fault: special_mapping_fault+0x0/0x80
+2013-04-04T19:00:29.220+02:00 trinity kernel: 413c7d20:  [<0836efd8>] dump_stack+0x22/0x24
+2013-04-04T19:00:29.220+02:00 trinity kernel: 413c7d38:  [<0837039b>] print_bad_pte+0x17b/0x197
+2013-04-04T19:00:29.220+02:00 trinity kernel: 413c7d7c:  [<080e2c68>] unmap_single_vma+0x268/0x430
+2013-04-04T19:00:29.220+02:00 trinity kernel: 413c7ddc:  [<080e33f4>] zap_page_range+0x74/0xb0
+2013-04-04T19:00:29.220+02:00 trinity kernel: 413c7e10:  [<080e172d>] sys_madvise+0x3bd/0x720
+2013-04-04T19:00:29.225+02:00 trinity kernel: 413c7eac:  [<08064a92>] handle_syscall+0x82/0xb0
+2013-04-04T19:00:29.225+02:00 trinity kernel: 413c7ef4:  [<08076f0d>] userspace+0x46d/0x590
+2013-04-04T19:00:29.225+02:00 trinity kernel: 413c7fec:  [<080617cc>] fork_handler+0x6c/0x70
+2013-04-04T19:00:29.225+02:00 trinity kernel: 413c7ffc:  [<00000002>] 0x2
+2013-04-04T19:00:29.225+02:00 trinity kernel:
+2013-04-04T19:00:29.225+02:00 trinity kernel: Disabling lock debugging due to kernel taint
+2013-04-04T19:00:29.225+02:00 trinity kernel: BUG: Bad page state in process trinity-child1  pfn:0032d
+2013-04-04T19:00:29.225+02:00 trinity kernel: page:0a73f5a0 count:0 mapcount:-1 mapping:  (null) index:0x0
+2013-04-04T19:00:29.225+02:00 trinity kernel: page flags: 0x404(referenced|reserved)
+2013-04-04T19:00:29.225+02:00 trinity kernel: 413c7cd8:  [<0836efd8>] dump_stack+0x22/0x24
+2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7cf0:  [<080cf185>] bad_page+0xb5/0xe0
+2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7d0c:  [<080cf223>] free_pages_prepare+0x73/0xb0
+2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7d28:  [<080d064d>] free_hot_cold_page+0x1d/0x100
+2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7d50:  [<080d2fde>] __put_single_page+0x1e/0x30
+2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7d64:  [<080d3107>] put_page+0x27/0x30
+2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7d6c:  [<080f026c>] free_page_and_swap_cache+0x3c/0x50
+2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7d7c:  [<080e2c85>] unmap_single_vma+0x285/0x430
+2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7ddc:  [<080e33f4>] zap_page_range+0x74/0xb0
+2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7e10:  [<080e172d>] sys_madvise+0x3bd/0x720
+2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7eac:  [<08064a92>] handle_syscall+0x82/0xb0
+2013-04-04T19:00:29.234+02:00 trinity kernel: 413c7ef4:  [<08076f0d>] userspace+0x46d/0x590
+2013-04-04T19:00:29.234+02:00 trinity kernel: 413c7fec:  [<080617cc>] fork_handler+0x6c/0x70
+2013-04-04T19:00:29.234+02:00 trinity kernel: 413c7ffc:  [<00000002>] 0x2
+2013-04-04T19:00:29.234+02:00 trinity kernel:
+2013-04-04T19:00:30.174+02:00 trinity kernel: BUG: Bad rss-counter state mm:40623600 idx:0 val:-1
 
-
-I also note that my date line was removed. I like dates,
-so when I add comments like "the i2c-at91 driver is broken
-for the SAM9G20 ** and use the i2c-gpio driver instead" then
-this is not taken as an eternal truth. It worked in the
-past and hopefully it will work again in the future.
-
-While on the subject of I2C, I'm getting tired of seeing
-this oft-copied line:
-    i2c-gpio,delay-us = <2>;        /* ~100 kHz */
-
-It is the clock half period in microseconds and for the 100 kHz
-(standard) I2C clock speed, it should be 5. Due to rounding
-(up) that gives a measured clock speed of around 88 kHz on
-my equipment. Crappy I2C devices *** seem to cope better
-with 12% below the standard clock frequency than 80% above
-it.
-
-Doug Gilbert
-
-** broken in my tests on the FoxG20 with lk 3.9.0-rc5
-
-*** if my experience is anything to go by there are many
-     dodgy I2C devices, probably using I2C bit banging
-     code borrowed from Wikipedia.
-
-
-
---------------040402050103090900030309
-Content-Type: text/x-patch;
- name="ariag25_390rc5_dg1.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="ariag25_390rc5_dg1.patch"
-
---- a/arch/arm/boot/dts/ariag25.dts_orig	2013-04-04 11:58:40.518122816 -0400
-+++ b/arch/arm/boot/dts/at91-ariag25.dts	2013-04-03 15:23:09.240385849 -0400
-@@ -1,5 +1,5 @@
- /*
-- * ariag25.dts - Device Tree file for Acme Systems Aria G25 (AT91SAM9G25 based)
-+ * at91-ariag25.dts - Device Tree file for Acme Systems Aria G25 (AT91SAM9G25 based)
-  *
-  * Copyright (C) 2013 Douglas Gilbert <dgilbert@interlog.com>,
-  *                    Robert Nelson <robertcnelson@gmail.com>
-@@ -21,6 +21,7 @@
- 		serial3 = &usart2;
- 		serial4 = &usart3;
- 		serial5 = &uart0;
-+		serial6 = &uart1;
- 	};
- 
- 	chosen {
-@@ -121,6 +122,16 @@
- 				status = "okay";
- 			};
- 
-+			uart1: serial@f8044000 {
-+				compatible = "atmel,at91sam9260-usart";
-+				reg = <0xf8044000 0x200>;
-+				interrupts = <16 4 5>;
-+				pinctrl-names = "default";
-+				pinctrl-0 = <&pinctrl_uart1>;
-+				/* Remove following or change to "okay" if wanted */
-+				status = "disabled";
-+			};
-+
- 			spi0: spi@f0000000 {
- 				status = "okay";
- 				cs-gpios = <&pioA 14 0>, <0>, <0>, <0>;
-
---------------040402050103090900030309--
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
