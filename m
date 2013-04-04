@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764262Ab3DDIIv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 04:08:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54332 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1764157Ab3DDIIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 04:08:47 -0400
-Date: Thu, 4 Apr 2013 10:08:45 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Robin Holt <holt@sgi.com>
-Cc: Cliff Wickman <cpw@sgi.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, x86@kernel.org, wli@holomorphy.com
-Subject: Re: [PATCH] mm, x86: Do not zero hugetlbfs pages at boot. -v2
-Message-ID: <20130404080845.GC29911@dhcp22.suse.cz>
-References: <E1UDME8-00041J-B4@eag09.americas.sgi.com>
- <20130314085138.GA11636@dhcp22.suse.cz>
- <20130403024344.GA4384@sgi.com>
- <20130403140247.GJ16471@dhcp22.suse.cz>
- <20130403170012.GY29151@sgi.com>
+	id S933441Ab3DDIKU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 04:10:20 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46909 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1764264Ab3DDIKN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 04:10:13 -0400
+Date: Thu, 4 Apr 2013 09:10:11 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nathan Zimmer <nzimmer@sgi.com>
+Subject: Re: linux-next: manual merge of the akpm tree with the vfs tree
+Message-ID: <20130404081011.GO21522@ZenIV.linux.org.uk>
+References: <20130404172648.27834d12cbb68338f4b89482@canb.auug.org.au>
+ <20130403235634.6bc72c39.akpm@linux-foundation.org>
+ <20130404000253.2fc9c75d.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130403170012.GY29151@sgi.com>
+In-Reply-To: <20130404000253.2fc9c75d.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 03-04-13 12:00:12, Robin Holt wrote:
-> On Wed, Apr 03, 2013 at 04:02:47PM +0200, Michal Hocko wrote:
-> > On Tue 02-04-13 21:43:44, Robin Holt wrote:
-> > [...]
-> > > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> > > index ca9a7c6..7683f6a 100644
-> > > --- a/mm/hugetlb.c
-> > > +++ b/mm/hugetlb.c
-> > > @@ -1185,7 +1185,7 @@ int __weak alloc_bootmem_huge_page(struct hstate *h)
-> > >  	while (nr_nodes) {
-> > >  		void *addr;
-> > >  
-> > > -		addr = __alloc_bootmem_node_nopanic(
-> > > +		addr = __alloc_bootmem_node_nopanic_notzeroed(
-> > >  				NODE_DATA(hstate_next_node_to_alloc(h,
-> > >  						&node_states[N_MEMORY])),
-> > >  				huge_page_size(h), huge_page_size(h), 0);
-> > 
-> > Ohh, and powerpc seems to have its own opinion how to allocate huge
-> > pages. See arch/powerpc/mm/hugetlbpage.c
+On Thu, Apr 04, 2013 at 12:02:53AM -0700, Andrew Morton wrote:
+
+> > Well perhaps the vfs tree should start paying some attention to the
+> > rest of the world, particularly after -rc5.
 > 
-> Do I need to address their allocations?  Can I leave that part of the
-> changes as something powerpc can address if they are affected by this?
+> I can't even find this "lift sb_start_write() out of ->write()".  Not on fsdevel,
+> not on lkml.  What the heck is it and why was it so important?
 
-I mentioned powerpc basically because I encountered it as the only
-alternative implementation of alloc_bootmem_huge_page. I haven't checked
-how it does the job and now that I am looking closer it uses memblock
-allocator so it would need a separate fix.
-I guess you are right saying that this should be handled when the need
-arises.
+Deadlocks around splice; see the threads re overlayfs/unionmount/aufs and
+deadlocks in their copyup implementations.  See also XFS freeze-related
+deadlocks, etc.
 
--- 
-Michal Hocko
-SUSE Labs
+The thing is, sb_start_write() is pretty high in locking hierarchy (outside
+->i_mutex, etc.), but ->splice_write() and friends had it buried pretty
+deep.  With distinctly unpleasant results, including ->..._write() instances
+using generic ones (which took the lock) *and* doing some IO outside of those
+(ext4, for example; ocfs2 also looked fishy in that respect, IIRC).
+
+The obvious solution is to lift taking that lock out of the methods, which
+had been done.  It had been discussed on fsdevel and sat in #experimental for
+several weeks; time for it to go into #for-next.
