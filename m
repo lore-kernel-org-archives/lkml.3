@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761012Ab3DDNqq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 09:46:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39907 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760835Ab3DDNqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 09:46:45 -0400
-Date: Thu, 4 Apr 2013 15:45:45 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] THP: Use explicit memory barrier
-Message-ID: <20130404134545.GF3423@redhat.com>
-References: <1364773535-26264-1-git-send-email-minchan@kernel.org>
- <alpine.DEB.2.02.1304011634530.21603@chino.kir.corp.google.com>
- <20130402003746.GA30444@blaptop>
- <alpine.LNX.2.00.1304021221240.5808@eggly.anvils>
- <20130403001401.GC16026@blaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130403001401.GC16026@blaptop>
+	id S1761071Ab3DDNrF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 09:47:05 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:64336 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761032Ab3DDNrD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 09:47:03 -0400
+Message-ID: <1365083221.1830.51.camel@x61.thuisdomein>
+Subject: [PATCH v2] MIPS: Alchemy: Fix typo "CONFIG_DEBUG_PCI"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Date: Thu, 04 Apr 2013 15:47:01 +0200
+In-Reply-To: <515D69B6.6040302@cogentembedded.com>
+References: <1365074738.1830.38.camel@x61.thuisdomein>
+	 <515D69B6.6040302@cogentembedded.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Apr 2013 13:47:01.0691 (UTC) FILETIME=[E26BE8B0:01CE313A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 03, 2013 at 09:14:01AM +0900, Minchan Kim wrote:
->  	clear_huge_page(page, haddr, HPAGE_PMD_NR);
-> +	/*
-> +	 * The memory barrier inside __SetPageUptodate makes sure that
-> +	 * clear_huge_page writes become visible after the set_pmd_at()
+Commit 7517de348663b08a808aff44b5300e817157a568 ("MIPS: Alchemy: Redo
+PCI as platform driver") added a reference to CONFIG_DEBUG_PCI. Change
+it to CONFIG_PCI_DEBUG, as that is a valid Kconfig macro.
 
-s/after/before/
+Also add a newline to a debugging printk that this fix enables.
 
-> +	 * write.
-> +	 */
->  	__SetPageUptodate(page);
->  
->  	spin_lock(&mm->page_table_lock);
-> @@ -724,12 +729,6 @@ static int __do_huge_pmd_anonymous_page(struct mm_struct *mm,
->  	} else {
->  		pmd_t entry;
->  		entry = mk_huge_pmd(page, vma);
-> -		/*
-> -		 * The spinlocking to take the lru_lock inside
-> -		 * page_add_new_anon_rmap() acts as a full memory
-> -		 * barrier to be sure clear_huge_page writes become
-> -		 * visible after the set_pmd_at() write.
-> -		 */
->  		page_add_new_anon_rmap(page, vma, haddr);
->  		set_pmd_at(mm, haddr, pmd, entry);
->  		pgtable_trans_huge_deposit(mm, pgtable);
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 494526a..d0da51e 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -3196,6 +3196,11 @@ static int do_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  	page = alloc_zeroed_user_highpage_movable(vma, address);
->  	if (!page)
->  		goto oom;
-> +	/*
-> +	 * The memory barrier inside __SetPageUptodate makes sure that
-> +	 * preceeding stores to the page contents become visible after
-> +	 * the set_pte_at() write.
-> +	 */
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+This version has a verbose commit explanation, as Sergei requested.
+Still entirely untested.
 
-s/after/before/
+ arch/mips/pci/pci-alchemy.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-After the above correction it looks nice cleanup, thanks!
-
-Acked-by: Andrea Arcangeli <aarcange@redhat.com>
+diff --git a/arch/mips/pci/pci-alchemy.c b/arch/mips/pci/pci-alchemy.c
+index 38a80c8..d1faece 100644
+--- a/arch/mips/pci/pci-alchemy.c
++++ b/arch/mips/pci/pci-alchemy.c
+@@ -19,7 +19,7 @@
+ #include <asm/mach-au1x00/au1000.h>
+ #include <asm/tlbmisc.h>
+ 
+-#ifdef CONFIG_DEBUG_PCI
++#ifdef CONFIG_PCI_DEBUG
+ #define DBG(x...) printk(KERN_DEBUG x)
+ #else
+ #define DBG(x...) do {} while (0)
+@@ -162,7 +162,7 @@ static int config_access(unsigned char access_type, struct pci_bus *bus,
+ 	if (status & (1 << 29)) {
+ 		*data = 0xffffffff;
+ 		error = -1;
+-		DBG("alchemy-pci: master abort on cfg access %d bus %d dev %d",
++		DBG("alchemy-pci: master abort on cfg access %d bus %d dev %d\n",
+ 		    access_type, bus->number, device);
+ 	} else if ((status >> 28) & 0xf) {
+ 		DBG("alchemy-pci: PCI ERR detected: dev %d, status %lx\n",
+-- 
+1.7.11.7
 
