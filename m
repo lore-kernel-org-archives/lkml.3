@@ -1,49 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933613Ab3DDIcJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 04:32:09 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:38288 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933593Ab3DDIcG (ORCPT
+	id S933799Ab3DDI45 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 04:56:57 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:36153 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933776Ab3DDI4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 04:32:06 -0400
+	Thu, 4 Apr 2013 04:56:53 -0400
 MIME-Version: 1.0
-In-Reply-To: <fae1030e861c5dfd00df8f03526b0bdc5156de4d.1364205812.git.viresh.kumar@linaro.org>
-References: <cover.1364205812.git.viresh.kumar@linaro.org>
-	<fae1030e861c5dfd00df8f03526b0bdc5156de4d.1364205812.git.viresh.kumar@linaro.org>
-Date: Thu, 4 Apr 2013 14:02:05 +0530
-Message-ID: <CAKohpo=yppB4o+_31dEfoo3Sd=7KnqK1ZfDoMBDTT1ONxkFyOA@mail.gmail.com>
-Subject: Re: [PATCH 5/9] cpufreq: integrator: move cpufreq driver to drivers/cpufreq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: arvind.chauhan@arm.com, robin.randhawa@arm.com, Steve.Bannister@arm.com,
-        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        arnd.bergmann@linaro.org, linux@arm.linux.org.uk,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
+In-Reply-To: <20130404071832.GD30287@arwen.pp.htv.fi>
+References: <20130403141831.GJ14680@arwen.pp.htv.fi>
+	<Pine.LNX.4.44L0.1304031410320.2027-100000@iolanthe.rowland.org>
+	<20130404071832.GD30287@arwen.pp.htv.fi>
+Date: Thu, 4 Apr 2013 14:26:51 +0530
+Message-ID: <CAFp+6iF9VJ5EneyVA9c6ggEa_RiUw0ZRBTRgh_gy--5ubP=8=Q@mail.gmail.com>
+Subject: Re: [PATCH v3 01/11] usb: phy: Add APIs for runtime power management
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: balbi@ti.com
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        sarah.a.sharp@linux.intel.com, rob.herring@calxeda.com,
+        kgene.kim@samsung.com, dianders@chromium.org, t.figa@samsung.com,
+        p.paneri@samsung.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi,
 
-On 25 March 2013 15:41, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> This patch moves cpufreq driver of ARM based integrator platform to
-> drivers/cpufreq.
+
+On Thu, Apr 4, 2013 at 12:48 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
 >
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  arch/arm/Kconfig                                              | 11 -----------
->  arch/arm/mach-integrator/Makefile                             |  1 -
->  drivers/cpufreq/Kconfig.arm                                   |  8 ++++++++
->  drivers/cpufreq/Makefile                                      |  1 +
->  .../cpu.c => drivers/cpufreq/integrator-cpufreq.c             |  2 --
->  5 files changed, 9 insertions(+), 14 deletions(-)
->  rename arch/arm/mach-integrator/cpu.c => drivers/cpufreq/integrator-cpufreq.c (99%)
+> On Wed, Apr 03, 2013 at 02:14:02PM -0400, Alan Stern wrote:
+>> > > Lets suppose DWC3 enables runtime_pm on USB 2 type phy,
+>> > > it will try to go into suspend state and thereby call runtime_suspend(), if any.
+>> > > And PHY will come to active state only when its consumer wakes it up,
+>> > > and this consumer is operational
+>> > > only when its related PHY is in fully functional state.
+>> > > So do we have a situation in which this PHY goes into low power state
+>> > > in its runtime_suspend(),
+>> > > resulting in non-detection of devices on further attach (since PHY is
+>> > > in low power state) ?
+>> > >
+>> > > Will the controller (like EHCI/OHCI) be functional now ?
+>> >
+>> > ehci/ohci need to cope with that by calling usb_phy_autopm_get_sync(),
+>> > right ? (so does DWC3 :-)
+>>
+>> Maybe you guys have already got this all figured out -- if so, feel
+>> free to ignore this email.
+>>
+>> Some subsystems handle this issue by calling pm_runtime_get_sync()
+>> before probing a driver and pm_runtime_put_sync() after unbinding the
+>> driver.  If the driver is runtime-PM-enabled, it then does its own
+>> put_sync near the end of its probe routine and get_sync in its release
+>> routine.
+>
+> sounds a bit 'fishy' to me... So a separate entity would call
+> pm_runtime_get_sync(), even when we don't have registered dev_pm_ops,
+> then drivers need to check if runtime_pm is enabled and call
+> pm_runtime_put*() conditionally before returning from probe(). One
+> remove, we might have another issue: device is already runtime_suspended
+> (due to e.g. autosuspend) when module is removed, a call to
+> pm_runtime_put_sync() will be unbalanced. No ?
 
-I didn't knew that you are maintaining integrator now a days.
-Can i have your comments/Ack for this patch?
+May be i am misinterpreting !!
+If PHYs are runtime-PM enabled (PHY probe calls *runtime_enable*),
+then the consumers
+need to call pm_runtime_get_sync whever they want to access PHY.
+Besides PHYs also need to *put_sync* just before their probe is
+finishing, so that it's
+availbale for autosuspend.
+
+I, however didn't understand the need of PHY to *get_sync* itself in
+release routine.
+
+
+
+-- 
+Thanks & Regards
+Vivek
