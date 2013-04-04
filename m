@@ -1,94 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764778Ab3DDTxs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 15:53:48 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:38578 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764711Ab3DDTxr (ORCPT
+	id S1764179Ab3DDT6s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 15:58:48 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:46522 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763740Ab3DDT6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 15:53:47 -0400
+	Thu, 4 Apr 2013 15:58:47 -0400
 MIME-Version: 1.0
-X-Originating-IP: [217.132.7.209]
-In-Reply-To: <0000013dd64a36f3-60dd0774-a44b-4780-93b7-af6b8baac87f-000000@email.amazonses.com>
-References: <1364993190-13784-1-git-send-email-fweisbec@gmail.com>
-	<0000013dd63de989-c6980852-2aac-4597-ba34-3b2efaa24c17-000000@email.amazonses.com>
-	<CAOtvUMcs5F89biz_xtVSBAPVftfJk+0VDvxLfm7-kQ3q6x0Ynw@mail.gmail.com>
-	<0000013dd64a36f3-60dd0774-a44b-4780-93b7-af6b8baac87f-000000@email.amazonses.com>
-Date: Thu, 4 Apr 2013 22:48:20 +0300
-Message-ID: <CAOtvUMfiaKKRpPGK_MH7364RhB_7VXzcWMBNNJNaSSM6upEngw@mail.gmail.com>
-Subject: Re: [RFC GIT PULL] nohz: Kconfig layout improvements
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
+In-Reply-To: <CAGXu5j+jpXrcLDyAV+p81pjapaQeKQTMz4+JXjKj03DV-yoC=w@mail.gmail.com>
+References: <1363618233-6375-1-git-send-email-nschichan@freebox.fr>
+	<1363618233-6375-2-git-send-email-nschichan@freebox.fr>
+	<CAGXu5j+jpXrcLDyAV+p81pjapaQeKQTMz4+JXjKj03DV-yoC=w@mail.gmail.com>
+Date: Thu, 4 Apr 2013 14:58:46 -0500
+Message-ID: <CABqD9hZp7FiQjvLrauV1rkUqgXZyCxmbOKA+6rzpDNEEfJ0NPw@mail.gmail.com>
+Subject: Re: [PATCH V2 1/3] seccomp: add generic code for jitted seccomp filters.
+From: Will Drewry <wad@chromium.org>
+To: Nicolas Schichan <nschichan@freebox.fr>
+Cc: Mircea Gherzan <mgherzan@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Kees Cook <keescook@chromium.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Michal Marek <mmarek@suse.cz>
+        Eric Paris <eparis@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-[ Sorry for dropping LKML on my previous email. It was caused by
-replying from my smartphone. Adding everyone back now ]
-
-On Thu, Apr 4, 2013 at 9:23 PM, Christoph Lameter <cl@linux.com> wrote:
+On Mon, Apr 1, 2013 at 4:53 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Mon, Mar 18, 2013 at 7:50 AM, Nicolas Schichan <nschichan@freebox.fr> wrote:
+>> Architecture must select HAVE_SECCOMP_FILTER_JIT and implement
+>> seccomp_jit_compile() and seccomp_jit_free() if they intend to support
+>> jitted seccomp filters.
+>>
+>> struct seccomp_filter has been moved to <linux/seccomp.h> to make its
+>> content available to the jit compilation code.
+>>
+>> In a way similar to the net BPF, the jit compilation code is expected
+>> to updates struct seccomp_filter.bpf_func pointer to the generated
+>> code.
+>>
+>> Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
 >
-> On Thu, 4 Apr 2013, Gilad Ben-Yossef wrote:
+> Acked-by: Kees Cook <keescook@chromium.org>
 >
-> > The vmstat work item leaving a timer running on the CPU, perhaps?
->
-> Of course there is always a timer running for VM work.
->
-> > Check /proc/timers
->
-> Not compiled in.
->
-> > I've sent a patch previously to make vmstat disable the timer if no VM work
-> > has been detected since the last run. Maybe you can try it? It was against
-> > 3.4 though. Probably won't apply...
->
-> Can you repost it? CC me on future postings. I wrote the vmstat handling.
->
+> I'd love to see this for x86 too. I suspect it'd be a small change
+> after this series lands.
 
-Here is the last version I posted over a year ago. You were CCed and
-provided very useful feedback:
+Agreed - and thanks for working through the necessary changes!
 
-http://lkml.indiana.edu/hypermail/linux/kernel/1205.0/01291.html
-
-Based on your feedback I re-spun them but never gotten around to port
-them to recent kernel and post them. The latest (yet unpublished
-versions) are here:
-
-https://github.com/gby/linux/commit/04e041327036772383c14ebdc450f522d782f264
-https://github.com/gby/linux/commit/f5b8ae815670a289af9ff22ad83da3295472e63c
-
-I'll try to resurrect them, but maybe they'll prove useful as a
-reference as they are in the meantime.
-
-Hope it helps,
-Gilad
-
-
---
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
+Acked-By: Will Drewry <wad@chromium.org>
+(for the series)
