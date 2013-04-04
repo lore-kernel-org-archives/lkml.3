@@ -1,130 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758557Ab3DDJbh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 05:31:37 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:63795 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757801Ab3DDJbd (ORCPT
+	id S1758652Ab3DDJc0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 05:32:26 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:42899 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758594Ab3DDJcZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 05:31:33 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 2/2] mfd: db8500-prcmu: Support platform dependant device selection
-Date: Thu,  4 Apr 2013 10:31:17 +0100
-Message-Id: <1365067877-29459-2-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1365067877-29459-1-git-send-email-lee.jones@linaro.org>
-References: <1365067877-29459-1-git-send-email-lee.jones@linaro.org>
+	Thu, 4 Apr 2013 05:32:25 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mfd: twl4030-madc: Add support for raw value in twl4030_madc_conversion
+Date: Thu, 4 Apr 2013 11:32:20 +0200
+User-Agent: KMail/1.13.7 (Linux/3.5.0-27-generic; KDE/4.10.1; x86_64; ; )
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Anton Vorontsov <cbou@mail.ru>,
+        Keerthy <j-keerthy@ti.com>, Kyle Manna <kyle@kylemanna.com>,
+        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org
+References: <1360969010-8571-1-git-send-email-pali.rohar@gmail.com> <201303022323.06091@pali> <201303241503.29912@pali>
+In-Reply-To: <201303241503.29912@pali>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart4204324.nyTu21UEpb";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304041132.21158@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The main aim for this cycle is to have the u8540 booting to a
-console. However, the u8540 doesn't support all of the u8500
-platform devices yet. After this stage is complete we can then
-fill in the inadequacies, such as specific clock support at a
-later date. To achieve this we're placing devices supported by
-all platforms into a common device structure and the remaining
-ones into a platform specific one.
+--nextPart4204324.nyTu21UEpb
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mfd/db8500-prcmu.c |   46 +++++++++++++++++++++++++++++---------------
- 1 file changed, 30 insertions(+), 16 deletions(-)
+On Sunday 24 March 2013 15:03:29 Pali Roh=C3=A1r wrote:
+> On Saturday 02 March 2013 23:23:05 Pali Roh=C3=A1r wrote:
+> > On Friday 15 February 2013 23:56:49 Pali Roh=C3=A1r wrote:
+> > > Driver twl4030-madc has hardcoded channel types (10 -
+> > > battery current, 1 - battery temperature) and also
+> > > conversation data in variable twl4030_divider_ratios.
+> > > These hardcoded channels are incorrect for Nokia RX-51
+> > > board (where is channel 0 - battery temperature).
+> > >=20
+> > > For Nokia RX-51 there is rx51_battery power_supply driver
+> > > which reporting battery information via
+> > > twl4030_madc_conversion. But this driver needs raw values
+> > > (not converted via some hardcoded functions). So this
+> > > patch adding new parameter "raw" to struct
+> > > twl4030_madc_request which tell twl4030-madc driver to
+> > > not convert values, but rather return raw.
+> > >=20
+> > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > > ---
+> > >=20
+> > >  drivers/mfd/twl4030-madc.c       |   14 ++++++++++----
+> > >  include/linux/i2c/twl4030-madc.h |    2 ++
+> > >  2 files changed, 12 insertions(+), 4 deletions(-)
+> >=20
+> > Hello, can somebody review this twl4030-madc patch?
+>=20
+> Bump.
+>=20
+> Can some of mfd maintainers look at this patch and include it
+> to mfd tree? It is needed for rx51_battery power supply
+> driver.
 
-diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-index 1c4edbf8..37ece93 100644
---- a/drivers/mfd/db8500-prcmu.c
-+++ b/drivers/mfd/db8500-prcmu.c
-@@ -24,6 +24,7 @@
- #include <linux/jiffies.h>
- #include <linux/bitops.h>
- #include <linux/fs.h>
-+#include <linux/of.h>
- #include <linux/platform_device.h>
- #include <linux/uaccess.h>
- #include <linux/irqchip/arm-gic.h>
-@@ -3107,19 +3108,7 @@ static struct ux500_wdt_data db8500_wdt_pdata = {
- 	.has_28_bits_resolution = true,
- };
- 
--static struct mfd_cell db8500_prcmu_devs[] = {
--	{
--		.name = "db8500-prcmu-regulators",
--		.of_compatible = "stericsson,db8500-prcmu-regulator",
--		.platform_data = &db8500_regulators,
--		.pdata_size = sizeof(db8500_regulators),
--	},
--	{
--		.name = "cpufreq-ux500",
--		.of_compatible = "stericsson,cpufreq-ux500",
--		.platform_data = &db8500_cpufreq_table,
--		.pdata_size = sizeof(db8500_cpufreq_table),
--	},
-+static struct mfd_cell common_prcmu_devs[] = {
- 	{
- 		.name = "ux500_wdt",
- 		.platform_data = &db8500_wdt_pdata,
-@@ -3135,6 +3124,21 @@ static struct mfd_cell db8500_prcmu_devs[] = {
- 	},
- };
- 
-+static struct mfd_cell db8500_prcmu_devs[] = {
-+	{
-+		.name = "db8500-prcmu-regulators",
-+		.of_compatible = "stericsson,db8500-prcmu-regulator",
-+		.platform_data = &db8500_regulators,
-+		.pdata_size = sizeof(db8500_regulators),
-+	},
-+	{
-+		.name = "cpufreq-ux500",
-+		.of_compatible = "stericsson,cpufreq-ux500",
-+		.platform_data = &db8500_cpufreq_table,
-+		.pdata_size = sizeof(db8500_cpufreq_table),
-+	},
-+};
-+
- static void db8500_prcmu_update_cpufreq(void)
- {
- 	if (prcmu_has_arm_maxopp()) {
-@@ -3184,7 +3188,7 @@ static int db8500_prcmu_probe(struct platform_device *pdev)
- 
- 	db8500_irq_init(np);
- 
--	for (i = 0; i < ARRAY_SIZE(db8500_prcmu_devs); i++) {
-+	for (i = 0; i < ARRAY_SIZE(common_prcmu_devs); i++) {
- 		if (!strcmp(db8500_prcmu_devs[i].name, "ab8500-core")) {
- 			db8500_prcmu_devs[i].platform_data = pdata->ab_platdata;
- 			db8500_prcmu_devs[i].pdata_size = sizeof(struct ab8500_platform_data);
-@@ -3195,13 +3199,23 @@ static int db8500_prcmu_probe(struct platform_device *pdev)
- 
- 	db8500_prcmu_update_cpufreq();
- 
--	err = mfd_add_devices(&pdev->dev, 0, db8500_prcmu_devs,
--			      ARRAY_SIZE(db8500_prcmu_devs), NULL, 0, NULL);
-+	err = mfd_add_devices(&pdev->dev, 0, common_prcmu_devs,
-+			      ARRAY_SIZE(common_prcmu_devs), NULL, 0, NULL);
- 	if (err) {
- 		pr_err("prcmu: Failed to add subdevices\n");
- 		return err;
- 	}
- 
-+	/* TODO: Remove restriction when clk definitions are available. */
-+	if (!of_machine_is_compatible("st-ericsson,u8540")) {
-+		err = mfd_add_devices(&pdev->dev, 0, db8500_prcmu_devs,
-+				      ARRAY_SIZE(db8500_prcmu_devs), NULL, 0, NULL);
-+		if (err) {
-+			pr_err("prcmu: Failed to add subdevices\n");
-+			return err;
-+		}
-+	}
-+
- 	pr_info("DB8500 PRCMU initialized\n");
- 
- no_irq_return:
--- 
-1.7.10.4
+CCing Tony, can you look at this patch?
 
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart4204324.nyTu21UEpb
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlFdSKUACgkQi/DJPQPkQ1J3FwCgsdsQMZ9ABbG+1TJ9cLK8pSCm
+XgoAn03qdIow1/rBhSL214sDBT7RJZZW
+=kBoX
+-----END PGP SIGNATURE-----
+
+--nextPart4204324.nyTu21UEpb--
