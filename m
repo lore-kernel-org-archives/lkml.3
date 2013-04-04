@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763256Ab3DDE5j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 00:57:39 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:33367 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763197Ab3DDE5i (ORCPT
+	id S1763296Ab3DDFEY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 01:04:24 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42571 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763259Ab3DDFEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 00:57:38 -0400
-Message-ID: <515D083A.4010704@gmail.com>
-Date: Thu, 04 Apr 2013 12:57:30 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Thu, 4 Apr 2013 01:04:23 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <515D01CC.2060606@prisktech.co.nz>
+References: <1364970291-17721-1-git-send-email-linux@prisktech.co.nz> <CACRpkdZAtgpfA5rZ_C=eKDDOE9aDm=3k1QDava=EGL2BaoV+0g@mail.gmail.com> <515C9DB7.9000908@wwwdotorg.org> <515D01CC.2060606@prisktech.co.nz>
 MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/9] migrate: add migrate_entry_wait_huge()
-References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1361475708-25991-2-git-send-email-n-horiguchi@ah.jp.nec.com> <5148FB6C.4070202@gmail.com> <1363816399-c6e7mofc-mutt-n-horiguchi@ah.jp.nec.com> <514A4815.4040206@gmail.com>
-In-Reply-To: <514A4815.4040206@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCHv5 0/7] arm: vt8500: Add support for pinctrl/gpio module
+From: Stephen Warren <swarren@wwwdotorg.org>
+Date: Wed, 03 Apr 2013 23:04:16 -0600
+To: Tony Prisk <linux@prisktech.co.nz>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <robherring2@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vt8500-wm8505-linux-kernel@googlegroups.com" 
+	<vt8500-wm8505-linux-kernel@googlegroups.com>
+Message-ID: <cda13d16-0282-4483-bda7-98bb90875c77@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping!
-On 03/21/2013 07:36 AM, Simon Jeons wrote:
-> Hi Naoya,
-> On 03/21/2013 05:53 AM, Naoya Horiguchi wrote:
->> On Wed, Mar 20, 2013 at 07:57:32AM +0800, Simon Jeons wrote:
->>> Hi Naoya,
->>> On 02/22/2013 03:41 AM, Naoya Horiguchi wrote:
->>>> When we have a page fault for the address which is backed by a hugepage
->>>> under migration, the kernel can't wait correctly until the migration
->>>> finishes. This is because pte_offset_map_lock() can't get a correct
->>> It seems that current hugetlb_fault still wait hugetlb page under
->>> migration, how can it work without lock 2MB memory?
->> Hugetlb_fault() does call migration_entry_wait(), but returns immediately.
-> Could you point out to me which code in function migration_entry_wait()
-> lead to return immediately?
+Tony Prisk <linux@prisktech.co.nz> wrote:
+...
+>Can you just confirm you want:
 >
->> So page fault happens over and over again until the migration completes.
->> IOW, migration_entry_wait() is now broken for hugepage and doesn't work
->> as expected.
->>
->> Thanks,
->> Naoya
+>pinctrl: bcm2835: make use of of_property_read_u32_index()
+>
+>to be included in the pull with this series. I'll get it sent out once 
+>you let me know.
 
+That sounds fine, thanks.
+
+
+-- 
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
