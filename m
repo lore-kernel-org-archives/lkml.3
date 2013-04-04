@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763583Ab3DDGRe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 02:17:34 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:44119 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756663Ab3DDGRc (ORCPT
+	id S1763596Ab3DDGRp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 02:17:45 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:33081 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756663Ab3DDGRn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 02:17:32 -0400
-Message-ID: <515D1AF5.3010900@hitachi.com>
-Date: Thu, 04 Apr 2013 15:17:25 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: oskar.andero@sonymobile.com
-Cc: linux-kernel@vger.kernel.org, davem@davemloft.net,
-        anil.s.keshavamurthy@intel.com, ananth@in.ibm.com,
-        radovan.lekanovic@sonymobile.com, bjorn.davidsson@sonymobile.com,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH 2/4] kprobes: split blacklist into common and arch
-References: <1364977734-32267-1-git-send-email-oskar.andero@sonymobile.com> <1364977734-32267-3-git-send-email-oskar.andero@sonymobile.com>
-In-Reply-To: <1364977734-32267-3-git-send-email-oskar.andero@sonymobile.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Apr 2013 02:17:43 -0400
+Date: Thu, 4 Apr 2013 17:17:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>
+Subject: linux-next: manual merge of the akpm tree with the vfs tree
+Message-Id: <20130404171739.4ca53305020a2422e0c00f64@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__4_Apr_2013_17_17_39_+1100_AlzKg9dcn3CzinAu"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/04/03 17:28), oskar.andero@sonymobile.com wrote:
-> Some blackpoints are only valid for specific architectures. To let each
-> architecture specify its own blackpoints the list has been split in two
-> lists: common and arch. The common list is kept in kernel/kprobes.c and
-> the arch list is kept in the arch/ directory.
+--Signature=_Thu__4_Apr_2013_17_17_39_+1100_AlzKg9dcn3CzinAu
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hmm, I think you'd better merge this with patch 3/4.
+Hi Andrew,
 
-[...]
-> +static const size_t common_kprobes_blacksyms_size =
-> +			ARRAY_SIZE(common_kprobes_blacksyms);
-> +
-> +extern const char * const arch_kprobes_blacksyms[];
-> +extern const size_t arch_kprobes_blacksyms_size;
-> +
-> +static struct kprobe_blackpoint **kprobe_blacklist;
-> +static size_t kprobe_blacklist_size;
+Today's linux-next merge of the akpm tree got a conflict in fs/coredump.c
+between commit d9fe6ea81efe ("lift sb_start_write() out of ->write()")
+from the vfs tree and commit "coredump: sanitize the setting of
+signal->group_exit_code" from the akpm tree.
 
-Since the blacklist is allocated once and never be updated,
-we just need an array of struct kprobe_blackpoint, no need
-to allocate each entry.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Other parts are good for me! :)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thank you!
+diff --cc fs/coredump.c
+index 69d5141,4201338..0000000
+--- a/fs/coredump.c
++++ b/fs/coredump.c
+@@@ -636,11 -641,8 +639,10 @@@ void do_coredump(siginfo_t *siginfo
+  		goto close_fail;
+  	if (displaced)
+  		put_files_struct(displaced);
++=20
+ +	file_start_write(cprm.file);
+- 	retval =3D binfmt->core_dump(&cprm);
+- 	if (retval)
+- 		current->signal->group_exit_code |=3D 0x80;
++ 	core_dumped =3D binfmt->core_dump(&cprm);
+ +	file_end_write(cprm.file);
+ =20
+  	if (ispipe && core_pipe_limit)
+  		wait_for_dump_helpers(cprm.file);
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+--Signature=_Thu__4_Apr_2013_17_17_39_+1100_AlzKg9dcn3CzinAu
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJRXRsDAAoJEECxmPOUX5FEXz0P/2eWwUU57VM0hNBheui3z5UI
+vV8MjLqUFaAj5EIgp+DNgUKsHj8q7jEVb43WwW4NSwO0nNb2T6U4fHCHse/YhyoF
+vOPVQkQ47KjA6523pUzqpmObQNrKio/b9uzTWz+atWVB5GP1rXVLoGGnBBARS3CS
+tP6DDE5KDNJU8058ZM4qqM2vMPFdDr84eIidyHVEJfYIiQUBsrCR44T8s1dWUycD
+y3cQYdHXHP1RtMZ+W2/60LU6nbfiRU9wAJxofzNnMKsj15wglPCaLKXZ930Ve+QI
+YdHWEiM2jqob0BEL7TGcVaqzFzWs5FNo8jjPmH8bC5ZGR3aEMWEqTVtrSmkkjEFq
+fQcheh+Sv9U8ndmtsRMJ7hpLr9IkJKypYL8+GdDYuFgIyN28Z0l42xIuHj/6UN9X
+6mzmirFsRXHEfSFGuNinhJDTOzZkI3uCr7G0GcIx5L1vppvoVSkjGbcEFAZ5hkbF
+hsBjwy3xVcbEIsZBNYCJlFdkHZrKQi+1B6dquMbFmhsX4yq8GES2cZbbCSsFCP+2
+KMZgVMDzDahATQkA5ZgSDvDFyIXzdgsnIM4yrXYNMTJ7mcBdYGIf4vA50FtwyZj8
+c/IxmtTBEmOoS3Is3KqVOuscWyJRcvlPQ+AM/Zzes+H8U/v9sLKlu1I02tVf0VbN
+uahsCuqNzCReqHNUhMJJ
+=D0SE
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__4_Apr_2013_17_17_39_+1100_AlzKg9dcn3CzinAu--
