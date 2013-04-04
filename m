@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761118Ab3DDM5h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 08:57:37 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:59271 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761085Ab3DDM5c (ORCPT
+	id S1761156Ab3DDM5p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 08:57:45 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:36973 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761131Ab3DDM5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 08:57:32 -0400
+	Thu, 4 Apr 2013 08:57:41 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
@@ -14,12 +14,12 @@ Cc: robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Olof Johansson <olof@lixom.net>,
         linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH 17/18] cpufreq: powerpc: move cpufreq driver to drivers/cpufreq
-Date: Thu,  4 Apr 2013 18:24:25 +0530
-Message-Id: <027e8f1d4ac8de6351115f15a408431558510abb.1365079581.git.viresh.kumar@linaro.org>
+Subject: [PATCH 18/18] cpufreq: powerpc/platforms/cell: move cpufreq driver to drivers/cpufreq
+Date: Thu,  4 Apr 2013 18:24:26 +0530
+Message-Id: <0f989533f2e47d4d632710029bf0273082bafee3.1365079581.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1365079581.git.viresh.kumar@linaro.org>
 References: <cover.1365079581.git.viresh.kumar@linaro.org>
@@ -29,152 +29,212 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves cpufreq driver of powerpc platform to drivers/cpufreq.
+This patch moves cpufreq driver of powerpc platforms/cell to drivers/cpufreq.
 
+Cc: Arnd Bergmann <arnd@arndb.de>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Olof Johansson <olof@lixom.net>
 Cc: linuxppc-dev@lists.ozlabs.org
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
 Compile Tested only.
 
- arch/powerpc/platforms/Kconfig                     | 31 ----------------------
- arch/powerpc/platforms/pasemi/Makefile             |  1 -
- arch/powerpc/platforms/powermac/Makefile           |  2 --
- drivers/cpufreq/Kconfig.powerpc                    | 26 ++++++++++++++++++
+ arch/powerpc/platforms/cell/Kconfig                | 26 +---------------------
+ arch/powerpc/platforms/cell/Makefile               |  3 ---
+ drivers/cpufreq/Kconfig.powerpc                    | 18 +++++++++++++++
  drivers/cpufreq/Makefile                           |  3 +++
- .../cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c  |  0
- .../cpufreq/pmac32-cpufreq.c                       |  0
- .../cpufreq/pmac64-cpufreq.c                       |  0
- 8 files changed, 29 insertions(+), 34 deletions(-)
- rename arch/powerpc/platforms/pasemi/cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c (100%)
- rename arch/powerpc/platforms/powermac/cpufreq_32.c => drivers/cpufreq/pmac32-cpufreq.c (100%)
- rename arch/powerpc/platforms/powermac/cpufreq_64.c => drivers/cpufreq/pmac64-cpufreq.c (100%)
+ .../cpufreq/ppc_cbe_cpufreq.c                      |  2 +-
+ .../cpufreq/ppc_cbe_cpufreq_pervasive.c            |  3 +--
+ .../cpufreq/ppc_cbe_cpufreq_pmi.c                  |  3 +--
+ .../linux/ppc_cbe_cpufreq.h                        |  4 ++--
+ 8 files changed, 27 insertions(+), 35 deletions(-)
+ rename arch/powerpc/platforms/cell/cbe_cpufreq.c => drivers/cpufreq/ppc_cbe_cpufreq.c (99%)
+ rename arch/powerpc/platforms/cell/cbe_cpufreq_pervasive.c => drivers/cpufreq/ppc_cbe_cpufreq_pervasive.c (98%)
+ rename arch/powerpc/platforms/cell/cbe_cpufreq_pmi.c => drivers/cpufreq/ppc_cbe_cpufreq_pmi.c (99%)
+ rename arch/powerpc/platforms/cell/cbe_cpufreq.h => include/linux/ppc_cbe_cpufreq.h (82%)
 
-diff --git a/arch/powerpc/platforms/Kconfig b/arch/powerpc/platforms/Kconfig
-index 52de8bc..46a223f 100644
---- a/arch/powerpc/platforms/Kconfig
-+++ b/arch/powerpc/platforms/Kconfig
-@@ -194,37 +194,6 @@ config PPC_IO_WORKAROUNDS
+diff --git a/arch/powerpc/platforms/cell/Kconfig b/arch/powerpc/platforms/cell/Kconfig
+index 53aaefe..9978f59 100644
+--- a/arch/powerpc/platforms/cell/Kconfig
++++ b/arch/powerpc/platforms/cell/Kconfig
+@@ -113,34 +113,10 @@ config CBE_THERM
+ 	default m
+ 	depends on CBE_RAS && SPU_BASE
  
- source "drivers/cpufreq/Kconfig"
+-config CBE_CPUFREQ
+-	tristate "CBE frequency scaling"
+-	depends on CBE_RAS && CPU_FREQ
+-	default m
+-	help
+-	  This adds the cpufreq driver for Cell BE processors.
+-	  For details, take a look at <file:Documentation/cpu-freq/>.
+-	  If you don't have such processor, say N
+-
+-config CBE_CPUFREQ_PMI_ENABLE
+-	bool "CBE frequency scaling using PMI interface"
+-	depends on CBE_CPUFREQ
+-	default n
+-	help
+-	  Select this, if you want to use the PMI interface
+-	  to switch frequencies. Using PMI, the
+-	  processor will not only be able to run at lower speed,
+-	  but also at lower core voltage.
+-
+-config CBE_CPUFREQ_PMI
+-	tristate
+-	depends on CBE_CPUFREQ_PMI_ENABLE
+-	default CBE_CPUFREQ
+-
+ config PPC_PMI
+ 	tristate
+ 	default y
+-	depends on CBE_CPUFREQ_PMI || PPC_IBM_CELL_POWERBUTTON
++	depends on CPU_FREQ_CBE_PMI || PPC_IBM_CELL_POWERBUTTON
+ 	help
+ 	  PMI (Platform Management Interrupt) is a way to
+ 	  communicate with the BMC (Baseboard Management Controller).
+diff --git a/arch/powerpc/platforms/cell/Makefile b/arch/powerpc/platforms/cell/Makefile
+index a4a8935..fe053e7 100644
+--- a/arch/powerpc/platforms/cell/Makefile
++++ b/arch/powerpc/platforms/cell/Makefile
+@@ -5,9 +5,6 @@ obj-$(CONFIG_PPC_CELL_NATIVE)		+= iommu.o setup.o spider-pic.o \
+ obj-$(CONFIG_CBE_RAS)			+= ras.o
  
--menu "CPU Frequency drivers"
--	depends on CPU_FREQ
--
--config CPU_FREQ_PMAC
--	bool "Support for Apple PowerBooks"
--	depends on ADB_PMU && PPC32
--	select CPU_FREQ_TABLE
--	help
--	  This adds support for frequency switching on Apple PowerBooks,
--	  this currently includes some models of iBook & Titanium
--	  PowerBook.
--
--config CPU_FREQ_PMAC64
--	bool "Support for some Apple G5s"
--	depends on PPC_PMAC && PPC64
--	select CPU_FREQ_TABLE
--	help
--	  This adds support for frequency switching on Apple iMac G5,
--	  and some of the more recent desktop G5 machines as well.
--
--config PPC_PASEMI_CPUFREQ
--	bool "Support for PA Semi PWRficient"
--	depends on PPC_PASEMI
--	default y
--	select CPU_FREQ_TABLE
--	help
--	  This adds the support for frequency switching on PA Semi
--	  PWRficient processors.
--
--endmenu
--
- menu "CPUIdle driver"
+ obj-$(CONFIG_CBE_THERM)			+= cbe_thermal.o
+-obj-$(CONFIG_CBE_CPUFREQ_PMI)		+= cbe_cpufreq_pmi.o
+-obj-$(CONFIG_CBE_CPUFREQ)		+= cbe-cpufreq.o
+-cbe-cpufreq-y				+= cbe_cpufreq_pervasive.o cbe_cpufreq.o
+ obj-$(CONFIG_CBE_CPUFREQ_SPU_GOVERNOR)	+= cpufreq_spudemand.o
  
- source "drivers/cpuidle/Kconfig"
-diff --git a/arch/powerpc/platforms/pasemi/Makefile b/arch/powerpc/platforms/pasemi/Makefile
-index ce6d789..8e8d4ca 100644
---- a/arch/powerpc/platforms/pasemi/Makefile
-+++ b/arch/powerpc/platforms/pasemi/Makefile
-@@ -1,3 +1,2 @@
- obj-y	+= setup.o pci.o time.o idle.o powersave.o iommu.o dma_lib.o misc.o
- obj-$(CONFIG_PPC_PASEMI_MDIO)	+= gpio_mdio.o
--obj-$(CONFIG_PPC_PASEMI_CPUFREQ) += cpufreq.o
-diff --git a/arch/powerpc/platforms/powermac/Makefile b/arch/powerpc/platforms/powermac/Makefile
-index ea47df6..52c6ce1 100644
---- a/arch/powerpc/platforms/powermac/Makefile
-+++ b/arch/powerpc/platforms/powermac/Makefile
-@@ -9,8 +9,6 @@ obj-y				+= pic.o setup.o time.o feature.o pci.o \
- 				   sleep.o low_i2c.o cache.o pfunc_core.o \
- 				   pfunc_base.o udbg_scc.o udbg_adb.o
- obj-$(CONFIG_PMAC_BACKLIGHT)	+= backlight.o
--obj-$(CONFIG_CPU_FREQ_PMAC)	+= cpufreq_32.o
--obj-$(CONFIG_CPU_FREQ_PMAC64)	+= cpufreq_64.o
- # CONFIG_NVRAM is an arch. independent tristate symbol, for pmac32 we really
- # need this to be a bool.  Cheat here and pretend CONFIG_NVRAM=m is really
- # CONFIG_NVRAM=y
+ obj-$(CONFIG_PPC_IBM_CELL_POWERBUTTON)	+= cbe_powerbutton.o
 diff --git a/drivers/cpufreq/Kconfig.powerpc b/drivers/cpufreq/Kconfig.powerpc
-index e76992f..2e5a007 100644
+index 2e5a007..9e1ae94 100644
 --- a/drivers/cpufreq/Kconfig.powerpc
 +++ b/drivers/cpufreq/Kconfig.powerpc
-@@ -5,3 +5,29 @@ config CPU_FREQ_MAPLE
- 	help
- 	  This adds support for frequency switching on Maple 970FX
- 	  Evaluation Board and compatible boards (IBM JS2x blades).
-+
-+config CPU_FREQ_PMAC
-+	bool "Support for Apple PowerBooks"
-+	depends on ADB_PMU && PPC32
-+	select CPU_FREQ_TABLE
+@@ -1,3 +1,21 @@
++config CPU_FREQ_CBE
++	tristate "CBE frequency scaling"
++	depends on CBE_RAS && PPC_CELL
++	default m
 +	help
-+	  This adds support for frequency switching on Apple PowerBooks,
-+	  this currently includes some models of iBook & Titanium
-+	  PowerBook.
++	  This adds the cpufreq driver for Cell BE processors.
++	  For details, take a look at <file:Documentation/cpu-freq/>.
++	  If you don't have such processor, say N
 +
-+config CPU_FREQ_PMAC64
-+	bool "Support for some Apple G5s"
-+	depends on PPC_PMAC && PPC64
-+	select CPU_FREQ_TABLE
++config CPU_FREQ_CBE_PMI
++	bool "CBE frequency scaling using PMI interface"
++	depends on CPU_FREQ_CBE
++	default n
 +	help
-+	  This adds support for frequency switching on Apple iMac G5,
-+	  and some of the more recent desktop G5 machines as well.
++	  Select this, if you want to use the PMI interface to switch
++	  frequencies. Using PMI, the processor will not only be able to run at
++	  lower speed, but also at lower core voltage.
 +
-+config PPC_PASEMI_CPUFREQ
-+	bool "Support for PA Semi PWRficient"
-+	depends on PPC_PASEMI
-+	select CPU_FREQ_TABLE
-+	default y
-+	help
-+	  This adds the support for frequency switching on PA Semi
-+	  PWRficient processors.
+ config CPU_FREQ_MAPLE
+ 	bool "Support for Maple 970FX Evaluation Board"
+ 	depends on PPC_MAPLE
 diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index db96d74..7b16092f 100644
+index 7b16092f..bfefa22 100644
 --- a/drivers/cpufreq/Makefile
 +++ b/drivers/cpufreq/Makefile
-@@ -79,6 +79,9 @@ obj-$(CONFIG_ARCH_TEGRA)		+= tegra-cpufreq.o
- ##################################################################################
- # PowerPC platform drivers
- obj-$(CONFIG_CPU_FREQ_MAPLE)		+= maple-cpufreq.o
-+obj-$(CONFIG_CPU_FREQ_PMAC)		+= pmac32-cpufreq.o
-+obj-$(CONFIG_CPU_FREQ_PMAC64)		+= pmac64-cpufreq.o
-+obj-$(CONFIG_PPC_PASEMI_CPUFREQ)	+= pasemi-cpufreq.o
+@@ -78,6 +78,9 @@ obj-$(CONFIG_ARCH_TEGRA)		+= tegra-cpufreq.o
  
  ##################################################################################
- # Other platform drivers
-diff --git a/arch/powerpc/platforms/pasemi/cpufreq.c b/drivers/cpufreq/pasemi-cpufreq.c
-similarity index 100%
-rename from arch/powerpc/platforms/pasemi/cpufreq.c
-rename to drivers/cpufreq/pasemi-cpufreq.c
-diff --git a/arch/powerpc/platforms/powermac/cpufreq_32.c b/drivers/cpufreq/pmac32-cpufreq.c
-similarity index 100%
-rename from arch/powerpc/platforms/powermac/cpufreq_32.c
-rename to drivers/cpufreq/pmac32-cpufreq.c
-diff --git a/arch/powerpc/platforms/powermac/cpufreq_64.c b/drivers/cpufreq/pmac64-cpufreq.c
-similarity index 100%
-rename from arch/powerpc/platforms/powermac/cpufreq_64.c
-rename to drivers/cpufreq/pmac64-cpufreq.c
+ # PowerPC platform drivers
++obj-$(CONFIG_CPU_FREQ_CBE)		+= ppc-cbe-cpufreq.o
++ppc-cbe-cpufreq-y			+= ppc_cbe_cpufreq_pervasive.o ppc_cbe_cpufreq.o
++obj-$(CONFIG_CPU_FREQ_CBE_PMI)		+= ppc_cbe_cpufreq_pmi.o
+ obj-$(CONFIG_CPU_FREQ_MAPLE)		+= maple-cpufreq.o
+ obj-$(CONFIG_CPU_FREQ_PMAC)		+= pmac32-cpufreq.o
+ obj-$(CONFIG_CPU_FREQ_PMAC64)		+= pmac64-cpufreq.o
+diff --git a/arch/powerpc/platforms/cell/cbe_cpufreq.c b/drivers/cpufreq/ppc_cbe_cpufreq.c
+similarity index 99%
+rename from arch/powerpc/platforms/cell/cbe_cpufreq.c
+rename to drivers/cpufreq/ppc_cbe_cpufreq.c
+index 718c6a3..6d7a51d 100644
+--- a/arch/powerpc/platforms/cell/cbe_cpufreq.c
++++ b/drivers/cpufreq/ppc_cbe_cpufreq.c
+@@ -23,11 +23,11 @@
+ #include <linux/cpufreq.h>
+ #include <linux/module.h>
+ #include <linux/of_platform.h>
++#include <linux/ppc_cbe_cpufreq.h>
+ 
+ #include <asm/machdep.h>
+ #include <asm/prom.h>
+ #include <asm/cell-regs.h>
+-#include "cbe_cpufreq.h"
+ 
+ static DEFINE_MUTEX(cbe_switch_mutex);
+ 
+diff --git a/arch/powerpc/platforms/cell/cbe_cpufreq_pervasive.c b/drivers/cpufreq/ppc_cbe_cpufreq_pervasive.c
+similarity index 98%
+rename from arch/powerpc/platforms/cell/cbe_cpufreq_pervasive.c
+rename to drivers/cpufreq/ppc_cbe_cpufreq_pervasive.c
+index 20472e4..6708710 100644
+--- a/arch/powerpc/platforms/cell/cbe_cpufreq_pervasive.c
++++ b/drivers/cpufreq/ppc_cbe_cpufreq_pervasive.c
+@@ -25,13 +25,12 @@
+ 
+ #include <linux/io.h>
+ #include <linux/kernel.h>
++#include <linux/ppc_cbe_cpufreq.h>
+ #include <linux/time.h>
+ #include <asm/machdep.h>
+ #include <asm/hw_irq.h>
+ #include <asm/cell-regs.h>
+ 
+-#include "cbe_cpufreq.h"
+-
+ /* to write to MIC register */
+ static u64 MIC_Slow_Fast_Timer_table[] = {
+ 	[0 ... 7] = 0x007fc00000000000ull,
+diff --git a/arch/powerpc/platforms/cell/cbe_cpufreq_pmi.c b/drivers/cpufreq/ppc_cbe_cpufreq_pmi.c
+similarity index 99%
+rename from arch/powerpc/platforms/cell/cbe_cpufreq_pmi.c
+rename to drivers/cpufreq/ppc_cbe_cpufreq_pmi.c
+index 60a07a4..448b888 100644
+--- a/arch/powerpc/platforms/cell/cbe_cpufreq_pmi.c
++++ b/drivers/cpufreq/ppc_cbe_cpufreq_pmi.c
+@@ -25,6 +25,7 @@
+ #include <linux/timer.h>
+ #include <linux/module.h>
+ #include <linux/of_platform.h>
++#include <linux/ppc_cbe_cpufreq.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/prom.h>
+@@ -35,8 +36,6 @@
+ #include <asm/time.h>
+ #endif
+ 
+-#include "cbe_cpufreq.h"
+-
+ static u8 pmi_slow_mode_limit[MAX_CBE];
+ 
+ bool cbe_cpufreq_has_pmi = false;
+diff --git a/arch/powerpc/platforms/cell/cbe_cpufreq.h b/include/linux/ppc_cbe_cpufreq.h
+similarity index 82%
+rename from arch/powerpc/platforms/cell/cbe_cpufreq.h
+rename to include/linux/ppc_cbe_cpufreq.h
+index c1d86bf..b4c00a5 100644
+--- a/arch/powerpc/platforms/cell/cbe_cpufreq.h
++++ b/include/linux/ppc_cbe_cpufreq.h
+@@ -1,5 +1,5 @@
+ /*
+- * cbe_cpufreq.h
++ * ppc_cbe_cpufreq.h
+  *
+  * This file contains the definitions used by the cbe_cpufreq driver.
+  *
+@@ -17,7 +17,7 @@ int cbe_cpufreq_get_pmode(int cpu);
+ 
+ int cbe_cpufreq_set_pmode_pmi(int cpu, unsigned int pmode);
+ 
+-#if defined(CONFIG_CBE_CPUFREQ_PMI) || defined(CONFIG_CBE_CPUFREQ_PMI_MODULE)
++#if defined(CONFIG_CPU_FREQ_CBE_PMI) || defined(CONFIG_CPU_FREQ_CBE_PMI_MODULE)
+ extern bool cbe_cpufreq_has_pmi;
+ #else
+ #define cbe_cpufreq_has_pmi (0)
 -- 
 1.7.12.rc2.18.g61b472e
 
