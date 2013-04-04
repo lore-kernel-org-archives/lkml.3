@@ -1,113 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762183Ab3DDOqX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 10:46:23 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:58040 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1761973Ab3DDOqW (ORCPT
+	id S1762233Ab3DDOsY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 10:48:24 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:65044 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762203Ab3DDOsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 10:46:22 -0400
-Date: Thu, 4 Apr 2013 10:46:20 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Vivek Gautam <gautamvivek1987@gmail.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>, <linux-usb@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <sarah.a.sharp@linux.intel.com>, <rob.herring@calxeda.com>,
-        <kgene.kim@samsung.com>, <dianders@chromium.org>, <t.figa@samsung.com>,
-        <p.paneri@samsung.com>
-Subject: Re: [PATCH v3 01/11] usb: phy: Add APIs for runtime power management
-In-Reply-To: <20130404092616.GD30991@arwen.pp.htv.fi>
-Message-ID: <Pine.LNX.4.44L0.1304041022260.1324-100000@iolanthe.rowland.org>
+	Thu, 4 Apr 2013 10:48:22 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 18/18] cpufreq: powerpc/platforms/cell: move cpufreq driver to drivers/cpufreq
+Date: Thu, 4 Apr 2013 14:48:10 +0000
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: rjw@sisk.pl, robin.randhawa@arm.com, Steve.Bannister@arm.com,
+        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
+        arvind.chauhan@arm.com, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org
+References: <cover.1365079581.git.viresh.kumar@linaro.org> <201304041302.09995.arnd@arndb.de> <CAKohpok_ftPoME0tFRMWMM9A2mNSOpQSvbJut0=AzhCuB-Yjrg@mail.gmail.com>
+In-Reply-To: <CAKohpok_ftPoME0tFRMWMM9A2mNSOpQSvbJut0=AzhCuB-Yjrg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304041448.11052.arnd@arndb.de>
+X-Provags-ID: V02:K0:NyqUvWax1PbGadlsMI20/prPzt+nP7GPC3O2yVJVup2
+ 9+K0ikpFUUs9EhK5ajo2LlEnrORidLYpJ2OiOxR4rjvHb70NqT
+ pPiph+8rmWpictlfB5VuAhezTELLWWu/TeEvWv738GQscjbI7y
+ Or0gRXpgMohxIVnaPyGlDJhv2valMi6Ez2m3MQ3jFuYdo8wO+O
+ XZN2gXS1l8pbrDtobrBWYv/v9OmPVcwvtsgxeqBkuI1Zmk42cX
+ Ut3ugcCRqO8kL2JBhjEng8YHmBKSITA91ZshzfmjRon9tIz/I3
+ duA9jtD4q/XY3tc40/e7RcXPYsOB3GTRWqXQseV9LJg62OscQ1
+ xqPt6zIgHkmhDVWBjiJU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Apr 2013, Felipe Balbi wrote:
-
-> > >> Some subsystems handle this issue by calling pm_runtime_get_sync()
-> > >> before probing a driver and pm_runtime_put_sync() after unbinding the
-> > >> driver.  If the driver is runtime-PM-enabled, it then does its own
-> > >> put_sync near the end of its probe routine and get_sync in its release
-> > >> routine.
-> > >
-> > > sounds a bit 'fishy' to me... So a separate entity would call
-> > > pm_runtime_get_sync(), even when we don't have registered dev_pm_ops,
-
-I don't know what you mean by "separate entity".  The PHY's subsystem
-would handle this.  After all, the subsystem has to handle registering 
-the PHY in the first place.
-
-If the PHY doesn't have a dev_pm_ops, why are you talking about doing 
-runtime PM on it?  That doesn't make any sense.
-
-> > > then drivers need to check if runtime_pm is enabled and call
-> > > pm_runtime_put*() conditionally before returning from probe(). One
-
-They don't have to check.  If CONFIG_PM_RUNTIME isn't set or the target
-is runtime-PM-disabled then pm_runtime_put* is essentially a no-op (in
-the disabled case it decrements the usage counter but doesn't do
-anything else).
-
-One possible complication I did not mention: The scheme described above
-assumes the device that uses the PHY will always be registered on the
-same type of bus.  If the device can be used on multiple bus types (and
-hence in multiple subsystems) then things aren't so simple, because
-some of the subsystems might support runtime PM and others might not.  
-(You may very well run into this problem with USB controllers that are 
-sometimes on a PCI bus and sometimes on a platform bus.)  In this case, 
-the driver needs to adapt to the subsystem's capabilities.  Presumably 
-the bus-glue part of the driver takes care of this.
-
-> > > remove, we might have another issue: device is already runtime_suspended
-> > > (due to e.g. autosuspend) when module is removed, a call to
-> > > pm_runtime_put_sync() will be unbalanced. No ?
-
-No.  I left out some of the details.  For one thing, the subsystem is
-careful to do a runtime resume before calling the driver's remove
-method.  (Also, if you look over my original description carefully,
-you'll see that there are no unbalanced calls -- even if the device is
-already runtime suspended when the driver is unbound.)
-
-For another, the subsystem needs to check before calling the driver's
-runtime-PM methods.  There are two brief windows during which the
-driver isn't in charge of the device even though dev->driver is set.  
-Those windows occur in the subsystem's probe routine (before it calls
-the driver's probe method) and in the subsystem's remove routine
-(after it calls the driver's remove method).  At such times, the 
-subsystem's runtime-PM handlers must be careful _not_ to call the 
-driver's runtime-PM routines.
-
-> > May be i am misinterpreting !!
-> > If PHYs are runtime-PM enabled (PHY probe calls *runtime_enable*),
-> > then the consumers
-> > need to call pm_runtime_get_sync whever they want to access PHY.
-
-No, because in addition to being runtime-PM enabled, the PHY should
-automatically be runtime resumed when the consumer registers itself as
-a user of the PHY.  Therefore the consumer doesn't need to do anything
-at all -- which is good for consumers that aren't runtime-PM aware.
-
-> Alright, so here's my understanding:
+On Thursday 04 April 2013, Viresh Kumar wrote:
 > 
-> I suggested letting e.g. DWC3 enable the PHY's runtime_pm; Alan said
-> that it could be done before that so that DWC3 sees an enabled PHY
-> during probe.
+> On 4 April 2013 18:32, Arnd Bergmann <arnd@arndb.de> wrote:
+> > Moving the files is good, but I don't see a reason to make the cbe_cpufreq.h
+> > header globally visible in include/linux/. Isn't it just used by as the
+> > interface between ppc_cbe_cpufreq_pmi.c  and ppc_cbe_cpufreq.c?
+> 
+> When i moved it initially i thought it is also used by
+> arch/powerpc/platforms/cell/cpufreq_spudemand.c and hence moved it
+> to include/linux and never realized i am wrong..
+> 
+> Here is the fixup (And attached complete patch: original+fixup for Rafael
+> to apply):
 
-Basically right.  Help me to understand the overall situation a little
-better:
 
-	What code registers the PHY initially?
-
-	What routine does the DWC3 driver call to register itself
-	as a consumer of the PHY?
-
-	Likewise, what routine does it call to unregister itself?
-
-Alan Stern
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
