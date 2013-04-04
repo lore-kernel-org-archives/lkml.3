@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709Ab3DDJLg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 05:11:36 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:53902 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755768Ab3DDJJh (ORCPT
+	id S1755434Ab3DDJJe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 05:09:34 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:43515 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824Ab3DDJJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 05:09:37 -0400
+	Thu, 4 Apr 2013 05:09:32 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
@@ -15,38 +15,57 @@ Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Rik van Riel <riel@redhat.com>, Hillf Danton <dhillf@gmail.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH 6/6] mm/hugetlb: use already exist interface huge_page_shift 
-Date: Thu,  4 Apr 2013 17:09:14 +0800
-Message-Id: <1365066554-29195-7-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH 3/6] mm/hugetlb: enable gigantic hugetlb page pools shrinking
+Date: Thu,  4 Apr 2013 17:09:11 +0800
+Message-Id: <1365066554-29195-4-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1365066554-29195-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1365066554-29195-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040409-1618-0000-0000-000003A03244
+x-cbid: 13040409-3568-0000-0000-00000361791F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use already exist interface huge_page_shift instead of h->order + PAGE_SHIFT.
+Enable gigantic hugetlb page pools shrinking.
 
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- mm/hugetlb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/hugetlb.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 0cae950..750ed8a 100644
+index eeaf6f2..328f140 100644
 --- a/mm/hugetlb.c
 +++ b/mm/hugetlb.c
-@@ -320,7 +320,7 @@ unsigned long vma_kernel_pagesize(struct vm_area_struct *vma)
+@@ -1416,7 +1416,8 @@ static unsigned long set_max_huge_pages(struct hstate *h, unsigned long count,
+ {
+ 	unsigned long min_count, ret;
  
- 	hstate = hstate_vma(vma);
+-	if (h->order >= MAX_ORDER)
++	if (h->order >= MAX_ORDER && (!hugetlb_shrink_gigantic_pool ||
++				count > persistent_huge_pages(h)))
+ 		return h->max_huge_pages;
  
--	return 1UL << (hstate->order + PAGE_SHIFT);
-+	return 1UL << huge_page_shift(hstate);
- }
- EXPORT_SYMBOL_GPL(vma_kernel_pagesize);
+ 	/*
+@@ -1542,7 +1543,7 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
+ 		goto out;
  
+ 	h = kobj_to_hstate(kobj, &nid);
+-	if (h->order >= MAX_ORDER) {
++	if (h->order >= MAX_ORDER && !hugetlb_shrink_gigantic_pool) {
+ 		err = -EINVAL;
+ 		goto out;
+ 	}
+@@ -2036,7 +2037,7 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
+ 
+ 	tmp = h->max_huge_pages;
+ 
+-	if (write && h->order >= MAX_ORDER)
++	if (write && h->order >= MAX_ORDER && !hugetlb_shrink_gigantic_pool)
+ 		return -EINVAL;
+ 
+ 	table->data = &tmp;
 -- 
 1.7.10.4
 
