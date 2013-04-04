@@ -1,102 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500Ab3DDAo7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 20:44:59 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53824 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071Ab3DDAo6 (ORCPT
+	id S932582Ab3DDApN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 20:45:13 -0400
+Received: from zetta.elopez.com.ar ([199.30.59.35]:48242 "EHLO
+	zetta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932525Ab3DDApI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 20:44:58 -0400
-Date: Thu, 4 Apr 2013 11:44:44 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, Gabor Juhos <juhosg@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: linux-next: manual merge of the net-next tree with the wireless
- tree
-Message-Id: <20130404114444.de4e40c24f4e1a0e4c0b7328@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__4_Apr_2013_11_44_44_+1100_v3v+zd8ZXeCgqXdk"
+	Wed, 3 Apr 2013 20:45:08 -0400
+X-Greylist: delayed 2532 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Apr 2013 20:45:08 EDT
+Message-ID: <515CC317.2000703@elopez.com.ar>
+Date: Wed, 03 Apr 2013 21:02:31 -0300
+From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Michal Marek <mmarek@suse.cz>, Grant Likely <glikely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>, linux-kbuild@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Shawn Guo <shawn.guo@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Hiroshi Doyu <hdoyu@nvidia.com>
+Subject: Re: [PATCH V2 4/7] kbuild: always run gcc -E on *.dts, remove cmd_dtc_cpp
+References: <1365032098-22825-1-git-send-email-swarren@wwwdotorg.org> <1365032098-22825-4-git-send-email-swarren@wwwdotorg.org>
+In-Reply-To: <1365032098-22825-4-git-send-email-swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__4_Apr_2013_11_44_44_+1100_v3v+zd8ZXeCgqXdk
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Stephen,
 
-Hi all,
+El 03/04/13 20:34, Stephen Warren escribió:
+> From: Stephen Warren <swarren@nvidia.com>
+> 
+> Replace cmd_dtc with cmd_dtc_cpp, and delete the latter.
+> 
+> Previously, a special file extension (.dtsp) was required to trigger
+> the C pre-processor to run on device tree files. This was ugly. Now that
+> previous changes have enhanced cmd_dtc_cpp to collect dependency
+> information from both gcc -E and dtc, we can transparently run the pre-
+> processor on all device tree files, irrespective of whether they
+> 
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/wireless/rt2x00/rt2x00pci.c between commit 69a2bac8984c
-("rt2x00: rt2x00pci: fix build error on Ralink RT3x5x SoCs") from the
-wireless tree and commit 1f9061d27d3d ("drivers:net: dma_alloc_coherent:
-use __GFP_ZERO instead of memset(, 0)") from the net-next tree.
+I think a line got dropped on the commit description by mistake.
 
-The former moved the code modified by the latter into a different file,
-so I added the following merge fix patch and can carry the fix as
-necessary (no action is required).
+Regards,
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 4 Apr 2013 11:42:05 +1100
-Subject: [PATCH] drivers:net: fix up for code movement from rt2x00pci.c
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/net/wireless/rt2x00/rt2x00mmio.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
-diff --git a/drivers/net/wireless/rt2x00/rt2x00mmio.c b/drivers/net/wireles=
-s/rt2x00/rt2x00mmio.c
-index d84a680..9fe9a36 100644
---- a/drivers/net/wireless/rt2x00/rt2x00mmio.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mmio.c
-@@ -123,12 +123,10 @@ static int rt2x00pci_alloc_queue_dma(struct rt2x00_de=
-v *rt2x00dev,
- 	 */
- 	addr =3D dma_alloc_coherent(rt2x00dev->dev,
- 				  queue->limit * queue->desc_size,
--				  &dma, GFP_KERNEL);
-+				  &dma, GFP_KERNEL | __GFP_ZERO);
- 	if (!addr)
- 		return -ENOMEM;
-=20
--	memset(addr, 0, queue->limit * queue->desc_size);
--
- 	/*
- 	 * Initialize all queue entries to contain valid addresses.
- 	 */
---=20
-1.8.1
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__4_Apr_2013_11_44_44_+1100_v3v+zd8ZXeCgqXdk
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRXMz8AAoJEECxmPOUX5FExBIP/jewPg6JVgi3GQuJ5zp4GFmv
-thlXnE13eSG/g5O3AiuMCM+QXwhtuWMTHUSn8KXLPqZQqur6QrTYYAtWUFKB3i6u
-xTSlx8DU722PSEFhkbdIjnoeKBqFHatQrk4CWk2GRBFGdvpZjH+bzSlKvqYK49Dr
-fYU6i/labWNTgpUY7apzdkFNuKmYRBrQmwZwGYNfMX4LLWkR61oMO6jzyNRFWj8f
-G3zQqnc+8hzq9DkPzPcBS7/C3gWjOb4fZPfVsydYdwt6WGSPZ+lZdyxD00+n9MhH
-gNQVaC1vkf6rkIs+24OHaK9l2seZz3B181CZr0n8JWkcBlSh3euOa+0B25+BJRZ6
-0aZNA5RoDglwgKMDI9n2Qlcfm+5XalqVMMk9A/QvwHc84qO1uCTYqjV0XXklhapI
-NZjcwvbay8o8FJ+q5L76SnbgGE8Ko5QI4Qndl87NzJvstbZarUkpm4ZZR/+FuBhW
-Ih4KLMp/toeM5Rpy3DYFKIuOTC97IvYT45QWRunecUVGF9QIdi9oAKcqUeN9gJ0g
-JIV8evPWGjvGf/+Aq31BusZFErKsmnweiJtPDSCb2aEVroM0HS5zjtHq8TxPx53e
-rOjqeSqvNLlV6HAE7hHXFfljWWaV3adjmyq5opysYncH0pOZmdWR48kkdv2bUvj6
-on2CSbvYhrrl0j8TJPBc
-=9fJF
------END PGP SIGNATURE-----
-
---Signature=_Thu__4_Apr_2013_11_44_44_+1100_v3v+zd8ZXeCgqXdk--
+Emilio
