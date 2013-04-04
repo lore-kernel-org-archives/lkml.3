@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933192Ab3DDH3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 03:29:15 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:42881 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933177Ab3DDH3N (ORCPT
+	id S933225Ab3DDHcO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 03:32:14 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:50963 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933211Ab3DDHcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 03:29:13 -0400
-Date: Thu, 4 Apr 2013 08:29:07 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: [PATCH] ARM: ux500: Supply a DTS file for the u8540 platform
-Message-ID: <20130404072907.GB3004@gmail.com>
-References: <1364908916-29803-1-git-send-email-lee.jones@linaro.org>
- <1364908916-29803-3-git-send-email-lee.jones@linaro.org>
- <CACRpkdafSvT5Xb=7sqnkRHcc4UKkVzr8jzThMgWn6459RDmKGw@mail.gmail.com>
+	Thu, 4 Apr 2013 03:32:13 -0400
+Message-ID: <515D2C79.7040904@suse.cz>
+Date: Thu, 04 Apr 2013 09:32:09 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdafSvT5Xb=7sqnkRHcc4UKkVzr8jzThMgWn6459RDmKGw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
+References: <20130129202848.GE25415@pd.tnic> <5109A8F1.9040707@suse.cz> <5109B11C.2010400@suse.cz> <5170962.qHnbnlVDfx@vostro.rjw.lan> <20130131070926.GC4926@pd.tnic> <510A2B1C.1060108@suse.cz> <20130131131805.GG4926@pd.tnic> <20130131132400.GH4926@pd.tnic> <5130A55E.8030508@suse.cz>
+In-Reply-To: <5130A55E.8030508@suse.cz>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a skeleton DTS file which only enables serial. Just using
-this simple file yields a terminal when booting u8540.
+On 03/01/2013 01:55 PM, Jiri Slaby wrote:
+> On 01/31/2013 02:24 PM, Borislav Petkov wrote:
+>> On Thu, Jan 31, 2013 at 02:18:05PM +0100, Borislav Petkov wrote:
+>>>> And if I pass nmi_watchdog=0 to the image kernel, it should be gone I
+>>>> guess.
+>>>
+>>> How do you pass options the image kernel?
+>>
+>> Yep, passing "nmi_watchdog=0" to the kernel (both when you boot and
+>> when you resume) fixes the issue - no more unknown NMIs. Did only 3 s/r
+>> cycles though.
+> 
+> FWIW the last time I saw the unhandled NMI was on 31st Jan. Since I
+> disabled NMI watchdog no more unhandled NMIs. I have to add that I don't
+> use ethernet at all.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- arch/arm/boot/dts/ccu8540.dts |   36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
- create mode 100644 arch/arm/boot/dts/ccu8540.dts
+And yesterday I plugged in an ethernet cable for a wihle and guess what
+happened today:
+Uhhuh. NMI received for unknown reason 2c on CPU 0.
 
-diff --git a/arch/arm/boot/dts/ccu8540.dts b/arch/arm/boot/dts/ccu8540.dts
-new file mode 100644
-index 0000000..02e8e1a
---- /dev/null
-+++ b/arch/arm/boot/dts/ccu8540.dts
-@@ -0,0 +1,36 @@
-+/*
-+ * Copyright 2013 ST-Ericsson AB
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
-+
-+/dts-v1/;
-+/include/ "dbx5x0.dtsi"
-+
-+/ {
-+  model = "ST-Ericsson U8540 platform with Device Tree";
-+  compatible = "st-ericsson,u8540";
-+
-+	memory {
-+	       reg = <0x00000000 0x20000000>;
-+	       };
-+
-+	soc-u9500 {
-+		  uart@80120000 {
-+					status = "okay";
-+					       };
-+
-+		uart@80121000 {
-+				status = "okay";
-+				       };
-+
-+		uart@80007000 {
-+				status = "okay";
-+				       };
-+				       };
-+};
+Still holds that this is the first time since Jan.
+
 -- 
-1.7.10.4
+js
+suse labs
