@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab3DDE3g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 00:29:36 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:64944 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753485Ab3DDE3f (ORCPT
+	id S1755923Ab3DDEem (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 00:34:42 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:45116 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753485Ab3DDEel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 00:29:35 -0400
-Message-ID: <515D01CC.2060606@prisktech.co.nz>
-Date: Thu, 04 Apr 2013 17:30:04 +1300
-From: Tony Prisk <linux@prisktech.co.nz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <robherring2@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vt8500-wm8505-linux-kernel@googlegroups.com" 
-	<vt8500-wm8505-linux-kernel@googlegroups.com>
-Subject: Re: [PATCHv5 0/7] arm: vt8500: Add support for pinctrl/gpio module
-References: <1364970291-17721-1-git-send-email-linux@prisktech.co.nz> <CACRpkdZAtgpfA5rZ_C=eKDDOE9aDm=3k1QDava=EGL2BaoV+0g@mail.gmail.com> <515C9DB7.9000908@wwwdotorg.org>
-In-Reply-To: <515C9DB7.9000908@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Apr 2013 00:34:41 -0400
+Date: Thu, 4 Apr 2013 15:34:33 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nathan Zimmer <nzimmer@sgi.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: linux-next: manual merge of the staging tree with the vfs tree
+Message-Id: <20130404153433.be980c842e6b7a41afa0168f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__4_Apr_2013_15_34_33_+1100_C1FtxSwIWNbTqPb7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/13 10:23, Stephen Warren wrote:
-> On 04/03/2013 07:40 AM, Linus Walleij wrote:
->> On Wed, Apr 3, 2013 at 8:24 AM, Tony Prisk <linux@prisktech.co.nz> wrote:
->>
->>> v5 changes:
->>> Changed as requested by Rob Herring:
->>> Added of_find_property_value_of_size() to drivers/of/base.c to remove some
->>> code that was being duplicated.
->>>
->>> Changed as requested by Stephen Warren:
->>> Redid the kfree(maps) code as devm_kzalloc would cause issues. We now kzalloc
->>> maps all at once, and configs as required. A call to wmt_pctl_dt_free_map() is
->>> used to kfree the allocated blocks if we fail early.
->> This v5 series:
->> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->>
->> I guess it will go in through the VT8500 tree eventually?
->>
->> Maybe you could put Stephen's BCMring patch on top when sending
->> it in (also Acked-by) so we can avoid having that dangling.
-> s/bcmring/bcm2835/ :-)
-Stephen,
+--Signature=_Thu__4_Apr_2013_15_34_33_+1100_C1FtxSwIWNbTqPb7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Can you just confirm you want:
+Hi Greg,
 
-pinctrl: bcm2835: make use of of_property_read_u32_index()
+Today's linux-next merge of the staging tree got conflicts in
+drivers/staging/dgrp/dgrp_dpa_ops.c, drivers/staging/dgrp/dgrp_mon_ops.c,
+drivers/staging/dgrp/dgrp_net_ops.c and
+drivers/staging/dgrp/dgrp_ports_ops.c between commit 33633903f16f ("dgrp
+procfs fixes, part 5: per-node files") from the vfs tree and commit
+433121c6ef51 ("staging: dgrp: cleanup sparse warnings") from the staging
+tree.
 
-to be included in the pull with this series. I'll get it sent out once 
-you let me know.
+The former removed the code modified by the latter, so I just did that
+and can carry the fix as necessary (no action is required).
 
-Regards
-Tony P
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__4_Apr_2013_15_34_33_+1100_C1FtxSwIWNbTqPb7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRXQLZAAoJEECxmPOUX5FEhjUP/2l9QJVBf/zkgdq/EtSyzgBN
+EAoxwbGhwLLUCrd6tdSSv6eq+f+mxuo5njnkNxF4b3lp7FgjknKPlibWxb0wRfDP
+pXeqwGm4eidWNY1/rt4E0gnzFxTj6b4ZuhiF3rDXDjg8nBaH0bWFpnRUso2h8Y9Q
+ci9QVQN+Z4AXqelKviwO80SerUbBZ1mxSv2v29Q8Foau2SB5hLhhP72l3zHbzev7
+WZxrpAJ/GHEIsoC+VIF++lj5D4nMmLR5vM1geYy1fU4jEWQR3scfv96qW2BdV2BR
+QHwfQYsniSjSps+yT62JcJhsZhYskknXJR803++ABUqH7Y91Y6aY6EQqLPyTy+G9
+ulD9tWhoDWA+TIW6ibN6qsB5oGEy9p5tX7tcXJaLuFIMrPyumlUTp/TSYCt3ZZNo
+nkh1Uq/4VZjfWhS0DMQvRE8FVAhQBYrnKB7UBL/QBsV9UD0oo3FUwFfsMU4lBXAc
+uW8v1H0NNLxniUcAaDm0w3/667wt4OOj4aYci2zgG16lIsaKWUW/r7nRKCXDEAtk
+8HJn35c7JQG5/zeguRLODYwzDv/9CkxuGd6xuTGGm9L54DbaefN+svOW1rsZGZF8
+E3RYzvX+mKespkind2r/P8lKL6J0N/1VFf/Uscq2adiWlZ4VvYQhA3ev8ozbSIOY
+1staHK1QLFsq7B5MvPhm
+=382n
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__4_Apr_2013_15_34_33_+1100_C1FtxSwIWNbTqPb7--
