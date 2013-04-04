@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932572Ab3DDADX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 20:03:23 -0400
+	id S932484Ab3DDADV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 20:03:21 -0400
 Received: from wolverine02.qualcomm.com ([199.106.114.251]:4834 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758014Ab3DDADT (ORCPT
+	with ESMTP id S932350Ab3DDADS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 20:03:19 -0400
+	Wed, 3 Apr 2013 20:03:18 -0400
 X-IronPort-AV: E=Sophos;i="4.87,404,1363158000"; 
-   d="scan'208";a="35720039"
+   d="scan'208";a="35720037"
 From: Richard Kuo <rkuo@codeaurora.org>
 To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
         linux-kernel@vger.kernel.org, viro@ZenIV.linux.org.uk
 Cc: Richard Kuo <rkuo@codeaurora.org>
-Subject: [PATCH 5/6] Hexagon: break up user fn/arg register setting
-Date: Wed,  3 Apr 2013 19:02:55 -0500
-Message-Id: <1365033776-21804-6-git-send-email-rkuo@codeaurora.org>
+Subject: [PATCH 4/6] Hexagon: check to if we will overflow the signal stack
+Date: Wed,  3 Apr 2013 19:02:54 -0500
+Message-Id: <1365033776-21804-5-git-send-email-rkuo@codeaurora.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365033776-21804-1-git-send-email-rkuo@codeaurora.org>
 References: <1365033776-21804-1-git-send-email-rkuo@codeaurora.org>
@@ -25,23 +25,24 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 ---
- arch/hexagon/kernel/process.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/hexagon/kernel/signal.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/hexagon/kernel/process.c b/arch/hexagon/kernel/process.c
-index 8e90b0c..2009377 100644
---- a/arch/hexagon/kernel/process.c
-+++ b/arch/hexagon/kernel/process.c
-@@ -113,7 +113,8 @@ int copy_thread(unsigned long clone_flags, unsigned long usp,
- 	if (unlikely(p->flags & PF_KTHREAD)) {
- 		memset(childregs, 0, sizeof(struct pt_regs));
- 		/* r24 <- fn, r25 <- arg */
--		ss->r2524 = usp | ((u64)arg << 32);
-+		ss->r24 = usp;
-+		ss->r25 = arg;
- 		pt_set_kmode(childregs);
- 		return 0;
- 	}
+diff --git a/arch/hexagon/kernel/signal.c b/arch/hexagon/kernel/signal.c
+index 8a20e8e..097623c 100644
+--- a/arch/hexagon/kernel/signal.c
++++ b/arch/hexagon/kernel/signal.c
+@@ -41,6 +41,10 @@ static void __user *get_sigframe(struct k_sigaction *ka, struct pt_regs *regs,
+ {
+ 	unsigned long sp = regs->r29;
+ 
++	/* check if we would overflow the alt stack */
++	if (on_sig_stack(sp) && !likely(on_sig_stack(sp - frame_size)))
++		return (void __user __force *)-1UL;
++
+ 	/* Switch to signal stack if appropriate */
+ 	if ((ka->sa.sa_flags & SA_ONSTACK) && (sas_ss_flags(sp) == 0))
+ 		sp = current->sas_ss_sp + current->sas_ss_size;
 -- 
 1.7.9.5
 
