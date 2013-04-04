@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758029Ab3DDKI3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 06:08:29 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:60903 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756855Ab3DDKI1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 06:08:27 -0400
-Message-ID: <1365070105.1830.21.camel@x61.thuisdomein>
-Subject: [PATCH] Blackfin: bf537: rename "CONFIG_AD7314"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Date: Thu, 04 Apr 2013 12:08:25 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 04 Apr 2013 10:08:25.0177 (UTC) FILETIME=[585EB490:01CE311C]
-X-RcptDomain: vger.kernel.org
+	id S1758075Ab3DDKJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 06:09:28 -0400
+Received: from mga01.intel.com ([192.55.52.88]:45444 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756635Ab3DDKJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 06:09:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,407,1363158000"; 
+   d="scan'208";a="316788968"
+Date: Thu, 4 Apr 2013 13:13:38 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH] gpiolib-acpi: introduce acpi_get_gpio_by_index() helper
+Message-ID: <20130404101338.GK21804@intel.com>
+References: <1364986614-15711-1-git-send-email-mika.westerberg@linux.intel.com>
+ <CAN+gG=F4LMHMsOqVh+BikSLKBJ8V7ni-p4hKi7yRb4jjD7gv0w@mail.gmail.com>
+ <20130404093820.GI21804@intel.com>
+ <CAN+gG=F7T6ujLuNu2hfEKfrDwBCG9xM_e3P9Fan0Awj7EYmJyA@mail.gmail.com>
+ <20130404095716.GJ21804@intel.com>
+ <CAN+gG=Edb-iTLeafeDw+E33rJWthSM8Qr37yQJNOG9p45_rrbw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+gG=Edb-iTLeafeDw+E33rJWthSM8Qr37yQJNOG9p45_rrbw@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In v3.2 the Analog Devices AD7314 temperature sensor driver was removed
-as an IIO driver and added as a HWMON driver. But it was apparently
-overlooked to rename two references to CONFIG_AD7314 to
-CONFIG_SENSORS_AD7314. Do so now. Use the IS_ENABLED() macro, while
-we're at it.
+On Thu, Apr 04, 2013 at 12:01:23PM +0200, Benjamin Tissoires wrote:
+> > One option is to provide acpi_get_gpio_all() that returns all GPIOs and
+> > their corresponding types. That should allow clients like i2c-hid to find
+> > the right GPIO (I'm hoping that there will be only one GpioInt associated
+> > with these devices).
+> 
+> That could do the trick.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Entirely untested.
+Great.
 
-1) See commits 4f3a659581cabf1be441d6467b523be914615496 ("hwmon: AD7314
-driver (ported from IIO)") and 48a2c3799b7141c271a771d3249142a104faeefc
-("staging:iio:adc:ad7314 removal. Supported via hwmon.") for the two
-patches involved.
+> However, I won't be able to test it. I still don't have access to any
+> ACPI 5 device with i2c-hid devices...
 
- arch/blackfin/mach-bf537/boards/stamp.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
-index 23bb55d..b40b849 100644
---- a/arch/blackfin/mach-bf537/boards/stamp.c
-+++ b/arch/blackfin/mach-bf537/boards/stamp.c
-@@ -681,7 +681,7 @@ static struct bfin5xx_spi_chip ad2s1210_spi_chip_info = {
- };
- #endif
- 
--#if defined(CONFIG_AD7314) || defined(CONFIG_AD7314_MODULE)
-+#if IS_ENABLED(CONFIG_SENSORS_AD7314)
- static struct bfin5xx_spi_chip ad7314_spi_chip_info = {
- 	.enable_dma = 0,
- };
-@@ -1039,7 +1039,7 @@ static struct spi_board_info bfin_spi_board_info[] __initdata = {
- 	},
- #endif
- 
--#if defined(CONFIG_AD7314) || defined(CONFIG_AD7314_MODULE)
-+#if IS_ENABLED(CONFIG_SENSORS_AD7314)
- 	{
- 		.modalias = "ad7314",
- 		.max_speed_hz = 1000000,
--- 
-1.7.11.7
-
+I have few such devices but none of them has GpioInt resources (they have
+the interrupt line routed to ioapic), so I can't test the i2c-hid with
+GpioInt either :-/
