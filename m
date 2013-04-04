@@ -1,122 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933435Ab3DDIE4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 04:04:56 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48521 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933414Ab3DDIEw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 04:04:52 -0400
-Date: Thu, 4 Apr 2013 10:04:55 +0200
-From: Anisse Astier <anisse@astier.eu>
-To: linux-kbuild@vger.kernel.org
-Cc: Anisse Astier <anisse@astier.eu>, linux-kernel@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>, maximilian attems <max@stro.at>
-Subject: Re: [PATCH 1/2] deb-pkg: split debug symbols in their own package
-Message-ID: <20130404100455.64367233@serenity>
-In-Reply-To: <1363946761-7449-1-git-send-email-anisse@astier.eu>
-References: <1363946761-7449-1-git-send-email-anisse@astier.eu>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1764262Ab3DDIIv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 04:08:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54332 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1764157Ab3DDIIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 04:08:47 -0400
+Date: Thu, 4 Apr 2013 10:08:45 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Robin Holt <holt@sgi.com>
+Cc: Cliff Wickman <cpw@sgi.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, x86@kernel.org, wli@holomorphy.com
+Subject: Re: [PATCH] mm, x86: Do not zero hugetlbfs pages at boot. -v2
+Message-ID: <20130404080845.GC29911@dhcp22.suse.cz>
+References: <E1UDME8-00041J-B4@eag09.americas.sgi.com>
+ <20130314085138.GA11636@dhcp22.suse.cz>
+ <20130403024344.GA4384@sgi.com>
+ <20130403140247.GJ16471@dhcp22.suse.cz>
+ <20130403170012.GY29151@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130403170012.GY29151@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any comments ?
-
-Anisse
-
-On Fri, 22 Mar 2013 11:06:00 +0100, Anisse Astier <anisse@astier.eu> wrote :
-
-> This can reduce almost 3 times the size of the linux-image package,
-> while keeping the debug symbols available for this particular build, in
-> their own package.
+On Wed 03-04-13 12:00:12, Robin Holt wrote:
+> On Wed, Apr 03, 2013 at 04:02:47PM +0200, Michal Hocko wrote:
+> > On Tue 02-04-13 21:43:44, Robin Holt wrote:
+> > [...]
+> > > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > > index ca9a7c6..7683f6a 100644
+> > > --- a/mm/hugetlb.c
+> > > +++ b/mm/hugetlb.c
+> > > @@ -1185,7 +1185,7 @@ int __weak alloc_bootmem_huge_page(struct hstate *h)
+> > >  	while (nr_nodes) {
+> > >  		void *addr;
+> > >  
+> > > -		addr = __alloc_bootmem_node_nopanic(
+> > > +		addr = __alloc_bootmem_node_nopanic_notzeroed(
+> > >  				NODE_DATA(hstate_next_node_to_alloc(h,
+> > >  						&node_states[N_MEMORY])),
+> > >  				huge_page_size(h), huge_page_size(h), 0);
+> > 
+> > Ohh, and powerpc seems to have its own opinion how to allocate huge
+> > pages. See arch/powerpc/mm/hugetlbpage.c
 > 
-> This mimics the way kernels are built in debian, ubuntu, or with
-> make-kpkg, and comes at the price of a small slowdown in the building of
-> packages.
-> 
-> Signed-off-by: Anisse Astier <anisse@astier.eu>
-> ---
->  scripts/package/builddeb | 33 ++++++++++++++++++++++++++++++++-
->  1 file changed, 32 insertions(+), 1 deletion(-)
-> 
-> diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-> index acb8650..7f7a7fd 100644
-> --- a/scripts/package/builddeb
-> +++ b/scripts/package/builddeb
-> @@ -78,17 +78,19 @@ tmpdir="$objtree/debian/tmp"
->  fwdir="$objtree/debian/fwtmp"
->  kernel_headers_dir="$objtree/debian/hdrtmp"
->  libc_headers_dir="$objtree/debian/headertmp"
-> +dbg_dir="$objtree/debian/dbgtmp"
->  packagename=linux-image-$version
->  fwpackagename=linux-firmware-image
->  kernel_headers_packagename=linux-headers-$version
->  libc_headers_packagename=linux-libc-dev
-> +dbg_packagename=$packagename-dbg
->  
->  if [ "$ARCH" = "um" ] ; then
->  	packagename=user-mode-linux-$version
->  fi
->  
->  # Setup the directory structure
-> -rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir"
-> +rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir" "$dbg_dir"
->  mkdir -m 755 -p "$tmpdir/DEBIAN"
->  mkdir -p  "$tmpdir/lib" "$tmpdir/boot" "$tmpdir/usr/share/doc/$packagename"
->  mkdir -m 755 -p "$fwdir/DEBIAN"
-> @@ -98,6 +100,8 @@ mkdir -p "$libc_headers_dir/usr/share/doc/$libc_headers_packagename"
->  mkdir -m 755 -p "$kernel_headers_dir/DEBIAN"
->  mkdir -p "$kernel_headers_dir/usr/share/doc/$kernel_headers_packagename"
->  mkdir -p "$kernel_headers_dir/lib/modules/$version/"
-> +mkdir -p "$dbg_dir/usr/share/doc/$dbg_packagename"
-> +mkdir -m 755 -p "$dbg_dir/DEBIAN"
->  if [ "$ARCH" = "um" ] ; then
->  	mkdir -p "$tmpdir/usr/lib/uml/modules/$version" "$tmpdir/usr/bin"
->  fi
-> @@ -128,8 +132,24 @@ if grep -q '^CONFIG_MODULES=y' .config ; then
->  		mv "$tmpdir/lib/modules/$version"/* "$tmpdir/usr/lib/uml/modules/$version/"
->  		rmdir "$tmpdir/lib/modules/$version"
->  	fi
-> +	# Build debug package
-> +	(
-> +		cd $tmpdir
-> +		for module in $(find lib/modules/ -name *.ko); do
-> +			mkdir -p $(dirname $dbg_dir/usr/lib/debug/$module)
-> +			# only keep debug symbols in the debug file
-> +			objcopy --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
-> +			# strip original module from debug symbols
-> +			objcopy --strip-debug $module
-> +			# then add a link to those
-> +			objcopy --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
-> +		done
-> +	)
->  fi
->  
-> +mkdir -p $dbg_dir/usr/lib/debug/lib/modules/$version/
-> +cp vmlinux $dbg_dir/usr/lib/debug/lib/modules/$version/
-> +
->  if [ "$ARCH" != "um" ]; then
->  	$MAKE headers_check KBUILD_SRC=
->  	$MAKE headers_install KBUILD_SRC= INSTALL_HDR_PATH="$libc_headers_dir/usr"
-> @@ -297,6 +317,17 @@ if [ "$ARCH" != "um" ]; then
->  	create_package "$libc_headers_packagename" "$libc_headers_dir"
->  fi
->  
-> +cat <<EOF >> debian/control
-> +
-> +Package: $dbg_packagename
-> +Section: devel
-> +Provides: linux-debug, linux-debug-$version
-> +Architecture: any
-> +Description: Linux kernel debugging symbols for $version
-> + This package will come in handy if you need to debug the kernel.
-> +EOF
-> +
-> +create_package "$dbg_packagename" "$dbg_dir"
->  create_package "$packagename" "$tmpdir"
->  
->  exit 0
+> Do I need to address their allocations?  Can I leave that part of the
+> changes as something powerpc can address if they are affected by this?
+
+I mentioned powerpc basically because I encountered it as the only
+alternative implementation of alloc_bootmem_huge_page. I haven't checked
+how it does the job and now that I am looking closer it uses memblock
+allocator so it would need a separate fix.
+I guess you are right saying that this should be handled when the need
+arises.
+
+-- 
+Michal Hocko
+SUSE Labs
