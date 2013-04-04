@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762541Ab3DDPyT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 11:54:19 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:36859 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762404Ab3DDPyR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 11:54:17 -0400
-From: Daniel J Blueman <daniel@numascale-asia.com>
-To: Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Steffen Persvold <sp@numascale.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>
-Subject: [PATCH] x86, amd, mce: Prevent potential cpu-online oops
-Date: Thu,  4 Apr 2013 23:52:00 +0800
-Message-Id: <1365090720-12652-1-git-send-email-daniel@numascale-asia.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1762764Ab3DDP5x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 11:57:53 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:49904 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762576Ab3DDP5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 11:57:49 -0400
+From: Florian Fainelli <florian@openwrt.org>
+To: stern@rowland.harvard.edu
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, balbi@ti.com,
+        Florian Fainelli <florian@openwrt.org>
+Subject: [PATCH 5/5 v3] USB: enclose USB_XHCI_HCD related symbols within a if USB_XHCI_HCD block
+Date: Thu,  4 Apr 2013 17:57:28 +0200
+Message-Id: <1365091048-16229-6-git-send-email-florian@openwrt.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1365091048-16229-1-git-send-email-florian@openwrt.org>
+References: <1365091048-16229-1-git-send-email-florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On platforms where all Northbridges may not be visible (due to routing, eg on
-NumaConnect systems), prevent oopsing due to stale pointer access when
-offlining cores.
+This patch encloses all symbols depending on USB_XHCI_HCD within an if
+USB_XHCI_HCD / endif block.
 
-Signed-off-by: Steffen Persvold <sp@numascale.com>
-Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
-
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
- arch/x86/kernel/cpu/mcheck/mce_amd.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+Changes in v3:
+- added Alan's Acked-by tag
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-index 1ac581f..53a58c2 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-@@ -578,8 +578,11 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
- 	if (shared_bank[bank]) {
- 		nb = node_to_amd_nb(amd_get_nb_id(cpu));
+ drivers/usb/host/Kconfig |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 8ff86d3..c7cb18d 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -25,13 +25,13 @@ config USB_XHCI_HCD
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called xhci-hcd.
  
-+		if (WARN_ON_ONCE(!nb))
-+			goto out;
++if USB_XHCI_HCD
 +
- 		/* threshold descriptor already initialized on this node? */
--		if (nb && nb->bank4) {
-+		if (nb->bank4) {
- 			/* yes, use it */
- 			b = nb->bank4;
- 			err = kobject_add(b->kobj, &dev->kobj, name);
-@@ -613,10 +616,8 @@ static __cpuinit int threshold_create_bank(unsigned int cpu, unsigned int bank)
- 		atomic_set(&b->cpus, 1);
+ config USB_XHCI_PLATFORM
+ 	tristate
+-	depends on USB_XHCI_HCD
  
- 		/* nb is already initialized, see above */
--		if (nb) {
--			WARN_ON(nb->bank4);
--			nb->bank4 = b;
--		}
-+		WARN_ON(nb->bank4);
-+		nb->bank4 = b;
- 	}
+ config USB_XHCI_HCD_DEBUGGING
+ 	bool "Debugging for the xHCI host controller"
+-	depends on USB_XHCI_HCD
+ 	---help---
+ 	  Say 'Y' to turn on debugging for the xHCI host controller driver.
+ 	  This will spew debugging output, even in interrupt context.
+@@ -39,6 +39,8 @@ config USB_XHCI_HCD_DEBUGGING
  
- 	err = allocate_threshold_blocks(cpu, bank, 0,
+ 	  If unsure, say N.
+ 
++endif # USB_XHCI_HCD
++
+ config USB_EHCI_HCD
+ 	tristate "EHCI HCD (USB 2.0) support"
+ 	depends on USB_ARCH_HAS_EHCI
 -- 
-1.7.4.1
+1.7.10.4
 
