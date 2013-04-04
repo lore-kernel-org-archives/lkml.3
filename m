@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761263Ab3DDP6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 11:58:46 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:49903 "EHLO zmc.proxad.net"
+	id S1762620Ab3DDP7T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 11:59:19 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:49900 "EHLO zmc.proxad.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762583Ab3DDP5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 11:57:50 -0400
+	id S1762534Ab3DDP5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 11:57:49 -0400
 From: Florian Fainelli <florian@openwrt.org>
 To: stern@rowland.harvard.edu
 Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, gregkh@linuxfoundation.org,
         linux-usb@vger.kernel.org, balbi@ti.com,
         Florian Fainelli <florian@openwrt.org>
-Subject: [PATCH 2/5 v3] USB: remove USB_EHCI_BIG_ENDIAN_{DESC,MMIO} depends on architecture symbol
-Date: Thu,  4 Apr 2013 17:57:25 +0200
-Message-Id: <1365091048-16229-3-git-send-email-florian@openwrt.org>
+Subject: [PATCH 4/5 v3] USB: enclose all depends on USB_OHCI_HCD within an if USB_OHCI_HCD block
+Date: Thu,  4 Apr 2013 17:57:27 +0200
+Message-Id: <1365091048-16229-5-git-send-email-florian@openwrt.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1365091048-16229-1-git-send-email-florian@openwrt.org>
 References: <1365091048-16229-1-git-send-email-florian@openwrt.org>
@@ -21,130 +21,182 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just like the OHCI counter part we just can remove the architecture
-specific symbols which prevent these configuration symbols from being
-selected by platforms/architectures requiring it. The original
-implementation did not scale at all since it required each and every
-single architecture to be added for these configuration symbols to be
-selected. Now it is up to the EHCI driver and/or platform to select
-these configuration symbols accordingly.
+This patch removes the various depends on USB_OHCI_HCD from the OHCI HCD
+drivers and enclose them within an if USB_OHCI_HCD / endif block. The
+Octeon OHCI HCD driver has been moved around to remain in this block.
 
 Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
-Changes in v2:
+Changes in v3:
 - added Alan's Acked-by tag
 
-Changes since RFC:
-- dropped default n for USB_EHCI_BIG_ENDIAN_{MMIO_DESC} as it is the default
-- properly patch MPC521x and not MPC52xx
+ drivers/usb/host/Kconfig |   51 +++++++++++++++++++++++-----------------------
+ 1 file changed, 26 insertions(+), 25 deletions(-)
 
- arch/arm/Kconfig                    |    2 ++
- arch/mips/Kconfig                   |    3 +++
- arch/powerpc/platforms/44x/Kconfig  |    2 ++
- arch/powerpc/platforms/512x/Kconfig |    2 ++
- arch/sparc/Kconfig                  |    2 ++
- drivers/usb/host/Kconfig            |   11 ++---------
- 6 files changed, 13 insertions(+), 9 deletions(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 13b7394..6100e6e 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -549,6 +549,8 @@ config ARCH_IXP4XX
- 	select GENERIC_CLOCKEVENTS
- 	select MIGHT_HAVE_PCI
- 	select NEED_MACH_IO_H
-+	select USB_EHCI_BIG_ENDIAN_MMIO
-+	select USB_EHCI_BIG_ENDIAN_DESC
- 	help
- 	  Support for Intel's IXP4XX (XScale) family of processors.
- 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index cd2e21f..a46a0b0 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -404,6 +404,8 @@ config PMC_MSP
- 	select IRQ_CPU
- 	select SERIAL_8250
- 	select SERIAL_8250_CONSOLE
-+	select USB_EHCI_BIG_ENDIAN_MMIO
-+	select USB_EHCI_BIG_ENDIAN_DESC
- 	help
- 	  This adds support for the PMC-Sierra family of Multi-Service
- 	  Processor System-On-A-Chips.  These parts include a number
-@@ -1433,6 +1435,7 @@ config CPU_CAVIUM_OCTEON
- 	select CPU_SUPPORTS_HUGEPAGES
- 	select LIBFDT
- 	select USE_OF
-+	select USB_EHCI_BIG_ENDIAN_MMIO
- 	help
- 	  The Cavium Octeon processor is a highly integrated chip containing
- 	  many ethernet hardware widgets for networking tasks. The processor
-diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms/44x/Kconfig
-index 0effe9f..7be9336 100644
---- a/arch/powerpc/platforms/44x/Kconfig
-+++ b/arch/powerpc/platforms/44x/Kconfig
-@@ -274,6 +274,8 @@ config 440EPX
- 	select IBM_EMAC_EMAC4
- 	select IBM_EMAC_RGMII
- 	select IBM_EMAC_ZMII
-+	select USB_EHCI_BIG_ENDIAN_MMIO
-+	select USB_EHCI_BIG_ENDIAN_DESC
- 
- config 440GRX
- 	bool
-diff --git a/arch/powerpc/platforms/512x/Kconfig b/arch/powerpc/platforms/512x/Kconfig
-index c169998..381a592 100644
---- a/arch/powerpc/platforms/512x/Kconfig
-+++ b/arch/powerpc/platforms/512x/Kconfig
-@@ -7,6 +7,8 @@ config PPC_MPC512x
- 	select PPC_PCI_CHOICE
- 	select FSL_PCI if PCI
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
-+	select USB_EHCI_BIG_ENDIAN_MMIO
-+	select USB_EHCI_BIG_ENDIAN_DESC
- 
- config MPC5121_ADS
- 	bool "Freescale MPC5121E ADS"
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index 3d361f2..66dc562 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -407,6 +407,8 @@ config SERIAL_CONSOLE
- config SPARC_LEON
- 	bool "Sparc Leon processor family"
- 	depends on SPARC32
-+	select USB_EHCI_BIG_ENDIAN_MMIO
-+	select USB_EHCI_BIG_ENDIAN_DESC
- 	---help---
- 	  If you say Y here if you are running on a SPARC-LEON processor.
- 	  The LEON processor is a synthesizable VHDL model of the
 diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 7f4ccf7..a330549 100644
+index 415ebdd..8ff86d3 100644
 --- a/drivers/usb/host/Kconfig
 +++ b/drivers/usb/host/Kconfig
-@@ -110,18 +110,11 @@ config USB_EHCI_HCD_PMC_MSP
+@@ -326,16 +326,18 @@ config USB_OHCI_HCD
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called ohci-hcd.
  
- config USB_EHCI_BIG_ENDIAN_MMIO
++if USB_OHCI_HCD
++
+ config USB_OHCI_HCD_OMAP1
+ 	bool "OHCI support for OMAP1/2 chips"
+-	depends on USB_OHCI_HCD && ARCH_OMAP1
++	depends on ARCH_OMAP1
+ 	default y
+ 	---help---
+ 	  Enables support for the OHCI controller on OMAP1/2 chips.
+ 
+ config USB_OHCI_HCD_OMAP3
+ 	bool "OHCI support for OMAP3 and later chips"
+-	depends on USB_OHCI_HCD && (ARCH_OMAP3 || ARCH_OMAP4)
++	depends on (ARCH_OMAP3 || ARCH_OMAP4)
+ 	default y
+ 	---help---
+ 	  Enables support for the on-chip OHCI controller on
+@@ -343,7 +345,7 @@ config USB_OHCI_HCD_OMAP3
+ 
+ config USB_OHCI_ATH79
+ 	bool "USB OHCI support for the Atheros AR71XX/AR7240 SoCs (DEPRECATED)"
+-	depends on USB_OHCI_HCD && (SOC_AR71XX || SOC_AR724X)
++	depends on (SOC_AR71XX || SOC_AR724X)
+ 	select USB_OHCI_HCD_PLATFORM
+ 	default y
+ 	help
+@@ -355,7 +357,7 @@ config USB_OHCI_ATH79
+ 
+ config USB_OHCI_HCD_PPC_OF_BE
+ 	bool "OHCI support for OF platform bus (big endian)"
+-	depends on USB_OHCI_HCD && PPC_OF
++	depends on PPC_OF
+ 	select USB_OHCI_BIG_ENDIAN_DESC
+ 	select USB_OHCI_BIG_ENDIAN_MMIO
+ 	---help---
+@@ -364,7 +366,7 @@ config USB_OHCI_HCD_PPC_OF_BE
+ 
+ config USB_OHCI_HCD_PPC_OF_LE
+ 	bool "OHCI support for OF platform bus (little endian)"
+-	depends on USB_OHCI_HCD && PPC_OF
++	depends on PPC_OF
+ 	select USB_OHCI_LITTLE_ENDIAN
+ 	---help---
+ 	  Enables support for little-endian USB controllers present on the
+@@ -372,12 +374,12 @@ config USB_OHCI_HCD_PPC_OF_LE
+ 
+ config USB_OHCI_HCD_PPC_OF
  	bool
--	depends on USB_EHCI_HCD && (PPC_CELLEB || PPC_PS3 || 440EPX || \
--				    ARCH_IXP4XX || XPS_USB_HCD_XILINX || \
--				    PPC_MPC512x || CPU_CAVIUM_OCTEON || \
--				    PMC_MSP || SPARC_LEON || MIPS_SEAD3)
--	default y
-+	depends on USB_EHCI_HCD
+-	depends on USB_OHCI_HCD && PPC_OF
++	depends on PPC_OF
+ 	default USB_OHCI_HCD_PPC_OF_BE || USB_OHCI_HCD_PPC_OF_LE
  
- config USB_EHCI_BIG_ENDIAN_DESC
+ config USB_OHCI_HCD_PCI
+ 	bool "OHCI support for PCI-bus USB controllers"
+-	depends on USB_OHCI_HCD && PCI && (STB03xxx || PPC_MPC52xx || USB_OHCI_HCD_PPC_OF)
++	depends on PCI && (STB03xxx || PPC_MPC52xx || USB_OHCI_HCD_PPC_OF)
+ 	default y
+ 	select USB_OHCI_LITTLE_ENDIAN
+ 	---help---
+@@ -386,7 +388,7 @@ config USB_OHCI_HCD_PCI
+ 
+ config USB_OHCI_HCD_SSB
+ 	bool "OHCI support for Broadcom SSB OHCI core (DEPRECATED)"
+-	depends on USB_OHCI_HCD && (SSB = y || SSB = USB_OHCI_HCD)
++	depends on (SSB = y || SSB = USB_OHCI_HCD)
+ 	select USB_HCD_SSB
+ 	select USB_OHCI_HCD_PLATFORM
+ 	default n
+@@ -404,7 +406,7 @@ config USB_OHCI_HCD_SSB
+ 
+ config USB_OHCI_SH
+ 	bool "OHCI support for SuperH USB controller (DEPRECATED)"
+-	depends on USB_OHCI_HCD && SUPERH
++	depends on SUPERH
+ 	select USB_OHCI_HCD_PLATFORM
+ 	---help---
+ 	  This option is deprecated now and the driver was removed, use
+@@ -415,13 +417,13 @@ config USB_OHCI_SH
+ 
+ config USB_OHCI_EXYNOS
+ 	boolean "OHCI support for Samsung EXYNOS SoC Series"
+-	depends on USB_OHCI_HCD && ARCH_EXYNOS
++	depends on ARCH_EXYNOS
+ 	help
+ 	 Enable support for the Samsung Exynos SOC's on-chip OHCI controller.
+ 
+ config USB_CNS3XXX_OHCI
+ 	bool "Cavium CNS3XXX OHCI Module (DEPRECATED)"
+-	depends on USB_OHCI_HCD && ARCH_CNS3XXX
++	depends on ARCH_CNS3XXX
+ 	select USB_OHCI_HCD_PLATFORM
+ 	---help---
+ 	  This option is deprecated now and the driver was removed, use
+@@ -432,7 +434,6 @@ config USB_CNS3XXX_OHCI
+ 
+ config USB_OHCI_HCD_PLATFORM
+ 	bool "Generic OHCI driver for a platform device"
+-	depends on USB_OHCI_HCD
+ 	default n
+ 	---help---
+ 	  Adds an OHCI host driver for a generic platform device, which
+@@ -440,23 +441,33 @@ config USB_OHCI_HCD_PLATFORM
+ 
+ 	  If unsure, say N.
+ 
++config USB_OCTEON_OHCI
++	bool "Octeon on-chip OHCI support"
++	depends on CPU_CAVIUM_OCTEON
++	default USB_OCTEON_EHCI
++	select USB_OHCI_BIG_ENDIAN_MMIO
++	select USB_OHCI_LITTLE_ENDIAN
++	help
++	  Enable support for the Octeon II SOC's on-chip OHCI
++	  controller.  It is needed for low-speed USB 1.0 device
++	  support.  All CN6XXX based chips with USB are supported.
++
+ 
+ config USB_OHCI_BIG_ENDIAN_DESC
  	bool
--	depends on USB_EHCI_HCD && (440EPX || ARCH_IXP4XX || XPS_USB_HCD_XILINX || \
--				    PPC_MPC512x || PMC_MSP || SPARC_LEON || \
--				    MIPS_SEAD3)
--	default y
-+	depends on USB_EHCI_HCD
+-	depends on USB_OHCI_HCD
+ 	default n
  
- config XPS_USB_HCD_XILINX
- 	bool "Use Xilinx usb host EHCI controller core"
+ config USB_OHCI_BIG_ENDIAN_MMIO
+ 	bool
+-	depends on USB_OHCI_HCD
+ 	default n
+ 
+ config USB_OHCI_LITTLE_ENDIAN
+ 	bool
+-	depends on USB_OHCI_HCD
+ 	default n if STB03xxx || PPC_MPC52xx
+ 	default y
+ 
++endif # USB_OHCI_HCD
++
+ config USB_UHCI_HCD
+ 	tristate "UHCI HCD (most Intel and VIA) support"
+ 	depends on PCI || SPARC_LEON || ARCH_VT8500
+@@ -633,16 +644,6 @@ config USB_IMX21_HCD
+          module will be called "imx21-hcd".
+ 
+ 
+-config USB_OCTEON_OHCI
+-	bool "Octeon on-chip OHCI support"
+-	depends on USB_OHCI_HCD && CPU_CAVIUM_OCTEON
+-	default USB_OCTEON_EHCI
+-	select USB_OHCI_BIG_ENDIAN_MMIO
+-	select USB_OHCI_LITTLE_ENDIAN
+-	help
+-	  Enable support for the Octeon II SOC's on-chip OHCI
+-	  controller.  It is needed for low-speed USB 1.0 device
+-	  support.  All CN6XXX based chips with USB are supported.
+ 
+ config USB_OCTEON2_COMMON
+ 	bool
 -- 
 1.7.10.4
 
