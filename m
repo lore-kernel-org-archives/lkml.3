@@ -1,119 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933523Ab3DDI13 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 04:27:29 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:21780 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933336Ab3DDI10 convert rfc822-to-8bit (ORCPT
+	id S933555Ab3DDI1y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 04:27:54 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:40726 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933141Ab3DDI1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 04:27:26 -0400
-Date: Thu, 4 Apr 2013 10:26:53 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC] Add implicit barriers to irqsave/restore class of functions
-Message-ID: <20130404082652.GA15261@ab42.lan>
-References: <20130403130340.GA13826@ab42.lan>
- <1364994622-14110-1-git-send-email-christian.ruppert@abilis.com>
- <515C2EC0.4090904@synopsys.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <515C2EC0.4090904@synopsys.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Thu, 4 Apr 2013 04:27:51 -0400
+X-AuditID: cbfee68e-b7f946d000001e37-4c-515d3985b6c4
+From: Jonghwan Choi <jhbird.choi@samsung.com>
+To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org, "'Kukjin'" <kgene.kim@samsung.com>,
+        "'Thomas Abraham'" <thomas.ab@samsung.com>
+References: 
+In-reply-to: 
+Subject: [PATCH 3.8-stable] ARM: EXYNOS: Fix crash on soft reset on EXYNOS5440
+Date: Thu, 04 Apr 2013 17:27:48 +0900
+Message-id: <000101ce310e$4a8c3990$dfa4acb0$%choi@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAEJzDJAAAEqHoA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGIsWRmVeSWpSXmKPExsVy+t8zQ91Wy9hAg3l9ghZLmrktehdcZbO4
+	vGsOm8WCjY8YLTqWMTqwevRtWcXo8XmTXABTFJdNSmpOZllqkb5dAlfGpFuXmQrOclesnjKJ
+	qYHxIGcXIyeHhICJxMquV+wQtpjEhXvr2boYuTiEBJYxSrR8a2CHKXpzrY0ZIjGdUWJq+0VG
+	COcvo8ScnxtZQarYBHQljq3fAmaLCHhLnJryixnEZhbIkLjScBAozgHUwC2xujkIJMwpwCOx
+	7k8nWImwgJ/Euh8zwZaxCKhKdC38ygJi8wrYSew4/4wNwhaU+DH5HgvESC2J9TuPM0HY8hKb
+	17xlBhkvIaAu8eivLsQFThLrz7RBlYtI7HvxDuxkCYFD7BKzZqxmgtglIPFt8iEWiF5ZiU0H
+	mCH+lZQ4uOIGywRGiVlINs9CsnkWks2zkKxYwMiyilE0tSC5oDgpvchIrzgxt7g0L10vOT93
+	EyMkDvt2MN48YH2IMRlo/URmKdHkfGAc55XEGxqbGVmYmpgaG5lbmpEmrCTOq9ZiHSgkkJ5Y
+	kpqdmlqQWhRfVJqTWnyIkYmDU6qBUdfkv8uS1/N8p+2sz3ncVhwX5ba04Bnzz6WFpjmix8PD
+	797bzNTlkmrwZ0GY8Y5cu/RrYhWL467/UjEwSmLmv/Y+ctdbHdfrjLNXrT0zafP5Sq17nTv/
+	v5TPEHR9ddPifJLdX8PkGVNmac2XC214Nefudv2yW7FnDNn2xEcy35Dvnj6n8i6bsxJLcUai
+	oRZzUXEiALYLLrjZAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMKsWRmVeSWpSXmKPExsVy+t9jQd1Wy9hAg95/3BZLmrktehdcZbO4
+	vGsOm8WCjY8YLTqWMTqwevRtWcXo8XmTXABTVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7yp
+	mYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QMiWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFB
+	cD1GBmggYR1jxqRbl5kKznJXrJ4yiamB8SBnFyMnh4SAicSba23MELaYxIV769m6GLk4hASm
+	M0pMbb/ICOH8ZZSY83MjK0gVm4CuxLH1W8BsEQFviVNTfoF1MwtkSFxpOAgU5wBq4JZY3RwE
+	EuYU4JFY96cTrERYwE9i3Y+Z7CA2i4CqRNfCrywgNq+AncSO88/YIGxBiR+T77FAjNSSWL/z
+	OBOELS+xec1bZpDxEgLqEo/+6kJc4CSx/kwbVLmIxL4X7xgnMArNQjJpFpJJs5BMmoWkZQEj
+	yypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4Ch/Jr2DcVWDxSFGAQ5GJR7eFf4xgUKsiWXF
+	lbmHGCU4mJVEeN15YgOFeFMSK6tSi/Lji0pzUosPMSYDPTqRWUo0OR+YgPJK4g2NTcyMLI3M
+	LIxMzM1JE1YS5z3Yah0oJJCeWJKanZpakFoEs4WJg1OqgVHp376tbS4bVhXltBWlrOk8EVvv
+	LPHvx68DO+T+PePtVjfvOvPl6MGMNG8LnerJlb9afddYCH5aX6xWG2DvLBTScWy2VaBxsRh3
+	fuDZau1Asxb2i3uenmUy/npgwVs1Bfv7+xqWKW6eNVHo/MO33VXvr539tfYb+3fXDJlDvZfY
+	u394/Q40YlNiKc5INNRiLipOBAAv7gwHNgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vineet,
+This patch looks like it should be in the 3.8-stable tree, should we apply
+it?
 
-Just a short message to inform you that the test campaign on our RFC
-patch has run through successfully and we consider the patch stable
-enough for release to our customers. The main reason the barriers were
-added in this particular place is because other architectures do the
-same.
+------------------
 
-I agree that the patch adding barriers in preempt_* is more in line with
-Thomas' comment than our RFC (which predates that comment) and we have
-also started a test campaign for that patch yesterday. I'll give an update
-directly in reply to the patch when that campaign has run through.
+From: "Thomas Abraham <thomas.ab@samsung.com>"
 
-Greetings,
-  Christian
+The soft-reset control register is located in the XMU controller space.
+Map this controller space before writing to the soft-reset controller
+register.
 
-On Wed, Apr 03, 2013 at 06:59:36PM +0530, Vineet Gupta wrote:
-> Hi Christian,
-> 
-> On 04/03/2013 06:40 PM, Christian Ruppert wrote:
-> > This patch adds implicit memory barriers to irqsave/restore functions of
-> > the ARC architecture port in line with what is done in other architectures.
-> >
-> > It seems to fix several seemingly unrelated issues in our platform but for
-> > the moment it is insufficiently tested (and might even be incomplete).
-> > Please comment.
-> 
-> I think this is not needed. Semantically we need barrier for spinlocks, not irq
-> save/restore - although spin locks are one of the primary users of irq
-> save/restore API.
-> 
-> So repeating what Thomas already said, the barrier already exists for
-> PREEMPT_COUNT, we need to make sure they are present for !PREEMPT_COUNT.
-> 
-> -Vineet
-> 
-> > Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
-> > ---
-> >  arch/arc/include/asm/irqflags.h |    8 ++++----
-> >  1 files changed, 4 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/arch/arc/include/asm/irqflags.h b/arch/arc/include/asm/irqflags.h
-> > index ccd8480..c8147d1 100644
-> > --- a/arch/arc/include/asm/irqflags.h
-> > +++ b/arch/arc/include/asm/irqflags.h
-> > @@ -39,7 +39,7 @@ static inline long arch_local_irq_save(void)
-> >  	"	flag.nz %0		\n"
-> >  	: "=r"(temp), "=r"(flags)
-> >  	: "n"((STATUS_E1_MASK | STATUS_E2_MASK))
-> > -	: "cc");
-> > +	: "memory", "cc");
-> >  
-> >  	return flags;
-> >  }
-> > @@ -53,7 +53,7 @@ static inline void arch_local_irq_restore(unsigned long flags)
-> >  	__asm__ __volatile__(
-> >  	"	flag %0			\n"
-> >  	:
-> > -	: "r"(flags));
-> > +	: "r"(flags) : "memory");
-> >  }
-> >  
-> >  /*
-> > @@ -73,7 +73,7 @@ static inline void arch_local_irq_disable(void)
-> >  	"	and %0, %0, %1		\n"
-> >  	"	flag %0			\n"
-> >  	: "=&r"(temp)
-> > -	: "n"(~(STATUS_E1_MASK | STATUS_E2_MASK)));
-> > +	: "n"(~(STATUS_E1_MASK | STATUS_E2_MASK)) : "memory");
-> >  }
-> >  
-> >  /*
-> > @@ -85,7 +85,7 @@ static inline long arch_local_save_flags(void)
-> >  
-> >  	__asm__ __volatile__(
-> >  	"	lr  %0, [status32]	\n"
-> > -	: "=&r"(temp));
-> > +	: "=&r"(temp) : : "memory");
-> >  
-> >  	return temp;
-> >  }
-> 
+Signed-off-by: Thomas Abraham <thomas.ab@samsung.com>
+Signed-off-by: Girish K S <ks.giri@samsung.com>
+Signed-off-by: Kukjin <kgene.kim@samsung.com>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+---
+ arch/arm/mach-exynos/common.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
+diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
+index 1a89824..3b6de7a 100644
+--- a/arch/arm/mach-exynos/common.c
++++ b/arch/arm/mach-exynos/common.c
+@@ -299,6 +299,7 @@ void exynos4_restart(char mode, const char *cmd)
+ 
+ void exynos5_restart(char mode, const char *cmd)
+ {
++	struct device_node *np;
+ 	u32 val;
+ 	void __iomem *addr;
+ 
+@@ -306,8 +307,9 @@ void exynos5_restart(char mode, const char *cmd)
+ 		val = 0x1;
+ 		addr = EXYNOS_SWRESET;
+ 	} else if (of_machine_is_compatible("samsung,exynos5440")) {
+-		val = (0x10 << 20) | (0x1 << 16);
+-		addr = EXYNOS5440_SWRESET;
++		np = of_find_compatible_node(NULL, NULL,
+"samsung,exynos5440-clock");
++		addr = of_iomap(np, 0) + 0xcc;
++		val = (0xfff << 20) | (0x1 << 16);
+ 	} else {
+ 		pr_err("%s: cannot support non-DT\n", __func__);
+ 		return;
 -- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+1.7.9.5
+
+
