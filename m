@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763553Ab3DDGMQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 02:12:16 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58216 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756421Ab3DDGMO (ORCPT
+	id S1763216Ab3DDGNH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 02:13:07 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:17574 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756356Ab3DDGNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 02:12:14 -0400
-Date: Thu, 4 Apr 2013 17:12:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: linux-next: manual merge of the akpm tree with the vfs tree
-Message-Id: <20130404171211.3d359e39ca54e074f122d541@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__4_Apr_2013_17_12_11_+1100_lm2EqbNn1KmxB7VV"
+	Thu, 4 Apr 2013 02:13:04 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-ec-515d19df5eff
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Jingoo Han'" <jg1.han@samsung.com>,
+        "'Doug Anderson'" <dianders@chromium.org>
+Cc: "'Olof Johansson'" <olof@lixom.net>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Vivek Gautam'" <gautam.vivek@samsung.com>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Rob Herring'" <rob.herring@calxeda.com>,
+        "'Rob Landley'" <rob@landley.net>, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1363302046-31684-1-git-send-email-dianders@chromium.org>
+ <1363316303-12736-1-git-send-email-dianders@chromium.org>
+ <007c01ce212a$059e3340$10da99c0$%han@samsung.com>
+In-reply-to: <007c01ce212a$059e3340$10da99c0$%han@samsung.com>
+Subject: RE: [PATCH v2] usb: Document clocks in samsung,exynos4210-ehci/ohci
+ bindings
+Date: Thu, 04 Apr 2013 15:12:46 +0900
+Message-id: <27a301ce30fb$6d141400$473c3c00$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4hKP0ou9rx4cJmRtaXjhtfU7dHGQAAF2IQA/SBS9A=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgleLIzCtJLcpLzFFi42I5/e+Zke59ydhAgyPdYhYHZj9ktTi77CCb
+	RduVg+wWr85sZLO4vPASq8XCtiUsFpd3zWGzOHX9M5vF4RUHmCzWvZzOYnFsxhJGB26PBZ+v
+	sHvMbrjI4vFq9UxWjzvX9rB5nJ+xkNHjyokmVo++LasYPX6+1PH4vEkugDOKyyYlNSezLLVI
+	3y6BK2PJtMiCRuaKS72LGBsY1zB1MXJySAiYSJzd8o8RwhaTuHBvPVsXIxeHkMAyRolNO68y
+	wxRNnHyBFcQWEljEKPHreDBE0V9GiYbeaWBFbAIaEoffP2MHsUUE/CXWLpvLBFLELHCPSeLZ
+	k72MEB1bGSU2P+gGGsXBwSlgJ/FpZhZIg7BAuMSS2afAzmARUJXonH6SBcTmFbCVWPpxDSuE
+	LSjxY/I9sDizgJbE+p3HmSBseYnNa94yg4yUEFCXePRXF+IGK4mnL49BlYtI7HvxDuwECYGl
+	HBJbe3cwQewSkPg2+RALRK+sxKYDUA9LShxccYNlAqPELCSbZyHZPAvJ5llIVixgZFnFKJpa
+	kFxQnJReZKxXnJhbXJqXrpecn7uJEZIK+ncw3j1gfYgxGWj9RGYp0eR8YCrJK4k3NDYzsjA1
+	MTU2Mrc0I01YSZxXrcU6UEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAMjQ/W536YXVnm3GGye
+	a3eWxYXTZdrFBv6zW91Wz2X980hvisWt9WEpM+YkFLE8ejr5+ye3L4l7sl8dnXn6bLOmWdnD
+	LOG1O2TvenDHCO1+Uj+1Kdw3fsHW2omF/Y1iK/cof3KxYJV9n95csNxw8ZX2Ni2zdydKExe7
+	s3RuZak5uImFmVUgsU1NiaU4I9FQi7moOBEALaj1YBsDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKKsWRmVeSWpSXmKPExsVy+t9jAd17krGBBhMXG1kcmP2Q1eLssoNs
+	Fm1XDrJbvDqzkc3i8sJLrBYL25awWFzeNYfN4tT1z2wWh1ccYLJY93I6i8WxGUsYHbg9Fny+
+	wu4xu+Eii8er1TNZPe5c28PmcX7GQkaPKyeaWD36tqxi9Pj5Usfj8ya5AM6oBkabjNTElNQi
+	hdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKBzlRTKEnNKgUIBicXF
+	Svp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZS6ZFFjQyV1zqXcTYwLiGqYuRk0NCwERi4uQL
+	rBC2mMSFe+vZQGwhgUWMEr+OB3cxcgHZfxklGnqnMYMk2AQ0JA6/f8YOYosI+EusXTaXCaSI
+	WeAek8SzJ3sZITq2MkpsftANNJaDg1PATuLTzCyQBmGBcIkls08xgtgsAqoSndNPsoDYvAK2
+	Eks/rmGFsAUlfky+BxZnFtCSWL/zOBOELS+xec1bZpCREgLqEo/+6kLcYCXx9OUxqHIRiX0v
+	3jFOYBSahWTSLCSTZiGZNAtJywJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwYnmmfQO
+	xlUNFocYBTgYlXh4V/jHBAqxJpYVV+YeYpTgYFYS4XXniQ0U4k1JrKxKLcqPLyrNSS0+xJgM
+	9OhEZinR5HxgEswriTc0NjEzsjQyszAyMTcnTVhJnPdgq3WgkEB6YklqdmpqQWoRzBYmDk6p
+	BkYG5flHOnRvtl6uuH3FqP9IKs95s8zfb97xP/IzvBRr2erwiP/AtcUn8w9MLyspr9azyvFf
+	sXbxhmZFr5W9pu/jDR0iG8P4wiefMluzcg2LSZHcQgdRwU2F6dn86rIWjlePlMlzi5za/+Pz
+	V9aGqoye9W6qZ4PLFXOOlj2K8Nr1qvXTx/nKeUosxRmJhlrMRcWJAHdB0u94AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__4_Apr_2013_17_12_11_+1100_lm2EqbNn1KmxB7VV
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Jingoo Han wrote:
+> 
+> On Friday, March 15, 2013 8:01 AM, Doug Anderson wrote:
+> >
+> > The exynox4210-ehci and exynos4210-ohci nodes need a clock specified
+> > using the common clock framework.  Document it.
+> >
+> > Signed-off-by: Doug Anderson <dianders@chromium.org>
+> 
+> It looks good.
+> Acked-by: Jingoo Han <jg1.han@samsung.com>
+> 
+> 
+Applied, thanks.
 
-Hi Andrew,
+- Kukjin
 
-Today's linux-next merge of the akpm tree got conflicts in mm/filemap.c,
-fs/xfs/xfs_file.c, fs/splice.c, fs/ocfs2/file.c, fs/ntfs/file.c,
-fs/fuse/file.c, fs/cifs/file.c and fs/btrfs/file.c between commit
-36bd5dc0c4e2 ("lift sb_start_write/sb_end_write out of ->aio_write()")
-from the vfs tree and commit "fs: return EAGAIN when O_NONBLOCK write
-should block on frozen fs" from the akpm tree.
-
-The former was removing the code modified by the letter, so I just
-dropped the akpm tree patch and the following "ocfs2: add freeze
-protection to ocfs2_file_splice_write()".
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__4_Apr_2013_17_12_11_+1100_lm2EqbNn1KmxB7VV
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRXRm7AAoJEECxmPOUX5FExDEP/2OSVv/twwkkewBAuBkAG51I
-a60ZaF9WPDWB4WFj8gy5Dj8snwIrS1jbq0SEh4dxF0gQqaZhskQvZv1V4XTlRzD9
-shGq+6cTJOyhj8h28m3GYJ6/cE+2lD6tNLwm5Pi4K75gvmm9UL/R1tN7ybwvV4IN
-4kzxPloqmRHgtG+buxpd47bGocJzDuZyJfVUra4mgwiDj9Yf794HVVD5X+9NwBzp
-ZU3qc7z+rBUphcNztFv40IE2YjC7u4h0xdFdcw2isp44VitlpXUfwQYuILy1Omvs
-dMk9UsOHnB1LWzt+FUuCb4ENHeoXCMiz0xcVqhuCTQFxg4IQS97v5wbrrM5RGYYD
-WoRfPQnmL6aT0GqnF2ZaGkmLiAgYHrLJ8f/WD8DW6uAZuXd6BcQSDNz9zGo3KPX7
-pyq9cGyGwUeE/WLVO+/+5HKCQzV+HpBIjw56SMsRgaFRsHlCOYH6qFPjD1qrvdYU
-e4DKb6XvyV+Vb8taKkFe8tSMS7o3QAN6DL7opB79TYFIF0uMP0D8b2mD+2bS41tR
-B1eHGe8OpduG9xSBJ4thsoYHfgkX1PhRAyTSPzQxeZpZXQlduApqt6akTklF9pld
-ZIJ9w2vawlWC0VaPU3AKzRR3v/A8yNdEtczJ/CsMWqZQq4UYMC9vMwdXdFwH9Dbq
-aQT4jHq49JLmjD584n9L
-=shJe
------END PGP SIGNATURE-----
-
---Signature=_Thu__4_Apr_2013_17_12_11_+1100_lm2EqbNn1KmxB7VV--
