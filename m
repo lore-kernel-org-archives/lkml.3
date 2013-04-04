@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762851Ab3DDVAw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 17:00:52 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:51629 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762183Ab3DDVAv (ORCPT
+	id S1762971Ab3DDVBn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 17:01:43 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:41145 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762570Ab3DDVBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 17:00:51 -0400
+	Thu, 4 Apr 2013 17:01:41 -0400
 MIME-Version: 1.0
 In-Reply-To: <c3d1db06-5196-4828-b0a4-7f6517c7b68a@email.android.com>
 References: <1365106055-22939-1-git-send-email-keescook@chromium.org>
@@ -14,10 +14,10 @@ References: <1365106055-22939-1-git-send-email-keescook@chromium.org>
 	<515DDEC0.9000109@zytor.com>
 	<CAGXu5j+FqZpXURougB_Sd4zmF3bsqsT=m-om5eEM5WCsRX014g@mail.gmail.com>
 	<c3d1db06-5196-4828-b0a4-7f6517c7b68a@email.android.com>
-Date: Thu, 4 Apr 2013 14:00:50 -0700
-Message-ID: <CAKyRK=gNeEjBQ7zbJphMcE=sps-fOwtddYMQt-e3q=Dc9nVo0g@mail.gmail.com>
+Date: Thu, 4 Apr 2013 14:01:39 -0700
+Message-ID: <CAG7+5M0SDj0r+HfrZp99FvmDa+LJMJmyDv2Eju5LSfe2TsCXbg@mail.gmail.com>
 Subject: Re: [PATCH 3/3] x86: kernel base offset ASLR
-From: Julien Tinnes <jln@google.com>
+From: Eric Northup <digitaleric@google.com>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
         "kernel-hardening@lists.openwall.com" 
@@ -27,22 +27,23 @@ Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
         Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
         Matthew Garrett <mjg@redhat.com>,
         Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
         Dan Rosenberg <drosenberg@vsecurity.com>,
-        Will Drewry <wad@chromium.org>
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Natural evolution: when the cluster is the computer, kernel panics are
-recoverable like segfaults in a multi-process OS.
-
-You have a point and 8 bits isn't perfect, but it's already useful
-regardless, in certain scenarios.
-
 On Thu, Apr 4, 2013 at 1:58 PM, H. Peter Anvin <hpa@zytor.com> wrote:
 > It seems to me that you are assuming that the attacker is targeting a specific system, but a bot might as well target 256 different systems and see what sticks...
+
+The alarm signal from the ones that don't stick is, in my opinion, the
+primary benefit from this work -- it makes certain classes of attack
+much less economical.  A crash dump from a panic'd machine may include
+enough information to diagnose the exploited vulnerability - and once
+diagnosed and fixed, knowledge about the vulnerability is much less
+valuable.
+
 >
 > Kees Cook <keescook@chromium.org> wrote:
 >
