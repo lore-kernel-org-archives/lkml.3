@@ -1,93 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762959Ab3DDWAw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 18:00:52 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:54791 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760720Ab3DDWAu (ORCPT
+	id S1765100Ab3DDWLb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 18:11:31 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:54881 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765070Ab3DDWL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 18:00:50 -0400
+	Thu, 4 Apr 2013 18:11:26 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: [PATCHv8 8/8] zswap: add documentation
+Date: Thu,  4 Apr 2013 17:10:46 -0500
+Message-Id: <1365113446-25647-9-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.2
+In-Reply-To: <1365113446-25647-1-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1365113446-25647-1-git-send-email-sjenning@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1363217302-14383-3-git-send-email-yinghai@kernel.org>
-References: <1363217302-14383-1-git-send-email-yinghai@kernel.org> <1363217302-14383-3-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 4 Apr 2013 16:00:30 -0600
-Message-ID: <CAErSpo6rmxMrX8EWiaut3wLSCu7LvmstyadEnTRu4Bv5MVyXJw@mail.gmail.com>
-Subject: Re: [PATCH v3 02/27] PCI: Add pci_dev_resource_idx() helper
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ram Pai <linuxram@us.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040422-2876-0000-0000-0000071B7B66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 5:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> Use resource pointer to get index in pci resources array/list.
->
-> -v2: export symbol for acpiphp compiling error, found by
->        Steven Newbury <steve@snewbury.org.uk>
->
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  drivers/pci/probe.c |    9 +++++++++
->  include/linux/pci.h |    1 +
->  2 files changed, 10 insertions(+)
->
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 9cb3eb3..1df75f7 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -114,6 +114,15 @@ struct resource *pci_dev_resource_n(struct pci_dev *dev, int n)
->  }
->  EXPORT_SYMBOL(pci_dev_resource_n);
->
-> +int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res)
-> +{
-> +       if (res >= dev->resource &&
-> +           res <= dev->resource + (PCI_NUM_RESOURCES - 1))
-> +               return res - dev->resource;
-> +
-> +       return -1;
-> +}
+This patch adds the documentation file for the zswap functionality
 
-I'm dubious about the whole idea of a resource *index*.  I'd like to
-get away from that concept completely.
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ Documentation/vm/zswap.txt | 82 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 82 insertions(+)
+ create mode 100644 Documentation/vm/zswap.txt
 
-Some uses of this are just for printing and are obviously unnecessary
-(get_res_add_size()).
+diff --git a/Documentation/vm/zswap.txt b/Documentation/vm/zswap.txt
+new file mode 100644
+index 0000000..f29b82f
+--- /dev/null
++++ b/Documentation/vm/zswap.txt
+@@ -0,0 +1,82 @@
++Overview:
++
++Zswap is a lightweight compressed cache for swap pages. It takes
++pages that are in the process of being swapped out and attempts to
++compress them into a dynamically allocated RAM-based memory pool.
++If this process is successful, the writeback to the swap device is
++deferred and, in many cases, avoided completely.  This results in
++a significant I/O reduction and performance gains for systems that
++are swapping.
++
++Zswap provides compressed swap caching that basically trades CPU cycles
++for reduced swap I/O.  This trade-off can result in a significant
++performance improvement as reads to/writes from to the compressed
++cache almost always faster that reading from a swap device
++which incurs the latency of an asynchronous block I/O read.
++
++Some potential benefits:
++* Desktop/laptop users with limited RAM capacities can mitigate the
++    performance impact of swapping.
++* Overcommitted guests that share a common I/O resource can
++    dramatically reduce their swap I/O pressure, avoiding heavy
++    handed I/O throttling by the hypervisor.  This allows more work
++    to get done with less impact to the guest workload and guests
++    sharing the I/O subsystem
++* Users with SSDs as swap devices can extend the life of the device by
++    drastically reducing life-shortening writes.
++
++Zswap evicts pages from compressed cache on an LRU basis to the backing
++swap device when the compress pool reaches it size limit or the pool is
++unable to obtain additional pages from the buddy allocator.  This
++requirement had been identified in prior community discussions.
++
++To enabled zswap, the "enabled" attribute must be set to 1 at boot time.
++e.g. zswap.enabled=1
++
++Design:
++
++Zswap receives pages for compression through the Frontswap API and
++is able to evict pages from its own compressed pool on an LRU basis
++and write them back to the backing swap device in the case that the
++compressed pool is full or unable to secure additional pages from
++the buddy allocator.
++
++Zswap makes use of zsmalloc for the managing the compressed memory
++pool.  This is because zsmalloc is specifically designed to minimize
++fragmentation on large (> PAGE_SIZE/2) allocation sizes.  Each
++allocation in zsmalloc is not directly accessible by address.
++Rather, a handle is return by the allocation routine and that handle
++must be mapped before being accessed.  The compressed memory pool grows
++on demand and shrinks as compressed pages are freed.  The pool is
++not preallocated.
++
++When a swap page is passed from frontswap to zswap, zswap maintains
++a mapping of the swap entry, a combination of the swap type and swap
++offset, to the zsmalloc handle that references that compressed swap
++page.  This mapping is achieved with a red-black tree per swap type.
++The swap offset is the search key for the tree nodes.
++
++During a page fault on a PTE that is a swap entry, frontswap calls
++the zswap load function to decompress the page into the page
++allocated by the page fault handler.
++
++Once there are no PTEs referencing a swap page stored in zswap
++(i.e. the count in the swap_map goes to 0) the swap code calls
++the zswap invalidate function, via frontswap, to free the compressed
++entry.
++
++Zswap seeks to be simple in its policies.  Sysfs attributes allow for
++two user controlled policies:
++* max_compression_ratio - Maximum compression ratio, as as percentage,
++    for an acceptable compressed page. Any page that does not compress
++    by at least this ratio will be rejected.
++* max_pool_percent - The maximum percentage of memory that the compressed
++    pool can occupy.
++
++Zswap allows the compressor to be selected at kernel boot time by
++setting the “compressor” attribute.  The default compressor is lzo.
++e.g. zswap.compressor=deflate
++
++A debugfs interface is provided for various statistic about pool size,
++number of pages stored, and various counters for the reasons pages
++are rejected.
+-- 
+1.8.2
 
-Other places we pass around the index, e.g.,
-reassign_resources_sorted() passes it to pci_assign_resource() and
-pci_reassign_resource(), and eventually we just pass the index to
-pci_dev_resource_n() to get back what we started with.  I'd rather
-just pass around a pointer instead of this half pointer/half index
-strategy.
-
-We might need a "struct pci_resource" or something that contains the
-type (BAR, IOV, bridge window, etc), a BAR number, etc.  There's
-already a "struct pci_resource" in cpqphp, but that's isolated to
-cpqphp and could be easily changed if you wanted that name.
-
-It's going to be very confusing to have a "struct pci_dev_resource"
-and a "pci_dev_resource_n()" that have nothing to do with each other.
-
->  static u64 pci_size(u64 base, u64 maxbase, u64 mask)
->  {
->         u64 size = mask & maxbase;      /* Find the significant bits */
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 00d5367..aefff8b 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -339,6 +339,7 @@ struct pci_dev {
->  };
->
->  struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
-> +int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res);
->
->  static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
->  {
-> --
-> 1.7.10.4
->
