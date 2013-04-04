@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933062Ab3DDHKx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 03:10:53 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59083 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933034Ab3DDHKw (ORCPT
+	id S1763601Ab3DDHN2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 03:13:28 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:46255 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763126Ab3DDHN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 03:10:52 -0400
-Date: Thu, 4 Apr 2013 18:10:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: linux-next: build failure after merge of the final tree
- (wireless-next tree related)
-Message-Id: <20130404181043.c191e7f4aa3057e6eda151cc@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Thu, 4 Apr 2013 03:13:26 -0400
+Date: Thu, 4 Apr 2013 09:13:09 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mingo@redhat.com, x86@kernel.org,
+        rth@twiddle.net, linux@arm.linux.org.uk, msalter@redhat.com,
+        starvik@axis.com, dhowells@redhat.com, tony.luck@intel.com,
+        benh@kernel.crashing.org, takata@linux-m32r.org, geert@linux-m68k.org,
+        james.hogan@imgtec.com, monstr@monstr.eu, ralf@linux-mips.org,
+        jonas@southpole.se, rkuo@codeaurora.org, liqin.chen@sunplusct.com,
+        davem@davemloft.net, lethal@linux-sh.org, vgupta@synopsys.com,
+        chris@zankel.net, cmetcalf@tilera.com, ysato@users.sourceforge.jp,
+        gxt@mprc.pku.edu.cn, jdike@addtoit.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH 3/7] dump_stack: consolidate dump_stack()
+ implementations and unify their behaviors
+Message-ID: <20130404091309.5c9da9d3@mschwide>
+In-Reply-To: <1365016497-32033-4-git-send-email-tj@kernel.org>
+References: <1365016497-32033-1-git-send-email-tj@kernel.org>
+	<1365016497-32033-4-git-send-email-tj@kernel.org>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__4_Apr_2013_18_10_43_+1100_dk0mYOib4873MBfI"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040407-1948-0000-0000-000004BB6BD0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__4_Apr_2013_18_10_43_+1100_dk0mYOib4873MBfI
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed,  3 Apr 2013 12:14:53 -0700
+Tejun Heo <tj@kernel.org> wrote:
 
-Hi all,
+> v2: CPU number added to the generic debug info as requested by s390
+>     folks and dropped the s390 specific dump_stack().  This loses %ksp
+>     from the debug message which the maintainers think isn't important
+>     enough to keep the s390-specific dump_stack() implementation.
+> 
+>     dump_stack_print_info() is moved to kernel/printk.c from
+>     lib/dump_stack.c.  Because linkage is per objecct file,
+>     dump_stack_print_info() living in the same lib file as generic
+>     dump_stack() means that archs which implement custom dump_stack()
+>     - at this point, only blackfin - can't use dump_stack_print_info()
+>     as that will bring in the generic version of dump_stack() too.  v1
+>     The v1 patch broke build on blackfin due to this issue.  The build
+>     breakage was reported by Fengguang Wu.
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+For the s390 changes:
+Acked-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-drivers/net/wireless/rtlwifi/rtl8188ee/built-in.o: In function `.rtl92c_phy=
-_ap_calibrate':
-(.text+0x21d14): multiple definition of `.rtl92c_phy_ap_calibrate'
-drivers/net/wireless/rtlwifi/rtl8192c/built-in.o:(.text+0xb1e8): first defi=
-ned here
-drivers/net/wireless/rtlwifi/rtl8188ee/built-in.o: In function `rtl_hal_pwr=
-seqcmdparsing':
-(.opd+0xed0): multiple definition of `rtl_hal_pwrseqcmdparsing'
-drivers/net/wireless/rtlwifi/rtl8723ae/built-in.o:(.opd+0x11a0): first defi=
-ned here
-drivers/net/wireless/rtlwifi/rtl8188ee/built-in.o: In function `rtl92c_phy_=
-ap_calibrate':
-(.opd+0xe58): multiple definition of `rtl92c_phy_ap_calibrate'
-drivers/net/wireless/rtlwifi/rtl8192c/built-in.o:(.opd+0x570): first define=
-d here
-drivers/net/wireless/rtlwifi/rtl8188ee/built-in.o: In function `.rtl_hal_pw=
-rseqcmdparsing':
-(.text+0x22164): multiple definition of `.rtl_hal_pwrseqcmdparsing'
-drivers/net/wireless/rtlwifi/rtl8723ae/built-in.o:(.text+0x297a8): first de=
-fined here
+-- 
+blue skies,
+   Martin.
 
-Caused by commit f0eb856e0b6c ("rtlwifi: rtl8188ee: Add new driver").
+"Reality continues to ruin my life." - Calvin.
 
-I reverted commit 8b138d4898a0 ("rtlwifi: rtl8188ee: Enable build of new
-driver") for today.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__4_Apr_2013_18_10_43_+1100_dk0mYOib4873MBfI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRXSdzAAoJEECxmPOUX5FEcrQQAI4QDwqAUYleseYaMGg6Ecb2
-P4e4mPo5bTfbCWQvnoC1EmP+sjMWnfz8s/t/o5ZJC4BaqdMHbNtigjUic3R9zVh/
-s7rriNc7KqsbwZO8cNYHXJq+ZSnvI6b6VCLxC6rcBteUyYxadz0F89FytngzUzaS
-4IH2/66LAG2kqOe7GR9qlLvTLHQ6vc4vNLlZBVhEbUdoLFo4YtWzKyR6aImZfo9T
-EZ0fsU+OylgQ2Ug6C8FLUKAqFmQeiB0I9Vehpr99a1+M1P2PZD4vCJHtg5mgBUS5
-ua9ctmnePIh14cEVYY/uQWbXEeB3I/pi+EsYM76jaWll3NN0itp7CUNfIxGPSCDr
-dydCQ6b6ms0Uf9iJjAh52Vzm17VDgSD1lrkuvWfWVEID65QgZ/L0tYBThjbkytAr
-VnMwXqIVLmj9YIugt+FsPc6PASJop5tZgnuKxExMrr58unHUHLxAaub5397xC6cb
-+ZeVZEBy6fr3c76EYKPC6Nn1yHia1kKON7G7xAAWu9FXCsXM2M4e3o24hmKIyvrw
-10Oa/NfwC3cx1HiwlXyLAMWLm3LJs7FeEn5P44l4RqyFoTfrtGhwvQuldXJVfOg3
-t+aaC0NJT7GcfBIr1t1jpCHYNnDs+ALvMOth6+5fVXQLOFqz6a+VWKHjwUu3yDPu
-nbMbOcpWcluIMjgFNAre
-=3qS5
------END PGP SIGNATURE-----
-
---Signature=_Thu__4_Apr_2013_18_10_43_+1100_dk0mYOib4873MBfI--
