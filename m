@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765636Ab3DDXxd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 19:53:33 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:32192 "EHLO
+	id S1765581Ab3DDXxc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 19:53:32 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:32193 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764919Ab3DDXrz (ORCPT
+	with ESMTP id S1764911Ab3DDXrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 4 Apr 2013 19:47:55 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,94 +13,158 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3 11/22] x86, mm, numa: Call numa_meminfo_cover_memory() checking early
-Date: Thu,  4 Apr 2013 16:46:15 -0700
-Message-Id: <1365119186-23487-12-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v3 10/22] x86, mm, numa: Move two functions calling on successful path later
+Date: Thu,  4 Apr 2013 16:46:14 -0700
+Message-Id: <1365119186-23487-11-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
 References: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the separation, we need to set memblock nid later, as it
-could change memblock array, and possible doube memblock.memory
-array that will need to allocate buffer.
+We need to have numa info ready before init_mem_mapping, so we
+can call init_mem_mapping per nodes also can trim node mem range to
+big alignment.
 
-We do not need to use nid in memblock to find out absent pages.
-So we can move that numa_meminfo_cover_memory() early.
+Current numa parsing need to allocate some buffer and need to be
+called after init_mem_mapping.
 
-Also could change __absent_pages_in_range() to static and use
-absent_pages_in_range() directly.
+So try to split parsing numa info to two stages, and early one will be
+before init_mem_mapping, and it should not need allocate buffers.
 
-Later we can only set memblock nid one time on successful path.
+At last we will have early_initmem_init() and initmem_init().
+
+This one is first one for separation.
+
+setup_node_data() and numa_init_array() are only called for successful
+path, so we can move calling to x86_numa_init(). That will also make
+numa_init() small and readable.
+
+-v2: remove online_node_map clear in numa_init(), as it is only
+     set in setup_node_data() at last in successful path.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/numa.c | 7 ++++---
- include/linux/mm.h | 2 --
- mm/page_alloc.c    | 2 +-
- 3 files changed, 5 insertions(+), 6 deletions(-)
+ arch/x86/mm/numa.c | 69 ++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 39 insertions(+), 30 deletions(-)
 
 diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index d545638..b7173f6 100644
+index 72fe01e..d545638 100644
 --- a/arch/x86/mm/numa.c
 +++ b/arch/x86/mm/numa.c
-@@ -460,7 +460,7 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
- 		u64 s = mi->blk[i].start >> PAGE_SHIFT;
- 		u64 e = mi->blk[i].end >> PAGE_SHIFT;
- 		numaram += e - s;
--		numaram -= __absent_pages_in_range(mi->blk[i].nid, s, e);
-+		numaram -= absent_pages_in_range(s, e);
- 		if ((s64)numaram < 0)
- 			numaram = 0;
- 	}
-@@ -488,6 +488,9 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 	if (WARN_ON(nodes_empty(node_possible_map)))
+@@ -480,7 +480,7 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
+ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ {
+ 	unsigned long uninitialized_var(pfn_align);
+-	int i, nid;
++	int i;
+ 
+ 	/* Account for nodes with cpus and no memory */
+ 	node_possible_map = numa_nodes_parsed;
+@@ -509,24 +509,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ 	if (!numa_meminfo_cover_memory(mi))
  		return -EINVAL;
  
-+	if (!numa_meminfo_cover_memory(mi))
-+		return -EINVAL;
-+
- 	for (i = 0; i < mi->nr_blks; i++) {
- 		struct numa_memblk *mb = &mi->blk[i];
- 		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
-@@ -506,8 +509,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 		return -EINVAL;
- 	}
- #endif
--	if (!numa_meminfo_cover_memory(mi))
--		return -EINVAL;
- 
+-	/* Finally register nodes. */
+-	for_each_node_mask(nid, node_possible_map) {
+-		u64 start = PFN_PHYS(max_pfn);
+-		u64 end = 0;
+-
+-		for (i = 0; i < mi->nr_blks; i++) {
+-			if (nid != mi->blk[i].nid)
+-				continue;
+-			start = min(mi->blk[i].start, start);
+-			end = max(mi->blk[i].end, end);
+-		}
+-
+-		if (start < end)
+-			setup_node_data(nid, start, end);
+-	}
+-
+-	/* Dump memblock with node info and return. */
+-	memblock_dump_all();
  	return 0;
  }
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index e19ff30..192806c 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1323,8 +1323,6 @@ extern void free_initmem(void);
+ 
+@@ -562,7 +544,6 @@ static int __init numa_init(int (*init_func)(void))
+ 
+ 	nodes_clear(numa_nodes_parsed);
+ 	nodes_clear(node_possible_map);
+-	nodes_clear(node_online_map);
+ 	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
+ 	WARN_ON(memblock_set_node(0, ULLONG_MAX, MAX_NUMNODES));
+ 	numa_reset_distance();
+@@ -580,15 +561,6 @@ static int __init numa_init(int (*init_func)(void))
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	for (i = 0; i < nr_cpu_ids; i++) {
+-		int nid = early_cpu_to_node(i);
+-
+-		if (nid == NUMA_NO_NODE)
+-			continue;
+-		if (!node_online(nid))
+-			numa_clear_node(i);
+-	}
+-	numa_init_array();
+ 	return 0;
+ }
+ 
+@@ -621,7 +593,7 @@ static int __init dummy_numa_init(void)
+  * last fallback is dummy single node config encomapssing whole memory and
+  * never fails.
   */
- extern void free_area_init_nodes(unsigned long *max_zone_pfn);
- unsigned long node_map_pfn_alignment(void);
--unsigned long __absent_pages_in_range(int nid, unsigned long start_pfn,
--						unsigned long end_pfn);
- extern unsigned long absent_pages_in_range(unsigned long start_pfn,
- 						unsigned long end_pfn);
- extern void get_pfn_range_for_nid(unsigned int nid,
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 8fcced7..580d919 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4356,7 +4356,7 @@ static unsigned long __meminit zone_spanned_pages_in_node(int nid,
-  * Return the number of holes in a range on a node. If nid is MAX_NUMNODES,
-  * then all holes in the requested range will be accounted for.
-  */
--unsigned long __meminit __absent_pages_in_range(int nid,
-+static unsigned long __meminit __absent_pages_in_range(int nid,
- 				unsigned long range_start_pfn,
- 				unsigned long range_end_pfn)
+-void __init x86_numa_init(void)
++static void __init early_x86_numa_init(void)
  {
+ 	if (!numa_off) {
+ #ifdef CONFIG_X86_NUMAQ
+@@ -641,6 +613,43 @@ void __init x86_numa_init(void)
+ 	numa_init(dummy_numa_init);
+ }
+ 
++void __init x86_numa_init(void)
++{
++	int i, nid;
++	struct numa_meminfo *mi = &numa_meminfo;
++
++	early_x86_numa_init();
++
++	/* Finally register nodes. */
++	for_each_node_mask(nid, node_possible_map) {
++		u64 start = PFN_PHYS(max_pfn);
++		u64 end = 0;
++
++		for (i = 0; i < mi->nr_blks; i++) {
++			if (nid != mi->blk[i].nid)
++				continue;
++			start = min(mi->blk[i].start, start);
++			end = max(mi->blk[i].end, end);
++		}
++
++		if (start < end)
++			setup_node_data(nid, start, end); /* online is set */
++	}
++
++	/* Dump memblock with node info */
++	memblock_dump_all();
++
++	for (i = 0; i < nr_cpu_ids; i++) {
++		int nid = early_cpu_to_node(i);
++
++		if (nid == NUMA_NO_NODE)
++			continue;
++		if (!node_online(nid))
++			numa_clear_node(i);
++	}
++	numa_init_array();
++}
++
+ static __init int find_near_online_node(int node)
+ {
+ 	int n, val;
 -- 
 1.8.1.4
 
