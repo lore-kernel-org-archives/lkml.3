@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765470Ab3DDXgx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 19:36:53 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:56643 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765340Ab3DDXgv (ORCPT
+	id S1765480Ab3DDXlc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 19:41:32 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:62906 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765146Ab3DDXlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 19:36:51 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHSET] cgroup: unexport locking interface
-Date: Thu,  4 Apr 2013 16:36:24 -0700
-Message-Id: <1365118589-10619-1-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
+	Thu, 4 Apr 2013 19:41:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <515DBB00.20208@sr71.net>
+References: <515DBB00.20208@sr71.net>
+Date: Fri, 5 Apr 2013 01:41:29 +0200
+Message-ID: <CAFTL4hxnNyWbn47PxPZDibzgOcqtw8v+t3EEzn+AM_pzFM=YeQ@mail.gmail.com>
+Subject: Re: sched/cputime: sig->prev_stime underflow
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+2013/4/4 Dave Hansen <dave@sr71.net>:
+> With the 3.9-rcs (and probably much earlier) I'm seeing some weird top
+> output where the cpu time "spent" is millions of hours:
+>
+> 445 root      20   0     0    0    0 S    0  0.0  5124095h kworker/45:1
+> 404 root      20   0     0    0    0 S    0  0.0  5124095h kworker/4:1
+>
+> I see it mostly with kernel threads, but it doesn't seem to happen on my
+> distro kernel (3.5 era).  The suspect code is in thread_group_times():
+>
+>         sig->prev_stime = max(sig->prev_stime, rtime - sig->prev_utime);
+>
+> In my case, I caught it with rtime=34 and sig->prev_utime=35.  This code
+> _looks_ to be pretty mature, coming in at commit 0cf55e1e in 2009.  The
+> system I'm running on _does_ have some non-sync'd TSCs, but they are at
+> least being detected, so I expect the fallout to be minimal:
+>
+>         tsc: Marking TSC unstable due to check_tsc_sync_source failed
+>
+> config:
+>
+>         http://sr71.net/~dave/linux/config-bigbox-04042013.txt
+>
+> The dumb fix here would seem to be to just check "rtime <
+> sig->prev_utime".  Any thoughts?
 
-Most cgroup_mutex abuses outside cgroup core proper have been
-eradicated but there's still one use remaining and locking interface
-is still exported.  This patchset updates the last user and unexports
-the locking interface and is composed of the following five patches.
+Hi Dave,
 
- 0001-cgroup-cpuset-replace-move_member_tasks_to_cpuset-wi.patch
- 0002-cgroup-relocate-cgroup_lock_live_group-and-cgroup_at.patch
- 0003-cgroup-unexport-locking-interface-and-cgroup_attach_.patch
- 0004-cgroup-kill-cgroup_-un-lock.patch
- 0005-cgroup-remove-cgroup_lock_is_held.patch
-
-It's on top of cgroup/for-3.10 a423ecb8a ("memcg: fix
-memcg_cache_name() to use cgroup_name()") and available in the
-following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-unexport-locking
-
-diffstat follows.  Thanks.
-
- include/linux/cgroup.h |   19 +++--
- kernel/cgroup.c        |  162 ++++++++++++++++++++++++-------------------------
- kernel/cpuset.c        |   51 +--------------
- 3 files changed, 96 insertions(+), 136 deletions(-)
-
---
-tejun
+Does this patch fix the issue for you?
+https://lkml.org/lkml/2013/4/4/112
