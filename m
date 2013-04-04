@@ -1,61 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761658Ab3DDOXm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 10:23:42 -0400
-Received: from mga11.intel.com ([192.55.52.93]:63013 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760186Ab3DDOXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 10:23:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,409,1363158000"; 
-   d="scan'208";a="313606679"
-Message-ID: <515D8D38.3060009@intel.com>
-Date: Thu, 04 Apr 2013 22:24:56 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1761673Ab3DDOY1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 10:24:27 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:49855 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761248Ab3DDOYZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 10:24:25 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH] blk: start bypass mode in blk_unregister_queue
-References: <1364308501-1640-1-git-send-email-aaron.lu@intel.com> <515D87AA.4050604@intel.com> <20130404140327.GC9425@htj.dyndns.org> <515D8B47.7060504@intel.com> <20130404142058.GF9425@htj.dyndns.org>
-In-Reply-To: <20130404142058.GF9425@htj.dyndns.org>
+In-Reply-To: <1364996263-12198-1-git-send-email-vincent.guittot@linaro.org>
+References: <1364996263-12198-1-git-send-email-vincent.guittot@linaro.org>
+Date: Thu, 4 Apr 2013 16:24:23 +0200
+Message-ID: <CAFTL4hwbANveEoY40fNhMt1CJpCoNYfAFj7NghPRTqixCeodHQ@mail.gmail.com>
+Subject: Re: [PATCH Resend v5] sched: fix init NOHZ_IDLE flag
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linaro-kernel@lists.linaro.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2013 10:20 PM, Tejun Heo wrote:
-> Hello,
-> 
-> On Thu, Apr 04, 2013 at 10:16:39PM +0800, Aaron Lu wrote:
->> It probably wouldn't happen for normal user, only for some SCSI driver
->> developers like me, e.g. the sr_mod will normally load during boot, and
->> when I made some changes to the code, I'll unload the driver and reload
->> it. This is found when I was developing ZPODD code and I just found some
->> time to see what happened.
-> 
-> Does that unregister and register the same queue?  Ah, crap, it does.
-> 
->> The queue for the scsi device will always be there, the queue(and the
->> device) will not go away on driver unregistration. So it will be left in
->> normal mode, and on next blk_register_queue call, the warning will show
->> up.
->>
->>> Starting a bypass mode can be very expensive and some drivers create
->>> and destroy a lot of queues during probing.  We don't want a call to
->>> blk_queue_bypass_start() on every queue creation / destruction cycle.
->>
->> By expensive, do you mean the drain of the queue? Since the queue is to
->> be unregistered, I suppose the queue has to be drained somewhere?
-> 
-> The problematic one is synchronize_rcu().  It adds up pretty quickly.
-> I'd suggest just skipping blk_queue_bypass_end() during registration
-> if the queue is not bypassing.
+2013/4/3 Vincent Guittot <vincent.guittot@linaro.org>:
+> On my smp platform which is made of 5 cores in 2 clusters, I have the
+> nr_busy_cpu field of sched_group_power struct that is not null when the
+> platform is fully idle. The root cause is:
+> During the boot sequence, some CPUs reach the idle loop and set their
+> NOHZ_IDLE flag while waiting for others CPUs to boot. But the nr_busy_cpus
+> field is initialized later with the assumption that all CPUs are in the busy
+> state whereas some CPUs have already set their NOHZ_IDLE flag.
+>
+> More generally, the NOHZ_IDLE flag must be initialized when new sched_domains
+> are created in order to ensure that NOHZ_IDLE and nr_busy_cpus are aligned.
+>
+> This condition can be ensured by adding a synchronize_rcu between the
+> destruction of old sched_domains and the creation of new ones so the NOHZ_IDLE
+> flag will not be updated with old sched_domain once it has been initialized.
+> But this solution introduces a additionnal latency in the rebuild sequence
+> that is called during cpu hotplug.
+>
+> As suggested by Frederic Weisbecker, another solution is to have the same
+> rcu lifecycle for both NOHZ_IDLE and sched_domain struct. I have introduce
+> a new sched_domain_rq struct that is the entry point for both sched_domains
+> and objects that must follow the same lifecycle like NOHZ_IDLE flags. They
+> will share the same RCU lifecycle and will be always synchronized.
+>
+> The synchronization is done at the cost of :
+>  - an additional indirection for accessing the first sched_domain level
+>  - an additional indirection and a rcu_dereference before accessing to the
+>    NOHZ_IDLE flag.
+>
+> Change since v4:
+>  - link both sched_domain and NOHZ_IDLE flag in one RCU object so
+>    their states are always synchronized.
+>
+> Change since V3;
+>  - NOHZ flag is not cleared if a NULL domain is attached to the CPU
+>  - Remove patch 2/2 which becomes useless with latest modifications
+>
+> Change since V2:
+>  - change the initialization to idle state instead of busy state so a CPU that
+>    enters idle during the build of the sched_domain will not corrupt the
+>    initialization state
+>
+> Change since V1:
+>  - remove the patch for SCHED softirq on an idle core use case as it was
+>    a side effect of the other use cases.
+>
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> ---
+>  include/linux/sched.h |    6 +++
+>  kernel/sched/core.c   |  105 ++++++++++++++++++++++++++++++++++++++++++++-----
+>  kernel/sched/fair.c   |   35 +++++++++++------
+>  kernel/sched/sched.h  |   24 +++++++++--
+>  4 files changed, 145 insertions(+), 25 deletions(-)
+>
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index d35d2b6..2a52188 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -959,6 +959,12 @@ struct sched_domain {
+>         unsigned long span[0];
+>  };
+>
+> +struct sched_domain_rq {
+> +       struct sched_domain *sd;
 
-OK, thanks for the suggestion!
+Why not make it part of the structure content instead of pointing to it?
 
--Aaron
-
+> +       unsigned long flags;
+> +       struct rcu_head rcu;    /* used during destruction */
+> +};
