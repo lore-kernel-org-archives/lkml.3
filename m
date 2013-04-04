@@ -1,125 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763385Ab3DDG1i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 02:27:38 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:51743 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755698Ab3DDG1g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 02:27:36 -0400
-Date: Thu, 4 Apr 2013 08:27:30 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Felipe Balbi <balbi@ti.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thierry Reding <thierry@gilfi.de>,
-        Greg KH <greg@kroah.com>
-Subject: Re: linux-next: manual merge of the usb-gadget tree with the usb tree
-Message-ID: <20130404062730.GA4806@avionic-0098.mockup.avionic-design.de>
-References: <20130404151845.406517e19f29380ccb90ac35@canb.auug.org.au>
+	id S1763638Ab3DDGal (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 02:30:41 -0400
+Received: from mga11.intel.com ([192.55.52.93]:22807 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1763424Ab3DDGak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 02:30:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,405,1363158000"; 
+   d="scan'208";a="313415653"
+Message-ID: <515D1F4E.1080306@intel.com>
+Date: Thu, 04 Apr 2013 09:35:58 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tKW2IUtsqtDRztdT"
-Content-Disposition: inline
-In-Reply-To: <20130404151845.406517e19f29380ccb90ac35@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:OtzK60u3BcvT6dDvkLYJJJmVZlH2ppAHjoP8tnGk6Fy
- qJirGHswN4R4b1hVRk5Jmz3dRk4vmQ1qwXN4G+efVhVcdVaUPW
- Kguz7mGZcJ3fE+S1yao6Vg1Vt2mQt7FfYPvnLkQbsJ9rZ4zyjw
- JF0g2BaOUliPlFS1m0Zio3yjTz1M4Wki26pg2xY2tEgWpo/CMg
- WyvkHXTGC7uWncL0qycnQ9s+qiYDIX0rD5VlfvDRcaKA1gxce1
- ABddG7xGUI1wPHGjN1dC3Ou/cPkTTePGCl9qON/EYEJO9qc/U7
- dSVm1jGGYBGJ331QW20r3xlVYwyJx0bqQ2IjjlLX4tx0Gg6qXT
- mwCFHj6SrDdXKGRttR5CdpYljAQAWKi7NhPaKiTCdpMlxgkvbE
- H0ylr70g5mIcsG+a3PsBJi52/cRq0jSHeqsNRBcYicJl+SGDKp
- gt961
+To: Sergey Yanovich <ynvich@gmail.com>
+CC: Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH v2] wait while adding MMC host to ensure root mounts
+References: <1363223183-3772-1-git-send-email-ynvich@gmail.com>  <1363224194-7366-1-git-send-email-ynvich@gmail.com>  <87620jmkoe.fsf@octavius.laptop.org>  <CAPDyKFp27MUOjhydLXf92vN3cua=XcX4oTJnMGfOJPpBhtwM8Q@mail.gmail.com>  <87ppylf429.fsf@octavius.laptop.org> <515ADEDE.3050707@intel.com> <1364912689.3399.7.camel@host5.opentask.org>
+In-Reply-To: <1364912689.3399.7.camel@host5.opentask.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 02/04/13 17:24, Sergey Yanovich wrote:
+> On Tue, 2013-04-02 at 16:36 +0300, Adrian Hunter wrote:
+>> On my system it is significant:
+>>
+>> Before the patch:
+>>
+>> [    1.625623] VFS: Mounted root (ext4 filesystem) readonly on device 179:2.
+>>
+>> After the patch:
+>>
+>> [    1.935851] VFS: Mounted root (ext4 filesystem) readonly on device 179:2.
+>>
+>> That is an addition of 310 ms which is 19% performance degradation.
+> 
+> Are you sure the delay is caused by mmc?
 
---tKW2IUtsqtDRztdT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes
 
-On Thu, Apr 04, 2013 at 03:18:45PM +1100, Stephen Rothwell wrote:
-> Hi Felipe,
->=20
-> Today's linux-next merge of the usb-gadget tree got a conflict in
-> drivers/usb/host/ehci-tegra.c between commit 369a9a9d2af7 ("usb: host:
-> ehci-tegra: Fix oops in error cleanup") from the usb tree and commit
-> 4261b8f3538c ("usb: host: ehci-tegra: fix PHY error handling") from the
-> usb-gadget tree.
->=20
-> I fixed it up (I think - see below) and can carry the fix as necessary
-> (no action is required).
->=20
-> --=20
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
->=20
-> diff --cc drivers/usb/host/ehci-tegra.c
-> index 4f3cfb8,1d2488c..0000000
-> --- a/drivers/usb/host/ehci-tegra.c
-> +++ b/drivers/usb/host/ehci-tegra.c
-> @@@ -770,19 -765,15 +770,17 @@@ static int tegra_ehci_probe(struct plat
->   	if (!irq) {
->   		dev_err(&pdev->dev, "Failed to get IRQ\n");
->   		err =3D -ENODEV;
->  -		goto fail;
->  +		goto fail_phy;
->   	}
->  =20
->   	if (pdata->operating_mode =3D=3D TEGRA_USB_OTG) {
->   		tegra->transceiver =3D
->   			devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
-> - 		if (!IS_ERR_OR_NULL(tegra->transceiver))
-> + 		if (!IS_ERR(tegra->transceiver))
->   			otg_set_host(tegra->transceiver->otg, &hcd->self);
->  +	} else {
->  +		tegra->transceiver =3D ERR_PTR(-ENODEV);
->   	}
-> - #endif
->  =20
->   	err =3D usb_add_hcd(hcd, irq, IRQF_SHARED);
->   	if (err) {
-> @@@ -801,11 -792,8 +799,9 @@@
->   	return err;
->  =20
->   fail:
-> - #ifdef CONFIG_USB_OTG_UTILS
-> - 	if (!IS_ERR_OR_NULL(tegra->transceiver))
-> + 	if (!IS_ERR(tegra->transceiver))
->   		otg_set_host(tegra->transceiver->otg, NULL);
-> - #endif
->  +fail_phy:
->   	usb_phy_shutdown(hcd->phy);
->   fail_io:
->   	clk_disable_unprepare(tegra->clk);
+> 
+> On my intel laptop (userspace is Debian/unstable):
+> [    1.542339] EXT4-fs (sda2): mounted filesystem with ordered data mode. Opts: (null)
+> ...
+> [    2.735851] mmc0: new high speed SD card at address e624
+> [    2.742289] mmcblk0: mmc0:e624 SU02G 1.84 GiB 
+> [    2.752317]  mmcblk0: p1
 
-Looks good to me, thanks.
 
-Thierry
+No,  I am booting from eMMC.
 
---tKW2IUtsqtDRztdT
-Content-Type: application/pgp-signature
+> 
+>> Please revert the patch.
+> 
+> Chris, could provide a pointer on how to improve the patch?
+> 
+> Maybe introduce mmc_is_hosting_root() and do something like:
+> 
+> -	mmc_flush_scheduled_work();
+> +	if (mmc_is_hosting_root())
+> +		mmc_flush_scheduled_work();
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+No, I am booting from eMMC.  Perhaps a host capability:
 
-iQIcBAEBAgAGBQJRXR1SAAoJEN0jrNd/PrOhOhYQAJsFpwzSmw9HNGC50ap95a5B
-J0nn0tH1HTYtNjlS0KuuNW0bqQ7PqDL3R/oFHK7oeOOr38oA1p4E9PvFR/ly+q+m
-r+wT4YOY8x0P8QEL2wGjJRcLmBDAWT+G07P4UHRwBQgEzLgtyj2AUBwKYAzifYq9
-3vd+cD4jTg5gVoAnyttZv85tcK0FL6DpOQCqAIyO3t7MSeHpKG4bxdQVnKtsCF5k
-12gPjb0YGbexN72ldfjb9hMwxX/PzzLHVZxgH7JRNWoQKnvpEDcyy6CN8MMbXf7Z
-XJgjMsbNFV40wUcq7s2Xn+1Of2jjDPhjvLwhpuEG1vpa6LWF4bSNfkWFtPCWMWbX
-9qpMRJwy26g9YoTRAsUMiHSXH665St5y4REwOx8Ul/IL6iu14qQys0cp2Am2yCSp
-Zeaw9x2QxLnhcF0Fi7IXG3Hb6oclMY18I5lChib2Nb0KcKvIcr6/NwlIaSA6N0m+
-T1FQ5tif0Kfk1cIuntq3CT3m4Lhgt4cGoj1RdTmPU8E7X7nOjD04YBtcVVL3AV8+
-cEBOp+LJ/5PSf2/Hkqaij2jy/HUN3PnrQlzMiPJSzuJVN7uk4M8kbaZcC113QOVw
-29+D/P20Do+WWER+MM6YK5iNAAs1OwrdThsX0WqDyf/LrRSWs8musdxZYco4xRGS
-qyl9r8cOsNREJs7I7Q/e
-=BL2A
------END PGP SIGNATURE-----
+	if (host->caps2 & MMC_CAP2_ROOTWAIT)
+		mmc_flush_scheduled_work();
 
---tKW2IUtsqtDRztdT--
