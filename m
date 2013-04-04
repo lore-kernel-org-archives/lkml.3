@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab3DDKGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 06:06:30 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:52186 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757804Ab3DDKG2 (ORCPT
+	id S1758029Ab3DDKI3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 06:08:29 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:60903 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756855Ab3DDKI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 06:06:28 -0400
-Date: Thu, 4 Apr 2013 11:06:23 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 2/2] mfd: db8500-prcmu: Support platform dependant device
- selection
-Message-ID: <20130404100623.GB8921@gmail.com>
-References: <1365067877-29459-1-git-send-email-lee.jones@linaro.org>
- <1365067877-29459-2-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1365067877-29459-2-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 4 Apr 2013 06:08:27 -0400
+Message-ID: <1365070105.1830.21.camel@x61.thuisdomein>
+Subject: [PATCH] Blackfin: bf537: rename "CONFIG_AD7314"
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Date: Thu, 04 Apr 2013 12:08:25 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Apr 2013 10:08:25.0177 (UTC) FILETIME=[585EB490:01CE311C]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 04 Apr 2013, Lee Jones wrote:
+In v3.2 the Analog Devices AD7314 temperature sensor driver was removed
+as an IIO driver and added as a HWMON driver. But it was apparently
+overlooked to rename two references to CONFIG_AD7314 to
+CONFIG_SENSORS_AD7314. Do so now. Use the IS_ENABLED() macro, while
+we're at it.
 
-> The main aim for this cycle is to have the u8540 booting to a
-> console. However, the u8540 doesn't support all of the u8500
-> platform devices yet. After this stage is complete we can then
-> fill in the inadequacies, such as specific clock support at a
-> later date. To achieve this we're placing devices supported by
-> all platforms into a common device structure and the remaining
-> ones into a platform specific one.
-> 
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/mfd/db8500-prcmu.c |   46 +++++++++++++++++++++++++++++---------------
->  1 file changed, 30 insertions(+), 16 deletions(-)
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Entirely untested.
 
-Withdrawn.
+1) See commits 4f3a659581cabf1be441d6467b523be914615496 ("hwmon: AD7314
+driver (ported from IIO)") and 48a2c3799b7141c271a771d3249142a104faeefc
+("staging:iio:adc:ad7314 removal. Supported via hwmon.") for the two
+patches involved.
 
-I'll resubmit.
+ arch/blackfin/mach-bf537/boards/stamp.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Sorry for the churn.
-
+diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
+index 23bb55d..b40b849 100644
+--- a/arch/blackfin/mach-bf537/boards/stamp.c
++++ b/arch/blackfin/mach-bf537/boards/stamp.c
+@@ -681,7 +681,7 @@ static struct bfin5xx_spi_chip ad2s1210_spi_chip_info = {
+ };
+ #endif
+ 
+-#if defined(CONFIG_AD7314) || defined(CONFIG_AD7314_MODULE)
++#if IS_ENABLED(CONFIG_SENSORS_AD7314)
+ static struct bfin5xx_spi_chip ad7314_spi_chip_info = {
+ 	.enable_dma = 0,
+ };
+@@ -1039,7 +1039,7 @@ static struct spi_board_info bfin_spi_board_info[] __initdata = {
+ 	},
+ #endif
+ 
+-#if defined(CONFIG_AD7314) || defined(CONFIG_AD7314_MODULE)
++#if IS_ENABLED(CONFIG_SENSORS_AD7314)
+ 	{
+ 		.modalias = "ad7314",
+ 		.max_speed_hz = 1000000,
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.11.7
+
