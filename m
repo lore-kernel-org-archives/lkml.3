@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758872Ab3DDK70 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 06:59:26 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:45845 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758062Ab3DDK7Y (ORCPT
+	id S1757753Ab3DDLCO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 07:02:14 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:60650 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755758Ab3DDLCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 06:59:24 -0400
-Message-ID: <1365073152.9806.26.camel@host5.omatika.ru>
-Subject: Re: [PATCH v2] wait while adding MMC host to ensure root mounts
-From: Sergey Yanovich <ynvich@gmail.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org
-Date: Thu, 04 Apr 2013 14:59:12 +0400
-In-Reply-To: <515D1F4E.1080306@intel.com>
-References: <1363223183-3772-1-git-send-email-ynvich@gmail.com>
-	  <1363224194-7366-1-git-send-email-ynvich@gmail.com>
-	  <87620jmkoe.fsf@octavius.laptop.org>
-	  <CAPDyKFp27MUOjhydLXf92vN3cua=XcX4oTJnMGfOJPpBhtwM8Q@mail.gmail.com>
-	  <87ppylf429.fsf@octavius.laptop.org> <515ADEDE.3050707@intel.com>
-	 <1364912689.3399.7.camel@host5.opentask.org> <515D1F4E.1080306@intel.com>
+	Thu, 4 Apr 2013 07:02:13 -0400
+Message-ID: <1365073330.1830.34.camel@x61.thuisdomein>
+Subject: [PATCH] Blackfin: bf537: rename ad2s120x ->ad2s1200
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Date: Thu, 04 Apr 2013 13:02:10 +0200
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Apr 2013 11:02:11.0459 (UTC) FILETIME=[DB624530:01CE3123]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-04 at 09:35 +0300, Adrian Hunter wrote:
-> No,  I am booting from eMMC.
+In v3.2 the Analog Devices ad2s1200/ad2s1205 driver was renamed from
+ad2s120x to ad2s1200. But it apparently forgot to rename the references
+to this driver in the BF537-STAMP code. Rename these now, and use the
+IS_ENABLED() macro, while we're at it.
 
-Well, in this case you should be aware, that your system is not
-concurrency-safe without the patch. It may or may not boot each time
-depending on the large number of factors.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Also untested. The ".modalias" change is educated guesswork.
 
-> > Maybe introduce mmc_is_hosting_root() and do something like:
-> > 
-> > -	mmc_flush_scheduled_work();
-> > +	if (mmc_is_hosting_root())
-> > +		mmc_flush_scheduled_work();
-> 
-> No, I am booting from eMMC.  Perhaps a host capability:
-> 
-> 	if (host->caps2 & MMC_CAP2_ROOTWAIT)
-> 		mmc_flush_scheduled_work();
-> 
+1) See commit 10e4a52b6e471cea2e87e71f8708a8c8c6b75266
+("staging:iio:resolver rename ad2s120x ->ad2s1200") for the commit that
+started all this.
 
-Neither my variant, nor yours will help to handle the increased boot
-time.
+ arch/blackfin/mach-bf537/boards/stamp.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-The root cause is that probing several devices is done sequentially and
-mmc was reporting end of its probing before it was actually happening.
-My patch makes mmc report end of probing on-time. The correct way to fix
-the additional delay, my patch introduces, is to rewrite the probing to
-be parallel instead of sequential. I understand that it is much easier
-just to revert the patch.
-
-If the patch is reverted, something like this somewhere in
-'init/do_mounts.c' could conditionally activate 'root_wait':
-
-	if (mmc_is_hosting_root())
-		root_wait = 1;
-
-IMHO this is wrong and my patch is right, but better this than broken
-mmc boot.
+diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
+index 9735345..e6fdc2a 100644
+--- a/arch/blackfin/mach-bf537/boards/stamp.c
++++ b/arch/blackfin/mach-bf537/boards/stamp.c
+@@ -654,13 +654,13 @@ static struct bfin5xx_spi_chip ad2s90_spi_chip_info = {
+ };
+ #endif
+ 
+-#if defined(CONFIG_AD2S120X) || defined(CONFIG_AD2S120X_MODULE)
+-static unsigned short ad2s120x_platform_data[] = {
++#if IS_ENABLED(CONFIG_AD2S1200)
++static unsigned short ad2s1200_platform_data[] = {
+ 	/* used as SAMPLE and RDVEL */
+ 	GPIO_PF5, GPIO_PF6, 0
+ };
+ 
+-static struct bfin5xx_spi_chip ad2s120x_spi_chip_info = {
++static struct bfin5xx_spi_chip ad2s1200_spi_chip_info = {
+ 	.enable_dma = 0,
+ };
+ #endif
+@@ -1018,13 +1018,13 @@ static struct spi_board_info bfin_spi_board_info[] __initdata = {
+ 	},
+ #endif
+ 
+-#if defined(CONFIG_AD2S120X) || defined(CONFIG_AD2S120X_MODULE)
++#if IS_ENABLED(CONFIG_AD2S1200)
+ 	{
+-		.modalias = "ad2s120x",
++		.modalias = "ad2s1200",
+ 		.bus_num = 0,
+ 		.chip_select = 4,            /* CS, change it for your board */
+-		.platform_data = ad2s120x_platform_data,
+-		.controller_data = &ad2s120x_spi_chip_info,
++		.platform_data = ad2s1200_platform_data,
++		.controller_data = &ad2s1200_spi_chip_info,
+ 	},
+ #endif
+ 
+-- 
+1.7.11.7
 
