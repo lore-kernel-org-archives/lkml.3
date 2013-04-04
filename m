@@ -1,118 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761378Ab3DDNzU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 09:55:20 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:52759 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760664Ab3DDNzS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 09:55:18 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: Neil Horman <nhorman@tuxdriver.com>, Prarit Bhargava <prarit@redhat.com>,
-        Don Zickus <dzickus@redhat.com>, Don Dutile <ddutile@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Asit Mallick <asit.k.mallick@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-pci@vger.kernel.org
-Subject: [PATCH v3] irq: add quirk for broken interrupt remapping on 55XX chipsets
-Date: Thu,  4 Apr 2013 09:54:56 -0400
-Message-Id: <1365083696-5245-1-git-send-email-nhorman@tuxdriver.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
-References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
-X-Spam-Score: -2.9 (--)
+	id S1760973Ab3DDN6Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 09:58:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17416 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759986Ab3DDN6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 09:58:15 -0400
+Date: Thu, 4 Apr 2013 15:58:02 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alexander Graf <agraf@suse.de>
+Cc: Gleb Natapov <gleb@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Christoffer Dall <c.dall@virtualopensystems.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH RFC] kvm: add PV MMIO EVENTFD
+Message-ID: <20130404125802.GC6467@redhat.com>
+References: <20130404104846.GA6227@redhat.com>
+ <6D40C5F1-849E-4F32-B391-E1A1BFA8C59D@suse.de>
+ <20130404120825.GD17919@redhat.com>
+ <194AE9A4-07C6-4597-B3AA-1EDF3DA97FA0@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <194AE9A4-07C6-4597-B3AA-1EDF3DA97FA0@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A few years back intel published a spec update:
-http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
+On Thu, Apr 04, 2013 at 02:22:09PM +0200, Alexander Graf wrote:
+> 
+> On 04.04.2013, at 14:08, Gleb Natapov wrote:
+> 
+> > On Thu, Apr 04, 2013 at 01:57:34PM +0200, Alexander Graf wrote:
+> >> 
+> >> On 04.04.2013, at 12:50, Michael S. Tsirkin wrote:
+> >> 
+> >>> With KVM, MMIO is much slower than PIO, due to the need to
+> >>> do page walk and emulation. But with EPT, it does not have to be: we
+> >>> know the address from the VMCS so if the address is unique, we can look
+> >>> up the eventfd directly, bypassing emulation.
+> >>> 
+> >>> Add an interface for userspace to specify this per-address, we can
+> >>> use this e.g. for virtio.
+> >>> 
+> >>> The implementation adds a separate bus internally. This serves two
+> >>> purposes:
+> >>> - minimize overhead for old userspace that does not use PV MMIO
+> >>> - minimize disruption in other code (since we don't know the length,
+> >>> devices on the MMIO bus only get a valid address in write, this
+> >>> way we don't need to touch all devices to teach them handle
+> >>> an dinvalid length)
+> >>> 
+> >>> At the moment, this optimization is only supported for EPT on x86 and
+> >>> silently ignored for NPT and MMU, so everything works correctly but
+> >>> slowly.
+> >>> 
+> >>> TODO: NPT, MMU and non x86 architectures.
+> >>> 
+> >>> The idea was suggested by Peter Anvin.  Lots of thanks to Gleb for
+> >>> pre-review and suggestions.
+> >>> 
+> >>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> >> 
+> >> This still uses page fault intercepts which are orders of magnitudes slower than hypercalls. Why don't you just create a PV MMIO hypercall that the guest can use to invoke MMIO accesses towards the host based on physical addresses with explicit length encodings?
+> >> 
+> > It is slower, but not an order of magnitude slower. It become faster
+> > with newer HW.
+> > 
+> >> That way you simplify and speed up all code paths, exceeding the speed of PIO exits even. It should also be quite easily portable, as all other platforms have hypercalls available as well.
+> >> 
+> > We are trying to avoid PV as much as possible (well this is also PV,
+> > but not guest visible). We haven't replaced PIO with hypercall for the
+> > same reason. My hope is that future HW will provide us with instruction
+> > decode for basic mov instruction at which point this optimisation can be
+> > dropped.
+> 
+> The same applies to an MMIO hypercall. Once the PV interface becomes obsolete, we can drop the capability we expose to the guest.
 
-For the 5520 and 5500 chipsets which contained an errata (specificially errata
-53), which noted that these chipsets can't properly do interrupt remapping, and
-as a result the recommend that interrupt remapping be disabled in bios.  While
-many vendors have a bios update to do exactly that, not all do, and of course
-not all users update their bios to a level that corrects the problem.  As a
-result, occasionally interrupts can arrive at a cpu even after affinity for that
-interrupt has be moved, leading to lost or spurrious interrupts (usually
-characterized by the message:
-kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
+Yes but unlike a hypercall this optimization does not need special code
+in the guest. You can use standard OS interfaces for memory access.
 
-There have been several incidents recently of people seeing this error, and
-investigation has shown that they have system for which their BIOS level is such
-that this feature was not properly turned off.  As such, it would be good to
-give them a reminder that their systems are vulnurable to this problem.
+> > And hypercall has its own set of problems with Windows guests.
+> > When KVM runs in Hyper-V emulation mode it expects to get Hyper-V
+> > hypercalls.  Mixing KVM hypercalls and Hyper-V requires some tricks. It
+> 
+> Can't we simply register a hypercall ID range with Microsoft?
+> 
+> > may also affect WHQLing Windows drivers since driver will talk to HW
+> > bypassing Windows interfaces.
+> 
+> Then the WHQL'ed driver doesn't support the PV MMIO hcall?
+> 
+> 
+> Alex
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Prarit Bhargava <prarit@redhat.com>
-CC: Don Zickus <dzickus@redhat.com>
-CC: Don Dutile <ddutile@redhat.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>
-CC: Asit Mallick <asit.k.mallick@intel.com>
-CC: David Woodhouse <dwmw2@infradead.org>
-CC: linux-pci@vger.kernel.org
----
 
-Change notes:
-
-v2)
-
-* Moved the quirk to the x86 arch, since consensus seems to be that the 55XX
-chipset series is x86 only.  I decided however to keep the quirk as a regular
-quirk, not an early_quirk.  Early quirks have no way currently to determine if
-BIOS has properly disabled the feature in the iommu, at least not without
-significant hacking, and since its quite possible this will be a short lived
-quirk, should Don Z's workaround code prove successful (and it looks like it may
-well), I don't think that necessecary.
-
-* Removed the WARNING banner from the quirk, and added the HW_ERR token to the
-string, I opted to leave the newlines in place however, as I really couldnt
-find a way to keep the text on a single line is still legible from a code
-perspective.  I think theres enough language in there that using cscope on just
-about any substring however will turn it up, and again, this may be a short
-lived quirk.
-
-v3)
-
-* removed defines from pci_ids.h, and used direct id values as per request from
-Bjorn.
----
- arch/x86/kernel/quirks.c | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
-
-diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-index 26ee48a..7c99675 100644
---- a/arch/x86/kernel/quirks.c
-+++ b/arch/x86/kernel/quirks.c
-@@ -5,6 +5,7 @@
- #include <linux/irq.h>
- 
- #include <asm/hpet.h>
-+#include "../../../drivers/iommu/irq_remapping.h"
- 
- #if defined(CONFIG_X86_IO_APIC) && defined(CONFIG_SMP) && defined(CONFIG_PCI)
- 
-@@ -567,3 +568,20 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F5,
- 			quirk_amd_nb_node);
- 
- #endif
-+
-+static void intel_remapping_check(struct pci_dev *dev)
-+{
-+	u8 revision;
-+
-+	pci_read_config_byte(dev, PCI_REVISION_ID, &revision);
-+
-+	if ((revision == 0x13) && irq_remapping_enabled) {
-+                pr_warn(HW_ERR "This system BIOS has enabled interrupt remapping\n"
-+                        "on a chipset that contains an errata making that\n"
-+                        "feature unstable.  Please reboot with nointremap\n"
-+                        "added to the kernel command line and contact\n"
-+                        "your BIOS vendor for an update");
-+	}
-+}
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x3406, intel_remapping_check);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x3403, intel_remapping_check);
 -- 
-1.8.1.4
-
+MST
