@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932858Ab3DDIBO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 04:01:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53954 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932797Ab3DDIBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 04:01:13 -0400
-Date: Thu, 4 Apr 2013 10:01:11 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Huzefa Kankroliwala <huzefa.nomanx.kankroliwala@intel.com>,
-        mika.westerberg@intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] i2c-hid: fix length for set/get report in i2c hid
-In-Reply-To: <CAN+gG=GuEuzekoMAsRiGJNs73PFzRK8oxjjRB4xP1kQeBp0DCw@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1304041000270.30938@pobox.suse.cz>
-References: <1364993121-18800-1-git-send-email-huzefa.nomanx.kankroliwala@intel.com> <alpine.LNX.2.00.1304040946170.30938@pobox.suse.cz> <CAN+gG=GuEuzekoMAsRiGJNs73PFzRK8oxjjRB4xP1kQeBp0DCw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933389Ab3DDICk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 04:02:40 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:61238 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933369Ab3DDICb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 04:02:31 -0400
+Message-ID: <1365062549.1830.16.camel@x61.thuisdomein>
+Subject: Re: [PATCH 09/23] perf: make cfi unwind support based on
+ CONFIG_LIBUNWIND
+From: Paul Bolle <pebolle@tiscali.nl>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Borislav Petkov <bp@alien8.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Date: Thu, 04 Apr 2013 10:02:29 +0200
+In-Reply-To: <515AF720.9010809@gmail.com>
+References: <1364874877-5618-1-git-send-email-dsahern@gmail.com>
+	  <1364874877-5618-10-git-send-email-dsahern@gmail.com>
+	 <1364895122.21627.94.camel@x61.thuisdomein> <515AF720.9010809@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Apr 2013 08:02:29.0199 (UTC) FILETIME=[C0A7F5F0:01CE310A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Apr 2013, Benjamin Tissoires wrote:
+On Tue, 2013-04-02 at 09:20 -0600, David Ahern wrote:
+> traditionally, perf has not required a kernel config to build it. The 
+> above grabs some symbols for a standalone perf config. I guess that's a 
+> question to be answered - should the kernel's config files should be 
+> used for perf (or a tools target in general).
 
-> >> With the current i2c hid driver set/get report does not work
-> >> as expected, for e.g sensor hub properties like power state,
-> >> frequency etc is not set properly on the device as a result
-> >> we do not get events.
-> >> The problem is that i2c hid driver in function i2c_hid_request
-> >> sets length equal to default buffer size for which the sensor
-> >> hub does not respond on get/set commands. Use report length
-> >> and calculate it based on report size and id.
-> >>
-> >> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >> Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> >> Signed-off-by: Huzefa Kankroliwala <huzefa.nomanx.kankroliwala@intel.com>
-> >
-> > This is based on some old version of the driver though. Could you please
-> > rebase it so that it applies on top of for-next branch of
-> >
-> >         git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git
-> >
-> > and resend? (actually rebasing on Linus' current tree would be absolutely
-> > sufficient).
+If you decide to only use the kernel kconfig tools but not the current
+tree of Kconfig files I suggest to separate things clearly. So in that
+case using Pconfig as a filename (as we discussed for PATCH 01/23)
+actually seems to be a good idea. Likewise, in that case you might want
+to prefix your macros with, say, PCONFIG_ instead of CONFIG_. (I think
+the kconfig tools support that, but I haven't checked.)
+
+> Also, perf can be built outside of the kernel tree. Tying the build to 
+> the kernel config files would have an affect on that option.
 > 
-> Actually, the patch goes smoothly on your for-next branch on my computer...
-> And there is no point rebasing it on top of Linus' tree as the
-> i2c_hid_request() callback is scheduled for 3.10.
-> 
-> Could you double check Jiri?
+> Something to look at for the next version.
 
-Apologies, that was an error on my side, I have forgotten about the 
-i2c_hid_request()-related refactoring that is queued.
 
-I will review and apply the patch shortly, thanks.
+Paul Bolle
 
--- 
-Jiri Kosina
-SUSE Labs
