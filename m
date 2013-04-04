@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758988Ab3DDJi1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 05:38:27 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:54552 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758923Ab3DDJiY (ORCPT
+	id S1759019Ab3DDJib (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 05:38:31 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:50043 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758957Ab3DDJi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 05:38:24 -0400
-From: Arnd Bergmann <arnd.bergmann@linaro.org>
-Organization: Linaro Limited 
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 0/9] ARM: CPUFreq: Move drivers arch/arm/ -> drivers/cpufreq
-Date: Thu, 4 Apr 2013 09:38:11 +0000
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: rjw@sisk.pl, arvind.chauhan@arm.com, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, linux@arm.linux.org.uk
-References: <cover.1364205812.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1364205812.git.viresh.kumar@linaro.org>
+	Thu, 4 Apr 2013 05:38:29 -0400
+Message-ID: <515D4A0D.7070302@suse.cz>
+Date: Thu, 04 Apr 2013 11:38:21 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1252"
+To: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
+References: <20130129202848.GE25415@pd.tnic> <5109A8F1.9040707@suse.cz> <5109B11C.2010400@suse.cz> <5170962.qHnbnlVDfx@vostro.rjw.lan> <20130131070926.GC4926@pd.tnic> <510A2B1C.1060108@suse.cz> <20130131131805.GG4926@pd.tnic> <20130131132400.GH4926@pd.tnic> <5130A55E.8030508@suse.cz> <515D2C79.7040904@suse.cz> <20130404093302.GB32271@pd.tnic>
+In-Reply-To: <20130404093302.GB32271@pd.tnic>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304040938.11760.arnd.bergmann@linaro.org>
-X-Provags-ID: V02:K0:cg+dNWME390t/OkNKXcqSUB45cupCWLWCHgFOfnXLti
- TWk6NqtoqJG5YTKbqFcNqSJigVG5uCxFoshALeK1iKTo+PXsa2
- WU6jegft5pgVWxT+c1hq5RNebpo0CLbdy55PrOoM2GwEuqj2BD
- 1PXBAFyrwqat0l5sbbmcPPf4yfQwXgXyJlceHB+PJj78BPGxrb
- Ogh4eCOfK799NOO9+965T1QOMQGOGUOmRJnvHC8bZ6ERiU+Jt8
- bmZwnAX7PKANng5KmZAFM/HZBQNLTgM854gf6fv+6Kw9BVR4bp
- 21fVnQoEDn2XMmyIHExkU/63dxtxNIhnFMFO3dghwPG/ybjxAR
- QUWuL8HAcl+BIbRZOr0TckjN5RaqwJpms2GMISyT6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 25 March 2013, Viresh Kumar wrote:
+On 04/04/2013 11:33 AM, Borislav Petkov wrote:
+> On Thu, Apr 04, 2013 at 09:32:09AM +0200, Jiri Slaby wrote:
+>> And yesterday I plugged in an ethernet cable for a wihle and guess
+>> what happened today: Uhhuh. NMI received for unknown reason 2c on CPU
+>> 0.
+>>
+>> Still holds that this is the first time since Jan.
 > 
-> Hi,
+> Yeah, you could try my sure-fire way to trigger it:
 > 
-> This patchset tries to move all CPUFreq drivers for ARM platforms from arch/arm
-> to drivers/cpufreq directory.
+> * boot the box without any "nmi_watchdog" tweaks on the kernel cmdline -
+> i.e. it should be enabled.
 > 
-> This series is dependent (rebased of) on following patches:
+> * turn off NMI watchdog through powertop or directly through
+> /proc/sys/kernel/nmi_watchdog
 > 
-> http://www.spinics.net/lists/arm-kernel/msg232540.html
-> https://lkml.org/lkml/2013/3/24/151
+> * suspend to disk
 > 
-> I want this series to go through Rafael's tree due to dependencies and so want
-> Ack's by respective maintainers.
-> 
-> These are applied here for people looking to test them:
-> 
-> http://git.linaro.org/gitweb?p=people/vireshk/linux.git;a=shortlog;h=refs/heads/cpufreq-move-drivers
+> Now when you resume, you should either see unknown reason 2c or 3c.
 
-Whole series 
+Oh, this reminds me that this time it might be unrelated to yesterday's
+use of ethernet. Because today, I resumed the system by a kernel which I
+didn't pass nmi_watchdog=0 to.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Hmm. So you can silently ignore the report I sent today :).
 
-but please post them another time with linux-arm-kernel on Cc.
+And sure, the way you describe above "works" for me to trigger the
+issue... I just wanted to note the ethernet may interfere.
 
-	Arnd
+Anyway, I will bake some hack to disable NMI before jumping to the
+resumed kernel and will see what happens...
+
+-- 
+js
+suse labs
