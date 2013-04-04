@@ -1,14 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760009Ab3DDMjB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 08:39:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37623 "EHLO mx1.redhat.com"
+	id S1760090Ab3DDMjN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 08:39:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39131 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759876Ab3DDMjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 08:39:00 -0400
-Date: Thu, 4 Apr 2013 15:38:06 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Alexander Graf <agraf@suse.de>
+	id S1759876Ab3DDMjI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 08:39:08 -0400
+Subject: Re: [PATCH RFC] kvm: add PV MMIO EVENTFD
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <20130404123438.GF17919@redhat.com>
+Date: Thu, 4 Apr 2013 14:39:06 +0200
 Cc: "Michael S. Tsirkin" <mst@redhat.com>,
         Marcelo Tosatti <mtosatti@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -22,78 +26,96 @@ Cc: "Michael S. Tsirkin" <mst@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH RFC] kvm: add PV MMIO EVENTFD
-Message-ID: <20130404123806.GG17919@redhat.com>
-References: <20130404104846.GA6227@redhat.com>
- <6D40C5F1-849E-4F32-B391-E1A1BFA8C59D@suse.de>
- <20130404120825.GD17919@redhat.com>
- <959E147D-EB7B-4F4B-9F84-4F1BBA98DEF8@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <959E147D-EB7B-4F4B-9F84-4F1BBA98DEF8@suse.de>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <F6B8A4F8-56F4-41EA-9F3A-AD3814271419@suse.de>
+References: <20130404104846.GA6227@redhat.com> <6D40C5F1-849E-4F32-B391-E1A1BFA8C59D@suse.de> <20130404120825.GD17919@redhat.com> <194AE9A4-07C6-4597-B3AA-1EDF3DA97FA0@suse.de> <20130404123438.GF17919@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 02:32:08PM +0200, Alexander Graf wrote:
-> 
-> On 04.04.2013, at 14:08, Gleb Natapov wrote:
-> 
-> > On Thu, Apr 04, 2013 at 01:57:34PM +0200, Alexander Graf wrote:
-> >> 
-> >> On 04.04.2013, at 12:50, Michael S. Tsirkin wrote:
-> >> 
-> >>> With KVM, MMIO is much slower than PIO, due to the need to
-> >>> do page walk and emulation. But with EPT, it does not have to be: we
-> >>> know the address from the VMCS so if the address is unique, we can look
-> >>> up the eventfd directly, bypassing emulation.
-> >>> 
-> >>> Add an interface for userspace to specify this per-address, we can
-> >>> use this e.g. for virtio.
-> >>> 
-> >>> The implementation adds a separate bus internally. This serves two
-> >>> purposes:
-> >>> - minimize overhead for old userspace that does not use PV MMIO
-> >>> - minimize disruption in other code (since we don't know the length,
-> >>> devices on the MMIO bus only get a valid address in write, this
-> >>> way we don't need to touch all devices to teach them handle
-> >>> an dinvalid length)
-> >>> 
-> >>> At the moment, this optimization is only supported for EPT on x86 and
-> >>> silently ignored for NPT and MMU, so everything works correctly but
-> >>> slowly.
-> >>> 
-> >>> TODO: NPT, MMU and non x86 architectures.
-> >>> 
-> >>> The idea was suggested by Peter Anvin.  Lots of thanks to Gleb for
-> >>> pre-review and suggestions.
-> >>> 
-> >>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> >> 
-> >> This still uses page fault intercepts which are orders of magnitudes slower than hypercalls. Why don't you just create a PV MMIO hypercall that the guest can use to invoke MMIO accesses towards the host based on physical addresses with explicit length encodings?
-> >> 
-> > It is slower, but not an order of magnitude slower. It become faster
-> > with newer HW.
-> > 
-> >> That way you simplify and speed up all code paths, exceeding the speed of PIO exits even. It should also be quite easily portable, as all other platforms have hypercalls available as well.
-> >> 
-> > We are trying to avoid PV as much as possible (well this is also PV,
-> > but not guest visible
-> 
-> Also, how is this not guest visible? Who sets KVM_IOEVENTFD_FLAG_PV_MMIO? The comment above its definition indicates that the guest does so, so it is guest visible.
-> 
-QEMU sets it.
 
-> +/*
-> + * PV_MMIO - Guest can promise us that all accesses touching this address
-> + * are writes of specified length, starting at the specified address.
-> + * If not - it's a Guest bug.
-> + * Can not be used together with either PIO or DATAMATCH.
-> + */
-> 
-Virtio spec will state that access to a kick register needs to be of
-specific length. This is reasonable thing for HW to ask.
+On 04.04.2013, at 14:34, Gleb Natapov wrote:
 
---
-			Gleb.
+> On Thu, Apr 04, 2013 at 02:22:09PM +0200, Alexander Graf wrote:
+>> 
+>> On 04.04.2013, at 14:08, Gleb Natapov wrote:
+>> 
+>>> On Thu, Apr 04, 2013 at 01:57:34PM +0200, Alexander Graf wrote:
+>>>> 
+>>>> On 04.04.2013, at 12:50, Michael S. Tsirkin wrote:
+>>>> 
+>>>>> With KVM, MMIO is much slower than PIO, due to the need to
+>>>>> do page walk and emulation. But with EPT, it does not have to be: we
+>>>>> know the address from the VMCS so if the address is unique, we can look
+>>>>> up the eventfd directly, bypassing emulation.
+>>>>> 
+>>>>> Add an interface for userspace to specify this per-address, we can
+>>>>> use this e.g. for virtio.
+>>>>> 
+>>>>> The implementation adds a separate bus internally. This serves two
+>>>>> purposes:
+>>>>> - minimize overhead for old userspace that does not use PV MMIO
+>>>>> - minimize disruption in other code (since we don't know the length,
+>>>>> devices on the MMIO bus only get a valid address in write, this
+>>>>> way we don't need to touch all devices to teach them handle
+>>>>> an dinvalid length)
+>>>>> 
+>>>>> At the moment, this optimization is only supported for EPT on x86 and
+>>>>> silently ignored for NPT and MMU, so everything works correctly but
+>>>>> slowly.
+>>>>> 
+>>>>> TODO: NPT, MMU and non x86 architectures.
+>>>>> 
+>>>>> The idea was suggested by Peter Anvin.  Lots of thanks to Gleb for
+>>>>> pre-review and suggestions.
+>>>>> 
+>>>>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+>>>> 
+>>>> This still uses page fault intercepts which are orders of magnitudes slower than hypercalls. Why don't you just create a PV MMIO hypercall that the guest can use to invoke MMIO accesses towards the host based on physical addresses with explicit length encodings?
+>>>> 
+>>> It is slower, but not an order of magnitude slower. It become faster
+>>> with newer HW.
+>>> 
+>>>> That way you simplify and speed up all code paths, exceeding the speed of PIO exits even. It should also be quite easily portable, as all other platforms have hypercalls available as well.
+>>>> 
+>>> We are trying to avoid PV as much as possible (well this is also PV,
+>>> but not guest visible). We haven't replaced PIO with hypercall for the
+>>> same reason. My hope is that future HW will provide us with instruction
+>>> decode for basic mov instruction at which point this optimisation can be
+>>> dropped.
+>> 
+>> The same applies to an MMIO hypercall. Once the PV interface becomes obsolete, we can drop the capability we expose to the guest.
+>> 
+> Disable it on newer HW is easy, but it is not that simple to get rid of the guest code.
+
+You need to have guest code that runs with non-PV hcalls anyways, since you want to be able to run on older KVM versions. So what's the problem?
+
+> 
+>>> And hypercall has its own set of problems with Windows guests.
+>>> When KVM runs in Hyper-V emulation mode it expects to get Hyper-V
+>>> hypercalls.  Mixing KVM hypercalls and Hyper-V requires some tricks. It
+>> 
+>> Can't we simply register a hypercall ID range with Microsoft?
+> Doubt it. This is not only about the rang though. The calling convention
+> is completely different.
+
+There is no calling convention for KVM hypercalls anymore, or is there?
+Either way, we would of course just adhere to the MS calling convention. We're only talking about register values here...
+
+> 
+>> 
+>>> may also affect WHQLing Windows drivers since driver will talk to HW
+>>> bypassing Windows interfaces.
+>> 
+>> Then the WHQL'ed driver doesn't support the PV MMIO hcall?
+>> 
+> All Windows drivers have to be WHQL'ed, saying that is like saying that
+> we do not care about Windows guest virtio speed.
+
+I don't mind if a Linux guest is faster than a Windows guest, if that's what you're asking.
+
+
+Alex
+
