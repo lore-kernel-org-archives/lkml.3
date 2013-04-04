@@ -1,94 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759453Ab3DDJvU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 05:51:20 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:41558 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759411Ab3DDJvR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 05:51:17 -0400
-Message-ID: <515D4D0E.40005@mellanox.com>
-Date: Thu, 4 Apr 2013 12:51:10 +0300
-From: Or Gerlitz <ogerlitz@mellanox.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1759432Ab3DDJxH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 05:53:07 -0400
+Received: from mga01.intel.com ([192.55.52.88]:63018 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756527Ab3DDJxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 05:53:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,407,1363158000"; 
+   d="scan'208";a="316782925"
+Date: Thu, 4 Apr 2013 12:57:16 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH] gpiolib-acpi: introduce acpi_get_gpio_by_index() helper
+Message-ID: <20130404095716.GJ21804@intel.com>
+References: <1364986614-15711-1-git-send-email-mika.westerberg@linux.intel.com>
+ <CAN+gG=F4LMHMsOqVh+BikSLKBJ8V7ni-p4hKi7yRb4jjD7gv0w@mail.gmail.com>
+ <20130404093820.GI21804@intel.com>
+ <CAN+gG=F7T6ujLuNu2hfEKfrDwBCG9xM_e3P9Fan0Awj7EYmJyA@mail.gmail.com>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: target-devel <target-devel@vger.kernel.org>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Roland Dreier <roland@kernel.org>,
-        Alexander Nezhinsky <alexandern@mellanox.com>
-Subject: Re: [RFC-v3 9/9] iser-target: Add iSCSI Extensions for RDMA (iSER)
- target driver
-References: <1365060256-21506-1-git-send-email-nab@linux-iscsi.org> <1365060256-21506-10-git-send-email-nab@linux-iscsi.org>
-In-Reply-To: <1365060256-21506-10-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.222.66.109]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+gG=F7T6ujLuNu2hfEKfrDwBCG9xM_e3P9Fan0Awj7EYmJyA@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2013 10:24, Nicholas A. Bellinger wrote:
-> +static int
-> +isert_put_response(struct iscsi_conn *conn, struct iscsi_cmd *cmd)
-> +{
-> +	struct isert_cmd *isert_cmd = container_of(cmd,
-> +					struct isert_cmd, iscsi_cmd);
-> +	struct isert_conn *isert_conn = (struct isert_conn *)conn->context;
-> +	struct ib_send_wr *send_wr = &isert_cmd->tx_desc.send_wr;
-> +	struct iscsi_scsi_rsp *hdr = (struct iscsi_scsi_rsp *)
-> +				&isert_cmd->tx_desc.iscsi_header;
-> +
-> +	isert_create_send_desc(isert_conn, isert_cmd, &isert_cmd->tx_desc);
-> +	iscsit_build_rsp_pdu(cmd, conn, true, hdr);
-> +	isert_init_tx_hdrs(isert_conn, &isert_cmd->tx_desc);
-> +	/*
-> +	 * Attach SENSE DATA payload to iSCSI Response PDU
-> +	 */
-> +	if (cmd->se_cmd.sense_buffer &&
-> +	    ((cmd->se_cmd.se_cmd_flags & SCF_TRANSPORT_TASK_SENSE) ||
-> +	    (cmd->se_cmd.se_cmd_flags & SCF_EMULATED_TASK_SENSE))) {
-> +		struct ib_device *ib_dev = isert_conn->conn_cm_id->device;
-> +		struct ib_sge *tx_dsg = &isert_cmd->tx_desc.tx_sg[1];
-> +		u32 padding, sense_len;
-> +
-> +		put_unaligned_be16(cmd->se_cmd.scsi_sense_length,
-> +				   cmd->sense_buffer);
-> +		cmd->se_cmd.scsi_sense_length += sizeof(__be16);
-> +
-> +		padding = -(cmd->se_cmd.scsi_sense_length) & 3;
-> +		hton24(hdr->dlength, (u32)cmd->se_cmd.scsi_sense_length);
-> +		sense_len = cmd->se_cmd.scsi_sense_length + padding;
-> +
-> +		isert_cmd->sense_buf_dma = ib_dma_map_single(ib_dev,
-> +				(void *)cmd->sense_buffer, sense_len,
-> +				DMA_TO_DEVICE);
-> +
-> +		isert_cmd->sense_buf_len = sense_len;
-> +		ib_dma_sync_single_for_cpu(ib_dev, isert_cmd->sense_buf_dma,
-> +					   sense_len, DMA_TO_DEVICE);
-> +		ib_dma_sync_single_for_device(ib_dev, isert_cmd->sense_buf_dma,
-> +					      sense_len, DMA_TO_DEVICE);
-> +
+On Thu, Apr 04, 2013 at 11:42:11AM +0200, Benjamin Tissoires wrote:
+> On Thu, Apr 4, 2013 at 11:38 AM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> > On Thu, Apr 04, 2013 at 11:19:53AM +0200, Benjamin Tissoires wrote:
+> >> Hi Mika,
+> >>
+> >> On Wed, Apr 3, 2013 at 12:56 PM, Mika Westerberg
+> >> <mika.westerberg@linux.intel.com> wrote:
+> >> > Instead of open-coding ACPI GPIO resource lookup in each driver, we provide
+> >> > a helper function analogous to Device Tree version that allows drivers to
+> >> > specify which GPIO resource they are interested (using an index to the GPIO
+> >> > resources). The function then finds out the correct resource, translates
+> >> > the ACPI GPIO number to the corresponding Linux GPIO number and returns
+> >> > that.
+> >> >
+> >> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> >> > ---
+> >> >  Documentation/acpi/enumeration.txt |   32 ++++++++++++++-
+> >> >  drivers/gpio/gpiolib-acpi.c        |   77 ++++++++++++++++++++++++++++++++++++
+> >> >  include/linux/acpi_gpio.h          |   17 ++++++++
+> >> >  3 files changed, 125 insertions(+), 1 deletion(-)
+> >> >
+> >> > diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
+> >> > index 94a6561..b0d5410 100644
+> >> > --- a/Documentation/acpi/enumeration.txt
+> >> > +++ b/Documentation/acpi/enumeration.txt
+> >> > @@ -199,6 +199,8 @@ the device to the driver. For example:
+> >> >         {
+> >> >                 Name (SBUF, ResourceTemplate()
+> >> >                 {
+> >> > +                       ...
+> >> > +                       // Used to power on/off the device
+> >> >                         GpioIo (Exclusive, PullDefault, 0x0000, 0x0000,
+> >> >                                 IoRestrictionOutputOnly, "\\_SB.PCI0.GPI0",
+> >> >                                 0x00, ResourceConsumer,,)
+> >> > @@ -206,10 +208,20 @@ the device to the driver. For example:
+> >> >                                 // Pin List
+> >> >                                 0x0055
+> >> >                         }
+> >> > +
+> >> > +                       // Interrupt for the device
+> >> > +                       GpioInt (Edge, ActiveHigh, ExclusiveAndWake, PullNone,
+> >> > +                                0x0000, "\\_SB.PCI0.GPI0", 0x00, ResourceConsumer,,)
+> >>
+> >> Sorry for coming late in the GPIO ACPI discussion, but when I see this
+> >> documentation, I wonder:
+> >> wouldn't it be feasible to find the correct GPIO by its type? Here, we
+> >> have a GpioIo and a GpioInt, and I bet this would be sometime more
+> >> useful to request the first GpioInt without knowing the correct order
+> >> of declarations.
+> >
+> > Why not. But then again you can always check the type returned in the
+> > acpi_gpio_info structure and pick the first GpioInt (if you have multiple
+> > GPIO resources).
+> >
+> >> It may be feasible by walking the tree, but a helper would be of great
+> >> help (thinking at i2c-hid here, which can not rely on indexes in the
+> >> DSDT).
+> >
+> > Well, index is the only thing we can rely on unfortunately. There's nothing
+> > like names or anything like that.
+> >
+> > What I've seen from ACPI enumerated i2c-hid devices there is only one GPIO
+> > resource (GpioInt) declared.
+> 
+> Ok, thanks for the answer. I guess the idea would be to pick the index
+> 0, check the type, and try indexes 1 or 2 if it's not GpioInt. I bet
+> there will be devices with more than one Gpio as most of I2C input
+> device have a reset line (except if Microsoft forces them not to have
+> one).
 
-you just called dma_map_single, and not going to touch the buffer before 
-posting it to the wire,
-there's no point to sync it for the cpu and for the device, remove these 
-calls.
-
-
-> +		tx_dsg->addr	= isert_cmd->sense_buf_dma;
-> +		tx_dsg->length	= sense_len;
-> +		tx_dsg->lkey	= isert_conn->conn_mr->lkey;
-> +		isert_cmd->tx_desc.num_sge = 2;
-> +	}
-> +
-> +	isert_init_send_wr(isert_cmd, send_wr);
-> +
-> +	pr_debug("Posting SCSI Response IB_WR_SEND >>>>>>>>>>>>>>>>>>>>>>\n");
-> +
-> +	return isert_post_response(isert_conn, isert_cmd);
-> +}
-
+One option is to provide acpi_get_gpio_all() that returns all GPIOs and
+their corresponding types. That should allow clients like i2c-hid to find
+the right GPIO (I'm hoping that there will be only one GpioInt associated
+with these devices).
