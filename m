@@ -1,96 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932658Ab3DDBEI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 21:04:08 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47875 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932245Ab3DDBEF (ORCPT
+	id S932674Ab3DDBGJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 21:06:09 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:36104 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932290Ab3DDBGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 21:04:05 -0400
-Date: Thu, 4 Apr 2013 12:04:02 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: linux-next: build warning after merge of the wireless-next tree
-Message-Id: <20130404120402.2384c71a6e1850ebe76d62e2@canb.auug.org.au>
-In-Reply-To: <20130404120043.794afc7dd061dcd3adac0fdb@canb.auug.org.au>
-References: <20130404120043.794afc7dd061dcd3adac0fdb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__4_Apr_2013_12_04_02_+1100_hHmGi2WUYcA3A8Gq"
+	Wed, 3 Apr 2013 21:06:07 -0400
+Date: Wed, 3 Apr 2013 18:06:04 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tim Bird <tim.bird@am.sony.com>
+Cc: linux kernel <linux-kernel@vger.kernel.org>
+Subject: Re: GPS driver for Linux - kernel or user-space driver?
+Message-ID: <20130404010604.GC19599@kroah.com>
+References: <515CCEB3.4020309@am.sony.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515CCEB3.4020309@am.sony.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__4_Apr_2013_12_04_02_+1100_hHmGi2WUYcA3A8Gq
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Apr 03, 2013 at 05:52:03PM -0700, Tim Bird wrote:
+> I've been approached by a developer at Sony who wants to publish an
+> open source driver for a Sony GPS receiver module.
 
-Hi John,
+What does the device look like?  USB device?  UART?  Something else?
 
-On Thu, 4 Apr 2013 12:00:43 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
->
-> After merging the wireless-next tree, today's linux-next build (x86_64
-> allmodconfig) produced this warning:
->=20
-> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
-e unused because linking not done
-> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
-e unused because linking not done
-> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
-e unused because linking not done
-> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
-e unused because linking not done
-> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
-e unused because linking not done
-> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
-e unused because linking not done
-> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
-e unused because linking not done
-> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
-e unused because linking not done
-> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
-e unused because linking not done
-> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
-e unused because linking not done
-> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
-e unused because linking not done
->=20
-> I have no idea what caused that.
+> I've looked in the kernel source, and only see one standalone GPS
+> driver, for Garmin.  It appears that most GPS support in Linux is done
+> via user-space drivers.  Many GPS hardware modules appear to be
+> accessed via a serial line, or USB/serial port.  The Sony
+> module is pretty much the same, accepting commands and delivering
+> data via a uart from the chip.
+> 
+> I planning to recommend writing a user-space driver (based on
+> gpsd and/or the Android GPS HAL specification).  But I'm worried
+> I'm missing something.  Is this the correct approach, or is there
+> an established kernel API for GPS modules - such that I should
+> recommend that this developer writes a kernel module instead
+> of, or in addition to, the user-space support for the hardware?
 
-Though I suspect commit 8b138d4898a0 ("rtlwifi: rtl8188ee: Enable build
-of new driver") - I wonder if the gap between the "-I" and
-"drivers/net/wireless/rtlwifi" added to ccflags-y is the cause?
+If it's just a uart-like device, just write a serial driver and drive it
+from gpsd.  That way seems to be the simplest and then the kernel just
+becomes a dumb-pipe, which is fine.
 
-I am using gcc 4.6.3 if that matters.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+thanks,
 
---Signature=_Thu__4_Apr_2013_12_04_02_+1100_hHmGi2WUYcA3A8Gq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRXNGCAAoJEECxmPOUX5FEY1kP/R35HVl/sai+s8wFFY+T0giI
-E7TacSGxAkIJ+zf+ZSeUtj3UGSU/2IhgFRO3N7NGl9YjvkBqoQesvKHKzJl+ktqo
-FAQeb78pTK8Yh0/6yBvF9UsMn/UGilJBqufDvqrkJqDQ/DWjydWYrRVL0empSUUz
-xfl5NqoRaZlj0c//FyPZ7+1qHU8LydFynba9VGd8jTF6HH30c1gKbOxCB05SE4D7
-dwrZBqqcPCsRkarUtAMssFB8JBSmi+3w2twaoeCNEk0+baTTMdMnNMlqS9cGH0c8
-eWlqbLy2I2kd7j5Z+chDzDgISGTqVNiNwAOChqIOCwG6CaTX+c9MWyELqScTv/4r
-s9SYerPOiNeBWruh0vB8tjMRemxI4A+8Z112G450LFDiRCM3OegQkShES8ABcHIh
-1r0/PKARkGUxP5wXMxG4PIZ7zUEQb8quvJ8Mm/zos3GxEb2nmC46nir2ck5Y2XtP
-UMjrxtNsAPjfYEhQjDAE5+bbG1kaf9qaoKd+eloIWvPtY5BWQDnswWIXglOvsmdS
-STdwCuCFPFHeXgMC/s857LbhT3CHZmt6gIwvMffXBqMx/3BgQh/3wmTcJnYMSjNW
-838TZBITDcp1u2xxY4iTCuJrm8nQYzWQ1dS1/memztsWeWCMIzPtR8UGKeJgKLvL
-fNT+IAQePTgfkmJlPdes
-=v5zX
------END PGP SIGNATURE-----
-
---Signature=_Thu__4_Apr_2013_12_04_02_+1100_hHmGi2WUYcA3A8Gq--
+greg k-h
