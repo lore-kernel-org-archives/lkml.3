@@ -1,123 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763401Ab3DDIVX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 04:21:23 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11609 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756513Ab3DDIVT (ORCPT
+	id S933011Ab3DDIZc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 04:25:32 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:8230 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932504Ab3DDIZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 04:21:19 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 04 Apr 2013 01:19:51 -0700
-Date: Thu, 4 Apr 2013 11:20:44 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Rob Herring <rob.herring@calxeda.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Simon Glass <sjg@chromium.org>, Rhyland Klein <rklein@nvidia.com>,
-        Pritesh Raithatha <praithatha@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Andrew Chew <AChew@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 00/14] Tegra114 clockframework
-Message-ID: <20130404082043.GY18519@tbergstrom-lnx.Nvidia.com>
-References: <1365000110-8916-1-git-send-email-pdeschrijver@nvidia.com>
- <515C6C6E.6060302@wwwdotorg.org>
- <515C7495.8060106@wwwdotorg.org>
- <515CB9D9.90303@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <515CB9D9.90303@wwwdotorg.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 4 Apr 2013 04:25:28 -0400
+X-AuditID: cbfee690-b7f656d0000007e3-e0-515d38f65913
+From: Jonghwan Choi <jhbird.choi@samsung.com>
+To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org, "'Kukjin'" <kgene.kim@samsung.com>,
+        "'Rafael J. Wysocki'" <rjw@sisk.pl>
+References: 
+In-reply-to: 
+Subject: [PATCH 3.8-stable] cpufreq: exynos: Get booting freq value in
+ exynos_cpufreq_init
+Date: Thu, 04 Apr 2013 17:25:22 +0900
+Message-id: <000001ce310d$f5b615d0$e1224170$%choi@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAEJzDJA=
+Content-language: ko
+x-cr-hashedpuzzle: l/c= Fke3 HCtM JX1/ LRIM Nqe4 O8KT Sjdw UVyx Uvw+ XhZ6 fJ3J
+ fjU1 lUnB xfpS
+ xi6X;5;agBoAGIAaQByAGQALgBjAGgAbwBpAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAawBnAGUAbgBlAC4AawBpAG0AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAcgBqAHcAQABzAGkAcwBrAC4AcABsADsAcwB0AGEAYgBsAGUAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{22DE1EB9-94FC-48AC-8EA1-88890CE89982};agBoAGIAaQByAGQALgBjAGgAbwBpAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtAA==;Thu,
+ 04 Apr 2013 08:25:14
+ GMT;WwBQAEEAVABDAEgAIAAzAC4AOAAtAHMAdABhAGIAbABlAF0AIABjAHAAdQBmAHIAZQBxADoAIABlAHgAeQBuAG8AcwA6ACAARwBlAHQAIABiAG8AbwB0AGkAbgBnACAAZgByAGUAcQAgAHYAYQBsAHUAZQAgAGkAbgAgAGUAeAB5AG4AbwBzAF8AYwBwAHUAZgByAGUAcQBfAGkAbgBpAHQA
+x-cr-puzzleid: {22DE1EB9-94FC-48AC-8EA1-88890CE89982}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t8zI91vFrGBBjvuW1gsaea26F1wlc3i
+	8q45bBb9C3uZLBZsfMTowOrRt2UVo8ejxS2MHp83yQUwR3HZpKTmZJalFunbJXBl3Nh+k6ng
+	FFfF/dt72RsYf3F0MXJySAiYSFzePIUVwhaTuHBvPVsXIxeHkMAyRokbV14xwRSd2PMBrEhI
+	YBGjxLR+YYiiv4wS8za9ZwFJsAnoShxbvwWsSETAW+LUlF/MXYwcHMwCyRI7WnlBTCEBbonV
+	zUEgFZwCPBLr/nQyg9jCAjESTf9ngXWyCKhKtP3/xQRSzitgJ/HgqhhImFdAUOLH5Htgi5gF
+	tCTW7zzOBGHLS2xe8xZskYSAusSjv7oQ+60kTq++ywhRIiKx78U7RpCDJQT+sEoc+nSADeIr
+	U4lJO7+wQyQ+skvcXrmYBeIGAYlvkw+xQAyVldh0gBmiXlLi4IobLBMYpWYhOWkWkpNmITlp
+	FpLdCxhZVjGKphYkFxQnpReZ6BUn5haX5qXrJefnbmKExO+EHYz3DlgfYkwGWj+RWUo0OR8Y
+	/3kl8YbGZkYWpiamxkbmlmakCSuJ86q3WAcKCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYJy3
+	zjmq+uCqI7XhCot//bna//GYTqtLtVzMSzF7jtqoe5MP2TwPnbCvfq7eyhVhfkrLu80Vp3jw
+	vwpmXmIcdemIyD7urLdzTy5bKfcmKJPZ79grhm6tZyW2lYu/Ky01zYmfe2fTmjazkrCXHrNb
+	J728o/5g0aKbGgUa71Q/cJz5+P+41bZr9eVKLMUZiYZazEXFiQAshexV9QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPKsWRmVeSWpSXmKPExsVy+t9jAd1vFrGBBk9PGlssaea26F1wlc3i
+	8q45bBb9C3uZLBZsfMTowOrRt2UVo8ejxS2MHp83yQUwRzUw2mSkJqakFimk5iXnp2Tmpdsq
+	eQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYArVRSKEvMKQUKBSQWFyvp22GaEBripmsB
+	0xih6xsSBNdjZIAGEtYxZtzYfpOp4BRXxf3be9kbGH9xdDFyckgImEic2POBFcIWk7hwbz0b
+	iC0ksIhRYlq/cBcjF5D9l1Fi3qb3LCAJNgFdiWPrt4A1iAh4S5ya8ou5i5GDg1kgWWJHKy+I
+	KSTALbG6OQikglOAR2Ldn05mEFtYIEai6f8ssE4WAVWJtv+/mEDKeQXsJB5cFQMJ8woISvyY
+	fA9sEbOAlsT6nceZIGx5ic1r3oItkhBQl3j0Vxdiv5XE6dV3GSFKRCT2vXjHCHKwhMAfVolD
+	nw6wQXxlKjFp5xf2CYwis5CsmIVkxSwkK2YhmbWAkWUVo2hqQXJBcVJ6rqFecWJucWleul5y
+	fu4mRnByeCa1g3Flg8UhRgEORiUe3pX+MYFCrIllxZW5hxglOJiVRHjdeWIDhXhTEiurUovy
+	44tKc1KLDzEmAwNgIrOUaHI+MHHllcQbGpuYGVkamVkYmZibkyasJM57oNU6UEggPbEkNTs1
+	tSC1CGYLEwenVANj5NVb6zXPP9uYMoutWf38fr+ADx8v37ptesu1JpqlKkTgWUXfwrt9644+
+	+LbwrWxvatizr7pSsUvP31ra8myDjZFGxLKd1o4fzJV8VljI3NJcu1pA+vifEl232MVvZp4+
+	ce3E+kdPboQtjL6zoPTD9z2HZ6+ZtfFg54vAPz9Y16UtOnvIyqTmtJUSS3FGoqEWc1FxIgB4
+	YJ9fUgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 01:23:05AM +0200, Stephen Warren wrote:
-> On 04/03/2013 12:27 PM, Stephen Warren wrote:
-> > On 04/03/2013 11:52 AM, Stephen Warren wrote:
-> >> On 04/03/2013 08:40 AM, Peter De Schrijver wrote:
-> >>> This is the nineth version of the Tegra114 clockframework. It is based on the
-> >>> next-20130320-fixed branch of
-> >>> git://nv-tegra.nvidia.com/user/swarren/linux-2.6.git,
-> > ... [it depends on]
-> >>> http://patchwork.ozlabs.org/patch/233415/
-> >>
-> >> That is Joseph's "clocksource: tegra: enable arch_timer". Is this
-> >> actually a dependency, or an optimization, or ...?
-> >>
-> >> Rob Herring objected to that patch since it isn't necessary if his
-> >> series "ARM arch, sp804 and integrator timer CLKSRC_OF support" is applied.
-> >>
-> >> If I apply just your (Peter's) CCF series without Joseph's or Rob's
-> >> patches, will everything still work, or is this a hard dependency to
-> >> create a working system?
-> > 
-> > I manage to get this series applied on top of my local dev branch, based
-> > on next-20130328 (it was painful). Testing indicates that there is no
-> > dependency on Joseph's patch mentioned above; I could boot, log in, and
-> > play audio (with local patches) with /or/ without Joseph's patch applied.
-> > 
-> > However, I still find that I need to revert f7db706 ARM: "7674/1: smp:
-> > Avoid dummy clockevent being preferred over real hardware clock-event",
-> > or I get a hard system hang right after the root fs is mounted. As such,
-> > I not sure if it's worthwhile applying this series since it's unlikely
-> > to actually work once merged into Torvalds' tree.
-> > 
-> > Do you have any idea what the problem is here?
-> > 
-> > I'll try rebasing my local test branch on top of the latest linux-next
-> > just in case some other fix solved this already, but I'm not going to
-> > hold my breath.
-> 
-> I've found the problem. My bootloader wasn't initializing the TSC and
-> hence I guess it wasn't working properly, even with Joseph's patch to
-> add a call to the initialization function.
-> 
+This patch looks like it should be in the 3.8-stable tree, should we apply
+it?
 
-Ok.
+------------------
 
-> So, if I:
-> 
-> a) Fix my bootloader to enable TSC.
-> 
-> b) Merge Rob's patch series to enable the TSC. This is needed rather
-> than Joseph's patch since the two conflict, and I assume that Rob's
-> patch is going into 3.10.
-> 
-> c) Undo my local revert of "ARM: 7674/1: smp: Avoid dummy clockevent
-> being preferred over real hardware clock-event".
-> 
+From: "Jonghwan Choi <jhbird.choi@samsung.com>"
 
-Ok. Good. That's close to what I have and works here. As well.
+Boot_freq is for saving booting freq. But exynos_cpufreq_cpu_init
+is called in hotplug. If boot_freq is existed in exynos_cpufreq_cpu_init,
+boot_freq could be changed.
 
-> ... then everything now works.
-> 
-> So the only remaining issues are:
-> 
-> 1) Should the mux clocks still be defined in the binding document?
-> Prashant didn't seem to think so.
-> 
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+---
+ drivers/cpufreq/exynos-cpufreq.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I guess we should remove them then.
+diff --git a/drivers/cpufreq/exynos-cpufreq.c
+b/drivers/cpufreq/exynos-cpufreq.c
+index 7012ea8..41fc550 100644
+--- a/drivers/cpufreq/exynos-cpufreq.c
++++ b/drivers/cpufreq/exynos-cpufreq.c
+@@ -222,8 +222,6 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy
+*policy)
+ 
+ 	cpufreq_frequency_table_get_attr(exynos_info->freq_table,
+policy->cpu);
+ 
+-	locking_frequency = exynos_getspeed(0);
+-
+ 	/* set the transition latency value */
+ 	policy->cpuinfo.transition_latency = 100000;
+ 
+@@ -288,6 +286,8 @@ static int __init exynos_cpufreq_init(void)
+ 		goto err_vdd_arm;
+ 	}
+ 
++	locking_frequency = exynos_getspeed(0);
++
+ 	register_pm_notifier(&exynos_cpufreq_nb);
+ 
+ 	if (cpufreq_register_driver(&exynos_driver)) {
+-- 
+1.7.9.5
 
-> 2) I need Mike's ack to apply this series to the Tegra tree.
-
-Ok. Mike?
-
-Cheers,
-
-Peter.
