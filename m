@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932582Ab3DDApN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 20:45:13 -0400
-Received: from zetta.elopez.com.ar ([199.30.59.35]:48242 "EHLO
-	zetta.elopez.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932525Ab3DDApI (ORCPT
+	id S1761976Ab3DDArw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 20:47:52 -0400
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:23440
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758736Ab3DDArv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 20:45:08 -0400
-X-Greylist: delayed 2532 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Apr 2013 20:45:08 EDT
-Message-ID: <515CC317.2000703@elopez.com.ar>
-Date: Wed, 03 Apr 2013 21:02:31 -0300
-From: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Wed, 3 Apr 2013 20:47:51 -0400
+X-Forefront-Antispam-Report: CIP:160.33.194.231;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail04v.am.sony.com;RD:mail.sonyusa.com;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zz4015Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzzz2fh2a8h668h839h947hd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1b0ah1155h)
+Message-ID: <515CCEB3.4020309@am.sony.com>
+Date: Wed, 3 Apr 2013 17:52:03 -0700
+From: Tim Bird <tim.bird@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Michal Marek <mmarek@suse.cz>, Grant Likely <glikely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@nvidia.com>, linux-kbuild@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, Shawn Guo <shawn.guo@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH V2 4/7] kbuild: always run gcc -E on *.dts, remove cmd_dtc_cpp
-References: <1365032098-22825-1-git-send-email-swarren@wwwdotorg.org> <1365032098-22825-4-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1365032098-22825-4-git-send-email-swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: linux kernel <linux-kernel@vger.kernel.org>
+Subject: GPS driver for Linux - kernel or user-space driver?
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+I've been approached by a developer at Sony who wants to publish an
+open source driver for a Sony GPS receiver module.
 
-El 03/04/13 20:34, Stephen Warren escribió:
-> From: Stephen Warren <swarren@nvidia.com>
-> 
-> Replace cmd_dtc with cmd_dtc_cpp, and delete the latter.
-> 
-> Previously, a special file extension (.dtsp) was required to trigger
-> the C pre-processor to run on device tree files. This was ugly. Now that
-> previous changes have enhanced cmd_dtc_cpp to collect dependency
-> information from both gcc -E and dtc, we can transparently run the pre-
-> processor on all device tree files, irrespective of whether they
-> 
+I've looked in the kernel source, and only see one standalone GPS
+driver, for Garmin.  It appears that most GPS support in Linux is done
+via user-space drivers.  Many GPS hardware modules appear to be
+accessed via a serial line, or USB/serial port.  The Sony
+module is pretty much the same, accepting commands and delivering
+data via a uart from the chip.
 
-I think a line got dropped on the commit description by mistake.
+I planning to recommend writing a user-space driver (based on
+gpsd and/or the Android GPS HAL specification).  But I'm worried
+I'm missing something.  Is this the correct approach, or is there
+an established kernel API for GPS modules - such that I should
+recommend that this developer writes a kernel module instead
+of, or in addition to, the user-space support for the hardware?
 
-Regards,
+Thanks,
+ -- Tim
 
-Emilio
+=============================
+Tim Bird
+Architecture Group Chair, CE Workgroup of the Linux Foundation
+Senior Staff Engineer, Sony Network Entertainment
+=============================
+
