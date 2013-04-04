@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763024Ab3DDSu3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 14:50:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57754 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762864Ab3DDSu2 (ORCPT
+	id S1763487Ab3DDS6U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 14:58:20 -0400
+Received: from zimbra.linbit.com ([212.69.161.123]:52335 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762997Ab3DDS6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 14:50:28 -0400
-Message-ID: <515DCB78.3010207@infradead.org>
-Date: Thu, 04 Apr 2013 11:50:32 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Thu, 4 Apr 2013 14:58:19 -0400
+Date: Thu, 4 Apr 2013 20:58:15 +0200
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: drbd-dev@lists.linbit.com, yongjun_wei@trendmicro.com.cn,
+        linux-kernel@vger.kernel.org, drbd-user@lists.linbit.com
+Subject: Re: [Drbd-dev] [PATCH -next] drbd: fix error return code in
+ drbd_init()
+Message-ID: <20130404185815.GJ22095@soda.linbit>
+Mail-Followup-To: Wei Yongjun <weiyj.lk@gmail.com>,
+	drbd-dev@lists.linbit.com, yongjun_wei@trendmicro.com.cn,
+	linux-kernel@vger.kernel.org, drbd-user@lists.linbit.com
+References: <CAPgLHd9NdpPH74owO-5=h7G2Qmhb5OJSWnuo=gPWHhnUbE6ULQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: linux-next: Tree for Apr 4 (usb/gadget/configfs)
-References: <20130404182232.bd2dbfba27620bdab9e0de42@canb.auug.org.au>
-In-Reply-To: <20130404182232.bd2dbfba27620bdab9e0de42@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPgLHd9NdpPH74owO-5=h7G2Qmhb5OJSWnuo=gPWHhnUbE6ULQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/13 00:22, Stephen Rothwell wrote:
-> Hi all,
+On Thu, Apr 04, 2013 at 02:17:09PM +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 > 
-> Changes since 20130403:
-> 
+> Fix to return a negative error code from the error handling
+> case instead of 0, as returned elsewhere in this function.
 
+We used to have an err = -ENOMEM; "just in case"...
 
-on x86_64, when CONFIG_BUG is not enabled:
+How about this instead:
 
-  CC [M]  drivers/usb/gadget/configfs.o
-drivers/usb/gadget/configfs.c: In function 'config_usb_cfg_unlink':
-drivers/usb/gadget/configfs.c:442:2: error: implicit declaration of function '__WARN_printf' [-Werror=implicit-function-declaration]
-drivers/usb/gadget/configfs.c: In function 'configfs_do_nothing':
-drivers/usb/gadget/configfs.c:733:2: error: implicit declaration of function '__WARN' [-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
-make[4]: *** [drivers/usb/gadget/configfs.o] Error 1
-
-
-
-
--- 
-~Randy
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index e98da67..dfe52d6 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -2739,8 +2739,6 @@ int __init drbd_init(void)
+ 	/*
+ 	 * allocate all necessary structs
+ 	 */
+-	err = -ENOMEM;
+-
+ 	init_waitqueue_head(&drbd_pp_wait);
+ 
+ 	drbd_proc = NULL; /* play safe for drbd_cleanup */
+@@ -2750,6 +2748,7 @@ int __init drbd_init(void)
+ 	if (err)
+ 		goto fail;
+ 
++	err = -ENOMEM;
+ 	drbd_proc = proc_create_data("drbd", S_IFREG | S_IRUGO , NULL, &drbd_proc_fops, NULL);
+ 	if (!drbd_proc)	{
+ 		printk(KERN_ERR "drbd: unable to register proc file\n");
+@@ -2780,7 +2779,6 @@ int __init drbd_init(void)
+ fail:
+ 	drbd_cleanup();
+ 	if (err == -ENOMEM)
+-		/* currently always the case */
+ 		printk(KERN_ERR "drbd: ran out of memory\n");
+ 	else
+ 		printk(KERN_ERR "drbd: initialization failure\n");
