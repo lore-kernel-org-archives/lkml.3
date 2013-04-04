@@ -1,102 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759565Ab3DDMVT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 08:21:19 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6421 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759464Ab3DDMVR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 08:21:17 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 04 Apr 2013 05:20:21 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 4 Apr 2013 17:51:09 +0530
-Subject: RE: [PATCH v2 1/7] ARM: tegra: finalize USB EHCI and PHY bindings
-Thread-Topic: [PATCH v2 1/7] ARM: tegra: finalize USB EHCI and PHY bindings
-Thread-Index: Ac4wnpJ9ntiQGemWSnecVjOwlhE3+gAjjC4Q
-Message-ID: <D958900912E20642BCBC71664EFECE3E6E50BE4899@BGMAIL02.nvidia.com>
-References: <1364978502-22887-1-git-send-email-vbyravarasu@nvidia.com>
- <1364978502-22887-2-git-send-email-vbyravarasu@nvidia.com>
- <515C7E07.4040505@wwwdotorg.org>
-In-Reply-To: <515C7E07.4040505@wwwdotorg.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	id S1759646Ab3DDMWA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 08:22:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11390 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759504Ab3DDMV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 08:21:59 -0400
+Date: Thu, 4 Apr 2013 14:21:57 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alexander Graf <agraf@suse.de>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Christoffer Dall <c.dall@virtualopensystems.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH RFC] kvm: add PV MMIO EVENTFD
+Message-ID: <20130404112157.GB6467@redhat.com>
+References: <20130404104846.GA6227@redhat.com>
+ <6D40C5F1-849E-4F32-B391-E1A1BFA8C59D@suse.de>
+ <20130404110442.GA6467@redhat.com>
+ <C5D3F576-7567-4FCD-8819-9DC235E3513B@suse.de>
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C5D3F576-7567-4FCD-8819-9DC235E3513B@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-tegra-owner@vger.kernel.org [mailto:linux-tegra-
-> owner@vger.kernel.org] On Behalf Of Stephen Warren
-> Sent: Thursday, April 04, 2013 12:38 AM
-> To: Venu Byravarasu
-> Cc: gregkh@linuxfoundation.org; balbi@ti.com;
-> stern@rowland.harvard.edu; linux-tegra@vger.kernel.org; linux-
-> usb@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v2 1/7] ARM: tegra: finalize USB EHCI and PHY bindings
+On Thu, Apr 04, 2013 at 02:09:53PM +0200, Alexander Graf wrote:
 > 
-> On 04/03/2013 02:41 AM, Venu Byravarasu wrote:
-> > The existing Tegra USB bindings have a few issues:
-> ...
-> > This patch fixes the binding definition to resolve these issues.
+> On 04.04.2013, at 13:04, Michael S. Tsirkin wrote:
 > 
-> > diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-
-> phy.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra20-usb-
-> phy.txt
+> > On Thu, Apr 04, 2013 at 01:57:34PM +0200, Alexander Graf wrote:
+> >> 
+> >> On 04.04.2013, at 12:50, Michael S. Tsirkin wrote:
+> >> 
+> >>> With KVM, MMIO is much slower than PIO, due to the need to
+> >>> do page walk and emulation. But with EPT, it does not have to be: we
+> >>> know the address from the VMCS so if the address is unique, we can look
+> >>> up the eventfd directly, bypassing emulation.
+> >>> 
+> >>> Add an interface for userspace to specify this per-address, we can
+> >>> use this e.g. for virtio.
+> >>> 
+> >>> The implementation adds a separate bus internally. This serves two
+> >>> purposes:
+> >>> - minimize overhead for old userspace that does not use PV MMIO
+> >>> - minimize disruption in other code (since we don't know the length,
+> >>> devices on the MMIO bus only get a valid address in write, this
+> >>> way we don't need to touch all devices to teach them handle
+> >>> an dinvalid length)
+> >>> 
+> >>> At the moment, this optimization is only supported for EPT on x86 and
+> >>> silently ignored for NPT and MMU, so everything works correctly but
+> >>> slowly.
+> >>> 
+> >>> TODO: NPT, MMU and non x86 architectures.
+> >>> 
+> >>> The idea was suggested by Peter Anvin.  Lots of thanks to Gleb for
+> >>> pre-review and suggestions.
+> >>> 
+> >>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> >> 
+> >> This still uses page fault intercepts which are orders of magnitudes
+> >> slower than hypercalls.
+> > 
+> > Not really. Here's a test:
+> > compare vmcall to portio:
+> > 
+> > vmcall 1519
+> > ...
+> > outl_to_kernel 1745
+> > 
+> > compare portio to mmio:
+> > 
+> > mmio-wildcard-eventfd:pci-mem 3529
+> > mmio-pv-eventfd:pci-mem 1878
+> > portio-wildcard-eventfd:pci-io 1846
+> > 
+> > So not orders of magnitude.
 > 
-> >  Required properties :
-> ...
-> > +  - vbus-supply: regulator for VBUS
+> https://dl.dropbox.com/u/8976842/KVM%20Forum%202012/MMIO%20Tuning.pdf
 > 
-> Doesn't the driver only need to control VBUS if the port is in OTG mode?
-> 
-> If there is no VBUS control, and the HW provides VBUS, I think that the
-> port can only operate in host mode.
-> 
-> If there is no VBUS control, and the HW does not provide VBUS, I think
-> that the port can only operate in peripheral mode.
-> 
-> If there is VBUS control, then shouldn't the port always operate in OTG
-> mode, or are there other reasons to control VBUS even in host-only mode?
-> 
-> If VBUS control is only useful for OTG mode, then I think the
-> vbus-supply property should be documented in a "Required properties for
-> dr_mode == otg" section.
+> Check out page 41. Higher is better (number is number of loop cycles in a second). My test system was an AMD Istanbul based box.
 
-Agree, will do it in next patch update.
+Wow 2x difference.  The difference seems to be much smaller now. Newer
+hardware? Newer software?
 
+> > 
+> >> Why don't you just create a PV MMIO hypercall
+> >> that the guest can use to invoke MMIO accesses towards the host based
+> >> on physical addresses with explicit length encodings?
+> >> That way you simplify and speed up all code paths, exceeding the speed
+> >> of PIO exits even. It should also be quite easily portable, as all
+> >> other platforms have hypercalls available as well.
+> >> 
+> >> 
+> >> Alex
+> > 
+> > I sent such a patch, but maintainers seem reluctant to add hypercalls.
+> > Gleb, could you comment please?
+> > 
+> > A fast way to do MMIO is probably useful in any case ...
 > 
-> I assume that VBUS control makes no sense for a peripheral-mode-only
-> port, so if VBUS control is useful for host-only mode as well as OTG
-> mode, then I think the vbus-supply property should be documented in a
-> "Required properties for dr_mode != peripheral" section.
+> Yes, but at least according to my numbers optimizing anything that is not hcalls is a waste of time.
 > 
-> Is the following table correct?
 > 
-> Port operating mode:	host	peripheral	otg
-> --------------------	----	----------	---
-> VBUS control required:	no	no		yes
-> VBUS control useful:	yes[1]?	no		yes
-> 
-> [1] perhaps for power-saving/suspend???
- 
-For waking system up from sleep via devices connected to USB, I think Vbus is always
-kept ON in host mode. 
+> Alex
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This was the implementation: 'kvm_para: add mmio word store hypercall'.
+Again, I don't mind.
+
+-- 
+MST
