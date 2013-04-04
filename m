@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763815Ab3DDGrR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 02:47:17 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40233 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099Ab3DDGrP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 02:47:15 -0400
+	id S932765Ab3DDGsT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 02:48:19 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:37740 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1763528Ab3DDGsQ (ORCPT
+	<rfc822;	linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 02:48:16 -0400
+Date: Thu, 04 Apr 2013 09:47:57 +0300
+Subject: Re: [PATCH v3 linux-next] cpufreq: ondemand: Calculate gradient of
+ CPU load to early increase frequency
+Message-ID: <c47p1i8x8eiep3wulmq44fxd.1365058077739@email.android.com>
+From: stratosk <stratosk@semaphore.gr>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <1363334534-21901-1-git-send-email-gautam.vivek@samsung.com>
-References: <1363334534-21901-1-git-send-email-gautam.vivek@samsung.com>
-Date: Thu, 4 Apr 2013 12:17:13 +0530
-Message-ID: <CAFp+6iHt5QHkx2MkQq_JiJDZ-aov2e2Db=sn50_bm0fYcBQinA@mail.gmail.com>
-Subject: Re: [PATCH v5 0/3] ARM: Exynos5250: Enabling dwc3-exynos driver
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, balbi@ti.com, rob.herring@calxeda.com,
-        thomas.abraham@linaro.org, grant.likely@secretlab.ca,
-        dianders@chromium.org, jg1.han@samsung.com, p.paneri@samsung.com,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r346mKhe000831
 
-Hi Kukjin,
+Hi Viresh,
 
+I never use performance governor, but I want improved performance with ondemand.
 
-On Fri, Mar 15, 2013 at 1:32 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
-> This patch-set is in continuation with patch-series:
-> [PATCH v4 0/4] Enable ehci, ohci and dwc3 devices on exynos5250
-> out of which follwowing patches have been picked up:
-> ARM: Exynos5250: Enabling ehci-s5p driver
-> ARM: Exynos5250: Enabling ohci-exynos driver
+Why do you suspect significant increased power? With ondemand  the CPU will go down to lowest freq as soon as the load will decreased. And the measurement shows that the CPU load will decrease faster (because of faster calculation).
+
+I build and distribute a 3.0.y kernel for a smart phone arm cortex A8. There are about 10000 installations with early_demand included. Nobody noticed increased power.
+
+Though, I'm not able to provide numbers in the form of power.
+
+Thanks,
+Stratos
+
+Viresh Kumar <viresh.kumar@linaro.org> wrote:
+
+>Hi Stratos,
 >
-> Based on following patch-set for Samsung's usb PHY enablement:
-> [PATCH v4 0/2] ARM: Exynos5250: Enabling samsung usb phy
+>On 4 April 2013 05:00, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+>> I tried to do some measurements simulating a CPU load with a loop that simply counts
+>> an integer. The first test simulates a CPU load that lasts 2 x sampling_rate = ~ 20000us.
+>> The second ~40000us and the third ~60000us.
+>> There are 5 runs in each test. In each run the benchmark program counts 20 times with
+>> early_demand off and 20 times with early_demand on and takes the average times.
+>>
+>> I run the benchmark program on 3.9-rc5 + early_demand patch. My CPU is the i7-3770 @ 3.40 GHz
+>>
+>> Please find below the results, and the benchmark code attached.
+>> Please note, that the idea of this patch is to push the CPU to max frequency few sampling
+>> periods (1 in most cases) earlier for a more responsive system.
 >
-> and further depends on dwc3-exynos driver patch-set:
-> [PATCH 0/2] dwc3: exynos: Device tree fixes
+>Yes, your results show some improvements. BUT if performance is the only thing
+>we were looking for, then we will never use ondemand governor but performance
+>governor.
 >
-> Changes from v4:
->  - Aligning with the recently merged common clock framework, thereby
->    no place for clock file changes. ;-)
->  - Adding proper binding documentation as per latest bindings changes in
->    dwc3 driver (dwc3/core.c as well as for dwc3-exynos.c change reflected
->    by above patch-set.
->  - Bifurcating the patch to separate our Documentation, arch and dts changes.
+>I suspect this little increase in performance must have increased power numbers
+>too (significantly). So, if you can get numbers in the form of power/performance
+>with and without your patch, it will be great.
 >
-> Vivek Gautam (3):
->   usb: Add device tree bindings for dwc3-exynos
->   ARM: exynos5250: dts: Enabling dwc3-exynos driver
->   ARM: exynos5: Enable XHCI support on exynos5
->
->  .../devicetree/bindings/usb/exynos-usb.txt         |   34 ++++++++++++++++++++
->  arch/arm/boot/dts/exynos5250.dtsi                  |   20 ++++++++++-
->  arch/arm/mach-exynos/Kconfig                       |    1 +
->  3 files changed, 53 insertions(+), 2 deletions(-)
-
-Waiting for your review on this patch-set. :-)
-
-
--- 
-Thanks & Regards
-Vivek
+>--
+>viresh
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
