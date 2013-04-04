@@ -1,118 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761483Ab3DDOGZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 10:06:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23598 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760684Ab3DDOGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 10:06:23 -0400
-Date: Thu, 4 Apr 2013 16:06:18 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alexander Graf <agraf@suse.de>
-Cc: Gleb Natapov <gleb@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Christoffer Dall <c.dall@virtualopensystems.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH RFC] kvm: add PV MMIO EVENTFD
-Message-ID: <20130404130618.GE6467@redhat.com>
-References: <20130404104846.GA6227@redhat.com>
- <6D40C5F1-849E-4F32-B391-E1A1BFA8C59D@suse.de>
- <20130404120825.GD17919@redhat.com>
- <959E147D-EB7B-4F4B-9F84-4F1BBA98DEF8@suse.de>
- <20130404123806.GG17919@redhat.com>
- <EF153515-9835-4FB9-B6BC-73D0BDC86492@suse.de>
+	id S1761132Ab3DDOH7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 10:07:59 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:33773 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760838Ab3DDOH6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 10:07:58 -0400
+Message-ID: <515D892A.20909@openwrt.org>
+Date: Thu, 04 Apr 2013 16:07:38 +0200
+From: Florian Fainelli <florian@openwrt.org>
+Organization: OpenWrt
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <EF153515-9835-4FB9-B6BC-73D0BDC86492@suse.de>
+To: Florian Fainelli <florian@openwrt.org>
+CC: giometti@enneenne.com, linux-kernel@vger.kernel.org,
+        richardcochran@gmail.com, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] pps: hide more configuration symbols behind CONFIG_PPS
+References: <20130108162754.GB7643@netboy.at.omicron.at> <1358267098-30789-1-git-send-email-florian@openwrt.org>
+In-Reply-To: <1358267098-30789-1-git-send-email-florian@openwrt.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 02:39:51PM +0200, Alexander Graf wrote:
-> 
-> On 04.04.2013, at 14:38, Gleb Natapov wrote:
-> 
-> > On Thu, Apr 04, 2013 at 02:32:08PM +0200, Alexander Graf wrote:
-> >> 
-> >> On 04.04.2013, at 14:08, Gleb Natapov wrote:
-> >> 
-> >>> On Thu, Apr 04, 2013 at 01:57:34PM +0200, Alexander Graf wrote:
-> >>>> 
-> >>>> On 04.04.2013, at 12:50, Michael S. Tsirkin wrote:
-> >>>> 
-> >>>>> With KVM, MMIO is much slower than PIO, due to the need to
-> >>>>> do page walk and emulation. But with EPT, it does not have to be: we
-> >>>>> know the address from the VMCS so if the address is unique, we can look
-> >>>>> up the eventfd directly, bypassing emulation.
-> >>>>> 
-> >>>>> Add an interface for userspace to specify this per-address, we can
-> >>>>> use this e.g. for virtio.
-> >>>>> 
-> >>>>> The implementation adds a separate bus internally. This serves two
-> >>>>> purposes:
-> >>>>> - minimize overhead for old userspace that does not use PV MMIO
-> >>>>> - minimize disruption in other code (since we don't know the length,
-> >>>>> devices on the MMIO bus only get a valid address in write, this
-> >>>>> way we don't need to touch all devices to teach them handle
-> >>>>> an dinvalid length)
-> >>>>> 
-> >>>>> At the moment, this optimization is only supported for EPT on x86 and
-> >>>>> silently ignored for NPT and MMU, so everything works correctly but
-> >>>>> slowly.
-> >>>>> 
-> >>>>> TODO: NPT, MMU and non x86 architectures.
-> >>>>> 
-> >>>>> The idea was suggested by Peter Anvin.  Lots of thanks to Gleb for
-> >>>>> pre-review and suggestions.
-> >>>>> 
-> >>>>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> >>>> 
-> >>>> This still uses page fault intercepts which are orders of magnitudes slower than hypercalls. Why don't you just create a PV MMIO hypercall that the guest can use to invoke MMIO accesses towards the host based on physical addresses with explicit length encodings?
-> >>>> 
-> >>> It is slower, but not an order of magnitude slower. It become faster
-> >>> with newer HW.
-> >>> 
-> >>>> That way you simplify and speed up all code paths, exceeding the speed of PIO exits even. It should also be quite easily portable, as all other platforms have hypercalls available as well.
-> >>>> 
-> >>> We are trying to avoid PV as much as possible (well this is also PV,
-> >>> but not guest visible
-> >> 
-> >> Also, how is this not guest visible? Who sets KVM_IOEVENTFD_FLAG_PV_MMIO? The comment above its definition indicates that the guest does so, so it is guest visible.
-> >> 
-> > QEMU sets it.
-> 
-> How does QEMU know?
-> 
-> > 
-> >> +/*
-> >> + * PV_MMIO - Guest can promise us that all accesses touching this address
-> >> + * are writes of specified length, starting at the specified address.
-> >> + * If not - it's a Guest bug.
-> >> + * Can not be used together with either PIO or DATAMATCH.
-> >> + */
-> >> 
-> > Virtio spec will state that access to a kick register needs to be of
-> > specific length. This is reasonable thing for HW to ask.
-> 
-> This is a spec change. So the guest would have to indicate that it adheres to a newer spec. Thus it's a guest visible change.
-> 
-> 
-> Alex
+Le 01/15/13 17:24, Florian Fainelli a écrit :
+> This patch makes CONFIG_PPS_DEBUG and CONFIG_NTP_PPS be hidden if
+> CONFIG_PPS is not selected, such that we are not prompted for these
+> configuration options if CONFIG_PPS is not set.
 
-To use MMIO is a spec change, yes.
-What Gleb refers to is that the optimization is not guest visible.
-If you have hardware that can quickly decode MMIO you can
-drop the PV ioctl from qemu without changing guests.
+It seems like this patch has not been merged, yet it is still applicable 
+as of 3.9-rc. Andrew can you take it maybe? Thanks!
 
+>
+> Signed-off-by: Florian Fainelli <florian@openwrt.org>
+> ---
+> Changes since v1:
+> - dropped the depends on PPS which is now useless
+>
+>   drivers/pps/Kconfig |    6 ++++--
+>   1 file changed, 4 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/pps/Kconfig b/drivers/pps/Kconfig
+> index 982d16b..7512e98 100644
+> --- a/drivers/pps/Kconfig
+> +++ b/drivers/pps/Kconfig
+> @@ -20,10 +20,10 @@ config PPS
+>
+>   	  To compile this driver as a module, choose M here: the module
+>   	  will be called pps_core.ko.
+> +if PPS
+>
+>   config PPS_DEBUG
+>   	bool "PPS debugging messages"
+> -	depends on PPS
+>   	help
+>   	  Say Y here if you want the PPS support to produce a bunch of debug
+>   	  messages to the system log.  Select this if you are having a
+> @@ -31,13 +31,15 @@ config PPS_DEBUG
+>
+>   config NTP_PPS
+>   	bool "PPS kernel consumer support"
+> -	depends on PPS && !NO_HZ
+> +	depends on !NO_HZ
+>   	help
+>   	  This option adds support for direct in-kernel time
+>   	  synchronization using an external PPS signal.
+>
+>   	  It doesn't work on tickless systems at the moment.
+>
+> +endif
+> +
+>   source drivers/pps/clients/Kconfig
+>
+>   source drivers/pps/generators/Kconfig
+>
 
--- 
-MST
