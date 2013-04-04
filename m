@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764879Ab3DDVaH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 17:30:07 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52669 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764789Ab3DDVaF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 17:30:05 -0400
-Message-ID: <515DF0D9.40007@wwwdotorg.org>
-Date: Thu, 04 Apr 2013 15:30:01 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1764918Ab3DDVc1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 17:32:27 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56671 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1764868Ab3DDVcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 17:32:25 -0400
+Date: Thu, 4 Apr 2013 23:32:20 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH V4 1/2] cpufreq: ondemand: allow custom
+ powersave_bias_target handler to be registered
+Message-ID: <20130404213220.GK32271@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jacob Shin <jacob.shin@amd.com>,
+	Viresh Kumar <viresh.kumar@linaro.org>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+	linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Thomas Renninger <trenn@suse.de>
+References: <1365092344-11310-1-git-send-email-jacob.shin@amd.com>
+ <1365092344-11310-2-git-send-email-jacob.shin@amd.com>
+ <CAKohpom6BSJZc_ohgnjRTV2EBUAPy8TKVphtoRaNSt1wFP70uA@mail.gmail.com>
+ <20130404171804.GA4696@jshin-Toonie>
+ <20130404191225.GH32271@pd.tnic>
+ <20130404202813.GA24479@jshin-Toonie>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 07/12] PCI: tegra: Move PCIe driver to drivers/pci/host
-References: <1365000318-28256-1-git-send-email-thierry.reding@avionic-design.de> <1365000318-28256-8-git-send-email-thierry.reding@avionic-design.de> <515DF096.2000703@wwwdotorg.org>
-In-Reply-To: <515DF096.2000703@wwwdotorg.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130404202813.GA24479@jshin-Toonie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2013 03:28 PM, Stephen Warren wrote:
-> On 04/03/2013 08:45 AM, Thierry Reding wrote:
->> Move the PCIe driver from arch/arm/mach-tegra into the drivers/pci/host
->> directory. The motivation is to collect various host controller drivers
->> in the same location in order to facilitate refactoring.
->>
->> The Tegra PCIe driver has been largely rewritten, both in order to turn
->> it into a proper platform driver and to add MSI (based on code by
->> Krishna Kishore <kthota@nvidia.com>) as well as device tree support.
+On Thu, Apr 04, 2013 at 03:28:13PM -0500, Jacob Shin wrote:
+> Ah, okay .. here is the fixup:
 > 
->>  arch/arm/boot/dts/tegra20.dtsi                     |   53 +
+> From 7236287faa1a499686c9aac1d3f3f224516a7bbf Mon Sep 17 00:00:00 2001
+> From: Jacob Shin <jacob.shin@amd.com>
+> Date: Tue, 2 Apr 2013 09:56:56 -0500
+> Subject: [PATCH 1/2] cpufreq: ondemand: allow custom powersave_bias_target
+>  handler to be registered
 > 
-> I guess this has to touch both the driver and the dtsi file so that
-> bisectabilty isn't broken? I guess that's OK.
+> This allows for another [arch specific] driver to hook into existing
+> powersave bias function of the ondemand governor. i.e. This allows AMD
+> specific powersave bias function (in a separate AMD specific driver)
+> to aid ondemand governor's frequency transition decisions.
+> 
+> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 
-Actually, can't you move all the *.dts/*.dtsi changes to the start of
-the series, then put the driver conversion patch last, to avoid any
-bisectability issues and still keep code and DT changes separate?
+Acked-by: Borislav Petkov <bp@suse.de>
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
