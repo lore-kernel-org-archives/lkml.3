@@ -1,105 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764321Ab3DDSHW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 14:07:22 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:40988 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764294Ab3DDSHU (ORCPT
+	id S1764335Ab3DDSHc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 14:07:32 -0400
+Received: from mail-da0-f50.google.com ([209.85.210.50]:45838 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1764294Ab3DDSH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 14:07:20 -0400
+	Thu, 4 Apr 2013 14:07:29 -0400
+Date: Thu, 4 Apr 2013 11:07:21 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Jacob Shin <jacob.shin@amd.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 05/20] x86, ACPI: Split acpi_initrd_override to
+ find/copy two functions
+Message-ID: <20130404180721.GT9425@htj.dyndns.org>
+References: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
+ <1362897887-30808-6-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <514BAB13.3000101@gmail.com>
-References: <20130321043449.7229.81056.stgit@amt.stowe> <20130321043502.7229.43877.stgit@amt.stowe>
- <514BAB13.3000101@gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 4 Apr 2013 12:06:58 -0600
-Message-ID: <CAErSpo4FajG4hz8ELinnFLjk_3j=gQpC9zi4jR6pi=qoOda5cg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] PCI: Handle device quirks when accessing sysfs
- resource<N> entries
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: Myron Stowe <myron.stowe@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Xiangliang Yu <yuxiangl@marvell.com>,
-        xiangliang yu <yxlraid@gmail.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        Kay Sievers <kay@vrfy.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362897887-30808-6-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 21, 2013 at 6:51 PM, Robert Hancock <hancockrwd@gmail.com> wrote:
-> On 03/20/2013 10:35 PM, Myron Stowe wrote:
->>
->> Sysfs includes entries to memory regions that back a PCI device's BARs.
->> The pci-sysfs entries backing I/O Port BARs can be accessed by userspace,
->> providing direct access to the device's registers.  File permissions
->> prevent random users from accessing the device's registers through these
->> files, but don't stop a privileged app that chooses to ignore the purpose
->> of these files from doing so.
->>
->> There are devices with abnormally strict restrictions with respect to
->> accessing their registers; aspects that are typically handled by the
->> device's driver.  When these access restrictions are not followed - as
->> when a userspace app such as "udevadm info --attribute-walk
->> --path=/sys/..." parses though reading all the device's sysfs entries - it
->> can cause such devices to fail.
->>
->> This patch introduces a quirking mechanism that can be used to detect
->> accesses that do no meet the device's restrictions, letting a device
->> specific method intervene and decide how to progress.
->>
->> Reported-by: Xiangliang Yu <yuxiangl@marvell.com>
->> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
->
->
-> I honestly don't think there's much point in even attempting this strategy.
-> This list of devices in the quirk can't possibly be complete. It would
-> likely be easier to enumerate a white-list of devices that can deal with
-> their IO ports being read willy-nilly than a blacklist of those that don't,
-> as there's likely countless devices that fall into this category. Even if
-> they don't choke as badly as these ones do, it's quite likely that bad
-> behavior will result.
+On Sat, Mar 09, 2013 at 10:44:32PM -0800, Yinghai Lu wrote:
+> To parse srat early, we need to move acpi table probing early.
+> acpi_initrd_table_override is before acpi table probing. So we need to
+> move it early too.
+> 
+> Current code acpi_initrd_table_override is after init_mem_mapping and
+> relocate_initrd(), so it can scan initrd and copy acpi tables with kernel
+> virtual address of initrd.
+> Copying need to be after memblock is ready, because it need to allocate
+> buffer for new acpi tables.
+> 
+> So we have to split that function to find and copy two functions.
+> Find should be as early as possible. Copy should be after memblock is ready.
+> 
+> Finding could be done in head_32.S and head64.c, just like microcode
+> early scanning. In head_32.S, it is 32bit flat mode, we don't
+> need to set page table to access it. In head64.c, #PF set page table
+> could help us access initrd with kernel low mapping address.
+> 
+> Copying could be done just after memblock is ready and before probing
+> acpi tables, and we need to early_ioremap to access source and target
+> range, as init_mem_mapping is not called yet.
+> 
+> Also move down two functions declaration to avoid #ifdef in setup.c
+> 
+> ACPI_INITRD_TABLE_OVERRIDE depends one ACPI and BLK_DEV_INITRD.
+> So could move declaration out from #ifdef CONFIG_ACPI protection.
 
-I agree, I'm not inclined to add a bunch of code that only fixes one
-device when there are likely many others with similar problems.
+Heh, I couldn't really follow the above.  How about something like the
+following.
 
-> I think there's a few things that need to be done:
->
-> -Fix the bug in udevadm that caused it to trawl through these files
-> willy-nilly,
+ While a dummy version of acpi_initrd_override() was defined when
+ !CONFIG_ACPI_INITRD_TABLE_OVERRIDE, the prototype and dummy version
+ were conditionalized inside CONFIG_ACPI.  This forced setup_arch() to
+ have its own #ifdefs around acpi_initrd_override() as otherwise build
+ would fail when !CONFIG_ACPI.  Move the prototypes and dummy
+ implementations of the newly split functions below CONFIG_ACPI block
+ in acpi.h so that we can do away with #ifdefs in its user.
 
-We can argue about whether this is actually a bug in udevadm, but
-either way, my opinion is that the data that udevadm prints out from
-these files is uninteresting in the same way the data from "uevent,"
-"dev," "modalias," "resource," etc. is uninteresting.  So to me, a
-udevadm change seems justified for that reason.
+Acked-by: Tejun Heo <tj@kernel.org>
 
-> -Fix the kernel so that access through these files complies with the
-> kernel's mechanisms for claiming IO/memory regions to prevent access
-> conflicts (i.e. opening these files should claim the resource region they
-> refer to, and should fail with EBUSY or something if another process or a
-> kernel driver is using it).
->
-> -Reconsider whether supporting read/write on the resource files for IO port
-> regions like these makes any sense. Obviously mmap isn't very practical for
-> IO port access on x86 but you could even do something like an ioctl for this
-> purpose. Not very many pieces of software would need to access these files
-> so it's likely OK if the API is a bit ugly. That would prevent something
-> like grepping through sysfs from generating port accesses to random devices.
+Thanks.
 
-This is the approach I'd like to push on for a kernel fix.  I'm not a
-VM person, but if it were possible to support .mmap() in such a way
-that a handler would be called for every access to the region, we
-could easily support I/O port access that way.
-
-Along that line, I'm concerned that we may have a hole in the MEM BAR
-.mmap() path.  What happens if we have BARs from two different devices
-in the same page, and we mmap() one of them?  Does the user also get
-access to the second device's BAR on the same page?  If so, that could
-also be fixed with an .mmap() trap approach.  Performance would suck
-for these small BARs, of course.
-
-Bjorn
+-- 
+tejun
