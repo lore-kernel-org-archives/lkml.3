@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763982Ab3DDHOW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 03:14:22 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:8184 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763218Ab3DDHOU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 03:14:20 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 04 Apr 2013 00:13:22 -0700
-Message-ID: <515D283E.5060209@nvidia.com>
-Date: Thu, 4 Apr 2013 12:44:06 +0530
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1764011Ab3DDHQP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 03:16:15 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58157 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1763988Ab3DDHQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 03:16:12 -0400
+Date: Thu, 4 Apr 2013 10:15:34 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Kishon Vijay Abraham I <kishon@ti.com>, <balbi@ti.com>,
+        <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
+        <akpm@linux-foundation.org>, <sylvester.nawrocki@gmail.com>,
+        <rob@landley.net>, <netdev@vger.kernel.org>, <davem@davemloft.net>,
+        <cesarb@cesarb.net>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <tony@atomide.com>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <b-cousson@ti.com>,
+        <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
+        <mchehab@redhat.com>, <santosh.shilimkar@ti.com>,
+        <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
+        <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 1/6] drivers: phy: add generic PHY framework
+Message-ID: <20130404071534.GC30287@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1364993634-6378-1-git-send-email-kishon@ti.com>
+ <1364993634-6378-2-git-send-email-kishon@ti.com>
+ <515CC123.4060402@wwwdotorg.org>
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Pritesh Raithatha <praithatha@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>, Andrew Chew <AChew@nvidia.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 10/14] ARM: tegra: Define Tegra114 CAR binding
-References: <1363956029-31873-1-git-send-email-pdeschrijver@nvidia.com> <1363956029-31873-11-git-send-email-pdeschrijver@nvidia.com> <515031E3.40007@nvidia.com> <20130403141916.GS18519@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20130403141916.GS18519@tbergstrom-lnx.Nvidia.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KDt/GgjP6HVcx58l"
+Content-Disposition: inline
+In-Reply-To: <515CC123.4060402@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 April 2013 07:49 PM, Peter De Schrijver wrote:
-> On Mon, Mar 25, 2013 at 12:15:47PM +0100, Prashant Gaikwad wrote:
->> On Friday 22 March 2013 06:09 PM, Peter De Schrijver wrote:
->>> The device tree binding models Tegra114 CAR (Clock And Reset) as a single
->>> monolithic clock provider.
->>>
->>> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
->>> ---
->> <snip>
->>
->>> +  263	cclk_lp
->>> +  264	dfll_ref
->>> +  265	dfll_soc
->>> +
->> Peter,
->>
->> Please remove following clock IDs from binding.
->>
->>> +Mux clocks
->>> +
-> ...
->>> +  306	clk_out_1_mux
-> Is at least used by the init list. So we can't remove that?
+--KDt/GgjP6HVcx58l
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Init list is internal to driver and does not use device tree, so we can 
-keep that ID in enum but remove from DT binding so that we don't have to 
-change the binding later.
+Hi,
 
->
-> Cheers,
->
-> Peter.
+On Wed, Apr 03, 2013 at 05:54:11PM -0600, Stephen Warren wrote:
+> struct phy {
+> 	struct device *dev;
+> 	struct module *owner;
+> 	int	(*init)(struct phy *phy);
+> 	int	(*exit)(struct phy *phy);
+> 	int	(*suspend)(struct phy *phy);
+> 	int	(*resume)(struct phy *phy);
 
+I wonder whether it makes sense to provide ->suspend/->resume callbacks
+here. We already have dev_pm_ops providing those methods and we can just
+wrap pm_runtime_* calls to be called by consumers.
+
+--=20
+balbi
+
+--KDt/GgjP6HVcx58l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRXSiWAAoJEIaOsuA1yqREFXkQAIP3OrjLQw12ylU/UHkhNtSJ
+B9qlFZyTCIGB0Vt9B3LZj5E3Vr7+GjR6UVbgC4FrYGJ57kFM7bzF/s+4r/8IjHzQ
+OrVRwpQButjAQZ6AgOd3rWMl2GvV60Eq6qlaWxWnjYLlzyBon1ThFPcOqBwDXaxi
+FwADvC1Yi1RqPDyvAUz+awgwZI11F4PRv+CQtf2kzDrbSdyrM64IykFGzhe9SrMJ
+50A6YUZ2DSniypLc53dYFgaLQSatCBPVT5MAMrvGABE7XyiAN4WHYpWco75FfaM2
+/FGsGfp2JBewuWYOV/M2ARnE8YVYYMQYaBMlf1i0wdFmW4VWRbcRYeMPAKpjAOJn
+QLfhRyfDUeKb8L6IZxRLHo0LnF3UUXy27EmtZBAFGXDa2fTIieJSE1KE3nR9K9CF
+AKFdNwBxW54Z/FBn9atxJQzZcWaoVkp3iQhdZK3Nqhg5k5AaO5eZssm+YEPRMiZ0
+yjSintNTJDLR1JCwX6f4fgXgPhrKt48y7XdReHpeqFPZVnSCB4W+Y4STHI4sw6N8
+975ACZvbnw5NA+FpNwrBxcwsyQ7CdodsLsRDDlRrKRlu3jedXy5dhtIVu9Q7bCNn
+g5DK/nQ7mrVAZMpGN240eAdZszGR78RgZAL7+90YcoKJT7Kns667clNN2giJ6Tn9
+QbXnLOdkrSFA1+UF2k8E
+=jF/V
+-----END PGP SIGNATURE-----
+
+--KDt/GgjP6HVcx58l--
