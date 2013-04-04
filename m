@@ -1,46 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763418Ab3DDQnU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:43:20 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52433
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1763361Ab3DDQnS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:43:18 -0400
-Message-ID: <1365093786.2609.113.camel@laptop>
-Subject: Re: [PATCH v2 2/3] mutex: add support for reservation style locks,
- v2
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-arch@vger.kernel.org, daniel.vetter@ffwll.ch, x86@kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, robclark@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu, linux-media@vger.kernel.org
-Date: Thu, 04 Apr 2013 18:43:06 +0200
-In-Reply-To: <20130404133123.GW2228@phenom.ffwll.local>
-References: <20130228102452.15191.22673.stgit@patser>
-	 <20130228102502.15191.14146.stgit@patser>
-	 <1364900432.18374.24.camel@laptop> <515AF1C1.7080508@canonical.com>
-	 <1364921954.20640.22.camel@laptop> <1365076908.2609.94.camel@laptop>
-	 <20130404133123.GW2228@phenom.ffwll.local>
+	id S1763395Ab3DDQn4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:43:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1858 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762889Ab3DDQnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 12:43:55 -0400
+Message-ID: <1365093819.2882.301.camel@bling.home>
+Subject: Re: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu
+ implementation.
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Sethi Varun-B16395 <B16395@freescale.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Yoder Stuart-B08248 <B08248@freescale.com>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>
+Date: Thu, 04 Apr 2013 10:43:39 -0600
+In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D459471@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1364500442-20927-1-git-send-email-Varun.Sethi@freescale.com>
+	 <1364500442-20927-6-git-send-email-Varun.Sethi@freescale.com>
+	 <20130402161812.GI15687@8bytes.org> <1365012091.2882.252.camel@bling.home>
+	 <C5ECD7A89D1DC44195F34B25E172658D45883B@039-SN2MPN1-013.039d.mgd.msft.net>
+	 <1365088930.2882.296.camel@bling.home>
+	 <C5ECD7A89D1DC44195F34B25E172658D459471@039-SN2MPN1-013.039d.mgd.msft.net>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-04 at 15:31 +0200, Daniel Vetter wrote:
-> Another big reason for having a start/end marker like you've describe
-> is
-> lockdep support.
+On Thu, 2013-04-04 at 16:35 +0000, Sethi Varun-B16395 wrote:
+> 
+> > -----Original Message-----
+> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> > Sent: Thursday, April 04, 2013 8:52 PM
+> > To: Sethi Varun-B16395
+> > Cc: Joerg Roedel; Yoder Stuart-B08248; Wood Scott-B07421;
+> > iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org; linux-
+> > kernel@vger.kernel.org; galak@kernel.crashing.org;
+> > benh@kernel.crashing.org
+> > Subject: Re: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu
+> > implementation.
+> > 
+> > On Thu, 2013-04-04 at 13:00 +0000, Sethi Varun-B16395 wrote:
+> > >
+> > > > -----Original Message-----
+> > > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> > > > Sent: Wednesday, April 03, 2013 11:32 PM
+> > > > To: Joerg Roedel
+> > > > Cc: Sethi Varun-B16395; Yoder Stuart-B08248; Wood Scott-B07421;
+> > > > iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org;
+> > > > linux- kernel@vger.kernel.org; galak@kernel.crashing.org;
+> > > > benh@kernel.crashing.org
+> > > > Subject: Re: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and
+> > > > iommu implementation.
+> > > >
+> > > > On Tue, 2013-04-02 at 18:18 +0200, Joerg Roedel wrote:
+> > > > > Cc'ing Alex Williamson
+> > > > >
+> > > > > Alex, can you please review the iommu-group part of this patch?
+> > > >
+> > > > Sure, it looks pretty reasonable.  AIUI, all PCI devices are below
+> > > > some kind of host bridge that is either new and supports
+> > > > partitioning or old and doesn't.  I don't know if that's a
+> > > > visibility or isolation requirement, perhaps PCI ACS-ish.  In the
+> > > > new host bridge case, each device gets a group.  This seems not to
+> > > > have any quirks for multifunction devices though.  On AMD and Intel
+> > > > IOMMUs we test multifunction device ACS support to determine whether
+> > > > all the functions should be in the same group.  Is there any reason
+> > to trust multifunction devices on PAMU?
+> > > >
+> > > [Sethi Varun-B16395] In the case where we can partition endpoints we
+> > > can distinguish transactions based on the bus,device,function number
+> > > combination. This support is available in the PCIe controller (host
+> > > bridge).
+> > 
+> > So can x86 IOMMUs, that's the visibility aspect of IOMMU groups.
+> > Visibility alone doesn't necessarily imply that a device is isolated
+> > though.  A multifunction PCI device that doesn't expose ACS support may
+> > not isolate functions from each other.  For example a peer-to-peer DMA
+> > between functions may not be translated by the upstream IOMMU.  IOMMU
+> > groups should encompass both visibility and isolation.
+> [Sethi Varun-B16395] We can isolate the DMA access to the host based
+> on the to the pci bus,device,function number.
 
-Yeah, I saw how you did that.. but there's other ways of making it work
-too, you could for instance create a new validation state for this type
-of lock.
+The IOMMU can only isolate DMA that it can see.  A multifunction device
+may never expose peer-to-peer DMA to the upstream device, it's
+implementation specific.  The ACS flags allow that possibility to be
+controlled and prevented.
 
-That said, I didn't consider lockdep too much, I first want the regular
-semantics clear.
+> I thought that was enough to put devices in to separate iommu groups.
+> This is a PCIe controller property which allows us to partition PCIe
+> devices. But, what I can understand from your point is that we also
+> need to consider isolation at PCIe device level as well. I will check
+> for the case of multifunction devices.
+> 
+> > 
+> > > > I also find it curious what happens to the iommu group of the host
+> > > > bridge.  In the partitionable case the host bridge group is removed,
+> > > > in the non-partitionable case the host bridge group becomes the
+> > > > group for the children, removing the host bridge.  It's unique to
+> > > > PAMU so far that these host bridges are even in an iommu group (x86
+> > > > only adds pci devices), but I don't see it as necessarily wrong
+> > > > leaving it in either scenario.  Does it solve some problem to remove
+> > them from the groups?
+> > > > Thanks,
+> > > [Sethi Varun-B16395] The PCIe controller isn't a partitionable entity,
+> > > it would always be owned by the host.
+> > 
+> > Ownership of a device shouldn't play into the group context.  An IOMMU
+> > group should be defined by it's visibility and isolation from other
+> > devices.  Whether the PCIe controller is allowed to be handed to
+> > userspace is a question for VFIO.
+> [Sethi Varun-B16395] The problem is in the case, where we can't
+> partition PCIe devices. PCIe devices share the same device group as
+> the PCI controller. This becomes a problem while assigning the devices
+> to the guest, as you are required to unbind all the PCIe devices
+> including the controller from the host. PCIe controller can't be
+> unbound from the host, so we simply delete the controller iommu_group.
+
+Unbinding devices is a VFIO implementation, it shouldn't leak into IOMMU
+groups.  Also note that VFIO has a driver white list where we can have
+exceptions to the rule.  I recently added pciehp to that list because
+the host driver provides functionality.  Being attached to the host
+driver means the device is not accessible to the user through VFIO, but
+other devices in the group are.  Thanks,
+
+Alex
+
 
