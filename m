@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760640Ab3DDMzi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 08:55:38 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:60998 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760616Ab3DDMze (ORCPT
+	id S1760679Ab3DDMzq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 08:55:46 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:53540 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760654Ab3DDMzn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 08:55:34 -0400
+	Thu, 4 Apr 2013 08:55:43 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
@@ -14,12 +14,12 @@ Cc: robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Sekhar Nori <nsekhar@ti.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 03/18] cpufreq: davinci: move cpufreq driver to drivers/cpufreq
-Date: Thu,  4 Apr 2013 18:24:11 +0530
-Message-Id: <eb5d22a8f338116621cdffdf46e4e3d50966e428.1365079581.git.viresh.kumar@linaro.org>
+Subject: [PATCH 04/18] cpufreq: pxa3xx: move cpufreq driver to drivers/cpufreq
+Date: Thu,  4 Apr 2013 18:24:12 +0530
+Message-Id: <5aa065e550ad6b9f443155913a383374235df865.1365079581.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1365079581.git.viresh.kumar@linaro.org>
 References: <cover.1365079581.git.viresh.kumar@linaro.org>
@@ -29,62 +29,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves cpufreq driver of ARM based davinci platform to
-drivers/cpufreq.
+This patch moves cpufreq driver of ARM based pxa3xx platform to drivers/cpufreq.
 
-Cc: Sekhar Nori <nsekhar@ti.com>
-Cc: davinci-linux-open-source@linux.davincidsp.com
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
 Cc: linux-arm-kernel@lists.infradead.org
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Acked-by: Sekhar Nori <nsekhar@ti.com>
+Acked-by: Eric Miao <eric.y.miao@gmail.com>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/mach-davinci/Makefile                                       | 1 -
+ arch/arm/mach-pxa/Makefile                                           | 1 -
+ arch/arm/mach-pxa/include/mach/generic.h                             | 1 +
  drivers/cpufreq/Makefile                                             | 1 +
- arch/arm/mach-davinci/cpufreq.c => drivers/cpufreq/davinci-cpufreq.c | 2 --
- 3 files changed, 1 insertion(+), 3 deletions(-)
- rename arch/arm/mach-davinci/cpufreq.c => drivers/cpufreq/davinci-cpufreq.c (99%)
+ .../mach-pxa/cpufreq-pxa3xx.c => drivers/cpufreq/pxa3xx-cpufreq.c    | 5 +----
+ 4 files changed, 3 insertions(+), 5 deletions(-)
+ create mode 100644 arch/arm/mach-pxa/include/mach/generic.h
+ rename arch/arm/mach-pxa/cpufreq-pxa3xx.c => drivers/cpufreq/pxa3xx-cpufreq.c (98%)
 
-diff --git a/arch/arm/mach-davinci/Makefile b/arch/arm/mach-davinci/Makefile
-index fb5c1aa..dd1ffcc 100644
---- a/arch/arm/mach-davinci/Makefile
-+++ b/arch/arm/mach-davinci/Makefile
-@@ -37,7 +37,6 @@ obj-$(CONFIG_MACH_MITYOMAPL138)		+= board-mityomapl138.o
- obj-$(CONFIG_MACH_OMAPL138_HAWKBOARD)	+= board-omapl138-hawk.o
+diff --git a/arch/arm/mach-pxa/Makefile b/arch/arm/mach-pxa/Makefile
+index 12c5005..929e700 100644
+--- a/arch/arm/mach-pxa/Makefile
++++ b/arch/arm/mach-pxa/Makefile
+@@ -10,7 +10,6 @@ obj-$(CONFIG_PM)		+= pm.o sleep.o standby.o
+ ifeq ($(CONFIG_CPU_FREQ),y)
+ obj-$(CONFIG_PXA25x)		+= cpufreq-pxa2xx.o
+ obj-$(CONFIG_PXA27x)		+= cpufreq-pxa2xx.o
+-obj-$(CONFIG_PXA3xx)		+= cpufreq-pxa3xx.o
+ endif
  
- # Power Management
--obj-$(CONFIG_CPU_FREQ)			+= cpufreq.o
- obj-$(CONFIG_CPU_IDLE)			+= cpuidle.o
- obj-$(CONFIG_SUSPEND)			+= pm.o sleep.o
- obj-$(CONFIG_HAVE_CLK)			+= pm_domain.o
+ # Generic drivers that other drivers may depend upon
+diff --git a/arch/arm/mach-pxa/include/mach/generic.h b/arch/arm/mach-pxa/include/mach/generic.h
+new file mode 100644
+index 0000000..665542e
+--- /dev/null
++++ b/arch/arm/mach-pxa/include/mach/generic.h
+@@ -0,0 +1 @@
++#include "../../generic.h"
 diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index c34094b..c0e8921 100644
+index c0e8921..3458bf2 100644
 --- a/drivers/cpufreq/Makefile
 +++ b/drivers/cpufreq/Makefile
-@@ -49,6 +49,7 @@ obj-$(CONFIG_ARM_BIG_LITTLE_CPUFREQ)	+= arm_big_little.o
- # LITTLE drivers, so that it is probed last.
- obj-$(CONFIG_ARM_DT_BL_CPUFREQ)		+= arm_big_little_dt.o
+@@ -59,6 +59,7 @@ obj-$(CONFIG_ARM_HIGHBANK_CPUFREQ)	+= highbank-cpufreq.o
+ obj-$(CONFIG_ARM_IMX6Q_CPUFREQ)		+= imx6q-cpufreq.o
+ obj-$(CONFIG_ARM_KIRKWOOD_CPUFREQ)	+= kirkwood-cpufreq.o
+ obj-$(CONFIG_ARM_OMAP2PLUS_CPUFREQ)	+= omap-cpufreq.o
++obj-$(CONFIG_PXA3xx)			+= pxa3xx-cpufreq.o
+ obj-$(CONFIG_ARM_S3C2416_CPUFREQ)	+= s3c2416-cpufreq.o
+ obj-$(CONFIG_ARM_S3C64XX_CPUFREQ)	+= s3c64xx-cpufreq.o
+ obj-$(CONFIG_ARM_S5PV210_CPUFREQ)	+= s5pv210-cpufreq.o
+diff --git a/arch/arm/mach-pxa/cpufreq-pxa3xx.c b/drivers/cpufreq/pxa3xx-cpufreq.c
+similarity index 98%
+rename from arch/arm/mach-pxa/cpufreq-pxa3xx.c
+rename to drivers/cpufreq/pxa3xx-cpufreq.c
+index 8c45b2b..15d60f8 100644
+--- a/arch/arm/mach-pxa/cpufreq-pxa3xx.c
++++ b/drivers/cpufreq/pxa3xx-cpufreq.c
+@@ -1,6 +1,4 @@
+ /*
+- * linux/arch/arm/mach-pxa/cpufreq-pxa3xx.c
+- *
+  * Copyright (C) 2008 Marvell International Ltd.
+  *
+  * This program is free software; you can redistribute it and/or modify
+@@ -17,10 +15,9 @@
+ #include <linux/slab.h>
+ #include <linux/io.h>
  
-+obj-$(CONFIG_ARCH_DAVINCI_DA850)	+= davinci-cpufreq.o
- obj-$(CONFIG_UX500_SOC_DB8500)		+= dbx500-cpufreq.o
- obj-$(CONFIG_ARM_EXYNOS_CPUFREQ)	+= exynos-cpufreq.o
- obj-$(CONFIG_ARM_EXYNOS4210_CPUFREQ)	+= exynos4210-cpufreq.o
-diff --git a/arch/arm/mach-davinci/cpufreq.c b/drivers/cpufreq/davinci-cpufreq.c
-similarity index 99%
-rename from arch/arm/mach-davinci/cpufreq.c
-rename to drivers/cpufreq/davinci-cpufreq.c
-index 7c2e943..c33c76c 100644
---- a/arch/arm/mach-davinci/cpufreq.c
-+++ b/drivers/cpufreq/davinci-cpufreq.c
-@@ -30,8 +30,6 @@
- #include <mach/cpufreq.h>
- #include <mach/common.h>
++#include <mach/generic.h>
+ #include <mach/pxa3xx-regs.h>
  
--#include "clock.h"
+-#include "generic.h"
 -
- struct davinci_cpufreq {
- 	struct device *dev;
- 	struct clk *armclk;
+ #define HSS_104M	(0)
+ #define HSS_156M	(1)
+ #define HSS_208M	(2)
 -- 
 1.7.12.rc2.18.g61b472e
 
