@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762961Ab3DDSsE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 14:48:04 -0400
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:42684 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762667Ab3DDSsC (ORCPT
+	id S1763024Ab3DDSu3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 14:50:29 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57754 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762864Ab3DDSu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 14:48:02 -0400
+	Thu, 4 Apr 2013 14:50:28 -0400
+Message-ID: <515DCB78.3010207@infradead.org>
+Date: Thu, 04 Apr 2013 11:50:32 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1304041120510.26822@eggly.anvils>
-References: <alpine.LNX.2.00.1304041120510.26822@eggly.anvils>
-Date: Thu, 4 Apr 2013 11:48:01 -0700
-X-Google-Sender-Auth: Mnf4sb7V_ZmC4twe9KXwZX3uRbg
-Message-ID: <CA+55aFwCG2h1ijWTCJ38LVcUyczDAfk72c4MVSU+_-BiLoMOOw@mail.gmail.com>
-Subject: Re: [PATCH] mm: prevent mmap_cache race in find_vma()
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jan Stancek <jstancek@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ian Lance Taylor <iant@google.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: linux-next: Tree for Apr 4 (usb/gadget/configfs)
+References: <20130404182232.bd2dbfba27620bdab9e0de42@canb.auug.org.au>
+In-Reply-To: <20130404182232.bd2dbfba27620bdab9e0de42@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 4, 2013 at 11:35 AM, Hugh Dickins <hughd@google.com> wrote:
->
-> find_vma() can be called by multiple threads with read lock
-> held on mm->mmap_sem and any of them can update mm->mmap_cache.
-> Prevent compiler from re-fetching mm->mmap_cache, because other
-> readers could update it in the meantime:
+On 04/04/13 00:22, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Changes since 20130403:
+> 
 
-Ack. I do wonder if we should mark the unlocked update too some way
-(also in find_vma()), although it's probably not a problem in practice
-since there's no way the compiler can reasonably really do anything
-odd with it. We *could* make that an ACCESS_ONCE() write too just to
-highlight the fact that it's an unlocked write to this optimistic data
-structure.
 
-Anyway, applied.
+on x86_64, when CONFIG_BUG is not enabled:
 
-                  Linus
+  CC [M]  drivers/usb/gadget/configfs.o
+drivers/usb/gadget/configfs.c: In function 'config_usb_cfg_unlink':
+drivers/usb/gadget/configfs.c:442:2: error: implicit declaration of function '__WARN_printf' [-Werror=implicit-function-declaration]
+drivers/usb/gadget/configfs.c: In function 'configfs_do_nothing':
+drivers/usb/gadget/configfs.c:733:2: error: implicit declaration of function '__WARN' [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+make[4]: *** [drivers/usb/gadget/configfs.o] Error 1
+
+
+
+
+-- 
+~Randy
