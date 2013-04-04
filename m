@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764447Ab3DDTKv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 15:10:51 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:47083 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763430Ab3DDTKu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 15:10:50 -0400
+	id S1764507Ab3DDTMc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 15:12:32 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53593 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1764451Ab3DDTM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 15:12:29 -0400
+Date: Thu, 4 Apr 2013 21:12:25 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH V4 1/2] cpufreq: ondemand: allow custom
+ powersave_bias_target handler to be registered
+Message-ID: <20130404191225.GH32271@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jacob Shin <jacob.shin@amd.com>,
+	Viresh Kumar <viresh.kumar@linaro.org>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+	linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Thomas Renninger <trenn@suse.de>
+References: <1365092344-11310-1-git-send-email-jacob.shin@amd.com>
+ <1365092344-11310-2-git-send-email-jacob.shin@amd.com>
+ <CAKohpom6BSJZc_ohgnjRTV2EBUAPy8TKVphtoRaNSt1wFP70uA@mail.gmail.com>
+ <20130404171804.GA4696@jshin-Toonie>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1304041149030.29847@eggly.anvils>
-References: <alpine.LNX.2.00.1304041120510.26822@eggly.anvils>
-	<CA+55aFwCG2h1ijWTCJ38LVcUyczDAfk72c4MVSU+_-BiLoMOOw@mail.gmail.com>
-	<alpine.LNX.2.00.1304041149030.29847@eggly.anvils>
-Date: Thu, 4 Apr 2013 12:10:49 -0700
-X-Google-Sender-Auth: 33Qpc3Pe4RvDf8LUxekhptICH9o
-Message-ID: <CA+55aFzNYSRRDpewo2koEVC=kZEw9uvL67s9D9ENwtHJjQSCcg@mail.gmail.com>
-Subject: Re: [PATCH] mm: prevent mmap_cache race in find_vma()
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jan Stancek <jstancek@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ian Lance Taylor <iant@google.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130404171804.GA4696@jshin-Toonie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 4, 2013 at 12:01 PM, Hugh Dickins <hughd@google.com> wrote:
->
-> When Paul reminded us of it yesterday, I came to wonder if actually
-> every use of ACCESS_ONCE in the read form should strictly be matched
-> by ACCESS_ONCE whenever modifying the location.
->
-> My uneducated guess is that strictly it ought to, in the sense of
-> insurance policy; but that (apart from that strange split writing
-> issue which came up a couple of months ago) in practice our compilers
-> have not "advanced" to the point of making this an issue yet.
+On Thu, Apr 04, 2013 at 12:18:04PM -0500, Jacob Shin wrote:
+> @@ -574,6 +577,45 @@ static struct common_dbs_data od_dbs_cdata = {
+>  	.exit = od_exit,
+>  };
+>  
+> +static void od_set_powersave_bias(unsigned int powersave_bias)
+> +{
+> +	struct cpufreq_policy *policy;
+> +	struct dbs_data *dbs_data;
+> +	struct od_dbs_tuners *od_tuners;
+> +	unsigned int cpu;
+> +	cpumask_t done;
+> +
+> +	cpumask_clear(&done);
+> +
 
-I don't see how a compiler could reasonably really ever do anything
-different, but I do think the ACCESS_ONCE() modification version might
-be a good thing just as a "documentation".
+get_online_cpus();
 
-This is a good example of this issue, exactly because we have a mix of
-both speculative cases (the find_vma() lookup and modification)
-together with strictly exclusive locked accesses to the same field
-(the ones that invalidate the cache under the write lock). So
-documenting that the write in find_vma() is this kind of "optimistic
-unlocked access" is actually a potentially interesting piece of
-information for programmers, completely independently of whether the
-compiler will then treat it really differently or not.
+> +	for_each_online_cpu(cpu) {
+> +		if (cpumask_test_cpu(cpu, &done))
+> +			continue;
+> +
+> +		policy = per_cpu(od_cpu_dbs_info, cpu).cdbs.cur_policy;
+> +		dbs_data = policy->governor_data;
+> +		od_tuners = dbs_data->tuners;
+> +		od_tuners->powersave_bias = powersave_bias;
+> +
+> +		cpumask_or(&done, &done, policy->cpus);
+> +	}
 
-Of course, a plain comment would do the same, but would be less greppable.
+put_online_cpus();
 
-And despite the verbiage here, I don't really have a very strong
-opinion on this. I'm going to let it go, and if somebody sends me a
-patch with a good explanation in the next merge window, I'll probably
-apply it.
+-- 
+Regards/Gruss,
+    Boris.
 
-                    Linus
+Sent from a fat crate under my desk. Formatting is fine.
+--
