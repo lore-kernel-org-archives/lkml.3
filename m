@@ -1,110 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759432Ab3DDJxH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 05:53:07 -0400
-Received: from mga01.intel.com ([192.55.52.88]:63018 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756527Ab3DDJxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 05:53:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,407,1363158000"; 
-   d="scan'208";a="316782925"
-Date: Thu, 4 Apr 2013 12:57:16 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] gpiolib-acpi: introduce acpi_get_gpio_by_index() helper
-Message-ID: <20130404095716.GJ21804@intel.com>
-References: <1364986614-15711-1-git-send-email-mika.westerberg@linux.intel.com>
- <CAN+gG=F4LMHMsOqVh+BikSLKBJ8V7ni-p4hKi7yRb4jjD7gv0w@mail.gmail.com>
- <20130404093820.GI21804@intel.com>
- <CAN+gG=F7T6ujLuNu2hfEKfrDwBCG9xM_e3P9Fan0Awj7EYmJyA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN+gG=F7T6ujLuNu2hfEKfrDwBCG9xM_e3P9Fan0Awj7EYmJyA@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757471Ab3DDJ5C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 05:57:02 -0400
+Received: from mail-da0-f43.google.com ([209.85.210.43]:35132 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755338Ab3DDJ5A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 05:57:00 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, sachin.kamat@linaro.org,
+        Roger Quadros <rogerq@ti.com>
+Subject: [PATCH 1/2] mfd: omap-usb-host: Convert to devm_ioremap_resource()
+Date: Thu,  4 Apr 2013 15:15:14 +0530
+Message-Id: <1365068715-15868-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 11:42:11AM +0200, Benjamin Tissoires wrote:
-> On Thu, Apr 4, 2013 at 11:38 AM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
-> > On Thu, Apr 04, 2013 at 11:19:53AM +0200, Benjamin Tissoires wrote:
-> >> Hi Mika,
-> >>
-> >> On Wed, Apr 3, 2013 at 12:56 PM, Mika Westerberg
-> >> <mika.westerberg@linux.intel.com> wrote:
-> >> > Instead of open-coding ACPI GPIO resource lookup in each driver, we provide
-> >> > a helper function analogous to Device Tree version that allows drivers to
-> >> > specify which GPIO resource they are interested (using an index to the GPIO
-> >> > resources). The function then finds out the correct resource, translates
-> >> > the ACPI GPIO number to the corresponding Linux GPIO number and returns
-> >> > that.
-> >> >
-> >> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >> > ---
-> >> >  Documentation/acpi/enumeration.txt |   32 ++++++++++++++-
-> >> >  drivers/gpio/gpiolib-acpi.c        |   77 ++++++++++++++++++++++++++++++++++++
-> >> >  include/linux/acpi_gpio.h          |   17 ++++++++
-> >> >  3 files changed, 125 insertions(+), 1 deletion(-)
-> >> >
-> >> > diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
-> >> > index 94a6561..b0d5410 100644
-> >> > --- a/Documentation/acpi/enumeration.txt
-> >> > +++ b/Documentation/acpi/enumeration.txt
-> >> > @@ -199,6 +199,8 @@ the device to the driver. For example:
-> >> >         {
-> >> >                 Name (SBUF, ResourceTemplate()
-> >> >                 {
-> >> > +                       ...
-> >> > +                       // Used to power on/off the device
-> >> >                         GpioIo (Exclusive, PullDefault, 0x0000, 0x0000,
-> >> >                                 IoRestrictionOutputOnly, "\\_SB.PCI0.GPI0",
-> >> >                                 0x00, ResourceConsumer,,)
-> >> > @@ -206,10 +208,20 @@ the device to the driver. For example:
-> >> >                                 // Pin List
-> >> >                                 0x0055
-> >> >                         }
-> >> > +
-> >> > +                       // Interrupt for the device
-> >> > +                       GpioInt (Edge, ActiveHigh, ExclusiveAndWake, PullNone,
-> >> > +                                0x0000, "\\_SB.PCI0.GPI0", 0x00, ResourceConsumer,,)
-> >>
-> >> Sorry for coming late in the GPIO ACPI discussion, but when I see this
-> >> documentation, I wonder:
-> >> wouldn't it be feasible to find the correct GPIO by its type? Here, we
-> >> have a GpioIo and a GpioInt, and I bet this would be sometime more
-> >> useful to request the first GpioInt without knowing the correct order
-> >> of declarations.
-> >
-> > Why not. But then again you can always check the type returned in the
-> > acpi_gpio_info structure and pick the first GpioInt (if you have multiple
-> > GPIO resources).
-> >
-> >> It may be feasible by walking the tree, but a helper would be of great
-> >> help (thinking at i2c-hid here, which can not rely on indexes in the
-> >> DSDT).
-> >
-> > Well, index is the only thing we can rely on unfortunately. There's nothing
-> > like names or anything like that.
-> >
-> > What I've seen from ACPI enumerated i2c-hid devices there is only one GPIO
-> > resource (GpioInt) declared.
-> 
-> Ok, thanks for the answer. I guess the idea would be to pick the index
-> 0, check the type, and try indexes 1 or 2 if it's not GpioInt. I bet
-> there will be devices with more than one Gpio as most of I2C input
-> device have a reset line (except if Microsoft forces them not to have
-> one).
+Use the newly introduced devm_ioremap_resource() instead of
+devm_request_and_ioremap() which provides more consistent error handling.
 
-One option is to provide acpi_get_gpio_all() that returns all GPIOs and
-their corresponding types. That should allow clients like i2c-hid to find
-the right GPIO (I'm hoping that there will be only one GpioInt associated
-with these devices).
+devm_ioremap_resource() provides its own error messages; so all explicit
+error messages can be removed from the failure code paths.
+
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Roger Quadros <rogerq@ti.com>
+---
+ drivers/mfd/omap-usb-host.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 4febc5c..1b49b21 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -27,6 +27,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/platform_data/usb-omap.h>
+ #include <linux/pm_runtime.h>
++#include <linux/err.h>
+ 
+ #include "omap-usb.h"
+ 
+@@ -534,11 +535,9 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "uhh");
+-	omap->uhh_base = devm_request_and_ioremap(dev, res);
+-	if (!omap->uhh_base) {
+-		dev_err(dev, "Resource request/ioremap failed\n");
+-		return -EADDRNOTAVAIL;
+-	}
++	omap->uhh_base = devm_ioremap_resource(dev, res);
++	if (IS_ERR(omap->uhh_base))
++		return PTR_ERR(omap->uhh_base);
+ 
+ 	omap->pdata = pdata;
+ 
+-- 
+1.7.9.5
+
