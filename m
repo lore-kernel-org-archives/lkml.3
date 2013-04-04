@@ -1,78 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763621Ab3DDREp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 13:04:45 -0400
-Received: from mout.gmx.net ([212.227.17.22]:51956 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763473Ab3DDREn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 13:04:43 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX19+TUx0p9h+OdjaAkGELHFYacivqghvHsBSVBcQqb
-	YFybORVlg1Wm5P
-Message-ID: <515DB2A6.7020902@gmx.de>
-Date: Thu, 04 Apr 2013 19:04:38 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130309 Thunderbird/17.0.4
+	id S1763643Ab3DDRHq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 13:07:46 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:47192 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763549Ab3DDRHo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 13:07:44 -0400
 MIME-Version: 1.0
-To: user-mode-linux-user@lists.sourceforge.net
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: user mode linux: trinity syscall "madvise" triggers quickly BUG:
- Bad page map
-X-Enigmail-Version: 1.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+In-Reply-To: <1364996263-12198-1-git-send-email-vincent.guittot@linaro.org>
+References: <1364996263-12198-1-git-send-email-vincent.guittot@linaro.org>
+Date: Thu, 4 Apr 2013 19:07:40 +0200
+Message-ID: <CAFTL4hxt++4aRw_6uTDH4HDgac6-g1bU4Unq_BXuzwM5QBK_yQ@mail.gmail.com>
+Subject: Re: [PATCH Resend v5] sched: fix init NOHZ_IDLE flag
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linaro-kernel@lists.linaro.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-if SLUB is used (SLAB works fine till now with this syscall).
+2013/4/3 Vincent Guittot <vincent.guittot@linaro.org>:
+> On my smp platform which is made of 5 cores in 2 clusters, I have the
+> nr_busy_cpu field of sched_group_power struct that is not null when the
+> platform is fully idle. The root cause is:
+> During the boot sequence, some CPUs reach the idle loop and set their
+> NOHZ_IDLE flag while waiting for others CPUs to boot. But the nr_busy_cpus
+> field is initialized later with the assumption that all CPUs are in the busy
+> state whereas some CPUs have already set their NOHZ_IDLE flag.
+>
+> More generally, the NOHZ_IDLE flag must be initialized when new sched_domains
+> are created in order to ensure that NOHZ_IDLE and nr_busy_cpus are aligned.
+>
+> This condition can be ensured by adding a synchronize_rcu between the
+> destruction of old sched_domains and the creation of new ones so the NOHZ_IDLE
+> flag will not be updated with old sched_domain once it has been initialized.
+> But this solution introduces a additionnal latency in the rebuild sequence
+> that is called during cpu hotplug.
+>
+> As suggested by Frederic Weisbecker, another solution is to have the same
+> rcu lifecycle for both NOHZ_IDLE and sched_domain struct. I have introduce
+> a new sched_domain_rq struct that is the entry point for both sched_domains
+> and objects that must follow the same lifecycle like NOHZ_IDLE flags. They
+> will share the same RCU lifecycle and will be always synchronized.
+>
+> The synchronization is done at the cost of :
+>  - an additional indirection for accessing the first sched_domain level
+>  - an additional indirection and a rcu_dereference before accessing to the
+>    NOHZ_IDLE flag.
+>
+> Change since v4:
+>  - link both sched_domain and NOHZ_IDLE flag in one RCU object so
+>    their states are always synchronized.
+>
+> Change since V3;
+>  - NOHZ flag is not cleared if a NULL domain is attached to the CPU
+>  - Remove patch 2/2 which becomes useless with latest modifications
+>
+> Change since V2:
+>  - change the initialization to idle state instead of busy state so a CPU that
+>    enters idle during the build of the sched_domain will not corrupt the
+>    initialization state
+>
+> Change since V1:
+>  - remove the patch for SCHED softirq on an idle core use case as it was
+>    a side effect of the other use cases.
+>
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> ---
+>  include/linux/sched.h |    6 +++
+>  kernel/sched/core.c   |  105 ++++++++++++++++++++++++++++++++++++++++++++-----
+>  kernel/sched/fair.c   |   35 +++++++++++------
+>  kernel/sched/sched.h  |   24 +++++++++--
+>  4 files changed, 145 insertions(+), 25 deletions(-)
+>
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index d35d2b6..2a52188 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -959,6 +959,12 @@ struct sched_domain {
+>         unsigned long span[0];
+>  };
+>
+> +struct sched_domain_rq {
+> +       struct sched_domain *sd;
+> +       unsigned long flags;
+> +       struct rcu_head rcu;    /* used during destruction */
+> +};
+> +
+>  static inline struct cpumask *sched_domain_span(struct sched_domain *sd)
+>  {
+>         return to_cpumask(sd->span);
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 7f12624..69e2313 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -5602,6 +5602,15 @@ static void destroy_sched_domains(struct sched_domain *sd, int cpu)
+>                 destroy_sched_domain(sd, cpu);
+>  }
+>
+> +static void destroy_sched_domain_rq(struct sched_domain_rq *sd_rq, int cpu)
+> +{
+> +       if (!sd_rq)
+> +               return;
+> +
+> +       destroy_sched_domains(sd_rq->sd, cpu);
+> +       kfree_rcu(sd_rq, rcu);
+> +}
+> +
+>  /*
+>   * Keep a special pointer to the highest sched_domain that has
+>   * SD_SHARE_PKG_RESOURCE set (Last Level Cache Domain) for this
+> @@ -5632,10 +5641,23 @@ static void update_top_cache_domain(int cpu)
+>   * hold the hotplug lock.
+>   */
+>  static void
+> -cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
+> +cpu_attach_domain(struct sched_domain_rq *sd_rq, struct root_domain *rd,
+> +               int cpu)
+>  {
+>         struct rq *rq = cpu_rq(cpu);
+> -       struct sched_domain *tmp;
+> +       struct sched_domain_rq *tmp_rq;
+> +       struct sched_domain *tmp, *sd = NULL;
+> +
+> +       /*
+> +        * If we don't have any sched_domain and associated object, we can
+> +        * directly jump to the attach sequence otherwise we try to degenerate
+> +        * the sched_domain
+> +        */
+> +       if (!sd_rq)
+> +               goto attach;
+> +
+> +       /* Get a pointer to the 1st sched_domain */
+> +       sd = sd_rq->sd;
+>
+>         /* Remove the sched domains which do not contribute to scheduling. */
+>         for (tmp = sd; tmp; ) {
+> @@ -5658,14 +5680,17 @@ cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
+>                 destroy_sched_domain(tmp, cpu);
+>                 if (sd)
+>                         sd->child = NULL;
+> +               /* update sched_domain_rq */
+> +               sd_rq->sd = sd;
+>         }
+>
+> +attach:
+>         sched_domain_debug(sd, cpu);
+>
+>         rq_attach_root(rq, rd);
+> -       tmp = rq->sd;
+> -       rcu_assign_pointer(rq->sd, sd);
+> -       destroy_sched_domains(tmp, cpu);
+> +       tmp_rq = rq->sd_rq;
+> +       rcu_assign_pointer(rq->sd_rq, sd_rq);
+> +       destroy_sched_domain_rq(tmp_rq, cpu);
+>
+>         update_top_cache_domain(cpu);
+>  }
+> @@ -5695,12 +5720,14 @@ struct sd_data {
+>  };
+>
+>  struct s_data {
+> +       struct sched_domain_rq ** __percpu sd_rq;
+>         struct sched_domain ** __percpu sd;
+>         struct root_domain      *rd;
+>  };
+>
+>  enum s_alloc {
+>         sa_rootdomain,
+> +       sa_sd_rq,
+>         sa_sd,
+>         sa_sd_storage,
+>         sa_none,
+> @@ -5935,7 +5962,7 @@ static void init_sched_groups_power(int cpu, struct sched_domain *sd)
+>                 return;
+>
+>         update_group_power(sd, cpu);
+> -       atomic_set(&sg->sgp->nr_busy_cpus, sg->group_weight);
+> +       atomic_set(&sg->sgp->nr_busy_cpus, 0);
 
-What I get with the this trinity command line
-
-$> trinity --children 2 -c madvise
-
-for a 32 bit Gentoo Linux (both as host and as guest) 
-and host kernel 3.8.5 and guest kernel 3.9-rc5 is the following :
-
-
-2013-04-04T19:00:29.220+02:00 trinity kernel: BUG: Bad page map in process trinity-child1  pte:0032d045 pmd:3932e1e1
-2013-04-04T19:00:29.220+02:00 trinity kernel: page:0a73f5a0 count:1 mapcount:-1 mapping:  (null) index:0x0
-2013-04-04T19:00:29.220+02:00 trinity kernel: page flags: 0x404(referenced|reserved)
-2013-04-04T19:00:29.220+02:00 trinity kernel: addr:00100000 vm_flags:00040055 anon_vma:  (null) mapping:  (null) index:100
-2013-04-04T19:00:29.220+02:00 trinity kernel: vma->vm_ops->fault: special_mapping_fault+0x0/0x80
-2013-04-04T19:00:29.220+02:00 trinity kernel: 413c7d20:  [<0836efd8>] dump_stack+0x22/0x24
-2013-04-04T19:00:29.220+02:00 trinity kernel: 413c7d38:  [<0837039b>] print_bad_pte+0x17b/0x197
-2013-04-04T19:00:29.220+02:00 trinity kernel: 413c7d7c:  [<080e2c68>] unmap_single_vma+0x268/0x430
-2013-04-04T19:00:29.220+02:00 trinity kernel: 413c7ddc:  [<080e33f4>] zap_page_range+0x74/0xb0
-2013-04-04T19:00:29.220+02:00 trinity kernel: 413c7e10:  [<080e172d>] sys_madvise+0x3bd/0x720
-2013-04-04T19:00:29.225+02:00 trinity kernel: 413c7eac:  [<08064a92>] handle_syscall+0x82/0xb0
-2013-04-04T19:00:29.225+02:00 trinity kernel: 413c7ef4:  [<08076f0d>] userspace+0x46d/0x590
-2013-04-04T19:00:29.225+02:00 trinity kernel: 413c7fec:  [<080617cc>] fork_handler+0x6c/0x70
-2013-04-04T19:00:29.225+02:00 trinity kernel: 413c7ffc:  [<00000002>] 0x2
-2013-04-04T19:00:29.225+02:00 trinity kernel:
-2013-04-04T19:00:29.225+02:00 trinity kernel: Disabling lock debugging due to kernel taint
-2013-04-04T19:00:29.225+02:00 trinity kernel: BUG: Bad page state in process trinity-child1  pfn:0032d
-2013-04-04T19:00:29.225+02:00 trinity kernel: page:0a73f5a0 count:0 mapcount:-1 mapping:  (null) index:0x0
-2013-04-04T19:00:29.225+02:00 trinity kernel: page flags: 0x404(referenced|reserved)
-2013-04-04T19:00:29.225+02:00 trinity kernel: 413c7cd8:  [<0836efd8>] dump_stack+0x22/0x24
-2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7cf0:  [<080cf185>] bad_page+0xb5/0xe0
-2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7d0c:  [<080cf223>] free_pages_prepare+0x73/0xb0
-2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7d28:  [<080d064d>] free_hot_cold_page+0x1d/0x100
-2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7d50:  [<080d2fde>] __put_single_page+0x1e/0x30
-2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7d64:  [<080d3107>] put_page+0x27/0x30
-2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7d6c:  [<080f026c>] free_page_and_swap_cache+0x3c/0x50
-2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7d7c:  [<080e2c85>] unmap_single_vma+0x285/0x430
-2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7ddc:  [<080e33f4>] zap_page_range+0x74/0xb0
-2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7e10:  [<080e172d>] sys_madvise+0x3bd/0x720
-2013-04-04T19:00:29.230+02:00 trinity kernel: 413c7eac:  [<08064a92>] handle_syscall+0x82/0xb0
-2013-04-04T19:00:29.234+02:00 trinity kernel: 413c7ef4:  [<08076f0d>] userspace+0x46d/0x590
-2013-04-04T19:00:29.234+02:00 trinity kernel: 413c7fec:  [<080617cc>] fork_handler+0x6c/0x70
-2013-04-04T19:00:29.234+02:00 trinity kernel: 413c7ffc:  [<00000002>] 0x2
-2013-04-04T19:00:29.234+02:00 trinity kernel:
-2013-04-04T19:00:30.174+02:00 trinity kernel: BUG: Bad rss-counter state mm:40623600 idx:0 val:-1
-
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+Is it possible that we can be dealing here with a
+sched_group/sched_group_power that is used on another CPU (from that
+CPU's rq->rq_sd->sd) concurrently?
+When we call build_sched_groups(), we might reuse an exisiting struct
+sched_group used elsewhere right? If so, is there a race with the
+above initialization?
