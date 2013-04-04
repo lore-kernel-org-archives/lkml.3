@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759490Ab3DDJ5F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 05:57:05 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:48458 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755338Ab3DDJ5D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 05:57:03 -0400
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: sameo@linux.intel.com, sachin.kamat@linaro.org,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH 2/2] mfd: omap-usb-tll: Convert to devm_ioremap_resource()
-Date: Thu,  4 Apr 2013 15:15:15 +0530
-Message-Id: <1365068715-15868-2-git-send-email-sachin.kamat@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1365068715-15868-1-git-send-email-sachin.kamat@linaro.org>
-References: <1365068715-15868-1-git-send-email-sachin.kamat@linaro.org>
+	id S1759530Ab3DDJ62 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 05:58:28 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53709 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759383Ab3DDJ61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 05:58:27 -0400
+Date: Thu, 4 Apr 2013 11:58:23 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Bjorn Helgaas <bhelgaas@google.com>,
+        x86@kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: Re: Uhhuh. NMI received for unknown reason 2c on CPU 0.
+Message-ID: <20130404095823.GC32271@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jiri Slaby <jslaby@suse.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+	Bjorn Helgaas <bhelgaas@google.com>, x86@kernel.org,
+	lkml <linux-kernel@vger.kernel.org>,
+	Konstantin Khlebnikov <khlebnikov@openvz.org>
+References: <5109B11C.2010400@suse.cz>
+ <5170962.qHnbnlVDfx@vostro.rjw.lan>
+ <20130131070926.GC4926@pd.tnic>
+ <510A2B1C.1060108@suse.cz>
+ <20130131131805.GG4926@pd.tnic>
+ <20130131132400.GH4926@pd.tnic>
+ <5130A55E.8030508@suse.cz>
+ <515D2C79.7040904@suse.cz>
+ <20130404093302.GB32271@pd.tnic>
+ <515D4A0D.7070302@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <515D4A0D.7070302@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the newly introduced devm_ioremap_resource() instead of
-devm_request_and_ioremap() which provides more consistent error handling.
+On Thu, Apr 04, 2013 at 11:38:21AM +0200, Jiri Slaby wrote:
+> Oh, this reminds me that this time it might be unrelated to
+> yesterday's use of ethernet. Because today, I resumed the system by a
+> kernel which I didn't pass nmi_watchdog=0 to.
+>
+> Hmm. So you can silently ignore the report I sent today :).
+>
+> And sure, the way you describe above "works" for me to trigger the
+> issue... I just wanted to note the ethernet may interfere.
+>
+> Anyway, I will bake some hack to disable NMI before jumping to the
+> resumed kernel and will see what happens...
 
-devm_ioremap_resource() provides its own error messages; so all explicit
-error messages can be removed from the failure code paths.
+Yeah, Rafael said something about the resume kernel not getting the
+disabling of the watchdog in time or so... The issue looks like a last
+forgotten NMI which fires although we've disabled the watchdog already.
+The certainly aren't any other coming up after this last one.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Roger Quadros <rogerq@ti.com>
----
- drivers/mfd/omap-usb-tll.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+Hmm.
 
-diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
-index 0aef1a7..f3b0365 100644
---- a/drivers/mfd/omap-usb-tll.c
-+++ b/drivers/mfd/omap-usb-tll.c
-@@ -235,12 +235,9 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 	tll->pdata = pdata;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	base = devm_request_and_ioremap(dev, res);
--	if (!base) {
--		ret = -EADDRNOTAVAIL;
--		dev_err(dev, "Resource request/ioremap failed:%d\n", ret);
--		return ret;
--	}
-+	base = devm_ioremap_resource(dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
- 
- 	platform_set_drvdata(pdev, tll);
- 	pm_runtime_enable(dev);
 -- 
-1.7.9.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
