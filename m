@@ -1,209 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757984Ab3DDJSQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 05:18:16 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35260 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757941Ab3DDJSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 05:18:09 -0400
-Message-ID: <515D4544.6000604@ti.com>
-Date: Thu, 4 Apr 2013 14:47:56 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1756127Ab3DDJT5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 05:19:57 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:52172 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196Ab3DDJTz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 05:19:55 -0400
 MIME-Version: 1.0
-To: Prabhakar lad <prabhakar.csengg@gmail.com>
-CC: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 1/2] ARM: davinci: dm355: add support for v4l2 video
- display
-References: <1364908504-14232-1-git-send-email-prabhakar.csengg@gmail.com> <1364908504-14232-2-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1364908504-14232-2-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1364986614-15711-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1364986614-15711-1-git-send-email-mika.westerberg@linux.intel.com>
+Date: Thu, 4 Apr 2013 11:19:53 +0200
+Message-ID: <CAN+gG=F4LMHMsOqVh+BikSLKBJ8V7ni-p4hKi7yRb4jjD7gv0w@mail.gmail.com>
+Subject: Re: [PATCH] gpiolib-acpi: introduce acpi_get_gpio_by_index() helper
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/2/2013 6:45 PM, Prabhakar lad wrote:
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> 
-> Create platform devices for various video modules like venc,osd,
-> vpbe and v4l2 driver for dm355.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Hi Mika,
+
+On Wed, Apr 3, 2013 at 12:56 PM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> Instead of open-coding ACPI GPIO resource lookup in each driver, we provide
+> a helper function analogous to Device Tree version that allows drivers to
+> specify which GPIO resource they are interested (using an index to the GPIO
+> resources). The function then finds out the correct resource, translates
+> the ACPI GPIO number to the corresponding Linux GPIO number and returns
+> that.
+>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 > ---
->  arch/arm/mach-davinci/board-dm355-evm.c |    4 +-
->  arch/arm/mach-davinci/davinci.h         |    3 +-
->  arch/arm/mach-davinci/dm355.c           |  173 ++++++++++++++++++++++++++++++-
->  3 files changed, 172 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/arm/mach-davinci/board-dm355-evm.c b/arch/arm/mach-davinci/board-dm355-evm.c
-> index 147b8e1..37d12cc 100644
-> --- a/arch/arm/mach-davinci/board-dm355-evm.c
-> +++ b/arch/arm/mach-davinci/board-dm355-evm.c
-> @@ -253,8 +253,6 @@ static struct davinci_uart_config uart_config __initdata = {
->  
->  static void __init dm355_evm_map_io(void)
->  {
-> -	/* setup input configuration for VPFE input devices */
-> -	dm355_set_vpfe_config(&vpfe_cfg);
->  	dm355_init();
->  }
->  
-> @@ -344,6 +342,8 @@ static __init void dm355_evm_init(void)
->  	davinci_setup_mmc(0, &dm355evm_mmc_config);
->  	davinci_setup_mmc(1, &dm355evm_mmc_config);
->  
-> +	dm355_init_video(&vpfe_cfg, NULL);
+>  Documentation/acpi/enumeration.txt |   32 ++++++++++++++-
+>  drivers/gpio/gpiolib-acpi.c        |   77 ++++++++++++++++++++++++++++++++++++
+>  include/linux/acpi_gpio.h          |   17 ++++++++
+>  3 files changed, 125 insertions(+), 1 deletion(-)
+>
+> diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
+> index 94a6561..b0d5410 100644
+> --- a/Documentation/acpi/enumeration.txt
+> +++ b/Documentation/acpi/enumeration.txt
+> @@ -199,6 +199,8 @@ the device to the driver. For example:
+>         {
+>                 Name (SBUF, ResourceTemplate()
+>                 {
+> +                       ...
+> +                       // Used to power on/off the device
+>                         GpioIo (Exclusive, PullDefault, 0x0000, 0x0000,
+>                                 IoRestrictionOutputOnly, "\\_SB.PCI0.GPI0",
+>                                 0x00, ResourceConsumer,,)
+> @@ -206,10 +208,20 @@ the device to the driver. For example:
+>                                 // Pin List
+>                                 0x0055
+>                         }
 > +
->  	dm355_init_spi0(BIT(0), dm355_evm_spi_info,
->  			ARRAY_SIZE(dm355_evm_spi_info));
->  
-> diff --git a/arch/arm/mach-davinci/davinci.h b/arch/arm/mach-davinci/davinci.h
-> index a9de512..5402592 100644
-> --- a/arch/arm/mach-davinci/davinci.h
-> +++ b/arch/arm/mach-davinci/davinci.h
-> @@ -39,6 +39,7 @@
->  #define SYSMOD_VDAC_CONFIG		0x2c
->  #define SYSMOD_VIDCLKCTL		0x38
->  #define SYSMOD_VPSS_CLKCTL		0x44
-> +#define VPSS_MUXSEL_EXTCLK_ENABLE	BIT(1)
->  #define VPSS_VENCCLKEN_ENABLE		BIT(3)
->  #define VPSS_DACCLKEN_ENABLE		BIT(4)
->  #define VPSS_PLLC2SYSCLK5_ENABLE	BIT(5)
-> @@ -79,7 +80,7 @@ void __init dm355_init(void);
->  void dm355_init_spi0(unsigned chipselect_mask,
->  		const struct spi_board_info *info, unsigned len);
->  void __init dm355_init_asp1(u32 evt_enable, struct snd_platform_data *pdata);
-> -void dm355_set_vpfe_config(struct vpfe_config *cfg);
-> +int __init dm355_init_video(struct vpfe_config *, struct vpbe_config *);
+> +                       // Interrupt for the device
+> +                       GpioInt (Edge, ActiveHigh, ExclusiveAndWake, PullNone,
+> +                                0x0000, "\\_SB.PCI0.GPI0", 0x00, ResourceConsumer,,)
 
-Why do this especially after sending a big patch cleaning __init
-annotation in function declaration all over mach-davinci?
+Sorry for coming late in the GPIO ACPI discussion, but when I see this
+documentation, I wonder:
+wouldn't it be feasible to find the correct GPIO by its type? Here, we
+have a GpioIo and a GpioInt, and I bet this would be sometime more
+useful to request the first GpioInt without knowing the correct order
+of declarations.
 
->  
->  /* DM365 function declarations */
->  void __init dm365_init(void);
-> diff --git a/arch/arm/mach-davinci/dm355.c b/arch/arm/mach-davinci/dm355.c
-> index 8e98bb0..174ad02 100644
-> --- a/arch/arm/mach-davinci/dm355.c
-> +++ b/arch/arm/mach-davinci/dm355.c
-> @@ -36,6 +36,10 @@
->  
->  #define DM355_UART2_BASE	(IO_PHYS + 0x206000)
->  
-> +#define DM355_OSD_BASE			0x01c70200
-> +
+It may be feasible by walking the tree, but a helper would be of great
+help (thinking at i2c-hid here, which can not rely on indexes in the
+DSDT).
 
-Drop the empty line here and after DM355_UART2_BASE. And be consistent
-and add new definitions as (IO_PHYS + N)?
+Cheers,
+Benjamin
 
-> +#define DM355_VENC_BASE			0x01c70400
+> +                       {
+> +                               // Pin list
+> +                               0x0058
+> +                       }
 > +
->  /*
->   * Device specific clocks
->   */
-> @@ -744,11 +748,150 @@ static struct platform_device vpfe_capture_dev = {
->  	},
->  };
->  
-> -void dm355_set_vpfe_config(struct vpfe_config *cfg)
-> +static struct resource dm355_osd_resources[] = {
-> +	{
-> +		.start	= DM355_OSD_BASE,
-> +		.end	= DM355_OSD_BASE + 0x17f,
-> +		.flags	= IORESOURCE_MEM,
-> +	},
-> +};
+>                         ...
+>
+> -                       Return (SBUF)
+>                 }
 > +
-> +static struct platform_device dm355_osd_dev = {
-> +	.name		= DM355_VPBE_OSD_SUBDEV_NAME,
-> +	.id		= -1,
-> +	.num_resources	= ARRAY_SIZE(dm355_osd_resources),
-> +	.resource	= dm355_osd_resources,
-> +	.dev		= {
-> +		.dma_mask		= &vpfe_capture_dma_mask,
-> +		.coherent_dma_mask	= DMA_BIT_MASK(32),
-> +	},
-> +};
+> +               Return (SBUF)
+>         }
+>
+>  These GPIO numbers are controller relative and path "\\_SB.PCI0.GPI0"
+> @@ -220,6 +232,24 @@ The driver can do this by including <linux/acpi_gpio.h> and then calling
+>  acpi_get_gpio(path, gpio). This will return the Linux GPIO number or
+>  negative errno if there was no translation found.
+>
+> +In a simple case of just getting the Linux GPIO number from device
+> +resources one can use acpi_get_gpio_by_index() helper function. It takes
+> +pointer to the device and index of the GpioIo/GpioInt descriptor in the
+> +device resources list. For example:
 > +
-> +static struct resource dm355_venc_resources[] = {
-> +	{
-> +		.start	= IRQ_VENCINT,
-> +		.end	= IRQ_VENCINT,
-> +		.flags	= IORESOURCE_IRQ,
-> +	},
-> +	/* venc registers io space */
-> +	{
-> +		.start	= DM355_VENC_BASE,
-> +		.end	= DM355_VENC_BASE + 0x17f,
-> +		.flags	= IORESOURCE_MEM,
-> +	},
-> +	/* VDAC config register io space */
-> +	{
-> +		.start	= DAVINCI_SYSTEM_MODULE_BASE + SYSMOD_VDAC_CONFIG,
-> +		.end	= DAVINCI_SYSTEM_MODULE_BASE + SYSMOD_VDAC_CONFIG + 3,
-> +		.flags	= IORESOURCE_MEM,
-> +	},
-> +};
+> +       int gpio_irq, gpio_power;
+> +       int ret;
 > +
-> +static struct resource dm355_v4l2_disp_resources[] = {
-> +	{
-> +		.start	= IRQ_VENCINT,
-> +		.end	= IRQ_VENCINT,
-> +		.flags	= IORESOURCE_IRQ,
-> +	},
-> +	/* venc registers io space */
-> +	{
-> +		.start	= DM355_VENC_BASE,
-> +		.end	= DM355_VENC_BASE + 0x17f,
-> +		.flags	= IORESOURCE_MEM,
-> +	},
-> +};
+> +       gpio_irq = acpi_get_gpio_by_index(dev, 1, NULL);
+> +       if (gpio_irq < 0)
+> +               /* handle error */
 > +
-> +static int dm355_vpbe_setup_pinmux(enum v4l2_mbus_pixelcode if_type,
-> +			    int field)
->  {
-> -	vpfe_capture_dev.dev.platform_data = cfg;
-> +	switch (if_type) {
-> +	case V4L2_MBUS_FMT_SGRBG8_1X8:
-> +		davinci_cfg_reg(DM355_VOUT_FIELD_G70);
-> +		break;
+> +       gpio_power = acpi_get_gpio_by_index(dev, 0, NULL);
+> +       if (gpio_power < 0)
+> +               /* handle error */
 > +
-> +	case V4L2_MBUS_FMT_YUYV10_1X20:
-> +		if (field)
-> +			davinci_cfg_reg(DM355_VOUT_FIELD);
-> +		else
-> +			davinci_cfg_reg(DM355_VOUT_FIELD_G70);
-> +		break;
+> +       /* Now we can use the GPIO numbers */
 > +
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	davinci_cfg_reg(DM355_VOUT_COUTL_EN);
-> +	davinci_cfg_reg(DM355_VOUT_COUTH_EN);
-> +
-> +	return 0;
-> +}
-> +
-> +static int dm355_venc_setup_clock(enum vpbe_enc_timings_type type,
-> +				   unsigned int pclock)
-> +{
-> +	void __iomem *vpss_clk_ctrl_reg;
-> +
-> +	vpss_clk_ctrl_reg = DAVINCI_SYSMOD_VIRT(SYSMOD_VPSS_CLKCTL);
-> +
-> +	switch (type) {
-> +	case VPBE_ENC_STD:
-> +		writel(VPSS_DACCLKEN_ENABLE |
-> +		       VPSS_VENCCLKEN_ENABLE, vpss_clk_ctrl_reg);
-
-Please don't break the line in middle of expression. Instead break it
-after the first argument completes.
-
-Rest of the patch looks good. Thank you for your patience with this.
-
-Regards,
-Sekhar
+>  Other GpioIo parameters must be converted first by the driver to be
+>  suitable to the gpiolib before passing them.
+>
+[snipped]
