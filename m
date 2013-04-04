@@ -1,287 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761332Ab3DDOEQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 10:04:16 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:41883 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759986Ab3DDOEM (ORCPT
+	id S1761463Ab3DDOEe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 10:04:34 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:43988 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760687Ab3DDOEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 10:04:12 -0400
-Date: Thu, 4 Apr 2013 22:04:03 +0800
-From: Yanchuan Nian <ycnian@gmail.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] nfsd: fix bug on nfs4 stateid deallocation
-Message-ID: <20130404140403.GA2134@localhost.localdomain>
-References: <1362962774-5141-1-git-send-email-ycnian@gmail.com>
- <20130311150208.GB16309@fieldses.org>
- <CAC5OsZPyuOj_3OUJZFu1Haqg=q6GCyyqDL=n+Y5Wr48D1-SkSg@mail.gmail.com>
- <20130402015044.GA12158@fieldses.org>
- <20130403105843.GA22704@mail.example.com>
- <20130403185508.GE6044@fieldses.org>
+	Thu, 4 Apr 2013 10:04:32 -0400
+Message-ID: <515D882E.6040001@oracle.com>
+Date: Thu, 04 Apr 2013 10:03:26 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130310 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=gb2312
-Content-Disposition: inline
-In-Reply-To: <20130403185508.GE6044@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: David Rientjes <rientjes@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Mel Gorman <mgorman@suse.de>,
+        Dave Jones <davej@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: mm: BUG in do_huge_pmd_wp_page
+References: <51559150.3040407@oracle.com>
+In-Reply-To: <51559150.3040407@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 03, 2013 at 02:55:08PM -0400, J. Bruce Fields wrote:
-> On Wed, Apr 03, 2013 at 06:58:43PM +0800, Yanchuan Nian wrote:
-> > On Mon, Apr 01, 2013 at 09:50:44PM -0400, J. Bruce Fields wrote:
-> > > On Wed, Mar 13, 2013 at 11:04:54PM +0800, Yanchuan Nian wrote:
-> > > > 2013/3/11 J. Bruce Fields <bfields@fieldses.org>
-> > > > 
-> > > > > On Mon, Mar 11, 2013 at 08:46:14AM +0800, ycnian@gmail.com wrote:
-> > > > > > NFS4_OO_PURGE_CLOSE is not handled properly. To avoid memory leak, nfs4
-> > > > > > stateid which is pointed by oo_last_closed_stid is freed in
-> > > > > nfsd4_close(),
-> > > > > > but NFS4_OO_PURGE_CLOSE isn't cleared meanwhile. So the stateid released
-> > > > > in
-> > > > > > THIS close procedure may be freed immediately in the coming encoding
-> > > > > function.
-> > > > >
-> > > > > OK, makes sense.  This code is confusing, I wonder if there's some way
-> > > > > we could make it simpler.
-> > > > >
-> > > > 
-> > > > The only purpose of NFS4_OO_PURGE_CLOSE is to decide whether the stateid
-> > > > pointed by last-closed-stateid should be freed or not. I wonder if this
-> > > > flag is necessary. oo_last_closed_stid is set only in CLOSE, so in other
-> > > > procedures, if the pointer is not NULL, it must be set in previous
-> > > > procedure, we can free it directly. In CLOSE procedure, we also free it
-> > > > directly before asigning the new released stateid to it in nfsd4_close(),
-> > > > and then we can ignore it in nfsd4_encode_close(). What do you think?
-> > > 
-> > > Yeah, something like that would be simpler, I think.  Maybe the
-> > > following?  (On top of your patch.)
-> > 
-> 
-> > This patch may cause memory leak in NFSv4.1. If the stateid released
-> > is the last one in nfs4_openowner, nfs4_openowner will be deallocated
-> > immediately, and NULL will be assigned to cstate->replay_owner at the
-> > same time. In this situation encode_seqid_op_tail() cannot be called.
-> > To avoid this problem, we can free the stateid just before or after
-> > nfs4_opwnowner deallocation.
-> 
-> Yes, thanks for catching that!:
-> 
->  	nfsd4_close_open_stateid(stp);
-> -	close->cl_closed_stateid = stp;
-> +	if (cstate->minorversion) {
-> +		unhash_stid(&stp->st_stid);
-> +		free_generic_stateid(stp);
-> +	} else
-> +		close->cl_closed_stateid = stp;
->  
->  	if (list_empty(&oo->oo_owner.so_stateids)) {
->  		if (cstate->minorversion) {
-> 
-> > Another question, cl_stateid in struct nfsd4_close will be returned to
-> > the client, so original comment is right even though applying this
-> > patch. Can this struct be commented like this.
-> > 
-> > struct nfsd4_close {
-> >         u32             cl_seqid;           /* request */
-> >         stateid_t       cl_stateid;         /* request+response */
-> >         struct nfs4_ol_stateid *cl_closed_stateid; /* used during processing */
-> 
-> Agreed; done.  The result is the following (untested).
+Ping? I'm seeing a whole bunch of these with current -next.
 
-Yes, it works on my machine. Just the comment of cl_stateid in struct
-nfsd4_close is still a little misleading.
+
+Thanks,
+Sasha
+
+On 03/29/2013 09:04 AM, Sasha Levin wrote:
+> Hi all,
 > 
-> --b.
+> While fuzzing with trinity inside a KVM tools guest running latest -next kernel,
+> I've stumbled on the following.
 > 
-> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> index 3e1101a..9bd6653 100644
-> --- a/fs/nfsd/nfs4state.c
-> +++ b/fs/nfsd/nfs4state.c
-> @@ -674,7 +674,7 @@ static void unhash_openowner(struct nfs4_openowner *oo)
->  	}
->  }
->  
-> -static void release_last_closed_stateid(struct nfs4_openowner *oo)
-> +void release_last_closed_stateid(struct nfs4_openowner *oo)
->  {
->  	struct nfs4_ol_stateid *s = oo->oo_last_closed_stid;
->  
-> @@ -3783,26 +3783,6 @@ out:
->  	return status;
->  }
->  
-> -void nfsd4_purge_closed_stateid(struct nfs4_stateowner *so)
-> -{
-> -	struct nfs4_openowner *oo;
-> -	struct nfs4_ol_stateid *s;
-> -
-> -	if (!so->so_is_open_owner)
-> -		return;
-> -	oo = openowner(so);
-> -	s = oo->oo_last_closed_stid;
-> -	if (!s)
-> -		return;
-> -	if (!(oo->oo_flags & NFS4_OO_PURGE_CLOSE)) {
-> -		/* Release the last_closed_stid on the next seqid bump: */
-> -		oo->oo_flags |= NFS4_OO_PURGE_CLOSE;
-> -		return;
-> -	}
-> -	oo->oo_flags &= ~NFS4_OO_PURGE_CLOSE;
-> -	release_last_closed_stateid(oo);
-> -}
-> -
->  static void nfsd4_close_open_stateid(struct nfs4_ol_stateid *s)
->  {
->  	unhash_open_stateid(s);
-> @@ -3839,9 +3819,11 @@ nfsd4_close(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
->  	memcpy(&close->cl_stateid, &stp->st_stid.sc_stateid, sizeof(stateid_t));
->  
->  	nfsd4_close_open_stateid(stp);
-> -	release_last_closed_stateid(oo);
-> -	oo->oo_flags &= ~NFS4_OO_PURGE_CLOSE;
-> -	oo->oo_last_closed_stid = stp;
-> +	if (cstate->minorversion) {
-> +		unhash_stid(&stp->st_stid);
-> +		free_generic_stateid(stp);
-> +	} else
-> +		close->cl_closed_stateid = stp;
->  
->  	if (list_empty(&oo->oo_owner.so_stateids)) {
->  		if (cstate->minorversion) {
-> diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-> index 700de01..60e196f 100644
-> --- a/fs/nfsd/nfs4xdr.c
-> +++ b/fs/nfsd/nfs4xdr.c
-> @@ -527,6 +527,7 @@ nfsd4_decode_close(struct nfsd4_compoundargs *argp, struct nfsd4_close *close)
->  {
->  	DECODE_HEAD;
->  
-> +	close->cl_closed_stateid = NULL;
->  	READ_BUF(4);
->  	READ32(close->cl_seqid);
->  	return nfsd4_decode_stateid(argp, &close->cl_stateid);
-> @@ -1707,8 +1708,7 @@ static void write_cinfo(__be32 **p, struct nfsd4_change_info *c)
->   * Note that we increment sequence id's here, at the last moment, so we're sure
->   * we know whether the error to be returned is a sequence id mutating error.
->   */
-> -
-> -static void encode_seqid_op_tail(struct nfsd4_compoundres *resp, __be32 *save, __be32 nfserr)
-> +static void encode_seqid_op_tail(struct nfsd4_compoundres *resp, __be32 *save, __be32 nfserr, struct nfs4_ol_stateid *close_stp)
->  {
->  	struct nfs4_stateowner *stateowner = resp->cstate.replay_owner;
->  
-> @@ -1719,7 +1719,13 @@ static void encode_seqid_op_tail(struct nfsd4_compoundres *resp, __be32 *save, _
->  			  (char *)resp->p - (char *)save;
->  		memcpy(stateowner->so_replay.rp_buf, save,
->  			stateowner->so_replay.rp_buflen);
-> -		nfsd4_purge_closed_stateid(stateowner);
-> +		if (stateowner->so_is_open_owner) {
-> +			struct nfs4_openowner *oo = openowner(stateowner);
-> +
-> +			release_last_closed_stateid(oo);
-> +			if (close_stp)
-> +				oo->oo_last_closed_stid = close_stp;
-> +		}
->  	}
->  }
->  
-> @@ -2667,7 +2673,7 @@ nfsd4_encode_close(struct nfsd4_compoundres *resp, __be32 nfserr, struct nfsd4_c
->  	if (!nfserr)
->  		nfsd4_encode_stateid(resp, &close->cl_stateid);
->  
-> -	encode_seqid_op_tail(resp, save, nfserr);
-> +	encode_seqid_op_tail(resp, save, nfserr, close->cl_closed_stateid);
->  	return nfserr;
->  }
->  
-> @@ -2770,7 +2776,7 @@ nfsd4_encode_lock(struct nfsd4_compoundres *resp, __be32 nfserr, struct nfsd4_lo
->  	else if (nfserr == nfserr_denied)
->  		nfsd4_encode_lock_denied(resp, &lock->lk_denied);
->  
-> -	encode_seqid_op_tail(resp, save, nfserr);
-> +	encode_seqid_op_tail(resp, save, nfserr, NULL);
->  	return nfserr;
->  }
->  
-> @@ -2790,7 +2796,7 @@ nfsd4_encode_locku(struct nfsd4_compoundres *resp, __be32 nfserr, struct nfsd4_l
->  	if (!nfserr)
->  		nfsd4_encode_stateid(resp, &locku->lu_stateid);
->  
-> -	encode_seqid_op_tail(resp, save, nfserr);
-> +	encode_seqid_op_tail(resp, save, nfserr, NULL);
->  	return nfserr;
->  }
->  
-> @@ -2885,7 +2891,7 @@ nfsd4_encode_open(struct nfsd4_compoundres *resp, __be32 nfserr, struct nfsd4_op
->  	}
->  	/* XXX save filehandle here */
->  out:
-> -	encode_seqid_op_tail(resp, save, nfserr);
-> +	encode_seqid_op_tail(resp, save, nfserr, NULL);
->  	return nfserr;
->  }
->  
-> @@ -2897,7 +2903,7 @@ nfsd4_encode_open_confirm(struct nfsd4_compoundres *resp, __be32 nfserr, struct
->  	if (!nfserr)
->  		nfsd4_encode_stateid(resp, &oc->oc_resp_stateid);
->  
-> -	encode_seqid_op_tail(resp, save, nfserr);
-> +	encode_seqid_op_tail(resp, save, nfserr, NULL);
->  	return nfserr;
->  }
->  
-> @@ -2909,7 +2915,7 @@ nfsd4_encode_open_downgrade(struct nfsd4_compoundres *resp, __be32 nfserr, struc
->  	if (!nfserr)
->  		nfsd4_encode_stateid(resp, &od->od_stateid);
->  
-> -	encode_seqid_op_tail(resp, save, nfserr);
-> +	encode_seqid_op_tail(resp, save, nfserr, NULL);
->  	return nfserr;
->  }
->  
-> diff --git a/fs/nfsd/state.h b/fs/nfsd/state.h
-> index f6ae4db..477f027 100644
-> --- a/fs/nfsd/state.h
-> +++ b/fs/nfsd/state.h
-> @@ -355,7 +355,6 @@ struct nfs4_openowner {
->  	struct nfs4_ol_stateid *oo_last_closed_stid;
->  	time_t			oo_time; /* time of placement on so_close_lru */
->  #define NFS4_OO_CONFIRMED   1
-> -#define NFS4_OO_PURGE_CLOSE 2
->  #define NFS4_OO_NEW         4
->  	unsigned char		oo_flags;
->  };
-> @@ -363,7 +362,7 @@ struct nfs4_openowner {
->  struct nfs4_lockowner {
->  	struct nfs4_stateowner	lo_owner; /* must be first element */
->  	struct list_head	lo_owner_ino_hash; /* hash by owner,file */
-> -	struct list_head        lo_perstateid; /* for lockowners only */
-> +	struct list_head        lo_perstateid;
->  	struct list_head	lo_list; /* for temporary uses */
->  };
->  
-> @@ -477,7 +476,7 @@ extern struct nfs4_client_reclaim *nfs4_client_to_reclaim(const char *name,
->  							struct nfsd_net *nn);
->  extern bool nfs4_has_reclaimed_state(const char *name, struct nfsd_net *nn);
->  extern void put_client_renew(struct nfs4_client *clp);
-> -extern void nfsd4_purge_closed_stateid(struct nfs4_stateowner *);
-> +extern void release_last_closed_stateid(struct nfs4_openowner *);
->  
->  /* nfs4recover operations */
->  extern int nfsd4_client_tracking_init(struct net *net);
-> diff --git a/fs/nfsd/xdr4.h b/fs/nfsd/xdr4.h
-> index 40e05e6..4d501db 100644
-> --- a/fs/nfsd/xdr4.h
-> +++ b/fs/nfsd/xdr4.h
-> @@ -91,7 +91,8 @@ struct nfsd4_access {
->  
->  struct nfsd4_close {
->  	u32		cl_seqid;           /* request */
-> -	stateid_t	cl_stateid;         /* request+response */
-> +	stateid_t	cl_stateid;         /* request */
-> +	struct nfs4_ol_stateid *cl_closed_stateid; /* used during processing */
->  };
->  
->  struct nfsd4_commit {
+> It seems that the code in do_huge_pmd_wp_page() was recently modified in
+> "thp: do_huge_pmd_wp_page(): handle huge zero page".
+> 
+> Here's the trace:
+> 
+> [  246.244708] BUG: unable to handle kernel paging request at ffff88009c422000
+> [  246.245743] IP: [<ffffffff81a0a795>] copy_page_rep+0x5/0x10
+> [  246.250569] PGD 7232067 PUD 7235067 PMD bfefe067 PTE 800000009c422060
+> [  246.251529] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [  246.252325] Dumping ftrace buffer:
+> [  246.252791]    (ftrace buffer empty)
+> [  246.252869] Modules linked in:
+> [  246.252869] CPU 3
+> [  246.252869] Pid: 11985, comm: trinity-child12 Tainted: G        W    3.9.0-rc4-next-20130328-sasha-00014-g91a3267 #319
+> [  246.252869] RIP: 0010:[<ffffffff81a0a795>]  [<ffffffff81a0a795>] copy_page_rep+0x5/0x10
+> [  246.252869] RSP: 0018:ffff88000015bc40  EFLAGS: 00010286
+> [  246.252869] RAX: ffff88000015bfd8 RBX: 0000000002710880 RCX: 0000000000000200
+> [  246.252869] RDX: 0000000000000000 RSI: ffff88009c422000 RDI: ffff88009a422000
+> [  246.252869] RBP: ffff88000015bc98 R08: 0000000002718000 R09: 0000000000000001
+> [  246.252869] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880000000000
+> [  246.252869] R13: ffff88000015bfd8 R14: ffff88000015bfd8 R15: fffffffffff80000
+> [  246.252869] FS:  00007f53db93f700(0000) GS:ffff8800bba00000(0000) knlGS:0000000000000000
+> [  246.252869] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [  246.252869] CR2: ffff88009c422000 CR3: 0000000000159000 CR4: 00000000000406e0
+> [  246.252869] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [  246.252869] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [  246.252869] Process trinity-child12 (pid: 11985, threadinfo ffff88000015a000, task ffff88009c60b000)
+> [  246.252869] Stack:
+> [  246.252869]  ffffffff81234aae ffff88000015bc88 ffffffff81273639 0000000000a00000
+> [  246.252869]  0000000002718000 ffff8800ab36d050 ffff880000153800 ffffea0002690000
+> [  246.252869]  0000000000a00000 ffff8800ab36d000 ffffea0002710000 ffff88000015bd48
+> [  246.252869] Call Trace:
+> [  246.252869]  [<ffffffff81234aae>] ? copy_user_huge_page+0x1de/0x240
+> [  246.252869]  [<ffffffff81273639>] ? mem_cgroup_charge_common+0xa9/0xc0
+> [  246.252869]  [<ffffffff8126b4d7>] do_huge_pmd_wp_page+0x9f7/0xc60
+> [  246.252869]  [<ffffffff81a0acd9>] ? __const_udelay+0x29/0x30
+> [  246.252869]  [<ffffffff8123364e>] handle_mm_fault+0x26e/0x650
+> [  246.252869]  [<ffffffff8117dc1a>] ? __lock_is_held+0x5a/0x80
+> [  246.252869]  [<ffffffff83db3814>] ? __do_page_fault+0x514/0x5e0
+> [  246.252869]  [<ffffffff83db3870>] __do_page_fault+0x570/0x5e0
+> [  246.252869]  [<ffffffff811c6500>] ? rcu_eqs_exit_common+0x60/0x260
+> [  246.252869]  [<ffffffff811c740e>] ? rcu_eqs_enter_common+0x33e/0x3b0
+> [  246.252869]  [<ffffffff811c679c>] ? rcu_eqs_exit+0x9c/0xb0
+> [  246.252869]  [<ffffffff83db3912>] do_page_fault+0x32/0x50
+> [  246.252869]  [<ffffffff83db2ef0>] do_async_page_fault+0x30/0xc0
+> [  246.252869]  [<ffffffff83db01e8>] async_page_fault+0x28/0x30
+> [  246.252869] Code: 90 90 90 90 90 90 9c fa 65 48 3b 06 75 14 65 48 3b 56 08 75 0d 65 48 89 1e 65 48 89 4e 08 9d b0 01 c3 9d 30
+> c0 c3 b9 00 02 00 00 <f3> 48 a5 c3 0f 1f 80 00 00 00 00 eb ee 66 66 66 90 66 66 66 90
+> [  246.252869] RIP  [<ffffffff81a0a795>] copy_page_rep+0x5/0x10
+> [  246.252869]  RSP <ffff88000015bc40>
+> [  246.252869] CR2: ffff88009c422000
+> [  246.252869] ---[ end trace 09fbe37b108d5766 ]---
+> 
+> And this is the code:
+> 
+>         if (is_huge_zero_pmd(orig_pmd))
+>                 clear_huge_page(new_page, haddr, HPAGE_PMD_NR);
+>         else
+>                 copy_user_huge_page(new_page, page, haddr, vma, HPAGE_PMD_NR); <--- this
+> 
+> 
+> Thanks,
+> Sasha
+> 
+
