@@ -1,40 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762946Ab3DDQ0O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:26:14 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:60146 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760890Ab3DDQ0M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:26:12 -0400
-MIME-Version: 1.0
-Reply-To: linasvepstas@gmail.com
-In-Reply-To: <1365033776-21804-5-git-send-email-rkuo@codeaurora.org>
-References: <1365033776-21804-1-git-send-email-rkuo@codeaurora.org> <1365033776-21804-5-git-send-email-rkuo@codeaurora.org>
-From: Linas Vepstas <linasvepstas@gmail.com>
-Date: Thu, 4 Apr 2013 11:25:50 -0500
-Message-ID: <CAHrUA37oTkv-x5f4zZVwqjWAqvyMdwXAokw1EDBHiGv8ozWxVQ@mail.gmail.com>
-Subject: Re: [PATCH 4/6] Hexagon: check to if we will overflow the signal stack
-To: Richard Kuo <rkuo@codeaurora.org>
-Cc: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk
-Content-Type: text/plain; charset=UTF-8
+	id S1762971Ab3DDQ1M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:27:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:13679 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762820Ab3DDQ1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 12:27:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,410,1363158000"; 
+   d="scan'208";a="289422293"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Mel Gorman <mgorman@suse.de>,
+        Dave Jones <davej@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <515D9041.8080000@oracle.com>
+References: <51559150.3040407@oracle.com>
+ <515D882E.6040001@oracle.com>
+ <20130404143048.02672E0085@blue.fi.intel.com>
+ <515D9041.8080000@oracle.com>
+Subject: Re: mm: BUG in do_huge_pmd_wp_page
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130404162851.39ECBE0085@blue.fi.intel.com>
+Date: Thu,  4 Apr 2013 19:28:51 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 April 2013 19:02, Richard Kuo <rkuo@codeaurora.org> wrote:
+Sasha Levin wrote:
+> On 04/04/2013 10:30 AM, Kirill A. Shutemov wrote:
+> > Sasha Levin wrote:
+> >> Ping? I'm seeing a whole bunch of these with current -next.
+> > 
+> > Do you have a way to reproduce?
+> 
+> Not really, trinity just manages to make it happen quite often.
+> 
+> I can add something in the code to spew more debug info when it
+> happens though, I just couldn't come up with anything that might
+> be useful.
 
-> +       /* check if we would overflow the alt stack */
-> +       if (on_sig_stack(sp) && !likely(on_sig_stack(sp - frame_size)))
-> +               return (void __user __force *)-1UL;
+I will try to reproduce on my own.
 
-I found the !likely construction confusing, as its doing both a
-'unlikely' (right?) and inverting the argument. It seems clearer,
-to idiots like me, to write this as:
+I'm new with trinity. Any hint on run parameters?
+Is 'trinity -g vm -C 8' in lkvm good enough?
 
-if (on_sig_stack(sp) && unlikely(!on_sig_stack(sp - frame_size)))
-
-since where checking for overflow, and its unlikely that the overflow happened.
-
--- Linas
+-- 
+ Kirill A. Shutemov
