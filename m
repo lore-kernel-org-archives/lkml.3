@@ -1,165 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765219Ab3DDWSZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 18:18:25 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:49798 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765163Ab3DDWSV (ORCPT
+	id S1765234Ab3DDWS5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 18:18:57 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:39101 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765028Ab3DDWR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 18:18:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <1363217302-14383-4-git-send-email-yinghai@kernel.org>
-References: <1363217302-14383-1-git-send-email-yinghai@kernel.org> <1363217302-14383-4-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 4 Apr 2013 16:18:01 -0600
-Message-ID: <CAErSpo4VzBZ=fAzPm1yWEs4+09_D1=rysMf6tGgnqpVEKytSzQ@mail.gmail.com>
-Subject: Re: [PATCH v3 03/27] PCI: pci resource iterator
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ram Pai <linuxram@us.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 4 Apr 2013 18:17:27 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: WANG Chao <chaowang@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v3 1/4] x86, kdump: Set crashkernel_low automatically
+Date: Thu,  4 Apr 2013 15:16:58 -0700
+Message-Id: <1365113821-22749-2-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1365113821-22749-1-git-send-email-yinghai@kernel.org>
+References: <1365113821-22749-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 5:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> From: Ram Pai <linuxram@us.ibm.com>
->
-> Currently pci_dev structure holds an array of 17 PCI resources; six base
-> BARs, one ROM BAR, four BRIDGE BARs, six sriov BARs.  This is wasteful.
-> A bridge device just needs the 4 bridge resources. A non-bridge device
-> just needs the six base resources and one ROM resource. The sriov
-> resources are needed only if the device has SRIOV capability.
->
-> The pci_dev structure needs to be re-organized to avoid unnecessary
-> bloating.  However too much code outside the pci-bus driver, assumes the
-> internal details of the pci_dev structure, thus making it hard to
-> re-organize the datastructure.
->
-> As a first step this patch provides generic methods to access the
-> resource structure of the pci_dev.
->
-> Finally we can re-organize the resource structure in the pci_dev
-> structure and correspondingly update the methods.
->
-> -v2: Consolidated iterator interface as per Bjorn's suggestion.
-> -v3: Add the idx back - Yinghai Lu
-> -v7: Change to use bitmap for searching - Yinghai Lu
-> -v8: Fix acpiphp module compiling error that is found by
->         Steven Newbury <steve@snewbury.org.uk> - Yinghai Lu
->
-> Signed-off-by: Ram Pai <linuxram@us.ibm.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  drivers/pci/probe.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/pci.h |   24 ++++++++++++++++++++++++
->  2 files changed, 72 insertions(+)
->
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 1df75f7..ac751a6 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -123,6 +123,54 @@ int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res)
->         return -1;
->  }
->
-> +static void __init_res_idx_mask(unsigned long *mask, int flag)
-> +{
-> +       bitmap_zero(mask, PCI_NUM_RESOURCES);
-> +       if (flag & PCI_STD_RES)
-> +               bitmap_set(mask, PCI_STD_RESOURCES,
-> +                       PCI_STD_RESOURCE_END - PCI_STD_RESOURCES + 1);
-> +       if (flag & PCI_ROM_RES)
-> +               bitmap_set(mask, PCI_ROM_RESOURCE, 1);
-> +#ifdef CONFIG_PCI_IOV
-> +       if (flag & PCI_IOV_RES)
-> +               bitmap_set(mask, PCI_IOV_RESOURCES,
-> +                       PCI_IOV_RESOURCE_END - PCI_IOV_RESOURCES + 1);
-> +#endif
-> +       if (flag & PCI_BRIDGE_RES)
-> +               bitmap_set(mask, PCI_BRIDGE_RESOURCES,
-> +                       PCI_BRIDGE_RESOURCE_END - PCI_BRIDGE_RESOURCES + 1);
-> +}
-> +
-> +static DECLARE_BITMAP(res_idx_mask[1 << PCI_RES_BLOCK_NUM], PCI_NUM_RESOURCES);
-> +static int __init pci_res_idx_mask_init(void)
-> +{
-> +       int i;
-> +
-> +       for (i = 0; i < (1 << PCI_RES_BLOCK_NUM); i++)
-> +               __init_res_idx_mask(res_idx_mask[i], i);
-> +
-> +       return 0;
-> +}
-> +postcore_initcall(pci_res_idx_mask_init);
-> +
-> +static inline unsigned long *get_res_idx_mask(int flag)
-> +{
-> +       return res_idx_mask[flag & ((1 << PCI_RES_BLOCK_NUM) - 1)];
-> +}
-> +
-> +int pci_next_resource_idx(int i, int flag)
-> +{
-> +       i++;
-> +       if (i < PCI_NUM_RESOURCES)
-> +               i = find_next_bit(get_res_idx_mask(flag), PCI_NUM_RESOURCES, i);
-> +
-> +       if (i < PCI_NUM_RESOURCES)
-> +               return i;
-> +
-> +       return -1;
-> +}
-> +EXPORT_SYMBOL(pci_next_resource_idx);
-> +
->  static u64 pci_size(u64 base, u64 maxbase, u64 mask)
->  {
->         u64 size = mask & maxbase;      /* Find the significant bits */
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index aefff8b..127a856 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -341,6 +341,30 @@ struct pci_dev {
->  struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
->  int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res);
->
-> +#define PCI_STD_RES            (1<<0)
-> +#define PCI_ROM_RES            (1<<1)
-> +#define PCI_IOV_RES            (1<<2)
-> +#define PCI_BRIDGE_RES         (1<<3)
-> +#define PCI_RES_BLOCK_NUM      4
-> +
-> +#define PCI_ALL_RES            (PCI_STD_RES | PCI_ROM_RES | PCI_BRIDGE_RES | PCI_IOV_RES)
-> +#define PCI_NOSTD_RES          (PCI_ALL_RES & ~PCI_STD_RES)
-> +#define PCI_NOIOV_RES          (PCI_ALL_RES & ~PCI_IOV_RES)
-> +#define PCI_NOROM_RES          (PCI_ALL_RES & ~PCI_ROM_RES)
-> +#define PCI_NOBRIDGE_RES       (PCI_ALL_RES & ~PCI_BRIDGE_RES)
-> +#define PCI_STD_ROM_RES                (PCI_STD_RES | PCI_ROM_RES)
-> +#define PCI_STD_IOV_RES                (PCI_STD_RES | PCI_IOV_RES)
-> +#define PCI_STD_ROM_IOV_RES    (PCI_STD_RES | PCI_ROM_RES | PCI_IOV_RES)
-> +
-> +int pci_next_resource_idx(int i, int flag);
-> +
-> +#define for_each_pci_resource(dev, res, i, flag)       \
-> +       for (i = pci_next_resource_idx(-1, flag),       \
-> +               res = pci_dev_resource_n(dev, i);       \
-> +            res;                                       \
-> +            i = pci_next_resource_idx(i, flag),        \
-> +               res = pci_dev_resource_n(dev, i))
-> +
->  static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
->  {
->  #ifdef CONFIG_PCI_IOV
+Chao said that kdump does does work well on his system on 3.8
+without extra parameter, even iommu does not work with kdump.
+And now have to append crashkernel_low=Y in first kernel to make
+kdump work.
 
-I think this turned out to be a disaster, with all the bitmaps and
-helper functions.  Filtering in the bodies of the
-for_each_pci_resource() users has *got* to be better.  That probably
-requires a wrapper struct around the struct resource.  Or possibly
-having a wrapper struct with a "type" or "flags" field would make
-filtering in for_each_pci_resources() itself cleaner to implement.
+We have now modified crashkernel=X to allocate memory beyong 4G (if
+available) and do not allocate low range for crashkernel if the user
+does not specify that with crashkernel_low=Y.  This causes regression
+if iommu is not enabled.  Without iommu, swiotlb needs to be setup in
+first 4G and there is no low memory available to second kernel.
 
-I think it would also help if we got rid of all the "PCI_NO*_RES"
-definitions and just had the users explicitly specify what they *do*
-want.
+Set crashkernel_low automatically if the user does not specify that.
 
-Bjorn
+For system that does support IOMMU with kdump properly, user could
+specify crashkernel_low=0 to save that 72M low ram.
+
+-v3: add swiotlb_size() according to Konrad.
+-v4: add comments what 8M is for according to hpa.
+     also update more crashkernel_low= in kernel-parameters.txt
+-v5: update changelog according to Vivek.
+-v6: Change description about swiotlb referring according to HATAYAMA.
+
+Reported-by: WANG Chao <chaowang@redhat.com>
+Tested-by: WANG Chao <chaowang@redhat.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ Documentation/kernel-parameters.txt |   14 +++++++++++---
+ arch/x86/kernel/setup.c             |   20 +++++++++++++++++---
+ include/linux/swiotlb.h             |    1 +
+ lib/swiotlb.c                       |   19 +++++++++++++++----
+ 4 files changed, 44 insertions(+), 10 deletions(-)
+
+Index: linux-2.6/arch/x86/kernel/setup.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -519,19 +519,33 @@ static void __init reserve_crashkernel_l
+ 	unsigned long long low_base = 0, low_size = 0;
+ 	unsigned long total_low_mem;
+ 	unsigned long long base;
++	bool auto_set = false;
+ 	int ret;
+ 
+ 	total_low_mem = memblock_mem_size(1UL<<(32-PAGE_SHIFT));
+ 	ret = parse_crashkernel_low(boot_command_line, total_low_mem,
+ 						&low_size, &base);
+-	if (ret != 0 || low_size <= 0)
+-		return;
++	if (ret != 0) {
++		/*
++		 * two parts from lib/swiotlb.c:
++		 *	swiotlb size: user specified with swiotlb= or default.
++		 *	swiotlb overflow buffer: now is hardcoded to 32k,
++		 *		round to 8M to cover more others.
++		 */
++		low_size = swiotlb_size_or_default() + (8UL<<20);
++		auto_set = true;
++	} else {
++		/* passed with crashkernel_low=0 ? */
++		if (!low_size)
++			return;
++	}
+ 
+ 	low_base = memblock_find_in_range(low_size, (1ULL<<32),
+ 					low_size, alignment);
+ 
+ 	if (!low_base) {
+-		pr_info("crashkernel low reservation failed - No suitable area found.\n");
++		if (!auto_set)
++			pr_info("crashkernel low reservation failed - No suitable area found.\n");
+ 
+ 		return;
+ 	}
+Index: linux-2.6/include/linux/swiotlb.h
+===================================================================
+--- linux-2.6.orig/include/linux/swiotlb.h
++++ linux-2.6/include/linux/swiotlb.h
+@@ -25,6 +25,7 @@ extern int swiotlb_force;
+ extern void swiotlb_init(int verbose);
+ int swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
+ extern unsigned long swiotlb_nr_tbl(void);
++unsigned long swiotlb_size_or_default(void);
+ extern int swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs);
+ 
+ /*
+Index: linux-2.6/lib/swiotlb.c
+===================================================================
+--- linux-2.6.orig/lib/swiotlb.c
++++ linux-2.6/lib/swiotlb.c
+@@ -105,9 +105,9 @@ setup_io_tlb_npages(char *str)
+ 	if (!strcmp(str, "force"))
+ 		swiotlb_force = 1;
+ 
+-	return 1;
++	return 0;
+ }
+-__setup("swiotlb=", setup_io_tlb_npages);
++early_param("swiotlb", setup_io_tlb_npages);
+ /* make io_tlb_overflow tunable too? */
+ 
+ unsigned long swiotlb_nr_tbl(void)
+@@ -115,6 +115,18 @@ unsigned long swiotlb_nr_tbl(void)
+ 	return io_tlb_nslabs;
+ }
+ EXPORT_SYMBOL_GPL(swiotlb_nr_tbl);
++
++/* default to 64MB */
++#define IO_TLB_DEFAULT_SIZE (64UL<<20)
++unsigned long swiotlb_size_or_default(void)
++{
++	unsigned long size;
++
++	size = io_tlb_nslabs << IO_TLB_SHIFT;
++
++	return size ? size : (IO_TLB_DEFAULT_SIZE);
++}
++
+ /* Note that this doesn't work with highmem page */
+ static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
+ 				      volatile void *address)
+@@ -188,8 +200,7 @@ int __init swiotlb_init_with_tbl(char *t
+ void  __init
+ swiotlb_init(int verbose)
+ {
+-	/* default to 64MB */
+-	size_t default_size = 64UL<<20;
++	size_t default_size = IO_TLB_DEFAULT_SIZE;
+ 	unsigned char *vstart;
+ 	unsigned long bytes;
+ 
+Index: linux-2.6/Documentation/kernel-parameters.txt
+===================================================================
+--- linux-2.6.orig/Documentation/kernel-parameters.txt
++++ linux-2.6/Documentation/kernel-parameters.txt
+@@ -596,9 +596,6 @@ bytes respectively. Such letter suffixes
+ 			is selected automatically. Check
+ 			Documentation/kdump/kdump.txt for further details.
+ 
+-	crashkernel_low=size[KMG]
+-			[KNL, x86] parts under 4G.
+-
+ 	crashkernel=range1:size1[,range2:size2,...][@offset]
+ 			[KNL] Same as above, but depends on the memory
+ 			in the running system. The syntax of range is
+@@ -606,6 +603,17 @@ bytes respectively. Such letter suffixes
+ 			a memory unit (amount[KMG]). See also
+ 			Documentation/kdump/kdump.txt for an example.
+ 
++	crashkernel_low=size[KMG]
++			[KNL, x86_64] range under 4G. When crashkernel= is
++			passed, kernel allocate physical memory region
++			above 4G, that cause second kernel crash on system
++			that require some amount of low memory, e.g. swiotlb
++			requires at least 64M+32K low memory.  Kernel would
++			try to allocate 72M below 4G automatically.
++			This one let user to specify own low range under 4G
++			for second kernel instead.
++			0: to disable low allocation.
++
+ 	cs89x0_dma=	[HW,NET]
+ 			Format: <dma>
+ 
