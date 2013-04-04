@@ -1,126 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760266Ab3DDMtn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 08:49:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39430 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760232Ab3DDMtm convert rfc822-to-8bit (ORCPT
+	id S1760347Ab3DDMwJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 08:52:09 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:6463 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759950Ab3DDMwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 08:49:42 -0400
-Subject: Re: [PATCH RFC] kvm: add PV MMIO EVENTFD
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <20130404124501.GH17919@redhat.com>
-Date: Thu, 4 Apr 2013 14:49:39 +0200
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Christoffer Dall <c.dall@virtualopensystems.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <1B68D701-103D-4B1A-8F5E-3916753699CB@suse.de>
-References: <20130404104846.GA6227@redhat.com> <6D40C5F1-849E-4F32-B391-E1A1BFA8C59D@suse.de> <20130404120825.GD17919@redhat.com> <959E147D-EB7B-4F4B-9F84-4F1BBA98DEF8@suse.de> <20130404123806.GG17919@redhat.com> <EF153515-9835-4FB9-B6BC-73D0BDC86492@suse.de> <20130404124501.GH17919@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-X-Mailer: Apple Mail (2.1278)
+	Thu, 4 Apr 2013 08:52:05 -0400
+From: Oskar Andero <oskar.andero@sonymobile.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arch@vger.kernel.org>, <masami.hiramatsu.pt@hitachi.com>,
+        <davem@davemloft.net>, <anil.s.keshavamurthy@intel.com>,
+        <ananth@in.ibm.com>, <radovan.lekanovic@sonymobile.com>,
+        <bjorn.davidsson@sonymobile.com>, <oskar.andero@sonymobile.com>,
+        Toby Collett <toby.collett@sonymobile.com>
+Subject: [PATCH v2 1/4] kprobes: delay blacklist symbol lookup until we actually need it
+Date: Thu, 4 Apr 2013 14:51:26 +0200
+Message-ID: <1365079889-21525-2-git-send-email-oskar.andero@sonymobile.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1365079889-21525-1-git-send-email-oskar.andero@sonymobile.com>
+References: <1365079889-21525-1-git-send-email-oskar.andero@sonymobile.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Toby Collett <toby.collett@sonymobile.com>
 
-On 04.04.2013, at 14:45, Gleb Natapov wrote:
+The symbol lookup can take a long time and kprobes is
+initialised very early in boot, so delay symbol lookup
+until the blacklist is first used.
 
-> On Thu, Apr 04, 2013 at 02:39:51PM +0200, Alexander Graf wrote:
->> 
->> On 04.04.2013, at 14:38, Gleb Natapov wrote:
->> 
->>> On Thu, Apr 04, 2013 at 02:32:08PM +0200, Alexander Graf wrote:
->>>> 
->>>> On 04.04.2013, at 14:08, Gleb Natapov wrote:
->>>> 
->>>>> On Thu, Apr 04, 2013 at 01:57:34PM +0200, Alexander Graf wrote:
->>>>>> 
->>>>>> On 04.04.2013, at 12:50, Michael S. Tsirkin wrote:
->>>>>> 
->>>>>>> With KVM, MMIO is much slower than PIO, due to the need to
->>>>>>> do page walk and emulation. But with EPT, it does not have to be: we
->>>>>>> know the address from the VMCS so if the address is unique, we can look
->>>>>>> up the eventfd directly, bypassing emulation.
->>>>>>> 
->>>>>>> Add an interface for userspace to specify this per-address, we can
->>>>>>> use this e.g. for virtio.
->>>>>>> 
->>>>>>> The implementation adds a separate bus internally. This serves two
->>>>>>> purposes:
->>>>>>> - minimize overhead for old userspace that does not use PV MMIO
->>>>>>> - minimize disruption in other code (since we don't know the length,
->>>>>>> devices on the MMIO bus only get a valid address in write, this
->>>>>>> way we don't need to touch all devices to teach them handle
->>>>>>> an dinvalid length)
->>>>>>> 
->>>>>>> At the moment, this optimization is only supported for EPT on x86 and
->>>>>>> silently ignored for NPT and MMU, so everything works correctly but
->>>>>>> slowly.
->>>>>>> 
->>>>>>> TODO: NPT, MMU and non x86 architectures.
->>>>>>> 
->>>>>>> The idea was suggested by Peter Anvin.  Lots of thanks to Gleb for
->>>>>>> pre-review and suggestions.
->>>>>>> 
->>>>>>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->>>>>> 
->>>>>> This still uses page fault intercepts which are orders of magnitudes slower than hypercalls. Why don't you just create a PV MMIO hypercall that the guest can use to invoke MMIO accesses towards the host based on physical addresses with explicit length encodings?
->>>>>> 
->>>>> It is slower, but not an order of magnitude slower. It become faster
->>>>> with newer HW.
->>>>> 
->>>>>> That way you simplify and speed up all code paths, exceeding the speed of PIO exits even. It should also be quite easily portable, as all other platforms have hypercalls available as well.
->>>>>> 
->>>>> We are trying to avoid PV as much as possible (well this is also PV,
->>>>> but not guest visible
->>>> 
->>>> Also, how is this not guest visible? Who sets KVM_IOEVENTFD_FLAG_PV_MMIO? The comment above its definition indicates that the guest does so, so it is guest visible.
->>>> 
->>> QEMU sets it.
->> 
->> How does QEMU know?
->> 
-> Knows what? When to create such eventfd? virtio device knows.
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: David S. Miller <davem@davemloft.net>
+Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
+Signed-off-by: Toby Collett <toby.collett@sonymobile.com>
+Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
+---
+ kernel/kprobes.c | 98 ++++++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 60 insertions(+), 38 deletions(-)
 
-Where does it know from?
-
-> 
->>> 
->>>> +/*
->>>> + * PV_MMIO - Guest can promise us that all accesses touching this address
->>>> + * are writes of specified length, starting at the specified address.
->>>> + * If not - it's a Guest bug.
->>>> + * Can not be used together with either PIO or DATAMATCH.
->>>> + */
->>>> 
->>> Virtio spec will state that access to a kick register needs to be of
->>> specific length. This is reasonable thing for HW to ask.
->> 
->> This is a spec change. So the guest would have to indicate that it adheres to a newer spec. Thus it's a guest visible change.
->> 
-> There is not virtio spec that has kick register in MMIO. The spec is in
-> the works AFAIK. Actually PIO will not be deprecated and my suggestion
-
-So the guest would indicate that it supports a newer revision of the spec (in your case, that it supports MMIO). How is that any different from exposing that it supports a PV MMIO hcall?
-
-> is to move to MMIO only when PIO address space is exhausted. For PCI it
-> will be never, for PCI-e it will be after ~16 devices.
-
-Ok, let's go back a step here. Are you actually able to measure any speed in performance with this patch applied and without when going through MMIO kicks?
-
-
-Alex
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index e35be53..0a270e5 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -68,6 +68,7 @@
+ #endif
+ 
+ static int kprobes_initialized;
++static int kprobe_blacklist_initialized;
+ static struct hlist_head kprobe_table[KPROBE_TABLE_SIZE];
+ static struct hlist_head kretprobe_inst_table[KPROBE_TABLE_SIZE];
+ 
+@@ -102,6 +103,60 @@ static struct kprobe_blackpoint kprobe_blacklist[] = {
+ 	{NULL}    /* Terminator */
+ };
+ 
++/* it can take some time ( > 100ms ) to initialise the
++ * blacklist so we delay this until we actually need it
++ */
++static void init_kprobe_blacklist(void)
++{
++	int i;
++	unsigned long offset = 0, size = 0;
++	char *modname, namebuf[128];
++	const char *symbol_name;
++	void *addr;
++	struct kprobe_blackpoint *kb;
++
++	mutex_lock(&kprobe_mutex);
++	if (kprobe_blacklist_initialized)
++		goto out;
++
++	/*
++	 * Lookup and populate the kprobe_blacklist.
++	 *
++	 * Unlike the kretprobe blacklist, we'll need to determine
++	 * the range of addresses that belong to the said functions,
++	 * since a kprobe need not necessarily be at the beginning
++	 * of a function.
++	 */
++	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
++		kprobe_lookup_name(kb->name, addr);
++		if (!addr)
++			continue;
++
++		kb->start_addr = (unsigned long)addr;
++		symbol_name = kallsyms_lookup(kb->start_addr,
++				&size, &offset, &modname, namebuf);
++		if (!symbol_name)
++			kb->range = 0;
++		else
++			kb->range = size;
++	}
++
++	if (kretprobe_blacklist_size) {
++		/* lookup the function address from its name */
++		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
++			kprobe_lookup_name(kretprobe_blacklist[i].name,
++					   kretprobe_blacklist[i].addr);
++			if (!kretprobe_blacklist[i].addr)
++				printk("kretprobe: lookup failed: %s\n",
++				       kretprobe_blacklist[i].name);
++		}
++	}
++	kprobe_blacklist_initialized = 1;
++
++out:
++	mutex_unlock(&kprobe_mutex);
++}
++
+ #ifdef __ARCH_WANT_KPROBES_INSN_SLOT
+ /*
+  * kprobe->ainsn.insn points to the copy of the instruction to be
+@@ -1331,6 +1386,9 @@ static int __kprobes in_kprobes_functions(unsigned long addr)
+ 	if (addr >= (unsigned long)__kprobes_text_start &&
+ 	    addr < (unsigned long)__kprobes_text_end)
+ 		return -EINVAL;
++
++	if (unlikely(!kprobe_blacklist_initialized))
++		init_kprobe_blacklist();
+ 	/*
+ 	 * If there exists a kprobe_blacklist, verify and
+ 	 * fail any probe registration in the prohibited area
+@@ -1816,6 +1874,8 @@ int __kprobes register_kretprobe(struct kretprobe *rp)
+ 	void *addr;
+ 
+ 	if (kretprobe_blacklist_size) {
++		if (unlikely(!kprobe_blacklist_initialized))
++			init_kprobe_blacklist();
+ 		addr = kprobe_addr(&rp->kp);
+ 		if (IS_ERR(addr))
+ 			return PTR_ERR(addr);
+@@ -2065,11 +2125,6 @@ static struct notifier_block kprobe_module_nb = {
+ static int __init init_kprobes(void)
+ {
+ 	int i, err = 0;
+-	unsigned long offset = 0, size = 0;
+-	char *modname, namebuf[128];
+-	const char *symbol_name;
+-	void *addr;
+-	struct kprobe_blackpoint *kb;
+ 
+ 	/* FIXME allocate the probe table, currently defined statically */
+ 	/* initialize all list heads */
+@@ -2079,39 +2134,6 @@ static int __init init_kprobes(void)
+ 		raw_spin_lock_init(&(kretprobe_table_locks[i].lock));
+ 	}
+ 
+-	/*
+-	 * Lookup and populate the kprobe_blacklist.
+-	 *
+-	 * Unlike the kretprobe blacklist, we'll need to determine
+-	 * the range of addresses that belong to the said functions,
+-	 * since a kprobe need not necessarily be at the beginning
+-	 * of a function.
+-	 */
+-	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
+-		kprobe_lookup_name(kb->name, addr);
+-		if (!addr)
+-			continue;
+-
+-		kb->start_addr = (unsigned long)addr;
+-		symbol_name = kallsyms_lookup(kb->start_addr,
+-				&size, &offset, &modname, namebuf);
+-		if (!symbol_name)
+-			kb->range = 0;
+-		else
+-			kb->range = size;
+-	}
+-
+-	if (kretprobe_blacklist_size) {
+-		/* lookup the function address from its name */
+-		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
+-			kprobe_lookup_name(kretprobe_blacklist[i].name,
+-					   kretprobe_blacklist[i].addr);
+-			if (!kretprobe_blacklist[i].addr)
+-				printk("kretprobe: lookup failed: %s\n",
+-				       kretprobe_blacklist[i].name);
+-		}
+-	}
+-
+ #if defined(CONFIG_OPTPROBES)
+ #if defined(__ARCH_WANT_KPROBES_INSN_SLOT)
+ 	/* Init kprobe_optinsn_slots */
+-- 
+1.8.1.5
 
