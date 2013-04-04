@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761475Ab3DDOLg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 10:11:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28793 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761305Ab3DDOLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 10:11:35 -0400
-Date: Thu, 4 Apr 2013 10:11:16 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/4] x86, kdump: Set crashkernel_low automatically
-Message-ID: <20130404141116.GC16459@redhat.com>
-References: <1365035906-3208-1-git-send-email-yinghai@kernel.org>
- <1365035906-3208-2-git-send-email-yinghai@kernel.org>
+	id S1761518Ab3DDOMg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 10:12:36 -0400
+Received: from mail-da0-f43.google.com ([209.85.210.43]:33657 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761367Ab3DDOMe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 10:12:34 -0400
+Date: Thu, 4 Apr 2013 07:12:29 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/7] workqueue: add __WQ_FREEZING and remove POOL_FREEZING
+Message-ID: <20130404141229.GD9425@htj.dyndns.org>
+References: <1365041143-3088-1-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365035906-3208-2-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1365041143-3088-1-git-send-email-laijs@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 03, 2013 at 05:38:23PM -0700, Yinghai Lu wrote:
+Hello, Lai.
 
-[..]
-> +	if (ret != 0) {
-> +		/*
-> +		 * two parts from lib/swiotlb.c:
-> +		 *	swiotlb size: user specified with swiotlb= or default.
-> +		 *	swiotlb overflow buffer: now is hardcoded to 32k,
-> +		 *		round to 8M to cover more others.
-> +		 */
-> +		low_size = swiotlb_size_or_default() + (8UL<<20);
-> +		auto_set = true;
-
-What is the correlation between swiotlb size of first kernel and second
-kernel. They might be completely different kernel and with different
-default size for swiotlb buffers.
-
-[..]
+On Thu, Apr 04, 2013 at 10:05:32AM +0800, Lai Jiangshan wrote:
+> @@ -4757,25 +4747,16 @@ void thaw_workqueues(void)
+>  {
+>  	struct workqueue_struct *wq;
+>  	struct pool_workqueue *pwq;
+> -	struct worker_pool *pool;
+> -	int pi;
 >  
-> +	crashkernel_low=size[KMG]
-> +			[KNL, x86_64] range under 4G. When crashkernel= is
-> +			passed, kernel allocate physical memory region
-> +			above 4G,
-	
-This is not right. "When crashkernel=X;high is passed kernel first tries
-to allocate memory above 4G". crashkernel=X does not try to allocate 
-memory above 4G.
+>  	mutex_lock(&wq_pool_mutex);
+>  
+>  	if (!workqueue_freezing)
+>  		goto out_unlock;
+>  
+> -	/* clear FREEZING */
+> -	for_each_pool(pool, pi) {
+> -		spin_lock_irq(&pool->lock);
+> -		WARN_ON_ONCE(!(pool->flags & POOL_FREEZING));
+> -		pool->flags &= ~POOL_FREEZING;
+> -		spin_unlock_irq(&pool->lock);
+> -	}
+> -
+>  	/* restore max_active and repopulate worklist */
+>  	list_for_each_entry(wq, &workqueues, list) {
+>  		mutex_lock(&wq->mutex);
+> +		wq->flags &= ~__WQ_FREEZING;
 
-Vivek
+I want an assertion here.  Maybe we can fold the next patch into this
+one and add WARN_ON_ONCE() here?
+
+>  		for_each_pwq(pwq, wq)
+>  			pwq_adjust_max_active(pwq);
+>  		mutex_unlock(&wq->mutex);
+
+Thanks.
+
+-- 
+tejun
