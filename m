@@ -1,111 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933011Ab3DDIZc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 04:25:32 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:8230 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932504Ab3DDIZ2 (ORCPT
+	id S933523Ab3DDI13 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 04:27:29 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:21780 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933336Ab3DDI10 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 04:25:28 -0400
-X-AuditID: cbfee690-b7f656d0000007e3-e0-515d38f65913
-From: Jonghwan Choi <jhbird.choi@samsung.com>
-To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, "'Kukjin'" <kgene.kim@samsung.com>,
-        "'Rafael J. Wysocki'" <rjw@sisk.pl>
-References: 
-In-reply-to: 
-Subject: [PATCH 3.8-stable] cpufreq: exynos: Get booting freq value in
- exynos_cpufreq_init
-Date: Thu, 04 Apr 2013 17:25:22 +0900
-Message-id: <000001ce310d$f5b615d0$e1224170$%choi@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAEJzDJA=
-Content-language: ko
-x-cr-hashedpuzzle: l/c= Fke3 HCtM JX1/ LRIM Nqe4 O8KT Sjdw UVyx Uvw+ XhZ6 fJ3J
- fjU1 lUnB xfpS
- xi6X;5;agBoAGIAaQByAGQALgBjAGgAbwBpAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtADsAawBnAGUAbgBlAC4AawBpAG0AQABzAGEAbQBzAHUAbgBnAC4AYwBvAG0AOwBsAGkAbgB1AHgALQBrAGUAcgBuAGUAbABAAHYAZwBlAHIALgBrAGUAcgBuAGUAbAAuAG8AcgBnADsAcgBqAHcAQABzAGkAcwBrAC4AcABsADsAcwB0AGEAYgBsAGUAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{22DE1EB9-94FC-48AC-8EA1-88890CE89982};agBoAGIAaQByAGQALgBjAGgAbwBpAEAAcwBhAG0AcwB1AG4AZwAuAGMAbwBtAA==;Thu,
- 04 Apr 2013 08:25:14
- GMT;WwBQAEEAVABDAEgAIAAzAC4AOAAtAHMAdABhAGIAbABlAF0AIABjAHAAdQBmAHIAZQBxADoAIABlAHgAeQBuAG8AcwA6ACAARwBlAHQAIABiAG8AbwB0AGkAbgBnACAAZgByAGUAcQAgAHYAYQBsAHUAZQAgAGkAbgAgAGUAeAB5AG4AbwBzAF8AYwBwAHUAZgByAGUAcQBfAGkAbgBpAHQA
-x-cr-puzzleid: {22DE1EB9-94FC-48AC-8EA1-88890CE89982}
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t8zI91vFrGBBjvuW1gsaea26F1wlc3i
-	8q45bBb9C3uZLBZsfMTowOrRt2UVo8ejxS2MHp83yQUwR3HZpKTmZJalFunbJXBl3Nh+k6ng
-	FFfF/dt72RsYf3F0MXJySAiYSFzePIUVwhaTuHBvPVsXIxeHkMAyRokbV14xwRSd2PMBrEhI
-	YBGjxLR+YYiiv4wS8za9ZwFJsAnoShxbvwWsSETAW+LUlF/MXYwcHMwCyRI7WnlBTCEBbonV
-	zUEgFZwCPBLr/nQyg9jCAjESTf9ngXWyCKhKtP3/xQRSzitgJ/HgqhhImFdAUOLH5Htgi5gF
-	tCTW7zzOBGHLS2xe8xZskYSAusSjv7oQ+60kTq++ywhRIiKx78U7RpCDJQT+sEoc+nSADeIr
-	U4lJO7+wQyQ+skvcXrmYBeIGAYlvkw+xQAyVldh0gBmiXlLi4IobLBMYpWYhOWkWkpNmITlp
-	FpLdCxhZVjGKphYkFxQnpReZ6BUn5haX5qXrJefnbmKExO+EHYz3DlgfYkwGWj+RWUo0OR8Y
-	/3kl8YbGZkYWpiamxkbmlmakCSuJ86q3WAcKCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYJy3
-	zjmq+uCqI7XhCot//bna//GYTqtLtVzMSzF7jtqoe5MP2TwPnbCvfq7eyhVhfkrLu80Vp3jw
-	vwpmXmIcdemIyD7urLdzTy5bKfcmKJPZ79grhm6tZyW2lYu/Ky01zYmfe2fTmjazkrCXHrNb
-	J728o/5g0aKbGgUa71Q/cJz5+P+41bZr9eVKLMUZiYZazEXFiQAshexV9QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPKsWRmVeSWpSXmKPExsVy+t9jAd1vFrGBBk9PGlssaea26F1wlc3i
-	8q45bBb9C3uZLBZsfMTowOrRt2UVo8ejxS2MHp83yQUwRzUw2mSkJqakFimk5iXnp2Tmpdsq
-	eQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYArVRSKEvMKQUKBSQWFyvp22GaEBripmsB
-	0xih6xsSBNdjZIAGEtYxZtzYfpOp4BRXxf3be9kbGH9xdDFyckgImEic2POBFcIWk7hwbz0b
-	iC0ksIhRYlq/cBcjF5D9l1Fi3qb3LCAJNgFdiWPrt4A1iAh4S5ya8ou5i5GDg1kgWWJHKy+I
-	KSTALbG6OQikglOAR2Ldn05mEFtYIEai6f8ssE4WAVWJtv+/mEDKeQXsJB5cFQMJ8woISvyY
-	fA9sEbOAlsT6nceZIGx5ic1r3oItkhBQl3j0Vxdiv5XE6dV3GSFKRCT2vXjHCHKwhMAfVolD
-	nw6wQXxlKjFp5xf2CYwis5CsmIVkxSwkK2YhmbWAkWUVo2hqQXJBcVJ6rqFecWJucWleul5y
-	fu4mRnByeCa1g3Flg8UhRgEORiUe3pX+MYFCrIllxZW5hxglOJiVRHjdeWIDhXhTEiurUovy
-	44tKc1KLDzEmAwNgIrOUaHI+MHHllcQbGpuYGVkamVkYmZibkyasJM57oNU6UEggPbEkNTs1
-	tSC1CGYLEwenVANj5NVb6zXPP9uYMoutWf38fr+ADx8v37ptesu1JpqlKkTgWUXfwrt9644+
-	+LbwrWxvatizr7pSsUvP31ra8myDjZFGxLKd1o4fzJV8VljI3NJcu1pA+vifEl232MVvZp4+
-	ce3E+kdPboQtjL6zoPTD9z2HZ6+ZtfFg54vAPz9Y16UtOnvIyqTmtJUSS3FGoqEWc1FxIgB4
-	YJ9fUgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 4 Apr 2013 04:27:26 -0400
+Date: Thu, 4 Apr 2013 10:26:53 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [RFC] Add implicit barriers to irqsave/restore class of functions
+Message-ID: <20130404082652.GA15261@ab42.lan>
+References: <20130403130340.GA13826@ab42.lan>
+ <1364994622-14110-1-git-send-email-christian.ruppert@abilis.com>
+ <515C2EC0.4090904@synopsys.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <515C2EC0.4090904@synopsys.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch looks like it should be in the 3.8-stable tree, should we apply
-it?
+Hi Vineet,
 
-------------------
+Just a short message to inform you that the test campaign on our RFC
+patch has run through successfully and we consider the patch stable
+enough for release to our customers. The main reason the barriers were
+added in this particular place is because other architectures do the
+same.
 
-From: "Jonghwan Choi <jhbird.choi@samsung.com>"
+I agree that the patch adding barriers in preempt_* is more in line with
+Thomas' comment than our RFC (which predates that comment) and we have
+also started a test campaign for that patch yesterday. I'll give an update
+directly in reply to the patch when that campaign has run through.
 
-Boot_freq is for saving booting freq. But exynos_cpufreq_cpu_init
-is called in hotplug. If boot_freq is existed in exynos_cpufreq_cpu_init,
-boot_freq could be changed.
+Greetings,
+  Christian
 
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
----
- drivers/cpufreq/exynos-cpufreq.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+On Wed, Apr 03, 2013 at 06:59:36PM +0530, Vineet Gupta wrote:
+> Hi Christian,
+> 
+> On 04/03/2013 06:40 PM, Christian Ruppert wrote:
+> > This patch adds implicit memory barriers to irqsave/restore functions of
+> > the ARC architecture port in line with what is done in other architectures.
+> >
+> > It seems to fix several seemingly unrelated issues in our platform but for
+> > the moment it is insufficiently tested (and might even be incomplete).
+> > Please comment.
+> 
+> I think this is not needed. Semantically we need barrier for spinlocks, not irq
+> save/restore - although spin locks are one of the primary users of irq
+> save/restore API.
+> 
+> So repeating what Thomas already said, the barrier already exists for
+> PREEMPT_COUNT, we need to make sure they are present for !PREEMPT_COUNT.
+> 
+> -Vineet
+> 
+> > Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+> > ---
+> >  arch/arc/include/asm/irqflags.h |    8 ++++----
+> >  1 files changed, 4 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/arch/arc/include/asm/irqflags.h b/arch/arc/include/asm/irqflags.h
+> > index ccd8480..c8147d1 100644
+> > --- a/arch/arc/include/asm/irqflags.h
+> > +++ b/arch/arc/include/asm/irqflags.h
+> > @@ -39,7 +39,7 @@ static inline long arch_local_irq_save(void)
+> >  	"	flag.nz %0		\n"
+> >  	: "=r"(temp), "=r"(flags)
+> >  	: "n"((STATUS_E1_MASK | STATUS_E2_MASK))
+> > -	: "cc");
+> > +	: "memory", "cc");
+> >  
+> >  	return flags;
+> >  }
+> > @@ -53,7 +53,7 @@ static inline void arch_local_irq_restore(unsigned long flags)
+> >  	__asm__ __volatile__(
+> >  	"	flag %0			\n"
+> >  	:
+> > -	: "r"(flags));
+> > +	: "r"(flags) : "memory");
+> >  }
+> >  
+> >  /*
+> > @@ -73,7 +73,7 @@ static inline void arch_local_irq_disable(void)
+> >  	"	and %0, %0, %1		\n"
+> >  	"	flag %0			\n"
+> >  	: "=&r"(temp)
+> > -	: "n"(~(STATUS_E1_MASK | STATUS_E2_MASK)));
+> > +	: "n"(~(STATUS_E1_MASK | STATUS_E2_MASK)) : "memory");
+> >  }
+> >  
+> >  /*
+> > @@ -85,7 +85,7 @@ static inline long arch_local_save_flags(void)
+> >  
+> >  	__asm__ __volatile__(
+> >  	"	lr  %0, [status32]	\n"
+> > -	: "=&r"(temp));
+> > +	: "=&r"(temp) : : "memory");
+> >  
+> >  	return temp;
+> >  }
+> 
 
-diff --git a/drivers/cpufreq/exynos-cpufreq.c
-b/drivers/cpufreq/exynos-cpufreq.c
-index 7012ea8..41fc550 100644
---- a/drivers/cpufreq/exynos-cpufreq.c
-+++ b/drivers/cpufreq/exynos-cpufreq.c
-@@ -222,8 +222,6 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy
-*policy)
- 
- 	cpufreq_frequency_table_get_attr(exynos_info->freq_table,
-policy->cpu);
- 
--	locking_frequency = exynos_getspeed(0);
--
- 	/* set the transition latency value */
- 	policy->cpuinfo.transition_latency = 100000;
- 
-@@ -288,6 +286,8 @@ static int __init exynos_cpufreq_init(void)
- 		goto err_vdd_arm;
- 	}
- 
-+	locking_frequency = exynos_getspeed(0);
-+
- 	register_pm_notifier(&exynos_cpufreq_nb);
- 
- 	if (cpufreq_register_driver(&exynos_driver)) {
 -- 
-1.7.9.5
-
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
