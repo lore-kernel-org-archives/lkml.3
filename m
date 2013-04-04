@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763631Ab3DDGZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 02:25:59 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:58707 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763615Ab3DDGZ5 (ORCPT
+	id S1763263Ab3DDG0w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 02:26:52 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51560 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763171Ab3DDG0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 02:25:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <1364985034.16520.12.camel@pasglop>
-References: <cover.1364229828.git.viresh.kumar@linaro.org>
-	<4180fd5b43906421fc155126e8b7bea5fb3ff375.1364229828.git.viresh.kumar@linaro.org>
-	<CAKohpo=LOJ3DfaGzCm6a6ev2+dNUgEpJd+04pGMhdSpkyZNR9A@mail.gmail.com>
-	<CAKohpomRMkKouiy+iJUiheTcPGCDVLbxppL5f4oc-WMu2E5T8g@mail.gmail.com>
-	<1364985034.16520.12.camel@pasglop>
-Date: Thu, 4 Apr 2013 11:55:56 +0530
-Message-ID: <CAKohpo=EPbGocbNaZcNtGuZy4Tst5jH4rPviQ6L=YuZceDnKMw@mail.gmail.com>
-Subject: Re: [PATCH 9/9] powerpc: cpufreq: move cpufreq driver to drivers/cpufreq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Olof Johansson <olof@lixom.net>, linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: arvind.chauhan@arm.com, Arnd Bergmann <arnd.bergmann@linaro.org>,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 4 Apr 2013 02:26:50 -0400
+Date: Thu, 4 Apr 2013 17:26:48 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Nathan Zimmer <nzimmer@sgi.com>
+Subject: linux-next: manual merge of the akpm tree with the vfs tree
+Message-Id: <20130404172648.27834d12cbb68338f4b89482@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__4_Apr_2013_17_26_48_+1100_mS6UWCiaj_Bi=Mh2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 April 2013 16:00, Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
-> On Wed, 2013-04-03 at 15:00 +0530, Viresh Kumar wrote:
->> On 31 March 2013 09:33, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+--Signature=_Thu__4_Apr_2013_17_26_48_+1100_mS6UWCiaj_Bi=Mh2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> > Benjamin/Paul/Olof,
->> >
->> > Any comments on this?
->>
->> Ping!!
->
-> I'm on vacation until end of April. No objection to the patch but
-> somebody needs to test it.
+Hi Andrew,
 
-Hi,
+Today's linux-next merge of the akpm tree got a conflict in
+fs/proc/generic.c between several commits from the vfs tree and commit
+"procfs: improve scaling in proc" from the akpm tree.
 
-Can somebody else from powerpc world give it a try?
+I just dropped the akpm tree patch (and the following
+"procfs-improve-scaling-in-proc-v5") as the conflicts are a bit complex.
 
-OR
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-@Rafael: Can we get this pushed in linux-next as is and then people would
-be forced to test it and in case there are any complains, i will fix them or
-you can revert it?
+--Signature=_Thu__4_Apr_2013_17_26_48_+1100_mS6UWCiaj_Bi=Mh2
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRXR0oAAoJEECxmPOUX5FEdg8P/j7TGaT1KEqyZkxb9eOZ6Nbr
+PERDLO2tioAtsHjsS/eAyg0EfnyxVruYiCg68RNx0+TcK91pHJderGJ2ZTJNyZI/
+CrbGY3WabqSI901omVKrrb3j5Yni9NNL0RpazhAT0/pFC1xioc4W2HwxwkKnSTl6
+qtOqWVlIgwX0I/MiVbsc4NTfQIO1sG2rIGess0dA77J+jsKAvrE7O6naprCcGSkq
+s+Dnq+jcPPfWu3eS9R8ZAc+Ik4ircMD0pXOPwKcewQKe3tTJWjv1YxMAElbKymx2
+CfRyHpiheWNFFqSSz4v0fw9haJFBECLdQ1HBvDtQqI51B6mV0KtEJPujjUtl05j5
+dLPqJ4116nctJMM1bHKgH5G4Tjwx4G9PfQdV0tZfp26/wW8AJzbyDwxfqcBoTRsV
+A+fwz2rFZah1fcQjPLaxmK01rYlyHQCxz66I6/A94QWSRMYTQODf8ft0SZKnZtKd
+oNvtSwn/Zu7UZ5J+mPvshXa+e1gXKfLPkloWWIp347udbObF8BdMws/WnSyFDVHn
+MIeYEqCKzf8blHw71RQxDBd8q72jB97cSxEzH+swSpo1wDwvMm6F7bVTflYpPXbK
+DNMjY+bBjSENtNuXleoSbPOs1rTLys+n33U6AF17IEK2Av6qM4i5r9Ry7qtDxR3F
+viPZSGKKyI8YuZdoEqg+
+=qMSw
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__4_Apr_2013_17_26_48_+1100_mS6UWCiaj_Bi=Mh2--
