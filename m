@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763878Ab3DDHC4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 03:02:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53719 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763862Ab3DDHCy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 03:02:54 -0400
-Date: Thu, 4 Apr 2013 00:02:53 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Nathan Zimmer <nzimmer@sgi.com>
-Subject: Re: linux-next: manual merge of the akpm tree with the vfs tree
-Message-Id: <20130404000253.2fc9c75d.akpm@linux-foundation.org>
-In-Reply-To: <20130403235634.6bc72c39.akpm@linux-foundation.org>
-References: <20130404172648.27834d12cbb68338f4b89482@canb.auug.org.au>
-	<20130403235634.6bc72c39.akpm@linux-foundation.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1763923Ab3DDHHE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 03:07:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50607 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1763907Ab3DDHHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 03:07:02 -0400
+Date: Thu, 4 Apr 2013 09:06:57 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: fix memcg_cache_name() to use cgroup_name()
+Message-ID: <20130404070657.GA29911@dhcp22.suse.cz>
+References: <1364373399-17397-1-git-send-email-mhocko@suse.cz>
+ <20130327145727.GD29052@cmpxchg.org>
+ <20130327151104.GK16579@dhcp22.suse.cz>
+ <51530E1E.3010100@parallels.com>
+ <20130327153220.GL16579@dhcp22.suse.cz>
+ <20130327173223.GQ16579@dhcp22.suse.cz>
+ <20130328074814.GA3018@dhcp22.suse.cz>
+ <20130402082648.GB24345@dhcp22.suse.cz>
+ <20130403213334.GE3411@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130403213334.GE3411@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Apr 2013 23:56:34 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Thu, 4 Apr 2013 17:26:48 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Wed 03-04-13 14:33:34, Tejun Heo wrote:
+> On Tue, Apr 02, 2013 at 10:26:48AM +0200, Michal Hocko wrote:
+> > Tejun,
+> > could you take this one please?
 > 
-> > Hi Andrew,
-> > 
-> > Today's linux-next merge of the akpm tree got a conflict in
-> > fs/proc/generic.c between several commits from the vfs tree and commit
-> > "procfs: improve scaling in proc" from the akpm tree.
-> > 
-> > I just dropped the akpm tree patch (and the following
-> > "procfs-improve-scaling-in-proc-v5") as the conflicts are a bit complex.
-> 
-> Well perhaps the vfs tree should start paying some attention to the
-> rest of the world, particularly after -rc5.
+> Aye aye, applied to cgroup/for-3.10.
 
-I can't even find this "lift sb_start_write() out of ->write()".  Not on fsdevel,
-not on lkml.  What the heck is it and why was it so important?
+Thanks!
+-- 
+Michal Hocko
+SUSE Labs
