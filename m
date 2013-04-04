@@ -1,108 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761463Ab3DDOEe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 10:04:34 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:43988 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760687Ab3DDOEc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 10:04:32 -0400
-Message-ID: <515D882E.6040001@oracle.com>
-Date: Thu, 04 Apr 2013 10:03:26 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130310 Thunderbird/17.0.4
+	id S1761483Ab3DDOGZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 10:06:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23598 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760684Ab3DDOGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 10:06:23 -0400
+Date: Thu, 4 Apr 2013 16:06:18 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Alexander Graf <agraf@suse.de>
+Cc: Gleb Natapov <gleb@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Christoffer Dall <c.dall@virtualopensystems.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH RFC] kvm: add PV MMIO EVENTFD
+Message-ID: <20130404130618.GE6467@redhat.com>
+References: <20130404104846.GA6227@redhat.com>
+ <6D40C5F1-849E-4F32-B391-E1A1BFA8C59D@suse.de>
+ <20130404120825.GD17919@redhat.com>
+ <959E147D-EB7B-4F4B-9F84-4F1BBA98DEF8@suse.de>
+ <20130404123806.GG17919@redhat.com>
+ <EF153515-9835-4FB9-B6BC-73D0BDC86492@suse.de>
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: David Rientjes <rientjes@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Mel Gorman <mgorman@suse.de>,
-        Dave Jones <davej@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: mm: BUG in do_huge_pmd_wp_page
-References: <51559150.3040407@oracle.com>
-In-Reply-To: <51559150.3040407@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <EF153515-9835-4FB9-B6BC-73D0BDC86492@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping? I'm seeing a whole bunch of these with current -next.
+On Thu, Apr 04, 2013 at 02:39:51PM +0200, Alexander Graf wrote:
+> 
+> On 04.04.2013, at 14:38, Gleb Natapov wrote:
+> 
+> > On Thu, Apr 04, 2013 at 02:32:08PM +0200, Alexander Graf wrote:
+> >> 
+> >> On 04.04.2013, at 14:08, Gleb Natapov wrote:
+> >> 
+> >>> On Thu, Apr 04, 2013 at 01:57:34PM +0200, Alexander Graf wrote:
+> >>>> 
+> >>>> On 04.04.2013, at 12:50, Michael S. Tsirkin wrote:
+> >>>> 
+> >>>>> With KVM, MMIO is much slower than PIO, due to the need to
+> >>>>> do page walk and emulation. But with EPT, it does not have to be: we
+> >>>>> know the address from the VMCS so if the address is unique, we can look
+> >>>>> up the eventfd directly, bypassing emulation.
+> >>>>> 
+> >>>>> Add an interface for userspace to specify this per-address, we can
+> >>>>> use this e.g. for virtio.
+> >>>>> 
+> >>>>> The implementation adds a separate bus internally. This serves two
+> >>>>> purposes:
+> >>>>> - minimize overhead for old userspace that does not use PV MMIO
+> >>>>> - minimize disruption in other code (since we don't know the length,
+> >>>>> devices on the MMIO bus only get a valid address in write, this
+> >>>>> way we don't need to touch all devices to teach them handle
+> >>>>> an dinvalid length)
+> >>>>> 
+> >>>>> At the moment, this optimization is only supported for EPT on x86 and
+> >>>>> silently ignored for NPT and MMU, so everything works correctly but
+> >>>>> slowly.
+> >>>>> 
+> >>>>> TODO: NPT, MMU and non x86 architectures.
+> >>>>> 
+> >>>>> The idea was suggested by Peter Anvin.  Lots of thanks to Gleb for
+> >>>>> pre-review and suggestions.
+> >>>>> 
+> >>>>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> >>>> 
+> >>>> This still uses page fault intercepts which are orders of magnitudes slower than hypercalls. Why don't you just create a PV MMIO hypercall that the guest can use to invoke MMIO accesses towards the host based on physical addresses with explicit length encodings?
+> >>>> 
+> >>> It is slower, but not an order of magnitude slower. It become faster
+> >>> with newer HW.
+> >>> 
+> >>>> That way you simplify and speed up all code paths, exceeding the speed of PIO exits even. It should also be quite easily portable, as all other platforms have hypercalls available as well.
+> >>>> 
+> >>> We are trying to avoid PV as much as possible (well this is also PV,
+> >>> but not guest visible
+> >> 
+> >> Also, how is this not guest visible? Who sets KVM_IOEVENTFD_FLAG_PV_MMIO? The comment above its definition indicates that the guest does so, so it is guest visible.
+> >> 
+> > QEMU sets it.
+> 
+> How does QEMU know?
+> 
+> > 
+> >> +/*
+> >> + * PV_MMIO - Guest can promise us that all accesses touching this address
+> >> + * are writes of specified length, starting at the specified address.
+> >> + * If not - it's a Guest bug.
+> >> + * Can not be used together with either PIO or DATAMATCH.
+> >> + */
+> >> 
+> > Virtio spec will state that access to a kick register needs to be of
+> > specific length. This is reasonable thing for HW to ask.
+> 
+> This is a spec change. So the guest would have to indicate that it adheres to a newer spec. Thus it's a guest visible change.
+> 
+> 
+> Alex
+
+To use MMIO is a spec change, yes.
+What Gleb refers to is that the optimization is not guest visible.
+If you have hardware that can quickly decode MMIO you can
+drop the PV ioctl from qemu without changing guests.
 
 
-Thanks,
-Sasha
-
-On 03/29/2013 09:04 AM, Sasha Levin wrote:
-> Hi all,
-> 
-> While fuzzing with trinity inside a KVM tools guest running latest -next kernel,
-> I've stumbled on the following.
-> 
-> It seems that the code in do_huge_pmd_wp_page() was recently modified in
-> "thp: do_huge_pmd_wp_page(): handle huge zero page".
-> 
-> Here's the trace:
-> 
-> [  246.244708] BUG: unable to handle kernel paging request at ffff88009c422000
-> [  246.245743] IP: [<ffffffff81a0a795>] copy_page_rep+0x5/0x10
-> [  246.250569] PGD 7232067 PUD 7235067 PMD bfefe067 PTE 800000009c422060
-> [  246.251529] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [  246.252325] Dumping ftrace buffer:
-> [  246.252791]    (ftrace buffer empty)
-> [  246.252869] Modules linked in:
-> [  246.252869] CPU 3
-> [  246.252869] Pid: 11985, comm: trinity-child12 Tainted: G        W    3.9.0-rc4-next-20130328-sasha-00014-g91a3267 #319
-> [  246.252869] RIP: 0010:[<ffffffff81a0a795>]  [<ffffffff81a0a795>] copy_page_rep+0x5/0x10
-> [  246.252869] RSP: 0018:ffff88000015bc40  EFLAGS: 00010286
-> [  246.252869] RAX: ffff88000015bfd8 RBX: 0000000002710880 RCX: 0000000000000200
-> [  246.252869] RDX: 0000000000000000 RSI: ffff88009c422000 RDI: ffff88009a422000
-> [  246.252869] RBP: ffff88000015bc98 R08: 0000000002718000 R09: 0000000000000001
-> [  246.252869] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880000000000
-> [  246.252869] R13: ffff88000015bfd8 R14: ffff88000015bfd8 R15: fffffffffff80000
-> [  246.252869] FS:  00007f53db93f700(0000) GS:ffff8800bba00000(0000) knlGS:0000000000000000
-> [  246.252869] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [  246.252869] CR2: ffff88009c422000 CR3: 0000000000159000 CR4: 00000000000406e0
-> [  246.252869] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  246.252869] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [  246.252869] Process trinity-child12 (pid: 11985, threadinfo ffff88000015a000, task ffff88009c60b000)
-> [  246.252869] Stack:
-> [  246.252869]  ffffffff81234aae ffff88000015bc88 ffffffff81273639 0000000000a00000
-> [  246.252869]  0000000002718000 ffff8800ab36d050 ffff880000153800 ffffea0002690000
-> [  246.252869]  0000000000a00000 ffff8800ab36d000 ffffea0002710000 ffff88000015bd48
-> [  246.252869] Call Trace:
-> [  246.252869]  [<ffffffff81234aae>] ? copy_user_huge_page+0x1de/0x240
-> [  246.252869]  [<ffffffff81273639>] ? mem_cgroup_charge_common+0xa9/0xc0
-> [  246.252869]  [<ffffffff8126b4d7>] do_huge_pmd_wp_page+0x9f7/0xc60
-> [  246.252869]  [<ffffffff81a0acd9>] ? __const_udelay+0x29/0x30
-> [  246.252869]  [<ffffffff8123364e>] handle_mm_fault+0x26e/0x650
-> [  246.252869]  [<ffffffff8117dc1a>] ? __lock_is_held+0x5a/0x80
-> [  246.252869]  [<ffffffff83db3814>] ? __do_page_fault+0x514/0x5e0
-> [  246.252869]  [<ffffffff83db3870>] __do_page_fault+0x570/0x5e0
-> [  246.252869]  [<ffffffff811c6500>] ? rcu_eqs_exit_common+0x60/0x260
-> [  246.252869]  [<ffffffff811c740e>] ? rcu_eqs_enter_common+0x33e/0x3b0
-> [  246.252869]  [<ffffffff811c679c>] ? rcu_eqs_exit+0x9c/0xb0
-> [  246.252869]  [<ffffffff83db3912>] do_page_fault+0x32/0x50
-> [  246.252869]  [<ffffffff83db2ef0>] do_async_page_fault+0x30/0xc0
-> [  246.252869]  [<ffffffff83db01e8>] async_page_fault+0x28/0x30
-> [  246.252869] Code: 90 90 90 90 90 90 9c fa 65 48 3b 06 75 14 65 48 3b 56 08 75 0d 65 48 89 1e 65 48 89 4e 08 9d b0 01 c3 9d 30
-> c0 c3 b9 00 02 00 00 <f3> 48 a5 c3 0f 1f 80 00 00 00 00 eb ee 66 66 66 90 66 66 66 90
-> [  246.252869] RIP  [<ffffffff81a0a795>] copy_page_rep+0x5/0x10
-> [  246.252869]  RSP <ffff88000015bc40>
-> [  246.252869] CR2: ffff88009c422000
-> [  246.252869] ---[ end trace 09fbe37b108d5766 ]---
-> 
-> And this is the code:
-> 
->         if (is_huge_zero_pmd(orig_pmd))
->                 clear_huge_page(new_page, haddr, HPAGE_PMD_NR);
->         else
->                 copy_user_huge_page(new_page, page, haddr, vma, HPAGE_PMD_NR); <--- this
-> 
-> 
-> Thanks,
-> Sasha
-> 
-
+-- 
+MST
