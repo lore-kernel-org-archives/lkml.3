@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932678Ab3DDCBp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 22:01:45 -0400
+	id S932738Ab3DDCBy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 22:01:54 -0400
 Received: from mga14.intel.com ([143.182.124.37]:45838 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761964Ab3DDCBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 22:01:43 -0400
+	id S932691Ab3DDCBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 22:01:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,404,1363158000"; 
-   d="scan'208";a="280534001"
+   d="scan'208";a="280534100"
 From: Alex Shi <alex.shi@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
@@ -20,9 +20,9 @@ Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
         rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
         tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
         riel@redhat.com
-Subject: [patch v7 03/21] sched: add sched balance policies in kernel
-Date: Thu,  4 Apr 2013 10:00:44 +0800
-Message-Id: <1365040862-8390-4-git-send-email-alex.shi@intel.com>
+Subject: [patch v7 05/21] sched: log the cpu utilization at rq
+Date: Thu,  4 Apr 2013 10:00:46 +0800
+Message-Id: <1365040862-8390-6-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1365040862-8390-1-git-send-email-alex.shi@intel.com>
 References: <1365040862-8390-1-git-send-email-alex.shi@intel.com>
@@ -30,57 +30,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current scheduler behavior is just consider for larger performance
-of system. So it try to spread tasks on more cpu sockets and cpu cores
+The cpu's utilization is to measure how busy is the cpu.
+        util = cpu_rq(cpu)->avg.runnable_avg_sum * SCHED_POEWR_SCALE
+                / cpu_rq(cpu)->avg.runnable_avg_period;
 
-To adding the consideration of power awareness, the patchset adds
-a powersaving scheduler policy. It will use runnable load util in
-scheduler balancing. The current scheduling is taken as performance
-policy.
+Since the util is no more than 1, we scale its value with 1024, same as
+SCHED_POWER_SCALE and set the FULL_UTIL as 1024.
 
-performance: the current scheduling behaviour, try to spread tasks
-                on more CPU sockets or cores. performance oriented.
-powersaving: will pack tasks into few sched group until all LCPU in the
-                group is full, power oriented.
+In later power aware scheduling, we are sensitive for how busy of the
+cpu. Since as to power consuming, it is tight related with cpu busy
+time.
 
-The incoming patches will enable powersaving scheduling in CFS.
+BTW, rq->util can be used for any purposes if needed, not only power
+scheduling.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/fair.c  | 3 +++
- kernel/sched/sched.h | 5 +++++
- 2 files changed, 8 insertions(+)
+ include/linux/sched.h | 2 +-
+ kernel/sched/debug.c  | 1 +
+ kernel/sched/fair.c   | 5 +++++
+ kernel/sched/sched.h  | 4 ++++
+ 4 files changed, 11 insertions(+), 1 deletion(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5a4cf37..226a515 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -793,7 +793,7 @@ enum cpu_idle_type {
+ #define SCHED_LOAD_SCALE	(1L << SCHED_LOAD_SHIFT)
+ 
+ /*
+- * Increase resolution of cpu_power calculations
++ * Increase resolution of cpu_power and rq->util calculations
+  */
+ #define SCHED_POWER_SHIFT	10
+ #define SCHED_POWER_SCALE	(1L << SCHED_POWER_SHIFT)
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 75024a6..f5db759 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -311,6 +311,7 @@ do {									\
+ 
+ 	P(ttwu_count);
+ 	P(ttwu_local);
++	P(util);
+ 
+ #undef P
+ #undef P64
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 2881d42..04dd319 100644
+index 2e49c3f..7124244 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -6093,6 +6093,9 @@ static unsigned int get_rr_interval_fair(struct rq *rq, struct task_struct *task
- 	return rr_interval;
+@@ -1495,8 +1495,13 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+ 
+ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+ {
++	u32 period;
+ 	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
+ 	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
++
++	period = rq->avg.runnable_avg_period ? rq->avg.runnable_avg_period : 1;
++	rq->util = (u64)(rq->avg.runnable_avg_sum << SCHED_POWER_SHIFT)
++				/ period;
  }
  
-+/* The default scheduler policy is 'performance'. */
-+int __read_mostly sched_balance_policy = SCHED_POLICY_PERFORMANCE;
-+
- /*
-  * All the scheduling class methods:
-  */
+ /* Add the load generated by se into cfs_rq's child load-average */
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 7f36024f..804ee41 100644
+index 804ee41..8682110 100644
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
-@@ -10,6 +10,11 @@
+@@ -351,6 +351,9 @@ extern struct root_domain def_root_domain;
  
- extern __read_mostly int scheduler_running;
+ #endif /* CONFIG_SMP */
  
-+#define SCHED_POLICY_PERFORMANCE	(0x1)
-+#define SCHED_POLICY_POWERSAVING	(0x2)
-+
-+extern int __read_mostly sched_balance_policy;
++/* full cpu utilization */
++#define FULL_UTIL	SCHED_POWER_SCALE
 +
  /*
-  * Convert user-nice values [ -20 ... 0 ... 19 ]
-  * to static priority [ MAX_RT_PRIO..MAX_PRIO-1 ],
+  * This is the main, per-CPU runqueue data structure.
+  *
+@@ -482,6 +485,7 @@ struct rq {
+ #endif
+ 
+ 	struct sched_avg avg;
++	unsigned int util;
+ };
+ 
+ static inline int cpu_of(struct rq *rq)
 -- 
 1.7.12
 
