@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933005Ab3DDHBf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 03:01:35 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:62953 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763858Ab3DDHBd (ORCPT
+	id S1763878Ab3DDHC4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 03:02:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53719 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763862Ab3DDHCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 03:01:33 -0400
-From: Hong Zhiguo <honkiko@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@redhat.com, peterz@infradead.org
-Subject: [PATCH] lockdep: remove unneccesary assignment in loop and the viarable
-Date: Thu,  4 Apr 2013 15:01:21 +0800
-Message-Id: <1365058881-4044-1-git-send-email-honkiko@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 4 Apr 2013 03:02:54 -0400
+Date: Thu, 4 Apr 2013 00:02:53 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Nathan Zimmer <nzimmer@sgi.com>
+Subject: Re: linux-next: manual merge of the akpm tree with the vfs tree
+Message-Id: <20130404000253.2fc9c75d.akpm@linux-foundation.org>
+In-Reply-To: <20130403235634.6bc72c39.akpm@linux-foundation.org>
+References: <20130404172648.27834d12cbb68338f4b89482@canb.auug.org.au>
+	<20130403235634.6bc72c39.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Hong Zhiguo <honkiko@gmail.com>
----
- kernel/lockdep.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+On Wed, 3 Apr 2013 23:56:34 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
 
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 259db20..0f26597 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -2000,7 +2000,7 @@ static inline int lookup_chain_cache(struct task_struct *curr,
- 	struct lock_class *class = hlock_class(hlock);
- 	struct list_head *hash_head = chainhashentry(chain_key);
- 	struct lock_chain *chain;
--	struct held_lock *hlock_curr, *hlock_next;
-+	struct held_lock *hlock_curr;
- 	int i, j;
- 
- 	/*
-@@ -2057,12 +2057,10 @@ cache_hit:
- 	chain->chain_key = chain_key;
- 	chain->irq_context = hlock->irq_context;
- 	/* Find the first held_lock of current chain */
--	hlock_next = hlock;
- 	for (i = curr->lockdep_depth - 1; i >= 0; i--) {
- 		hlock_curr = curr->held_locks + i;
--		if (hlock_curr->irq_context != hlock_next->irq_context)
-+		if (hlock_curr->irq_context != hlock->irq_context)
- 			break;
--		hlock_next = hlock;
- 	}
- 	i++;
- 	chain->depth = curr->lockdep_depth + 1 - i;
--- 
-1.7.10.4
+> On Thu, 4 Apr 2013 17:26:48 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> 
+> > Hi Andrew,
+> > 
+> > Today's linux-next merge of the akpm tree got a conflict in
+> > fs/proc/generic.c between several commits from the vfs tree and commit
+> > "procfs: improve scaling in proc" from the akpm tree.
+> > 
+> > I just dropped the akpm tree patch (and the following
+> > "procfs-improve-scaling-in-proc-v5") as the conflicts are a bit complex.
+> 
+> Well perhaps the vfs tree should start paying some attention to the
+> rest of the world, particularly after -rc5.
 
+I can't even find this "lift sb_start_write() out of ->write()".  Not on fsdevel,
+not on lkml.  What the heck is it and why was it so important?
