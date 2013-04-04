@@ -1,84 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758405Ab3DDL3w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 07:29:52 -0400
-Received: from mga14.intel.com ([143.182.124.37]:21497 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758322Ab3DDL3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 07:29:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,408,1363158000"; 
-   d="scan'208";a="222762614"
-Message-ID: <515D6568.7000702@intel.com>
-Date: Thu, 04 Apr 2013 14:35:04 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1758615Ab3DDLck (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 07:32:40 -0400
+Received: from alvesta.synopsys.com ([198.182.60.77]:47880 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758370Ab3DDLcj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 07:32:39 -0400
+Message-ID: <515D64C6.9050903@synopsys.com>
+Date: Thu, 4 Apr 2013 17:02:22 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Sergey Yanovich <ynvich@gmail.com>
-CC: Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH v2] wait while adding MMC host to ensure root mounts
-References: <1363223183-3772-1-git-send-email-ynvich@gmail.com>   <1363224194-7366-1-git-send-email-ynvich@gmail.com>   <87620jmkoe.fsf@octavius.laptop.org>   <CAPDyKFp27MUOjhydLXf92vN3cua=XcX4oTJnMGfOJPpBhtwM8Q@mail.gmail.com>   <87ppylf429.fsf@octavius.laptop.org> <515ADEDE.3050707@intel.com>  <1364912689.3399.7.camel@host5.opentask.org> <515D1F4E.1080306@intel.com> <1365073152.9806.26.camel@host5.omatika.ru>
-In-Reply-To: <1365073152.9806.26.camel@host5.omatika.ru>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+To: <oskar.andero@sonymobile.com>
+CC: <linux-kernel@vger.kernel.org>, <masami.hiramatsu.pt@hitachi.com>,
+        <davem@davemloft.net>, <anil.s.keshavamurthy@intel.com>,
+        <ananth@in.ibm.com>, <radovan.lekanovic@sonymobile.com>,
+        <bjorn.davidsson@sonymobile.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH 0/4] kprobes: split blacklist into common and arch
+References: <1364977734-32267-1-git-send-email-oskar.andero@sonymobile.com>
+In-Reply-To: <1364977734-32267-1-git-send-email-oskar.andero@sonymobile.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.12.197.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/13 13:59, Sergey Yanovich wrote:
-> On Thu, 2013-04-04 at 09:35 +0300, Adrian Hunter wrote:
->> No,  I am booting from eMMC.
+Hi Oskar,
+
+On 04/03/2013 01:58 PM, oskar.andero@sonymobile.com wrote:
+> Hi,
 > 
-> Well, in this case you should be aware, that your system is not
-> concurrency-safe without the patch. It may or may not boot each time
-> depending on the large number of factors.
-
-Not true.  You know nothing of my boot time characteristics.
-
+> This is a slight rework of the following patches which I posted earlier:
+> [PATCH] Kprobes blacklist: Conditionally add x86-specific symbols
+> [PATCH] delay blacklist symbol lookup until we actually need it
 > 
->>> Maybe introduce mmc_is_hosting_root() and do something like:
->>>
->>> -	mmc_flush_scheduled_work();
->>> +	if (mmc_is_hosting_root())
->>> +		mmc_flush_scheduled_work();
->>
->> No, I am booting from eMMC.  Perhaps a host capability:
->>
->> 	if (host->caps2 & MMC_CAP2_ROOTWAIT)
->> 		mmc_flush_scheduled_work();
->>
+> This serie includes a patch that moves the architecture dependent black points
+> to the arch/ directory and the x86 patch was modified to follow that patch.
 > 
-> Neither my variant, nor yours will help to handle the increased boot
-> time.
-
-Not true.  I would not set MMC_CAP2_ROOTWAIT.
-
-> The root cause is that probing several devices is done sequentially and
-> mmc was reporting end of its probing before it was actually happening.
-
-Not true.  The probe of the MMC Host Controller finishes when the host
-controller is initialized.
-
-> My patch makes mmc report end of probing on-time. The correct way to fix
-> the additional delay, my patch introduces, is to rewrite the probing to
-> be parallel instead of sequential. I understand that it is much easier
-> just to revert the patch.
+> -Oskar
 > 
-> If the patch is reverted, something like this somewhere in
-> 'init/do_mounts.c' could conditionally activate 'root_wait':
+> Björn Davidsson (1):
+>   kprobes: move x86-specific blacklist symbols to arch directory
 > 
-> 	if (mmc_is_hosting_root())
-> 		root_wait = 1;
+> Oskar Andero (2):
+>   kprobes: split blacklist into common and arch
+>   kprobes: replace printk with pr_-functions
 > 
-> IMHO this is wrong and my patch is right, but better this than broken
-> mmc boot.
+> Toby Collett (1):
+>   kprobes: delay blacklist symbol lookup until we actually need it
+> 
+>  arch/arc/kernel/kprobes.c      |   3 +
+>  arch/arm/kernel/kprobes.c      |   2 +
+>  arch/avr32/kernel/kprobes.c    |   3 +
+>  arch/ia64/kernel/kprobes.c     |   3 +
+>  arch/mips/kernel/kprobes.c     |   3 +
+>  arch/mn10300/kernel/kprobes.c  |   2 +
+>  arch/powerpc/kernel/kprobes.c  |   3 +
+>  arch/s390/kernel/kprobes.c     |   3 +
+>  arch/sh/kernel/kprobes.c       |   3 +
+>  arch/sparc/kernel/kprobes.c    |   3 +
+>  arch/x86/kernel/kprobes/core.c |   7 ++
+>  kernel/kprobes.c               | 149 ++++++++++++++++++++++++++---------------
+>  12 files changed, 130 insertions(+), 54 deletions(-)
+> 
 
-No.  Your patch is not right for my platform.
+For any arch changes, however trivial they might be, you need to CC the respective
+maintainers, or atleast post the patches on linux-arch so we know what's going on !
 
+
+Thx,
+-Vineet
