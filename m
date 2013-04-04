@@ -1,93 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762405Ab3DDOz1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 10:55:27 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:45610 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762388Ab3DDOzY (ORCPT
+	id S1762360Ab3DDOzM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 10:55:12 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:19222 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762235Ab3DDOzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 10:55:24 -0400
-Date: Thu, 4 Apr 2013 07:55:14 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PATCH] workqueue: avoid false negative WARN_ON() in
- destroy_workqueue()
-Message-ID: <20130404145514.GJ9425@htj.dyndns.org>
-References: <1365041143-3088-1-git-send-email-laijs@cn.fujitsu.com>
- <1365041143-3088-7-git-send-email-laijs@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365041143-3088-7-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 4 Apr 2013 10:55:08 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>, Waiman Long <Waiman.Long@hp.com>,
+        linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>
+Subject: [PATCH RFC 1/3] mutex: Make more scalable by doing less atomic operations
+Date: Thu,  4 Apr 2013 10:54:16 -0400
+Message-Id: <1365087258-7169-2-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1365087258-7169-1-git-send-email-Waiman.Long@hp.com>
+References: <1365087258-7169-1-git-send-email-Waiman.Long@hp.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 5c529597e922c26910fe49b8d5f93aeaca9a2415 Mon Sep 17 00:00:00 2001
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-Date: Thu, 4 Apr 2013 10:05:38 +0800
+In the __mutex_lock_common() function, an initial entry into
+the lock slow path will cause two atomic_xchg instructions to be
+issued. Together with the atomic decrement in the fast path, a total
+of three atomic read-modify-write instructions will be issued in
+rapid succession. This can cause a lot of cache bouncing when many
+tasks are trying to acquire the mutex at the same time.
 
-destroy_workqueue() performs several sanity checks before proceeding
-with destruction of a workqueue.  One of the checks verifies that
-refcnt of each pwq (pool_workqueue) is over 1 as at that point there
-should be no in-flight work items and the only holder of pwq refs is
-the workqueue itself.
+This patch will reduce the number of atomic_xchg instructions used by
+checking the counter value first before issuing the instruction. The
+atomic_read() function is just a simple memory read. The atomic_xchg()
+function, on the other hand, can be up to 2 order of magnitude or even
+more in cost when compared with atomic_read(). By using atomic_read()
+to check the value first before calling atomic_xchg(), we can avoid a
+lot of unnecessary cache coherency traffic. The only downside with this
+change is that a task on the slow path will have a tiny bit
+less chance of getting the mutex when competing with another task
+in the fast path.
 
-This worked fine as a workqueue used to hold only one reference to its
-pwqs; however, since 4c16bd327c ("workqueue: implement NUMA affinity
-for unbound workqueues"), a workqueue may hold multiple references to
-its default pwq triggering this sanity check spuriously.
+The same is true for the atomic_cmpxchg() function in the
+mutex-spin-on-owner loop. So an atomic_read() is also performed before
+calling atomic_cmpxchg().
 
-Fix it by not triggering the pwq->refcnt assertion on default pwqs.
+The mutex locking and unlocking code for the x86 architecture can allow
+any negative number to be used in the mutex count to indicate that some
+tasks are waiting for the mutex. I am not so sure if that is the case
+for the other architectures. So the default is to avoid atomic_xchg()
+if the count has already been set to -1. For x86, the check is modified
+to include all negative numbers to cover a larger case.
 
-An example spurious WARN trigger follows.
+The following table shows the scalability data on an 8-node 80-core
+Westmere box with a 3.7.10 kernel. The numactl command is used to
+restrict the running of the high_systime workloads to 1/2/4/8 nodes
+with hyperthreading on and off.
 
- WARNING: at kernel/workqueue.c:4201 destroy_workqueue+0x6a/0x13e()
- Hardware name: 4286C12
- Modules linked in: sdhci_pci sdhci mmc_core usb_storage i915 drm_kms_helper drm i2c_algo_bit i2c_core video
- Pid: 361, comm: umount Not tainted 3.9.0-rc5+ #29
- Call Trace:
-  [<c04314a7>] warn_slowpath_common+0x7c/0x93
-  [<c04314e0>] warn_slowpath_null+0x22/0x24
-  [<c044796a>] destroy_workqueue+0x6a/0x13e
-  [<c056dc01>] ext4_put_super+0x43/0x2c4
-  [<c04fb7b8>] generic_shutdown_super+0x4b/0xb9
-  [<c04fb848>] kill_block_super+0x22/0x60
-  [<c04fb960>] deactivate_locked_super+0x2f/0x56
-  [<c04fc41b>] deactivate_super+0x2e/0x31
-  [<c050f1e6>] mntput_no_expire+0x103/0x108
-  [<c050fdce>] sys_umount+0x2a2/0x2c4
-  [<c050fe0e>] sys_oldumount+0x1e/0x20
-  [<c085ba4d>] sysenter_do_call+0x12/0x38
++-----------------+------------------+------------------+----------+
+|  Configuration  | Mean Transaction | Mean Transaction | % Change |
+|		  |  Rate w/o patch  | Rate with patch  |	   |
++-----------------+------------------------------------------------+
+|		  |              User Range 1100 - 2000		   |
++-----------------+------------------------------------------------+
+| 8 nodes, HT on  |      36980       |      148590      | +301.8%  |
+| 8 nodes, HT off |      42799       |      145011      | +238.8%  |
+| 4 nodes, HT on  |	 61318       |      118445      |  +51.1%  |
+| 4 nodes, HT off |     158481       |      158592      |   +0.1%  |
+| 2 nodes, HT on  |     180602       |      173967      |   -3.7%  |
+| 2 nodes, HT off |     198409       |      198073      |   -0.2%  |
+| 1 node , HT on  |     149042       |      147671      |   -0.9%  |
+| 1 node , HT off |     126036       |      126533      |   +0.4%  |
++-----------------+------------------------------------------------+
+|		  |              User Range 200 - 1000		   |
++-----------------+------------------------------------------------+
+| 8 nodes, HT on  |      41525       |      122349      | +194.6%  |
+| 8 nodes, HT off |      49866       |      124032      | +148.7%  |
+| 4 nodes, HT on  |	 66409       |      106984      |  +61.1%  |
+| 4 nodes, HT off |     119880       |      130508      |   +8.9%  |
+| 2 nodes, HT on  |     138003       |      133948      |   -2.9%  |
+| 2 nodes, HT off |     132792       |      131997      |   -0.6%  |
+| 1 node , HT on  |     116593       |      115859      |   -0.6%  |
+| 1 node , HT off |     104499       |      104597      |   +0.1%  |
++-----------------+------------------+------------------+----------+
 
-tj: Rewrote description.
+AIM7 benchmark run has a pretty large run-to-run variance due to random
+nature of the subtests executed. So a difference of less than +-5%
+may not be really significant.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+This patch improves high_systime workload performance at 4 nodes
+and up by maintaining transaction rates without significant drop-off
+at high node count.  The patch has practically no impact on 1 and 2
+nodes system.
+
+The table below shows the percentage time (as reported by perf
+record -a -s -g) spent on the __mutex_lock_slowpath() function by
+the high_systime workload at 1500 users for 2/4/8-node configurations
+with hyperthreading off.
+
++---------------+-----------------+------------------+---------+
+| Configuration | %Time w/o patch | %Time with patch | %Change |
++---------------+-----------------+------------------+---------+
+|    8 nodes    |      65.34%     |      0.69%       |  -99%   |
+|    4 nodes    |       8.70%	  |      1.02%	     |  -88%   |
+|    2 nodes    |       0.41%     |      0.32%       |  -22%   |
++---------------+-----------------+------------------+---------+
+
+It is obvious that the dramatic performance improvement at 8
+nodes was due to the drastic cut in the time spent within the
+__mutex_lock_slowpath() function.
+
+The table below show the improvements in other AIM7 workloads (at 8
+nodes, hyperthreading off).
+
++--------------+---------------+----------------+-----------------+
+|   Workload   | mean % change | mean % change  | mean % change   |
+|              | 10-100 users  | 200-1000 users | 1100-2000 users |
++--------------+---------------+----------------+-----------------+
+| alltests     |     +0.6%     |   +104.2%      |   +185.9%       |
+| five_sec     |     +1.9%     |     +0.9%      |     +0.9%       |
+| fserver      |     +1.4%     |     -7.7%      |     +5.1%       |
+| new_fserver  |     -0.5%     |     +3.2%      |     +3.1%       |
+| shared       |    +13.1%     |   +146.1%      |   +181.5%       |
+| short        |     +7.4%     |     +5.0%      |     +4.2%       |
++--------------+---------------+----------------+-----------------+
+
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+Reviewed-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
 ---
-Applied to wq/for-3.10.
+ arch/x86/include/asm/mutex.h |   16 ++++++++++++++++
+ kernel/mutex.c               |    9 ++++++---
+ kernel/mutex.h               |    8 ++++++++
+ 3 files changed, 30 insertions(+), 3 deletions(-)
 
-Thanks.
-
- kernel/workqueue.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index dd2a4c4..c273376 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -4201,7 +4201,7 @@ void destroy_workqueue(struct workqueue_struct *wq)
- 			}
- 		}
+diff --git a/arch/x86/include/asm/mutex.h b/arch/x86/include/asm/mutex.h
+index 7d3a482..aa6a3ec 100644
+--- a/arch/x86/include/asm/mutex.h
++++ b/arch/x86/include/asm/mutex.h
+@@ -3,3 +3,19 @@
+ #else
+ # include <asm/mutex_64.h>
+ #endif
++
++#ifndef	__ASM_MUTEX_H
++#define	__ASM_MUTEX_H
++
++#ifdef MUTEX_SHOULD_XCHG_COUNT
++#undef MUTEX_SHOULD_XCHG_COUNT
++#endif
++/*
++ * For the x86 architecture, it allows any negative number (besides -1) in
++ * the mutex counter to indicate that some other threads are waiting on the
++ * mutex. So the atomic_xchg() function should not be called in
++ * __mutex_lock_common() if the value of the counter has already been set
++ * to a negative number.
++ */
++#define MUTEX_SHOULD_XCHG_COUNT(mutex)	(atomic_read(&(mutex)->count) >= 0)
++#endif
+diff --git a/kernel/mutex.c b/kernel/mutex.c
+index 52f2301..5e5ea03 100644
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -171,7 +171,8 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 		if (owner && !mutex_spin_on_owner(lock, owner))
+ 			break;
  
--		if (WARN_ON(pwq->refcnt > 1) ||
-+		if (WARN_ON((pwq != wq->dfl_pwq) && (pwq->refcnt > 1)) ||
- 		    WARN_ON(pwq->nr_active) ||
- 		    WARN_ON(!list_empty(&pwq->delayed_works))) {
- 			mutex_unlock(&wq->mutex);
+-		if (atomic_cmpxchg(&lock->count, 1, 0) == 1) {
++		if ((atomic_read(&lock->count) == 1) &&
++		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
+ 			lock_acquired(&lock->dep_map, ip);
+ 			mutex_set_owner(lock);
+ 			preempt_enable();
+@@ -205,7 +206,8 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 	list_add_tail(&waiter.list, &lock->wait_list);
+ 	waiter.task = task;
+ 
+-	if (atomic_xchg(&lock->count, -1) == 1)
++	if (MUTEX_SHOULD_XCHG_COUNT(lock) &&
++	   (atomic_xchg(&lock->count, -1) == 1))
+ 		goto done;
+ 
+ 	lock_contended(&lock->dep_map, ip);
+@@ -220,7 +222,8 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 		 * that when we release the lock, we properly wake up the
+ 		 * other waiters:
+ 		 */
+-		if (atomic_xchg(&lock->count, -1) == 1)
++		if (MUTEX_SHOULD_XCHG_COUNT(lock) &&
++		   (atomic_xchg(&lock->count, -1) == 1))
+ 			break;
+ 
+ 		/*
+diff --git a/kernel/mutex.h b/kernel/mutex.h
+index 4115fbf..b873f8e 100644
+--- a/kernel/mutex.h
++++ b/kernel/mutex.h
+@@ -46,3 +46,11 @@ static inline void
+ debug_mutex_lock_common(struct mutex *lock, struct mutex_waiter *waiter)
+ {
+ }
++
++/*
++ * The atomic_xchg() function should not be called in __mutex_lock_common()
++ * if the value of the counter has already been set to -1.
++ */
++#ifndef MUTEX_SHOULD_XCHG_COUNT
++#define	MUTEX_SHOULD_XCHG_COUNT(mutex)	(atomic_read(&(mutex)->count) != -1)
++#endif
 -- 
-1.8.1.4
+1.7.1
 
