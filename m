@@ -1,119 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762980Ab3DDAOt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 20:14:49 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:59702 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759187Ab3DDAOr (ORCPT
+	id S1761607Ab3DDAPs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 20:15:48 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:10189 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757659Ab3DDAPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 20:14:47 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Sven Joachim <svenjoac@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, Ding Tianhong <dingtianhong@huawei.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-References: <20130402221104.163133110@linuxfoundation.org>
-	<20130402221116.307254752@linuxfoundation.org>
-	<87vc833kpf.fsf@turtle.gmx.de>
-	<1364997630.13853.19.camel@edumazet-glaptop>
-	<87a9pfzm33.fsf@turtle.gmx.de>
-	<1365003300.13853.25.camel@edumazet-glaptop> <515C6DCD.50902@mit.edu>
-	<1365014637.13853.36.camel@edumazet-glaptop>
-	<CALCETrVWV=HEv7q5AUYeCjZOq52omz8moYTwympB6_G4Bz7p8Q@mail.gmail.com>
-Date: Wed, 03 Apr 2013 17:14:31 -0700
-In-Reply-To: <CALCETrVWV=HEv7q5AUYeCjZOq52omz8moYTwympB6_G4Bz7p8Q@mail.gmail.com>
-	(Andy Lutomirski's message of "Wed, 3 Apr 2013 12:01:36 -0700")
-Message-ID: <87a9pfm9so.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18CrTe3BVAvw0pGK+QA/DrWgINT+7aC02g=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Andy Lutomirski <luto@amacapital.net>
-X-Spam-Relay-Country: 
-Subject: Re: [ 105/124] af_unix: dont send SCM_CREDENTIAL when dest socket is NULL
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Wed, 3 Apr 2013 20:15:46 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-3d-515cc630f961
+Message-id: <1365034495.4353.14.camel@kjgkr>
+Subject: Re: [PATCH] To add NULL pointer check
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: P J P <ppandit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Petr Matousek <pmatouse@redhat.com>
+Date: Thu, 04 Apr 2013 09:14:55 +0900
+In-reply-to: <alpine.LFD.2.03.1304031342550.23577@erqung.pbz>
+References: <alpine.LFD.2.03.1304021808410.12716@erqung.pbz>
+ <1364958193.4353.4.camel@kjgkr>
+ <alpine.LFD.2.03.1304031224180.21402@erqung.pbz>
+ <1364975688.4353.7.camel@kjgkr>
+ <alpine.LFD.2.03.1304031342550.23577@erqung.pbz>
+Organization: samsung
+Content-type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature"; boundary="=-FuWwjiBCe5AaaWJ/qsNi"
+X-Mailer: Evolution 3.2.3-0ubuntu6
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsVy+t8zI12DYzGBBjfblC327D3JYnF51xw2
+	i6tXvjNbTDn5g82BxeP9vqtsHp83yQUwRXHZpKTmZJalFunbJXBlzJ94jKmgX7pi/fx+9gbG
+	Q2JdjJwcEgImEge/tLNA2GISF+6tZ+ti5OIQEljGKPH3/jxGmKLTWz6zQCQWMUrM2vkQquo1
+	o8T6tQfYQap4BXQkHsy/CmYLC+hJvFm+E8jm4GAT0JbYvN8AJCwkoCjxdv9dVhBbREBO4urW
+	3WCbmQXSJPa03gezWQRUJa5/esEEYnMK2Eps27CdHWLXM0aJFT+/ghXxC4hKnGz9xAjRXCXR
+	0/6KDeJSJYnd7Z1Q9whK/Jh8D+xqCYGP7BJta7ayQmwQkPg2+RALyHESArISmw4wQ/RKShxc
+	cYNlAqP4LCRjZyEZBRHXlGjd/psdwtaWWLbwNTOEbSuxbt17qBobiU1XFzBC2PIS29/OYV7A
+	yL6KUTS1ILmgOCm9yFivODG3uDQvXS85P3cTIyRq+3cw3j1gfYixCujEicxSosn5wKjPK4k3
+	NDYzsjA1MTU2Mrc0o4qwkjivWot1oJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQbGSU0Tz9dU
+	9V89Gh1nuOiQnIbaxJxL7TYnRc4lrPnI2+9cGv6qsIW5UaVVW+f3il+bTRLyt7P+sw5t1tjc
+	YZ8T8dy/5/wxtplb2Ne1S9+OaL2zZyXnwq8Ormc09F88le8TqbLuUd77oIvlTelLkzU3+EuL
+	ttdmCVinWTxQn13bZ/i89aj/xSYlluKMREMt5qLiRAB39rAIBwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKKsWRmVeSWpSXmKPExsVy+t9jAV2DYzGBBnPb5Sz27D3JYnF51xw2
+	i6tXvjNbTDn5g82BxeP9vqtsHp83yQUwRTUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY
+	6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVJSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdj
+	ZIAGEtYxZsyfeIypoF+6Yv38fvYGxkNiXYycHBICJhKnt3xmgbDFJC7cW8/WxcjFISSwiFFi
+	1s6HUM5rRon1aw+wg1TxCuhIPJh/FcwWFtCTeLN8J5DNwcEmoC2xeb8BSFhIQFHi7f67rCC2
+	iICcxNWtu8EWMAukSexpvQ9mswioSlz/9IIJxOYUsJXYtmE7O8SuZ4wSK35+BSviFxCVONn6
+	iRGiuUqip/0VG8SlShK72zuh7hGU+DH5HssERsFZSMpmIUlBxDUlWrf/ZoewtSWWLXzNDGHb
+	Sqxb9x6qxkZi09UFjBC2vMT2t3OYFzCyr2IUTS1ILihOSs811CtOzC0uzUvXS87P3cQITgnP
+	pHYwrmywOMQowMGoxMO70j8mUIg1say4MvcQowrQnEcbVl9glGLJy89LVRLh3bASKM2bklhZ
+	lVqUH19UmpNafIhxIiMwPCYyS4km5wMTWV5JvKGxiZmRpZGZhZGJuTkthZXEeQ+0WgcKCaQn
+	lqRmp6YWpBbBHMXEwSnVwFhnLtR13J9T+II0s8q1nouveb/wnXp/fpJh1A23WxsXhrYVR2av
+	zuzwnaGnXHXlRWMMO2vyi91/eOb+z77PGG25bH1RypcqTwGFhO2/7LL9+W1FHq38oWAhd3Wm
+	qeLDDRyctSXrjje0VjorXBPKUr+revv23GZ7Z44n8x5OXvmZTevsgdbphkosxRmJhlrMRcWJ
+	AOXLpnuIAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Lutomirski <luto@amacapital.net> writes:
 
-> On Wed, Apr 3, 2013 at 11:43 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->> On Wed, 2013-04-03 at 10:58 -0700, Andy Lutomirski wrote:
->>
->>>
->>> This sounds suspiciously like an SCM_CREDENTIALS bug triggered by a
->>> race.  There's a fix (that needs both a new version from me and a review
->>> by someone) here:
->>>
->>> http://www.spinics.net/lists/netdev/msg229948.html
->>
->> Hmm... this is not a stable candidate, IMHO.
->
-> Agreed.
->
->>
->> This has to be fixed (if needed) in a more easy way.
->>
->> What about this one liner ?
->>
->> CC Eric W. Biederman  as he wrote commit
->> dbe9a4173ea53b72b2c3
->> (scm: Don't use struct ucred in NETLINK_CB and struct scm_cookie.)
->>
->> diff --git a/include/net/scm.h b/include/net/scm.h
->> index 975cca0..42359d8 100644
->> --- a/include/net/scm.h
->> +++ b/include/net/scm.h
->> @@ -120,7 +120,7 @@ static __inline__ void scm_recv(struct socket *sock, struct msghdr *msg,
->>                 return;
->>         }
->>
->> -       if (test_bit(SOCK_PASSCRED, &sock->flags)) {
->> +       if (test_bit(SOCK_PASSCRED, &sock->flags) && scm->creds.pid) {
->>                 struct user_namespace *current_ns = current_user_ns();
->>                 struct ucred ucreds = {
->>                         .pid = scm->creds.pid,
->>
->>
->
-> That looks like it's correct.  If it gets applied, I'll respin my
-> patches on top of it.
->
-> (This approach may be a POSIX violation for all I know, and it's even
-> possible that some really fragile userspace breaks.  But I doubt it,
-> and anything that will break as a result is already operating in a
-> highly confused state; hence the original problem.)
+--=-FuWwjiBCe5AaaWJ/qsNi
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-It certainly looks like we are not giving userspace what userspace asked
-for, which can break in all kinds of subtle ways.  And I can't possibly
-see how not giving udev any information will when udev asked for the
-sender will fix anything.
+Hi,
 
-I think we need to answer why in the world do we do not want to pass
-credentials from an unconnected unix mode socket, before we ask
-why don't we want to deliver credentials that we didn't pass when
-passing of credentials was explicitly requested.
+2013-04-03 (=EC=88=98), 14:43 +0530, P J P:
+> +-- On Wed, 3 Apr 2013, Jaegeuk Kim wrote --+
+> | I'm confusing the question because f2fs doesn't use generic_writepages(=
+),=20
+> | since f2fs_write_data_pages() is linked to a_ops->writepages. In=20
+> | do_writepages(), always f2fs_write_data_pages() is triggered instead of=
+=20
+> | generic_writepages(). Isn't it?
+>=20
+> Before commit fa9150a84c, when `generic_writepages' returned 0, it did no=
+t=20
+> abort `f2fs_write_data_pages', as the proposed patch does. I was wonderin=
+g if=20
+> that's intentional OR if the patch below does it right?
+>=20
+> =3D=3D=3D
+> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+> index 7bd22a2..7be750e 100644
+> --- a/fs/f2fs/data.c
+> +++ b/fs/f2fs/data.c
+> @@ -561,7 +561,7 @@ static int f2fs_write_data_pages(struct address_space=
+=20
+> *mapping,
+>  {
+>         struct inode *inode =3D mapping->host;
+>         struct f2fs_sb_info *sbi =3D F2FS_SB(inode->i_sb);
+> -       int ret;
+> +       int ret =3D 0;
+>         long excess_nrtw =3D 0, desired_nrtw;
+> =20
+>         if (wbc->nr_to_write < MAX_DESIRED_PAGES_WP) {
+> @@ -572,7 +572,9 @@ static int f2fs_write_data_pages(struct address_space=
+ *mapping,
+> =20
+>         if (!S_ISDIR(inode->i_mode))
+>                 mutex_lock(&sbi->writepages);
+> -       ret =3D write_cache_pages(mapping, wbc, __f2fs_writepage, mapping=
+);
+> +       /* deal with chardevs and other special file */
+> +       if (mapping->a_ops->writepage)
+> +               ret =3D write_cache_pages(mapping, wbc, __f2fs_writepage,=
+ mapping);
 
-If the only concern about the LSB test case is performance I think we
-need to revert the original commit and just stop passing a struct cred
-pointer.  If there is a concern about the data I think we need a better
-explanation of what those LSB test cases were that broke.
+Why should we take unnecessary locks and an f2fs_submit_bio call?
+Thanks,
 
-Eric
+>         if (!S_ISDIR(inode->i_mode))
+>                 mutex_unlock(&sbi->writepages);
+>         f2fs_submit_bio(sbi, DATA, (wbc->sync_mode =3D=3D WB_SYNC_ALL));
+> =3D=3D=3D
+>=20
+> Thank you.
+> --
+> Prasad J Pandit / Red Hat Security Response Team
+> DB7A 84C5 D3F9 7CD1 B5EB  C939 D048 7860 3655 602B
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" i=
+n
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+--=20
+Jaegeuk Kim
+Samsung
+
+--=-FuWwjiBCe5AaaWJ/qsNi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJRXMX/AAoJEEAUqH6CSFDSlCAP/jHaAzlUX3CnJQ81ZkNoDEW5
+6X/R9xu6z/cPBeqqXZJmHit1kHuajS2nAmBYnuYIvNpcjgAumz0VzTff1nN/Oy2D
+2tmS00E/rPo+I56wg2Eb9owXc39u1pYJDckFVPLIVRmT9j/3E2qHcGzealb65tyH
+ty05Y6I62U8rofKHDLJKMbrNnsV7fyzzgnKF2C16rI0cQVi85Ywlr0UfXepZXLwO
+Zj8h/dtL8jA2bzR6JUymQ8KdSw1e7RBLCNEexq3EApYAlSn0sfbFqyhgwiU2uxHo
+Iiwi1m0iLoa3cIKEOkeLSwTQjq6KWMwYPKfvMgn7EMTcKVyjCdoXNtC8YXnK9SKq
+dZZfFd3Bf8cC0bw1b7MedTuZeE91ze/RCgu63BpO9+tMDH5flzITu/4NF2zkJXQr
+ARvksnTViHxOjVjXS86jdA/PvVa8LOxggXP1sFS6HtIIBUGOBMnim8+L0GrXCOI8
+gdgBU4AJBp+wp4Y5IjICuGEGFGan5oYnafjqYDMv7NEbR7B/mGnrumgIEI9KCstt
+i+ycY3PpyMurt0RIpNEerVJgh8qsPfd6FInus9V0XmSm5T8gDEhJsaBjH/P2ygC+
+lycmOjGDA+Q46LqLXCKbNxxQtKq4mcxvN031PBDOIGHBlNls/Ej3do3Q74pHjdPB
+NQuoyxicEv2yhLwF3Z1Y
+=HLLI
+-----END PGP SIGNATURE-----
+
+--=-FuWwjiBCe5AaaWJ/qsNi--
+
