@@ -1,75 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764940Ab3DDVdk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 17:33:40 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:53794 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764925Ab3DDVdi convert rfc822-to-8bit (ORCPT
+	id S1764957Ab3DDVgJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 17:36:09 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:54962 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1764937Ab3DDVgG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 17:33:38 -0400
-Content-Type: text/plain; charset="utf-8"
+	Thu, 4 Apr 2013 17:36:06 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1364890840-20052-1-git-send-email-tushar.behera@linaro.org>
-Cc: kgene.kim@samsung.com, patches@linaro.org,
-        Thomas Abraham <thomas.abraham@linaro.org>
-References: <1364890840-20052-1-git-send-email-tushar.behera@linaro.org>
-Message-ID: <20130404213331.8665.7028@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH] clk: exynos5250: Fix divider values for sclk_mmc{0,1,2,3}
-Date: Thu, 04 Apr 2013 14:33:31 -0700
+In-Reply-To: <1363217302-14383-27-git-send-email-yinghai@kernel.org>
+References: <1363217302-14383-1-git-send-email-yinghai@kernel.org> <1363217302-14383-27-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 4 Apr 2013 15:35:44 -0600
+Message-ID: <CAErSpo7DhyVwNng=uBR=YMC3ZMFUtV-MDuukjMMGFxMmgHZR=w@mail.gmail.com>
+Subject: Re: [PATCH v3 26/27] PCI: Make quirk_io_region to use addon_res
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ram Pai <linuxram@us.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Tushar Behera (2013-04-02 01:20:40)
-> In legacy setup, sclk_mmc{0,1,2,3} used PRE_RATIO bit-field (8-bit wide)
-> instead of RATIO bit-field (4-bit wide) for dividing clock rate.
-> 
-> With current common clock setup, we are using RATIO bit-field which
-> is creating FIFO read errors while accessing eMMC. Changing over to
-> use PRE_RATIO bit-field fixes this issue.
-> 
-> dwmmc_exynos 12200000.dwmmc0: data FIFO error (status=00008020)
-> mmcblk0: error -5 transferring data, sector 1, nr 7, cmd response 0x900, card status 0x0
-> end_request: I/O error, dev mmcblk0, sector 1
-> 
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> CC: Thomas Abraham <thomas.abraham@linaro.org>
-
-I guess this will be applied through the samsung tree, so:
-
-Acked-by: Mike Turquette <mturquette@linaro.org>
-
+On Wed, Mar 13, 2013 at 5:28 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> After they are put in add-on resources, they will be safely claimed later.
+>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 > ---
-> 
-> Based on Kukjin's for-next branch.
-> commit d58f6a153f40 ("Merge branch 'next/clk-exynos-2' into for-next")
-> 
->  drivers/clk/samsung/clk-exynos5250.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/clk/samsung/clk-exynos5250.c b/drivers/clk/samsung/clk-exynos5250.c
-> index 1152125..2c46fbd 100644
-> --- a/drivers/clk/samsung/clk-exynos5250.c
-> +++ b/drivers/clk/samsung/clk-exynos5250.c
-> @@ -274,10 +274,10 @@ struct samsung_div_clock exynos5250_div_clks[] __initdata = {
->         DIV(none, "div_pcm0", "sclk_audio0", DIV_MAU, 4, 8),
->         DIV(none, "div_sata", "mout_sata", DIV_FSYS0, 20, 4),
->         DIV(none, "div_usb3", "mout_usb3", DIV_FSYS0, 24, 4),
-> -       DIV(none, "div_mmc0", "mout_mmc0", DIV_FSYS1, 0, 4),
-> -       DIV(none, "div_mmc1", "mout_mmc1", DIV_FSYS1, 16, 4),
-> -       DIV(none, "div_mmc2", "mout_mmc2", DIV_FSYS2, 0, 4),
-> -       DIV(none, "div_mmc3", "mout_mmc3", DIV_FSYS2, 16, 4),
-> +       DIV(none, "div_mmc0", "mout_mmc0", DIV_FSYS1, 8, 8),
-> +       DIV(none, "div_mmc1", "mout_mmc1", DIV_FSYS1, 24, 8),
-> +       DIV(none, "div_mmc2", "mout_mmc2", DIV_FSYS2, 8, 8),
-> +       DIV(none, "div_mmc3", "mout_mmc3", DIV_FSYS2, 24, 8),
->         DIV(none, "div_uart0", "mout_uart0", DIV_PERIC0, 0, 4),
->         DIV(none, "div_uart1", "mout_uart1", DIV_PERIC0, 4, 4),
->         DIV(none, "div_uart2", "mout_uart2", DIV_PERIC0, 8, 4),
-> -- 
-> 1.7.9.5
+>  drivers/pci/quirks.c |  155 +++++++++++++++++++++++---------------------------
+>  1 file changed, 70 insertions(+), 85 deletions(-)
+>
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index 7e5392c..6d379d6 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -324,29 +324,61 @@ static void quirk_cs5536_vsa(struct pci_dev *dev)
+>  }
+>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_CS5536_ISA, quirk_cs5536_vsa);
+>
+> -static void quirk_io_region(struct pci_dev *dev, unsigned region,
+> -       unsigned size, int nr, const char *name)
+> +static int quirk_read_io(struct pci_dev *dev, struct resource *res, int port)
+>  {
+> -       region &= ~(size-1);
+> -       if (region) {
+> -               struct pci_bus_region bus_region;
+> -               struct resource *res = dev->resource + nr;
+> +       struct pci_bus_region bus_region;
+> +       u16 region;
+> +       unsigned size = to_pci_dev_addon_resource(res)->size;
+>
+> -               res->name = pci_name(dev);
+> -               res->start = region;
+> -               res->end = region + size - 1;
+> -               res->flags = IORESOURCE_IO;
+> +       pci_read_config_word(dev, port, &region);
+> +       region &= ~(size - 1);
+>
+> -               /* Convert from PCI bus to resource space.  */
+> -               bus_region.start = res->start;
+> -               bus_region.end = res->end;
+> -               pcibios_bus_to_resource(dev, res, &bus_region);
+> +       /* Convert from PCI bus to resource space.  */
+> +       bus_region.start = region;
+> +       bus_region.end = region + size - 1;
+>
+> -               if (pci_claim_resource(dev, nr) == 0)
+> -                       dev_info(&dev->dev, "quirk: %pR claimed by %s\n",
+> -                                res, name);
+> -       }
+> -}
+> +       pcibios_bus_to_resource(dev, res, &bus_region);
+> +
+> +       res->flags |= IORESOURCE_IO;
+> +       dev_info(&dev->dev, "PIO at %pR\n", res);
+> +
+> +       return 0;
+> +}
+> +static int quirk_write_io(struct pci_dev *dev, struct resource *res, int port)
+> +{
+> +       struct pci_bus_region bus_region;
+> +       u16 region;
+> +       unsigned size = to_pci_dev_addon_resource(res)->size;
+> +
+> +       pci_read_config_word(dev, port, &region);
+> +       region &= size - 1;
+> +
+> +       /* Convert to PCI bus space.  */
+> +       pcibios_resource_to_bus(dev, &bus_region, res);
+> +       region |= bus_region.start & (~(size - 1));
+> +
+> +       pci_write_config_word(dev, port, region);
+> +
+> +       return 0;
+> +}
+> +static struct resource_ops quirk_io_ops = {
+> +       .read = quirk_read_io,
+> +       .write = quirk_write_io,
+> +};
+> +
+> +static void quirk_io_region(struct pci_dev *dev, int port,
+> +                                       unsigned size, char *name)
+> +{
+> +       u16 region;
+> +
+> +       pci_read_config_word(dev, port, &region);
+> +       region &= size - 1;
+> +
+> +       if (!region)
+> +               return;
+> +
+> +       pci_add_dev_addon_resource(dev, port, size, &quirk_io_ops, name);
+> +}
+>
+>  /*
+>   *     ATI Northbridge setups MCE the processor if you even
+> @@ -374,12 +406,8 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_RS100,   quirk_ati_
+>   */
+>  static void quirk_ali7101_acpi(struct pci_dev *dev)
+>  {
+> -       u16 region;
+> -
+> -       pci_read_config_word(dev, 0xE0, &region);
+> -       quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES, "ali7101 ACPI");
+> -       pci_read_config_word(dev, 0xE2, &region);
+> -       quirk_io_region(dev, region, 32, PCI_BRIDGE_RESOURCES+1, "ali7101 SMB");
+> +       quirk_io_region(dev, 0xE0, 64, "ali7101 ACPI");
+> +       quirk_io_region(dev, 0xE2, 32, "ali7101 SMB");
+
+This patch has two changes that need to be separated:
+
+  1) Refactoring quirk_io_region() so the pci_read_config_word() is
+done by quirk_io_region() rather than the caller.
+  2) Whatever pci_dev resource changes we end up making.
+
+I think part 1 can be done at any time and is probably not controversial.
+
+Bjorn
