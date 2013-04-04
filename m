@@ -1,107 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763812Ab3DDRPA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 13:15:00 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60722 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763774Ab3DDROz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1763780Ab3DDROz (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 4 Apr 2013 13:14:55 -0400
-Date: Thu, 4 Apr 2013 20:14:30 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Florian Fainelli <florian@openwrt.org>
-CC: <stern@rowland.harvard.edu>, <linux-kernel@vger.kernel.org>,
-        <arnd@arndb.de>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <balbi@ti.com>
-Subject: Re: [PATCH 1/5 v3] USB: regroup all depends on USB within an if USB
- block
-Message-ID: <20130404171429.GF5129@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1365091048-16229-1-git-send-email-florian@openwrt.org>
- <1365091048-16229-2-git-send-email-florian@openwrt.org>
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:33798 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763760Ab3DDROw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 13:14:52 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3oCie2+XPXTnK5a5"
-Content-Disposition: inline
-In-Reply-To: <1365091048-16229-2-git-send-email-florian@openwrt.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130404153905.GB3403@neilslaptop.think-freely.org>
+References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
+ <1362423859-18516-1-git-send-email-nhorman@tuxdriver.com> <CAErSpo4=L9q+q5hqP2Avw6uceQwZiPuOzadhsqGpu6aP53PMbQ@mail.gmail.com>
+ <1365085649.28127.66.camel@i7.infradead.org> <20130404145012.GA3403@neilslaptop.think-freely.org>
+ <CAErSpo6x5rokg8np7xEKO6y6Qke5X7=r7J7VB2LVrAGGzDC1sA@mail.gmail.com> <20130404153905.GB3403@neilslaptop.think-freely.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 4 Apr 2013 11:14:30 -0600
+Message-ID: <CAErSpo7Mup+k7UmZsH1ZidCM1dJw-rNfdtCC6dSF+cZe1d+aBg@mail.gmail.com>
+Subject: Re: [PATCH v2] irq: add quirk for broken interrupt remapping on 55XX chipsets
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, Prarit Bhargava <prarit@redhat.com>,
+        Don Zickus <dzickus@redhat.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Asit Mallick <asit.k.mallick@intel.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        iommu@lists.linux-foundation.org, Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---3oCie2+XPXTnK5a5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Apr 4, 2013 at 9:39 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
+> On Thu, Apr 04, 2013 at 08:57:06AM -0600, Bjorn Helgaas wrote:
+>> On Thu, Apr 4, 2013 at 8:50 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
+>> > On Thu, Apr 04, 2013 at 03:27:29PM +0100, David Woodhouse wrote:
+>> >> On Wed, 2013-04-03 at 17:53 -0600, Bjorn Helgaas wrote:
+>> >> > );
+>> >> > > +
+>> >> > > +       if ((revision == 0x13) && irq_remapping_enabled) {
+>> >> > > +                pr_warn(HW_ERR "This system BIOS has enabled interrupt remapping\n"
+>> >> > > +                        "on a chipset that contains an errata making that\n"
+>> >> > > +                        "feature unstable.  Please reboot with nointremap\n"
+>> >> > > +                        "added to the kernel command line and contact\n"
+>> >> > > +                        "your BIOS vendor for an update");
+>> >>
+>> >> This should be WARN_TAINT(TAINT_FIRMWARE_WORKAROUND). And 'an erratum'.
+>> >>
+>> > Ok, copy that. I'll repost shortly
+>>
+>> When you do, please include URLs for any problem reports or bugzillas you have.
+>>
+> Well, those are going to be vendor specific, so I'm not sure we can really do
+> that, at least not in any meaningful way.
 
-Hi,
+Sorry, I don't understand your point.  It's useful to know who
+reported it (e.g., for future testers) and what happened and what
+bugzillas it solved.  Of course it applies only to machines with this
+chipset and certain BIOS revisions.
 
-On Thu, Apr 04, 2013 at 05:57:24PM +0200, Florian Fainelli wrote:
-> diff --git a/drivers/usb/misc/sisusbvga/Kconfig b/drivers/usb/misc/sisusb=
-vga/Kconfig
-> index 30ea7ca..0d03a52 100644
-> --- a/drivers/usb/misc/sisusbvga/Kconfig
-> +++ b/drivers/usb/misc/sisusbvga/Kconfig
-> @@ -1,7 +1,7 @@
-> =20
->  config USB_SISUSBVGA
->  	tristate "USB 2.0 SVGA dongle support (Net2280/SiS315)"
-> -	depends on USB && (USB_MUSB_HDRC || USB_EHCI_HCD)
-> +	depends on (USB_MUSB_HDRC || USB_EHCI_HCD)
+>> I assume Windows "just works" in this situation?
+> No more or less than linux does in this case.  The Intel provided errata
+> indicates that the only acceptable workaround is to disable remapping in the
+> BIOS, so I would presume that if a windows system has a BIOS that doesn't
+> implement this fix, its just as exposed as we are.
 
-is it just me or would everybody agree that depending on MUSB or EHCI
-here is wrong ?
+It sounds like the effect of this bug is that on Linux, devices may
+not work at all because of lost interrupts.  Either Windows must never
+enable remapping (so it never sees the bug), or it must be designed in
+a way that tolerates the problem.  I can't believe these machines
+shipped with Windows certification if devices didn't work correctly.
 
-> diff --git a/drivers/usb/mon/Kconfig b/drivers/usb/mon/Kconfig
-> index 635745f..5c6ffa2 100644
-> --- a/drivers/usb/mon/Kconfig
-> +++ b/drivers/usb/mon/Kconfig
-> @@ -4,7 +4,6 @@
-> =20
->  config USB_MON
->  	tristate "USB Monitor"
-> -	depends on USB
->  	help
->  	  If you select this option, a component which captures the USB traffic
->  	  between peripheral-specific drivers and HC drivers will be built.
-> diff --git a/drivers/usb/musb/Kconfig b/drivers/usb/musb/Kconfig
-> index 05e5143..4636ab9 100644
-> --- a/drivers/usb/musb/Kconfig
-> +++ b/drivers/usb/musb/Kconfig
-> @@ -6,7 +6,7 @@
->  # (M)HDRC =3D (Multipoint) Highspeed Dual-Role Controller
->  config USB_MUSB_HDRC
->  	tristate 'Inventra Highspeed Dual Role Controller (TI, ADI, ...)'
-> -	depends on USB && USB_GADGET
-> +	depends on USB_GADGET
+Either way, I don't understand why we can't make the quirk just fix
+this.  Booting with "nointremap" only sets disable_irq_remap, which is
+only used by irq_remapping_supported().  Early quirks are run before
+irq_remapping_supported () is ever called, so an early quirk ought to
+be just as effective as the command line option.  Here's the relevant
+call tree I see:
 
-great, except for the question above:
+  start_kernel
+    setup_arch
+      parse_early_param
+      early_quirks
+    rest_init
+      ...
+        <first use of disable_irq_remap>
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+The x86 setup_arch() does call generic_apic_probe(), but as far as I
+can tell, none of the APIC .probe() methods reference
+disable_irq_remap, so that doesn't look like a problem.
 
---=20
-balbi
-
---3oCie2+XPXTnK5a5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRXbT1AAoJEIaOsuA1yqREVesQAJB6Lfqm06VtCe6kX+gN152r
-2CGOL8AOZVfE5RcVxCgQBucchGAq1Keqw4eKu5VpBExHPQJrvjaEuFqbPzmlrFMK
-byvrGWFgleRqtI+dYdV+UrDoAi3fy574XaLPOcGeB4Y7Qho57EIWnnZ434Evxv0K
-bhbJmRLEiBwO47CceV0Og8ljBnMogHw7KgN691BgGEO8NPHO1mGG3uFFsFnCMTeh
-TG5sAt1F8pf+SmBoOwNttuVfODkw6Ye3mtWcOpNf6S+J55M40envMHZ2ERFMCypm
-r1iq8dP/lKS4p0pBYaCtr8iXe/sI6gbDPhQAqPNwZ8vVYnezGCFRGY6QAOL7Kl+o
-ESJ1bMqRC5FIkiVCtJUsGQzGp0zcYF2Sb9jB7ULQMU6q1gLs132SbA5M/0vjekcH
-TioYt6AAH8V0YvQEAznSrfh335H+YSxtx0taomgpZMpndHOjLDDwvmLKg+OiRrDN
-M7pUvi0jJs7xTjJvvMTJEyi5x+KdogS5z4ZkHgJoy/oJGKMiw2XXjkKNS2EOhxxY
-dZeUnDZR8mAFMVHPiO2PH5e1/XjAD67weupv+tsKv8GLQGCt1rWI7e/u+HjVVif4
-NIw9LwxyhXudTdix0SZH75226ZGPiifEl3SA83mPUXqRj5DaCDUcooCnT+HRO4bv
-Pmtwcg2HLf6dYzKIglqZ
-=JyVv
------END PGP SIGNATURE-----
-
---3oCie2+XPXTnK5a5--
+Bjorn
