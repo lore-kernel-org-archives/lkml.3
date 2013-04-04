@@ -1,62 +1,411 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764186Ab3DDHhO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 03:37:14 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:34397 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763314Ab3DDHhK (ORCPT
+	id S1764199Ab3DDHht (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 03:37:49 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:35574 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1764076Ab3DDHfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 03:37:10 -0400
-Date: Thu, 4 Apr 2013 09:37:00 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Pawel Moll <pawel.moll@arm.com>, Peter Zijlstra <peterz@infradead.org>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: [RFC] perf: need to expose sched_clock to correlate user
- samples with kernel samples
-Message-ID: <20130404073700.GA1860@localhost.localdomain>
-References: <CABPqkBS4TELhoUGrO+moca2fPUoqGjiYCdHJc=H8CjLomPWWDQ@mail.gmail.com>
- <1363291021.3100.144.camel@hornet>
- <51586315.7080006@gmail.com>
- <5159D221.70304@linaro.org>
- <1364889256.16858.1.camel@laptop>
- <515B0502.8070408@linaro.org>
- <1365009558.26858.19.camel@hornet>
- <515C66FE.7030501@linaro.org>
- <1365010502.26858.32.camel@hornet>
- <515C6C01.9070905@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515C6C01.9070905@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 4 Apr 2013 03:35:43 -0400
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: linux-rdma <linux-rdma@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Roland Dreier <roland@kernel.org>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Alexander Nezhinsky <alexandern@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [RFC-v3 4/9] iscsi-target: Add iser-target parameter keys + setup during login
+Date: Thu,  4 Apr 2013 07:24:11 +0000
+Message-Id: <1365060256-21506-5-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1365060256-21506-1-git-send-email-nab@linux-iscsi.org>
+References: <1365060256-21506-1-git-send-email-nab@linux-iscsi.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 03, 2013 at 10:50:57AM -0700, John Stultz wrote:
-> 
-> I get the reasoning around reusing the fd we already have, but is
-> the possibility of a dynamic chardev pathname really a big concern?
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-I have been following this thread, and, not knowing very much about
-perf, I would think that the userland can easily open a second file
-(the dynamic posix clock chardev) in order to get these time stamps.
+This patch adds RDMAExtensions, InitiatorRecvDataSegmentLength and
+TargetRecvDataSegmentLength parameters keys necessary for iser-target
+login to occur.
 
-> Maybe can we extend the dynamic posix clock code to work on more
-> then just the chardev? Although I worry about multiplexing too much
-> functionality on the file.
+This includes setting the necessary parameters during login path
+code within iscsi_login_zero_tsih_s2(), and currently PAGE_SIZE
+aligning the target's advertised MRDSL for immediate data and
+unsolicited data-out incoming payloads.
 
-I don't yet see a need for that, but if we do, then it should work in
-a generic way, and not as a list of special cases, like we saw in the
-patch.
+v3 changes:
+- Add iscsi_post_login_start_timers FIXME for ISER
 
-Thanks,
-Richard
+v2 changes:
+
+- Fix RDMAExtentions -> RDMAExtensions typo (andy)
+- Drop unnecessary '== true' conditional checks for type bool
+
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/iscsi/iscsi_target_core.h       |   10 +++
+ drivers/target/iscsi/iscsi_target_login.c      |   77 ++++++++++++++++++++----
+ drivers/target/iscsi/iscsi_target_parameters.c |   75 +++++++++++++++++++++--
+ drivers/target/iscsi/iscsi_target_parameters.h |   16 +++++-
+ 4 files changed, 161 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/target/iscsi/iscsi_target_core.h b/drivers/target/iscsi/iscsi_target_core.h
+index 2587677..53400b0 100644
+--- a/drivers/target/iscsi/iscsi_target_core.h
++++ b/drivers/target/iscsi/iscsi_target_core.h
+@@ -244,6 +244,11 @@ struct iscsi_conn_ops {
+ 	u8	IFMarker;			/* [0,1] == [No,Yes] */
+ 	u32	OFMarkInt;			/* [1..65535] */
+ 	u32	IFMarkInt;			/* [1..65535] */
++	/*
++	 * iSER specific connection parameters
++	 */
++	u32	InitiatorRecvDataSegmentLength;	/* [512..2**24-1] */
++	u32	TargetRecvDataSegmentLength;	/* [512..2**24-1] */
+ };
+ 
+ struct iscsi_sess_ops {
+@@ -265,6 +270,10 @@ struct iscsi_sess_ops {
+ 	u8	DataSequenceInOrder;		/* [0,1] == [No,Yes] */
+ 	u8	ErrorRecoveryLevel;		/* [0..2] */
+ 	u8	SessionType;			/* [0,1] == [Normal,Discovery]*/
++	/*
++	 * iSER specific session parameters
++	 */
++	u8	RDMAExtensions;			/* [0,1] == [No,Yes] */
+ };
+ 
+ struct iscsi_queue_req {
+@@ -284,6 +293,7 @@ struct iscsi_data_count {
+ };
+ 
+ struct iscsi_param_list {
++	bool			iser;
+ 	struct list_head	param_list;
+ 	struct list_head	extra_response_list;
+ };
+diff --git a/drivers/target/iscsi/iscsi_target_login.c b/drivers/target/iscsi/iscsi_target_login.c
+index 57f9dea..24a9e69 100644
+--- a/drivers/target/iscsi/iscsi_target_login.c
++++ b/drivers/target/iscsi/iscsi_target_login.c
+@@ -340,6 +340,7 @@ static int iscsi_login_zero_tsih_s2(
+ 	struct iscsi_node_attrib *na;
+ 	struct iscsi_session *sess = conn->sess;
+ 	unsigned char buf[32];
++	bool iser = false;
+ 
+ 	sess->tpg = conn->tpg;
+ 
+@@ -361,7 +362,10 @@ static int iscsi_login_zero_tsih_s2(
+ 		return -1;
+ 	}
+ 
+-	iscsi_set_keys_to_negotiate(0, conn->param_list);
++	if (conn->conn_transport->transport_type == ISCSI_INFINIBAND)
++		iser = true;
++
++	iscsi_set_keys_to_negotiate(conn->param_list, iser);
+ 
+ 	if (sess->sess_ops->SessionType)
+ 		return iscsi_set_keys_irrelevant_for_discovery(
+@@ -399,6 +403,56 @@ static int iscsi_login_zero_tsih_s2(
+ 
+ 	if (iscsi_login_disable_FIM_keys(conn->param_list, conn) < 0)
+ 		return -1;
++	/*
++	 * Set RDMAExtensions=Yes by default for iSER enabled network portals
++	 */
++	if (iser) {
++		struct iscsi_param *param;
++		unsigned long mrdsl, off;
++		int rc;
++
++		sprintf(buf, "RDMAExtensions=Yes");
++		if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
++			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
++				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++			return -1;
++		}
++		/*
++		 * Make MaxRecvDataSegmentLength PAGE_SIZE aligned for
++		 * Immediate Data + Unsolicitied Data-OUT if necessary..
++		 */
++		param = iscsi_find_param_from_key("MaxRecvDataSegmentLength",
++						  conn->param_list);
++		if (!param) {
++			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
++				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++			return -1;
++		}
++		rc = strict_strtoul(param->value, 0, &mrdsl);
++		if (rc < 0) {
++			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
++				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++			return -1;
++		}
++		off = mrdsl % PAGE_SIZE;
++		if (!off)
++			return 0;
++
++		if (mrdsl < PAGE_SIZE)
++			mrdsl = PAGE_SIZE;
++		else
++			mrdsl -= off;
++
++		pr_warn("Aligning ISER MaxRecvDataSegmentLength: %lu down"
++			" to PAGE_SIZE\n", mrdsl);
++
++		sprintf(buf, "MaxRecvDataSegmentLength=%lu\n", mrdsl);
++		if (iscsi_change_param_value(buf, conn->param_list, 0) < 0) {
++			iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
++				ISCSI_LOGIN_STATUS_NO_RESOURCES);
++			return -1;
++		}
++	}
+ 
+ 	return 0;
+ }
+@@ -478,6 +532,7 @@ static int iscsi_login_non_zero_tsih_s2(
+ 	struct se_portal_group *se_tpg = &tpg->tpg_se_tpg;
+ 	struct se_session *se_sess, *se_sess_tmp;
+ 	struct iscsi_login_req *pdu = (struct iscsi_login_req *)buf;
++	bool iser = false;
+ 
+ 	spin_lock_bh(&se_tpg->session_lock);
+ 	list_for_each_entry_safe(se_sess, se_sess_tmp, &se_tpg->tpg_sess_list,
+@@ -527,7 +582,10 @@ static int iscsi_login_non_zero_tsih_s2(
+ 		return -1;
+ 	}
+ 
+-	iscsi_set_keys_to_negotiate(0, conn->param_list);
++	if (conn->conn_transport->transport_type == ISCSI_INFINIBAND)
++		iser = true;
++
++	iscsi_set_keys_to_negotiate(conn->param_list, iser);
+ 	/*
+ 	 * Need to send TargetPortalGroupTag back in first login response
+ 	 * on any iSCSI connection where the Initiator provides TargetName.
+@@ -615,13 +673,15 @@ int iscsi_login_post_auth_non_zero_tsih(
+ 
+ static void iscsi_post_login_start_timers(struct iscsi_conn *conn)
+ {
+-#warning FIXME: Reenable iscsit_start_nopin_timer
+-#if 0
+ 	struct iscsi_session *sess = conn->sess;
++	/*
++	 * FIXME: Unsolicitied NopIN support for ISER
++	 */
++	if (conn->conn_transport->transport_type == ISCSI_INFINIBAND)
++		return;
+ 
+ 	if (!sess->sess_ops->SessionType)
+ 		iscsit_start_nopin_timer(conn);
+-#endif
+ }
+ 
+ static int iscsi_post_login_handler(
+@@ -678,12 +738,7 @@ static int iscsi_post_login_handler(
+ 
+ 		iscsi_post_login_start_timers(conn);
+ 
+-		if (conn->conn_transport == ISCSI_TCP) {
+-			iscsi_activate_thread_set(conn, ts);
+-		} else {
+-			printk("Not calling iscsi_activate_thread_set....\n");
+-			dump_stack();
+-		}
++		iscsi_activate_thread_set(conn, ts);
+ 		/*
+ 		 * Determine CPU mask to ensure connection's RX and TX kthreads
+ 		 * are scheduled on the same CPU.
+diff --git a/drivers/target/iscsi/iscsi_target_parameters.c b/drivers/target/iscsi/iscsi_target_parameters.c
+index 84ce94a..f690be9 100644
+--- a/drivers/target/iscsi/iscsi_target_parameters.c
++++ b/drivers/target/iscsi/iscsi_target_parameters.c
+@@ -433,6 +433,28 @@ int iscsi_create_default_params(struct iscsi_param_list **param_list_ptr)
+ 			TYPERANGE_MARKINT, USE_INITIAL_ONLY);
+ 	if (!param)
+ 		goto out;
++	/*
++	 * Extra parameters for ISER from RFC-5046
++	 */
++	param = iscsi_set_default_param(pl, RDMAEXTENTIONS, INITIAL_RDMAEXTENTIONS,
++			PHASE_OPERATIONAL, SCOPE_SESSION_WIDE, SENDER_BOTH,
++			TYPERANGE_BOOL_AND, USE_LEADING_ONLY);
++	if (!param)
++		goto out;
++
++	param = iscsi_set_default_param(pl, INITIATORRECVDATASEGMENTLENGTH,
++			INITIAL_INITIATORRECVDATASEGMENTLENGTH,
++			PHASE_OPERATIONAL, SCOPE_CONNECTION_ONLY, SENDER_BOTH,
++			TYPERANGE_512_TO_16777215, USE_ALL);
++	if (!param)
++		goto out;
++
++	param = iscsi_set_default_param(pl, TARGETRECVDATASEGMENTLENGTH,
++			INITIAL_TARGETRECVDATASEGMENTLENGTH,
++			PHASE_OPERATIONAL, SCOPE_CONNECTION_ONLY, SENDER_BOTH,
++			TYPERANGE_512_TO_16777215, USE_ALL);
++	if (!param)
++		goto out;
+ 
+ 	*param_list_ptr = pl;
+ 	return 0;
+@@ -442,19 +464,23 @@ out:
+ }
+ 
+ int iscsi_set_keys_to_negotiate(
+-	int sessiontype,
+-	struct iscsi_param_list *param_list)
++	struct iscsi_param_list *param_list,
++	bool iser)
+ {
+ 	struct iscsi_param *param;
+ 
++	param_list->iser = iser;
++
+ 	list_for_each_entry(param, &param_list->param_list, p_list) {
+ 		param->state = 0;
+ 		if (!strcmp(param->name, AUTHMETHOD)) {
+ 			SET_PSTATE_NEGOTIATE(param);
+ 		} else if (!strcmp(param->name, HEADERDIGEST)) {
+-			SET_PSTATE_NEGOTIATE(param);
++			if (iser == false)
++				SET_PSTATE_NEGOTIATE(param);
+ 		} else if (!strcmp(param->name, DATADIGEST)) {
+-			SET_PSTATE_NEGOTIATE(param);
++			if (iser == false)
++				SET_PSTATE_NEGOTIATE(param);
+ 		} else if (!strcmp(param->name, MAXCONNECTIONS)) {
+ 			SET_PSTATE_NEGOTIATE(param);
+ 		} else if (!strcmp(param->name, TARGETNAME)) {
+@@ -473,7 +499,8 @@ int iscsi_set_keys_to_negotiate(
+ 		} else if (!strcmp(param->name, IMMEDIATEDATA)) {
+ 			SET_PSTATE_NEGOTIATE(param);
+ 		} else if (!strcmp(param->name, MAXRECVDATASEGMENTLENGTH)) {
+-			SET_PSTATE_NEGOTIATE(param);
++			if (iser == false)
++				SET_PSTATE_NEGOTIATE(param);
+ 		} else if (!strcmp(param->name, MAXXMITDATASEGMENTLENGTH)) {
+ 			continue;
+ 		} else if (!strcmp(param->name, MAXBURSTLENGTH)) {
+@@ -502,6 +529,15 @@ int iscsi_set_keys_to_negotiate(
+ 			SET_PSTATE_NEGOTIATE(param);
+ 		} else if (!strcmp(param->name, OFMARKINT)) {
+ 			SET_PSTATE_NEGOTIATE(param);
++		} else if (!strcmp(param->name, RDMAEXTENTIONS)) {
++			if (iser == true)
++				SET_PSTATE_NEGOTIATE(param);
++		} else if (!strcmp(param->name, INITIATORRECVDATASEGMENTLENGTH)) {
++			if (iser == true)
++				SET_PSTATE_NEGOTIATE(param);
++		} else if (!strcmp(param->name, TARGETRECVDATASEGMENTLENGTH)) {
++			if (iser == true)
++				SET_PSTATE_NEGOTIATE(param);
+ 		}
+ 	}
+ 
+@@ -544,6 +580,12 @@ int iscsi_set_keys_irrelevant_for_discovery(
+ 			param->state &= ~PSTATE_NEGOTIATE;
+ 		else if (!strcmp(param->name, OFMARKINT))
+ 			param->state &= ~PSTATE_NEGOTIATE;
++		else if (!strcmp(param->name, RDMAEXTENTIONS))
++			param->state &= ~PSTATE_NEGOTIATE;
++		else if (!strcmp(param->name, INITIATORRECVDATASEGMENTLENGTH))
++			param->state &= ~PSTATE_NEGOTIATE;
++		else if (!strcmp(param->name, TARGETRECVDATASEGMENTLENGTH))
++			param->state &= ~PSTATE_NEGOTIATE;
+ 	}
+ 
+ 	return 0;
+@@ -1759,6 +1801,9 @@ void iscsi_set_connection_parameters(
+ 		 * this key is not sent over the wire.
+ 		 */
+ 		if (!strcmp(param->name, MAXXMITDATASEGMENTLENGTH)) {
++			if (param_list->iser == true)
++				continue;
++
+ 			ops->MaxXmitDataSegmentLength =
+ 				simple_strtoul(param->value, &tmpptr, 0);
+ 			pr_debug("MaxXmitDataSegmentLength:     %s\n",
+@@ -1804,6 +1849,22 @@ void iscsi_set_connection_parameters(
+ 				simple_strtoul(param->value, &tmpptr, 0);
+ 			pr_debug("IFMarkInt:                    %s\n",
+ 				param->value);
++		} else if (!strcmp(param->name, INITIATORRECVDATASEGMENTLENGTH)) {
++			ops->InitiatorRecvDataSegmentLength =
++				simple_strtoul(param->value, &tmpptr, 0);
++			pr_debug("InitiatorRecvDataSegmentLength: %s\n",
++				param->value);
++			ops->MaxRecvDataSegmentLength =
++					ops->InitiatorRecvDataSegmentLength;
++			pr_debug("Set MRDSL from InitiatorRecvDataSegmentLength\n");
++		} else if (!strcmp(param->name, TARGETRECVDATASEGMENTLENGTH)) {
++			ops->TargetRecvDataSegmentLength =
++				simple_strtoul(param->value, &tmpptr, 0);
++			pr_debug("TargetRecvDataSegmentLength:  %s\n",
++				param->value);
++			ops->MaxXmitDataSegmentLength =
++					ops->TargetRecvDataSegmentLength;
++			pr_debug("Set MXDSL from TargetRecvDataSegmentLength\n");
+ 		}
+ 	}
+ 	pr_debug("----------------------------------------------------"
+@@ -1916,6 +1977,10 @@ void iscsi_set_session_parameters(
+ 			ops->SessionType = !strcmp(param->value, DISCOVERY);
+ 			pr_debug("SessionType:                  %s\n",
+ 				param->value);
++		} else if (!strcmp(param->name, RDMAEXTENTIONS)) {
++			ops->RDMAExtensions = !strcmp(param->value, YES);
++			pr_debug("RDMAExtensions:               %s\n",
++				param->value);
+ 		}
+ 	}
+ 	pr_debug("----------------------------------------------------"
+diff --git a/drivers/target/iscsi/iscsi_target_parameters.h b/drivers/target/iscsi/iscsi_target_parameters.h
+index 1e1b750..f31b9c4 100644
+--- a/drivers/target/iscsi/iscsi_target_parameters.h
++++ b/drivers/target/iscsi/iscsi_target_parameters.h
+@@ -27,7 +27,7 @@ extern void iscsi_dump_conn_ops(struct iscsi_conn_ops *);
+ extern void iscsi_dump_sess_ops(struct iscsi_sess_ops *);
+ extern void iscsi_print_params(struct iscsi_param_list *);
+ extern int iscsi_create_default_params(struct iscsi_param_list **);
+-extern int iscsi_set_keys_to_negotiate(int, struct iscsi_param_list *);
++extern int iscsi_set_keys_to_negotiate(struct iscsi_param_list *, bool);
+ extern int iscsi_set_keys_irrelevant_for_discovery(struct iscsi_param_list *);
+ extern int iscsi_copy_param_list(struct iscsi_param_list **,
+ 			struct iscsi_param_list *, int);
+@@ -89,6 +89,13 @@ extern void iscsi_set_session_parameters(struct iscsi_sess_ops *,
+ #define X_EXTENSIONKEY_CISCO_OLD	"X-com.cisco.iscsi.draft"
+ 
+ /*
++ * Parameter names of iSCSI Extentions for RDMA (iSER).  See RFC-5046
++ */
++#define RDMAEXTENTIONS			"RDMAExtensions"
++#define INITIATORRECVDATASEGMENTLENGTH	"InitiatorRecvDataSegmentLength"
++#define TARGETRECVDATASEGMENTLENGTH	"TargetRecvDataSegmentLength"
++
++/*
+  * For AuthMethod.
+  */
+ #define KRB5				"KRB5"
+@@ -133,6 +140,13 @@ extern void iscsi_set_session_parameters(struct iscsi_sess_ops *,
+ #define INITIAL_OFMARKINT			"2048~65535"
+ 
+ /*
++ * Initial values for iSER parameters following RFC-5046 Section 6
++ */
++#define INITIAL_RDMAEXTENTIONS			NO
++#define INITIAL_INITIATORRECVDATASEGMENTLENGTH	"262144"
++#define INITIAL_TARGETRECVDATASEGMENTLENGTH	"8192"
++
++/*
+  * For [Header,Data]Digests.
+  */
+ #define CRC32C				"CRC32C"
+-- 
+1.7.2.5
+
