@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759970Ab3DDMcu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 08:32:50 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64422 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759780Ab3DDMcp (ORCPT
+	id S1759992Ab3DDMcy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 08:32:54 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:60478 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759780Ab3DDMcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 08:32:45 -0400
-From: Serban Constantinescu <serban.constantinescu@arm.com>
-To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
-        Dave.Butcher@arm.com
-Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH 2/8] staging: android: binder: replace IOCTL types with user-exportable types
-Date: Thu,  4 Apr 2013 13:32:32 +0100
-Message-Id: <1365078758-28674-3-git-send-email-serban.constantinescu@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1365078758-28674-1-git-send-email-serban.constantinescu@arm.com>
-References: <1365078758-28674-1-git-send-email-serban.constantinescu@arm.com>
+	Thu, 4 Apr 2013 08:32:51 -0400
+Message-ID: <1365078767.9806.34.camel@host5.omatika.ru>
+Subject: Re: [PATCH v2] wait while adding MMC host to ensure root mounts
+From: Sergey Yanovich <ynvich@gmail.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Chris Ball <cjb@laptop.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Date: Thu, 04 Apr 2013 16:32:47 +0400
+In-Reply-To: <515D6568.7000702@intel.com>
+References: <1363223183-3772-1-git-send-email-ynvich@gmail.com>
+	   <1363224194-7366-1-git-send-email-ynvich@gmail.com>
+	   <87620jmkoe.fsf@octavius.laptop.org>
+	   <CAPDyKFp27MUOjhydLXf92vN3cua=XcX4oTJnMGfOJPpBhtwM8Q@mail.gmail.com>
+	   <87ppylf429.fsf@octavius.laptop.org> <515ADEDE.3050707@intel.com>
+	  <1364912689.3399.7.camel@host5.opentask.org> <515D1F4E.1080306@intel.com>
+	 <1365073152.9806.26.camel@host5.omatika.ru> <515D6568.7000702@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies the IOCTL macros to use user-exportable data types,
-as they are the referred kernel types for the user/kernel interface.
+On Thu, 2013-04-04 at 14:35 +0300, Adrian Hunter wrote:
+> On 04/04/13 13:59, Sergey Yanovich wrote:
+> > On Thu, 2013-04-04 at 09:35 +0300, Adrian Hunter wrote:
+> >> No,  I am booting from eMMC.
+> > 
+> > Well, in this case you should be aware, that your system is not
+> > concurrency-safe without the patch. It may or may not boot each time
+> > depending on the large number of factors.
+> 
+> Not true.  You know nothing of my boot time characteristics.
 
-The patch does not change in any way the functionality of the binder driver.
+Well, I assumed you use linux kernel recent enough to include the patch
+in question. This assumption may well be wrong.
 
-Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
----
- drivers/staging/android/binder.h |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
-index f240464..dbe81ce 100644
---- a/drivers/staging/android/binder.h
-+++ b/drivers/staging/android/binder.h
-@@ -85,11 +85,11 @@ struct binder_version {
- #define BINDER_CURRENT_PROTOCOL_VERSION 7
- 
- #define BINDER_WRITE_READ		_IOWR('b', 1, struct binder_write_read)
--#define	BINDER_SET_IDLE_TIMEOUT		_IOW('b', 3, int64_t)
-+#define	BINDER_SET_IDLE_TIMEOUT		_IOW('b', 3, __s64)
- #define	BINDER_SET_MAX_THREADS		_IOW('b', 5, size_t)
--#define	BINDER_SET_IDLE_PRIORITY	_IOW('b', 6, int)
--#define	BINDER_SET_CONTEXT_MGR		_IOW('b', 7, int)
--#define	BINDER_THREAD_EXIT		_IOW('b', 8, int)
-+#define	BINDER_SET_IDLE_PRIORITY	_IOW('b', 6, __s32)
-+#define	BINDER_SET_CONTEXT_MGR		_IOW('b', 7, __s32)
-+#define	BINDER_THREAD_EXIT		_IOW('b', 8, __s32)
- #define BINDER_VERSION			_IOWR('b', 9, struct binder_version)
- 
- /*
--- 
-1.7.9.5
+Could you please elaborate how you avoid a situation which brought up
+this patch ("all probes finish and mmc card is not ready")?
 
