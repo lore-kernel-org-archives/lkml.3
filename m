@@ -1,78 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932617Ab3DDBB1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 21:01:27 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:54433 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932245Ab3DDBBZ (ORCPT
+	id S932658Ab3DDBEI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 21:04:08 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47875 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932245Ab3DDBEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 21:01:25 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Sven Joachim <svenjoac@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Ding Tianhong <dingtianhong@huawei.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andy Lutomirski <luto@amacapital.net>, Karel Srot <ksrot@redhat.com>
-References: <20130402221104.163133110@linuxfoundation.org>
-	<20130402221116.307254752@linuxfoundation.org>
-	<87vc833kpf.fsf@turtle.gmx.de> <87k3ojnosa.fsf@xmission.com>
-	<1365034777.13853.46.camel@edumazet-glaptop>
-	<1365035424.13853.48.camel@edumazet-glaptop>
-Date: Wed, 03 Apr 2013 18:01:11 -0700
-In-Reply-To: <1365035424.13853.48.camel@edumazet-glaptop> (Eric Dumazet's
-	message of "Wed, 03 Apr 2013 17:30:24 -0700")
-Message-ID: <878v4zjei0.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18wCaGoty7L+rrugj8b2pYKQD3OvkTeTxI=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Eric Dumazet <eric.dumazet@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [ 105/124] af_unix: dont send SCM_CREDENTIAL when dest socket is NULL
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Wed, 3 Apr 2013 21:04:05 -0400
+Date: Thu, 4 Apr 2013 12:04:02 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: linux-next: build warning after merge of the wireless-next tree
+Message-Id: <20130404120402.2384c71a6e1850ebe76d62e2@canb.auug.org.au>
+In-Reply-To: <20130404120043.794afc7dd061dcd3adac0fdb@canb.auug.org.au>
+References: <20130404120043.794afc7dd061dcd3adac0fdb@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__4_Apr_2013_12_04_02_+1100_hHmGi2WUYcA3A8Gq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet <eric.dumazet@gmail.com> writes:
+--Signature=_Thu__4_Apr_2013_12_04_02_+1100_hHmGi2WUYcA3A8Gq
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Wed, 2013-04-03 at 17:19 -0700, Eric Dumazet wrote:
+Hi John,
+
+On Thu, 4 Apr 2013 12:00:43 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
 >
->> Well, yes, this commit fixes a real bug : We were coalescing two
->> messages into a single one, even if the senders were different.
->
-> By the way, the 'LSB' test program can be found here :
->
-> https://lsbbugs.linuxfoundation.org/attachment.cgi?id=2144
+> After merging the wireless-next tree, today's linux-next build (x86_64
+> allmodconfig) produced this warning:
+>=20
+> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
+e unused because linking not done
+> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
+e unused because linking not done
+> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
+e unused because linking not done
+> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
+e unused because linking not done
+> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
+e unused because linking not done
+> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
+e unused because linking not done
+> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
+e unused because linking not done
+> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
+e unused because linking not done
+> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
+e unused because linking not done
+> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
+e unused because linking not done
+> x86_64-linux-gcc: warning: drivers/net/wireless/rtlwifi: linker input fil=
+e unused because linking not done
+>=20
+> I have no idea what caused that.
 
-And we have two sends and one recvfrom, and no loops.
+Though I suspect commit 8b138d4898a0 ("rtlwifi: rtl8188ee: Enable build
+of new driver") - I wonder if the gap between the "-I" and
+"drivers/net/wireless/rtlwifi" added to ccflags-y is the cause?
 
-So the the problem must be a failure to coalesce messages.
+I am using gcc 4.6.3 if that matters.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-There is a race between creating the sending and receiving sockets.
+--Signature=_Thu__4_Apr_2013_12_04_02_+1100_hHmGi2WUYcA3A8Gq
+Content-Type: application/pgp-signature
 
-At a first glance that race looks like we put the cred on the first
-message and not on the second message because we are connected by the
-time the second messages is sent.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Which would definitely cause a failure to coallesce messages.
+iQIcBAEBCAAGBQJRXNGCAAoJEECxmPOUX5FEY1kP/R35HVl/sai+s8wFFY+T0giI
+E7TacSGxAkIJ+zf+ZSeUtj3UGSU/2IhgFRO3N7NGl9YjvkBqoQesvKHKzJl+ktqo
+FAQeb78pTK8Yh0/6yBvF9UsMn/UGilJBqufDvqrkJqDQ/DWjydWYrRVL0empSUUz
+xfl5NqoRaZlj0c//FyPZ7+1qHU8LydFynba9VGd8jTF6HH30c1gKbOxCB05SE4D7
+dwrZBqqcPCsRkarUtAMssFB8JBSmi+3w2twaoeCNEk0+baTTMdMnNMlqS9cGH0c8
+eWlqbLy2I2kd7j5Z+chDzDgISGTqVNiNwAOChqIOCwG6CaTX+c9MWyELqScTv/4r
+s9SYerPOiNeBWruh0vB8tjMRemxI4A+8Z112G450LFDiRCM3OegQkShES8ABcHIh
+1r0/PKARkGUxP5wXMxG4PIZ7zUEQb8quvJ8Mm/zos3GxEb2nmC46nir2ck5Y2XtP
+UMjrxtNsAPjfYEhQjDAE5+bbG1kaf9qaoKd+eloIWvPtY5BWQDnswWIXglOvsmdS
+STdwCuCFPFHeXgMC/s857LbhT3CHZmt6gIwvMffXBqMx/3BgQh/3wmTcJnYMSjNW
+838TZBITDcp1u2xxY4iTCuJrm8nQYzWQ1dS1/memztsWeWCMIzPtR8UGKeJgKLvL
+fNT+IAQePTgfkmJlPdes
+=v5zX
+-----END PGP SIGNATURE-----
 
-Eric
-
+--Signature=_Thu__4_Apr_2013_12_04_02_+1100_hHmGi2WUYcA3A8Gq--
