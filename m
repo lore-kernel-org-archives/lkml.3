@@ -1,292 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763037Ab3DDQT5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:19:57 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:22308 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762981Ab3DDQTx (ORCPT
+	id S1763078Ab3DDQUD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:20:03 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:52300 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763041Ab3DDQT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:19:53 -0400
-X-AuditID: cbfee61b-b7f076d0000034b6-a7-515da8283bc1
+	Thu, 4 Apr 2013 12:19:59 -0400
+X-AuditID: cbfee61b-b7f076d0000034b6-ba-515da82d29ff
 From: Tomasz Figa <t.figa@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
         kyungmin.park@samsung.com, lrg@ti.com,
         broonie@opensource.wolfsonmicro.com, m.szyprowski@samsung.com,
         kgene.kim@samsung.com, Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH 1/3] mfd: Add irq domain support for max8998 interrupts
-Date: Thu, 04 Apr 2013 18:19:21 +0200
-Message-id: <1365092363-12763-2-git-send-email-t.figa@samsung.com>
+Subject: [PATCH 2/3] regulator: max8998: Use arrays for specifying voltages in
+ platform data
+Date: Thu, 04 Apr 2013 18:19:22 +0200
+Message-id: <1365092363-12763-3-git-send-email-t.figa@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1365092363-12763-1-git-send-email-t.figa@samsung.com>
 References: <1365092363-12763-1-git-send-email-t.figa@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDLMWRmVeSWpSXmKPExsVy+t9jAV2NFbGBBueOqFr8m32KzeLA7Ies
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLLMWRmVeSWpSXmKPExsVy+t9jAV29FbGBBnsPsFj8m32KzeLA7Ies
 	Fr0LrrJZnG16w25xedccNosZ5/cxWTRtn8BusfbIXXaL9TNeszhwepyfsZDR4+XE32wefVtW
-	MXocv7GdyePzJrkA1igum5TUnMyy1CJ9uwSujHkzeQr2O1YcmnaKpYHxumkXIyeHhICJxPs1
-	jSwQtpjEhXvr2boYuTiEBBYxSrxdNJkFwulikvj4eTkjSBWbgJrE54ZHbCC2iICCxObeZ6wg
-	RcwC7xklrjx5CeRwcAgLuEu0/AsDqWERUJV4OKUNrJ5XwEni/K0vrBDb5CWe3u9jAynnFHCW
-	ODRZGyQsBFTy7PNtxgmMvAsYGVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBIfZM+kdjKsa
-	LA4xCnAwKvHwZvTFBgqxJpYVV+YeYpTgYFYS4T3aAhTiTUmsrEotyo8vKs1JLT7EKM3BoiTO
-	e7DVOlBIID2xJDU7NbUgtQgmy8TBKdXAWMN/PKvviJ1083FFdYbXYfdOfJzDznYrzuP3EfmI
-	0maj1dtPX+OpP8nlVRll9XrBsXvJwi8/9axJDGu9aCvexPT74OXHNxaLvDy9U2Jp2tKadxa7
-	pqzSYudsVcqVa9dsKc3IOhN+9u6DRcmb6oLk5bJq5Np+8O2Zcfjj9ZsOceUPb9WKPLNxUWIp
-	zkg01GIuKk4EAIzHd0MvAgAA
+	MXocv7GdyePzJrkA1igum5TUnMyy1CJ9uwSujP0L+pgLZjhUrHp8nLGBscO4i5GTQ0LAROLR
+	jD5mCFtM4sK99WxdjFwcQgKLGCUeXXrKCuF0MUnMWNjCBFLFJqAm8bnhERuILSKgILG59xlY
+	EbPAe0aJK09esoIkhAXiJI42LAWyOThYBFQlHjyRAgnzCjhJnDu7CWqbvMTT+31sICWcAs4S
+	hyZrg4SFgEqefb7NOIGRdwEjwypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4EB7Jr2DcVWD
+	xSFGAQ5GJR7ejL7YQCHWxLLiytxDjBIczEoivEdbgEK8KYmVValF+fFFpTmpxYcYpTlYlMR5
+	D7ZaBwoJpCeWpGanphakFsFkmTg4pRoYJ/E6Z/VpHUr9HbXcfzm/Ra7I92DHTO8Jr/XKvP3n
+	bRPVlG999C1181114RkhO71SJx4+kH02slZEuSvfYqHwJP7tnaxTd/9q2LwpTNdPOCU85/KH
+	olyPjiCz37sPnSrj+R+vuueg4L35fxTvaHzs6Th1Q31i4tpPt09fd2Jvzwz/8LhgmkK6Ektx
+	RqKhFnNRcSIAwnfbpDACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds irq domain support for max8998 interrupts.
+This patch modifies the platform data of max8998 to use arrays for
+specifying predefined voltages of buck1 and buck2 instead of separate
+field for each voltage.
 
-The reverse mapping method used is linear mapping since the sub-drivers
-of max8998 such as regulator and charger drivers can use the max8998
-irq_domain to get the virtual irq number for max8998 interrupts.
-
-All uses of irq_base in platform data and max8997 driver private data
-are removed.
+This allows to simplify the code a bit and will help in adding support
+for Device Tree, which will be introduced in further patch.
 
 Signed-off-by: Tomasz Figa <t.figa@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/mfd/Kconfig                 |  1 +
- drivers/mfd/max8998-irq.c           | 61 ++++++++++++++++++++++---------------
- drivers/mfd/max8998.c               |  1 -
- drivers/rtc/rtc-max8998.c           | 15 +++++++--
- include/linux/mfd/max8998-private.h |  4 ++-
- include/linux/mfd/max8998.h         |  2 --
- 6 files changed, 53 insertions(+), 31 deletions(-)
+ arch/arm/mach-exynos/mach-universal_c210.c |  8 +--
+ arch/arm/mach-s5pv210/mach-aquila.c        |  8 +--
+ arch/arm/mach-s5pv210/mach-goni.c          |  8 +--
+ drivers/regulator/max8998.c                | 96 +++++++++---------------------
+ include/linux/mfd/max8998.h                | 16 ++---
+ 5 files changed, 39 insertions(+), 97 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index c346941..3ab3a11 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -585,6 +585,7 @@ config MFD_MAX8998
- 	bool "Maxim Semiconductor MAX8998/National LP3974 PMIC Support"
- 	depends on I2C=y && GENERIC_HARDIRQS
- 	select MFD_CORE
-+	select IRQ_DOMAIN
- 	help
- 	  Say yes here to support for Maxim Semiconductor MAX8998 and
- 	  National Semiconductor LP3974. This is a Power Management IC.
-diff --git a/drivers/mfd/max8998-irq.c b/drivers/mfd/max8998-irq.c
-index 5919710..f770abf 100644
---- a/drivers/mfd/max8998-irq.c
-+++ b/drivers/mfd/max8998-irq.c
-@@ -14,6 +14,7 @@
- #include <linux/device.h>
- #include <linux/interrupt.h>
- #include <linux/irq.h>
-+#include <linux/irqdomain.h>
- #include <linux/mfd/max8998-private.h>
+diff --git a/arch/arm/mach-exynos/mach-universal_c210.c b/arch/arm/mach-exynos/mach-universal_c210.c
+index 497fcb7..366abb3 100644
+--- a/arch/arm/mach-exynos/mach-universal_c210.c
++++ b/arch/arm/mach-exynos/mach-universal_c210.c
+@@ -540,15 +540,11 @@ static struct max8998_regulator_data lp3974_regulators[] = {
+ static struct max8998_platform_data universal_lp3974_pdata = {
+ 	.num_regulators		= ARRAY_SIZE(lp3974_regulators),
+ 	.regulators		= lp3974_regulators,
+-	.buck1_voltage1		= 1100000,	/* INT */
+-	.buck1_voltage2		= 1000000,
+-	.buck1_voltage3		= 1100000,
+-	.buck1_voltage4		= 1000000,
++	.buck1_voltage		= { 1100000, 1000000, 1100000, 1000000 },
+ 	.buck1_set1		= EXYNOS4_GPX0(5),
+ 	.buck1_set2		= EXYNOS4_GPX0(6),
+-	.buck2_voltage1		= 1200000,	/* G3D */
+-	.buck2_voltage2		= 1100000,
+ 	.buck1_default_idx	= 0,
++	.buck2_voltage		= { 1200000, 1100000 },
+ 	.buck2_set3		= EXYNOS4_GPE2(0),
+ 	.buck2_default_idx	= 0,
+ 	.wakeup			= true,
+diff --git a/arch/arm/mach-s5pv210/mach-aquila.c b/arch/arm/mach-s5pv210/mach-aquila.c
+index 11900a8..7e6c718 100644
+--- a/arch/arm/mach-s5pv210/mach-aquila.c
++++ b/arch/arm/mach-s5pv210/mach-aquila.c
+@@ -377,12 +377,8 @@ static struct max8998_platform_data aquila_max8998_pdata = {
+ 	.buck1_set1	= S5PV210_GPH0(3),
+ 	.buck1_set2	= S5PV210_GPH0(4),
+ 	.buck2_set3	= S5PV210_GPH0(5),
+-	.buck1_voltage1	= 1200000,
+-	.buck1_voltage2	= 1200000,
+-	.buck1_voltage3	= 1200000,
+-	.buck1_voltage4	= 1200000,
+-	.buck2_voltage1	= 1200000,
+-	.buck2_voltage2	= 1200000,
++	.buck1_voltage	= { 1200000, 1200000, 1200000, 1200000 },
++	.buck2_voltage	= { 1200000, 1200000 },
+ };
+ #endif
  
- struct max8998_irq_data {
-@@ -99,7 +100,8 @@ static struct max8998_irq_data max8998_irqs[] = {
- static inline struct max8998_irq_data *
- irq_to_max8998_irq(struct max8998_dev *max8998, int irq)
- {
--	return &max8998_irqs[irq - max8998->irq_base];
-+	struct irq_data *data = irq_get_irq_data(irq);
-+	return &max8998_irqs[data->hwirq];
- }
+diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-s5pv210/mach-goni.c
+index e373de4..2ae61d4 100644
+--- a/arch/arm/mach-s5pv210/mach-goni.c
++++ b/arch/arm/mach-s5pv210/mach-goni.c
+@@ -580,12 +580,8 @@ static struct max8998_platform_data goni_max8998_pdata = {
+ 	.buck1_set1	= S5PV210_GPH0(3),
+ 	.buck1_set2	= S5PV210_GPH0(4),
+ 	.buck2_set3	= S5PV210_GPH0(5),
+-	.buck1_voltage1	= 1200000,
+-	.buck1_voltage2	= 1200000,
+-	.buck1_voltage3	= 1200000,
+-	.buck1_voltage4	= 1200000,
+-	.buck2_voltage1	= 1200000,
+-	.buck2_voltage2	= 1200000,
++	.buck1_voltage	= { 1200000, 1200000, 1200000, 1200000 },
++	.buck2_voltage	= { 1200000, 1200000 },
+ };
+ #endif
  
- static void max8998_irq_lock(struct irq_data *data)
-@@ -176,8 +178,10 @@ static irqreturn_t max8998_irq_thread(int irq, void *data)
+diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
+index a57a1b1..8c45b93 100644
+--- a/drivers/regulator/max8998.c
++++ b/drivers/regulator/max8998.c
+@@ -630,6 +630,7 @@ static int max8998_pmic_probe(struct platform_device *pdev)
+ 	struct max8998_data *max8998;
+ 	struct i2c_client *i2c;
+ 	int i, ret, size;
++	unsigned int v;
  
- 	/* Report */
- 	for (i = 0; i < MAX8998_IRQ_NR; i++) {
--		if (irq_reg[max8998_irqs[i].reg - 1] & max8998_irqs[i].mask)
--			handle_nested_irq(max8998->irq_base + i);
-+		if (irq_reg[max8998_irqs[i].reg - 1] & max8998_irqs[i].mask) {
-+			irq = irq_linear_revmap(max8998->irq_domain, i);
-+			handle_nested_irq(irq);
+ 	if (!pdata) {
+ 		dev_err(pdev->dev.parent, "No platform init data supplied\n");
+@@ -688,53 +689,21 @@ static int max8998_pmic_probe(struct platform_device *pdev)
+ 		gpio_request(pdata->buck1_set2, "MAX8998 BUCK1_SET2");
+ 		gpio_direction_output(pdata->buck1_set2,
+ 				      (max8998->buck1_idx >> 1) & 0x1);
+-		/* Set predefined value for BUCK1 register 1 */
+-		i = 0;
+-		while (buck12_voltage_map_desc.min +
+-		       buck12_voltage_map_desc.step*i
+-		       < pdata->buck1_voltage1)
+-			i++;
+-		max8998->buck1_vol[0] = i;
+-		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK1_VOLTAGE1, i);
+-		if (ret)
+-			goto err_out;
+-
+-		/* Set predefined value for BUCK1 register 2 */
+-		i = 0;
+-		while (buck12_voltage_map_desc.min +
+-		       buck12_voltage_map_desc.step*i
+-		       < pdata->buck1_voltage2)
+-			i++;
+-
+-		max8998->buck1_vol[1] = i;
+-		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK1_VOLTAGE2, i);
+-		if (ret)
+-			goto err_out;
+-
+-		/* Set predefined value for BUCK1 register 3 */
+-		i = 0;
+-		while (buck12_voltage_map_desc.min +
+-		       buck12_voltage_map_desc.step*i
+-		       < pdata->buck1_voltage3)
+-			i++;
+-
+-		max8998->buck1_vol[2] = i;
+-		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK1_VOLTAGE3, i);
+-		if (ret)
+-			goto err_out;
+-
+-		/* Set predefined value for BUCK1 register 4 */
+-		i = 0;
+-		while (buck12_voltage_map_desc.min +
+-		       buck12_voltage_map_desc.step*i
+-		       < pdata->buck1_voltage4)
+-			i++;
+-
+-		max8998->buck1_vol[3] = i;
+-		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK1_VOLTAGE4, i);
+-		if (ret)
+-			goto err_out;
+ 
++		/* Set predefined values for BUCK1 registers */
++		for (v = 0; v < ARRAY_SIZE(pdata->buck1_voltage); ++v) {
++			i = 0;
++			while (buck12_voltage_map_desc.min +
++			       buck12_voltage_map_desc.step*i
++			       < pdata->buck1_voltage[v])
++				i++;
++
++			max8998->buck1_vol[v] = i;
++			ret = max8998_write_reg(i2c,
++					MAX8998_REG_BUCK1_VOLTAGE1 + v, i);
++			if (ret)
++				goto err_out;
 +		}
  	}
  
- 	return IRQ_HANDLED;
-@@ -185,27 +189,40 @@ static irqreturn_t max8998_irq_thread(int irq, void *data)
+ 	if (gpio_is_valid(pdata->buck2_set3)) {
+@@ -750,27 +719,20 @@ static int max8998_pmic_probe(struct platform_device *pdev)
+ 		gpio_direction_output(pdata->buck2_set3,
+ 				      max8998->buck2_idx & 0x1);
  
- int max8998_irq_resume(struct max8998_dev *max8998)
- {
--	if (max8998->irq && max8998->irq_base)
--		max8998_irq_thread(max8998->irq_base, max8998);
-+	if (max8998->irq && max8998->irq_domain)
-+		max8998_irq_thread(0, max8998);
-+	return 0;
-+}
-+
-+static int max8998_irq_domain_map(struct irq_domain *d, unsigned int irq,
-+					irq_hw_number_t hw)
-+{
-+	struct max8997_dev *max8998 = d->host_data;
-+
-+	irq_set_chip_data(irq, max8998);
-+	irq_set_chip_and_handler(irq, &max8998_irq_chip, handle_edge_irq);
-+	irq_set_nested_thread(irq, 1);
-+#ifdef CONFIG_ARM
-+	set_irq_flags(irq, IRQF_VALID);
-+#else
-+	irq_set_noprobe(irq);
-+#endif
- 	return 0;
- }
- 
-+static struct irq_domain_ops max8998_irq_domain_ops = {
-+	.map = max8998_irq_domain_map,
-+};
-+
- int max8998_irq_init(struct max8998_dev *max8998)
- {
- 	int i;
--	int cur_irq;
- 	int ret;
-+	struct irq_domain *domain;
- 
- 	if (!max8998->irq) {
- 		dev_warn(max8998->dev,
- 			 "No interrupt specified, no interrupts\n");
--		max8998->irq_base = 0;
--		return 0;
--	}
+-		/* BUCK2 register 1 */
+-		i = 0;
+-		while (buck12_voltage_map_desc.min +
+-		       buck12_voltage_map_desc.step*i
+-		       < pdata->buck2_voltage1)
+-			i++;
+-		max8998->buck2_vol[0] = i;
+-		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK2_VOLTAGE1, i);
+-		if (ret)
+-			goto err_out;
 -
--	if (!max8998->irq_base) {
--		dev_err(max8998->dev,
--			"No interrupt base specified, no interrupts\n");
- 		return 0;
- 	}
- 
-@@ -221,19 +238,13 @@ int max8998_irq_init(struct max8998_dev *max8998)
- 	max8998_write_reg(max8998->i2c, MAX8998_REG_STATUSM1, 0xff);
- 	max8998_write_reg(max8998->i2c, MAX8998_REG_STATUSM2, 0xff);
- 
--	/* register with genirq */
--	for (i = 0; i < MAX8998_IRQ_NR; i++) {
--		cur_irq = i + max8998->irq_base;
--		irq_set_chip_data(cur_irq, max8998);
--		irq_set_chip_and_handler(cur_irq, &max8998_irq_chip,
--					 handle_edge_irq);
--		irq_set_nested_thread(cur_irq, 1);
--#ifdef CONFIG_ARM
--		set_irq_flags(cur_irq, IRQF_VALID);
--#else
--		irq_set_noprobe(cur_irq);
--#endif
-+	domain = irq_domain_add_linear(NULL, MAX8998_IRQ_NR,
-+					&max8998_irq_domain_ops, max8998);
-+	if (!domain) {
-+		dev_err(max8998->dev, "could not create irq domain\n");
-+		return -ENODEV;
- 	}
-+	max8998->irq_domain = domain;
- 
- 	ret = request_threaded_irq(max8998->irq, NULL, max8998_irq_thread,
- 				   IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
-index d7218cc..e9bd352 100644
---- a/drivers/mfd/max8998.c
-+++ b/drivers/mfd/max8998.c
-@@ -146,7 +146,6 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
- 	max8998->type = id->driver_data;
- 	if (pdata) {
- 		max8998->ono = pdata->ono;
--		max8998->irq_base = pdata->irq_base;
- 		max8998->wakeup = pdata->wakeup;
- 	}
- 	mutex_init(&max8998->iolock);
-diff --git a/drivers/rtc/rtc-max8998.c b/drivers/rtc/rtc-max8998.c
-index 8f234a0..f854983 100644
---- a/drivers/rtc/rtc-max8998.c
-+++ b/drivers/rtc/rtc-max8998.c
-@@ -16,6 +16,7 @@
- #include <linux/i2c.h>
- #include <linux/slab.h>
- #include <linux/bcd.h>
-+#include <linux/irqdomain.h>
- #include <linux/rtc.h>
- #include <linux/platform_device.h>
- #include <linux/mfd/max8998.h>
-@@ -263,7 +264,6 @@ static int max8998_rtc_probe(struct platform_device *pdev)
- 	info->dev = &pdev->dev;
- 	info->max8998 = max8998;
- 	info->rtc = max8998->rtc;
--	info->irq = max8998->irq_base + MAX8998_IRQ_ALARM0;
- 
- 	platform_set_drvdata(pdev, info);
- 
-@@ -276,6 +276,15 @@ static int max8998_rtc_probe(struct platform_device *pdev)
- 		goto out_rtc;
- 	}
- 
-+	if (!max8998->irq_domain)
-+		goto no_irq;
+-		/* BUCK2 register 2 */
+-		i = 0;
+-		while (buck12_voltage_map_desc.min +
+-		       buck12_voltage_map_desc.step*i
+-		       < pdata->buck2_voltage2)
+-			i++;
+-		max8998->buck2_vol[1] = i;
+-		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK2_VOLTAGE2, i);
+-		if (ret)
+-			goto err_out;
++		/* Set predefined values for BUCK2 registers */
++		for (v = 0; v < ARRAY_SIZE(pdata->buck2_voltage); ++v) {
++			i = 0;
++			while (buck12_voltage_map_desc.min +
++			       buck12_voltage_map_desc.step*i
++			       < pdata->buck2_voltage[v])
++				i++;
 +
-+	info->irq = irq_create_mapping(max8998->irq_domain, MAX8998_IRQ_ALARM0);
-+	if (!info->irq) {
-+		dev_warn(&pdev->dev, "Failed to map alarm IRQ\n");
-+		goto no_irq;
-+	}
-+
- 	ret = request_threaded_irq(info->irq, NULL, max8998_rtc_alarm_irq, 0,
- 			"rtc-alarm0", info);
- 
-@@ -283,6 +292,7 @@ static int max8998_rtc_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "Failed to request alarm IRQ: %d: %d\n",
- 			info->irq, ret);
- 
-+no_irq:
- 	dev_info(&pdev->dev, "RTC CHIP NAME: %s\n", pdev->id_entry->name);
- 	if (pdata->rtc_delay) {
- 		info->lp3974_bug_workaround = true;
-@@ -303,7 +313,8 @@ static int max8998_rtc_remove(struct platform_device *pdev)
- 	struct max8998_rtc_info *info = platform_get_drvdata(pdev);
- 
- 	if (info) {
--		free_irq(info->irq, info);
-+		if (info->irq)
-+			free_irq(info->irq, info);
- 		rtc_device_unregister(info->rtc_dev);
- 		kfree(info);
++			max8998->buck2_vol[v] = i;
++			ret = max8998_write_reg(i2c,
++					MAX8998_REG_BUCK2_VOLTAGE1 + v, i);
++			if (ret)
++				goto err_out;
++		}
  	}
-diff --git a/include/linux/mfd/max8998-private.h b/include/linux/mfd/max8998-private.h
-index effa5d3..e81077a 100644
---- a/include/linux/mfd/max8998-private.h
-+++ b/include/linux/mfd/max8998-private.h
-@@ -132,6 +132,8 @@ enum {
  
- #define MAX8998_ENRAMP                  (1 << 4)
- 
-+struct irq_domain;
-+
- /**
-  * struct max8998_dev - max8998 master device for sub-drivers
-  * @dev: master device of the chip (can be used to access platform data)
-@@ -153,7 +155,7 @@ struct max8998_dev {
- 	struct mutex iolock;
- 	struct mutex irqlock;
- 
--	int irq_base;
-+	struct irq_domain *irq_domain;
- 	int irq;
- 	int ono;
- 	u8 irq_masks_cur[MAX8998_NUM_IRQ_REGS];
+ 	for (i = 0; i < pdata->num_regulators; i++) {
 diff --git a/include/linux/mfd/max8998.h b/include/linux/mfd/max8998.h
-index 6823548..9df60ba 100644
+index 9df60ba..e8b9ba7 100644
 --- a/include/linux/mfd/max8998.h
 +++ b/include/linux/mfd/max8998.h
-@@ -68,7 +68,6 @@ struct max8998_regulator_data {
-  * struct max8998_board - packages regulator init data
-  * @regulators: array of defined regulators
-  * @num_regulators: number of regulators used
-- * @irq_base: base IRQ number for max8998, required for IRQs
-  * @ono: power onoff IRQ number for max8998
+@@ -72,12 +72,8 @@ struct max8998_regulator_data {
   * @buck_voltage_lock: Do NOT change the values of the following six
   *   registers set by buck?_voltage?. The voltage of BUCK1/2 cannot
-@@ -100,7 +99,6 @@ struct max8998_regulator_data {
- struct max8998_platform_data {
- 	struct max8998_regulator_data	*regulators;
+  *   be other than the preset values.
+- * @buck1_voltage1: BUCK1 DVS mode 1 voltage register
+- * @buck1_voltage2: BUCK1 DVS mode 2 voltage register
+- * @buck1_voltage3: BUCK1 DVS mode 3 voltage register
+- * @buck1_voltage4: BUCK1 DVS mode 4 voltage register
+- * @buck2_voltage1: BUCK2 DVS mode 1 voltage register
+- * @buck2_voltage2: BUCK2 DVS mode 2 voltage register
++ * @buck1_voltage: BUCK1 DVS mode 1 voltage registers
++ * @buck2_voltage: BUCK2 DVS mode 2 voltage registers
+  * @buck1_set1: BUCK1 gpio pin 1 to set output voltage
+  * @buck1_set2: BUCK1 gpio pin 2 to set output voltage
+  * @buck1_default_idx: Default for BUCK1 gpio pin 1, 2
+@@ -101,12 +97,8 @@ struct max8998_platform_data {
  	int				num_regulators;
--	int				irq_base;
  	int				ono;
  	bool				buck_voltage_lock;
- 	int				buck1_voltage1;
+-	int				buck1_voltage1;
+-	int				buck1_voltage2;
+-	int				buck1_voltage3;
+-	int				buck1_voltage4;
+-	int				buck2_voltage1;
+-	int				buck2_voltage2;
++	int				buck1_voltage[4];
++	int				buck2_voltage[2];
+ 	int				buck1_set1;
+ 	int				buck1_set2;
+ 	int				buck1_default_idx;
 -- 
 1.8.1.5
 
