@@ -1,100 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759528Ab3DDMEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 08:04:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61576 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759344Ab3DDMEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 08:04:42 -0400
-Date: Thu, 4 Apr 2013 14:04:42 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alexander Graf <agraf@suse.de>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Christoffer Dall <c.dall@virtualopensystems.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH RFC] kvm: add PV MMIO EVENTFD
-Message-ID: <20130404110442.GA6467@redhat.com>
-References: <20130404104846.GA6227@redhat.com>
- <6D40C5F1-849E-4F32-B391-E1A1BFA8C59D@suse.de>
+	id S1759565Ab3DDMHD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 08:07:03 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:61342 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759439Ab3DDMHA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 08:07:00 -0400
+X-Originating-IP: 108.223.40.66
+Date: Thu, 4 Apr 2013 05:07:07 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Mike Frysinger <vapier@gentoo.org>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Blackfin: bf537: rename "CONFIG_AD7314"
+Message-ID: <20130404120707.GA27590@roeck-us.net>
+References: <1365070105.1830.21.camel@x61.thuisdomein>
+ <1365070623.1830.24.camel@x61.thuisdomein>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6D40C5F1-849E-4F32-B391-E1A1BFA8C59D@suse.de>
+In-Reply-To: <1365070623.1830.24.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 01:57:34PM +0200, Alexander Graf wrote:
+On Thu, Apr 04, 2013 at 12:17:03PM +0200, Paul Bolle wrote:
+> [Forwarded to a recent address of Guenter, as the ericsson address
+> bounces.]
 > 
-> On 04.04.2013, at 12:50, Michael S. Tsirkin wrote:
+> Paul Bolle
 > 
-> > With KVM, MMIO is much slower than PIO, due to the need to
-> > do page walk and emulation. But with EPT, it does not have to be: we
-> > know the address from the VMCS so if the address is unique, we can look
-> > up the eventfd directly, bypassing emulation.
+> On Thu, 2013-04-04 at 12:08 +0200, Paul Bolle wrote:
+> > In v3.2 the Analog Devices AD7314 temperature sensor driver was removed
+> > as an IIO driver and added as a HWMON driver. But it was apparently
+> > overlooked to rename two references to CONFIG_AD7314 to
+> > CONFIG_SENSORS_AD7314. Do so now. Use the IS_ENABLED() macro, while
+> > we're at it.
 > > 
-> > Add an interface for userspace to specify this per-address, we can
-> > use this e.g. for virtio.
+> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> > ---
+> > 0) Entirely untested.
 > > 
-> > The implementation adds a separate bus internally. This serves two
-> > purposes:
-> > - minimize overhead for old userspace that does not use PV MMIO
-> > - minimize disruption in other code (since we don't know the length,
-> >  devices on the MMIO bus only get a valid address in write, this
-> >  way we don't need to touch all devices to teach them handle
-> >  an dinvalid length)
+> > 1) See commits 4f3a659581cabf1be441d6467b523be914615496 ("hwmon: AD7314
+> > driver (ported from IIO)") and 48a2c3799b7141c271a771d3249142a104faeefc
+> > ("staging:iio:adc:ad7314 removal. Supported via hwmon.") for the two
+> > patches involved.
 > > 
-> > At the moment, this optimization is only supported for EPT on x86 and
-> > silently ignored for NPT and MMU, so everything works correctly but
-> > slowly.
+> >  arch/blackfin/mach-bf537/boards/stamp.c | 4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
 > > 
-> > TODO: NPT, MMU and non x86 architectures.
-> > 
-> > The idea was suggested by Peter Anvin.  Lots of thanks to Gleb for
-> > pre-review and suggestions.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
+> > index 23bb55d..b40b849 100644
+> > --- a/arch/blackfin/mach-bf537/boards/stamp.c
+> > +++ b/arch/blackfin/mach-bf537/boards/stamp.c
+> > @@ -681,7 +681,7 @@ static struct bfin5xx_spi_chip ad2s1210_spi_chip_info = {
+> >  };
+> >  #endif
+> >  
+> > -#if defined(CONFIG_AD7314) || defined(CONFIG_AD7314_MODULE)
+> > +#if IS_ENABLED(CONFIG_SENSORS_AD7314)
+> >  static struct bfin5xx_spi_chip ad7314_spi_chip_info = {
+> >  	.enable_dma = 0,
+> >  };
+> > @@ -1039,7 +1039,7 @@ static struct spi_board_info bfin_spi_board_info[] __initdata = {
+> >  	},
+> >  #endif
+> >  
+> > -#if defined(CONFIG_AD7314) || defined(CONFIG_AD7314_MODULE)
+> > +#if IS_ENABLED(CONFIG_SENSORS_AD7314)
+> >  	{
+> >  		.modalias = "ad7314",
+> >  		.max_speed_hz = 1000000,
 > 
-> This still uses page fault intercepts which are orders of magnitudes
-> slower than hypercalls.
+Acked-by: Guenter Roeck <linux@roeck-us.net>
 
-Not really. Here's a test:
-compare vmcall to portio:
+Really wonder ... there should be a better solution than all those ifdefs.
 
-vmcall 1519
-...
-outl_to_kernel 1745
-
-compare portio to mmio:
-
-mmio-wildcard-eventfd:pci-mem 3529
-mmio-pv-eventfd:pci-mem 1878
-portio-wildcard-eventfd:pci-io 1846
-
-So not orders of magnitude.
-
-> Why don't you just create a PV MMIO hypercall
-> that the guest can use to invoke MMIO accesses towards the host based
-> on physical addresses with explicit length encodings?
-> That way you simplify and speed up all code paths, exceeding the speed
-> of PIO exits even. It should also be quite easily portable, as all
-> other platforms have hypercalls available as well.
-> 
-> 
-> Alex
-
-I sent such a patch, but maintainers seem reluctant to add hypercalls.
-Gleb, could you comment please?
-
-A fast way to do MMIO is probably useful in any case ...
-
->  Alex
+Guenter
