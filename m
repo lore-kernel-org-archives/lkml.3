@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764848Ab3DDU2a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 16:28:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57422 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1764829Ab3DDU22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 16:28:28 -0400
-Message-ID: <515DE24D.3080507@zytor.com>
-Date: Thu, 04 Apr 2013 13:27:57 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1764839Ab3DDUaH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 16:30:07 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:45071
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1764807Ab3DDUaE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 16:30:04 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI1432I4015Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-WSS-ID: 0MKQZLO-02-42X-02
+X-M-MSG: 
+Date: Thu, 4 Apr 2013 15:29:47 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH V4 2/2] cpufreq: AMD "frequency sensitivity feedback"
+ powersave bias for ondemand governor
+Message-ID: <20130404202947.GB24479@jshin-Toonie>
+References: <1365092344-11310-1-git-send-email-jacob.shin@amd.com>
+ <1365092344-11310-3-git-send-email-jacob.shin@amd.com>
+ <20130404192323.GI32271@pd.tnic>
 MIME-Version: 1.0
-To: Julien Tinnes <jln@google.com>
-CC: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        kernel-hardening@lists.openwall.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Will Drewry <wad@chromium.org>
-Subject: Re: [PATCH 3/3] x86: kernel base offset ASLR
-References: <1365106055-22939-1-git-send-email-keescook@chromium.org> <1365106055-22939-4-git-send-email-keescook@chromium.org> <515DDEC0.9000109@zytor.com> <CAKyRK=iZeYv8MPa2tLfRRTmNX2WQsT+t3UAu_wy3uT9TiZokgA@mail.gmail.com> <CAKyRK=ic3QHOLKen=jxgeEN5mVVj_Gyt-1wXOniKNgO75f80Qw@mail.gmail.com>
-In-Reply-To: <CAKyRK=ic3QHOLKen=jxgeEN5mVVj_Gyt-1wXOniKNgO75f80Qw@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130404192323.GI32271@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2013 01:23 PM, Julien Tinnes wrote:
-> On Thu, Apr 4, 2013 at 1:19 PM, Julien Tinnes <jln@google.com> wrote:
->> On Thu, Apr 4, 2013 at 1:12 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> On 04/04/2013 01:07 PM, Kees Cook wrote:
->>>> However, the benefits of
->>>> this feature in certain environments exceed the perceived weaknesses[2].
->>>
->>> Could you clarify?
->>
->> I think privilege reduction in general, and sandboxing in particular,
->> can make KASLR even more useful. A lot of the information leaks can be
->> mitigated in the same way as attack surface and vulnerabilities can be
->> mitigated.
+On Thu, Apr 04, 2013 at 09:23:23PM +0200, Borislav Petkov wrote:
+> On Thu, Apr 04, 2013 at 11:19:04AM -0500, Jacob Shin wrote:
+> > Future AMD processors, starting with Family 16h, can provide software
+> > with feedback on how the workload may respond to frequency change --
+> > memory-bound workloads will not benefit from higher frequency, where
+> > as compute-bound workloads will. This patch enables this "frequency
+> > sensitivity feedback" to aid the ondemand governor to make better
+> > frequency change decisions by hooking into the powersave bias.
+> > 
+> > Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 > 
-> Case in point:
-> - leaks of 64 bits kernel values to userland in compatibility
-> sub-mode. Sandboxing by using seccomp-bpf can restrict a process to
-> the 64-bit mode API.
-> - restricting access to the syslog() system call
+> Looks good to me.
 > 
+> Acked-by: Borislav Petkov <bp@suse.de>
 
-That doesn't really speak to the value proposition.  My concern is that
-we're going to spend a lot of time chasing/plugging infoleaks instead of
-tackling bigger problems.
+Rafael, got acks from both Boris and Thomas. Please commit to
+linux-next when you get the chance.
 
-8 bits of entropy is not a lot.
+Thanks,
 
-	-hpa
+-Jacob
+
+> 
+> -- 
+> Regards/Gruss,
+>     Boris.
+> 
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
+> 
 
