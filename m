@@ -1,62 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762860Ab3DDQNq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:13:46 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:50712 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762770Ab3DDQNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:13:44 -0400
-Date: Thu, 4 Apr 2013 18:13:40 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Daniel J Blueman <daniel@numascale-asia.com>
-Cc: Tony Luck <tony.luck@intel.com>, Borislav Petkov <bp@alien8.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Steffen Persvold <sp@numascale.com>
-Subject: Re: [PATCH] x86, amd, mce: Prevent potential cpu-online oops
-Message-ID: <20130404161340.GF32271@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Daniel J Blueman <daniel@numascale-asia.com>,
-	Tony Luck <tony.luck@intel.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-	x86@kernel.org, linux-edac@vger.kernel.org,
-	linux-kernel@vger.kernel.org, Steffen Persvold <sp@numascale.com>
-References: <1365090720-12652-1-git-send-email-daniel@numascale-asia.com>
+	id S1762902Ab3DDQQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:16:57 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:44207 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762887Ab3DDQQ4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 12:16:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1365090720-12652-1-git-send-email-daniel@numascale-asia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1365088091-10862-1-git-send-email-nhorman@tuxdriver.com>
+References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
+	<1365088091-10862-1-git-send-email-nhorman@tuxdriver.com>
+Date: Thu, 4 Apr 2013 09:16:55 -0700
+X-Google-Sender-Auth: 6bbjRci8KiJl5bHMF6vqoUsmXVY
+Message-ID: <CAE9FiQUq8m_2fpyRrLweCZwR7cqFBfbZrt9ZeK-PVL3Puxjp0g@mail.gmail.com>
+Subject: Re: [PATCH v4] irq: add quirk for broken interrupt remapping on 55XX chipsets
+From: Yinghai Lu <yinghai@kernel.org>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Prarit Bhargava <prarit@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Don Dutile <ddutile@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Asit Mallick <asit.k.mallick@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 11:52:00PM +0800, Daniel J Blueman wrote:
-> On platforms where all Northbridges may not be visible (due to routing, eg on
-> NumaConnect systems), prevent oopsing due to stale pointer access when
-> offlining cores.
-> 
-> Signed-off-by: Steffen Persvold <sp@numascale.com>
-> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+On Thu, Apr 4, 2013 at 8:08 AM, Neil Horman <nhorman@tuxdriver.com> wrote:
+> A few years back intel published a spec update:
+> http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
+>
+> For the 5520 and 5500 chipsets which contained an errata (specificially errata
+> 53), which noted that these chipsets can't properly do interrupt remapping, and
+> as a result the recommend that interrupt remapping be disabled in bios.  While
+> many vendors have a bios update to do exactly that, not all do, and of course
+> not all users update their bios to a level that corrects the problem.  As a
+> result, occasionally interrupts can arrive at a cpu even after affinity for that
+> interrupt has be moved, leading to lost or spurrious interrupts (usually
+> characterized by the message:
+> kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
+>
+> There have been several incidents recently of people seeing this error, and
+> investigation has shown that they have system for which their BIOS level is such
+> that this feature was not properly turned off.  As such, it would be good to
+> give them a reminder that their systems are vulnurable to this problem.
+>
+> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> CC: Prarit Bhargava <prarit@redhat.com>
+> CC: Don Zickus <dzickus@redhat.com>
+> CC: Don Dutile <ddutile@redhat.com>
+> CC: Bjorn Helgaas <bhelgaas@google.com>
+> CC: Asit Mallick <asit.k.mallick@intel.com>
+> CC: David Woodhouse <dwmw2@infradead.org>
+> CC: linux-pci@vger.kernel.org
+> ---
+>
+> Change notes:
+>
+> v2)
+>
+> * Moved the quirk to the x86 arch, since consensus seems to be that the 55XX
+> chipset series is x86 only.  I decided however to keep the quirk as a regular
+> quirk, not an early_quirk.  Early quirks have no way currently to determine if
+> BIOS has properly disabled the feature in the iommu, at least not without
+> significant hacking, and since its quite possible this will be a short lived
+> quirk, should Don Z's workaround code prove successful (and it looks like it may
+> well), I don't think that necessecary.
+>
+> * Removed the WARNING banner from the quirk, and added the HW_ERR token to the
+> string, I opted to leave the newlines in place however, as I really couldnt
+> find a way to keep the text on a single line is still legible from a code
+> perspective.  I think theres enough language in there that using cscope on just
+> about any substring however will turn it up, and again, this may be a short
+> lived quirk.
+>
+> v3)
+>
+> * Removed defines from pci_ids.h, and used direct id values as per request from
+> Bjorn.
+>
+> v4)
+>
+> * Converted pr_warn to WARN_TAINT(TAINT_FIRMWARE_WORKAROUND) as per David
+> Woodhouse
+> ---
+>  arch/x86/kernel/quirks.c | 18 ++++++++++++++++++
+>  1 file changed, 18 insertions(+)
+>
+> diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
+> index 26ee48a..eb0785d 100644
+> --- a/arch/x86/kernel/quirks.c
+> +++ b/arch/x86/kernel/quirks.c
+> @@ -5,6 +5,7 @@
+>  #include <linux/irq.h>
+>
+>  #include <asm/hpet.h>
+> +#include "../../../drivers/iommu/irq_remapping.h"
+>
+>  #if defined(CONFIG_X86_IO_APIC) && defined(CONFIG_SMP) && defined(CONFIG_PCI)
+>
+> @@ -567,3 +568,20 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F5,
+>                         quirk_amd_nb_node);
+>
+>  #endif
+> +
+> +static void intel_remapping_check(struct pci_dev *dev)
+> +{
+> +       u8 revision;
+> +
+> +       pci_read_config_byte(dev, PCI_REVISION_ID, &revision);
+> +
+> +       WARN_TAINT(((revision == 0x13) && irq_remapping_enabled),
+> +                  TAINT_FIRMWARE_WORKAROUND,
+> +                   "This system BIOS has enabled interrupt remapping\n"
+> +                   "on a chipset that contains an erratum making that\n"
+> +                   "feature unstable.  Please reboot with nointremap\n"
+> +                   "added to the kernel command line and contact\n"
+> +                   "your BIOS vendor for an update");
+> +}
+> +DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x3406, intel_remapping_check);
+> +DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_INTEL, 0x3403, intel_remapping_check);
 
-Huh, what's up?
+No, you only address my one request, move to arch/x86 directory.
 
-This one is almost reverting 21c5e50e15b1a which you wrote in the first
-place. What's happening? What stale pointer access, where? We have the
-if (nb ..) guards there.
+You need to move the quirk to early_quirk to append nointremap to
+avoid extra rebooting.
 
-This commit message needs a *lot* more explanation about what's going
-on and why we're reverting 21c5e50e15b1a. And why the special handling
-for shared banks? I presume you offline some of the cores and there's a
-dangling pointer but again, there are the nb validity guards...
+Thanks
 
-/me is genuinely confused.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Yinghai
