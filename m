@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762971Ab3DDEnc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 00:43:32 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41689 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756088Ab3DDEna (ORCPT
+	id S1763094Ab3DDEyn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 00:54:43 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:59193 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756544Ab3DDEyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 00:43:30 -0400
-Date: Thu, 4 Apr 2013 15:43:29 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: linux-next: manual merge of the staging tree with the vfs tree
-Message-Id: <20130404154329.d0c983568da9650d5dcb31bd@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__4_Apr_2013_15_43_29_+1100_zPYyW3.SRIQbcM7A"
+	Thu, 4 Apr 2013 00:54:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <515CBB98.4020607@semaphore.gr>
+References: <ore61p9gvaic2j0fc083dpbd.1364970699079@email.android.com>
+	<CAKohponUuwiQ9EiKq66Mgf7zZxonxHs=DNbhx=uydDVB5bed6w@mail.gmail.com>
+	<3060957.HxB12olH3c@vostro.rjw.lan>
+	<515CBB98.4020607@semaphore.gr>
+Date: Thu, 4 Apr 2013 10:24:40 +0530
+Message-ID: <CAKohpomV7uSS1suFKGiGJfGvvqodKHhvc_uO3WsR4jzUg+1o9g@mail.gmail.com>
+Subject: Re: [PATCH v3 linux-next] cpufreq: ondemand: Calculate gradient of
+ CPU load to early increase frequency
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__4_Apr_2013_15_43_29_+1100_zPYyW3.SRIQbcM7A
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Stratos,
 
-Hi Greg,
+On 4 April 2013 05:00, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+> I tried to do some measurements simulating a CPU load with a loop that simply counts
+> an integer. The first test simulates a CPU load that lasts 2 x sampling_rate = ~ 20000us.
+> The second ~40000us and the third ~60000us.
+> There are 5 runs in each test. In each run the benchmark program counts 20 times with
+> early_demand off and 20 times with early_demand on and takes the average times.
+>
+> I run the benchmark program on 3.9-rc5 + early_demand patch. My CPU is the i7-3770 @ 3.40 GHz
+>
+> Please find below the results, and the benchmark code attached.
+> Please note, that the idea of this patch is to push the CPU to max frequency few sampling
+> periods (1 in most cases) earlier for a more responsive system.
 
-Today's linux-next merge of the staging tree got conflicts in
-drivers/staging/ccg/f_fs.c and drivers/staging/ccg/rndis.c between
-commits 465bced2e3ed ("ccg: don't bother with fops->owner") and
-4dfac87dca02 ("procfs: new helper - PDE_DATA(inode)") from the vfs tree
-and commit 515e6dd20b3f ("Staging: ccg: delete it from the tree") from
-the staging tree.
+Yes, your results show some improvements. BUT if performance is the only thing
+we were looking for, then we will never use ondemand governor but performance
+governor.
 
-The latter just deletes the files, so I did that and can carry the fix as
-necessary (no action is required).
+I suspect this little increase in performance must have increased power numbers
+too (significantly). So, if you can get numbers in the form of power/performance
+with and without your patch, it will be great.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__4_Apr_2013_15_43_29_+1100_zPYyW3.SRIQbcM7A
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRXQTxAAoJEECxmPOUX5FEilEP/0I1/q/DOqiM4g5IUkCsth1w
-q+pvU+DLSYv5Yk5+Hl9EMk9QemDWEXkOsdgt9yWvbHRd+0O78o4KX+Gjc0EFIfud
-wi6QYjUindxcARPJTlemZly+AXIzVjghrUP+gZ7RdtxCIpOkJvvJerqzR6pNuLaF
-Lhajo8Rcl1GUX8aDq2C4dqE57+UsyKwsRGWONJBKRAi84VjZEVTkYI2yMGaRA/36
-67ft0JTr7HetvtQJnxDtHFLJiR6CRO5rB7+Ed9urz9aj7+kVC4UfN8Bor7IYArV7
-gt5NjzaArmxEP//9UkxDnsYtkCQXEYdYp/a6NYkK9g408ukr6963c59YOZFehSQ5
-6rjbvqMxFFgWJXN5sEupz3JW9U4TS+8Fo2aXsjPcGRKm8omei7hOCsyQpCF9chXI
-79KyVeIfIgesk961wDXnUZ5EghIl9Bur1eSJvHnMmnFACKT4mFZ2YsbMuHiCswQ3
-1gUMXZ7HgstF32f3SHXAWzXfu0W7keRk0L2zeHAQ7YIPwYtmgrreVieOHMdPezOr
-yGuyV4HYcQ0EA19AV9KHIV6Gy/wakKdjXEZN5PQlDq71ebRcnZXG2eYBQnLoPvcz
-PJ7J+9DDiNOOSMuVMnDWPwfe7RCKiVbmQo2fTJuGP5tZTloJD3iNBu4Y7cdpvPbF
-nzYvwBwCEEuA8+8gNP+r
-=3JQC
------END PGP SIGNATURE-----
-
---Signature=_Thu__4_Apr_2013_15_43_29_+1100_zPYyW3.SRIQbcM7A--
+--
+viresh
