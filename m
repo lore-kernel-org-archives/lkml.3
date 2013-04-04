@@ -1,203 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765286Ab3DDW3F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 18:29:05 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:51505 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1765250Ab3DDW3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 18:29:02 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org
-Subject: Re: [PATCH 00/18] For-3.10: CPUFreq: Move drivers to drivers/cpufreq
-Date: Fri, 05 Apr 2013 00:36:40 +0200
-Message-ID: <2724059.EMM6yAeBck@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <cover.1365079581.git.viresh.kumar@linaro.org>
-References: <cover.1365079581.git.viresh.kumar@linaro.org>
+	id S1765302Ab3DDWan (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 18:30:43 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:40947 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765257Ab3DDWam (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 18:30:42 -0400
+Date: Thu, 4 Apr 2013 15:30:34 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Stancek <jstancek@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Ian Lance Taylor <iant@google.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: prevent mmap_cache race in find_vma()
+Message-ID: <20130404223034.GQ28522@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.LNX.2.00.1304041120510.26822@eggly.anvils>
+ <CA+55aFwCG2h1ijWTCJ38LVcUyczDAfk72c4MVSU+_-BiLoMOOw@mail.gmail.com>
+ <alpine.LNX.2.00.1304041149030.29847@eggly.anvils>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1304041149030.29847@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040422-2398-0000-0000-000012EEA96D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 04, 2013 06:24:08 PM Viresh Kumar wrote:
-> Hi Rafael,
+On Thu, Apr 04, 2013 at 12:01:52PM -0700, Hugh Dickins wrote:
+> On Thu, 4 Apr 2013, Linus Torvalds wrote:
+> > On Thu, Apr 4, 2013 at 11:35 AM, Hugh Dickins <hughd@google.com> wrote:
+> > >
+> > > find_vma() can be called by multiple threads with read lock
+> > > held on mm->mmap_sem and any of them can update mm->mmap_cache.
+> > > Prevent compiler from re-fetching mm->mmap_cache, because other
+> > > readers could update it in the meantime:
+> > 
+> > Ack. I do wonder if we should mark the unlocked update too some way
+> > (also in find_vma()), although it's probably not a problem in practice
+> > since there's no way the compiler can reasonably really do anything
+> > odd with it. We *could* make that an ACCESS_ONCE() write too just to
+> > highlight the fact that it's an unlocked write to this optimistic data
+> > structure.
 > 
-> These are all the remaining patches i have for 3.10. All of them have received
-> Acks from their maintainers leaving powerpc ones. I have got an additional patch
-> for powerpc (18) this time, it was the only driver left out of drivers/cpufreq.
+> Hah, you beat me to it.
 > 
-> Please consider them for applying to your bleeding-edge or linux-next.
+> I wanted to get Jan's patch in first, seeing as it actually fixes his
+> observed issue; and it is very nice to have such a good description of
+> one of those, when ACCESS_ONCE() is usually just an insurance policy.
+> 
+> But then I was researching the much rarer "ACCESS_ONCE(x) = y" usage
+> (popular in drivers/net/wireless/ath/ath9k and kernel/rcutree* and
+> sound/firewire, but few places else).
+> 
+> When Paul reminded us of it yesterday, I came to wonder if actually
+> every use of ACCESS_ONCE in the read form should strictly be matched
+> by ACCESS_ONCE whenever modifying the location.
 
-Patches [1-16/18] plus the fixed-up [18/18] (slightly modified due to the
-ordering change) applied to bleeding-edge.  For [17/18] I need an ACK from the
-powerpc side.
+>From a hygiene/insurance/documentation point of view, I agree.  Of course,
+it is OK to use things like cmpxchg() in place of ACCESS_ONCE().
 
-Thanks,
-Rafael
+The possible exceptions that come to mind are (1) if the access in
+question is done holding a lock that excludes all other accesses to that
+location, (2) if the access in question happens during initialization
+before any other CPU has access to that location, and (3) if the access
+in question happens during cleanup after all other CPUs have lost access
+to that location.  Any others?
 
+/me goes to look to see if the RCU code follows this good advice...
 
-> -------------x--------------x-------------
+							Thanx, Paul
+
+> My uneducated guess is that strictly it ought to, in the sense of
+> insurance policy; but that (apart from that strange split writing
+> issue which came up a couple of months ago) in practice our compilers
+> have not "advanced" to the point of making this an issue yet.
 > 
-> This patchset targets towards moving all platform specific cpufreq drivers to
-> drivers/cpufreq. This will lead to better consolidation code in future too.
+> > 
+> > Anyway, applied.
 > 
-> All ARM and powerpc patches are compile tested by me.
+> Thanks,
+> Hugh
 > 
-> Changes since earlier version:
-> - Additional patch 18/18
-> 
-> Viresh Kumar (18):
->   cpufreq: ARM: Arrange drivers in alphabetical order
->   cpufreq: tegra: Move driver to drivers/cpufreq
->   cpufreq: davinci: move cpufreq driver to drivers/cpufreq
->   cpufreq: pxa3xx: move cpufreq driver to drivers/cpufreq
->   cpufreq: pxa2xx: move cpufreq driver to drivers/cpufreq
->   cpufreq: integrator: move cpufreq driver to drivers/cpufreq
->   cpufreq: s3c24xx: move cpufreq driver to drivers/cpufreq
->   cpufreq: sa11x0: move cpufreq driver to drivers/cpufreq
->   cpufreq: AVR32: move cpufreq driver to drivers/cpufreq
->   cpufreq: blackfin: move cpufreq driver to drivers/cpufreq
->   cpufreq: cris: move cpufreq driver to drivers/cpufreq
->   cpufreq: ia64: move cpufreq driver to drivers/cpufreq
->   cpufreq: mips: move cpufreq driver to drivers/cpufreq
->   cpufreq: sh: move cpufreq driver to drivers/cpufreq
->   cpufreq: unicore2: move cpufreq driver to drivers/cpufreq
->   cpufreq: sparc: move cpufreq driver to drivers/cpufreq
->   cpufreq: powerpc: move cpufreq driver to drivers/cpufreq
->   cpufreq: powerpc/platforms/cell: move cpufreq driver to
->     drivers/cpufreq
-> 
->  arch/arm/Kconfig                                   |  72 --------
->  arch/arm/mach-davinci/Makefile                     |   1 -
->  arch/arm/mach-integrator/Makefile                  |   1 -
->  arch/arm/mach-pxa/Makefile                         |   6 -
->  arch/arm/mach-pxa/include/mach/generic.h           |   1 +
->  arch/arm/mach-s3c24xx/Kconfig                      |  66 +++-----
->  arch/arm/mach-s3c24xx/Makefile                     |   6 -
->  arch/arm/mach-s3c24xx/{ => include/mach}/s3c2412.h |   0
->  arch/arm/mach-s3c24xx/iotiming-s3c2412.c           |   2 +-
->  arch/arm/mach-sa1100/Kconfig                       |  26 +--
->  arch/arm/mach-sa1100/Makefile                      |   3 -
->  arch/arm/mach-sa1100/include/mach/generic.h        |   1 +
->  arch/arm/mach-tegra/Makefile                       |   1 -
->  arch/arm/plat-samsung/include/plat/cpu-freq-core.h |  10 +-
->  arch/arm/plat-samsung/include/plat/cpu-freq.h      |   6 +-
->  arch/avr32/Kconfig                                 |  13 --
->  arch/avr32/configs/atngw100_defconfig              |   2 +-
->  arch/avr32/configs/atngw100_evklcd100_defconfig    |   2 +-
->  arch/avr32/configs/atngw100_evklcd101_defconfig    |   2 +-
->  arch/avr32/configs/atngw100_mrmt_defconfig         |   2 +-
->  arch/avr32/configs/atngw100mkii_defconfig          |   2 +-
->  .../avr32/configs/atngw100mkii_evklcd100_defconfig |   2 +-
->  .../avr32/configs/atngw100mkii_evklcd101_defconfig |   2 +-
->  arch/avr32/configs/atstk1002_defconfig             |   2 +-
->  arch/avr32/configs/atstk1003_defconfig             |   2 +-
->  arch/avr32/configs/atstk1004_defconfig             |   2 +-
->  arch/avr32/configs/atstk1006_defconfig             |   2 +-
->  arch/avr32/configs/favr-32_defconfig               |   2 +-
->  arch/avr32/configs/hammerhead_defconfig            |   2 +-
->  arch/avr32/configs/mimc200_defconfig               |   2 +-
->  arch/avr32/mach-at32ap/Makefile                    |   1 -
->  arch/blackfin/mach-common/Makefile                 |   1 -
->  arch/cris/arch-v32/mach-a3/Makefile                |   1 -
->  arch/cris/arch-v32/mach-fs/Makefile                |   1 -
->  arch/ia64/Kconfig                                  |   6 +-
->  arch/ia64/kernel/Makefile                          |   1 -
->  arch/ia64/kernel/cpufreq/Kconfig                   |  29 ----
->  arch/ia64/kernel/cpufreq/Makefile                  |   2 -
->  arch/mips/Kconfig                                  |   9 +-
->  arch/mips/kernel/Makefile                          |   2 -
->  arch/mips/kernel/cpufreq/Kconfig                   |  41 -----
->  arch/mips/kernel/cpufreq/Makefile                  |   5 -
->  arch/powerpc/platforms/Kconfig                     |  31 ----
->  arch/powerpc/platforms/cell/Kconfig                |  26 +--
->  arch/powerpc/platforms/cell/Makefile               |   3 -
->  arch/powerpc/platforms/pasemi/Makefile             |   1 -
->  arch/powerpc/platforms/powermac/Makefile           |   2 -
->  arch/sh/Kconfig                                    |  18 --
->  arch/sh/kernel/Makefile                            |   1 -
->  arch/sparc/Kconfig                                 |  23 ---
->  arch/sparc/kernel/Makefile                         |   3 -
->  arch/unicore32/kernel/Makefile                     |   1 -
->  drivers/cpufreq/Kconfig                            |  89 ++++++++++
->  drivers/cpufreq/Kconfig.arm                        | 184 ++++++++++++++-------
->  drivers/cpufreq/Kconfig.powerpc                    |  44 +++++
->  drivers/cpufreq/Makefile                           |  42 ++++-
->  .../cpufreq.c => drivers/cpufreq/at32ap-cpufreq.c  |   0
->  .../cpufreq/blackfin-cpufreq.c                     |   0
->  .../cpufreq/cris-artpec3-cpufreq.c                 |   0
->  .../cpufreq/cris-etraxfs-cpufreq.c                 |   0
->  .../cpufreq.c => drivers/cpufreq/davinci-cpufreq.c |   2 -
->  .../cpufreq/ia64-acpi-cpufreq.c                    |   1 -
->  .../cpu.c => drivers/cpufreq/integrator-cpufreq.c  |   2 -
->  .../kernel => drivers}/cpufreq/loongson2_cpufreq.c |   0
->  .../cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c  |   0
->  .../cpufreq/pmac32-cpufreq.c                       |   0
->  .../cpufreq/pmac64-cpufreq.c                       |   0
->  .../cpufreq/ppc_cbe_cpufreq.c                      |   2 +-
->  .../cpufreq/ppc_cbe_cpufreq_pervasive.c            |   3 +-
->  .../cpufreq/ppc_cbe_cpufreq_pmi.c                  |   3 +-
->  .../cpufreq/pxa2xx-cpufreq.c                       |   2 -
->  .../cpufreq/pxa3xx-cpufreq.c                       |   5 +-
->  .../cpufreq/s3c2410-cpufreq.c                      |   0
->  .../cpufreq/s3c2412-cpufreq.c                      |   3 +-
->  .../cpufreq/s3c2440-cpufreq.c                      |   0
->  .../cpufreq/s3c24xx-cpufreq-debugfs.c              |   0
->  .../cpufreq.c => drivers/cpufreq/s3c24xx-cpufreq.c |   0
->  .../cpufreq/sa1100-cpufreq.c                       |   3 +-
->  .../cpufreq/sa1110-cpufreq.c                       |   3 +-
->  .../cpufreq.c => drivers/cpufreq/sh-cpufreq.c      |   2 -
->  .../cpufreq/sparc-us2e-cpufreq.c                   |   0
->  .../cpufreq/sparc-us3-cpufreq.c                    |   0
->  .../cpu-tegra.c => drivers/cpufreq/tegra-cpufreq.c |   2 -
->  .../cpufreq/unicore2-cpufreq.c                     |   2 +-
->  .../linux/ppc_cbe_cpufreq.h                        |   4 +-
->  85 files changed, 385 insertions(+), 464 deletions(-)
->  create mode 100644 arch/arm/mach-pxa/include/mach/generic.h
->  rename arch/arm/mach-s3c24xx/{ => include/mach}/s3c2412.h (100%)
->  create mode 100644 arch/arm/mach-sa1100/include/mach/generic.h
->  delete mode 100644 arch/ia64/kernel/cpufreq/Kconfig
->  delete mode 100644 arch/ia64/kernel/cpufreq/Makefile
->  delete mode 100644 arch/mips/kernel/cpufreq/Kconfig
->  delete mode 100644 arch/mips/kernel/cpufreq/Makefile
->  rename arch/avr32/mach-at32ap/cpufreq.c => drivers/cpufreq/at32ap-cpufreq.c (100%)
->  rename arch/blackfin/mach-common/cpufreq.c => drivers/cpufreq/blackfin-cpufreq.c (100%)
->  rename arch/cris/arch-v32/mach-a3/cpufreq.c => drivers/cpufreq/cris-artpec3-cpufreq.c (100%)
->  rename arch/cris/arch-v32/mach-fs/cpufreq.c => drivers/cpufreq/cris-etraxfs-cpufreq.c (100%)
->  rename arch/arm/mach-davinci/cpufreq.c => drivers/cpufreq/davinci-cpufreq.c (99%)
->  rename arch/ia64/kernel/cpufreq/acpi-cpufreq.c => drivers/cpufreq/ia64-acpi-cpufreq.c (99%)
->  rename arch/arm/mach-integrator/cpu.c => drivers/cpufreq/integrator-cpufreq.c (99%)
->  rename {arch/mips/kernel => drivers}/cpufreq/loongson2_cpufreq.c (100%)
->  rename arch/powerpc/platforms/pasemi/cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c (100%)
->  rename arch/powerpc/platforms/powermac/cpufreq_32.c => drivers/cpufreq/pmac32-cpufreq.c (100%)
->  rename arch/powerpc/platforms/powermac/cpufreq_64.c => drivers/cpufreq/pmac64-cpufreq.c (100%)
->  rename arch/powerpc/platforms/cell/cbe_cpufreq.c => drivers/cpufreq/ppc_cbe_cpufreq.c (99%)
->  rename arch/powerpc/platforms/cell/cbe_cpufreq_pervasive.c => drivers/cpufreq/ppc_cbe_cpufreq_pervasive.c (98%)
->  rename arch/powerpc/platforms/cell/cbe_cpufreq_pmi.c => drivers/cpufreq/ppc_cbe_cpufreq_pmi.c (99%)
->  rename arch/arm/mach-pxa/cpufreq-pxa2xx.c => drivers/cpufreq/pxa2xx-cpufreq.c (99%)
->  rename arch/arm/mach-pxa/cpufreq-pxa3xx.c => drivers/cpufreq/pxa3xx-cpufreq.c (98%)
->  rename arch/arm/mach-s3c24xx/cpufreq-s3c2410.c => drivers/cpufreq/s3c2410-cpufreq.c (100%)
->  rename arch/arm/mach-s3c24xx/cpufreq-s3c2412.c => drivers/cpufreq/s3c2412-cpufreq.c (99%)
->  rename arch/arm/mach-s3c24xx/cpufreq-s3c2440.c => drivers/cpufreq/s3c2440-cpufreq.c (100%)
->  rename arch/arm/mach-s3c24xx/cpufreq-debugfs.c => drivers/cpufreq/s3c24xx-cpufreq-debugfs.c (100%)
->  rename arch/arm/mach-s3c24xx/cpufreq.c => drivers/cpufreq/s3c24xx-cpufreq.c (100%)
->  rename arch/arm/mach-sa1100/cpu-sa1100.c => drivers/cpufreq/sa1100-cpufreq.c (99%)
->  rename arch/arm/mach-sa1100/cpu-sa1110.c => drivers/cpufreq/sa1110-cpufreq.c (99%)
->  rename arch/sh/kernel/cpufreq.c => drivers/cpufreq/sh-cpufreq.c (99%)
->  rename arch/sparc/kernel/us2e_cpufreq.c => drivers/cpufreq/sparc-us2e-cpufreq.c (100%)
->  rename arch/sparc/kernel/us3_cpufreq.c => drivers/cpufreq/sparc-us3-cpufreq.c (100%)
->  rename arch/arm/mach-tegra/cpu-tegra.c => drivers/cpufreq/tegra-cpufreq.c (99%)
->  rename arch/unicore32/kernel/cpu-ucv2.c => drivers/cpufreq/unicore2-cpufreq.c (96%)
->  rename arch/powerpc/platforms/cell/cbe_cpufreq.h => include/linux/ppc_cbe_cpufreq.h (82%)
-> 
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
