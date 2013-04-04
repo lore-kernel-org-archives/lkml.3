@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760801Ab3DDM4Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 08:56:24 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:47848 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760779Ab3DDM4R (ORCPT
+	id S1760831Ab3DDM4e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 08:56:34 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:38049 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760807Ab3DDM4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 08:56:17 -0400
+	Thu, 4 Apr 2013 08:56:25 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
@@ -14,11 +14,11 @@ Cc: robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
         cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 08/18] cpufreq: sa11x0: move cpufreq driver to drivers/cpufreq
-Date: Thu,  4 Apr 2013 18:24:16 +0530
-Message-Id: <b9e9ae96e4aade16c8c158872d998708479361be.1365079581.git.viresh.kumar@linaro.org>
+        hans-christian.egtvedt@atmel.com,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>
+Subject: [PATCH 09/18] cpufreq: AVR32: move cpufreq driver to drivers/cpufreq
+Date: Thu,  4 Apr 2013 18:24:17 +0530
+Message-Id: <b2787dfcbad4a4118f04d19a4eda2c87b4471b3f.1365079581.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1365079581.git.viresh.kumar@linaro.org>
 References: <cover.1365079581.git.viresh.kumar@linaro.org>
@@ -28,261 +28,295 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves cpufreq driver of ARM based sa11x0 platform to drivers/cpufreq.
+This patch moves cpufreq driver of AVR32 based at32ap platform to
+drivers/cpufreq.
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
+Cc: hans-christian.egtvedt@atmel.com
+Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 ---
- arch/arm/Kconfig                                   |  8 -------
- arch/arm/mach-sa1100/Kconfig                       | 26 +++++++++++-----------
- arch/arm/mach-sa1100/Makefile                      |  3 ---
- arch/arm/mach-sa1100/include/mach/generic.h        |  1 +
- drivers/cpufreq/Kconfig.arm                        |  6 +++++
- drivers/cpufreq/Makefile                           |  2 ++
- .../cpufreq/sa1100-cpufreq.c                       |  3 +--
- .../cpufreq/sa1110-cpufreq.c                       |  3 +--
- 8 files changed, 24 insertions(+), 28 deletions(-)
- create mode 100644 arch/arm/mach-sa1100/include/mach/generic.h
- rename arch/arm/mach-sa1100/cpu-sa1100.c => drivers/cpufreq/sa1100-cpufreq.c (99%)
- rename arch/arm/mach-sa1100/cpu-sa1110.c => drivers/cpufreq/sa1110-cpufreq.c (99%)
+ arch/avr32/Kconfig                                          | 13 -------------
+ arch/avr32/configs/atngw100_defconfig                       |  2 +-
+ arch/avr32/configs/atngw100_evklcd100_defconfig             |  2 +-
+ arch/avr32/configs/atngw100_evklcd101_defconfig             |  2 +-
+ arch/avr32/configs/atngw100_mrmt_defconfig                  |  2 +-
+ arch/avr32/configs/atngw100mkii_defconfig                   |  2 +-
+ arch/avr32/configs/atngw100mkii_evklcd100_defconfig         |  2 +-
+ arch/avr32/configs/atngw100mkii_evklcd101_defconfig         |  2 +-
+ arch/avr32/configs/atstk1002_defconfig                      |  2 +-
+ arch/avr32/configs/atstk1003_defconfig                      |  2 +-
+ arch/avr32/configs/atstk1004_defconfig                      |  2 +-
+ arch/avr32/configs/atstk1006_defconfig                      |  2 +-
+ arch/avr32/configs/favr-32_defconfig                        |  2 +-
+ arch/avr32/configs/hammerhead_defconfig                     |  2 +-
+ arch/avr32/configs/mimc200_defconfig                        |  2 +-
+ arch/avr32/mach-at32ap/Makefile                             |  1 -
+ drivers/cpufreq/Kconfig                                     | 13 +++++++++++++
+ drivers/cpufreq/Makefile                                    |  4 ++++
+ .../cpufreq.c => drivers/cpufreq/at32ap-cpufreq.c           |  0
+ 19 files changed, 31 insertions(+), 28 deletions(-)
+ rename arch/avr32/mach-at32ap/cpufreq.c => drivers/cpufreq/at32ap-cpufreq.c (100%)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 70366b7..bbc8953 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -2150,7 +2150,6 @@ endmenu
- menu "CPU Power Management"
+diff --git a/arch/avr32/Kconfig b/arch/avr32/Kconfig
+index c1a868d..22c4030 100644
+--- a/arch/avr32/Kconfig
++++ b/arch/avr32/Kconfig
+@@ -250,20 +250,7 @@ config ARCH_SUSPEND_POSSIBLE
+ 	def_bool y
  
- if ARCH_HAS_CPUFREQ
+ menu "CPU Frequency scaling"
 -
  source "drivers/cpufreq/Kconfig"
- 
- config CPU_FREQ_IMX
-@@ -2159,13 +2158,6 @@ config CPU_FREQ_IMX
- 	select CPU_FREQ_TABLE
- 	help
- 	  This enables the CPUfreq driver for i.MX CPUs.
 -
--config CPU_FREQ_SA1100
--	bool
+-config CPU_FREQ_AT32AP
+-	bool "CPU frequency driver for AT32AP"
+-	depends on CPU_FREQ && PLATFORM_AT32AP
+-	default n
+-	help
+-	  This enables the CPU frequency driver for AT32AP processors.
 -
--config CPU_FREQ_SA1110
--	bool
+-	  For details, take a look in <file:Documentation/cpu-freq>.
 -
- endif
- 
- source "drivers/cpuidle/Kconfig"
-diff --git a/arch/arm/mach-sa1100/Kconfig b/arch/arm/mach-sa1100/Kconfig
-index ca14dbd..04f9784 100644
---- a/arch/arm/mach-sa1100/Kconfig
-+++ b/arch/arm/mach-sa1100/Kconfig
-@@ -4,7 +4,7 @@ menu "SA11x0 Implementations"
- 
- config SA1100_ASSABET
- 	bool "Assabet"
--	select CPU_FREQ_SA1110
-+	select ARM_SA1110_CPUFREQ
- 	help
- 	  Say Y here if you are using the Intel(R) StrongARM(R) SA-1110
- 	  Microprocessor Development Board (also known as the Assabet).
-@@ -20,7 +20,7 @@ config ASSABET_NEPONSET
- 
- config SA1100_CERF
- 	bool "CerfBoard"
--	select CPU_FREQ_SA1110
-+	select ARM_SA1110_CPUFREQ
- 	help
- 	  The Intrinsyc CerfBoard is based on the StrongARM 1110 (Discontinued).
- 	  More information is available at:
-@@ -47,7 +47,7 @@ endchoice
- 
- config SA1100_COLLIE
- 	bool "Sharp Zaurus SL5500"
--	# FIXME: select CPU_FREQ_SA11x0
-+	# FIXME: select ARM_SA11x0_CPUFREQ
- 	select SHARP_LOCOMO
- 	select SHARP_PARAM
- 	select SHARP_SCOOP
-@@ -56,7 +56,7 @@ config SA1100_COLLIE
- 
- config SA1100_H3100
- 	bool "Compaq iPAQ H3100"
--	select CPU_FREQ_SA1110
-+	select ARM_SA1110_CPUFREQ
- 	select HTC_EGPIO
- 	help
- 	  Say Y here if you intend to run this kernel on the Compaq iPAQ
-@@ -67,7 +67,7 @@ config SA1100_H3100
- 
- config SA1100_H3600
- 	bool "Compaq iPAQ H3600/H3700"
--	select CPU_FREQ_SA1110
-+	select ARM_SA1110_CPUFREQ
- 	select HTC_EGPIO
- 	help
- 	  Say Y here if you intend to run this kernel on the Compaq iPAQ
-@@ -78,7 +78,7 @@ config SA1100_H3600
- 
- config SA1100_BADGE4
- 	bool "HP Labs BadgePAD 4"
--	select CPU_FREQ_SA1100
-+	select ARM_SA1100_CPUFREQ
- 	select SA1111
- 	help
- 	  Say Y here if you want to build a kernel for the HP Laboratories
-@@ -86,7 +86,7 @@ config SA1100_BADGE4
- 
- config SA1100_JORNADA720
- 	bool "HP Jornada 720"
--	# FIXME: select CPU_FREQ_SA11x0
-+	# FIXME: select ARM_SA11x0_CPUFREQ
- 	select SA1111
- 	help
- 	  Say Y here if you want to build a kernel for the HP Jornada 720
-@@ -105,14 +105,14 @@ config SA1100_JORNADA720_SSP
- 
- config SA1100_HACKKIT
- 	bool "HackKit Core CPU Board"
--	select CPU_FREQ_SA1100
-+	select ARM_SA1100_CPUFREQ
- 	help
- 	  Say Y here to support the HackKit Core CPU Board
- 	  <http://hackkit.eletztrick.de>;
- 
- config SA1100_LART
- 	bool "LART"
--	select CPU_FREQ_SA1100
-+	select ARM_SA1100_CPUFREQ
- 	help
- 	  Say Y here if you are using the Linux Advanced Radio Terminal
- 	  (also known as the LART).  See <http://www.lartmaker.nl/> for
-@@ -120,7 +120,7 @@ config SA1100_LART
- 
- config SA1100_NANOENGINE
- 	bool "nanoEngine"
--	select CPU_FREQ_SA1110
-+	select ARM_SA1110_CPUFREQ
- 	select PCI
- 	select PCI_NANOENGINE
- 	help
-@@ -130,7 +130,7 @@ config SA1100_NANOENGINE
- 
- config SA1100_PLEB
- 	bool "PLEB"
--	select CPU_FREQ_SA1100
-+	select ARM_SA1100_CPUFREQ
- 	help
- 	  Say Y here if you are using version 1 of the Portable Linux
- 	  Embedded Board (also known as PLEB).
-@@ -139,7 +139,7 @@ config SA1100_PLEB
- 
- config SA1100_SHANNON
- 	bool "Shannon"
--	select CPU_FREQ_SA1100
-+	select ARM_SA1100_CPUFREQ
- 	help
- 	  The Shannon (also known as a Tuxscreen, and also as a IS2630) was a
- 	  limited edition webphone produced by Philips. The Shannon is a SA1100
-@@ -148,7 +148,7 @@ config SA1100_SHANNON
- 
- config SA1100_SIMPAD
- 	bool "Simpad"
--	select CPU_FREQ_SA1110
-+	select ARM_SA1110_CPUFREQ
- 	help
- 	  The SIEMENS webpad SIMpad is based on the StrongARM 1110. There
- 	  are two different versions CL4 and SL4. CL4 has 32MB RAM and 16MB
-diff --git a/arch/arm/mach-sa1100/Makefile b/arch/arm/mach-sa1100/Makefile
-index 1aed9e7..2732eef 100644
---- a/arch/arm/mach-sa1100/Makefile
-+++ b/arch/arm/mach-sa1100/Makefile
-@@ -8,9 +8,6 @@ obj-m :=
- obj-n :=
- obj-  :=
- 
--obj-$(CONFIG_CPU_FREQ_SA1100)		+= cpu-sa1100.o
--obj-$(CONFIG_CPU_FREQ_SA1110)		+= cpu-sa1110.o
+-	  If in doubt, say N.
 -
- # Specific board support
- obj-$(CONFIG_SA1100_ASSABET)		+= assabet.o
- obj-$(CONFIG_ASSABET_NEPONSET)		+= neponset.o
-diff --git a/arch/arm/mach-sa1100/include/mach/generic.h b/arch/arm/mach-sa1100/include/mach/generic.h
-new file mode 100644
-index 0000000..665542e
---- /dev/null
-+++ b/arch/arm/mach-sa1100/include/mach/generic.h
-@@ -0,0 +1 @@
-+#include "../../generic.h"
-diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-index 1ce61ba..f3f3b14 100644
---- a/drivers/cpufreq/Kconfig.arm
-+++ b/drivers/cpufreq/Kconfig.arm
-@@ -185,6 +185,12 @@ config ARM_S5PV210_CPUFREQ
+ endmenu
  
- 	  If in doubt, say N.
+ endmenu
+diff --git a/arch/avr32/configs/atngw100_defconfig b/arch/avr32/configs/atngw100_defconfig
+index f4025db..d5aff36 100644
+--- a/arch/avr32/configs/atngw100_defconfig
++++ b/arch/avr32/configs/atngw100_defconfig
+@@ -26,7 +26,7 @@ CONFIG_CPU_FREQ=y
+ # CONFIG_CPU_FREQ_STAT is not set
+ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+ CONFIG_CPU_FREQ_GOV_USERSPACE=y
+-CONFIG_CPU_FREQ_AT32AP=y
++CONFIG_AVR32_AT32AP_CPUFREQ=y
+ CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+diff --git a/arch/avr32/configs/atngw100_evklcd100_defconfig b/arch/avr32/configs/atngw100_evklcd100_defconfig
+index c76a49b..4abcf43 100644
+--- a/arch/avr32/configs/atngw100_evklcd100_defconfig
++++ b/arch/avr32/configs/atngw100_evklcd100_defconfig
+@@ -28,7 +28,7 @@ CONFIG_CPU_FREQ=y
+ # CONFIG_CPU_FREQ_STAT is not set
+ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+ CONFIG_CPU_FREQ_GOV_USERSPACE=y
+-CONFIG_CPU_FREQ_AT32AP=y
++CONFIG_AVR32_AT32AP_CPUFREQ=y
+ CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+diff --git a/arch/avr32/configs/atngw100_evklcd101_defconfig b/arch/avr32/configs/atngw100_evklcd101_defconfig
+index 2d8ab08..18f3fa0 100644
+--- a/arch/avr32/configs/atngw100_evklcd101_defconfig
++++ b/arch/avr32/configs/atngw100_evklcd101_defconfig
+@@ -27,7 +27,7 @@ CONFIG_CPU_FREQ=y
+ # CONFIG_CPU_FREQ_STAT is not set
+ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+ CONFIG_CPU_FREQ_GOV_USERSPACE=y
+-CONFIG_CPU_FREQ_AT32AP=y
++CONFIG_AVR32_AT32AP_CPUFREQ=y
+ CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+diff --git a/arch/avr32/configs/atngw100_mrmt_defconfig b/arch/avr32/configs/atngw100_mrmt_defconfig
+index b189e0c..06e389c 100644
+--- a/arch/avr32/configs/atngw100_mrmt_defconfig
++++ b/arch/avr32/configs/atngw100_mrmt_defconfig
+@@ -23,7 +23,7 @@ CONFIG_CPU_FREQ=y
+ CONFIG_CPU_FREQ_GOV_POWERSAVE=y
+ CONFIG_CPU_FREQ_GOV_USERSPACE=y
+ CONFIG_CPU_FREQ_GOV_ONDEMAND=y
+-CONFIG_CPU_FREQ_AT32AP=y
++CONFIG_AVR32_AT32AP_CPUFREQ=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+diff --git a/arch/avr32/configs/atngw100mkii_defconfig b/arch/avr32/configs/atngw100mkii_defconfig
+index 2e4de42..2518a13 100644
+--- a/arch/avr32/configs/atngw100mkii_defconfig
++++ b/arch/avr32/configs/atngw100mkii_defconfig
+@@ -26,7 +26,7 @@ CONFIG_CPU_FREQ=y
+ # CONFIG_CPU_FREQ_STAT is not set
+ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+ CONFIG_CPU_FREQ_GOV_USERSPACE=y
+-CONFIG_CPU_FREQ_AT32AP=y
++CONFIG_AVR32_AT32AP_CPUFREQ=y
+ CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+diff --git a/arch/avr32/configs/atngw100mkii_evklcd100_defconfig b/arch/avr32/configs/atngw100mkii_evklcd100_defconfig
+index fad3cd2..245ef6b 100644
+--- a/arch/avr32/configs/atngw100mkii_evklcd100_defconfig
++++ b/arch/avr32/configs/atngw100mkii_evklcd100_defconfig
+@@ -29,7 +29,7 @@ CONFIG_CPU_FREQ=y
+ # CONFIG_CPU_FREQ_STAT is not set
+ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+ CONFIG_CPU_FREQ_GOV_USERSPACE=y
+-CONFIG_CPU_FREQ_AT32AP=y
++CONFIG_AVR32_AT32AP_CPUFREQ=y
+ CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+diff --git a/arch/avr32/configs/atngw100mkii_evklcd101_defconfig b/arch/avr32/configs/atngw100mkii_evklcd101_defconfig
+index 2998623..fa6cbac 100644
+--- a/arch/avr32/configs/atngw100mkii_evklcd101_defconfig
++++ b/arch/avr32/configs/atngw100mkii_evklcd101_defconfig
+@@ -28,7 +28,7 @@ CONFIG_CPU_FREQ=y
+ # CONFIG_CPU_FREQ_STAT is not set
+ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+ CONFIG_CPU_FREQ_GOV_USERSPACE=y
+-CONFIG_CPU_FREQ_AT32AP=y
++CONFIG_AVR32_AT32AP_CPUFREQ=y
+ CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+diff --git a/arch/avr32/configs/atstk1002_defconfig b/arch/avr32/configs/atstk1002_defconfig
+index a582465..bbd5131 100644
+--- a/arch/avr32/configs/atstk1002_defconfig
++++ b/arch/avr32/configs/atstk1002_defconfig
+@@ -25,7 +25,7 @@ CONFIG_CPU_FREQ=y
+ # CONFIG_CPU_FREQ_STAT is not set
+ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+ CONFIG_CPU_FREQ_GOV_USERSPACE=y
+-CONFIG_CPU_FREQ_AT32AP=y
++CONFIG_AVR32_AT32AP_CPUFREQ=y
+ CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+diff --git a/arch/avr32/configs/atstk1003_defconfig b/arch/avr32/configs/atstk1003_defconfig
+index 57a79df..c1cd726 100644
+--- a/arch/avr32/configs/atstk1003_defconfig
++++ b/arch/avr32/configs/atstk1003_defconfig
+@@ -26,7 +26,7 @@ CONFIG_CPU_FREQ=y
+ # CONFIG_CPU_FREQ_STAT is not set
+ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+ CONFIG_CPU_FREQ_GOV_USERSPACE=y
+-CONFIG_CPU_FREQ_AT32AP=y
++CONFIG_AVR32_AT32AP_CPUFREQ=y
+ CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+diff --git a/arch/avr32/configs/atstk1004_defconfig b/arch/avr32/configs/atstk1004_defconfig
+index 1a49bd8..754ae56 100644
+--- a/arch/avr32/configs/atstk1004_defconfig
++++ b/arch/avr32/configs/atstk1004_defconfig
+@@ -26,7 +26,7 @@ CONFIG_CPU_FREQ=y
+ # CONFIG_CPU_FREQ_STAT is not set
+ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+ CONFIG_CPU_FREQ_GOV_USERSPACE=y
+-CONFIG_CPU_FREQ_AT32AP=y
++CONFIG_AVR32_AT32AP_CPUFREQ=y
+ CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+diff --git a/arch/avr32/configs/atstk1006_defconfig b/arch/avr32/configs/atstk1006_defconfig
+index 206a1b6..58589d8 100644
+--- a/arch/avr32/configs/atstk1006_defconfig
++++ b/arch/avr32/configs/atstk1006_defconfig
+@@ -26,7 +26,7 @@ CONFIG_CPU_FREQ=y
+ # CONFIG_CPU_FREQ_STAT is not set
+ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+ CONFIG_CPU_FREQ_GOV_USERSPACE=y
+-CONFIG_CPU_FREQ_AT32AP=y
++CONFIG_AVR32_AT32AP_CPUFREQ=y
+ CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+diff --git a/arch/avr32/configs/favr-32_defconfig b/arch/avr32/configs/favr-32_defconfig
+index 0421498..57788a4 100644
+--- a/arch/avr32/configs/favr-32_defconfig
++++ b/arch/avr32/configs/favr-32_defconfig
+@@ -27,7 +27,7 @@ CONFIG_CPU_FREQ=y
+ # CONFIG_CPU_FREQ_STAT is not set
+ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+ CONFIG_CPU_FREQ_GOV_USERSPACE=y
+-CONFIG_CPU_FREQ_AT32AP=y
++CONFIG_AVR32_AT32AP_CPUFREQ=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+diff --git a/arch/avr32/configs/hammerhead_defconfig b/arch/avr32/configs/hammerhead_defconfig
+index 82f24eb..ba7c31e 100644
+--- a/arch/avr32/configs/hammerhead_defconfig
++++ b/arch/avr32/configs/hammerhead_defconfig
+@@ -31,7 +31,7 @@ CONFIG_CPU_FREQ=y
+ # CONFIG_CPU_FREQ_STAT is not set
+ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+ CONFIG_CPU_FREQ_GOV_USERSPACE=y
+-CONFIG_CPU_FREQ_AT32AP=y
++CONFIG_AVR32_AT32AP_CPUFREQ=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+diff --git a/arch/avr32/configs/mimc200_defconfig b/arch/avr32/configs/mimc200_defconfig
+index 1bee51f..0a8bfdc 100644
+--- a/arch/avr32/configs/mimc200_defconfig
++++ b/arch/avr32/configs/mimc200_defconfig
+@@ -24,7 +24,7 @@ CONFIG_CPU_FREQ=y
+ # CONFIG_CPU_FREQ_STAT is not set
+ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+ CONFIG_CPU_FREQ_GOV_USERSPACE=y
+-CONFIG_CPU_FREQ_AT32AP=y
++CONFIG_AVR32_AT32AP_CPUFREQ=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+diff --git a/arch/avr32/mach-at32ap/Makefile b/arch/avr32/mach-at32ap/Makefile
+index 514c9a9..fc09ec4 100644
+--- a/arch/avr32/mach-at32ap/Makefile
++++ b/arch/avr32/mach-at32ap/Makefile
+@@ -1,7 +1,6 @@
+ obj-y				+= pdc.o clock.o intc.o extint.o pio.o hsmc.o
+ obj-y				+= hmatrix.o
+ obj-$(CONFIG_CPU_AT32AP700X)	+= at32ap700x.o pm-at32ap700x.o
+-obj-$(CONFIG_CPU_FREQ_AT32AP)	+= cpufreq.o
+ obj-$(CONFIG_PM)		+= pm.o
  
-+config ARM_SA1100_CPUFREQ
-+	bool
+ ifeq ($(CONFIG_PM_DEBUG),y)
+diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+index cbcb21e..d7ce6cc 100644
+--- a/drivers/cpufreq/Kconfig
++++ b/drivers/cpufreq/Kconfig
+@@ -205,6 +205,19 @@ depends on ARM
+ source "drivers/cpufreq/Kconfig.arm"
+ endmenu
+ 
++menu "AVR32 CPU frequency scaling drivers"
++depends on AVR32
 +
-+config ARM_SA1110_CPUFREQ
-+	bool
++config AVR32_AT32AP_CPUFREQ
++	bool "CPU frequency driver for AT32AP"
++	depends on PLATFORM_AT32AP
++	default n
++	help
++	  This enables the CPU frequency driver for AT32AP processors.
++	  If in doubt, say N.
 +
- config ARM_SPEAR_CPUFREQ
- 	bool "SPEAr CPUFreq support"
- 	depends on PLAT_SPEAR
++endmenu
++
+ menu "PowerPC CPU frequency scaling drivers"
+ depends on PPC32 || PPC64
+ source "drivers/cpufreq/Kconfig.powerpc"
 diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index a55e3e8..7356e0a 100644
+index 7356e0a..36a93a6 100644
 --- a/drivers/cpufreq/Makefile
 +++ b/drivers/cpufreq/Makefile
-@@ -71,6 +71,8 @@ obj-$(CONFIG_ARM_S3C2416_CPUFREQ)	+= s3c2416-cpufreq.o
- obj-$(CONFIG_ARM_S3C2440_CPUFREQ)	+= s3c2440-cpufreq.o
- obj-$(CONFIG_ARM_S3C64XX_CPUFREQ)	+= s3c64xx-cpufreq.o
- obj-$(CONFIG_ARM_S5PV210_CPUFREQ)	+= s5pv210-cpufreq.o
-+obj-$(CONFIG_ARM_SA1100_CPUFREQ)	+= sa1100-cpufreq.o
-+obj-$(CONFIG_ARM_SA1110_CPUFREQ)	+= sa1110-cpufreq.o
- obj-$(CONFIG_ARM_SPEAR_CPUFREQ)		+= spear-cpufreq.o
- obj-$(CONFIG_ARCH_TEGRA)		+= tegra-cpufreq.o
- 
-diff --git a/arch/arm/mach-sa1100/cpu-sa1100.c b/drivers/cpufreq/sa1100-cpufreq.c
-similarity index 99%
-rename from arch/arm/mach-sa1100/cpu-sa1100.c
-rename to drivers/cpufreq/sa1100-cpufreq.c
-index 3268761..cff18e8 100644
---- a/arch/arm/mach-sa1100/cpu-sa1100.c
-+++ b/drivers/cpufreq/sa1100-cpufreq.c
-@@ -91,10 +91,9 @@
- 
- #include <asm/cputype.h>
- 
-+#include <mach/generic.h>
- #include <mach/hardware.h>
- 
--#include "generic.h"
--
- struct sa1100_dram_regs {
- 	int speed;
- 	u32 mdcnfg;
-diff --git a/arch/arm/mach-sa1100/cpu-sa1110.c b/drivers/cpufreq/sa1110-cpufreq.c
-similarity index 99%
-rename from arch/arm/mach-sa1100/cpu-sa1110.c
-rename to drivers/cpufreq/sa1110-cpufreq.c
-index 38a7733..39c90b6 100644
---- a/arch/arm/mach-sa1100/cpu-sa1110.c
-+++ b/drivers/cpufreq/sa1110-cpufreq.c
-@@ -27,10 +27,9 @@
- #include <asm/cputype.h>
- #include <asm/mach-types.h>
- 
-+#include <mach/generic.h>
- #include <mach/hardware.h>
- 
--#include "generic.h"
--
- #undef DEBUG
- 
- struct sdram_params {
+@@ -79,3 +79,7 @@ obj-$(CONFIG_ARCH_TEGRA)		+= tegra-cpufreq.o
+ ##################################################################################
+ # PowerPC platform drivers
+ obj-$(CONFIG_CPU_FREQ_MAPLE)		+= maple-cpufreq.o
++
++##################################################################################
++# Other platform drivers
++obj-$(CONFIG_AVR32_AT32AP_CPUFREQ)	+= at32ap-cpufreq.o
+diff --git a/arch/avr32/mach-at32ap/cpufreq.c b/drivers/cpufreq/at32ap-cpufreq.c
+similarity index 100%
+rename from arch/avr32/mach-at32ap/cpufreq.c
+rename to drivers/cpufreq/at32ap-cpufreq.c
 -- 
 1.7.12.rc2.18.g61b472e
 
