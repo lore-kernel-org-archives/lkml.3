@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763010Ab3DDQTv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:19:51 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:22302 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762953Ab3DDQTt (ORCPT
+	id S1762948Ab3DDQTL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:19:11 -0400
+Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:39066
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762908Ab3DDQTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:19:49 -0400
-X-AuditID: cbfee61b-b7f076d0000034b6-a1-515da823ac43
-From: Tomasz Figa <t.figa@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
-        kyungmin.park@samsung.com, lrg@ti.com,
-        broonie@opensource.wolfsonmicro.com, m.szyprowski@samsung.com,
-        kgene.kim@samsung.com, Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH 0/3] regulator: max8998: Add support for Device Tree
-Date: Thu, 04 Apr 2013 18:19:20 +0200
-Message-id: <1365092363-12763-1-git-send-email-t.figa@samsung.com>
-X-Mailer: git-send-email 1.7.10
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjluLIzCtJLcpLzFFi42I5/e+xgK7yithAgx9dJhb/Zp9iszgw+yGr
-	Re+Cq2wWZ5vesFtc3jWHzWLG+X1MFk3bJ7BbrD1yl91i/YzXLA6cHudnLGT0eDnxN5tH35ZV
-	jB7Hb2xn8vi8SS6ANYrLJiU1J7MstUjfLoEr4/Qlk4K/XBVvmmexNDDeZ+9i5OSQEDCReHRq
-	DjOELSZx4d56ti5GLg4hgUWMEk8uLmSEcLqYJF697GMCqWITUJP43PCIDcQWEVCQ2Nz7jBWk
-	iFngPaPElScvWUESwgIuEms+/AMrYhFQlXh//THYCl4BJ4nbW9+yQqyTl3h6v49tAiP3AkaG
-	VYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBofNMegfjqgaLQ4wCHIxKPLwZfbGBQqyJZcWV
-	uYcYJTiYlUR4j7YAhXhTEiurUovy44tKc1KLDzFKc7AoifMebLUOFBJITyxJzU5NLUgtgsky
-	cXBKNTD6mb56MVPlkEDvR6/6t27Kn3wnMV7iFN/Yca8h+FBYe9yEruUpDhMPTT1462SE36nd
-	wQcZy4LaMpdf8M3xCykxn/x85+4lkfmxfXcs792o3rNi7pN/aszHmxQqPzN4a7dFJv/0nVbf
-	XtLAWPoq3pP75nHD4GqJgjTby6fLV/w1/+p0v2rSs24lluKMREMt5qLiRAAgn00cGQIAAA==
+	Thu, 4 Apr 2013 12:19:09 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275dhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-WSS-ID: 0MKQNZQ-02-9EZ-02
+X-M-MSG: 
+From: Jacob Shin <jacob.shin@amd.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Thomas Renninger <trenn@suse.de>, Borislav Petkov <bp@alien8.de>,
+        Jacob Shin <jacob.shin@amd.com>
+Subject: [PATCH V4 0/2] cpufreq: ondemand: add AMD specific powersave bias
+Date: Thu, 4 Apr 2013 11:19:02 -0500
+Message-ID: <1365092344-11310-1-git-send-email-jacob.shin@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds Device Tree support to max8998 MFD driver.
+This patchset adds AMD specific powersave bias function to the ondemand
+governor; which can be used to help ondemand governor make more power conscious
+frequency change decisions based on feedback from hardware (availble on AMD
+Family 16h and above).
 
-First patch reworks max8998-irq driver to use IRQ domains. Second patch
-prepares platform data structure to ease generating it at runtime from
-data parsed from device tree. Third patch implements Device Tree
-binding and adds necessary documentation.
+Hardware feedback tells software how "sensitive" to frequency changes the
+workloads are. CPU-bound workloads will be more sensitive -- they will
+perform better as frequency increases. Memory/IO-bound workloads will be less
+sensitive -- they will not necessarily perform better as frequnecy increases.
 
-Tested on Universal C210 board.
+This patchset was compared against ondemand governor without powersave bias
+and did not show any performance degradation on CPU-bound workloads such as
+kernbench and unixbench. While saving power on Memory-bound workloads such as
+stream.
 
-Tomasz Figa (3):
-  mfd: Add irq domain support for max8998 interrupts
-  regulator: max8998: Use arrays for specifying voltages in platform
-    data
-  mfd: max8998: Add support for Device Tree
+V4:
+* Added proper documentation to Documentation/cpu-freq/
+* Revised so that when this driver loads, the feature is enabled by
+  default with a sane tunable value.
 
- Documentation/devicetree/bindings/mfd/max8998.txt | 111 ++++++++++
- arch/arm/mach-exynos/mach-universal_c210.c        |   8 +-
- arch/arm/mach-s5pv210/mach-aquila.c               |   8 +-
- arch/arm/mach-s5pv210/mach-goni.c                 |   8 +-
- drivers/mfd/Kconfig                               |   1 +
- drivers/mfd/max8998-irq.c                         |  61 +++---
- drivers/mfd/max8998.c                             |  76 ++++++-
- drivers/regulator/max8998.c                       | 254 ++++++++++++++++------
- drivers/rtc/rtc-max8998.c                         |  17 +-
- include/linux/mfd/max8998-private.h               |   6 +-
- include/linux/mfd/max8998.h                       |  20 +-
- 11 files changed, 435 insertions(+), 135 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/max8998.txt
+V3:
+* Added to CPUID bit to cpufeature.h
+* Added MODULE_DEVICE_TABLE to autoload this driver.
+* Other small changes per feedback from:
+  https://lkml.org/lkml/2013/4/2/349
+
+V2:
+* Added proper include files to amd_freq_sensitivity.c
+* Only register powersave_bias_target function pointer and not the entire
+  od_ops.
+
+Jacob Shin (2):
+  cpufreq: ondemand: allow custom powersave_bias_target handler to be
+    registered
+  cpufreq: AMD "frequency sensitivity feedback" powersave bias for
+    ondemand governor
+
+ Documentation/cpu-freq/governors.txt   |   21 +++++
+ arch/x86/include/asm/cpufeature.h      |    1 +
+ arch/x86/kernel/cpu/scattered.c        |    3 +-
+ drivers/cpufreq/Kconfig.x86            |   17 ++++
+ drivers/cpufreq/Makefile               |    1 +
+ drivers/cpufreq/amd_freq_sensitivity.c |  148 ++++++++++++++++++++++++++++++++
+ drivers/cpufreq/cpufreq_governor.h     |    4 +
+ drivers/cpufreq/cpufreq_ondemand.c     |   56 ++++++++++--
+ 8 files changed, 242 insertions(+), 9 deletions(-)
+ create mode 100644 drivers/cpufreq/amd_freq_sensitivity.c
 
 -- 
-1.8.1.5
+1.7.9.5
+
 
