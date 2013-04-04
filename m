@@ -1,126 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763749Ab3DDROq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 13:14:46 -0400
-Received: from mail-bn1lp0154.outbound.protection.outlook.com ([207.46.163.154]:52664
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1763694Ab3DDROo convert rfc822-to-8bit (ORCPT
+	id S1763812Ab3DDRPA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 13:15:00 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60722 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763774Ab3DDROz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 13:14:44 -0400
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -3
-X-BigFish: PS-3(zz98dI9371I936eI542I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275dhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: James Bottomley <jbottomley@parallels.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: scanning for LUNs
-Thread-Topic: scanning for LUNs
-Thread-Index: AQHOMUdANg7kpflkhkadeeCX7AcjMpjGTF9g
-Date: Thu, 4 Apr 2013 17:12:37 +0000
-Message-ID: <5c58dfba0d564ed4b6959a0d478268b9@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1365088357-22624-1-git-send-email-kys@microsoft.com>
- <1365088500.2764.8.camel@dabdike>
-In-Reply-To: <1365088500.2764.8.camel@dabdike>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [98.110.61.163]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 4 Apr 2013 13:14:55 -0400
+Date: Thu, 4 Apr 2013 20:14:30 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Florian Fainelli <florian@openwrt.org>
+CC: <stern@rowland.harvard.edu>, <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>, <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <balbi@ti.com>
+Subject: Re: [PATCH 1/5 v3] USB: regroup all depends on USB within an if USB
+ block
+Message-ID: <20130404171429.GF5129@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1365091048-16229-1-git-send-email-florian@openwrt.org>
+ <1365091048-16229-2-git-send-email-florian@openwrt.org>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB063.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%INFRADEAD.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%PARALLELS.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC102.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC102.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(24454001)(13464002)(199002)(377424002)(377454001)(51704002)(189002)(81342001)(63696002)(51856001)(4396001)(47736001)(54316002)(76482001)(44976002)(74662001)(31966008)(66066001)(50466001)(47976001)(77982001)(47776003)(16676001)(56776001)(20776003)(80022001)(79102001)(81542001)(46406002)(56816002)(23726001)(33646001)(54356001)(69226001)(65816001)(5343655001)(74502001)(47446002)(50986001)(46102001)(6806001)(59766001)(49866001)(53806001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BL2FFO11HUB026;H:TK5EX14HUBC102.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 08062C429B
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3oCie2+XPXTnK5a5"
+Content-Disposition: inline
+In-Reply-To: <1365091048-16229-2-git-send-email-florian@openwrt.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--3oCie2+XPXTnK5a5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi,
 
-> -----Original Message-----
-> From: James Bottomley [mailto:jbottomley@parallels.com]
-> Sent: Thursday, April 04, 2013 11:15 AM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; ohering@suse.com; hch@infradead.org; linux-
-> scsi@vger.kernel.org
-> Subject: Re: scanning for LUNs
-> 
-> On Thu, 2013-04-04 at 08:12 -0700, K. Y. Srinivasan wrote:
-> > Here is the code snippet for scanning LUNS (drivers/scsi/scsi_scan.c in function
-> > __scsi_scan_target()):
-> >
-> >         /*
-> >          * Scan LUN 0, if there is some response, scan further. Ideally, we
-> >          * would not configure LUN 0 until all LUNs are scanned.
-> >          */
-> >         res = scsi_probe_and_add_lun(starget, 0, &bflags, NULL, rescan, NULL);
-> >         if (res == SCSI_SCAN_LUN_PRESENT || res ==
-> SCSI_SCAN_TARGET_PRESENT) {
-> >                 if (scsi_report_lun_scan(starget, bflags, rescan) != 0)
-> >
-> >
-> > So, if we don't get a response while scanning LUN0, we will not use
-> > scsi_report_lun_scan().
-> > On Hyper-V, the scsi emulation on the host does not treat LUN0 as
-> > anything special and we
-> > could have situations where the only device under a scsi controller is
-> > at a location other than 0
-> > or 1. In this case the standard LUN scanning code in Linux fails to
-> > detect this device. Is this
-> > behaviour expected? Why is LUN0 treated differently here. Looking at
-> > the scsi spec, I am not sure
-> > if this is what is specified. Any help/guidance will be greatly
-> > appreciated.
-> 
-> Why don't you describe the problem.  We can't scan randomly a bunch of
-> LUNs hoping for a response (the space is 10^19).  SAM thinks you use
-> LUNW for this, but that's not well supported.  We can't annoy USB
-> devices by probing with REPORT LUNS, so conventionally most arrays
-> return something for LUN0 even if they don't actually have one (That's
-> what the peripheral qualifier codes are supposed to be about).  We
-> translate PQ1 and PQ2 to SCSI_SCAN_TARGET_PRESENT, which means no LUN,
-> but there is a target to scan here.
-> 
-> If you're sending back an error to an INQUIRY to LUN0, then you're out
-> of spec.  The SCSI standards say:
-> 
->         SPC3 6.4.1: In response to an INQUIRY command received by an
->         incorrect logical unit, the SCSI target device shall return the
->         INQUIRY data with the peripheral qualifier set to the value
->         defined in 6.4.2. The INQUIRY command shall return CHECK
->         CONDITION status only when the device server is unable to return
->         the requested INQUIRY data
+On Thu, Apr 04, 2013 at 05:57:24PM +0200, Florian Fainelli wrote:
+> diff --git a/drivers/usb/misc/sisusbvga/Kconfig b/drivers/usb/misc/sisusb=
+vga/Kconfig
+> index 30ea7ca..0d03a52 100644
+> --- a/drivers/usb/misc/sisusbvga/Kconfig
+> +++ b/drivers/usb/misc/sisusbvga/Kconfig
+> @@ -1,7 +1,7 @@
+> =20
+>  config USB_SISUSBVGA
+>  	tristate "USB 2.0 SVGA dongle support (Net2280/SiS315)"
+> -	depends on USB && (USB_MUSB_HDRC || USB_EHCI_HCD)
+> +	depends on (USB_MUSB_HDRC || USB_EHCI_HCD)
 
-Thanks James. I will further investigate the issue on our platform.
+is it just me or would everybody agree that depending on MUSB or EHCI
+here is wrong ?
 
-Regards,
+> diff --git a/drivers/usb/mon/Kconfig b/drivers/usb/mon/Kconfig
+> index 635745f..5c6ffa2 100644
+> --- a/drivers/usb/mon/Kconfig
+> +++ b/drivers/usb/mon/Kconfig
+> @@ -4,7 +4,6 @@
+> =20
+>  config USB_MON
+>  	tristate "USB Monitor"
+> -	depends on USB
+>  	help
+>  	  If you select this option, a component which captures the USB traffic
+>  	  between peripheral-specific drivers and HC drivers will be built.
+> diff --git a/drivers/usb/musb/Kconfig b/drivers/usb/musb/Kconfig
+> index 05e5143..4636ab9 100644
+> --- a/drivers/usb/musb/Kconfig
+> +++ b/drivers/usb/musb/Kconfig
+> @@ -6,7 +6,7 @@
+>  # (M)HDRC =3D (Multipoint) Highspeed Dual-Role Controller
+>  config USB_MUSB_HDRC
+>  	tristate 'Inventra Highspeed Dual Role Controller (TI, ADI, ...)'
+> -	depends on USB && USB_GADGET
+> +	depends on USB_GADGET
 
-K. Y
-> 
-> James
-> 
-> 
-> James
-> 
-> 
+great, except for the question above:
 
+Acked-by: Felipe Balbi <balbi@ti.com>
 
+--=20
+balbi
+
+--3oCie2+XPXTnK5a5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRXbT1AAoJEIaOsuA1yqREVesQAJB6Lfqm06VtCe6kX+gN152r
+2CGOL8AOZVfE5RcVxCgQBucchGAq1Keqw4eKu5VpBExHPQJrvjaEuFqbPzmlrFMK
+byvrGWFgleRqtI+dYdV+UrDoAi3fy574XaLPOcGeB4Y7Qho57EIWnnZ434Evxv0K
+bhbJmRLEiBwO47CceV0Og8ljBnMogHw7KgN691BgGEO8NPHO1mGG3uFFsFnCMTeh
+TG5sAt1F8pf+SmBoOwNttuVfODkw6Ye3mtWcOpNf6S+J55M40envMHZ2ERFMCypm
+r1iq8dP/lKS4p0pBYaCtr8iXe/sI6gbDPhQAqPNwZ8vVYnezGCFRGY6QAOL7Kl+o
+ESJ1bMqRC5FIkiVCtJUsGQzGp0zcYF2Sb9jB7ULQMU6q1gLs132SbA5M/0vjekcH
+TioYt6AAH8V0YvQEAznSrfh335H+YSxtx0taomgpZMpndHOjLDDwvmLKg+OiRrDN
+M7pUvi0jJs7xTjJvvMTJEyi5x+KdogS5z4ZkHgJoy/oJGKMiw2XXjkKNS2EOhxxY
+dZeUnDZR8mAFMVHPiO2PH5e1/XjAD67weupv+tsKv8GLQGCt1rWI7e/u+HjVVif4
+NIw9LwxyhXudTdix0SZH75226ZGPiifEl3SA83mPUXqRj5DaCDUcooCnT+HRO4bv
+Pmtwcg2HLf6dYzKIglqZ
+=JyVv
+-----END PGP SIGNATURE-----
+
+--3oCie2+XPXTnK5a5--
