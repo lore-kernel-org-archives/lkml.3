@@ -1,88 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761986Ab3DDPYk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 11:24:40 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:44604 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761549Ab3DDPYi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 11:24:38 -0400
-X-Greylist: delayed 574 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Apr 2013 11:24:38 EDT
-From: James Bottomley <jbottomley@parallels.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: Re: scanning for LUNs
-Thread-Topic: scanning for LUNs
-Thread-Index: AQHOMUctLbBJHCoFOk22/89ZTQXv0Q==
-Date: Thu, 4 Apr 2013 15:15:01 +0000
-Message-ID: <1365088500.2764.8.camel@dabdike>
-References: <1365088357-22624-1-git-send-email-kys@microsoft.com>
-In-Reply-To: <1365088357-22624-1-git-send-email-kys@microsoft.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [87.213.44.130]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <B4B43BB0144F154C8C05F0B446C514CA@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
+	id S1762352Ab3DDP1O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 11:27:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2904 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761846Ab3DDP1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 11:27:12 -0400
+Date: Thu, 4 Apr 2013 17:26:51 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Alexander Graf <agraf@suse.de>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Christoffer Dall <c.dall@virtualopensystems.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH RFC] kvm: add PV MMIO EVENTFD
+Message-ID: <20130404142651.GL6467@redhat.com>
+References: <6D40C5F1-849E-4F32-B391-E1A1BFA8C59D@suse.de>
+ <20130404120825.GD17919@redhat.com>
+ <959E147D-EB7B-4F4B-9F84-4F1BBA98DEF8@suse.de>
+ <20130404123806.GG17919@redhat.com>
+ <EF153515-9835-4FB9-B6BC-73D0BDC86492@suse.de>
+ <20130404124501.GH17919@redhat.com>
+ <1B68D701-103D-4B1A-8F5E-3916753699CB@suse.de>
+ <20130404125649.GI17919@redhat.com>
+ <8E65D34D-2DA7-4C2E-9C3E-BE3A7DBC3279@suse.de>
+ <20130404131457.GJ17919@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130404131457.GJ17919@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-04 at 08:12 -0700, K. Y. Srinivasan wrote:
-> Here is the code snippet for scanning LUNS (drivers/scsi/scsi_scan.c in function 
-> __scsi_scan_target()):
+On Thu, Apr 04, 2013 at 04:14:57PM +0300, Gleb Natapov wrote:
+> On Thu, Apr 04, 2013 at 03:06:42PM +0200, Alexander Graf wrote:
+> > 
+> > On 04.04.2013, at 14:56, Gleb Natapov wrote:
+> > 
+> > > On Thu, Apr 04, 2013 at 02:49:39PM +0200, Alexander Graf wrote:
+> > >> 
+> > >> On 04.04.2013, at 14:45, Gleb Natapov wrote:
+> > >> 
+> > >>> On Thu, Apr 04, 2013 at 02:39:51PM +0200, Alexander Graf wrote:
+> > >>>> 
+> > >>>> On 04.04.2013, at 14:38, Gleb Natapov wrote:
+> > >>>> 
+> > >>>>> On Thu, Apr 04, 2013 at 02:32:08PM +0200, Alexander Graf wrote:
+> > >>>>>> 
+> > >>>>>> On 04.04.2013, at 14:08, Gleb Natapov wrote:
+> > >>>>>> 
+> > >>>>>>> On Thu, Apr 04, 2013 at 01:57:34PM +0200, Alexander Graf wrote:
+> > >>>>>>>> 
+> > >>>>>>>> On 04.04.2013, at 12:50, Michael S. Tsirkin wrote:
+> > >>>>>>>> 
+> > >>>>>>>>> With KVM, MMIO is much slower than PIO, due to the need to
+> > >>>>>>>>> do page walk and emulation. But with EPT, it does not have to be: we
+> > >>>>>>>>> know the address from the VMCS so if the address is unique, we can look
+> > >>>>>>>>> up the eventfd directly, bypassing emulation.
+> > >>>>>>>>> 
+> > >>>>>>>>> Add an interface for userspace to specify this per-address, we can
+> > >>>>>>>>> use this e.g. for virtio.
+> > >>>>>>>>> 
+> > >>>>>>>>> The implementation adds a separate bus internally. This serves two
+> > >>>>>>>>> purposes:
+> > >>>>>>>>> - minimize overhead for old userspace that does not use PV MMIO
+> > >>>>>>>>> - minimize disruption in other code (since we don't know the length,
+> > >>>>>>>>> devices on the MMIO bus only get a valid address in write, this
+> > >>>>>>>>> way we don't need to touch all devices to teach them handle
+> > >>>>>>>>> an dinvalid length)
+> > >>>>>>>>> 
+> > >>>>>>>>> At the moment, this optimization is only supported for EPT on x86 and
+> > >>>>>>>>> silently ignored for NPT and MMU, so everything works correctly but
+> > >>>>>>>>> slowly.
+> > >>>>>>>>> 
+> > >>>>>>>>> TODO: NPT, MMU and non x86 architectures.
+> > >>>>>>>>> 
+> > >>>>>>>>> The idea was suggested by Peter Anvin.  Lots of thanks to Gleb for
+> > >>>>>>>>> pre-review and suggestions.
+> > >>>>>>>>> 
+> > >>>>>>>>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > >>>>>>>> 
+> > >>>>>>>> This still uses page fault intercepts which are orders of magnitudes slower than hypercalls. Why don't you just create a PV MMIO hypercall that the guest can use to invoke MMIO accesses towards the host based on physical addresses with explicit length encodings?
+> > >>>>>>>> 
+> > >>>>>>> It is slower, but not an order of magnitude slower. It become faster
+> > >>>>>>> with newer HW.
+> > >>>>>>> 
+> > >>>>>>>> That way you simplify and speed up all code paths, exceeding the speed of PIO exits even. It should also be quite easily portable, as all other platforms have hypercalls available as well.
+> > >>>>>>>> 
+> > >>>>>>> We are trying to avoid PV as much as possible (well this is also PV,
+> > >>>>>>> but not guest visible
+> > >>>>>> 
+> > >>>>>> Also, how is this not guest visible? Who sets KVM_IOEVENTFD_FLAG_PV_MMIO? The comment above its definition indicates that the guest does so, so it is guest visible.
+> > >>>>>> 
+> > >>>>> QEMU sets it.
+> > >>>> 
+> > >>>> How does QEMU know?
+> > >>>> 
+> > >>> Knows what? When to create such eventfd? virtio device knows.
+> > >> 
+> > >> Where does it know from?
+> > >> 
+> > > It does it always.
+> > > 
+> > >>> 
+> > >>>>> 
+> > >>>>>> +/*
+> > >>>>>> + * PV_MMIO - Guest can promise us that all accesses touching this address
+> > >>>>>> + * are writes of specified length, starting at the specified address.
+> > >>>>>> + * If not - it's a Guest bug.
+> > >>>>>> + * Can not be used together with either PIO or DATAMATCH.
+> > >>>>>> + */
+> > >>>>>> 
+> > >>>>> Virtio spec will state that access to a kick register needs to be of
+> > >>>>> specific length. This is reasonable thing for HW to ask.
+> > >>>> 
+> > >>>> This is a spec change. So the guest would have to indicate that it adheres to a newer spec. Thus it's a guest visible change.
+> > >>>> 
+> > >>> There is not virtio spec that has kick register in MMIO. The spec is in
+> > >>> the works AFAIK. Actually PIO will not be deprecated and my suggestion
+> > >> 
+> > >> So the guest would indicate that it supports a newer revision of the spec (in your case, that it supports MMIO). How is that any different from exposing that it supports a PV MMIO hcall?
+> > >> 
+> > > Guest will indicate nothing. New driver will use MMIO if PIO is bar is
+> > > not configured. All driver will not work for virtio devices with MMIO
+> > > bar, but not PIO bar.
+> > 
+> > I can't parse that, sorry :).
+> > 
+> I am sure MST can explain it better, but I'll try one more time.
+> Device will have two BARs with kick register one is PIO another is MMIO.
+> Old driver works only with PIO new one support both. MMIO is used only
+> when PIO space is exhausted. So old driver will not be able to drive new
+> virtio device that have no PIO bar configured.
+
+Right, I think this was the latest proposal by Rusty.
+
+The discussion about the new layout is taking place on the virtio mailing list.
+See thread 'virtio_pci: use separate notification offsets for each vq'
+started by Rusty.
+
+
+> > > 
+> > >>> is to move to MMIO only when PIO address space is exhausted. For PCI it
+> > >>> will be never, for PCI-e it will be after ~16 devices.
+> > >> 
+> > >> Ok, let's go back a step here. Are you actually able to measure any speed in performance with this patch applied and without when going through MMIO kicks?
+> > >> 
+> > >> 
+> > > That's the question for MST. I think he did only micro benchmarks till
+> > > now and he already posted his result here:
+> > > 
+> > > mmio-wildcard-eventfd:pci-mem 3529
+> > > mmio-pv-eventfd:pci-mem 1878
+> > > portio-wildcard-eventfd:pci-io 1846
+> > > 
+> > > So the patch speedup mmio by almost 100% and it is almost the same as PIO.
+> > 
+> > Those numbers don't align at all with what I measured.
+> I am trying to run vmexit test on AMD now, but something does not work
+> there. Next week I'll fix it and see how AMD differs, bit on Intel those are the
+> numbers.
+
+Right. Also next week, need to implement the optimization for NPT.
+
+> > 
+> > MST, could you please do a real world latency benchmark with virtio-net and
+> > 
+> >   * normal ioeventfd
+> >   * mmio-pv eventfd
+> >   * hcall eventfd
+> > 
+> > to give us some idea how much performance we would gain from each approach? Thoughput should be completely unaffected anyway, since virtio just coalesces kicks internally.
+> > 
+> > I'm also slightly puzzled why the wildcard eventfd mechanism is so significantly slower, while it was only a few percent on my test system. What are the numbers you're listing above? Cycles? How many cycles do you execute in a second?
+> > 
+> > 
+> > Alex
 > 
->         /*
->          * Scan LUN 0, if there is some response, scan further. Ideally, we
->          * would not configure LUN 0 until all LUNs are scanned.
->          */
->         res = scsi_probe_and_add_lun(starget, 0, &bflags, NULL, rescan, NULL);
->         if (res == SCSI_SCAN_LUN_PRESENT || res == SCSI_SCAN_TARGET_PRESENT) {
->                 if (scsi_report_lun_scan(starget, bflags, rescan) != 0)
->  
-> 
-> So, if we don't get a response while scanning LUN0, we will not use
-> scsi_report_lun_scan().
-> On Hyper-V, the scsi emulation on the host does not treat LUN0 as
-> anything special and we 
-> could have situations where the only device under a scsi controller is
-> at a location other than 0
-> or 1. In this case the standard LUN scanning code in Linux fails to
-> detect this device. Is this
-> behaviour expected? Why is LUN0 treated differently here. Looking at
-> the scsi spec, I am not sure
-> if this is what is specified. Any help/guidance will be greatly
-> appreciated.
-
-Why don't you describe the problem.  We can't scan randomly a bunch of
-LUNs hoping for a response (the space is 10^19).  SAM thinks you use
-LUNW for this, but that's not well supported.  We can't annoy USB
-devices by probing with REPORT LUNS, so conventionally most arrays
-return something for LUN0 even if they don't actually have one (That's
-what the peripheral qualifier codes are supposed to be about).  We
-translate PQ1 and PQ2 to SCSI_SCAN_TARGET_PRESENT, which means no LUN,
-but there is a target to scan here.
-
-If you're sending back an error to an INQUIRY to LUN0, then you're out
-of spec.  The SCSI standards say:
-
-        SPC3 6.4.1: In response to an INQUIRY command received by an
-        incorrect logical unit, the SCSI target device shall return the
-        INQUIRY data with the peripheral qualifier set to the value
-        defined in 6.4.2. The INQUIRY command shall return CHECK
-        CONDITION status only when the device server is unable to return
-        the requested INQUIRY data
-
-James
-
-
-James
-
+> --
+> 			Gleb.
