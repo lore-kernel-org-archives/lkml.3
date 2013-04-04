@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763433Ab3DDQyv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:54:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56628 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763188Ab3DDQys (ORCPT
+	id S1763484Ab3DDQ4Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:56:16 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:62717 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763462Ab3DDQ4O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:54:48 -0400
-Message-ID: <1365094476.2609.123.camel@laptop>
-Subject: Re: [PATCH v2 2/3] mutex: add support for reservation style locks,
- v2
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-arch@vger.kernel.org, daniel.vetter@ffwll.ch, x86@kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, robclark@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu, linux-media@vger.kernel.org
-Date: Thu, 04 Apr 2013 18:54:36 +0200
-In-Reply-To: <20130404133123.GW2228@phenom.ffwll.local>
-References: <20130228102452.15191.22673.stgit@patser>
-	 <20130228102502.15191.14146.stgit@patser>
-	 <1364900432.18374.24.camel@laptop> <515AF1C1.7080508@canonical.com>
-	 <1364921954.20640.22.camel@laptop> <1365076908.2609.94.camel@laptop>
-	 <20130404133123.GW2228@phenom.ffwll.local>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Apr 2013 12:56:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130404141604.GD16459@redhat.com>
+References: <1365035906-3208-1-git-send-email-yinghai@kernel.org>
+	<1365035906-3208-4-git-send-email-yinghai@kernel.org>
+	<20130404141604.GD16459@redhat.com>
+Date: Thu, 4 Apr 2013 09:56:14 -0700
+X-Google-Sender-Auth: aCp6j--oWkIJLqJVdF0xeHbBh6c
+Message-ID: <CAE9FiQVn1C7Zy94=oQLpHnGp9WGevGB2SKCM2zMjHumc1Secmw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] x86, kdump: Retore crashkernel= to allocate low
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-04 at 15:31 +0200, Daniel Vetter wrote:
-> Well, it was a good read and I'm rather happy that we agree on the
-> ww_ctx
-> thing (whatever it's called in the end), even though we have slightly
-> different reasons for it.
+On Thu, Apr 4, 2013 at 7:16 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>> +     crashkernel_high=size[KMG]
+>> +                     [KNL, x86_64] range could be above 4G. Allow kernel
+>> +                     to allocate physical memory region from top, so could
+>> +                     be above 4G if system have more than 4G ram installed.
+>
+> Also specify "otherwise memory will be allocated below 4G, if available".
+>
+...
+>> @@ -614,6 +619,8 @@ bytes respectively. Such letter suffixes
+>>                       0: to disable low allocation on systems that do not
+>>                       need swiotlb, that will save 72M low ram in first
+>>                       kernel.
+>> +                     It will be ignored when crashkernel_high=X is not used
+>> +                     or return from that is below 4G.
+>
+> Replace "return from that" with "memory reserved".
 
-Yeah, I tried various weirdness to get out from under it, but the whole
-progress/fairness thing made it rather hard. Ideally you'd be able to
-use some existing scheduler state since its the same goal, but the
-whole wakeup-retry muck makes that hard.
+updated.
 
-> I don't really have a useful idea to make the retry handling for users
-> more rusty-compliant though, and I'm still unhappy with all current
-> naming
-> proposals ;-)
+Thanks
 
-Ah, naming,.. yeah I'm not too terribly attached to most of them. I
-just want to avoid something that's reasonably well known to mean
-something different.
-
-Furthermore, since we use the wound/wait symmetry breaking it would
-make sense for that to appear somewhere in the name.
-
-
-
+Yinghai
