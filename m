@@ -1,31 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762971Ab3DDAFo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 20:05:44 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:42469 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758014Ab3DDAFm (ORCPT
+	id S1762980Ab3DDAOt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 20:14:49 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:59702 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759187Ab3DDAOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 20:05:42 -0400
+	Wed, 3 Apr 2013 20:14:47 -0400
 From: ebiederm@xmission.com (Eric W. Biederman)
-To: Sven Joachim <svenjoac@gmx.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Ding Tianhong <dingtianhong@huawei.com>,
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Sven Joachim <svenjoac@gmx.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org, Ding Tianhong <dingtianhong@huawei.com>,
         Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andy Lutomirski <luto@amacapital.net>, Karel Srot <ksrot@redhat.com>
+        "David S. Miller" <davem@davemloft.net>
 References: <20130402221104.163133110@linuxfoundation.org>
 	<20130402221116.307254752@linuxfoundation.org>
 	<87vc833kpf.fsf@turtle.gmx.de>
-Date: Wed, 03 Apr 2013 17:05:25 -0700
-In-Reply-To: <87vc833kpf.fsf@turtle.gmx.de> (Sven Joachim's message of "Wed,
-	03 Apr 2013 13:41:32 +0200")
-Message-ID: <87k3ojnosa.fsf@xmission.com>
+	<1364997630.13853.19.camel@edumazet-glaptop>
+	<87a9pfzm33.fsf@turtle.gmx.de>
+	<1365003300.13853.25.camel@edumazet-glaptop> <515C6DCD.50902@mit.edu>
+	<1365014637.13853.36.camel@edumazet-glaptop>
+	<CALCETrVWV=HEv7q5AUYeCjZOq52omz8moYTwympB6_G4Bz7p8Q@mail.gmail.com>
+Date: Wed, 03 Apr 2013 17:14:31 -0700
+In-Reply-To: <CALCETrVWV=HEv7q5AUYeCjZOq52omz8moYTwympB6_G4Bz7p8Q@mail.gmail.com>
+	(Andy Lutomirski's message of "Wed, 3 Apr 2013 12:01:36 -0700")
+Message-ID: <87a9pfm9so.fsf@xmission.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/FXeIELwMU2kXdTZDf9HmK3fOShNTG8+E=
+X-XM-AID: U2FsdGVkX18CrTe3BVAvw0pGK+QA/DrWgINT+7aC02g=
 X-SA-Exim-Connect-IP: 98.207.154.105
 X-SA-Exim-Mail-From: ebiederm@xmission.com
 X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
@@ -36,9 +41,8 @@ X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
 	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
 	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
 	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
 X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Sven Joachim <svenjoac@gmx.de>
+X-Spam-Combo: ;Andy Lutomirski <luto@amacapital.net>
 X-Spam-Relay-Country: 
 Subject: Re: [ 105/124] af_unix: dont send SCM_CREDENTIAL when dest socket is NULL
 X-Spam-Flag: No
@@ -48,76 +52,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sven Joachim <svenjoac@gmx.de> writes:
+Andy Lutomirski <luto@amacapital.net> writes:
 
-> On 2013-04-03 00:11 +0200, Greg Kroah-Hartman wrote:
+> On Wed, Apr 3, 2013 at 11:43 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> On Wed, 2013-04-03 at 10:58 -0700, Andy Lutomirski wrote:
+>>
+>>>
+>>> This sounds suspiciously like an SCM_CREDENTIALS bug triggered by a
+>>> race.  There's a fix (that needs both a new version from me and a review
+>>> by someone) here:
+>>>
+>>> http://www.spinics.net/lists/netdev/msg229948.html
+>>
+>> Hmm... this is not a stable candidate, IMHO.
 >
->> 3.8-stable review patch.  If anyone has any objections, please let me know.
+> Agreed.
 >
-> I'm seeing several complaints from udevd at boot in both 3.8.6-rc1 and
-> 3.9-rc5: "udevd[56]: sender uid=65534, message ignored".  Reverting the
-> patch below on top of 3.8.6-rc1 fixes that.  I'm using udev version 175
-> here, and 65534 is the uid of user "nobody".
+>>
+>> This has to be fixed (if needed) in a more easy way.
+>>
+>> What about this one liner ?
+>>
+>> CC Eric W. Biederman  as he wrote commit
+>> dbe9a4173ea53b72b2c3
+>> (scm: Don't use struct ucred in NETLINK_CB and struct scm_cookie.)
+>>
+>> diff --git a/include/net/scm.h b/include/net/scm.h
+>> index 975cca0..42359d8 100644
+>> --- a/include/net/scm.h
+>> +++ b/include/net/scm.h
+>> @@ -120,7 +120,7 @@ static __inline__ void scm_recv(struct socket *sock, struct msghdr *msg,
+>>                 return;
+>>         }
+>>
+>> -       if (test_bit(SOCK_PASSCRED, &sock->flags)) {
+>> +       if (test_bit(SOCK_PASSCRED, &sock->flags) && scm->creds.pid) {
+>>                 struct user_namespace *current_ns = current_user_ns();
+>>                 struct ucred ucreds = {
+>>                         .pid = scm->creds.pid,
+>>
+>>
+>
+> That looks like it's correct.  If it gets applied, I'll respin my
+> patches on top of it.
+>
+> (This approach may be a POSIX violation for all I know, and it's even
+> possible that some really fragile userspace breaks.  But I doubt it,
+> and anything that will break as a result is already operating in a
+> highly confused state; hence the original problem.)
 
-Hmm.
+It certainly looks like we are not giving userspace what userspace asked
+for, which can break in all kinds of subtle ways.  And I can't possibly
+see how not giving udev any information will when udev asked for the
+sender will fix anything.
 
-Ok.  I don't understand the commit that was being backported here.  I am
-pretty certain it a fix for a problem that did not exist.
+I think we need to answer why in the world do we do not want to pass
+credentials from an unconnected unix mode socket, before we ask
+why don't we want to deliver credentials that we didn't pass when
+passing of credentials was explicitly requested.
 
-Unless I am completely mis-reading scm_recv we only generate a
-SCM_CREDENTIALS message if the receiving socket asserts SOCK_PASSCRED.
-Which means that the only harm that can come from adding scm credentials
-to a disconnected af_unix socket is a loss in efficiency.
-
-Not adding scm credentials to be passed to userspace as the commit below
-is doing can result is bogus data being passed to userspace.  Which is
-very actively WRONG.
-
-Now before scm_recv does anything we first call scm_set_cred.  If no
-credential was passed to scm_set_cred we set the uid to INVALID_UID.
-Which scm_recv in the call from_kuid_munged translates into 65534 for
-reporting to userspace.
-
-So this is is pretty clearly a case of us not sending the unix
-credentials.
-
-Since not sending credential is just a performance optimization I can
-see no earthly reason why the commit below should have been applied in
-the first place, and no reason why it should have been backported in the
-second place.  So my vote is that we revert this bogus commit.  Upstream
-and then backport the revert.
-
-Am I missing something?
+If the only concern about the LSB test case is performance I think we
+need to revert the original commit and just stop passing a struct cred
+pointer.  If there is a concern about the data I think we need a better
+explanation of what those LSB test cases were that broke.
 
 Eric
-
->> From: dingtianhong <dingtianhong@huawei.com>
->>
->> [ Upstream commit 14134f6584212d585b310ce95428014b653dfaf6 ]
->>
->> SCM_SCREDENTIALS should apply to write() syscalls only either source or destination
->> socket asserted SOCK_PASSCRED. The original implememtation in maybe_add_creds is wrong,
->> and breaks several LSB testcases ( i.e. /tset/LSB.os/netowkr/recvfrom/T.recvfrom).
->>
->> Origionally-authored-by: Karel Srot <ksrot@redhat.com>
->> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
->> Acked-by: Eric Dumazet <edumazet@google.com>
->> Signed-off-by: David S. Miller <davem@davemloft.net>
->> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> ---
->>  net/unix/af_unix.c |    4 ++--
->>  1 file changed, 2 insertions(+), 2 deletions(-)
->>
->> --- a/net/unix/af_unix.c
->> +++ b/net/unix/af_unix.c
->> @@ -1414,8 +1414,8 @@ static void maybe_add_creds(struct sk_bu
->>  	if (UNIXCB(skb).cred)
->>  		return;
->>  	if (test_bit(SOCK_PASSCRED, &sock->flags) ||
->> -	    !other->sk_socket ||
->> -	    test_bit(SOCK_PASSCRED, &other->sk_socket->flags)) {
->> +	    (other->sk_socket &&
->> +	    test_bit(SOCK_PASSCRED, &other->sk_socket->flags))) {
->>  		UNIXCB(skb).pid  = get_pid(task_tgid(current));
->>  		UNIXCB(skb).cred = get_current_cred();
->>  	}
