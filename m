@@ -1,115 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763756Ab3DDGoU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 02:44:20 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:33056 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756012Ab3DDGoT (ORCPT
+	id S1763777Ab3DDGpD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 02:45:03 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:54357 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763496Ab3DDGpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 02:44:19 -0400
-Message-ID: <515D213A.2080707@hitachi.com>
-Date: Thu, 04 Apr 2013 15:44:10 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: oskar.andero@sonymobile.com
-Cc: linux-kernel@vger.kernel.org, davem@davemloft.net,
-        anil.s.keshavamurthy@intel.com, ananth@in.ibm.com,
-        radovan.lekanovic@sonymobile.com, bjorn.davidsson@sonymobile.com,
-        Toby Collett <toby.collett@sonymobile.com>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH 1/4] kprobes: delay blacklist symbol lookup until we actually
- need it
-References: <1364977734-32267-1-git-send-email-oskar.andero@sonymobile.com> <1364977734-32267-2-git-send-email-oskar.andero@sonymobile.com>
-In-Reply-To: <1364977734-32267-2-git-send-email-oskar.andero@sonymobile.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Apr 2013 02:45:00 -0400
+Date: Thu, 4 Apr 2013 17:44:50 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Kent Overstreet <koverstreet@google.com>
+Subject: linux-next: build failure after merge of the akpm tree
+Message-Id: <20130404174450.0ffe81ac6c994dcce442f88d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__4_Apr_2013_17_44_50_+1100_A.8zfjwGjH8bi/7r"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/04/03 17:28), oskar.andero@sonymobile.com wrote:
->  
-> +/* it can take some time ( > 100ms ) to initialise the
-> + * blacklist so we delay this until we actually need it
-> + */
-> +static void init_kprobe_blacklist(void)
-> +{
-> +	int i;
-> +	unsigned long offset = 0, size = 0;
-> +	char *modname, namebuf[128];
-> +	const char *symbol_name;
-> +	void *addr;
-> +	struct kprobe_blackpoint *kb;
-> +
-> +	/*
-> +	 * Lookup and populate the kprobe_blacklist.
-> +	 *
-> +	 * Unlike the kretprobe blacklist, we'll need to determine
-> +	 * the range of addresses that belong to the said functions,
-> +	 * since a kprobe need not necessarily be at the beginning
-> +	 * of a function.
-> +	 */
-> +	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
-> +		kprobe_lookup_name(kb->name, addr);
-> +		if (!addr)
-> +			continue;
-> +
-> +		kb->start_addr = (unsigned long)addr;
-> +		symbol_name = kallsyms_lookup(kb->start_addr,
-> +				&size, &offset, &modname, namebuf);
-> +		if (!symbol_name)
-> +			kb->range = 0;
-> +		else
-> +			kb->range = size;
-> +	}
-> +
-> +	if (kretprobe_blacklist_size) {
-> +		/* lookup the function address from its name */
-> +		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
-> +			kprobe_lookup_name(kretprobe_blacklist[i].name,
-> +					   kretprobe_blacklist[i].addr);
-> +			if (!kretprobe_blacklist[i].addr)
-> +				printk("kretprobe: lookup failed: %s\n",
-> +				       kretprobe_blacklist[i].name);
-> +		}
-> +	}
-> +	kprobe_blacklist_initialized = 1;
-> +}
-> +
->  #ifdef __ARCH_WANT_KPROBES_INSN_SLOT
->  /*
->   * kprobe->ainsn.insn points to the copy of the instruction to be
-> @@ -1331,6 +1379,9 @@ static int __kprobes in_kprobes_functions(unsigned long addr)
->  	if (addr >= (unsigned long)__kprobes_text_start &&
->  	    addr < (unsigned long)__kprobes_text_end)
->  		return -EINVAL;
-> +
-> +	if (!kprobe_blacklist_initialized)
-> +		init_kprobe_blacklist();
->  	/*
->  	 * If there exists a kprobe_blacklist, verify and
->  	 * fail any probe registration in the prohibited area
-> @@ -1816,6 +1867,8 @@ int __kprobes register_kretprobe(struct kretprobe *rp)
->  	void *addr;
->  
->  	if (kretprobe_blacklist_size) {
-> +		if (!kprobe_blacklist_initialized)
-> +			init_kprobe_blacklist();
+--Signature=_Thu__4_Apr_2013_17_44_50_+1100_A.8zfjwGjH8bi/7r
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Joonsoo reminds me that these calling points are not protected by kprobe_mutex,
-thus we have to do something for avoiding concurrent initialization.
+Hi Andrew,
 
-Perhaps, the easiest way is to protect init_kprobe_blacklist() by kprobe_mutex
-and check kprobe_blacklist_initialized again in the top of that.
+After merging the akpm tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-Thank you,
+fs/aio.c: In function 'aio_rw_vect_retry':
+fs/aio.c:1106:6: error: 'opcode' undeclared (first use in this function)
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Caused by commit 36bd5dc0c4e2 ("lift sb_start_write/sb_end_write out of
+->aio_write()") from the vfs tree interacting with commit 61ead3d450a4
+("aio: kill ki_retry") from the akpm tree.
 
+I applied the following fix patch:
 
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 4 Apr 2013 17:41:59 +1100
+Subject: [PATCH] aio: kill ki_retry merge fix
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ fs/aio.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fs/aio.c b/fs/aio.c
+index 162b418..5b7ed78 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1103,7 +1103,7 @@ static ssize_t aio_rw_vect_retry(struct kiocb *iocb, =
+int rw, aio_rw_op *rw_op)
+ 	if (iocb->ki_pos < 0)
+ 		return -EINVAL;
+=20
+-	if (opcode =3D=3D IOCB_CMD_PWRITEV)
++	if (rw =3D=3D WRITE)
+ 		file_start_write(file);
+ 	do {
+ 		ret =3D rw_op(iocb, &iocb->ki_iovec[iocb->ki_cur_seg],
+@@ -1117,7 +1117,7 @@ static ssize_t aio_rw_vect_retry(struct kiocb *iocb, =
+int rw, aio_rw_op *rw_op)
+ 	} while (ret > 0 && iocb->ki_left > 0 &&
+ 		 (rw =3D=3D WRITE ||
+ 		  (!S_ISFIFO(inode->i_mode) && !S_ISSOCK(inode->i_mode))));
+-	if (opcode =3D=3D IOCB_CMD_PWRITEV)
++	if (rw =3D=3D WRITE)
+ 		file_end_write(file);
+=20
+ 	/* This means we must have transferred all that we could */
+--=20
+1.8.1
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__4_Apr_2013_17_44_50_+1100_A.8zfjwGjH8bi/7r
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRXSFiAAoJEECxmPOUX5FEHmUQAKeIR02SzwPOnJTZ69RLgyPd
+xsdqCS4QW5mqZ9Z+ghr73BImPBC8vYJSXO6ovItYufMpbOrCR0lElBzG92ro1RCW
+siAKF16EW4/GvSStmEHfu3JlxShWw5QQmWdRmZjfDVIgf2gJ8SKpN0SE/0UkM31y
+vNunlr+bTtQNk1rxpY0s3yZg100SZzhwbFHp8M+wFUkJ07m6sh+aAaOhHGlix3B3
+NXV0qhKWN7hmSvez3Oq1LtcMg7ZUXltTTcIMp1ibgG8VF425d14SkUvR7v+iN1fv
+XBqe5qxsSRqpsUcPdXMgmoyfw6KUr3RAiteWDeyNgeKyA/W3ASpsCIyxz+DecsJR
+pHwHVdEhrwfHOaY3GNZ4crxysUkFW0aL0wJCwwo9KZzlVnyT/eJ5UuSPHfZd4ILx
+3MzGqgpRaoENRrq/qLiit8PSrwThasVnSwFuwgaCHxJ42hjDZSsf7iLQ1mq0kmVX
+wh+AVolWwnyxnDfqrdd0zUMF2hdL60rG7SfI/f6xsM6JQQKvluuQMCVeotdeRy0/
+obw03QtVqQG032Tk72YCkuNdo8Btz1KMnZgZ29PuXMH5dRIjUUnDEG6br8Y5y4+0
+N2uxlH2EMj5r4kIHC3p9bGC5bZJGbmM343KhAebVnjmiWBJAEkzSRmUvamxokDZj
+JqmywPcY+s5EETVgK0Y7
+=rVdn
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__4_Apr_2013_17_44_50_+1100_A.8zfjwGjH8bi/7r--
