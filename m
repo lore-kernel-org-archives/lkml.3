@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764119Ab3DDRpX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 13:45:23 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:46003 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764094Ab3DDRpV (ORCPT
+	id S1764146Ab3DDRsi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 13:48:38 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:47649 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1764114Ab3DDRsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 13:45:21 -0400
+	Thu, 4 Apr 2013 13:48:37 -0400
+Date: Thu, 4 Apr 2013 10:48:30 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [PATCH v2 02/20] x86, microcode: Use common get_ramdisk_image()
+Message-ID: <20130404174830.GR9425@htj.dyndns.org>
+References: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
+ <1362897887-30808-3-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20130404090232.30457b32@corrin.poochiereds.net>
-References: <1362065133-9490-1-git-send-email-piastry@etersoft.ru>
-	<1362065133-9490-7-git-send-email-piastry@etersoft.ru>
-	<20130311145434.707f5ed1@corrin.poochiereds.net>
-	<20130312083517.770a17f6@tlielax.poochiereds.net>
-	<CAKywueRSTipeO8V-oNrM=jM8WUo7Dd0ahj_Xcw8f8ViE3NGEOQ@mail.gmail.com>
-	<20130404090232.30457b32@corrin.poochiereds.net>
-Date: Thu, 4 Apr 2013 21:45:20 +0400
-X-Google-Sender-Auth: 6KymEslJ_rdnZpAkee-kHhSLOMw
-Message-ID: <CAKywueTcy8gMy=TVpj=TnfRMBj9e3xPCpaJvUmRd=TvT5uJHFw@mail.gmail.com>
-Subject: Re: [PATCH v3 6/7] NFSv4: Add O_DENY* open flags support
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-cifs <linux-cifs@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux NFS Mailing list <linux-nfs@vger.kernel.org>,
-        wine-devel@winehq.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362897887-30808-3-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/4 Jeff Layton <jlayton@redhat.com>:
-> I'd probably still stick with a FS_* flag for this...
->
-> That sort of mechanism would work (for now) but sounds like the sort of
-> subtle behavior that's difficult for filesystem authors to get right.
-> It would also be subject to subtle breakage later.
->
-> Also, suppose there are changes in the future that require you to
-> determine this before calling into ->open? Then you'll have to go back
-> and somehow mark the fs anyway...
+On Sat, Mar 09, 2013 at 10:44:29PM -0800, Yinghai Lu wrote:
+> Use common get_ramdisk_image() to get ramdisk start phys address.
+> 
+> We need this to get correct ramdisk adress for 64bit bzImage that
+> initrd can be loaded above 4G by kexec-tools.
 
-Ok, this makes sense, thanks. Will do it this way and repost.
+Is this a bug fix?  Can it actually happen?
 
---
-Best regards,
-Pavel Shilovsky.
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+
+For 01 and 02
+
+ Acked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
+
+-- 
+tejun
