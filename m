@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763190Ab3DDQdU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:33:20 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:38584 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762975Ab3DDQdS (ORCPT
+	id S1763163Ab3DDQdQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:33:16 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52371
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762997Ab3DDQdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:33:18 -0400
-Date: Thu, 4 Apr 2013 09:33:13 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: oskar.andero@sonymobile.com
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Aleksej Makarov <aleksej.makarov@sonymobile.com>
-Subject: Re: [PATCH] input: don't call input_dev_release_keys() in resume
-Message-ID: <20130404163313.GA12302@core.coreip.homeip.net>
-References: <1362664882-16194-1-git-send-email-oskar.andero@sonymobile.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362664882-16194-1-git-send-email-oskar.andero@sonymobile.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 4 Apr 2013 12:33:13 -0400
+Message-ID: <1365093180.2609.103.camel@laptop>
+Subject: Re: [PATCH v2 2/3] mutex: add support for reservation style locks,
+ v2
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        linux-arch@vger.kernel.org, daniel.vetter@ffwll.ch, x86@kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, robclark@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu, linux-media@vger.kernel.org
+Date: Thu, 04 Apr 2013 18:33:00 +0200
+In-Reply-To: <20130404133123.GW2228@phenom.ffwll.local>
+References: <20130228102452.15191.22673.stgit@patser>
+	 <20130228102502.15191.14146.stgit@patser>
+	 <1364900432.18374.24.camel@laptop> <515AF1C1.7080508@canonical.com>
+	 <1364921954.20640.22.camel@laptop> <1365076908.2609.94.camel@laptop>
+	 <20130404133123.GW2228@phenom.ffwll.local>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oskar,
-
-On Thu, Mar 07, 2013 at 03:01:22PM +0100, oskar.andero@sonymobile.com wrote:
-> From: Aleksej Makarov <aleksej.makarov@sonymobile.com>
+On Thu, 2013-04-04 at 15:31 +0200, Daniel Vetter wrote:
+> We do add some form of owner tracking by storing the reservation
+> ticket
+> of the current holder into every ww_mutex. So when task-Y in your
+> above
+> example tries to acquire lock A it notices that it's behind in the
+> global
+> queue and immedieately returns -EAGAIN to indicate the deadlock.
 > 
-> When waking up the platform by pressing a specific key, sending a
-> release on that key makes it impossible to react on the event in
-> user-space.
+> Aside, there's a bit of fun in that ttm uses -EDEADLCK for when you
+> try to
+> reserve the same buffer twice - it can easily detect that by comparing
+> the
+> lock owner ticket with the provided one and if it matches bail out. 
+
+Sure, but this should bear no influence on the design of the mutex
+primitive. At most we should ensure this situation is recognizable.
+
+> Hence we've kept the special -EDEADLCK semantics even for the ww_mutex
+> stuff.
+
+There's EDEADLK and EDEADLOCK, EDEADLCK does alas not exist :-)
+
+> > Now this gets a little more interesting if we change the scenario a
+> > little:
+> > 
+> >       task-O  task-Y
+> >         A
+> >               B
+> >         B <-- blocks on Y
+> >               * <-- could be A
 > 
+> The current code at least simple blocks task-O on B until task-Y
+> unlocks
+> B. Deadlocks cannot happen since if task-Y ever tries to acquire a
+> lock
+> which is held by an older task (e.g. lock A) it will bail out with
+> -EAGAIN.
 
-No, we can not simply not release keys after resume from suspend, as
-this leads to keys being stuck. Consider you are holding an 'I' key on
-your external USB keyboard and close your laptop's lid. Then you release
-the key and leave. Later you come back, open the lid waking the laptop
-and observe endless stream of 'I' in your open terminal.
+Agreed, O would have to wait until Y unlocks B. It was a 'detail' I
+skimped over for the sake of brevity. I was merely trying to illustrate
+the ways in which we must bring Y to return -EDEADLK (or -EAGAIN in
+your version).
 
-Maybe we should release the keys during suspend time? I am not sure how
-Android infrastructure will react to this though...
-
-Thanks.
-
--- 
-Dmitry
