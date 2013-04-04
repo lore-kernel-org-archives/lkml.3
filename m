@@ -1,347 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763024Ab3DDAEm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 20:04:42 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:4834 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762220Ab3DDADR (ORCPT
+	id S1762971Ab3DDAFo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 20:05:44 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:42469 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758014Ab3DDAFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 20:03:17 -0400
-X-IronPort-AV: E=Sophos;i="4.87,404,1363158000"; 
-   d="scan'208";a="35720033"
-From: Richard Kuo <rkuo@codeaurora.org>
-To: linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org,
-        linux-kernel@vger.kernel.org, viro@ZenIV.linux.org.uk
-Cc: Richard Kuo <rkuo@codeaurora.org>
-Subject: [PATCH 1/6] Hexagon: Signal and return path fixes
-Date: Wed,  3 Apr 2013 19:02:51 -0500
-Message-Id: <1365033776-21804-2-git-send-email-rkuo@codeaurora.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1365033776-21804-1-git-send-email-rkuo@codeaurora.org>
-References: <1365033776-21804-1-git-send-email-rkuo@codeaurora.org>
+	Wed, 3 Apr 2013 20:05:42 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Sven Joachim <svenjoac@gmx.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Ding Tianhong <dingtianhong@huawei.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andy Lutomirski <luto@amacapital.net>, Karel Srot <ksrot@redhat.com>
+References: <20130402221104.163133110@linuxfoundation.org>
+	<20130402221116.307254752@linuxfoundation.org>
+	<87vc833kpf.fsf@turtle.gmx.de>
+Date: Wed, 03 Apr 2013 17:05:25 -0700
+In-Reply-To: <87vc833kpf.fsf@turtle.gmx.de> (Sven Joachim's message of "Wed,
+	03 Apr 2013 13:41:32 +0200")
+Message-ID: <87k3ojnosa.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/FXeIELwMU2kXdTZDf9HmK3fOShNTG8+E=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Sven Joachim <svenjoac@gmx.de>
+X-Spam-Relay-Country: 
+Subject: Re: [ 105/124] af_unix: dont send SCM_CREDENTIAL when dest socket is NULL
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the return value of sigreturn and moves the work pending check
-into a c routine for readability and fixes the loop for multiple pending
-signals.  Based on feedback from Al Viro.
+Sven Joachim <svenjoac@gmx.de> writes:
 
-Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
----
- arch/hexagon/include/uapi/asm/signal.h |    2 +
- arch/hexagon/kernel/process.c          |   41 +++++++++++++++
- arch/hexagon/kernel/signal.c           |   29 ++---------
- arch/hexagon/kernel/traps.c            |   13 +----
- arch/hexagon/kernel/vm_entry.S         |   87 +++++++++++++-------------------
- 5 files changed, 84 insertions(+), 88 deletions(-)
+> On 2013-04-03 00:11 +0200, Greg Kroah-Hartman wrote:
+>
+>> 3.8-stable review patch.  If anyone has any objections, please let me know.
+>
+> I'm seeing several complaints from udevd at boot in both 3.8.6-rc1 and
+> 3.9-rc5: "udevd[56]: sender uid=65534, message ignored".  Reverting the
+> patch below on top of 3.8.6-rc1 fixes that.  I'm using udev version 175
+> here, and 65534 is the uid of user "nobody".
 
-diff --git a/arch/hexagon/include/uapi/asm/signal.h b/arch/hexagon/include/uapi/asm/signal.h
-index 9395568..24b9988 100644
---- a/arch/hexagon/include/uapi/asm/signal.h
-+++ b/arch/hexagon/include/uapi/asm/signal.h
-@@ -21,6 +21,8 @@
- 
- extern unsigned long __rt_sigtramp_template[2];
- 
-+void do_signal(struct pt_regs *regs);
-+
- #include <asm-generic/signal.h>
- 
- #endif
-diff --git a/arch/hexagon/kernel/process.c b/arch/hexagon/kernel/process.c
-index 06ae9ff..dc72ed5 100644
---- a/arch/hexagon/kernel/process.c
-+++ b/arch/hexagon/kernel/process.c
-@@ -24,6 +24,7 @@
- #include <linux/tick.h>
- #include <linux/uaccess.h>
- #include <linux/slab.h>
-+#include <linux/tracehook.h>
- 
- /*
-  * Program thread launch.  Often defined as a macro in processor.h,
-@@ -202,3 +203,43 @@ int dump_fpu(struct pt_regs *regs, elf_fpregset_t *fpu)
- {
- 	return 0;
- }
-+
-+
-+/*
-+ * Called on the exit path of event entry; see vm_entry.S
-+ *
-+ * Interrupts will already be disabled.
-+ *
-+ * Returns 0 if there's no need to re-check for more work.
-+ */
-+
-+int do_work_pending(struct pt_regs *regs, u32 thread_info_flags)
-+{
-+	if (!(thread_info_flags & _TIF_ALLWORK_MASK)) {
-+		return 0;
-+	}  /* shortcut -- no work to be done */
-+
-+	local_irq_enable();
-+
-+	if (thread_info_flags & _TIF_NEED_RESCHED) {
-+		schedule();
-+		return 1;
-+	}
-+
-+	if (thread_info_flags & _TIF_SIGPENDING) {
-+		do_signal(regs);
-+		return 1;
-+	}
-+
-+	if (thread_info_flags & _TIF_NOTIFY_RESUME) {
-+		clear_thread_flag(TIF_NOTIFY_RESUME);
-+		tracehook_notify_resume(regs);
-+		if (current->replacement_session_keyring)
-+			key_replace_session_keyring();
-+		return 1;
-+	}
-+
-+	/* Should not even reach here */
-+	panic("%s: bad thread_info flags 0x%08x\n", __func__,
-+		thread_info_flags);
-+}
-diff --git a/arch/hexagon/kernel/signal.c b/arch/hexagon/kernel/signal.c
-index a1492a6..8a20e8e 100644
---- a/arch/hexagon/kernel/signal.c
-+++ b/arch/hexagon/kernel/signal.c
-@@ -199,7 +199,7 @@ static void handle_signal(int sig, siginfo_t *info, struct k_sigaction *ka,
- /*
-  * Called from return-from-event code.
-  */
--static void do_signal(struct pt_regs *regs)
-+void do_signal(struct pt_regs *regs)
- {
- 	struct k_sigaction sigact;
- 	siginfo_t info;
-@@ -216,8 +216,9 @@ static void do_signal(struct pt_regs *regs)
- 	}
- 
- 	/*
--	 * If we came from a system call, handle the restart.
-+	 * No (more) signals; if we came from a system call, handle the restart.
- 	 */
-+
- 	if (regs->syscall_nr >= 0) {
- 		switch (regs->r00) {
- 		case -ERESTARTNOHAND:
-@@ -240,17 +241,6 @@ no_restart:
- 	restore_saved_sigmask();
- }
- 
--void do_notify_resume(struct pt_regs *regs, unsigned long thread_info_flags)
--{
--	if (thread_info_flags & _TIF_SIGPENDING)
--		do_signal(regs);
--
--	if (thread_info_flags & _TIF_NOTIFY_RESUME) {
--		clear_thread_flag(TIF_NOTIFY_RESUME);
--		tracehook_notify_resume(regs);
--	}
--}
--
- /*
-  * Architecture-specific wrappers for signal-related system calls
-  */
-@@ -278,21 +268,12 @@ asmlinkage int sys_rt_sigreturn(void)
- 	/* Restore the user's stack as well */
- 	pt_psp(regs) = regs->r29;
- 
--	/*
--	 * Leave a trace in the stack frame that this was a sigreturn.
--	 * If the system call is to replay, we've already restored the
--	 * number in the GPR slot and it will be regenerated on the
--	 * new system call trap entry. Note that if restore_sigcontext()
--	 * did something other than a bulk copy of the pt_regs struct,
--	 * we could avoid this assignment by simply not overwriting
--	 * regs->syscall_nr.
--	 */
--	regs->syscall_nr = __NR_rt_sigreturn;
-+	regs->syscall_nr = -1;
- 
- 	if (restore_altstack(&frame->uc.uc_stack))
- 		goto badframe;
- 
--	return 0;
-+	return regs->r00;
- 
- badframe:
- 	force_sig(SIGSEGV, current);
-diff --git a/arch/hexagon/kernel/traps.c b/arch/hexagon/kernel/traps.c
-index be5e2dd..d59ee62 100644
---- a/arch/hexagon/kernel/traps.c
-+++ b/arch/hexagon/kernel/traps.c
-@@ -356,7 +356,6 @@ long sys_syscall(void)
- 
- void do_trap0(struct pt_regs *regs)
- {
--	unsigned long syscallret = 0;
- 	syscall_fn syscall;
- 
- 	switch (pt_cause(regs)) {
-@@ -396,21 +395,11 @@ void do_trap0(struct pt_regs *regs)
- 		} else {
- 			syscall = (syscall_fn)
- 				  (sys_call_table[regs->syscall_nr]);
--			syscallret = syscall(regs->r00, regs->r01,
-+			regs->r00 = syscall(regs->r00, regs->r01,
- 				   regs->r02, regs->r03,
- 				   regs->r04, regs->r05);
- 		}
- 
--		/*
--		 * If it was a sigreturn system call, don't overwrite
--		 * r0 value in stack frame with return value.
--		 *
--		 * __NR_sigreturn doesn't seem to exist in new unistd.h
--		 */
--
--		if (regs->syscall_nr != __NR_rt_sigreturn)
--			regs->r00 = syscallret;
--
- 		/* allow strace to get the syscall return state  */
- 		if (unlikely(test_thread_flag(TIF_SYSCALL_TRACE)))
- 			tracehook_report_syscall_exit(regs, 0);
-diff --git a/arch/hexagon/kernel/vm_entry.S b/arch/hexagon/kernel/vm_entry.S
-index ffe4a42..053551e 100644
---- a/arch/hexagon/kernel/vm_entry.S
-+++ b/arch/hexagon/kernel/vm_entry.S
-@@ -274,6 +274,9 @@ event_dispatch:
- 	callr	r1
- 
- 	/*
-+	 * Coming back from the C-world, our thread info pointer
-+	 * should be in the designated register (usually R19)
-+	 *
- 	 * If we were in kernel mode, we don't need to check scheduler
- 	 * or signals if CONFIG_PREEMPT is not set.  If set, then it has
- 	 * to jump to a need_resched kind of block.
-@@ -286,67 +289,43 @@ event_dispatch:
- #endif
- 
- 	/*  "Nested control path" -- if the previous mode was kernel  */
--	R0 = memw(R29 + #_PT_ER_VMEST);
- 	{
--		P0 = tstbit(R0, #HVM_VMEST_UM_SFT);
--		if (!P0.new) jump:nt restore_all;
-+		R0 = memw(R29 + #_PT_ER_VMEST);
-+		R16.L = #LO(do_work_pending);
- 	}
--	/*
--	 * Returning from system call, normally coming back from user mode
--	 */
--return_from_syscall:
--	/*  Disable interrupts while checking TIF  */
--	R0 = #VM_INT_DISABLE
--	trap1(#HVM_TRAP1_VMSETIE)
--
--	/*
--	 * Coming back from the C-world, our thread info pointer
--	 * should be in the designated register (usually R19)
--	 */
--#if CONFIG_HEXAGON_ARCH_VERSION < 4
--	R1.L = #LO(_TIF_ALLWORK_MASK)
- 	{
--		R1.H = #HI(_TIF_ALLWORK_MASK);
--		R0 = memw(THREADINFO_REG + #_THREAD_INFO_FLAGS);
--	}
--#else
--	{
--		R1 = ##_TIF_ALLWORK_MASK;
--		R0 = memw(THREADINFO_REG + #_THREAD_INFO_FLAGS);
-+		P0 = tstbit(R0, #HVM_VMEST_UM_SFT);
-+		if (!P0.new) jump:nt restore_all;
-+		R16.H = #HI(do_work_pending);
-+		R0 = #VM_INT_DISABLE;
- 	}
--#endif
- 
- 	/*
--	 * Compare against the "return to userspace" _TIF_WORK_MASK
-+	 * Check also the return from fork/system call, normally coming back from
-+	 * user mode
-+	 *
-+	 * R16 needs to have do_work_pending, and R0 should have VM_INT_DISABLE
- 	 */
--	R1 = and(R1,R0);
--	{ P0 = cmp.eq(R1,#0); if (!P0.new) jump:t work_pending;}
--	jump restore_all;  /*  we're outta here!  */
- 
--work_pending:
-+check_work_pending:
-+	/*  Disable interrupts while checking TIF  */
-+	trap1(#HVM_TRAP1_VMSETIE)
- 	{
--		P0 = tstbit(R1, #TIF_NEED_RESCHED);
--		if (!P0.new) jump:nt work_notifysig;
-+		R0 = R29;  /*  regs should still be at top of stack  */
-+		R1 = memw(THREADINFO_REG + #_THREAD_INFO_FLAGS);
-+		callr R16;
- 	}
--	call schedule
--	jump return_from_syscall;  /*  check for more work  */
- 
--work_notifysig:
--	/*  this is the part that's kind of fuzzy.  */
--	R1 = and(R0, #(_TIF_SIGPENDING | _TIF_NOTIFY_RESUME));
--	{
--		P0 = cmp.eq(R1, #0);
--		if P0.new jump:t restore_all;
--	}
- 	{
--		R1 = R0; 	/* unsigned long thread_info_flags */
--		R0 = R29;	/* regs should still be at top of stack  */
-+		P0 = cmp.eq(R0, #0); if (!P0.new) jump:nt check_work_pending;
-+		R0 = #VM_INT_DISABLE;
- 	}
--	call do_notify_resume
- 
- restore_all:
--	/* Disable interrupts, if they weren't already, before reg restore.  */
--	R0 = #VM_INT_DISABLE
-+	/*
-+	 * Disable interrupts, if they weren't already, before reg restore.
-+	 * R0 gets preloaded with #VM_INT_DISABLE before we get here.
-+	 */
- 	trap1(#HVM_TRAP1_VMSETIE)
- 
- 	/*  do the setregs here for VM 0.5  */
-@@ -371,6 +350,7 @@ restore_all:
- 	trap1(#HVM_TRAP1_VMRTE)
- 	/* Notreached */
- 
-+
- 	.globl _K_enter_genex
- _K_enter_genex:
- 	vm_event_entry(do_genex)
-@@ -390,9 +370,12 @@ _K_enter_machcheck:
- 
- 	.globl ret_from_fork
- ret_from_fork:
--	call schedule_tail
--	P0 = cmp.eq(R24, #0);
--	if P0 jump return_from_syscall
--	R0 = R25;
--	callr R24
--	jump return_from_syscall
-+	{
-+		call schedule_tail;
-+		R16.H = #HI(do_work_pending);
-+	}
-+	{
-+		R16.L = #LO(do_work_pending);
-+		R0 = #VM_INT_DISABLE;
-+		jump check_work_pending;
-+	}
--- 
-1.7.9.5
+Hmm.
 
---
+Ok.  I don't understand the commit that was being backported here.  I am
+pretty certain it a fix for a problem that did not exist.
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Unless I am completely mis-reading scm_recv we only generate a
+SCM_CREDENTIALS message if the receiving socket asserts SOCK_PASSCRED.
+Which means that the only harm that can come from adding scm credentials
+to a disconnected af_unix socket is a loss in efficiency.
+
+Not adding scm credentials to be passed to userspace as the commit below
+is doing can result is bogus data being passed to userspace.  Which is
+very actively WRONG.
+
+Now before scm_recv does anything we first call scm_set_cred.  If no
+credential was passed to scm_set_cred we set the uid to INVALID_UID.
+Which scm_recv in the call from_kuid_munged translates into 65534 for
+reporting to userspace.
+
+So this is is pretty clearly a case of us not sending the unix
+credentials.
+
+Since not sending credential is just a performance optimization I can
+see no earthly reason why the commit below should have been applied in
+the first place, and no reason why it should have been backported in the
+second place.  So my vote is that we revert this bogus commit.  Upstream
+and then backport the revert.
+
+Am I missing something?
+
+Eric
+
+>> From: dingtianhong <dingtianhong@huawei.com>
+>>
+>> [ Upstream commit 14134f6584212d585b310ce95428014b653dfaf6 ]
+>>
+>> SCM_SCREDENTIALS should apply to write() syscalls only either source or destination
+>> socket asserted SOCK_PASSCRED. The original implememtation in maybe_add_creds is wrong,
+>> and breaks several LSB testcases ( i.e. /tset/LSB.os/netowkr/recvfrom/T.recvfrom).
+>>
+>> Origionally-authored-by: Karel Srot <ksrot@redhat.com>
+>> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+>> Acked-by: Eric Dumazet <edumazet@google.com>
+>> Signed-off-by: David S. Miller <davem@davemloft.net>
+>> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> ---
+>>  net/unix/af_unix.c |    4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> --- a/net/unix/af_unix.c
+>> +++ b/net/unix/af_unix.c
+>> @@ -1414,8 +1414,8 @@ static void maybe_add_creds(struct sk_bu
+>>  	if (UNIXCB(skb).cred)
+>>  		return;
+>>  	if (test_bit(SOCK_PASSCRED, &sock->flags) ||
+>> -	    !other->sk_socket ||
+>> -	    test_bit(SOCK_PASSCRED, &other->sk_socket->flags)) {
+>> +	    (other->sk_socket &&
+>> +	    test_bit(SOCK_PASSCRED, &other->sk_socket->flags))) {
+>>  		UNIXCB(skb).pid  = get_pid(task_tgid(current));
+>>  		UNIXCB(skb).cred = get_current_cred();
+>>  	}
