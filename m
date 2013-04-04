@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764799Ab3DDUZL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 16:25:11 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40852 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764145Ab3DDUZJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 16:25:09 -0400
-Message-ID: <515DE192.1030408@ti.com>
-Date: Thu, 4 Apr 2013 16:24:50 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1764699Ab3DDU0y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 16:26:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57404 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1763121Ab3DDU0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 16:26:53 -0400
+Message-ID: <515DE1C1.6080000@zytor.com>
+Date: Thu, 04 Apr 2013 13:25:37 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Zhang Rui <rui.zhang@intel.com>
-CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <amit.daniel@samsung.com>, <durgadoss.r@intel.com>, <andi@lisas.de>,
-        <eduardo.valentin@ti.com>
-Subject: Re: [PATCH V2 1/3] Thermal: rename thermal_sys.c to thermal_core.c
-References: <1364567196-3560-1-git-send-email-rui.zhang@intel.com> <1364567196-3560-2-git-send-email-rui.zhang@intel.com>
-In-Reply-To: <1364567196-3560-2-git-send-email-rui.zhang@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Pekka Enberg <penberg@kernel.org>
+CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Thomas Renninger <trenn@suse.de>,
+        Tang Chen <tangchen@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        Jacob Shin <jacob.shin@amd.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v2 08/20] x86, ACPI: Find acpi tables in initrd early
+ from head_32.S/head64.c
+References: <1362897887-30808-1-git-send-email-yinghai@kernel.org> <1362897887-30808-9-git-send-email-yinghai@kernel.org> <CAOJsxLG2Qg7vmLWirWK-GOBp65NxogGcAU5guoVphDu2G=BsjA@mail.gmail.com>
+In-Reply-To: <CAOJsxLG2Qg7vmLWirWK-GOBp65NxogGcAU5guoVphDu2G=BsjA@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29-03-2013 10:26, Zhang Rui wrote:
-> this is the preparation work to build all the thermal core framework
-> source file, like governors, cpu cooling, etc, into one module.
->
-> No functional change in this patch.
->
-> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+On 03/10/2013 03:25 AM, Pekka Enberg wrote:
+> 
+> What is preventing us from making the 64-bit variant also work in flat
+> mode to make the code consistent and not hiding the differences under
+> the rug? What am I missing here?
+> 
 
-Durga and me have already reviewed and acked this patch. Can you please 
-add our Acked-by on this patch?
+There is no such thing as "flat mode" in 64-bit mode.  We use a #PF
+handler to emulate it, but we add the normal kernel offset when doing so.
 
-> ---
->   drivers/thermal/Makefile                          |    1 +
->   drivers/thermal/{thermal_sys.c => thermal_core.c} |    0
->   2 files changed, 1 insertion(+)
->   rename drivers/thermal/{thermal_sys.c => thermal_core.c} (100%)
->
-> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
-> index d3a2b38..b2009bd 100644
-> --- a/drivers/thermal/Makefile
-> +++ b/drivers/thermal/Makefile
-> @@ -3,6 +3,7 @@
->   #
->
->   obj-$(CONFIG_THERMAL)		+= thermal_sys.o
-> +thermal_sys-y			+= thermal_core.o
->
->   # governors
->   obj-$(CONFIG_THERMAL_GOV_FAIR_SHARE)	+= fair_share.o
-> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_core.c
-> similarity index 100%
-> rename from drivers/thermal/thermal_sys.c
-> rename to drivers/thermal/thermal_core.c
->
+In the 32-bit case the problem is that the kernel offset is not
+available while in linear mode.  It *could* be created using segment
+bases, but that would break Xen, I'm pretty sure, and possibly some
+other too-clever environments.
+
+	-hpa
+
 
