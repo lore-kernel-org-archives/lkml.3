@@ -1,112 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086Ab3DDCHG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 22:07:06 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:36933 "EHLO song.cn.fujitsu.com"
+	id S932975Ab3DDCHf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 22:07:35 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:17418 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932994Ab3DDCGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 22:06:01 -0400
+	id S932802Ab3DDCGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 22:06:00 -0400
 X-IronPort-AV: E=Sophos;i="4.87,404,1363104000"; 
-   d="scan'208";a="6998074"
+   d="scan'208";a="6998072"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
 Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 6/7] workqueue: node-awared allocation for unbound pool
-Date: Thu, 4 Apr 2013 10:05:37 +0800
-Message-Id: <1365041143-3088-6-git-send-email-laijs@cn.fujitsu.com>
+Subject: [PATCH 5/7] workqueue, use default pwq when fail to allocate node pwd
+Date: Thu, 4 Apr 2013 10:05:36 +0800
+Message-Id: <1365041143-3088-5-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1365041143-3088-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1365041143-3088-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/04 10:04:59,
+ 2013/04/04 10:04:58,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/04 10:05:00,
-	Serialize complete at 2013/04/04 10:05:00
+ 2013/04/04 10:04:58,
+	Serialize complete at 2013/04/04 10:04:58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-calculate the node of the pool earlier, and allocate the pool
-from the node.
+When we fail to allocate the node pwq, we can use the default pwq
+for the node.
+
+Thus we can avoid failure after allocated default pwq, and remove
+some code for failure path.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- kernel/workqueue.c |   29 +++++++++++++++--------------
- 1 files changed, 15 insertions(+), 14 deletions(-)
+ kernel/workqueue.c |   28 +++++++---------------------
+ 1 files changed, 7 insertions(+), 21 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 737646d..3f33077 100644
+index a383eaf..737646d 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -539,7 +539,7 @@ static int worker_pool_assign_id(struct worker_pool *pool)
-  * @wq: the target workqueue
-  * @node: the node ID
-  *
-- * This must be called either with pwq_lock held or sched RCU read locked.
-+ * This must be called either with wq->mutex held or sched RCU read locked.
-  * If the pwq needs to be used beyond the locking in effect, the caller is
-  * responsible for guaranteeing that the pwq stays online.
-  */
-@@ -3555,7 +3555,7 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
- {
- 	u32 hash = wqattrs_hash(attrs);
- 	struct worker_pool *pool;
--	int node;
-+	int pool_node = NUMA_NO_NODE, node;
+@@ -3751,17 +3751,6 @@ static struct pool_workqueue *alloc_unbound_pwq(struct workqueue_struct *wq,
+ 	return pwq;
+ }
  
- 	lockdep_assert_held(&wq_pool_mutex);
- 
-@@ -3563,29 +3563,30 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
- 	hash_for_each_possible(unbound_pool_hash, pool, hash_node, hash) {
- 		if (wqattrs_equal(pool->attrs, attrs)) {
- 			pool->refcnt++;
--			goto out_unlock;
-+			goto out_pool;
+-/* undo alloc_unbound_pwq(), used only in the error path */
+-static void free_unbound_pwq(struct pool_workqueue *pwq)
+-{
+-	lockdep_assert_held(&wq_pool_mutex);
+-
+-	if (pwq) {
+-		put_unbound_pool(pwq->pool);
+-		kfree(pwq);
+-	}
+-}
+-
+ /**
+  * wq_calc_node_mask - calculate a wq_attrs' cpumask for the specified node
+  * @attrs: the wq_attrs of interest
+@@ -3891,12 +3880,12 @@ int apply_workqueue_attrs(struct workqueue_struct *wq,
+ 	for_each_node(node) {
+ 		if (wq_calc_node_cpumask(attrs, node, -1, tmp_attrs->cpumask)) {
+ 			pwq_tbl[node] = alloc_unbound_pwq(wq, tmp_attrs);
+-			if (!pwq_tbl[node])
+-				goto enomem_pwq;
+-		} else {
+-			dfl_pwq->refcnt++;
+-			pwq_tbl[node] = dfl_pwq;
++			if (pwq_tbl[node])
++				continue;
++			/* fallback to dfl_pwq if the allocation failed */
  		}
++		dfl_pwq->refcnt++;
++		pwq_tbl[node] = dfl_pwq;
  	}
  
--	/* nope, create a new one */
--	pool = kzalloc(sizeof(*pool), GFP_KERNEL);
--	if (!pool || init_worker_pool(pool) < 0)
--		goto fail;
--
--	lockdep_set_subclass(&pool->lock, 1);	/* see put_pwq() */
--	copy_workqueue_attrs(pool->attrs, attrs);
--
- 	/* if cpumask is contained inside a NUMA node, we belong to that node */
- 	if (wq_numa_enabled) {
- 		for_each_node(node) {
--			if (cpumask_subset(pool->attrs->cpumask,
-+			if (cpumask_subset(attrs->cpumask,
- 					   wq_numa_possible_cpumask[node])) {
--				pool->node = node;
-+				pool_node = node;
- 				break;
- 			}
- 		}
+ 	mutex_unlock(&wq_pool_mutex);
+@@ -3931,10 +3920,6 @@ out_free:
+ 	return ret;
+ 
+ enomem_pwq:
+-	free_unbound_pwq(dfl_pwq);
+-	for_each_node(node)
+-		if (pwq_tbl && pwq_tbl[node] != dfl_pwq)
+-			free_unbound_pwq(pwq_tbl[node]);
+ 	mutex_unlock(&wq_pool_mutex);
+ 	put_online_cpus();
+ enomem:
+@@ -4017,7 +4002,8 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
+ 	if (!pwq) {
+ 		pr_warning("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
+ 			   wq->name);
+-		goto out_unlock;
++		mutex_lock(&wq->mutex);
++		goto use_dfl_pwq;
  	}
  
-+	/* create a new one */
-+	pool = kzalloc_node(sizeof(*pool), GFP_KERNEL, pool_node);
-+	if (!pool || init_worker_pool(pool) < 0)
-+		goto fail;
-+
-+	lockdep_set_subclass(&pool->lock, 1);	/* see put_pwq() */
-+	copy_workqueue_attrs(pool->attrs, attrs);
-+	pool->node = pool_node;
-+
- 	if (worker_pool_assign_id(pool) < 0)
- 		goto fail;
- 
-@@ -3595,7 +3596,7 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
- 
- 	/* install */
- 	hash_add(unbound_pool_hash, &pool->hash_node, hash);
--out_unlock:
-+out_pool:
- 	return pool;
- fail:
- 	if (pool)
+ 	/*
 -- 
 1.7.7.6
 
