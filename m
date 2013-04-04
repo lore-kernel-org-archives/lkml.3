@@ -1,140 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764957Ab3DDVgJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 17:36:09 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:54962 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764937Ab3DDVgG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 17:36:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <1363217302-14383-27-git-send-email-yinghai@kernel.org>
-References: <1363217302-14383-1-git-send-email-yinghai@kernel.org> <1363217302-14383-27-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 4 Apr 2013 15:35:44 -0600
-Message-ID: <CAErSpo7DhyVwNng=uBR=YMC3ZMFUtV-MDuukjMMGFxMmgHZR=w@mail.gmail.com>
-Subject: Re: [PATCH v3 26/27] PCI: Make quirk_io_region to use addon_res
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ram Pai <linuxram@us.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1764964Ab3DDVh0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 17:37:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:41524 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1764942Ab3DDVhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 17:37:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,411,1363158000"; 
+   d="scan'208";a="312561416"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Bill Pemberton <wfp5p@virginia.edu>,
+        Joe Perches <joe@perches.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: [PATCH] staging/adt7316 Fix some 'interesting' string operations
+Date: Thu, 04 Apr 2013 14:37:24 -0700
+Message-Id: <515df29417437372eb@agluck-desk.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 13, 2013 at 5:28 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> After they are put in add-on resources, they will be safely claimed later.
->
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  drivers/pci/quirks.c |  155 +++++++++++++++++++++++---------------------------
->  1 file changed, 70 insertions(+), 85 deletions(-)
->
-> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> index 7e5392c..6d379d6 100644
-> --- a/drivers/pci/quirks.c
-> +++ b/drivers/pci/quirks.c
-> @@ -324,29 +324,61 @@ static void quirk_cs5536_vsa(struct pci_dev *dev)
->  }
->  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_CS5536_ISA, quirk_cs5536_vsa);
->
-> -static void quirk_io_region(struct pci_dev *dev, unsigned region,
-> -       unsigned size, int nr, const char *name)
-> +static int quirk_read_io(struct pci_dev *dev, struct resource *res, int port)
->  {
-> -       region &= ~(size-1);
-> -       if (region) {
-> -               struct pci_bus_region bus_region;
-> -               struct resource *res = dev->resource + nr;
-> +       struct pci_bus_region bus_region;
-> +       u16 region;
-> +       unsigned size = to_pci_dev_addon_resource(res)->size;
->
-> -               res->name = pci_name(dev);
-> -               res->start = region;
-> -               res->end = region + size - 1;
-> -               res->flags = IORESOURCE_IO;
-> +       pci_read_config_word(dev, port, &region);
-> +       region &= ~(size - 1);
->
-> -               /* Convert from PCI bus to resource space.  */
-> -               bus_region.start = res->start;
-> -               bus_region.end = res->end;
-> -               pcibios_bus_to_resource(dev, res, &bus_region);
-> +       /* Convert from PCI bus to resource space.  */
-> +       bus_region.start = region;
-> +       bus_region.end = region + size - 1;
->
-> -               if (pci_claim_resource(dev, nr) == 0)
-> -                       dev_info(&dev->dev, "quirk: %pR claimed by %s\n",
-> -                                res, name);
-> -       }
-> -}
-> +       pcibios_bus_to_resource(dev, res, &bus_region);
-> +
-> +       res->flags |= IORESOURCE_IO;
-> +       dev_info(&dev->dev, "PIO at %pR\n", res);
-> +
-> +       return 0;
-> +}
-> +static int quirk_write_io(struct pci_dev *dev, struct resource *res, int port)
-> +{
-> +       struct pci_bus_region bus_region;
-> +       u16 region;
-> +       unsigned size = to_pci_dev_addon_resource(res)->size;
-> +
-> +       pci_read_config_word(dev, port, &region);
-> +       region &= size - 1;
-> +
-> +       /* Convert to PCI bus space.  */
-> +       pcibios_resource_to_bus(dev, &bus_region, res);
-> +       region |= bus_region.start & (~(size - 1));
-> +
-> +       pci_write_config_word(dev, port, region);
-> +
-> +       return 0;
-> +}
-> +static struct resource_ops quirk_io_ops = {
-> +       .read = quirk_read_io,
-> +       .write = quirk_write_io,
-> +};
-> +
-> +static void quirk_io_region(struct pci_dev *dev, int port,
-> +                                       unsigned size, char *name)
-> +{
-> +       u16 region;
-> +
-> +       pci_read_config_word(dev, port, &region);
-> +       region &= size - 1;
-> +
-> +       if (!region)
-> +               return;
-> +
-> +       pci_add_dev_addon_resource(dev, port, size, &quirk_io_ops, name);
-> +}
->
->  /*
->   *     ATI Northbridge setups MCE the processor if you even
-> @@ -374,12 +406,8 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_RS100,   quirk_ati_
->   */
->  static void quirk_ali7101_acpi(struct pci_dev *dev)
->  {
-> -       u16 region;
-> -
-> -       pci_read_config_word(dev, 0xE0, &region);
-> -       quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES, "ali7101 ACPI");
-> -       pci_read_config_word(dev, 0xE2, &region);
-> -       quirk_io_region(dev, region, 32, PCI_BRIDGE_RESOURCES+1, "ali7101 SMB");
-> +       quirk_io_region(dev, 0xE0, 64, "ali7101 ACPI");
-> +       quirk_io_region(dev, 0xE2, 32, "ali7101 SMB");
+Calling memcmp() to check the value of the first byte in a string is overkill.
+Just use buf[0] == '1' or buf[0] != '1' as appropriate.
 
-This patch has two changes that need to be separated:
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 
-  1) Refactoring quirk_io_region() so the pci_read_config_word() is
-done by quirk_io_region() rather than the caller.
-  2) Whatever pci_dev resource changes we end up making.
+---
 
-I think part 1 can be done at any time and is probably not controversial.
+[Inspired by a rant on IRC about a different driver doing something similar]
 
-Bjorn
+diff --git a/drivers/staging/iio/addac/adt7316.c b/drivers/staging/iio/addac/adt7316.c
+index 0b431bc..506b5a7 100644
+--- a/drivers/staging/iio/addac/adt7316.c
++++ b/drivers/staging/iio/addac/adt7316.c
+@@ -256,7 +256,7 @@ static ssize_t adt7316_store_enabled(struct device *dev,
+ 	struct adt7316_chip_info *chip = iio_priv(dev_info);
+ 	int enable;
+ 
+-	if (!memcmp(buf, "1", 1))
++	if (buf[0] == '1')
+ 		enable = 1;
+ 	else
+ 		enable = 0;
+@@ -299,7 +299,7 @@ static ssize_t adt7316_store_select_ex_temp(struct device *dev,
+ 		return -EPERM;
+ 
+ 	config1 = chip->config1 & (~ADT7516_SEL_EX_TEMP);
+-	if (!memcmp(buf, "1", 1))
++	if (buf[0] == '1')
+ 		config1 |= ADT7516_SEL_EX_TEMP;
+ 
+ 	ret = chip->bus.write(chip->bus.client, ADT7316_CONFIG1, config1);
+@@ -495,7 +495,7 @@ static ssize_t adt7316_store_disable_averaging(struct device *dev,
+ 	int ret;
+ 
+ 	config2 = chip->config2 & (~ADT7316_DISABLE_AVERAGING);
+-	if (!memcmp(buf, "1", 1))
++	if (buf[0] == '1')
+ 		config2 |= ADT7316_DISABLE_AVERAGING;
+ 
+ 	ret = chip->bus.write(chip->bus.client, ADT7316_CONFIG2, config2);
+@@ -534,7 +534,7 @@ static ssize_t adt7316_store_enable_smbus_timeout(struct device *dev,
+ 	int ret;
+ 
+ 	config2 = chip->config2 & (~ADT7316_EN_SMBUS_TIMEOUT);
+-	if (!memcmp(buf, "1", 1))
++	if (buf[0] == '1')
+ 		config2 |= ADT7316_EN_SMBUS_TIMEOUT;
+ 
+ 	ret = chip->bus.write(chip->bus.client, ADT7316_CONFIG2, config2);
+@@ -597,7 +597,7 @@ static ssize_t adt7316_store_powerdown(struct device *dev,
+ 	int ret;
+ 
+ 	config1 = chip->config1 & (~ADT7316_PD);
+-	if (!memcmp(buf, "1", 1))
++	if (buf[0] == '1')
+ 		config1 |= ADT7316_PD;
+ 
+ 	ret = chip->bus.write(chip->bus.client, ADT7316_CONFIG1, config1);
+@@ -635,7 +635,7 @@ static ssize_t adt7316_store_fast_ad_clock(struct device *dev,
+ 	int ret;
+ 
+ 	config3 = chip->config3 & (~ADT7316_ADCLK_22_5);
+-	if (!memcmp(buf, "1", 1))
++	if (buf[0] == '1')
+ 		config3 |= ADT7316_ADCLK_22_5;
+ 
+ 	ret = chip->bus.write(chip->bus.client, ADT7316_CONFIG3, config3);
+@@ -681,7 +681,7 @@ static ssize_t adt7316_store_da_high_resolution(struct device *dev,
+ 
+ 	chip->dac_bits = 8;
+ 
+-	if (!memcmp(buf, "1", 1)) {
++	if (buf[0] == '1') {
+ 		config3 = chip->config3 | ADT7316_DA_HIGH_RESOLUTION;
+ 		if (chip->id == ID_ADT7316 || chip->id == ID_ADT7516)
+ 			chip->dac_bits = 12;
+@@ -731,7 +731,7 @@ static ssize_t adt7316_store_AIN_internal_Vref(struct device *dev,
+ 	if ((chip->id & ID_FAMILY_MASK) != ID_ADT75XX)
+ 		return -EPERM;
+ 
+-	if (memcmp(buf, "1", 1))
++	if (buf[0] != '1')
+ 		config3 = chip->config3 & (~ADT7516_AIN_IN_VREF);
+ 	else
+ 		config3 = chip->config3 | ADT7516_AIN_IN_VREF;
+@@ -773,7 +773,7 @@ static ssize_t adt7316_store_enable_prop_DACA(struct device *dev,
+ 	int ret;
+ 
+ 	config3 = chip->config3 & (~ADT7316_EN_IN_TEMP_PROP_DACA);
+-	if (!memcmp(buf, "1", 1))
++	if (buf[0] == '1')
+ 		config3 |= ADT7316_EN_IN_TEMP_PROP_DACA;
+ 
+ 	ret = chip->bus.write(chip->bus.client, ADT7316_CONFIG3, config3);
+@@ -812,7 +812,7 @@ static ssize_t adt7316_store_enable_prop_DACB(struct device *dev,
+ 	int ret;
+ 
+ 	config3 = chip->config3 & (~ADT7316_EN_EX_TEMP_PROP_DACB);
+-	if (!memcmp(buf, "1", 1))
++	if (buf[0] == '1')
+ 		config3 |= ADT7316_EN_EX_TEMP_PROP_DACB;
+ 
+ 	ret = chip->bus.write(chip->bus.client, ADT7316_CONFIG3, config3);
+@@ -1018,7 +1018,7 @@ static ssize_t adt7316_store_DA_AB_Vref_bypass(struct device *dev,
+ 		return -EPERM;
+ 
+ 	dac_config = chip->dac_config & (~ADT7316_VREF_BYPASS_DAC_AB);
+-	if (!memcmp(buf, "1", 1))
++	if (buf[0] == '1')
+ 		dac_config |= ADT7316_VREF_BYPASS_DAC_AB;
+ 
+ 	ret = chip->bus.write(chip->bus.client, ADT7316_DAC_CONFIG, dac_config);
+@@ -1063,7 +1063,7 @@ static ssize_t adt7316_store_DA_CD_Vref_bypass(struct device *dev,
+ 		return -EPERM;
+ 
+ 	dac_config = chip->dac_config & (~ADT7316_VREF_BYPASS_DAC_CD);
+-	if (!memcmp(buf, "1", 1))
++	if (buf[0] == '1')
+ 		dac_config |= ADT7316_VREF_BYPASS_DAC_CD;
+ 
+ 	ret = chip->bus.write(chip->bus.client, ADT7316_DAC_CONFIG, dac_config);
+@@ -1982,7 +1982,7 @@ static ssize_t adt7316_set_int_enabled(struct device *dev,
+ 	int ret;
+ 
+ 	config1 = chip->config1 & (~ADT7316_INT_EN);
+-	if (!memcmp(buf, "1", 1))
++	if (buf[0] == '1')
+ 		config1 |= ADT7316_INT_EN;
+ 
+ 	ret = chip->bus.write(chip->bus.client, ADT7316_CONFIG1, config1);
