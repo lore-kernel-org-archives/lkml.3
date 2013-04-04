@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762407Ab3DDPaE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 11:30:04 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:35781 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761846Ab3DDPaD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 11:30:03 -0400
-Message-ID: <515D9C74.5050207@atmel.com>
-Date: Thu, 4 Apr 2013 17:29:56 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1762511Ab3DDPa4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 11:30:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46009 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762457Ab3DDPaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 11:30:55 -0400
+Date: Thu, 4 Apr 2013 17:30:51 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC][PATCH 5/7] cgroup: make sure parent won't be destroyed
+ before its children
+Message-ID: <20130404153051.GL29911@dhcp22.suse.cz>
+References: <515BF233.6070308@huawei.com>
+ <515BF2A4.1070703@huawei.com>
+ <20130404113750.GH29911@dhcp22.suse.cz>
+ <20130404133706.GA9425@htj.dyndns.org>
+ <20130404152028.GK29911@dhcp22.suse.cz>
+ <20130404152213.GL9425@htj.dyndns.org>
 MIME-Version: 1.0
-To: <dgilbert@interlog.com>
-CC: Olof Johansson <olof@lixom.net>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <tanzilli@acmesystems.it>, <Robert.Nelson@digikey.com>
-Subject: Re: [PATCH v2] ARM: at91: add Acme Systems Aria G25 board
-References: <1364201369-12047-1-git-send-email-nicolas.ferre@atmel.com> <1364297952-32473-1-git-send-email-nicolas.ferre@atmel.com> <CAOesGMj+etPUMWffx2CiDtbWbB9A5_6QPbkTsmbEqCiBnkhm3A@mail.gmail.com> <515C7E94.6030702@interlog.com>
-In-Reply-To: <515C7E94.6030702@interlog.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130404152213.GL9425@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 09:10 PM, Douglas Gilbert :
-> On 13-04-02 02:48 PM, Olof Johansson wrote:
->> Hi,
->>
->> I just saw this since it came in through a pull request
->>
->> On Tue, Mar 26, 2013 at 4:39 AM, Nicolas Ferre
->> <nicolas.ferre@atmel.com> wrote:
->>> From: Douglas Gilbert <dgilbert@interlog.com>
->>>
->>> Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
->>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>> ---
->>>   arch/arm/boot/dts/ariag25.dts | 175
->>> ++++++++++++++++++++++++++++++++++++++++++
->>>   1 file changed, 175 insertions(+)
->>>   create mode 100644 arch/arm/boot/dts/ariag25.dts
->>>
->>> diff --git a/arch/arm/boot/dts/ariag25.dts
->>> b/arch/arm/boot/dts/ariag25.dts
->>> new file mode 100644
->>> index 0000000..b43266f
->>> --- /dev/null
->>> +++ b/arch/arm/boot/dts/ariag25.dts
->>
->> Please prefix the boards with the platform. Most other SoCs already do
->> this, and I see now that some at91 boards haven't been prefixed in the
->> past, but it's a good idea to not add more of them.
->>
->> So, at91-ariag25.dts is a good name in this case.
+On Thu 04-04-13 08:22:13, Tejun Heo wrote:
+> On Thu, Apr 04, 2013 at 05:20:28PM +0200, Michal Hocko wrote:
+> > > But what harm does an additional reference do?
+> > 
+> > No harm at all. I just wanted to be sure that this is not yet another
+> > "for memcg" hack. So if this is useful for other controllers then I have
+> > no objections of course.
 > 
-> That is fine with me. I have changed my working DT
-> config file to at91-ariag25.dts and will push that
-> out to Robert Nelson soon.
+> I think it makes sense in general, so let's do it in cgroup core.
+
+Ok
+
+> I suppose it'd be easier for this to be routed together with other
+> memcg changes?
+
+Probably yes.
+
+> Thanks.
 > 
-> Also I'm working on a DT version of an existing Acme
-> product called the FoxG20 which is based on the
-> AT91SAM9G20 SoC. It already has non-DT support inside
-> the mainline kernel. I am using at91-foxg20.dts for
-> its DT config file.
+> -- 
+> tejun
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Yep! Works for me.
-
-Bye,
 -- 
-Nicolas Ferre
+Michal Hocko
+SUSE Labs
