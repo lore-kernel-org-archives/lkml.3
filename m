@@ -1,79 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761132Ab3DDOH7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 10:07:59 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:33773 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760838Ab3DDOH6 (ORCPT
+	id S1761356Ab3DDOLG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 10:11:06 -0400
+Received: from a9-78.smtp-out.amazonses.com ([54.240.9.78]:45281 "EHLO
+	a9-78.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761305Ab3DDOLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 10:07:58 -0400
-Message-ID: <515D892A.20909@openwrt.org>
-Date: Thu, 04 Apr 2013 16:07:38 +0200
-From: Florian Fainelli <florian@openwrt.org>
-Organization: OpenWrt
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Thu, 4 Apr 2013 10:11:03 -0400
+X-Greylist: delayed 1056 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Apr 2013 10:11:03 EDT
+Date: Thu, 4 Apr 2013 13:53:25 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <clark@redhat.com>, Pekka Enberg <penberg@kernel.org>
+Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
+ unfreeze_partials() code.
+In-Reply-To: <20130404005850.GC10683@lge.com>
+Message-ID: <0000013dd552ca2b-986c7b7f-850e-4108-82e8-443695368b1d-000000@email.amazonses.com>
+References: <20130327025957.GA17125@lge.com> <1364355032.6345.200.camel@gandalf.local.home> <20130327061351.GB17125@lge.com> <alpine.DEB.2.02.1303281227520.16200@gentwo.org> <0000013db20ca149-0064fbb8-2f81-4323-9095-a38f6abb79c5-000000@email.amazonses.com>
+ <CAP=VYLr4i=39ywFCrmG-XuvUFmmXpyj6dYgG44JJoUJhpN6uuQ@mail.gmail.com> <alpine.DEB.2.02.1304011025550.12690@gentwo.org> <0000013dc63b3a87-6ce88b75-d011-407e-8dde-da73c3a7f5fd-000000@email.amazonses.com> <20130402004217.GA16699@lge.com>
+ <0000013dcc35f310-d338600d-8a5a-4c95-9770-af4b8d81e103-000000@email.amazonses.com> <20130404005850.GC10683@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Florian Fainelli <florian@openwrt.org>
-CC: giometti@enneenne.com, linux-kernel@vger.kernel.org,
-        richardcochran@gmail.com, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] pps: hide more configuration symbols behind CONFIG_PPS
-References: <20130108162754.GB7643@netboy.at.omicron.at> <1358267098-30789-1-git-send-email-florian@openwrt.org>
-In-Reply-To: <1358267098-30789-1-git-send-email-florian@openwrt.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.04.04-54.240.9.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 01/15/13 17:24, Florian Fainelli a écrit :
-> This patch makes CONFIG_PPS_DEBUG and CONFIG_NTP_PPS be hidden if
-> CONFIG_PPS is not selected, such that we are not prompted for these
-> configuration options if CONFIG_PPS is not set.
+On Thu, 4 Apr 2013, Joonsoo Kim wrote:
 
-It seems like this patch has not been merged, yet it is still applicable 
-as of 3.9-rc. Andrew can you take it maybe? Thanks!
+> Pekka alreay applied it.
+> Do we need update?
 
->
-> Signed-off-by: Florian Fainelli <florian@openwrt.org>
-> ---
-> Changes since v1:
-> - dropped the depends on PPS which is now useless
->
->   drivers/pps/Kconfig |    6 ++++--
->   1 file changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/pps/Kconfig b/drivers/pps/Kconfig
-> index 982d16b..7512e98 100644
-> --- a/drivers/pps/Kconfig
-> +++ b/drivers/pps/Kconfig
-> @@ -20,10 +20,10 @@ config PPS
->
->   	  To compile this driver as a module, choose M here: the module
->   	  will be called pps_core.ko.
-> +if PPS
->
->   config PPS_DEBUG
->   	bool "PPS debugging messages"
-> -	depends on PPS
->   	help
->   	  Say Y here if you want the PPS support to produce a bunch of debug
->   	  messages to the system log.  Select this if you are having a
-> @@ -31,13 +31,15 @@ config PPS_DEBUG
->
->   config NTP_PPS
->   	bool "PPS kernel consumer support"
-> -	depends on PPS && !NO_HZ
-> +	depends on !NO_HZ
->   	help
->   	  This option adds support for direct in-kernel time
->   	  synchronization using an external PPS signal.
->
->   	  It doesn't work on tickless systems at the moment.
->
-> +endif
-> +
->   source drivers/pps/clients/Kconfig
->
->   source drivers/pps/generators/Kconfig
->
+Well I thought the passing of the count via lru.next would be something
+worthwhile to pick up.
 
