@@ -1,364 +1,369 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759910Ab3DDKlv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 06:41:51 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:54598 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756934Ab3DDKlt (ORCPT
+	id S1759969Ab3DDKmE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 06:42:04 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:44553 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756934Ab3DDKl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 06:41:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <87fvz7zdht.fsf@linaro.org>
-References: <1364392374-12236-1-git-send-email-rajagopal.venkat@linaro.org>
-	<1364392374-12236-3-git-send-email-rajagopal.venkat@linaro.org>
-	<87fvz7zdht.fsf@linaro.org>
-Date: Thu, 4 Apr 2013 16:11:48 +0530
-Message-ID: <CA+Z25wU+yLnhzJtq9mYn+AU9YGKW_GABpZ8p3H-Yjqa1iazHzw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] PM / devfreq: tie suspend/resume to runtime-pm
-From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: myungjoo.ham@samsung.com, rjw@sisk.pl,
-        Alan Stern <stern@rowland.harvard.edu>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 4 Apr 2013 06:41:59 -0400
+X-AuditID: cbfec7f4-b7f4c6d0000018de-95-515d58f4ee3c
+Message-id: <515D58F2.7030404@samsung.com>
+Date: Thu, 04 Apr 2013 12:41:54 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: balbi@ti.com, gregkh@linuxfoundation.org, arnd@arndb.de,
+        akpm@linux-foundation.org, swarren@wwwdotorg.org, rob@landley.net,
+        netdev@vger.kernel.org, davem@davemloft.net, cesarb@cesarb.net,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tony@atomide.com,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com, b-cousson@ti.com,
+        linux@arm.linux.org.uk, eballetbo@gmail.com, javier@dowhile0.org,
+        mchehab@redhat.com, santosh.shilimkar@ti.com,
+        broonie@opensource.wolfsonmicro.com, swarren@nvidia.com,
+        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 1/6] drivers: phy: add generic PHY framework
+References: <1364993634-6378-1-git-send-email-kishon@ti.com>
+ <1364993634-6378-2-git-send-email-kishon@ti.com> <515CA337.1010504@gmail.com>
+ <515D462F.9050109@ti.com>
+In-reply-to: <515D462F.9050109@ti.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t/xa7pfImIDDX5+krGYs34Nm8XfScfY
+	Lb7d3sRscfB+vcW/2afYLGZdC7KYc76FxeLA7IesFhd+r2SzeHVmI5tF8+L1bBbXfs9gs7jw
+	tIfNYtPja6wWC9uWsFhc3jWHzWL2kn4Wi0XLWpktbl/mtdhz9DC7xbEFYhaHVxxgslj3cjqL
+	xeu+NcwWN6a3sFq8OtjGYrH/ipeDtEdLcw+bx+9fkxg9vn2dxOKx4PMVdo8jt2cwe2xZeZPJ
+	4+/sVmaPnbPusnu8Wj2T1ePEjN8sHvvnrmH32Lyk3uP8jIWMHr3N79g8Xk78zebxft9VtgCR
+	KC6blNSczLLUIn27BK6MxY1TWAsOhVTs29PF2MB416GLkZNDQsBE4smZg6wQtpjEhXvr2boY
+	uTiEBJYySnTtP8cC4XxilHiwCSTDycEroCXxamUDC4jNIqAqcbLlMDuIzSZgKNF7tI8RxBYV
+	CJBYvOQcO0S9oMSPyffA6kWAek/v/MEMMpRZoIdV4vqFo2AJYQFniVlNh6FWr2CU6P1xAayb
+	U0BNouv0NLD7mAV0JPa3TmODsOUlNq95yzyBUWAWkiWzkJTNQlK2gJF5FaNoamlyQXFSeq6h
+	XnFibnFpXrpecn7uJkZIWviyg3HxMatDjAIcjEo8vCv9YwKFWBPLiitzDzFKcDArifCeDYoN
+	FOJNSaysSi3Kjy8qzUktPsTIxMEp1cA4Re/36sWn2Nj3VWwTkL4sM2E7m39X8q3f4X8c3DNX
+	V0u0H2i3XfTCaH6Q6vFLrjLbLv20bLbwcTx29FfJk+9VU6d94+budX3UyrKxe2pYUYtG4Sbb
+	DrOPTE9jF5RmMmvbqc1d01GqelJs+vllBv8SLmrWqz+WeT1na11z/bG7jnpLHmfEzEhUYinO
+	SDTUYi4qTgQA7Eb8qOkCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 April 2013 23:46, Kevin Hilman <khilman@linaro.org> wrote:
-> Rajagopal Venkat <rajagopal.venkat@linaro.org> writes:
+Hi,
+
+On 04/04/2013 11:21 AM, Kishon Vijay Abraham I wrote:
+> On Thursday 04 April 2013 03:16 AM, Sylwester Nawrocki wrote:
+>> On 04/03/2013 02:53 PM, Kishon Vijay Abraham I wrote:
+
+>>> +4. Getting a reference to the PHY
+>>> +
+>>> +Before the controller can make use of the PHY, it has to get a
+>>> reference to
+>>> +it. This framework provides 6 APIs to get a reference to the PHY.
+>>> +
+>>> +struct phy *phy_get(struct device *dev, int index);
+>>> +struct phy *devm_phy_get(struct device *dev, int index);
+>>> +struct phy *of_phy_get(struct device *dev, const char *phandle, int
+>>> index);
+>>> +struct phy *devm_of_phy_get(struct device *dev, const char *phandle,
+>>> int index);
+>>
+>> Why do we need separate functions for dt and non-dt ? Couldn't it be
+>> handled
+>> internally by the framework ? So the PHY users can use same calls for dt
+>> and non-dt, like in case of e.g. the regulators API ?
+> 
+> yeah. Indeed it makes sense to do it that way.
 >
->> Devfreq core suspend/resume of a device is explicitly handled
->> by devfreq driver through devfreq_suspend_device() and
->> devfreq_resume_device() apis typically called from runtime
->> suspend/resume callbacks. This patch aims to take away this
->> from devfreq drivers and handle it from runtime-pm core. So
->> that device devfreq core suspend/resume is automatically done
->> with runtime pm suspend/resume. The devfreq drivers shouldn't
->> be concerned on when to suspend/resume the devfreq.
+>> Also signatures of some functions are different now:
+>>
+>> extern struct phy *phy_get(struct device *dev, int index);
+>> extern struct phy *devm_phy_get(struct device *dev, int index);
+>> extern struct phy *of_phy_get(struct device *dev, int index);
+>> extern struct phy *devm_of_phy_get(struct device *dev, int index);
+> 
+> My bad :-(
+> 
+>> BTW, I think "extern" could be dropped, does it have any significance in
+>> function declarations in header files ?
+> 
+> it shouldn't have any effect I guess. It's harmless nevertheless.
+
+Yup.
+
+>>> +struct phy *of_phy_get_byname(struct device *dev, const char *string);
+>>> +struct phy *devm_of_phy_get_byname(struct device *dev, const char
+>>> *string);
+
+>>> --- /dev/null
+>>> +++ b/drivers/phy/phy-core.c
+>>> @@ -0,0 +1,616 @@
+>>
+>>> +static struct phy *of_phy_lookup(struct device_node *node)
+>>> +{
+>>> +    struct phy *phy;
+>>> +    struct device *dev;
+>>> +    struct class_dev_iter iter;
+>>> +
+>>> +    class_dev_iter_init(&iter, phy_class, NULL, NULL);
+>>
+>> There is currently nothing preventing a call to this function before
+>> phy_class is initialized. It happened during my tests, and the nice
+>> stack dump showed that it was the PHY user attempting to get the PHY
+>> before the framework got initialized. So either phy_core_init should
+>> be a subsys_initcall or we need a better protection against phy_class
+>> being NULL or ERR_PTR in more places.
+> 
+> Whats the initcall used in your PHY user? Looks like more people prefer having
+
+It happened in a regular platform driver probe() callback.
+
+> module_init and any issue because of it should be fixed in PHY providers and
+> PHY users.
+
+OK. In fact this uncovered some issues in the MIPI DSI interface driver
+(some unexpected interrupts). But this should just be fixed in those drivers
+anyway. Now the DSI interface driver needs to wait for the PHY to be
+registered and ready, so the initialization will likely be changed regardless
+the framework initializes in module_init or earlier.
+
+>>> +    while ((dev = class_dev_iter_next(&iter))) {
+>>> +        phy = container_of(dev, struct phy, dev);
+>>> +        if (node != phy->of_node)
+>>> +            continue;
+>>> +
+>>> +        class_dev_iter_exit(&iter);
+>>> +        return phy;
+>>> +    }
+>>> +
+>>> +    class_dev_iter_exit(&iter);
+>>> +    return ERR_PTR(-EPROBE_DEFER);
+>>> +}
+>>
+>>> +/**
+>>> + * of_phy_get() - lookup and obtain a reference to a phy by phandle
+>>> + * @dev: device that requests this phy
+>>> + * @index: the index of the phy
+>>> + *
+>>> + * Returns the phy associated with the given phandle value,
+>>> + * after getting a refcount to it or -ENODEV if there is no such phy or
+>>> + * -EPROBE_DEFER if there is a phandle to the phy, but the device is
+>>> + * not yet loaded.
+>>> + */
+>>> +struct phy *of_phy_get(struct device *dev, int index)
+>>> +{
+>>> +    int ret;
+>>> +    struct phy *phy = NULL;
+>>> +    struct phy_bind *phy_map = NULL;
+>>> +    struct of_phandle_args args;
+>>> +    struct device_node *node;
+>>> +
+>>> +    if (!dev->of_node) {
+>>> +        dev_dbg(dev, "device does not have a device node entry\n");
+>>> +        return ERR_PTR(-EINVAL);
+>>> +    }
+>>> +
+>>> +    ret = of_parse_phandle_with_args(dev->of_node, "phys", "#phy-cells",
+>>> +        index,&args);
+>>> +    if (ret) {
+>>> +        dev_dbg(dev, "failed to get phy in %s node\n",
+>>> +            dev->of_node->full_name);
+>>> +        return ERR_PTR(-ENODEV);
+>>> +    }
+>>> +
+>>> +    phy = of_phy_lookup(args.np);
+>>> +    if (IS_ERR(phy) || !try_module_get(phy->ops->owner)) {
+>>> +        phy = ERR_PTR(-EPROBE_DEFER);
+>>> +        goto err0;
+>>> +    }
+>>> +
+>>> +    phy = phy->ops->of_xlate(phy,&args);
+>>> +    if (IS_ERR(phy))
+>>> +        goto err1;
+>>> +
+>>> +    phy_map = phy_bind(dev_name(dev), index, dev_name(&phy->dev));
+>>> +    if (!IS_ERR(phy_map)) {
+>>> +        phy_map->phy = phy;
+>>> +        phy_map->auto_bind = true;
+>>
+>> Shouldn't it be done with the phy_bind_mutex held ? I guess an unlocked
+>> version of the phy_bind functions is needed, so it can be used internally.
+> 
+> The locking is done inside phy_bind function. I'm not sure but I vaguely
+> remember getting a dump stack (incorrect mutex ordering or something) when
+> trying to have phy_bind_mutex here. I can check it again.
+
+Yes, IIUC the locking needs to be reworked a bit so "phy_map" is not modified
+without the mutex held.
+
+>>> +    }
+>>> +
+>>> +    get_device(&phy->dev);
+>>> +
+>>> +err1:
+>>> +    module_put(phy->ops->owner);
+>>> +
+>>> +err0:
+>>> +    of_node_put(node);
+>>> +
+>>> +    return phy;
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(of_phy_get);
+>>
+>>> +/**
+>>> + * phy_create() - create a new phy
+>>> + * @dev: device that is creating the new phy
+>>> + * @label: label given to phy
+>>> + * @of_node: device node of the phy
+>>> + * @type: specifies the phy type
+>>> + * @ops: function pointers for performing phy operations
+>>> + * @priv: private data from phy driver
+>>> + *
+>>> + * Called to create a phy using phy framework.
+>>> + */
+>>> +struct phy *phy_create(struct device *dev, const char *label,
+>>> +    struct device_node *of_node, int type, struct phy_ops *ops,
+>>> +    void *priv)
+>>> +{
+>>> +    int ret;
+>>> +    struct phy *phy;
+>>> +    struct phy_bind *phy_bind;
+>>> +    const char *devname = NULL;
+>>> +
+>>> +    if (!dev) {
+>>> +        dev_err(dev, "no device provided for PHY\n");
+>>> +        ret = -EINVAL;
+>>> +        goto err0;
+>>> +    }
+>>> +
+>>> +    if (!ops || !ops->of_xlate || !priv) {
+>>> +        dev_err(dev, "no PHY ops/PHY data provided\n");
+>>> +        ret = -EINVAL;
+>>> +        goto err0;
+>>> +    }
+>>> +
+>>> +    if (!phy_class)
+>>> +        phy_core_init();
+>>> +
+>>> +    phy = kzalloc(sizeof(*phy), GFP_KERNEL);
+>>> +    if (!phy) {
+>>> +        ret = -ENOMEM;
+>>> +        goto err0;
+>>> +    }
+>>> +
+>>> +    devname = dev_name(dev);
+>>
+>> OK, a sort of serious issue here is that you can't call phy_create()
+>> multiple times for same PHY provider device.
+> 
+> Ah.. right.
+
+The other question I had was why we needed struct device object for each
+PHY. And if it wouldn't be enough to have only struct device * in
+struct phy, and the real device would be the PHY provider only. I might
+be missing some reasons behind this decision though, as I have not been
+following your work since the beginning.
+
+>> device_add() further will fail as sysfs won't let you create multiple
+>> objects with same name. So I would assume we need to add a new argument
+>> to phy_create() or rename @type to e.g. @phy_id, which could be
+>> concatenated with dev_name(dev) to create a unique name of the phy
+>> device.
+> 
+> hmm.. ok
+>>
+>> And how is the PHY provider supposed to identify a PHY in its common PHY
+>> ops, now when the struct phy port field is removed ? I have temporarily
+>> (ab)used the type field in order to select proper registers within the
+>> phy ops.
+> 
+> Can't it be handled in the PHY provider driver without using struct phy *?
+
+You need to select registers/bit fields corresponding to a specific PHY,
+since the phy ops are common. So we need to know exactly with which phy
+we deal at the moment and I can't see any other option to figure out that
+than by dereferencing struct phy *... ;)
+
+> Moreover the PHY ops passes on the *phy to phy provider right? Not sure I
+
+Yes, all you get in the ops is phy *. I wanted to avoid global variables
+in the provider driver and be able to get to any provider private data
+from phy * only.
+
+If I use something like below for the PHY provider private data then from
+struct phy * only I would need to get an index. This could be looked up by
+iterating over phys[] array, but that seems an unnecessary complication.
+Maybe there are better/easier ways to resolve it, without adding a new
+field to struct phy.
+
+struct phy_povider_priv {
+	struct phy *phys[4];
+	...
+};
+
+static in phy_power_on(struct phy *phy)
+{
+	struct phy_provider_priv *priv = dev_get_drvdata(&phy->dev);
+	int phy_id = ...
+	....
+}
+...
+struct phy_ops ops = {
+	.power_on = phy_power_on,
+	...
+};
+
+> understand you here.
 >
-> The terminology is a bit confusing here since you're mixing runtime
-> suspend/resume and just suspend/resume.  AFAICT, this patch is only
-> handling devfreq in the runtime PM core, correct?
+>>> +    device_initialize(&phy->dev);
+>>> +
+>>> +    phy->dev.class = phy_class;
+>>> +    phy->dev.parent = dev;
+>>> +    phy->label = label;
+>>
+>> What about duplicating the string here ? That would make the API a bit
+>> more convenient and the callers wouldn't be required to keep all the
+>> labels around.
+> 
+> you mean use dev_name? The device names are sometime more cryptic so preferred
+> to have it like this.
 
-Yes correct. The suspend/resume refers to devfreq core suspend/resume
-of a device. Nothing to do with system wide suspend/resume. May be I
-am not clear enough. I will update it.
+No, I meant something like:
 
->
-> Also, how does this work when multiple devices may be using the same
-> devfreq instance?  Using this patch, it looks like the devfreq governor
-> will be shutdown as soon as the first device runtime suspends, right?
+phy->label = kstrdup(label, GFP_KERNEL);
 
-As per the devfre
+>>> +static int phy_core_init(void)
+>>> +{
+>>> +    if (phy_class)
+>>> +        return 0;
+>>> +
+>>> +    phy_class = class_create(THIS_MODULE, "phy");
+>>> +    if (IS_ERR(phy_class)) {
+>>> +        pr_err("failed to create phy class -->  %ld\n",
+>>> +            PTR_ERR(phy_class));
+>>> +        return PTR_ERR(phy_class);
+>>> +    }
+>>> +
+>>> +    phy_class->dev_release = phy_release;
+>>> +    phy_class->dev_attrs = phy_dev_attrs;
+>>> +
+>>> +    return 0;
+>>> +}
+>>> +module_init(phy_core_init);
+>>
+>> Having this framework initialized before the PHY provider and consumer
+>> drivers could save some unnecessary probe deferrals. I was wondering,
+>> what is really an advantage of having it as module_init(), rather than
+>> subsys_initcall() ?
+> 
+> I'm not sure of the exact reason but after the advent of EPROBE_DEFER, everyone
+> recommends to use module_init only.
 
+Ah...OK. We just need to ensure the resources are properly checked before
+they are used then.
 
->
->> This patch is targeted to handle devfreq core load monitoring
->> suspend/resume only. Not the actual hardware itself. All the
->> resources like clocks and regulators must still be handled by
->> devfreq driver using runtime-pm. The sequence of devfreq and
->   ^^^^^^^
-> devfreq driver?  Did you mean device driver?
-Yes device driver.
+> Thanks for the detailed review.
 
->
-> Kevin
->
->> device runtime suspend/resume is,
->>
->> pm_runtime_suspend(dev) will first suspend device devfreq
->> (if available) before device is suspended to ensure devfreq load
->> monitoring is stopped and no device resources like clocks are
->> accessed while device suspend is in progress.
->>
->> pm_runtime_resume(dev) will resume device devfreq(if available)
->> after device is resumed to ensure device resources like clocks
->> are ready for use.
->>
->> As devfreq suspend/resume is done automatically from runtime-pm,
->> this patch removes the existing devfreq_suspend_device() and
->> devfreq_resume_device() apis.
->>
->> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
->> ---
->>  drivers/base/power/runtime.c |   21 ++++++++++++-
->>  drivers/devfreq/devfreq.c    |   69 +++++++++++++++++++++++++++++++++++++++---
->>  include/linux/devfreq.h      |   18 +++--------
->>  include/linux/pm.h           |    2 ++
->>  4 files changed, 91 insertions(+), 19 deletions(-)
->>
->> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
->> index 3148b10..2438abc 100644
->> --- a/drivers/base/power/runtime.c
->> +++ b/drivers/base/power/runtime.c
->> @@ -11,6 +11,7 @@
->>  #include <linux/export.h>
->>  #include <linux/pm_runtime.h>
->>  #include <trace/events/rpm.h>
->> +#include <linux/devfreq.h>
->>  #include "power.h"
->>
->>  static int rpm_resume(struct device *dev, int rpmflags);
->> @@ -406,6 +407,14 @@ static int rpm_suspend(struct device *dev, int rpmflags)
->>
->>       __update_runtime_status(dev, RPM_SUSPENDING);
->>
->> +     /*
->> +      * Try suspending devfreq before device is runtime suspended.
->> +      * It wouldn't make sense to continue devfreq load monitoring
->> +      * when device is runtime suspended.
->> +      */
->> +     if (dev->power.devfreq && dev->power.devfreq->runtime_suspend)
->> +             dev->power.devfreq->runtime_suspend(dev);
->> +
->>       if (dev->pm_domain)
->>               callback = dev->pm_domain->ops.runtime_suspend;
->>       else if (dev->type && dev->type->pm)
->> @@ -421,8 +430,12 @@ static int rpm_suspend(struct device *dev, int rpmflags)
->>               callback = dev->driver->pm->runtime_suspend;
->>
->>       retval = rpm_callback(callback, dev);
->> -     if (retval)
->> +     if (retval) {
->> +             /* Resume back devfreq on device suspend failure */
->> +             if (dev->power.devfreq && dev->power.devfreq->runtime_resume)
->> +                     dev->power.devfreq->runtime_resume(dev);
->>               goto fail;
->> +     }
->>
->>   no_callback:
->>       __update_runtime_status(dev, RPM_SUSPENDED);
->> @@ -661,6 +674,12 @@ static int rpm_resume(struct device *dev, int rpmflags)
->>               __update_runtime_status(dev, RPM_ACTIVE);
->>               if (parent)
->>                       atomic_inc(&parent->power.child_count);
->> +             /*
->> +              * Resume devfreq after runtime resume sequence to ensure
->> +              * device resources are available for devfreq load monitoring.
->> +              */
->> +             if (dev->power.devfreq && dev->power.devfreq->runtime_resume)
->> +                     dev->power.devfreq->runtime_resume(dev);
->>       }
->>       wake_up_all(&dev->power.wait_queue);
->>
->> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
->> index 44c4079..b8dab0d 100644
->> --- a/drivers/devfreq/devfreq.c
->> +++ b/drivers/devfreq/devfreq.c
->> @@ -25,6 +25,7 @@
->>  #include <linux/list.h>
->>  #include <linux/printk.h>
->>  #include <linux/hrtimer.h>
->> +#include <linux/pm_runtime.h>
->>  #include "governor.h"
->>
->>  static struct class *devfreq_class;
->> @@ -42,6 +43,9 @@ static LIST_HEAD(devfreq_governor_list);
->>  static LIST_HEAD(devfreq_list);
->>  static DEFINE_MUTEX(devfreq_list_lock);
->>
->> +static void devfreq_runtime_suspend(struct device *dev);
->> +static void devfreq_runtime_resume(struct device *dev);
->> +
->>  /**
->>   * find_device_devfreq() - find devfreq struct using device pointer
->>   * @dev:     device pointer used to lookup device devfreq.
->> @@ -387,6 +391,8 @@ static int devfreq_notifier_call(struct notifier_block *nb, unsigned long type,
->>   */
->>  static void _remove_devfreq(struct devfreq *devfreq, bool skip)
->>  {
->> +     unsigned long flags;
->> +
->>       mutex_lock(&devfreq_list_lock);
->>       if (IS_ERR(find_device_devfreq(devfreq->dev.parent))) {
->>               mutex_unlock(&devfreq_list_lock);
->> @@ -400,6 +406,10 @@ static void _remove_devfreq(struct devfreq *devfreq, bool skip)
->>               devfreq->governor->event_handler(devfreq,
->>                                                DEVFREQ_GOV_STOP, NULL);
->>
->> +     spin_lock_irqsave(&devfreq->dev.parent->power.lock, flags);
->> +     devfreq->dev.parent->power.devfreq = NULL;
->> +     spin_unlock_irqrestore(&devfreq->dev.parent->power.lock, flags);
->> +
->>       if (devfreq->profile->exit)
->>               devfreq->profile->exit(devfreq->dev.parent);
->>
->> @@ -442,6 +452,7 @@ struct devfreq *devfreq_add_device(struct device *dev,
->>  {
->>       struct devfreq *devfreq;
->>       struct devfreq_governor *governor;
->> +     unsigned long flags;
->>       int err = 0;
->>
->>       if (!dev || !profile || !governor_name) {
->> @@ -476,6 +487,12 @@ struct devfreq *devfreq_add_device(struct device *dev,
->>       devfreq->previous_freq = profile->initial_freq;
->>       devfreq->data = data;
->>       devfreq->nb.notifier_call = devfreq_notifier_call;
->> +     devfreq->runtime_suspend = devfreq_runtime_suspend;
->> +     devfreq->runtime_resume = devfreq_runtime_resume;
->> +     spin_lock_irqsave(&dev->power.lock, flags);
->> +     dev->power.devfreq = devfreq;
->> +     spin_unlock_irqrestore(&dev->power.lock, flags);
->> +
->>
->>       devfreq->trans_table =  devm_kzalloc(dev, sizeof(unsigned int) *
->>                                               devfreq->profile->max_state *
->> @@ -549,7 +566,7 @@ EXPORT_SYMBOL(devfreq_remove_device);
->>   * (e.g., runtime_suspend, suspend) of the device driver that
->>   * holds the devfreq.
->>   */
->> -int devfreq_suspend_device(struct devfreq *devfreq)
->> +static int devfreq_suspend_device(struct devfreq *devfreq)
->>  {
->>       if (!devfreq)
->>               return -EINVAL;
->> @@ -560,7 +577,6 @@ int devfreq_suspend_device(struct devfreq *devfreq)
->>       return devfreq->governor->event_handler(devfreq,
->>                               DEVFREQ_GOV_SUSPEND, NULL);
->>  }
->> -EXPORT_SYMBOL(devfreq_suspend_device);
->>
->>  /**
->>   * devfreq_resume_device() - Resume devfreq of a device.
->> @@ -570,7 +586,7 @@ EXPORT_SYMBOL(devfreq_suspend_device);
->>   * (e.g., runtime_resume, resume) of the device driver that
->>   * holds the devfreq.
->>   */
->> -int devfreq_resume_device(struct devfreq *devfreq)
->> +static int devfreq_resume_device(struct devfreq *devfreq)
->>  {
->>       if (!devfreq)
->>               return -EINVAL;
->> @@ -581,7 +597,52 @@ int devfreq_resume_device(struct devfreq *devfreq)
->>       return devfreq->governor->event_handler(devfreq,
->>                               DEVFREQ_GOV_RESUME, NULL);
->>  }
->> -EXPORT_SYMBOL(devfreq_resume_device);
->> +
->> +/**
->> + * devfreq_runtime_suspend() - Suspend devfreq of a device.
->> + * @dev: the device associated with devfreq
->> + *
->> + * This function is intended to be called by the runtime-pm
->> + * core when the device associated with devfreq is
->> + * runtime suspended.
->> + */
->> +static void devfreq_runtime_suspend(struct device *dev)
->> +{
->> +     struct devfreq *devfreq;
->> +     int err;
->> +
->> +     mutex_lock(&devfreq_list_lock);
->> +     devfreq = find_device_devfreq(dev);
->> +     mutex_unlock(&devfreq_list_lock);
->> +
->> +     err = devfreq_suspend_device(devfreq);
->> +     if (err)
->> +             dev_err(dev, "devfreq runtime suspend failed with (%d) error\n",
->> +                     err);
->> +}
->> +
->> +/**
->> + * devfreq_runtime_resume() - Resume devfreq of a device.
->> + * @dev: the device associated with devfreq
->> + *
->> + * This function is intended to be called by the runtime-pm
->> + * core when the device associated with devfreq is
->> + * runtime resumed.
->> + */
->> +static void devfreq_runtime_resume(struct device *dev)
->> +{
->> +     struct devfreq *devfreq;
->> +     int err;
->> +
->> +     mutex_lock(&devfreq_list_lock);
->> +     devfreq = find_device_devfreq(dev);
->> +     mutex_unlock(&devfreq_list_lock);
->> +
->> +     err = devfreq_resume_device(devfreq);
->> +     if (err)
->> +             dev_err(dev, "devfreq runtime resume failed with (%d) error\n",
->> +                     err);
->> +}
->>
->>  /**
->>   * devfreq_add_governor() - Add devfreq governor
->> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
->> index 5f1ab92..669368b 100644
->> --- a/include/linux/devfreq.h
->> +++ b/include/linux/devfreq.h
->> @@ -140,6 +140,8 @@ struct devfreq_governor {
->>   * @trans_table:     Statistics of devfreq transitions
->>   * @time_in_state:   Statistics of devfreq states
->>   * @last_stat_updated:       The last time stat updated
->> + * @runtime_suspend: func to runtime suspend devfreq from runtime core
->> + * @runtime_resume:  func to runtime resume devfreq from runtime core
->>   *
->>   * This structure stores the devfreq information for a give device.
->>   *
->> @@ -173,6 +175,8 @@ struct devfreq {
->>       unsigned int *trans_table;
->>       unsigned long *time_in_state;
->>       unsigned long last_stat_updated;
->> +     void (*runtime_suspend)(struct device *dev);
->> +     void (*runtime_resume)(struct device *dev);
->>  };
->>
->>  #if defined(CONFIG_PM_DEVFREQ)
->> @@ -182,10 +186,6 @@ extern struct devfreq *devfreq_add_device(struct device *dev,
->>                                 void *data);
->>  extern int devfreq_remove_device(struct devfreq *devfreq);
->>
->> -/* Supposed to be called by PM_SLEEP/PM_RUNTIME callbacks */
->> -extern int devfreq_suspend_device(struct devfreq *devfreq);
->> -extern int devfreq_resume_device(struct devfreq *devfreq);
->> -
->>  /* Helper functions for devfreq user device driver with OPP. */
->>  extern struct opp *devfreq_recommended_opp(struct device *dev,
->>                                          unsigned long *freq, u32 flags);
->> @@ -228,16 +228,6 @@ static inline int devfreq_remove_device(struct devfreq *devfreq)
->>       return 0;
->>  }
->>
->> -static inline int devfreq_suspend_device(struct devfreq *devfreq)
->> -{
->> -     return 0;
->> -}
->> -
->> -static inline int devfreq_resume_device(struct devfreq *devfreq)
->> -{
->> -     return 0;
->> -}
->> -
->>  static inline struct opp *devfreq_recommended_opp(struct device *dev,
->>                                          unsigned long *freq, u32 flags)
->>  {
->> diff --git a/include/linux/pm.h b/include/linux/pm.h
->> index 03d7bb1..734449c 100644
->> --- a/include/linux/pm.h
->> +++ b/include/linux/pm.h
->> @@ -40,6 +40,7 @@ extern void (*pm_power_off_prepare)(void);
->>   */
->>
->>  struct device;
->> +struct devfreq;
->>
->>  #ifdef CONFIG_PM
->>  extern const char power_group_name[];                /* = "power" */
->> @@ -549,6 +550,7 @@ struct dev_pm_info {
->>  #endif
->>       struct pm_subsys_data   *subsys_data;  /* Owned by the subsystem. */
->>       struct dev_pm_qos       *qos;
->> +     struct devfreq          *devfreq;  /* device devfreq */
->>  };
->>
->>  extern void update_pm_runtime_accounting(struct device *dev);
-
-
-
--- 
 Regards,
-Rajagopal
+Sylwester
