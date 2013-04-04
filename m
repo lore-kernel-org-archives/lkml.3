@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759428Ab3DDLk2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 07:40:28 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:34527 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758781Ab3DDLk1 (ORCPT
+	id S1759472Ab3DDLkq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 07:40:46 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:63921 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759437Ab3DDLko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 07:40:27 -0400
-Date: Thu, 4 Apr 2013 13:40:03 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Mike Frysinger <vapier@gentoo.org>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>, Guenter Roeck <linux@roeck-us.net>,
-        uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Blackfin: bf537: rename "CONFIG_ADT75"
-Message-ID: <20130404134003.016dcee3@endymion.delvare>
-In-Reply-To: <1365071466.1830.29.camel@x61.thuisdomein>
-References: <1365071466.1830.29.camel@x61.thuisdomein>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.14; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Apr 2013 07:40:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAKohpo=yppB4o+_31dEfoo3Sd=7KnqK1ZfDoMBDTT1ONxkFyOA@mail.gmail.com>
+References: <cover.1364205812.git.viresh.kumar@linaro.org>
+	<fae1030e861c5dfd00df8f03526b0bdc5156de4d.1364205812.git.viresh.kumar@linaro.org>
+	<CAKohpo=yppB4o+_31dEfoo3Sd=7KnqK1ZfDoMBDTT1ONxkFyOA@mail.gmail.com>
+Date: Thu, 4 Apr 2013 13:40:43 +0200
+Message-ID: <CACRpkdYeq38NfbDz2WbGhmWwQqaf2RgeX507OXQoq5mPGeH4hg@mail.gmail.com>
+Subject: Re: [PATCH 5/9] cpufreq: integrator: move cpufreq driver to drivers/cpufreq
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Arvind Chauhan <arvind.chauhan@arm.com>,
+        Robin Randhawa <robin.randhawa@arm.com>, Steve.Bannister@arm.com,
+        Liviu.Dudau@arm.com,
+        Charles Garcia-Tobin <charles.garcia-tobin@arm.com>,
+        cpufreq@vger.kernel.org,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 04 Apr 2013 12:31:06 +0200, Paul Bolle wrote:
-> In v3.2 the Analog Devices ADT75 temperature sensor driver was removed
-> as an IIO driver and support for it was added to the LM75 HWMON driver.
-> But it was apparently overlooked to rename one reference to CONFIG_ADT75
-> to CONFIG_SENSORS_LM75. Do so now. Use the IS_ENABLED() macro, while
-> we're at it.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> 0) Also untested.
-> 
-> 1) See commits e96f9d89e6213c7630a3323cd0c754e7f2619564 ("hwmon: (lm75)
-> Add support for Analog Devices ADT75") and
-> cdea0bec8d37f2943ae500512b0c178bc76de6e3 ("iio: adc: remove ADT75 driver
-> - hwmon/lm75 will take over ADT75 support") for the two patches involved
-> in this operation.
-> 
->  arch/blackfin/mach-bf537/boards/stamp.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+On Thu, Apr 4, 2013 at 10:32 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 25 March 2013 15:41, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> This patch moves cpufreq driver of ARM based integrator platform to
+>> drivers/cpufreq.
+>>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+>> ---
+>>  arch/arm/Kconfig                                              | 11 -----------
+>>  arch/arm/mach-integrator/Makefile                             |  1 -
+>>  drivers/cpufreq/Kconfig.arm                                   |  8 ++++++++
+>>  drivers/cpufreq/Makefile                                      |  1 +
+>>  .../cpu.c => drivers/cpufreq/integrator-cpufreq.c             |  2 --
+>>  5 files changed, 9 insertions(+), 14 deletions(-)
+>>  rename arch/arm/mach-integrator/cpu.c => drivers/cpufreq/integrator-cpufreq.c (99%)
+>
+> I didn't knew that you are maintaining integrator now a days.
+> Can i have your comments/Ack for this patch?
 
-This breakage is telling us something about the weird approach taken in
-this file, methinks.
+Sure
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-> diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
-> index b40b849..9735345 100644
-> --- a/arch/blackfin/mach-bf537/boards/stamp.c
-> +++ b/arch/blackfin/mach-bf537/boards/stamp.c
-> @@ -2221,7 +2221,7 @@ static struct i2c_board_info __initdata bfin_i2c_board_info[] = {
->  	},
->  #endif
->  
-> -#if defined(CONFIG_ADT75) || defined(CONFIG_ADT75_MODULE)
-> +#if IS_ENABLED(CONFIG_SENSORS_LM75)
->  	{
->  		I2C_BOARD_INFO("adt75", 0x9),
+This file still #includes a few <mach/*> headers, which stand in the
+way for multiplatform, but whatever, it will need some heavy patching
+anyway.
 
-Unrelated to this patch, but this is very odd, as the ADT75 can't have
-slave address 0x09. This address is almost exclusively used by battery
-chargers AFAIK.
-
->  		.irq = IRQ_PG5,
-
-The patch itself looks good.
-
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
-
--- 
-Jean Delvare
+Yours,
+Linus Walleij
