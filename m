@@ -1,100 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762977Ab3DDQRu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:17:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47817 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762842Ab3DDQRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:17:48 -0400
-Date: Thu, 4 Apr 2013 18:17:46 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] mm/hugetlb: gigantic hugetlb page pools shrink
- supporting
-Message-ID: <20130404161746.GP29911@dhcp22.suse.cz>
-References: <1365066554-29195-1-git-send-email-liwanp@linux.vnet.ibm.com>
+	id S1762979Ab3DDQTO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:19:14 -0400
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:27019
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762531Ab3DDQTJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 12:19:09 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-WSS-ID: 0MKQNZR-01-PYU-02
+X-M-MSG: 
+From: Jacob Shin <jacob.shin@amd.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Thomas Renninger <trenn@suse.de>, Borislav Petkov <bp@alien8.de>,
+        Jacob Shin <jacob.shin@amd.com>
+Subject: [PATCH V4 1/2] cpufreq: ondemand: allow custom powersave_bias_target handler to be registered
+Date: Thu, 4 Apr 2013 11:19:03 -0500
+Message-ID: <1365092344-11310-2-git-send-email-jacob.shin@amd.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1365092344-11310-1-git-send-email-jacob.shin@amd.com>
+References: <1365092344-11310-1-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365066554-29195-1-git-send-email-liwanp@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 04-04-13 17:09:08, Wanpeng Li wrote:
-> order >= MAX_ORDER pages are only allocated at boot stage using the 
-> bootmem allocator with the "hugepages=xxx" option. These pages are never 
-> free after boot by default since it would be a one-way street(>= MAX_ORDER
-> pages cannot be allocated later), but if administrator confirm not to 
-> use these gigantic pages any more, these pinned pages will waste memory
-> since other users can't grab free pages from gigantic hugetlb pool even
-> if OOM, it's not flexible.  The patchset add hugetlb gigantic page pools
-> shrink supporting. Administrator can enable knob exported in sysctl to
-> permit to shrink gigantic hugetlb pool.
+This allows for another [arch specific] driver to hook into existing
+powersave bias function of the ondemand governor. i.e. This allows AMD
+specific powersave bias function (in a separate AMD specific driver)
+to aid ondemand governor's frequency transition decisions.
 
-I am not sure I see why the new knob is needed.
-/sys/kernel/mm/hugepages/hugepages-*/nr_hugepages is root interface so
-an additional step to allow writing to the file doesn't make much sense
-to me to be honest.
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+---
+ drivers/cpufreq/cpufreq_governor.h |    4 +++
+ drivers/cpufreq/cpufreq_ondemand.c |   56 ++++++++++++++++++++++++++++++------
+ 2 files changed, 52 insertions(+), 8 deletions(-)
 
-Support for shrinking gigantic huge pages makes some sense to me but I
-would be interested in the real world example. GB pages are usually used
-in very specific environments where the amount is usually well known.
-
-I could imagine nr_hugepages_mempolicy would make more sense to free
-pages from particular nodes so they could be offlined for example.
-Does the patchset handles this as well?
-
-> Testcase:
-> boot: hugepagesz=1G hugepages=10
-> 
-> [root@localhost hugepages]# free -m
->              total       used       free     shared    buffers     cached
-> Mem:         36269      10836      25432          0         11        288
-> -/+ buffers/cache:      10537      25732
-> Swap:        35999          0      35999
-> [root@localhost hugepages]# echo 0 > /sys/kernel/mm/hugepages/hugepages-1048576kB/nr_hugepages
-> -bash: echo: write error: Invalid argument
-> [root@localhost hugepages]# echo 1 > /proc/sys/vm/hugetlb_shrink_gigantic_pool
-> [root@localhost hugepages]# echo 0 > /sys/kernel/mm/hugepages/hugepages-1048576kB/nr_hugepages
-> [root@localhost hugepages]# free -m
->              total       used       free     shared    buffers     cached
-> Mem:         36269        597      35672          0         11        288
-> -/+ buffers/cache:        297      35972
-> Swap:        35999          0      35999
-> 
-> Wanpeng Li (6):
->   introduce new sysctl knob which control gigantic page pools shrinking
->   update_and_free_page gigantic pages awareness
->   enable gigantic hugetlb page pools shrinking
->   use already exist huge_page_order() instead of h->order
->   remove redundant hugetlb_prefault 
->   use already exist interface huge_page_shift
-> 
->  Documentation/sysctl/vm.txt |   13 +++++++
->  include/linux/hugetlb.h     |    5 +--
->  kernel/sysctl.c             |    7 ++++
->  mm/hugetlb.c                |   83 +++++++++++++++++++++++++++++--------------
->  mm/internal.h               |    1 +
->  mm/page_alloc.c             |    2 +-
->  6 files changed, 82 insertions(+), 29 deletions(-)
-> 
-> -- 
-> 1.7.10.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+index 6593769..8ac3353 100644
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -263,4 +263,8 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 		struct common_dbs_data *cdata, unsigned int event);
+ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+ 		unsigned int delay, bool all_cpus);
++void od_register_powersave_bias_handler(unsigned int (*f)
++		(struct cpufreq_policy *, unsigned int, unsigned int),
++		unsigned int powersave_bias);
++void od_unregister_powersave_bias_handler(void);
+ #endif /* _CPUFREQ_GOVERNOR_H */
+diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+index 1471478..e5d1e8c 100644
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -40,6 +40,8 @@
+ 
+ static DEFINE_PER_CPU(struct od_cpu_dbs_info_s, od_cpu_dbs_info);
+ 
++static struct od_ops od_ops;
++
+ #ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND
+ static struct cpufreq_governor cpufreq_gov_ondemand;
+ #endif
+@@ -80,7 +82,7 @@ static int should_io_be_busy(void)
+  * Returns the freq_hi to be used right now and will set freq_hi_jiffies,
+  * freq_lo, and freq_lo_jiffies in percpu area for averaging freqs.
+  */
+-static unsigned int powersave_bias_target(struct cpufreq_policy *policy,
++static unsigned int generic_powersave_bias_target(struct cpufreq_policy *policy,
+ 		unsigned int freq_next, unsigned int relation)
+ {
+ 	unsigned int freq_req, freq_reduc, freq_avg;
+@@ -145,7 +147,8 @@ static void dbs_freq_increase(struct cpufreq_policy *p, unsigned int freq)
+ 	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
+ 
+ 	if (od_tuners->powersave_bias)
+-		freq = powersave_bias_target(p, freq, CPUFREQ_RELATION_H);
++		freq = od_ops.powersave_bias_target(p, freq,
++				CPUFREQ_RELATION_H);
+ 	else if (p->cur == p->max)
+ 		return;
+ 
+@@ -205,12 +208,12 @@ static void od_check_cpu(int cpu, unsigned int load_freq)
+ 		if (!od_tuners->powersave_bias) {
+ 			__cpufreq_driver_target(policy, freq_next,
+ 					CPUFREQ_RELATION_L);
+-		} else {
+-			int freq = powersave_bias_target(policy, freq_next,
+-					CPUFREQ_RELATION_L);
+-			__cpufreq_driver_target(policy, freq,
+-					CPUFREQ_RELATION_L);
++			return;
+ 		}
++
++		freq_next = od_ops.powersave_bias_target(policy, freq_next,
++					CPUFREQ_RELATION_L);
++		__cpufreq_driver_target(policy, freq_next, CPUFREQ_RELATION_L);
+ 	}
+ }
+ 
+@@ -557,7 +560,7 @@ define_get_cpu_dbs_routines(od_cpu_dbs_info);
+ 
+ static struct od_ops od_ops = {
+ 	.powersave_bias_init_cpu = ondemand_powersave_bias_init_cpu,
+-	.powersave_bias_target = powersave_bias_target,
++	.powersave_bias_target = generic_powersave_bias_target,
+ 	.freq_increase = dbs_freq_increase,
+ };
+ 
+@@ -574,6 +577,43 @@ static struct common_dbs_data od_dbs_cdata = {
+ 	.exit = od_exit,
+ };
+ 
++static void od_set_powersave_bias(unsigned int powersave_bias)
++{
++	unsigned int cpu;
++	struct od_dbs_tuners *od_tuners;
++
++	if (!have_governor_per_policy()) {
++		od_tuners = od_dbs_cdata.gdbs_data->tuners;
++		od_tuners->powersave_bias = powersave_bias;
++		return;
++	}
++
++	for_each_online_cpu(cpu) {
++		struct cpufreq_policy *policy;
++		struct dbs_data *dbs_data;
++		policy = per_cpu(od_cpu_dbs_info, cpu).cdbs.cur_policy;
++		dbs_data = policy->governor_data;
++		od_tuners = dbs_data->tuners;
++		od_tuners->powersave_bias = powersave_bias;
++	}
++}
++
++void od_register_powersave_bias_handler(unsigned int (*f)
++		(struct cpufreq_policy *, unsigned int, unsigned int),
++		unsigned int powersave_bias)
++{
++	od_ops.powersave_bias_target = f;
++	od_set_powersave_bias(powersave_bias);
++}
++EXPORT_SYMBOL_GPL(od_register_powersave_bias_handler);
++
++void od_unregister_powersave_bias_handler(void)
++{
++	od_ops.powersave_bias_target = generic_powersave_bias_target;
++	od_set_powersave_bias(0);
++}
++EXPORT_SYMBOL_GPL(od_unregister_powersave_bias_handler);
++
+ static int od_cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 		unsigned int event)
+ {
 -- 
-Michal Hocko
-SUSE Labs
+1.7.9.5
+
+
