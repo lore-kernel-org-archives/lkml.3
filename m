@@ -1,122 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933407Ab3DDIC5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 04:02:57 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46896 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933369Ab3DDICw (ORCPT
+	id S933435Ab3DDIE4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 04:04:56 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:48521 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933414Ab3DDIEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 04:02:52 -0400
-Date: Thu, 4 Apr 2013 09:02:48 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Nathan Zimmer <nzimmer@sgi.com>
-Subject: Re: linux-next: manual merge of the akpm tree with the vfs tree
-Message-ID: <20130404080248.GN21522@ZenIV.linux.org.uk>
-References: <20130404172648.27834d12cbb68338f4b89482@canb.auug.org.au>
- <20130403235634.6bc72c39.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130403235634.6bc72c39.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 4 Apr 2013 04:04:52 -0400
+Date: Thu, 4 Apr 2013 10:04:55 +0200
+From: Anisse Astier <anisse@astier.eu>
+To: linux-kbuild@vger.kernel.org
+Cc: Anisse Astier <anisse@astier.eu>, linux-kernel@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>, maximilian attems <max@stro.at>
+Subject: Re: [PATCH 1/2] deb-pkg: split debug symbols in their own package
+Message-ID: <20130404100455.64367233@serenity>
+In-Reply-To: <1363946761-7449-1-git-send-email-anisse@astier.eu>
+References: <1363946761-7449-1-git-send-email-anisse@astier.eu>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 03, 2013 at 11:56:34PM -0700, Andrew Morton wrote:
-> On Thu, 4 Apr 2013 17:26:48 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+Any comments ?
+
+Anisse
+
+On Fri, 22 Mar 2013 11:06:00 +0100, Anisse Astier <anisse@astier.eu> wrote :
+
+> This can reduce almost 3 times the size of the linux-image package,
+> while keeping the debug symbols available for this particular build, in
+> their own package.
 > 
-> > Hi Andrew,
-> > 
-> > Today's linux-next merge of the akpm tree got a conflict in
-> > fs/proc/generic.c between several commits from the vfs tree and commit
-> > "procfs: improve scaling in proc" from the akpm tree.
-> > 
-> > I just dropped the akpm tree patch (and the following
-> > "procfs-improve-scaling-in-proc-v5") as the conflicts are a bit complex.
+> This mimics the way kernels are built in debian, ubuntu, or with
+> make-kpkg, and comes at the price of a small slowdown in the building of
+> packages.
 > 
-> Well perhaps the vfs tree should start paying some attention to the
-> rest of the world, particularly after -rc5.
-
-I'm sorry, but... not in this case.  There are seriously nasty races around
-remove_proc_entry()/proc_reg_release() and the whole area needs a rewrite.
-Tentative fix is in vfs.git#experimental; I hadn't pushed it into #for-next
-yet, but Nathan's patches are definitely going to buggered by any realistic
-solution.  For now I'm going for the dumbest variant possible; ->pde_users
-will eventually become atomic_t, but it'll be modified by
-atomic_inc_unless_negative(), not atomic_inc() and ->proc_fops won't be
-zeroed at all.  But before we do that, I want to get that sucker tested and
-stabilized - the whole thing is sufficiently convoluted for those races to
-stay unnoticed for a long time in the first place.
-
-I am aware of those patches; it's just that they'll need to be redone - the
-code being optimized is broken and needs to be fixed.  Longer term, I want
-to lift the whole thing into VFS proper; it *can* be done with minimal
-overhead and it'll get us a large part of revoke(2) if done right.  Basically,
-what I want is a pair of new types - struct revoke and struct revokable.
-	* struct file gets a pointer to struct revoke; set in ->open() by
-file_revokable(file, revokable) and never changed afterwards.  No locking
-is needed to check it.
-	* struct revoke contains a pointer back to struct file (never changed)
-+ pointer to struct revokable (RCU-protected, zeroed on revoke) + mutex/count
-(serializes __fput() vs. revoke() deciding who's going to call ->release() and
-who'll be waiting; see pdeo->mutex and pdep->count in #experimental) + cyclic
-list anchored in struct revokable (list_del_init() after ->release() had been
-done, under revoke->mutex and revokable->lock).
-	* struct revokable contains an anchor for aforementioned cyclic
-list + spinlock + atomic_t in_use (a-la pde->pde_users) + pointer to
-completion + one method (->kick(); see below).  Freed via RCU.
-	* start_using(file) is an inlined helper, returning true if
-file->f_revoke is NULL; if it's not NULL, we do rcu_read_lock() and look
-at file->f_revoke->revokable.  If it's NULL - rcu_read_unlock() and return
-false (file had been revoked).  If it's not, atomic_inc_unless_negative()
-of revokable->in_use.  Then rcu_read_unlock() and return - true if
-->in_use used to be non-negative (file not revoked, revoke will wait) and
-false if it was negative (file in process of being revoked).
-	* stop_using(file) - inlined helper, does nothing if file->f_revoke
-is NULL, otherwise decrements revokable->in_use and if it's reached
-BIAS (large negative), complete(revokable->completion).
-	* all normal method calls (everything except ->release()) are
-turned into
-	if (likely(start_using(file)) {
-		res = method call
-		stop_using(file);
-	} else {
-		res = <appropriate for method>;
-	}
-Overhead for non-revokable files is trivial - we just check one field in
-struct file and if it's in the same cacheline as ->f_op, we are not going
-to see any real delays.
-	* new helper - release_revoke(); similar to close_pdeo() in
-vfs.git#experimenatal.  __fput() checks ->f_revoke and, if that sucker's
-non-NULL, does rcu_read_lock(), checks ->revokable, grabs ->lock on it
-and does release_revoke().  If ->f_revoke is NULL, call ->release() as
-we do now.  Note that unlike struct pde_opener, these guys would be
-created with ->count equal to 1 - IOW, file->f_revoke would contribute to it.
-	* do_revoke(revokable) starts with setting ->completion and adding
-BIAS to ->in_use; if it non-zero prior to that, call ->kick(revokable) and
-wait for completion.  ->kick() should essentially wake up those who are
-sleeping in ->read() or ->write() and make them return, be it with EAGAIN
-or short read/write.  Empty for procfs, for something like TTY it should
-imitate hangup.  That's where driver-specific logics in revoke(2) would
-live.  Once do_revoke() has finished waiting, we know that nobody is in
-method calls (except possibly ->release()) and nobody will manage to enter
-them from now on.  We grab ->lock, pick the first struct revoke from the
-list, do release_revoke() to it and keep doing that to these guys until
-none is left.
-
-procfs would have struct revokable embedded into proc_dir_entry, with
-freeing of those guys RCUd.  It would have file_revokable() done in
-proc_reg_open() (that would do allocation of struct revoke, adding it
-to the cyclic list, etc.) and set ->f_op to ->proc_fops; no wrappers
-needed anymore.  All file_operations instances fed to proc_create()
-et.al. would lose ->owner - it's already not needed for those, actually.
-remove_proc_entry()/remove_proc_subtree() would call do_revoke() on
-everything we are removing.
-
-Getting from there to working revoke(2) is probably not too hard; the
-interesting part is what should we associate struct revokable with and
-what should revoke(2) in progress do to new attempts to open the damn
-device.  Hell knows - not sure what's the right semantics here.
+> Signed-off-by: Anisse Astier <anisse@astier.eu>
+> ---
+>  scripts/package/builddeb | 33 ++++++++++++++++++++++++++++++++-
+>  1 file changed, 32 insertions(+), 1 deletion(-)
+> 
+> diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+> index acb8650..7f7a7fd 100644
+> --- a/scripts/package/builddeb
+> +++ b/scripts/package/builddeb
+> @@ -78,17 +78,19 @@ tmpdir="$objtree/debian/tmp"
+>  fwdir="$objtree/debian/fwtmp"
+>  kernel_headers_dir="$objtree/debian/hdrtmp"
+>  libc_headers_dir="$objtree/debian/headertmp"
+> +dbg_dir="$objtree/debian/dbgtmp"
+>  packagename=linux-image-$version
+>  fwpackagename=linux-firmware-image
+>  kernel_headers_packagename=linux-headers-$version
+>  libc_headers_packagename=linux-libc-dev
+> +dbg_packagename=$packagename-dbg
+>  
+>  if [ "$ARCH" = "um" ] ; then
+>  	packagename=user-mode-linux-$version
+>  fi
+>  
+>  # Setup the directory structure
+> -rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir"
+> +rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir" "$dbg_dir"
+>  mkdir -m 755 -p "$tmpdir/DEBIAN"
+>  mkdir -p  "$tmpdir/lib" "$tmpdir/boot" "$tmpdir/usr/share/doc/$packagename"
+>  mkdir -m 755 -p "$fwdir/DEBIAN"
+> @@ -98,6 +100,8 @@ mkdir -p "$libc_headers_dir/usr/share/doc/$libc_headers_packagename"
+>  mkdir -m 755 -p "$kernel_headers_dir/DEBIAN"
+>  mkdir -p "$kernel_headers_dir/usr/share/doc/$kernel_headers_packagename"
+>  mkdir -p "$kernel_headers_dir/lib/modules/$version/"
+> +mkdir -p "$dbg_dir/usr/share/doc/$dbg_packagename"
+> +mkdir -m 755 -p "$dbg_dir/DEBIAN"
+>  if [ "$ARCH" = "um" ] ; then
+>  	mkdir -p "$tmpdir/usr/lib/uml/modules/$version" "$tmpdir/usr/bin"
+>  fi
+> @@ -128,8 +132,24 @@ if grep -q '^CONFIG_MODULES=y' .config ; then
+>  		mv "$tmpdir/lib/modules/$version"/* "$tmpdir/usr/lib/uml/modules/$version/"
+>  		rmdir "$tmpdir/lib/modules/$version"
+>  	fi
+> +	# Build debug package
+> +	(
+> +		cd $tmpdir
+> +		for module in $(find lib/modules/ -name *.ko); do
+> +			mkdir -p $(dirname $dbg_dir/usr/lib/debug/$module)
+> +			# only keep debug symbols in the debug file
+> +			objcopy --only-keep-debug $module $dbg_dir/usr/lib/debug/$module
+> +			# strip original module from debug symbols
+> +			objcopy --strip-debug $module
+> +			# then add a link to those
+> +			objcopy --add-gnu-debuglink=$dbg_dir/usr/lib/debug/$module $module
+> +		done
+> +	)
+>  fi
+>  
+> +mkdir -p $dbg_dir/usr/lib/debug/lib/modules/$version/
+> +cp vmlinux $dbg_dir/usr/lib/debug/lib/modules/$version/
+> +
+>  if [ "$ARCH" != "um" ]; then
+>  	$MAKE headers_check KBUILD_SRC=
+>  	$MAKE headers_install KBUILD_SRC= INSTALL_HDR_PATH="$libc_headers_dir/usr"
+> @@ -297,6 +317,17 @@ if [ "$ARCH" != "um" ]; then
+>  	create_package "$libc_headers_packagename" "$libc_headers_dir"
+>  fi
+>  
+> +cat <<EOF >> debian/control
+> +
+> +Package: $dbg_packagename
+> +Section: devel
+> +Provides: linux-debug, linux-debug-$version
+> +Architecture: any
+> +Description: Linux kernel debugging symbols for $version
+> + This package will come in handy if you need to debug the kernel.
+> +EOF
+> +
+> +create_package "$dbg_packagename" "$dbg_dir"
+>  create_package "$packagename" "$tmpdir"
+>  
+>  exit 0
