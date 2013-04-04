@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763487Ab3DDS6U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 14:58:20 -0400
-Received: from zimbra.linbit.com ([212.69.161.123]:52335 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762997Ab3DDS6T (ORCPT
+	id S1764006Ab3DDTCO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 15:02:14 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:48267 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763581Ab3DDTCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 14:58:19 -0400
-Date: Thu, 4 Apr 2013 20:58:15 +0200
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: drbd-dev@lists.linbit.com, yongjun_wei@trendmicro.com.cn,
-        linux-kernel@vger.kernel.org, drbd-user@lists.linbit.com
-Subject: Re: [Drbd-dev] [PATCH -next] drbd: fix error return code in
- drbd_init()
-Message-ID: <20130404185815.GJ22095@soda.linbit>
-Mail-Followup-To: Wei Yongjun <weiyj.lk@gmail.com>,
-	drbd-dev@lists.linbit.com, yongjun_wei@trendmicro.com.cn,
-	linux-kernel@vger.kernel.org, drbd-user@lists.linbit.com
-References: <CAPgLHd9NdpPH74owO-5=h7G2Qmhb5OJSWnuo=gPWHhnUbE6ULQ@mail.gmail.com>
+	Thu, 4 Apr 2013 15:02:12 -0400
+Date: Thu, 4 Apr 2013 12:01:52 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jan Stancek <jstancek@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ian Lance Taylor <iant@google.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: prevent mmap_cache race in find_vma()
+In-Reply-To: <CA+55aFwCG2h1ijWTCJ38LVcUyczDAfk72c4MVSU+_-BiLoMOOw@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1304041149030.29847@eggly.anvils>
+References: <alpine.LNX.2.00.1304041120510.26822@eggly.anvils> <CA+55aFwCG2h1ijWTCJ38LVcUyczDAfk72c4MVSU+_-BiLoMOOw@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd9NdpPH74owO-5=h7G2Qmhb5OJSWnuo=gPWHhnUbE6ULQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 02:17:09PM +0800, Wei Yongjun wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Thu, 4 Apr 2013, Linus Torvalds wrote:
+> On Thu, Apr 4, 2013 at 11:35 AM, Hugh Dickins <hughd@google.com> wrote:
+> >
+> > find_vma() can be called by multiple threads with read lock
+> > held on mm->mmap_sem and any of them can update mm->mmap_cache.
+> > Prevent compiler from re-fetching mm->mmap_cache, because other
+> > readers could update it in the meantime:
 > 
-> Fix to return a negative error code from the error handling
-> case instead of 0, as returned elsewhere in this function.
+> Ack. I do wonder if we should mark the unlocked update too some way
+> (also in find_vma()), although it's probably not a problem in practice
+> since there's no way the compiler can reasonably really do anything
+> odd with it. We *could* make that an ACCESS_ONCE() write too just to
+> highlight the fact that it's an unlocked write to this optimistic data
+> structure.
 
-We used to have an err = -ENOMEM; "just in case"...
+Hah, you beat me to it.
 
-How about this instead:
+I wanted to get Jan's patch in first, seeing as it actually fixes his
+observed issue; and it is very nice to have such a good description of
+one of those, when ACCESS_ONCE() is usually just an insurance policy.
 
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index e98da67..dfe52d6 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -2739,8 +2739,6 @@ int __init drbd_init(void)
- 	/*
- 	 * allocate all necessary structs
- 	 */
--	err = -ENOMEM;
--
- 	init_waitqueue_head(&drbd_pp_wait);
- 
- 	drbd_proc = NULL; /* play safe for drbd_cleanup */
-@@ -2750,6 +2748,7 @@ int __init drbd_init(void)
- 	if (err)
- 		goto fail;
- 
-+	err = -ENOMEM;
- 	drbd_proc = proc_create_data("drbd", S_IFREG | S_IRUGO , NULL, &drbd_proc_fops, NULL);
- 	if (!drbd_proc)	{
- 		printk(KERN_ERR "drbd: unable to register proc file\n");
-@@ -2780,7 +2779,6 @@ int __init drbd_init(void)
- fail:
- 	drbd_cleanup();
- 	if (err == -ENOMEM)
--		/* currently always the case */
- 		printk(KERN_ERR "drbd: ran out of memory\n");
- 	else
- 		printk(KERN_ERR "drbd: initialization failure\n");
+But then I was researching the much rarer "ACCESS_ONCE(x) = y" usage
+(popular in drivers/net/wireless/ath/ath9k and kernel/rcutree* and
+sound/firewire, but few places else).
+
+When Paul reminded us of it yesterday, I came to wonder if actually
+every use of ACCESS_ONCE in the read form should strictly be matched
+by ACCESS_ONCE whenever modifying the location.
+
+My uneducated guess is that strictly it ought to, in the sense of
+insurance policy; but that (apart from that strange split writing
+issue which came up a couple of months ago) in practice our compilers
+have not "advanced" to the point of making this an issue yet.
+
+> 
+> Anyway, applied.
+
+Thanks,
+Hugh
