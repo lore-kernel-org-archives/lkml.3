@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761071Ab3DDNrF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 09:47:05 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:64336 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761032Ab3DDNrD (ORCPT
+	id S1761138Ab3DDNrX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 09:47:23 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:39687 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761095Ab3DDNrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 09:47:03 -0400
-Message-ID: <1365083221.1830.51.camel@x61.thuisdomein>
-Subject: [PATCH v2] MIPS: Alchemy: Fix typo "CONFIG_DEBUG_PCI"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Date: Thu, 04 Apr 2013 15:47:01 +0200
-In-Reply-To: <515D69B6.6040302@cogentembedded.com>
-References: <1365074738.1830.38.camel@x61.thuisdomein>
-	 <515D69B6.6040302@cogentembedded.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 04 Apr 2013 13:47:01.0691 (UTC) FILETIME=[E26BE8B0:01CE313A]
-X-RcptDomain: vger.kernel.org
+	Thu, 4 Apr 2013 09:47:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130404131003.GE1367@redhat.com>
+References: <1365066635-2959-1-git-send-email-sgruszka@redhat.com>
+	<CAFTL4hx-k42Af1qhpf+0jra6HZ3LBxL=1A8J3xabzjWLAxH9GQ@mail.gmail.com>
+	<20130404131003.GE1367@redhat.com>
+Date: Thu, 4 Apr 2013 15:47:19 +0200
+Message-ID: <CAFTL4hxZ8RJ0Wd-+sScfa90_c5j0bX3eufH+RC+u8i7=7hN+ig@mail.gmail.com>
+Subject: Re: [PATCH -tip 0/4] do not make cputime scaling in kernel
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Paul Turner <pjt@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 7517de348663b08a808aff44b5300e817157a568 ("MIPS: Alchemy: Redo
-PCI as platform driver") added a reference to CONFIG_DEBUG_PCI. Change
-it to CONFIG_PCI_DEBUG, as that is a valid Kconfig macro.
+2013/4/4 Stanislaw Gruszka <sgruszka@redhat.com>:
+> On Thu, Apr 04, 2013 at 02:31:42PM +0200, Frederic Weisbecker wrote:
+>> I don't know. I'm not convinced userland is the right place to perform
+>> this kind of check. The kernel perhaps doesn't give guarantee about
+>> utime/stime precision but now users may have got used to that scaled
+>> behaviour. It's also a matter of security, a malicous app can hide
+>> from the tick to make its activity less visible from tools like top.
+>>
+>> It's sortof an ABI breakage to remove such an implicit protection. And
+>> fixing that from userspace with a lib or so won't change that fact.
+>
+> I think number of fields in /proc/PID/stat is not part of ABI. For
+> example commit 5b172087f99189416d5f47fd7ab5e6fb762a9ba3 add various
+> new fields at the end of the file. What is imported to keep unchanged
+> ABI is not changing order or meaning of fields we already have.
 
-Also add a newline to a debugging printk that this fix enables.
+Oh I wasn't considering the layout of the proc file but the semantic
+change in its utime/stime fields.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-This version has a verbose commit explanation, as Sergei requested.
-Still entirely untested.
+> Regarding top, I added those additional fields to allow top to detect
+> those malicious software. Patched top will work well with old and new
+> (patched) kernel. Problem is old top with new kernel, but I believe
+> users who care about security update they software regularly.
 
- arch/mips/pci/pci-alchemy.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+The usual rule is that but you can't remove a feature from the kernel
+and tell userspace to fix it itself. That's basically an ABI breakage.
+A semantic one. We do it sometimes for some cases. But the more we are
+dealing with a central ABI component, the harder it is to change it.
+And here it is quite a central component.
 
-diff --git a/arch/mips/pci/pci-alchemy.c b/arch/mips/pci/pci-alchemy.c
-index 38a80c8..d1faece 100644
---- a/arch/mips/pci/pci-alchemy.c
-+++ b/arch/mips/pci/pci-alchemy.c
-@@ -19,7 +19,7 @@
- #include <asm/mach-au1x00/au1000.h>
- #include <asm/tlbmisc.h>
- 
--#ifdef CONFIG_DEBUG_PCI
-+#ifdef CONFIG_PCI_DEBUG
- #define DBG(x...) printk(KERN_DEBUG x)
- #else
- #define DBG(x...) do {} while (0)
-@@ -162,7 +162,7 @@ static int config_access(unsigned char access_type, struct pci_bus *bus,
- 	if (status & (1 << 29)) {
- 		*data = 0xffffffff;
- 		error = -1;
--		DBG("alchemy-pci: master abort on cfg access %d bus %d dev %d",
-+		DBG("alchemy-pci: master abort on cfg access %d bus %d dev %d\n",
- 		    access_type, bus->number, device);
- 	} else if ((status >> 28) & 0xf) {
- 		DBG("alchemy-pci: PCI ERR detected: dev %d, status %lx\n",
--- 
-1.7.11.7
+>
+> Besides for most cases (not counting hostile software), those
+> statistical stime/utime accounting give good approximation of CPU
+> time utilizing by each process.
 
+Yeah but still the users are expecting that result to be scaled now.
+
+>
+>> How about that 128bits based idea? I'm adding Paul Turner in Cc
+>> because he seemed to agree with doing it using 128bits maths.
+>
+> For problem that I try to solve 128bits math is not necessary, assuming
+> we can do multiplication in user space. Taking into account how easily
+> things can be done in user space using floating point math, I prefer not
+> to add complexity in kernel. This solution make kernel simpler and
+> faster.
+
+I'm always all for making the kernel simpler and faster, as long as we
+don't break userspace.
