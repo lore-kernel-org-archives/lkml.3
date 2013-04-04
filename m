@@ -1,110 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762948Ab3DDVEr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 17:04:47 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:34731 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761015Ab3DDVEq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 17:04:46 -0400
+	id S1763026Ab3DDVFl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 17:05:41 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:51453 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761144Ab3DDVFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 17:05:39 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: [GIT PULL] ACPI and power management fixes for v3.9-rc6
+Date: Thu, 04 Apr 2013 23:13:17 +0200
+Message-ID: <1903330.VdMMbXjxYW@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <7b09fa09-8ab7-4189-b86b-59fa6a9fbe0e@email.android.com>
-References: <1365106055-22939-1-git-send-email-keescook@chromium.org>
-	<1365106055-22939-4-git-send-email-keescook@chromium.org>
-	<515DDEC0.9000109@zytor.com>
-	<CAGXu5j+FqZpXURougB_Sd4zmF3bsqsT=m-om5eEM5WCsRX014g@mail.gmail.com>
-	<c3d1db06-5196-4828-b0a4-7f6517c7b68a@email.android.com>
-	<CAGXu5j+BHcVW2vsQ6xdF2hBCvvckf9Cmf_Lpz4+-tauSyY1Ucw@mail.gmail.com>
-	<7b09fa09-8ab7-4189-b86b-59fa6a9fbe0e@email.android.com>
-Date: Thu, 4 Apr 2013 14:04:44 -0700
-Message-ID: <CAG7+5M0ohMrCG1obmy1kaP+R1Qykcu1nn_L1c4L8RFpvrWmgcQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] x86: kernel base offset ASLR
-From: Eric Northup <digitaleric@google.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 4, 2013 at 2:01 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> What system monitoring?  Most systems don't have much...
+Hi Linus,
 
-The security of an unmonitored system is going to be much lower than
-of a well-monitored system.  That's true independent of whether kASLR
-is deployed.
+Please pull from the git repository at
 
->
-> Kees Cook <keescook@chromium.org> wrote:
->
->>On Thu, Apr 4, 2013 at 1:58 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> It seems to me that you are assuming that the attacker is targeting a
->>specific system, but a bot might as well target 256 different systems
->>and see what sticks...
->>
->>Certainly, but system monitoring will show 255 crashed machines, which
->>is a huge blip on any radar. :)
->>
->>-Kees
->>
->>>
->>> Kees Cook <keescook@chromium.org> wrote:
->>>
->>>>On Thu, Apr 4, 2013 at 1:12 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>>>> On 04/04/2013 01:07 PM, Kees Cook wrote:
->>>>>> However, the benefits of
->>>>>> this feature in certain environments exceed the perceived
->>>>weaknesses[2].
->>>>>
->>>>> Could you clarify?
->>>>
->>>>I would summarize the discussion of KASLR weaknesses into to two
->>>>general observations:
->>>>1- it depends on address location secrecy and leaks are common/easy.
->>>>2- it has low entropy so attack success rates may be high.
->>>>
->>>>For "1", as Julien mentions, remote attacks and attacks from a
->>>>significantly contained process (via seccomp-bpf) minimizes the leak
->>>>exposure. For local attacks, cache timing attacks and other things
->>>>also exist, but the ASLR can be improved to defend against that too.
->>>>So, KASLR is useful on systems that are virtualization hosts,
->>>>providing remote services, or running locally confined processes.
->>>>
->>>>For "2", I think that the comparison to userspace ASLR entropy isn't
->>>>as direct. For userspace, most systems don't tend to have any kind of
->>>>watchdog on segfaulting processes, so a remote attacker could just
->>>>keep trying an attack until they got lucky, in which case low entropy
->>>>is a serious problem. In the case of KASLR, a single attack failure
->>>>means the system goes down, which makes mounting an attack much more
->>>>difficult. I think 8 bits is fine to start with, and I think start
->>>>with a base offset ASLR is a good first step. We can improve things
->>in
->>>>the future.
->>>>
->>>>-Kees
->>>>
->>>>--
->>>>Kees Cook
->>>>Chrome OS Security
->>>
->>> --
->>> Sent from my mobile phone. Please excuse brevity and lack of
->>formatting.
->>
->>
->>
->>--
->>Kees Cook
->>Chrome OS Security
->
-> --
-> Sent from my mobile phone. Please excuse brevity and lack of formatting.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-3.9-rc6
+
+to receive ACPI and power management fixes for v3.9-rc6 with top-most commit
+6cb437acd93a01fdbd6bac9c78ac8159c644e576
+
+  Merge branch 'acpi-fixes' into fixes
+
+on top of commit 07961ac7c0ee8b546658717034fe692fd12eefa9
+
+  Linux 3.9-rc5
+
+Included are:
+
+- Revert of a recent cpuidle change that caused Nehalem machines
+  to hang on boot from Alex Shi.
+
+- USB power management fix addressing a crash in the port device
+  object's release routine.
+
+- Device PM QoS fix for a potential deadlock related to sysfs
+  interface.
+
+- Fix for a cpufreq crash when the /cpus Device Tree node is missing.
+  From Paolo Pisati.
+
+- Fix for a build issue on ia64 related to the fact that the
+  Boot Graphics Resource Table (BGRT) is only useful on x86 with
+  EFI.  From Tony Luck.
+
+- Two fixes for ACPI handles being set incorrectly for device
+  objects that don't correspond to any ACPI namespace nodes in
+  the I2C and SPI subsystems.
+
+- Fix for compiler warnings related to CONFIG_PM_DEVFREQ being
+  unset from Rajagopal Venkat.
+
+- Fix for a symbol definition typo in cpufreq_governor.h from
+  Borislav Petkov.
+
+Thanks!
+
+---------------
+
+Alex Shi (1):
+      cpuidle / ACPI: recover percpu ACPI processor cstate
+
+Borislav Petkov (1):
+      cpufreq: Correct header guards typo
+
+Paolo Pisati (1):
+      cpufreq: check OF node /cpus presence before dereferencing it
+
+Rafael J. Wysocki (4):
+      USB / PM: Don't try to hide PM QoS flags from usb_port_device_release()
+      PM / QoS: Avoid possible deadlock related to sysfs access
+      ACPI / SPI: Use parent's ACPI_HANDLE() in acpi_register_spi_devices()
+      ACPI / I2C: Use parent's ACPI_HANDLE() in acpi_i2c_register_devices()
+
+Rajagopal Venkat (1):
+      PM / devfreq: Fix compiler warnings for CONFIG_PM_DEVFREQ unset
+
+Tony Luck (1):
+      ACPI / BGRT: Don't let users configure BGRT on non X86 systems
+
+---------------
+
+ drivers/acpi/Kconfig                        |    2 +-
+ drivers/acpi/acpi_i2c.c                     |    2 +-
+ drivers/acpi/processor_idle.c               |   13 ++++----
+ drivers/base/power/qos.c                    |   60 +++++++++++++++++++++++++++--------
+ drivers/cpufreq/cpufreq-cpu0.c              |   10 ++++--
+ drivers/cpufreq/cpufreq_governor.h          |    6 ++--
+ drivers/i2c/busses/i2c-designware-platdrv.c |    1 -
+ drivers/spi/spi-pxa2xx.c                    |    1 -
+ drivers/spi/spi.c                           |    2 +-
+ drivers/usb/core/port.c                     |    1 -
+ include/linux/devfreq.h                     |   16 +++++-----
+ 11 files changed, 76 insertions(+), 38 deletions(-)
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
