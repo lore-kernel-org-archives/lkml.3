@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761711Ab3DDUxV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 16:53:21 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:51444 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761409Ab3DDUxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 16:53:20 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Lv Zheng <lv.zheng@intel.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI: remove "config ACPI_DEBUG_FUNC_TRACE"
-Date: Thu, 04 Apr 2013 23:00:57 +0200
-Message-ID: <9105435.faatoZyPxO@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <3588021.V98D5VToQr@vostro.rjw.lan>
-References: <1363689661.1390.9.camel@x61.thuisdomein> <3588021.V98D5VToQr@vostro.rjw.lan>
+	id S1761903Ab3DDUyj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 16:54:39 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:35264 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761637Ab3DDUyh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 16:54:37 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <515DDEC0.9000109@zytor.com>
+References: <1365106055-22939-1-git-send-email-keescook@chromium.org>
+	<1365106055-22939-4-git-send-email-keescook@chromium.org>
+	<515DDEC0.9000109@zytor.com>
+Date: Thu, 4 Apr 2013 13:54:36 -0700
+X-Google-Sender-Auth: dbh7pm7fRcxjkgoihhUP0-Ks6rA
+Message-ID: <CAGXu5j+FqZpXURougB_Sd4zmF3bsqsT=m-om5eEM5WCsRX014g@mail.gmail.com>
+Subject: Re: [PATCH 3/3] x86: kernel base offset ASLR
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 26, 2013 02:34:25 PM Rafael J. Wysocki wrote:
-> On Tuesday, March 19, 2013 11:41:01 AM Paul Bolle wrote:
-> > Kconfig symbol ACPI_DEBUG_FUNC_TRACE was only used (through its
-> > corresponding macro) in drivers/acpi/acpica/acmacros.h. That macro was
-> > removed from that header in v3.8, with commit
-> > 86ff0e508f88eda6e479a897476026055831d2d8 ("ACPICA: Fix unmerged
-> > acmacros.h divergences."). That commit did not explain why that macro
-> > was removed. But it seems that ACPI_DEBUG_FUNC_TRACE can now be removed
-> > too, as it is unused.
-> 
-> Lv, can you please comment here?
+On Thu, Apr 4, 2013 at 1:12 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/04/2013 01:07 PM, Kees Cook wrote:
+>> However, the benefits of
+>> this feature in certain environments exceed the perceived weaknesses[2].
+>
+> Could you clarify?
 
-Lv, I'm still waiting for your comment regarding the commit mentioned above.
+I would summarize the discussion of KASLR weaknesses into to two
+general observations:
+1- it depends on address location secrecy and leaks are common/easy.
+2- it has low entropy so attack success rates may be high.
 
-Thanks,
-Rafael
+For "1", as Julien mentions, remote attacks and attacks from a
+significantly contained process (via seccomp-bpf) minimizes the leak
+exposure. For local attacks, cache timing attacks and other things
+also exist, but the ASLR can be improved to defend against that too.
+So, KASLR is useful on systems that are virtualization hosts,
+providing remote services, or running locally confined processes.
 
+For "2", I think that the comparison to userspace ASLR entropy isn't
+as direct. For userspace, most systems don't tend to have any kind of
+watchdog on segfaulting processes, so a remote attacker could just
+keep trying an attack until they got lucky, in which case low entropy
+is a serious problem. In the case of KASLR, a single attack failure
+means the system goes down, which makes mounting an attack much more
+difficult. I think 8 bits is fine to start with, and I think start
+with a base offset ASLR is a good first step. We can improve things in
+the future.
 
-> > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > ---
-> > Eyeball tested.
-> > 
-> >  drivers/acpi/Kconfig | 8 --------
-> >  1 file changed, 8 deletions(-)
-> > 
-> > diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-> > index 92ed969..006b714 100644
-> > --- a/drivers/acpi/Kconfig
-> > +++ b/drivers/acpi/Kconfig
-> > @@ -298,14 +298,6 @@ config ACPI_DEBUG
-> >  	  Documentation/kernel-parameters.txt to control the type and
-> >  	  amount of debug output.
-> >  
-> > -config ACPI_DEBUG_FUNC_TRACE
-> > -	bool "Additionally enable ACPI function tracing"
-> > -	default n
-> > -	depends on ACPI_DEBUG
-> > -	help
-> > -	  ACPI Debug Statements slow down ACPI processing. Function trace
-> > -	  is about half of the penalty and is rarely useful.
-> > -
-> >  config ACPI_PCI_SLOT
-> >  	bool "PCI slot detection driver"
-> >  	depends on SYSFS
-> > 
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+-Kees
+
+--
+Kees Cook
+Chrome OS Security
