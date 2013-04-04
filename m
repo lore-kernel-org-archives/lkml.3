@@ -1,66 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932765Ab3DDGsT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 02:48:19 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:37740 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1763528Ab3DDGsQ (ORCPT
-	<rfc822;	linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 02:48:16 -0400
-Date: Thu, 04 Apr 2013 09:47:57 +0300
-Subject: Re: [PATCH v3 linux-next] cpufreq: ondemand: Calculate gradient of
- CPU load to early increase frequency
-Message-ID: <c47p1i8x8eiep3wulmq44fxd.1365058077739@email.android.com>
-From: stratosk <stratosk@semaphore.gr>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1763838Ab3DDGtI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 02:49:08 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:44059 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756163Ab3DDGtF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 02:49:05 -0400
+Date: Thu, 4 Apr 2013 14:48:49 +0800
+From: Ram Pai <linuxram@us.ibm.com>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, tmac@hp.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        tangchen@cn.fujitsu.com, jiang.liu@huawei.com
+Subject: Re: [PATCH 2/3] resource: Add release_mem_region_adjustable()
+Message-ID: <20130404064849.GA5709@ram.oc3035372033.ibm.com>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <1364919450-8741-1-git-send-email-toshi.kani@hp.com>
+ <1364919450-8741-3-git-send-email-toshi.kani@hp.com>
+ <20130403053720.GA26398@ram.oc3035372033.ibm.com>
+ <1365018905.11159.113.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365018905.11159.113.camel@misato.fc.hp.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040406-2398-0000-0000-000012E87BC1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r346mKhe000831
 
-Hi Viresh,
+On Wed, Apr 03, 2013 at 01:55:05PM -0600, Toshi Kani wrote:
+> On Wed, 2013-04-03 at 13:37 +0800, Ram Pai wrote:
+> > On Tue, Apr 02, 2013 at 10:17:29AM -0600, Toshi Kani wrote:
+> > > +	while ((res = *p)) {
 
-I never use performance governor, but I want improved performance with ondemand.
+...snip...
 
-Why do you suspect significant increased power? With ondemand  the CPU will go down to lowest freq as soon as the load will decreased. And the measurement shows that the CPU load will decrease faster (because of faster calculation).
+> > > +		if (res->start > start || res->end < end) {
+> > 
+> > This check looks sub-optimal; possbily wrong, to me.  if the res->start
+> > is greater than 'start', then obviously its sibling's start will
+> > also be greater than 'start'. So it will loop through all the
+> > resources unnecesarily.
+> 
+> I think this check is necessary to check if the requested range fits
+> into a resource.  It needs to check both sides to verify this.  I will
+> add some comment on this check.
+> 
+> >   you might want something like
+> > 
+> > 		if (start >= res->end) {
+> 
+> I agree that this list is sorted, so we can optimize an error case (i.e.
+> no matching entry is found) with an additional check.  I will add the
+> following check at the beginning of the while loop.  
+> 
+>                 if (res->start >= end)
+>                         break;
+> 
+> I also realized that the function returns 0 when no matching entry is
+> found.  I will change it to return -EINVAL as well.  
 
-I build and distribute a 3.0.y kernel for a smart phone arm cortex A8. There are about 10000 installations with early_demand included. Nobody noticed increased power.
+ok. this will take care of it.
 
-Though, I'm not able to provide numbers in the form of power.
+> 
+> > 		
+> > > +			p = &res->sibling;
+> > > +			continue;
+> > > +		}
+> > > +
+> > > +		if (!(res->flags & IORESOURCE_MEM)) {
+> > > +			ret = -EINVAL;
+> > > +			break;
+> > > +		}
+> > > +
+> > > +		if (!(res->flags & IORESOURCE_BUSY)) {
+> > > +			p = &res->child;
+> > > +			continue;
+> > > +		}
+> > > +
+> > > +		if (res->start == start && res->end == end) {
+> > > +			/* free the whole entry */
+> > > +			*p = res->sibling;
+> > > +			kfree(res);
+> > 
+> > This is incomplete. the prev resource's sibling should now point to
+> > this resource's sibling. The parent's child has to be updated if
+> > this resource is the first child resource. no?
+> 
+> If this resource is the first child, *p is set to &parent->child.  So,
+> it will update the parents' child.
 
-Thanks,
-Stratos
+But if the resource is not the parent's first child? will it update the
+previous siblings ->sibling ?
 
-Viresh Kumar <viresh.kumar@linaro.org> wrote:
+-- 
+Ram Pai
 
->Hi Stratos,
->
->On 4 April 2013 05:00, Stratos Karafotis <stratosk@semaphore.gr> wrote:
->> I tried to do some measurements simulating a CPU load with a loop that simply counts
->> an integer. The first test simulates a CPU load that lasts 2 x sampling_rate = ~ 20000us.
->> The second ~40000us and the third ~60000us.
->> There are 5 runs in each test. In each run the benchmark program counts 20 times with
->> early_demand off and 20 times with early_demand on and takes the average times.
->>
->> I run the benchmark program on 3.9-rc5 + early_demand patch. My CPU is the i7-3770 @ 3.40 GHz
->>
->> Please find below the results, and the benchmark code attached.
->> Please note, that the idea of this patch is to push the CPU to max frequency few sampling
->> periods (1 in most cases) earlier for a more responsive system.
->
->Yes, your results show some improvements. BUT if performance is the only thing
->we were looking for, then we will never use ondemand governor but performance
->governor.
->
->I suspect this little increase in performance must have increased power numbers
->too (significantly). So, if you can get numbers in the form of power/performance
->with and without your patch, it will be great.
->
->--
->viresh
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
