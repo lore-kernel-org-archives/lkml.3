@@ -1,80 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758742Ab3DDJdi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 05:33:38 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38879 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758701Ab3DDJdh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 05:33:37 -0400
-Message-ID: <515D48E5.1060700@ti.com>
-Date: Thu, 4 Apr 2013 15:03:25 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1758783Ab3DDJeK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 05:34:10 -0400
+Received: from mga01.intel.com ([192.55.52.88]:1364 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758753Ab3DDJeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 05:34:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,407,1363158000"; 
+   d="scan'208";a="316777092"
+Date: Thu, 4 Apr 2013 12:38:20 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH] gpiolib-acpi: introduce acpi_get_gpio_by_index() helper
+Message-ID: <20130404093820.GI21804@intel.com>
+References: <1364986614-15711-1-git-send-email-mika.westerberg@linux.intel.com>
+ <CAN+gG=F4LMHMsOqVh+BikSLKBJ8V7ni-p4hKi7yRb4jjD7gv0w@mail.gmail.com>
 MIME-Version: 1.0
-To: Prabhakar lad <prabhakar.csengg@gmail.com>
-CC: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 1/2] ARM: davinci: dm365: add support for v4l2 video
- display
-References: <1364903681-13914-1-git-send-email-prabhakar.csengg@gmail.com> <1364903681-13914-2-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1364903681-13914-2-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+gG=F4LMHMsOqVh+BikSLKBJ8V7ni-p4hKi7yRb4jjD7gv0w@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/2/2013 5:24 PM, Prabhakar lad wrote:
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On Thu, Apr 04, 2013 at 11:19:53AM +0200, Benjamin Tissoires wrote:
+> Hi Mika,
 > 
-> Create platform devices for various video modules like venc,osd,
-> vpbe and v4l2 driver for dm365.
+> On Wed, Apr 3, 2013 at 12:56 PM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> > Instead of open-coding ACPI GPIO resource lookup in each driver, we provide
+> > a helper function analogous to Device Tree version that allows drivers to
+> > specify which GPIO resource they are interested (using an index to the GPIO
+> > resources). The function then finds out the correct resource, translates
+> > the ACPI GPIO number to the corresponding Linux GPIO number and returns
+> > that.
+> >
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > ---
+> >  Documentation/acpi/enumeration.txt |   32 ++++++++++++++-
+> >  drivers/gpio/gpiolib-acpi.c        |   77 ++++++++++++++++++++++++++++++++++++
+> >  include/linux/acpi_gpio.h          |   17 ++++++++
+> >  3 files changed, 125 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
+> > index 94a6561..b0d5410 100644
+> > --- a/Documentation/acpi/enumeration.txt
+> > +++ b/Documentation/acpi/enumeration.txt
+> > @@ -199,6 +199,8 @@ the device to the driver. For example:
+> >         {
+> >                 Name (SBUF, ResourceTemplate()
+> >                 {
+> > +                       ...
+> > +                       // Used to power on/off the device
+> >                         GpioIo (Exclusive, PullDefault, 0x0000, 0x0000,
+> >                                 IoRestrictionOutputOnly, "\\_SB.PCI0.GPI0",
+> >                                 0x00, ResourceConsumer,,)
+> > @@ -206,10 +208,20 @@ the device to the driver. For example:
+> >                                 // Pin List
+> >                                 0x0055
+> >                         }
+> > +
+> > +                       // Interrupt for the device
+> > +                       GpioInt (Edge, ActiveHigh, ExclusiveAndWake, PullNone,
+> > +                                0x0000, "\\_SB.PCI0.GPI0", 0x00, ResourceConsumer,,)
 > 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Sorry for coming late in the GPIO ACPI discussion, but when I see this
+> documentation, I wonder:
+> wouldn't it be feasible to find the correct GPIO by its type? Here, we
+> have a GpioIo and a GpioInt, and I bet this would be sometime more
+> useful to request the first GpioInt without knowing the correct order
+> of declarations.
 
-Minor nits below:
+Why not. But then again you can always check the type returned in the
+acpi_gpio_info structure and pick the first GpioInt (if you have multiple
+GPIO resources).
 
-> diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
-> index c61dd94..786c860 100644
-> --- a/arch/arm/mach-davinci/dm365.c
-> +++ b/arch/arm/mach-davinci/dm365.c
-> @@ -40,10 +40,14 @@
->  
->  #define DM365_REF_FREQ		24000000	/* 24 MHz on the DM365 EVM */
->  
-> +#define DM365_RTC_BASE			0x01c69000
-> +
->  /* Base of key scan register bank */
->  #define DM365_KEYSCAN_BASE		0x01c69400
->  
-> -#define DM365_RTC_BASE			0x01c69000
-> +#define DM365_OSD_BASE			0x01c71c00
-> +
-> +#define DM365_VENC_BASE			0x01c71e00
->  
->  #define DAVINCI_DM365_VC_BASE		0x01d0c000
+> It may be feasible by walking the tree, but a helper would be of great
+> help (thinking at i2c-hid here, which can not rely on indexes in the
+> DSDT).
 
-No need of empty lines between these definitions. While at it you can
-also remove the useless comment "/* Base of key scan register bank */"
+Well, index is the only thing we can rely on unfortunately. There's nothing
+like names or anything like that.
 
-> +static int dm365_vpbe_setup_pinmux(enum v4l2_mbus_pixelcode if_type,
-> +			    int field)
-> +{
-> +	switch (if_type) {
-> +	case V4L2_MBUS_FMT_SGRBG8_1X8:
-> +		davinci_cfg_reg(DM365_VOUT_FIELD_G81);
-> +		davinci_cfg_reg(DM365_VOUT_COUTL_EN);
-> +		davinci_cfg_reg(DM365_VOUT_COUTH_EN);
-> +		break;
-> +
-
-No need of these empty lines after 'break'. Here and other places below.
-
-The patch looks good overall though so you can fix the nits and add:
-
-Acked-by: Sekhar Nori <nsekhar@ti.com>
-
-Thanks,
-Sekhar
+What I've seen from ACPI enumerated i2c-hid devices there is only one GPIO
+resource (GpioInt) declared.
