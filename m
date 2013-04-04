@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763273Ab3DDQgl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:36:41 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:39077 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763201Ab3DDQgf (ORCPT
+	id S1763284Ab3DDQiv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:38:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52924 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763055Ab3DDQiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:36:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <1365092344-11310-2-git-send-email-jacob.shin@amd.com>
-References: <1365092344-11310-1-git-send-email-jacob.shin@amd.com>
-	<1365092344-11310-2-git-send-email-jacob.shin@amd.com>
-Date: Thu, 4 Apr 2013 22:06:35 +0530
-Message-ID: <CAKohpom6BSJZc_ohgnjRTV2EBUAPy8TKVphtoRaNSt1wFP70uA@mail.gmail.com>
-Subject: Re: [PATCH V4 1/2] cpufreq: ondemand: allow custom
- powersave_bias_target handler to be registered
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Renninger <trenn@suse.de>, Borislav Petkov <bp@alien8.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 4 Apr 2013 12:38:50 -0400
+Message-ID: <1365093516.2609.109.camel@laptop>
+Subject: Re: [PATCH v2 2/3] mutex: add support for reservation style locks,
+ v2
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        linux-arch@vger.kernel.org, daniel.vetter@ffwll.ch, x86@kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, robclark@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu, linux-media@vger.kernel.org
+Date: Thu, 04 Apr 2013 18:38:36 +0200
+In-Reply-To: <20130404133123.GW2228@phenom.ffwll.local>
+References: <20130228102452.15191.22673.stgit@patser>
+	 <20130228102502.15191.14146.stgit@patser>
+	 <1364900432.18374.24.camel@laptop> <515AF1C1.7080508@canonical.com>
+	 <1364921954.20640.22.camel@laptop> <1365076908.2609.94.camel@laptop>
+	 <20130404133123.GW2228@phenom.ffwll.local>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 April 2013 21:49, Jacob Shin <jacob.shin@amd.com> wrote:
-> diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+On Thu, 2013-04-04 at 15:31 +0200, Daniel Vetter wrote:
+> Hm, I guess your aim with the TASK_DEADLOCK wakeup is to bound the
+> wait
+> times of older task.
 
-> +static void od_set_powersave_bias(unsigned int powersave_bias)
-> +{
-> +       unsigned int cpu;
-> +       struct od_dbs_tuners *od_tuners;
-> +
-> +       if (!have_governor_per_policy()) {
-> +               od_tuners = od_dbs_cdata.gdbs_data->tuners;
-> +               od_tuners->powersave_bias = powersave_bias;
-> +               return;
-> +       }
-> +
-> +       for_each_online_cpu(cpu) {
-> +               struct cpufreq_policy *policy;
-> +               struct dbs_data *dbs_data;
-> +               policy = per_cpu(od_cpu_dbs_info, cpu).cdbs.cur_policy;
-> +               dbs_data = policy->governor_data;
-> +               od_tuners = dbs_data->tuners;
-> +               od_tuners->powersave_bias = powersave_bias;
-> +       }
+No, imagine the following:
 
-You can keep only the for_each_online_cpu() loop and remove the other
-one. And in that one also, you don't have to do this for every cpu...
+struct ww_mutex A, B;
+struct mutex C;
 
-something like this will help you...
+	task-O	task-Y	task-X
+	  	A
+		B
+			C
+		C
+	B
 
-cpus_processed = NULL;
+At this point O finds that Y owns B and thus we want to make Y 'yield'
+B to make allow B progress. Since Y is blocked, we'll send a wakeup.
+However Y is blocked on a different locking primitive; one that doesn't
+collaborate in the -EDEADLK scheme therefore we don't want the wakeup to
+succeed.
 
-for_each_online_cpu(cpu) {
-    if cpu-is-present-in cpus_processed
-        continue;
 
-    cpu-set-mask(cpus_processed, policy->cpus);
 
-}
-
-Syntax is poor, please choose the correct one.
-
-> +}
