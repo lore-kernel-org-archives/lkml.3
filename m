@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764006Ab3DDTCO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 15:02:14 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:48267 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763581Ab3DDTCM (ORCPT
+	id S1764120Ab3DDTDR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 15:03:17 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:54488 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763581Ab3DDTDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 15:02:12 -0400
-Date: Thu, 4 Apr 2013 12:01:52 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jan Stancek <jstancek@redhat.com>, Jakub Jelinek <jakub@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ian Lance Taylor <iant@google.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: prevent mmap_cache race in find_vma()
-In-Reply-To: <CA+55aFwCG2h1ijWTCJ38LVcUyczDAfk72c4MVSU+_-BiLoMOOw@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1304041149030.29847@eggly.anvils>
-References: <alpine.LNX.2.00.1304041120510.26822@eggly.anvils> <CA+55aFwCG2h1ijWTCJ38LVcUyczDAfk72c4MVSU+_-BiLoMOOw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 4 Apr 2013 15:03:16 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: John Stultz <john.stultz@linaro.org>,
+        Zhangfei Gao <zhangfei.gao@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>, Michal Marek <mmarek@suse.cz>,
+        Bruce Ashfield <bruce.ashfield@windriver.com>,
+        Darren Hart <dvhart@linux.intel.com>
+Subject: [PATCH] merge_config.sh: Avoid creating unnessary source softlinks
+Date: Thu,  4 Apr 2013 12:02:59 -0700
+Message-Id: <1365102179-19176-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Apr 2013, Linus Torvalds wrote:
-> On Thu, Apr 4, 2013 at 11:35 AM, Hugh Dickins <hughd@google.com> wrote:
-> >
-> > find_vma() can be called by multiple threads with read lock
-> > held on mm->mmap_sem and any of them can update mm->mmap_cache.
-> > Prevent compiler from re-fetching mm->mmap_cache, because other
-> > readers could update it in the meantime:
-> 
-> Ack. I do wonder if we should mark the unlocked update too some way
-> (also in find_vma()), although it's probably not a problem in practice
-> since there's no way the compiler can reasonably really do anything
-> odd with it. We *could* make that an ACCESS_ONCE() write too just to
-> highlight the fact that it's an unlocked write to this optimistic data
-> structure.
+Viresh noticed when using merge_config.sh that a source softlink
+was being created even when he didn't specify the -O option.
 
-Hah, you beat me to it.
+The problem arises due to the previous commit 409f117e2d6b
+which added the -O option. Basically if -O is not specified,
+we still pass '-O=.' to the make command, which then generates
+a source softlink to ./
 
-I wanted to get Jan's patch in first, seeing as it actually fixes his
-observed issue; and it is very nice to have such a good description of
-one of those, when ACCESS_ONCE() is usually just an insurance policy.
+This patch adds an extra check so if there is no -O specified
+to merge_config.sh, we don't pass one on to make.
 
-But then I was researching the much rarer "ACCESS_ONCE(x) = y" usage
-(popular in drivers/net/wireless/ath/ath9k and kernel/rcutree* and
-sound/firewire, but few places else).
+Cc: Zhangfei Gao <zhangfei.gao@linaro.org>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Bruce Ashfield <bruce.ashfield@windriver.com>
+Cc: Darren Hart <dvhart@linux.intel.com>
+Reported-by: Viresh Kumar <viresh.kumar@linaro.org>
+Tested-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ scripts/kconfig/merge_config.sh |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-When Paul reminded us of it yesterday, I came to wonder if actually
-every use of ACCESS_ONCE in the read form should strictly be matched
-by ACCESS_ONCE whenever modifying the location.
+diff --git a/scripts/kconfig/merge_config.sh b/scripts/kconfig/merge_config.sh
+index 05274fc..81b0c61 100755
+--- a/scripts/kconfig/merge_config.sh
++++ b/scripts/kconfig/merge_config.sh
+@@ -120,10 +120,18 @@ if [ "$MAKE" = "false" ]; then
+ 	exit
+ fi
+ 
++# If we have an output dir, setup the O= argument, otherwise leave
++# it blank, since O=. will create an unnecessary ./source softlink
++OUTPUT_ARG=""
++if [ "$OUTPUT" != "." ] ; then
++	OUTPUT_ARG="O=$OUTPUT"
++fi
++
++
+ # Use the merged file as the starting point for:
+ # alldefconfig: Fills in any missing symbols with Kconfig default
+ # allnoconfig: Fills in any missing symbols with # CONFIG_* is not set
+-make KCONFIG_ALLCONFIG=$TMP_FILE O=$OUTPUT $ALLTARGET
++make KCONFIG_ALLCONFIG=$TMP_FILE $OUTPUT_ARG $ALLTARGET
+ 
+ 
+ # Check all specified config values took (might have missed-dependency issues)
+-- 
+1.7.10.4
 
-My uneducated guess is that strictly it ought to, in the sense of
-insurance policy; but that (apart from that strange split writing
-issue which came up a couple of months ago) in practice our compilers
-have not "advanced" to the point of making this an issue yet.
-
-> 
-> Anyway, applied.
-
-Thanks,
-Hugh
