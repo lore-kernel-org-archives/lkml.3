@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764120Ab3DDTDR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 15:03:17 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:54488 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763581Ab3DDTDQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 15:03:16 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>,
-        Zhangfei Gao <zhangfei.gao@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>, Michal Marek <mmarek@suse.cz>,
-        Bruce Ashfield <bruce.ashfield@windriver.com>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: [PATCH] merge_config.sh: Avoid creating unnessary source softlinks
-Date: Thu,  4 Apr 2013 12:02:59 -0700
-Message-Id: <1365102179-19176-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1764383Ab3DDTHh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 15:07:37 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45642 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1764311Ab3DDTHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 15:07:36 -0400
+Date: Thu, 4 Apr 2013 21:07:31 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Steffen Persvold <sp@numascale.com>
+Cc: Daniel J Blueman <daniel@numascale-asia.com>,
+        Tony Luck <tony.luck@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, amd, mce: Prevent potential cpu-online oops
+Message-ID: <20130404190731.GG32271@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Steffen Persvold <sp@numascale.com>,
+	Daniel J Blueman <daniel@numascale-asia.com>,
+	Tony Luck <tony.luck@intel.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	x86@kernel.org, linux-edac@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1365090720-12652-1-git-send-email-daniel@numascale-asia.com>
+ <20130404161340.GF32271@pd.tnic>
+ <515DC0FA.1040408@numascale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <515DC0FA.1040408@numascale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Viresh noticed when using merge_config.sh that a source softlink
-was being created even when he didn't specify the -O option.
+On Thu, Apr 04, 2013 at 08:05:46PM +0200, Steffen Persvold wrote:
+> It made more sense (to me) to skip the creation of MC4 all together
+> if you can't find the matching northbridge since you can't reliably
+> do the dec_and_test() reference counting on the shared bank when you
+> don't have the common NB struct for all the shared cores.
+>
+> Or am I just smoking the wrong stuff ?
 
-The problem arises due to the previous commit 409f117e2d6b
-which added the -O option. Basically if -O is not specified,
-we still pass '-O=.' to the make command, which then generates
-a source softlink to ./
+No, actually *this* explanation should've been in the commit message.
+You numascale people do crazy things with the hardware :) so explaining
+yourself more verbosely is an absolute must if anyone is to understand
+why you're changing the code.
 
-This patch adds an extra check so if there is no -O specified
-to merge_config.sh, we don't pass one on to make.
+So please write a detailed commit message why you need this change,
+don't be afraid to talk about the big picture.
 
-Cc: Zhangfei Gao <zhangfei.gao@linaro.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Bruce Ashfield <bruce.ashfield@windriver.com>
-Cc: Darren Hart <dvhart@linux.intel.com>
-Reported-by: Viresh Kumar <viresh.kumar@linaro.org>
-Tested-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- scripts/kconfig/merge_config.sh |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+Also, I'm guessing this is urgent stuff and it needs to go into 3.9?
+Yes, no? If yes, this patch should probably be tagged for stable.
 
-diff --git a/scripts/kconfig/merge_config.sh b/scripts/kconfig/merge_config.sh
-index 05274fc..81b0c61 100755
---- a/scripts/kconfig/merge_config.sh
-+++ b/scripts/kconfig/merge_config.sh
-@@ -120,10 +120,18 @@ if [ "$MAKE" = "false" ]; then
- 	exit
- fi
- 
-+# If we have an output dir, setup the O= argument, otherwise leave
-+# it blank, since O=. will create an unnecessary ./source softlink
-+OUTPUT_ARG=""
-+if [ "$OUTPUT" != "." ] ; then
-+	OUTPUT_ARG="O=$OUTPUT"
-+fi
-+
-+
- # Use the merged file as the starting point for:
- # alldefconfig: Fills in any missing symbols with Kconfig default
- # allnoconfig: Fills in any missing symbols with # CONFIG_* is not set
--make KCONFIG_ALLCONFIG=$TMP_FILE O=$OUTPUT $ALLTARGET
-+make KCONFIG_ALLCONFIG=$TMP_FILE $OUTPUT_ARG $ALLTARGET
- 
- 
- # Check all specified config values took (might have missed-dependency issues)
+Also, please redo this patch against tip:x86/ras which already has
+patches touching mce_amd.c.
+
+Oh, and lastly, needless to say, it needs to be tested on a "normal",
+i.e. !numascale AMD multinode box, in case you haven't done so yet. :-)
+
+Thanks.
+
 -- 
-1.7.10.4
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+-- 
