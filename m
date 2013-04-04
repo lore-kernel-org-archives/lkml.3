@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762626Ab3DDQFa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:05:30 -0400
-Received: from mga14.intel.com ([143.182.124.37]:46402 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760671Ab3DDQF2 convert rfc822-to-8bit (ORCPT
+	id S1762851Ab3DDQFz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:05:55 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:39452 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761620Ab3DDQFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:05:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,410,1363158000"; 
-   d="scan'208";a="222865078"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Daniel J Blueman <daniel@numascale-asia.com>,
-        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Steffen Persvold <sp@numascale.com>
-Subject: RE: [PATCH] x86, amd, mce: Prevent potential cpu-online oops
-Thread-Topic: [PATCH] x86, amd, mce: Prevent potential cpu-online oops
-Thread-Index: AQHOMUzBBVtMkyw9vUeBxGdJaaJBMJjGOPnA
-Date: Thu, 4 Apr 2013 16:04:53 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F1E09882E@ORSMSX108.amr.corp.intel.com>
-References: <1365090720-12652-1-git-send-email-daniel@numascale-asia.com>
-In-Reply-To: <1365090720-12652-1-git-send-email-daniel@numascale-asia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 4 Apr 2013 12:05:54 -0400
+Message-ID: <1365091547.8229.2.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH] lib80211: make lib80211 can be enabled independently
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Wang YanQing <udknight@gmail.com>
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 04 Apr 2013 18:05:47 +0200
+In-Reply-To: <20130404160130.GA2577@udknight> (sfid-20130404_180146_336133_A89725C9)
+References: <20130404160130.GA2577@udknight>
+	 (sfid-20130404_180146_336133_A89725C9)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+		if (WARN_ON_ONCE(!nb))
-+			goto out;
-+
+On Fri, 2013-04-05 at 00:01 +0800, Wang YanQing wrote:
+> Current we can only enable lib80211 by enable a driver
+> in tree use it which will select it, but some out tree's
+> drivers also use it, so I think it has sense to make lib80211
+> can be enabled independently.
+> 
+> A example of the out tree's drivers use lib80211 is:
+> hybird driver(wl) for Broadcom Corporation BCM43225 802.11b/g/n
 
-WARN_ON_ONCE() will drop a stack trace to the console - is that going to be useful?
+Tough luck.
 
-If you want a message perhaps:
+NACK.
 
-		if (!nb) {
-			printk_once("something interesting about not having access to north bridge\n")
-			goto out;
-		}
+johannes
 
--Tony
