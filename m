@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762851Ab3DDQFz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:05:55 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:39452 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761620Ab3DDQFy (ORCPT
+	id S1762746Ab3DDQKy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:10:54 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47149 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762468Ab3DDQKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:05:54 -0400
-Message-ID: <1365091547.8229.2.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH] lib80211: make lib80211 can be enabled independently
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Wang YanQing <udknight@gmail.com>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 04 Apr 2013 18:05:47 +0200
-In-Reply-To: <20130404160130.GA2577@udknight> (sfid-20130404_180146_336133_A89725C9)
-References: <20130404160130.GA2577@udknight>
-	 (sfid-20130404_180146_336133_A89725C9)
+	Thu, 4 Apr 2013 12:10:53 -0400
+Message-ID: <1365091846.2609.96.camel@laptop>
+Subject: Re: [PATCH 4/6] perf: Fix hw breakpoints overflow period sampling
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Stephane Eranian <eranian@google.com>
+Date: Thu, 04 Apr 2013 18:10:46 +0200
+In-Reply-To: <1362940871-24486-5-git-send-email-jolsa@redhat.com>
+References: <1362940871-24486-1-git-send-email-jolsa@redhat.com>
+	 <1362940871-24486-5-git-send-email-jolsa@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-1 
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-05 at 00:01 +0800, Wang YanQing wrote:
-> Current we can only enable lib80211 by enable a driver
-> in tree use it which will select it, but some out tree's
-> drivers also use it, so I think it has sense to make lib80211
-> can be enabled independently.
+On Sun, 2013-03-10 at 19:41 +0100, Jiri Olsa wrote:
+> The hw breakpoint pmu 'add' function is missing the
+> period_left update needed for SW events.
 > 
-> A example of the out tree's drivers use lib80211 is:
-> hybird driver(wl) for Broadcom Corporation BCM43225 802.11b/g/n
+> The perf HW breakpoint events use SW events framework
+> for to process the overflow, so it needs to be properly
+> initialized during PMU 'add' method.
 
-Tough luck.
-
-NACK.
-
-johannes
+Yeah looks about right.. 
 
