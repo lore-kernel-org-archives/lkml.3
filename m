@@ -1,171 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764231Ab3DDSBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 14:01:13 -0400
-Received: from arrakis.dune.hu ([78.24.191.176]:59917 "EHLO arrakis.dune.hu"
+	id S1764268Ab3DDSCz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 14:02:55 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55117 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1764208Ab3DDSBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 14:01:11 -0400
-From: Gabor Juhos <juhosg@openwrt.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        Gabor Juhos <juhosg@openwrt.org>
-Subject: [PATCH 1/2] pci/of: remove weak annotation of pcibios_get_phb_of_node
-Date: Thu,  4 Apr 2013 20:01:22 +0200
-Message-Id: <1365098483-26821-1-git-send-email-juhosg@openwrt.org>
-X-Mailer: git-send-email 1.7.10
+	id S1764237Ab3DDSCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 14:02:54 -0400
+Date: Thu, 4 Apr 2013 21:02:30 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Felipe Balbi <balbi@ti.com>, Thomas Winischhofer <thomas@winischhofer.net>,
+        Florian Fainelli <florian@openwrt.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>, <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 1/5 v3] USB: regroup all depends on USB within an if USB
+ block
+Message-ID: <20130404180229.GA5926@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <20130404171429.GF5129@arwen.pp.htv.fi>
+ <Pine.LNX.4.44L0.1304041339530.1324-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wRRV7LY7NUeQGEoC"
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1304041339530.1324-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to the __weak annotation in the forward declaration
-of the 'pcibios_get_phb_of_node' function GCC will emit
-a weak symbol for this functions even if the actual
-implementation does not use the weak attribute.
+--wRRV7LY7NUeQGEoC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If an architecture tries to override the function
-by providing its own implementation there will be
-multiple weak symbols with the same name in the
-object files. When the kernel is linked from the
-object files the linking order determines which
-implementation will be used in the final image.
+Hi,
 
-On x86 and on powerpc the architecture specific
-version gets used:
+On Thu, Apr 04, 2013 at 01:42:18PM -0400, Alan Stern wrote:
+> > > diff --git a/drivers/usb/misc/sisusbvga/Kconfig b/drivers/usb/misc/si=
+susbvga/Kconfig
+> > > index 30ea7ca..0d03a52 100644
+> > > --- a/drivers/usb/misc/sisusbvga/Kconfig
+> > > +++ b/drivers/usb/misc/sisusbvga/Kconfig
+> > > @@ -1,7 +1,7 @@
+> > > =20
+> > >  config USB_SISUSBVGA
+> > >  	tristate "USB 2.0 SVGA dongle support (Net2280/SiS315)"
+> > > -	depends on USB && (USB_MUSB_HDRC || USB_EHCI_HCD)
+> > > +	depends on (USB_MUSB_HDRC || USB_EHCI_HCD)
+> >=20
+> > is it just me or would everybody agree that depending on MUSB or EHCI
+> > here is wrong ?
+>=20
+> That line certainly looks like it could be removed entirely.  Perhaps=20
+> the original author can enlighten us.
+>=20
+> In any case, it's not relevant to the purpose of this patch set.
 
-  $ readelf -s  arch/x86/kernel/built-in.o drivers/pci/built-in.o \
-    vmlinux.o | grep pcibios_get_phb_of_node
-    3338: 00029b80    86 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
-    1701: 00012710    77 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
-   52072: 0002a170    86 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
-  $
+right :-)
 
-  $ powerpc-openwrt-linux-uclibc-readelf -s arch/powerpc/kernel/built-in.o \
-    drivers/pci/built-in.o vmlinux.o | grep pcibios_get_phb_of_node
-    1001: 0000cbb8    12 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
-    1484: 0001471c    88 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
-   28652: 0000d6f8    12 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
-  $
+--=20
+balbi
 
-However on MIPS, the linker puts the default
-implementation into the final image:
+--wRRV7LY7NUeQGEoC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-  $ mipsel-openwrt-linux-readelf -s arch/mips/pci/built-in.o \
-    drivers/pci/built-in.o vmlinux.o | grep pcibios_get_phb_of_node
-      86: 0000046c    12 FUNC    WEAK   DEFAULT    2 pcibios_get_phb_of_node
-    1430: 00012e2c   104 FUNC    WEAK   DEFAULT    2 pcibios_get_phb_of_node
-   31898: 0017e4ec   104 FUNC    WEAK   DEFAULT    2 pcibios_get_phb_of_node
-  $
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Rename the default implementation and remove the
-__weak annotation of that. This ensures that there
-will be no multiple weak symbols with the same name
-in the object files. In order to keep the expected
-behaviour, call the architecture specific function
-if the weak symbol is resolved.
+iQIcBAEBAgAGBQJRXcA1AAoJEIaOsuA1yqREsnoP/iBnNUZlsBWMA2z9KGTgoxcR
+mofwGrRlycyCTA4KNjmT6MbvQfyD5kIs5MirDqMj9u+mHoCYUImElR9f4squM0GC
+cGk2ve+836rvKJ6Vgm3sozT+wch+BTd8WpYWCTbodiiiuD55jjWsAxtJ1nx/ymZw
+88aiqpKmkO8DC4AAb8icT83lAeSSIDdVNHAS/rbbSeEmg3PEODTXUw9mRv/2l7NL
+KfFh/e0CRgUp4p0y3PrCowkkqu4P8k0O7daEscuBQqs8C34vl4Nky0lXKVgBR8Fp
+8BzMGl++cmPTm4nVM0xeH7EvQID1pDlXw5WZhMYjsZuD7OFsbuiP/vm7H7o3gRmj
+DDI3rEn3aKJaCmcu2nEVhkGOYaOaGkPSiPb+wdh+EEUFwEla16xNC455CCnZlDB9
+x6lNXz+3pbeolG/6u6aNEc0Yd+JA6QxuLjl4tuQEPFMJ4u03xK5MT9M2jv5GrYc5
+M0pV8fpfy/qPFxPEbmSTwejXeTVD8AI5mHB/F34JhwdUPry8u6eNAaanKI6baYix
+waG2082iLawzuR6W1qt/l4y0tyGZ+hOs4NwaqSkHpz2VUaY9wTwoAwqV4Ztp0N/z
+Y1knRrbIkbwJEJaqJdZwjmFCjcC7uM8czdUQTse+XRH2dCW2yVS9ic1NRmq6UN0d
+HjN8fZcz76+B4aq/eTXy
+=kBAJ
+-----END PGP SIGNATURE-----
 
-Also move the renamed function to the top instead
-of adding a new forward declaration for that.
-
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
----
-Notes:
-
-Unfortunately I'm not a binutils/gcc expert, so
-I don't know if this is the expected behaviour
-of those or not.
-
-Removing the __weak annotation from the forward
-declaration of 'pcibios_get_phb_of_node' in
-'include/linux/pci.h' also fixes the problem.
-
-The microblaze architecture also provides its own
-implementation. The behaviour of that is not tested
-but I assume that the linker chooses the arch specific
-implementation on that as well similarly to the
-x86/powerpc.
-
-The MIPS version is implemented in the followup
-patch.
-
-Removing the __weak annotation from the forward
-declaration of 'pcibios_get_phb_of_node' in
-'include/linux/pci.h' also fixes the problem.
-
--Gabor
----
- drivers/pci/of.c |   41 +++++++++++++++++++++++------------------
- 1 file changed, 23 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/pci/of.c b/drivers/pci/of.c
-index f092993..5794840 100644
---- a/drivers/pci/of.c
-+++ b/drivers/pci/of.c
-@@ -15,10 +15,32 @@
- #include <linux/of_pci.h>
- #include "pci.h"
- 
-+static struct device_node *__pcibios_get_phb_of_node(struct pci_bus *bus)
-+{
-+	/* This should only be called for PHBs */
-+	if (WARN_ON(bus->self || bus->parent))
-+		return NULL;
-+
-+	if (pcibios_get_phb_of_node)
-+		return pcibios_get_phb_of_node(bus);
-+
-+	/* Look for a node pointer in either the intermediary device we
-+	 * create above the root bus or it's own parent. Normally only
-+	 * the later is populated.
-+	 */
-+	if (bus->bridge->of_node)
-+		return of_node_get(bus->bridge->of_node);
-+	if (bus->bridge->parent && bus->bridge->parent->of_node)
-+		return of_node_get(bus->bridge->parent->of_node);
-+
-+	return NULL;
-+}
-+
- void pci_set_of_node(struct pci_dev *dev)
- {
- 	if (!dev->bus->dev.of_node)
- 		return;
-+
- 	dev->dev.of_node = of_pci_find_child_device(dev->bus->dev.of_node,
- 						    dev->devfn);
- }
-@@ -32,7 +54,7 @@ void pci_release_of_node(struct pci_dev *dev)
- void pci_set_bus_of_node(struct pci_bus *bus)
- {
- 	if (bus->self == NULL)
--		bus->dev.of_node = pcibios_get_phb_of_node(bus);
-+		bus->dev.of_node = __pcibios_get_phb_of_node(bus);
- 	else
- 		bus->dev.of_node = of_node_get(bus->self->dev.of_node);
- }
-@@ -42,20 +64,3 @@ void pci_release_bus_of_node(struct pci_bus *bus)
- 	of_node_put(bus->dev.of_node);
- 	bus->dev.of_node = NULL;
- }
--
--struct device_node * __weak pcibios_get_phb_of_node(struct pci_bus *bus)
--{
--	/* This should only be called for PHBs */
--	if (WARN_ON(bus->self || bus->parent))
--		return NULL;
--
--	/* Look for a node pointer in either the intermediary device we
--	 * create above the root bus or it's own parent. Normally only
--	 * the later is populated.
--	 */
--	if (bus->bridge->of_node)
--		return of_node_get(bus->bridge->of_node);
--	if (bus->bridge->parent && bus->bridge->parent->of_node)
--		return of_node_get(bus->bridge->parent->of_node);
--	return NULL;
--}
--- 
-1.7.10
-
+--wRRV7LY7NUeQGEoC--
