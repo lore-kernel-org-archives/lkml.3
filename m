@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759873Ab3DDMdp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 08:33:45 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64436 "EHLO
+	id S1760032Ab3DDMez (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 08:34:55 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64421 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759853Ab3DDMcp (ORCPT
+	by vger.kernel.org with ESMTP id S1759715Ab3DDMcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 4 Apr 2013 08:32:45 -0400
 From: Serban Constantinescu <serban.constantinescu@arm.com>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
         kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
         Dave.Butcher@arm.com
 Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH 8/8] staging: android: binder: replace types with portable ones
-Date: Thu,  4 Apr 2013 13:32:38 +0100
-Message-Id: <1365078758-28674-9-git-send-email-serban.constantinescu@arm.com>
+Subject: [PATCH 3/8] staging: android: binder: fix binder interface for 64bit compat layer
+Date: Thu,  4 Apr 2013 13:32:33 +0100
+Message-Id: <1365078758-28674-4-git-send-email-serban.constantinescu@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365078758-28674-1-git-send-email-serban.constantinescu@arm.com>
 References: <1365078758-28674-1-git-send-email-serban.constantinescu@arm.com>
@@ -22,102 +22,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since this driver is meant to be used on different types of processors
-and a portable driver should specify the size a variable expects to be
-this patch changes the types used throughout the binder interface.
+The changes in this patch will fix the binder interface for use on 64bit
+machines and stand as the base of the 64bit compat support. The changes
+apply to the structures that are passed between the kernel and
+userspace.
 
-We use "userspace" types since this header will be exported and used by
-the Android filesystem.
+Most of the  changes applied mirror the change to struct binder_version
+where there is no need for a 64bit wide protocol_version(on 64bit
+machines). The change inlines with the existing 32bit userspace(the
+structure has the same size) and simplifies the compat layer such that
+the same handler can service the BINDER_VERSION ioctl.
 
-The patch does not change in any way the functionality of the binder driver.
+Other changes fix the function prototypes for binder_thread_read/write
+and make use of kernel types as well as user-exportable ones.
+
+The changes do not affect existing 32bit ABI.
 
 Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
 ---
- drivers/staging/android/binder.h |   26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ drivers/staging/android/binder.c |    6 +++---
+ drivers/staging/android/binder.h |   16 ++++++++--------
+ 2 files changed, 11 insertions(+), 11 deletions(-)
 
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index 5794cf6..caa6dde 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -1700,7 +1700,7 @@ err_no_context_mgr_node:
+ }
+ 
+ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
+-			void __user *buffer, int size, signed long *consumed)
++			void __user *buffer, size_t size, size_t *consumed)
+ {
+ 	unsigned int cmd;
+ 	void __user *ptr = buffer + *consumed;
+@@ -2080,8 +2080,8 @@ static int binder_has_thread_work(struct binder_thread *thread)
+ 
+ static int binder_thread_read(struct binder_proc *proc,
+ 			      struct binder_thread *thread,
+-			      void  __user *buffer, int size,
+-			      signed long *consumed, int non_block)
++			      void  __user *buffer, size_t size,
++			      size_t *consumed, int non_block)
+ {
+ 	void __user *ptr = buffer + *consumed;
+ 	void __user *end = buffer + size;
 diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
-index 8789baa..f3ffacd 100644
+index dbe81ce..8012921 100644
 --- a/drivers/staging/android/binder.h
 +++ b/drivers/staging/android/binder.h
-@@ -123,10 +123,10 @@ struct binder_transaction_data {
- 		void	*ptr;	/* target descriptor of return transaction */
- 	} target;
- 	void		*cookie;	/* target object cookie */
--	unsigned int	code;		/* transaction command */
-+	__u32		code;		/* transaction command */
+@@ -48,13 +48,13 @@ enum {
+  */
+ struct flat_binder_object {
+ 	/* 8 bytes for large_flat_header. */
+-	unsigned long		type;
+-	unsigned long		flags;
++	__u32		type;
++	__u32		flags;
  
- 	/* General information about the transaction. */
--	unsigned int	flags;
-+	__u32	        flags;
- 	pid_t		sender_pid;
- 	uid_t		sender_euid;
- 	size_t		data_size;	/* number of bytes of data */
-@@ -143,7 +143,7 @@ struct binder_transaction_data {
- 			/* offsets from buffer to flat_binder_object structs */
- 			const void __user	*offsets;
- 		} ptr;
--		uint8_t	buf[8];
-+		__u8	buf[8];
- 	} data;
+ 	/* 8 bytes of data. */
+ 	union {
+ 		void __user	*binder;	/* local object */
+-		signed long	handle;		/* remote object */
++		__s32	    handle;		/* remote object */
+ 	};
+ 
+ 	/* extra data associated with local object */
+@@ -67,18 +67,18 @@ struct flat_binder_object {
+  */
+ 
+ struct binder_write_read {
+-	signed long	write_size;	/* bytes to write */
+-	signed long	write_consumed;	/* bytes consumed by driver */
++	size_t  write_size;	/* bytes to write */
++	size_t  write_consumed;	/* bytes consumed by driver */
+ 	unsigned long	write_buffer;
+-	signed long	read_size;	/* bytes to read */
+-	signed long	read_consumed;	/* bytes consumed by driver */
++	size_t  read_size;	/* bytes to read */
++	size_t  read_consumed;	/* bytes consumed by driver */
+ 	unsigned long	read_buffer;
  };
  
-@@ -153,18 +153,18 @@ struct binder_ptr_cookie {
+ /* Use with BINDER_VERSION, driver fills in fields. */
+ struct binder_version {
+ 	/* driver protocol version -- increment with incompatible change */
+-	signed long	protocol_version;
++	__s32       protocol_version;
  };
  
- struct binder_pri_desc {
--	int priority;
--	int desc;
-+	__s32 priority;
-+	__s32 desc;
- };
- 
- struct binder_pri_ptr_cookie {
--	int priority;
-+	__s32 priority;
- 	void *ptr;
- 	void *cookie;
- };
- 
- enum binder_driver_return_protocol {
--	BR_ERROR = _IOR('r', 0, int),
-+	BR_ERROR = _IOR('r', 0, __s32),
- 	/*
- 	 * int: error code
- 	 */
-@@ -178,7 +178,7 @@ enum binder_driver_return_protocol {
- 	 * binder_transaction_data: the received command.
- 	 */
- 
--	BR_ACQUIRE_RESULT = _IOR('r', 4, int),
-+	BR_ACQUIRE_RESULT = _IOR('r', 4, __s32),
- 	/*
- 	 * not currently supported
- 	 * int: 0 if the last bcATTEMPT_ACQUIRE was not successful.
-@@ -258,7 +258,7 @@ enum binder_driver_command_protocol {
- 	 * binder_transaction_data: the sent command.
- 	 */
- 
--	BC_ACQUIRE_RESULT = _IOW('c', 2, int),
-+	BC_ACQUIRE_RESULT = _IOW('c', 2, __s32),
- 	/*
- 	 * not currently supported
- 	 * int:  0 if the last BR_ATTEMPT_ACQUIRE was not successful.
-@@ -270,10 +270,10 @@ enum binder_driver_command_protocol {
- 	 * void *: ptr to transaction data received on a read
- 	 */
- 
--	BC_INCREFS = _IOW('c', 4, int),
--	BC_ACQUIRE = _IOW('c', 5, int),
--	BC_RELEASE = _IOW('c', 6, int),
--	BC_DECREFS = _IOW('c', 7, int),
-+	BC_INCREFS = _IOW('c', 4, __s32),
-+	BC_ACQUIRE = _IOW('c', 5, __s32),
-+	BC_RELEASE = _IOW('c', 6, __s32),
-+	BC_DECREFS = _IOW('c', 7, __s32),
- 	/*
- 	 * int:	descriptor
- 	 */
+ /* This is the current protocol version. */
 -- 
 1.7.9.5
 
