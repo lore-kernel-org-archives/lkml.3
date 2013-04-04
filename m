@@ -1,61 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759749Ab3DDMbo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 08:31:44 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:52429 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758406Ab3DDMbn (ORCPT
+	id S1759806Ab3DDMcN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 08:32:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38681 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759429Ab3DDMcL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 08:31:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <1365066635-2959-1-git-send-email-sgruszka@redhat.com>
-References: <1365066635-2959-1-git-send-email-sgruszka@redhat.com>
-Date: Thu, 4 Apr 2013 14:31:42 +0200
-Message-ID: <CAFTL4hx-k42Af1qhpf+0jra6HZ3LBxL=1A8J3xabzjWLAxH9GQ@mail.gmail.com>
-Subject: Re: [PATCH -tip 0/4] do not make cputime scaling in kernel
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Turner <pjt@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 4 Apr 2013 08:32:11 -0400
+Subject: Re: [PATCH RFC] kvm: add PV MMIO EVENTFD
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <20130404120825.GD17919@redhat.com>
+Date: Thu, 4 Apr 2013 14:32:08 +0200
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Christoffer Dall <c.dall@virtualopensystems.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <959E147D-EB7B-4F4B-9F84-4F1BBA98DEF8@suse.de>
+References: <20130404104846.GA6227@redhat.com> <6D40C5F1-849E-4F32-B391-E1A1BFA8C59D@suse.de> <20130404120825.GD17919@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/4 Stanislaw Gruszka <sgruszka@redhat.com>:
-> This patch series removes cputime scaling from kernel. It can be easily
-> done in user space using floating point if we provide sum_exec_runtime,
-> what patches 2/4 and 3/4 do. I have procps patch which utilize that:
->
-> http://people.redhat.com/sgruszka/procps-use-sum_exec_runtime.patch
->
-> I will post it, if this patch set will be queued.
->
-> Change affect also getrusage() and times() syscals, but I don't think
-> kernel give guarantees about utime/stime precision, in a matter of fact
-> before commit b27f03d4bdc145a09fb7b0c0e004b29f1ee555fa, we do not
-> perform any scaling and we provided raw cputime values to user space.
->
-> Providing sum_exec_runtime via proc is done against malware that utilize
-> lot of cpu time but hide itself from top program.
->
-> This affect kernels not compiled with CONFIG_VIRT_CPU_ACCOUNTING_{GEN,NATIVE},
-> if user choose to compile kernel with some of those options, he/she will
-> have more precise cputime accounting, what is documented in Kconfig.
->
 
-I don't know. I'm not convinced userland is the right place to perform
-this kind of check. The kernel perhaps doesn't give guarantee about
-utime/stime precision but now users may have got used to that scaled
-behaviour. It's also a matter of security, a malicous app can hide
-from the tick to make its activity less visible from tools like top.
+On 04.04.2013, at 14:08, Gleb Natapov wrote:
 
-It's sortof an ABI breakage to remove such an implicit protection. And
-fixing that from userspace with a lib or so won't change that fact.
+> On Thu, Apr 04, 2013 at 01:57:34PM +0200, Alexander Graf wrote:
+>> 
+>> On 04.04.2013, at 12:50, Michael S. Tsirkin wrote:
+>> 
+>>> With KVM, MMIO is much slower than PIO, due to the need to
+>>> do page walk and emulation. But with EPT, it does not have to be: we
+>>> know the address from the VMCS so if the address is unique, we can look
+>>> up the eventfd directly, bypassing emulation.
+>>> 
+>>> Add an interface for userspace to specify this per-address, we can
+>>> use this e.g. for virtio.
+>>> 
+>>> The implementation adds a separate bus internally. This serves two
+>>> purposes:
+>>> - minimize overhead for old userspace that does not use PV MMIO
+>>> - minimize disruption in other code (since we don't know the length,
+>>> devices on the MMIO bus only get a valid address in write, this
+>>> way we don't need to touch all devices to teach them handle
+>>> an dinvalid length)
+>>> 
+>>> At the moment, this optimization is only supported for EPT on x86 and
+>>> silently ignored for NPT and MMU, so everything works correctly but
+>>> slowly.
+>>> 
+>>> TODO: NPT, MMU and non x86 architectures.
+>>> 
+>>> The idea was suggested by Peter Anvin.  Lots of thanks to Gleb for
+>>> pre-review and suggestions.
+>>> 
+>>> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+>> 
+>> This still uses page fault intercepts which are orders of magnitudes slower than hypercalls. Why don't you just create a PV MMIO hypercall that the guest can use to invoke MMIO accesses towards the host based on physical addresses with explicit length encodings?
+>> 
+> It is slower, but not an order of magnitude slower. It become faster
+> with newer HW.
+> 
+>> That way you simplify and speed up all code paths, exceeding the speed of PIO exits even. It should also be quite easily portable, as all other platforms have hypercalls available as well.
+>> 
+> We are trying to avoid PV as much as possible (well this is also PV,
+> but not guest visible
 
-How about that 128bits based idea? I'm adding Paul Turner in Cc
-because he seemed to agree with doing it using 128bits maths.
+Also, how is this not guest visible? Who sets KVM_IOEVENTFD_FLAG_PV_MMIO? The comment above its definition indicates that the guest does so, so it is guest visible.
+
++/*
++ * PV_MMIO - Guest can promise us that all accesses touching this address
++ * are writes of specified length, starting at the specified address.
++ * If not - it's a Guest bug.
++ * Can not be used together with either PIO or DATAMATCH.
++ */
+
+
+Alex
+
