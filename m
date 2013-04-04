@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763601Ab3DDHN2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 03:13:28 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:46255 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763126Ab3DDHN0 (ORCPT
+	id S1763982Ab3DDHOW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 03:14:22 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8184 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763218Ab3DDHOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 03:13:26 -0400
-Date: Thu, 4 Apr 2013 09:13:09 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mingo@redhat.com, x86@kernel.org,
-        rth@twiddle.net, linux@arm.linux.org.uk, msalter@redhat.com,
-        starvik@axis.com, dhowells@redhat.com, tony.luck@intel.com,
-        benh@kernel.crashing.org, takata@linux-m32r.org, geert@linux-m68k.org,
-        james.hogan@imgtec.com, monstr@monstr.eu, ralf@linux-mips.org,
-        jonas@southpole.se, rkuo@codeaurora.org, liqin.chen@sunplusct.com,
-        davem@davemloft.net, lethal@linux-sh.org, vgupta@synopsys.com,
-        chris@zankel.net, cmetcalf@tilera.com, ysato@users.sourceforge.jp,
-        gxt@mprc.pku.edu.cn, jdike@addtoit.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH 3/7] dump_stack: consolidate dump_stack()
- implementations and unify their behaviors
-Message-ID: <20130404091309.5c9da9d3@mschwide>
-In-Reply-To: <1365016497-32033-4-git-send-email-tj@kernel.org>
-References: <1365016497-32033-1-git-send-email-tj@kernel.org>
-	<1365016497-32033-4-git-send-email-tj@kernel.org>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 4 Apr 2013 03:14:20 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 04 Apr 2013 00:13:22 -0700
+Message-ID: <515D283E.5060209@nvidia.com>
+Date: Thu, 4 Apr 2013 12:44:06 +0530
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Russell King <linux@arm.linux.org.uk>, Simon Glass <sjg@chromium.org>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Pritesh Raithatha <praithatha@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>, Andrew Chew <AChew@nvidia.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v8 10/14] ARM: tegra: Define Tegra114 CAR binding
+References: <1363956029-31873-1-git-send-email-pdeschrijver@nvidia.com> <1363956029-31873-11-git-send-email-pdeschrijver@nvidia.com> <515031E3.40007@nvidia.com> <20130403141916.GS18519@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20130403141916.GS18519@tbergstrom-lnx.Nvidia.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040407-1948-0000-0000-000004BB6BD0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  3 Apr 2013 12:14:53 -0700
-Tejun Heo <tj@kernel.org> wrote:
+On Wednesday 03 April 2013 07:49 PM, Peter De Schrijver wrote:
+> On Mon, Mar 25, 2013 at 12:15:47PM +0100, Prashant Gaikwad wrote:
+>> On Friday 22 March 2013 06:09 PM, Peter De Schrijver wrote:
+>>> The device tree binding models Tegra114 CAR (Clock And Reset) as a single
+>>> monolithic clock provider.
+>>>
+>>> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+>>> ---
+>> <snip>
+>>
+>>> +  263	cclk_lp
+>>> +  264	dfll_ref
+>>> +  265	dfll_soc
+>>> +
+>> Peter,
+>>
+>> Please remove following clock IDs from binding.
+>>
+>>> +Mux clocks
+>>> +
+> ...
+>>> +  306	clk_out_1_mux
+> Is at least used by the init list. So we can't remove that?
 
-> v2: CPU number added to the generic debug info as requested by s390
->     folks and dropped the s390 specific dump_stack().  This loses %ksp
->     from the debug message which the maintainers think isn't important
->     enough to keep the s390-specific dump_stack() implementation.
-> 
->     dump_stack_print_info() is moved to kernel/printk.c from
->     lib/dump_stack.c.  Because linkage is per objecct file,
->     dump_stack_print_info() living in the same lib file as generic
->     dump_stack() means that archs which implement custom dump_stack()
->     - at this point, only blackfin - can't use dump_stack_print_info()
->     as that will bring in the generic version of dump_stack() too.  v1
->     The v1 patch broke build on blackfin due to this issue.  The build
->     breakage was reported by Fengguang Wu.
+Init list is internal to driver and does not use device tree, so we can 
+keep that ID in enum but remove from DT binding so that we don't have to 
+change the binding later.
 
-For the s390 changes:
-Acked-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
+>
+> Cheers,
+>
+> Peter.
 
