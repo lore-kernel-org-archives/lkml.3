@@ -1,98 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763216Ab3DDQlq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:41:46 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:50886 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1762536Ab3DDQlo (ORCPT
+	id S1763344Ab3DDQl4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:41:56 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:45261 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763296Ab3DDQly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:41:44 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19zphEXOFEGh6dGgir1K8zf
-Date: Thu, 4 Apr 2013 09:41:38 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: b-cousson@ti.com, linux@arm.linux.org.uk, rnayak@ti.com, balbi@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Paul Walmsley <paul@pwsan.com>,
-        "Menon, Nishanth" <nm@ti.com>
-Subject: Re: [RFC][PATCH 1/2] ARM: OMAP4: clock: Add device tree support
- for AUXCLKs
-Message-ID: <20130404164137.GH10155@atomide.com>
-References: <1363703220-4777-1-git-send-email-rogerq@ti.com>
- <1363703220-4777-2-git-send-email-rogerq@ti.com>
- <20130403234242.GE10155@atomide.com>
- <515D2D30.3000306@ti.com>
+	Thu, 4 Apr 2013 12:41:54 -0400
+Message-ID: <515DAD4D.9020100@wwwdotorg.org>
+Date: Thu, 04 Apr 2013 10:41:49 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515D2D30.3000306@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>
+CC: Michal Marek <mmarek@suse.cz>, Grant Likely <glikely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@nvidia.com>, linux-kbuild@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Shawn Guo <shawn.guo@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Hiroshi Doyu <hdoyu@nvidia.com>
+Subject: Re: [PATCH V2 4/7] kbuild: always run gcc -E on *.dts, remove cmd_dtc_cpp
+References: <1365032098-22825-1-git-send-email-swarren@wwwdotorg.org> <1365032098-22825-4-git-send-email-swarren@wwwdotorg.org> <515CC317.2000703@elopez.com.ar>
+In-Reply-To: <515CC317.2000703@elopez.com.ar>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [130404 00:39]:
-> On 04/04/2013 02:42 AM, Tony Lindgren wrote:
-> >> --- a/arch/arm/mach-omap2/cclock44xx_data.c
-> >> +++ b/arch/arm/mach-omap2/cclock44xx_data.c
-> >> @@ -27,6 +27,7 @@
-> >>  #include <linux/clk-private.h>
-> >>  #include <linux/clkdev.h>
-> >>  #include <linux/io.h>
-> >> +#include <linux/of.h>
-> >>  
-> >>  #include "soc.h"
-> >>  #include "iomap.h"
-> >> @@ -1663,6 +1664,40 @@ static struct omap_clk omap44xx_clks[] = {
-> >>  	CLK(NULL,	"cpufreq_ck",	&dpll_mpu_ck,	CK_443X),
-> >>  };
-> >>  
-> >> +static struct clk *scrm_clks[] = {
-> >> +	&auxclk0_ck,
-> >> +	&auxclk1_ck,
-> >> +	&auxclk2_ck,
-> >> +	&auxclk3_ck,
-> >> +	&auxclk4_ck,
-> >> +	&auxclk5_ck,
-> >> +};
-> > 
-> > Hmm I don't like the idea of specifying the auxclk both in the
-> > cclock44xx_data.c and in DT..
+On 04/03/2013 06:02 PM, Emilio López wrote:
+> Hi Stephen,
 > 
-> Right, but till we have all clocks moved to DT we only need this
-> approach for general purpose clocks that are not mapped to devices
-> by hwmod.
+> El 03/04/13 20:34, Stephen Warren escribió:
+>> From: Stephen Warren <swarren@nvidia.com>
+>>
+>> Replace cmd_dtc with cmd_dtc_cpp, and delete the latter.
+>>
+>> Previously, a special file extension (.dtsp) was required to trigger
+>> the C pre-processor to run on device tree files. This was ugly. Now that
+>> previous changes have enhanced cmd_dtc_cpp to collect dependency
+>> information from both gcc -E and dtc, we can transparently run the pre-
+>> processor on all device tree files, irrespective of whether they
+>>
+> 
+> I think a line got dropped on the commit description by mistake.
 
-For v3.10, let's just make sure that USB works with DT as then
-after v3.10 we can make omap4 DT only and get rid of estimated
-7K lines of code and data. I guess this is the last piece missing
-for that, or are we also missing something else?
+Thanks for noticing. I've locally added the following line to the end of
+the description, but won't repost unless there's some other reason, or
+the series is ack'd enough to actually be applied:
 
-Can't you set up a clock alias for your device so it can find the
-auxclk when requesting it with the dev entry?
+use /include/ or #include syntax to include *.dtsi.
 
-For the DT clock driver if needed for v3.10, how about just do a
-minimal drivers/clock/omap/ that uses the standard binding?
-Then that driver can just do clk_get() from cclock44xx_data.c
-for now? And then later on we'll just move all the clocks to a
-combination of DT + /lib/firmware.
-
-> e.g. auxclk are required to be specified in DT nodes for USB PHY.
-> Without this we can't get USB host working on Panda.
-
-OK. So if the USB PHY has a dev entry, can't you just set up a
-clock alias in struct omap_clk omap44xx_clks[] for it?
- 
-> As Rajendra points out, it seems moving entire clock data to DT is not
-> going to happen soon. So this is the simplistic way things can work.
-
-Right but seems like we can get started there without moving
-them all at once.
-
-Regards,
-
-Tony
