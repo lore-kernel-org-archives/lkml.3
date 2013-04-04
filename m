@@ -1,281 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765190Ab3DDWSJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 18:18:09 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:49960 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765125Ab3DDWRi (ORCPT
+	id S1765219Ab3DDWSZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 18:18:25 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:49798 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765163Ab3DDWSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 18:17:38 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: WANG Chao <chaowang@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3 3/4] x86, kdump: Change crashkernel_high/low= to crashkernel=;high/low
-Date: Thu,  4 Apr 2013 15:17:01 -0700
-Message-Id: <1365113821-22749-5-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1365113821-22749-1-git-send-email-yinghai@kernel.org>
-References: <1365113821-22749-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Thu, 4 Apr 2013 18:18:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <1363217302-14383-4-git-send-email-yinghai@kernel.org>
+References: <1363217302-14383-1-git-send-email-yinghai@kernel.org> <1363217302-14383-4-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 4 Apr 2013 16:18:01 -0600
+Message-ID: <CAErSpo4VzBZ=fAzPm1yWEs4+09_D1=rysMf6tGgnqpVEKytSzQ@mail.gmail.com>
+Subject: Re: [PATCH v3 03/27] PCI: pci resource iterator
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ram Pai <linuxram@us.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Per hpa, use crashkernel=XM;high crashkernel=YM;low instead of
-crashkernel_hign=XM crashkernel_low=YM. As that could be extensible.
+On Wed, Mar 13, 2013 at 5:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> From: Ram Pai <linuxram@us.ibm.com>
+>
+> Currently pci_dev structure holds an array of 17 PCI resources; six base
+> BARs, one ROM BAR, four BRIDGE BARs, six sriov BARs.  This is wasteful.
+> A bridge device just needs the 4 bridge resources. A non-bridge device
+> just needs the six base resources and one ROM resource. The sriov
+> resources are needed only if the device has SRIOV capability.
+>
+> The pci_dev structure needs to be re-organized to avoid unnecessary
+> bloating.  However too much code outside the pci-bus driver, assumes the
+> internal details of the pci_dev structure, thus making it hard to
+> re-organize the datastructure.
+>
+> As a first step this patch provides generic methods to access the
+> resource structure of the pci_dev.
+>
+> Finally we can re-organize the resource structure in the pci_dev
+> structure and correspondingly update the methods.
+>
+> -v2: Consolidated iterator interface as per Bjorn's suggestion.
+> -v3: Add the idx back - Yinghai Lu
+> -v7: Change to use bitmap for searching - Yinghai Lu
+> -v8: Fix acpiphp module compiling error that is found by
+>         Steven Newbury <steve@snewbury.org.uk> - Yinghai Lu
+>
+> Signed-off-by: Ram Pai <linuxram@us.ibm.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  drivers/pci/probe.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/pci.h |   24 ++++++++++++++++++++++++
+>  2 files changed, 72 insertions(+)
+>
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 1df75f7..ac751a6 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -123,6 +123,54 @@ int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res)
+>         return -1;
+>  }
+>
+> +static void __init_res_idx_mask(unsigned long *mask, int flag)
+> +{
+> +       bitmap_zero(mask, PCI_NUM_RESOURCES);
+> +       if (flag & PCI_STD_RES)
+> +               bitmap_set(mask, PCI_STD_RESOURCES,
+> +                       PCI_STD_RESOURCE_END - PCI_STD_RESOURCES + 1);
+> +       if (flag & PCI_ROM_RES)
+> +               bitmap_set(mask, PCI_ROM_RESOURCE, 1);
+> +#ifdef CONFIG_PCI_IOV
+> +       if (flag & PCI_IOV_RES)
+> +               bitmap_set(mask, PCI_IOV_RESOURCES,
+> +                       PCI_IOV_RESOURCE_END - PCI_IOV_RESOURCES + 1);
+> +#endif
+> +       if (flag & PCI_BRIDGE_RES)
+> +               bitmap_set(mask, PCI_BRIDGE_RESOURCES,
+> +                       PCI_BRIDGE_RESOURCE_END - PCI_BRIDGE_RESOURCES + 1);
+> +}
+> +
+> +static DECLARE_BITMAP(res_idx_mask[1 << PCI_RES_BLOCK_NUM], PCI_NUM_RESOURCES);
+> +static int __init pci_res_idx_mask_init(void)
+> +{
+> +       int i;
+> +
+> +       for (i = 0; i < (1 << PCI_RES_BLOCK_NUM); i++)
+> +               __init_res_idx_mask(res_idx_mask[i], i);
+> +
+> +       return 0;
+> +}
+> +postcore_initcall(pci_res_idx_mask_init);
+> +
+> +static inline unsigned long *get_res_idx_mask(int flag)
+> +{
+> +       return res_idx_mask[flag & ((1 << PCI_RES_BLOCK_NUM) - 1)];
+> +}
+> +
+> +int pci_next_resource_idx(int i, int flag)
+> +{
+> +       i++;
+> +       if (i < PCI_NUM_RESOURCES)
+> +               i = find_next_bit(get_res_idx_mask(flag), PCI_NUM_RESOURCES, i);
+> +
+> +       if (i < PCI_NUM_RESOURCES)
+> +               return i;
+> +
+> +       return -1;
+> +}
+> +EXPORT_SYMBOL(pci_next_resource_idx);
+> +
+>  static u64 pci_size(u64 base, u64 maxbase, u64 mask)
+>  {
+>         u64 size = mask & maxbase;      /* Find the significant bits */
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index aefff8b..127a856 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -341,6 +341,30 @@ struct pci_dev {
+>  struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
+>  int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res);
+>
+> +#define PCI_STD_RES            (1<<0)
+> +#define PCI_ROM_RES            (1<<1)
+> +#define PCI_IOV_RES            (1<<2)
+> +#define PCI_BRIDGE_RES         (1<<3)
+> +#define PCI_RES_BLOCK_NUM      4
+> +
+> +#define PCI_ALL_RES            (PCI_STD_RES | PCI_ROM_RES | PCI_BRIDGE_RES | PCI_IOV_RES)
+> +#define PCI_NOSTD_RES          (PCI_ALL_RES & ~PCI_STD_RES)
+> +#define PCI_NOIOV_RES          (PCI_ALL_RES & ~PCI_IOV_RES)
+> +#define PCI_NOROM_RES          (PCI_ALL_RES & ~PCI_ROM_RES)
+> +#define PCI_NOBRIDGE_RES       (PCI_ALL_RES & ~PCI_BRIDGE_RES)
+> +#define PCI_STD_ROM_RES                (PCI_STD_RES | PCI_ROM_RES)
+> +#define PCI_STD_IOV_RES                (PCI_STD_RES | PCI_IOV_RES)
+> +#define PCI_STD_ROM_IOV_RES    (PCI_STD_RES | PCI_ROM_RES | PCI_IOV_RES)
+> +
+> +int pci_next_resource_idx(int i, int flag);
+> +
+> +#define for_each_pci_resource(dev, res, i, flag)       \
+> +       for (i = pci_next_resource_idx(-1, flag),       \
+> +               res = pci_dev_resource_n(dev, i);       \
+> +            res;                                       \
+> +            i = pci_next_resource_idx(i, flag),        \
+> +               res = pci_dev_resource_n(dev, i))
+> +
+>  static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
+>  {
+>  #ifdef CONFIG_PCI_IOV
 
--v2: according to Vivek, change delimiter to ;
--v3: let hign and low only handle simple form and it conforms to
-	description in kernel-parameters.txt
-     still keep crashkernel=X override any crashkernel=X,high
-        crashkernel=Y,low
--v4: update get_last_crashkernel returning and add more strict
-     checking in parse_crashkernel_simple() found by HATAYAMA.
+I think this turned out to be a disaster, with all the bitmaps and
+helper functions.  Filtering in the bodies of the
+for_each_pci_resource() users has *got* to be better.  That probably
+requires a wrapper struct around the struct resource.  Or possibly
+having a wrapper struct with a "type" or "flags" field would make
+filtering in for_each_pci_resources() itself cleaner to implement.
 
-Cc:HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+I think it would also help if we got rid of all the "PCI_NO*_RES"
+definitions and just had the users explicitly specify what they *do*
+want.
 
----
- Documentation/kernel-parameters.txt |   10 +--
- arch/x86/kernel/setup.c             |    6 +-
- kernel/kexec.c                      |  103 ++++++++++++++++++++++++++++--------
- 3 files changed, 89 insertions(+), 30 deletions(-)
-
-Index: linux-2.6/Documentation/kernel-parameters.txt
-===================================================================
---- linux-2.6.orig/Documentation/kernel-parameters.txt
-+++ linux-2.6/Documentation/kernel-parameters.txt
-@@ -603,16 +603,16 @@ bytes respectively. Such letter suffixes
- 			a memory unit (amount[KMG]). See also
- 			Documentation/kdump/kdump.txt for an example.
- 
--	crashkernel_high=size[KMG]
-+	crashkernel=size[KMG];high
- 			[KNL, x86_64] range could be above 4G. Allow kernel
- 			to allocate physical memory region from top, so could
- 			be above 4G if system have more than 4G ram installed.
- 			Otherwise memory region will be allocated below 4G, if
- 			available.
- 			It will be ignored if crashkernel=X is specified.
--	crashkernel_low=size[KMG]
--			[KNL, x86_64] range under 4G. When crashkernel_high= is
--			passed, kernel could allocate physical memory region
-+	crashkernel=size[KMG];low
-+			[KNL, x86_64] range under 4G. When crashkernel=X;high
-+			is passed, kernel could allocate physical memory region
- 			above 4G, that cause second kernel crash on system
- 			that require some amount of low memory, e.g. swiotlb
- 			requires at least 64M+32K low memory.  Kernel would
-@@ -620,7 +620,7 @@ bytes respectively. Such letter suffixes
- 			This one let user to specify own low range under 4G
- 			for second kernel instead.
- 			0: to disable low allocation.
--			It will be ignored when crashkernel_high=X is not used
-+			It will be ignored when crashkernel=X;high is not used
- 			or memory reserved is below 4G.
- 
- 	cs89x0_dma=	[HW,NET]
-Index: linux-2.6/arch/x86/kernel/setup.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/setup.c
-+++ linux-2.6/arch/x86/kernel/setup.c
-@@ -526,7 +526,7 @@ static void __init reserve_crashkernel_l
- 	int ret;
- 
- 	total_low_mem = memblock_mem_size(1UL<<(32-PAGE_SHIFT));
--	/* crashkernel_low=YM */
-+	/* crashkernel=YM;low */
- 	ret = parse_crashkernel_low(boot_command_line, total_low_mem,
- 						&low_size, &base);
- 	if (ret != 0) {
-@@ -539,7 +539,7 @@ static void __init reserve_crashkernel_l
- 		low_size = swiotlb_size_or_default() + (8UL<<20);
- 		auto_set = true;
- 	} else {
--		/* passed with crashkernel_low=0 ? */
-+		/* passed with crashkernel=0;low ? */
- 		if (!low_size)
- 			return;
- 	}
-@@ -579,7 +579,7 @@ static void __init reserve_crashkernel(v
- 	ret = parse_crashkernel(boot_command_line, total_mem,
- 			&crash_size, &crash_base);
- 	if (ret != 0 || crash_size <= 0) {
--		/* crashkernel_high=XM */
-+		/* crashkernel=XM;high */
- 		ret = parse_crashkernel_high(boot_command_line, total_mem,
- 				&crash_size, &crash_base);
- 		if (ret != 0 || crash_size <= 0)
-Index: linux-2.6/kernel/kexec.c
-===================================================================
---- linux-2.6.orig/kernel/kexec.c
-+++ linux-2.6/kernel/kexec.c
-@@ -1339,6 +1339,15 @@ static int __init parse_crashkernel_mem(
- 	return 0;
- }
- 
-+#define SUFFIX_HIGH 0
-+#define SUFFIX_LOW  1
-+#define SUFFIX_NULL 2
-+static __initdata char *suffix_tbl[] = {
-+	[SUFFIX_HIGH] = ";high",
-+	[SUFFIX_LOW]  = ";low",
-+	[SUFFIX_NULL] = NULL,
-+};
-+
- /*
-  * That function parses "simple" (old) crashkernel command lines like
-  *
-@@ -1360,37 +1369,80 @@ static int __init parse_crashkernel_simp
- 
- 	if (*cur == '@')
- 		*crash_base = memparse(cur+1, &cur);
--	else if (*cur != ' ' && *cur != '\0') {
--		pr_warning("crashkernel: unrecognized char\n");
--		return -EINVAL;
-+	else {
-+		int i;
-+
-+		/* check with known suffix */
-+		for (i = 0; suffix_tbl[i]; i++)
-+			if (!strncmp(cur, suffix_tbl[i], strlen(suffix_tbl[i])))
-+				return 0;
-+
-+		if (*cur != ' ' && *cur != '\0') {
-+			pr_warning("crashkernel: unrecognized char\n");
-+			return -EINVAL;
-+		}
- 	}
- 
- 	return 0;
- }
- 
--/*
-- * That function is the entry point for command line parsing and should be
-- * called from the arch-specific code.
-- */
-+static __init char *get_last_crashkernel(char *cmdline,
-+			     const char *name,
-+			     const char *suffix)
-+{
-+	char *p = cmdline, *ck_cmdline = NULL;
-+
-+	/* find crashkernel and use the last one if there are more */
-+	p = strstr(p, name);
-+	while (p) {
-+		char *end_p = strchr(p, ' ');
-+		char *q;
-+
-+		if (!end_p)
-+			end_p = p + strlen(p);
-+
-+		if (!suffix) {
-+			int i;
-+
-+			/* skip the one with any known suffix */
-+			for (i = 0; suffix_tbl[i]; i++) {
-+				q = end_p - strlen(suffix_tbl[i]);
-+				if (!strncmp(q, suffix_tbl[i],
-+					     strlen(suffix_tbl[i])))
-+					goto next;
-+			}
-+			ck_cmdline = p;
-+		} else {
-+			q = end_p - strlen(suffix);
-+			if (!strncmp(q, suffix, strlen(suffix)))
-+				ck_cmdline = p;
-+		}
-+next:
-+		p = strstr(p+1, name);
-+	}
-+
-+	if (!ck_cmdline)
-+		return NULL;
-+
-+	return ck_cmdline;
-+}
-+
- static int __init __parse_crashkernel(char *cmdline,
- 			     unsigned long long system_ram,
- 			     unsigned long long *crash_size,
- 			     unsigned long long *crash_base,
--				const char *name)
-+			     const char *name,
-+			     const char *suffix,
-+			     bool simple_only)
- {
--	char 	*p = cmdline, *ck_cmdline = NULL;
- 	char	*first_colon, *first_space;
-+	char	*ck_cmdline;
- 
- 	BUG_ON(!crash_size || !crash_base);
- 	*crash_size = 0;
- 	*crash_base = 0;
- 
--	/* find crashkernel and use the last one if there are more */
--	p = strstr(p, name);
--	while (p) {
--		ck_cmdline = p;
--		p = strstr(p+1, name);
--	}
-+	ck_cmdline = get_last_crashkernel(cmdline, name, suffix);
- 
- 	if (!ck_cmdline)
- 		return -EINVAL;
-@@ -1403,23 +1455,30 @@ static int __init __parse_crashkernel(ch
- 	 */
- 	first_colon = strchr(ck_cmdline, ':');
- 	first_space = strchr(ck_cmdline, ' ');
--	if (first_colon && (!first_space || first_colon < first_space))
--		return parse_crashkernel_mem(ck_cmdline, system_ram,
--				crash_size, crash_base);
--	else
-+	if (first_colon && (!first_space || first_colon < first_space)) {
-+		if (simple_only)
-+			return -EINVAL;
-+		else
-+			return parse_crashkernel_mem(ck_cmdline, system_ram,
-+					crash_size, crash_base);
-+	} else
- 		return parse_crashkernel_simple(ck_cmdline, crash_size,
- 				crash_base);
- 
- 	return 0;
- }
- 
-+/*
-+ * That function is the entry point for command line parsing and should be
-+ * called from the arch-specific code.
-+ */
- int __init parse_crashkernel(char *cmdline,
- 			     unsigned long long system_ram,
- 			     unsigned long long *crash_size,
- 			     unsigned long long *crash_base)
- {
- 	return __parse_crashkernel(cmdline, system_ram, crash_size, crash_base,
--					"crashkernel=");
-+					"crashkernel=", NULL, false);
- }
- 
- int __init parse_crashkernel_high(char *cmdline,
-@@ -1428,7 +1487,7 @@ int __init parse_crashkernel_high(char *
- 			     unsigned long long *crash_base)
- {
- 	return __parse_crashkernel(cmdline, system_ram, crash_size, crash_base,
--					"crashkernel_high=");
-+				"crashkernel=", suffix_tbl[SUFFIX_HIGH], true);
- }
- 
- int __init parse_crashkernel_low(char *cmdline,
-@@ -1437,7 +1496,7 @@ int __init parse_crashkernel_low(char *c
- 			     unsigned long long *crash_base)
- {
- 	return __parse_crashkernel(cmdline, system_ram, crash_size, crash_base,
--					"crashkernel_low=");
-+				"crashkernel=", suffix_tbl[SUFFIX_LOW], true);
- }
- 
- static void update_vmcoreinfo_note(void)
+Bjorn
