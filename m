@@ -1,135 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763395Ab3DDQn4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:43:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1858 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762889Ab3DDQnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:43:55 -0400
-Message-ID: <1365093819.2882.301.camel@bling.home>
-Subject: Re: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu
- implementation.
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Sethi Varun-B16395 <B16395@freescale.com>
-Cc: Joerg Roedel <joro@8bytes.org>, Yoder Stuart-B08248 <B08248@freescale.com>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>
-Date: Thu, 04 Apr 2013 10:43:39 -0600
-In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D459471@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1364500442-20927-1-git-send-email-Varun.Sethi@freescale.com>
-	 <1364500442-20927-6-git-send-email-Varun.Sethi@freescale.com>
-	 <20130402161812.GI15687@8bytes.org> <1365012091.2882.252.camel@bling.home>
-	 <C5ECD7A89D1DC44195F34B25E172658D45883B@039-SN2MPN1-013.039d.mgd.msft.net>
-	 <1365088930.2882.296.camel@bling.home>
-	 <C5ECD7A89D1DC44195F34B25E172658D459471@039-SN2MPN1-013.039d.mgd.msft.net>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1763361Ab3DDQpQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:45:16 -0400
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:39119 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762912Ab3DDQpO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 12:45:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <515D35B0.8020107@jp.fujitsu.com>
+References: <1365035906-3208-1-git-send-email-yinghai@kernel.org>
+	<1365035906-3208-2-git-send-email-yinghai@kernel.org>
+	<515D35B0.8020107@jp.fujitsu.com>
+Date: Thu, 4 Apr 2013 09:45:14 -0700
+X-Google-Sender-Auth: tLHbqZpOn5Uwvf1F9rrUWmX4LgI
+Message-ID: <CAE9FiQUi3OL0gQO8Ks-mODVvAxDV_evNqNwUGuzoa-msJU6JLQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] x86, kdump: Set crashkernel_low automatically
+From: Yinghai Lu <yinghai@kernel.org>
+To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-04 at 16:35 +0000, Sethi Varun-B16395 wrote:
-> 
-> > -----Original Message-----
-> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > Sent: Thursday, April 04, 2013 8:52 PM
-> > To: Sethi Varun-B16395
-> > Cc: Joerg Roedel; Yoder Stuart-B08248; Wood Scott-B07421;
-> > iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org; linux-
-> > kernel@vger.kernel.org; galak@kernel.crashing.org;
-> > benh@kernel.crashing.org
-> > Subject: Re: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu
-> > implementation.
-> > 
-> > On Thu, 2013-04-04 at 13:00 +0000, Sethi Varun-B16395 wrote:
-> > >
-> > > > -----Original Message-----
-> > > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > > > Sent: Wednesday, April 03, 2013 11:32 PM
-> > > > To: Joerg Roedel
-> > > > Cc: Sethi Varun-B16395; Yoder Stuart-B08248; Wood Scott-B07421;
-> > > > iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org;
-> > > > linux- kernel@vger.kernel.org; galak@kernel.crashing.org;
-> > > > benh@kernel.crashing.org
-> > > > Subject: Re: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and
-> > > > iommu implementation.
-> > > >
-> > > > On Tue, 2013-04-02 at 18:18 +0200, Joerg Roedel wrote:
-> > > > > Cc'ing Alex Williamson
-> > > > >
-> > > > > Alex, can you please review the iommu-group part of this patch?
-> > > >
-> > > > Sure, it looks pretty reasonable.  AIUI, all PCI devices are below
-> > > > some kind of host bridge that is either new and supports
-> > > > partitioning or old and doesn't.  I don't know if that's a
-> > > > visibility or isolation requirement, perhaps PCI ACS-ish.  In the
-> > > > new host bridge case, each device gets a group.  This seems not to
-> > > > have any quirks for multifunction devices though.  On AMD and Intel
-> > > > IOMMUs we test multifunction device ACS support to determine whether
-> > > > all the functions should be in the same group.  Is there any reason
-> > to trust multifunction devices on PAMU?
-> > > >
-> > > [Sethi Varun-B16395] In the case where we can partition endpoints we
-> > > can distinguish transactions based on the bus,device,function number
-> > > combination. This support is available in the PCIe controller (host
-> > > bridge).
-> > 
-> > So can x86 IOMMUs, that's the visibility aspect of IOMMU groups.
-> > Visibility alone doesn't necessarily imply that a device is isolated
-> > though.  A multifunction PCI device that doesn't expose ACS support may
-> > not isolate functions from each other.  For example a peer-to-peer DMA
-> > between functions may not be translated by the upstream IOMMU.  IOMMU
-> > groups should encompass both visibility and isolation.
-> [Sethi Varun-B16395] We can isolate the DMA access to the host based
-> on the to the pci bus,device,function number.
+On Thu, Apr 4, 2013 at 1:11 AM, HATAYAMA Daisuke
+<d.hatayama@jp.fujitsu.com> wrote:
+> (2013/04/04 9:38), Yinghai Lu wrote:
+>
+>> Index: linux-2.6/lib/swiotlb.c
+>> ===================================================================
+>> --- linux-2.6.orig/lib/swiotlb.c
+>> +++ linux-2.6/lib/swiotlb.c
+>> @@ -105,9 +105,9 @@ setup_io_tlb_npages(char *str)
+>>       if (!strcmp(str, "force"))
+>>               swiotlb_force = 1;
+>>
+>> -     return 1;
+>> +     return 0;
+>>   }
+>> -__setup("swiotlb=", setup_io_tlb_npages);
+>> +early_param("swiotlb", setup_io_tlb_npages);
+>>   /* make io_tlb_overflow tunable too? */
+>>
+>>   unsigned long swiotlb_nr_tbl(void)
+>> @@ -115,6 +115,18 @@ unsigned long swiotlb_nr_tbl(void)
+>>       return io_tlb_nslabs;
+>>   }
+>>   EXPORT_SYMBOL_GPL(swiotlb_nr_tbl);
+>> +
+>> +/* default to 64MB */
+>> +#define IO_TLB_DEFAULT_SIZE (64UL<<20)
+>> +unsigned long swiotlb_size_or_default(void)
+>> +{
+>> +     unsigned long size;
+>> +
+>> +     size = io_tlb_nslabs << IO_TLB_SHIFT;
+>> +
+>> +     return size ? size : (IO_TLB_DEFAULT_SIZE);
+>> +}
+>> +
+>>   /* Note that this doesn't work with highmem page */
+>>   static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
+>>                                     volatile void *address)
+>> @@ -188,8 +200,7 @@ int __init swiotlb_init_with_tbl(char *t
+>>   void  __init
+>>   swiotlb_init(int verbose)
+>>   {
+>> -     /* default to 64MB */
+>> -     size_t default_size = 64UL<<20;
+>> +     size_t default_size = IO_TLB_DEFAULT_SIZE;
+>>       unsigned char *vstart;
+>>       unsigned long bytes;
+>
+> The variable default_size seems no longer necessary. IO_TLB_DEFAULT_SIZE
+> should be used directly.
 
-The IOMMU can only isolate DMA that it can see.  A multifunction device
-may never expose peer-to-peer DMA to the upstream device, it's
-implementation specific.  The ACS flags allow that possibility to be
-controlled and prevented.
+Yes, but that does not hurt.
 
-> I thought that was enough to put devices in to separate iommu groups.
-> This is a PCIe controller property which allows us to partition PCIe
-> devices. But, what I can understand from your point is that we also
-> need to consider isolation at PCIe device level as well. I will check
-> for the case of multifunction devices.
-> 
-> > 
-> > > > I also find it curious what happens to the iommu group of the host
-> > > > bridge.  In the partitionable case the host bridge group is removed,
-> > > > in the non-partitionable case the host bridge group becomes the
-> > > > group for the children, removing the host bridge.  It's unique to
-> > > > PAMU so far that these host bridges are even in an iommu group (x86
-> > > > only adds pci devices), but I don't see it as necessarily wrong
-> > > > leaving it in either scenario.  Does it solve some problem to remove
-> > them from the groups?
-> > > > Thanks,
-> > > [Sethi Varun-B16395] The PCIe controller isn't a partitionable entity,
-> > > it would always be owned by the host.
-> > 
-> > Ownership of a device shouldn't play into the group context.  An IOMMU
-> > group should be defined by it's visibility and isolation from other
-> > devices.  Whether the PCIe controller is allowed to be handed to
-> > userspace is a question for VFIO.
-> [Sethi Varun-B16395] The problem is in the case, where we can't
-> partition PCIe devices. PCIe devices share the same device group as
-> the PCI controller. This becomes a problem while assigning the devices
-> to the guest, as you are required to unbind all the PCIe devices
-> including the controller from the host. PCIe controller can't be
-> unbound from the host, so we simply delete the controller iommu_group.
+>
+>>
+>> Index: linux-2.6/Documentation/kernel-parameters.txt
+>> ===================================================================
+>> --- linux-2.6.orig/Documentation/kernel-parameters.txt
+>> +++ linux-2.6/Documentation/kernel-parameters.txt
+>> @@ -596,9 +596,6 @@ bytes respectively. Such letter suffixes
+>>                       is selected automatically. Check
+>>                       Documentation/kdump/kdump.txt for further details.
+>>
+>> -     crashkernel_low=size[KMG]
+>> -                     [KNL, x86] parts under 4G.
+>> -
+>>       crashkernel=range1:size1[,range2:size2,...][@offset]
+>>                       [KNL] Same as above, but depends on the memory
+>>                       in the running system. The syntax of range is
+>> @@ -606,6 +603,18 @@ bytes respectively. Such letter suffixes
+>>                       a memory unit (amount[KMG]). See also
+>>                       Documentation/kdump/kdump.txt for an example.
+>>
+>> +     crashkernel_low=size[KMG]
+>> +                     [KNL, x86_64] range under 4G. When crashkernel= is
+>> +                     passed, kernel allocate physical memory region
+>> +                     above 4G, that cause second kernel crash on system
+>> +                     that need swiotlb later. Kernel would try to allocate
+>> +                     some region below 4G automatically. This one let
+>> +                     user to specify own low range under 4G for second
+>> +                     kernel instead.
+>
+> In fact, swiotlb caused the 2nd kernel to fail to boot this time, but in
+> general, other components that require low memory can cause the same
+> situation. I think it better to avoid the description that only swiotlb
+> can cause the 2nd kernel to fail to boot.
+>
+> So, how about this?
+>
+> ... that cause second kernel crash on system that require some amount of
+> low memory, e.g. swiotlb that requires at least 72MB low memory at
+> default. Kernel would ...
 
-Unbinding devices is a VFIO implementation, it shouldn't leak into IOMMU
-groups.  Also note that VFIO has a driver white list where we can have
-exceptions to the rule.  I recently added pciehp to that list because
-the host driver provides functionality.  Being attached to the host
-driver means the device is not accessible to the user through VFIO, but
-other devices in the group are.  Thanks,
+ok, will change that.
 
-Alex
+>
+>> +                     0: to disable low allocation on systems that do not
+>> +                     need swiotlb, that will save 72M low ram in first
+>> +                     kernel.
+>> +
+>
+> Similarly, I think it better not to say swiotlb thing here. Just:
+>
+>   0: to disable automatic low memory allocation.
 
+ok,
 
+it will be:
+
+---
+        crashkernel_low=size[KMG]
+                        [KNL, x86_64] range under 4G. When crashkernel= is
+                        passed, kernel allocate physical memory region
+                        above 4G, that cause second kernel crash on system
+                        that require some amount of low memory, e.g. swiotlb
+                        requires at least 64M+32K low memory.  Kernel would
+                        try to allocate 72M below 4G automatically.
+                        This one let user to specify own low range under 4G
+                        for second kernel instead.
+                        0: to disable low allocation.
+---
+
+Thanks
+
+Yinghai
