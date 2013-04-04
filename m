@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765561Ab3DDXvz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 19:51:55 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:33373 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765254Ab3DDXvw (ORCPT
+	id S1765103Ab3DDXr5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 19:47:57 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:43382 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1764407Ab3DDXrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 19:51:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130404160130.GA2577@udknight>
-References: <20130404160130.GA2577@udknight>
-From: Julian Calaby <julian.calaby@gmail.com>
-Date: Fri, 5 Apr 2013 10:51:30 +1100
-Message-ID: <CAGRGNgXj7mSF0Fgyjek4Xcc34N26WHtt4HMmHk7DOopaEPrYFw@mail.gmail.com>
-Subject: Re: [PATCH] lib80211: make lib80211 can be enabled independently
-To: Wang YanQing <udknight@gmail.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 4 Apr 2013 19:47:55 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: [PATCH v3 02/22] x86, microcode: Use common get_ramdisk_image()
+Date: Thu,  4 Apr 2013 16:46:06 -0700
+Message-Id: <1365119186-23487-3-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
+References: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wang,
+Use common get_ramdisk_image() to get ramdisk start phys address.
 
-On Fri, Apr 5, 2013 at 3:01 AM, Wang YanQing <udknight@gmail.com> wrote:
->
-> Current we can only enable lib80211 by enable a driver
-> in tree use it which will select it, but some out tree's
-> drivers also use it, so I think it has sense to make lib80211
-> can be enabled independently.
+We need this to get correct ramdisk adress for 64bit bzImage that
+initrd can be loaded above 4G by kexec-tools.
 
-Just as a bit of explanation for Johannes' NACK:
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+---
+ arch/x86/kernel/microcode_intel_early.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-1. The only reason lib80211 still exists is because a couple of
-in-tree drivers still use it. If this weren't the case, the code would
-have been removed a long time ago as it's been completely replaced by
-mac80211 and cfg80211. All modern drivers _must_ use mac80211 or
-cfg80211 without exception.
-2. In general, there is no official in-kernel support for
-out-of-kernel drivers, regardless of quality, status or importance.
-3. I believe that the in-tree brcmsmac driver already supports the
-Broadcom card you reference.
+diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/microcode_intel_early.c
+index d893e8e..ea57bd8 100644
+--- a/arch/x86/kernel/microcode_intel_early.c
++++ b/arch/x86/kernel/microcode_intel_early.c
+@@ -742,8 +742,8 @@ load_ucode_intel_bsp(void)
+ 	struct boot_params *boot_params_p;
+ 
+ 	boot_params_p = (struct boot_params *)__pa_nodebug(&boot_params);
+-	ramdisk_image = boot_params_p->hdr.ramdisk_image;
+-	ramdisk_size  = boot_params_p->hdr.ramdisk_size;
++	ramdisk_image = get_ramdisk_image(boot_params_p);
++	ramdisk_size  = get_ramdisk_image(boot_params_p);
+ 	initrd_start_early = ramdisk_image;
+ 	initrd_end_early = initrd_start_early + ramdisk_size;
+ 
+@@ -752,8 +752,8 @@ load_ucode_intel_bsp(void)
+ 		(unsigned long *)__pa_nodebug(&mc_saved_in_initrd),
+ 		initrd_start_early, initrd_end_early, &uci);
+ #else
+-	ramdisk_image = boot_params.hdr.ramdisk_image;
+-	ramdisk_size  = boot_params.hdr.ramdisk_size;
++	ramdisk_image = get_ramdisk_image(&boot_params);
++	ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	initrd_start_early = ramdisk_image + PAGE_OFFSET;
+ 	initrd_end_early = initrd_start_early + ramdisk_size;
+ 
+-- 
+1.8.1.4
 
-Thanks,
-
---
-Julian Calaby
-
-Email: julian.calaby@gmail.com
-Profile: http://www.google.com/profiles/julian.calaby/
-.Plan: http://sites.google.com/site/juliancalaby/
