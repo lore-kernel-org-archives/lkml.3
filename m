@@ -1,50 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764310Ab3DDSDh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 14:03:37 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:53248 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764286Ab3DDSDa (ORCPT
+	id S1764321Ab3DDSHW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 14:07:22 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:40988 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1764294Ab3DDSHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 14:03:30 -0400
+	Thu, 4 Apr 2013 14:07:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130404175017.GS9425@htj.dyndns.org>
-References: <1362897887-30808-1-git-send-email-yinghai@kernel.org>
-	<1362897887-30808-5-git-send-email-yinghai@kernel.org>
-	<20130404175017.GS9425@htj.dyndns.org>
-Date: Thu, 4 Apr 2013 11:03:30 -0700
-X-Google-Sender-Auth: 58CS00eV3uwqB3IQDRU1Ggrusl8
-Message-ID: <CAE9FiQXJjALfmRSZH_H4qAJrCV0+jQOTEk=fUHn_3+eLZ6XQfA@mail.gmail.com>
-Subject: Re: [PATCH v2 04/20] x86, ACPI: Increase override tables number limit
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+In-Reply-To: <514BAB13.3000101@gmail.com>
+References: <20130321043449.7229.81056.stgit@amt.stowe> <20130321043502.7229.43877.stgit@amt.stowe>
+ <514BAB13.3000101@gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 4 Apr 2013 12:06:58 -0600
+Message-ID: <CAErSpo4FajG4hz8ELinnFLjk_3j=gQpC9zi4jR6pi=qoOda5cg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] PCI: Handle device quirks when accessing sysfs
+ resource<N> entries
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: Myron Stowe <myron.stowe@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Xiangliang Yu <yuxiangl@marvell.com>,
+        xiangliang yu <yxlraid@gmail.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        Kay Sievers <kay@vrfy.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 4, 2013 at 10:50 AM, Tejun Heo <tj@kernel.org> wrote:
-> On Sat, Mar 09, 2013 at 10:44:31PM -0800, Yinghai Lu wrote:
-
->> @@ -648,14 +647,14 @@ void __init acpi_initrd_override(void *data, size_t size)
->>       memblock_reserve(acpi_tables_addr, acpi_tables_addr + all_tables_size);
->>       arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
+On Thu, Mar 21, 2013 at 6:51 PM, Robert Hancock <hancockrwd@gmail.com> wrote:
+> On 03/20/2013 10:35 PM, Myron Stowe wrote:
 >>
->> -     p = early_ioremap(acpi_tables_addr, all_tables_size);
->> -
+>> Sysfs includes entries to memory regions that back a PCI device's BARs.
+>> The pci-sysfs entries backing I/O Port BARs can be accessed by userspace,
+>> providing direct access to the device's registers.  File permissions
+>> prevent random users from accessing the device's registers through these
+>> files, but don't stop a privileged app that chooses to ignore the purpose
+>> of these files from doing so.
+>>
+>> There are devices with abnormally strict restrictions with respect to
+>> accessing their registers; aspects that are typically handled by the
+>> device's driver.  When these access restrictions are not followed - as
+>> when a userspace app such as "udevadm info --attribute-walk
+>> --path=/sys/..." parses though reading all the device's sysfs entries - it
+>> can cause such devices to fail.
+>>
+>> This patch introduces a quirking mechanism that can be used to detect
+>> accesses that do no meet the device's restrictions, letting a device
+>> specific method intervene and decide how to progress.
+>>
+>> Reported-by: Xiangliang Yu <yuxiangl@marvell.com>
+>> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
 >
-> It'd be nice to have a brief comment here explaining why we're mapping
-> each table separately.
+>
+> I honestly don't think there's much point in even attempting this strategy.
+> This list of devices in the quirk can't possibly be complete. It would
+> likely be easier to enumerate a white-list of devices that can deal with
+> their IO ports being read willy-nilly than a blacklist of those that don't,
+> as there's likely countless devices that fall into this category. Even if
+> they don't choke as badly as these ones do, it's quite likely that bad
+> behavior will result.
 
-ok, will copy lines from changelog to comment.
+I agree, I'm not inclined to add a bunch of code that only fixes one
+device when there are likely many others with similar problems.
 
-Thanks
+> I think there's a few things that need to be done:
+>
+> -Fix the bug in udevadm that caused it to trawl through these files
+> willy-nilly,
 
-Yinghai
+We can argue about whether this is actually a bug in udevadm, but
+either way, my opinion is that the data that udevadm prints out from
+these files is uninteresting in the same way the data from "uevent,"
+"dev," "modalias," "resource," etc. is uninteresting.  So to me, a
+udevadm change seems justified for that reason.
+
+> -Fix the kernel so that access through these files complies with the
+> kernel's mechanisms for claiming IO/memory regions to prevent access
+> conflicts (i.e. opening these files should claim the resource region they
+> refer to, and should fail with EBUSY or something if another process or a
+> kernel driver is using it).
+>
+> -Reconsider whether supporting read/write on the resource files for IO port
+> regions like these makes any sense. Obviously mmap isn't very practical for
+> IO port access on x86 but you could even do something like an ioctl for this
+> purpose. Not very many pieces of software would need to access these files
+> so it's likely OK if the API is a bit ugly. That would prevent something
+> like grepping through sysfs from generating port accesses to random devices.
+
+This is the approach I'd like to push on for a kernel fix.  I'm not a
+VM person, but if it were possible to support .mmap() in such a way
+that a handler would be called for every access to the region, we
+could easily support I/O port access that way.
+
+Along that line, I'm concerned that we may have a hole in the MEM BAR
+.mmap() path.  What happens if we have BARs from two different devices
+in the same page, and we mmap() one of them?  Does the user also get
+access to the second device's BAR on the same page?  If so, that could
+also be fixed with an .mmap() trap approach.  Performance would suck
+for these small BARs, of course.
+
+Bjorn
