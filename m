@@ -1,125 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763094Ab3DDA5j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Apr 2013 20:57:39 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:49188 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762904Ab3DDA5g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Apr 2013 20:57:36 -0400
-X-AuditID: cbfee691-b7f5f6d000002fda-e3-515ccfff14c3
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        "'Andrew Murray'" <Andrew.Murray@arm.com>
-Cc: "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        linux-samsung-soc@vger.kernel.org,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Liviu Dudau'" <Liviu.Dudau@arm.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <20130326162022.GA25625@arm.com>
- <20130327130418.GA10480@avionic-0098.mockup.avionic-design.de>
-In-reply-to: <20130327130418.GA10480@avionic-0098.mockup.avionic-design.de>
-Subject: Re: [PATCH v3] of/pci: Provide support for parsing PCI DT ranges
- property
-Date: Thu, 04 Apr 2013 09:57:34 +0900
-Message-id: <002b01ce30cf$64da6180$2e8f2480$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4q65z/zDBbhQSyS9yD4tC3iMkrxAF43cBg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPKsWRmVeSWpSXmKPExsVy+t8zY93/52MCDR6e57do/r+d1eLvpGPs
-	FkuaMiwOzH7IavHqzEY2i8sLL7FafL9hatG74CqbxabH11gtLu+aw2Zxdt5xNosZ5/cxWdy+
-	zGtxYGk7i8WKpq2MFosvLme22L1yCYvFsRlLGC2ePmhichD2WDNvDaNHS3MPm8fvX5MYPfqm
-	XGXzeLLpIqPHgk2lHneu7WHz2Lyk3uP8jIWMHt939AIVbFnF6PHzpY7H501yAbxRXDYpqTmZ
-	ZalF+nYJXBmPJp1hLNjPWzH1tXED42OuLkZODgkBE4k7184zQ9hiEhfurWfrYuTiEBJYxiix
-	p+c9C0zRtGMPmSASixgl9r66CtYhJPCLUaJrhzCIzSagJvHly2F2EFtEIEliZ/82RpAGZoGH
-	rBIbbp5hgWjIldj++SoTiM0p4C0xf8knNhBbWCBE4vfj62BDWQRUJc79fcIKYvMK2Eps/9nP
-	DmELSvyYfA9sDrOAlsTmbU2sELa8xOY1b4F6OYAuVZd49FcX4gYjieX7pkGViEjse/EO7B4J
-	gS8cEqt+bWaB2CUg8W3yIRaIXlmJTQegISEpcXDFDZYJjBKzkGyehWTzLCSbZyFZsYCRZRWj
-	aGpBckFxUnqRqV5xYm5xaV66XnJ+7iZGSOKZuIPx/gHrQ4zJQOsnMkuJJucDE1deSbyhsZmR
-	hamJqbGRuaUZacJK4rzqLdaBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhgZ/ZcLidq0BaYk
-	blkmsttD/r4Tx4/wafYLj72Ji9XYpHDhy536iLvaWpOZbqtvOFz3xnC948Gv7quS3yde3cze
-	k/t77r9t/y4kG4o0u3pGvT9z1Cxyb87BC2aaN6v6ju60KY/derZGKz/xzofIogvxN5bcNmK9
-	qyisePmxpKn5bZa9BStDuP2VWIozEg21mIuKEwGxnB2JUgMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDJsWRmVeSWpSXmKPExsVy+t9jAd3/52MCDR7M5rBo/r+d1eLvpGPs
-	FkuaMiwOzH7IavHqzEY2i8sLL7FafL9hatG74CqbxabH11gtLu+aw2Zxdt5xNosZ5/cxWdy+
-	zGtxYGk7i8WKpq2MFosvLme22L1yCYvFsRlLGC2ePmhichD2WDNvDaNHS3MPm8fvX5MYPfqm
-	XGXzeLLpIqPHgk2lHneu7WHz2Lyk3uP8jIWMHt939AIVbFnF6PHzpY7H501yAbxRDYw2GamJ
-	KalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBfKimUJeaUAoUC
-	EouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzHk06w1iwn7di6mvjBsbHXF2MnBwSAiYS
-	0449ZIKwxSQu3FvP1sXIxSEksIhRYu+rq8wgCSGBX4wSXTuEQWw2ATWJL18Os4PYIgJJEjv7
-	tzGCNDALPGSV2HDzDAtEQ67E9s9XwaZyCnhLzF/yiQ3EFhYIkfj9+DrYUBYBVYlzf5+wgti8
-	ArYS23/2s0PYghI/Jt8Dm8MsoCWxeVsTK4QtL7F5zVugXg6gS9UlHv3VhbjBSGL5vmlQJSIS
-	+168Y5zAKDQLyaRZSCbNQjJpFpKWBYwsqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGC09oz
-	6R2MqxosDjEKcDAq8fCu8I8JFGJNLCuuzD3EKMHBrCTCu2ElUIg3JbGyKrUoP76oNCe1+BBj
-	MtCjE5mlRJPzgSk3ryTe0NjEzMjSyMzCyMTcnDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4
-	pRoYtTObFpYKv+H7svP/4QJxvf97NYLy3cN01rbx6h7YyC0n7C5x3Uh1d230sXQGd2H7aT8V
-	zPtYVUXrrJ/4x4ttfRn3ceG0OzYd1Txyj65c2nrrfN1pxj2WFnsfuGbdZ2Wewh28RJvtQsPx
-	ulVte/fMYZk5m5G5LuqnS+fKZNem1ouhW749N+JUYinOSDTUYi4qTgQAIjrzEa8DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1763130Ab3DDA6G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Apr 2013 20:58:06 -0400
+Received: from mga11.intel.com ([192.55.52.93]:10742 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762885Ab3DDA6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Apr 2013 20:58:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,404,1363158000"; 
+   d="scan'208";a="316604815"
+Message-ID: <515CD016.6050202@intel.com>
+Date: Thu, 04 Apr 2013 08:57:58 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Alex Shi <alex.shi@intel.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch v6 0/21] sched: power aware scheduling
+References: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1364654108-16307-1-git-send-email-alex.shi@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 27, 2013 10:04 PM, Thierry Reding wrote:
+On 03/30/2013 10:34 PM, Alex Shi wrote:
+> This patch set implement/consummate the rough power aware scheduling
+> proposal: https://lkml.org/lkml/2012/8/13/139.
+
+BTW, this task packing feature causes more cpu freq boost because part
+cores idle. And since cpu freq boost is more power efficient.
+that is much helpful on performance/watts. like the 16/32 thread kbuild
+results show:
+
+         powersaving              performance
+> x = 2    189.416 /228 23          193.355 /209 24
+> x = 4    215.728 /132 35          219.69 /122 37
+> x = 8    244.31 /75 54            252.709 /68 58
+> x = 16   299.915 /43 77           259.127 /58 66
+> x = 32   341.221 /35 83           323.418 /38 81
+>
+> data explains: 189.416 /228 23
+> 	189.416: average Watts during compilation
+> 	228: seconds(compile time)
+> 	23:  scaled performance/watts = 1000000 / seconds / watts
+>
 > 
-> On Tue, Mar 26, 2013 at 04:20:23PM +0000, Andrew Murray wrote:
-> > This patch factors out common implementation patterns to reduce overall kernel
-> > code and provide a means for host bridge drivers to directly obtain struct
-> > resources from the DT's ranges property without relying on architecture specific
-> > DT handling. This will make it easier to write archiecture independent host bridge
-> > drivers and mitigate against further duplication of DT parsing code.
-> >
-> > This patch can be used in the following way:
-> >
-> > 	struct of_pci_range_parser parser;
-> > 	struct of_pci_range range;
-> >
-> > 	if (of_pci_range_parser(&parser, np))
-> > 		; //no ranges property
-> >
-> > 	for_each_of_pci_range(&parser, &range) {
-> >
-> > 		/*
-> > 			directly access properties of the address range, e.g.:
-> > 			range.pci_space, range.pci_addr, range.cpu_addr,
-> > 			range.size, range.flags
-> >
-> > 			alternatively obtain a struct resource, e.g.:
-> > 			struct resource res;
-> > 			of_pci_range_to_resource(&range, np, &res);
-> > 		*/
-> > 	}
-> >
-> > Additionally the implementation takes care of adjacent ranges and merges them
-> > into a single range (as was the case with powerpc and microblaze).
-> >
-> > The modifications to microblaze, mips and powerpc have not been tested.
-> >
-> > Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> > Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> The code also on this git tree:
+> https://github.com/alexshi/power-scheduling.git power-scheduling
 > 
-> Tested-by: Thierry Reding <thierry.reding@avionic-design.de>
+> The patch defines a new policy 'powersaving', that try to pack tasks on
+> each sched groups level. Then it can save much power when task number in
+> system is no more than LCPU number.
+> 
+> As mentioned in the power aware scheduling proposal, Power aware
+> scheduling has 2 assumptions:
+> 1, race to idle is helpful for power saving
+> 2, less active sched groups will reduce cpu power consumption
+> 
+> The first assumption make performance policy take over scheduling when
+> any group is busy.
+> The second assumption make power aware scheduling try to pack disperse
+> tasks into fewer groups.
+> 
+> Compare to the removed power balance, this power balance has the following
+> advantages:
+> 1, simpler sys interface
+> 	only 2 sysfs interface VS 2 interface for each of LCPU
+> 2, cover on all cpu topology 
+> 	effect on all domain level VS only work on SMT/MC domain
+> 3, Less task migration 
+> 	mutual exclusive perf/power LB VS balance power on balanced performance
+> 4, considered system load threshing 
+> 	yes VS no
+> 5, transitory task considered       
+> 	yes VS no
+> 
+> BTW, like sched numa, Power aware scheduling is also a kind of cpu
+> locality oriented scheduling.
+> 
+> Thanks comments/suggestions from PeterZ, Linus Torvalds, Andrew Morton,
+> Ingo, Len Brown, Arjan, Borislav Petkov, PJT, Namhyung Kim, Mike
+> Galbraith, Greg, Preeti, Morten Rasmussen, Rafael etc.
+> 
+> Since the patch can perfect pack tasks into fewer groups, I just show
+> some performance/power testing data here:
+> =========================================
+> $for ((i = 0; i < x; i++)) ; do while true; do :; done  &   done
+> 
+> On my SNB laptop with 4 core* HT: the data is avg Watts
+>          powersaving     performance
+> x = 8	 72.9482 	 72.6702
+> x = 4	 61.2737 	 66.7649
+> x = 2	 44.8491 	 59.0679
+> x = 1	 43.225 	 43.0638
+> 
+> on SNB EP machine with 2 sockets * 8 cores * HT:
+>          powersaving     performance
+> x = 32	 393.062 	 395.134
+> x = 16	 277.438 	 376.152
+> x = 8	 209.33 	 272.398
+> x = 4	 199 	         238.309
+> x = 2	 175.245 	 210.739
+> x = 1	 174.264 	 173.603
+> 
+> 
+> tasks number keep waving benchmark, 'make -j <x> vmlinux'
+> on my SNB EP 2 sockets machine with 8 cores * HT:
+>          powersaving              performance
+> x = 2    189.416 /228 23          193.355 /209 24
+> x = 4    215.728 /132 35          219.69 /122 37
+> x = 8    244.31 /75 54            252.709 /68 58
+> x = 16   299.915 /43 77           259.127 /58 66
+> x = 32   341.221 /35 83           323.418 /38 81
+> 
+> data explains: 189.416 /228 23
+> 	189.416: average Watts during compilation
+> 	228: seconds(compile time)
+> 	23:  scaled performance/watts = 1000000 / seconds / watts
+> The performance value of kbuild is better on threads 16/32, that's due
+> to lazy power balance reduced the context switch and CPU has more boost 
+> chance on powersaving balance.
+> 
+> Some performance testing results:
+> ---------------------------------
+> 
+> Tested benchmarks: kbuild, specjbb2005, oltp, tbench, aim9,
+> hackbench, fileio-cfq of sysbench, dbench, aiostress, multhreads
+> loopback netperf. on my core2, nhm, wsm, snb, platforms.
+> 
+> results:
+> A, no clear performance change found on 'performance' policy.
+> B, specjbb2005 drop 5~7% on both of policy whenever with openjdk or
+>    jrockit on powersaving polocy
+> C, hackbench drops 40% with powersaving policy on snb 4 sockets platforms.
+> Others has no clear change.
+> 
+> ===
+> Changelog:
+> V6 change:
+> a, remove 'balance' policy.
+> b, consider RT task effect in balancing
+> c, use avg_idle as burst wakeup indicator
+> d, balance on task utilization in fork/exec/wakeup.
+> e, no power balancing on SMT domain.
+> 
+> V5 change:
+> a, change sched_policy to sched_balance_policy
+> b, split fork/exec/wake power balancing into 3 patches and refresh
+> commit logs
+> c, others minors clean up
+> 
+> V4 change:
+> a, fix few bugs and clean up code according to Morten Rasmussen, Mike
+> Galbraith and Namhyung Kim. Thanks!
+> b, take Morten Rasmussen's suggestion to use different criteria for
+> different policy in transitory task packing.
+> c, shorter latency in power aware scheduling.
+> 
+> V3 change:
+> a, engaged nr_running and utilisation in periodic power balancing.
+> b, try packing small exec/wake tasks on running cpu not idle cpu.
+> 
+> V2 change:
+> a, add lazy power scheduling to deal with kbuild like benchmark.
+> 
+> 
+> -- Thanks Alex
+> [patch v6 01/21] Revert "sched: Introduce temporary FAIR_GROUP_SCHED
+> [patch v6 02/21] sched: set initial value of runnable avg for new
+> [patch v6 03/21] sched: only count runnable avg on cfs_rq's
+> [patch v6 04/21] sched: add sched balance policies in kernel
+> [patch v6 05/21] sched: add sysfs interface for sched_balance_policy
+> [patch v6 06/21] sched: log the cpu utilization at rq
+> [patch v6 07/21] sched: add new sg/sd_lb_stats fields for incoming
+> [patch v6 08/21] sched: move sg/sd_lb_stats struct ahead
+> [patch v6 09/21] sched: scale_rt_power rename and meaning change
+> [patch v6 10/21] sched: get rq potential maximum utilization
+> [patch v6 11/21] sched: detect wakeup burst with rq->avg_idle
+> [patch v6 12/21] sched: add power aware scheduling in fork/exec/wake
+> [patch v6 13/21] sched: using avg_idle to detect bursty wakeup
+> [patch v6 14/21] sched: packing transitory tasks in wakeup power
+> [patch v6 15/21] sched: add power/performance balance allow flag
+> [patch v6 16/21] sched: pull all tasks from source group
+> [patch v6 17/21] sched: no balance for prefer_sibling in power
+> [patch v6 18/21] sched: add new members of sd_lb_stats
+> [patch v6 19/21] sched: power aware load balance
+> [patch v6 20/21] sched: lazy power balance
+> [patch v6 21/21] sched: don't do power balance on share cpu power
+> 
 
-It works properly with Exynos5440.
 
-Tested-by: Jingoo Han <jg1.han@samsung.com>
-
-
-
+-- 
+Thanks
+    Alex
