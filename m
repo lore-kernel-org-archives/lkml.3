@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763355Ab3DDQxR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:53:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54565 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763133Ab3DDQxQ (ORCPT
+	id S1763433Ab3DDQyv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:54:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56628 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763188Ab3DDQys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:53:16 -0400
-Date: Thu, 4 Apr 2013 09:53:11 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: next-20130325 - INFO: trying to register non-static key.
-Message-ID: <20130404165311.GP9425@htj.dyndns.org>
-References: <11740.1364321163@turing-police.cc.vt.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <11740.1364321163@turing-police.cc.vt.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 4 Apr 2013 12:54:48 -0400
+Message-ID: <1365094476.2609.123.camel@laptop>
+Subject: Re: [PATCH v2 2/3] mutex: add support for reservation style locks,
+ v2
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        linux-arch@vger.kernel.org, daniel.vetter@ffwll.ch, x86@kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, robclark@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu, linux-media@vger.kernel.org
+Date: Thu, 04 Apr 2013 18:54:36 +0200
+In-Reply-To: <20130404133123.GW2228@phenom.ffwll.local>
+References: <20130228102452.15191.22673.stgit@patser>
+	 <20130228102502.15191.14146.stgit@patser>
+	 <1364900432.18374.24.camel@laptop> <515AF1C1.7080508@canonical.com>
+	 <1364921954.20640.22.camel@laptop> <1365076908.2609.94.camel@laptop>
+	 <20130404133123.GW2228@phenom.ffwll.local>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Valdis.
+On Thu, 2013-04-04 at 15:31 +0200, Daniel Vetter wrote:
+> Well, it was a good read and I'm rather happy that we agree on the
+> ww_ctx
+> thing (whatever it's called in the end), even though we have slightly
+> different reasons for it.
 
-On Tue, Mar 26, 2013 at 02:06:03PM -0400, Valdis Kletnieks wrote:
-> Seen in the dmesg for next-20130325, but looks like it's been doing
-> it since at least next-20130218.
-> 
-> [   50.162584] dell_wmi: Received unknown WMI event (0x11)
-> [   51.167629] INFO: trying to register non-static key.
-> [   51.167636] the code is fine but needs lockdep annotation.
-> [   51.167639] turning off the locking correctness validator.
-> [   51.167644] Pid: 594, comm: kworker/0:3 Tainted: G        W  O 3.9.0-rc4-next-20130325 #67
-> [   51.167646] Call Trace:
-> [   51.167656]  [<ffffffff81073847>] register_lock_class+0x108/0x2ba
-> [   51.167662]  [<ffffffff81075113>] __lock_acquire+0x126/0xde2
-> [   51.167667]  [<ffffffff810755de>] ? __lock_acquire+0x5f1/0xde2
-> [   51.167671]  [<ffffffff81076111>] lock_acquire+0xc7/0x14a
-> [   51.167677]  [<ffffffff810498dd>] ? process_one_work+0x1fd/0x4ae
-> [   51.167681]  [<ffffffff81049949>] process_one_work+0x269/0x4ae
-> [   51.167686]  [<ffffffff810498dd>] ? process_one_work+0x1fd/0x4ae
-> [   51.167691]  [<ffffffff8104ae2c>] worker_thread+0x2d6/0x3dc
-> [   51.167696]  [<ffffffff8104ab56>] ? rescuer_thread+0x343/0x343
-> [   51.167701]  [<ffffffff81050394>] kthread+0x9d/0xa5
-> [   51.167706]  [<ffffffff810502f7>] ? __kthread_parkme+0x60/0x60
-> [   51.167712]  [<ffffffff815fdf6c>] ret_from_fork+0x7c/0xb0
-> [   51.167717]  [<ffffffff810502f7>] ? __kthread_parkme+0x60/0x60
-> 
-> 'git blame' doesn't seem to shout anything.  Commit 112202d90 touched code
-> in that area semi-recently, but I don't actually see a problem with it.
-> 
-> (I admit not being sure how long this has been an issue - discovered I
-> had a local config screw-up that meant lockdep wasn't on for quite some
-> time).
+Yeah, I tried various weirdness to get out from under it, but the whole
+progress/fairness thing made it rather hard. Ideally you'd be able to
+use some existing scheduler state since its the same goal, but the
+whole wakeup-retry muck makes that hard.
 
-It's likely caused by the workqueue user not initializing the work
-item properly; unfortunately, I can't tell who the offending user is
-from the trace.  Can you please reproduce the problem on the following
-git branch and report the output?
+> I don't really have a useful idea to make the retry handling for users
+> more rusty-compliant though, and I'm still unhappy with all current
+> naming
+> proposals ;-)
 
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-unify-dump
+Ah, naming,.. yeah I'm not too terribly attached to most of them. I
+just want to avoid something that's reasonably well known to mean
+something different.
 
-Thanks!
+Furthermore, since we use the wound/wait symmetry breaking it would
+make sense for that to appear somewhere in the name.
 
--- 
-tejun
+
+
