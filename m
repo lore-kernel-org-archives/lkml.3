@@ -1,112 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765087Ab3DDXRV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 19:17:21 -0400
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:53742 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765062Ab3DDXRT (ORCPT
+	id S1765210Ab3DDXTG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 19:19:06 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:55435 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765142Ab3DDXTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 19:17:19 -0400
-Message-ID: <515E09FA.1090408@gmail.com>
-Date: Thu, 04 Apr 2013 18:17:14 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Michal Marek <mmarek@suse.cz>, Grant Likely <glikely@secretlab.ca>,
-        arm@kernel.org, Shawn Guo <shawn.guo@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, linux-kbuild@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V2 1/7] kbuild: create an "include chroot" for DT bindings
-References: <1365032098-22825-1-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1365032098-22825-1-git-send-email-swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Apr 2013 19:19:04 -0400
+Date: Fri, 5 Apr 2013 10:18:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nathan Zimmer <nzimmer@sgi.com>
+Subject: Re: linux-next: manual merge of the akpm tree with the vfs tree
+Message-Id: <20130405101853.769d3b915cacd8a4863b7c19@canb.auug.org.au>
+In-Reply-To: <20130404081011.GO21522@ZenIV.linux.org.uk>
+References: <20130404172648.27834d12cbb68338f4b89482@canb.auug.org.au>
+	<20130403235634.6bc72c39.akpm@linux-foundation.org>
+	<20130404000253.2fc9c75d.akpm@linux-foundation.org>
+	<20130404081011.GO21522@ZenIV.linux.org.uk>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__5_Apr_2013_10_18_53_+1100_q0CGuO8FIiErykVS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 06:34 PM, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
-> 
-> The recent dtc+cpp support allows header files and C pre-processor
-> defines/macros to be used when compiling device tree files. These
-> headers will typically define various constants that are part of the
-> device tree bindings.
-> 
-> The original patch which set up the dtc+cpp include path only considered
-> using those headers from device tree files. However, most are also
-> useful for kernel code which needs to interpret the device tree.
-> 
-> In both the DT files and the kernel, I'd like to include the DT-related
-> headers in the same way, for example, <dt-bindings/gpio/tegra-gpio.h>.
-> That will simplify any text which discusses the DT header locations.
-> 
-> Creating a <dt-bindings/> for kernel source to use is as simple as
-> placing files into include/dt-bindings/.
-> 
-> However, when compiling DT files, the include path should be restricted
-> so that only the dt-bindings path is available; arbitrary kernel headers
-> shouldn't be exposed. For this reason, create a specific include
-> directory for use by dtc+cpp, and symlink dt-bindings from there to the
-> actual location of include/dt-bindings/. For want of a better location,
-> place this "include chroot" into the existing dts/ directory.
-> 
-> arch/*/boot/dts/include/dt-bindings -> ../../../../../include/dt-bindings
-> 
-> Some headers used by device tree files may not be useful to the kernel;
-> they may be used simply to aid in constructing the DT file (e.g. macros
-> to create a node), but not define any information that the kernel needs
-> to share. These may be placed directly into arch/*/boot/dts/ along with
-> the DT files themselves.
-> 
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Hiroshi Doyu <hdoyu@nvidia.com>
-> Acked-by: Michal Marek <mmarek@suse.cz>
-> Acked-by: Shawn Guo <shawn.guo@linaro.org>
-> Acked-by: Rob Herring <rob.herring@calxeda.com>
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> Grant, Rob, Michal, I'm hoping for acks or comments from you so this
-> series can be placed into a topic branch in the arm-soc repo, for others
-> to build on during the 3.10 kernel cycle. Thanks.
+--Signature=_Fri__5_Apr_2013_10_18_53_+1100_q0CGuO8FIiErykVS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Well, you have mine here and the rest looks fine, so add it to the others.
+Hi Al,
 
-Rob
+On Thu, 4 Apr 2013 09:10:11 +0100 Al Viro <viro@ZenIV.linux.org.uk> wrote:
+>
+> On Thu, Apr 04, 2013 at 12:02:53AM -0700, Andrew Morton wrote:
+>=20
+> > > Well perhaps the vfs tree should start paying some attention to the
+> > > rest of the world, particularly after -rc5.
+> >=20
+> > I can't even find this "lift sb_start_write() out of ->write()".  Not o=
+n fsdevel,
+> > not on lkml.  What the heck is it and why was it so important?
+>=20
+> Deadlocks around splice; see the threads re overlayfs/unionmount/aufs and
+> deadlocks in their copyup implementations.  See also XFS freeze-related
+> deadlocks, etc.
+>=20
+> The thing is, sb_start_write() is pretty high in locking hierarchy (outsi=
+de
+> ->i_mutex, etc.), but ->splice_write() and friends had it buried pretty
+> deep.  With distinctly unpleasant results, including ->..._write() instan=
+ces
+> using generic ones (which took the lock) *and* doing some IO outside of t=
+hose
+> (ext4, for example; ocfs2 also looked fishy in that respect, IIRC).
+>=20
+> The obvious solution is to lift taking that lock out of the methods, which
+> had been done.  It had been discussed on fsdevel and sat in #experimental=
+ for
+> several weeks; time for it to go into #for-next.
 
-> 
-> This first patch was previously posted separately as V2. I'm including
-> it here to keep it with the whole series. I hope this series can be
-> applied as a topic branch in arm-soc.
-> ---
->  arch/arm/boot/dts/include/dt-bindings |    1 +
->  scripts/Makefile.lib                  |    2 +-
->  2 files changed, 2 insertions(+), 1 deletion(-)
->  create mode 120000 arch/arm/boot/dts/include/dt-bindings
-> 
-> diff --git a/arch/arm/boot/dts/include/dt-bindings b/arch/arm/boot/dts/include/dt-bindings
-> new file mode 120000
-> index 0000000..08c00e4
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/include/dt-bindings
-> @@ -0,0 +1 @@
-> +../../../../../include/dt-bindings
-> \ No newline at end of file
-> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-> index 07125e6..af35521 100644
-> --- a/scripts/Makefile.lib
-> +++ b/scripts/Makefile.lib
-> @@ -158,7 +158,7 @@ ld_flags       = $(LDFLAGS) $(ldflags-y)
->  
->  dtc_cpp_flags  = -Wp,-MD,$(depfile) -nostdinc                            \
->  		 -I$(srctree)/arch/$(SRCARCH)/boot/dts                   \
-> -		 -I$(srctree)/arch/$(SRCARCH)/include/dts                \
-> +		 -I$(srctree)/arch/$(SRCARCH)/boot/dts/include           \
->  		 -undef -D__DTS__
->  
->  # Finds the multi-part object the current object will be linked into
-> 
+It would have been useful to put something like that in the commit message =
+...
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__5_Apr_2013_10_18_53_+1100_q0CGuO8FIiErykVS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRXgpdAAoJEECxmPOUX5FEfVkP/RUeL6JuiTZSoUXc02z0PcdN
+hS26kfzYp6Ziz0MUHx/rauzVqNm6+swCQqnwc8v4smzc9acBIMhIvpSl3UuAw4HO
+T673B7MYqLyJ0WwsX21ChZ9wETGY2BIXCE+mzVtAv+7LPRVX0ZRFBBgyCnsBgn6n
+v7oIIBH76eM2ZDY4f+aUNaxlVVdLlfLy3liG+vpal3pRa5WLfXxvyL3Ax0iYGRJk
+V3Td7/j175gWyOs93srej7ryNYVpk1e0BRB7wnXHEZu2HEAmW8IsDrUZYVJEQR6D
+71p06t+Vl7KzG8+R6DjKMnRIOT/iLjv5OkrKkYopLoX0wzmRwcj5vwvNAcdOJAmc
+DdVcgsqmKIKIfV4gUhImBLhF/S+NnQv3m3DegRC1j4MpeKczZIRaeuhT73H1RjzA
+TcevApShCmp3YHEHSvjilBbPBPwjEnu4I2V4M5TzX/EmtTnJtEc5Unu0lJ5eu/+N
+5LXUxWoU6EUg0+kCrfCNq3cFXLGy7jAXaoiB2z4zVA7LswvHTbqF5Vm8DNjJwuQ+
+qF0dhdsORObCrFL7SBBxqRFp/CM0UhPv7I7rmcqReHxbFwSbuZ5fDZKWzvbzxRKM
+WKoXNxmnGh8LejrPrdExnm77dS61W9uWbv8Q9XZ9x8Z8PQoch5QihZBB1Dzva6nA
+YLWeGP/utc+7lrv+dZXV
+=Yn9n
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__5_Apr_2013_10_18_53_+1100_q0CGuO8FIiErykVS--
