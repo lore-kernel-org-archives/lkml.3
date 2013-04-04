@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764077Ab3DDHfo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 03:35:44 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:35561 "EHLO
+	id S1764134Ab3DDHfy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 03:35:54 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:35594 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764040Ab3DDHfk (ORCPT
+	with ESMTP id S1764040Ab3DDHfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 03:35:40 -0400
+	Thu, 4 Apr 2013 03:35:48 -0400
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: target-devel <target-devel@vger.kernel.org>
 Cc: linux-rdma <linux-rdma@vger.kernel.org>,
@@ -15,9 +15,9 @@ Cc: linux-rdma <linux-rdma@vger.kernel.org>,
         Roland Dreier <roland@kernel.org>, Or Gerlitz <ogerlitz@mellanox.com>,
         Alexander Nezhinsky <alexandern@mellanox.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [RFC-v3 2/9] iscsi-target: Add iscsit_transport API template
-Date: Thu,  4 Apr 2013 07:24:09 +0000
-Message-Id: <1365060256-21506-3-git-send-email-nab@linux-iscsi.org>
+Subject: [RFC-v3 8/9] iscsi-target: Add iser network portal attribute
+Date: Thu,  4 Apr 2013 07:24:15 +0000
+Message-Id: <1365060256-21506-9-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1365060256-21506-1-git-send-email-nab@linux-iscsi.org>
 References: <1365060256-21506-1-git-send-email-nab@linux-iscsi.org>
@@ -27,202 +27,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Add basic struct iscsit_transport API template to allow iscsi-target for
-running with external transport modules using existing iscsi_target_core.h
-code.
+This patch adds a new network portal attribute for iser, that lives
+under existing iscsi-target configfs layout at:
 
-For all external modules, this calls try_module_get() and module_put()
-to obtain + release an external iscsit_transport module reference count.
+   /sys/kernel/config/target/iscsi/$TARGETNAME/$TPGT/np/$PORTAL/iser
 
-Also include the iscsi-target symbols necessary in iscsi_transport.h to
-allow external transport modules to function.
+When lio_target_np_store_iser() is enabled, iscsit_tpg_add_network_portal()
+will attempt to start an rdma_cma network portal for iser-target, only if
+the external ib_isert module transport has been loaded.
 
-v3 changes:
-- Add iscsit_build_reject export for ISTATE_SEND_REJECT usage
-
-v2 changes:
-
-- Drop unnecessary export of iscsit_get_transport + iscsit_put_transport (roland)
-- Add ->iscsit_queue_data_in() to remove extra context switch on RDMA_WRITE
-- Add ->iscsit_queue_status() to remove extra context switch on IB_SEND status
-- Add ->iscsit_get_dataout() to remove extra context switch on RDMA_READ
-- Drop ->iscsit_free_cmd()
-- Drop ->iscsit_unmap_cmd()
-- Rename iscsit_create_transport() -> iscsit_register_transport() (andy)
-- Rename iscsit_destroy_transport() -> iscsit_unregister_transport() (andy)
+When disabled, iscsit_tpg_del_network_portal() will cease iser login service
+on the network portal, and release any external ib_isert module reference.
 
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/iscsi/Makefile                 |    3 +-
- drivers/target/iscsi/iscsi_target_transport.c |   55 ++++++++++++++++
- include/target/iscsi/iscsi_transport.h        |   83 +++++++++++++++++++++++++
- 3 files changed, 140 insertions(+), 1 deletions(-)
- create mode 100644 drivers/target/iscsi/iscsi_target_transport.c
- create mode 100644 include/target/iscsi/iscsi_transport.h
+ drivers/target/iscsi/iscsi_target_configfs.c |   75 ++++++++++++++++++++++++++
+ 1 files changed, 75 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/target/iscsi/Makefile b/drivers/target/iscsi/Makefile
-index 5b9a2cf..13a9240 100644
---- a/drivers/target/iscsi/Makefile
-+++ b/drivers/target/iscsi/Makefile
-@@ -15,6 +15,7 @@ iscsi_target_mod-y +=		iscsi_target_parameters.o \
- 				iscsi_target_util.o \
- 				iscsi_target.o \
- 				iscsi_target_configfs.o \
--				iscsi_target_stat.o
-+				iscsi_target_stat.o \
-+				iscsi_target_transport.o
+diff --git a/drivers/target/iscsi/iscsi_target_configfs.c b/drivers/target/iscsi/iscsi_target_configfs.c
+index 2704daf..9763fec 100644
+--- a/drivers/target/iscsi/iscsi_target_configfs.c
++++ b/drivers/target/iscsi/iscsi_target_configfs.c
+@@ -125,8 +125,83 @@ out:
  
- obj-$(CONFIG_ISCSI_TARGET)	+= iscsi_target_mod.o
-diff --git a/drivers/target/iscsi/iscsi_target_transport.c b/drivers/target/iscsi/iscsi_target_transport.c
-new file mode 100644
-index 0000000..882728f
---- /dev/null
-+++ b/drivers/target/iscsi/iscsi_target_transport.c
-@@ -0,0 +1,55 @@
-+#include <linux/spinlock.h>
-+#include <linux/list.h>
-+#include <target/iscsi/iscsi_transport.h>
-+
-+static LIST_HEAD(g_transport_list);
-+static DEFINE_MUTEX(transport_mutex);
-+
-+struct iscsit_transport *iscsit_get_transport(int type)
+ TF_NP_BASE_ATTR(lio_target, sctp, S_IRUGO | S_IWUSR);
+ 
++static ssize_t lio_target_np_show_iser(
++	struct se_tpg_np *se_tpg_np,
++	char *page)
 +{
-+	struct iscsit_transport *t;
++	struct iscsi_tpg_np *tpg_np = container_of(se_tpg_np,
++				struct iscsi_tpg_np, se_tpg_np);
++	struct iscsi_tpg_np *tpg_np_iser;
++	ssize_t rb;
 +
-+	mutex_lock(&transport_mutex);
-+	list_for_each_entry(t, &g_transport_list, t_node) {
-+		if (t->transport_type == type) {
-+			if (t->owner && !try_module_get(t->owner)) {
-+				t = NULL;
-+			}
-+			mutex_unlock(&transport_mutex);
-+			return t;
-+		}
++	tpg_np_iser = iscsit_tpg_locate_child_np(tpg_np, ISCSI_INFINIBAND);
++	if (tpg_np_iser)
++		rb = sprintf(page, "1\n");
++	else
++		rb = sprintf(page, "0\n");
++
++	return rb;
++}
++
++static ssize_t lio_target_np_store_iser(
++	struct se_tpg_np *se_tpg_np,
++	const char *page,
++	size_t count)
++{
++	struct iscsi_np *np;
++	struct iscsi_portal_group *tpg;
++	struct iscsi_tpg_np *tpg_np = container_of(se_tpg_np,
++				struct iscsi_tpg_np, se_tpg_np);
++	struct iscsi_tpg_np *tpg_np_iser = NULL;
++	char *endptr;
++	u32 op;
++	int rc;
++
++	op = simple_strtoul(page, &endptr, 0);
++	if ((op != 1) && (op != 0)) {
++		pr_err("Illegal value for tpg_enable: %u\n", op);
++		return -EINVAL;
 +	}
-+	mutex_unlock(&transport_mutex);
++	np = tpg_np->tpg_np;
++	if (!np) {
++		pr_err("Unable to locate struct iscsi_np from"
++				" struct iscsi_tpg_np\n");
++		return -EINVAL;
++	}
 +
-+	return NULL;
++	tpg = tpg_np->tpg;
++	if (iscsit_get_tpg(tpg) < 0)
++		return -EINVAL;
++
++	if (op) {
++		tpg_np_iser = iscsit_tpg_add_network_portal(tpg, &np->np_sockaddr,
++				np->np_ip, tpg_np, ISCSI_INFINIBAND);
++		if (!tpg_np_iser || IS_ERR(tpg_np_iser))
++			goto out;
++	} else {
++		tpg_np_iser = iscsit_tpg_locate_child_np(tpg_np, ISCSI_INFINIBAND);
++		if (!tpg_np_iser)
++			goto out;
++
++		rc = iscsit_tpg_del_network_portal(tpg, tpg_np_iser);
++		if (rc < 0)
++			goto out;
++	}
++
++	printk("lio_target_np_store_iser() done, op: %d\n", op);
++
++	iscsit_put_tpg(tpg);
++	return count;
++out:
++	iscsit_put_tpg(tpg);
++	return -EINVAL;
 +}
 +
-+void iscsit_put_transport(struct iscsit_transport *t)
-+{
-+	if (t->owner)
-+		module_put(t->owner);
-+}
++TF_NP_BASE_ATTR(lio_target, iser, S_IRUGO | S_IWUSR);
 +
-+int iscsit_register_transport(struct iscsit_transport *t)
-+{
-+	INIT_LIST_HEAD(&t->t_node);
-+
-+	mutex_lock(&transport_mutex);
-+	list_add_tail(&t->t_node, &g_transport_list);
-+	mutex_unlock(&transport_mutex);
-+
-+	pr_debug("Registered iSCSI transport: %s\n", t->name);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(iscsit_register_transport);
-+
-+void iscsit_unregister_transport(struct iscsit_transport *t)
-+{
-+	mutex_lock(&transport_mutex);
-+	list_del(&t->t_node);
-+	mutex_unlock(&transport_mutex);
-+
-+	pr_debug("Unregistered iSCSI transport: %s\n", t->name);
-+}
-+EXPORT_SYMBOL(iscsit_unregister_transport);
-diff --git a/include/target/iscsi/iscsi_transport.h b/include/target/iscsi/iscsi_transport.h
-new file mode 100644
-index 0000000..23a87d0
---- /dev/null
-+++ b/include/target/iscsi/iscsi_transport.h
-@@ -0,0 +1,83 @@
-+#include <linux/module.h>
-+#include <linux/list.h>
-+#include "../../../drivers/target/iscsi/iscsi_target_core.h"
-+
-+struct iscsit_transport {
-+#define ISCSIT_TRANSPORT_NAME	16
-+	char name[ISCSIT_TRANSPORT_NAME];
-+	int transport_type;
-+	struct module *owner;
-+	struct list_head t_node;
-+	int (*iscsit_setup_np)(struct iscsi_np *, struct __kernel_sockaddr_storage *);
-+	int (*iscsit_accept_np)(struct iscsi_np *, struct iscsi_conn *);
-+	void (*iscsit_free_np)(struct iscsi_np *);
-+	void (*iscsit_free_conn)(struct iscsi_conn *);
-+	struct iscsi_cmd *(*iscsit_alloc_cmd)(struct iscsi_conn *, gfp_t);
-+	int (*iscsit_get_login_rx)(struct iscsi_conn *, struct iscsi_login *);
-+	int (*iscsit_put_login_tx)(struct iscsi_conn *, struct iscsi_login *, u32);
-+	int (*iscsit_immediate_queue)(struct iscsi_conn *, struct iscsi_cmd *, int);
-+	int (*iscsit_response_queue)(struct iscsi_conn *, struct iscsi_cmd *, int);
-+	int (*iscsit_get_dataout)(struct iscsi_conn *, struct iscsi_cmd *, bool);
-+	int (*iscsit_queue_data_in)(struct iscsi_conn *, struct iscsi_cmd *);
-+	int (*iscsit_queue_status)(struct iscsi_conn *, struct iscsi_cmd *);
-+};
-+
-+/*
-+ * From iscsi_target_transport.c
-+ */
-+
-+extern int iscsit_register_transport(struct iscsit_transport *);
-+extern void iscsit_unregister_transport(struct iscsit_transport *);
-+extern struct iscsit_transport *iscsit_get_transport(int);
-+extern void iscsit_put_transport(struct iscsit_transport *);
-+
-+/*
-+ * From iscsi_target.c
-+ */
-+extern int iscsit_add_reject_from_cmd(u8, int, int, unsigned char *,
-+				struct iscsi_cmd *);
-+extern int iscsit_setup_scsi_cmd(struct iscsi_conn *, struct iscsi_cmd *,
-+				unsigned char *);
-+extern void iscsit_set_unsoliticed_dataout(struct iscsi_cmd *);
-+extern int iscsit_process_scsi_cmd(struct iscsi_conn *, struct iscsi_cmd *,
-+				struct iscsi_scsi_req *);
-+extern int iscsit_check_dataout_hdr(struct iscsi_conn *, unsigned char *,
-+				struct iscsi_cmd **);
-+extern int iscsit_check_dataout_payload(struct iscsi_cmd *, struct iscsi_data *,
-+				bool);
-+extern int iscsit_handle_nop_out(struct iscsi_conn *, struct iscsi_cmd *,
-+				unsigned char *);
-+extern int iscsit_handle_logout_cmd(struct iscsi_conn *, struct iscsi_cmd *,
-+				unsigned char *);
-+extern int iscsit_handle_task_mgt_cmd(struct iscsi_conn *, struct iscsi_cmd *,
-+				unsigned char *);
-+extern void iscsit_build_rsp_pdu(struct iscsi_cmd *, struct iscsi_conn *,
-+				bool, struct iscsi_scsi_rsp *);
-+extern void iscsit_build_nopin_rsp(struct iscsi_cmd *, struct iscsi_conn *,
-+				struct iscsi_nopin *, bool);
-+extern void iscsit_build_task_mgt_rsp(struct iscsi_cmd *, struct iscsi_conn *,
-+				struct iscsi_tm_rsp *);
-+extern void iscsit_build_reject(struct iscsi_cmd *, struct iscsi_conn *,
-+				struct iscsi_reject *);
-+extern int iscsit_build_logout_rsp(struct iscsi_cmd *, struct iscsi_conn *,
-+				struct iscsi_logout_rsp *);
-+extern int iscsit_logout_post_handler(struct iscsi_cmd *, struct iscsi_conn *);
-+/*
-+ * From iscsi_target_device.c
-+ */
-+extern void iscsit_increment_maxcmdsn(struct iscsi_cmd *, struct iscsi_session *);
-+/*
-+ * From iscsi_target_erl1.c
-+ */
-+extern void iscsit_stop_dataout_timer(struct iscsi_cmd *);
-+
-+/*
-+ * From iscsi_target_tmr.c
-+ */
-+extern int iscsit_tmr_post_handler(struct iscsi_cmd *, struct iscsi_conn *);
-+
-+/*
-+ * From iscsi_target_util.c
-+ */
-+extern struct iscsi_cmd *iscsit_allocate_cmd(struct iscsi_conn *, gfp_t);
-+extern int iscsit_sequence_cmd(struct iscsi_conn *, struct iscsi_cmd *, __be32);
+ static struct configfs_attribute *lio_target_portal_attrs[] = {
+ 	&lio_target_np_sctp.attr,
++	&lio_target_np_iser.attr,
+ 	NULL,
+ };
+ 
 -- 
 1.7.2.5
 
