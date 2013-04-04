@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763424Ab3DDQqK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 12:46:10 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54574 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762916Ab3DDQqI (ORCPT
+	id S1763375Ab3DDQtb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 12:49:31 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52471
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1763197Ab3DDQta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 12:46:08 -0400
-Message-ID: <1365093965.2609.116.camel@laptop>
+	Thu, 4 Apr 2013 12:49:30 -0400
+Message-ID: <1365094158.2609.119.camel@laptop>
 Subject: Re: [PATCH v2 2/3] mutex: add support for reservation style locks,
  v2
 From: Peter Zijlstra <peterz@infradead.org>
@@ -17,7 +17,7 @@ Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
         linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         linaro-mm-sig@lists.linaro.org, robclark@gmail.com, tglx@linutronix.de,
         mingo@elte.hu, linux-media@vger.kernel.org
-Date: Thu, 04 Apr 2013 18:46:05 +0200
+Date: Thu, 04 Apr 2013 18:49:18 +0200
 In-Reply-To: <20130404133123.GW2228@phenom.ffwll.local>
 References: <20130228102452.15191.22673.stgit@patser>
 	 <20130228102502.15191.14146.stgit@patser>
@@ -33,24 +33,22 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, 2013-04-04 at 15:31 +0200, Daniel Vetter wrote:
-> I'm a bit confused about the different classes you're talking about.
-> Since
-> the ticket queue is currently a global counter there's only one class
-> of
-> ww_mutexes. 
+> We've discussed this approach of using (rt-prio, age) instead of just
+> age
+> to determine the the "oldness" of a task for deadlock-breaking with
+> -EAGAIN. The problem is that through PI boosting or normal rt-prio
+> changes
+> while tasks are trying to acquire ww_mutexes you can create acyclic
+> loops
+> in the blocked-on graph of ww_mutexes after the fact and so cause
+> deadlocks. So we've convinced ourselves that this approche doesn't
+> work.
 
-Right, so that's not something that's going to fly.. we need to support
-multiple users, including nesting of those. Again, you're adding
-something to the generic kernel infrastructure, it had better be usable
-:-)
+Could you pretty please draw me a picture, I'm having trouble seeing
+what you mean.
 
-> I guess we could change that once a second user shows up
+AFAICT as long as you boost Y while its the lock owner things should
+work out, no?
 
-No, we fix that before it all goes in. I would _so_ hate to find out it
-cannot be 'fixed' and be stuck with a half-arsed sync primitive in the
-core kernel that's only every usable by the one existent user.
 
-So for now, forget all about TTM, DMA-BUF and other such coolness
-except to verify that whatever we end up with does indeed work for the
-case you need it for ;-)
 
