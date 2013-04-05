@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162260Ab3DEQ6Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 12:58:16 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:3713 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162134Ab3DEQ6N (ORCPT
+	id S1162316Ab3DEQ7C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 12:59:02 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:16468 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162246Ab3DEQ6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 12:58:13 -0400
+	Fri, 5 Apr 2013 12:58:15 -0400
 From: Waiman Long <Waiman.Long@hp.com>
 Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
@@ -15,10 +15,12 @@ Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
         "Chandramouleeswaran, Aswin" <aswin@hp.com>,
         "Norton, Scott J" <scott.norton@hp.com>,
         Andi Kleen <andi@firstfloor.org>, Dave Chinner <david@fromorbit.com>
-Subject: [PATCH v2 0/4] dcache: make dcache more scalable on large system
-Date: Fri,  5 Apr 2013 12:57:37 -0400
-Message-Id: <1365181061-30787-1-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH RFC v2 2/4] dcache: introduce a new sequence read/write lock type
+Date: Fri,  5 Apr 2013 12:57:39 -0400
+Message-Id: <1365181061-30787-3-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1365181061-30787-1-git-send-email-Waiman.Long@hp.com>
+References: <1365181061-30787-1-git-send-email-Waiman.Long@hp.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
         Miklos Szeredi <mszeredi@suse.cz>, Ian Kent <raven@themaw.net>,
         Sage Weil <sage@inktank.com>, Steve French <sfrench@samba.org>,
@@ -28,131 +30,186 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change log:
+The current sequence lock supports 2 types of lock users:
 
-v1->v2
- - Include performance improvement in the AIM7 benchmark results because
-   of this patch.
- - Modify dget_parent() to avoid taking the lock, if possible, to further
-   improve AIM7 benchmark results.
+1. A reader who wants a consistent set of information and is willing
+   to retry if the information changes. The information that the
+   reader needs cannot contain pointers, because any writer could
+   invalidate a pointer that a reader was following. This reader
+   will never block but they may have to retry if a writer is in
+   progress.
+2. A writer who may need to modify content of a data structure. Writer
+   blocks only if another writer is in progress.
 
-During some perf-record sessions of the kernel running the high_systime
-workload of the AIM7 benchmark, it was found that quite a large portion
-of the spinlock contention was due to the perf_event_mmap_event()
-function itself. This perf kernel function calls d_path() which,
-in turn, call path_get() and dput() indirectly. These 3 functions
-were the hottest functions shown in the perf-report output of
-the _raw_spin_lock() function in an 8-socket system with 80 cores
-(hyperthreading off) with a 3.7.10 kernel with a mutex patch applied:
+This type of lock is suitable for cases where there are a large number
+of readers and much less writers. However, it has a limitation that
+reader who may want to follow pointer or cannot tolerate unexpected
+changes in the protected data structure must take the writer lock
+even if it doesn't need to make any changes.
 
--  11.97%          reaim  [kernel.kallsyms]     [k] _raw_spin_lock
-   - _raw_spin_lock
-      + 46.17% d_path
-      + 20.31% path_get
-      + 19.75% dput
+To more efficiently support this type of readers, a new lock type is
+introduced by this patch: sequence read/write lock. Two types of readers
+are supported by this new lock:
 
-In fact, the output of the "perf record -s -a" (without call-graph)
-showed:
+1. Reader who has the same behavior as a sequence lock reader.
+2. Reader who may need to follow pointers. This reader will block if
+   a writer is in progress. In turn, it blocks a writer if it is in
+   progress. Multiple readers of this type can proceed concurrently.
+   Taking this reader lock won't update the sequence number.
 
- 11.73%          reaim  [kernel.kallsyms]     [k] _raw_spin_lock
-  8.85%             ls  [kernel.kallsyms]     [k] _raw_spin_lock
-  3.97%           true  [kernel.kallsyms]     [k] _raw_spin_lock
-
-Without using the perf monitoring tool, the actual execution profile
-will be quite different. In fact, with this patch set applied, the
-output of the same "perf record -s -a" command became:
-
-  2.05%          reaim  [kernel.kallsyms]     [k] _raw_spin_lock
-  0.30%             ls  [kernel.kallsyms]     [k] _raw_spin_lock
-  0.25%           true  [kernel.kallsyms]     [k] _raw_spin_lock
-
-So the time spent on _raw_spin_lock() function went down from 24.55%
-to 2.60%. It can be seen that the performance data collected by the
-perf-record command can be heavily skewed in some cases on a system
-with a large number of CPUs. This set of patches enables the perf
-command to give a more accurate and reliable picture of what is really
-happening in the system. At the same time, they can also improve the
-general performance of systems especially those with a large number
-of CPUs.
-
-The d_path() function takes the following two locks:
-
-1. dentry->d_lock [spinlock] from dget()/dget_parent()/dput()
-2. rename_lock    [seqlock]  from d_path()
-
-This set of patches were designed to minimize the locking overhead
-of these code paths.
-
-The current kernel takes the dentry->d_lock lock whenever it wants to
-increment or decrement the d_count reference count. However, nothing
-big will really happen until the reference count goes all the way to 1
-or 0.  Actually, we don't need to take the lock when reference count
-is bigger than 1. Instead, atomic cmpxchg() function can be used to
-increment or decrement the count in these situations. For safety,
-other reference count update operations have to be changed to use
-atomic instruction as well.
-
-The rename_lock is a sequence lock. The d_path() function takes the
-writer lock because it needs to traverse different dentries through
-pointers to get the full path name. Hence it can't tolerate changes
-in those pointers. But taking the writer lock also prevent multiple
-d_path() calls to proceed concurrently.
-
-A solution is to introduce a new lock type where there will be a
-second type of reader which can block the writers - the sequence
-read/write lock (seqrwlock). The d_path() and related functions will
-then be changed to take the reader lock instead of the writer lock.
-This will allow multiple d_path() operations to proceed concurrently.
-
-Additional performance testing was conducted using the AIM7
-benchmark.  It is mainly the first patch that has impact on the AIM7
-benchmark. Please see the patch description of the first patch on
-more information about the benchmark results.
-
-Incidentally, these patches also have a favorable impact on Oracle
-database performance when measured by the Oracle SLOB benchmark.
-
-The following tests with multiple threads were also run on kernels
-with and without the patch on an 8-socket 80-core system and a PC
-with 4-core i5 processor:
-
-1. find $HOME -size 0b
-2. cat /proc/*/maps /proc/*/numa_maps
-3. git diff
-
-For both the find-size and cat-maps tests, the performance difference
-with hot cache was within a few percentage points and hence within
-the margin of error. Single-thread performance was slightly worse,
-but multithread performance was generally a bit better. Apparently,
-reference count update isn't a significant factor in those tests. Their
-perf traces indicates that there was less spinlock content in
-functions like dput(), but the function itself ran a little bit longer
-on average.
-
-The git-diff test showed no difference in performance. There is a
-slight increase in system time compensated by a slight decrease in
-user time.
-
-Of the 4 patches, patch 3 is dependent on patch 2. The other 2 patches
-are independent can be applied individually.
+This new lock type is a combination of the sequence lock and read/write
+lock. Hence it will have the same limitation of a read/write lock that
+writers may be starved if there is a lot of contention.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-
-Waiman Long (4):
-  dcache: Don't take unnecessary lock in d_count update
-  dcache: introduce a new sequence read/write lock type
-  dcache: change rename_lock to a sequence read/write lock
-  dcache: don't need to take d_lock in prepend_path()
-
- fs/autofs4/waitq.c        |    6 +-
- fs/ceph/mds_client.c      |    4 +-
- fs/cifs/dir.c             |    4 +-
- fs/dcache.c               |  125 ++++++++++++++++++++---------------------
- fs/namei.c                |    2 +-
- fs/nfs/namespace.c        |    6 +-
- include/linux/dcache.h    |  105 +++++++++++++++++++++++++++++++++--
+---
  include/linux/seqrwlock.h |  137 +++++++++++++++++++++++++++++++++++++++++++++
- kernel/auditsc.c          |    4 +-
- 9 files changed, 311 insertions(+), 82 deletions(-)
+ 1 files changed, 137 insertions(+), 0 deletions(-)
  create mode 100644 include/linux/seqrwlock.h
+
+diff --git a/include/linux/seqrwlock.h b/include/linux/seqrwlock.h
+new file mode 100644
+index 0000000..c6145ff
+--- /dev/null
++++ b/include/linux/seqrwlock.h
+@@ -0,0 +1,137 @@
++#ifndef __LINUX_SEQRWLOCK_H
++#define __LINUX_SEQRWLOCK_H
++/*
++ * Sequence Read/Write Lock
++ * ------------------------
++ * This new lock type is a combination of the sequence lock and read/write
++ * lock. Three types of lock users are supported:
++ * 1. Reader who wants a consistent set of information and is willing to
++ *    retry if the information changes. The information that the reader
++ *    need cannot contain pointers, because any writer could invalidate
++ *    a pointer that a reader was following. This reader never block but
++ *    they may have to retry if a writer is in progress.
++ * 2. Reader who may need to follow pointers. This reader will block if
++ *    a writer is in progress.
++ * 3. Writer who may need to modify content of a data structure. Writer
++ *    blocks if another writer or the 2nd type of reader is in progress.
++ *
++ * The current implementation layered on top of the regular read/write
++ * lock. There is a chance that the writers may be starved by the readers.
++ * So be careful when you decided to use this lock.
++ *
++ * Expected 1st type reader usage:
++ * 	do {
++ *	    seq = read_seqrwbegin(&foo);
++ * 	...
++ *      } while (read_seqrwretry(&foo, seq));
++ *
++ * Expected 2nd type reader usage:
++ * 	read_seqrwlock(&foo)
++ * 	...
++ * 	read_seqrwunlock(&foo)
++ *
++ * Expected writer usage:
++ * 	write_seqrwlock(&foo)
++ * 	...
++ * 	write_seqrwunlock(&foo)
++ *
++ * Based on the seqlock.h file
++ * by Waiman Long
++ */
++
++#include <linux/rwlock.h>
++#include <linux/preempt.h>
++#include <asm/processor.h>
++
++typedef struct {
++	unsigned sequence;
++	rwlock_t lock;
++} seqrwlock_t;
++
++#define __SEQRWLOCK_UNLOCKED(lockname) \
++		 { 0, __RW_LOCK_UNLOCKED(lockname) }
++
++#define seqrwlock_init(x)				\
++	do {						\
++		(x)->sequence = 0;			\
++		rwlock_init(&(x)->lock);		\
++	} while (0)
++
++#define DEFINE_SEQRWLOCK(x) \
++		seqrwlock_t x = __SEQRWLOCK_UNLOCKED(x)
++
++/* For writer:
++ * Lock out other writers and 2nd type of readers and update the sequence
++ * number. Don't need preempt_disable() because that is in the read_lock and
++ * write_lock already.
++ */
++static inline void write_seqrwlock(seqrwlock_t *sl)
++{
++	write_lock(&sl->lock);
++	++sl->sequence;
++	smp_wmb();
++}
++
++static inline void write_seqrwunlock(seqrwlock_t *sl)
++{
++	smp_wmb();
++	sl->sequence++;
++	write_unlock(&sl->lock);
++}
++
++static inline int write_tryseqrwlock(seqrwlock_t *sl)
++{
++	int ret = write_trylock(&sl->lock);
++
++	if (ret) {
++		++sl->sequence;
++		smp_wmb();
++	}
++	return ret;
++}
++
++/* For 2nd type of reader:
++ * Lock out other writers, but don't update the sequence number
++ */
++static inline void read_seqrwlock(seqrwlock_t *sl)
++{
++	read_lock(&sl->lock);
++}
++
++static inline void read_seqrwunlock(seqrwlock_t *sl)
++{
++	read_unlock(&sl->lock);
++}
++
++static inline int read_tryseqrwlock(seqrwlock_t *sl)
++{
++	return read_trylock(&sl->lock);
++}
++
++/* Start of read calculation -- fetch last complete writer token */
++static __always_inline unsigned read_seqrwbegin(const seqrwlock_t *sl)
++{
++	unsigned ret;
++
++repeat:
++	ret = ACCESS_ONCE(sl->sequence);
++	if (unlikely(ret & 1)) {
++		cpu_relax();
++		goto repeat;
++	}
++	smp_rmb();
++	return ret;
++}
++
++/*
++ * Test if reader processed invalid data.
++ *
++ * If sequence value changed then writer changed data while in section.
++ */
++static __always_inline int read_seqrwretry(const seqrwlock_t *sl, unsigned start)
++{
++	smp_rmb();
++	return unlikely(sl->sequence != start);
++}
++
++#endif /* __LINUX_SEQLOCK_H */
+-- 
+1.7.1
 
