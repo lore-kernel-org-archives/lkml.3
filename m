@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161721Ab3DEL7S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 07:59:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26836 "EHLO mga02.intel.com"
+	id S1161706Ab3DEL7Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 07:59:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:14075 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161619Ab3DEL63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1161622Ab3DEL63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Apr 2013 07:58:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,414,1363158000"; 
-   d="scan'208";a="312816031"
+   d="scan'208";a="312816035"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv3, RFC 16/34] thp, mm: add event counters for huge page alloc on write to a file
-Date: Fri,  5 Apr 2013 14:59:40 +0300
-Message-Id: <1365163198-29726-17-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv3, RFC 20/34] thp: handle file pages in split_huge_page()
+Date: Fri,  5 Apr 2013 14:59:44 +0300
+Message-Id: <1365163198-29726-21-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,44 +33,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Existing stats specify source of thp page: fault or collapse. We're
-going allocate a new huge page with write(2). It's nither fault nor
-collapse.
+The base scheme is the same as for anonymous pages, but we walk by
+mapping->i_mmap rather then anon_vma->rb_root.
 
-Let's introduce new events for that.
+__split_huge_page_refcount() has been tunned a bit: we need to transfer
+PG_swapbacked to tail pages.
+
+Splitting mapped pages haven't tested at all, since we cannot mmap()
+file-backed huge pages yet.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/vm_event_item.h |    2 ++
- mm/vmstat.c                   |    2 ++
- 2 files changed, 4 insertions(+)
+ mm/huge_memory.c |   71 +++++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 59 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index d4b7a18..584c71c 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -71,6 +71,8 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		THP_FAULT_FALLBACK,
- 		THP_COLLAPSE_ALLOC,
- 		THP_COLLAPSE_ALLOC_FAILED,
-+		THP_WRITE_ALLOC,
-+		THP_WRITE_ALLOC_FAILED,
- 		THP_SPLIT,
- 		THP_ZERO_PAGE_ALLOC,
- 		THP_ZERO_PAGE_ALLOC_FAILED,
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 292b1cf..dd8323a 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -818,6 +818,8 @@ const char * const vmstat_text[] = {
- 	"thp_fault_fallback",
- 	"thp_collapse_alloc",
- 	"thp_collapse_alloc_failed",
-+	"thp_write_alloc",
-+	"thp_write_alloc_failed",
- 	"thp_split",
- 	"thp_zero_page_alloc",
- 	"thp_zero_page_alloc_failed",
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 46a44ac..ac0dc80 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1637,24 +1637,25 @@ static void __split_huge_page_refcount(struct page *page)
+ 		*/
+ 		page_tail->_mapcount = page->_mapcount;
+ 
+-		BUG_ON(page_tail->mapping);
+ 		page_tail->mapping = page->mapping;
+-
+ 		page_tail->index = page->index + i;
+ 		page_nid_xchg_last(page_tail, page_nid_last(page));
+ 
+-		BUG_ON(!PageAnon(page_tail));
+ 		BUG_ON(!PageUptodate(page_tail));
+ 		BUG_ON(!PageDirty(page_tail));
+-		BUG_ON(!PageSwapBacked(page_tail));
+ 
+ 		lru_add_page_tail(page, page_tail, lruvec);
+ 	}
+ 	atomic_sub(tail_count, &page->_count);
+ 	BUG_ON(atomic_read(&page->_count) <= 0);
+ 
+-	__mod_zone_page_state(zone, NR_ANON_TRANSPARENT_HUGEPAGES, -1);
+-	__mod_zone_page_state(zone, NR_ANON_PAGES, HPAGE_PMD_NR);
++	if (PageAnon(page)) {
++		__mod_zone_page_state(zone, NR_ANON_TRANSPARENT_HUGEPAGES, -1);
++		__mod_zone_page_state(zone, NR_ANON_PAGES, HPAGE_PMD_NR);
++	} else {
++		__mod_zone_page_state(zone, NR_FILE_TRANSPARENT_HUGEPAGES, -1);
++		__mod_zone_page_state(zone, NR_FILE_PAGES, HPAGE_PMD_NR);
++	}
+ 
+ 	ClearPageCompound(page);
+ 	compound_unlock(page);
+@@ -1754,7 +1755,7 @@ static int __split_huge_page_map(struct page *page,
+ }
+ 
+ /* must be called with anon_vma->root->rwsem held */
+-static void __split_huge_page(struct page *page,
++static void __split_anon_huge_page(struct page *page,
+ 			      struct anon_vma *anon_vma)
+ {
+ 	int mapcount, mapcount2;
+@@ -1801,14 +1802,11 @@ static void __split_huge_page(struct page *page,
+ 	BUG_ON(mapcount != mapcount2);
+ }
+ 
+-int split_huge_page(struct page *page)
++static int split_anon_huge_page(struct page *page)
+ {
+ 	struct anon_vma *anon_vma;
+ 	int ret = 1;
+ 
+-	BUG_ON(is_huge_zero_pfn(page_to_pfn(page)));
+-	BUG_ON(!PageAnon(page));
+-
+ 	/*
+ 	 * The caller does not necessarily hold an mmap_sem that would prevent
+ 	 * the anon_vma disappearing so we first we take a reference to it
+@@ -1826,7 +1824,7 @@ int split_huge_page(struct page *page)
+ 		goto out_unlock;
+ 
+ 	BUG_ON(!PageSwapBacked(page));
+-	__split_huge_page(page, anon_vma);
++	__split_anon_huge_page(page, anon_vma);
+ 	count_vm_event(THP_SPLIT);
+ 
+ 	BUG_ON(PageCompound(page));
+@@ -1837,6 +1835,55 @@ out:
+ 	return ret;
+ }
+ 
++static int split_file_huge_page(struct page *page)
++{
++	struct address_space *mapping = page->mapping;
++	pgoff_t pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
++	struct vm_area_struct *vma;
++	int mapcount, mapcount2;
++
++	BUG_ON(!PageHead(page));
++	BUG_ON(PageTail(page));
++
++	mutex_lock(&mapping->i_mmap_mutex);
++	mapcount = 0;
++	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
++		unsigned long addr = vma_address(page, vma);
++		mapcount += __split_huge_page_splitting(page, vma, addr);
++	}
++
++	if (mapcount != page_mapcount(page))
++		printk(KERN_ERR "mapcount %d page_mapcount %d\n",
++		       mapcount, page_mapcount(page));
++	BUG_ON(mapcount != page_mapcount(page));
++
++	__split_huge_page_refcount(page);
++
++	mapcount2 = 0;
++	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
++		unsigned long addr = vma_address(page, vma);
++		mapcount2 += __split_huge_page_map(page, vma, addr);
++	}
++
++	if (mapcount != mapcount2)
++		printk(KERN_ERR "mapcount %d mapcount2 %d page_mapcount %d\n",
++		       mapcount, mapcount2, page_mapcount(page));
++	BUG_ON(mapcount != mapcount2);
++	count_vm_event(THP_SPLIT);
++	mutex_unlock(&mapping->i_mmap_mutex);
++	return 0;
++}
++
++int split_huge_page(struct page *page)
++{
++	BUG_ON(is_huge_zero_pfn(page_to_pfn(page)));
++
++	if (PageAnon(page))
++		return split_anon_huge_page(page);
++	else
++		return split_file_huge_page(page);
++}
++
+ #define VM_NO_THP (VM_SPECIAL|VM_MIXEDMAP|VM_HUGETLB|VM_SHARED|VM_MAYSHARE)
+ 
+ int hugepage_madvise(struct vm_area_struct *vma,
 -- 
 1.7.10.4
 
