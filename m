@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162176Ab3DEUhA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 16:37:00 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41922 "EHLO
+	id S1162335Ab3DEUhH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 16:37:07 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58770 "EHLO
 	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1162032Ab3DEUg6 (ORCPT
+	by vger.kernel.org with ESMTP id S1162032Ab3DEUhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 16:36:58 -0400
-X-Sasl-enc: I1zkCD2igPfzucJuJTYIQxLZaRPTdxBoahSlbn+HXA8p 1365194217
+	Fri, 5 Apr 2013 16:37:01 -0400
+X-Sasl-enc: tw3r6fVvIk0tKFMpVK19SM7c2Mm4Vh4LVDFl9WABJjAI 1365194221
 From: Alan Ott <alan@signal11.us>
 To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, Alan Ott <alan@signal11.us>
-Subject: [PATCH] mac802154: Keep track of the channel when changed
-Date: Fri,  5 Apr 2013 16:36:41 -0400
-Message-Id: <1365194201-2635-1-git-send-email-alan@signal11.us>
+Subject: [PATCH] mrf24j40: Enable link-layer acknowledgement and retry
+Date: Fri,  5 Apr 2013 16:34:51 -0400
+Message-Id: <1365194091-2542-1-git-send-email-alan@signal11.us>
 X-Mailer: git-send-email 1.7.11.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prevent set_channel() from getting called every time a packet is sent. This
-looks like it was an oversight.
+On the MRF24J40, link-layer acknowledgment request and retry must be
+turned on explicitly for each packet.  Turn this on in the hardware based
+on the FC_ACK_REQ bit being set in the packet.
+
+Also, now that failure to receive an ACK will cause the hardware to report
+failure of transmission, change the log level for this failure to debug
+level.
 
 Signed-off-by: Alan Ott <alan@signal11.us>
 ---
- net/mac802154/tx.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/ieee802154/mrf24j40.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/net/mac802154/tx.c b/net/mac802154/tx.c
-index 3fd3e07..6d16473 100644
---- a/net/mac802154/tx.c
-+++ b/net/mac802154/tx.c
-@@ -58,6 +58,9 @@ static void mac802154_xmit_worker(struct work_struct *work)
- 			pr_debug("set_channel failed\n");
- 			goto out;
- 		}
-+
-+		xw->priv->phy->current_channel = xw->chan;
-+		xw->priv->phy->current_page = xw->page;
- 	}
+diff --git a/drivers/net/ieee802154/mrf24j40.c b/drivers/net/ieee802154/mrf24j40.c
+index 6481faf..556151d 100644
+--- a/drivers/net/ieee802154/mrf24j40.c
++++ b/drivers/net/ieee802154/mrf24j40.c
+@@ -25,6 +25,7 @@
+ #include <linux/pinctrl/consumer.h>
+ #include <net/wpan-phy.h>
+ #include <net/mac802154.h>
++#include <net/ieee802154.h>
  
- 	res = xw->priv->ops->xmit(&xw->priv->hw, xw->skb);
+ /* MRF24J40 Short Address Registers */
+ #define REG_RXMCR    0x00  /* Receive MAC control */
+@@ -349,7 +350,9 @@ static int mrf24j40_tx(struct ieee802154_dev *dev, struct sk_buff *skb)
+ 	if (ret)
+ 		goto err;
+ 	val |= 0x1;
+-	val &= ~0x4;
++	/* Set TXNACKREQ if the ACK bit is set in the packet. */
++	if (skb->data[0] & IEEE802154_FC_ACK_REQ)
++		val |= 0x4;
+ 	write_short_reg(devrec, REG_TXNCON, val);
+ 
+ 	INIT_COMPLETION(devrec->tx_complete);
+@@ -371,7 +374,7 @@ static int mrf24j40_tx(struct ieee802154_dev *dev, struct sk_buff *skb)
+ 	if (ret)
+ 		goto err;
+ 	if (val & 0x1) {
+-		dev_err(printdev(devrec), "Error Sending. Retry count exceeded\n");
++		dev_dbg(printdev(devrec), "Error Sending. Retry count exceeded\n");
+ 		ret = -ECOMM; /* TODO: Better error code ? */
+ 	} else
+ 		dev_dbg(printdev(devrec), "Packet Sent\n");
 -- 
 1.7.11.2
 
