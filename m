@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163074Ab3DEXqQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 19:46:16 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:44481 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162968Ab3DEXqP (ORCPT
+	id S1163084Ab3DEXsI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 19:48:08 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:49518 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162968Ab3DEXsG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 19:46:15 -0400
-Date: Fri, 5 Apr 2013 19:46:04 -0400 (EDT)
-From: Parag Warudkar <parag.lkml@gmail.com>
-X-X-Sender: parag@Parags-iMac
-To: Viresh Kumar <viresh.kumar@linaro.org>
-cc: dirk.brandewie@gmail.com, Adam Williamson <awilliam@redhat.com>,
-        Parag Warudkar <parag.lkml@gmail.com>, rjw@sisk.pl,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org
-Subject: Re: [PATCH] cpufreq/intel_pstate: Set timer timeout correctly
-In-Reply-To: <CAOh2x=mzQBSnBB3-10yGMdGfxMWeMcvE_t2Mvnz+fvdHv0-uaA@mail.gmail.com>
-Message-ID: <alpine.LFD.2.03.1304051943270.3817@gmail.com>
-References: <1365096935-16730-1-git-send-email-dirk.brandewie@gmail.com> <CAOh2x=mzQBSnBB3-10yGMdGfxMWeMcvE_t2Mvnz+fvdHv0-uaA@mail.gmail.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Fri, 5 Apr 2013 19:48:06 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130405220156.GC31680@kroah.com>
+References: <515E85C5.7010706@asianux.com>
+	<20130405220156.GC31680@kroah.com>
+Date: Fri, 5 Apr 2013 16:48:05 -0700
+Message-ID: <CAMP5Xgd=wVrDVCc84L2kMk9ADy7avokB6D=4+kdAm8jF+NLVyg@mail.gmail.com>
+Subject: Re: [PATCH] Staging: Android: looping issue, need break when get
+ value firstly.
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Chen Gang <gang.chen@asianux.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Mirsal Ennaime <mirsal@mirsal.fr>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 5, 2013 at 3:01 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Fri, Apr 05, 2013 at 04:05:25PM +0800, Chen Gang wrote:
+>>
+>>   need break when 'target_thread' get value, firstly.
+>>
+>>     'tmp' is a stack (thread->transaction_stack),
+>>     if 'proc' was the same between child node and parent node,
+>>     the child would have higher priority than parent.
+>
+> Are you sure about this?
+>
+> have you tested it?
+>
 
+Theoretically this should not change the behavior. The purpose of this
+code it to make sure only thread per process is part of a transaction
+stack, so if it finds more than one transaction with a matching
+process, they should all point to the same thread object. I think a
+better change description is needed though.
 
-On Fri, 5 Apr 2013, Viresh Kumar wrote:
-
-> On Thu, Apr 4, 2013 at 11:05 PM,  <dirk.brandewie@gmail.com> wrote:
-> > From: Dirk Brandewie <dirk.brandewie@gmail.com>
-> >
-> > The current calculation of the delay time is wrong and a cut and paste
-> > error from a previous experimental driver.  This can result in the
-> > timeout being set to jiffies + 1 which setup the driver to race with
-> > it's self if the apic timer interrupt happen at just the right time.
-> >
-> >
-> > https://bugzilla.redhat.com/show_bug.cgi?id=920289
-> >
-> > Reported-by: Adam Williamson <awilliam@redhat.com>
-> > Reported-by: Parag Warudkar <parag.lkml@gmail.com>
-> >
-> > Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-> > ---
-> >  drivers/cpufreq/intel_pstate.c |    1 -
-> >  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> Looks fine, but I would like to see a Tested-by from Adam/Parag
-> as they haven't said anything about this patch (even in bugzilla).
-> 
-
-I am running with the patch since yesterday - everything looks good.
-
-The issue hasn't been reproducible on demand but some code reading and 
-Dirk's explanation says the patch should fix the issue.
-
-So - Tested-by: Parag Warudkar <parag.lkml@gmail.com>
-
-Parag
+--
+Arve Hjønnevåg
