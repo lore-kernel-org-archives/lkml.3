@@ -1,118 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751376Ab3DEHFg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 03:05:36 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:55025 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111Ab3DEHFf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 03:05:35 -0400
-Date: Fri, 5 Apr 2013 09:05:30 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Julien Tinnes <jln@google.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Will Drewry <wad@chromium.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 3/3] x86: kernel base offset ASLR
-Message-ID: <20130405070530.GA26889@gmail.com>
-References: <1365106055-22939-1-git-send-email-keescook@chromium.org>
- <1365106055-22939-4-git-send-email-keescook@chromium.org>
- <515DDEC0.9000109@zytor.com>
- <CAKyRK=iZeYv8MPa2tLfRRTmNX2WQsT+t3UAu_wy3uT9TiZokgA@mail.gmail.com>
- <CAKyRK=ic3QHOLKen=jxgeEN5mVVj_Gyt-1wXOniKNgO75f80Qw@mail.gmail.com>
- <515DE24D.3080507@zytor.com>
- <CAKyRK=gmUBaHvFtPyzEGN697gB1AhhcrguCWBGQvLZS7x-YFvQ@mail.gmail.com>
+	id S1161729Ab3DEHGE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 03:06:04 -0400
+Received: from ozlabs.org ([203.10.76.45]:40536 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753170Ab3DEHGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 03:06:02 -0400
+Date: Fri, 5 Apr 2013 18:06:00 +1100
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+Cc: benh@kernel.crashing.org, michaele@au1.ibm.com,
+        Steve Munroe <sjmunroe@us.ibm.com>, linux-kernel@vger.kernel.org,
+        paulus@samba.org, Ryan Arnold <ryanarn@us.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, akpm@linux-foundation.org,
+        vda.linux@googlemail.com, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH] powerpc: Add HWCAP2 aux entry
+Message-ID: <20130405070559.GE5082@concordia>
+References: <20130402212204.GA30438@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKyRK=gmUBaHvFtPyzEGN697gB1AhhcrguCWBGQvLZS7x-YFvQ@mail.gmail.com>
+In-Reply-To: <20130402212204.GA30438@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi guys,
 
-* Julien Tinnes <jln@google.com> wrote:
+Added some folks to CC, blame scripts/get_maintainer.pl.
 
-> On Thu, Apr 4, 2013 at 1:27 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> > On 04/04/2013 01:23 PM, Julien Tinnes wrote:
-> >> On Thu, Apr 4, 2013 at 1:19 PM, Julien Tinnes <jln@google.com> wrote:
-> >>> On Thu, Apr 4, 2013 at 1:12 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> >>>> On 04/04/2013 01:07 PM, Kees Cook wrote:
-> >>>>> However, the benefits of
-> >>>>> this feature in certain environments exceed the perceived weaknesses[2].
-> >>>>
-> >>>> Could you clarify?
-> >>>
-> >>> I think privilege reduction in general, and sandboxing in particular,
-> >>> can make KASLR even more useful. A lot of the information leaks can be
-> >>> mitigated in the same way as attack surface and vulnerabilities can be
-> >>> mitigated.
-> >>
-> >> Case in point:
-> >> - leaks of 64 bits kernel values to userland in compatibility
-> >> sub-mode. Sandboxing by using seccomp-bpf can restrict a process to
-> >> the 64-bit mode API.
-> >> - restricting access to the syslog() system call
-> >>
-> >
-> > That doesn't really speak to the value proposition.  My concern is that
-> > we're going to spend a lot of time chasing/plugging infoleaks instead of
-> > tackling bigger problems.
+Comment below ..
+
+
+On Tue, Apr 02, 2013 at 02:22:05PM -0700, Nishanth Aravamudan wrote:
+> From: Michael Neuling <michael.neuling@au1.ibm.com>
 > 
-> Certain leaks are already an issue, even without kernel base 
-> randomization.
-
-Definitely. Stealth infiltration needs a high reliability expoit, 
-especially if the attack vector used is a zero day kernel vulnerability.
-
-Injecting uncertainty gives us a chance to get a crash logged and the 
-vulnerability exposed.
-
-> But yeah, this would give an incentive to plug more infoleaks. I'm not 
-> sure what cost this would incur on kernel development.
-
-I consider it a plus on kernel development - the more incentives to plug 
-infoleaks, the better.
-
-> There are by-design ones (printk) and bugs. I think we would want to
-> correct bugs regardless?
-
-Definitely.
-
-> For by-design ones, privilege-reduction can often be an appropriate answer.
-
-Correct, that's the motivation behind kptr_restrict and dmsg_restrict.
-
-> I really see KASLR as the next natural step:
->
-> 1. Enforce different privilege levels via the kernel
-> 2. Attackers attack the kernel directly
-> 3a. Allow user-land to restrict the kernel's attack surface and
->     develop sandboxes (seccomp-bpf, kvm..)
-> 3b. Add more exploitation defenses to the kernel, leveraging (3a) and (1).
+> We are currently out of free bits in AT_HWCAP. With POWER8, we have
+> several hardware features that we need to advertise. Tested on POWER and
+> x86.
 > 
-> > 8 bits of entropy is not a lot.
+> Signed-off-by: Michael Neuling <michael.neuling@au1.ibm.com>
+> Signed-off-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
 > 
-> It would certainly be nice to have more, but it's a good first start. 
-> Unlike user-land segfaults, many kernel-mode panics aren't recoverable 
-> for an attacker.
+> diff --git a/arch/powerpc/include/asm/cputable.h b/arch/powerpc/include/asm/cputable.h
+> index fb3245e..ccadad6 100644
+> --- a/arch/powerpc/include/asm/cputable.h
+> +++ b/arch/powerpc/include/asm/cputable.h
+> @@ -52,6 +52,7 @@ struct cpu_spec {
+>  	char		*cpu_name;
+>  	unsigned long	cpu_features;		/* Kernel features */
+>  	unsigned int	cpu_user_features;	/* Userland features */
+> +	unsigned int	cpu_user_features2;	/* Userland features v2 */
+>  	unsigned int	mmu_features;		/* MMU features */
+>  
+>  	/* cache line sizes */
+> diff --git a/arch/powerpc/include/asm/elf.h b/arch/powerpc/include/asm/elf.h
+> index ac9790f..cc0655a 100644
+> --- a/arch/powerpc/include/asm/elf.h
+> +++ b/arch/powerpc/include/asm/elf.h
+> @@ -61,6 +61,7 @@ typedef elf_vrregset_t elf_fpxregset_t;
+>     instruction set this cpu supports.  This could be done in userspace,
+>     but it's not easy, and we've already done it here.  */
+>  # define ELF_HWCAP	(cur_cpu_spec->cpu_user_features)
+> +# define ELF_HWCAP2	(cur_cpu_spec->cpu_user_features2)
+>  
+>  /* This yields a string that ld.so will use to load implementation
+>     specific libraries for optimization.  This is more specific in
+> diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+> index 3939829..51adc23 100644
+> --- a/fs/binfmt_elf.c
+> +++ b/fs/binfmt_elf.c
+> @@ -140,6 +140,13 @@ static int padzero(unsigned long elf_bss)
+>  #define ELF_BASE_PLATFORM NULL
+>  #endif
+>  
+> +/*
+> + * Most archs don't need this
+> + */
+> +#ifndef ELF_HWCAP2
+> +#define ELF_HWCAP2 (0)
+> +#endif
+> +
+>  static int
+>  create_elf_tables(struct linux_binprm *bprm, struct elfhdr *exec,
+>  		unsigned long load_addr, unsigned long interp_load_addr)
+> @@ -240,6 +247,7 @@ create_elf_tables(struct linux_binprm *bprm, struct elfhdr *exec,
+>  	NEW_AUX_ENT(AT_EGID, from_kgid_munged(cred->user_ns, cred->egid));
+>   	NEW_AUX_ENT(AT_SECURE, security_bprm_secureexec(bprm));
+>  	NEW_AUX_ENT(AT_RANDOM, (elf_addr_t)(unsigned long)u_rand_bytes);
+> +	NEW_AUX_ENT(AT_HWCAP2, ELF_HWCAP2);
 
-The other aspect of even just a couple of bits of extra entropy is that it 
-changes the economics of worms and other remote attacks: there's a 
-significant difference between being able to infect one machine per packet 
-and only 1 out of 256 machines while the other 255 get crashed.
 
-The downside is debuggability - so things like 'debug' on the kernel boot 
-command line should probably disable this feature automatically.
+Wouldn't it be safer to not emit AT_HWCAP2 unless it is defined by the arch?
 
-Thanks,
+That way the change would only impact powerpc.
 
-	Ingo
+
+cheers
+
+
+
+> diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
+> index 9c13e02..0b553d3 100644
+> --- a/fs/binfmt_elf_fdpic.c
+> +++ b/fs/binfmt_elf_fdpic.c
+> @@ -469,6 +469,13 @@ error_kill:
+>  #endif
+>  
+>  /*
+> + * Most archs don't need this
+> + */
+> +#ifndef ELF_HWCAP2
+> +#define ELF_HWCAP2 (0)
+> +#endif
+> +
+> +/*
+>   * present useful information to the program by shovelling it onto the new
+>   * process's stack
+>   */
+> @@ -483,7 +490,6 @@ static int create_elf_fdpic_tables(struct linux_binprm *bprm,
+>  	size_t platform_len = 0, len;
+>  	char *k_platform, *k_base_platform;
+>  	char __user *u_platform, *u_base_platform, *p;
+> -	long hwcap;
+>  	int loop;
+>  	int nr;	/* reset for each csp adjustment */
+>  
+> @@ -502,8 +508,6 @@ static int create_elf_fdpic_tables(struct linux_binprm *bprm,
+>  		return -EFAULT;
+>  #endif
+>  
+> -	hwcap = ELF_HWCAP;
+> -
+>  	/*
+>  	 * If this architecture has a platform capability string, copy it
+>  	 * to userspace.  In some cases (Sparc), this info is impossible
+> @@ -617,7 +621,8 @@ static int create_elf_fdpic_tables(struct linux_binprm *bprm,
+>  
+>  	nr = 0;
+>  	csp -= DLINFO_ITEMS * 2 * sizeof(unsigned long);
+> -	NEW_AUX_ENT(AT_HWCAP,	hwcap);
+> +	NEW_AUX_ENT(AT_HWCAP,	ELF_HWCAP);
+> +	NEW_AUX_ENT(AT_HWCAP2,	ELF_HWCAP2);
+>  	NEW_AUX_ENT(AT_PAGESZ,	PAGE_SIZE);
+>  	NEW_AUX_ENT(AT_CLKTCK,	CLOCKS_PER_SEC);
+>  	NEW_AUX_ENT(AT_PHDR,	exec_params->ph_addr);
+> diff --git a/include/uapi/linux/auxvec.h b/include/uapi/linux/auxvec.h
+> index 61594d5..835c065 100644
+> --- a/include/uapi/linux/auxvec.h
+> +++ b/include/uapi/linux/auxvec.h
+> @@ -28,6 +28,7 @@
+>  #define AT_BASE_PLATFORM 24	/* string identifying real platform, may
+>  				 * differ from AT_PLATFORM. */
+>  #define AT_RANDOM 25	/* address of 16 random bytes */
+> +#define AT_HWCAP2 26	/* extension of AT_HWCAP */
+>  
+>  #define AT_EXECFN  31	/* filename of program */
+>  
+> 
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+> 
