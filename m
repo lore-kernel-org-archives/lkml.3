@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162764Ab3DEUYW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 16:24:22 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:40619 "EHLO
+	id S1162775Ab3DEU0m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 16:26:42 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:40647 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162750Ab3DEUYU (ORCPT
+	with ESMTP id S1162753Ab3DEUYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 16:24:20 -0400
+	Fri, 5 Apr 2013 16:24:22 -0400
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Gregory Clement <gregory.clement@free-electrons.com>
@@ -27,9 +27,9 @@ Cc: Grant Likely <grant.likely@secretlab.ca>,
         Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
         David Marlin <dmarlin@redhat.com>,
         Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: [PATCH v2 2/9] arm: mvebu: Align the internal registers virtual base to support LPAE
-Date: Fri,  5 Apr 2013 22:23:57 +0200
-Message-Id: <1365193444-13441-3-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH v2 4/9] arm: dts: Add a 64 bits version of the skeleton device tree
+Date: Fri,  5 Apr 2013 22:23:59 +0200
+Message-Id: <1365193444-13441-5-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365193444-13441-1-git-send-email-gregory.clement@free-electrons.com>
 References: <1365193444-13441-1-git-send-email-gregory.clement@free-electrons.com>
@@ -39,42 +39,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lior Amsalem <alior@marvell.com>
 
-In order to be able to support he LPAE, the internal registers virtual
-base must be aligned to 2MB.
+In order to be able to use more than 4GB address-cells and size-cells
+have to be set to 2
 
-Signed-off-by: Lior Amsalem <alior@marvell.com>
 Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Lior Amsalem <alior@marvell.com>
 ---
- arch/arm/include/debug/mvebu.S      |    2 +-
- arch/arm/mach-mvebu/armada-370-xp.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/skeleton64.dtsi |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+ create mode 100644 arch/arm/boot/dts/skeleton64.dtsi
 
-diff --git a/arch/arm/include/debug/mvebu.S b/arch/arm/include/debug/mvebu.S
-index 865c6d0..df191af 100644
---- a/arch/arm/include/debug/mvebu.S
-+++ b/arch/arm/include/debug/mvebu.S
-@@ -12,7 +12,7 @@
- */
- 
- #define ARMADA_370_XP_REGS_PHYS_BASE	0xd0000000
--#define ARMADA_370_XP_REGS_VIRT_BASE	0xfeb00000
-+#define ARMADA_370_XP_REGS_VIRT_BASE	0xfec00000
- 
- 	.macro	addruart, rp, rv, tmp
- 	ldr	\rp, =ARMADA_370_XP_REGS_PHYS_BASE
-diff --git a/arch/arm/mach-mvebu/armada-370-xp.h b/arch/arm/mach-mvebu/armada-370-xp.h
-index c6a7d74..c49c08e 100644
---- a/arch/arm/mach-mvebu/armada-370-xp.h
-+++ b/arch/arm/mach-mvebu/armada-370-xp.h
-@@ -16,7 +16,7 @@
- #define __MACH_ARMADA_370_XP_H
- 
- #define ARMADA_370_XP_REGS_PHYS_BASE	0xd0000000
--#define ARMADA_370_XP_REGS_VIRT_BASE	IOMEM(0xfeb00000)
-+#define ARMADA_370_XP_REGS_VIRT_BASE	IOMEM(0xfec00000)
- #define ARMADA_370_XP_REGS_SIZE		SZ_1M
- 
- #ifdef CONFIG_SMP
+diff --git a/arch/arm/boot/dts/skeleton64.dtsi b/arch/arm/boot/dts/skeleton64.dtsi
+new file mode 100644
+index 0000000..1599415
+--- /dev/null
++++ b/arch/arm/boot/dts/skeleton64.dtsi
+@@ -0,0 +1,13 @@
++/*
++ * Skeleton device tree in the 64 bits version; the bare minimum
++ * needed to boot; just include and add a compatible value.  The
++ * bootloader will typically populate the memory node.
++ */
++
++/ {
++	#address-cells = <2>;
++	#size-cells = <2>;
++	chosen { };
++	aliases { };
++	memory { device_type = "memory"; reg = <0 0>; };
++};
 -- 
 1.7.9.5
 
