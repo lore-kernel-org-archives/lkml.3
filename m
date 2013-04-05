@@ -1,118 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161870Ab3DEIIH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 04:08:07 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:54384 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148Ab3DEIIB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 04:08:01 -0400
-Message-ID: <515E8688.3000504@parallels.com>
-Date: Fri, 5 Apr 2013 12:08:40 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1161884Ab3DEIIl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 04:08:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45430 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161874Ab3DEIIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 04:08:32 -0400
+Date: Fri, 5 Apr 2013 10:08:28 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: Linux Memory Management List <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [RFC][PATCH 0/9] extend hugepage migration
+Message-ID: <20130405080828.GA14882@dhcp22.suse.cz>
+References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <5148F830.3070601@gmail.com>
+ <1363815326-urchkyxr-mutt-n-horiguchi@ah.jp.nec.com>
+ <514A4B1C.6020201@gmail.com>
+ <20130321125628.GB6051@dhcp22.suse.cz>
+ <514B9BD8.9050207@gmail.com>
+ <20130322081532.GC31457@dhcp22.suse.cz>
+ <515E2592.7020607@gmail.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Li Zefan <lizefan@huawei.com>, <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC][PATCH 1/7] memcg: use css_get in sock_update_memcg()
-References: <515BF233.6070308@huawei.com> <515BF249.50607@huawei.com> <515C2788.90907@parallels.com> <20130403152934.GL16471@dhcp22.suse.cz>
-In-Reply-To: <20130403152934.GL16471@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515E2592.7020607@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 07:29 PM, Michal Hocko wrote:
-> On Wed 03-04-13 16:58:48, Glauber Costa wrote:
->> On 04/03/2013 01:11 PM, Li Zefan wrote:
->>> Use css_get/css_put instead of mem_cgroup_get/put.
->>>
->>> Note, if at the same time someone is moving @current to a different
->>> cgroup and removing the old cgroup, css_tryget() may return false,
->>> and sock->sk_cgrp won't be initialized.
->>>
->>> Signed-off-by: Li Zefan <lizefan@huawei.com>
->>> ---
->>>  mm/memcontrol.c | 8 ++++----
->>>  1 file changed, 4 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->>> index 23d0f6e..43ca91d 100644
->>> --- a/mm/memcontrol.c
->>> +++ b/mm/memcontrol.c
->>> @@ -536,15 +536,15 @@ void sock_update_memcg(struct sock *sk)
->>>  		 */
->>>  		if (sk->sk_cgrp) {
->>>  			BUG_ON(mem_cgroup_is_root(sk->sk_cgrp->memcg));
->>> -			mem_cgroup_get(sk->sk_cgrp->memcg);
->>> +			css_get(&sk->sk_cgrp->memcg->css);
+On Fri 05-04-13 09:14:58, Simon Jeons wrote:
+> Hi Michal,
+> On 03/22/2013 04:15 PM, Michal Hocko wrote:
+> >[getting off-list]
+> >
+> >On Fri 22-03-13 07:46:32, Simon Jeons wrote:
+> >>Hi Michal,
+> >>On 03/21/2013 08:56 PM, Michal Hocko wrote:
+> >>>On Thu 21-03-13 07:49:48, Simon Jeons wrote:
+> >>>[...]
+> >>>>When I hacking arch/x86/mm/hugetlbpage.c like this,
+> >>>>diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+> >>>>index ae1aa71..87f34ee 100644
+> >>>>--- a/arch/x86/mm/hugetlbpage.c
+> >>>>+++ b/arch/x86/mm/hugetlbpage.c
+> >>>>@@ -354,14 +354,13 @@ hugetlb_get_unmapped_area(struct file *file,
+> >>>>unsigned long addr,
+> >>>>
+> >>>>#endif /*HAVE_ARCH_HUGETLB_UNMAPPED_AREA*/
+> >>>>
+> >>>>-#ifdef CONFIG_X86_64
+> >>>>static __init int setup_hugepagesz(char *opt)
+> >>>>{
+> >>>>unsigned long ps = memparse(opt, &opt);
+> >>>>if (ps == PMD_SIZE) {
+> >>>>hugetlb_add_hstate(PMD_SHIFT - PAGE_SHIFT);
+> >>>>- } else if (ps == PUD_SIZE && cpu_has_gbpages) {
+> >>>>- hugetlb_add_hstate(PUD_SHIFT - PAGE_SHIFT);
+> >>>>+ } else if (ps == PUD_SIZE) {
+> >>>>+ hugetlb_add_hstate(PMD_SHIFT - PAGE_SHIFT+4);
+> >>>>} else {
+> >>>>printk(KERN_ERR "hugepagesz: Unsupported page size %lu M\n",
+> >>>>ps >> 20);
+> >>>>
+> >>>>I set boot=hugepagesz=1G hugepages=10, then I got 10 32MB huge pages.
+> >>>>What's the difference between these pages which I hacking and normal
+> >>>>huge pages?
+> >>>How is this related to the patch set?
+> >>>Please _stop_ distracting discussion to unrelated topics!
+> >>>
+> >>>Nothing personal but this is just wasting our time.
+> >>Sorry kindly Michal, my bad.
+> >>Btw, could you explain this question for me? very sorry waste your time.
+> >Your CPU has to support GB pages. You have removed cpu_has_gbpages test
+> >and added a hstate for order 13 pages which is a weird number on its
+> >own (32MB) because there is no page table level to support them.
 > 
-> I am not sure I understand this one. So we have a goup here (which means
-> that somebody already took a reference on it, right?) and we are taking
-> another reference. If this is released by sock_release_memcg then who
-> releases the previous one? It is not directly related to the patch
-> because this has been done previously already. Could you clarify
-> Glauber, please?
+> But after hacking, there is /sys/kernel/mm/hugepages/hugepages-*,
+> and have equal number of 32MB huge pages which I set up in boot
+> parameter.
 
-This should be documented in the commit that introduced this, and it was
-one of the first bugs I've handled with this code.
+because hugetlb_add_hstate creates hstate for those pages and
+hugetlb_init_hstates allocates them later on.
 
-Bottom line, we can create sockets normally, and those will have process
-context. But we also can create sockets by cloning existing sockets. To
-the best of my knowledge, this is done by things like accept().
+> If there is no page table level to support them, how can
+> them present?
 
-Because those sockets are a clone of their ancestors, they also belong
-to a workload that should be limited. Also note that because they have
-cgroup context, we will eventually try to put them. So we need to grab
-an extra reference.
-
-socket_update_cgroup is always called at socket creation, and the
-original structures are filled with zeroes. Therefore cloning is the
-*only* path that takes us here with sk->sk_cgroup filled.
-
-My comment right above this excerpt states:
-
-                /* Socket cloning can throw us here with sk_cgrp already
-                 * filled. It won't however, necessarily happen from
-                 * process context. So the test for root memcg given
-                 * the current task's memcg won't help us in this case.
-                 *
-                 * Respecting the original socket's memcg is a better
-                 * decision in this case.
-                 */
-
-> 
->>>  			return;
->>>  		}
->>>  
->>>  		rcu_read_lock();
->>>  		memcg = mem_cgroup_from_task(current);
->>>  		cg_proto = sk->sk_prot->proto_cgroup(memcg);
->>> -		if (!mem_cgroup_is_root(memcg) && memcg_proto_active(cg_proto)) {
->>> -			mem_cgroup_get(memcg);
->>> +		if (!mem_cgroup_is_root(memcg) &&
->>> +		    memcg_proto_active(cg_proto) && css_tryget(&memcg->css)) {
->>>  			sk->sk_cgrp = cg_proto;
->>>  		}
->>
->> What happens if this tryget fails ? Won't we leak a reference here? We
->> will put regardless when the socket is released, and this may go
->> negative. No?
->  
-> AFAICS sock_release_memcg releases the reference only if sk->sk_cgrp and
-> that one wouldn't be set if css_tryget fails.
-> 
-
-Yes, this is totally fine. I was actually thinking of the same socket
-cloning I mentioned above. We cannot fail that path because we already
-have an "implicit" reference, we just need to officially mark it.
-
-Failing here is indeed fine. Future cloned sockets from this socket will
-have NULL cgroup context as well.
-
-
+Because hugetlb hstate handling code doesn't care about page tables and
+the way how those pages are going to be mapped _at all_. Or put it in
+another way. Nobody prevents you to allocate order-5 page for a single
+pte but that would be a pure waste. Page fault code expects that pages
+with a proper size are allocated.
+-- 
+Michal Hocko
+SUSE Labs
