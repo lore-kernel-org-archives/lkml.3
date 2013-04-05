@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162772Ab3DEUdg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 16:33:36 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:60456 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162735Ab3DEUdf (ORCPT
+	id S1162800Ab3DEUdw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 16:33:52 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:51687 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162735Ab3DEUdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 16:33:35 -0400
-Message-ID: <515F351C.403@gmail.com>
-Date: Fri, 05 Apr 2013 16:33:32 -0400
+	Fri, 5 Apr 2013 16:33:51 -0400
+Message-ID: <515F352D.8020405@gmail.com>
+Date: Fri, 05 Apr 2013 16:33:49 -0400
 From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
 User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
@@ -46,4 +46,4 @@ hugetlb_fault call "address &= hugetlb_mask()" at first and then migration_entry
 could grab right pte lock. And from !x86 point of view, this funciton still doesn't work
 because huge page != pmd on some arch.
 
-I might be missing though.
+I might be missing something though.
