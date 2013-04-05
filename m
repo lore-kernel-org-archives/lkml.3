@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162927Ab3DEUoO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 16:44:14 -0400
-Received: from na3sys010aog105.obsmtp.com ([74.125.245.78]:51304 "HELO
-	na3sys010aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1162759Ab3DEUoM (ORCPT
+	id S1422631Ab3DEUoj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 16:44:39 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:56873 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162046Ab3DEUoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 16:44:12 -0400
+	Fri, 5 Apr 2013 16:44:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Subject: Re: [PATCH v2 7/9] arm: dts: mvebu: introduce internal-regs node
+Date: Fri, 5 Apr 2013 22:43:36 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>, Nicolas Pitre <nico@fluxnic.net>,
+        Lior Amsalem <alior@marvell.com>, Maen Suleiman <maen@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
+        "Eran Ben-Avi" <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+References: <1365193444-13441-1-git-send-email-gregory.clement@free-electrons.com> <1365193444-13441-8-git-send-email-gregory.clement@free-electrons.com>
+In-Reply-To: <1365193444-13441-8-git-send-email-gregory.clement@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <515F3160.4020007@linux.vnet.ibm.com>
-References: <20130324155153.GA8597@redhat.com> <515F3160.4020007@linux.vnet.ibm.com>
-From: Roland Dreier <roland@kernel.org>
-Date: Fri, 5 Apr 2013 13:43:49 -0700
-X-Google-Sender-Auth: Efn-6ymzYq19jJCmKWBwTpx_4Nc
-Message-ID: <CAL1RGDU2jtrRrxi6srsH_ADiYGvJbCpCT3UvoLGTX3cvQ=s0kQ@mail.gmail.com>
-Subject: Re: [PATCHv2] rdma: add a new IB_ACCESS_GIFT flag
-To: "Michael R. Hines" <mrhines@linux.vnet.ibm.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304052243.37108.arnd@arndb.de>
+X-Provags-ID: V02:K0:zEszHXzLdD3eUJooAnOaYDLyXrIh1sR8IQwO550PmeI
+ KVE9Zw9KbEK/4DwIHd/9yCP9BWW4PNlkMTvQuspZ9uoXEe97ex
+ ZCLyye83Fzuxo3+mT5FJWIW/Xv8aWgUQOgVepZpPj3T5gk+Yiz
+ J5k/wNWEG93I761Nata8e600nWlhvEUQlWw2s8ETVf5tEstdsX
+ 78QiyWMk29DqInN9hh9UJaDVgDzxcdYhsyKe1GTb+i8vM2Gu3t
+ GfvCbYOOwuPn/b6M/vT6c4gq01Xoyv1RXoFHRaCOcBLDAxxEVD
+ 9MX5WHKfbv4O/inlH0E+4CWEPqB/86g06basq+G+qihBsEzIl8
+ XBOkzimZU//plS8X2P0g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 5, 2013 at 1:17 PM, Michael R. Hines
-<mrhines@linux.vnet.ibm.com> wrote:
-> I also removed the IBV_*_WRITE flags on the sender-side and activated
-> cgroups with the "memory.memsw.limit_in_bytes" activated and the migration
-> with RDMA also succeeded without any problems (both with *and* without GIFT
-> also worked).
+On Friday 05 April 2013, Gregory CLEMENT wrote:
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-Not sure I'm interpreting this correctly.  Are you saying that things
-worked without actually setting the GIFT flag?   In which case why are
-we adding this flag?
+The patch looks good but the description is a bit short.
 
- - R.
+	Arnd
