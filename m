@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161970Ab3DEQHu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 12:07:50 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:53641 "EHLO
+	id S1161986Ab3DEQIU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 12:08:20 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:50729 "EHLO
 	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161931Ab3DEQHs (ORCPT
+	with ESMTP id S1161931Ab3DEQIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 12:07:48 -0400
-X-Auth-Info: 5IOaRU1yFRTcPQKaH+PREkvV2JIYJpLz1DUxyciblg0=
+	Fri, 5 Apr 2013 12:08:18 -0400
+X-Auth-Info: mfR99aumRVIRjy8G8sC7QrTanygtWhfZe+ueFgpe34c=
 From: Marek Vasut <marex@denx.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH] mmc: mxs-mmc: Add support for non-removable cards
-Date: Fri, 5 Apr 2013 18:07:43 +0200
+To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Subject: Re: [PATCH] ARM: dts: imx23-olinuxino: Set the sdcard as non-removable
+Date: Fri, 5 Apr 2013 18:08:15 +0200
 User-Agent: KMail/1.13.7 (Linux/3.8-trunk-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>, cjb@laptop.org,
-        shawn.guo@linaro.org, fabio.estevam@freescale.com,
-        otavio@ossystems.com.br, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1365135518-31549-1-git-send-email-aletes.xgr@gmail.com> <201304050837.39520.marex@denx.de> <20130405095750.GC6597@opensource.wolfsonmicro.com>
-In-Reply-To: <20130405095750.GC6597@opensource.wolfsonmicro.com>
+Cc: "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
+        Shawn Guo <shawn.guo@linaro.org>, fabio.estevam@freescale.com,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Otavio Salvador <otavio@ossystems.com.br>, f.koliqi@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>, maxime.ripard@free-electrons.com
+References: <1365135413-31493-1-git-send-email-aletes.xgr@gmail.com> <201304051611.15003.marex@denx.de> <CAAAP30FMObPdRg60eNov3FKRvycVrBxV-9DCu05Pb4Fx__H8Qw@mail.gmail.com>
+In-Reply-To: <CAAAP30FMObPdRg60eNov3FKRvycVrBxV-9DCu05Pb4Fx__H8Qw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304051807.44036.marex@denx.de>
+Message-Id: <201304051808.16034.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Mark Brown,
+Dear Alexandre Pereira da Silva,
 
-> On Fri, Apr 05, 2013 at 08:37:39AM +0200, Marek Vasut wrote:
-> > btw. did you know you can let git send-email automatically handle CC for
-> > you so you don't have to type it into the command line by simply
-> > sticking
-> > 
-> > Cc: Us Er <e@ma.il>
-> > 
-> > in the commit message? Preferably under the SoB line.
+> On Fri, Apr 5, 2013 at 11:11 AM, Marek Vasut <marex@denx.de> wrote:
+> > The CD line is working perfectly well on this board, so I don't get it.
 > 
-> Though not everyone likes seeing things like that end up in the commit
-> log (or having to edit them out of commit logs).
+> In the schematics of this board, the SSP1_DETECT pin is connected to
+> the green led. As I see, there is no way, the hardware can detect card
+> removal. Am I missing something here?
 
-Ah, all right.
+You're right. Then the design is indeed defective. Sorry.
 
 Best regards,
 Marek Vasut
