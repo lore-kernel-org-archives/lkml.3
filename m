@@ -1,88 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162417Ab3DEScM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 14:32:12 -0400
-Received: from mail-ye0-f174.google.com ([209.85.213.174]:34171 "EHLO
-	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162396Ab3DEScK (ORCPT
+	id S1162426Ab3DESew (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 14:34:52 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54073 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162402Ab3DESev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 14:32:10 -0400
-Message-ID: <515F18A8.7030102@gmail.com>
-Date: Fri, 05 Apr 2013 14:32:08 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Fri, 5 Apr 2013 14:34:51 -0400
+X-Originating-IP: 108.223.40.66
+Date: Fri, 5 Apr 2013 11:34:50 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Hector Palacios <hector.palacios@digi.com>
+Cc: linux-watchdog@vger.kernel.org, wim@iguana.be,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC] watchdog: core: don't try to stop device if not
+ running
+Message-ID: <20130405183450.GA29835@roeck-us.net>
+References: <515EF748.6060504@digi.com>
 MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kosaki.motohiro@gmail.com
-Subject: Re: [PATCH v3 1/3] hugetlbfs: stop setting VM_DONTDUMP in initializing
- vma(VM_HUGETLB)
-References: <1365014138-19589-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1365014138-19589-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1365014138-19589-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515EF748.6060504@digi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(4/3/13 2:35 PM), Naoya Horiguchi wrote:
-> Currently we fail to include any data on hugepages into coredump,
-> because VM_DONTDUMP is set on hugetlbfs's vma. This behavior was recently
-> introduced by commit 314e51b98 "mm: kill vma flag VM_RESERVED and
-> mm->reserved_vm counter". This looks to me a serious regression,
-> so let's fix it.
+On Fri, Apr 05, 2013 at 06:09:44PM +0200, Hector Palacios wrote:
+> A watchdog device may be stopped from userspace using WDIOC_SETOPTIONS
+> ioctl and flag WDIOS_DISABLECARD. If the device is closed after this
+> operation, watchdog_release() is called and status bits checked for
+> stopping it. Besides, if the device has not been unregistered a critical
+> message "watchdog did not stop!" is printed, although the ioctl may have
+> successfully stopped it already.
+> 
+> Without the patch a user application sample code like this will successfully
+> stop the watchdog, but the kernel will output the message
+> "watchdog did not stop!":
+> 
+> 	wd_fd = open("/dev/watchdog", O_RDWR);
+> 
+> 	flags = WDIOS_DISABLECARD;
+> 	ioctl(wd_fd, WDIOC_SETOPTIONS, &flags);
+> 
+> 	close(wd_fd);
+> 
+> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
 
-I don't think this is enough explanations. Let's explain the code meaning
-time to time order.
+How about the following patch instead ?
 
-First, we had no madvice(DONTDUMP) nor coredump_filter(HUGETLB). then hugetlb
-pages were never dumped.
+diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
+index 08b48bb..9775e8d 100644
+--- a/drivers/watchdog/watchdog_dev.c
++++ b/drivers/watchdog/watchdog_dev.c
+@@ -469,7 +469,9 @@ static int watchdog_release(struct inode *inode, struct file *file)
+ 	 * or if WDIOF_MAGICCLOSE is not set. If nowayout was set then
+ 	 * watchdog_stop will fail.
+ 	 */
+-	if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
++	if (!test_bit(WDOG_ACTIVE, &wdd->status))
++		err = 0;
++	else if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
+ 	    !(wdd->info->options & WDIOF_MAGICCLOSE))
+ 		err = watchdog_stop(wdd);
 
-Second, I added coredump_filter(HUGETLB). and then vm_dump_size became..
+Much less invasive and the result is the same.
 
-vm_dump_size()
-{
-	/* Hugetlb memory check */
-	if (vma->vm_flags & VM_HUGETLB) {
-		..
-		goto whole;
-	}
-	if (vma->vm_flags & VM_RESERVED)
-		return 0;
+Thanks,
+Guenter
 
-The point is, hugetlb was checked before VM_RESERVED. i.e. hugetlb core dump ignored
-VM_RESERVED. At this time, "if (vma->vm_flags & VM_HUGETLB)" statement don't need
-return 0 because VM_RESERVED prevented to go into the subsequent flag checks.
-
-Third, Jason added madvise(DONTDUMP). then vm_dump_size became...
-
-vm_dump_size()
-{
-       if (vma->vm_flags & VM_NODUMP)
-               return 0;
-
-	/* Hugetlb memory check */
-	if (vma->vm_flags & VM_HUGETLB) {
-		..
-		goto whole;
-	}
-	if (vma->vm_flags & VM_RESERVED)
-		return 0;
-
-Look, VM_NODUMP and VM_RESERVED had similar and different meanings at this time.
-
-Finally, Konstantin removed VM_RESERVED and hugetlb coredump behavior
-has been changed.
-
-Thus, patch [1/3] and [2/3] should be marked [stable for v3.6 or later].
-
-Anyway, this patch is correct. Thank you!
-
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-
-
+> ---
+>  drivers/watchdog/watchdog_dev.c |   38 +++++++++++++++++++++-----------------
+>  1 file changed, 21 insertions(+), 17 deletions(-)
+> 
+> diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
+> index ef8edec..adadbdd 100644
+> --- a/drivers/watchdog/watchdog_dev.c
+> +++ b/drivers/watchdog/watchdog_dev.c
+> @@ -463,24 +463,28 @@ out:
+>  static int watchdog_release(struct inode *inode, struct file *file)
+>  {
+>  	struct watchdog_device *wdd = file->private_data;
+> -	int err = -EBUSY;
+> 
+> -	/*
+> -	 * We only stop the watchdog if we received the magic character
+> -	 * or if WDIOF_MAGICCLOSE is not set. If nowayout was set then
+> -	 * watchdog_stop will fail.
+> -	 */
+> -	if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
+> -	    !(wdd->info->options & WDIOF_MAGICCLOSE))
+> -		err = watchdog_stop(wdd);
+> -
+> -	/* If the watchdog was not stopped, send a keepalive ping */
+> -	if (err < 0) {
+> -		mutex_lock(&wdd->lock);
+> -		if (!test_bit(WDOG_UNREGISTERED, &wdd->status))
+> -			dev_crit(wdd->dev, "watchdog did not stop!\n");
+> -		mutex_unlock(&wdd->lock);
+> -		watchdog_ping(wdd);
+> +	if (test_bit(WDOG_ACTIVE, &wdd->status)) {
+> +		int err = -EBUSY;
+> +
+> +		/*
+> +		 * We only stop the watchdog if we received the magic character
+> +		 * or if WDIOF_MAGICCLOSE is not set. If nowayout was set then
+> +		 * watchdog_stop will fail.
+> +		 */
+> +		if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
+> +		    !(wdd->info->options & WDIOF_MAGICCLOSE)) {
+> +			err = watchdog_stop(wdd);
+> +		}
+> +
+> +		/* If the watchdog was not stopped, send a keepalive ping */
+> +		if (err < 0) {
+> +			mutex_lock(&wdd->lock);
+> +			if (!test_bit(WDOG_UNREGISTERED, &wdd->status))
+> +				dev_crit(wdd->dev, "watchdog did not stop!\n");
+> +			mutex_unlock(&wdd->lock);
+> +			watchdog_ping(wdd);
+> +		}
+>  	}
+> 
+>  	/* Allow the owner module to be unloaded again */
+> -- 
+> 1.7.9.5
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
