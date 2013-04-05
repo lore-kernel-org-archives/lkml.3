@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162985Ab3DEUu4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 16:50:56 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:63695 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162097Ab3DEUux (ORCPT
+	id S1162997Ab3DEUvb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 16:51:31 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:42164 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162134Ab3DEUv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 16:50:53 -0400
-Message-ID: <515F392B.1030200@gmail.com>
-Date: Fri, 05 Apr 2013 15:50:51 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Fri, 5 Apr 2013 16:51:29 -0400
+Message-ID: <515F3948.40205@linux.vnet.ibm.com>
+Date: Fri, 05 Apr 2013 16:51:20 -0400
+From: "Michael R. Hines" <mrhines@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v6 4/4] xen/arm: introduce xen_early_init, use PSCI on
- xen
-References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-4-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.LFD.2.03.1304051217560.1171@syhkavp.arg> <alpine.DEB.2.02.1304051725580.21065@kaball.uk.xensource.com> <alpine.LFD.2.03.1304051324190.1171@syhkavp.arg>
-In-Reply-To: <alpine.LFD.2.03.1304051324190.1171@syhkavp.arg>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Roland Dreier <roland@kernel.org>
+CC: "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
+Subject: Re: [PATCHv2] rdma: add a new IB_ACCESS_GIFT flag
+References: <20130324155153.GA8597@redhat.com> <515F3160.4020007@linux.vnet.ibm.com> <CAL1RGDU2jtrRrxi6srsH_ADiYGvJbCpCT3UvoLGTX3cvQ=s0kQ@mail.gmail.com>
+In-Reply-To: <CAL1RGDU2jtrRrxi6srsH_ADiYGvJbCpCT3UvoLGTX3cvQ=s0kQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040520-2876-0000-0000-00000728A9D6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2013 02:36 PM, Nicolas Pitre wrote:
-> On Fri, 5 Apr 2013, Stefano Stabellini wrote:
-> 
->> This is what happens:
->>
->> - No Xen
->> Xen is not running on the platform and a Xen hypervisor node is not
->> available on device tree.
->> Everything keeps working seamlessly, this patch doesn't change anything.
->>
->> - we are running on Xen
->> Xen is running on the platform, we are running as a guest on Xen and an
->> hypervisor node is available on device tree.
->> Let's also assume that there aren't any "arm,cci" compatible nodes on
->> device tree because Xen wouldn't export this kind of information to any
->> guests right now. Therefore PSCI should be used to boot secondary cpus.
->> Because the versatile express machine sets smp_init to
->> vexpress_smp_init_ops, vexpress_smp_init_ops will be called.
->> vexpress_smp_init_ops sets smp_ops to vexpress_smp_ops, that *break*
->> Xen.
-> 
-> OK I see.
-> 
->> With this patch, xen_smp_init will be called instead of
->> vexpress_smp_init_ops, and smp_ops will be set to psci_smp_ops,
->> therefore *unbreaking* Xen.
-> 
-> However that breaks MCPM.
+Sorry, I was wrong. ignore the comments about cgroups. That's still 
+broken. (i.e. trying to register RDMA memory while using a cgroup swap 
+limit cause the process get killed).
 
-You mean on bare metal, right? For the bare metal, "xen,xen" property
-would not be present and xen_smp_init is not used. So the vexpress MCPM
-ops will be used. Aren't Dom0 cpu's basically virtual cpus? If Xen ever
-needs the MCPM support, the Xen hook itself can figure out whether to
-use MCPM support.
+But the GIFT flag patch works (my understanding is that GIFT flag allows 
+the adapter to transmit stale memory information, it does not have 
+anything to do with cgroups specifically).
 
-Rob
+Am I missing something? I was only testing the GIFT flag patch.
+
+Note: I only turned it on - I did not verify the (non) consitency of the 
+memory that was transmitted.
+
+- Michael
+
+
+On 04/05/2013 04:43 PM, Roland Dreier wrote:
+> On Fri, Apr 5, 2013 at 1:17 PM, Michael R. Hines
+> <mrhines@linux.vnet.ibm.com> wrote:
+>> I also removed the IBV_*_WRITE flags on the sender-side and activated
+>> cgroups with the "memory.memsw.limit_in_bytes" activated and the migration
+>> with RDMA also succeeded without any problems (both with *and* without GIFT
+>> also worked).
+> Not sure I'm interpreting this correctly.  Are you saying that things
+> worked without actually setting the GIFT flag?   In which case why are
+> we adding this flag?
+>
+>   - R.
+>
 
