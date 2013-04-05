@@ -1,85 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161848Ab3DEH5E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 03:57:04 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:55936 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161622Ab3DEH5C (ORCPT
+	id S1765219Ab3DEH6y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 03:58:54 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:59202 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab3DEH6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 03:57:02 -0400
+	Fri, 5 Apr 2013 03:58:53 -0400
+Message-ID: <515E8435.9090701@redhat.com>
+Date: Fri, 05 Apr 2013 09:58:45 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <CAMo8Bf+ccoU7jccOsxoyPqo2o8HaHhnuiocoNj1j67+S07aq_g@mail.gmail.com>
-References: <CAMo8BfLusS_vT4LWU93iCXpVSgN_Uvi1mBvLUVx+892V67X1JQ@mail.gmail.com>
-	<254789F5-7950-4239-AB7B-2DB9DC73565F@dubeyko.com>
-	<5159EC3D.2020501@gmail.com>
-	<1364884045.3301.18.camel@slavad-ubuntu>
-	<CAMo8Bf+83t3ML_Ctr4V-pVL7Meei=pdOeC5cgtrPJB12tOcGtA@mail.gmail.com>
-	<CAMo8BfKgTPO6AJng6zo1my4K_PivC1gJFQmcvy8q=iDYWSO2Pw@mail.gmail.com>
-	<20130405015327.GA319@kernel.org>
-	<CAMo8Bf+ccoU7jccOsxoyPqo2o8HaHhnuiocoNj1j67+S07aq_g@mail.gmail.com>
-Date: Fri, 5 Apr 2013 16:57:01 +0900
-Message-ID: <CAKYAXd_V4ZjozTn2F-VtQwrsQ229JsBqL8RaFCYE66MhXvBrUA@mail.gmail.com>
-Subject: Re: mkfs.f2fs gets stuck with "blk_update_request: bio idx 0 >= vcnt
- 0" on 3.8
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: Shaohua Li <shli@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Jaegeuk Kim <jaegeuk.kim@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, slava@dubeyko.com
-Content-Type: text/plain; charset=UTF-8
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: fix MMIO/PIO collision misdetection
+References: <20130404102720.GA5707@redhat.com>
+In-Reply-To: <20130404102720.GA5707@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi. Max.
+Il 04/04/2013 12:27, Michael S. Tsirkin ha scritto:
+> PIO and MMIO are separate address spaces, but
+> ioeventfd registration code mistakenly detected
+> two eventfds as duplicate if they use the same address,
+> even if one is PIO and another one MMIO.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-I have a question.
-Your mmc host driver set to host->max_discard_to by some value instead
-of not zero ?
+Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
 
-Thanks.
+> ---
+>  virt/kvm/eventfd.c | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> index adb17f2..93e5b05 100644
+> --- a/virt/kvm/eventfd.c
+> +++ b/virt/kvm/eventfd.c
+> @@ -577,6 +577,7 @@ struct _ioeventfd {
+>  	struct eventfd_ctx  *eventfd;
+>  	u64                  datamatch;
+>  	struct kvm_io_device dev;
+> +	u8                   bus_idx;
+>  	bool                 wildcard;
+>  };
+>  
+> @@ -669,7 +670,8 @@ ioeventfd_check_collision(struct kvm *kvm, struct _ioeventfd *p)
+>  	struct _ioeventfd *_p;
+>  
+>  	list_for_each_entry(_p, &kvm->ioeventfds, list)
+> -		if (_p->addr == p->addr && _p->length == p->length &&
+> +		if (_p->bus_idx == p->bus_idx &&
+> +		    _p->addr == p->addr && _p->length == p->length &&
+>  		    (_p->wildcard || p->wildcard ||
+>  		     _p->datamatch == p->datamatch))
+>  			return true;
+> @@ -717,6 +719,7 @@ kvm_assign_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+>  
+>  	INIT_LIST_HEAD(&p->list);
+>  	p->addr    = args->addr;
+> +	p->bus_idx = bus_idx;
+>  	p->length  = args->len;
+>  	p->eventfd = eventfd;
+>  
+> @@ -775,7 +778,8 @@ kvm_deassign_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+>  	list_for_each_entry_safe(p, tmp, &kvm->ioeventfds, list) {
+>  		bool wildcard = !(args->flags & KVM_IOEVENTFD_FLAG_DATAMATCH);
+>  
+> -		if (p->eventfd != eventfd  ||
+> +		if (p->bus_idx != bus_idx ||
+> +		    p->eventfd != eventfd  ||
+>  		    p->addr != args->addr  ||
+>  		    p->length != args->len ||
+>  		    p->wildcard != wildcard)
+> 
 
-2013/4/5, Max Filippov <jcmvbkbc@gmail.com>:
-> On Fri, Apr 5, 2013 at 5:53 AM, Shaohua Li <shli@kernel.org> wrote:
->> On Thu, Apr 04, 2013 at 06:00:18AM +0400, Max Filippov wrote:
->
-> [...]
->
->>> the commit 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9 'block: add plug
->>> for blkdev_issue_discard'
->>> have added merge opportunity for DISCARD requests. When I do
->>> mkfs.f2fs on a 5G partition (0xad8000 sectors) it submits two bios,
->>> one for 0x7fe000 sectors (0xffc00000 bytes) and another for
->>> 0x2da000 sectors (0x5b400000 bytes). Prior to that commit these
->>> bios weren't merged into one request. Now the second bio gets
->>> merged with the first, but the request's __data_len field is unsigned
->>> int
->>> and it gets wrapped to 0x5b000000 bytes instead of 0x15b000000
->>> in the bio_attempt_back_merge. Later this reduced size is passed to
->>> the blk_update_request causing KERN_ERR and not completed
->>> request. Reverting this commit fixes mkfs.f2fs for me.
->>
->> A workaround is setting limits.max_discard_sectors to a smaller value.
->
-> I'm not sure:
-> 1) in my case max_discard_sectors is 0x7fe000 (0xffc00000 bytes,
->     which still fits into 32 bits) and
-> 2) this parameter will only change size of individual discard requests for
->     the discarded range, but as long as these requests are done inside
->     the plug they will be merged anyway with an overflow if we try
->     to discard more than 4G at once.
->
->> So the question is why __data_len isn't sector based? Since disk is
->> sector
->> based, is there any disk finishing IO in byte granularity? Maybe Jens can
->> answer.
->
-> --
-> Thanks.
-> -- Max
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
