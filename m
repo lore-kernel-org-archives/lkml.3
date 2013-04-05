@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161720Ab3DENKc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 09:10:32 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:1437 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161328Ab3DENKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 09:10:31 -0400
+	id S1161762Ab3DENLu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 09:11:50 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:58371 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161612Ab3DENLs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 09:11:48 -0400
 X-IronPort-AV: E=Sophos;i="4.87,414,1363132800"; 
-   d="scan'208";a="17719307"
-Date: Fri, 5 Apr 2013 14:10:24 +0100
+   d="scan'208";a="16891157"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-Subject: [PATCH 0/4 v6] arm: introduce psci_smp_ops and use them on Xen
-Message-ID: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <will.deacon@arm.com>, <arnd@arndb.de>, <nicolas.pitre@linaro.org>,
+        <Stefano.Stabellini@eu.citrix.com>, <rob.herring@calxeda.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v6 2/4] arm: prefer psci_smp_ops over mdesc->smp
+Date: Fri, 5 Apr 2013 14:11:33 +0100
+Message-ID: <1365167495-18508-2-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this is the sixth version of the patch series to move virt_smp_ops out of
-mach-virt and make it a generic set of reusable PSCI based smp_ops.
-psci_smp_ops are preferred over the platform smp_ops.
-I added a patch to introduce smp_init to this series.
-In the last patch I am using smp_init to switch to psci_smp_ops if Xen
-is detected on the platform.
+If PSCI is available on the platform, prefer psci_smp_ops over the
+platform smp_ops.
 
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ arch/arm/kernel/setup.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Jon Medhurst (1):
-      ARM: Enable selection of SMP operations at boot time
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 341efaa..dad3048 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -770,10 +770,10 @@ void __init setup_arch(char **cmdline_p)
+ 	psci_init();
+ #ifdef CONFIG_SMP
+ 	if (is_smp()) {
+-		if (mdesc->smp)
+-			smp_set_ops(mdesc->smp);
+-		else if (psci_smp_available())
++		if (psci_smp_available())
+ 			smp_set_ops(&psci_smp_ops);
++		else if (mdesc->smp)
++			smp_set_ops(mdesc->smp);
+ 		smp_init_cpus();
+ 	}
+ #endif
+-- 
+1.7.2.5
 
-Stefano Stabellini (3):
-      arm: introduce psci_smp_ops
-      arm: prefer psci_smp_ops over mdesc->smp
-      xen/arm: introduce xen_early_init, use PSCI on xen
-
- arch/arm/Kconfig                      |    1 +
- arch/arm/include/asm/mach/arch.h      |    3 +
- arch/arm/include/asm/psci.h           |   29 ++++++++++++++
- arch/arm/include/asm/xen/hypervisor.h |    6 +++
- arch/arm/kernel/Makefile              |    5 ++-
- arch/arm/kernel/psci.c                |    7 +--
- arch/arm/kernel/psci_smp.c            |   67 +++++++++++++++++++++++++++++++++
- arch/arm/kernel/setup.c               |   12 +++++-
- arch/arm/mach-virt/Makefile           |    1 -
- arch/arm/mach-virt/platsmp.c          |   58 ----------------------------
- arch/arm/mach-virt/virt.c             |    3 -
- arch/arm/xen/enlighten.c              |   36 ++++++++++++++----
- 12 files changed, 152 insertions(+), 76 deletions(-)
-
-    
-git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 3.9-rc3-smp-6
-
-
-Cheers,
-
-Stefano
