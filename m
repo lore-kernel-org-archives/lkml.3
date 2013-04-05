@@ -1,254 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161710Ab3DEHyE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 03:54:04 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:59989 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750723Ab3DEHyB (ORCPT
+	id S1161844Ab3DEHyO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 03:54:14 -0400
+Received: from smtp-out-239.synserver.de ([212.40.185.239]:1061 "EHLO
+	smtp-out-237.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751949Ab3DEHyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 03:54:01 -0400
-Date: Fri, 5 Apr 2013 09:53:49 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 07/12] PCI: tegra: Move PCIe driver to drivers/pci/host
-Message-ID: <20130405075348.GC15848@avionic-0098.mockup.avionic-design.de>
-References: <1365000318-28256-1-git-send-email-thierry.reding@avionic-design.de>
- <1365000318-28256-8-git-send-email-thierry.reding@avionic-design.de>
- <515DF096.2000703@wwwdotorg.org>
- <20130405073703.GB15848@avionic-0098.mockup.avionic-design.de>
+	Fri, 5 Apr 2013 03:54:11 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 25423
+Message-ID: <515E90FD.10006@metafoo.de>
+Date: Fri, 05 Apr 2013 10:53:17 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UfEAyuTBtIjiZzX6"
-Content-Disposition: inline
-In-Reply-To: <20130405073703.GB15848@avionic-0098.mockup.avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:AWbQ1k4clpOmlI9JW/4FCd+s8QhnxJ7dZXyjnc3GMWV
- 0y5k5kIeAIz0cbyZESe4rZ6Yio6lsCMR5bEHuOj6mEy9aUMhPQ
- ymApRTouBWyrkAlmP0lpD2LINDf+AF/VXQRDAzRLNPtULKp5SY
- Inq0/8qPAB9Tlp1xn+mqcGgKPtaAMeP6D18+aTWqBOavCooyuZ
- QRipwlHiuMFxLDknU0/+8GdjpBluFlVu7QMkPbd8PhZxAExUAl
- etKYGTFhu8AFokHu7gHET/EnJxEWXZ5byQVVlc8JNLDWPbCfrX
- /DKEfppianBUF1xVm4POfqcrkqb6Rr8JJJaNCT75RTLDZhWAZN
- cAT5glGkfUekn9PURwN0jaDKSWxCMLbr1hf5KIbU73qqb3HA8K
- mjKE2nw45Uny/jMHnEU9Ic1ldB8+RDd+m73pye29ZZfs3sZ4KN
- wYkeY
+To: Doug Anderson <dianders@chromium.org>
+CC: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-iio <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Naveen Krishna <naveenkrishna.ch@gmail.com>
+Subject: Re: [RFC: PATCH 2/2] iio: adc: exynos_adc: Handle timeout and race
+ conditions
+References: <1363364801-23684-1-git-send-email-ch.naveen@samsung.com> <51439846.9090201@metafoo.de> <CAD=FV=V+-DwCjGoookySCazazBBYOoRO+=G5Q_WXAw+SrXNc-A@mail.gmail.com> <5144849A.8050907@metafoo.de> <CAD=FV=VBYHyD6yXBrM1BV3gazDFT0oHgvJM0+5LU1w4AO16Yzg@mail.gmail.com>
+In-Reply-To: <CAD=FV=VBYHyD6yXBrM1BV3gazDFT0oHgvJM0+5LU1w4AO16Yzg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/03/2013 07:06 PM, Doug Anderson wrote:
+> Lars,
+> 
+> On Sat, Mar 16, 2013 at 7:41 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>> I think you still need the mutex for serialization, otherwise the requests
+>> would just cancel each other out. Btw. what happens if you start a conversion
+>> while another is still in progress? Is it possible to abort a conversion?
+> 
+> I was thinking that the spinlock would just replace the mutex for the
+> purposes of serialization.
+> 
 
---UfEAyuTBtIjiZzX6
-Content-Type: multipart/mixed; boundary="V88s5gaDVPzZ0KCq"
-Content-Disposition: inline
+Since we sleep inside the protected section we need to use a mutex.
 
+> I stepped back a bit, though, and I'm wondering if we're over-thinking
+> things.  The timeout case should certainly be handled properly (thanks
+> for pointing it out), but getting a timeout is really not expected and
+> adding a lot of extra overhead to handle it elegantly seems a bit
+> much?
+> 
+> Specifically, the mutex means that we have one user of the ADC at a
+> time, and ADC conversion has nothing variable about it.  The user
+> manual that I have access to talks about 12-bit conversion happening
+> in 1 microsecond with a 5MHz input clock or 5 microseconds with a 1MHz
+> input clock.  Even if someone has clocks configured very differently,
+> it would be hard to imagine a conversion actually taking a full
+> second.
+> 
+> ...so that means that if the timeout actually fires then something
+> else fairly drastic has gone wrong.  It's _very_ unlikely that the IRQ
+> will still go off for this conversion sometime in the future.
+> 
 
---V88s5gaDVPzZ0KCq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+It's not the timeout case I'm worried about, but the case where the transfer
+is interrupted by the user. Even though it is rather unlikely for the
+problem to occur we should still try to avoid it, this is one of these
+annoying heisenbugs that happen once in a while and nobody is able to
+reproduce them.
 
-For reference, here's the new binding document with all your comments
-addressed (I think).
+> To me, total modifications to what's landed already ought to be:
+> 
+> * Change timeout to long (from unsigned long)
+> 
+> * Make sure we return errors (negative results) from
+> wait_for_completion_interruptible_timeout() properly.
+> 
+> * If we get back a value of 0 from
+> wait_for_completion_interruptible_timeout() then we should print a
+> warning and attempt machinations to reset the ADC.  Without ever
+> seeing real-world situtations that would cause a real timeout these
+> machinations would be a bit of a guess (is resetting the adc useful
+> when it's more likely that someone accidentally messed with the clock
+> tree or power gated the ADC?)...  ...or perhaps a warning and a TODO
+> in the code would be enough?
+> 
+> 
+> Thoughts?
 
-Thierry
+I think most of this is already implemented and Naveen sent a patch to reset
+the controller in case of a timeout, which is a good idea and works fine,
+but you still should handle the case where the user aborted the transfer.
+Just resetting the core should work as well in that case.
 
---V88s5gaDVPzZ0KCq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline; filename="nvidia,tegra20-pcie.txt"
-
-NVIDIA Tegra PCIe controller
-
-Required properties:
-- compatible: "nvidia,tegra20-pcie"
-- device_type: Must be "pci"
-- reg: A list of physical base address and length for each set of controller
-  registers. Must contain an entry for each entry in the reg-names property.
-- reg-names: Must include the following entries:
-  "pads": PADS registers
-  "afi": AFI registers
-  "cs": configuration space region
-- interrupts: A list of interrupt outputs of the controller. Must contain an
-  entry for each entry in the interrupt-names property.
-- interrupt-names: Must include the following entries:
-  "intr": The Tegra interrupt that is asserted for controller interrupts
-  "msi": The Tegra interrupt that is asserted when an MSI is received
-- pex-clk-supply: Supply voltage for internal reference clock
-- vdd-supply: Power supply for controller (1.05V)
-- bus-range: Range of bus numbers associated with this controller
-- #address-cells: Address representation for root ports (must be 3)
-  - cell 0 specifies the bus and device numbers of the root port:
-    [23:16]: bus number
-    [15:11]: device number
-  - cell 1 denotes the upper 32 address bits and should be 0
-  - cell 2 contains the lower 32 address bits and is used to translate to the
-    CPU address space
-- #size-cells: Size representation for root ports (must be 2)
-- ranges: Describes the translation of addresses for root ports and standard
-  PCI regions. The entries must be 6 cells each, where the first three cells
-  correspond to the address as described for the #address-cells property
-  above, the fourth cell is the physical CPU address to translate to and the
-  fifth and six cells are as described for the #size-cells property above.
-  - The first two entries are expected to translate the addresses for the root
-    port registers, which are referenced by the assigned-addresses property of
-    the root port nodes (see below).
-  - The remaining entries setup the mapping for the standard I/O, memory and
-    prefetchable PCI regions. The first cell determines the type of region
-    that is setup:
-    - 0x81000000: I/O memory region
-    - 0x82000000: non-prefetchable memory region
-    - 0xc2000000: prefetchable memory region
-  Please refer to the standard PCI bus binding document for a more detailed
-  explanation.
-- clocks: List of clock inputs of the controller. Must contain an entry for
-  each entry in the clock-names property.
-- clock-names: Must include the following entries:
-  "pex": The Tegra clock of that name
-  "afi": The Tegra clock of that name
-  "pcie_xclk": The Tegra clock of that name
-  "pll_e": The Tegra clock of that name
-
-Root ports are defined as subnodes of the PCIe controller node.
-
-Required properties:
-- device_type: Must be "pci"
-- assigned-addresses: Address and size of the port configuration registers
-- reg: PCI bus address of the root port
-- #address-cells: Must be 3
-- #size-cells: Must be 2
-- ranges: Sub-ranges distributed from the PCIe controller node. An empty
-  property is sufficient.
-- nvidia,num-lanes: Number of lanes to use for this port. Valid combinations
-  are:
-  - Root port 0 uses 4 lanes, root port 1 is unused.
-  - Both root ports use 2 lanes.
-
-Example:
-
-SoC DTSI:
-
-	pcie-controller {
-		compatible = "nvidia,tegra20-pcie";
-		device_type = "pci";
-		reg = <0x80003000 0x00000800   /* PADS registers */
-		       0x80003800 0x00000200   /* AFI registers */
-		       0x90000000 0x10000000>; /* configuration space */
-		reg-names = "pads", "afi", "cs";
-		interrupts = <0 98 0x04   /* controller interrupt */
-		              0 99 0x04>; /* MSI interrupt */
-		interrupt-names = "intr", "msi";
-
-		bus-range = <0x00 0xff>;
-		#address-cells = <3>;
-		#size-cells = <2>;
-
-		ranges = <0x82000000 0 0x80000000 0x80000000 0 0x00001000   /* port 0 registers */
-			  0x82000000 0 0x80001000 0x80001000 0 0x00001000   /* port 1 registers */
-			  0x81000000 0 0          0x82000000 0 0x00010000   /* downstream I/O */
-			  0x82000000 0 0xa0000000 0xa0000000 0 0x10000000   /* non-prefetchable memory */
-			  0xc2000000 0 0xb0000000 0xb0000000 0 0x10000000>; /* prefetchable memory */
-
-		clocks = <&tegra_car 70>, <&tegra_car 72>, <&tegra_car 74>,
-			 <&tegra_car 118>;
-		clock-names = "pex", "afi", "pcie_xclk", "pll_e";
-		status = "disabled";
-
-		pci@1,0 {
-			device_type = "pci";
-			assigned-addresses = <0x82000800 0 0x80000000 0 0x1000>;
-			reg = <0x000800 0 0 0 0>;
-			status = "disabled";
-
-			#address-cells = <3>;
-			#size-cells = <2>;
-
-			ranges;
-
-			nvidia,num-lanes = <2>;
-		};
-
-		pci@2,0 {
-			device_type = "pci";
-			assigned-addresses = <0x82001000 0 0x80001000 0 0x1000>;
-			reg = <0x001000 0 0 0 0>;
-			status = "disabled";
-
-			#address-cells = <3>;
-			#size-cells = <2>;
-
-			ranges;
-
-			nvidia,num-lanes = <2>;
-		};
-	};
-
-
-Board DTS:
-
-	pcie-controller {
-		status = "okay";
-
-		vdd-supply = <&pci_vdd_reg>;
-		pex-clk-supply = <&pci_clk_reg>;
-
-		/* root port 00:01.0 */
-		pci@1,0 {
-			status = "okay";
-
-			/* bridge 01:00.0 (optional) */
-			pci@0,0 {
-				reg = <0x010000 0 0 0 0>;
-
-				#address-cells = <3>;
-				#size-cells = <2>;
-
-				device_type = "pci";
-
-				/* endpoint 02:00.0 */
-				pci@0,0 {
-					reg = <0x020000 0 0 0 0>;
-				};
-			};
-		};
-	};
-
-Note that devices on the PCI bus are dynamically discovered using PCI's bus
-enumeration and therefore don't need corresponding device nodes in DT. However
-if a device on the PCI bus provides a non-probeable bus such as I2C or SPI,
-device nodes need to be added in order to allow the bus' children to be
-instantiated at the proper location in the operating system's device tree (as
-illustrated by the optional nodes in the example above).
-
---V88s5gaDVPzZ0KCq--
-
---UfEAyuTBtIjiZzX6
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRXoMMAAoJEN0jrNd/PrOhEscP/2t4BExCgPEZeJs6Wxkx0P9v
-tbON506DFGBmoD1pN8olOM4jSR2GnWEC+aMtszV9ATH4/3aTTP4kTG34w3Pruti0
-wn8QPSr/dbmXwcWqMqjan9P+p43o/EhaQXVmoNL/i2xh1nrSpLMfylQmzXumfeat
-Ax40zgEhN9CyNPKS4uoYmVPRLQnNPKN++G8hqm2XypJ6g6300ntm5GbyCWGldIiR
-0xHcfv6hxiaC0/QU8B+TzpJP/xQ1TGzDaNf4VvJQVl7NdINFXUVL2pdTVYLeLt41
-uRu+hFyyWcihlNlUr6CpV6E7Fca4Ymtq6azGOfYdnQ30dCS9rHD2nHx2VAUsvdY6
-2+Ygx4TzjQruz6H+90RGubpdpYv/vMESD+sbOLGm/98UUykPAmKuKdjiwDcKcIfs
-oFHw06LugZLdw/cXcqT7YNcfL/mV+2mXTgaYkfUlka/khnzAFN80Tyv3WV8zetZ+
-AGf8lwvJJd3AUybVx0lyjclkORi4icHeoW/LYlvXIa88/Hk+ZFMEGVYFL4jl+vhq
-2S/lHfiQEtqcCaltgthKBvE9svCFJTwV2YCRLHGL/xGOuCL1r+JIZmI+l7pIzuaj
-cccbGTp/yXtyxzcd6xvhiV0iKTaQ2XRBG4hGMSqZzgI6zYCBKnwbf2zPNwng/CDz
-wN0Yg6/YVU7JxsG2HUrZ
-=WF+a
------END PGP SIGNATURE-----
-
---UfEAyuTBtIjiZzX6--
+- Lars
