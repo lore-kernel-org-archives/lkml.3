@@ -1,644 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162587Ab3DET0K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 15:26:10 -0400
-Received: from usindpps04.hds.com ([207.126.252.17]:57993 "EHLO
-	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162546Ab3DET0H convert rfc822-to-8bit (ORCPT
+	id S1162605Ab3DET0V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 15:26:21 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:47356 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162546Ab3DET0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 15:26:07 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-CC: "Thomas Gleixner (tglx@linutronix.de)" <tglx@linutronix.de>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>,
-        "Borislav Petkov (bp@alien8.de)" <bp@alien8.de>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Subject: RE: [PATCH v12 3/3] trace,x86: code-sharing between non-trace and
- trace irq handlers
-Thread-Topic: [PATCH v12 3/3] trace,x86: code-sharing between non-trace and
- trace irq handlers
-Thread-Index: Ac4yMsLoDKRDE6+HTHWLu1jFQu+oqQAABrCA
-Date: Fri, 5 Apr 2013 19:25:26 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41AF862AE@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D41AF86286@USINDEM103.corp.hds.com>
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D41AF86286@USINDEM103.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
- definitions=2013-04-05_04:2013-04-05,2013-04-05,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
- definitions=main-1304050198
+	Fri, 5 Apr 2013 15:26:19 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: linux-kernel@vger.kernel.org
+Cc: Neil Horman <nhorman@tuxdriver.com>, Prarit Bhargava <prarit@redhat.com>,
+        Don Zickus <dzickus@redhat.com>, Don Dutile <ddutile@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Asit Mallick <asit.k.mallick@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pci@vger.kernel.org
+Subject: [PATCH v5] irq: add quirk for broken interrupt remapping on 55XX chipsets
+Date: Fri,  5 Apr 2013 15:25:54 -0400
+Message-Id: <1365189954-8896-1-git-send-email-nhorman@tuxdriver.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
+References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven,
+A few years back intel published a spec update:
+http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
 
-I confirmed that smp_apic_timer_interrupt is traced in a function graph tracing below.
-If additional testing is needed, please let me know.
+For the 5520 and 5500 chipsets which contained an errata (specificially errata
+53), which noted that these chipsets can't properly do interrupt remapping, and
+as a result the recommend that interrupt remapping be disabled in bios.  While
+many vendors have a bios update to do exactly that, not all do, and of course
+not all users update their bios to a level that corrects the problem.  As a
+result, occasionally interrupts can arrive at a cpu even after affinity for that
+interrupt has be moved, leading to lost or spurrious interrupts (usually
+characterized by the message:
+kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
 
-trace-cmd start -p function_graph -g "smp_trace_apic_timer_interrupt"    -g "smp_apic_timer_interrupt" -e irq_vectors
-  plugin function_graph
+There have been several incidents recently of people seeing this error, and
+investigation has shown that they have system for which their BIOS level is such
+that this feature was not properly turned off.  As such, it would be good to
+give them a reminder that their systems are vulnurable to this problem.
 
-Seiji
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Prarit Bhargava <prarit@redhat.com>
+CC: Don Zickus <dzickus@redhat.com>
+CC: Don Dutile <ddutile@redhat.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: Asit Mallick <asit.k.mallick@intel.com>
+CC: David Woodhouse <dwmw2@infradead.org>
+CC: linux-pci@vger.kernel.org
+---
 
-> -----Original Message-----
-> From: Seiji Aguchi
-> Sent: Friday, April 05, 2013 3:22 PM
-> To: linux-kernel@vger.kernel.org; x86@kernel.org; rostedt@goodmis.org; hpa@zytor.com
-> Cc: Thomas Gleixner (tglx@linutronix.de); 'mingo@elte.hu' (mingo@elte.hu); Borislav Petkov (bp@alien8.de); linux-
-> edac@vger.kernel.org; Luck, Tony (tony.luck@intel.com); dle-develop@lists.sourceforge.net; Tomoki Sekiyama
-> Subject: [PATCH v12 3/3] trace,x86: code-sharing between non-trace and trace irq handlers
-> 
-> [Issue]
-> 
-> Currently, irq vector handlers for tracing are just copied non-trace handlers by simply inserting tracepoints.
-> 
-> It is difficult to manage the codes.
-> 
-> [Solution]
-> 
-> This patch shares common codes between non-trace and trace handlers as follows to make them manageable and readable.
-> 
-> Non-trace irq handler:
-> smp_irq_handler()
-> {
-> 	entering_irq(); /* pre-processing of this handler */
-> 	__smp_irq_handler(); /*
->                           * common logic between non-trace and trace handlers
->                           * in a vector.
->                           */
-> 	exiting_irq(); /* post-processing of this handler */
-> 
-> }
-> 
-> Trace irq_handler:
-> smp_trace_irq_handler()
-> {
-> 	entering_irq(); /* pre-processing of this handler */
-> 	trace_irq_entry(); /* tracepoint for irq entry */
-> 	__smp_irq_handler(); /*
->                           * common logic between non-trace and trace handlers
->                           * in a vector.
->                           */
-> 	trace_irq_exit(); /* tracepoint for irq exit */
-> 	exiting_irq(); /* post-processing of this handler */
-> 
-> }
-> 
-> If tracepoints can place outside entering_irq()/exiting_irq() as follows, it looks \ cleaner.
-> 
-> smp_trace_irq_handler()
-> {
-> 	trace_irq_entry();
-> 	smp_irq_handler();
-> 	trace_irq_exit();
-> }
-> 
-> But it doesn't work.
-> The problem is with irq_enter/exit() being called. They must be called before \ trace_irq_enter/exit(),  because of the rcu_irq_enter()
-> must be called before any \ tracepoints are used, as tracepoints use  rcu to synchronize.
-> 
-> As a possible alternative, we may be able to call irq_enter() first as follows if \
-> irq_enter() can nest.
-> 
-> smp_trace_irq_hander()
-> {
-> 	irq_entry();
-> 	trace_irq_entry();
-> 	smp_irq_handler();
-> 	trace_irq_exit();
-> 	irq_exit();
-> }
-> 
-> But it doesn't work, either.
-> If irq_enter() is nested, it may have a time penalty because it has to check if it \ was already called or not. The time penalty is not
-> desired in performance sensitive \ paths even if it is tiny.
-> 
-> Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-> ---
->  arch/x86/include/asm/apic.h              |   27 ++++++++
->  arch/x86/kernel/apic/apic.c              |  103 ++++++++----------------------
->  arch/x86/kernel/cpu/mcheck/therm_throt.c |   24 +++----
->  arch/x86/kernel/cpu/mcheck/threshold.c   |   24 +++----
->  arch/x86/kernel/irq.c                    |   34 +++-------
->  arch/x86/kernel/irq_work.c               |   22 ++++--
->  arch/x86/kernel/smp.c                    |   54 ++++++++++------
->  7 files changed, 137 insertions(+), 151 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h index 3388034..f8119b5 100644
-> --- a/arch/x86/include/asm/apic.h
-> +++ b/arch/x86/include/asm/apic.h
-> @@ -12,6 +12,7 @@
->  #include <asm/fixmap.h>
->  #include <asm/mpspec.h>
->  #include <asm/msr.h>
-> +#include <asm/idle.h>
-> 
->  #define ARCH_APICTIMER_STOPS_ON_C3	1
-> 
-> @@ -687,5 +688,31 @@ extern int default_check_phys_apicid_present(int phys_apicid);  #endif
-> 
->  #endif /* CONFIG_X86_LOCAL_APIC */
-> +extern void irq_enter(void);
-> +extern void irq_exit(void);
-> +
-> +static inline void entering_irq(void)
-> +{
-> +	irq_enter();
-> +	exit_idle();
-> +}
-> +
-> +static inline void entering_ack_irq(void) {
-> +	ack_APIC_irq();
-> +	entering_irq();
-> +}
-> +
-> +static inline void exiting_irq(void)
-> +{
-> +	irq_exit();
-> +}
-> +
-> +static inline void exiting_ack_irq(void) {
-> +	irq_exit();
-> +	/* Ack only at the end to avoid potential reentry */
-> +	ack_APIC_irq();
-> +}
-> 
->  #endif /* _ASM_X86_APIC_H */
-> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c index 7d39c68..61ced40 100644
-> --- a/arch/x86/kernel/apic/apic.c
-> +++ b/arch/x86/kernel/apic/apic.c
-> @@ -922,17 +922,14 @@ void __irq_entry smp_apic_timer_interrupt(struct pt_regs *regs)
->  	/*
->  	 * NOTE! We'd better ACK the irq immediately,
->  	 * because timer handling can be slow.
-> -	 */
-> -	ack_APIC_irq();
-> -	/*
-> +	 *
->  	 * update_process_times() expects us to have done irq_enter().
->  	 * Besides, if we don't timer interrupts ignore the global
->  	 * interrupt lock, which is the WrongThing (tm) to do.
->  	 */
-> -	irq_enter();
-> -	exit_idle();
-> +	entering_ack_irq();
->  	local_apic_timer_interrupt();
-> -	irq_exit();
-> +	exiting_irq();
-> 
->  	set_irq_regs(old_regs);
->  }
-> @@ -944,19 +941,16 @@ void __irq_entry smp_trace_apic_timer_interrupt(struct pt_regs *regs)
->  	/*
->  	 * NOTE! We'd better ACK the irq immediately,
->  	 * because timer handling can be slow.
-> -	 */
-> -	ack_APIC_irq();
-> -	/*
-> +	 *
->  	 * update_process_times() expects us to have done irq_enter().
->  	 * Besides, if we don't timer interrupts ignore the global
->  	 * interrupt lock, which is the WrongThing (tm) to do.
->  	 */
-> -	irq_enter();
-> -	exit_idle();
-> +	entering_ack_irq();
->  	trace_local_timer_entry(LOCAL_TIMER_VECTOR);
->  	local_apic_timer_interrupt();
->  	trace_local_timer_exit(LOCAL_TIMER_VECTOR);
-> -	irq_exit();
-> +	exiting_irq();
-> 
->  	set_irq_regs(old_regs);
->  }
-> @@ -1934,12 +1928,10 @@ int __init APIC_init_uniprocessor(void)
->  /*
->   * This interrupt should _never_ happen with our APIC/SMP architecture
->   */
-> -void smp_spurious_interrupt(struct pt_regs *regs)
-> +static inline void __smp_spurious_interrupt(void)
->  {
->  	u32 v;
-> 
-> -	irq_enter();
-> -	exit_idle();
->  	/*
->  	 * Check if this really is a spurious interrupt and ACK it
->  	 * if it is a vectored one.  Just in case...
-> @@ -1954,38 +1946,28 @@ void smp_spurious_interrupt(struct pt_regs *regs)
->  	/* see sw-dev-man vol 3, chapter 7.4.13.5 */
->  	pr_info("spurious APIC interrupt on CPU#%d, "
->  		"should never happen.\n", smp_processor_id());
-> -	irq_exit();
->  }
-> 
-> -void smp_trace_spurious_interrupt(struct pt_regs *regs)
-> +void smp_spurious_interrupt(struct pt_regs *regs)
->  {
-> -	u32 v;
-> +	entering_irq();
-> +	__smp_spurious_interrupt();
-> +	exiting_irq();
-> +}
-> 
-> -	irq_enter();
-> -	exit_idle();
-> +void smp_trace_spurious_interrupt(struct pt_regs *regs) {
-> +	entering_irq();
->  	trace_spurious_apic_entry(SPURIOUS_APIC_VECTOR);
-> -	/*
-> -	 * Check if this really is a spurious interrupt and ACK it
-> -	 * if it is a vectored one.  Just in case...
-> -	 * Spurious interrupts should not be ACKed.
-> -	 */
-> -	v = apic_read(APIC_ISR + ((SPURIOUS_APIC_VECTOR & ~0x1f) >> 1));
-> -	if (v & (1 << (SPURIOUS_APIC_VECTOR & 0x1f)))
-> -		ack_APIC_irq();
-> -
-> -	inc_irq_stat(irq_spurious_count);
-> -
-> -	/* see sw-dev-man vol 3, chapter 7.4.13.5 */
-> -	pr_info("spurious APIC interrupt on CPU#%d, "
-> -		"should never happen.\n", smp_processor_id());
-> +	__smp_spurious_interrupt();
->  	trace_spurious_apic_exit(SPURIOUS_APIC_VECTOR);
-> -	irq_exit();
-> +	exiting_irq();
->  }
-> 
->  /*
->   * This interrupt should never happen with our APIC/SMP architecture
->   */
-> -void smp_error_interrupt(struct pt_regs *regs)
-> +static inline void __smp_error_interrupt(struct pt_regs *regs)
->  {
->  	u32 v0, v1;
->  	u32 i = 0;
-> @@ -2000,8 +1982,6 @@ void smp_error_interrupt(struct pt_regs *regs)
->  		"Illegal register address",	/* APIC Error Bit 7 */
->  	};
-> 
-> -	irq_enter();
-> -	exit_idle();
->  	/* First tickle the hardware, only then report what went on. -- REW */
->  	v0 = apic_read(APIC_ESR);
->  	apic_write(APIC_ESR, 0);
-> @@ -2022,49 +2002,22 @@ void smp_error_interrupt(struct pt_regs *regs)
-> 
->  	apic_printk(APIC_DEBUG, KERN_CONT "\n");
-> 
-> -	irq_exit();
->  }
-> 
-> -void smp_trace_error_interrupt(struct pt_regs *regs)
-> +void smp_error_interrupt(struct pt_regs *regs)
->  {
-> -	u32 v0, v1;
-> -	u32 i = 0;
-> -	static const char * const error_interrupt_reason[] = {
-> -		"Send CS error",		/* APIC Error Bit 0 */
-> -		"Receive CS error",		/* APIC Error Bit 1 */
-> -		"Send accept error",		/* APIC Error Bit 2 */
-> -		"Receive accept error",		/* APIC Error Bit 3 */
-> -		"Redirectable IPI",		/* APIC Error Bit 4 */
-> -		"Send illegal vector",		/* APIC Error Bit 5 */
-> -		"Received illegal vector",	/* APIC Error Bit 6 */
-> -		"Illegal register address",	/* APIC Error Bit 7 */
-> -	};
-> +	entering_irq();
-> +	__smp_error_interrupt(regs);
-> +	exiting_irq();
-> +}
-> 
-> -	irq_enter();
-> -	exit_idle();
-> +void smp_trace_error_interrupt(struct pt_regs *regs) {
-> +	entering_irq();
->  	trace_error_apic_entry(ERROR_APIC_VECTOR);
-> -	/* First tickle the hardware, only then report what went on. -- REW */
-> -	v0 = apic_read(APIC_ESR);
-> -	apic_write(APIC_ESR, 0);
-> -	v1 = apic_read(APIC_ESR);
-> -	ack_APIC_irq();
-> -	atomic_inc(&irq_err_count);
-> -
-> -	apic_printk(APIC_DEBUG, KERN_DEBUG "APIC error on CPU%d: %02x(%02x)",
-> -		    smp_processor_id(), v0 , v1);
-> -
-> -	v1 = v1 & 0xff;
-> -	while (v1) {
-> -		if (v1 & 0x1)
-> -			apic_printk(APIC_DEBUG, KERN_CONT " : %s", error_interrupt_reason[i]);
-> -		i++;
-> -		v1 >>= 1;
-> -	}
-> -
-> -	apic_printk(APIC_DEBUG, KERN_CONT "\n");
-> -
-> +	__smp_error_interrupt(regs);
->  	trace_error_apic_exit(ERROR_APIC_VECTOR);
-> -	irq_exit();
-> +	exiting_irq();
->  }
-> 
->  /**
-> diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> index e7aa7fc..2f3a799 100644
-> --- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> +++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> @@ -379,28 +379,26 @@ static void unexpected_thermal_interrupt(void)
-> 
->  static void (*smp_thermal_vector)(void) = unexpected_thermal_interrupt;
-> 
-> -asmlinkage void smp_thermal_interrupt(struct pt_regs *regs)
-> +static inline void __smp_thermal_interrupt(void)
->  {
-> -	irq_enter();
-> -	exit_idle();
->  	inc_irq_stat(irq_thermal_count);
->  	smp_thermal_vector();
-> -	irq_exit();
-> -	/* Ack only at the end to avoid potential reentry */
-> -	ack_APIC_irq();
-> +}
-> +
-> +asmlinkage void smp_thermal_interrupt(struct pt_regs *regs) {
-> +	entering_irq();
-> +	__smp_thermal_interrupt();
-> +	exiting_ack_irq();
->  }
-> 
->  asmlinkage void smp_trace_thermal_interrupt(struct pt_regs *regs)  {
-> -	irq_enter();
-> -	exit_idle();
-> +	entering_irq();
->  	trace_thermal_apic_entry(THERMAL_APIC_VECTOR);
-> -	inc_irq_stat(irq_thermal_count);
-> -	smp_thermal_vector();
-> +	__smp_thermal_interrupt();
->  	trace_thermal_apic_exit(THERMAL_APIC_VECTOR);
-> -	irq_exit();
-> -	/* Ack only at the end to avoid potential reentry */
-> -	ack_APIC_irq();
-> +	exiting_ack_irq();
->  }
-> 
->  /* Thermal monitoring depends on APIC, ACPI and clock modulation */ diff --git a/arch/x86/kernel/cpu/mcheck/threshold.c
-> b/arch/x86/kernel/cpu/mcheck/threshold.c
-> index 0cbef99..fe6b1c8 100644
-> --- a/arch/x86/kernel/cpu/mcheck/threshold.c
-> +++ b/arch/x86/kernel/cpu/mcheck/threshold.c
-> @@ -18,26 +18,24 @@ static void default_threshold_interrupt(void)
-> 
->  void (*mce_threshold_vector)(void) = default_threshold_interrupt;
-> 
-> -asmlinkage void smp_threshold_interrupt(void)
-> +static inline void __smp_threshold_interrupt(void)
->  {
-> -	irq_enter();
-> -	exit_idle();
->  	inc_irq_stat(irq_threshold_count);
->  	mce_threshold_vector();
-> -	irq_exit();
-> -	/* Ack only at the end to avoid potential reentry */
-> -	ack_APIC_irq();
-> +}
-> +
-> +asmlinkage void smp_threshold_interrupt(void) {
-> +	entering_irq();
-> +	__smp_threshold_interrupt();
-> +	exiting_ack_irq();
->  }
-> 
->  asmlinkage void smp_trace_threshold_interrupt(void)
->  {
-> -	irq_enter();
-> -	exit_idle();
-> +	entering_irq();
->  	trace_threshold_apic_entry(THRESHOLD_APIC_VECTOR);
-> -	inc_irq_stat(irq_threshold_count);
-> -	mce_threshold_vector();
-> +	__smp_threshold_interrupt();
->  	trace_threshold_apic_exit(THRESHOLD_APIC_VECTOR);
-> -	irq_exit();
-> -	/* Ack only at the end to avoid potential reentry */
-> -	ack_APIC_irq();
-> +	exiting_ack_irq();
->  }
-> diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c index 216bec1..ae836cd 100644
-> --- a/arch/x86/kernel/irq.c
-> +++ b/arch/x86/kernel/irq.c
-> @@ -209,23 +209,21 @@ unsigned int __irq_entry do_IRQ(struct pt_regs *regs)
->  /*
->   * Handler for X86_PLATFORM_IPI_VECTOR.
->   */
-> -void smp_x86_platform_ipi(struct pt_regs *regs)
-> +void __smp_x86_platform_ipi(void)
->  {
-> -	struct pt_regs *old_regs = set_irq_regs(regs);
-> -
-> -	ack_APIC_irq();
-> -
-> -	irq_enter();
-> -
-> -	exit_idle();
-> -
->  	inc_irq_stat(x86_platform_ipis);
-> 
->  	if (x86_platform_ipi_callback)
->  		x86_platform_ipi_callback();
-> +}
-> 
-> -	irq_exit();
-> +void smp_x86_platform_ipi(struct pt_regs *regs) {
-> +	struct pt_regs *old_regs = set_irq_regs(regs);
-> 
-> +	entering_ack_irq();
-> +	__smp_x86_platform_ipi();
-> +	exiting_irq();
->  	set_irq_regs(old_regs);
->  }
-> 
-> @@ -233,21 +231,11 @@ void smp_trace_x86_platform_ipi(struct pt_regs *regs)  {
->  	struct pt_regs *old_regs = set_irq_regs(regs);
-> 
-> -	ack_APIC_irq();
-> -
-> -	irq_enter();
-> -
-> -	exit_idle();
-> -
-> +	entering_ack_irq();
->  	trace_x86_platform_ipi_entry(X86_PLATFORM_IPI_VECTOR);
-> -	inc_irq_stat(x86_platform_ipis);
-> -
-> -	if (x86_platform_ipi_callback)
-> -		x86_platform_ipi_callback();
-> -
-> +	__smp_x86_platform_ipi();
->  	trace_x86_platform_ipi_exit(X86_PLATFORM_IPI_VECTOR);
-> -	irq_exit();
-> -
-> +	exiting_irq();
->  	set_irq_regs(old_regs);
->  }
-> 
-> diff --git a/arch/x86/kernel/irq_work.c b/arch/x86/kernel/irq_work.c index 09e6262..636a55e 100644
-> --- a/arch/x86/kernel/irq_work.c
-> +++ b/arch/x86/kernel/irq_work.c
-> @@ -10,24 +10,32 @@
->  #include <asm/apic.h>
->  #include <asm/trace/irq_vectors.h>
-> 
-> -void smp_irq_work_interrupt(struct pt_regs *regs)
-> +static inline void irq_work_entering_irq(void)
->  {
->  	irq_enter();
->  	ack_APIC_irq();
-> +}
-> +
-> +static inline void __smp_irq_work_interrupt(void) {
->  	inc_irq_stat(apic_irq_work_irqs);
->  	irq_work_run();
-> -	irq_exit();
-> +}
-> +
-> +void smp_irq_work_interrupt(struct pt_regs *regs) {
-> +	irq_work_entering_irq();
-> +	__smp_irq_work_interrupt();
-> +	exiting_irq();
->  }
-> 
->  void smp_trace_irq_work_interrupt(struct pt_regs *regs)  {
-> -	irq_enter();
-> -	ack_APIC_irq();
-> +	irq_work_entering_irq();
->  	trace_irq_work_entry(IRQ_WORK_VECTOR);
-> -	inc_irq_stat(apic_irq_work_irqs);
-> -	irq_work_run();
-> +	__smp_irq_work_interrupt();
->  	trace_irq_work_exit(IRQ_WORK_VECTOR);
-> -	irq_exit();
-> +	exiting_irq();
->  }
-> 
->  void arch_irq_work_raise(void)
-> diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c index aad58af..f4fe0b8 100644
-> --- a/arch/x86/kernel/smp.c
-> +++ b/arch/x86/kernel/smp.c
-> @@ -250,11 +250,16 @@ finish:
->  /*
->   * Reschedule call back.
->   */
-> -void smp_reschedule_interrupt(struct pt_regs *regs)
-> +static inline void __smp_reschedule_interrupt(void)
->  {
-> -	ack_APIC_irq();
->  	inc_irq_stat(irq_resched_count);
->  	scheduler_ipi();
-> +}
-> +
-> +void smp_reschedule_interrupt(struct pt_regs *regs) {
-> +	ack_APIC_irq();
-> +	__smp_reschedule_interrupt();
->  	/*
->  	 * KVM uses this interrupt to force a cpu out of guest mode
->  	 */
-> @@ -264,52 +269,61 @@ void smp_trace_reschedule_interrupt(struct pt_regs *regs)  {
->  	ack_APIC_irq();
->  	trace_reschedule_entry(RESCHEDULE_VECTOR);
-> -	inc_irq_stat(irq_resched_count);
-> -	scheduler_ipi();
-> +	__smp_reschedule_interrupt();
->  	trace_reschedule_exit(RESCHEDULE_VECTOR);
->  	/*
->  	 * KVM uses this interrupt to force a cpu out of guest mode
->  	 */
->  }
-> 
-> -void smp_call_function_interrupt(struct pt_regs *regs)
-> +static inline void call_function_entering_irq(void)
->  {
->  	ack_APIC_irq();
->  	irq_enter();
-> +}
-> +
-> +static inline void __smp_call_function_interrupt(void)
-> +{
->  	generic_smp_call_function_interrupt();
->  	inc_irq_stat(irq_call_count);
-> -	irq_exit();
-> +}
-> +
-> +void smp_call_function_interrupt(struct pt_regs *regs) {
-> +	call_function_entering_irq();
-> +	__smp_call_function_interrupt();
-> +	exiting_irq();
->  }
-> 
->  void smp_trace_call_function_interrupt(struct pt_regs *regs)  {
-> -	ack_APIC_irq();
-> -	irq_enter();
-> +	call_function_entering_irq();
->  	trace_call_function_entry(CALL_FUNCTION_VECTOR);
-> -	generic_smp_call_function_interrupt();
-> -	inc_irq_stat(irq_call_count);
-> +	__smp_call_function_interrupt();
->  	trace_call_function_exit(CALL_FUNCTION_VECTOR);
-> -	irq_exit();
-> +	exiting_irq();
->  }
-> 
-> -void smp_call_function_single_interrupt(struct pt_regs *regs)
-> +static inline void __smp_call_function_single_interrupt(void)
->  {
-> -	ack_APIC_irq();
-> -	irq_enter();
->  	generic_smp_call_function_single_interrupt();
->  	inc_irq_stat(irq_call_count);
-> -	irq_exit();
-> +}
-> +
-> +void smp_call_function_single_interrupt(struct pt_regs *regs) {
-> +	call_function_entering_irq();
-> +	__smp_call_function_single_interrupt();
-> +	exiting_irq();
->  }
-> 
->  void smp_trace_call_function_single_interrupt(struct pt_regs *regs)  {
-> -	ack_APIC_irq();
-> -	irq_enter();
-> +	call_function_entering_irq();
->  	trace_call_function_single_entry(CALL_FUNCTION_SINGLE_VECTOR);
-> -	generic_smp_call_function_single_interrupt();
-> -	inc_irq_stat(irq_call_count);
-> +	__smp_call_function_single_interrupt();
->  	trace_call_function_single_exit(CALL_FUNCTION_SINGLE_VECTOR);
-> -	irq_exit();
-> +	exiting_irq();
->  }
-> 
->  static int __init nonmi_ipi_setup(char *str)
-> --
-> 1.7.1
+Change notes:
+
+v2)
+
+* Moved the quirk to the x86 arch, since consensus seems to be that the 55XX
+chipset series is x86 only.  I decided however to keep the quirk as a regular
+quirk, not an early_quirk.  Early quirks have no way currently to determine if
+BIOS has properly disabled the feature in the iommu, at least not without
+significant hacking, and since its quite possible this will be a short lived
+quirk, should Don Z's workaround code prove successful (and it looks like it may
+well), I don't think that necessecary.
+
+* Removed the WARNING banner from the quirk, and added the HW_ERR token to the
+string, I opted to leave the newlines in place however, as I really couldnt
+find a way to keep the text on a single line is still legible from a code
+perspective.  I think theres enough language in there that using cscope on just
+about any substring however will turn it up, and again, this may be a short
+lived quirk.
+
+v3)
+
+* Removed defines from pci_ids.h, and used direct id values as per request from
+Bjorn.
+
+v4)
+
+* Converted pr_warn to WARN_TAINT(TAINT_FIRMWARE_WORKAROUND) as per David
+Woodhouse
+
+v5)
+
+* Moved check to an early quirk, and flagged the broken chip, so we could
+reasonably disable irq remapping during bootup.
+---
+ arch/x86/kernel/early-quirks.c | 25 +++++++++++++++++++++++++
+ arch/x86/kernel/quirks.c       |  2 ++
+ drivers/iommu/irq_remapping.c  | 12 ++++++++++++
+ drivers/iommu/irq_remapping.h  |  1 +
+ 4 files changed, 40 insertions(+)
+
+diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+index 3755ef4..bfa3139 100644
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -192,6 +192,27 @@ static void __init ati_bugs_contd(int num, int slot, int func)
+ }
+ #endif
+ 
++#ifdef CONFIG_IRQ_REMAP
++static void __init intel_remapping_check(int num, int slot, int func)
++{
++	u8 revision;
++
++	revision = pci_read_config_byte(num, slot, func , PCI_REVISION_ID);
++
++	/*
++	 * Revision 0x13 of this chipset supports irq remapping
++	 * but has an erratum that breaks its behavior, flag it as such
++	 */
++	if (revision == 0x13)
++		irq_remap_broken = 1;
++
++}
++#else
++static void __init intel_remapping_check(int num, int slot, int func)
++{
++}
++#endif
++
+ #define QFLAG_APPLY_ONCE 	0x1
+ #define QFLAG_APPLIED		0x2
+ #define QFLAG_DONE		(QFLAG_APPLY_ONCE|QFLAG_APPLIED)
+@@ -221,6 +242,10 @@ static struct chipset early_qrk[] __initdata = {
+ 	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs },
+ 	{ PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
+ 	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs_contd },
++	{ PCI_VENDOR_ID_INTEL, 0x3403, PCI_CLASS_BRIDGE_HOST,
++	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
++	{ PCI_VENDOR_ID_INTEL, 0x3406, PCI_CLASS_BRIDGE_HOST,
++	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
+ 	{}
+ };
+ 
+diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
+index 26ee48a..2136844 100644
+--- a/arch/x86/kernel/quirks.c
++++ b/arch/x86/kernel/quirks.c
+@@ -5,6 +5,7 @@
+ #include <linux/irq.h>
+ 
+ #include <asm/hpet.h>
++#include "../../../drivers/iommu/irq_remapping.h"
+ 
+ #if defined(CONFIG_X86_IO_APIC) && defined(CONFIG_SMP) && defined(CONFIG_PCI)
+ 
+@@ -567,3 +568,4 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F5,
+ 			quirk_amd_nb_node);
+ 
+ #endif
++
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index d56f8c1..2b56e92 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -19,6 +19,7 @@
+ int irq_remapping_enabled;
+ 
+ int disable_irq_remap;
++int irq_remap_broken;
+ int disable_sourceid_checking;
+ int no_x2apic_optout;
+ 
+@@ -216,6 +217,17 @@ int irq_remapping_supported(void)
+ 	if (disable_irq_remap)
+ 		return 0;
+ 
++	if (irq_remap_broken) {
++		WARN_TAINT(1, TAIN_FIRMWARE_WORKAROUND,
++			   "This system BIOS has enabled interrupt remapping\n"
++			   "on a chipset that contains an erratum making that\n"
++			   "feature unstable.  Please reboot with nointremap\n"
++			   "added to the kernel command line and contact\n"
++			   "your BIOS vendor for an update");
++		disable_irq_remap = 1;
++		return 0;
++	}
++
+ 	if (!remap_ops || !remap_ops->supported)
+ 		return 0;
+ 
+diff --git a/drivers/iommu/irq_remapping.h b/drivers/iommu/irq_remapping.h
+index ecb6376..d7537e4 100644
+--- a/drivers/iommu/irq_remapping.h
++++ b/drivers/iommu/irq_remapping.h
+@@ -32,6 +32,7 @@ struct pci_dev;
+ struct msi_msg;
+ 
+ extern int disable_irq_remap;
++extern int irq_remap_broken;
+ extern int disable_sourceid_checking;
+ extern int no_x2apic_optout;
+ extern int irq_remapping_enabled;
+-- 
+1.8.1.4
 
