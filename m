@@ -1,214 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765812Ab3DEA4K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 20:56:10 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56052 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765795Ab3DEA4I (ORCPT
+	id S1765827Ab3DEA5n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 20:57:43 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:31476 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765803Ab3DEA5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 20:56:08 -0400
-X-AuditID: 9c930197-b7b50ae00000018c-6a-515e212373eb
-Date: Fri, 5 Apr 2013 09:56:28 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Oskar Andero <oskar.andero@sonymobile.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, davem@davemloft.net,
-        anil.s.keshavamurthy@intel.com, ananth@in.ibm.com,
-        radovan.lekanovic@sonymobile.com, bjorn.davidsson@sonymobile.com,
-        Toby Collett <toby.collett@sonymobile.com>
-Subject: Re: [PATCH v2 1/4] kprobes: delay blacklist symbol lookup until we
- actually need it
-Message-ID: <20130405005628.GA13624@lge.com>
-References: <1365079889-21525-1-git-send-email-oskar.andero@sonymobile.com>
- <1365079889-21525-2-git-send-email-oskar.andero@sonymobile.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365079889-21525-2-git-send-email-oskar.andero@sonymobile.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 4 Apr 2013 20:57:42 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-7e-515e2184f9fd
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH 1/2] backlight: ili9320: use spi_set_drvdata()
+Date: Fri, 05 Apr 2013 09:57:39 +0900
+Message-id: <004101ce3198$92513a70$b6f3af50$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4xmJH+n27OKOYuSb6yuIIk4ZufNA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t8zQ90WxbhAg2PT+S3mrF/DZnF54SVW
+	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsErozPN7ex
+	Fkxjq3jUOZe9gXEGaxcjJ4eEgInEqtVvGCFsMYkL99azdTFycQgJLGOU2Pv+I1zR/3N/mUBs
+	IYHpjBKXHitD2L8YJWY8KQax2QTUJL58OczexcjBISKgL9HWogESZhYoldj64D0LSFhYwE7i
+	7LQskDCLgKrE4f/vwabzCthKXHjVygJhC0r8mHyPBaJVS2L9zuNMELa8xOY1b5lBxkgIqEs8
+	+qsLEhYR0JPo2vGPEaJERGLfi3eMINdLCGxil/j7sJkNYpeAxLfJh1ggemUlNh1ghnhKUuLg
+	ihssExjFZiHZPAvJ5llINs9CsmIBI8sqRtHUguSC4qT0ImO94sTc4tK8dL3k/NxNjJD46t/B
+	ePeA9SHGZKD1E5mlRJPzgfGZVxJvaGxmZGFqYmpsZG5pRpqwkjivWot1oJBAemJJanZqakFq
+	UXxRaU5q8SFGJg5OqQbGfWeqrC4u8Qkx/PlWUuwb+0UTjzWNjBUpajcad7NuWrivU+i+knfX
+	tPtr92u6rvyr8Yztp9mFEweX7F2Qeieh6M6e54t3fZnPeypVf7sdl8g+u+bHWpFZzuvcwxa1
+	92avec016eSVu6Zijo/l2j4X7qsxmJBQccXumdK199K6L/df8pzl8fx6kBJLcUaioRZzUXEi
+	AISBGbrFAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42I5/e+xoG6LYlygwYRPXBZz1q9hs7i88BKr
+	xeVdc9gsdu96yurA4nFixm8Wjz3zf7B69G1ZxejxeZNcAEtUA6NNRmpiSmqRQmpecn5KZl66
+	rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBOJYWyxJxSoFBAYnGxkr4dpgmhIW66
+	FjCNEbq+IUFwPUYGaCBhHWPG55vbWAumsVU86pzL3sA4g7WLkZNDQsBE4v+5v0wQtpjEhXvr
+	2UBsIYHpjBKXHitD2L8YJWY8KQax2QTUJL58OczexcjBISKgL9HWogESZhYoldj64D0LSFhY
+	wE7i7LQskDCLgKrE4f/vwTbxCthKXHjVygJhC0r8mHyPBaJVS2L9zuNMELa8xOY1b5lBxkgI
+	qEs8+qsLEhYR0JPo2vGPEaJERGLfi3eMExgFZiGZNAvJpFlIJs1C0rKAkWUVo2hqQXJBcVJ6
+	rpFecWJucWleul5yfu4mRnD0PpPewbiqweIQowAHoxIPb0ZfbKAQa2JZcWXuIUYJDmYlEd6d
+	fHGBQrwpiZVVqUX58UWlOanFhxiTgR6dyCwlmpwPTCx5JfGGxiZmRpZGZhZGJubmpAkrifMe
+	bLUOFBJITyxJzU5NLUgtgtnCxMEp1cAYzL6ez9HhzvGeA/e1H9bIu6lyKu/7Kb751dPktt2p
+	l74of3r26Uf2BdtbB/c78Kyovti4P7lIx/iP60RrZrODRVNuPJV55/P8cNkCw6hOkfLyWTdt
+	JNzW/FK7MSkx45L+JrPqM3nL55n5fLFtdlS+yLAjQGM249brPzUk9c+ddQqX3LJFp7hdiaU4
+	I9FQi7moOBEA7Hn82SIDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oskar.
+Use the wrapper functions for getting and setting the driver data using
+spi_device instead of using dev_{get|set}_drvdata with &spi->dev, so we
+can directly pass a struct spi_device.
 
-On Thu, Apr 04, 2013 at 02:51:26PM +0200, Oskar Andero wrote:
-> From: Toby Collett <toby.collett@sonymobile.com>
-> 
-> The symbol lookup can take a long time and kprobes is
-> initialised very early in boot, so delay symbol lookup
-> until the blacklist is first used.
-> 
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: David S. Miller <davem@davemloft.net>
-> Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
-> Signed-off-by: Toby Collett <toby.collett@sonymobile.com>
-> Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
-> ---
->  kernel/kprobes.c | 98 ++++++++++++++++++++++++++++++++++----------------------
->  1 file changed, 60 insertions(+), 38 deletions(-)
-> 
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index e35be53..0a270e5 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -68,6 +68,7 @@
->  #endif
->  
->  static int kprobes_initialized;
-> +static int kprobe_blacklist_initialized;
->  static struct hlist_head kprobe_table[KPROBE_TABLE_SIZE];
->  static struct hlist_head kretprobe_inst_table[KPROBE_TABLE_SIZE];
->  
-> @@ -102,6 +103,60 @@ static struct kprobe_blackpoint kprobe_blacklist[] = {
->  	{NULL}    /* Terminator */
->  };
->  
-> +/* it can take some time ( > 100ms ) to initialise the
-> + * blacklist so we delay this until we actually need it
-> + */
-> +static void init_kprobe_blacklist(void)
-> +{
-> +	int i;
-> +	unsigned long offset = 0, size = 0;
-> +	char *modname, namebuf[128];
-> +	const char *symbol_name;
-> +	void *addr;
-> +	struct kprobe_blackpoint *kb;
-> +
-> +	mutex_lock(&kprobe_mutex);
-> +	if (kprobe_blacklist_initialized)
-> +		goto out;
-> +
-> +	/*
-> +	 * Lookup and populate the kprobe_blacklist.
-> +	 *
-> +	 * Unlike the kretprobe blacklist, we'll need to determine
-> +	 * the range of addresses that belong to the said functions,
-> +	 * since a kprobe need not necessarily be at the beginning
-> +	 * of a function.
-> +	 */
-> +	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
-> +		kprobe_lookup_name(kb->name, addr);
-> +		if (!addr)
-> +			continue;
-> +
-> +		kb->start_addr = (unsigned long)addr;
-> +		symbol_name = kallsyms_lookup(kb->start_addr,
-> +				&size, &offset, &modname, namebuf);
-> +		if (!symbol_name)
-> +			kb->range = 0;
-> +		else
-> +			kb->range = size;
-> +	}
-> +
-> +	if (kretprobe_blacklist_size) {
-> +		/* lookup the function address from its name */
-> +		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
-> +			kprobe_lookup_name(kretprobe_blacklist[i].name,
-> +					   kretprobe_blacklist[i].addr);
-> +			if (!kretprobe_blacklist[i].addr)
-> +				printk("kretprobe: lookup failed: %s\n",
-> +				       kretprobe_blacklist[i].name);
-> +		}
-> +	}
-> +	kprobe_blacklist_initialized = 1;
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+---
+ drivers/video/backlight/ili9320.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-You need smp_wmb() before assigning 'kprobe_blacklist_initialized = 1'.
-This guarantee that who see kprobe_blacklist_initialized = 1 will get
-updated data of kprobe_blacklist.
+diff --git a/drivers/video/backlight/ili9320.c b/drivers/video/backlight/ili9320.c
+index 1235bf9..c3a5299 100644
+--- a/drivers/video/backlight/ili9320.c
++++ b/drivers/video/backlight/ili9320.c
+@@ -231,7 +231,7 @@ int ili9320_probe_spi(struct spi_device *spi,
+ 	ili->power = FB_BLANK_POWERDOWN;
+ 	ili->platdata = cfg;
+ 
+-	dev_set_drvdata(&spi->dev, ili);
++	spi_set_drvdata(spi, ili);
+ 
+ 	ili9320_setup_spi(ili, spi);
+ 
+-- 
+1.7.2.5
 
-Please refer my previous patch once more :)
 
-And How about define kprobe_blacklist_initialized as boolean?
-
-Thanks.
-
-> +
-> +out:
-> +	mutex_unlock(&kprobe_mutex);
-> +}
-> +
->  #ifdef __ARCH_WANT_KPROBES_INSN_SLOT
->  /*
->   * kprobe->ainsn.insn points to the copy of the instruction to be
-> @@ -1331,6 +1386,9 @@ static int __kprobes in_kprobes_functions(unsigned long addr)
->  	if (addr >= (unsigned long)__kprobes_text_start &&
->  	    addr < (unsigned long)__kprobes_text_end)
->  		return -EINVAL;
-> +
-> +	if (unlikely(!kprobe_blacklist_initialized))
-> +		init_kprobe_blacklist();
->  	/*
->  	 * If there exists a kprobe_blacklist, verify and
->  	 * fail any probe registration in the prohibited area
-> @@ -1816,6 +1874,8 @@ int __kprobes register_kretprobe(struct kretprobe *rp)
->  	void *addr;
->  
->  	if (kretprobe_blacklist_size) {
-> +		if (unlikely(!kprobe_blacklist_initialized))
-> +			init_kprobe_blacklist();
->  		addr = kprobe_addr(&rp->kp);
->  		if (IS_ERR(addr))
->  			return PTR_ERR(addr);
-> @@ -2065,11 +2125,6 @@ static struct notifier_block kprobe_module_nb = {
->  static int __init init_kprobes(void)
->  {
->  	int i, err = 0;
-> -	unsigned long offset = 0, size = 0;
-> -	char *modname, namebuf[128];
-> -	const char *symbol_name;
-> -	void *addr;
-> -	struct kprobe_blackpoint *kb;
->  
->  	/* FIXME allocate the probe table, currently defined statically */
->  	/* initialize all list heads */
-> @@ -2079,39 +2134,6 @@ static int __init init_kprobes(void)
->  		raw_spin_lock_init(&(kretprobe_table_locks[i].lock));
->  	}
->  
-> -	/*
-> -	 * Lookup and populate the kprobe_blacklist.
-> -	 *
-> -	 * Unlike the kretprobe blacklist, we'll need to determine
-> -	 * the range of addresses that belong to the said functions,
-> -	 * since a kprobe need not necessarily be at the beginning
-> -	 * of a function.
-> -	 */
-> -	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
-> -		kprobe_lookup_name(kb->name, addr);
-> -		if (!addr)
-> -			continue;
-> -
-> -		kb->start_addr = (unsigned long)addr;
-> -		symbol_name = kallsyms_lookup(kb->start_addr,
-> -				&size, &offset, &modname, namebuf);
-> -		if (!symbol_name)
-> -			kb->range = 0;
-> -		else
-> -			kb->range = size;
-> -	}
-> -
-> -	if (kretprobe_blacklist_size) {
-> -		/* lookup the function address from its name */
-> -		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
-> -			kprobe_lookup_name(kretprobe_blacklist[i].name,
-> -					   kretprobe_blacklist[i].addr);
-> -			if (!kretprobe_blacklist[i].addr)
-> -				printk("kretprobe: lookup failed: %s\n",
-> -				       kretprobe_blacklist[i].name);
-> -		}
-> -	}
-> -
->  #if defined(CONFIG_OPTPROBES)
->  #if defined(__ARCH_WANT_KPROBES_INSN_SLOT)
->  	/* Init kprobe_optinsn_slots */
-> -- 
-> 1.8.1.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
