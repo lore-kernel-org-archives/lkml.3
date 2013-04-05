@@ -1,78 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162017Ab3DEQRK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 12:17:10 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:58350 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161964Ab3DEQRJ convert rfc822-to-8bit (ORCPT
+	id S1162004Ab3DEQWK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 12:22:10 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:46417 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161938Ab3DEQWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 12:17:09 -0400
-From: Jan-Simon =?ISO-8859-1?Q?M=F6ller?= <jsmoeller.linux@gmail.com>
-To: trivial@kernel.org, linux-kernel@vger.kernel.org, pageexec@freemail.hu
-Subject: [PATCH] [TRIVIAL] FIX: unintended variable name reuse
-Date: Fri, 05 Apr 2013 18:17:01 +0200
-Message-ID: <2178091.aRcfQYZIWb@aragorn.auenland.lan>
-User-Agent: KMail/4.10 (Linux/3.7.10-1.1-desktop; KDE/4.10.0; x86_64; ; )
+	Fri, 5 Apr 2013 12:22:09 -0400
+Date: Fri, 5 Apr 2013 12:22:05 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, will.deacon@arm.com,
+        arnd@arndb.de, rob.herring@calxeda.com
+Subject: Re: [PATCH v6 4/4] xen/arm: introduce xen_early_init, use PSCI on
+ xen
+In-Reply-To: <1365167495-18508-4-git-send-email-stefano.stabellini@eu.citrix.com>
+Message-ID: <alpine.LFD.2.03.1304051217560.1171@syhkavp.arg>
+References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-4-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup a variable name reuse. 
+On Fri, 5 Apr 2013, Stefano Stabellini wrote:
+
+> Split xen_guest_init in two functions, one of them (xen_early_init) is
+> going to be called very early from setup_arch.
+> 
+> Change machine_desc->smp_init to xen_smp_init if Xen is present on the
+> platform. xen_smp_init just sets smp_ops to psci_smp_ops.
+
+I still think the above is redundant, especially since psci_smp_ops has 
+priority over default mdesc->smp_ops.  And doing so does break MCPM. But 
+we're apparently going in circle over this issue.
 
 
-Fix suggested by PaX Team <pageexec@freemail.hu>
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
----
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c 
-b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index b43200d..4c783be 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -2428,7 +2428,7 @@ static void __init uncore_types_exit(struct 
-intel_uncore_type **types)
- static int __init uncore_type_init(struct intel_uncore_type *type)
- {
- 	struct intel_uncore_pmu *pmus;
--	struct attribute_group *events_group;
-+	struct attribute_group *attr_group;
- 	struct attribute **attrs;
- 	int i, j;
- 
-@@ -2455,19 +2455,19 @@ static int __init uncore_type_init(struct 
-intel_uncore_type *type)
- 		while (type->event_descs[i].attr.attr.name)
- 			i++;
- 
--		events_group = kzalloc(sizeof(struct attribute *) * (i + 1) +
--					sizeof(*events_group), GFP_KERNEL);
--		if (!events_group)
-+		attr_group = kzalloc(sizeof(struct attribute *) * (i + 1) +
-+					sizeof(*attr_group), GFP_KERNEL);
-+		if (!attr_group)
- 			goto fail;
- 
--		attrs = (struct attribute **)(events_group + 1);
--		events_group->name = "events";
--		events_group->attrs = attrs;
-+		attrs = (struct attribute **)(attr_group + 1);
-+		attr_group->name = "events";
-+		attr_group->attrs = attrs;
- 
- 		for (j = 0; j < i; j++)
- 			attrs[j] = &type->event_descs[j].attr.attr;
- 
--		type->events_group = events_group;
-+		type->events_group = attr_group;
- 	}
- 
- 	type->pmu_group = &uncore_pmu_attr_group;
--- 
-1.8.1.4
-
-
+Nicolas
