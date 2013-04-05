@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162972Ab3DEUuq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 16:50:46 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:60670 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162957Ab3DEUun (ORCPT
+	id S1162985Ab3DEUu4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 16:50:56 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:63695 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162097Ab3DEUux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 16:50:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH v2 2/9] arm: mvebu: Align the internal registers virtual base to support LPAE
-Date: Fri, 5 Apr 2013 22:50:28 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, Nicolas Pitre <nico@fluxnic.net>,
-        Lior Amsalem <alior@marvell.com>, Maen Suleiman <maen@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
-        "Eran Ben-Avi" <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-References: <1365193444-13441-1-git-send-email-gregory.clement@free-electrons.com> <1365193444-13441-3-git-send-email-gregory.clement@free-electrons.com>
-In-Reply-To: <1365193444-13441-3-git-send-email-gregory.clement@free-electrons.com>
+	Fri, 5 Apr 2013 16:50:53 -0400
+Message-ID: <515F392B.1030200@gmail.com>
+Date: Fri, 05 Apr 2013 15:50:51 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v6 4/4] xen/arm: introduce xen_early_init, use PSCI on
+ xen
+References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-4-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.LFD.2.03.1304051217560.1171@syhkavp.arg> <alpine.DEB.2.02.1304051725580.21065@kaball.uk.xensource.com> <alpine.LFD.2.03.1304051324190.1171@syhkavp.arg>
+In-Reply-To: <alpine.LFD.2.03.1304051324190.1171@syhkavp.arg>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304052250.28641.arnd@arndb.de>
-X-Provags-ID: V02:K0:4N9ZxWec/YhrPPkNvpx2nVgITkDGhmNfYdx3ra9GpE5
- 8HoCaLGT4daUjU7KyXJi+lwoizu8ObXfRJUfLaAoZXf7geZwAk
- 5wIhEzprS5BbtWvZGcHPHKRcTPnIxMGEUPWHwA4bZUN3q9nPIs
- Dy0nfbVDGvfMVKyXSsjv65bzpwdHP1crxrPy2yRz/cVHhpp65b
- 3tByZAIG76K6zPsBMUISWW4N7rURIyAFwdWL76hsZDhK1Ylorc
- ob6gwZ3hFOy6Wu3EBEnwrj7DwYFzciVlGHjiGE0mxfs9LtXoH6
- hyo5IS+LAtuLBSwEqz122X0e3xcdCZqK6tYh+81yOp6TjhTj6U
- 6qDpMwZ+vOXDC2LutZdA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 05 April 2013, Gregory CLEMENT wrote:
-> From: Lior Amsalem <alior@marvell.com>
+On 04/05/2013 02:36 PM, Nicolas Pitre wrote:
+> On Fri, 5 Apr 2013, Stefano Stabellini wrote:
 > 
-> In order to be able to support he LPAE, the internal registers virtual
-> base must be aligned to 2MB.
+>> This is what happens:
+>>
+>> - No Xen
+>> Xen is not running on the platform and a Xen hypervisor node is not
+>> available on device tree.
+>> Everything keeps working seamlessly, this patch doesn't change anything.
+>>
+>> - we are running on Xen
+>> Xen is running on the platform, we are running as a guest on Xen and an
+>> hypervisor node is available on device tree.
+>> Let's also assume that there aren't any "arm,cci" compatible nodes on
+>> device tree because Xen wouldn't export this kind of information to any
+>> guests right now. Therefore PSCI should be used to boot secondary cpus.
+>> Because the versatile express machine sets smp_init to
+>> vexpress_smp_init_ops, vexpress_smp_init_ops will be called.
+>> vexpress_smp_init_ops sets smp_ops to vexpress_smp_ops, that *break*
+>> Xen.
 > 
-> Signed-off-by: Lior Amsalem <alior@marvell.com>
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> OK I see.
+> 
+>> With this patch, xen_smp_init will be called instead of
+>> vexpress_smp_init_ops, and smp_ops will be set to psci_smp_ops,
+>> therefore *unbreaking* Xen.
+> 
+> However that breaks MCPM.
 
-This is a surprising limitation. Can you extend the above text to go into more
-detail where that alignment requirement comes from?
+You mean on bare metal, right? For the bare metal, "xen,xen" property
+would not be present and xen_smp_init is not used. So the vexpress MCPM
+ops will be used. Aren't Dom0 cpu's basically virtual cpus? If Xen ever
+needs the MCPM support, the Xen hook itself can figure out whether to
+use MCPM support.
 
-	Arnd
+Rob
+
