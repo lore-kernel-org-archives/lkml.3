@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161475Ab3DEIVC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 04:21:02 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:42311 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618Ab3DEIU7 (ORCPT
+	id S1161922Ab3DEIVR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 04:21:17 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:34300 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab3DEIVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 04:20:59 -0400
-Message-ID: <515E8968.9070506@hitachi.com>
-Date: Fri, 05 Apr 2013 17:20:56 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 5 Apr 2013 04:21:08 -0400
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, OSDepend <osdepend@gmail.com>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH] perf probe: Enhance error message on non-kprobeable
- functions
-References: <1365129545-11689-1-git-send-email-namhyung@kernel.org>
-In-Reply-To: <1365129545-11689-1-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAB=NE6V3sApMSGWkKbaFaJC4+VpLxgYF-xyNRKxiA-YDCwhGkQ@mail.gmail.com>
+References: <CAJ-Vmo=LVSzdEo6DhfOVT_0JHCTMmdPU1zGfMuBmhmr8QuDmJQ@mail.gmail.com>
+	<CAB=NE6V3sApMSGWkKbaFaJC4+VpLxgYF-xyNRKxiA-YDCwhGkQ@mail.gmail.com>
+Date: Fri, 5 Apr 2013 01:21:06 -0700
+X-Google-Sender-Auth: df88rk8HX5ym0EnnJDISkHSnO8c
+Message-ID: <CAJ-Vmom7gNBhyuBgg9YkCLRohR6eE-JfBYYtxfFeTkSiGhgHyw@mail.gmail.com>
+Subject: Re: Version number policy!
+From: Adrian Chadd <adrian@freebsd.org>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: ath9k_htc_fw <ath9k_htc_fw@lists.infradead.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        Christian Lamparter <chunkeey@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/04/05 11:39), Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> Some of kernel functions are not allowed to be used by kprobes for
-> some reason, so they're marked as __kprobe on the source code and
-> reside on ".kprobes.text" section.
-> 
-> However normal users which only see /proc/kallsyms don't know about
-> them and would get only general error message when tried to add a
-> probe on such function.
+On 5 April 2013 01:19, Luis R. Rodriguez <mcgrof@do-not-panic.com> wrote:
 
-Right,
+> This is better than anything we had drafted before for 802.11 open
+> firmware design rules. Cc'ing a few lists for wider review given that
+> what we had written before for rules was for 802.11 and Bluetooth [0]
+> and it was very Linux specific. We are striving for open firmware here
+> for the community, for BSD / Linux. Christian would have dealt with
+> more of the support on open firmware design so far due to carl9170.fw
+> [1] so curious if he has any input.
+>
 
-> 
->   $ sudo ./perf probe do_page_fault
->   Failed to find path of kernel module.
->   Added new event:
->   Failed to write event: Invalid argument
->     Error: Failed to add events. (-1)
-> 
-> This patch enhance it by checking the special kprobes section address
-> and if to-be-probed function address is in the section, it would print
-> like this:
-> 
->   $ sudo ./perf probe do_page_fault
->   Failed to find path of kernel module.
->   Added new event:
->   Failed to write event: kprobes is not allowed for this function.
->     Error: Failed to add events. (-1)
+I'm treating it like shared libraries should be treated - minor
+versions shouldn't break existing stuff, just add new calls. Major
+versions are incompatible.
 
-Yeah, I agree that it is hard to know for perf probe users.
-However, your implementation strongly depends on the current kernel,
-I think we'd better export __kprobe_text_* as macros of symbol strings
-in kprobes.h, and reuse it.
-Or, export such no-probe symbols via /sys/kernel/debug/kprobes/noprobe_syms
-
-Thank you,
+We'll see how well this scales after people hack at it for a while.
 
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
 
-
+Adrian
