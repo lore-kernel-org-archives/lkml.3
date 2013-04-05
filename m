@@ -1,92 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161830Ab3DEP07 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 11:26:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:56068 "EHLO mga09.intel.com"
+	id S1161898Ab3DEPb1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 11:31:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37282 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762185Ab3DEP06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 11:26:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,415,1363158000"; 
-   d="scan'208";a="289941745"
-Message-ID: <515EED40.9000102@linux.intel.com>
-Date: Fri, 05 Apr 2013 08:26:56 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1765499Ab3DEPbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 11:31:25 -0400
+Message-ID: <515EEE25.1030402@zytor.com>
+Date: Fri, 05 Apr 2013 08:30:45 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>
-CC: linux-kernel@vger.kernel.org, Zhangfei Gao <zhangfei.gao@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>, Michal Marek <mmarek@suse.cz>,
-        Bruce Ashfield <bruce.ashfield@windriver.com>
-Subject: Re: [PATCH] merge_config.sh: Avoid creating unnessary source softlinks
-References: <1365102179-19176-1-git-send-email-john.stultz@linaro.org>
-In-Reply-To: <1365102179-19176-1-git-send-email-john.stultz@linaro.org>
+To: Ingo Molnar <mingo@kernel.org>
+CC: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 3/3] x86: kernel base offset ASLR
+References: <1365106055-22939-1-git-send-email-keescook@chromium.org> <1365106055-22939-4-git-send-email-keescook@chromium.org> <515DE0C9.3030709@zytor.com> <20130405080418.GG26889@gmail.com>
+In-Reply-To: <20130405080418.GG26889@gmail.com>
 X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 04/04/2013 12:02 PM, John Stultz wrote:
-> Viresh noticed when using merge_config.sh that a source softlink
-> was being created even when he didn't specify the -O option.
+On 04/05/2013 01:04 AM, Ingo Molnar wrote:
 > 
-> The problem arises due to the previous commit 409f117e2d6b
-> which added the -O option. Basically if -O is not specified,
-> we still pass '-O=.' to the make command, which then generates
-> a source softlink to ./
+> Random runtime shuffling of the kernel image - is that possible with 
+> existing toolchains?
 > 
-> This patch adds an extra check so if there is no -O specified
-> to merge_config.sh, we don't pass one on to make.
-> 
-> Cc: Zhangfei Gao <zhangfei.gao@linaro.org>
-> Cc: Viresh Kumar <viresh.kumar@linaro.org>
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: Bruce Ashfield <bruce.ashfield@windriver.com>
-> Cc: Darren Hart <dvhart@linux.intel.com>
-> Reported-by: Viresh Kumar <viresh.kumar@linaro.org>
-> Tested-by: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: John Stultz <john.stultz@linaro.org>
 
-Thanks John!
+Yes... the question is how much work we'd be willing to go through to
+make it happen.
 
-Acked-by: Darren Hart <dvhart@linux.intel.com>
+One approach: the kernel already contains a linker -- used for modules
+-- and the bulk of the kernel could actually be composed to a "pile of
+modules" that gets linked on boot.  This would provide very large
+amounts of randomness.
 
-
-> ---
->  scripts/kconfig/merge_config.sh |   10 +++++++++-
->  1 file changed, 9 insertions(+), 1 deletion(-)
-> 
-> diff --git a/scripts/kconfig/merge_config.sh b/scripts/kconfig/merge_config.sh
-> index 05274fc..81b0c61 100755
-> --- a/scripts/kconfig/merge_config.sh
-> +++ b/scripts/kconfig/merge_config.sh
-> @@ -120,10 +120,18 @@ if [ "$MAKE" = "false" ]; then
->  	exit
->  fi
->  
-> +# If we have an output dir, setup the O= argument, otherwise leave
-> +# it blank, since O=. will create an unnecessary ./source softlink
-> +OUTPUT_ARG=""
-> +if [ "$OUTPUT" != "." ] ; then
-> +	OUTPUT_ARG="O=$OUTPUT"
-> +fi
-> +
-> +
->  # Use the merged file as the starting point for:
->  # alldefconfig: Fills in any missing symbols with Kconfig default
->  # allnoconfig: Fills in any missing symbols with # CONFIG_* is not set
-> -make KCONFIG_ALLCONFIG=$TMP_FILE O=$OUTPUT $ALLTARGET
-> +make KCONFIG_ALLCONFIG=$TMP_FILE $OUTPUT_ARG $ALLTARGET
->  
->  
->  # Check all specified config values took (might have missed-dependency issues)
-> 
+	-hpa
 
 -- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Technical Lead - Linux Kernel
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
