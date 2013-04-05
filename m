@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162429Ab3DEVD4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 17:03:56 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:48819 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162097Ab3DEVDy (ORCPT
+	id S1162409Ab3DEVGL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 17:06:11 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:46938 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162241Ab3DEVGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 17:03:54 -0400
+	Fri, 5 Apr 2013 17:06:09 -0400
+Date: Fri, 5 Apr 2013 14:06:05 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Platform Driver <platform-driver-x86@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Joe Perches <joe@perches.com>, Randy Dunlap <rdunlap@infradead.org>,
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: Re: [PATCH v2] RAPL (Running Average Power Limit) driver
+Message-ID: <20130405210605.GA18505@kroah.com>
+References: <1365195724-8945-1-git-send-email-jacob.jun.pan@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <515F3948.40205@linux.vnet.ibm.com>
-References: <20130324155153.GA8597@redhat.com> <515F3160.4020007@linux.vnet.ibm.com>
- <CAL1RGDU2jtrRrxi6srsH_ADiYGvJbCpCT3UvoLGTX3cvQ=s0kQ@mail.gmail.com> <515F3948.40205@linux.vnet.ibm.com>
-From: Roland Dreier <roland@kernel.org>
-Date: Fri, 5 Apr 2013 14:03:33 -0700
-X-Google-Sender-Auth: a1xYx1letEcEbZ_7Gpcu-UvEtQw
-Message-ID: <CAG4TOxPNHZadLjq6-HuOExf1XXLO6AYyvRQ1L09i6qVeA5dbLQ@mail.gmail.com>
-Subject: Re: [PATCHv2] rdma: add a new IB_ACCESS_GIFT flag
-To: "Michael R. Hines" <mrhines@linux.vnet.ibm.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365195724-8945-1-git-send-email-jacob.jun.pan@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 5, 2013 at 1:51 PM, Michael R. Hines
-<mrhines@linux.vnet.ibm.com> wrote:
-> Sorry, I was wrong. ignore the comments about cgroups. That's still broken.
-> (i.e. trying to register RDMA memory while using a cgroup swap limit cause
-> the process get killed).
->
-> But the GIFT flag patch works (my understanding is that GIFT flag allows the
-> adapter to transmit stale memory information, it does not have anything to
-> do with cgroups specifically).
+On Fri, Apr 05, 2013 at 02:02:03PM -0700, Jacob Pan wrote:
+> Changes since V2:
+> 	- use 'struct device' instead of raw kobject to represent
+> 	  RAPL domains
+> 	- changed eventfd control interface to use event string
+> 	  instead of passing file descriptors that cannot be
+> 	  authenticated in sysfs directory
+> 	- clean ups based on v1 reviews
+> 		- use kcalloc for arrays
+> 		- drop dependencies on X86
+> 		- misc cleanups
 
-The point of the GIFT patch is to avoid triggering copy-on-write so
-that memory doesn't blow up during migration.  If that doesn't work
-then there's no point to the patch.
+Please no, split this up into at least 2 patches, the first being the
+"standard" thermal driver, and the rest for the "custom" extensions you
+are proposing.
 
- - R.
+That way the first can get accepted easily, and into 3.10 (hopefully),
+so people can use it and not stall everything as we continue to iterate
+over the "custom" things.
+
+As is, this driver isn't acceptable, sorry.
+
+greg k-h
