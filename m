@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161683Ab3DEMH7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 08:07:59 -0400
-Received: from mga03.intel.com ([143.182.124.21]:62677 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161315Ab3DEL6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1161348Ab3DEL6S (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 5 Apr 2013 07:58:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:14854 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161122Ab3DEL6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 07:58:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,414,1363158000"; 
-   d="scan'208";a="281245132"
+   d="scan'208";a="314095549"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,130 +21,73 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv3, RFC 00/34] Transparent huge page cache
-Date: Fri,  5 Apr 2013 14:59:24 +0300
-Message-Id: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv3, RFC 01/34] mm: drop actor argument of do_generic_file_read()
+Date: Fri,  5 Apr 2013 14:59:25 +0300
+Message-Id: <1365163198-29726-2-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Here's third RFC. Thanks everybody for feedback.
+There's only one caller of do_generic_file_read() and the only actor is
+file_read_actor(). No reason to have a callback parameter.
 
-The patchset is pretty big already and I want to stop generate new
-features to keep it reviewable. Next I'll concentrate on benchmarking and
-tuning.
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ mm/filemap.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Therefore some features will be outside initial transparent huge page
-cache implementation:
- - page collapsing;
- - migration;
- - tmpfs/shmem;
-
-There are few features which are not implemented and potentially can block
-upstreaming:
-
-1. Currently we allocate 2M page even if we create only 1 byte file on
-ramfs. I don't think it's a problem by itself. With anon thp pages we also
-try to allocate huge pages whenever possible.
-The problem is that ramfs pages are unevictable and we can't just split
-and pushed them in swap as with anon thp. We (at some point) have to have
-mechanism to split last page of the file under memory pressure to reclaim
-some memory.
-
-2. We don't have knobs for disabling transparent huge page cache per-mount
-or per-file. Should we have mount option and fadivse flags as part of
-initial implementation?
-
-Any thoughts?
-
-The patchset is also on git:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/kas/linux.git thp/pagecache
-
-v3:
- - set RADIX_TREE_PRELOAD_NR to 512 only if we build with THP;
- - rewrite lru_add_page_tail() to address few bags;
- - memcg accounting;
- - represent file thp pages in meminfo and friends;
- - dump page order in filemap trace;
- - add missed flush_dcache_page() in zero_huge_user_segment;
- - random cleanups based on feedback.
-v2:
- - mmap();
- - fix add_to_page_cache_locked() and delete_from_page_cache();
- - introduce mapping_can_have_hugepages();
- - call split_huge_page() only for head page in filemap_fault();
- - wait_split_huge_page(): serialize over i_mmap_mutex too;
- - lru_add_page_tail: avoid PageUnevictable on active/inactive lru lists;
- - fix off-by-one in zero_huge_user_segment();
- - THP_WRITE_ALLOC/THP_WRITE_FAILED counters;
-
-Kirill A. Shutemov (34):
-  mm: drop actor argument of do_generic_file_read()
-  block: implement add_bdi_stat()
-  mm: implement zero_huge_user_segment and friends
-  radix-tree: implement preload for multiple contiguous elements
-  memcg, thp: charge huge cache pages
-  thp, mm: avoid PageUnevictable on active/inactive lru lists
-  thp, mm: basic defines for transparent huge page cache
-  thp, mm: introduce mapping_can_have_hugepages() predicate
-  thp: represent file thp pages in meminfo and friends
-  thp, mm: rewrite add_to_page_cache_locked() to support huge pages
-  mm: trace filemap: dump page order
-  thp, mm: rewrite delete_from_page_cache() to support huge pages
-  thp, mm: trigger bug in replace_page_cache_page() on THP
-  thp, mm: locking tail page is a bug
-  thp, mm: handle tail pages in page_cache_get_speculative()
-  thp, mm: add event counters for huge page alloc on write to a file
-  thp, mm: implement grab_thp_write_begin()
-  thp, mm: naive support of thp in generic read/write routines
-  thp, libfs: initial support of thp in
-    simple_read/write_begin/write_end
-  thp: handle file pages in split_huge_page()
-  thp: wait_split_huge_page(): serialize over i_mmap_mutex too
-  thp, mm: truncate support for transparent huge page cache
-  thp, mm: split huge page on mmap file page
-  ramfs: enable transparent huge page cache
-  x86-64, mm: proper alignment mappings with hugepages
-  mm: add huge_fault() callback to vm_operations_struct
-  thp: prepare zap_huge_pmd() to uncharge file pages
-  thp: move maybe_pmd_mkwrite() out of mk_huge_pmd()
-  thp, mm: basic huge_fault implementation for generic_file_vm_ops
-  thp: extract fallback path from do_huge_pmd_anonymous_page() to a
-    function
-  thp: initial implementation of do_huge_linear_fault()
-  thp: handle write-protect exception to file-backed huge pages
-  thp: call __vma_adjust_trans_huge() for file-backed VMA
-  thp: map file-backed huge pages on fault
-
- arch/x86/kernel/sys_x86_64.c   |   12 +-
- drivers/base/node.c            |   10 +
- fs/libfs.c                     |   48 +++-
- fs/proc/meminfo.c              |    6 +
- fs/ramfs/inode.c               |    6 +-
- include/linux/backing-dev.h    |   10 +
- include/linux/huge_mm.h        |   36 ++-
- include/linux/mm.h             |    8 +
- include/linux/mmzone.h         |    1 +
- include/linux/pagemap.h        |   33 ++-
- include/linux/radix-tree.h     |   11 +
- include/linux/vm_event_item.h  |    2 +
- include/trace/events/filemap.h |    7 +-
- lib/radix-tree.c               |   33 ++-
- mm/filemap.c                   |  298 ++++++++++++++++++++-----
- mm/huge_memory.c               |  474 +++++++++++++++++++++++++++++++++-------
- mm/memcontrol.c                |    2 -
- mm/memory.c                    |   41 +++-
- mm/mmap.c                      |    3 +
- mm/page_alloc.c                |    7 +-
- mm/swap.c                      |   20 +-
- mm/truncate.c                  |   13 ++
- mm/vmstat.c                    |    2 +
- 23 files changed, 902 insertions(+), 181 deletions(-)
-
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 4ebaf95..2d99191 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1075,7 +1075,6 @@ static void shrink_readahead_size_eio(struct file *filp,
+  * @filp:	the file to read
+  * @ppos:	current file position
+  * @desc:	read_descriptor
+- * @actor:	read method
+  *
+  * This is a generic file read routine, and uses the
+  * mapping->a_ops->readpage() function for the actual low-level stuff.
+@@ -1084,7 +1083,7 @@ static void shrink_readahead_size_eio(struct file *filp,
+  * of the logic when it comes to error handling etc.
+  */
+ static void do_generic_file_read(struct file *filp, loff_t *ppos,
+-		read_descriptor_t *desc, read_actor_t actor)
++		read_descriptor_t *desc)
+ {
+ 	struct address_space *mapping = filp->f_mapping;
+ 	struct inode *inode = mapping->host;
+@@ -1185,13 +1184,14 @@ page_ok:
+ 		 * Ok, we have the page, and it's up-to-date, so
+ 		 * now we can copy it to user space...
+ 		 *
+-		 * The actor routine returns how many bytes were actually used..
++		 * The file_read_actor routine returns how many bytes were
++		 * actually used..
+ 		 * NOTE! This may not be the same as how much of a user buffer
+ 		 * we filled up (we may be padding etc), so we can only update
+ 		 * "pos" here (the actor routine has to update the user buffer
+ 		 * pointers and the remaining count).
+ 		 */
+-		ret = actor(desc, page, offset, nr);
++		ret = file_read_actor(desc, page, offset, nr);
+ 		offset += ret;
+ 		index += offset >> PAGE_CACHE_SHIFT;
+ 		offset &= ~PAGE_CACHE_MASK;
+@@ -1464,7 +1464,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 		if (desc.count == 0)
+ 			continue;
+ 		desc.error = 0;
+-		do_generic_file_read(filp, ppos, &desc, file_read_actor);
++		do_generic_file_read(filp, ppos, &desc);
+ 		retval += desc.written;
+ 		if (desc.error) {
+ 			retval = retval ?: desc.error;
 -- 
 1.7.10.4
 
