@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162054Ab3DEQb0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 12:31:26 -0400
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:52478 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1162040Ab3DEQbY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 12:31:24 -0400
-Message-ID: <1365179481.1830.69.camel@x61.thuisdomein>
-Subject: [PATCH] nfc: Remove useless Makefile line
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
-        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-wireless@vger.kernel.org, linux-nfc@ml01.01.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 05 Apr 2013 18:31:21 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Apr 2013 16:31:22.0239 (UTC) FILETIME=[022DE0F0:01CE321B]
-X-RcptDomain: vger.kernel.org
+	id S1162040Ab3DEQcm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 12:32:42 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3328 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161978Ab3DEQck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 12:32:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,415,1363158000"; 
+   d="scan'208";a="289974780"
+Date: Fri, 5 Apr 2013 18:32:23 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Ian Lartey <ian@slimlogic.co.uk>
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-leds@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        swarren@wwwdotorg.org, grant.likely@secretlab.ca,
+        broonie@opensource.wolfsonmicro.com, rob.herring@calxeda.com,
+        rob@landley.net, mturquette@linaro.org, linus.walleij@linaro.org,
+        cooloney@gmail.com, sfr@canb.auug.org.au, rpurdie@rpsys.net,
+        akpm@linux-foundation.org, wim@iguana.be, lgirdwood@gmail.com,
+        gg@slimlogic.co.uk, j-keerthy@ti.com, ldewangan@nvidia.com,
+        t-kristo@ti.com
+Subject: Re: [PATCH v10 03/12] mfd: palmas add variant and OTP detection
+Message-ID: <20130405163223.GO17363@zurbaran>
+References: <1363964122-19201-1-git-send-email-ian@slimlogic.co.uk>
+ <1363964122-19201-4-git-send-email-ian@slimlogic.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363964122-19201-4-git-send-email-ian@slimlogic.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's no Kconfig symbol NFC_DEBUG. Besides, there doesn't seem to be
-any nfc code that uses a DEBUG macro. This line can safely be removed.
+Hi Ian,
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested.
+On Fri, Mar 22, 2013 at 02:55:13PM +0000, Ian Lartey wrote:
+> @@ -278,20 +329,20 @@ static void palmas_dt_to_pdata(struct i2c_client *i2c,
+>  	int ret;
+>  	u32 prop;
+>  
+> -	ret = of_property_read_u32(node, "ti,mux_pad1", &prop);
+> +	ret = of_property_read_u32(node, "ti,mux-pad1", &prop);
+>  	if (!ret) {
+>  		pdata->mux_from_pdata = 1;
+>  		pdata->pad1 = prop;
+>  	}
+>  
+> -	ret = of_property_read_u32(node, "ti,mux_pad2", &prop);
+> +	ret = of_property_read_u32(node, "ti,mux-pad2", &prop);
+>  	if (!ret) {
+>  		pdata->mux_from_pdata = 1;
+>  		pdata->pad2 = prop;
+>  	}
+>  
+>  	/* The default for this register is all masked */
+> -	ret = of_property_read_u32(node, "ti,power_ctrl", &prop);
+> +	ret = of_property_read_u32(node, "ti,power-ctrl", &prop);
+>  	if (!ret)
+>  		pdata->power_ctrl = prop;
+>  	else
+> @@ -309,7 +360,7 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+>  	struct palmas_platform_data *pdata;
+>  	struct device_node *node = i2c->dev.of_node;
+>  	int ret = 0, i;
+> -	unsigned int reg, addr;
+> +	unsigned int reg;
+>  	int slave;
+>  	struct mfd_cell *children;
+The '-' to '_' fix has been sent by J Keerthy and is on my mfd-next tree
+aready. Would you mind removing it from this patch ?
 
- drivers/nfc/Makefile | 2 --
- 1 file changed, 2 deletions(-)
+Cheers,
+Samuel.
 
-diff --git a/drivers/nfc/Makefile b/drivers/nfc/Makefile
-index a189ada0..5b4ad00 100644
---- a/drivers/nfc/Makefile
-+++ b/drivers/nfc/Makefile
-@@ -6,5 +6,3 @@ obj-$(CONFIG_NFC_PN544)		+= pn544/
- obj-$(CONFIG_NFC_MICROREAD)	+= microread/
- obj-$(CONFIG_NFC_PN533)		+= pn533.o
- obj-$(CONFIG_NFC_WILINK)	+= nfcwilink.o
--
--ccflags-$(CONFIG_NFC_DEBUG) := -DDEBUG
 -- 
-1.7.11.7
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
