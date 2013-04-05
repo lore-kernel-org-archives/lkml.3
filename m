@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161917Ab3DEPcb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 11:32:31 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:10135
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755627Ab3DEPca convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 11:32:30 -0400
-X-Forefront-Antispam-Report: CIP:132.245.1.149;KIP:(null);UIP:(null);IPV:NLI;H:BLUPRD0512HT003.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: PS1(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz17326ah1954cbh8275bhz32i2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah1155h)
-From: Scan Subscription <scan-subscription@coverity.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: New Defect(s) reported by Coverity Scan 
-Thread-Topic: New Defect(s) reported by Coverity Scan 
-Thread-Index: Ac4yEmGCRltLC7mIQ8Wgr1X8pWsCtQ==
-Date: Fri, 5 Apr 2013 15:32:25 +0000
-Message-ID: <C0A4ACBB26D853488EA0C68388B702682F97EAC1@BLUPRD0512MB628.namprd05.prod.outlook.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [24.23.129.86]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1161903Ab3DEPfw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 11:35:52 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:54625 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765545Ab3DEPfu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 11:35:50 -0400
+Date: Fri, 5 Apr 2013 08:35:47 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johan Hovold <jhovold@gmail.com>, linux-kernel@vger.kernel.org,
+        stable <stable@vger.kernel.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] Revert "drivers/rtc/rtc-at91rm9200.c: use a variable for
+ storing IMR"
+Message-ID: <20130405153547.GA515@kroah.com>
+References: <20130403095150.GC27600@localhost>
+ <1364982862-19759-1-git-send-email-jhovold@gmail.com>
+ <515C0208.2000605@atmel.com>
+ <515EDC4B.3010508@atmel.com>
 MIME-Version: 1.0
-X-OriginatorOrg: coverity.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515EDC4B.3010508@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 05, 2013 at 04:14:35PM +0200, Nicolas Ferre wrote:
+> On 04/03/2013 12:18 PM, Nicolas Ferre :
+> > On 04/03/2013 11:54 AM, Johan Hovold :
+> >> This reverts commit 0ef1594c017521ea89278e80fe3f80dafb17abde.
+> >>
+> >> This patch introduced a few races which cannot be easily fixed with a
+> >> small follow-up patch. Furthermore, the SoC with the broken hardware
+> >> register, which this patch intended to add support for, can only be used
+> >> with device trees, which this driver currently does not support.
+> >>
+> >> Cc: stable <stable@vger.kernel.org>
+> >> Signed-off-by: Johan Hovold <jhovold@gmail.com>
+> > 
+> > Fair enough, after fighting to find a solution that can makes us move
+> > forward... your strong arguments convinced me.
+> > 
+> > So, Andrew, please can you take this "revert" patch for 3.9-rc ?
+> > And sorry for the noise.
+> > 
+> > Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> > 
+> > (Andrew, I figured out that you are not in copy of the original email:
+> > do I need to send it back to you or can you pick it up in patchwork?
+> > https://patchwork.kernel.org/patch/2385921/
+> > )
+> 
+> Andrew, ping?
 
-Hi,
+Andrew is on vacation for a few weeks, sorry.
 
-Please find the latest report on new defect(s) that have been introduced to the Linux Kernel found with Coverity SCAN. 
+Perhaps you should send this yourself?
 
-
-Defect(s) Reported-by: Coverity Scan:
-___________________________________________________________________________
-** CID 996157: Logically dead code (DEADCODE)
-/net/mac80211/sta_info.c: 808
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=996157
-
-###########################################################################
-Defect Details:
-___________________________________________________________________________
-CID 996157: Logically dead code (DEADCODE)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=996157
-
-/net/mac80211/sta_info.c: 803 ( assignment)
-
-   797     for (i = 0; i < NUM_DEFAULT_KEYS; i++) {
-   798                __ieee80211_key_free(key_mtx_dereference(local, sta->gtk[i]));
->>> Assigning: "have_key" = "true".
-   799                have_key = true;
-   800    	}
-   801    	if (sta->ptk) {
-   802    		__ieee80211_key_free(key_mtx_dereference(local, sta->ptk));
->>> Assigning: "have_key" = "true".
-   803    		have_key = true;
-   804    	}
-   805    	mutex_unlock(&local->key_mtx);
-   806    
-
->>> At condition "have_key", the value of "have_key" must be equal to 1.
->>> The condition "!have_key" cannot be true.
-
-   807    	if (!have_key)
->>> CID 996157: Logically dead code (DEADCODE) Execution cannot reach 
->>> this statement "synchronize_net();".
-   808    		synchronize_net();
-   809    
-   810    	sta->dead = true;
-   811    
-  
-  
-
-  
-________________________________________________________________________
-
-
-To view the defects in Coverity Scan visit, http://scan5.coverity.com:8080.  
-If you don't have a username, you can register at http://scan.coverity.com/
-	
-Thank you,
-Dakshesh Vyas
-Coverity SCAN-ADMIN
-scan-admin at coverity.com
-http://scan.coverity.com
-
+greg k-h
