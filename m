@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163051Ab3DEWXK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 18:23:10 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:36840 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162991Ab3DEWXI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 18:23:08 -0400
-Message-ID: <515F4ECB.9050105@gmail.com>
-Date: Fri, 05 Apr 2013 18:23:07 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        linux-kernel@vger.kernel.org, kosaki.motohiro@gmail.com
-Subject: Re: [PATCH 07/10] mbind: add hugepage migration code to mbind()
-References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1363983835-20184-8-git-send-email-n-horiguchi@ah.jp.nec.com> <20130325134926.GZ2154@dhcp22.suse.cz>
-In-Reply-To: <20130325134926.GZ2154@dhcp22.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1163065Ab3DEW2L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 18:28:11 -0400
+Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:58585
+	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1162901Ab3DEW2J convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 18:28:09 -0400
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: [PATCH 1/3] pci: Add PCI ROM helper for platform-provided ROM images
+From: Chris Murphy <bugzilla@colorremedies.com>
+In-Reply-To: <CAErSpo7y4ROBVBaj==67oH8rNqV077frgFmfmk_PvODc94UwAQ@mail.gmail.com>
+Date: Fri, 5 Apr 2013 16:28:06 -0600
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        =?utf-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>,
+        Dave Airlie <airlied@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Ben Skeggs <skeggsb@gmail.com>, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <A1959DD9-E925-45D1-887B-74DA73B5FC59@colorremedies.com>
+References: <CAPM=9tyYMSsK_2eCNRTx5EsgAQtnvmHxhgPHP3GHPxKUn+wo5w@mail.gmail.com> <1364333156-4530-1-git-send-email-matthew.garrett@nebula.com> <CAErSpo7fy+MVxDoLe6w+4noH5X2xJw_Lfdg6fVvgcbhgvUyAaw@mail.gmail.com> <1364338554.2553.53.camel@x230.sbx07502.somerma.wayport.net> <CAErSpo7ZYMsRAp=EKMS0YPmiw6YytN4pZVzoWPd-PL5EzT8+SQ@mail.gmail.com> <515403ED.6010008@gmail.com> <CAErSpo6T5KmTcm2fnoQZvSpJjzXozRd4AVL9REjn6gsL9Q1uPw@mail.gmail.com> <1364838466.19098.1.camel@x230> <CAErSpo4q3mU-0oi_xAUAjUpbDfFpU7Lb1rCnrd2WH67J2+U1hQ@mail.gmail.com> <E7324EBF-8BF5-450B-8CE4-9258B4806776@colorremedies.com> <CAErSpo7y4ROBVBaj==67oH8rNqV077frgFmfmk_PvODc94UwAQ@mail.gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+X-Mailer: Apple Mail (2.1503)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> -	if (!new_hpage)
->> +	/*
->> +	 * Getting a new hugepage with alloc_huge_page() (which can happen
->> +	 * when migration is caused by mbind()) can return ERR_PTR value,
->> +	 * so we need take care of the case here.
->> +	 */
->> +	if (!new_hpage || IS_ERR_VALUE(new_hpage))
->>  		return -ENOMEM;
+
+On Apr 5, 2013, at 2:35 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+
+> On Fri, Apr 5, 2013 at 2:31 PM, Chris Murphy <bugzilla@colorremedies.com> wrote:
+>> 
+>> 
+>> Are they in 3.9.0-0.rc5.git2.1.f19? I'm seeing a regression from 3.8.5 with the radeon driver not finding BIOS ROM as well.
+>> https://bugzilla.redhat.com/show_bug.cgi?id=949083
 > 
-> Please no. get_new_page returns NULL or a page. You are hooking a wrong
-> callback here. The error value doesn't make any sense here. IMO you
-> should just wrap alloc_huge_page by something that returns NULL or page.
+> No.  I haven't asked Linus to pull my branch yet (was just thinking it
+> was time to do that, coincidentally :))
 
-I suggest just opposite way. new_vma_page() always return ENOMEM, ENOSPC etc instad 
-of NULL. and caller propegate it to userland.
-I guess userland want to distingush why mbind was failed.
-
-Anyway, If new_vma_page() have a change to return both NULL and -ENOMEM. That's a bug.
-
+The patch appears to fix Bug 949083 radeon issue as well. I've updated the bug report.
