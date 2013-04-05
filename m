@@ -1,369 +1,535 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162225Ab3DEQ45 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 12:56:57 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:42068 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162074Ab3DEQyG (ORCPT
+	id S1162300Ab3DEQ6X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 12:58:23 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:28466 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162254Ab3DEQ6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 12:54:06 -0400
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: linux-kernel@vger.kernel.org
-Cc: linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, wine-devel@winehq.org
-Subject: [PATCH v4 1/7] fcntl: Introduce new O_DENY* open flags
-Date: Fri,  5 Apr 2013 20:57:49 +0400
-Message-Id: <1365181075-22540-2-git-send-email-piastry@etersoft.ru>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1365181075-22540-1-git-send-email-piastry@etersoft.ru>
-References: <1365181075-22540-1-git-send-email-piastry@etersoft.ru>
+	Fri, 5 Apr 2013 12:58:16 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-nfs@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Andi Kleen <andi@firstfloor.org>, Dave Chinner <david@fromorbit.com>
+Subject: [PATCH v2 RFC 3/4] dcache: change rename_lock to a sequence read/write lock
+Date: Fri,  5 Apr 2013 12:57:40 -0400
+Message-Id: <1365181061-30787-4-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1365181061-30787-1-git-send-email-Waiman.Long@hp.com>
+References: <1365181061-30787-1-git-send-email-Waiman.Long@hp.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ian Kent <raven@themaw.net>,
+        Sage Weil <sage@inktank.com>, Steve French <sfrench@samba.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Eric Paris <eparis@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds 3 flags:
-1) O_DENYREAD that doesn't permit read access,
-2) O_DENYWRITE that doesn't permit write access,
-3) O_DENYDELETE that doesn't permit delete or rename,
+The d_path() and related kernel functions currently take a writer
+lock on rename_lock because they need to follow pointers. By changing
+rename_lock to be the new sequence read/write lock, a reader lock
+can be taken and multiple d_path() threads can proceed concurrently
+without blocking each other.
 
-Network filesystems CIFS, SMB2.0, SMB3.0 and NFSv4 have such flags -
-this change can benefit cifs and nfs modules as well as Samba and
-NFS file servers that export the same directory for Windows clients,
-or Wine applications that access the same files simultaneously.
+It is unlikely that the frequency of filesystem changes and d_path()
+name lookup will be high enough to cause writer starvation, the current
+limitation of the read/write lock should be acceptable in that case.
 
-These flags are only take affect for opens on mounts with 'sharelock'
-mount option. They are translated to flock's flags:
+All the sites where rename_lock is referenced were modified to use the
+sequence read/write lock declaration and access functions.
 
-!O_DENYREAD  -> LOCK_READ | LOCK_MAND
-!O_DENYWRITE -> LOCK_WRITE | LOCK_MAND
+When apply this patch to 3.8 or earlier releases, the unused function
+d_path_with_unreachable() in fs/dcache.c should be removed to avoid
+compilation warning.
 
-and set through flock_lock_file on a file. If the file can't be locked
-due conflicts with another open with O_DENY* flags, the -EBUSY error
-code is returned.
-
-Create codepath is slightly changed to prevent data races on
-newely created files: when open with O_CREAT can return with -EBUSY
-error for successfully created files due to a deny lock set by
-another task.
-
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- fs/fcntl.c                       |  5 ++-
- fs/locks.c                       | 93 +++++++++++++++++++++++++++++++++++++---
- fs/namei.c                       | 45 +++++++++++++++++--
- fs/proc_namespace.c              |  1 +
- include/linux/fs.h               |  7 +++
- include/uapi/asm-generic/fcntl.h | 11 +++++
- include/uapi/linux/fs.h          |  1 +
- 7 files changed, 150 insertions(+), 13 deletions(-)
+ fs/autofs4/waitq.c     |    6 ++--
+ fs/ceph/mds_client.c   |    4 +-
+ fs/cifs/dir.c          |    4 +-
+ fs/dcache.c            |   83 ++++++++++++++++++++++++-----------------------
+ fs/nfs/namespace.c     |    6 ++--
+ include/linux/dcache.h |    4 +-
+ kernel/auditsc.c       |    4 +-
+ 7 files changed, 56 insertions(+), 55 deletions(-)
 
-diff --git a/fs/fcntl.c b/fs/fcntl.c
-index 71a600a..7abce5a 100644
---- a/fs/fcntl.c
-+++ b/fs/fcntl.c
-@@ -730,14 +730,15 @@ static int __init fcntl_init(void)
- 	 * Exceptions: O_NONBLOCK is a two bit define on parisc; O_NDELAY
- 	 * is defined as O_NONBLOCK on some platforms and not on others.
- 	 */
--	BUILD_BUG_ON(19 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
-+	BUILD_BUG_ON(22 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
- 		O_RDONLY	| O_WRONLY	| O_RDWR	|
- 		O_CREAT		| O_EXCL	| O_NOCTTY	|
- 		O_TRUNC		| O_APPEND	| /* O_NONBLOCK	| */
- 		__O_SYNC	| O_DSYNC	| FASYNC	|
- 		O_DIRECT	| O_LARGEFILE	| O_DIRECTORY	|
- 		O_NOFOLLOW	| O_NOATIME	| O_CLOEXEC	|
--		__FMODE_EXEC	| O_PATH
-+		__FMODE_EXEC	| O_PATH	| O_DENYREAD	|
-+		O_DENYWRITE	| O_DENYDELETE
- 		));
+diff --git a/fs/autofs4/waitq.c b/fs/autofs4/waitq.c
+index 3db70da..3afc4db 100644
+--- a/fs/autofs4/waitq.c
++++ b/fs/autofs4/waitq.c
+@@ -197,7 +197,7 @@ rename_retry:
+ 	buf = *name;
+ 	len = 0;
  
- 	fasync_cache = kmem_cache_create("fasync_cache",
-diff --git a/fs/locks.c b/fs/locks.c
-index a94e331..1eccc75 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -605,20 +605,73 @@ static int posix_locks_conflict(struct file_lock *caller_fl, struct file_lock *s
- 	return (locks_conflict(caller_fl, sys_fl));
- }
- 
--/* Determine if lock sys_fl blocks lock caller_fl. FLOCK specific
-- * checking before calling the locks_conflict().
-+static unsigned int
-+deny_flags_to_cmd(unsigned int flags)
-+{
-+	unsigned int cmd = LOCK_MAND;
-+
-+	if (!(flags & O_DENYREAD))
-+		cmd |= LOCK_READ;
-+	if (!(flags & O_DENYWRITE))
-+		cmd |= LOCK_WRITE;
-+
-+	return cmd;
-+}
-+
-+/*
-+ * locks_mand_conflict - Determine if there's a share reservation conflict
-+ * @caller_fl: lock we're attempting to acquire
-+ * @sys_fl: lock already present on system that we're checking against
-+ *
-+ * Check to see if there's a share_reservation conflict. LOCK_READ/LOCK_WRITE
-+ * tell us whether the reservation allows other readers and writers.
-+ */
-+static int
-+locks_mand_conflict(struct file_lock *caller_fl, struct file_lock *sys_fl)
-+{
-+	unsigned char caller_type = caller_fl->fl_type;
-+	unsigned char sys_type = sys_fl->fl_type;
-+	fmode_t caller_fmode = caller_fl->fl_file->f_mode;
-+	fmode_t sys_fmode = sys_fl->fl_file->f_mode;
-+
-+	/* they can only conflict if FS is mounted with MS_SHARELOCK */
-+	if (!IS_SHARELOCK(caller_fl->fl_file->f_path.dentry->d_inode))
-+		return 0;
-+
-+	/* they can only conflict if they're both LOCK_MAND */
-+	if (!(caller_type & LOCK_MAND) || !(sys_type & LOCK_MAND))
-+		return 0;
-+
-+	if (!(caller_type & LOCK_READ) && (sys_fmode & FMODE_READ))
-+		return 1;
-+	if (!(caller_type & LOCK_WRITE) && (sys_fmode & FMODE_WRITE))
-+		return 1;
-+	if (!(sys_type & LOCK_READ) && (caller_fmode & FMODE_READ))
-+		return 1;
-+	if (!(sys_type & LOCK_WRITE) && (caller_fmode & FMODE_WRITE))
-+		return 1;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Determine if lock sys_fl blocks lock caller_fl. FLOCK specific checking
-+ * before calling the locks_conflict().
-  */
- static int flock_locks_conflict(struct file_lock *caller_fl, struct file_lock *sys_fl)
- {
--	/* FLOCK locks referring to the same filp do not conflict with
-+	if (!IS_FLOCK(sys_fl))
-+		return 0;
-+	if ((caller_fl->fl_type & LOCK_MAND) || (sys_fl->fl_type & LOCK_MAND))
-+		return locks_mand_conflict(caller_fl, sys_fl);
-+	/*
-+	 * FLOCK locks referring to the same filp do not conflict with
- 	 * each other.
- 	 */
--	if (!IS_FLOCK(sys_fl) || (caller_fl->fl_file == sys_fl->fl_file))
--		return (0);
--	if ((caller_fl->fl_type & LOCK_MAND) || (sys_fl->fl_type & LOCK_MAND))
-+	if (caller_fl->fl_file == sys_fl->fl_file)
+-	seq = read_seqbegin(&rename_lock);
++	seq = read_seqrwbegin(&rename_lock);
+ 	rcu_read_lock();
+ 	spin_lock(&sbi->fs_lock);
+ 	for (tmp = dentry ; tmp != root ; tmp = tmp->d_parent)
+@@ -206,7 +206,7 @@ rename_retry:
+ 	if (!len || --len > NAME_MAX) {
+ 		spin_unlock(&sbi->fs_lock);
+ 		rcu_read_unlock();
+-		if (read_seqretry(&rename_lock, seq))
++		if (read_seqrwretry(&rename_lock, seq))
+ 			goto rename_retry;
  		return 0;
+ 	}
+@@ -222,7 +222,7 @@ rename_retry:
+ 	}
+ 	spin_unlock(&sbi->fs_lock);
+ 	rcu_read_unlock();
+-	if (read_seqretry(&rename_lock, seq))
++	if (read_seqrwretry(&rename_lock, seq))
+ 		goto rename_retry;
  
--	return (locks_conflict(caller_fl, sys_fl));
-+	return locks_conflict(caller_fl, sys_fl);
- }
+ 	return len;
+diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
+index 442880d..da565c4 100644
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@ -1486,7 +1486,7 @@ char *ceph_mdsc_build_path(struct dentry *dentry, int *plen, u64 *base,
  
- void
-@@ -783,6 +836,32 @@ out:
- 	return error;
- }
+ retry:
+ 	len = 0;
+-	seq = read_seqbegin(&rename_lock);
++	seq = read_seqrwbegin(&rename_lock);
+ 	rcu_read_lock();
+ 	for (temp = dentry; !IS_ROOT(temp);) {
+ 		struct inode *inode = temp->d_inode;
+@@ -1536,7 +1536,7 @@ retry:
+ 		temp = temp->d_parent;
+ 	}
+ 	rcu_read_unlock();
+-	if (pos != 0 || read_seqretry(&rename_lock, seq)) {
++	if (pos != 0 || read_seqrwretry(&rename_lock, seq)) {
+ 		pr_err("build_path did not end path lookup where "
+ 		       "expected, namelen is %d, pos is %d\n", len, pos);
+ 		/* presumably this is only possible if racing with a
+diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
+index 1cd0162..707d849 100644
+--- a/fs/cifs/dir.c
++++ b/fs/cifs/dir.c
+@@ -96,7 +96,7 @@ build_path_from_dentry(struct dentry *direntry)
+ 		dfsplen = 0;
+ cifs_bp_rename_retry:
+ 	namelen = dfsplen;
+-	seq = read_seqbegin(&rename_lock);
++	seq = read_seqrwbegin(&rename_lock);
+ 	rcu_read_lock();
+ 	for (temp = direntry; !IS_ROOT(temp);) {
+ 		namelen += (1 + temp->d_name.len);
+@@ -136,7 +136,7 @@ cifs_bp_rename_retry:
+ 		}
+ 	}
+ 	rcu_read_unlock();
+-	if (namelen != dfsplen || read_seqretry(&rename_lock, seq)) {
++	if (namelen != dfsplen || read_seqrwretry(&rename_lock, seq)) {
+ 		cFYI(1, "did not end path lookup where expected. namelen=%d "
+ 			"dfsplen=%d", namelen, dfsplen);
+ 		/* presumably this is only possible if racing with a rename
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 48c0680..9477d80 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -29,6 +29,7 @@
+ #include <asm/uaccess.h>
+ #include <linux/security.h>
+ #include <linux/seqlock.h>
++#include <linux/seqrwlock.h>
+ #include <linux/swap.h>
+ #include <linux/bootmem.h>
+ #include <linux/fs_struct.h>
+@@ -82,7 +83,7 @@ int sysctl_vfs_cache_pressure __read_mostly = 100;
+ EXPORT_SYMBOL_GPL(sysctl_vfs_cache_pressure);
  
-+/*
-+ * Determine if a file is allowed to be opened with specified access and deny
-+ * modes. Lock the file and return 0 if checks passed, otherwise return a error
-+ * code.
-+ */
-+int
-+deny_lock_file(struct file *filp)
-+{
-+	struct file_lock *lock;
-+	int error = 0;
-+
-+	if (!IS_SHARELOCK(filp->f_path.dentry->d_inode))
-+		return error;
-+
-+	error = flock_make_lock(filp, &lock, deny_flags_to_cmd(filp->f_flags));
-+	if (error)
-+		return error;
-+
-+	error = flock_lock_file(filp, lock);
-+	if (error == -EAGAIN)
-+		error = -EBUSY;
-+
-+	locks_free_lock(lock);
-+	return error;
-+}
-+
- static int __posix_lock_file(struct inode *inode, struct file_lock *request, struct file_lock *conflock)
- {
- 	struct file_lock *fl;
-diff --git a/fs/namei.c b/fs/namei.c
-index ec97aef..416c74f 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2557,9 +2557,14 @@ static int atomic_open(struct nameidata *nd, struct dentry *dentry,
- 	 * here.
+ static __cacheline_aligned_in_smp DEFINE_SPINLOCK(dcache_lru_lock);
+-__cacheline_aligned_in_smp DEFINE_SEQLOCK(rename_lock);
++__cacheline_aligned_in_smp DEFINE_SEQRWLOCK(rename_lock);
+ 
+ EXPORT_SYMBOL(rename_lock);
+ 
+@@ -1020,7 +1021,7 @@ static struct dentry *try_to_ascend(struct dentry *old, int locked, unsigned seq
  	 */
- 	error = may_open(&file->f_path, acc_mode, open_flag);
--	if (error)
-+	if (error) {
- 		fput(file);
-+		goto out;
-+	}
+ 	if (new != old->d_parent ||
+ 		 (old->d_flags & DCACHE_DENTRY_KILLED) ||
+-		 (!locked && read_seqretry(&rename_lock, seq))) {
++		 (!locked && read_seqrwretry(&rename_lock, seq))) {
+ 		spin_unlock(&new->d_lock);
+ 		new = NULL;
+ 	}
+@@ -1049,7 +1050,7 @@ int have_submounts(struct dentry *parent)
+ 	unsigned seq;
+ 	int locked = 0;
  
-+	error = deny_lock_file(file);
-+	if (error)
-+		fput(file);
+-	seq = read_seqbegin(&rename_lock);
++	seq = read_seqrwbegin(&rename_lock);
+ again:
+ 	this_parent = parent;
+ 
+@@ -1092,23 +1093,23 @@ resume:
+ 		goto resume;
+ 	}
+ 	spin_unlock(&this_parent->d_lock);
+-	if (!locked && read_seqretry(&rename_lock, seq))
++	if (!locked && read_seqrwretry(&rename_lock, seq))
+ 		goto rename_retry;
+ 	if (locked)
+-		write_sequnlock(&rename_lock);
++		write_seqrwunlock(&rename_lock);
+ 	return 0; /* No mount points found in tree */
+ positive:
+-	if (!locked && read_seqretry(&rename_lock, seq))
++	if (!locked && read_seqrwretry(&rename_lock, seq))
+ 		goto rename_retry;
+ 	if (locked)
+-		write_sequnlock(&rename_lock);
++		write_seqrwunlock(&rename_lock);
+ 	return 1;
+ 
+ rename_retry:
+ 	if (locked)
+ 		goto again;
+ 	locked = 1;
+-	write_seqlock(&rename_lock);
++	write_seqrwlock(&rename_lock);
+ 	goto again;
+ }
+ EXPORT_SYMBOL(have_submounts);
+@@ -1135,7 +1136,7 @@ static int select_parent(struct dentry *parent, struct list_head *dispose)
+ 	int found = 0;
+ 	int locked = 0;
+ 
+-	seq = read_seqbegin(&rename_lock);
++	seq = read_seqrwbegin(&rename_lock);
+ again:
+ 	this_parent = parent;
+ 	spin_lock(&this_parent->d_lock);
+@@ -1200,10 +1201,10 @@ resume:
+ 	}
  out:
- 	dput(dentry);
- 	return error;
-@@ -2769,9 +2774,9 @@ retry_lookup:
- 	}
- 	mutex_lock(&dir->d_inode->i_mutex);
- 	error = lookup_open(nd, path, file, op, got_write, opened);
--	mutex_unlock(&dir->d_inode->i_mutex);
+ 	spin_unlock(&this_parent->d_lock);
+-	if (!locked && read_seqretry(&rename_lock, seq))
++	if (!locked && read_seqrwretry(&rename_lock, seq))
+ 		goto rename_retry;
+ 	if (locked)
+-		write_sequnlock(&rename_lock);
++		write_seqrwunlock(&rename_lock);
+ 	return found;
  
- 	if (error <= 0) {
-+		mutex_unlock(&dir->d_inode->i_mutex);
- 		if (error)
- 			goto out;
- 
-@@ -2789,8 +2794,32 @@ retry_lookup:
- 		will_truncate = false;
- 		acc_mode = MAY_OPEN;
- 		path_to_nameidata(path, nd);
--		goto finish_open_created;
-+
-+		/*
-+		 * Unlock parent i_mutex later when the open finishes - prevent
-+		 * races when a file can be locked with a deny lock by another
-+		 * task that opens the file.
-+		 */
-+		error = may_open(&nd->path, acc_mode, open_flag);
-+		if (error) {
-+			mutex_unlock(&dir->d_inode->i_mutex);
-+			goto out;
-+		}
-+		file->f_path.mnt = nd->path.mnt;
-+		error = finish_open(file, nd->path.dentry, NULL, opened);
-+		if (error) {
-+			mutex_unlock(&dir->d_inode->i_mutex);
-+			if (error == -EOPENSTALE)
-+				goto stale_open;
-+			goto out;
-+		}
-+		error = deny_lock_file(file);
-+		mutex_unlock(&dir->d_inode->i_mutex);
-+		if (error)
-+			goto exit_fput;
-+		goto opened;
- 	}
-+	mutex_unlock(&dir->d_inode->i_mutex);
- 
- 	/*
- 	 * create/update audit record if it already exists.
-@@ -2872,7 +2901,6 @@ finish_open:
- 			goto out;
- 		got_write = true;
- 	}
--finish_open_created:
- 	error = may_open(&nd->path, acc_mode, open_flag);
- 	if (error)
- 		goto out;
-@@ -2883,6 +2911,15 @@ finish_open_created:
- 			goto stale_open;
- 		goto out;
- 	}
-+	/*
-+	 * Lock parent i_mutex to prevent races with deny locks on newely
-+	 * created files.
-+	 */
-+	mutex_lock(&dir->d_inode->i_mutex);
-+	error = deny_lock_file(file);
-+	mutex_unlock(&dir->d_inode->i_mutex);
-+	if (error)
-+		goto exit_fput;
- opened:
- 	error = open_check_o_direct(file);
- 	if (error)
-diff --git a/fs/proc_namespace.c b/fs/proc_namespace.c
-index 2033f74..6edbadc 100644
---- a/fs/proc_namespace.c
-+++ b/fs/proc_namespace.c
-@@ -44,6 +44,7 @@ static int show_sb_opts(struct seq_file *m, struct super_block *sb)
- 		{ MS_SYNCHRONOUS, ",sync" },
- 		{ MS_DIRSYNC, ",dirsync" },
- 		{ MS_MANDLOCK, ",mand" },
-+		{ MS_SHARELOCK, ",sharelock" },
- 		{ 0, NULL }
- 	};
- 	const struct proc_fs_info *fs_infop;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 1a39c33..073e31a 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1005,6 +1005,7 @@ extern int lease_modify(struct file_lock **, int);
- extern int lock_may_read(struct inode *, loff_t start, unsigned long count);
- extern int lock_may_write(struct inode *, loff_t start, unsigned long count);
- extern void locks_delete_block(struct file_lock *waiter);
-+extern int deny_lock_file(struct file *);
- extern void lock_flocks(void);
- extern void unlock_flocks(void);
- #else /* !CONFIG_FILE_LOCKING */
-@@ -1153,6 +1154,11 @@ static inline void locks_delete_block(struct file_lock *waiter)
- {
+ rename_retry:
+@@ -1212,7 +1213,7 @@ rename_retry:
+ 	if (locked)
+ 		goto again;
+ 	locked = 1;
+-	write_seqlock(&rename_lock);
++	write_seqrwlock(&rename_lock);
+ 	goto again;
  }
  
-+static inline int deny_lock_file(struct file *filp)
-+{
-+	return 0;
-+}
-+
- static inline void lock_flocks(void)
- {
+@@ -1825,7 +1826,7 @@ struct dentry *__d_lookup_rcu(const struct dentry *parent,
+ 	 * It is possible that concurrent renames can mess up our list
+ 	 * walk here and result in missing our dentry, resulting in the
+ 	 * false-negative result. d_lookup() protects against concurrent
+-	 * renames using rename_lock seqlock.
++	 * renames using rename_lock seqrwlock.
+ 	 *
+ 	 * See Documentation/filesystems/path-lookup.txt for more details.
+ 	 */
+@@ -1893,11 +1894,11 @@ struct dentry *d_lookup(const struct dentry *parent, const struct qstr *name)
+ 	unsigned seq;
+ 
+         do {
+-                seq = read_seqbegin(&rename_lock);
++                seq = read_seqrwbegin(&rename_lock);
+                 dentry = __d_lookup(parent, name);
+                 if (dentry)
+ 			break;
+-	} while (read_seqretry(&rename_lock, seq));
++	} while (read_seqrwretry(&rename_lock, seq));
+ 	return dentry;
  }
-@@ -1668,6 +1674,7 @@ struct super_operations {
- #define IS_PRIVATE(inode)	((inode)->i_flags & S_PRIVATE)
- #define IS_IMA(inode)		((inode)->i_flags & S_IMA)
- #define IS_AUTOMOUNT(inode)	((inode)->i_flags & S_AUTOMOUNT)
-+#define IS_SHARELOCK(inode)	__IS_FLG(inode, MS_SHARELOCK)
- #define IS_NOSEC(inode)		((inode)->i_flags & S_NOSEC)
+ EXPORT_SYMBOL(d_lookup);
+@@ -1911,7 +1912,7 @@ EXPORT_SYMBOL(d_lookup);
+  * __d_lookup is like d_lookup, however it may (rarely) return a
+  * false-negative result due to unrelated rename activity.
+  *
+- * __d_lookup is slightly faster by avoiding rename_lock read seqlock,
++ * __d_lookup is slightly faster by avoiding rename_lock read seqrwlock,
+  * however it must be used carefully, eg. with a following d_lookup in
+  * the case of failure.
+  *
+@@ -1943,7 +1944,7 @@ struct dentry *__d_lookup(const struct dentry *parent, const struct qstr *name)
+ 	 * It is possible that concurrent renames can mess up our list
+ 	 * walk here and result in missing our dentry, resulting in the
+ 	 * false-negative result. d_lookup() protects against concurrent
+-	 * renames using rename_lock seqlock.
++	 * renames using rename_lock seqrwlock.
+ 	 *
+ 	 * See Documentation/filesystems/path-lookup.txt for more details.
+ 	 */
+@@ -2318,9 +2319,9 @@ static void __d_move(struct dentry * dentry, struct dentry * target)
+  */
+ void d_move(struct dentry *dentry, struct dentry *target)
+ {
+-	write_seqlock(&rename_lock);
++	write_seqrwlock(&rename_lock);
+ 	__d_move(dentry, target);
+-	write_sequnlock(&rename_lock);
++	write_seqrwunlock(&rename_lock);
+ }
+ EXPORT_SYMBOL(d_move);
  
- /*
-diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
-index a48937d..5ac0d49 100644
---- a/include/uapi/asm-generic/fcntl.h
-+++ b/include/uapi/asm-generic/fcntl.h
-@@ -84,6 +84,17 @@
- #define O_PATH		010000000
- #endif
+@@ -2449,7 +2450,7 @@ struct dentry *d_materialise_unique(struct dentry *dentry, struct inode *inode)
+ 		alias = __d_find_alias(inode, 0);
+ 		if (alias) {
+ 			actual = alias;
+-			write_seqlock(&rename_lock);
++			write_seqrwlock(&rename_lock);
  
-+#ifndef O_DENYREAD
-+#define O_DENYREAD	020000000	/* Do not permit read access */
-+#endif
-+#ifndef O_DENYWRITE
-+#define O_DENYWRITE	040000000	/* Do not permit write access */
-+#endif
-+/* FMODE_NONOTIFY	0100000000 */
-+#ifndef O_DENYDELETE
-+#define O_DENYDELETE	0200000000	/* Do not permit delete or rename */
-+#endif
-+
- #ifndef O_NDELAY
- #define O_NDELAY	O_NONBLOCK
- #endif
-diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
-index 780d4c6..f1925f7 100644
---- a/include/uapi/linux/fs.h
-+++ b/include/uapi/linux/fs.h
-@@ -86,6 +86,7 @@ struct inodes_stat_t {
- #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
- #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
- #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
-+#define MS_SHARELOCK	(1<<25) /* Allow share locks on an FS */
- #define MS_NOSEC	(1<<28)
- #define MS_BORN		(1<<29)
- #define MS_ACTIVE	(1<<30)
+ 			if (d_ancestor(alias, dentry)) {
+ 				/* Check for loops */
+@@ -2459,7 +2460,7 @@ struct dentry *d_materialise_unique(struct dentry *dentry, struct inode *inode)
+ 				/* Is this an anonymous mountpoint that we
+ 				 * could splice into our tree? */
+ 				__d_materialise_dentry(dentry, alias);
+-				write_sequnlock(&rename_lock);
++				write_seqrwunlock(&rename_lock);
+ 				__d_drop(alias);
+ 				goto found;
+ 			} else {
+@@ -2467,7 +2468,7 @@ struct dentry *d_materialise_unique(struct dentry *dentry, struct inode *inode)
+ 				 * aliasing. This drops inode->i_lock */
+ 				actual = __d_unalias(inode, dentry, alias);
+ 			}
+-			write_sequnlock(&rename_lock);
++			write_seqrwunlock(&rename_lock);
+ 			if (IS_ERR(actual)) {
+ 				if (PTR_ERR(actual) == -ELOOP)
+ 					pr_warn_ratelimited(
+@@ -2614,9 +2615,9 @@ char *__d_path(const struct path *path,
+ 	int error;
+ 
+ 	prepend(&res, &buflen, "\0", 1);
+-	write_seqlock(&rename_lock);
++	read_seqrwlock(&rename_lock);
+ 	error = prepend_path(path, root, &res, &buflen);
+-	write_sequnlock(&rename_lock);
++	read_seqrwunlock(&rename_lock);
+ 
+ 	if (error < 0)
+ 		return ERR_PTR(error);
+@@ -2633,9 +2634,9 @@ char *d_absolute_path(const struct path *path,
+ 	int error;
+ 
+ 	prepend(&res, &buflen, "\0", 1);
+-	write_seqlock(&rename_lock);
++	read_seqrwlock(&rename_lock);
+ 	error = prepend_path(path, &root, &res, &buflen);
+-	write_sequnlock(&rename_lock);
++	read_seqrwunlock(&rename_lock);
+ 
+ 	if (error > 1)
+ 		error = -EINVAL;
+@@ -2699,11 +2700,11 @@ char *d_path(const struct path *path, char *buf, int buflen)
+ 		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
+ 
+ 	get_fs_root(current->fs, &root);
+-	write_seqlock(&rename_lock);
++	read_seqrwlock(&rename_lock);
+ 	error = path_with_deleted(path, &root, &res, &buflen);
+ 	if (error < 0)
+ 		res = ERR_PTR(error);
+-	write_sequnlock(&rename_lock);
++	read_seqrwunlock(&rename_lock);
+ 	path_put(&root);
+ 	return res;
+ }
+@@ -2768,9 +2769,9 @@ char *dentry_path_raw(struct dentry *dentry, char *buf, int buflen)
+ {
+ 	char *retval;
+ 
+-	write_seqlock(&rename_lock);
++	read_seqrwlock(&rename_lock);
+ 	retval = __dentry_path(dentry, buf, buflen);
+-	write_sequnlock(&rename_lock);
++	read_seqrwunlock(&rename_lock);
+ 
+ 	return retval;
+ }
+@@ -2781,7 +2782,7 @@ char *dentry_path(struct dentry *dentry, char *buf, int buflen)
+ 	char *p = NULL;
+ 	char *retval;
+ 
+-	write_seqlock(&rename_lock);
++	read_seqrwlock(&rename_lock);
+ 	if (d_unlinked(dentry)) {
+ 		p = buf + buflen;
+ 		if (prepend(&p, &buflen, "//deleted", 10) != 0)
+@@ -2789,7 +2790,7 @@ char *dentry_path(struct dentry *dentry, char *buf, int buflen)
+ 		buflen++;
+ 	}
+ 	retval = __dentry_path(dentry, buf, buflen);
+-	write_sequnlock(&rename_lock);
++	read_seqrwunlock(&rename_lock);
+ 	if (!IS_ERR(retval) && p)
+ 		*p = '/';	/* restore '/' overriden with '\0' */
+ 	return retval;
+@@ -2827,7 +2828,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, buf, unsigned long, size)
+ 	get_fs_root_and_pwd(current->fs, &root, &pwd);
+ 
+ 	error = -ENOENT;
+-	write_seqlock(&rename_lock);
++	read_seqrwlock(&rename_lock);
+ 	if (!d_unlinked(pwd.dentry)) {
+ 		unsigned long len;
+ 		char *cwd = page + PAGE_SIZE;
+@@ -2835,7 +2836,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, buf, unsigned long, size)
+ 
+ 		prepend(&cwd, &buflen, "\0", 1);
+ 		error = prepend_path(&pwd, &root, &cwd, &buflen);
+-		write_sequnlock(&rename_lock);
++		read_seqrwunlock(&rename_lock);
+ 
+ 		if (error < 0)
+ 			goto out;
+@@ -2855,7 +2856,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, buf, unsigned long, size)
+ 				error = -EFAULT;
+ 		}
+ 	} else {
+-		write_sequnlock(&rename_lock);
++		read_seqrwunlock(&rename_lock);
+ 	}
+ 
+ out:
+@@ -2891,7 +2892,7 @@ int is_subdir(struct dentry *new_dentry, struct dentry *old_dentry)
+ 
+ 	do {
+ 		/* for restarting inner loop in case of seq retry */
+-		seq = read_seqbegin(&rename_lock);
++		seq = read_seqrwbegin(&rename_lock);
+ 		/*
+ 		 * Need rcu_readlock to protect against the d_parent trashing
+ 		 * due to d_move
+@@ -2902,7 +2903,7 @@ int is_subdir(struct dentry *new_dentry, struct dentry *old_dentry)
+ 		else
+ 			result = 0;
+ 		rcu_read_unlock();
+-	} while (read_seqretry(&rename_lock, seq));
++	} while (read_seqrwretry(&rename_lock, seq));
+ 
+ 	return result;
+ }
+@@ -2914,7 +2915,7 @@ void d_genocide(struct dentry *root)
+ 	unsigned seq;
+ 	int locked = 0;
+ 
+-	seq = read_seqbegin(&rename_lock);
++	seq = read_seqrwbegin(&rename_lock);
+ again:
+ 	this_parent = root;
+ 	spin_lock(&this_parent->d_lock);
+@@ -2957,17 +2958,17 @@ resume:
+ 		goto resume;
+ 	}
+ 	spin_unlock(&this_parent->d_lock);
+-	if (!locked && read_seqretry(&rename_lock, seq))
++	if (!locked && read_seqrwretry(&rename_lock, seq))
+ 		goto rename_retry;
+ 	if (locked)
+-		write_sequnlock(&rename_lock);
++		write_seqrwunlock(&rename_lock);
+ 	return;
+ 
+ rename_retry:
+ 	if (locked)
+ 		goto again;
+ 	locked = 1;
+-	write_seqlock(&rename_lock);
++	write_seqrwlock(&rename_lock);
+ 	goto again;
+ }
+ 
+diff --git a/fs/nfs/namespace.c b/fs/nfs/namespace.c
+index fc8dc20..0eca871 100644
+--- a/fs/nfs/namespace.c
++++ b/fs/nfs/namespace.c
+@@ -60,7 +60,7 @@ rename_retry:
+ 	*--end = '\0';
+ 	buflen--;
+ 
+-	seq = read_seqbegin(&rename_lock);
++	seq = read_seqrwbegin(&rename_lock);
+ 	rcu_read_lock();
+ 	while (1) {
+ 		spin_lock(&dentry->d_lock);
+@@ -76,7 +76,7 @@ rename_retry:
+ 		spin_unlock(&dentry->d_lock);
+ 		dentry = dentry->d_parent;
+ 	}
+-	if (read_seqretry(&rename_lock, seq)) {
++	if (read_seqrwretry(&rename_lock, seq)) {
+ 		spin_unlock(&dentry->d_lock);
+ 		rcu_read_unlock();
+ 		goto rename_retry;
+@@ -117,7 +117,7 @@ rename_retry:
+ Elong_unlock:
+ 	spin_unlock(&dentry->d_lock);
+ 	rcu_read_unlock();
+-	if (read_seqretry(&rename_lock, seq))
++	if (read_seqrwretry(&rename_lock, seq))
+ 		goto rename_retry;
+ Elong:
+ 	return ERR_PTR(-ENAMETOOLONG);
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index 99da5e2..5f05815 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -6,7 +6,7 @@
+ #include <linux/rculist.h>
+ #include <linux/rculist_bl.h>
+ #include <linux/spinlock.h>
+-#include <linux/seqlock.h>
++#include <linux/seqrwlock.h>
+ #include <linux/cache.h>
+ #include <linux/rcupdate.h>
+ 
+@@ -210,7 +210,7 @@ struct dentry_operations {
+ 
+ #define DCACHE_DENTRY_KILLED	0x100000
+ 
+-extern seqlock_t rename_lock;
++extern seqrwlock_t rename_lock;
+ 
+ static inline int dname_external(struct dentry *dentry)
+ {
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index a371f85..767421e 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -1892,7 +1892,7 @@ retry:
+ 	drop = NULL;
+ 	d = dentry;
+ 	rcu_read_lock();
+-	seq = read_seqbegin(&rename_lock);
++	seq = read_seqrwbegin(&rename_lock);
+ 	for(;;) {
+ 		struct inode *inode = d->d_inode;
+ 		if (inode && unlikely(!hlist_empty(&inode->i_fsnotify_marks))) {
+@@ -1910,7 +1910,7 @@ retry:
+ 			break;
+ 		d = parent;
+ 	}
+-	if (unlikely(read_seqretry(&rename_lock, seq) || drop)) {  /* in this order */
++	if (unlikely(read_seqrwretry(&rename_lock, seq) || drop)) {  /* in this order */
+ 		rcu_read_unlock();
+ 		if (!drop) {
+ 			/* just a race with rename */
 -- 
-1.8.1.5
+1.7.1
 
