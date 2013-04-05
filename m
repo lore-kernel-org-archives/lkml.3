@@ -1,37 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161830Ab3DEODz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 10:03:55 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:33758 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161814Ab3DEODy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 10:03:54 -0400
-Message-ID: <515ED9BB.3060506@intel.com>
-Date: Fri, 05 Apr 2013 15:03:39 +0100
-From: Matt Fleming <matt.fleming@intel.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1161855Ab3DEOGx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 10:06:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60822 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161475Ab3DEOGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 10:06:52 -0400
+Date: Fri, 5 Apr 2013 16:06:50 +0200
+From: Jan Kara <jack@suse.cz>
+To: Shea Levy <shea@shealevy.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 0/2] vfs: Report a mount r/o if the superblock is
+Message-ID: <20130405140650.GA21852@quack.suse.cz>
+References: <1363277360-1947-1-git-send-email-shea@shealevy.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: "Luck, Tony" <tony.luck@intel.com>,
-        "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        "ccross@android.com" <ccross@android.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "matthew.garrett@nebula.com" <matthew.garrett@nebula.com>
-Subject: Re: [PATCH 1/2] efivars: Check max_size only if it is non-zero.
-References: <1365080500-13677-1-git-send-email-richard@nod.at> <3908561D78D1C84285E8C5FCA982C28F1E0987DE@ORSMSX108.amr.corp.intel.com> <515DA677.8050805@nod.at>
-In-Reply-To: <515DA677.8050805@nod.at>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363277360-1947-1-git-send-email-shea@shealevy.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/13 17:12, Richard Weinberger wrote:
-> Fair point. I'll add such a printk() to my patch and resend.
+On Thu 14-03-13 12:09:18, Shea Levy wrote:
+> By calling mount(2) with MS_REMOUNT | MS_BIND on a non-bind readonly
+> mountpoint, it is possible to have a readonly mount without MNT_READONLY
+> in its mnt_flags. Currently, /proc/<pid>/mountinfo and statfs will
+> report such a mount as r/w, even though for all intents and purposes it
+> is still readonly.
+> 
+> This patchset fixes show_mountinfo and statfs to report such mounts as
+> readonly.
+  Andrew, I think the two patches in this thread deserve to be picked up...
 
-Also take a look at FW_BUG.
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
