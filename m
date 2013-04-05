@@ -1,83 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162339Ab3DESIX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 14:08:23 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:50901 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162274Ab3DESIV (ORCPT
+	id S1162335Ab3DESKJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 14:10:09 -0400
+Received: from mail-ia0-f180.google.com ([209.85.210.180]:65460 "EHLO
+	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162274Ab3DESKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 14:08:21 -0400
-From: Christian Lamparter <chunkeey@googlemail.com>
-To: Eugene Krasnikov <k.eugene.e@gmail.com>
-Subject: Re: Version number policy!
-Date: Fri, 5 Apr 2013 20:08:14 +0200
-User-Agent: KMail/1.13.7 (Linux/3.9.0-rc5-wl+; KDE/4.8.4; x86_64; ; )
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "linux-bluetooth" <linux-bluetooth@vger.kernel.org>,
-        Adrian Chadd <adrian@freebsd.org>,
-        "linux-wireless" <linux-wireless@vger.kernel.org>,
-        "ath9k_htc_fw" <ath9k_htc_fw@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <CAJ-Vmo=LVSzdEo6DhfOVT_0JHCTMmdPU1zGfMuBmhmr8QuDmJQ@mail.gmail.com> <201304051903.11215.chunkeey@googlemail.com> <CAFSJ42bqquh+xekt8+V3wbG3MOUVFELTxR3mNPfS0Jn9J7OURQ@mail.gmail.com>
-In-Reply-To: <CAFSJ42bqquh+xekt8+V3wbG3MOUVFELTxR3mNPfS0Jn9J7OURQ@mail.gmail.com>
+	Fri, 5 Apr 2013 14:10:07 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304052008.15412.chunkeey@googlemail.com>
+In-Reply-To: <9825274.7u1gJKhUg4@skinner.arch.suse.de>
+References: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
+	<2084826.BkfVPXvXDZ@skinner.arch.suse.de>
+	<CAE9FiQXE5T=8RJ0FdrMfiTwZ_NDBwjsOM0q_SePWsuQ3tXMz6Q@mail.gmail.com>
+	<9825274.7u1gJKhUg4@skinner.arch.suse.de>
+Date: Fri, 5 Apr 2013 11:10:06 -0700
+X-Google-Sender-Auth: 2Q1RmrJYd-vkhJOjOk0FUUybjx8
+Message-ID: <CAE9FiQWaqJOZtCjzqB38bVmEnQKiFN1Uc3z0hWvT6vnbtuA7cw@mail.gmail.com>
+Subject: Re: [PATCH v3 00/22] x86, ACPI, numa: Parse numa info early
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Renninger <trenn@suse.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 05 April 2013 19:23:54 Eugene Krasnikov wrote:
-> When it comes to feature bitmap do you have an example of such a
-> bitmap from carl9170? 
-That's a weird way of asking. No, I don't have an example?!
-But carl9170fw_feature_list is used in "production".
+On Fri, Apr 5, 2013 at 9:36 AM, Thomas Renninger <trenn@suse.de> wrote:
+>
+> From acpi overriding parts:
+> Tested-by: Thomas Renninger <trenn@suse.de>
 
-Anyway, there is one defined in:
-<https://github.com/chunkeey/carl9170fw/blob/master/include/shared/fwdesc.h#L26>
+Thanks a lot for testing.
 
-It's packed into the OTUS firmware descriptor:
-<https://github.com/chunkeey/carl9170fw/blob/master/include/shared/fwdesc.h#L118>
+>
+> I also went through the override related patches and from
+> what I can judge (certainly not the early memory, flat 32 bit memory you call it?
+> specific parts), they look fine.
 
-And the descriptor is filled in:
-<https://github.com/chunkeey/carl9170fw/blob/master/carlfw/src/fw.c>
+Yes, we call it "32bit flat mode"
 
-[Basically, a bit for every feature in kconfig.]
+Thanks
 
-Of course, the nice thing is, if you have something like
-kconfig (carl9170fw.git uses a pretty much the vanilla kernel
-kconfig. Everything apart from the cmake scripts for gperf
-(which is in extra/) is packed into the conf/ directory.
-
-And it has the necessary cmake files. So it should integrate 
-well into the "new" ath9k_htc cmake build system Felix made.
-
-> Why not to rely always on major version?
-Ok, let's do the same with major version...
-
-if  ((fw_major == 1 && fw_minor > 30) ||
-     (fw_major == 2 && fw_minor > 7) ||
-     (fw_major == 3 && fw_minor > 3) ||
-     (fw_major > 4))
-      feature_supported = true;
-
-Nope, I think it looks just as bad.
-[Please, explain what you meant to say...
-Because the new versioning draft stats that very
-major release is incompatible with the old one and
-clearly, having to support a ton of different firmware
-trees is no joy.... and not necessary]
-
-BTW: Instead of a GET_BUILD command, why not make a add a
-firmware header or pack the information into the tail... 
-
-This way, it can be read and parsed by tools, without having
-to upload it to the device first.
-
-carl9170fw already such a tool, it's called: fwinfo and it is located in: 
-<https://github.com/chunkeey/carl9170fw/blob/master/tools/src/fwinfo.c>
-
-Regards,
-	Christian
+Yinghai
