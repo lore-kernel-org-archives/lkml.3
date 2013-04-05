@@ -1,92 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161268Ab3DECGW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 22:06:22 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48149 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161134Ab3DECGV (ORCPT
+	id S1161313Ab3DECQM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 22:16:12 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:54381 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161300Ab3DECQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 22:06:21 -0400
-X-AuditID: 9c930179-b7b2aae000000518-80-515e319b8edb
-Date: Fri, 5 Apr 2013 11:06:43 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
-        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH 4/5] sched: don't consider upper se in sched_slice()
-Message-ID: <20130405020643.GC13624@lge.com>
-References: <1364457537-15114-5-git-send-email-iamjoonsoo.kim@lge.com>
- <51553EF5.90702@linux.vnet.ibm.com>
- <20130401040820.GA12015@lge.com>
- <5159320C.4050903@linux.vnet.ibm.com>
- <20130402022556.GD16699@lge.com>
- <515A64BB.5050005@linux.vnet.ibm.com>
- <20130402092647.GE16699@lge.com>
- <515B163B.8050509@linux.vnet.ibm.com>
- <20130404004231.GA10683@lge.com>
- <515D2240.9060501@linux.vnet.ibm.com>
+	Thu, 4 Apr 2013 22:16:11 -0400
+Message-ID: <515E33E8.6050507@hitachi.com>
+Date: Fri, 05 Apr 2013 11:16:08 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515D2240.9060501@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Oskar Andero <oskar.andero@sonymobile.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, davem@davemloft.net,
+        anil.s.keshavamurthy@intel.com, ananth@in.ibm.com,
+        radovan.lekanovic@sonymobile.com, bjorn.davidsson@sonymobile.com,
+        Toby Collett <toby.collett@sonymobile.com>,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: Re: [PATCH v2 1/4] kprobes: delay blacklist symbol lookup
+ until we actually need it
+References: <1365079889-21525-1-git-send-email-oskar.andero@sonymobile.com> <1365079889-21525-2-git-send-email-oskar.andero@sonymobile.com> <20130405005628.GA13624@lge.com>
+In-Reply-To: <20130405005628.GA13624@lge.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Preeti.
+(2013/04/05 9:56), Joonsoo Kim wrote:
+> Hello, Oskar.
+> 
+> On Thu, Apr 04, 2013 at 02:51:26PM +0200, Oskar Andero wrote:
+>> From: Toby Collett <toby.collett@sonymobile.com>
+>>
+>> The symbol lookup can take a long time and kprobes is
+>> initialised very early in boot, so delay symbol lookup
+>> until the blacklist is first used.
+>>
+>> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> Cc: David S. Miller <davem@davemloft.net>
+>> Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
+>> Signed-off-by: Toby Collett <toby.collett@sonymobile.com>
+>> Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
+>> ---
+>>  kernel/kprobes.c | 98 ++++++++++++++++++++++++++++++++++----------------------
+>>  1 file changed, 60 insertions(+), 38 deletions(-)
+>>
+>> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+>> index e35be53..0a270e5 100644
+>> --- a/kernel/kprobes.c
+>> +++ b/kernel/kprobes.c
+>> @@ -68,6 +68,7 @@
+>>  #endif
+>>  
+>>  static int kprobes_initialized;
+>> +static int kprobe_blacklist_initialized;
+>>  static struct hlist_head kprobe_table[KPROBE_TABLE_SIZE];
+>>  static struct hlist_head kretprobe_inst_table[KPROBE_TABLE_SIZE];
+>>  
+>> @@ -102,6 +103,60 @@ static struct kprobe_blackpoint kprobe_blacklist[] = {
+>>  	{NULL}    /* Terminator */
+>>  };
+>>  
+>> +/* it can take some time ( > 100ms ) to initialise the
+>> + * blacklist so we delay this until we actually need it
+>> + */
+>> +static void init_kprobe_blacklist(void)
+>> +{
+>> +	int i;
+>> +	unsigned long offset = 0, size = 0;
+>> +	char *modname, namebuf[128];
+>> +	const char *symbol_name;
+>> +	void *addr;
+>> +	struct kprobe_blackpoint *kb;
+>> +
+>> +	mutex_lock(&kprobe_mutex);
+>> +	if (kprobe_blacklist_initialized)
+>> +		goto out;
+>> +
+>> +	/*
+>> +	 * Lookup and populate the kprobe_blacklist.
+>> +	 *
+>> +	 * Unlike the kretprobe blacklist, we'll need to determine
+>> +	 * the range of addresses that belong to the said functions,
+>> +	 * since a kprobe need not necessarily be at the beginning
+>> +	 * of a function.
+>> +	 */
+>> +	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
+>> +		kprobe_lookup_name(kb->name, addr);
+>> +		if (!addr)
+>> +			continue;
+>> +
+>> +		kb->start_addr = (unsigned long)addr;
+>> +		symbol_name = kallsyms_lookup(kb->start_addr,
+>> +				&size, &offset, &modname, namebuf);
+>> +		if (!symbol_name)
+>> +			kb->range = 0;
+>> +		else
+>> +			kb->range = size;
+>> +	}
+>> +
+>> +	if (kretprobe_blacklist_size) {
+>> +		/* lookup the function address from its name */
+>> +		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
+>> +			kprobe_lookup_name(kretprobe_blacklist[i].name,
+>> +					   kretprobe_blacklist[i].addr);
+>> +			if (!kretprobe_blacklist[i].addr)
+>> +				printk("kretprobe: lookup failed: %s\n",
+>> +				       kretprobe_blacklist[i].name);
+>> +		}
+>> +	}
+>> +	kprobe_blacklist_initialized = 1;
+> 
+> You need smp_wmb() before assigning 'kprobe_blacklist_initialized = 1'.
+> This guarantee that who see kprobe_blacklist_initialized = 1 will get
+> updated data of kprobe_blacklist.
 
-On Thu, Apr 04, 2013 at 12:18:32PM +0530, Preeti U Murthy wrote:
-> Hi Joonsoo,
-> 
-> On 04/04/2013 06:12 AM, Joonsoo Kim wrote:
-> > Hello, Preeti.
-> 
-> > 
-> > So, how about extending a sched_period with rq->nr_running, instead of
-> > cfs_rq->nr_running? It is my quick thought and I think that we can ensure
-> > to run atleast once in this extending sched_period.
-> 
-> Yeah this seems to be correct.This would ensure sched_min_granularity
-> also. So then in the scenarion where there are 2 tgs in a runqueue with
-> 10 tasks each,when we calculate the sched_slice of any task,the
-> __sched_period() would return 4*20 = 80ms.
-> 
-> The sched_slice of each of the task would be 80/20 = 4ms. But what about
-> the sched_slice of each task group? How would that be calculated then?
+Right, to ensure blacklist is updated, memory barrier is required.
 
-Ah... Okay.
-I will think more deeply about this issue.
+> Please refer my previous patch once more :)
+> 
+> And How about define kprobe_blacklist_initialized as boolean?
 
-> 
-> Let us take the above example and walk through this problem.This would
-> probably help us spot the issues involved with this.
-> 
-> > And, do we leave a problem if we cannot guaranteed atleast once property?
-> 
-> This would depend on the results of the benchmarks with the changes.I am
-> unable to comment on this off the top of my head.
+Good idea :)
 
-Okay. :)
+Thank you,
 
-Thanks for your kind review!!
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-> 
-> Thank you
-> 
-> Regards
-> Preeti U Murthy
-> 
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
