@@ -1,97 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162479Ab3DESmT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 14:42:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4053 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162434Ab3DESmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 14:42:18 -0400
-Date: Fri, 05 Apr 2013 14:40:35 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <1365187235-chwg4d0m-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <515F18A8.7030102@gmail.com>
-References: <1365014138-19589-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1365014138-19589-2-git-send-email-n-horiguchi@ah.jp.nec.com>
- <515F18A8.7030102@gmail.com>
-Subject: Re: [PATCH v3 1/3] hugetlbfs: stop setting VM_DONTDUMP in
- initializing vma(VM_HUGETLB)
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <515F18A8.7030102@gmail.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1162488Ab3DESq7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 14:46:59 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60767 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162471Ab3DESq6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 14:46:58 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Rob Herring <rob.herring@calxeda.com>
+Cc: Grant Likely <glikely@secretlab.ca>, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: [GIT PULL] dt: run C pre-processor on *.dts, create some standard headers
+Date: Fri,  5 Apr 2013 12:46:50 -0600
+Message-Id: <1365187610-29422-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.10.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 05, 2013 at 02:32:08PM -0400, KOSAKI Motohiro wrote:
-> (4/3/13 2:35 PM), Naoya Horiguchi wrote:
-> > Currently we fail to include any data on hugepages into coredump,
-> > because VM_DONTDUMP is set on hugetlbfs's vma. This behavior was recently
-> > introduced by commit 314e51b98 "mm: kill vma flag VM_RESERVED and
-> > mm->reserved_vm counter". This looks to me a serious regression,
-> > so let's fix it.
-> 
-> I don't think this is enough explanations. Let's explain the code meaning
-> time to time order.
-> 
-> First, we had no madvice(DONTDUMP) nor coredump_filter(HUGETLB). then hugetlb
-> pages were never dumped.
-> 
-> Second, I added coredump_filter(HUGETLB). and then vm_dump_size became..
-> 
-> vm_dump_size()
-> {
-> 	/* Hugetlb memory check */
-> 	if (vma->vm_flags & VM_HUGETLB) {
-> 		..
-> 		goto whole;
-> 	}
-> 	if (vma->vm_flags & VM_RESERVED)
-> 		return 0;
-> 
-> The point is, hugetlb was checked before VM_RESERVED. i.e. hugetlb core dump ignored
-> VM_RESERVED. At this time, "if (vma->vm_flags & VM_HUGETLB)" statement don't need
-> return 0 because VM_RESERVED prevented to go into the subsequent flag checks.
-> 
-> Third, Jason added madvise(DONTDUMP). then vm_dump_size became...
-> 
-> vm_dump_size()
-> {
->        if (vma->vm_flags & VM_NODUMP)
->                return 0;
-> 
-> 	/* Hugetlb memory check */
-> 	if (vma->vm_flags & VM_HUGETLB) {
-> 		..
-> 		goto whole;
-> 	}
-> 	if (vma->vm_flags & VM_RESERVED)
-> 		return 0;
-> 
-> Look, VM_NODUMP and VM_RESERVED had similar and different meanings at this time.
-> 
-> Finally, Konstantin removed VM_RESERVED and hugetlb coredump behavior
-> has been changed.
+Rob, it might be worth keeping this in a separate branch in linux-next
+so you can pull it out if it causes any issues. I've been using these
+patches for quite a while now, but there's always opportunity for
+surprises on architectures I don't use. I did just fix a bug when
+building with O= a few days back, hence the V2 that I posted as patches.
 
-Things were/are quite complicated, and this is a wonderful step-by-step explanation.
-Thank you very much.
+----------------------------------------------------------------
 
-Naoya
+This branch enhances the support for running dtc on device tree files.
 
-> Thus, patch [1/3] and [2/3] should be marked [stable for v3.6 or later].
-> 
-> Anyway, this patch is correct. Thank you!
-> 
-> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+A dedicated directory is created for header files that provide constants
+for device-tree bindings.
+
+The kbuild dependency script processor is enhanced to support processing
+the dependency outputs from multiple separate commands at once.
+
+The kbuild dtc rule is modified so that the C pre-processor is always
+applied when compiling any device tree.
+
+Some standard headers are created which define common constants for GPIO,
+IRQ, and ARM GIC device tree bindings.
+
+----------------------------------------------------------------
+
+The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
+
+  Linux 3.9-rc1
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git tegra-for-3.10-dtc-cpp-chroot-std-headers
+
+for you to fetch changes up to 4be505d4fc7a07371a2b658469ca1dda99993ca3:
+
+  ARM: dt: create a DT header for the GIC
+
+----------------------------------------------------------------
+
+Stephen Warren (7):
+      kbuild: create an "include chroot" for DT bindings
+      kbuild: fixdep: support concatenated dep files
+      kbuild: cmd_dtc_cpp: extract deps from both gcc -E and dtc
+      kbuild: always run gcc -E on *.dts, remove cmd_dtc_cpp
+      ARM: dt: add header to define GPIO flags
+      ARM: dt: add header to define IRQ flags
+      ARM: dt: create a DT header for the GIC
+
+ arch/arm/boot/dts/include/dt-bindings           |    1 +
+ include/dt-bindings/gpio/gpio.h                 |   15 +++
+ .../dt-bindings/interrupt-controller/arm-gic.h  |   22 +++++
+ include/dt-bindings/interrupt-controller/irq.h  |   19 ++++
+ scripts/Makefile.lib                            |   17 ++--
+ scripts/basic/fixdep.c                          |   93 ++++++++++++------
+ 6 files changed, 125 insertions(+), 42 deletions(-)
+ create mode 120000 arch/arm/boot/dts/include/dt-bindings
+ create mode 100644 include/dt-bindings/gpio/gpio.h
+ create mode 100644 include/dt-bindings/interrupt-controller/arm-gic.h
+ create mode 100644 include/dt-bindings/interrupt-controller/irq.h
