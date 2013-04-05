@@ -1,105 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161869Ab3DEKZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 06:25:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50551 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161175Ab3DEKZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 06:25:56 -0400
-Date: Fri, 5 Apr 2013 12:25:53 +0200
-From: Jan Kara <jack@suse.cz>
-To: Dave Jones <davej@redhat.com>
-Cc: tytso@mit.edu, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: ext4 object already free.
-Message-ID: <20130405102553.GB3848@quack.suse.cz>
-References: <20130329155855.GB5313@redhat.com>
+	id S1160994Ab3DEK1d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 06:27:33 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:39003 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750890Ab3DEK1b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 06:27:31 -0400
+Message-ID: <515EA73C.8050602@parallels.com>
+Date: Fri, 5 Apr 2013 14:28:12 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130329155855.GB5313@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Michal Hocko <mhocko@suse.cz>
+CC: Li Zefan <lizefan@huawei.com>, <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC][PATCH 2/7] memcg: don't use mem_cgroup_get() when creating
+ a kmemcg cache
+References: <515BF233.6070308@huawei.com> <515BF275.5080408@huawei.com> <20130403153133.GM16471@dhcp22.suse.cz>
+In-Reply-To: <20130403153133.GM16471@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+On 04/03/2013 07:31 PM, Michal Hocko wrote:
+> On Wed 03-04-13 17:12:21, Li Zefan wrote:
+>> Use css_get()/css_put() instead of mem_cgroup_get()/mem_cgroup_put().
+>>
+>> Signed-off-by: Li Zefan <lizefan@huawei.com>
+>> ---
+>>  mm/memcontrol.c | 10 +++++-----
+>>  1 file changed, 5 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 43ca91d..dafacb8 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -3191,7 +3191,7 @@ void memcg_release_cache(struct kmem_cache *s)
+>>  	list_del(&s->memcg_params->list);
+>>  	mutex_unlock(&memcg->slab_caches_mutex);
+>>  
+>> -	mem_cgroup_put(memcg);
+>> +	css_put(&memcg->css);
+>>  out:
+>>  	kfree(s->memcg_params);
+>>  }
+>> @@ -3350,16 +3350,18 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+>>  
+>>  	mutex_lock(&memcg_cache_mutex);
+>>  	new_cachep = cachep->memcg_params->memcg_caches[idx];
+>> -	if (new_cachep)
+>> +	if (new_cachep) {
+>> +		css_put(&memcg->css);
+>>  		goto out;
+>> +	}
+>>  
+>>  	new_cachep = kmem_cache_dup(memcg, cachep);
+>>  	if (new_cachep == NULL) {
+>>  		new_cachep = cachep;
+>> +		css_put(&memcg->css);
+>>  		goto out;
+>>  	}
+>>  
+>> -	mem_cgroup_get(memcg);
+>>  	atomic_set(&new_cachep->memcg_params->nr_pages , 0);
+>>  
+>>  	cachep->memcg_params->memcg_caches[idx] = new_cachep;
+>> @@ -3449,8 +3451,6 @@ static void memcg_create_cache_work_func(struct work_struct *w)
+>>  
+>>  	cw = container_of(w, struct create_work, work);
+>>  	memcg_create_kmem_cache(cw->memcg, cw->cachep);
+>> -	/* Drop the reference gotten when we enqueued. */
+>> -	css_put(&cw->memcg->css);
+>>  	kfree(cw);
+>>  }
+> 
+> You are putting references but I do not see any single css_{try}get
+> here. /me puzzled.
+> 
 
-On Fri 29-03-13 11:58:55, Dave Jones wrote:
-> Just hit this very quickly after boot while fuzzing.
-> (top of tree is 0776ce03b1348d39ba3035ea3ee3d268a42912ce)
-  Hum, but it doesn't really look ext4 related. Look:
+There are two things being done in this code:
+First, we acquired a css_ref to make sure that the underlying cgroup
+would not go away. That is a short lived reference, and it is put as
+soon as the cache is created.
+At this point, we acquire a long-lived per-cache memcg reference count
+to guarantee that the memcg will still be alive.
 
-> [   93.602628] =============================================================================
-> [   93.603689] BUG kmalloc-64 (Not tainted): Object already free
-> [   93.604441] -----------------------------------------------------------------------------
-> [   93.604441] 
-> [   93.605674] Disabling lock debugging due to kernel taint
-> [   93.606377] INFO: Allocated in ext4_htree_store_dirent+0x34/0x120 age=3 cpu=2 pid=2120
-> [   93.607400] 	__slab_alloc+0x44a/0x502
-> [   93.607870] 	__kmalloc+0x323/0x3e0
-> [   93.608330] 	ext4_htree_store_dirent+0x34/0x120
-> [   93.608925] 	htree_dirblock_to_tree+0x169/0x1c0
-> [   93.609526] 	ext4_htree_fill_tree+0x77/0x1e0
-> [   93.610093] 	ext4_readdir+0x51c/0x820
-> [   93.610586] 	vfs_readdir+0xb8/0xf0
-> [   93.611046] 	sys_getdents+0x8f/0x120
-> [   93.611528] 	system_call_fastpath+0x16/0x1b
-> [   93.612085] INFO: Freed in free_rb_tree_fname+0x6c/0xd0 age=3 cpu=2 pid=2120
-> [   93.612999] 	__slab_free+0x41/0x3a0
-> [   93.613469] 	kfree+0x2ca/0x300
-> [   93.613885] 	free_rb_tree_fname+0x6c/0xd0
-> [   93.614420] 	ext4_release_dir+0x1e/0x30
-> [   93.614935] 	__fput+0xf5/0x2d0
-> [   93.615352] 	____fput+0xe/0x10
-> [   93.615769] 	task_work_run+0xa4/0xd0
-> [   93.616251] 	do_notify_resume+0x71/0xb0
-> [   93.616764] 	int_signal+0x12/0x17
-  So ext4 properly allocated and freed this size-64 object...
+so it is:
 
-> [   93.617212] INFO: Slab 0xffffea0002665f80 objects=20 used=12 fp=0xffff88009997fb90 flags=0x3000000000004081
-> [   93.618457] INFO: Object 0xffff88009997e620 @offset=1568 fp=0xffff88009997f570
-> [   93.618457] 
-> [   93.619575] Bytes b4 ffff88009997e610: fd ae ff ff 00 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a  ........ZZZZZZZZ
-> [   93.620789] Object ffff88009997e620: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> [   93.621983] Object ffff88009997e630: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> [   93.623176] Object ffff88009997e640: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> [   93.624341] Object ffff88009997e650: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  kkkkkkkkkkkkkkk.
-> [   93.625505] Redzone ffff88009997e660: bb bb bb bb bb bb bb bb                          ........
-> [   93.626594] Padding ffff88009997e7a0: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
-> [   93.627684] Pid: 1850, comm: trinity-child37 Tainted: G    B        3.9.0-rc4+ #7
-> [   93.628623] Call Trace:
-> [   93.628943]  [<ffffffff81199b74>] print_trailer+0x154/0x210
-> [   93.629648]  [<ffffffff81190014>] ? hugetlb_fault+0x494/0x6b0
-> [   93.630373]  [<ffffffff816bb538>] free_debug_processing+0x134/0x22b
-> [   93.631164]  [<ffffffff810b3b8e>] ? put_lock_stats.isra.27+0xe/0x40
-> [   93.631955]  [<ffffffff816c50e5>] ? _raw_spin_unlock_irqrestore+0x65/0x80
-> [   93.632808]  [<ffffffff812c20f1>] ? free_msg+0x21/0x40
-> [   93.635318]  [<ffffffff812c20f1>] ? free_msg+0x21/0x40
-> [   93.637800]  [<ffffffff816bb670>] __slab_free+0x41/0x3a0
-> [   93.640304]  [<ffffffff810b6ced>] ? trace_hardirqs_on+0xd/0x10
-> [   93.642868]  [<ffffffff816c50c2>] ? _raw_spin_unlock_irqrestore+0x42/0x80
-> [   93.645524]  [<ffffffff81355425>] ? debug_check_no_obj_freed+0x155/0x250
-> [   93.648134]  [<ffffffff8119d11d>] ? kfree+0x9d/0x300
-> [   93.650521]  [<ffffffff812c20f1>] ? free_msg+0x21/0x40
-> [   93.652924]  [<ffffffff8119d34a>] kfree+0x2ca/0x300
-> [   93.655294]  [<ffffffff8134a010>] ? delay_tsc+0x90/0xe0
-> [   93.657696]  [<ffffffff812c20f1>] free_msg+0x21/0x40
-> [   93.660059]  [<ffffffff812c289f>] freeque+0xcf/0x140
-> [   93.662400]  [<ffffffff812c2a93>] msgctl_down.constprop.9+0x183/0x200
-> [   93.664918]  [<ffffffff810767cf>] ? up_read+0x1f/0x40
-> [   93.667261]  [<ffffffff816c8f94>] ? __do_page_fault+0x214/0x5b0
-> [   93.669717]  [<ffffffff810b94be>] ? lock_release_non_nested+0x23e/0x320
-> [   93.672257]  [<ffffffff812c2da9>] sys_msgctl+0x139/0x400
-> [   93.674641]  [<ffffffff816c5d4d>] ? retint_swapgs+0xe/0x13
-> [   93.677056]  [<ffffffff810b6c55>] ? trace_hardirqs_on_caller+0x115/0x1a0
-> [   93.679626]  [<ffffffff8134b39e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> [   93.682159]  [<ffffffff816cd942>] system_call_fastpath+0x16/0x1b
-> [   93.799329] FIX kmalloc-64: Object at 0xffff88009997e620 not freed
-  And then sys_msgctl() came and wanted to free it again without
-allocating. So it looks like a problem with IPC? 
+enqueue: css_get
+create : memcg_get, css_put
+destroy: css_put
 
-									Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+If I understand Li's patch correctly, he is not touching the first
+css_get, only turning that into the long lived reference (which was not
+possible before, since that would prevent rmdir).
+
+Then he only needs to get rid of the memcg_get, change the memcg_put to
+css_put, and get rid of the now extra css_put.
+
+He is issuing extra css_puts in memcg_create_kmem_cache, but only in
+failure paths. So the code reads as:
+* css_get on enqueue (already done, so not shown in patch)
+* if it fails, css_put
+* if it succeeds, don't do anything. This is already the long-lived
+reference count. put it at release time.
+
+The code looks correct, and of course, extremely simpler due to the
+use of a single reference.
+
+Li, am I right in my understanding that this is your intention?
+
