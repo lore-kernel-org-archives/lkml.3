@@ -1,110 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161315Ab3DEJaj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 05:30:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48267 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161203Ab3DEJah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 05:30:37 -0400
-Date: Fri, 5 Apr 2013 11:30:34 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Simon Jeons <simon.jeons@gmail.com>
-Cc: Linux Memory Management List <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [RFC][PATCH 0/9] extend hugepage migration
-Message-ID: <20130405093034.GB31132@dhcp22.suse.cz>
-References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <5148F830.3070601@gmail.com>
- <1363815326-urchkyxr-mutt-n-horiguchi@ah.jp.nec.com>
- <514A4B1C.6020201@gmail.com>
- <20130321125628.GB6051@dhcp22.suse.cz>
- <514B9BD8.9050207@gmail.com>
- <20130322081532.GC31457@dhcp22.suse.cz>
- <515E2592.7020607@gmail.com>
- <20130405080828.GA14882@dhcp22.suse.cz>
- <515E92CA.4000507@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515E92CA.4000507@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1161550Ab3DEJh0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 05:37:26 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56998 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1161328Ab3DEJhT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 05:37:19 -0400
+X-IronPort-AV: E=Sophos;i="4.87,413,1363104000"; 
+   d="scan'208";a="7001885"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        yinghai@kernel.org, akpm@linux-foundation.org, wency@cn.fujitsu.com,
+        trenn@suse.de, liwanp@linux.vnet.ibm.com, mgorman@suse.de,
+        walken@google.com, riel@redhat.com, khlebnikov@openvz.org,
+        tj@kernel.org, minchan@kernel.org, m.szyprowski@samsung.com,
+        mina86@mina86.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, linfeng@cn.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, jiang.liu@huawei.com,
+        guz.fnst@cn.fujitsu.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH 02/11] acpi: Print hotplug info in SRAT.
+Date: Fri, 5 Apr 2013 17:39:52 +0800
+Message-Id: <1365154801-473-3-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1365154801-473-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1365154801-473-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/05 17:36:09,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/05 17:36:11,
+	Serialize complete at 2013/04/05 17:36:11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 05-04-13 17:00:58, Simon Jeons wrote:
-> Hi Michal,
-> On 04/05/2013 04:08 PM, Michal Hocko wrote:
-> >On Fri 05-04-13 09:14:58, Simon Jeons wrote:
-> >>Hi Michal,
-> >>On 03/22/2013 04:15 PM, Michal Hocko wrote:
-> >>>[getting off-list]
-> >>>
-> >>>On Fri 22-03-13 07:46:32, Simon Jeons wrote:
-> >>>>Hi Michal,
-> >>>>On 03/21/2013 08:56 PM, Michal Hocko wrote:
-> >>>>>On Thu 21-03-13 07:49:48, Simon Jeons wrote:
-> >>>>>[...]
-> >>>>>>When I hacking arch/x86/mm/hugetlbpage.c like this,
-> >>>>>>diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
-> >>>>>>index ae1aa71..87f34ee 100644
-> >>>>>>--- a/arch/x86/mm/hugetlbpage.c
-> >>>>>>+++ b/arch/x86/mm/hugetlbpage.c
-> >>>>>>@@ -354,14 +354,13 @@ hugetlb_get_unmapped_area(struct file *file,
-> >>>>>>unsigned long addr,
-> >>>>>>
-> >>>>>>#endif /*HAVE_ARCH_HUGETLB_UNMAPPED_AREA*/
-> >>>>>>
-> >>>>>>-#ifdef CONFIG_X86_64
-> >>>>>>static __init int setup_hugepagesz(char *opt)
-> >>>>>>{
-> >>>>>>unsigned long ps = memparse(opt, &opt);
-> >>>>>>if (ps == PMD_SIZE) {
-> >>>>>>hugetlb_add_hstate(PMD_SHIFT - PAGE_SHIFT);
-> >>>>>>- } else if (ps == PUD_SIZE && cpu_has_gbpages) {
-> >>>>>>- hugetlb_add_hstate(PUD_SHIFT - PAGE_SHIFT);
-> >>>>>>+ } else if (ps == PUD_SIZE) {
-> >>>>>>+ hugetlb_add_hstate(PMD_SHIFT - PAGE_SHIFT+4);
-> >>>>>>} else {
-> >>>>>>printk(KERN_ERR "hugepagesz: Unsupported page size %lu M\n",
-> >>>>>>ps >> 20);
-> >>>>>>
-> >>>>>>I set boot=hugepagesz=1G hugepages=10, then I got 10 32MB huge pages.
-> >>>>>>What's the difference between these pages which I hacking and normal
-> >>>>>>huge pages?
-> >>>>>How is this related to the patch set?
-> >>>>>Please _stop_ distracting discussion to unrelated topics!
-> >>>>>
-> >>>>>Nothing personal but this is just wasting our time.
-> >>>>Sorry kindly Michal, my bad.
-> >>>>Btw, could you explain this question for me? very sorry waste your time.
-> >>>Your CPU has to support GB pages. You have removed cpu_has_gbpages test
-> >>>and added a hstate for order 13 pages which is a weird number on its
-> >>>own (32MB) because there is no page table level to support them.
-> >>But after hacking, there is /sys/kernel/mm/hugepages/hugepages-*,
-> >>and have equal number of 32MB huge pages which I set up in boot
-> >>parameter.
-> >because hugetlb_add_hstate creates hstate for those pages and
-> >hugetlb_init_hstates allocates them later on.
-> >
-> >>If there is no page table level to support them, how can
-> >>them present?
-> >Because hugetlb hstate handling code doesn't care about page tables and
-> >the way how those pages are going to be mapped _at all_. Or put it in
-> >another way. Nobody prevents you to allocate order-5 page for a single
-> >pte but that would be a pure waste. Page fault code expects that pages
-> >with a proper size are allocated.
-> Do you mean 32MB pages will map to one pmd which should map 2MB pages?
-> 
+The Hot Pluggable field in SRAT points out if the memory could be
+hotplugged while the system is running. It is useful to print out
+this info when parsing SRAT.
 
-Please refer to hugetlb_fault for more information.
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ arch/x86/mm/srat.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index 443f9ef..5055fa7 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -146,6 +146,7 @@ int __init
+ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ {
+ 	u64 start, end;
++	u32 hotpluggable;
+ 	int node, pxm;
+ 
+ 	if (srat_disabled())
+@@ -154,7 +155,8 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 		goto out_err_bad_srat;
+ 	if ((ma->flags & ACPI_SRAT_MEM_ENABLED) == 0)
+ 		goto out_err;
+-	if ((ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE) && !save_add_info())
++	hotpluggable = ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE;
++	if (hotpluggable && !save_add_info())
+ 		goto out_err;
+ 
+ 	start = ma->base_address;
+@@ -174,9 +176,10 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 
+ 	node_set(node, numa_nodes_parsed);
+ 
+-	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]\n",
++	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx] %s\n",
+ 	       node, pxm,
+-	       (unsigned long long) start, (unsigned long long) end - 1);
++	       (unsigned long long) start, (unsigned long long) end - 1,
++	       hotpluggable ? "Hot Pluggable" : "");
+ 
+ 	return 0;
+ out_err_bad_srat:
 -- 
-Michal Hocko
-SUSE Labs
+1.7.1
+
