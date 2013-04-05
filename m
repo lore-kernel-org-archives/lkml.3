@@ -1,88 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765850Ab3DEBBP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 21:01:15 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45192 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765824Ab3DEBBN (ORCPT
+	id S1765868Ab3DEBDi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 21:03:38 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:39442 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765836Ab3DEBDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 21:01:13 -0400
-Message-ID: <515E2257.4030607@wwwdotorg.org>
-Date: Thu, 04 Apr 2013 19:01:11 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+	Thu, 4 Apr 2013 21:03:36 -0400
+Message-ID: <515E22DE.1010207@gmail.com>
+Date: Fri, 05 Apr 2013 09:03:26 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Michal Marek <mmarek@suse.cz>, Grant Likely <glikely@secretlab.ca>,
-        arm@kernel.org, Shawn Guo <shawn.guo@linaro.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, linux-kbuild@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V2 1/7] kbuild: create an "include chroot" for DT bindings
-References: <1365032098-22825-1-git-send-email-swarren@wwwdotorg.org> <515E09FA.1090408@gmail.com>
-In-Reply-To: <515E09FA.1090408@gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hugh Dickins <hughd@google.com>
+CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, RFC 00/16] Transparent huge page cache
+References: <1359365068-10147-1-git-send-email-kirill.shutemov@linux.intel.com> <alpine.LNX.2.00.1301282041280.27186@eggly.anvils> <5107cb52e07b1_376199eb7059997@blue.mail> <alpine.LNX.2.00.1301301619040.24861@eggly.anvils>
+In-Reply-To: <alpine.LNX.2.00.1301301619040.24861@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2013 05:17 PM, Rob Herring wrote:
-> On 04/03/2013 06:34 PM, Stephen Warren wrote:
->> From: Stephen Warren <swarren@nvidia.com>
+Hi Hugh,
+On 01/31/2013 10:12 AM, Hugh Dickins wrote:
+> On Tue, 29 Jan 2013, Kirill A. Shutemov wrote:
+>> Hugh Dickins wrote:
+>>> On Mon, 28 Jan 2013, Kirill A. Shutemov wrote:
+>>>> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+>>>>
+>>>> Here's first steps towards huge pages in page cache.
+>>>>
+>>>> The intend of the work is get code ready to enable transparent huge page
+>>>> cache for the most simple fs -- ramfs.
+>>>>
+>>>> It's not yet near feature-complete. It only provides basic infrastructure.
+>>>> At the moment we can read, write and truncate file on ramfs with huge pages in
+>>>> page cache. The most interesting part, mmap(), is not yet there. For now
+>>>> we split huge page on mmap() attempt.
+>>>>
+>>>> I can't say that I see whole picture. I'm not sure if I understand locking
+>>>> model around split_huge_page(). Probably, not.
+>>>> Andrea, could you check if it looks correct?
+>>>>
+>>>> Next steps (not necessary in this order):
+>>>>   - mmap();
+>>>>   - migration (?);
+>>>>   - collapse;
+>>>>   - stats, knobs, etc.;
+>>>>   - tmpfs/shmem enabling;
+>>>>   - ...
+>>>>
+>>>> Kirill A. Shutemov (16):
+>>>>    block: implement add_bdi_stat()
+>>>>    mm: implement zero_huge_user_segment and friends
+>>>>    mm: drop actor argument of do_generic_file_read()
+>>>>    radix-tree: implement preload for multiple contiguous elements
+>>>>    thp, mm: basic defines for transparent huge page cache
+>>>>    thp, mm: rewrite add_to_page_cache_locked() to support huge pages
+>>>>    thp, mm: rewrite delete_from_page_cache() to support huge pages
+>>>>    thp, mm: locking tail page is a bug
+>>>>    thp, mm: handle tail pages in page_cache_get_speculative()
+>>>>    thp, mm: implement grab_cache_huge_page_write_begin()
+>>>>    thp, mm: naive support of thp in generic read/write routines
+>>>>    thp, libfs: initial support of thp in
+>>>>      simple_read/write_begin/write_end
+>>>>    thp: handle file pages in split_huge_page()
+>>>>    thp, mm: truncate support for transparent huge page cache
+>>>>    thp, mm: split huge page on mmap file page
+>>>>    ramfs: enable transparent huge page cache
+>>>>
+>>>>   fs/libfs.c                  |   54 +++++++++---
+>>>>   fs/ramfs/inode.c            |    6 +-
+>>>>   include/linux/backing-dev.h |   10 +++
+>>>>   include/linux/huge_mm.h     |    8 ++
+>>>>   include/linux/mm.h          |   15 ++++
+>>>>   include/linux/pagemap.h     |   14 ++-
+>>>>   include/linux/radix-tree.h  |    3 +
+>>>>   lib/radix-tree.c            |   32 +++++--
+>>>>   mm/filemap.c                |  204 +++++++++++++++++++++++++++++++++++--------
+>>>>   mm/huge_memory.c            |   62 +++++++++++--
+>>>>   mm/memory.c                 |   22 +++++
+>>>>   mm/truncate.c               |   12 +++
+>>>>   12 files changed, 375 insertions(+), 67 deletions(-)
+>>> Interesting.
+>>>
+>>> I was starting to think about Transparent Huge Pagecache a few
+>>> months ago, but then got washed away by incoming waves as usual.
+>>>
+>>> Certainly I don't have a line of code to show for it; but my first
+>>> impression of your patches is that we have very different ideas of
+>>> where to start.
+> A second impression confirms that we have very different ideas of
+> where to start.  I don't want to be dismissive, and please don't let
+> me discourage you, but I just don't find what you have very interesting.
+>
+> I'm sure you'll agree that the interesting part, and the difficult part,
+> comes with mmap(); and there's no point whatever to THPages without mmap()
+> (of course, I'm including exec and brk and shm when I say mmap there).
+>
+> (There may be performance benefits in working with larger page cache
+> size, which Christoph Lameter explored a few years back, but that's a
+> different topic: I think 2MB - if I may be x86_64-centric - would not be
+> the unit of choice for that, unless SSD erase block were to dominate.)
+>
+> I'm interested to get to the point of prototyping something that does
+> support mmap() of THPageCache: I'm pretty sure that I'd then soon learn
+> a lot about my misconceptions, and have to rework for a while (or give
+> up!); but I don't see much point in posting anything without that.
+> I don't know if we have 5 or 50 places which "know" that a THPage
+> must be Anon: some I'll spot in advance, some I sadly won't.
+>
+> It's not clear to me that the infrastructural changes you make in this
+> series will be needed or not, if I pursue my approach: some perhaps as
+> optimizations on top of the poorly performing base that may emerge from
+> going about it my way.  But for me it's too soon to think about those.
+>
+> Something I notice that we do agree upon: the radix_tree holding the
+> 4k subpages, at least for now.  When I first started thinking towards
+> THPageCache, I was fascinated by how we could manage the hugepages in
+> the radix_tree, cutting out unnecessary levels etc; but after a while
+> I realized that although there's probably nice scope for cleverness
+> there (significantly constrained by RCU expectations), it would only
+> be about optimization.  Let's be simple and stupid about radix_tree
+> for now, the problems that need to be worked out lie elsewhere.
+>
+>>> Perhaps that's good complementarity, or perhaps I'll disagree with
+>>> your approach.  I'll be taking a look at yours in the coming days,
+>>> and trying to summon back up my own ideas to summarize them for you.
+>> Yeah, it would be nice to see alternative design ideas. Looking forward.
 >>
->> The recent dtc+cpp support allows header files and C pre-processor
->> defines/macros to be used when compiling device tree files. These
->> headers will typically define various constants that are part of the
->> device tree bindings.
->>
->> The original patch which set up the dtc+cpp include path only considered
->> using those headers from device tree files. However, most are also
->> useful for kernel code which needs to interpret the device tree.
->>
->> In both the DT files and the kernel, I'd like to include the DT-related
->> headers in the same way, for example, <dt-bindings/gpio/tegra-gpio.h>.
->> That will simplify any text which discusses the DT header locations.
->>
->> Creating a <dt-bindings/> for kernel source to use is as simple as
->> placing files into include/dt-bindings/.
->>
->> However, when compiling DT files, the include path should be restricted
->> so that only the dt-bindings path is available; arbitrary kernel headers
->> shouldn't be exposed. For this reason, create a specific include
->> directory for use by dtc+cpp, and symlink dt-bindings from there to the
->> actual location of include/dt-bindings/. For want of a better location,
->> place this "include chroot" into the existing dts/ directory.
->>
->> arch/*/boot/dts/include/dt-bindings -> ../../../../../include/dt-bindings
->>
->> Some headers used by device tree files may not be useful to the kernel;
->> they may be used simply to aid in constructing the DT file (e.g. macros
->> to create a node), but not define any information that the kernel needs
->> to share. These may be placed directly into arch/*/boot/dts/ along with
->> the DT files themselves.
->>
->> Cc: Shawn Guo <shawn.guo@linaro.org>
->> Cc: Hiroshi Doyu <hdoyu@nvidia.com>
->> Acked-by: Michal Marek <mmarek@suse.cz>
->> Acked-by: Shawn Guo <shawn.guo@linaro.org>
->> Acked-by: Rob Herring <rob.herring@calxeda.com>
->> Signed-off-by: Stephen Warren <swarren@nvidia.com>
->> ---
->> Grant, Rob, Michal, I'm hoping for acks or comments from you so this
->> series can be placed into a topic branch in the arm-soc repo, for others
->> to build on during the 3.10 kernel cycle. Thanks.
-> 
-> Well, you have mine here and the rest looks fine, so add it to the others.
+>>> Perhaps I was naive to imagine it, but I did intend to start out
+>>> generically, independent of filesystem; but content to narrow down
+>>> on tmpfs alone where it gets hard to support the others (writeback
+>>> springs to mind).  khugepaged would be migrating little pages into
+>>> huge pages, where it saw that the mmaps of the file would benefit
 
-Rob,
+If add heuristic to adjust khugepaged_max_ptes_none make sense? Reduce 
+its value if memoy pressure is big and increase it if memory pressure is 
+small.
 
-I had originally hoped for this to go into an arm-soc branch so that a
-number of SoCs could convert to use the feature in the same release,
-hence I was looking for acks to let that happen.
+>>> (and for testing I would hack mmap alignment choice to favour it).
+>> I don't think all fs at once would fly, but it's wonderful, if I'm
+>> wrong :)
+> You are imagining the filesystem putting huge pages into its cache.
+> Whereas I'm imagining khugepaged looking around at mmaped file areas,
+> seeing which would benefit from huge pagecache (let's assume offset 0
+> belongs on hugepage boundary - maybe one day someone will want to tune
+> some files or parts differently, but that's low priority), migrating 4k
+> pages over to 2MB page (wouldn't have to be done all in one pass), then
+> finally slotting in the pmds for that.
+>
+> But going this way, I expect we'd have to split at page_mkwrite():
+> we probably don't want a single touch to dirty 2MB at a time,
+> unless tmpfs or ramfs.
+>
+>>> I had arrived at a conviction that the first thing to change was
+>>> the way that tail pages of a THP are refcounted, that it had been a
+>>> mistake to use the compound page method of holding the THP together.
+>>> But I'll have to enter a trance now to recall the arguments ;)
+>> THP refcounting looks reasonable for me, if take split_huge_page() in
+>> account.
+> I'm not claiming that the THP refcounting is wrong in what it's doing
+> at present; but that I suspect we'll want to rework it for THPageCache.
+>
+> Something I take for granted, I think you do too but I'm not certain:
+> a file with transparent huge pages in its page cache can also have small
+> pages in other extents of its page cache; and can be mapped hugely (2MB
+> extents) into one address space at the same time as individual 4k pages
+> from those extents are mapped into another (or the same) address space.
+>
+> One can certainly imagine sacrificing that principle, splitting whenever
+> there's such a "conflict"; but it then becomes uninteresting to me, too
+> much like hugetlbfs.  Splitting an anonymous hugepage in all address
+> spaces that hold it when one of them needs it split, that has been a
+> pragmatic strategy: it's not a common case for forks to diverge like
+> that; but files are expected to be more widely shared.
+>
+> At present THP is using compound pages, with mapcount of tail pages
+> reused to track their contribution to head page count; but I think we
+> shall want to be able to use the mapcount, and the count, of TH tail
+> pages for their original purpose if huge mappings can coexist with tiny.
+> Not fully thought out, but that's my feeling.
+>
+> The use of compound pages, in particular the redirection of tail page
+> count to head page count, was important in hugetlbfs: a get_user_pages
+> reference on a subpage must prevent the containing hugepage from being
+> freed, because hugetlbfs has its own separate pool of hugepages to
+> which freeing returns them.
+>
+> But for transparent huge pages?  It should not matter so much if the
+> subpages are freed independently.  So I'd like to devise another glue
+> to hold them together more loosely (for prototyping I can certainly
+> pretend we have infinite pageflag and pagefield space if that helps):
+> I may find in practice that they're forever falling apart, and I run
+> crying back to compound pages; but at present I'm hoping not.
+>
+> This mail might suggest that I'm about to start coding: I wish that
+> were true, but in reality there's always a lot of unrelated things
+> I have to look at, which dilute my focus.  So if I've said anything
+> that sparks ideas for you, go with them.
+>
+> Hugh
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-However, it's too late in the 3.10 cycle now for that to happen. Can the
-series be applied to the DT tree instead; people can convert during the
-3.11 cycle.
