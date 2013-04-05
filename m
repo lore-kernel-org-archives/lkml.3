@@ -1,76 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162856Ab3DEVVV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 17:21:21 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:35529 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162833Ab3DEVVS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1162842Ab3DEVVS (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 5 Apr 2013 17:21:18 -0400
-Date: Fri, 5 Apr 2013 17:21:15 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Rob Herring <robherring2@gmail.com>
-cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v6 4/4] xen/arm: introduce xen_early_init, use PSCI on
- xen
-In-Reply-To: <515F392B.1030200@gmail.com>
-Message-ID: <alpine.LFD.2.03.1304051718020.1171@syhkavp.arg>
-References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-4-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.LFD.2.03.1304051217560.1171@syhkavp.arg> <alpine.DEB.2.02.1304051725580.21065@kaball.uk.xensource.com>
- <alpine.LFD.2.03.1304051324190.1171@syhkavp.arg> <515F392B.1030200@gmail.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:33519 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162207Ab3DEVVN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 17:21:13 -0400
+Date: Fri, 5 Apr 2013 14:21:10 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: NeilBrown <neilb@suse.de>, linux-bcache@vger.kernel.org,
+        linux-raid@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: bcache: BUG in fuzz testing without devices
+Message-ID: <20130405212110.GD15749@google.com>
+References: <515B056E.6010002@oracle.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515B056E.6010002@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Apr 2013, Rob Herring wrote:
-
-> On 04/05/2013 02:36 PM, Nicolas Pitre wrote:
-> > On Fri, 5 Apr 2013, Stefano Stabellini wrote:
-> > 
-> >> This is what happens:
-> >>
-> >> - No Xen
-> >> Xen is not running on the platform and a Xen hypervisor node is not
-> >> available on device tree.
-> >> Everything keeps working seamlessly, this patch doesn't change anything.
-> >>
-> >> - we are running on Xen
-> >> Xen is running on the platform, we are running as a guest on Xen and an
-> >> hypervisor node is available on device tree.
-> >> Let's also assume that there aren't any "arm,cci" compatible nodes on
-> >> device tree because Xen wouldn't export this kind of information to any
-> >> guests right now. Therefore PSCI should be used to boot secondary cpus.
-> >> Because the versatile express machine sets smp_init to
-> >> vexpress_smp_init_ops, vexpress_smp_init_ops will be called.
-> >> vexpress_smp_init_ops sets smp_ops to vexpress_smp_ops, that *break*
-> >> Xen.
-> > 
-> > OK I see.
-> > 
-> >> With this patch, xen_smp_init will be called instead of
-> >> vexpress_smp_init_ops, and smp_ops will be set to psci_smp_ops,
-> >> therefore *unbreaking* Xen.
-> > 
-> > However that breaks MCPM.
+On Tue, Apr 02, 2013 at 12:21:02PM -0400, Sasha Levin wrote:
+> Hi all,
 > 
-> You mean on bare metal, right? For the bare metal, "xen,xen" property
-> would not be present and xen_smp_init is not used. So the vexpress MCPM
-> ops will be used. Aren't Dom0 cpu's basically virtual cpus? If Xen ever
-> needs the MCPM support, the Xen hook itself can figure out whether to
-> use MCPM support.
+> It seems that trying to fuzz bcache without any devices triggers a BUG:
+> 
+> That BUG looks very intentional there, any reason for adding it instead of exiting
+> if there aren't any devices?
 
-Well, if Xen has its own mdesc distinct from the VExpress one then 
-things
-are indeed fine.
-
-
-Nicolas
+The fuzz tester is meant to stress test some of the btree code - it's a
+purely in memory test. But it looks like it's rotted - thanks for the
+bug report, I'll disable it for now.
