@@ -1,219 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161162Ab3DELqe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 07:46:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37971 "EHLO mx1.redhat.com"
+	id S1161243Ab3DELre (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 07:47:34 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:51867 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752163Ab3DELqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 07:46:32 -0400
-Message-ID: <515EB946.7090705@redhat.com>
-Date: Fri, 05 Apr 2013 13:45:10 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1161123Ab3DELrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 07:47:32 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Renninger <trenn@suse.de>,
+        Borislav Petkov <bp@alien8.de>, Jacob Shin <jacob.shin@amd.com>
+Subject: Re: [PATCH V4 0/2] cpufreq: ondemand: add AMD specific powersave bias
+Date: Fri, 05 Apr 2013 13:55:11 +0200
+Message-ID: <2396755.WnKv3T7qE3@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAKohpo=OeNfJnmbqxP-+bG1ZZahk6kZ-AjcXn-zRQw24_6UG5g@mail.gmail.com>
+References: <1365092344-11310-1-git-send-email-jacob.shin@amd.com> <CAKohpomhBtR2aONp=GsOUeaM1=8f2ZN7EfcGyc1NYZX=ZsweWA@mail.gmail.com> <CAKohpo=OeNfJnmbqxP-+bG1ZZahk6kZ-AjcXn-zRQw24_6UG5g@mail.gmail.com>
 MIME-Version: 1.0
-To: Hu Tao <hutao@cn.fujitsu.com>
-CC: Matthew Garrett <matthew.garrett@nebula.com>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
-        Andrew Jones <drjones@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Markus Armbruster <armbru@redhat.com>,
-        Stefan Hajnoczi <stefanha@redhat.com>,
-        Juan Quintela <quintela@redhat.com>,
-        Orit Wasserman <owasserm@redhat.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Alexander Graf <agraf@suse.de>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Peter Maydell <peter.maydell@linaro.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: Re: [PATCH v17] pvpanic: pvpanic device driver
-References: <cover.1365143012.git.hutao@cn.fujitsu.com> <1365145843-6000-1-git-send-email-hutao@cn.fujitsu.com>
-In-Reply-To: <1365145843-6000-1-git-send-email-hutao@cn.fujitsu.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 05/04/2013 09:10, Hu Tao ha scritto:
-> pvpanic device is a qemu simulated device through which guest panic
-> event is sent to host.
+On Friday, April 05, 2013 12:19:36 PM Viresh Kumar wrote:
+> On 5 April 2013 10:19, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> > For the latest versions sent by you (including {get|put}_online_cpus()):
+> >
+> > Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 > 
-> Signed-off-by: Hu Tao <hutao@cn.fujitsu.com>
-
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
-
-Matthew, it would be nice to include this in 3.10.
-
-The implementation of the device in QEMU is final, the only thing that
-needs a respin is how it is enabled by default.
-
-Paolo
-
-> ---
+> Hi Rafael,
 > 
-> ref: http://lists.nongnu.org/archive/html/qemu-devel/2013-04/msg01028.html
-> 
->  drivers/platform/x86/Kconfig   |   7 +++
->  drivers/platform/x86/Makefile  |   2 +
->  drivers/platform/x86/pvpanic.c | 115 +++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 124 insertions(+)
->  create mode 100644 drivers/platform/x86/pvpanic.c
-> 
-> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-> index 3338437..527ed04 100644
-> --- a/drivers/platform/x86/Kconfig
-> +++ b/drivers/platform/x86/Kconfig
-> @@ -781,4 +781,11 @@ config APPLE_GMUX
->  	  graphics as well as the backlight. Currently only backlight
->  	  control is supported by the driver.
->  
-> +config PVPANIC
-> +	tristate "pvpanic device support"
-> +	depends on ACPI
-> +	---help---
-> +	  This driver provides support for pvpanic device, which is a qemu
-> +	  simulated device through which guest panic event is sent to host.
-> +
->  endif # X86_PLATFORM_DEVICES
-> diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
-> index ace2b38..ef0ec74 100644
-> --- a/drivers/platform/x86/Makefile
-> +++ b/drivers/platform/x86/Makefile
-> @@ -51,3 +51,5 @@ obj-$(CONFIG_INTEL_OAKTRAIL)	+= intel_oaktrail.o
->  obj-$(CONFIG_SAMSUNG_Q10)	+= samsung-q10.o
->  obj-$(CONFIG_APPLE_GMUX)	+= apple-gmux.o
->  obj-$(CONFIG_CHROMEOS_LAPTOP)	+= chromeos_laptop.o
-> +
-> +obj-$(CONFIG_PVPANIC)           += pvpanic.o
-> diff --git a/drivers/platform/x86/pvpanic.c b/drivers/platform/x86/pvpanic.c
-> new file mode 100644
-> index 0000000..81c95ec
-> --- /dev/null
-> +++ b/drivers/platform/x86/pvpanic.c
-> @@ -0,0 +1,115 @@
-> +/*
-> + *  pvpanic.c - pvpanic Device Support
-> + *
-> + *  Copyright (C) 2013 Fujitsu.
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License as published by
-> + *  the Free Software Foundation; either version 2 of the License, or
-> + *  (at your option) any later version.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + *  You should have received a copy of the GNU General Public License
-> + *  along with this program; if not, write to the Free Software
-> + *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-> + */
-> +
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/types.h>
-> +#include <acpi/acpi_bus.h>
-> +#include <acpi/acpi_drivers.h>
-> +
-> +MODULE_AUTHOR("Hu Tao <hutao@cn.fujitsu.com>");
-> +MODULE_DESCRIPTION("pvpanic device driver");
-> +MODULE_LICENSE("GPL");
-> +
-> +static int pvpanic_add(struct acpi_device *device);
-> +static int pvpanic_remove(struct acpi_device *device);
-> +
-> +static const struct acpi_device_id pvpanic_device_ids[] = {
-> +	{ "QEMU0001", 0},
-> +	{ "", 0},
-> +};
-> +MODULE_DEVICE_TABLE(acpi, pvpanic_device_ids);
-> +
-> +#define PVPANIC_PANICKED	(1 << 0)
-> +
-> +static acpi_handle handle;
-> +
-> +static struct acpi_driver pvpanic_driver = {
-> +	.name =		"pvpanic",
-> +	.class =	"QEMU",
-> +	.ids =		pvpanic_device_ids,
-> +	.ops =		{
-> +				.add =		pvpanic_add,
-> +				.remove =	pvpanic_remove,
-> +			},
-> +	.owner =	THIS_MODULE,
-> +};
-> +
-> +static void
-> +pvpanic_send_event(unsigned int event)
-> +{
-> +	union acpi_object arg;
-> +	struct acpi_object_list arg_list;
-> +
-> +	if (!handle)
-> +		return;
-> +
-> +	arg.type = ACPI_TYPE_INTEGER;
-> +	arg.integer.value = event;
-> +
-> +	arg_list.count = 1;
-> +	arg_list.pointer = &arg;
-> +
-> +	acpi_evaluate_object(handle, "WRPT", &arg_list, NULL);
-> +}
-> +
-> +static int
-> +pvpanic_panic_notify(struct notifier_block *nb, unsigned long code,
-> +		     void *unused)
-> +{
-> +	pvpanic_send_event(PVPANIC_PANICKED);
-> +	return NOTIFY_DONE;
-> +}
-> +
-> +static struct notifier_block pvpanic_panic_nb = {
-> +	.notifier_call = pvpanic_panic_notify,
-> +};
-> +
-> +static int pvpanic_add(struct acpi_device *device)
-> +{
-> +	acpi_status status;
-> +	u64 ret;
-> +
-> +	status = acpi_evaluate_integer(device->handle, "_STA", NULL,
-> +				       &ret);
-> +
-> +	if (ACPI_FAILURE(status) || (ret & 0x0B) != 0x0B)
-> +		return -ENODEV;
-> +
-> +	handle = device->handle;
-> +	atomic_notifier_chain_register(&panic_notifier_list,
-> +				       &pvpanic_panic_nb);
-> +
-> +	return 0;
-> +}
-> +
-> +static int pvpanic_remove(struct acpi_device *device)
-> +{
-> +
-> +	atomic_notifier_chain_unregister(&panic_notifier_list,
-> +					 &pvpanic_panic_nb);
-> +	handle = NULL;
-> +	return 0;
-> +}
-> +
-> +module_acpi_driver(pvpanic_driver);
-> 
+> I see that you have applied this patchset to bleeding-edge, but in
+> wrong order. You have applied 2/2 first and then 1/2, which is
+> wrong as after 2/2 we will have a compilation failure.
 
+Ah, good catch.  I didn't notice that patchwork changed the ordering when
+creating a bundle.
+
+Should be fixed now.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
