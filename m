@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161875Ab3DEOfi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 10:35:38 -0400
-Received: from a194-210.smtp-out.amazonses.com ([199.255.194.210]:3010 "EHLO
-	a194-210.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161757Ab3DEOff (ORCPT
+	id S1161866Ab3DEOiM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 10:38:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:49506 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161562Ab3DEOiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 10:35:35 -0400
-Date: Fri, 5 Apr 2013 14:35:33 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>, Pekka Enberg <penberg@kernel.org>
-Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
- unfreeze_partials() code.
-In-Reply-To: <20130405020501.GB13624@lge.com>
-Message-ID: <0000013dda9fb9c0-4fbf0700-efb5-4935-b8d8-02d2f917a95b-000000@email.amazonses.com>
-References: <20130327061351.GB17125@lge.com> <alpine.DEB.2.02.1303281227520.16200@gentwo.org> <0000013db20ca149-0064fbb8-2f81-4323-9095-a38f6abb79c5-000000@email.amazonses.com> <CAP=VYLr4i=39ywFCrmG-XuvUFmmXpyj6dYgG44JJoUJhpN6uuQ@mail.gmail.com>
- <alpine.DEB.2.02.1304011025550.12690@gentwo.org> <0000013dc63b3a87-6ce88b75-d011-407e-8dde-da73c3a7f5fd-000000@email.amazonses.com> <20130402004217.GA16699@lge.com> <0000013dcc35f310-d338600d-8a5a-4c95-9770-af4b8d81e103-000000@email.amazonses.com>
- <20130404005850.GC10683@lge.com> <0000013dd552ca2b-986c7b7f-850e-4108-82e8-443695368b1d-000000@email.amazonses.com> <20130405020501.GB13624@lge.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 5 Apr 2013 10:38:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tomas Winkler <tomas.winkler@intel.com>
+Subject: Re: [char-misc-next] mei: add debugfs hooks
+Date: Fri, 5 Apr 2013 16:38:05 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+References: <1365171789-21288-1-git-send-email-tomas.winkler@intel.com>
+In-Reply-To: <1365171789-21288-1-git-send-email-tomas.winkler@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.194.210
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304051638.05292.arnd@arndb.de>
+X-Provags-ID: V02:K0:3bqKyRvDojavWCK5qXA9A3mclUwQCB9fg4fYlb2SXL0
+ YvLG2qZJX3k6boX3KHYs5JxMsmSbSB7ZkJonE1bRwpZMsvd29p
+ wRjyI0LhNNFUr7o1OhvGzy4IGd+fhWEafyghqq3zCwTlkJxUbe
+ f+GTwVte2usX1U1bc+K9evKAFOqO3XNcuiGN5xlRh9vWqNGhk2
+ IuFo27jag9/atGOidNKYm/Bcc8zqEbU9lPBfU03fG5TkoURFb9
+ D3bQDY9qUk0F3kKd+rt4tw6uuUPH7TZGE9L2Y3xtMFKpbdAOfu
+ BYqePgcWOnQ+vClFUVRkToOkyFaTSykk7tAjRbN2Wo2URK/bn3
+ Gw8TOqBP1oJEAw8WypUI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Apr 2013, Joonsoo Kim wrote:
+On Friday 05 April 2013, Tomas Winkler wrote:
+> debugfs exposes device state and list of me clients and their
+> properties
+> 
+> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+> ---
+> V2:
+> 1. don't use DEBUGFS_ADD_FILE macro
+> 2. compile debugfs.c only if CONFIG_DEBUG_FS is set
 
-> Here goes a patch implementing Christoph's idea.
-> Instead of updating my previous patch, I re-write this patch on top of
-> your slab/next tree.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+> +#define DEBUGFS_ADD_FILE(_mei, name, parent, mode)	\
+> +	debugfs_create_file(#name, mode, parent,	\
+> +			_mei, &mei_dbgfs_fops_##name)
 
-Acked-by: Christoph Lameter <cl@linux.com>
+It seems you removed all the users but left the definition in place.
+
+	Arnd
