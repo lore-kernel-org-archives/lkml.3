@@ -1,136 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161850Ab3DEIBN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 04:01:13 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48568 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765231Ab3DEIBL (ORCPT
+	id S1161854Ab3DEIDF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 04:03:05 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:16496 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999Ab3DEIDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 04:01:11 -0400
-X-AuditID: 9c930197-b7b50ae00000018c-80-515e84c5b035
-Date: Fri, 5 Apr 2013 17:01:06 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Simon Jeons <simon.jeons@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Ying Han <yinghan@google.com>,
-        Christoph Lameter <cl@linux.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2, RFC 20/30] ramfs: enable transparent huge page cache
-Message-ID: <20130405080106.GB32126@blaptop>
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1363283435-7666-21-git-send-email-kirill.shutemov@linux.intel.com>
- <20130402162813.0B4CBE0085@blue.fi.intel.com>
- <alpine.LNX.2.00.1304021422460.19363@eggly.anvils>
- <20130403011104.GF16026@blaptop>
- <515E737D.8030204@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515E737D.8030204@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 5 Apr 2013 04:03:00 -0400
+X-AuditID: cbfee691-b7f5f6d000002fda-4d-515e8532dad8
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, FlorianSchandinat@gmx.de,
+        s.trumtrar@pengutronix.de, plagnioj@jcrosoft.com,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <8984685.165951364521249756.JavaMail.weblogic@epml18>
+ <515E75BC.20604@ti.com>
+In-reply-to: <515E75BC.20604@ti.com>
+Subject: Re: [PATCH RESEND] fbmon: use VESA_DMT_VSYNC_HIGH to fix typo
+Date: Fri, 05 Apr 2013 17:02:57 +0900
+Message-id: <002601ce31d3$fc25cfc0$f4716f40$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4xys6ejvKtNqWcSHOwEZPg6BF8nwACP94Q
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEIsWRmVeSWpSXmKPExsVy+t8zY12j1rhAgynvpC3mrF/DZvHykKZF
+	58xrjBaXF15itTjR94HV4vKuOWwW6x6+YLL49HEhi8X6+bfYHDg9PnyM83h14Q6Lx4kZv1k8
+	+v8aePRtWcXocfzGdiaPz5vkAtijuGxSUnMyy1KL9O0SuDLetC1iKnjOWXH14ST2BsbX7F2M
+	nBwSAiYSy159YoWwxSQu3FvP1sXIxSEksIxR4uq3iWwwRR//vARrEBKYzihx81UiRNEvRomV
+	J9+AdbMJqEl8+XIYrEhEQEdi0qIeZpAiZoFzjBIN27pYILqjJeavbmfqYuTg4BRQkdh5wgwk
+	LCzgJjH/41mwEhYBVYlLF28xgdi8ArYSHQ8b2CFsQYkfk++B1TALaEms33mcCcKWl9i85i0z
+	yEgJAXWJR391IU4wkpg7cQ9UuYjEvhfvGEHOkRBo5ZDo+b2TGWKXgMS3yYdYIHplJTYdYIb4
+	V1Li4IobLBMYJWYh2TwLyeZZSDbPQrJiASPLKkbR1ILkguKk9CJTveLE3OLSvHS95PzcTYyQ
+	+J64g/H+AetDjMlA6ycyS4km5wPTQ15JvKGxmZGFqYmpsZG5pRlpwkrivOot1oFCAumJJanZ
+	qakFqUXxRaU5qcWHGJk4OKUaGA8+eLY2Zeselb3b7XjOW356H8azNE30RsP3icVpMWvWhDUf
+	z5UIePeWzf9LYGX1Rv69PkfWrmiSfbBkbzTLoYZDLya//XEm/9qN7511yydNeB9VlKk80V5p
+	fqriz7O7Vv4JuljywnnVr870HduPVOrq9icVFpm4rA3P5Tp2806MaPy9y8siU8SVWIozEg21
+	mIuKEwHAZDWKBQMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPKsWRmVeSWpSXmKPExsVy+t9jQV2j1rhAg7e/RS3mrF/DZvHykKZF
+	58xrjBaXF15itTjR94HV4vKuOWwW6x6+YLL49HEhi8X6+bfYHDg9PnyM83h14Q6Lx4kZv1k8
+	+v8aePRtWcXocfzGdiaPz5vkAtijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0t
+	zJUU8hJzU22VXHwCdN0yc4AOU1IoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS
+	1jFmvGlbxFTwnLPi6sNJ7A2Mr9m7GDk5JARMJD7+eQlli0lcuLeeDcQWEpjOKHHzVWIXIxeQ
+	/YtRYuXJN6wgCTYBNYkvXw6DNYgI6EhMWtTDDFLELHCOUaJhWxcLRHe0xPzV7UxdjBwcnAIq
+	EjtPmIGEhQXcJOZ/PAtWwiKgKnHp4i0mEJtXwFai42EDO4QtKPFj8j2wGmYBLYn1O48zQdjy
+	EpvXvGUGGSkhoC7x6K8uxAlGEnMn7oEqF5HY9+Id4wRGoVlIJs1CMmkWkkmzkLQsYGRZxSia
+	WpBcUJyUnmuoV5yYW1yal66XnJ+7iRGcPJ5J7WBc2WBxiFGAg1GJhzejLzZQiDWxrLgy9xCj
+	BAezkgjvTr64QCHelMTKqtSi/Pii0pzU4kOMyUCPTmSWEk3OBya2vJJ4Q2MTMyNLIzMLIxNz
+	c9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpgzIhf9P9fkp9JrJWGr1nXnV7DtNcNLIej
+	ZNRU2c2Xi+hOfuQdlsIk4szLfvvA7ddb2ysuGM16tcU08L/qLtVgg75ne8O+HF3b3HH77Y0D
+	FSk3xbPvKqxTzQjj/PXjvOd34/BHVsmcysKVD0JfXCub3d4VmNimPjOsItC7UnBW0uk9Gao9
+	cx4rsRRnJBpqMRcVJwIA2JUXDGIDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 05, 2013 at 02:47:25PM +0800, Simon Jeons wrote:
-> Hi Minchan,
-> On 04/03/2013 09:11 AM, Minchan Kim wrote:
-> >On Tue, Apr 02, 2013 at 03:15:23PM -0700, Hugh Dickins wrote:
-> >>On Tue, 2 Apr 2013, Kirill A. Shutemov wrote:
-> >>>Kirill A. Shutemov wrote:
-> >>>>From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> >>>>
-> >>>>ramfs is the most simple fs from page cache point of view. Let's start
-> >>>>transparent huge page cache enabling here.
-> >>>>
-> >>>>For now we allocate only non-movable huge page. It's not yet clear if
-> >>>>movable page is safe here and what need to be done to make it safe.
-> >>>>
-> >>>>Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> >>>>---
-> >>>>  fs/ramfs/inode.c |    6 +++++-
-> >>>>  1 file changed, 5 insertions(+), 1 deletion(-)
-> >>>>
-> >>>>diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
-> >>>>index c24f1e1..da30b4f 100644
-> >>>>--- a/fs/ramfs/inode.c
-> >>>>+++ b/fs/ramfs/inode.c
-> >>>>@@ -61,7 +61,11 @@ struct inode *ramfs_get_inode(struct super_block *sb,
-> >>>>  		inode_init_owner(inode, dir, mode);
-> >>>>  		inode->i_mapping->a_ops = &ramfs_aops;
-> >>>>  		inode->i_mapping->backing_dev_info = &ramfs_backing_dev_info;
-> >>>>-		mapping_set_gfp_mask(inode->i_mapping, GFP_HIGHUSER);
-> >>>>+		/*
-> >>>>+		 * TODO: what should be done to make movable safe?
-> >>>>+		 */
-> >>>>+		mapping_set_gfp_mask(inode->i_mapping,
-> >>>>+				GFP_TRANSHUGE & ~__GFP_MOVABLE);
-> >>>Hugh, I've found old thread with the reason why we have GFP_HIGHUSER here, not
-> >>>GFP_HIGHUSER_MOVABLE:
-> >>>
-> >>>http://lkml.org/lkml/2006/11/27/156
-> >>>
-> >>>It seems the origin reason is not longer valid, correct?
-> >>Incorrect, I believe: so far as I know, the original reason remains
-> >>valid - though it would only require a couple of good small changes
-> >>to reverse that - or perhaps you have already made these changes?
-> >>
-> >>The original reason is that ramfs pages are not migratable,
-> >>therefore they should be allocated from an unmovable area.
-> >>
-> >>As I understand it (and I would have preferred to run a test to check
-> >>my understanding before replying, but don't have time for that), ramfs
-> >>pages cannot be migrated for two reasons, neither of them a good reason.
-> >>
-> >>One reason (okay, it wouldn't have been quite this way in 2006) is that
-> >>ramfs (rightly) calls mapping_set_unevictable(), so its pages will fail
-> >>the page_evictable() test, so they will be marked PageUnevictable, so
-> >>__isolate_lru_page() will refuse to isolate them for migration (except
-> >>for CMA).
-> >True.
-> >
-> >>I am strongly in favour of removing that limitation from
-> >>__isolate_lru_page() (and the thread you pointed - thank you - shows Mel
-> >>and Christoph were both in favour too); and note that there is no such
-> >>restriction in the confusingly similar but different isolate_lru_page().
-> >>
-> >>Some people do worry that migrating Mlocked pages would introduce the
-> >>occasional possibility of a minor fault (with migration_entry_wait())
-> >>on an Mlocked region which never faulted before.  I tend to dismiss
-> >>that worry, but maybe I'm wrong to do so: maybe there should be a
-> >>tunable for realtimey people to set, to prohibit page migration from
-> >>mlocked areas; but the default should be to allow it.
-> >I agree.
-> >Just FYI for mlocked page migration
-> >
-> >I tried migratioin of mlocked page and Johannes and Mel had a concern
-> >about that.
-> >http://lkml.indiana.edu/hypermail/linux/kernel/1109.0/00175.html
-> >
-> >But later, Peter already acked it and I guess by reading the thread that
-> >Hugh was in favour when page migration was merged first time.
-> >
-> >http://marc.info/?l=linux-mm&m=133697873414205&w=2
-> >http://marc.info/?l=linux-mm&m=133700341823358&w=2
-> >
-> >Many people said mlock means memory-resident, NOT pinning so it could
-> >allow minor fault while Mel still had a concern except CMA.
-> >http://marc.info/?l=linux-mm&m=133674219714419&w=2
+On Friday, April 05, 2013 3:57 PM, Tomi Valkeinen wrote:
 > 
-> How about add a knob?
+> Hi,
+> 
+> On 2013-03-29 03:40, Jingoo Han wrote:
+> > VESA_DMT_VSYNC_HIGH should be used instead of VESA_DMT_HSYNC_HIGH,
+> > because FB_SYNC_VERT_HIGH_ACT is related to vsync, not to hsync.
+> >
+> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> > Cc: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+> > Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+> > ---
+> >  drivers/video/fbmon.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/drivers/video/fbmon.c b/drivers/video/fbmon.c
+> > index 94ad0f7..7f67099 100644
+> > --- a/drivers/video/fbmon.c
+> > +++ b/drivers/video/fbmon.c
+> > @@ -1400,7 +1400,7 @@ int fb_videomode_from_videomode(const struct videomode *vm,
+> >  	fbmode->vmode = 0;
+> >  	if (vm->dmt_flags & VESA_DMT_HSYNC_HIGH)
+> >  		fbmode->sync |= FB_SYNC_HOR_HIGH_ACT;
+> > -	if (vm->dmt_flags & VESA_DMT_HSYNC_HIGH)
+> > +	if (vm->dmt_flags & VESA_DMT_VSYNC_HIGH)
+> >  		fbmode->sync |= FB_SYNC_VERT_HIGH_ACT;
+> >  	if (vm->data_flags & DISPLAY_FLAGS_INTERLACED)
+> >  		fbmode->vmode |= FB_VMODE_INTERLACED;
+> 
+> I'll apply this to fbdev fixes.
 
-Maybe, volunteering?
+Oh, thank you. :)
 
--- 
-Kind regards,
-Minchan Kim
+Best regards,
+Jingoo Han
+
+> 
+>  Tomi
+> 
+> 
+
+
