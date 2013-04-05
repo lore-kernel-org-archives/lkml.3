@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161741Ab3DENuR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 09:50:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12076 "EHLO mx1.redhat.com"
+	id S1161797Ab3DENu3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 09:50:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12002 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161203Ab3DENuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 09:50:15 -0400
-Date: Fri, 5 Apr 2013 09:49:29 -0400
-From: Dave Jones <davej@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: tytso@mit.edu, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: ext4 object already free.
-Message-ID: <20130405134929.GA1648@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, Jan Kara <jack@suse.cz>,
-	tytso@mit.edu, Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org
-References: <20130329155855.GB5313@redhat.com>
- <20130405102553.GB3848@quack.suse.cz>
+	id S1161203Ab3DENu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 09:50:27 -0400
+Date: Fri, 5 Apr 2013 09:50:00 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: Re: [RFC 2/2] initramfs with digital signature protection
+Message-ID: <20130405135000.GB6299@redhat.com>
+References: <cover.1360067333.git.dmitry.kasatkin@intel.com>
+ <cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com>
+ <20130205181926.GA13942@srcf.ucam.org>
+ <20130205183436.GC12853@redhat.com>
+ <CALLzPKavbsZgHoJrk5iQ0F1fO21SaeEHmCVCh1G1UKCKB3WZZQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130405102553.GB3848@quack.suse.cz>
+In-Reply-To: <CALLzPKavbsZgHoJrk5iQ0F1fO21SaeEHmCVCh1G1UKCKB3WZZQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 05, 2013 at 12:25:53PM +0200, Jan Kara wrote:
- 
- > > [   93.672257]  [<ffffffff812c2da9>] sys_msgctl+0x139/0x400
- > > [   93.674641]  [<ffffffff816c5d4d>] ? retint_swapgs+0xe/0x13
- > > [   93.677056]  [<ffffffff810b6c55>] ? trace_hardirqs_on_caller+0x115/0x1a0
- > > [   93.679626]  [<ffffffff8134b39e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- > > [   93.682159]  [<ffffffff816cd942>] system_call_fastpath+0x16/0x1b
- > > [   93.799329] FIX kmalloc-64: Object at 0xffff88009997e620 not freed
- >   And then sys_msgctl() came and wanted to free it again without
- > allocating. So it looks like a problem with IPC? 
+On Tue, Feb 05, 2013 at 11:55:09PM +0200, Kasatkin, Dmitry wrote:
 
-Seems plausible, considering the bugs Linus & others found there in the 
-last week.  Should be fixed now, so I'll holler if I see this again.
+[..]
+> > Also I am assuming that from signed initramfs, keys will be loaded in
+> > appropriate keyrings and then keyring will be locked so that any
+> > tools from unsigned initramfs can not load additional keys.
+> >
+> 
+> Exactly like that.
 
-thanks,
+Dmitry,
 
-	Dave
+[ Following up on this thread after a very long time ]
 
- 
+I was thinking about this point that keys can be loaded from signed
+initramfs. But how is it better than embedding the keys in kernel the
+way we do for module signing and lock down ima keyring before control
+is passed to initramfs.
+
+Reason being, that anyway a user can not put its own keys in signed
+initramfs. Signed initramfs will be shipped by distribution. So then
+it does not matter whether distribution's keys are embedded in the
+kernel or are loaded from signed initramfs.
+
+Thanks
+Vivek
