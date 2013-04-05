@@ -1,134 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162728Ab3DEVOA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 17:14:00 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:37566
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162478Ab3DEVN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 17:13:58 -0400
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org
-Subject: [PATCH net,2/2] hyperv: Fix RNDIS send_completion code path
-Date: Fri,  5 Apr 2013 14:44:40 -0700
-Message-Id: <1365198280-23270-2-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1365198280-23270-1-git-send-email-haiyangz@microsoft.com>
-References: <1365198280-23270-1-git-send-email-haiyangz@microsoft.com>
+	id S1162752Ab3DEVOJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 17:14:09 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:41159 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162478Ab3DEVOF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 17:14:05 -0400
+Message-ID: <515F3E96.4040307@free-electrons.com>
+Date: Fri, 05 Apr 2013 23:13:58 +0200
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Lior Amsalem <alior@marvell.com>, Andrew Lunn <andrew@lunn.ch>,
+        Ike Pan <ike.pan@canonical.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        David Marlin <dmarlin@redhat.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Eran Ben-Avi <benavi@marvell.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Leif Lindholm <leif.lindholm@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>, Nadav Haklai <nadavh@marvell.com>,
+        Jon Masters <jcm@redhat.com>, devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
+        Maen Suleiman <maen@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v2 2/9] arm: mvebu: Align the internal registers virtual
+ base to support LPAE
+References: <1365193444-13441-1-git-send-email-gregory.clement@free-electrons.com> <1365193444-13441-3-git-send-email-gregory.clement@free-electrons.com> <201304052250.28641.arnd@arndb.de>
+In-Reply-To: <201304052250.28641.arnd@arndb.de>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some cases, the VM_PKT_COMP message can arrive later than RNDIS completion
-message, which will free the packet memory. This may cause panic due to access
-to freed memory in netvsc_send_completion().
+On 04/05/2013 10:50 PM, Arnd Bergmann wrote:
+> On Friday 05 April 2013, Gregory CLEMENT wrote:
+>> From: Lior Amsalem <alior@marvell.com>
+>>
+>> In order to be able to support he LPAE, the internal registers virtual
+>> base must be aligned to 2MB.
+>>
+>> Signed-off-by: Lior Amsalem <alior@marvell.com>
+>> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> 
+> This is a surprising limitation. Can you extend the above text to go into more
+> detail where that alignment requirement comes from?
+> 
 
-This patch fixes this problem by removing rndis_filter_send_request_completion()
-from the code path. The function was a no-op.
+The explanation I had was that in LPAE section size is 2MB, in earlyprintk we map
+the internal registers and it must be section aligned.
 
-Reported-by: Long Li <longli@microsoft.com>
-Tested-by: Long Li <longli@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+> 	Arnd
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
----
- drivers/net/hyperv/netvsc.c       |   17 ++++++++++++-----
- drivers/net/hyperv/rndis_filter.c |   14 +-------------
- 2 files changed, 13 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
-index 1cd7748..f5f0f09 100644
---- a/drivers/net/hyperv/netvsc.c
-+++ b/drivers/net/hyperv/netvsc.c
-@@ -470,8 +470,10 @@ static void netvsc_send_completion(struct hv_device *device,
- 			packet->trans_id;
- 
- 		/* Notify the layer above us */
--		nvsc_packet->completion.send.send_completion(
--			nvsc_packet->completion.send.send_completion_ctx);
-+		if (nvsc_packet)
-+			nvsc_packet->completion.send.send_completion(
-+				nvsc_packet->completion.send.
-+				send_completion_ctx);
- 
- 		num_outstanding_sends =
- 			atomic_dec_return(&net_device->num_outstanding_sends);
-@@ -498,6 +500,7 @@ int netvsc_send(struct hv_device *device,
- 	int ret = 0;
- 	struct nvsp_message sendMessage;
- 	struct net_device *ndev;
-+	u64 req_id;
- 
- 	net_device = get_outbound_net_device(device);
- 	if (!net_device)
-@@ -518,20 +521,24 @@ int netvsc_send(struct hv_device *device,
- 		0xFFFFFFFF;
- 	sendMessage.msg.v1_msg.send_rndis_pkt.send_buf_section_size = 0;
- 
-+	if (packet->completion.send.send_completion)
-+		req_id = (u64)packet;
-+	else
-+		req_id = 0;
-+
- 	if (packet->page_buf_cnt) {
- 		ret = vmbus_sendpacket_pagebuffer(device->channel,
- 						  packet->page_buf,
- 						  packet->page_buf_cnt,
- 						  &sendMessage,
- 						  sizeof(struct nvsp_message),
--						  (unsigned long)packet);
-+						  req_id);
- 	} else {
- 		ret = vmbus_sendpacket(device->channel, &sendMessage,
- 				sizeof(struct nvsp_message),
--				(unsigned long)packet,
-+				req_id,
- 				VM_PKT_DATA_INBAND,
- 				VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
--
- 	}
- 
- 	if (ret == 0) {
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index 2b657d4..0775f0a 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -61,9 +61,6 @@ struct rndis_request {
- 
- static void rndis_filter_send_completion(void *ctx);
- 
--static void rndis_filter_send_request_completion(void *ctx);
--
--
- 
- static struct rndis_device *get_rndis_device(void)
- {
-@@ -241,10 +238,7 @@ static int rndis_filter_send_request(struct rndis_device *dev,
- 			packet->page_buf[0].len;
- 	}
- 
--	packet->completion.send.send_completion_ctx = req;/* packet; */
--	packet->completion.send.send_completion =
--		rndis_filter_send_request_completion;
--	packet->completion.send.send_completion_tid = (unsigned long)dev;
-+	packet->completion.send.send_completion = NULL;
- 
- 	ret = netvsc_send(dev->net_dev->dev, packet);
- 	return ret;
-@@ -999,9 +993,3 @@ static void rndis_filter_send_completion(void *ctx)
- 	/* Pass it back to the original handler */
- 	filter_pkt->completion(filter_pkt->completion_ctx);
- }
--
--
--static void rndis_filter_send_request_completion(void *ctx)
--{
--	/* Noop */
--}
 -- 
-1.7.4.1
-
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
