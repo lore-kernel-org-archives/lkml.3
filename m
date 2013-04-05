@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161584Ab3DEFLm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 01:11:42 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:50492 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932563Ab3DEFLk (ORCPT
+	id S1161592Ab3DEFNK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 01:13:10 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:40022 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506Ab3DEFNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 01:11:40 -0400
-X-IronPort-AV: E=Sophos;i="4.87,412,1363158000"; 
-   d="scan'208";a="36071744"
-Message-ID: <515E5CFC.4090900@codeaurora.org>
-Date: Thu, 04 Apr 2013 22:11:24 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Fri, 5 Apr 2013 01:13:08 -0400
 MIME-Version: 1.0
-To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: Re: [PATCH] ARM: arch_timer: Silence debug preempt warnings
-References: <1364934672-31554-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1364934672-31554-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1365135708-23886-1-git-send-email-nm@ti.com>
+References: <1365135708-23886-1-git-send-email-nm@ti.com>
+Date: Fri, 5 Apr 2013 10:43:07 +0530
+Message-ID: <CAKohpokiLQNp3JffxuKA5JxeL8+F3-2MK_cMv2FzcddOejQA=Q@mail.gmail.com>
+Subject: Re: [PATCH 0/2] cpufreq/regulator: Handle regulators that defer probe
+ with device tree bindings
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Shawn Guo <shawn.guo@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/2/2013 1:31 PM, Stephen Boyd wrote:
-> Hot-plugging with CONFIG_DEBUG_PREEMPT=y on a device with arm
-> architected timers causes a slew of "using smp_processor_id() in
-> preemptible" warnings:
+On 5 April 2013 09:51, Nishanth Menon <nm@ti.com> wrote:
+> Currently get_regulator returns -EPROBE_DEFER in the case of regulator supply
+> which have no device tree node or even if regulator which are depicted in device
+> tree node is defering it's registration for valid reasons.
 >
->   BUG: using smp_processor_id() in preemptible [00000000] code: sh/111
->   caller is arch_timer_cpu_notify+0x14/0xc8
+> This makes it impossible to use an regulator that registers itself after
+> cpufreq-cpu0 probe is complete. The reason for the same is regulator framework
+> fails to return appropriate error value when device tree binding is not actually
+> present as a node.
 >
-> This happens because sometimes the cpu notifier, arch_timer_cpu_notify(),
-> is called in preemptible context but we use this_cpu_ptr()
-> to retrieve the clockevent unconditionally. We're only going to
-> actually use the pointer in non-preemptible context though,
-> so use __this_cpu_ptr() instead to avoid the preemptible checks
-> and silence the warning.
+> Once we fix that, we can then fix cpufreq-cpu0 to make intelligent decisions
+> based on return value.
 >
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Marc Zyngier <Marc.Zyngier@arm.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
-
-Anyone else seeing this one?
-
->  drivers/clocksource/arm_arch_timer.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Nishanth Menon (2):
+>   regulator: core: return err value for regulator_get if there is no DT
+>     binding
+>   cpufreq: cpufreq-cpu0: defer probe when regulator is not ready
 >
-> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-> index d7ad425..5928c29 100644
-> --- a/drivers/clocksource/arm_arch_timer.c
-> +++ b/drivers/clocksource/arm_arch_timer.c
-> @@ -248,7 +248,7 @@ static void __cpuinit arch_timer_stop(struct clock_event_device *clk)
->  static int __cpuinit arch_timer_cpu_notify(struct notifier_block *self,
->  					   unsigned long action, void *hcpu)
->  {
-> -	struct clock_event_device *evt = this_cpu_ptr(arch_timer_evt);
-> +	struct clock_event_device *evt = __this_cpu_ptr(arch_timer_evt);
->  
->  	switch (action & ~CPU_TASKS_FROZEN) {
->  	case CPU_STARTING:
+>  drivers/cpufreq/cpufreq-cpu0.c |   20 ++++++++++++++------
+>  drivers/regulator/core.c       |    4 ++--
+>  2 files changed, 16 insertions(+), 8 deletions(-)
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
