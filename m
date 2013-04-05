@@ -1,129 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765999Ab3DEBYn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 21:24:43 -0400
-Received: from mail-da0-f44.google.com ([209.85.210.44]:55548 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765984Ab3DEBYl (ORCPT
+	id S932089Ab3DEB0o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 21:26:44 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50216 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765988Ab3DEB0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 21:24:41 -0400
-Message-ID: <515E27D0.5090105@gmail.com>
-Date: Fri, 05 Apr 2013 09:24:32 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH, RFC 00/16] Transparent huge page cache
-References: <1359365068-10147-1-git-send-email-kirill.shutemov@linux.intel.com> <alpine.LNX.2.00.1301282041280.27186@eggly.anvils>
-In-Reply-To: <alpine.LNX.2.00.1301282041280.27186@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Apr 2013 21:26:42 -0400
+X-AuditID: 9c93016f-b7c18ae000002f5f-de-515e2850a2de
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: [PATCH 1/8] perf sort: Reorder HISTC_SRCLINE index
+Date: Fri,  5 Apr 2013 10:26:31 +0900
+Message-Id: <1365125198-8334-2-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1365125198-8334-1-git-send-email-namhyung@kernel.org>
+References: <1365125198-8334-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
-On 01/29/2013 01:03 PM, Hugh Dickins wrote:
-> On Mon, 28 Jan 2013, Kirill A. Shutemov wrote:
->> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->>
->> Here's first steps towards huge pages in page cache.
->>
->> The intend of the work is get code ready to enable transparent huge page
->> cache for the most simple fs -- ramfs.
->>
->> It's not yet near feature-complete. It only provides basic infrastructure.
->> At the moment we can read, write and truncate file on ramfs with huge pages in
->> page cache. The most interesting part, mmap(), is not yet there. For now
->> we split huge page on mmap() attempt.
->>
->> I can't say that I see whole picture. I'm not sure if I understand locking
->> model around split_huge_page(). Probably, not.
->> Andrea, could you check if it looks correct?
->>
->> Next steps (not necessary in this order):
->>   - mmap();
->>   - migration (?);
->>   - collapse;
->>   - stats, knobs, etc.;
->>   - tmpfs/shmem enabling;
->>   - ...
->>
->> Kirill A. Shutemov (16):
->>    block: implement add_bdi_stat()
->>    mm: implement zero_huge_user_segment and friends
->>    mm: drop actor argument of do_generic_file_read()
->>    radix-tree: implement preload for multiple contiguous elements
->>    thp, mm: basic defines for transparent huge page cache
->>    thp, mm: rewrite add_to_page_cache_locked() to support huge pages
->>    thp, mm: rewrite delete_from_page_cache() to support huge pages
->>    thp, mm: locking tail page is a bug
->>    thp, mm: handle tail pages in page_cache_get_speculative()
->>    thp, mm: implement grab_cache_huge_page_write_begin()
->>    thp, mm: naive support of thp in generic read/write routines
->>    thp, libfs: initial support of thp in
->>      simple_read/write_begin/write_end
->>    thp: handle file pages in split_huge_page()
->>    thp, mm: truncate support for transparent huge page cache
->>    thp, mm: split huge page on mmap file page
->>    ramfs: enable transparent huge page cache
->>
->>   fs/libfs.c                  |   54 +++++++++---
->>   fs/ramfs/inode.c            |    6 +-
->>   include/linux/backing-dev.h |   10 +++
->>   include/linux/huge_mm.h     |    8 ++
->>   include/linux/mm.h          |   15 ++++
->>   include/linux/pagemap.h     |   14 ++-
->>   include/linux/radix-tree.h  |    3 +
->>   lib/radix-tree.c            |   32 +++++--
->>   mm/filemap.c                |  204 +++++++++++++++++++++++++++++++++++--------
->>   mm/huge_memory.c            |   62 +++++++++++--
->>   mm/memory.c                 |   22 +++++
->>   mm/truncate.c               |   12 +++
->>   12 files changed, 375 insertions(+), 67 deletions(-)
-> Interesting.
->
-> I was starting to think about Transparent Huge Pagecache a few
-> months ago, but then got washed away by incoming waves as usual.
->
-> Certainly I don't have a line of code to show for it; but my first
-> impression of your patches is that we have very different ideas of
-> where to start.
->
-> Perhaps that's good complementarity, or perhaps I'll disagree with
-> your approach.  I'll be taking a look at yours in the coming days,
-> and trying to summon back up my own ideas to summarize them for you.
->
-> Perhaps I was naive to imagine it, but I did intend to start out
-> generically, independent of filesystem; but content to narrow down
-> on tmpfs alone where it gets hard to support the others (writeback
-> springs to mind).  khugepaged would be migrating little pages into
-> huge pages, where it saw that the mmaps of the file would benefit
-> (and for testing I would hack mmap alignment choice to favour it).
->
-> I had arrived at a conviction that the first thing to change was
-> the way that tail pages of a THP are refcounted, that it had been a
-> mistake to use the compound page method of holding the THP together.
-> But I'll have to enter a trance now to recall the arguments ;)
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-One offline question, do you have any idea hugetlbfs pages support swapping?
+It's in common sort dimension so it'd be more natural to place it with
+other common column index.
 
->
-> Hugh
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/hist.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 14c2fe20aa62..6be88dc12b9a 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -43,12 +43,12 @@ enum hist_column {
+ 	HISTC_COMM,
+ 	HISTC_PARENT,
+ 	HISTC_CPU,
++	HISTC_SRCLINE,
+ 	HISTC_MISPREDICT,
+ 	HISTC_SYMBOL_FROM,
+ 	HISTC_SYMBOL_TO,
+ 	HISTC_DSO_FROM,
+ 	HISTC_DSO_TO,
+-	HISTC_SRCLINE,
+ 	HISTC_LOCAL_WEIGHT,
+ 	HISTC_GLOBAL_WEIGHT,
+ 	HISTC_MEM_DADDR_SYMBOL,
+-- 
+1.7.11.7
 
