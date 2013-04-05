@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161339Ab3DEMXA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 08:23:00 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:39209 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765141Ab3DEMW7 (ORCPT
+	id S1161369Ab3DEM1A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 08:27:00 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38286 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1161233Ab3DEM07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 08:22:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAKohpomTQj-S-32JdtY76_82NraB5uBqnKZXVxk28KxMZ-NSow@mail.gmail.com>
-References: <cover.1364740180.git.viresh.kumar@linaro.org>
-	<91239cde99aaba2715f63db1f88241d9f4a36e13.1364740180.git.viresh.kumar@linaro.org>
-	<20130331181931.GA7533@htj.dyndns.org>
-	<CAKohpo=nWsUh5y7y_tacGez7uN76QbRFRVPSQcKQMGM1nUBWtw@mail.gmail.com>
-	<20130403215412.GG3411@htj.dyndns.org>
-	<CAKohpomTQj-S-32JdtY76_82NraB5uBqnKZXVxk28KxMZ-NSow@mail.gmail.com>
-Date: Fri, 5 Apr 2013 05:22:58 -0700
-X-Google-Sender-Auth: -Xa68YkB-WSAeuiMTz78PnaUWlc
-Message-ID: <CAOS58YOvDGavhffFawMbk1Y4xihL3OwPSpOkEzXKSzORvjyq-Q@mail.gmail.com>
-Subject: Re: [PATCH V4 3/4] block: queue work on unbound wq
-From: Tejun Heo <tj@kernel.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        "David S. Miller" <davem@davemloft.net>, airlied@redhat.com,
-        Jens Axboe <axboe@kernel.dk>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-rt-users@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 5 Apr 2013 08:26:59 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] ASoC: wm5102: Correct lookup of arizona struct in SYSCLK event
+Date: Fri,  5 Apr 2013 13:26:53 +0100
+Message-Id: <1365164813-7050-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 5, 2013 at 2:47 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> module_param()?? We can't compile kernel/workqueue.c as a module and
-> hence i went with #define + a variable with functions to set/reset it...
+Reported-by: Ryo Tsutsui <Ryo.Tsutsui@wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ sound/soc/codecs/wm5102.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-module_param works fine for kernel proper.
+diff --git a/sound/soc/codecs/wm5102.c b/sound/soc/codecs/wm5102.c
+index cb03cc4..e895d39 100644
+--- a/sound/soc/codecs/wm5102.c
++++ b/sound/soc/codecs/wm5102.c
+@@ -581,7 +581,7 @@ static int wm5102_sysclk_ev(struct snd_soc_dapm_widget *w,
+ 			    struct snd_kcontrol *kcontrol, int event)
+ {
+ 	struct snd_soc_codec *codec = w->codec;
+-	struct arizona *arizona = dev_get_drvdata(codec->dev);
++	struct arizona *arizona = dev_get_drvdata(codec->dev->parent);
+ 	struct regmap *regmap = codec->control_data;
+ 	const struct reg_default *patch = NULL;
+ 	int i, patch_size;
+-- 
+1.7.10.4
 
---
-tejun
