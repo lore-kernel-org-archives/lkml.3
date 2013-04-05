@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162793Ab3DEUYZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 16:24:25 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:40634 "EHLO
+	id S1162779Ab3DEUYY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 16:24:24 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:40592 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162752Ab3DEUYV (ORCPT
+	with ESMTP id S1162745Ab3DEUYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 16:24:21 -0400
+	Fri, 5 Apr 2013 16:24:19 -0400
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Gregory Clement <gregory.clement@free-electrons.com>
@@ -27,9 +27,9 @@ Cc: Grant Likely <grant.likely@secretlab.ca>,
         Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
         David Marlin <dmarlin@redhat.com>,
         Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: [PATCH v2 3/9] arm: mvebu: Enable pj4b on LPAE compilations
-Date: Fri,  5 Apr 2013 22:23:58 +0200
-Message-Id: <1365193444-13441-4-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH v2 1/9] arm: mvebu: Limit the DMA zone when LPAE is selected
+Date: Fri,  5 Apr 2013 22:23:56 +0200
+Message-Id: <1365193444-13441-2-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365193444-13441-1-git-send-email-gregory.clement@free-electrons.com>
 References: <1365193444-13441-1-git-send-email-gregory.clement@free-electrons.com>
@@ -37,38 +37,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lior Amsalem <alior@marvell.com>
+When LPAE is activated on Armada XP, all registers and IOs are still
+32bit, the 40bit extension is on the CPU to DRAM path (windows) only.
+That means that all the DMA transfer are restricted to the low 32 bits
+address space. This is limitation is achieved by selecting ZONE_DMA.
 
-pj4b cpus are LPAE capable so enable them on LPAE compilations
-
-Signed-off-by: Lior Amsalem <alior@marvell.com>
-Tested-by: Franklin <flin@marvell.com>
 Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 ---
- arch/arm/mm/proc-v7.S |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/mach-mvebu/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
-index 3a3c015..159c747 100644
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -402,6 +402,8 @@ __v7_ca9mp_proc_info:
- 	__v7_proc __v7_ca9mp_setup
- 	.size	__v7_ca9mp_proc_info, . - __v7_ca9mp_proc_info
+diff --git a/arch/arm/mach-mvebu/Kconfig b/arch/arm/mach-mvebu/Kconfig
+index 440b13e..db1bbc8 100644
+--- a/arch/arm/mach-mvebu/Kconfig
++++ b/arch/arm/mach-mvebu/Kconfig
+@@ -13,6 +13,7 @@ config ARCH_MVEBU
+ 	select MVEBU_CLK_CORE
+ 	select MVEBU_CLK_CPU
+ 	select MVEBU_CLK_GATING
++	select ZONE_DMA if ARM_LPAE
  
-+#endif	/* CONFIG_ARM_LPAE */
-+
- 	/*
- 	 * Marvell PJ4B processor.
- 	 */
-@@ -411,7 +413,6 @@ __v7_pj4b_proc_info:
- 	.long	0xfffffff0
- 	__v7_proc __v7_pj4b_setup
- 	.size	__v7_pj4b_proc_info, . - __v7_pj4b_proc_info
--#endif	/* CONFIG_ARM_LPAE */
+ if ARCH_MVEBU
  
- 	/*
- 	 * ARM Ltd. Cortex A7 processor.
 -- 
 1.7.9.5
 
