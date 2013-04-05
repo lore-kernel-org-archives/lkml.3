@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161560Ab3DEDsR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 23:48:17 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:58540 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932390Ab3DEDsP (ORCPT
+	id S1751136Ab3DEEB4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 00:01:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53231 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703Ab3DEEBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 23:48:15 -0400
-Message-ID: <515E4977.3040002@gmail.com>
-Date: Fri, 05 Apr 2013 11:48:07 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Fri, 5 Apr 2013 00:01:55 -0400
+Message-ID: <515E4CB7.6020405@infradead.org>
+Date: Thu, 04 Apr 2013 21:01:59 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2, RFC 07/30] thp, mm: introduce mapping_can_have_hugepages()
- predicate
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-8-git-send-email-kirill.shutemov@linux.intel.com> <515E48D1.2090505@gmail.com>
-In-Reply-To: <515E48D1.2090505@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Julian Calaby <julian.calaby@gmail.com>
+CC: Wang YanQing <udknight@gmail.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] lib80211: make lib80211 can be enabled independently
+References: <20130404160130.GA2577@udknight> <CAGRGNgXj7mSF0Fgyjek4Xcc34N26WHtt4HMmHk7DOopaEPrYFw@mail.gmail.com>
+In-Reply-To: <CAGRGNgXj7mSF0Fgyjek4Xcc34N26WHtt4HMmHk7DOopaEPrYFw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2013 11:45 AM, Ric Mason wrote:
-> Hi Kirill,
-> On 03/15/2013 01:50 AM, Kirill A. Shutemov wrote:
->> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On 04/04/13 16:51, Julian Calaby wrote:
+> Hi Wang,
+> 
+> On Fri, Apr 5, 2013 at 3:01 AM, Wang YanQing <udknight@gmail.com> wrote:
 >>
->> Returns true if mapping can have huge pages. Just check for __GFP_COMP
->> in gfp mask of the mapping for now.
->>
->> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
->> ---
->>   include/linux/pagemap.h |   10 ++++++++++
->>   1 file changed, 10 insertions(+)
->>
->> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
->> index e3dea75..3521b0d 100644
->> --- a/include/linux/pagemap.h
->> +++ b/include/linux/pagemap.h
->> @@ -84,6 +84,16 @@ static inline void mapping_set_gfp_mask(struct 
->> address_space *m, gfp_t mask)
->>                   (__force unsigned long)mask;
->>   }
->>   +static inline bool mapping_can_have_hugepages(struct address_space 
->> *m)
->> +{
->> +    if (IS_ENABLED(CONFIG_TRANSPARENT_HUGEPAGE)) {
->> +        gfp_t gfp_mask = mapping_gfp_mask(m);
->> +        return !!(gfp_mask & __GFP_COMP);
->
-> I always see !! in kernel, but why check directly instead of have !! 
-> prefix?
+>> Current we can only enable lib80211 by enable a driver
+>> in tree use it which will select it, but some out tree's
+>> drivers also use it, so I think it has sense to make lib80211
+>> can be enabled independently.
+> 
+> Just as a bit of explanation for Johannes' NACK:
+> 
+> 1. The only reason lib80211 still exists is because a couple of
+> in-tree drivers still use it. If this weren't the case, the code would
+> have been removed a long time ago as it's been completely replaced by
+> mac80211 and cfg80211. All modern drivers _must_ use mac80211 or
+> cfg80211 without exception.
+> 2. In general, there is no official in-kernel support for
+> out-of-kernel drivers, regardless of quality, status or importance.
+> 3. I believe that the in-tree brcmsmac driver already supports the
+> Broadcom card you reference.
 
-s/why/why not
 
->
->> +    }
->> +
->> +    return false;
->> +}
->> +
->>   /*
->>    * The page cache can done in larger chunks than
->>    * one page, because it allows for more efficient
->
+3b.  If 3. is not correct, someone should endeavor to merge this
+out-of-tree driver into the kernel tree.
 
+
+-- 
+~Randy
