@@ -1,181 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806Ab3DEE55 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 00:57:57 -0400
-Received: from mga09.intel.com ([134.134.136.24]:38939 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703Ab3DEE5z convert rfc822-to-8bit (ORCPT
+	id S1161545Ab3DEFDR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 01:03:17 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59584 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753631Ab3DEFDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 00:57:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,412,1363158000"; 
-   d="scan'208";a="312687470"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: "Zhang, Rui" <rui.zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCHv2 1/3] thermal: introduce thermal_zone_get_zone_by_name
- helper function
-Thread-Topic: [PATCHv2 1/3] thermal: introduce thermal_zone_get_zone_by_name
- helper function
-Thread-Index: AQHOMLiUY3LidhVScU+woWA60HaxEJjGTOCg///ZrQCAAOvx4A==
-Date: Fri, 5 Apr 2013 04:57:48 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59C655C8@BGSMSX101.gar.corp.intel.com>
-References: <1365027197-2793-1-git-send-email-eduardo.valentin@ti.com>
- <1365027197-2793-2-git-send-email-eduardo.valentin@ti.com>
- <4D68720C2E767A4AA6A8796D42C8EB59C650A4@BGSMSX101.gar.corp.intel.com>
- <515DE0F8.7070702@ti.com>
-In-Reply-To: <515DE0F8.7070702@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 5 Apr 2013 01:03:15 -0400
+Date: Fri, 5 Apr 2013 16:02:56 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Heiko Stuebner <heiko@sntech.de>
+Subject: linux-next: manual merge of the samsung tree with the arm-soc tree
+Message-Id: <20130405160256.7ca6f52e25e0d2231eb1fcfe@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__5_Apr_2013_16_02_56_+1100_o7040RbB=VtDLCDB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Eduardo Valentin [mailto:eduardo.valentin@ti.com]
-> Sent: Friday, April 05, 2013 1:52 AM
-> To: R, Durgadoss
-> Cc: Eduardo Valentin; Zhang, Rui; linux-pm@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCHv2 1/3] thermal: introduce
-> thermal_zone_get_zone_by_name helper function
-> 
-> On 04-04-2013 13:12, R, Durgadoss wrote:
-> >> -----Original Message-----
-> >> From: Eduardo Valentin [mailto:eduardo.valentin@ti.com]
-> >> Sent: Thursday, April 04, 2013 3:43 AM
-> >> To: Zhang, Rui
-> >> Cc: linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; R,
-> Durgadoss;
-> >> Eduardo Valentin
-> >> Subject: [PATCHv2 1/3] thermal: introduce
-> >> thermal_zone_get_zone_by_name helper function
-> >>
-> >> This patch adds a helper function to get a reference of
-> >> a thermal zone, based on the zone type name.
-> >>
-> >> It will perform a zone name lookup and return a reference
-> >> to a thermal zone device that matches the name requested.
-> >> In case the zone is not found or when several zones match
-> >> same name or if the required parameters are invalid, it will return
-> >> the corresponding error code (ERR_PTR).
-> >>
-> >> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-> >> ---
-> >>   drivers/thermal/thermal_sys.c |   34
-> >> ++++++++++++++++++++++++++++++++++
-> >>   include/linux/thermal.h       |    1 +
-> >>   2 files changed, 35 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/drivers/thermal/thermal_sys.c
-> b/drivers/thermal/thermal_sys.c
-> >> index 5bd95d4..6e1da0a 100644
-> >> --- a/drivers/thermal/thermal_sys.c
-> >> +++ b/drivers/thermal/thermal_sys.c
-> >> @@ -1790,6 +1790,40 @@ void thermal_zone_device_unregister(struct
-> >> thermal_zone_device *tz)
-> >>   }
-> >>   EXPORT_SYMBOL_GPL(thermal_zone_device_unregister);
-> >>
-> >> +/**
-> >> + * thermal_zone_get_zone_by_name() - search for a zone and returns
-> its
-> >> ref
-> >> + * @name: thermal zone name to fetch the temperature
-> >> + *
-> >> + * When only one zone is found with the passed name, returns a
-> reference
-> >> to it.
-> >> + *
-> >> + * Return: On success returns a reference to an unique thermal zone
-> with
-> >> + * matching name equals to @name, a ERR_PTR otherwise.
-> >> + */
-> >> +struct thermal_zone_device *thermal_zone_get_zone_by_name(const
-> >> char *name)
-> >> +{
-> >> +	struct thermal_zone_device *pos = NULL, *ref = ERR_PTR(-EINVAL);
-> >> +	int found = 0;
-> >> +
-> >> +	if (!name)
-> >> +		goto exit;
-> >> +
-> >> +	mutex_lock(&thermal_list_lock);
-> >> +	list_for_each_entry(pos, &thermal_tz_list, node)
-> >> +		if (!strnicmp(name, pos->type, THERMAL_NAME_LENGTH)) {
-> >> +			found++;
-> >> +			ref = pos;
-> >> +		}
-> >> +	mutex_unlock(&thermal_list_lock);
-> >> +
-> >> +	/* Success only when an unique zone is found */
-> >> +	if (found != 1)
-> >> +		ref = ERR_PTR(-ENODEV);
-> >
-> > I think we should differentiate between the two cases:
-> > 1. The zone does not exist at all
-> > 	return NULL in this case
-> > 2. There are multiple zones
-> > 	return ERR_PTR(-EEXIST) in this case
-> >
-> > This way the calling function can figure out the exact reason
-> > for failure.
-> 
-> I think the code documentation is already clear enough to say that this
-> is for unique matches. But in case you want to differentiate these
-> cases, I can resend it. Do you have a usage for this?
+--Signature=_Fri__5_Apr_2013_16_02_56_+1100_o7040RbB=VtDLCDB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, the calling function may want to re-try (or even unregister a zone,
-to proceed further..)
+Hi Kukjin,
 
-> 
-> Besides, I would prefer to return ERR_PTR(-ENODEV) in the first case.
-> The way it is in the original patch.
+Today's linux-next merge of the samsung tree got a conflict in
+drivers/irqchip/irq-s3c24xx.c between commit de88cbb7b244 ("arm: Move
+chained_irq_(enter|exit) to a generic file") from the arm-soc tree (where
+it is called arch/arm/mach-s3c24xx/irq.c) and commit f0774d41da0e
+("irqchip: s3c24xx: add devicetree support") from the samsung tree.
 
-Okay, I am fine with that too :-)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> 
-> >
-> > Thanks,
-> > Durga
-> >
-> >> +
-> >> +exit:
-> >> +	return ref;
-> >> +}
-> >> +EXPORT_SYMBOL_GPL(thermal_zone_get_zone_by_name);
-> >> +
-> >>   #ifdef CONFIG_NET
-> >>   static struct genl_family thermal_event_genl_family = {
-> >>   	.id = GENL_ID_GENERATE,
-> >> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> >> index 542a39c..0cf9eb5 100644
-> >> --- a/include/linux/thermal.h
-> >> +++ b/include/linux/thermal.h
-> >> @@ -237,6 +237,7 @@ void thermal_zone_device_update(struct
-> >> thermal_zone_device *);
-> >>   struct thermal_cooling_device *thermal_cooling_device_register(char *,
-> >> void *,
-> >>   		const struct thermal_cooling_device_ops *);
-> >>   void thermal_cooling_device_unregister(struct thermal_cooling_device
-> *);
-> >> +struct thermal_zone_device *thermal_zone_get_zone_by_name(const
-> >> char *name);
-> >>
-> >>   int thermal_zone_trend_get(struct thermal_zone_device *, int);
-> >>   struct thermal_instance *thermal_instance_get(struct
-> >> thermal_zone_device *,
-> >> --
-> >> 1.7.7.1.488.ge8e1c
-> >
-> >
-> >
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/irqchip/irq-s3c24xx.c
+index 8296d94,5e40b34..0000000
+--- a/drivers/irqchip/irq-s3c24xx.c
++++ b/drivers/irqchip/irq-s3c24xx.c
+@@@ -25,8 -25,11 +25,12 @@@
+  #include <linux/ioport.h>
+  #include <linux/device.h>
+  #include <linux/irqdomain.h>
+ +#include <linux/irqchip/chained_irq.h>
++ #include <linux/of.h>
++ #include <linux/of_irq.h>
++ #include <linux/of_address.h>
+ =20
++ #include <asm/exception.h>
+  #include <asm/mach/irq.h>
+ =20
+  #include <mach/regs-irq.h>
+
+--Signature=_Fri__5_Apr_2013_16_02_56_+1100_o7040RbB=VtDLCDB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRXlsAAAoJEECxmPOUX5FE9uwP/i7WjEciiAx+Vr1IllWEpLS/
+c5uQH6Gv5E7ikYpRb9iFOmr6k8o41B9ba4GSw1X7HqnuCMiquVCauWpOVFX4pRdb
+2cmkpb3GPOz4RJaIQ4KSZVWN3Qiu0c9+d7NQju/UQhORZ2SHWQJ+q0RR/EICeLpl
+PxxdwrKvs2dGJAGK/z232+O2fYDXCRuBJvGDUhsQGBzr/mFBzxuRqWcMud12sEL9
+2hNZGkhaVEYojaP/2mkppyAUoCu5L0yprEGlrplVszpPAdtgoPRM4D1UdpfaWQlA
+ADcSV4m8mORXml8Du4MWy+1Jem7rdBwAkwqX1WCbPbpudr9MDlUfSedPf1ES68N/
+pj9VGdRics/BY56SRiQPMMs6PQ4/H4RokibYrPjGsU/X6PPxMDNHP5bg+IYCtUo3
+CAarS6u3rzqMKnKGDaTg+sS0UR3b2fV7zMExKLflrmUW+Z++FztMYnmB8YAvSwKk
+hcmddOIX2shyH8QRDCp6jhyhrh8WT747mXP4PAtCW1g4YC/itrwTZOPSHbLG64i6
+pO1maqbQfKZ7RoTVn2gim03G32oF0OaoI29xjF4Vszw++ACjsLMiQV1ji+lf4CnE
+iJ9feV9UDEv8qq85SJhZe3m8hWutlIfoS4l0Q0so8IIKSeaLAeKAlkXVdusE79Qx
+pM7XWGlYMAllAMpuU+9G
+=dFKJ
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__5_Apr_2013_16_02_56_+1100_o7040RbB=VtDLCDB--
