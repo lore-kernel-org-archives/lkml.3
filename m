@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162335Ab3DEUhH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 16:37:07 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:58770 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1162032Ab3DEUhB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 16:37:01 -0400
-X-Sasl-enc: tw3r6fVvIk0tKFMpVK19SM7c2Mm4Vh4LVDFl9WABJjAI 1365194221
-From: Alan Ott <alan@signal11.us>
-To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Ott <alan@signal11.us>
-Subject: [PATCH] mrf24j40: Enable link-layer acknowledgement and retry
-Date: Fri,  5 Apr 2013 16:34:51 -0400
-Message-Id: <1365194091-2542-1-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.11.2
+	id S1162482Ab3DEUi6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 16:38:58 -0400
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:44069 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1162070Ab3DEUi5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 16:38:57 -0400
+X-Greylist: delayed 426 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Apr 2013 16:38:57 EDT
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: [PATCH 1/3] pci: Add PCI ROM helper for platform-provided ROM images
+From: Chris Murphy <bugzilla@colorremedies.com>
+In-Reply-To: <CAErSpo4q3mU-0oi_xAUAjUpbDfFpU7Lb1rCnrd2WH67J2+U1hQ@mail.gmail.com>
+Date: Fri, 5 Apr 2013 14:31:46 -0600
+Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+        =?utf-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>,
+        Dave Airlie <airlied@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>, skeggsb@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Murphy <bugzilla@colorremedies.com>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <E7324EBF-8BF5-450B-8CE4-9258B4806776@colorremedies.com>
+References: <CAPM=9tyYMSsK_2eCNRTx5EsgAQtnvmHxhgPHP3GHPxKUn+wo5w@mail.gmail.com> <1364333156-4530-1-git-send-email-matthew.garrett@nebula.com> <CAErSpo7fy+MVxDoLe6w+4noH5X2xJw_Lfdg6fVvgcbhgvUyAaw@mail.gmail.com> <1364338554.2553.53.camel@x230.sbx07502.somerma.wayport.net> <CAErSpo7ZYMsRAp=EKMS0YPmiw6YytN4pZVzoWPd-PL5EzT8+SQ@mail.gmail.com> <515403ED.6010008@gmail.com> <CAErSpo6T5KmTcm2fnoQZvSpJjzXozRd4AVL9REjn6gsL9Q1uPw@mail.gmail.com> <1364838466.19098.1.camel@x230> <CAErSpo4q3mU-0oi_xAUAjUpbDfFpU7Lb1rCnrd2WH67J2+U1hQ@mail.gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+X-Mailer: Apple Mail (2.1503)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On the MRF24J40, link-layer acknowledgment request and retry must be
-turned on explicitly for each packet.  Turn this on in the hardware based
-on the FC_ACK_REQ bit being set in the packet.
 
-Also, now that failure to receive an ACK will cause the hardware to report
-failure of transmission, change the log level for this failure to debug
-level.
+On Apr 2, 2013, at 2:10 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
 
-Signed-off-by: Alan Ott <alan@signal11.us>
----
- drivers/net/ieee802154/mrf24j40.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+> On Mon, Apr 1, 2013 at 11:47 AM, Matthew Garrett
+> <matthew.garrett@nebula.com> wrote:
+>> On Mon, 2013-04-01 at 11:39 -0600, Bjorn Helgaas wrote:
+>> 
+>>> Chris still has problems (see
+>>> https://bugzilla.redhat.com/show_bug.cgi?id=927451), but I don't know
+>>> whether they are related to these patches or something else.
+>> 
+>> I think they're unrelated. The log he posts using this patch gives the
+>> correct output - the ROM image comes from the platform method rather
+>> than from PCI. I think Ben probably needs to look at that.
+> 
+> OK, I added these three patches to my for-linus branch, headed for v3.9.
 
-diff --git a/drivers/net/ieee802154/mrf24j40.c b/drivers/net/ieee802154/mrf24j40.c
-index 6481faf..556151d 100644
---- a/drivers/net/ieee802154/mrf24j40.c
-+++ b/drivers/net/ieee802154/mrf24j40.c
-@@ -25,6 +25,7 @@
- #include <linux/pinctrl/consumer.h>
- #include <net/wpan-phy.h>
- #include <net/mac802154.h>
-+#include <net/ieee802154.h>
- 
- /* MRF24J40 Short Address Registers */
- #define REG_RXMCR    0x00  /* Receive MAC control */
-@@ -349,7 +350,9 @@ static int mrf24j40_tx(struct ieee802154_dev *dev, struct sk_buff *skb)
- 	if (ret)
- 		goto err;
- 	val |= 0x1;
--	val &= ~0x4;
-+	/* Set TXNACKREQ if the ACK bit is set in the packet. */
-+	if (skb->data[0] & IEEE802154_FC_ACK_REQ)
-+		val |= 0x4;
- 	write_short_reg(devrec, REG_TXNCON, val);
- 
- 	INIT_COMPLETION(devrec->tx_complete);
-@@ -371,7 +374,7 @@ static int mrf24j40_tx(struct ieee802154_dev *dev, struct sk_buff *skb)
- 	if (ret)
- 		goto err;
- 	if (val & 0x1) {
--		dev_err(printdev(devrec), "Error Sending. Retry count exceeded\n");
-+		dev_dbg(printdev(devrec), "Error Sending. Retry count exceeded\n");
- 		ret = -ECOMM; /* TODO: Better error code ? */
- 	} else
- 		dev_dbg(printdev(devrec), "Packet Sent\n");
--- 
-1.7.11.2
+Are they in 3.9.0-0.rc5.git2.1.f19? I'm seeing a regression from 3.8.5 with the radeon driver not finding BIOS ROM as well.
+https://bugzilla.redhat.com/show_bug.cgi?id=949083
 
