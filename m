@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162515Ab3DES7r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 14:59:47 -0400
-Received: from mail-ye0-f177.google.com ([209.85.213.177]:50434 "EHLO
-	mail-ye0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162497Ab3DES7p (ORCPT
+	id S1162526Ab3DETB0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 15:01:26 -0400
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:36464 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162505Ab3DETBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 14:59:45 -0400
-X-Greylist: delayed 1240 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Apr 2013 14:59:45 EDT
-Message-ID: <515F1F1F.6060900@gmail.com>
-Date: Fri, 05 Apr 2013 14:59:43 -0400
+	Fri, 5 Apr 2013 15:01:25 -0400
+Message-ID: <515F18F1.4050901@gmail.com>
+Date: Fri, 05 Apr 2013 14:33:21 -0400
 From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
 User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
@@ -21,9 +20,9 @@ CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
         Michal Hocko <mhocko@suse.cz>,
         HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, kosaki.motohiro@gmail.com
-Subject: Re: [PATCH v3 3/3] hugetlbfs: add swap entry check in follow_hugetlb_page()
-References: <1365014138-19589-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1365014138-19589-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1365014138-19589-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: Re: [PATCH v3 2/3] fix hugetlb memory check in vma_dump_size()
+References: <1365014138-19589-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1365014138-19589-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1365014138-19589-3-git-send-email-n-horiguchi@ah.jp.nec.com>
 Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,69 +30,21 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 (4/3/13 2:35 PM), Naoya Horiguchi wrote:
-> With applying the previous patch "hugetlbfs: stop setting VM_DONTDUMP in
-> initializing vma(VM_HUGETLB)" to reenable hugepage coredump, if a memory
-> error happens on a hugepage and the affected processes try to access
-> the error hugepage, we hit VM_BUG_ON(atomic_read(&page->_count) <= 0)
-> in get_page().
+> Documentation/filesystems/proc.txt says about coredump_filter bitmask,
 > 
-> The reason for this bug is that coredump-related code doesn't recognise
-> "hugepage hwpoison entry" with which a pmd entry is replaced when a memory
-> error occurs on a hugepage.
-> In other words, physical address information is stored in different bit layout
-> between hugepage hwpoison entry and pmd entry, so follow_hugetlb_page()
-> which is called in get_dump_page() returns a wrong page from a given address.
+>   Note bit 0-4 doesn't effect any hugetlb memory. hugetlb memory are only
+>   effected by bit 5-6.
 > 
-> We need to filter out only hwpoison hugepages to have data on healthy
-> hugepages in coredump. So this patch makes follow_hugetlb_page() avoid
-> trying to get page when a pmd is in swap entry like format.
-> 
-> ChangeLog v3:
->  - add comment about using is_swap_pte()
+> However current code can go into the subsequent flag checks of bit 0-4
+> for vma(VM_HUGETLB). So this patch inserts 'return' and makes it work
+> as written in the document.
 > 
 > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
-> Acked-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 > Cc: stable@vger.kernel.org
-> ---
->  mm/hugetlb.c | 8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
-> 
-> diff --git v3.9-rc3.orig/mm/hugetlb.c v3.9-rc3/mm/hugetlb.c
-> index 0d1705b..3bc20bd 100644
-> --- v3.9-rc3.orig/mm/hugetlb.c
-> +++ v3.9-rc3/mm/hugetlb.c
-> @@ -2966,9 +2966,15 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  		 * Some archs (sparc64, sh*) have multiple pte_ts to
->  		 * each hugepage.  We have to make sure we get the
->  		 * first, for the page indexing below to work.
-> +		 *
-> +		 * is_swap_pte test covers both is_hugetlb_entry_hwpoisoned
-> +		 * and hugepages under migration in which case
-> +		 * hugetlb_fault waits for the migration and bails out
-> +		 * properly for HWPosined pages.
->  		 */
->  		pte = huge_pte_offset(mm, vaddr & huge_page_mask(h));
-> -		absent = !pte || huge_pte_none(huge_ptep_get(pte));
-> +		absent = !pte || huge_pte_none(huge_ptep_get(pte)) ||
-> +			is_swap_pte(huge_ptep_get(pte));
 
-Hmmm...
+If I were you, I merge this patch into [1/3] because both patches treat the same
+regression. but it is no big matter.
 
-Now absent has two meanings. 1) skip hugetlb_fault() and return immediately if FOLL_DUMP is used.
-2) call hugetlb_fault() if to be need page population or cow.
-
-The description of this patch only explain about (2). and I'm not convinced why we don't need to
-dump pages under migraion.
-
-
-
-
-
-
-
-
-
-
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
 
