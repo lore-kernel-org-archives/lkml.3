@@ -1,38 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162814Ab3DEUeT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 16:34:19 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:40412 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162735Ab3DEUeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 16:34:18 -0400
+	id S1162829Ab3DEUeW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 16:34:22 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:37259 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162735Ab3DEUeU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 16:34:20 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/3] mm: fixup changers of per cpu pageset's ->high and ->batch
-Date: Fri,  5 Apr 2013 13:33:47 -0700
-Message-Id: <1365194030-28939-1-git-send-email-cody@linux.vnet.ibm.com>
+        LKML <linux-kernel@vger.kernel.org>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: [PATCH 1/3] mm/page_alloc: factor out setting of pcp->high and pcp->batch.
+Date: Fri,  5 Apr 2013 13:33:48 -0700
+Message-Id: <1365194030-28939-2-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2
+In-Reply-To: <1365194030-28939-1-git-send-email-cody@linux.vnet.ibm.com>
+References: <1365194030-28939-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040520-5806-0000-0000-0000209E80D0
+x-cbid: 13040520-3620-0000-0000-000001EA9CA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In one case while modifying the ->high and ->batch fields of per cpu pagesets
-we're unneededly using stop_machine() (patches 1 & 2), and in another we don't have any
-syncronization at all (patch 3).
+Creates pageset_set_batch() for use in setup_pageset().
+pageset_set_batch() imitates the functionality of
+setup_pagelist_highmark(), but uses the boot time
+(percpu_pagelist_fraction == 0) calculations for determining ->high
+based on ->batch.
 
-This patchset fixes both of them.
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+---
+ mm/page_alloc.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-Note that it results in a change to the behavior of zone_pcp_update(), which is
-used by memory_hotplug. I _think_ that I've diserned (and preserved) the
-essential behavior (changing ->high and ->batch), and only eliminated unneeded
-actions (draining the per cpu pages), but this may not be the case.
-
---
- mm/page_alloc.c | 63 +++++++++++++++++++++++++++------------------------------
- 1 file changed, 30 insertions(+), 33 deletions(-)
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 8fcced7..5877cf0 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4004,6 +4004,14 @@ static int __meminit zone_batchsize(struct zone *zone)
+ #endif
+ }
+ 
++/* a companion to setup_pagelist_highmark() */
++static void pageset_set_batch(struct per_cpu_pageset *p, unsigned long batch)
++{
++	struct per_cpu_pages *pcp = &p->pcp;
++	pcp->high = 6 * batch;
++	pcp->batch = max(1UL, 1 * batch);
++}
++
+ static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
+ {
+ 	struct per_cpu_pages *pcp;
+@@ -4013,8 +4021,7 @@ static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
+ 
+ 	pcp = &p->pcp;
+ 	pcp->count = 0;
+-	pcp->high = 6 * batch;
+-	pcp->batch = max(1UL, 1 * batch);
++	pageset_set_batch(p, batch);
+ 	for (migratetype = 0; migratetype < MIGRATE_PCPTYPES; migratetype++)
+ 		INIT_LIST_HEAD(&pcp->lists[migratetype]);
+ }
+@@ -4023,7 +4030,6 @@ static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
+  * setup_pagelist_highmark() sets the high water mark for hot per_cpu_pagelist
+  * to the value high for the pageset p.
+  */
+-
+ static void setup_pagelist_highmark(struct per_cpu_pageset *p,
+ 				unsigned long high)
+ {
+-- 
+1.8.2
 
