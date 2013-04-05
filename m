@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162037Ab3DEQbL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 12:31:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17624 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162015Ab3DEQbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 12:31:08 -0400
-Date: Fri, 5 Apr 2013 12:27:47 -0400
-From: David Teigland <teigland@redhat.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Subject: Re: GFS2: Pull request (fixes)
-Message-ID: <20130405162746.GD20835@redhat.com>
-References: <1365158085.2735.25.camel@menhir>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365158085.2735.25.camel@menhir>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1162054Ab3DEQb0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 12:31:26 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:52478 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1162040Ab3DEQbY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 12:31:24 -0400
+Message-ID: <1365179481.1830.69.camel@x61.thuisdomein>
+Subject: [PATCH] nfc: Remove useless Makefile line
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-wireless@vger.kernel.org, linux-nfc@ml01.01.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 05 Apr 2013 18:31:21 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Apr 2013 16:31:22.0239 (UTC) FILETIME=[022DE0F0:01CE321B]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 05, 2013 at 11:34:45AM +0100, Steven Whitehouse wrote:
-> Please consider pulling the following changes,
+There's no Kconfig symbol NFC_DEBUG. Besides, there doesn't seem to be
+any nfc code that uses a DEBUG macro. This line can safely be removed.
 
-There's some mixup here that should be cleared up first.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Untested.
 
-> David Teigland (2):
->       GFS2: Fix unlock of fcntl locks during withdrawn state
-> 
-> Steven Whitehouse (1):
->       GFS2: Fix unlock of fcntl locks during withdrawn state
+ drivers/nfc/Makefile | 2 --
+ 1 file changed, 2 deletions(-)
 
+diff --git a/drivers/nfc/Makefile b/drivers/nfc/Makefile
+index a189ada0..5b4ad00 100644
+--- a/drivers/nfc/Makefile
++++ b/drivers/nfc/Makefile
+@@ -6,5 +6,3 @@ obj-$(CONFIG_NFC_PN544)		+= pn544/
+ obj-$(CONFIG_NFC_MICROREAD)	+= microread/
+ obj-$(CONFIG_NFC_PN533)		+= pn533.o
+ obj-$(CONFIG_NFC_WILINK)	+= nfcwilink.o
+-
+-ccflags-$(CONFIG_NFC_DEBUG) := -DDEBUG
+-- 
+1.7.11.7
 
