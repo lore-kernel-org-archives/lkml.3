@@ -1,41 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162659Ab3DEVNS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 17:13:18 -0400
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:50297 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162478Ab3DEVNR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 17:13:17 -0400
-Message-ID: <515F3E6C.8050009@gmail.com>
-Date: Fri, 05 Apr 2013 17:13:16 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        kosaki.motohiro@gmail.com
-Subject: Re: [PATCH 04/10] migrate: clean up migrate_huge_page()
-References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1363983835-20184-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1363983835-20184-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	id S1162678Ab3DEVNy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 17:13:54 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:37566
+	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1162478Ab3DEVNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 17:13:53 -0400
+x-originating-ip: 72.167.245.219
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: [PATCH net,1/2] hyperv: Fix a kernel warning from netvsc_linkstatus_callback()
+Date: Fri,  5 Apr 2013 14:44:39 -0700
+Message-Id: <1365198280-23270-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(3/22/13 4:23 PM), Naoya Horiguchi wrote:
-> Due to the previous patch, soft_offline_huge_page() switches to use
-> migrate_pages(), and migrate_huge_page() is not used any more.
-> So let's remove it.
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+The warning about local_bh_enable inside IRQ happens when disconnecting a
+virtual NIC.
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+The reason for the warning is -- netif_tx_disable() is called when the NIC
+is disconnected. And it's called within irq context. netif_tx_disable() calls
+local_bh_enable() which displays warning if in irq.
 
+The fix is to remove the unnecessary netif_tx_disable & wake_queue() in the
+netvsc_linkstatus_callback().
 
+Reported-by: Richard Genoud <richard.genoud@gmail.com>
+Tested-by: Long Li <longli@microsoft.com>
+Tested-by: Richard Genoud <richard.genoud@gmail.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+
+---
+ drivers/net/hyperv/netvsc_drv.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index 5f85205..8341b62 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -241,13 +241,11 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
+ 
+ 	if (status == 1) {
+ 		netif_carrier_on(net);
+-		netif_wake_queue(net);
+ 		ndev_ctx = netdev_priv(net);
+ 		schedule_delayed_work(&ndev_ctx->dwork, 0);
+ 		schedule_delayed_work(&ndev_ctx->dwork, msecs_to_jiffies(20));
+ 	} else {
+ 		netif_carrier_off(net);
+-		netif_tx_disable(net);
+ 	}
+ }
+ 
+-- 
+1.7.4.1
 
