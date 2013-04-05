@@ -1,118 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1160994Ab3DEK1d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 06:27:33 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:39003 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890Ab3DEK1b (ORCPT
+	id S932563Ab3DEK2w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 06:28:52 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55552 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754630Ab3DEK2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 06:27:31 -0400
-Message-ID: <515EA73C.8050602@parallels.com>
-Date: Fri, 5 Apr 2013 14:28:12 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Fri, 5 Apr 2013 06:28:51 -0400
+Date: Fri, 5 Apr 2013 11:28:37 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, dp@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 1/1] regmap: cache: Make regcache_sync_block_raw static
+Message-ID: <20130405102837.GJ6597@opensource.wolfsonmicro.com>
+References: <1365066378-3384-1-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Li Zefan <lizefan@huawei.com>, <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC][PATCH 2/7] memcg: don't use mem_cgroup_get() when creating
- a kmemcg cache
-References: <515BF233.6070308@huawei.com> <515BF275.5080408@huawei.com> <20130403153133.GM16471@dhcp22.suse.cz>
-In-Reply-To: <20130403153133.GM16471@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u3bvv0EcKsvvYeex"
+Content-Disposition: inline
+In-Reply-To: <1365066378-3384-1-git-send-email-sachin.kamat@linaro.org>
+X-Cookie: Make a wish, it might come true.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/03/2013 07:31 PM, Michal Hocko wrote:
-> On Wed 03-04-13 17:12:21, Li Zefan wrote:
->> Use css_get()/css_put() instead of mem_cgroup_get()/mem_cgroup_put().
->>
->> Signed-off-by: Li Zefan <lizefan@huawei.com>
->> ---
->>  mm/memcontrol.c | 10 +++++-----
->>  1 file changed, 5 insertions(+), 5 deletions(-)
->>
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 43ca91d..dafacb8 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -3191,7 +3191,7 @@ void memcg_release_cache(struct kmem_cache *s)
->>  	list_del(&s->memcg_params->list);
->>  	mutex_unlock(&memcg->slab_caches_mutex);
->>  
->> -	mem_cgroup_put(memcg);
->> +	css_put(&memcg->css);
->>  out:
->>  	kfree(s->memcg_params);
->>  }
->> @@ -3350,16 +3350,18 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
->>  
->>  	mutex_lock(&memcg_cache_mutex);
->>  	new_cachep = cachep->memcg_params->memcg_caches[idx];
->> -	if (new_cachep)
->> +	if (new_cachep) {
->> +		css_put(&memcg->css);
->>  		goto out;
->> +	}
->>  
->>  	new_cachep = kmem_cache_dup(memcg, cachep);
->>  	if (new_cachep == NULL) {
->>  		new_cachep = cachep;
->> +		css_put(&memcg->css);
->>  		goto out;
->>  	}
->>  
->> -	mem_cgroup_get(memcg);
->>  	atomic_set(&new_cachep->memcg_params->nr_pages , 0);
->>  
->>  	cachep->memcg_params->memcg_caches[idx] = new_cachep;
->> @@ -3449,8 +3451,6 @@ static void memcg_create_cache_work_func(struct work_struct *w)
->>  
->>  	cw = container_of(w, struct create_work, work);
->>  	memcg_create_kmem_cache(cw->memcg, cw->cachep);
->> -	/* Drop the reference gotten when we enqueued. */
->> -	css_put(&cw->memcg->css);
->>  	kfree(cw);
->>  }
-> 
-> You are putting references but I do not see any single css_{try}get
-> here. /me puzzled.
-> 
 
-There are two things being done in this code:
-First, we acquired a css_ref to make sure that the underlying cgroup
-would not go away. That is a short lived reference, and it is put as
-soon as the cache is created.
-At this point, we acquire a long-lived per-cache memcg reference count
-to guarantee that the memcg will still be alive.
+--u3bvv0EcKsvvYeex
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-so it is:
+On Thu, Apr 04, 2013 at 02:36:18PM +0530, Sachin Kamat wrote:
+> regcache_sync_block_raw is used only in this file. Hence make it static.
+> Silences the following warning:
+> drivers/base/regmap/regcache.c:608:5: warning:
+> symbol 'regcache_sync_block_raw' was not declared. Should it be static?
 
-enqueue: css_get
-create : memcg_get, css_put
-destroy: css_put
+Applied, thanks.
 
-If I understand Li's patch correctly, he is not touching the first
-css_get, only turning that into the long lived reference (which was not
-possible before, since that would prevent rmdir).
+--u3bvv0EcKsvvYeex
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Then he only needs to get rid of the memcg_get, change the memcg_put to
-css_put, and get rid of the now extra css_put.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-He is issuing extra css_puts in memcg_create_kmem_cache, but only in
-failure paths. So the code reads as:
-* css_get on enqueue (already done, so not shown in patch)
-* if it fails, css_put
-* if it succeeds, don't do anything. This is already the long-lived
-reference count. put it at release time.
+iQIcBAEBAgAGBQJRXqdHAAoJELSic+t+oim9q64P/RQvSMGZA+okhCCsUQFY488Y
+h5466BUr5JN6wvJtFP0o8aziWtS4xuh+SsN4+UCG8Vd4xH/UO3iCi3RLyvEJVSi0
+4KcLbHCPSVenfCNrsgaOghX7sJlqH2lUSyXJhcgK76u6dJPpDFKYjjXtBBhKpN5B
+HTkTwaE5BjtjEXLuPHJtz56cQBHC3+4HPz4Rh0WaBQXqYnODCzNnTKv9lYzmyTmE
+haHFXN+BbHsKesZYtGg2iHC4TLTdg1zkbcqw0YV6rWsS1rWByaiLgn36DM0kPh8x
+flUhpY7MfiaOo6YOSgMxzzEopexy7sLRgJNiOvowjiuqSs5k57iTiYyhOU73n5Qg
+7p6KX6zmk+zgLNAWlGBmJHyXR2e01deNFo6U3v3Ix9gPyswyFuFVob1K0eqGLbmY
+vpaG+vghTlLJnNbQ6H+PLsUqGFPCR5WyudrJOOka1vcz8ynlFK/dupuJcxVmeSzu
+LttD6orA0xmUXlpI/oe6IIpF8rNU4u/BwqExfjcseFw/UBMToANNt5WGy0MMG1HN
+8Z2sISrucPBPWSFf+UIzo3A6pyNzIlZMBKX4hX6TiGbIfmivRB62exVwwQWsYZOG
+ptZ4kDIRO5HpsZw896ZBu28VjAYFsBt6xF2R2im5B1heqXv595ChjhCVcCB5cO9M
+kozibpUhLFcYEHG7tAhT
+=MaqT
+-----END PGP SIGNATURE-----
 
-The code looks correct, and of course, extremely simpler due to the
-use of a single reference.
-
-Li, am I right in my understanding that this is your intention?
-
+--u3bvv0EcKsvvYeex--
