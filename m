@@ -1,168 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765547Ab3DEABo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 20:01:44 -0400
-Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:31740
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1765470Ab3DEABn (ORCPT
+	id S1765624Ab3DEAFh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 20:05:37 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:59161 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765486Ab3DEAFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 20:01:43 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zz98dI9371I936eI542I1432Id799h4015Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275dhz2dh2a8h668h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Joerg Roedel <joro@8bytes.org>, Yoder Stuart-B08248 <B08248@freescale.com>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>
-Subject: RE: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu
- implementation.
-Thread-Topic: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu
- implementation.
-Thread-Index: AQHOK+8t5MYhVlGTF0iQ16GsJktLA5jDI3qAgAGvMoCAATtRIIAAKn4AgAAO3OCAAAfogIAAeVsQ
-Date: Fri, 5 Apr 2013 00:01:38 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D45AC83@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1364500442-20927-1-git-send-email-Varun.Sethi@freescale.com>
-	 <1364500442-20927-6-git-send-email-Varun.Sethi@freescale.com>
-	 <20130402161812.GI15687@8bytes.org> <1365012091.2882.252.camel@bling.home>
-	 <C5ECD7A89D1DC44195F34B25E172658D45883B@039-SN2MPN1-013.039d.mgd.msft.net>
-	 <1365088930.2882.296.camel@bling.home>
-	 <C5ECD7A89D1DC44195F34B25E172658D459471@039-SN2MPN1-013.039d.mgd.msft.net>
- <1365093819.2882.301.camel@bling.home>
-In-Reply-To: <1365093819.2882.301.camel@bling.home>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.214.249.237]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 4 Apr 2013 20:05:35 -0400
+Message-ID: <515E1548.5040801@gmail.com>
+Date: Fri, 05 Apr 2013 08:05:28 +0800
+From: Will Huck <will.huckk@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Rik van Riel <riel@redhat.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
+        Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Zlatko Calusic <zcalusic@bitsync.net>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd reclaims
+ at each priority
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-2-git-send-email-mgorman@suse.de> <20130321155705.GA27848@cmpxchg.org> <514BA04D.2090002@gmail.com> <514BD56F.6050709@redhat.com> <514BD665.5020803@gmail.com> <514BE54C.4050106@gmail.com> <514C5640.8000902@redhat.com>
+In-Reply-To: <514C5640.8000902@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3501pQW006071
 
+Hi Rik,
+On 03/22/2013 09:01 PM, Rik van Riel wrote:
+> On 03/22/2013 12:59 AM, Will Huck wrote:
+>> Hi Rik,
+>> On 03/22/2013 11:56 AM, Will Huck wrote:
+>>> Hi Rik,
+>>> On 03/22/2013 11:52 AM, Rik van Riel wrote:
+>>>> On 03/21/2013 08:05 PM, Will Huck wrote:
+>>>>
+>>>>> One offline question, how to understand this in function 
+>>>>> balance_pgdat:
+>>>>> /*
+>>>>>   * Do some background aging of the anon list, to give
+>>>>>   * pages a chance to be referenced before reclaiming.
+>>>>>   */
+>>>>> age_acitve_anon(zone, &sc);
+>>>>
+>>>> The anon lrus use a two-handed clock algorithm. New anonymous pages
+>>>> start off on the active anon list. Older anonymous pages get moved
+>>>> to the inactive anon list.
+>>>
+>>> The file lrus also use the two-handed clock algorithm, correct?
+>>
+>> After reinvestigate the codes, the answer is no. But why have this
+>> difference? I think you are the expert for this question, expect your
+>> explanation. :-)
+>
+> Anonymous memory has a smaller amount of memory (on the order
+> of system memory), most of which is or has been in a working
+> set at some point.
+>
+> File system cache tends to have two distinct sets. One part
+> are the frequently accessed files, another part are the files
+> that are accessed just once or twice.
+>
+> The file working set needs to be protected from streaming
+> IO. We do this by having new file pages start out on the
 
+Is there streaming IO workload or benchmark?
 
-> -----Original Message-----
-> From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> Sent: Thursday, April 04, 2013 10:14 PM
-> To: Sethi Varun-B16395
-> Cc: Joerg Roedel; Yoder Stuart-B08248; Wood Scott-B07421;
-> iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org; linux-
-> kernel@vger.kernel.org; galak@kernel.crashing.org;
-> benh@kernel.crashing.org
-> Subject: Re: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu
-> implementation.
-> 
-> On Thu, 2013-04-04 at 16:35 +0000, Sethi Varun-B16395 wrote:
-> >
-> > > -----Original Message-----
-> > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > > Sent: Thursday, April 04, 2013 8:52 PM
-> > > To: Sethi Varun-B16395
-> > > Cc: Joerg Roedel; Yoder Stuart-B08248; Wood Scott-B07421;
-> > > iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org;
-> > > linux- kernel@vger.kernel.org; galak@kernel.crashing.org;
-> > > benh@kernel.crashing.org
-> > > Subject: Re: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and
-> > > iommu implementation.
-> > >
-> > > On Thu, 2013-04-04 at 13:00 +0000, Sethi Varun-B16395 wrote:
-> > > >
-> > > > > -----Original Message-----
-> > > > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > > > > Sent: Wednesday, April 03, 2013 11:32 PM
-> > > > > To: Joerg Roedel
-> > > > > Cc: Sethi Varun-B16395; Yoder Stuart-B08248; Wood Scott-B07421;
-> > > > > iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org;
-> > > > > linux- kernel@vger.kernel.org; galak@kernel.crashing.org;
-> > > > > benh@kernel.crashing.org
-> > > > > Subject: Re: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver
-> > > > > and iommu implementation.
-> > > > >
-> > > > > On Tue, 2013-04-02 at 18:18 +0200, Joerg Roedel wrote:
-> > > > > > Cc'ing Alex Williamson
-> > > > > >
-> > > > > > Alex, can you please review the iommu-group part of this patch?
-> > > > >
-> > > > > Sure, it looks pretty reasonable.  AIUI, all PCI devices are
-> > > > > below some kind of host bridge that is either new and supports
-> > > > > partitioning or old and doesn't.  I don't know if that's a
-> > > > > visibility or isolation requirement, perhaps PCI ACS-ish.  In
-> > > > > the new host bridge case, each device gets a group.  This seems
-> > > > > not to have any quirks for multifunction devices though.  On AMD
-> > > > > and Intel IOMMUs we test multifunction device ACS support to
-> > > > > determine whether all the functions should be in the same group.
-> > > > > Is there any reason
-> > > to trust multifunction devices on PAMU?
-> > > > >
-> > > > [Sethi Varun-B16395] In the case where we can partition endpoints
-> > > > we can distinguish transactions based on the bus,device,function
-> > > > number combination. This support is available in the PCIe
-> > > > controller (host bridge).
-> > >
-> > > So can x86 IOMMUs, that's the visibility aspect of IOMMU groups.
-> > > Visibility alone doesn't necessarily imply that a device is isolated
-> > > though.  A multifunction PCI device that doesn't expose ACS support
-> > > may not isolate functions from each other.  For example a
-> > > peer-to-peer DMA between functions may not be translated by the
-> > > upstream IOMMU.  IOMMU groups should encompass both visibility and
-> isolation.
-> > [Sethi Varun-B16395] We can isolate the DMA access to the host based
-> > on the to the pci bus,device,function number.
-> 
-> The IOMMU can only isolate DMA that it can see.  A multifunction device
-> may never expose peer-to-peer DMA to the upstream device, it's
-> implementation specific.  The ACS flags allow that possibility to be
-> controlled and prevented.
-> 
-> > I thought that was enough to put devices in to separate iommu groups.
-> > This is a PCIe controller property which allows us to partition PCIe
-> > devices. But, what I can understand from your point is that we also
-> > need to consider isolation at PCIe device level as well. I will check
-> > for the case of multifunction devices.
-> >
-> > >
-> > > > > I also find it curious what happens to the iommu group of the
-> > > > > host bridge.  In the partitionable case the host bridge group is
-> > > > > removed, in the non-partitionable case the host bridge group
-> > > > > becomes the group for the children, removing the host bridge.
-> > > > > It's unique to PAMU so far that these host bridges are even in
-> > > > > an iommu group (x86 only adds pci devices), but I don't see it
-> > > > > as necessarily wrong leaving it in either scenario.  Does it
-> > > > > solve some problem to remove
-> > > them from the groups?
-> > > > > Thanks,
-> > > > [Sethi Varun-B16395] The PCIe controller isn't a partitionable
-> > > > entity, it would always be owned by the host.
-> > >
-> > > Ownership of a device shouldn't play into the group context.  An
-> > > IOMMU group should be defined by it's visibility and isolation from
-> > > other devices.  Whether the PCIe controller is allowed to be handed
-> > > to userspace is a question for VFIO.
-> > [Sethi Varun-B16395] The problem is in the case, where we can't
-> > partition PCIe devices. PCIe devices share the same device group as
-> > the PCI controller. This becomes a problem while assigning the devices
-> > to the guest, as you are required to unbind all the PCIe devices
-> > including the controller from the host. PCIe controller can't be
-> > unbound from the host, so we simply delete the controller iommu_group.
-> 
-> Unbinding devices is a VFIO implementation, it shouldn't leak into IOMMU
-> groups.  Also note that VFIO has a driver white list where we can have
-> exceptions to the rule.  I recently added pciehp to that list because the
-> host driver provides functionality.  Being attached to the host driver
-> means the device is not accessible to the user through VFIO, but other
-> devices in the group are.  Thanks,
-> 
-Also, as Stuart pointed out the PCIe controller aren't the actual DMA devices (endpoints are the actual DMA devices). So, we remove the device group allocated for the PCIe controllers.
+> inactive file list, and only promoted to the active file
+> list if they get accessed twice.
+>
+>
 
--Varun
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
