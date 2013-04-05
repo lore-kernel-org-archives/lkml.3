@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519Ab3DEGqb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 02:46:31 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:64060 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab3DEGq3 (ORCPT
+	id S932583Ab3DEGrA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 02:47:00 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:39095 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab3DEGq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 02:46:29 -0400
+	Fri, 5 Apr 2013 02:46:59 -0400
+Date: Fri, 5 Apr 2013 08:46:54 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        akpm@linux-foundation.org, tglx@linutronix.de, eranian@google.com,
+        torvalds@linux-foundation.org
+Subject: Re: Basic perf PMU support for Haswell v10
+Message-ID: <20130405064654.GA25936@gmail.com>
+References: <1363895995-12967-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-In-Reply-To: <027e8f1d4ac8de6351115f15a408431558510abb.1365079581.git.viresh.kumar@linaro.org>
-References: <cover.1365079581.git.viresh.kumar@linaro.org>
-	<027e8f1d4ac8de6351115f15a408431558510abb.1365079581.git.viresh.kumar@linaro.org>
-Date: Fri, 5 Apr 2013 12:16:27 +0530
-Message-ID: <CAKohpokGkZ9m0v1QaoXEv1m0mZqY70adWpXf3edQGmZnToRRcg@mail.gmail.com>
-Subject: Re: [PATCH 17/18] cpufreq: powerpc: move cpufreq driver to drivers/cpufreq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl, deepthi@linux.vnet.ibm.com
-Cc: robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Olof Johansson <olof@lixom.net>,
-        linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363895995-12967-1-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 April 2013 18:24, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> This patch moves cpufreq driver of powerpc platform to drivers/cpufreq.
->
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: linuxppc-dev@lists.ozlabs.org
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> Compile Tested only.
->
->  arch/powerpc/platforms/Kconfig                     | 31 ----------------------
->  arch/powerpc/platforms/pasemi/Makefile             |  1 -
->  arch/powerpc/platforms/powermac/Makefile           |  2 --
->  drivers/cpufreq/Kconfig.powerpc                    | 26 ++++++++++++++++++
->  drivers/cpufreq/Makefile                           |  3 +++
->  .../cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c  |  0
->  .../cpufreq/pmac32-cpufreq.c                       |  0
->  .../cpufreq/pmac64-cpufreq.c                       |  0
->  8 files changed, 29 insertions(+), 34 deletions(-)
->  rename arch/powerpc/platforms/pasemi/cpufreq.c => drivers/cpufreq/pasemi-cpufreq.c (100%)
->  rename arch/powerpc/platforms/powermac/cpufreq_32.c => drivers/cpufreq/pmac32-cpufreq.c (100%)
->  rename arch/powerpc/platforms/powermac/cpufreq_64.c => drivers/cpufreq/pmac64-cpufreq.c (100%)
 
-Hi Deepthi,
+* Andi Kleen <andi@firstfloor.org> wrote:
 
-Can you help testing this please?
+> This is based on v7 of the full Haswell PMU support,
+
+This series looks mostly good - I've got two requests:
+
+ - please rename intx -> in_tx, INTX -> IN_TX, as 'intx' is confusing
+
+ - please port to the latest tip:master (or perf/core), as the underlying
+   code changed meanwhile, creating conflicts.
+
+Thanks,
+
+	Ingo
