@@ -1,154 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161829Ab3DEIbU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 04:31:20 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45377 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799Ab3DEIbR (ORCPT
+	id S1161907Ab3DEIh0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 04:37:26 -0400
+Received: from cmexedge1.ext.emulex.com ([138.239.224.99]:58900 "EHLO
+	CMEXEDGE1.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470Ab3DEIhY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 04:31:17 -0400
-X-AuditID: 9c930197-b7b50ae00000018c-bd-515e8bd0fe23
-Date: Fri, 5 Apr 2013 17:31:12 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Simon Jeons <simon.jeons@gmail.com>, Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Ying Han <yinghan@google.com>,
-        Christoph Lameter <cl@linux.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2, RFC 20/30] ramfs: enable transparent huge page cache
-Message-ID: <20130405083112.GD32126@blaptop>
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1363283435-7666-21-git-send-email-kirill.shutemov@linux.intel.com>
- <20130402162813.0B4CBE0085@blue.fi.intel.com>
- <alpine.LNX.2.00.1304021422460.19363@eggly.anvils>
- <20130403011104.GF16026@blaptop>
- <515E737D.8030204@gmail.com>
- <20130405080106.GB32126@blaptop>
- <515e89d2.e725320a.3a74.7fe7SMTPIN_ADDED_BROKEN@mx.google.com>
+	Fri, 5 Apr 2013 04:37:24 -0400
+From: "Perla, Sathya" <Sathya.Perla@Emulex.Com>
+To: David Miller <davem@davemloft.net>,
+        "ivecera@redhat.com" <ivecera@redhat.com>
+CC: "craig.hada@hp.com" <craig.hada@hp.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Seetharaman, Subramanian" <subbu.seetharaman@Emulex.Com>,
+        "Khaparde, Ajit" <Ajit.Khaparde@Emulex.Com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2 net-next] drivers/net: Enable IOMMU pass through for
+ be2net
+Thread-Topic: [PATCH v2 net-next] drivers/net: Enable IOMMU pass through for
+ be2net
+Thread-Index: AQHN9exzgQ95vzcl2EOGCHA2SRVWSZhQciKAgHe8GwCAAAk7gP//jUfg
+Date: Fri, 5 Apr 2013 08:37:19 +0000
+Message-ID: <bc200e62-f150-4235-832e-e73546738b48@CMEXHTCAS1.ad.emulex.com>
+References: <1358562195-2028-1-git-send-email-craig.hada@hp.com>
+	<1358562195-2028-2-git-send-email-craig.hada@hp.com>
+	<515E827C.3070702@redhat.com>
+ <20130405.042427.456273365605730206.davem@davemloft.net>
+In-Reply-To: <20130405.042427.456273365605730206.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [138.239.140.87]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515e89d2.e725320a.3a74.7fe7SMTPIN_ADDED_BROKEN@mx.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wanpeng,
-
-On Fri, Apr 05, 2013 at 04:22:17PM +0800, Wanpeng Li wrote:
-> On Fri, Apr 05, 2013 at 05:01:06PM +0900, Minchan Kim wrote:
-> >On Fri, Apr 05, 2013 at 02:47:25PM +0800, Simon Jeons wrote:
-> >> Hi Minchan,
-> >> On 04/03/2013 09:11 AM, Minchan Kim wrote:
-> >> >On Tue, Apr 02, 2013 at 03:15:23PM -0700, Hugh Dickins wrote:
-> >> >>On Tue, 2 Apr 2013, Kirill A. Shutemov wrote:
-> >> >>>Kirill A. Shutemov wrote:
-> >> >>>>From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> >> >>>>
-> >> >>>>ramfs is the most simple fs from page cache point of view. Let's start
-> >> >>>>transparent huge page cache enabling here.
-> >> >>>>
-> >> >>>>For now we allocate only non-movable huge page. It's not yet clear if
-> >> >>>>movable page is safe here and what need to be done to make it safe.
-> >> >>>>
-> >> >>>>Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> >> >>>>---
-> >> >>>>  fs/ramfs/inode.c |    6 +++++-
-> >> >>>>  1 file changed, 5 insertions(+), 1 deletion(-)
-> >> >>>>
-> >> >>>>diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
-> >> >>>>index c24f1e1..da30b4f 100644
-> >> >>>>--- a/fs/ramfs/inode.c
-> >> >>>>+++ b/fs/ramfs/inode.c
-> >> >>>>@@ -61,7 +61,11 @@ struct inode *ramfs_get_inode(struct super_block *sb,
-> >> >>>>  		inode_init_owner(inode, dir, mode);
-> >> >>>>  		inode->i_mapping->a_ops = &ramfs_aops;
-> >> >>>>  		inode->i_mapping->backing_dev_info = &ramfs_backing_dev_info;
-> >> >>>>-		mapping_set_gfp_mask(inode->i_mapping, GFP_HIGHUSER);
-> >> >>>>+		/*
-> >> >>>>+		 * TODO: what should be done to make movable safe?
-> >> >>>>+		 */
-> >> >>>>+		mapping_set_gfp_mask(inode->i_mapping,
-> >> >>>>+				GFP_TRANSHUGE & ~__GFP_MOVABLE);
-> >> >>>Hugh, I've found old thread with the reason why we have GFP_HIGHUSER here, not
-> >> >>>GFP_HIGHUSER_MOVABLE:
-> >> >>>
-> >> >>>http://lkml.org/lkml/2006/11/27/156
-> >> >>>
-> >> >>>It seems the origin reason is not longer valid, correct?
-> >> >>Incorrect, I believe: so far as I know, the original reason remains
-> >> >>valid - though it would only require a couple of good small changes
-> >> >>to reverse that - or perhaps you have already made these changes?
-> >> >>
-> >> >>The original reason is that ramfs pages are not migratable,
-> >> >>therefore they should be allocated from an unmovable area.
-> >> >>
-> >> >>As I understand it (and I would have preferred to run a test to check
-> >> >>my understanding before replying, but don't have time for that), ramfs
-> >> >>pages cannot be migrated for two reasons, neither of them a good reason.
-> >> >>
-> >> >>One reason (okay, it wouldn't have been quite this way in 2006) is that
-> >> >>ramfs (rightly) calls mapping_set_unevictable(), so its pages will fail
-> >> >>the page_evictable() test, so they will be marked PageUnevictable, so
-> >> >>__isolate_lru_page() will refuse to isolate them for migration (except
-> >> >>for CMA).
-> >> >True.
-> >> >
-> >> >>I am strongly in favour of removing that limitation from
-> >> >>__isolate_lru_page() (and the thread you pointed - thank you - shows Mel
-> >> >>and Christoph were both in favour too); and note that there is no such
-> >> >>restriction in the confusingly similar but different isolate_lru_page().
-> >> >>
-> >> >>Some people do worry that migrating Mlocked pages would introduce the
-> >> >>occasional possibility of a minor fault (with migration_entry_wait())
-> >> >>on an Mlocked region which never faulted before.  I tend to dismiss
-> >> >>that worry, but maybe I'm wrong to do so: maybe there should be a
-> >> >>tunable for realtimey people to set, to prohibit page migration from
-> >> >>mlocked areas; but the default should be to allow it.
-> >> >I agree.
-> >> >Just FYI for mlocked page migration
-> >> >
-> >> >I tried migratioin of mlocked page and Johannes and Mel had a concern
-> >> >about that.
-> >> >http://lkml.indiana.edu/hypermail/linux/kernel/1109.0/00175.html
-> >> >
-> >> >But later, Peter already acked it and I guess by reading the thread that
-> >> >Hugh was in favour when page migration was merged first time.
-> >> >
-> >> >http://marc.info/?l=linux-mm&m=133697873414205&w=2
-> >> >http://marc.info/?l=linux-mm&m=133700341823358&w=2
-> >> >
-> >> >Many people said mlock means memory-resident, NOT pinning so it could
-> >> >allow minor fault while Mel still had a concern except CMA.
-> >> >http://marc.info/?l=linux-mm&m=133674219714419&w=2
-> >> 
-> >> How about add a knob?
-> >
-> >Maybe, volunteering?
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
 > 
-> Hi Minchan,
+> From: Ivan Vecera <ivecera@redhat.com>
+> Date: Fri, 05 Apr 2013 09:51:24 +0200
 > 
-> I can be the volunteer, what I care is if add a knob make sense?
+> > Dave, I'd like to ask when do you plan to apply this patch?
+> 
+> I'm waiting for the be2net driver maintainers to integrate it and resend it to
+> me, they're usually very good about that.
 
-Frankly sepaking, I'd like to avoid new knob but there might be
-some workloads suffered from mlocked page migration so we coudn't
-dismiss it. In such case, introducing the knob would be a solution
-with default enabling. If we don't have any report for a long time,
-we can remove the knob someday, IMHO.
-
-Thanks.
-
--- 
-Kind regards,
-Minchan Kim
+Ok, I'll do it and send out a patch soon...thanks!
