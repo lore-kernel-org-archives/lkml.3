@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161514Ab3DEJhY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 05:37:24 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:12694 "EHLO song.cn.fujitsu.com"
+	id S1161575Ab3DEJh5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 05:37:57 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:9629 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1161326Ab3DEJhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 05:37:18 -0400
+	id S1161446Ab3DEJhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 05:37:23 -0400
 X-IronPort-AV: E=Sophos;i="4.87,413,1363104000"; 
-   d="scan'208";a="7001884"
+   d="scan'208";a="7001891"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
         yinghai@kernel.org, akpm@linux-foundation.org, wency@cn.fujitsu.com,
@@ -20,54 +20,97 @@ To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
         guz.fnst@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 01/11] x86: get pg_data_t's memory from other node
-Date: Fri, 5 Apr 2013 17:39:51 +0800
-Message-Id: <1365154801-473-2-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH 10/11] x86, numa, acpi, memory-hotplug: make movablemem_map have higher priority
+Date: Fri, 5 Apr 2013 17:40:00 +0800
+Message-Id: <1365154801-473-11-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1365154801-473-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1365154801-473-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/05 17:36:09,
+ 2013/04/05 17:36:10,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/05 17:36:11,
-	Serialize complete at 2013/04/05 17:36:11
+ 2013/04/05 17:36:12,
+	Serialize complete at 2013/04/05 17:36:12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+If kernelcore or movablecore is specified at the same time with
+movablemem_map, movablemem_map will have higher priority to be
+satisfied.  This patch will make find_zone_movable_pfns_for_nodes()
+calculate zone_movable_pfn[] with the limit from zone_movable_limit[].
 
-If system can create movable node which all memory of the
-node is allocated as ZONE_MOVABLE, setup_node_data() cannot
-allocate memory for the node's pg_data_t.
-So, use memblock_alloc_try_nid() instead of memblock_alloc_nid()
-to retry when the first allocation fails.
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
+Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Tested-by: Lin Feng <linfeng@cn.fujitsu.com>
 ---
- arch/x86/mm/numa.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ mm/page_alloc.c |   28 +++++++++++++++++++++++++---
+ 1 files changed, 25 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 11acdf6..4f754e6 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -214,10 +214,9 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
- 	 * Allocate node data.  Try node-local memory and then any node.
- 	 * Never allocate in DMA zone.
- 	 */
--	nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
-+	nd_pa = memblock_alloc_try_nid(nd_size, SMP_CACHE_BYTES, nid);
- 	if (!nd_pa) {
--		pr_err("Cannot find %zu bytes in node %d\n",
--		       nd_size, nid);
-+		pr_err("Cannot find %zu bytes in any node\n", nd_size);
- 		return;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index f800aec..5db286f 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4872,9 +4872,17 @@ static void __init find_zone_movable_pfns_for_nodes(void)
+ 		required_kernelcore = max(required_kernelcore, corepages);
  	}
- 	nd = __va(nd_pa);
+ 
+-	/* If kernelcore was not specified, there is no ZONE_MOVABLE */
+-	if (!required_kernelcore)
++	/*
++	 * If neither kernelcore/movablecore nor movablemem_map is specified,
++	 * there is no ZONE_MOVABLE. But if movablemem_map is specified, the
++	 * start pfn of ZONE_MOVABLE has been stored in zone_movable_limit[].
++	 */
++	if (!required_kernelcore) {
++		if (movablemem_map.nr_map)
++			memcpy(zone_movable_pfn, zone_movable_limit,
++				sizeof(zone_movable_pfn));
+ 		goto out;
++	}
+ 
+ 	/* usable_startpfn is the lowest possible pfn ZONE_MOVABLE can be at */
+ 	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
+@@ -4904,10 +4912,24 @@ restart:
+ 		for_each_mem_pfn_range(i, nid, &start_pfn, &end_pfn, NULL) {
+ 			unsigned long size_pages;
+ 
++			/*
++			 * Find more memory for kernelcore in
++			 * [zone_movable_pfn[nid], zone_movable_limit[nid]).
++			 */
+ 			start_pfn = max(start_pfn, zone_movable_pfn[nid]);
+ 			if (start_pfn >= end_pfn)
+ 				continue;
+ 
++			if (zone_movable_limit[nid]) {
++				end_pfn = min(end_pfn, zone_movable_limit[nid]);
++				/* No range left for kernelcore in this node */
++				if (start_pfn >= end_pfn) {
++					zone_movable_pfn[nid] =
++							zone_movable_limit[nid];
++					break;
++				}
++			}
++
+ 			/* Account for what is only usable for kernelcore */
+ 			if (start_pfn < usable_startpfn) {
+ 				unsigned long kernel_pages;
+@@ -4967,12 +4989,12 @@ restart:
+ 	if (usable_nodes && required_kernelcore > usable_nodes)
+ 		goto restart;
+ 
++out:
+ 	/* Align start of ZONE_MOVABLE on all nids to MAX_ORDER_NR_PAGES */
+ 	for (nid = 0; nid < MAX_NUMNODES; nid++)
+ 		zone_movable_pfn[nid] =
+ 			roundup(zone_movable_pfn[nid], MAX_ORDER_NR_PAGES);
+ 
+-out:
+ 	/* restore the node_state */
+ 	node_states[N_MEMORY] = saved_node_state;
+ }
 -- 
 1.7.1
 
