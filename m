@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161547Ab3DELC2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 07:02:28 -0400
-Received: from a2s31.a2hosting.com ([216.119.140.66]:38885 "EHLO
-	a2s31.a2hosting.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab3DELC1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 07:02:27 -0400
-X-Greylist: delayed 4147 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Apr 2013 07:02:27 EDT
-Message-ID: <515E9F0C.1000204@biovista.com>
-Date: Fri, 05 Apr 2013 12:53:16 +0300
-From: Vassilis Virvilis <v.virvilis@biovista.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S1161567Ab3DELGU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 07:06:20 -0400
+Received: from 8bytes.org ([85.214.48.195]:58970 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756626Ab3DELGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 07:06:19 -0400
+Date: Fri, 5 Apr 2013 13:06:16 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Takao Indoh <indou.takao@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org, kexec@lists.infradead.org
+Subject: Re: [PATCH] intel-iommu: Synchronize gcmd value with global command
+ register
+Message-ID: <20130405110616.GB6858@8bytes.org>
+References: <1363829556-2128-1-git-send-email-indou.takao@jp.fujitsu.com>
+ <20130326144629.GB2727@8bytes.org>
+ <51527D74.9080209@jp.fujitsu.com>
+ <20130327103122.GK30540@8bytes.org>
+ <51591EEE.60401@jp.fujitsu.com>
+ <20130402140546.GA15687@8bytes.org>
+ <515BD638.8070307@jp.fujitsu.com>
+ <1364977479.28127.15.camel@i7.infradead.org>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Debugging COW (copy on write) memory after fork: Is it possible to
- dump only the private anonymous memory of a process?
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - a2s31.a2hosting.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - biovista.com
-X-Get-Message-Sender-Via: a2s31.a2hosting.com: authenticated_id: v.virvilis@biovista.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364977479.28127.15.camel@i7.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Apr  5 13:06:17 2013
+X-DSPAM-Confidence: 0.9988
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 515eb02923671406512840
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, sorry if this is off topic. Just point me to the right direction. 
-Please cc me also in the reply.
+On Wed, Apr 03, 2013 at 09:24:39AM +0100, David Woodhouse wrote:
+> On Wed, 2013-04-03 at 16:11 +0900, Takao Indoh wrote:
+> > Yeah, you are right. I forgot such a case.
+> 
+> If you disable translation and there's some device still doing DMA, it's
+> going to scribble over random areas of memory. You really want to have
+> translation enabled and all the page tables *cleared*, during kexec. I
+> think it's fair to insist that the secondary kernel should use the IOMMU
+> if the first one did.
 
-Question
---------
+Do we really need to insist on that? The IOMMU initialization on x86
+happens after the kernel scanned and enumerated the PCI bus. While doing
+this the kernel (at least it should) disables all devices it finds. So
+when the IOMMU init code runs we should be safe from any in-flight DMA
+and can either disable translation or re-initialize it for the kdump
+kernel. Until then translation needs to stay enabled of course, so that
+the old page-tables are still used and in-flight DMA doesn't corrupt
+any data.
 
-Is it possible to dump only the private anonymous memory of a process?
 
-Background
-----------
+	Joerg
 
-I have a process where it reads and it initializes a large portion of 
-the memory (around 2.3GB). This memory is effectively read only from 
-that point and on. After the initialization I fork the process to 
-several children in order to take advantage of the multicore 
-architecture of modern cpus. The problem is that finally the program 
-ends up requiring number_of_process * 2.3GB memory effectively entering 
-swap thrashing and destroying the performance.
-
-Steps so far
-------------
-
-The first thing I did is to monitor the memory. I found about 
-/proc/$pid/smaps and the http://wingolog.org/pub/mem_usage.py.
-
-What happens is the following
-
-     The program starts reads from disk and has 2.3GB of private mappings
-     The program forks. Immediately the 2.3GB become shared mapping 
-between the parent and the child. Excellent so far.
-     As the time goes and the child starts performing its tasks the 
-shared memory is slowly migrating to the private mappings of each 
-process effectively blowing up the memory requirements.
-
-I thought that if I could see (dump) the private mappings of each 
-process I could see from the data why the shared mappings are being 
-touched so I tried to dump the core with gcore and by playing with 
-/proc/$pid/coredump_filter like this
-
-echo 0x1 > /proc/$pid/coredump_filter
-gcore $pid
-
-Unfortunately it always dumps 2.3GB despite the setting in 
-/proc/$pid/coredump_filter which says private anonymous mappings.
-
-I have researched the question in google.
-
-I even posted it in stack overflow.
-
-Any other ideas?
-
-Thanks in advance
-
-	Vassilis Virvilis
 
