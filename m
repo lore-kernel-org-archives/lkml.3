@@ -1,148 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161546Ab3DEGrh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 02:47:37 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:63090 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab3DEGrf (ORCPT
+	id S1161694Ab3DEGsk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 02:48:40 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:60499 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765390Ab3DEGsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 02:47:35 -0400
-Message-ID: <515E737D.8030204@gmail.com>
-Date: Fri, 05 Apr 2013 14:47:25 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Hugh Dickins <hughd@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Ying Han <yinghan@google.com>,
-        Christoph Lameter <cl@linux.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2, RFC 20/30] ramfs: enable transparent huge page cache
-References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-21-git-send-email-kirill.shutemov@linux.intel.com> <20130402162813.0B4CBE0085@blue.fi.intel.com> <alpine.LNX.2.00.1304021422460.19363@eggly.anvils> <20130403011104.GF16026@blaptop>
-In-Reply-To: <20130403011104.GF16026@blaptop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 5 Apr 2013 02:48:36 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-b9-515e73be3334
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Viresh Kumar'" <viresh.kumar@linaro.org>, rjw@sisk.pl
+Cc: robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, "'Ben Dooks'" <ben-linux@fluff.org>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+References: <cover.1365079581.git.viresh.kumar@linaro.org>
+ <927100d30bf40d4fec477cc7d8d464669a22d167.1365079581.git.viresh.kumar@linaro.org>
+In-reply-to: <927100d30bf40d4fec477cc7d8d464669a22d167.1365079581.git.viresh.kumar@linaro.org>
+Subject: RE: [PATCH 07/18] cpufreq: s3c24xx: move cpufreq driver to
+ drivers/cpufreq
+Date: Fri, 05 Apr 2013 15:48:29 +0900
+Message-id: <2a5901ce31c9$95160980$bf421c80$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4xM8d4hpaY03aLTXOLuSqGN7eoZwAlQAFw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t8zA919xXGBBvNOc1m87p7NajFp3QEm
+	i409n9ktnjb9YLd4f+gZs8Wmx9dYLS7vmsNm8bn3CKPFjPP7mCwOLG1nsZhy+AuLRf/CXiaL
+	z4d3sVusvfsUqPerhwO/x5p5axg9/q56wexx59oeNo/NS+o9bv97zOzxaHELo8fnTXIB7FFc
+	NimpOZllqUX6dglcGZcbbrAWdIpVrPpxjqmBcZdgFyMnh4SAicTWRZ1sELaYxIV764FsLg4h
+	gWWMEvP+dTDBFH2euZsJIrGIUWLtpgdQzl9GidU75zCCVLEJaEgcfv+MHcQWEbCUmNH8Eayb
+	WeAnk8SmpXEQDX2MEos+vwdLcAokSKxr+APUzMEhLBAqsfuMKUiYRUBVYsbGN2BzeAVsJa5O
+	/A1lC0r8mHyPBWKmlsT6nceh5stLbF7zlhlkjISAusSjv7ogpoiAkcT56XIQFSIS+168YwS5
+	QEJgLYfE+VtXGSFWCUh8m3yIBaJVVmLTAWaIfyUlDq64wTKBUWIWksWzkCyehWTxLCQrFjCy
+	rGIUTS1ILihOSi8y1itOzC0uzUvXS87P3cQISQ79OxjvHrA+xJgMtH4is5Rocj4wueSVxBsa
+	mxlZmJqYGhuZW5qRJqwkzqvWYh0oJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgXFG677zi3Z9
+	cXdZ4F1lu1hj+SOlZg0doYgDzed/1bH0PWip5i9JEOvqL/nu7qkxSzTl9rZ/Ge11S+42Fwix
+	L4pkPzl5mUyiy9QnL4ojXKUC5x0qds4+Jfj1wB7b13MYZpvzem+rnlUV+On5B5nrFz7Z5/Re
+	1z326tHVS1m77tVe6FXwuHdP/rISS3FGoqEWc1FxIgCyHmubJAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHKsWRmVeSWpSXmKPExsVy+t9jAd19xXGBBg3/mC1ed89mtZi07gCT
+	xcaez+wWT5t+sFu8P/SM2WLT42usFpd3zWGz+Nx7hNFixvl9TBYHlrazWEw5/IXFon9hL5PF
+	58O72C3W3n0K1PvVw4HfY828NYwef1e9YPa4c20Pm8fmJfUet/89ZvZ4tLiF0ePzJrkA9qgG
+	RpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoLuVFMoS
+	c0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYR1jBmXG26wFnSKVaz6cY6pgXGXYBcj
+	J4eEgInE55m7mSBsMYkL99azdTFycQgJLGKUWLvpAROE85dRYvXOOYwgVWwCGhKH3z9jB7FF
+	BCwlZjR/BOtmFvjJJLFpaRxEQx+jxKLP78ESnAIJEusa/gA1c3AIC4RK7D5jChJmEVCVmLHx
+	DdgcXgFbiasTf0PZghI/Jt9jgZipJbF+53Go+fISm9e8ZQYZIyGgLvHory6IKSJgJHF+uhxE
+	hYjEvhfvGCcwCs1CMmgWkkGzkAyahaRlASPLKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzg
+	1PNMagfjygaLQ4wCHIxKPLwZfbGBQqyJZcWVuYcYJTiYlUR4d/LFBQrxpiRWVqUW5ccXleak
+	Fh9iTAb6cyKzlGhyPjAt5pXEGxqbmBlZGplZGJmYm5MmrCTOe6DVOlBIID2xJDU7NbUgtQhm
+	CxMHp1QDY1r76Sjz5zKswvLKLa4XBfrOB0933up2aHag0onaq0WWNy83zQjeVLRE6fL5+194
+	VmVe93+2lbW/m2+2aOdv/2O3YgLu5C6vkQ551cJ66xSrGcthM7eOeWZCX7t61KYL1VeJG1u8
+	F/Cac27T96PuLNtl0xensZw4u9q/QZWhc7HSI8uppUq+SizFGYmGWsxFxYkA9DS464EDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
-On 04/03/2013 09:11 AM, Minchan Kim wrote:
-> On Tue, Apr 02, 2013 at 03:15:23PM -0700, Hugh Dickins wrote:
->> On Tue, 2 Apr 2013, Kirill A. Shutemov wrote:
->>> Kirill A. Shutemov wrote:
->>>> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->>>>
->>>> ramfs is the most simple fs from page cache point of view. Let's start
->>>> transparent huge page cache enabling here.
->>>>
->>>> For now we allocate only non-movable huge page. It's not yet clear if
->>>> movable page is safe here and what need to be done to make it safe.
->>>>
->>>> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
->>>> ---
->>>>   fs/ramfs/inode.c |    6 +++++-
->>>>   1 file changed, 5 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
->>>> index c24f1e1..da30b4f 100644
->>>> --- a/fs/ramfs/inode.c
->>>> +++ b/fs/ramfs/inode.c
->>>> @@ -61,7 +61,11 @@ struct inode *ramfs_get_inode(struct super_block *sb,
->>>>   		inode_init_owner(inode, dir, mode);
->>>>   		inode->i_mapping->a_ops = &ramfs_aops;
->>>>   		inode->i_mapping->backing_dev_info = &ramfs_backing_dev_info;
->>>> -		mapping_set_gfp_mask(inode->i_mapping, GFP_HIGHUSER);
->>>> +		/*
->>>> +		 * TODO: what should be done to make movable safe?
->>>> +		 */
->>>> +		mapping_set_gfp_mask(inode->i_mapping,
->>>> +				GFP_TRANSHUGE & ~__GFP_MOVABLE);
->>> Hugh, I've found old thread with the reason why we have GFP_HIGHUSER here, not
->>> GFP_HIGHUSER_MOVABLE:
->>>
->>> http://lkml.org/lkml/2006/11/27/156
->>>
->>> It seems the origin reason is not longer valid, correct?
->> Incorrect, I believe: so far as I know, the original reason remains
->> valid - though it would only require a couple of good small changes
->> to reverse that - or perhaps you have already made these changes?
->>
->> The original reason is that ramfs pages are not migratable,
->> therefore they should be allocated from an unmovable area.
->>
->> As I understand it (and I would have preferred to run a test to check
->> my understanding before replying, but don't have time for that), ramfs
->> pages cannot be migrated for two reasons, neither of them a good reason.
->>
->> One reason (okay, it wouldn't have been quite this way in 2006) is that
->> ramfs (rightly) calls mapping_set_unevictable(), so its pages will fail
->> the page_evictable() test, so they will be marked PageUnevictable, so
->> __isolate_lru_page() will refuse to isolate them for migration (except
->> for CMA).
-> True.
->
->> I am strongly in favour of removing that limitation from
->> __isolate_lru_page() (and the thread you pointed - thank you - shows Mel
->> and Christoph were both in favour too); and note that there is no such
->> restriction in the confusingly similar but different isolate_lru_page().
->>
->> Some people do worry that migrating Mlocked pages would introduce the
->> occasional possibility of a minor fault (with migration_entry_wait())
->> on an Mlocked region which never faulted before.  I tend to dismiss
->> that worry, but maybe I'm wrong to do so: maybe there should be a
->> tunable for realtimey people to set, to prohibit page migration from
->> mlocked areas; but the default should be to allow it.
-> I agree.
-> Just FYI for mlocked page migration
->
-> I tried migratioin of mlocked page and Johannes and Mel had a concern
-> about that.
-> http://lkml.indiana.edu/hypermail/linux/kernel/1109.0/00175.html
->
-> But later, Peter already acked it and I guess by reading the thread that
-> Hugh was in favour when page migration was merged first time.
->
-> http://marc.info/?l=linux-mm&m=133697873414205&w=2
-> http://marc.info/?l=linux-mm&m=133700341823358&w=2
->
-> Many people said mlock means memory-resident, NOT pinning so it could
-> allow minor fault while Mel still had a concern except CMA.
-> http://marc.info/?l=linux-mm&m=133674219714419&w=2
+Viresh Kumar wrote:
+> 
+> This patch moves cpufreq driver of Samsung's ARM based s3c24xx platform to
+> drivers/cpufreq.
+> 
+> Cc: Ben Dooks <ben-linux@fluff.org>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> Cc: linux-samsung-soc@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  arch/arm/Kconfig                                   | 46 ---------------
+>  arch/arm/mach-s3c24xx/Kconfig                      | 66
++++++++++-------------
+>  arch/arm/mach-s3c24xx/Makefile                     |  6 --
+>  arch/arm/mach-s3c24xx/{ => include/mach}/s3c2412.h |  0
+>  arch/arm/mach-s3c24xx/iotiming-s3c2412.c           |  2 +-
+>  arch/arm/plat-samsung/include/plat/cpu-freq-core.h | 10 ++--
+>  arch/arm/plat-samsung/include/plat/cpu-freq.h      |  6 +-
+>  drivers/cpufreq/Kconfig.arm                        | 58
++++++++++++++++++++
+>  drivers/cpufreq/Makefile                           |  5 ++
+>  .../cpufreq/s3c2410-cpufreq.c                      |  0
+>  .../cpufreq/s3c2412-cpufreq.c                      |  3 +-
+>  .../cpufreq/s3c2440-cpufreq.c                      |  0
+>  .../cpufreq/s3c24xx-cpufreq-debugfs.c              |  0
+>  .../cpufreq.c => drivers/cpufreq/s3c24xx-cpufreq.c |  0
+>  14 files changed, 100 insertions(+), 102 deletions(-)
+>  rename arch/arm/mach-s3c24xx/{ => include/mach}/s3c2412.h (100%)
+>  rename arch/arm/mach-s3c24xx/cpufreq-s3c2410.c =>
+> drivers/cpufreq/s3c2410-cpufreq.c (100%)
+>  rename arch/arm/mach-s3c24xx/cpufreq-s3c2412.c =>
+> drivers/cpufreq/s3c2412-cpufreq.c (99%)
+>  rename arch/arm/mach-s3c24xx/cpufreq-s3c2440.c =>
+> drivers/cpufreq/s3c2440-cpufreq.c (100%)
+>  rename arch/arm/mach-s3c24xx/cpufreq-debugfs.c =>
+> drivers/cpufreq/s3c24xx-cpufreq-debugfs.c (100%)
+>  rename arch/arm/mach-s3c24xx/cpufreq.c => drivers/cpufreq/s3c24xx-
+> cpufreq.c (100%)
+> 
+Basically, this moving looks good to me, but should be re-worked based on
+for-next of samsung tree because this touches too many samsung stuff so this
+should be sent to upstream via samsung tree.
 
-How about add a knob?
+See below,
 
->> (Of course, we could separate ramfs's mapping_unevictable case from
->> the Mlocked case; but I'd prefer to continue to treat them the same.)
-> Fair enough.
->
->> The other reason it looks as if ramfs pages cannot be migrated, is
->> that it does not set a suitable ->migratepage method, so would be
->> handled by fallback_migrate_page(), whose PageDirty test will end
->> up failing the migration with -EBUSY or -EINVAL - if I read it
->> correctly.
-> True.
->
->> Perhaps other such reasons would surface once those are fixed.
->> But until ramfs pages can be migrated, they should not be allocated
->> with __GFP_MOVABLE.  (I've been writing about the migratability of
->> small pages: I expect you have the migratability of THPages in flux.)
-> Agreed.
->
->> Hugh
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Applying: cpufreq: s3c24xx: move cpufreq driver to drivers/cpufreq
+error: patch failed: arch/arm/Kconfig:2166
+error: arch/arm/Kconfig: patch does not apply
+error: patch failed: arch/arm/mach-s3c24xx/Kconfig:28
+error: arch/arm/mach-s3c24xx/Kconfig: patch does not apply
+error: patch failed: arch/arm/mach-s3c24xx/Makefile:17
+error: arch/arm/mach-s3c24xx/Makefile: patch does not apply
+error: patch failed: drivers/cpufreq/Makefile:63
+error: drivers/cpufreq/Makefile: patch does not apply
+error: drivers/cpufreq/s3c2412-cpufreq.c: does not exist in index
+Patch failed at 0001 cpufreq: s3c24xx: move cpufreq driver to
+drivers/cpufreq
+
+Thanks.
+
+- Kukjin
 
