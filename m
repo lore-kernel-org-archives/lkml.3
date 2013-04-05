@@ -1,103 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161780Ab3DENQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 09:16:26 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36481 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753372Ab3DENQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 09:16:25 -0400
-From: Sourav Poddar <sourav.poddar@ti.com>
-To: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>
-CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-serial@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: [PATCHv3] driver: serial: prevent UART console idle on suspend while using "no_console_suspend"
-Date: Fri, 5 Apr 2013 18:45:33 +0530
-Message-ID: <1365167733-28083-1-git-send-email-sourav.poddar@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1161769Ab3DENVl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 09:21:41 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:46380 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161152Ab3DENVk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 09:21:40 -0400
+Message-ID: <515ECFD0.4090202@surriel.com>
+Date: Fri, 05 Apr 2013 09:21:20 -0400
+From: Rik van Riel <riel@surriel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Mike Galbraith <bitbucket@online.de>
+CC: Sasha Levin <sasha.levin@oracle.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, hhuang@redhat.com, jason.low2@hp.com,
+        walken@google.com, lwoodman@redhat.com, chegu_vinod@hp.com,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH -mm -next] ipc,sem: untangle RCU locking with find_alloc_undo
+References: <1363809337-29718-1-git-send-email-riel@surriel.com>  <5151DBD3.6080201@oracle.com>  <1364320297.5146.7.camel@buesod1.americas.hpqcorp.net>  <5151E3D2.1070103@oracle.com>  <20130326160059.7b466a8d@annuminas.surriel.com> <1365136697.4579.12.camel@marge.simpson.net>
+In-Reply-To: <1365136697.4579.12.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With dt boot, uart wakeup after suspend is non functional while using
-"no_console_suspend" in the bootargs. With "no_console_suspend" used, we
-should prevent the runtime suspend of the uart port which is getting used
-as an console.
+On 04/05/2013 12:38 AM, Mike Galbraith wrote:
+> On Tue, 2013-03-26 at 16:00 -0400, Rik van Riel wrote:
 
-Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
-Cc: Felipe Balbi<balbi@ti.com>
-Cc: Rajendra nayak<rnayak@ti.com>
-Tested on omap5430evm, omap4430sdp.
+>> The ipc semaphore code has a nasty RCU locking tangle, with both
+>> find_alloc_undo and semtimedop taking the rcu_read_lock(). The
+>> code can be cleaned up somewhat by only taking the rcu_read_lock
+>> once.
+>>
+>> There are no other callers to find_alloc_undo.
+>>
+>> This should also solve the trinity issue reported by Sasha Levin.
+>
+> I take it this is on top of the patchlet Sasha submitted?
 
-Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
----
-v2->v3
-Based on Kevin Hilman and Santosh Shilimkar comments, modified
-serial core/driver layer to bypass runtime suspend 
-for console uart while using "no_console_suspend".
+Indeed, and all the other fixes that got submitted :)
 
-This patch is based on Santosh Shilimkar serial patch[1]
+> (I hit rcu stall banging on patch set in rt with 60 synchronized core
+> executive model if I let it run long enough, fwtw)
 
-[1]: http://permalink.gmane.org/gmane.linux.ports.arm.omap/95828
-	
- drivers/tty/serial/omap-serial.c |    5 ++++-
- drivers/tty/serial/serial_core.c |    3 +++
- include/linux/serial_core.h      |    1 +
- 3 files changed, 8 insertions(+), 1 deletions(-)
+What are you using to trigger an rcu stall?
 
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index 08332f3..81a1760 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -1582,7 +1582,7 @@ static int serial_omap_runtime_suspend(struct device *dev)
- 	struct uart_omap_port *up = dev_get_drvdata(dev);
- 	struct omap_uart_port_info *pdata = dev->platform_data;
- 
--	if (!up)
-+	if (!up || (!console_suspend_enabled && up->port.port_is_console))
- 		return -EINVAL;
- 
- 	if (!pdata)
-@@ -1614,6 +1614,9 @@ static int serial_omap_runtime_resume(struct device *dev)
- 
- 	int loss_cnt = serial_omap_get_context_loss_count(up);
- 
-+	if (!console_suspend_enabled && up->port.port_is_console)
-+		return -EINVAL;
-+
- 	if (loss_cnt < 0) {
- 		dev_err(dev, "serial_omap_get_context_loss_count failed : %d\n",
- 			loss_cnt);
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index a400002..6c8b041 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -2594,6 +2594,9 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
- 	uport->cons = drv->cons;
- 	uport->state = state;
- 
-+	if (uart_console(uport))
-+		uport->port_is_console = true;
-+
- 	/*
- 	 * If this port is a console, then the spinlock is already
- 	 * initialised.
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index 87d4bbc..c944414 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -194,6 +194,7 @@ struct uart_port {
- 	unsigned char		irq_wake;
- 	unsigned char		unused[2];
- 	void			*private_data;		/* generic platform data pointer */
-+	bool			port_is_console;
- };
- 
- static inline int serial_port_in(struct uart_port *up, int offset)
+>> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+>> Signed-off-by: Rik van Riel <riel@redhat.com>
+
 -- 
-1.7.1
-
+All rights reversed.
