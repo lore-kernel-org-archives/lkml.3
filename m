@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162882Ab3DEWNk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 18:13:40 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:44958 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162859Ab3DEWNh (ORCPT
+	id S1162975Ab3DEWQu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 18:16:50 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:50854 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162791Ab3DEWQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 18:13:37 -0400
+	Fri, 5 Apr 2013 18:16:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <515F4B60.60302@zytor.com>
-References: <1365106055-22939-1-git-send-email-keescook@chromium.org>
-	<1365106055-22939-4-git-send-email-keescook@chromium.org>
-	<20130405071144.GB26889@gmail.com>
-	<CAKyRK=h0sDFn6vqdKwmWds4EubqwnqVYG4JgKk=5-EDV7dJ36g@mail.gmail.com>
-	<515F4B60.60302@zytor.com>
-Date: Fri, 5 Apr 2013 15:13:37 -0700
-Message-ID: <CAKyRK=j2UyqQFT2AEX5QqEA335n7r2pgJmK52in924x8LFNbTA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] x86: kernel base offset ASLR
-From: Julien Tinnes <jln@google.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Kees Cook <keescook@chromium.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Will Drewry <wad@chromium.org>
+In-Reply-To: <CA+8MBbJMk2w77VGBswoYCEKQZ4HTC9jBhWun5UzGLOj15Nqrmg@mail.gmail.com>
+References: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
+	<1365119186-23487-18-git-send-email-yinghai@kernel.org>
+	<CA+8MBbJMk2w77VGBswoYCEKQZ4HTC9jBhWun5UzGLOj15Nqrmg@mail.gmail.com>
+Date: Fri, 5 Apr 2013 15:16:48 -0700
+X-Google-Sender-Auth: CkVOXUHIBU6y5UpOSSBhP0xxvf0
+Message-ID: <CAE9FiQW9LsXo7gRvpAUv2ORbe2iuZaYO9nNOP-vTWa-_P450tg@mail.gmail.com>
+Subject: Re: [PATCH v3 17/22] x86, ACPI, numa, ia64: split SLIT handling out
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi <linux-acpi@vger.kernel.org>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 5, 2013 at 3:08 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 04/05/2013 03:06 PM, Julien Tinnes wrote:
->>
->> Speaking of IDT, and to capture some off-thread discussion here, we
->> should remember that the "SGDT" and "SIDT" instructions aren't
->> privileged on x86, so user-land can leak these out without any way for
->> the kernel to intercept that.
->>
->> Adding their own random offsets to these two tables would be very
->> useful. This could be done in a later patchset of course.
->>
+On Fri, Apr 5, 2013 at 2:54 PM, Tony Luck <tony.luck@gmail.com> wrote:
+> On Thu, Apr 4, 2013 at 4:46 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> It should not break ia64 by replacing acpi_numa_init with
+>> acpi_numa_init_srat/acpi_numa_init_slit/acpi_num_arch_fixup.
 >
-> Yes, if the GDT or IDT position is at all correlated to the kernel
-> position this is pointless.
+> You are right - it doesn't break ia64.  All my test configs still
+> build.  Machines both with and without NUMA still boot and
+> nothing strange happens.
+>
+> Tested-by: Tony Luck <tony.luck@intel.com>
 
-Let's say it's less useful :) Remote attacks and from-inside-a-VM
-attack would still be mitigated.
+Great, Thanks a lot for testing them.
 
-Julien
+Yinghai
