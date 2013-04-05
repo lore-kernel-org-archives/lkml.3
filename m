@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161899Ab3DEOtj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 10:49:39 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:52007 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161785Ab3DEOti (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 10:49:38 -0400
-Date: Fri, 5 Apr 2013 16:49:41 +0200
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, peterz@infradead.org, jolsa@redhat.com
-Subject: [PATCH] perf: fix comments in PERF_MEM_LVL bitmask
-Message-ID: <20130405144941.GA30503@quad>
+	id S1161911Ab3DEOuC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 10:50:02 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42564 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161785Ab3DEOuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 10:50:00 -0400
+Date: Fri, 5 Apr 2013 16:49:54 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Subject: Re: [PATCH 3/3] x86: kernel base offset ASLR
+Message-ID: <20130405144954.GC29290@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+	kernel-hardening@lists.openwall.com,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+	Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+	Matthew Garrett <mjg@redhat.com>,
+	Matt Fleming <matt.fleming@intel.com>,
+	Eric Northup <digitaleric@google.com>,
+	Dan Rosenberg <drosenberg@vsecurity.com>,
+	Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+References: <1365106055-22939-1-git-send-email-keescook@chromium.org>
+ <1365106055-22939-4-git-send-email-keescook@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1365106055-22939-4-git-send-email-keescook@chromium.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 04, 2013 at 01:07:35PM -0700, Kees Cook wrote:
+> This creates CONFIG_RANDOMIZE_BASE, so that the base offset of the kernel
+> can be randomized at boot.
 
-This small patch fixes a mistake in the comments
-for the PERF_MEM_LVL_* events. The L2, L3 bits simply
-represent cache levels, not hits or misses. That is
-encoded in PERF_MEM_LVL_MISS/PERF_MEM_LVL_HIT.
+Right,
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
+if I'm reading this whole deal correctly, I have an issue with this
+in the sense that if this thing is enabled by default and people are
+running stripped kernels, an oops which is being reported is worth sh*t
+since all the addresses there are random and one simply can't map them
+back to which functions the callstack frames are pointing to. Which will
+majorly hinder debuggability, IMHO...
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 964a450..fb104e5 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -645,8 +645,8 @@ union perf_mem_data_src {
- #define PERF_MEM_LVL_MISS	0x04  /* miss level  */
- #define PERF_MEM_LVL_L1		0x08  /* L1 */
- #define PERF_MEM_LVL_LFB	0x10  /* Line Fill Buffer */
--#define PERF_MEM_LVL_L2		0x20  /* L2 hit */
--#define PERF_MEM_LVL_L3		0x40  /* L3 hit */
-+#define PERF_MEM_LVL_L2		0x20  /* L2 */
-+#define PERF_MEM_LVL_L3		0x40  /* L3 */
- #define PERF_MEM_LVL_LOC_RAM	0x80  /* Local DRAM */
- #define PERF_MEM_LVL_REM_RAM1	0x100 /* Remote DRAM (1 hop) */
- #define PERF_MEM_LVL_REM_RAM2	0x200 /* Remote DRAM (2 hops) */
+[ … ]
+
+> When built into the kernel, the "noaslr" kernel command line option
+> will disable the feature.
+
+... so the saner thing to do, IMHO, would be to flip the meaning of
+this option to "kaslr" or whatever and let people and distros enable
+randomization on kernels which are bug free and don't oops (good luck
+finding those :-)). Generally make the thing opt-in instead of opt-out.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
