@@ -1,84 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161593Ab3DEXVO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 19:21:14 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:17347 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759881Ab3DEXVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 19:21:13 -0400
-X-IronPort-AV: E=Sophos;i="4.87,418,1363132800"; 
-   d="scan'208";a="17851952"
-Date: Sat, 6 Apr 2013 00:20:58 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Rob Herring <robherring2@gmail.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v6 4/4] xen/arm: introduce xen_early_init, use PSCI on
- xen
-In-Reply-To: <alpine.LFD.2.03.1304051718020.1171@syhkavp.arg>
-Message-ID: <alpine.DEB.2.02.1304060015490.5353@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-4-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.LFD.2.03.1304051217560.1171@syhkavp.arg> <alpine.DEB.2.02.1304051725580.21065@kaball.uk.xensource.com>
- <alpine.LFD.2.03.1304051324190.1171@syhkavp.arg> <515F392B.1030200@gmail.com> <alpine.LFD.2.03.1304051718020.1171@syhkavp.arg>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932507Ab3DEXgZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 19:36:25 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:51373 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932282Ab3DEXgY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 19:36:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <20130326201722.GA14220@linutronix.de>
+References: <20130326201722.GA14220@linutronix.de>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Fri, 5 Apr 2013 19:35:51 -0400
+X-Google-Sender-Auth: KezVKex0Gs-hN5oB6sxvYUj8Jos
+Message-ID: <CAP=VYLoXfECaSBuvYdZ3qbsnR9QMYpoRnKGZdY=P6zS_TYOcCA@mail.gmail.com>
+Subject: Re: [ANNOUNCE] 3.8.4-rt2
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Apr 2013, Nicolas Pitre wrote:
-> On Fri, 5 Apr 2013, Rob Herring wrote:
-> 
-> > On 04/05/2013 02:36 PM, Nicolas Pitre wrote:
-> > > On Fri, 5 Apr 2013, Stefano Stabellini wrote:
-> > > 
-> > >> This is what happens:
-> > >>
-> > >> - No Xen
-> > >> Xen is not running on the platform and a Xen hypervisor node is not
-> > >> available on device tree.
-> > >> Everything keeps working seamlessly, this patch doesn't change anything.
-> > >>
-> > >> - we are running on Xen
-> > >> Xen is running on the platform, we are running as a guest on Xen and an
-> > >> hypervisor node is available on device tree.
-> > >> Let's also assume that there aren't any "arm,cci" compatible nodes on
-> > >> device tree because Xen wouldn't export this kind of information to any
-> > >> guests right now. Therefore PSCI should be used to boot secondary cpus.
-> > >> Because the versatile express machine sets smp_init to
-> > >> vexpress_smp_init_ops, vexpress_smp_init_ops will be called.
-> > >> vexpress_smp_init_ops sets smp_ops to vexpress_smp_ops, that *break*
-> > >> Xen.
-> > > 
-> > > OK I see.
-> > > 
-> > >> With this patch, xen_smp_init will be called instead of
-> > >> vexpress_smp_init_ops, and smp_ops will be set to psci_smp_ops,
-> > >> therefore *unbreaking* Xen.
-> > > 
-> > > However that breaks MCPM.
-> > 
-> > You mean on bare metal, right? For the bare metal, "xen,xen" property
-> > would not be present and xen_smp_init is not used. So the vexpress MCPM
-> > ops will be used. Aren't Dom0 cpu's basically virtual cpus? If Xen ever
-> > needs the MCPM support, the Xen hook itself can figure out whether to
-> > use MCPM support.
-> 
-> Well, if Xen has its own mdesc distinct from the VExpress one then 
-> things
-> are indeed fine.
+On Tue, Mar 26, 2013 at 4:17 PM, Sebastian Andrzej Siewior
+<bigeasy@linutronix.de> wrote:
+>
+> Dear RT Folks,
+>
+> I'm pleased to announce the 3.8.4-rt2 release.
+>
+> changes since v3.8.4-rt1:
+> - build fix for i915 (reported by "Luis Claudio R. Goncalves")
+> - build fix for fscache (reported by tglx)
+> - build fix for !RT (kernel/softirq.c did not compile)
+> - per-cpu rwsem fixed for RT (required only by uprobes so far)
+> - slub: delay the execution of the ->ctor() hook for newly created
+>   objects. This lowers the worst case latencies.
+>
+> Known issues:
+>
+>       - SLxB is broken on PowerPC.
+>
+> The delta patch against v3.8.4-rt1 is appended below and can be found
+> here:
+>
+>   https://www.kernel.org/pub/linux/kernel/projects/rt/3.8/incr/patch-3.8.4-rt1-rt2.patch.xz
+>
+> The RT patch against 3.8.4 can be found here:
+>
+>   https://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patch-3.8.4-rt2.patch.xz
+>
+> The split quilt queue is available at:
+>
+>   https://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patches-3.8.4-rt2.tar.xz
 
-It's not about the mdesc: Xen has its own hypervisor node on device tree
-if and only if Xen is running on the platform, therefore the Xen early
-hook is never going to do anything at all on native.
+Thanks for the work in putting this together.  Just a heads up that the
+split queue fails on a patch with no author/date/subject as follows:
 
-In other words, this patch should NOT change the behaviour of Linux on
-native, and if it did, it would be a bug.
+[...]
+(174/286) Applying: rt-add-rt-to-mutex-headers.patch
+(175/286) Applying: rwsem-add-rt-variant.patch
+(176/286) Applying: rt: Add the preempt-rt lock replacement APIs
+(177/286) Patch format detection failed.
+git am of percpu-rwsem-compilefix.patch failed.
+
+Looking at percpu-rwsem-compilefix.patch -- it starts with three dashes,
+so it looks like the shortlog and long-log got inadvertently thrown out,
+as well as any author or optional date information, etc.
+
+Fixing that one, I get further, until I get to:
+
+[...]
+(270/286) Applying: wait-simple: Simple waitqueue implementation
+(271/286) Applying: rcutiny: Use simple waitqueue
+(272/286) Patch format detection failed.
+git am of treercu-use-simple-waitqueue.patch failed.
+
+This "treercu-use-simple-waitqueue.patch" has the exact same problem.
+
+Note that I'm using git directly, and not quilt -- which is more
+strict in what it will accept, hence it catches these kinds of things.
+
+Thanks,
+Paul.
+--
+
+> Sebastian
+> ---
