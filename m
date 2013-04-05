@@ -1,103 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161814Ab3DEIaZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 04:30:25 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38447 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161671Ab3DEIaW (ORCPT
+	id S1161829Ab3DEIbU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 04:31:20 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45377 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab3DEIbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 04:30:22 -0400
-Message-ID: <515E8B99.8080803@ti.com>
-Date: Fri, 5 Apr 2013 10:30:17 +0200
-From: Benoit Cousson <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Fri, 5 Apr 2013 04:31:17 -0400
+X-AuditID: 9c930197-b7b50ae00000018c-bd-515e8bd0fe23
+Date: Fri, 5 Apr 2013 17:31:12 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Simon Jeons <simon.jeons@gmail.com>, Hugh Dickins <hughd@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Ying Han <yinghan@google.com>,
+        Christoph Lameter <cl@linux.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2, RFC 20/30] ramfs: enable transparent huge page cache
+Message-ID: <20130405083112.GD32126@blaptop>
+References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1363283435-7666-21-git-send-email-kirill.shutemov@linux.intel.com>
+ <20130402162813.0B4CBE0085@blue.fi.intel.com>
+ <alpine.LNX.2.00.1304021422460.19363@eggly.anvils>
+ <20130403011104.GF16026@blaptop>
+ <515E737D.8030204@gmail.com>
+ <20130405080106.GB32126@blaptop>
+ <515e89d2.e725320a.3a74.7fe7SMTPIN_ADDED_BROKEN@mx.google.com>
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: <tony@atomide.com>, <balbi@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 00/21] ARM: OMAP2+: Adapt to ehci-omap changes for
- 3.10
-References: <1363794300-31526-1-git-send-email-rogerq@ti.com>
-In-Reply-To: <1363794300-31526-1-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515e89d2.e725320a.3a74.7fe7SMTPIN_ADDED_BROKEN@mx.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
+Hi Wanpeng,
 
-On 03/20/2013 04:44 PM, Roger Quadros wrote:
-> Hi Tony,
+On Fri, Apr 05, 2013 at 04:22:17PM +0800, Wanpeng Li wrote:
+> On Fri, Apr 05, 2013 at 05:01:06PM +0900, Minchan Kim wrote:
+> >On Fri, Apr 05, 2013 at 02:47:25PM +0800, Simon Jeons wrote:
+> >> Hi Minchan,
+> >> On 04/03/2013 09:11 AM, Minchan Kim wrote:
+> >> >On Tue, Apr 02, 2013 at 03:15:23PM -0700, Hugh Dickins wrote:
+> >> >>On Tue, 2 Apr 2013, Kirill A. Shutemov wrote:
+> >> >>>Kirill A. Shutemov wrote:
+> >> >>>>From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> >> >>>>
+> >> >>>>ramfs is the most simple fs from page cache point of view. Let's start
+> >> >>>>transparent huge page cache enabling here.
+> >> >>>>
+> >> >>>>For now we allocate only non-movable huge page. It's not yet clear if
+> >> >>>>movable page is safe here and what need to be done to make it safe.
+> >> >>>>
+> >> >>>>Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> >> >>>>---
+> >> >>>>  fs/ramfs/inode.c |    6 +++++-
+> >> >>>>  1 file changed, 5 insertions(+), 1 deletion(-)
+> >> >>>>
+> >> >>>>diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
+> >> >>>>index c24f1e1..da30b4f 100644
+> >> >>>>--- a/fs/ramfs/inode.c
+> >> >>>>+++ b/fs/ramfs/inode.c
+> >> >>>>@@ -61,7 +61,11 @@ struct inode *ramfs_get_inode(struct super_block *sb,
+> >> >>>>  		inode_init_owner(inode, dir, mode);
+> >> >>>>  		inode->i_mapping->a_ops = &ramfs_aops;
+> >> >>>>  		inode->i_mapping->backing_dev_info = &ramfs_backing_dev_info;
+> >> >>>>-		mapping_set_gfp_mask(inode->i_mapping, GFP_HIGHUSER);
+> >> >>>>+		/*
+> >> >>>>+		 * TODO: what should be done to make movable safe?
+> >> >>>>+		 */
+> >> >>>>+		mapping_set_gfp_mask(inode->i_mapping,
+> >> >>>>+				GFP_TRANSHUGE & ~__GFP_MOVABLE);
+> >> >>>Hugh, I've found old thread with the reason why we have GFP_HIGHUSER here, not
+> >> >>>GFP_HIGHUSER_MOVABLE:
+> >> >>>
+> >> >>>http://lkml.org/lkml/2006/11/27/156
+> >> >>>
+> >> >>>It seems the origin reason is not longer valid, correct?
+> >> >>Incorrect, I believe: so far as I know, the original reason remains
+> >> >>valid - though it would only require a couple of good small changes
+> >> >>to reverse that - or perhaps you have already made these changes?
+> >> >>
+> >> >>The original reason is that ramfs pages are not migratable,
+> >> >>therefore they should be allocated from an unmovable area.
+> >> >>
+> >> >>As I understand it (and I would have preferred to run a test to check
+> >> >>my understanding before replying, but don't have time for that), ramfs
+> >> >>pages cannot be migrated for two reasons, neither of them a good reason.
+> >> >>
+> >> >>One reason (okay, it wouldn't have been quite this way in 2006) is that
+> >> >>ramfs (rightly) calls mapping_set_unevictable(), so its pages will fail
+> >> >>the page_evictable() test, so they will be marked PageUnevictable, so
+> >> >>__isolate_lru_page() will refuse to isolate them for migration (except
+> >> >>for CMA).
+> >> >True.
+> >> >
+> >> >>I am strongly in favour of removing that limitation from
+> >> >>__isolate_lru_page() (and the thread you pointed - thank you - shows Mel
+> >> >>and Christoph were both in favour too); and note that there is no such
+> >> >>restriction in the confusingly similar but different isolate_lru_page().
+> >> >>
+> >> >>Some people do worry that migrating Mlocked pages would introduce the
+> >> >>occasional possibility of a minor fault (with migration_entry_wait())
+> >> >>on an Mlocked region which never faulted before.  I tend to dismiss
+> >> >>that worry, but maybe I'm wrong to do so: maybe there should be a
+> >> >>tunable for realtimey people to set, to prohibit page migration from
+> >> >>mlocked areas; but the default should be to allow it.
+> >> >I agree.
+> >> >Just FYI for mlocked page migration
+> >> >
+> >> >I tried migratioin of mlocked page and Johannes and Mel had a concern
+> >> >about that.
+> >> >http://lkml.indiana.edu/hypermail/linux/kernel/1109.0/00175.html
+> >> >
+> >> >But later, Peter already acked it and I guess by reading the thread that
+> >> >Hugh was in favour when page migration was merged first time.
+> >> >
+> >> >http://marc.info/?l=linux-mm&m=133697873414205&w=2
+> >> >http://marc.info/?l=linux-mm&m=133700341823358&w=2
+> >> >
+> >> >Many people said mlock means memory-resident, NOT pinning so it could
+> >> >allow minor fault while Mel still had a concern except CMA.
+> >> >http://marc.info/?l=linux-mm&m=133674219714419&w=2
+> >> 
+> >> How about add a knob?
+> >
+> >Maybe, volunteering?
 > 
-> These patches provide the SoC side code required to support
-> the changes in the OMAP USB Host drivers done in [1], [2] & [3].
+> Hi Minchan,
 > 
-> Device tree support is added for Beagleboard only. I've removed
-> Panda device tree support till we have resolved the AUXCLK issue.
-> 
-> NOTE: The first patch needs to be shared between the
-> OMAP tree and Felipe's USB tree.
-> 
-> v4:
-> - Some more cleanup to usbhs_init_phys(). Moved repeated code into
-> another helper function usbhs_add_regulator().
-> - Removed patch for Panda device tree support for USB host since
-> it is non functional.
-> 
-> v3:
-> - Moved more functionality into usbhs_init_phys().
-> 
-> v2:
-> - Added helper function usbhs_init_phys() that can be used by board files
-> to simplify adding of PHY regulators for USB host ports.
-> 
-> [1] MFD side changes to omap-usb-host and omap-usb-tll
->   https://lkml.org/lkml/2013/3/12/179
-> [2] USB EHCI side changes to ehci-omap 
->   http://www.mail-archive.com/linux-omap@vger.kernel.org/msg86265.html
-> [3] USB PHY driver changes
->   http://www.mail-archive.com/linux-omap@vger.kernel.org/msg86293.html
-> 
-> The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
-> 
->   Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
-> 
-> are available in the git repository at:
->   git://github.com/rogerq/linux.git usbhost-arm-next
-> 
-> Roger Quadros (21):
->   usb: phy: nop: Add some parameters to platform data
->   ARM: OMAP2+: omap-usb-host: Add usbhs_init_phys()
->   ARM: OMAP2+: omap4panda: Adapt to ehci-omap changes
->   ARM: OMAP3: Beagle: Adapt to ehci-omap changes
->   ARM: OMAP3: 3430SDP: Adapt to ehci-omap changes
->   ARM: OMAP3: 3630SDP: Adapt to ehci-omap changes
->   ARM: OMAP: AM3517crane: Adapt to ehci-omap changes
->   ARM: OMAP: AM3517evm: Adapt to ehci-omap changes
->   ARM: OMAP3: cm-t35: Adapt to ehci-omap changes
->   ARM: OMAP3: cm-t3517: Adapt to ehci-omap changes
->   ARM: OMAP: devkit8000: Adapt to ehci-omap changes
->   ARM: OMAP3: igep0020: Adapt to ehci-omap changes
->   ARM: OMAP3: omap3evm: Adapt to ehci-omap changes
->   ARM: OMAP3: omap3pandora: Adapt to ehci-omap changes
->   ARM: OMAP3: omap3stalker: Adapt to ehci-omap changes
->   ARM: OMAP3: omap3touchbook: Adapt to ehci-omap changes
->   ARM: OMAP3: overo: Adapt to ehci-omap changes
->   ARM: OMAP: zoom: Adapt to ehci-omap changes
->   ARM: dts: OMAP4: Add HS USB Host IP nodes
->   ARM: dts: OMAP3: Add HS USB Host IP nodes
->   ARM: dts: omap3-beagle: Add USB Host support
+> I can be the volunteer, what I care is if add a knob make sense?
 
-These 3 DTS patches are good to me, but I cannot applied them on top of
-the already existing patches I queued for 3.10.
+Frankly sepaking, I'd like to avoid new knob but there might be
+some workloads suffered from mlocked page migration so we coudn't
+dismiss it. In such case, introducing the knob would be a solution
+with default enabling. If we don't have any report for a long time,
+we can remove the knob someday, IMHO.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
-for_3.10/dts
+Thanks.
 
-Could you rebase these 3 ones only, and I will applied them.
-
-Thanks,
-Benoit
+-- 
+Kind regards,
+Minchan Kim
