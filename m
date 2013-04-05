@@ -1,54 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161898Ab3DEPb1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 11:31:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37282 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1765499Ab3DEPbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 11:31:25 -0400
-Message-ID: <515EEE25.1030402@zytor.com>
-Date: Fri, 05 Apr 2013 08:30:45 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1161917Ab3DEPcb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 11:32:31 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:10135
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755627Ab3DEPca convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 11:32:30 -0400
+X-Forefront-Antispam-Report: CIP:132.245.1.149;KIP:(null);UIP:(null);IPV:NLI;H:BLUPRD0512HT003.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: PS1(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz17326ah1954cbh8275bhz32i2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah1155h)
+From: Scan Subscription <scan-subscription@coverity.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: New Defect(s) reported by Coverity Scan 
+Thread-Topic: New Defect(s) reported by Coverity Scan 
+Thread-Index: Ac4yEmGCRltLC7mIQ8Wgr1X8pWsCtQ==
+Date: Fri, 5 Apr 2013 15:32:25 +0000
+Message-ID: <C0A4ACBB26D853488EA0C68388B702682F97EAC1@BLUPRD0512MB628.namprd05.prod.outlook.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [24.23.129.86]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        kernel-hardening@lists.openwall.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 3/3] x86: kernel base offset ASLR
-References: <1365106055-22939-1-git-send-email-keescook@chromium.org> <1365106055-22939-4-git-send-email-keescook@chromium.org> <515DE0C9.3030709@zytor.com> <20130405080418.GG26889@gmail.com>
-In-Reply-To: <20130405080418.GG26889@gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: coverity.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2013 01:04 AM, Ingo Molnar wrote:
-> 
-> Random runtime shuffling of the kernel image - is that possible with 
-> existing toolchains?
-> 
 
-Yes... the question is how much work we'd be willing to go through to
-make it happen.
+Hi,
 
-One approach: the kernel already contains a linker -- used for modules
--- and the bulk of the kernel could actually be composed to a "pile of
-modules" that gets linked on boot.  This would provide very large
-amounts of randomness.
+Please find the latest report on new defect(s) that have been introduced to the Linux Kernel found with Coverity SCAN. 
 
-	-hpa
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Defect(s) Reported-by: Coverity Scan:
+___________________________________________________________________________
+** CID 996157: Logically dead code (DEADCODE)
+/net/mac80211/sta_info.c: 808
+http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=996157
+
+###########################################################################
+Defect Details:
+___________________________________________________________________________
+CID 996157: Logically dead code (DEADCODE)
+http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=996157
+
+/net/mac80211/sta_info.c: 803 ( assignment)
+
+   797     for (i = 0; i < NUM_DEFAULT_KEYS; i++) {
+   798                __ieee80211_key_free(key_mtx_dereference(local, sta->gtk[i]));
+>>> Assigning: "have_key" = "true".
+   799                have_key = true;
+   800    	}
+   801    	if (sta->ptk) {
+   802    		__ieee80211_key_free(key_mtx_dereference(local, sta->ptk));
+>>> Assigning: "have_key" = "true".
+   803    		have_key = true;
+   804    	}
+   805    	mutex_unlock(&local->key_mtx);
+   806    
+
+>>> At condition "have_key", the value of "have_key" must be equal to 1.
+>>> The condition "!have_key" cannot be true.
+
+   807    	if (!have_key)
+>>> CID 996157: Logically dead code (DEADCODE) Execution cannot reach 
+>>> this statement "synchronize_net();".
+   808    		synchronize_net();
+   809    
+   810    	sta->dead = true;
+   811    
+  
+  
+
+  
+________________________________________________________________________
+
+
+To view the defects in Coverity Scan visit, http://scan5.coverity.com:8080.  
+If you don't have a username, you can register at http://scan.coverity.com/
+	
+Thank you,
+Dakshesh Vyas
+Coverity SCAN-ADMIN
+scan-admin at coverity.com
+http://scan.coverity.com
 
