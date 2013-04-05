@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161564Ab3DENdA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 09:33:00 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:49838 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161177Ab3DENc6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 09:32:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Michal Simek <monstr@monstr.eu>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the xilinx tree
-Date: Fri, 5 Apr 2013 15:32:45 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        John Linn <John.Linn@xilinx.com>
-References: <20130405153335.baf29606a97b1bee415f3546@canb.auug.org.au> <201304051409.37708.arnd@arndb.de> <CAHTX3d+PZ=G6JYBo7Hvqe=G77udaCFJ4pD4z_sQw_FDGP-xt=A@mail.gmail.com>
-In-Reply-To: <CAHTX3d+PZ=G6JYBo7Hvqe=G77udaCFJ4pD4z_sQw_FDGP-xt=A@mail.gmail.com>
+	id S1161691Ab3DENiV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 09:38:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59340 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161326Ab3DENiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 09:38:20 -0400
+Date: Fri, 5 Apr 2013 15:38:15 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Li Zefan <lizefan@huawei.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC][PATCH 1/7] memcg: use css_get in sock_update_memcg()
+Message-ID: <20130405133815.GE31132@dhcp22.suse.cz>
+References: <515BF233.6070308@huawei.com>
+ <515BF249.50607@huawei.com>
+ <515C2788.90907@parallels.com>
+ <20130403152934.GL16471@dhcp22.suse.cz>
+ <515E8688.3000504@parallels.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304051532.46156.arnd@arndb.de>
-X-Provags-ID: V02:K0:V0DIFr9YAtYbymqVPFTwpTRWRFtKuK6MSOaU+WLGly8
- kmz2aONSj72eJntoackHfkfXkX/wvxaBm4ColurVkfRk7bp6YR
- WAHGiqlSyv2Zp5yIz6wkMYYlcebKaglEnxNIoW9VwV4zh7d/jP
- b603xBLUMh515VZVp+YeonMFUok5JI2KmhB94uCCJdpScWyg0d
- kADh0b5ZFqR5scoNDeBUrgSQ1H0quwg/1kO5RYwW/K7L9SjQzT
- mL0T9hinhobygNb+q2tG65vQEkD7fMoa4BRplwf6fm2oJU4Mk1
- YuJxcS/s16XRluc9DSsPc5KvxnFyMzc8SSAr2eIZ3sqdNYIaMb
- gXxBslvSGZ+nJoOAixUM=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515E8688.3000504@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 05 April 2013, Michal Simek wrote:
-> > > Interesting. I rebased my arm-next branch based on 3.9-rc5
-> > > with some Rob's + one Arnd patch from arm-soc - clksrc/cleanup branch.
-> > >
-> > > I will fix my arm-next branch.
-> >
-> > The for-next branch in arm-soc is not stable, you should never base
-> > anything on it. If you depend on some stable branch, that is in arm-soc,
-> > then use just that branch, not one of the next/* branches or for-next.
-> >
+On Fri 05-04-13 12:08:40, Glauber Costa wrote:
+> On 04/03/2013 07:29 PM, Michal Hocko wrote:
+> > On Wed 03-04-13 16:58:48, Glauber Costa wrote:
+> >> On 04/03/2013 01:11 PM, Li Zefan wrote:
+> >>> Use css_get/css_put instead of mem_cgroup_get/put.
+> >>>
+> >>> Note, if at the same time someone is moving @current to a different
+> >>> cgroup and removing the old cgroup, css_tryget() may return false,
+> >>> and sock->sk_cgrp won't be initialized.
+> >>>
+> >>> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> >>> ---
+> >>>  mm/memcontrol.c | 8 ++++----
+> >>>  1 file changed, 4 insertions(+), 4 deletions(-)
+> >>>
+> >>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> >>> index 23d0f6e..43ca91d 100644
+> >>> --- a/mm/memcontrol.c
+> >>> +++ b/mm/memcontrol.c
+> >>> @@ -536,15 +536,15 @@ void sock_update_memcg(struct sock *sk)
+> >>>  		 */
+> >>>  		if (sk->sk_cgrp) {
+> >>>  			BUG_ON(mem_cgroup_is_root(sk->sk_cgrp->memcg));
+> >>> -			mem_cgroup_get(sk->sk_cgrp->memcg);
+> >>> +			css_get(&sk->sk_cgrp->memcg->css);
+> > 
+> > I am not sure I understand this one. So we have a goup here (which means
+> > that somebody already took a reference on it, right?) and we are taking
+> > another reference. If this is released by sock_release_memcg then who
+> > releases the previous one? It is not directly related to the patch
+> > because this has been done previously already. Could you clarify
+> > Glauber, please?
 > 
-> I haven't based on arm-soc for-next branch my arm-next branch.
-> I just took all patches I need for zynq and done git rebase v3.5-rc5.
-> Which caused that I have became commuter of that 4 patches
-> and there is probably any conflict between your for-next branch and
-> clksrc/cleanup
-> which you have resolved in for-next branch.
+> This should be documented in the commit that introduced this, and it was
+> one of the first bugs I've handled with this code.
+> 
+> Bottom line, we can create sockets normally, and those will have process
+> context. But we also can create sockets by cloning existing sockets. To
+> the best of my knowledge, this is done by things like accept().
+> 
+> Because those sockets are a clone of their ancestors, they also belong
+> to a workload that should be limited. Also note that because they have
+> cgroup context, we will eventually try to put them. So we need to grab
+> an extra reference.
+> 
+> socket_update_cgroup is always called at socket creation, and the
+> original structures are filled with zeroes. Therefore cloning is the
+> *only* path that takes us here with sk->sk_cgroup filled.
 
-Ah, I see. That was actually my fault, I'm sorry for causing trouble
-here and then accusing you instead.
+OK, I guess I understand.
 
-> And because of my rebase sha1 are different that's why Stephen
-> had problem with it.
-> I have changed my arm-next branch and will see on Monday if Stephen
-> will report any problem or not.
-
-Ok, thanks!
-
-	Arnd
+Thanks for the clarification, Galuber!
+-- 
+Michal Hocko
+SUSE Labs
