@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162877Ab3DEUnB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 16:43:01 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:42118 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162806Ab3DEUme (ORCPT
+	id S1162927Ab3DEUoO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 16:44:14 -0400
+Received: from na3sys010aog105.obsmtp.com ([74.125.245.78]:51304 "HELO
+	na3sys010aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1162759Ab3DEUoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 16:42:34 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        x86@kernel.org, hpa@zytor.com, konrad@kernel.org
-Subject: [RFC PATCH] axe the store_gdt() pvops call. (v1)
-Date: Fri,  5 Apr 2013 16:42:20 -0400
-Message-Id: <1365194544-14648-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.8.1.4
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Fri, 5 Apr 2013 16:44:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <515F3160.4020007@linux.vnet.ibm.com>
+References: <20130324155153.GA8597@redhat.com> <515F3160.4020007@linux.vnet.ibm.com>
+From: Roland Dreier <roland@kernel.org>
+Date: Fri, 5 Apr 2013 13:43:49 -0700
+X-Google-Sender-Auth: Efn-6ymzYq19jJCmKWBwTpx_4Nc
+Message-ID: <CAL1RGDU2jtrRrxi6srsH_ADiYGvJbCpCT3UvoLGTX3cvQ=s0kQ@mail.gmail.com>
+Subject: Re: [PATCHv2] rdma: add a new IB_ACCESS_GIFT flag
+To: "Michael R. Hines" <mrhines@linux.vnet.ibm.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Long long time ago (way back in October 2012), when I posted the patches
-that would make it possible to do ACPI S3 with Xen, Peter pointed out that:
-"excellent set of pvops calls that should be nukable to Kingdom Come. There
-is no reason, ever, to read the IDT and GDT from the kernel... the kernel
-already knows what they should be!"
+On Fri, Apr 5, 2013 at 1:17 PM, Michael R. Hines
+<mrhines@linux.vnet.ibm.com> wrote:
+> I also removed the IBV_*_WRITE flags on the sender-side and activated
+> cgroups with the "memory.memsw.limit_in_bytes" activated and the migration
+> with RDMA also succeeded without any problems (both with *and* without GIFT
+> also worked).
 
-http://lkml.indiana.edu/hypermail/linux/kernel/1210.2/01555.html
+Not sure I'm interpreting this correctly.  Are you saying that things
+worked without actually setting the GIFT flag?   In which case why are
+we adding this flag?
 
-Merge windows happens, bugs happen, and only this week I was able to carve
-out some time to dig a bit in this. I started with the GDT and found
-out that we can remove it. My fear was that ACPI S3 would break but fortunatly
-it has its own mechanism for reloading the GDT (and as the 32-bit
-patch shows - it has an redundant one as well!). Tested on 32 bit and
-64-bit kernels - doing ACPI S3 and hibernate as well. The machines
-were ThinkPad T61 and an Asus M5A97.
-
-This RFC patch does the removal of the store_gdt() and as well some of
-the 32-bit ACPI S3 code. Please review at your leisure.
-
-The patches are also visible at:
- 
- git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git devel/for-hpa-3.10
-
- arch/x86/include/asm/paravirt.h       |  4 ----
- arch/x86/include/asm/paravirt_types.h |  2 +-
- arch/x86/include/asm/suspend_32.h     |  1 -
- arch/x86/include/asm/suspend_64.h     |  3 ---
- arch/x86/kernel/acpi/sleep.c          |  2 +-
- arch/x86/kernel/acpi/wakeup_32.S      |  3 ---
- arch/x86/kernel/doublefault_32.c      |  2 +-
- arch/x86/kernel/paravirt.c            |  1 -
- arch/x86/kvm/vmx.c                    |  2 +-
- arch/x86/power/cpu.c                  | 13 +++++++------
- arch/x86/xen/enlighten.c              |  1 -
- 11 files changed, 11 insertions(+), 23 deletions(-)
-
-Konrad Rzeszutek Wilk (3):
-      x86/gdt/64-bit: store/load GDT for ACPI S3 or hibernate/resume path is not needed.
-      x86/gdt/i386: store/load GDT for ACPI S3 or hibernation/resume path is not needed
-      x86/xen/store_gdt: Remove the pvops variant of store_gdt.
-
-konrad@kernel.org (1):
-      x86/wakeup/sleep:  Use pvops functions for changing GDT entries.
-
+ - R.
