@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162775Ab3DEU0m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 16:26:42 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:40647 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162753Ab3DEUYW (ORCPT
+	id S1162804Ab3DEU0s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 16:26:48 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:39307 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162753Ab3DEU0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 16:24:22 -0400
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
-        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: [PATCH v2 4/9] arm: dts: Add a 64 bits version of the skeleton device tree
-Date: Fri,  5 Apr 2013 22:23:59 +0200
-Message-Id: <1365193444-13441-5-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1365193444-13441-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1365193444-13441-1-git-send-email-gregory.clement@free-electrons.com>
+	Fri, 5 Apr 2013 16:26:43 -0400
+Message-ID: <515F3373.40302@hp.com>
+Date: Fri, 05 Apr 2013 16:26:27 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
+        Ian Kent <raven@themaw.net>, Sage Weil <sage@inktank.com>,
+        Steve French <sfrench@samba.org>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Eric Paris <eparis@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, autofs@vger.kernel.org,
+        ceph-devel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-nfs@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Andi Kleen <andi@firstfloor.org>, Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH v2 1/4] dcache: Don't take unnecessary lock in d_count
+ update
+References: <1365181061-30787-1-git-send-email-Waiman.Long@hp.com> <1365181061-30787-2-git-send-email-Waiman.Long@hp.com> <20130405171220.GD4068@ZenIV.linux.org.uk>
+In-Reply-To: <20130405171220.GD4068@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lior Amsalem <alior@marvell.com>
+On 04/05/2013 01:12 PM, Al Viro wrote:
+>> @@ -635,22 +640,14 @@ struct dentry *dget_parent(struct dentry *dentry)
+>>   {
+>>   	struct dentry *ret;
+>>
+>> -repeat:
+>> -	/*
+>> -	 * Don't need rcu_dereference because we re-check it was correct under
+>> -	 * the lock.
+>> -	 */
+>>   	rcu_read_lock();
+>> -	ret = dentry->d_parent;
+>> -	spin_lock(&ret->d_lock);
+>> -	if (unlikely(ret != dentry->d_parent)) {
+>> -		spin_unlock(&ret->d_lock);
+>> -		rcu_read_unlock();
+>> -		goto repeat;
+>> -	}
+>> +	ret = rcu_dereference(dentry->d_parent);
+>>   	rcu_read_unlock();
+>> +	if (dcount_inc_cmpxchg(ret))
+>> +		return ret;
+>> +	spin_lock(&ret->d_lock);
+> And WTF is going to protect your "ret" from being freed just as you'd done
+> rcu_read_unlock()?
 
-In order to be able to use more than 4GB address-cells and size-cells
-have to be set to 2
+I think I had made a mistake here. I should move the rcu_read_unlock() 
+down to before the return statement as well as after the spin_lock(). 
+Thank for pointing this out. I will fix that in the next version. 
+Anything else that needs to be fixed?
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Signed-off-by: Lior Amsalem <alior@marvell.com>
----
- arch/arm/boot/dts/skeleton64.dtsi |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
- create mode 100644 arch/arm/boot/dts/skeleton64.dtsi
-
-diff --git a/arch/arm/boot/dts/skeleton64.dtsi b/arch/arm/boot/dts/skeleton64.dtsi
-new file mode 100644
-index 0000000..1599415
---- /dev/null
-+++ b/arch/arm/boot/dts/skeleton64.dtsi
-@@ -0,0 +1,13 @@
-+/*
-+ * Skeleton device tree in the 64 bits version; the bare minimum
-+ * needed to boot; just include and add a compatible value.  The
-+ * bootloader will typically populate the memory node.
-+ */
-+
-+/ {
-+	#address-cells = <2>;
-+	#size-cells = <2>;
-+	chosen { };
-+	aliases { };
-+	memory { device_type = "memory"; reg = <0 0>; };
-+};
--- 
-1.7.9.5
-
+Regards,
+Longman
