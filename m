@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161640Ab3DEL6a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 07:58:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41852 "EHLO mga09.intel.com"
+	id S1161675Ab3DEL6u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 07:58:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:14075 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161560Ab3DEL6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 07:58:25 -0400
+	id S1161623Ab3DEL6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 07:58:30 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,414,1363158000"; 
-   d="scan'208";a="289866925"
+   d="scan'208";a="312816039"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv3, RFC 17/34] thp, mm: implement grab_thp_write_begin()
-Date: Fri,  5 Apr 2013 14:59:41 +0300
-Message-Id: <1365163198-29726-18-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv3, RFC 25/34] x86-64, mm: proper alignment mappings with hugepages
+Date: Fri,  5 Apr 2013 14:59:49 +0300
+Message-Id: <1365163198-29726-26-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,164 +33,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-The function is grab_cache_page_write_begin() twin but it tries to
-allocate huge page at given position aligned to HPAGE_CACHE_NR.
-
-If, for some reason, it's not possible allocate a huge page at this
-possition, it returns NULL. Caller should take care of fallback to
-small pages.
+Make arch_get_unmapped_area() return unmapped area aligned to HPAGE_MASK
+if the file mapping can have huge pages.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/pagemap.h |   10 ++++++
- mm/filemap.c            |   89 +++++++++++++++++++++++++++++++++++++++--------
- 2 files changed, 85 insertions(+), 14 deletions(-)
+ arch/x86/kernel/sys_x86_64.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index bd07fc1..5a7dda9 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -271,6 +271,16 @@ unsigned find_get_pages_tag(struct address_space *mapping, pgoff_t *index,
+diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
+index dbded5a..d97ab40 100644
+--- a/arch/x86/kernel/sys_x86_64.c
++++ b/arch/x86/kernel/sys_x86_64.c
+@@ -15,6 +15,7 @@
+ #include <linux/random.h>
+ #include <linux/uaccess.h>
+ #include <linux/elf.h>
++#include <linux/pagemap.h>
  
- struct page *grab_cache_page_write_begin(struct address_space *mapping,
- 			pgoff_t index, unsigned flags);
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+struct page *grab_thp_write_begin(struct address_space *mapping,
-+		pgoff_t index, unsigned flags);
-+#else
-+static inline struct page *grab_thp_write_begin(struct address_space *mapping,
-+		pgoff_t index, unsigned flags)
-+{
-+	return NULL;
-+}
-+#endif
- 
- /*
-  * Returns locked page at given index in given cache, creating it if needed.
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 7b4736c..bcb679c 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -2290,16 +2290,17 @@ out:
- EXPORT_SYMBOL(generic_file_direct_write);
- 
- /*
-- * Find or create a page at the given pagecache position. Return the locked
-- * page. This function is specifically for buffered writes.
-+ * Returns true if the page was found in page cache and
-+ * false if it had to allocate a new page.
-  */
--struct page *grab_cache_page_write_begin(struct address_space *mapping,
--					pgoff_t index, unsigned flags)
-+static bool __grab_cache_page_write_begin(struct address_space *mapping,
-+		pgoff_t index, unsigned flags, unsigned int order,
-+		struct page **page)
- {
- 	int status;
- 	gfp_t gfp_mask;
--	struct page *page;
- 	gfp_t gfp_notmask = 0;
-+	int found = true;
- 
- 	gfp_mask = mapping_gfp_mask(mapping);
- 	if (mapping_cap_account_dirty(mapping))
-@@ -2307,27 +2308,87 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
- 	if (flags & AOP_FLAG_NOFS)
- 		gfp_notmask = __GFP_FS;
- repeat:
--	page = find_lock_page(mapping, index);
--	if (page)
-+	*page = find_lock_page(mapping, index);
-+	if (*page)
- 		goto found;
- 
--	page = __page_cache_alloc(gfp_mask & ~gfp_notmask);
--	if (!page)
--		return NULL;
--	status = add_to_page_cache_lru(page, mapping, index,
-+	found = false;
-+	if (order)
-+		*page = alloc_pages(gfp_mask & ~gfp_notmask, order);
-+	else
-+		*page = __page_cache_alloc(gfp_mask & ~gfp_notmask);
-+	if (!*page)
-+		return false;
-+	status = add_to_page_cache_lru(*page, mapping, index,
- 						GFP_KERNEL & ~gfp_notmask);
- 	if (unlikely(status)) {
--		page_cache_release(page);
-+		page_cache_release(*page);
- 		if (status == -EEXIST)
- 			goto repeat;
--		return NULL;
-+		*page = NULL;
-+		return false;
- 	}
- found:
--	wait_for_stable_page(page);
-+	wait_for_stable_page(*page);
-+	return found;
-+}
-+
-+/*
-+ * Find or create a page at the given pagecache position. Return the locked
-+ * page. This function is specifically for buffered writes.
-+ */
-+struct page *grab_cache_page_write_begin(struct address_space *mapping,
-+					pgoff_t index, unsigned flags)
-+{
-+	struct page *page;
-+	__grab_cache_page_write_begin(mapping, index, flags, 0, &page);
- 	return page;
+ #include <asm/ia32.h>
+ #include <asm/syscalls.h>
+@@ -34,6 +35,13 @@ static unsigned long get_align_mask(void)
+ 	return va_align.mask;
  }
- EXPORT_SYMBOL(grab_cache_page_write_begin);
  
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+/*
-+ * Find or create a huge page at the given pagecache position, aligned to
-+ * HPAGE_CACHE_NR. Return the locked huge page.
-+ *
-+ * If, for some reason, it's not possible allocate a huge page at this
-+ * possition, it returns NULL. Caller should take care of fallback to small
-+ * pages.
-+ *
-+ * This function is specifically for buffered writes.
-+ */
-+struct page *grab_thp_write_begin(struct address_space *mapping,
-+		pgoff_t index, unsigned flags)
++static inline unsigned long mapping_align_mask(struct address_space *mapping)
 +{
-+	gfp_t gfp_mask;
-+	struct page *page;
-+	bool found;
-+
-+	BUG_ON(index & HPAGE_CACHE_INDEX_MASK);
-+	gfp_mask = mapping_gfp_mask(mapping);
-+	BUG_ON(!(gfp_mask & __GFP_COMP));
-+
-+	found = __grab_cache_page_write_begin(mapping, index, flags,
-+			HPAGE_PMD_ORDER, &page);
-+	if (!page) {
-+		if (!found)
-+			count_vm_event(THP_WRITE_ALLOC_FAILED);
-+		return NULL;
-+	}
-+
-+	if (!found)
-+		count_vm_event(THP_WRITE_ALLOC);
-+
-+	if (!PageTransHuge(page)) {
-+		unlock_page(page);
-+		page_cache_release(page);
-+		return NULL;
-+	}
-+
-+	return page;
++	if (mapping_can_have_hugepages(mapping))
++		return PAGE_MASK & ~HPAGE_MASK;
++	return get_align_mask();
 +}
-+#endif
 +
- static ssize_t generic_perform_write(struct file *file,
- 				struct iov_iter *i, loff_t pos)
+ unsigned long align_vdso_addr(unsigned long addr)
  {
+ 	unsigned long align_mask = get_align_mask();
+@@ -135,7 +143,7 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+ 	info.length = len;
+ 	info.low_limit = begin;
+ 	info.high_limit = end;
+-	info.align_mask = filp ? get_align_mask() : 0;
++	info.align_mask = filp ? mapping_align_mask(filp->f_mapping) : 0;
+ 	info.align_offset = pgoff << PAGE_SHIFT;
+ 	return vm_unmapped_area(&info);
+ }
+@@ -174,7 +182,7 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
+ 	info.length = len;
+ 	info.low_limit = PAGE_SIZE;
+ 	info.high_limit = mm->mmap_base;
+-	info.align_mask = filp ? get_align_mask() : 0;
++	info.align_mask = filp ? mapping_align_mask(filp->f_mapping) : 0;
+ 	info.align_offset = pgoff << PAGE_SHIFT;
+ 	addr = vm_unmapped_area(&info);
+ 	if (!(addr & ~PAGE_MASK))
 -- 
 1.7.10.4
 
