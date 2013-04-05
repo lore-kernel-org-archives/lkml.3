@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161699Ab3DEJzB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 05:55:01 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34405 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161625Ab3DEJzA (ORCPT
+	id S1161714Ab3DEJ4J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 05:56:09 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:41297 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426Ab3DEJ4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 05:55:00 -0400
-Date: Fri, 5 Apr 2013 10:54:57 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>
-Subject: Re: [PATCH] regulator: core: don't require a supply when supply_name
- is specified
-Message-ID: <20130405095457.GB6597@opensource.wolfsonmicro.com>
-References: <1365114467-16357-1-git-send-email-abrestic@chromium.org>
+	Fri, 5 Apr 2013 05:56:08 -0400
+Message-ID: <515E9FB1.2040803@ti.com>
+Date: Fri, 5 Apr 2013 11:56:01 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dc+cDN39EJAMEtIO"
-Content-Disposition: inline
-In-Reply-To: <1365114467-16357-1-git-send-email-abrestic@chromium.org>
-X-Cookie: Make a wish, it might come true.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>
+CC: <balbi@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 00/21] ARM: OMAP2+: Adapt to ehci-omap changes for
+ 3.10
+References: <1363794300-31526-1-git-send-email-rogerq@ti.com> <515E8B99.8080803@ti.com>
+In-Reply-To: <515E8B99.8080803@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Roger,
 
---dc+cDN39EJAMEtIO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 04/05/2013 10:30 AM, Benoit Cousson wrote:
 
-On Thu, Apr 04, 2013 at 03:27:47PM -0700, Andrew Bresticker wrote:
+...
 
-> Regulator drivers may specify regulator_desc->supply_name which
-> regulator_register() will use to find the supply node for a regulator.
-> If no supply was specified in the device tree or the supply has yet
-> to be registered regulator_register() will fail, deferring the probe
-> of the regulator.  In the case where no supply node was specified in the
-> device tree, there is no supply and it is pointless to try and find one
-> later, so go ahead and add the regulator without the supply.
+>>   ARM: dts: OMAP4: Add HS USB Host IP nodes
+>>   ARM: dts: OMAP3: Add HS USB Host IP nodes
+>>   ARM: dts: omap3-beagle: Add USB Host support
+> 
+> These 3 DTS patches are good to me, but I cannot applied them on top of
+> the already existing patches I queued for 3.10.
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
+> for_3.10/dts
+> 
+> Could you rebase these 3 ones only, and I will applied them.
 
-I'd call this a broken device tree to be honest, the regulators ought to
-have a supply specified.  We should complain about it.  We probably
-ought to be doing this though so I'll apply.
+Mmm, in fact, I've just seen the pull request from Tony :-(
 
---dc+cDN39EJAMEtIO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Tony,
 
-iQIcBAEBAgAGBQJRXp9eAAoJELSic+t+oim9FE4P/jj3TgvovG6Y7oofvoyCYtP3
-Z00p51Er6qXcXLwQqaDM3GEMj32EM42aFF2164KZ18ufoGbRmQfGLOSzJ4XjvIrK
-Q2lfuAQNmd6dhE9VhQAlLew6L+MuRKtWqaORwEGhTSpfbuI2tmrl9WqR5/FqFJnz
-R7JNR3a1GYg9qETEIEGtWAP1OH/FAyqhsGmOjhdYm1os2i/COspPpuxPFzuLmm9x
-XWtTIGtzzomM6z7I0FuiO2O/JQa2pKturJFJqhaNSABnZ5PR6KL3cZqLRtJUQNxO
-LX/ZGv3HJb0Ud8BMMXtaPzsLPqyyFYJ2TaAMDah+Pq3cgcsqAA6LKla9l4TTKF5x
-/TdTRA5NCH30NDGWxOf960/L43xBEQNQp8kGMLHW5FrgP+Dijvu00WUrsbqXONDk
-3E3zm0XAqA8/p0Zg75gaRIRoP+A4DG1XQSvmQrwKkSwCWt6g1prGoUP4h4Q8TeOp
-RuiB70T3eqGuIL3emEhSCIXVWCWabEXC3NxODfrku+mjj6tYDmF34avPiDb6kqS/
-WiNQqYUbfTFuHGgPofaNm0lEwh/rnvu4Uy3p2gAhyi4ULE8xjkFMxYM/CjTRvAKT
-j/uhl7Fgqjqwj32JXZgHGDFp9htJuKiRMONJzhqyZ7ve01Bi6YOwHLTLaLmBJcOC
-4uRiYgcUrpaTtfoAxhFG
-=nTPK
------END PGP SIGNATURE-----
+Don't you want to remove these DTS patches from the pull-request?
 
---dc+cDN39EJAMEtIO--
+Otherwise, I will have to rebase the whole DTS series on top of yours.
+That being said, if the branch is not supposed to be rebased, it is doable.
+
+Thanks,
+Benoit
+
