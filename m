@@ -1,41 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161685Ab3DEGfE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 02:35:04 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:36705 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161327Ab3DEGfB (ORCPT
+	id S1161334Ab3DEGhq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 02:37:46 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:32855 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750723Ab3DEGho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 02:35:01 -0400
-Date: Fri, 5 Apr 2013 08:34:56 +0200
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
-Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "Huangweidong (C)" <weidong.huang@huawei.com>,
-        Zanghongyong <zanghongyong@huawei.com>,
-        Luonengjun <luonengjun@huawei.com>,
-        Zhanghuanzhong <zhanghuanzhong@huawei.com>
-Subject: Re: [Qemu-devel] qemu crashed when starting vm(kvm) with vnc connect
-Message-ID: <20130405063456.GA27569@stefanha-thinkpad.redhat.com>
-References: <D3E216785288A145B7BC975F83A2ED103FE154C1@szxeml556-mbx.china.huawei.com>
+	Fri, 5 Apr 2013 02:37:44 -0400
+X-Auth-Info: oFKiORtWmCTIlZ+VRZ00wfw6022hAXeDSYJr+mt2mSg=
+From: Marek Vasut <marex@denx.de>
+To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+Subject: Re: [PATCH] mmc: mxs-mmc: Add support for non-removable cards
+Date: Fri, 5 Apr 2013 08:37:39 +0200
+User-Agent: KMail/1.13.7 (Linux/3.8-trunk-amd64; KDE/4.8.4; x86_64; ; )
+Cc: cjb@laptop.org, shawn.guo@linaro.org, fabio.estevam@freescale.com,
+        otavio@ossystems.com.br, broonie@opensource.wolfsonmicro.com,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1365135518-31549-1-git-send-email-aletes.xgr@gmail.com>
+In-Reply-To: <1365135518-31549-1-git-send-email-aletes.xgr@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <D3E216785288A145B7BC975F83A2ED103FE154C1@szxeml556-mbx.china.huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304050837.39520.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 09:02:02AM +0000, Zhanghaoyu (A) wrote:
-> I start a kvm VM with vnc(using the zrle protocol) connect, sometimes qemu program crashed during starting period, received signal SIGABRT.
-> Trying about 20 times, this crash may be reproduced.
-> I guess the cause memory corruption or double free.
+Dear Alexandre Pereira da Silva,
 
-Which version of QEMU are you running?
+> Some boards and card slots doesn't have card detect feature available.
+> In that case allow to mark the cards as non-removable, via devicetree.
+> 
+> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
-Please try qemu.git/master.
+Looks good,
 
-Stefan
+Reviewed-by: Marek Vasut <marex@denx.de>
+
+btw. did you know you can let git send-email automatically handle CC for you so 
+you don't have to type it into the command line by simply sticking
+
+Cc: Us Er <e@ma.il>
+
+in the commit message? Preferably under the SoB line.
+
+> ---
+>  drivers/mmc/host/mxs-mmc.c |    6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
+> index 4efe302..7d2cd74 100644
+> --- a/drivers/mmc/host/mxs-mmc.c
+> +++ b/drivers/mmc/host/mxs-mmc.c
+> @@ -95,6 +95,9 @@ static int mxs_mmc_get_cd(struct mmc_host *mmc)
+>  	struct mxs_mmc_host *host = mmc_priv(mmc);
+>  	struct mxs_ssp *ssp = &host->ssp;
+> 
+> +	if (mmc->caps & MMC_CAP_NONREMOVABLE)
+> +		return 1;
+> +
+>  	return !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
+>  		 BM_SSP_STATUS_CARD_DETECT);
+>  }
+> @@ -691,6 +694,9 @@ static int mxs_mmc_probe(struct platform_device *pdev)
+>  	if (flags & OF_GPIO_ACTIVE_LOW)
+>  		host->wp_inverted = 1;
+> 
+> +	if (of_find_property(np, "non-removable", NULL))
+> +		mmc->caps |= MMC_CAP_NONREMOVABLE;
+> +
+>  	mmc->f_min = 400000;
+>  	mmc->f_max = 288000000;
+>  	mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
+
+Best regards,
+Marek Vasut
