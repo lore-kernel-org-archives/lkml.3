@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161121Ab3DEBtf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 21:49:35 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:18210 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161029Ab3DEBtd (ORCPT
+	id S1161144Ab3DEBxh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 21:53:37 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:36934 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161131Ab3DEBxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 21:49:33 -0400
-X-AuditID: cbfee691-b7f5f6d000002fda-3b-515e2dabc53c
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <000101ce319f$87f2a3f0$97d7ebd0$%han@samsung.com>
-In-reply-to: <000101ce319f$87f2a3f0$97d7ebd0$%han@samsung.com>
-Subject: [PATCH 7/7] rtc: rtc-max6902: use spi_set_drvdata()
-Date: Fri, 05 Apr 2013 10:49:31 +0900
-Message-id: <000701ce319f$d0fa51b0$72eef510$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4xn4fH39zvwb7bR32L9HOXANRbigAAD7oQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t8zQ901unGBBtO2MlosuXiV3WLO+jVs
-	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGsVlk5Kak1mW
-	WqRvl8CVsX/NWvaCC6wVr3/3MDcwXmLpYuTkkBAwkdja0ssMYYtJXLi3nq2LkYtDSGAZo8Tb
-	nnlMMEU7rnWzQiSmM0ps7z7IDOH8YpTomjePDaSKTUBN4suXw+xdjBwcIgL6Em0tGiA1zAK9
-	jBJnenezg9QICdhKrP7TA7aaU8BO4uu8DYwgtrCAjcT87YfBzmARUJWYuP4R2ExeoPptXSdY
-	IWxBiR+T74H1MgtoSazfeZwJwpaX2LzmLTPIXgkBdYlHf3VBwiICRhJLFt2CKheR2PfiHSPI
-	PRICj9gldk9ZxwaxS0Di2+RDLBC9shKbDkBDQlLi4IobLBMYJWYh2TwLyeZZSDbPQrJiASPL
-	KkbR1ILkguKk9CJTveLE3OLSvHS95PzcTYyQWJ24g/H+AetDjMlA6ycyS4km5wNjPa8k3tDY
-	zMjC1MTU2Mjc0ow0YSVxXvUW60AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjDzadc/MBX/1
-	GV8zbnh+8YrPNK+n3p7FTssNQ999UV87XTJWv/lbSlVw455N/YeY8mQdpho/mdViMMvsjOTF
-	x2qM77+YrXi+S1741YepQeE9P849E1rn8LZL8YHsnGkSMi5eXCeyKp2utv4O/5F0UHXBkR++
-	L+0mdB1T6/hYMft5z64nlqorZiixFGckGmoxFxUnAgBewot46wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKKsWRmVeSWpSXmKPExsVy+t9jQd3VunGBBvPbrCyWXLzKbjFn/Ro2
-	i8sLL7FaXN41h81if2cHowOrx56JJ9k8Tsz4zeLRt2UVo8f0eT+ZPD5vkgtgjWpgtMlITUxJ
-	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
-	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxjzNi/Zi17wQXWite/e5gbGC+xdDFyckgImEjs
-	uNbNCmGLSVy4t56ti5GLQ0hgOqPE9u6DzBDOL0aJrnnz2ECq2ATUJL58OczexcjBISKgL9HW
-	ogFSwyzQyyhxpnc3O0iNkICtxOo/PWAbOAXsJL7O28AIYgsL2EjM336YGcRmEVCVmLj+EdhM
-	XqD6bV0nWCFsQYkfk++B9TILaEms33mcCcKWl9i85i0zyF4JAXWJR391QcIiAkYSSxbdgioX
-	kdj34h3jBEahWUgmzUIyaRaSSbOQtCxgZFnFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJEZwI
-	nknvYFzVYHGIUYCDUYmHN6MvNlCINbGsuDL3EKMEB7OSCO9OvrhAId6UxMqq1KL8+KLSnNTi
-	Q4zJQI9OZJYSTc4HJqm8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh
-	4uCUamBcISlgtunSsb6H7/Yz8bx4M+XXVKUXtRl9DRqMwnMk17ZtXRTss6HERufuh+Dq63N3
-	q7/KbGqW67KfvWDSR9PGPRELTQ4bOKsZBiZfXecStfVVWm6OccTxtQkJT1240jov8qeU63q+
-	X5980V78vtQKiax5G1/N36ITKG402zx8J5vhBHPfTTOVWIozEg21mIuKEwEbzm+vSAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 4 Apr 2013 21:53:35 -0400
+Date: Fri, 5 Apr 2013 09:53:27 +0800
+From: Shaohua Li <shli@kernel.org>
+To: Max Filippov <jcmvbkbc@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        linux-f2fs-devel@lists.sourceforge.net, slava@dubeyko.com
+Subject: Re: mkfs.f2fs gets stuck with "blk_update_request: bio idx 0 >= vcnt
+ 0" on 3.8
+Message-ID: <20130405015327.GA319@kernel.org>
+References: <CAMo8BfLusS_vT4LWU93iCXpVSgN_Uvi1mBvLUVx+892V67X1JQ@mail.gmail.com>
+ <254789F5-7950-4239-AB7B-2DB9DC73565F@dubeyko.com>
+ <5159EC3D.2020501@gmail.com>
+ <1364884045.3301.18.camel@slavad-ubuntu>
+ <CAMo8Bf+83t3ML_Ctr4V-pVL7Meei=pdOeC5cgtrPJB12tOcGtA@mail.gmail.com>
+ <CAMo8BfKgTPO6AJng6zo1my4K_PivC1gJFQmcvy8q=iDYWSO2Pw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMo8BfKgTPO6AJng6zo1my4K_PivC1gJFQmcvy8q=iDYWSO2Pw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the wrapper functions for getting and setting the driver data using
-spi_device instead of using dev_{get|set}_drvdata with &spi->dev, so we
-can directly pass a struct spi_device.
+On Thu, Apr 04, 2013 at 06:00:18AM +0400, Max Filippov wrote:
+> Hi,
+> 
+> On Tue, Apr 2, 2013 at 7:41 PM, Max Filippov <jcmvbkbc@gmail.com> wrote:
+> > I'm trying to create f2fs filesystem on SD card on pandaboard using
+> > f2fs-tools v1.0.0.
+> > It works fine on Linus' v3.6, but fails on both v3.8 and stable v3.8.5:
+> >
+> > # mkfs.f2fs /dev/mmcblk0p3
+> > Info: sector size = 512
+> > Info: total sectors = 11370496 (in 512bytes)
+> > Info: zone aligned segment0 blkaddr: 512
+> > [  257.789764] blk_update_request: bio idx 0 >= vcnt 0
+> >
+> > mkfs process gets stuck in D state and I see the following in the dmesg:
+> >
+> > [  257.789733] __end_that: dev mmcblk0: type=1, flags=122c8081
+> > [  257.789764]   sector 4194304, nr/cnr 2981888/4294959104
+> > [  257.789764]   bio df3840c0, biotail df3848c0, buffer   (null), len 1526726656
+> > [  257.789764] blk_update_request: bio idx 0 >= vcnt 0
+> > [  257.794921] request botched: dev mmcblk0: type=1, flags=122c8081
+> > [  257.794921]   sector 4194304, nr/cnr 2981888/4294959104
+> > [  257.794921]   bio df3840c0, biotail df3848c0, buffer   (null), len 1526726656
+> 
+> [...]
+> 
+> >> So, I think that it needs to investigate issue in the direction of
+> >> BLKDISCARD code on the kernel side. It makes sense to debug
+> >> f2fs_trim_device() method of mkfs.f2fs utility too. But I can't see
+> >> anything strange in this function at a glance.
+> >
+> > Ok, I'll try to find what has changed in that ioctl handler since 3.6.
+> 
+> the commit 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9 'block: add plug
+> for blkdev_issue_discard'
+> have added merge opportunity for DISCARD requests. When I do
+> mkfs.f2fs on a 5G partition (0xad8000 sectors) it submits two bios,
+> one for 0x7fe000 sectors (0xffc00000 bytes) and another for
+> 0x2da000 sectors (0x5b400000 bytes). Prior to that commit these
+> bios weren't merged into one request. Now the second bio gets
+> merged with the first, but the request's __data_len field is unsigned int
+> and it gets wrapped to 0x5b000000 bytes instead of 0x15b000000
+> in the bio_attempt_back_merge. Later this reduced size is passed to
+> the blk_update_request causing KERN_ERR and not completed
+> request. Reverting this commit fixes mkfs.f2fs for me.
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/rtc/rtc-max6902.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+A workaround is setting limits.max_discard_sectors to a smaller value.
 
-diff --git a/drivers/rtc/rtc-max6902.c b/drivers/rtc/rtc-max6902.c
-index 7e4491b..7730a65 100644
---- a/drivers/rtc/rtc-max6902.c
-+++ b/drivers/rtc/rtc-max6902.c
-@@ -139,7 +139,7 @@ static int max6902_probe(struct spi_device *spi)
- 	if (IS_ERR(rtc))
- 		return PTR_ERR(rtc);
- 
--	dev_set_drvdata(&spi->dev, rtc);
-+	spi_set_drvdata(spi, rtc);
- 	return 0;
- }
- 
--- 
-1.7.2.5
+So the question is why __data_len isn't sector based? Since disk is sector
+based, is there any disk finishing IO in byte granularity? Maybe Jens can
+answer.
 
-
+Thanks,
+Shaohua
