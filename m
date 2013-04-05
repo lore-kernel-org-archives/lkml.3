@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161854Ab3DEIDF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 04:03:05 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:16496 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999Ab3DEIDA (ORCPT
+	id S1161852Ab3DEIE0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 04:04:26 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:46676 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161089Ab3DEIEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 04:03:00 -0400
-X-AuditID: cbfee691-b7f5f6d000002fda-4d-515e8532dad8
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, FlorianSchandinat@gmx.de,
-        s.trumtrar@pengutronix.de, plagnioj@jcrosoft.com,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <8984685.165951364521249756.JavaMail.weblogic@epml18>
- <515E75BC.20604@ti.com>
-In-reply-to: <515E75BC.20604@ti.com>
-Subject: Re: [PATCH RESEND] fbmon: use VESA_DMT_VSYNC_HIGH to fix typo
-Date: Fri, 05 Apr 2013 17:02:57 +0900
-Message-id: <002601ce31d3$fc25cfc0$f4716f40$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4xys6ejvKtNqWcSHOwEZPg6BF8nwACP94Q
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEIsWRmVeSWpSXmKPExsVy+t8zY12j1rhAgynvpC3mrF/DZvHykKZF
-	58xrjBaXF15itTjR94HV4vKuOWwW6x6+YLL49HEhi8X6+bfYHDg9PnyM83h14Q6Lx4kZv1k8
-	+v8aePRtWcXocfzGdiaPz5vkAtijuGxSUnMyy1KL9O0SuDLetC1iKnjOWXH14ST2BsbX7F2M
-	nBwSAiYSy159YoWwxSQu3FvP1sXIxSEksIxR4uq3iWwwRR//vARrEBKYzihx81UiRNEvRomV
-	J9+AdbMJqEl8+XIYrEhEQEdi0qIeZpAiZoFzjBIN27pYILqjJeavbmfqYuTg4BRQkdh5wgwk
-	LCzgJjH/41mwEhYBVYlLF28xgdi8ArYSHQ8b2CFsQYkfk++B1TALaEms33mcCcKWl9i85i0z
-	yEgJAXWJR391IU4wkpg7cQ9UuYjEvhfvGEHOkRBo5ZDo+b2TGWKXgMS3yYdYIHplJTYdYIb4
-	V1Li4IobLBMYJWYh2TwLyeZZSDbPQrJiASPLKkbR1ILkguKk9CJTveLE3OLSvHS95PzcTYyQ
-	+J64g/H+AetDjMlA6ycyS4km5wPTQ15JvKGxmZGFqYmpsZG5pRlpwkrivOot1oFCAumJJanZ
-	qakFqUXxRaU5qcWHGJk4OKUaGA8+eLY2Zeselb3b7XjOW356H8azNE30RsP3icVpMWvWhDUf
-	z5UIePeWzf9LYGX1Rv69PkfWrmiSfbBkbzTLoYZDLya//XEm/9qN7511yydNeB9VlKk80V5p
-	fqriz7O7Vv4JuljywnnVr870HduPVOrq9icVFpm4rA3P5Tp2806MaPy9y8siU8SVWIozEg21
-	mIuKEwHAZDWKBQMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPKsWRmVeSWpSXmKPExsVy+t9jQV2j1rhAg7e/RS3mrF/DZvHykKZF
-	58xrjBaXF15itTjR94HV4vKuOWwW6x6+YLL49HEhi8X6+bfYHDg9PnyM83h14Q6Lx4kZv1k8
-	+v8aePRtWcXocfzGdiaPz5vkAtijGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0t
-	zJUU8hJzU22VXHwCdN0yc4AOU1IoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS
-	1jFmvGlbxFTwnLPi6sNJ7A2Mr9m7GDk5JARMJD7+eQlli0lcuLeeDcQWEpjOKHHzVWIXIxeQ
-	/YtRYuXJN6wgCTYBNYkvXw6DNYgI6EhMWtTDDFLELHCOUaJhWxcLRHe0xPzV7UxdjBwcnAIq
-	EjtPmIGEhQXcJOZ/PAtWwiKgKnHp4i0mEJtXwFai42EDO4QtKPFj8j2wGmYBLYn1O48zQdjy
-	EpvXvGUGGSkhoC7x6K8uxAlGEnMn7oEqF5HY9+Id4wRGoVlIJs1CMmkWkkmzkLQsYGRZxSia
-	WpBcUJyUnmuoV5yYW1yal66XnJ+7iRGcPJ5J7WBc2WBxiFGAg1GJhzejLzZQiDWxrLgy9xCj
-	BAezkgjvTr64QCHelMTKqtSi/Pii0pzU4kOMyUCPTmSWEk3OBya2vJJ4Q2MTMyNLIzMLIxNz
-	c9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpgzIhf9P9fkp9JrJWGr1nXnV7DtNcNLIej
-	ZNRU2c2Xi+hOfuQdlsIk4szLfvvA7ddb2ysuGM16tcU08L/qLtVgg75ne8O+HF3b3HH77Y0D
-	FSk3xbPvKqxTzQjj/PXjvOd34/BHVsmcysKVD0JfXCub3d4VmNimPjOsItC7UnBW0uk9Gao9
-	cx4rsRRnJBpqMRcVJwIA2JUXDGIDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 5 Apr 2013 04:04:23 -0400
+Date: Fri, 5 Apr 2013 10:04:18 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 3/3] x86: kernel base offset ASLR
+Message-ID: <20130405080418.GG26889@gmail.com>
+References: <1365106055-22939-1-git-send-email-keescook@chromium.org>
+ <1365106055-22939-4-git-send-email-keescook@chromium.org>
+ <515DE0C9.3030709@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515DE0C9.3030709@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, April 05, 2013 3:57 PM, Tomi Valkeinen wrote:
-> 
-> Hi,
-> 
-> On 2013-03-29 03:40, Jingoo Han wrote:
-> > VESA_DMT_VSYNC_HIGH should be used instead of VESA_DMT_HSYNC_HIGH,
-> > because FB_SYNC_VERT_HIGH_ACT is related to vsync, not to hsync.
-> >
-> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> > Cc: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-> > Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> > ---
-> >  drivers/video/fbmon.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/video/fbmon.c b/drivers/video/fbmon.c
-> > index 94ad0f7..7f67099 100644
-> > --- a/drivers/video/fbmon.c
-> > +++ b/drivers/video/fbmon.c
-> > @@ -1400,7 +1400,7 @@ int fb_videomode_from_videomode(const struct videomode *vm,
-> >  	fbmode->vmode = 0;
-> >  	if (vm->dmt_flags & VESA_DMT_HSYNC_HIGH)
-> >  		fbmode->sync |= FB_SYNC_HOR_HIGH_ACT;
-> > -	if (vm->dmt_flags & VESA_DMT_HSYNC_HIGH)
-> > +	if (vm->dmt_flags & VESA_DMT_VSYNC_HIGH)
-> >  		fbmode->sync |= FB_SYNC_VERT_HIGH_ACT;
-> >  	if (vm->data_flags & DISPLAY_FLAGS_INTERLACED)
-> >  		fbmode->vmode |= FB_VMODE_INTERLACED;
-> 
-> I'll apply this to fbdev fixes.
 
-Oh, thank you. :)
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-Best regards,
-Jingoo Han
-
+> I have to admit to being somewhat skeptical toward KASLR with only 8 
+> bits of randomness.  There are at least two potential ways of 
+> dramatically increasing the available randomness:
 > 
->  Tomi
+> 1. actually compose the kernel of multiple independently relocatable
+>    pieces (maybe chunk it on 2M boundaries or something.)
 > 
+> 2. compile the kernel as one of the memory models which can be executed
+>    anywhere in the 64-bit address space.  The cost of this would have
+>    to be quantified, of course.
 > 
+> The latter is particularly something that should be considered for the 
+> LPF JIT, to defend against JIT spray attacks.
 
+The cost of 64-bit RIPs is probably measurable both in cache footprint and 
+in execution speed.
 
+Doing that might make sense - but unless it's surprisingly cheap to do it, 
+at least from a distro perspective, randomizing the kernel base using the 
+existing compact address space would probably be the preferred option - 
+even if a bigger build model was available.
+
+Random runtime shuffling of the kernel image - is that possible with 
+existing toolchains?
+
+Thanks,
+
+	Ingo
