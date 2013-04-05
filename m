@@ -1,170 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765581Ab3DDXxc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 19:53:32 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:32193 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764911Ab3DDXrz (ORCPT
+	id S1765547Ab3DEABo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 20:01:44 -0400
+Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:31740
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1765470Ab3DEABn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 19:47:55 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v3 10/22] x86, mm, numa: Move two functions calling on successful path later
-Date: Thu,  4 Apr 2013 16:46:14 -0700
-Message-Id: <1365119186-23487-11-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
-References: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 4 Apr 2013 20:01:43 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VS-5(zz98dI9371I936eI542I1432Id799h4015Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275dhz2dh2a8h668h839h8e2h8e3h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
+From: Sethi Varun-B16395 <B16395@freescale.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Joerg Roedel <joro@8bytes.org>, Yoder Stuart-B08248 <B08248@freescale.com>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>
+Subject: RE: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu
+ implementation.
+Thread-Topic: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu
+ implementation.
+Thread-Index: AQHOK+8t5MYhVlGTF0iQ16GsJktLA5jDI3qAgAGvMoCAATtRIIAAKn4AgAAO3OCAAAfogIAAeVsQ
+Date: Fri, 5 Apr 2013 00:01:38 +0000
+Message-ID: <C5ECD7A89D1DC44195F34B25E172658D45AC83@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1364500442-20927-1-git-send-email-Varun.Sethi@freescale.com>
+	 <1364500442-20927-6-git-send-email-Varun.Sethi@freescale.com>
+	 <20130402161812.GI15687@8bytes.org> <1365012091.2882.252.camel@bling.home>
+	 <C5ECD7A89D1DC44195F34B25E172658D45883B@039-SN2MPN1-013.039d.mgd.msft.net>
+	 <1365088930.2882.296.camel@bling.home>
+	 <C5ECD7A89D1DC44195F34B25E172658D459471@039-SN2MPN1-013.039d.mgd.msft.net>
+ <1365093819.2882.301.camel@bling.home>
+In-Reply-To: <1365093819.2882.301.camel@bling.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.214.249.237]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3501pQW006071
 
-We need to have numa info ready before init_mem_mapping, so we
-can call init_mem_mapping per nodes also can trim node mem range to
-big alignment.
 
-Current numa parsing need to allocate some buffer and need to be
-called after init_mem_mapping.
 
-So try to split parsing numa info to two stages, and early one will be
-before init_mem_mapping, and it should not need allocate buffers.
+> -----Original Message-----
+> From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> Sent: Thursday, April 04, 2013 10:14 PM
+> To: Sethi Varun-B16395
+> Cc: Joerg Roedel; Yoder Stuart-B08248; Wood Scott-B07421;
+> iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org; linux-
+> kernel@vger.kernel.org; galak@kernel.crashing.org;
+> benh@kernel.crashing.org
+> Subject: Re: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and iommu
+> implementation.
+> 
+> On Thu, 2013-04-04 at 16:35 +0000, Sethi Varun-B16395 wrote:
+> >
+> > > -----Original Message-----
+> > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> > > Sent: Thursday, April 04, 2013 8:52 PM
+> > > To: Sethi Varun-B16395
+> > > Cc: Joerg Roedel; Yoder Stuart-B08248; Wood Scott-B07421;
+> > > iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org;
+> > > linux- kernel@vger.kernel.org; galak@kernel.crashing.org;
+> > > benh@kernel.crashing.org
+> > > Subject: Re: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver and
+> > > iommu implementation.
+> > >
+> > > On Thu, 2013-04-04 at 13:00 +0000, Sethi Varun-B16395 wrote:
+> > > >
+> > > > > -----Original Message-----
+> > > > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> > > > > Sent: Wednesday, April 03, 2013 11:32 PM
+> > > > > To: Joerg Roedel
+> > > > > Cc: Sethi Varun-B16395; Yoder Stuart-B08248; Wood Scott-B07421;
+> > > > > iommu@lists.linux-foundation.org; linuxppc-dev@lists.ozlabs.org;
+> > > > > linux- kernel@vger.kernel.org; galak@kernel.crashing.org;
+> > > > > benh@kernel.crashing.org
+> > > > > Subject: Re: [PATCH 5/5 v11] iommu/fsl: Freescale PAMU driver
+> > > > > and iommu implementation.
+> > > > >
+> > > > > On Tue, 2013-04-02 at 18:18 +0200, Joerg Roedel wrote:
+> > > > > > Cc'ing Alex Williamson
+> > > > > >
+> > > > > > Alex, can you please review the iommu-group part of this patch?
+> > > > >
+> > > > > Sure, it looks pretty reasonable.  AIUI, all PCI devices are
+> > > > > below some kind of host bridge that is either new and supports
+> > > > > partitioning or old and doesn't.  I don't know if that's a
+> > > > > visibility or isolation requirement, perhaps PCI ACS-ish.  In
+> > > > > the new host bridge case, each device gets a group.  This seems
+> > > > > not to have any quirks for multifunction devices though.  On AMD
+> > > > > and Intel IOMMUs we test multifunction device ACS support to
+> > > > > determine whether all the functions should be in the same group.
+> > > > > Is there any reason
+> > > to trust multifunction devices on PAMU?
+> > > > >
+> > > > [Sethi Varun-B16395] In the case where we can partition endpoints
+> > > > we can distinguish transactions based on the bus,device,function
+> > > > number combination. This support is available in the PCIe
+> > > > controller (host bridge).
+> > >
+> > > So can x86 IOMMUs, that's the visibility aspect of IOMMU groups.
+> > > Visibility alone doesn't necessarily imply that a device is isolated
+> > > though.  A multifunction PCI device that doesn't expose ACS support
+> > > may not isolate functions from each other.  For example a
+> > > peer-to-peer DMA between functions may not be translated by the
+> > > upstream IOMMU.  IOMMU groups should encompass both visibility and
+> isolation.
+> > [Sethi Varun-B16395] We can isolate the DMA access to the host based
+> > on the to the pci bus,device,function number.
+> 
+> The IOMMU can only isolate DMA that it can see.  A multifunction device
+> may never expose peer-to-peer DMA to the upstream device, it's
+> implementation specific.  The ACS flags allow that possibility to be
+> controlled and prevented.
+> 
+> > I thought that was enough to put devices in to separate iommu groups.
+> > This is a PCIe controller property which allows us to partition PCIe
+> > devices. But, what I can understand from your point is that we also
+> > need to consider isolation at PCIe device level as well. I will check
+> > for the case of multifunction devices.
+> >
+> > >
+> > > > > I also find it curious what happens to the iommu group of the
+> > > > > host bridge.  In the partitionable case the host bridge group is
+> > > > > removed, in the non-partitionable case the host bridge group
+> > > > > becomes the group for the children, removing the host bridge.
+> > > > > It's unique to PAMU so far that these host bridges are even in
+> > > > > an iommu group (x86 only adds pci devices), but I don't see it
+> > > > > as necessarily wrong leaving it in either scenario.  Does it
+> > > > > solve some problem to remove
+> > > them from the groups?
+> > > > > Thanks,
+> > > > [Sethi Varun-B16395] The PCIe controller isn't a partitionable
+> > > > entity, it would always be owned by the host.
+> > >
+> > > Ownership of a device shouldn't play into the group context.  An
+> > > IOMMU group should be defined by it's visibility and isolation from
+> > > other devices.  Whether the PCIe controller is allowed to be handed
+> > > to userspace is a question for VFIO.
+> > [Sethi Varun-B16395] The problem is in the case, where we can't
+> > partition PCIe devices. PCIe devices share the same device group as
+> > the PCI controller. This becomes a problem while assigning the devices
+> > to the guest, as you are required to unbind all the PCIe devices
+> > including the controller from the host. PCIe controller can't be
+> > unbound from the host, so we simply delete the controller iommu_group.
+> 
+> Unbinding devices is a VFIO implementation, it shouldn't leak into IOMMU
+> groups.  Also note that VFIO has a driver white list where we can have
+> exceptions to the rule.  I recently added pciehp to that list because the
+> host driver provides functionality.  Being attached to the host driver
+> means the device is not accessible to the user through VFIO, but other
+> devices in the group are.  Thanks,
+> 
+Also, as Stuart pointed out the PCIe controller aren't the actual DMA devices (endpoints are the actual DMA devices). So, we remove the device group allocated for the PCIe controllers.
 
-At last we will have early_initmem_init() and initmem_init().
+-Varun
 
-This one is first one for separation.
-
-setup_node_data() and numa_init_array() are only called for successful
-path, so we can move calling to x86_numa_init(). That will also make
-numa_init() small and readable.
-
--v2: remove online_node_map clear in numa_init(), as it is only
-     set in setup_node_data() at last in successful path.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/mm/numa.c | 69 ++++++++++++++++++++++++++++++------------------------
- 1 file changed, 39 insertions(+), 30 deletions(-)
-
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 72fe01e..d545638 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -480,7 +480,7 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
- static int __init numa_register_memblks(struct numa_meminfo *mi)
- {
- 	unsigned long uninitialized_var(pfn_align);
--	int i, nid;
-+	int i;
- 
- 	/* Account for nodes with cpus and no memory */
- 	node_possible_map = numa_nodes_parsed;
-@@ -509,24 +509,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 	if (!numa_meminfo_cover_memory(mi))
- 		return -EINVAL;
- 
--	/* Finally register nodes. */
--	for_each_node_mask(nid, node_possible_map) {
--		u64 start = PFN_PHYS(max_pfn);
--		u64 end = 0;
--
--		for (i = 0; i < mi->nr_blks; i++) {
--			if (nid != mi->blk[i].nid)
--				continue;
--			start = min(mi->blk[i].start, start);
--			end = max(mi->blk[i].end, end);
--		}
--
--		if (start < end)
--			setup_node_data(nid, start, end);
--	}
--
--	/* Dump memblock with node info and return. */
--	memblock_dump_all();
- 	return 0;
- }
- 
-@@ -562,7 +544,6 @@ static int __init numa_init(int (*init_func)(void))
- 
- 	nodes_clear(numa_nodes_parsed);
- 	nodes_clear(node_possible_map);
--	nodes_clear(node_online_map);
- 	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
- 	WARN_ON(memblock_set_node(0, ULLONG_MAX, MAX_NUMNODES));
- 	numa_reset_distance();
-@@ -580,15 +561,6 @@ static int __init numa_init(int (*init_func)(void))
- 	if (ret < 0)
- 		return ret;
- 
--	for (i = 0; i < nr_cpu_ids; i++) {
--		int nid = early_cpu_to_node(i);
--
--		if (nid == NUMA_NO_NODE)
--			continue;
--		if (!node_online(nid))
--			numa_clear_node(i);
--	}
--	numa_init_array();
- 	return 0;
- }
- 
-@@ -621,7 +593,7 @@ static int __init dummy_numa_init(void)
-  * last fallback is dummy single node config encomapssing whole memory and
-  * never fails.
-  */
--void __init x86_numa_init(void)
-+static void __init early_x86_numa_init(void)
- {
- 	if (!numa_off) {
- #ifdef CONFIG_X86_NUMAQ
-@@ -641,6 +613,43 @@ void __init x86_numa_init(void)
- 	numa_init(dummy_numa_init);
- }
- 
-+void __init x86_numa_init(void)
-+{
-+	int i, nid;
-+	struct numa_meminfo *mi = &numa_meminfo;
-+
-+	early_x86_numa_init();
-+
-+	/* Finally register nodes. */
-+	for_each_node_mask(nid, node_possible_map) {
-+		u64 start = PFN_PHYS(max_pfn);
-+		u64 end = 0;
-+
-+		for (i = 0; i < mi->nr_blks; i++) {
-+			if (nid != mi->blk[i].nid)
-+				continue;
-+			start = min(mi->blk[i].start, start);
-+			end = max(mi->blk[i].end, end);
-+		}
-+
-+		if (start < end)
-+			setup_node_data(nid, start, end); /* online is set */
-+	}
-+
-+	/* Dump memblock with node info */
-+	memblock_dump_all();
-+
-+	for (i = 0; i < nr_cpu_ids; i++) {
-+		int nid = early_cpu_to_node(i);
-+
-+		if (nid == NUMA_NO_NODE)
-+			continue;
-+		if (!node_online(nid))
-+			numa_clear_node(i);
-+	}
-+	numa_init_array();
-+}
-+
- static __init int find_near_online_node(int node)
- {
- 	int n, val;
--- 
-1.8.1.4
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
