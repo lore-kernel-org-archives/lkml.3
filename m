@@ -1,10 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161179Ab3DEEWG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 00:22:06 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49466 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1765422Ab3DEEWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1161118Ab3DEEWE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 00:22:04 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57677 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190Ab3DEEWB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Apr 2013 00:22:01 -0400
 From: Nishanth Menon <nm@ti.com>
 To: <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
@@ -14,62 +15,97 @@ CC: Liam Girdwood <lgirdwood@gmail.com>,
         "Rafael J. Wysocki" <rjw@sisk.pl>,
         Viresh Kumar <viresh.kumar@linaro.org>,
         Shawn Guo <shawn.guo@linaro.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH 0/2] cpufreq/regulator: Handle regulators that defer probe with device tree bindings
-Date: Thu, 4 Apr 2013 23:21:46 -0500
-Message-ID: <1365135708-23886-1-git-send-email-nm@ti.com>
+Subject: [PATCH 2/2] cpufreq: cpufreq-cpu0: defer probe when regulator is not ready
+Date: Thu, 4 Apr 2013 23:21:48 -0500
+Message-ID: <1365135708-23886-3-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1365135708-23886-1-git-send-email-nm@ti.com>
+References: <1365135708-23886-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-Currently get_regulator returns -EPROBE_DEFER in the case of regulator supply
-which have no device tree node or even if regulator which are depicted in device
-tree node is defering it's registration for valid reasons.
+regulator_get will now return -EPROBE_DEFER when the cpu0-supply
+node is present, but the regulator is not yet registered.
 
-This makes it impossible to use an regulator that registers itself after
-cpufreq-cpu0 probe is complete. The reason for the same is regulator framework
-fails to return appropriate error value when device tree binding is not actually
-present as a node.
+It is possible for this to occur when the regulator registration
+by itself might be defered due to some dependent interface not
+yet instantiated. For example: an regulator which uses I2C and GPIO
+might need both systems available before proceeding, in this case,
+the regulator might defer it's registration.
 
-Once we fix that, we can then fix cpufreq-cpu0 to make intelligent decisions
-based on return value.
+However, the cpufreq-cpu0 driver assumes that any un-successful return
+result is equivalent of failure.
 
-Nishanth Menon (2):
-  regulator: core: return err value for regulator_get if there is no DT
-    binding
-  cpufreq: cpufreq-cpu0: defer probe when regulator is not ready
+When the regulator_get returns failure other than -EPROBE_DEFER, it
+makes sense to assume that supply node is not present and proceed
+with the assumption that only clock control is necessary in the
+platform.
 
+With this change, we can now handle the following conditions:
+a) cpu0-supply binding is not present, regulator_get will return
+appropriate error result, resulting in cpufreq-cpu0 driver controlling
+just the clock.
+b) cpu0-supply binding is present, regulator_get returns -EPROBE_DEFER,
+we retry resulting in cpufreq-cpu0 driver registering later once the
+regulator is available.
+c) cpu0-supply binding is present, regulator_get returns -EPROBE_DEFER,
+however, regulator never registers, we retry until cpufreq-cpu0
+driver fails to register pointing at device tree information bug.
+However, in this case, the fact that cpufreq-cpu0 operates with clock
+only when the DT binding clearly indicates need of a supply is a bug of
+it's own.
+d) cpu0-supply gets an regulator at probe - cpufreq-cpu0 driver controls
+both the clock and regulator
+
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
  drivers/cpufreq/cpufreq-cpu0.c |   20 ++++++++++++++------
- drivers/regulator/core.c       |    4 ++--
- 2 files changed, 16 insertions(+), 8 deletions(-)
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
-Series is based off tag v3.9-rc5 (also applies on rafael's bleeding-edge branch)
-
-Series is also available at:
-https://github.com/nmenon/linux-2.6-playground/commits/push/cpufreq-regulator-fixing-v1
-git link: git://github.com/nmenon/linux-2.6-playground.git
-branch: push/cpufreq-regulator-fixing-v1
-
-Test scenarios(performed on 3.9-rc3 on beagle-XM platform):
-test #1:  cpu0-supply binding is not present:
-	http://pastebin.com/0SSC1HAw
-test #2: cpu0-supply binding is present, but regulator defers probing:
-	http://pastebin.com/HCSJqtRK
-test #3: cpu0-supply binding is present, but regulator never registers (bug in DT binding)
-	http://pastebin.com/guUwQcGW
-test #4: cpu0-supply binding is present, regulator is available:
-	http://pastebin.com/hsbBdxiz
-	
-Sub Note: This series might not be important for 3.9, considering the regulator
-bug has been around since last year, however, it might be nice to have it fixed
-up in 3.10 sometime.
-
-Regards,
-Nishanth Menon
+diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+index 4e5b7fb..55fec7c 100644
+--- a/drivers/cpufreq/cpufreq-cpu0.c
++++ b/drivers/cpufreq/cpufreq-cpu0.c
+@@ -194,6 +194,20 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
+ 	cpu_dev = &pdev->dev;
+ 	cpu_dev->of_node = np;
+ 
++	cpu_reg = devm_regulator_get(cpu_dev, "cpu0");
++	if (IS_ERR(cpu_reg)) {
++		/*
++		 * If cpu0 regulator supply node is present, but regulator is
++		 * not yet registered, we should try defering probe.
++		 */
++		if (PTR_ERR(cpu_reg) == -EPROBE_DEFER) {
++			dev_err(cpu_dev, "cpu0 regulator not ready, retry\n");
++			return -EPROBE_DEFER;
++		}
++		pr_err("failed to get cpu0 regulator: %ld\n", PTR_ERR(cpu_reg));
++		cpu_reg = NULL;
++	}
++
+ 	cpu_clk = devm_clk_get(cpu_dev, NULL);
+ 	if (IS_ERR(cpu_clk)) {
+ 		ret = PTR_ERR(cpu_clk);
+@@ -201,12 +215,6 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
+ 		goto out_put_node;
+ 	}
+ 
+-	cpu_reg = devm_regulator_get(cpu_dev, "cpu0");
+-	if (IS_ERR(cpu_reg)) {
+-		pr_warn("failed to get cpu0 regulator\n");
+-		cpu_reg = NULL;
+-	}
+-
+ 	ret = of_init_opp_table(cpu_dev);
+ 	if (ret) {
+ 		pr_err("failed to init OPP table: %d\n", ret);
 -- 
 1.7.9.5
-
 
