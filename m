@@ -1,132 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162426Ab3DESew (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 14:34:52 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54073 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162402Ab3DESev (ORCPT
+	id S1162459Ab3DESlP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 14:41:15 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:51725 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162414Ab3DESlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 14:34:51 -0400
-X-Originating-IP: 108.223.40.66
-Date: Fri, 5 Apr 2013 11:34:50 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Hector Palacios <hector.palacios@digi.com>
-Cc: linux-watchdog@vger.kernel.org, wim@iguana.be,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] watchdog: core: don't try to stop device if not
- running
-Message-ID: <20130405183450.GA29835@roeck-us.net>
-References: <515EF748.6060504@digi.com>
+	Fri, 5 Apr 2013 14:41:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515EF748.6060504@digi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMOw1v4aHTOr_a9FBFuQXfLGq1SVNWiWnYn-xn-mG+gQWEeiNQ@mail.gmail.com>
+References: <CAGbaURnvzRm3N7++3p6G4U9eb_US6hBYCYQrEHs=FeZ+Gk9qEw@mail.gmail.com>
+	<CAMOw1v4aHTOr_a9FBFuQXfLGq1SVNWiWnYn-xn-mG+gQWEeiNQ@mail.gmail.com>
+Date: Fri, 5 Apr 2013 20:41:13 +0200
+Message-ID: <CAGbaURk3gm2+w2zs+K45ptGefAeTDyBUGTz1B9CoEBGXpgB7Ww@mail.gmail.com>
+Subject: Re: control on cpu/core
+From: christophe malvasio <arsdmthe@gmail.com>
+To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: linux-modules <linux-modules@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 05, 2013 at 06:09:44PM +0200, Hector Palacios wrote:
-> A watchdog device may be stopped from userspace using WDIOC_SETOPTIONS
-> ioctl and flag WDIOS_DISABLECARD. If the device is closed after this
-> operation, watchdog_release() is called and status bits checked for
-> stopping it. Besides, if the device has not been unregistered a critical
-> message "watchdog did not stop!" is printed, although the ioctl may have
-> successfully stopped it already.
-> 
-> Without the patch a user application sample code like this will successfully
-> stop the watchdog, but the kernel will output the message
-> "watchdog did not stop!":
-> 
-> 	wd_fd = open("/dev/watchdog", O_RDWR);
-> 
-> 	flags = WDIOS_DISABLECARD;
-> 	ioctl(wd_fd, WDIOC_SETOPTIONS, &flags);
-> 
-> 	close(wd_fd);
-> 
-> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
+ok thanks lucas ;)
+i'm not on writing functions loading yet but it will come
+(i don't have a more efficient format than elf in good shape in my mind ...)
 
-How about the following patch instead ?
 
-diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
-index 08b48bb..9775e8d 100644
---- a/drivers/watchdog/watchdog_dev.c
-+++ b/drivers/watchdog/watchdog_dev.c
-@@ -469,7 +469,9 @@ static int watchdog_release(struct inode *inode, struct file *file)
- 	 * or if WDIOF_MAGICCLOSE is not set. If nowayout was set then
- 	 * watchdog_stop will fail.
- 	 */
--	if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
-+	if (!test_bit(WDOG_ACTIVE, &wdd->status))
-+		err = 0;
-+	else if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
- 	    !(wdd->info->options & WDIOF_MAGICCLOSE))
- 		err = watchdog_stop(wdd);
-
-Much less invasive and the result is the same.
-
-Thanks,
-Guenter
-
-> ---
->  drivers/watchdog/watchdog_dev.c |   38 +++++++++++++++++++++-----------------
->  1 file changed, 21 insertions(+), 17 deletions(-)
-> 
-> diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
-> index ef8edec..adadbdd 100644
-> --- a/drivers/watchdog/watchdog_dev.c
-> +++ b/drivers/watchdog/watchdog_dev.c
-> @@ -463,24 +463,28 @@ out:
->  static int watchdog_release(struct inode *inode, struct file *file)
->  {
->  	struct watchdog_device *wdd = file->private_data;
-> -	int err = -EBUSY;
-> 
-> -	/*
-> -	 * We only stop the watchdog if we received the magic character
-> -	 * or if WDIOF_MAGICCLOSE is not set. If nowayout was set then
-> -	 * watchdog_stop will fail.
-> -	 */
-> -	if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
-> -	    !(wdd->info->options & WDIOF_MAGICCLOSE))
-> -		err = watchdog_stop(wdd);
-> -
-> -	/* If the watchdog was not stopped, send a keepalive ping */
-> -	if (err < 0) {
-> -		mutex_lock(&wdd->lock);
-> -		if (!test_bit(WDOG_UNREGISTERED, &wdd->status))
-> -			dev_crit(wdd->dev, "watchdog did not stop!\n");
-> -		mutex_unlock(&wdd->lock);
-> -		watchdog_ping(wdd);
-> +	if (test_bit(WDOG_ACTIVE, &wdd->status)) {
-> +		int err = -EBUSY;
-> +
-> +		/*
-> +		 * We only stop the watchdog if we received the magic character
-> +		 * or if WDIOF_MAGICCLOSE is not set. If nowayout was set then
-> +		 * watchdog_stop will fail.
-> +		 */
-> +		if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
-> +		    !(wdd->info->options & WDIOF_MAGICCLOSE)) {
-> +			err = watchdog_stop(wdd);
-> +		}
-> +
-> +		/* If the watchdog was not stopped, send a keepalive ping */
-> +		if (err < 0) {
-> +			mutex_lock(&wdd->lock);
-> +			if (!test_bit(WDOG_UNREGISTERED, &wdd->status))
-> +				dev_crit(wdd->dev, "watchdog did not stop!\n");
-> +			mutex_unlock(&wdd->lock);
-> +			watchdog_ping(wdd);
-> +		}
->  	}
-> 
->  	/* Allow the owner module to be unloaded again */
-> -- 
-> 1.7.9.5
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+2013/4/5 Lucas De Marchi <lucas.demarchi@profusion.mobi>:
+> On Fri, Apr 5, 2013 at 1:30 PM, christophe malvasio <arsdmthe@gmail.com> wrote:
+>> hi all
+>> i want to give the control of one core to a module
+>> that is the kernel have to not schedule/interrupt execution on this
+>> core and also my module have to be the only thing to send execution on
+>> this core
+>> i'm not sure if i can make it only from my module or if i must hack
+>> the kernel too ?
+>> fake core unplug or more coding ?
+>> give me your opinion ;)
+>
+> You can isolate a core during boot so no process is scheduled to that
+> core. See "isolcpus=" in Documentation/kernel-parameters.txt.
+>
+> I don't know what your module is doing so it might not be possible in
+> all scenarios. The only way I see is if your module created a kernel
+> thread. Then it can be moved to the isolated core by setting the cpu
+> mask. See for example how kworker, watchdog, migration do.
+>
+> I'm CCing LKML to broaden your audience. linux-modules@vger.kernel.org
+> is really low traffic and mostly intended for the module
+> loading/removal process, not really about writing modules.
+>
+>
+> Lucas De Marchi
