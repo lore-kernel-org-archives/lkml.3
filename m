@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161621Ab3DEHzi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 03:55:38 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:63056 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932563Ab3DEHzg (ORCPT
+	id S1161848Ab3DEH5E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 03:57:04 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:55936 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161622Ab3DEH5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 03:55:36 -0400
-Date: Fri, 5 Apr 2013 09:55:32 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Eric Northup <digitaleric@google.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 3/3] x86: kernel base offset ASLR
-Message-ID: <20130405075532.GF26889@gmail.com>
-References: <1365106055-22939-1-git-send-email-keescook@chromium.org>
- <1365106055-22939-4-git-send-email-keescook@chromium.org>
- <515DDEC0.9000109@zytor.com>
- <CAGXu5j+FqZpXURougB_Sd4zmF3bsqsT=m-om5eEM5WCsRX014g@mail.gmail.com>
- <c3d1db06-5196-4828-b0a4-7f6517c7b68a@email.android.com>
- <CAG7+5M0SDj0r+HfrZp99FvmDa+LJMJmyDv2Eju5LSfe2TsCXbg@mail.gmail.com>
+	Fri, 5 Apr 2013 03:57:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAG7+5M0SDj0r+HfrZp99FvmDa+LJMJmyDv2Eju5LSfe2TsCXbg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMo8Bf+ccoU7jccOsxoyPqo2o8HaHhnuiocoNj1j67+S07aq_g@mail.gmail.com>
+References: <CAMo8BfLusS_vT4LWU93iCXpVSgN_Uvi1mBvLUVx+892V67X1JQ@mail.gmail.com>
+	<254789F5-7950-4239-AB7B-2DB9DC73565F@dubeyko.com>
+	<5159EC3D.2020501@gmail.com>
+	<1364884045.3301.18.camel@slavad-ubuntu>
+	<CAMo8Bf+83t3ML_Ctr4V-pVL7Meei=pdOeC5cgtrPJB12tOcGtA@mail.gmail.com>
+	<CAMo8BfKgTPO6AJng6zo1my4K_PivC1gJFQmcvy8q=iDYWSO2Pw@mail.gmail.com>
+	<20130405015327.GA319@kernel.org>
+	<CAMo8Bf+ccoU7jccOsxoyPqo2o8HaHhnuiocoNj1j67+S07aq_g@mail.gmail.com>
+Date: Fri, 5 Apr 2013 16:57:01 +0900
+Message-ID: <CAKYAXd_V4ZjozTn2F-VtQwrsQ229JsBqL8RaFCYE66MhXvBrUA@mail.gmail.com>
+Subject: Re: mkfs.f2fs gets stuck with "blk_update_request: bio idx 0 >= vcnt
+ 0" on 3.8
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Max Filippov <jcmvbkbc@gmail.com>
+Cc: Shaohua Li <shli@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        linux-f2fs-devel@lists.sourceforge.net, slava@dubeyko.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi. Max.
 
-* Eric Northup <digitaleric@google.com> wrote:
+I have a question.
+Your mmc host driver set to host->max_discard_to by some value instead
+of not zero ?
 
-> On Thu, Apr 4, 2013 at 1:58 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> > It seems to me that you are assuming that the attacker is targeting a specific system, but a bot might as well target 256 different systems and see what sticks...
-> 
-> The alarm signal from the ones that don't stick is, in my opinion, the 
-> primary benefit from this work -- it makes certain classes of attack 
-> much less economical.  A crash dump from a panic'd machine may include 
-> enough information to diagnose the exploited vulnerability - and once 
-> diagnosed and fixed, knowledge about the vulnerability is much less 
-> valuable.
+Thanks.
 
-Correct.
-
-Beyond making worm propagation and zombie collection dynamics much less 
-favorable, there's another aspect to randomization: attacks against high 
-value Linux targets often use high value exploits, where considerable 
-effort is spent to make sure that the attack will succeed 100%, without 
-alerting anyone - or will fail safely without alerting anyone.
-
-Probabilistically crashing the kernel does not fit that requirement.
-
-In some cases adding even a _single bit_ of randomness will change the 
-economics dramatically, because as time progresses and the kernel gets 
-(hopefully) more secure, the value of an exploitable zero-day 
-vulnerability becomes inevitably much higher than the value of pretty much 
-any system attacked.
-
-Injecting a significant risk of detection is a powerful concept. Think of 
-WWII: how much effort went into making sure that the Germans did not 
-detect that the encryption of Enigma was broken. Or how much effort went 
-into making sure that the soviets did not detect that the US got hold of 
-one of their nukes - etc.
-
-So this feature really seems useful across the security spectrum, for low 
-and high value systems alike.
-
-Thanks,
-
-	Ingo
+2013/4/5, Max Filippov <jcmvbkbc@gmail.com>:
+> On Fri, Apr 5, 2013 at 5:53 AM, Shaohua Li <shli@kernel.org> wrote:
+>> On Thu, Apr 04, 2013 at 06:00:18AM +0400, Max Filippov wrote:
+>
+> [...]
+>
+>>> the commit 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9 'block: add plug
+>>> for blkdev_issue_discard'
+>>> have added merge opportunity for DISCARD requests. When I do
+>>> mkfs.f2fs on a 5G partition (0xad8000 sectors) it submits two bios,
+>>> one for 0x7fe000 sectors (0xffc00000 bytes) and another for
+>>> 0x2da000 sectors (0x5b400000 bytes). Prior to that commit these
+>>> bios weren't merged into one request. Now the second bio gets
+>>> merged with the first, but the request's __data_len field is unsigned
+>>> int
+>>> and it gets wrapped to 0x5b000000 bytes instead of 0x15b000000
+>>> in the bio_attempt_back_merge. Later this reduced size is passed to
+>>> the blk_update_request causing KERN_ERR and not completed
+>>> request. Reverting this commit fixes mkfs.f2fs for me.
+>>
+>> A workaround is setting limits.max_discard_sectors to a smaller value.
+>
+> I'm not sure:
+> 1) in my case max_discard_sectors is 0x7fe000 (0xffc00000 bytes,
+>     which still fits into 32 bits) and
+> 2) this parameter will only change size of individual discard requests for
+>     the discarded range, but as long as these requests are done inside
+>     the plug they will be merged anyway with an overflow if we try
+>     to discard more than 4G at once.
+>
+>> So the question is why __data_len isn't sector based? Since disk is
+>> sector
+>> based, is there any disk finishing IO in byte granularity? Maybe Jens can
+>> answer.
+>
+> --
+> Thanks.
+> -- Max
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
