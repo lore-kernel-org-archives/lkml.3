@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161920Ab3DEO5Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 10:57:16 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:51626 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161881Ab3DEO5P (ORCPT
+	id S1161925Ab3DEPBs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 11:01:48 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:51096 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161875Ab3DEPBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 10:57:15 -0400
-Message-ID: <515EE63A.6050307@cip.cs.fau.de>
-Date: Fri, 05 Apr 2013 16:56:58 +0200
-From: Sebastian Wankerl <sisewank@cip.cs.fau.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Fri, 5 Apr 2013 11:01:46 -0400
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: linux-kernel@vger.kernel.org, Philip Kranz <philip.kranz@googlemail.com>,
-        i4passt@lists.informatik.uni-erlangen.de
-Subject: Re: [PATCH] Add non-zero module sections to sysfs
-References: <1364994499-23708-1-git-send-email-sisewank@cip.cs.fau.de> <87mwtf3ya1.fsf@rustcorp.com.au> <515D4A7F.5070102@cip.cs.fau.de> <87vc81lj7x.fsf@rustcorp.com.au>
-In-Reply-To: <87vc81lj7x.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:2x0dNpB5yZjMsaW7hJgYF2CfEGuSt8qc83jVV+YmaOI
- 0fTS0Y8BiiJ9KEKp0loS+Ghg9EgMw4TM77LRD3XBU0nJeriNkj
- u2RvV/xCOQYhBCOAz3c72mfP+ahrz1PJNAelEb2M3Oi6J+y9s0
- cQQXZNQBj0BGHkRBam20fXJ9MfZfJIfNyP+M8V1ndk4Ayj5Hzh
- JX+djuCXMA7FZUfNjRq5+p48ETGR6fjYNC3tEBXBIbO25LZCUU
- iUbjhmiN/nMuPVrmDd+7D253rcbVEzuoV2/lyaYwSxset5XWtO
- 63i8jRxX0Re+EBz5szpK5cO0MvC3bq1Gn8Z4zaSckjmcdboBwd
- mKBrf37oQYhTOvLw1o/kCvWCwX2rJVjM03Q7rLTfV
+In-Reply-To: <CAKYAXd_V4ZjozTn2F-VtQwrsQ229JsBqL8RaFCYE66MhXvBrUA@mail.gmail.com>
+References: <CAMo8BfLusS_vT4LWU93iCXpVSgN_Uvi1mBvLUVx+892V67X1JQ@mail.gmail.com>
+	<254789F5-7950-4239-AB7B-2DB9DC73565F@dubeyko.com>
+	<5159EC3D.2020501@gmail.com>
+	<1364884045.3301.18.camel@slavad-ubuntu>
+	<CAMo8Bf+83t3ML_Ctr4V-pVL7Meei=pdOeC5cgtrPJB12tOcGtA@mail.gmail.com>
+	<CAMo8BfKgTPO6AJng6zo1my4K_PivC1gJFQmcvy8q=iDYWSO2Pw@mail.gmail.com>
+	<20130405015327.GA319@kernel.org>
+	<CAMo8Bf+ccoU7jccOsxoyPqo2o8HaHhnuiocoNj1j67+S07aq_g@mail.gmail.com>
+	<CAKYAXd_V4ZjozTn2F-VtQwrsQ229JsBqL8RaFCYE66MhXvBrUA@mail.gmail.com>
+Date: Fri, 5 Apr 2013 19:01:46 +0400
+Message-ID: <CAMo8BfJOEdZ3OzZUG6fU_sdMzaHCEUkin1cMwzoezbsScby5=A@mail.gmail.com>
+Subject: Re: mkfs.f2fs gets stuck with "blk_update_request: bio idx 0 >= vcnt
+ 0" on 3.8
+From: Max Filippov <jcmvbkbc@gmail.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: Shaohua Li <shli@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        linux-f2fs-devel@lists.sourceforge.net, slava@dubeyko.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/13 06:00, Rusty Russell wrote:
-> Sebastian Wankerl <sisewank@cip.cs.fau.de> writes:
->> On 04/04/13 03:00, Rusty Russell wrote:
->>> Sebastian Wankerl <sisewank@cip.cs.fau.de> writes:
->>>> Add non-zero module sections to sysfs on architectures unequal to PARISC.
->>>> KGDB needs all module sections for proper module debugging. Therefore, commit 
->>>> 35dead4235e2b67da7275b4122fed37099c2f462 is revoked except for PARISC
->>>> architecture.
->>> #ifdef CONFIG_PARISC in the middle of kernel/module.c is super-ugly, and
->>> wrong.
->> I don't see why this is wrong. It used to load all sections to sysfs
->> until the patch mentioned. Actually, it is the PARISC build chain which
->> is broken.
+Hi Namjae,
 
-We worked on that topic further. Now we have another suggestion: would
-it be okay to add a field to struct module for use by kgdb where we save
-the section names for our use. This seems to be the most valuable
-solution as solving the sysfs stuff is rather hard.
+On Fri, Apr 5, 2013 at 11:57 AM, Namjae Jeon <linkinjeon@gmail.com> wrote:
+> Hi. Max.
+>
+> I have a question.
+> Your mmc host driver set to host->max_discard_to by some value instead
+> of not zero ?
+
+I believe it's zero, because the only place where I can see it initialized
+(sdhci_add_host in the drivers/mmc/host/sdhci.c) is not built in my
+configuration.
+
+> 2013/4/5, Max Filippov <jcmvbkbc@gmail.com>:
+>> On Fri, Apr 5, 2013 at 5:53 AM, Shaohua Li <shli@kernel.org> wrote:
+>>> On Thu, Apr 04, 2013 at 06:00:18AM +0400, Max Filippov wrote:
+>>
+>> [...]
+>>
+>>>> the commit 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9 'block: add plug
+>>>> for blkdev_issue_discard'
+>>>> have added merge opportunity for DISCARD requests. When I do
+>>>> mkfs.f2fs on a 5G partition (0xad8000 sectors) it submits two bios,
+>>>> one for 0x7fe000 sectors (0xffc00000 bytes) and another for
+>>>> 0x2da000 sectors (0x5b400000 bytes). Prior to that commit these
+>>>> bios weren't merged into one request. Now the second bio gets
+>>>> merged with the first, but the request's __data_len field is unsigned
+>>>> int
+>>>> and it gets wrapped to 0x5b000000 bytes instead of 0x15b000000
+>>>> in the bio_attempt_back_merge. Later this reduced size is passed to
+>>>> the blk_update_request causing KERN_ERR and not completed
+>>>> request. Reverting this commit fixes mkfs.f2fs for me.
+>>>
+>>> A workaround is setting limits.max_discard_sectors to a smaller value.
+>>
+>> I'm not sure:
+>> 1) in my case max_discard_sectors is 0x7fe000 (0xffc00000 bytes,
+>>     which still fits into 32 bits) and
+>> 2) this parameter will only change size of individual discard requests for
+>>     the discarded range, but as long as these requests are done inside
+>>     the plug they will be merged anyway with an overflow if we try
+>>     to discard more than 4G at once.
+>>
+>>> So the question is why __data_len isn't sector based? Since disk is
+>>> sector
+>>> based, is there any disk finishing IO in byte granularity? Maybe Jens can
+>>> answer.
+
+-- 
+Thanks.
+-- Max
