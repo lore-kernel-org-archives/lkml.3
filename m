@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161855Ab3DEOGx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 10:06:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60822 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161475Ab3DEOGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 10:06:52 -0400
-Date: Fri, 5 Apr 2013 16:06:50 +0200
-From: Jan Kara <jack@suse.cz>
-To: Shea Levy <shea@shealevy.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/2] vfs: Report a mount r/o if the superblock is
-Message-ID: <20130405140650.GA21852@quack.suse.cz>
-References: <1363277360-1947-1-git-send-email-shea@shealevy.com>
+	id S1161857Ab3DEONb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 10:13:31 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:34803 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161806Ab3DEONa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 10:13:30 -0400
+X-Auth-Info: l0pqlijVc7KUm5QhQ4uai1o/Mby+0eKtrE+85nO7thM=
+From: Marek Vasut <marex@denx.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: dts: imx23-olinuxino: Set the sdcard as non-removable
+Date: Fri, 5 Apr 2013 16:11:14 +0200
+User-Agent: KMail/1.13.7 (Linux/3.8-trunk-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Shawn Guo <shawn.guo@linaro.org>,
+        Alexandre Pereira da Silva <aletes.xgr@gmail.com>,
+        fabio.estevam@freescale.com, linux@arm.linux.org.uk,
+        otavio@ossystems.com.br, f.koliqi@gmail.com,
+        linux-kernel@vger.kernel.org, maxime.ripard@free-electrons.com
+References: <1365135413-31493-1-git-send-email-aletes.xgr@gmail.com> <20130405091656.GD2667@S2101-09.ap.freescale.net>
+In-Reply-To: <20130405091656.GD2667@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363277360-1947-1-git-send-email-shea@shealevy.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304051611.15003.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 14-03-13 12:09:18, Shea Levy wrote:
-> By calling mount(2) with MS_REMOUNT | MS_BIND on a non-bind readonly
-> mountpoint, it is possible to have a readonly mount without MNT_READONLY
-> in its mnt_flags. Currently, /proc/<pid>/mountinfo and statfs will
-> report such a mount as r/w, even though for all intents and purposes it
-> is still readonly.
-> 
-> This patchset fixes show_mountinfo and statfs to report such mounts as
-> readonly.
-  Andrew, I think the two patches in this thread deserve to be picked up...
+Dear Shawn Guo,
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> On Fri, Apr 05, 2013 at 01:16:53AM -0300, Alexandre Pereira da Silva wrote:
+> > The imx23-olinuxino sdcard doesn't support card detect.
+> 
+> So it sounds more like a "broken-cd" rather than "non-removable"?
+
+The CD line is working perfectly well on this board, so I don't get it.
+
+Best regards,
+Marek Vasut
