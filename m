@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab3DEJrU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 05:47:20 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:63699 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765499Ab3DEJrS (ORCPT
+	id S932495Ab3DEJsh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 05:48:37 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39817 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975Ab3DEJsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 05:47:18 -0400
+	Fri, 5 Apr 2013 05:48:36 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <515E9DC5.4050402@jp.fujitsu.com>
+Date: Fri, 05 Apr 2013 18:47:49 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <20130403215412.GG3411@htj.dyndns.org>
-References: <cover.1364740180.git.viresh.kumar@linaro.org>
-	<91239cde99aaba2715f63db1f88241d9f4a36e13.1364740180.git.viresh.kumar@linaro.org>
-	<20130331181931.GA7533@htj.dyndns.org>
-	<CAKohpo=nWsUh5y7y_tacGez7uN76QbRFRVPSQcKQMGM1nUBWtw@mail.gmail.com>
-	<20130403215412.GG3411@htj.dyndns.org>
-Date: Fri, 5 Apr 2013 15:17:17 +0530
-Message-ID: <CAKohpomTQj-S-32JdtY76_82NraB5uBqnKZXVxk28KxMZ-NSow@mail.gmail.com>
-Subject: Re: [PATCH V4 3/4] block: queue work on unbound wq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linaro-kernel@lists.linaro.org, patches@linaro.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        davem@davemloft.net, airlied@redhat.com, axboe@kernel.dk,
-        tglx@linutronix.de, peterz@infradead.org, mingo@redhat.com,
-        rostedt@goodmis.org, linux-rt-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Minchan Kim <minchan@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] THP: fix comment about memory barrier
+References: <1365149799-839-1-git-send-email-minchan@kernel.org>
+In-Reply-To: <1365149799-839-1-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 April 2013 03:24, Tejun Heo <tj@kernel.org> wrote:
-> Not a call, probably a module_param() so that it can be switched
-> on/off during boot.  You can make the param writable so that it can be
-> flipped run-time but updating existing workqueues would be non-trivial
-> and I don't think it's gonna be worthwhile.
+(2013/04/05 17:16), Minchan Kim wrote:
+> Now, memory barrier in __do_huge_pmd_anonymous_page doesn't work.
+> Because lru_cache_add_lru uses pagevec so it could miss spinlock
+> easily so above rule was broken so user might see inconsistent data.
+> 
+> I was not first person who pointed out the problem. Mel and Peter
+> pointed out a few months ago and Peter pointed out further that
+> even spin_lock/unlock can't make sure it.
+> http://marc.info/?t=134333512700004
+> 
+> 	In particular:
+> 
+>          	*A = a;
+>          	LOCK
+>          	UNLOCK
+>          	*B = b;
+> 
+> 	may occur as:
+> 
+>          	LOCK, STORE *B, STORE *A, UNLOCK
+> 
+> At last, Hugh pointed out that even we don't need memory barrier
+> in there because __SetPageUpdate already have done it from
+> Nick's [1] explicitly.
+> 
+> So this patch fixes comment on THP and adds same comment for
+> do_anonymous_page, too because everybody except Hugh was missing
+> that. It means we needs COMMENT about that.
+> 
+> [1] 0ed361dec "mm: fix PageUptodate data race"
+> 
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Acked-by: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
 
-module_param()?? We can't compile kernel/workqueue.c as a module and
-hence i went with #define + a variable with functions to set/reset it...
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-I am not looking to update all existing workqueues to use it but workqueues
-which are affecting power for us... And if there are some very very
-performance critical ones, then we must better use queue_work_on() for
-them to make it more clear.
+
+
