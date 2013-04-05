@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161931Ab3DEPjV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 11:39:21 -0400
-Received: from smtp-out-239.synserver.de ([212.40.185.239]:1078 "EHLO
-	smtp-out-221.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1161860Ab3DEPjT (ORCPT
+	id S1161939Ab3DEPnH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 11:43:07 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:20573 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755664Ab3DEPnF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 11:39:19 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 27266
-Message-ID: <515EFE0C.2030401@metafoo.de>
-Date: Fri, 05 Apr 2013 18:38:36 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Fri, 5 Apr 2013 11:43:05 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+x18KOXQtXLHKbp84EqjGB
+Date: Fri, 5 Apr 2013 08:43:00 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Benoit Cousson <b-cousson@ti.com>
+Cc: Roger Quadros <rogerq@ti.com>, balbi@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 00/21] ARM: OMAP2+: Adapt to ehci-omap changes for
+ 3.10
+Message-ID: <20130405154259.GZ10155@atomide.com>
+References: <1363794300-31526-1-git-send-email-rogerq@ti.com>
+ <515E8B99.8080803@ti.com>
+ <515E9FB1.2040803@ti.com>
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-iio <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Naveen Krishna <naveenkrishna.ch@gmail.com>
-Subject: Re: [RFC: PATCH 2/2] iio: adc: exynos_adc: Handle timeout and race
- conditions
-References: <1363364801-23684-1-git-send-email-ch.naveen@samsung.com> <51439846.9090201@metafoo.de> <CAD=FV=V+-DwCjGoookySCazazBBYOoRO+=G5Q_WXAw+SrXNc-A@mail.gmail.com> <5144849A.8050907@metafoo.de> <CAD=FV=VBYHyD6yXBrM1BV3gazDFT0oHgvJM0+5LU1w4AO16Yzg@mail.gmail.com> <515E90FD.10006@metafoo.de> <CAD=FV=XHKn_vqv7-rqpraJy_V2kyBfo98WdMsAJ5eXhADc_rmA@mail.gmail.com>
-In-Reply-To: <CAD=FV=XHKn_vqv7-rqpraJy_V2kyBfo98WdMsAJ5eXhADc_rmA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515E9FB1.2040803@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2013 04:56 PM, Doug Anderson wrote:
-> Lars,
+* Benoit Cousson <b-cousson@ti.com> [130405 03:00]:
+> On 04/05/2013 10:30 AM, Benoit Cousson wrote:
 > 
-> On Fri, Apr 5, 2013 at 1:53 AM, Lars-Peter Clausen <lars@metafoo.de> wrote:
->> Since we sleep inside the protected section we need to use a mutex.
+> ...
 > 
-> Ah, good point.
+> >>   ARM: dts: OMAP4: Add HS USB Host IP nodes
+> >>   ARM: dts: OMAP3: Add HS USB Host IP nodes
+> >>   ARM: dts: omap3-beagle: Add USB Host support
+> > 
+> > These 3 DTS patches are good to me, but I cannot applied them on top of
+> > the already existing patches I queued for 3.10.
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
+> > for_3.10/dts
+> > 
+> > Could you rebase these 3 ones only, and I will applied them.
 > 
->> It's not the timeout case I'm worried about, but the case where the transfer
->> is interrupted by the user. Even though it is rather unlikely for the
->> problem to occur we should still try to avoid it, this is one of these
->> annoying heisenbugs that happen once in a while and nobody is able to
->> reproduce them.
+> Mmm, in fact, I've just seen the pull request from Tony :-(
 > 
-> Yes, of course.  Then we can also get extra confidence that the reset
-> logic works well by stressing out this case...  :)
 > 
-> This makes me think, though.  Given how fast we expect the ADC
-> transaction to finish, would there be any benefit to making the wait
-> non-interruptible and then shortening the timeout a whole lot.  If we
-> shortened to 1ms then we're really not "non-interruptible" for very
-> long and there's less chance of subtle bugs in the way that reset
-> works.
+> Tony,
+> 
+> Don't you want to remove these DTS patches from the pull-request?
 
-Yes, that could also work.
+Oops sorry :( Looks like I applied them mistakenly as I saved all
+the patches into a mbox, then applied it. Anyways, too late to start
+messing with it now.
+ 
+> Otherwise, I will have to rebase the whole DTS series on top of yours.
+> That being said, if the branch is not supposed to be rebased, it is doable.
 
-- Lars
+I pulled in your for_3.10/dts for testing, and to me it looks like
+it's just overlapping additions. So that should be OK to resolve while
+pulling it in.
+
+It seems there's no need to add omap-for-v3.10/usb as a dependency for
+your for_3.10/dts unless the conflict gets non-trivial with some
+additional patches.
+
+Regards,
+
+Tony
