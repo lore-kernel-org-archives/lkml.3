@@ -1,105 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162376Ab3DERzA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 13:55:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18711 "EHLO mx1.redhat.com"
+	id S1162371Ab3DER5w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 13:57:52 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36070 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162270Ab3DERy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 13:54:58 -0400
-Subject: Re: GFS2: Pull request (fixes)
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Teigland <teigland@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        cluster-devel@redhat.com
-In-Reply-To: <CA+55aFzPK1Sz_JO4iDvKSnPXdin8CBET7eisYFkMV8DctLfTZg@mail.gmail.com>
-References: <1365158085.2735.25.camel@menhir>
-	 <20130405162746.GD20835@redhat.com>
-	 <CA+55aFzPK1Sz_JO4iDvKSnPXdin8CBET7eisYFkMV8DctLfTZg@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-TC7LCp1hi214VO6eyvxw"
-Organization: Red Hat UK Ltd
-Date: Fri, 05 Apr 2013 18:52:44 +0100
-Message-ID: <1365184364.2735.33.camel@menhir>
-Mime-Version: 1.0
+	id S1162254Ab3DER5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 13:57:51 -0400
+Message-ID: <515F1035.8090500@ti.com>
+Date: Fri, 5 Apr 2013 20:56:05 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>
+CC: Roger Quadros <rogerq@ti.com>, <b-cousson@ti.com>,
+        <linux@arm.linux.org.uk>, <rnayak@ti.com>, <balbi@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, Paul Walmsley <paul@pwsan.com>,
+        "Menon, Nishanth" <nm@ti.com>
+Subject: Re: [RFC][PATCH 1/2] ARM: OMAP4: clock: Add device tree support for
+ AUXCLKs
+References: <1363703220-4777-1-git-send-email-rogerq@ti.com> <1363703220-4777-2-git-send-email-rogerq@ti.com> <20130403234242.GE10155@atomide.com> <515D2D30.3000306@ti.com> <20130404164137.GH10155@atomide.com>
+In-Reply-To: <20130404164137.GH10155@atomide.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.145.249]
+X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/04/2013 07:41 PM, Tony Lindgren wrote:
+> * Roger Quadros <rogerq@ti.com> [130404 00:39]:
+>> On 04/04/2013 02:42 AM, Tony Lindgren wrote:
+>>>> --- a/arch/arm/mach-omap2/cclock44xx_data.c
+>>>> +++ b/arch/arm/mach-omap2/cclock44xx_data.c
+>>>> @@ -27,6 +27,7 @@
+>>>>   #include <linux/clk-private.h>
+>>>>   #include <linux/clkdev.h>
+>>>>   #include <linux/io.h>
+>>>> +#include <linux/of.h>
+>>>>   
+>>>>   #include "soc.h"
+>>>>   #include "iomap.h"
+>>>> @@ -1663,6 +1664,40 @@ static struct omap_clk omap44xx_clks[] = {
+>>>>   	CLK(NULL,	"cpufreq_ck",	&dpll_mpu_ck,	CK_443X),
+>>>>   };
+>>>>   
+>>>> +static struct clk *scrm_clks[] = {
+>>>> +	&auxclk0_ck,
+>>>> +	&auxclk1_ck,
+>>>> +	&auxclk2_ck,
+>>>> +	&auxclk3_ck,
+>>>> +	&auxclk4_ck,
+>>>> +	&auxclk5_ck,
+>>>> +};
+>>> Hmm I don't like the idea of specifying the auxclk both in the
+>>> cclock44xx_data.c and in DT..
+>> Right, but till we have all clocks moved to DT we only need this
+>> approach for general purpose clocks that are not mapped to devices
+>> by hwmod.
+> For v3.10, let's just make sure that USB works with DT as then
+> after v3.10 we can make omap4 DT only and get rid of estimated
+> 7K lines of code and data. I guess this is the last piece missing
+> for that, or are we also missing something else?
+>
+> Can't you set up a clock alias for your device so it can find the
+> auxclk when requesting it with the dev entry?
+>
+> For the DT clock driver if needed for v3.10, how about just do a
+> minimal drivers/clock/omap/ that uses the standard binding?
+> Then that driver can just do clk_get() from cclock44xx_data.c
+> for now? And then later on we'll just move all the clocks to a
+> combination of DT + /lib/firmware.
+>
+Hi Roger, Rajendra, All
 
---=-TC7LCp1hi214VO6eyvxw
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Sorry that disturbing you.
 
-Hi,
+I'm supporting Android OMAP4 kernels (K3.0/K3.4) and like to clarify few
+points regarding this approach (having into account possible future 
+migrations
+on newer Kernels and OMAP5).
+If I understand everything right, this patch series allows to create 
+clock binding
+in DT using following syntax: clocks = <&aux_clks 3>
+  - does it means that in worst case there will be ~200 clock IDs defined?
+  - does it means that clock nodes binding using phandles 
+(human-friendly notation)
+isn't going to be supported?
+for example:
+     clocks = <&sys_clkin_ck>
+     clocks = <&dss_sys_clk &dss_tv_clk &dss_dss_clk>)
 
-I've dropped out the patch which shouldn't have made it into the previous
-pull request, so this set should be ok now. Apologies for not spotting
-that issue sooner,
+I was horrified to think about the problems of this approach support
+(in case if there would be more then ~30 IDs) - just miss with on digit
+and weeks of debugging would be guaranteed.
 
-Steve.
+Please, say me that i'm wrong.
+And why clock DT data can't be auto-generated like all other OMAP data
+to close this questions?
 
--------------------------------------------------------------------------
-There are two patches which fix up a couple of minor issues in the DLM
-interface code, a missing error path in gfs2_rs_alloc(), one patch
-which fixes a problem during "withdraw" and a fix for discards/FITRIM when
-using 4k sector sized devices.
+Thanks.
 
--------------------------------------------------------------------------
-
-The following changes since commit 66ade474237745a57b7e87da9a93c7ec69fd52bb=
-:
-
-  Merge branch 'fixes' of git://git.linaro.org/people/rmk/linux-arm (2013-0=
-4-03 16:15:17 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-fixes.git ma=
-ster
-
-Akinobu Mita (1):
-      GFS2: use memchr_inv
-
-Bob Peterson (1):
-      GFS2: Issue discards in 512b sectors
-
-David Teigland (1):
-      GFS2: use kmalloc for lvb bitmap
-
-Steven Whitehouse (1):
-      GFS2: Fix unlock of fcntl locks during withdrawn state
-
-Wei Yongjun (1):
-      GFS2: return error if malloc failed in gfs2_rs_alloc()
-
- fs/gfs2/file.c     |    5 ++++-
- fs/gfs2/incore.h   |    1 +
- fs/gfs2/lock_dlm.c |   39 ++++++++++++++++++++-------------------
- fs/gfs2/rgrp.c     |   32 ++++++++++++++------------------
- 4 files changed, 39 insertions(+), 38 deletions(-)
-
-
---=-TC7LCp1hi214VO6eyvxw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJRXw9oAAoJEMrg3m4a/8jSva8P/j/i0/2zHHJBtET8hF6IkEZy
-dYEPmkFDqkBexp3ANBh4+0MVgQe0EVT7me+pP3oVgmim5WEMyP1IgIWJGywcsZOj
-fsL+3I0ou26Lg2g/juGuzJ+DTy9SRi1CXurIlEkrGNFsdqzWXWBV6oOMifb+LIHm
-8jt4g+UNdIeHQdFQYLk1lZ8Px1NqavKVKZwmhKCg4TZkZGm3q9bgRfHf4CpSQivl
-C/mXGu2hnF4nFyac7AVkpTF9XXHlrv2RjUckvVhXuw21WR7mXwzsi31Rax6uVQFk
-AGZodBylbF+P7BGmKW4SBvZsOj/YK/PoXQ0zTTOJg6uNp/6Tg2+kzSUnVWTMiZx/
-uo8PUWJqPgZuRqT+Mie3YEmIscFsYkXV5Prm8sdx0X2rWvg2YszTpgF+jXcPEhLu
-zHXJ3Y/flHFJXMLcUYaGvVm8kcXCnUssEXGsN8GdW3WSJg/MAnpMnPNJeamq6gZh
-W2vX+Nnuhjo1LTfbw/HPmoqMHatcQJS0/u4+WFHHWTWJP+8+cRzVuWSiTajI1g/T
-U882Nk2iIlu/SD3hOOpzfHTSgpySFCSgpaRYrjA9Y4bhYnageYSFX93jLr5Srw1Y
-eG0cEpVRIHhUHB127pD565Q8Si/uwqobMGK3dQ4hixixNEAgMqLOa7+/8b5LL0NW
-tQUcEdhhollYnNhHjn3z
-=s1WM
------END PGP SIGNATURE-----
-
---=-TC7LCp1hi214VO6eyvxw--
+>> e.g. auxclk are required to be specified in DT nodes for USB PHY.
+>> Without this we can't get USB host working on Panda.
+> OK. So if the USB PHY has a dev entry, can't you just set up a
+> clock alias in struct omap_clk omap44xx_clks[] for it?
+>   
+>> As Rajendra points out, it seems moving entire clock data to DT is not
+>> going to happen soon. So this is the simplistic way things can work.
+> Right but seems like we can get started there without moving
+> them all at once.
+>
+> Regards,
+>
+> Tony
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
