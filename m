@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161683Ab3DEL7O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 07:59:14 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26836 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754642Ab3DEL63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1161617Ab3DEL63 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 5 Apr 2013 07:58:29 -0400
+Received: from mga11.intel.com ([192.55.52.93]:65441 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754642Ab3DEL6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 07:58:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,414,1363158000"; 
-   d="scan'208";a="312816037"
+   d="scan'208";a="317363660"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv3, RFC 21/34] thp: wait_split_huge_page(): serialize over i_mmap_mutex too
-Date: Fri,  5 Apr 2013 14:59:45 +0300
-Message-Id: <1365163198-29726-22-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv3, RFC 07/34] thp, mm: basic defines for transparent huge page cache
+Date: Fri,  5 Apr 2013 14:59:31 +0300
+Message-Id: <1365163198-29726-8-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,89 +33,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-Since we're going to have huge pages backed by files,
-wait_split_huge_page() has to serialize not only over anon_vma_lock,
-but over i_mmap_mutex too.
-
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/huge_mm.h |   15 ++++++++++++---
- mm/huge_memory.c        |    4 ++--
- mm/memory.c             |    4 ++--
- 3 files changed, 16 insertions(+), 7 deletions(-)
+ include/linux/huge_mm.h |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
 diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index a54939c..b53e295 100644
+index ee1c244..a54939c 100644
 --- a/include/linux/huge_mm.h
 +++ b/include/linux/huge_mm.h
-@@ -113,11 +113,20 @@ extern void __split_huge_page_pmd(struct vm_area_struct *vma,
- 			__split_huge_page_pmd(__vma, __address,		\
- 					____pmd);			\
- 	}  while (0)
--#define wait_split_huge_page(__anon_vma, __pmd)				\
-+#define wait_split_huge_page(__vma, __pmd)				\
- 	do {								\
- 		pmd_t *____pmd = (__pmd);				\
--		anon_vma_lock_write(__anon_vma);			\
--		anon_vma_unlock_write(__anon_vma);			\
-+		struct address_space *__mapping =			\
-+					vma->vm_file->f_mapping;	\
-+		struct anon_vma *__anon_vma = (__vma)->anon_vma;	\
-+		if (__mapping)						\
-+			mutex_lock(&__mapping->i_mmap_mutex);		\
-+		if (__anon_vma) {					\
-+			anon_vma_lock_write(__anon_vma);		\
-+			anon_vma_unlock_write(__anon_vma);		\
-+		}							\
-+		if (__mapping)						\
-+			mutex_unlock(&__mapping->i_mmap_mutex);		\
- 		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
- 		       pmd_trans_huge(*____pmd));			\
- 	} while (0)
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index ac0dc80..7c48f58 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -907,7 +907,7 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 		spin_unlock(&dst_mm->page_table_lock);
- 		pte_free(dst_mm, pgtable);
+@@ -64,6 +64,10 @@ extern pmd_t *page_check_address_pmd(struct page *page,
+ #define HPAGE_PMD_MASK HPAGE_MASK
+ #define HPAGE_PMD_SIZE HPAGE_SIZE
  
--		wait_split_huge_page(vma->anon_vma, src_pmd); /* src_vma */
-+		wait_split_huge_page(vma, src_pmd); /* src_vma */
- 		goto out;
- 	}
- 	src_page = pmd_page(pmd);
-@@ -1480,7 +1480,7 @@ int __pmd_trans_huge_lock(pmd_t *pmd, struct vm_area_struct *vma)
- 	if (likely(pmd_trans_huge(*pmd))) {
- 		if (unlikely(pmd_trans_splitting(*pmd))) {
- 			spin_unlock(&vma->vm_mm->page_table_lock);
--			wait_split_huge_page(vma->anon_vma, pmd);
-+			wait_split_huge_page(vma, pmd);
- 			return -1;
- 		} else {
- 			/* Thp mapped by 'pmd' is stable, so we can
-diff --git a/mm/memory.c b/mm/memory.c
-index 9da540f..2895f0e 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -619,7 +619,7 @@ int __pte_alloc(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if (new)
- 		pte_free(mm, new);
- 	if (wait_split_huge_page)
--		wait_split_huge_page(vma->anon_vma, pmd);
-+		wait_split_huge_page(vma, pmd);
- 	return 0;
- }
++#define HPAGE_CACHE_ORDER      (HPAGE_SHIFT - PAGE_CACHE_SHIFT)
++#define HPAGE_CACHE_NR         (1L << HPAGE_CACHE_ORDER)
++#define HPAGE_CACHE_INDEX_MASK (HPAGE_CACHE_NR - 1)
++
+ extern bool is_vma_temporary_stack(struct vm_area_struct *vma);
  
-@@ -1529,7 +1529,7 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
- 		if (likely(pmd_trans_huge(*pmd))) {
- 			if (unlikely(pmd_trans_splitting(*pmd))) {
- 				spin_unlock(&mm->page_table_lock);
--				wait_split_huge_page(vma->anon_vma, pmd);
-+				wait_split_huge_page(vma, pmd);
- 			} else {
- 				page = follow_trans_huge_pmd(vma, address,
- 							     pmd, flags);
+ #define transparent_hugepage_enabled(__vma)				\
+@@ -181,6 +185,10 @@ extern int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vm
+ #define HPAGE_PMD_MASK ({ BUILD_BUG(); 0; })
+ #define HPAGE_PMD_SIZE ({ BUILD_BUG(); 0; })
+ 
++#define HPAGE_CACHE_ORDER      ({ BUILD_BUG(); 0; })
++#define HPAGE_CACHE_NR         ({ BUILD_BUG(); 0; })
++#define HPAGE_CACHE_INDEX_MASK ({ BUILD_BUG(); 0; })
++
+ #define hpage_nr_pages(x) 1
+ 
+ #define transparent_hugepage_enabled(__vma) 0
 -- 
 1.7.10.4
 
