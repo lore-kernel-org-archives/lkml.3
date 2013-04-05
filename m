@@ -1,211 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161475Ab3DEMIe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 08:08:34 -0400
-Received: from mga03.intel.com ([143.182.124.21]:62677 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161144Ab3DEL6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 07:58:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,414,1363158000"; 
-   d="scan'208";a="281245135"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv3, RFC 04/34] radix-tree: implement preload for multiple contiguous elements
-Date: Fri,  5 Apr 2013 14:59:28 +0300
-Message-Id: <1365163198-29726-5-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1161328Ab3DEMKD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 08:10:03 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:57851 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160Ab3DEMKA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 08:10:00 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Michal Simek <monstr@monstr.eu>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the xilinx tree
+Date: Fri, 5 Apr 2013 14:09:37 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        John Linn <John.Linn@xilinx.com>
+References: <20130405153335.baf29606a97b1bee415f3546@canb.auug.org.au> <CAHTX3d+NK7b3RVMASZ4BARs1kHeVKGgxNwKTjAeiNB+44TPsFg@mail.gmail.com>
+In-Reply-To: <CAHTX3d+NK7b3RVMASZ4BARs1kHeVKGgxNwKTjAeiNB+44TPsFg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304051409.37708.arnd@arndb.de>
+X-Provags-ID: V02:K0:qBzjC5ypq6R9tvh0ZHK1fQTmk6AHqj1Jv+c9DCEnjuJ
+ kNhic4Z2m3NUYMDaRd0ZYUYyy6TuP5wLcI99Oc/2ICFY3FMY5L
+ oapkfI2d8O3PMC1QV8FPxQ/tZ6cOiXM0aCzJeYUvyMt0PVhRh6
+ hxiZENjuf596BVOjc8P61/PkFU8VpfHL3v76NbkoI9/ZT9bd+Y
+ IyiR7zsvjPrJHm9Tm4K+UhES2mjuQ6O8OOd+jNH4QBByyUS/x+
+ Af/kbDschDwtzOrUPH7YbVN+KknQhTzWJuyrteEoq03uru2V1w
+ OBuY9NuzseXLmxuuneWgGw1S6BywbTlV3CeWTWJhuJIxP2MJ1z
+ 97GUaHAr8IAxNGBrt+SU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On Friday 05 April 2013, Michal Simek wrote:
+> Hi,
+> 
+> 2013/4/5 Stephen Rothwell <sfr@canb.auug.org.au>
+> 
+> > Hi all,
+> >
+> > Today's linux-next merge of the arm-soc tree got a conflict in
+> > arch/arm/mach-spear/spear13xx.c between commit c79e33b3e828 ("ARM:
+> > smp_twd: convert to use CLKSRC_OF init") from the xilinx tree and commit
+> > 2b9c613c4ee1 ("ARM: spear: move generic.h and pl080.h into private dir")
+> > from the arm-soc tree.
+> >
+> > I fixed it up (just used the arm-soc tree version) and can carry the fix
+> > as necessary (no action is required).
+> >  <sfr@canb.auug.org.au>
+> 
+> 
+> Interesting. I rebased my arm-next branch based on 3.9-rc5
+> with some Rob's + one Arnd patch from arm-soc - clksrc/cleanup branch.
+> 
+> I will fix my arm-next branch.
 
-The radix tree is variable-height, so an insert operation not only has
-to build the branch to its corresponding item, it also has to build the
-branch to existing items if the size has to be increased (by
-radix_tree_extend).
+The for-next branch in arm-soc is not stable, you should never base
+/anything/ on it. If you depend on some stable branch, that is in arm-soc,
+then use just that branch, not one of the next/* branches or for-next.
 
-The worst case is a zero height tree with just a single item at index 0,
-and then inserting an item at index ULONG_MAX. This requires 2 new branches
-of RADIX_TREE_MAX_PATH size to be created, with only the root node shared.
-
-Radix tree is usually protected by spin lock. It means we want to
-pre-allocate required memory before taking the lock.
-
-Currently radix_tree_preload() only guarantees enough nodes to insert
-one element. It's a hard limit. For transparent huge page cache we want
-to insert HPAGE_PMD_NR (512 on x86-64) entires to address_space at once.
-
-This patch introduces radix_tree_preload_count(). It allows to
-preallocate nodes enough to insert a number of *contiguous* elements.
-
-Worst case for adding N contiguous items is adding entries at indexes
-(ULONG_MAX - N) to ULONG_MAX. It requires nodes to insert single worst-case
-item plus extra nodes if you cross the boundary from one node to the next.
-
-Preload uses per-CPU array to store nodes. The total cost of preload is
-"array size" * sizeof(void*) * NR_CPUS. We want to increase array size
-to be able to handle 512 entries at once.
-
-Size of array depends on system bitness and on RADIX_TREE_MAP_SHIFT.
-
-We have three possible RADIX_TREE_MAP_SHIFT:
-
- #ifdef __KERNEL__
- #define RADIX_TREE_MAP_SHIFT	(CONFIG_BASE_SMALL ? 4 : 6)
- #else
- #define RADIX_TREE_MAP_SHIFT	3	/* For more stressful testing */
- #endif
-
-On 64-bit system:
-For RADIX_TREE_MAP_SHIFT=3, old array size is 43, new is 107.
-For RADIX_TREE_MAP_SHIFT=4, old array size is 31, new is 63.
-For RADIX_TREE_MAP_SHIFT=6, old array size is 21, new is 30.
-
-On 32-bit system:
-For RADIX_TREE_MAP_SHIFT=3, old array size is 21, new is 84.
-For RADIX_TREE_MAP_SHIFT=4, old array size is 15, new is 46.
-For RADIX_TREE_MAP_SHIFT=6, old array size is 11, new is 19.
-
-On most machines we will have RADIX_TREE_MAP_SHIFT=6.
-
-Since only THP uses batched preload at the , we disable (set max preload
-to 1) it if !CONFIG_TRANSPARENT_HUGEPAGE. This can be changed in the
-future.
-
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- include/linux/radix-tree.h |   11 +++++++++++
- lib/radix-tree.c           |   33 ++++++++++++++++++++++++++-------
- 2 files changed, 37 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
-index ffc444c..0d98fd6 100644
---- a/include/linux/radix-tree.h
-+++ b/include/linux/radix-tree.h
-@@ -83,6 +83,16 @@ do {									\
- 	(root)->rnode = NULL;						\
- } while (0)
- 
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-+/*
-+ * At the moment only THP uses preload for more then on item for batched
-+ * pagecache manipulations.
-+ */
-+#define RADIX_TREE_PRELOAD_NR	512
-+#else
-+#define RADIX_TREE_PRELOAD_NR	1
-+#endif
-+
- /**
-  * Radix-tree synchronization
-  *
-@@ -231,6 +241,7 @@ unsigned long radix_tree_next_hole(struct radix_tree_root *root,
- unsigned long radix_tree_prev_hole(struct radix_tree_root *root,
- 				unsigned long index, unsigned long max_scan);
- int radix_tree_preload(gfp_t gfp_mask);
-+int radix_tree_preload_count(unsigned size, gfp_t gfp_mask);
- void radix_tree_init(void);
- void *radix_tree_tag_set(struct radix_tree_root *root,
- 			unsigned long index, unsigned int tag);
-diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-index e796429..1bc352f 100644
---- a/lib/radix-tree.c
-+++ b/lib/radix-tree.c
-@@ -81,16 +81,24 @@ static struct kmem_cache *radix_tree_node_cachep;
-  * The worst case is a zero height tree with just a single item at index 0,
-  * and then inserting an item at index ULONG_MAX. This requires 2 new branches
-  * of RADIX_TREE_MAX_PATH size to be created, with only the root node shared.
-+ *
-+ * Worst case for adding N contiguous items is adding entries at indexes
-+ * (ULONG_MAX - N) to ULONG_MAX. It requires nodes to insert single worst-case
-+ * item plus extra nodes if you cross the boundary from one node to the next.
-+ *
-  * Hence:
-  */
--#define RADIX_TREE_PRELOAD_SIZE (RADIX_TREE_MAX_PATH * 2 - 1)
-+#define RADIX_TREE_PRELOAD_MIN (RADIX_TREE_MAX_PATH * 2 - 1)
-+#define RADIX_TREE_PRELOAD_MAX \
-+	(RADIX_TREE_PRELOAD_MIN + \
-+	 DIV_ROUND_UP(RADIX_TREE_PRELOAD_NR - 1, RADIX_TREE_MAP_SIZE))
- 
- /*
-  * Per-cpu pool of preloaded nodes
-  */
- struct radix_tree_preload {
- 	int nr;
--	struct radix_tree_node *nodes[RADIX_TREE_PRELOAD_SIZE];
-+	struct radix_tree_node *nodes[RADIX_TREE_PRELOAD_MAX];
- };
- static DEFINE_PER_CPU(struct radix_tree_preload, radix_tree_preloads) = { 0, };
- 
-@@ -257,29 +265,35 @@ radix_tree_node_free(struct radix_tree_node *node)
- 
- /*
-  * Load up this CPU's radix_tree_node buffer with sufficient objects to
-- * ensure that the addition of a single element in the tree cannot fail.  On
-- * success, return zero, with preemption disabled.  On error, return -ENOMEM
-+ * ensure that the addition of *contiguous* elements in the tree cannot fail.
-+ * On success, return zero, with preemption disabled.  On error, return -ENOMEM
-  * with preemption not disabled.
-  *
-  * To make use of this facility, the radix tree must be initialised without
-  * __GFP_WAIT being passed to INIT_RADIX_TREE().
-  */
--int radix_tree_preload(gfp_t gfp_mask)
-+int radix_tree_preload_count(unsigned size, gfp_t gfp_mask)
- {
- 	struct radix_tree_preload *rtp;
- 	struct radix_tree_node *node;
- 	int ret = -ENOMEM;
-+	int preload_target = RADIX_TREE_PRELOAD_MIN +
-+		DIV_ROUND_UP(size - 1, RADIX_TREE_MAP_SIZE);
-+
-+	if (WARN_ONCE(size > RADIX_TREE_PRELOAD_NR,
-+				"too large preload requested"))
-+		return -ENOMEM;
- 
- 	preempt_disable();
- 	rtp = &__get_cpu_var(radix_tree_preloads);
--	while (rtp->nr < ARRAY_SIZE(rtp->nodes)) {
-+	while (rtp->nr < preload_target) {
- 		preempt_enable();
- 		node = kmem_cache_alloc(radix_tree_node_cachep, gfp_mask);
- 		if (node == NULL)
- 			goto out;
- 		preempt_disable();
- 		rtp = &__get_cpu_var(radix_tree_preloads);
--		if (rtp->nr < ARRAY_SIZE(rtp->nodes))
-+		if (rtp->nr < preload_target)
- 			rtp->nodes[rtp->nr++] = node;
- 		else
- 			kmem_cache_free(radix_tree_node_cachep, node);
-@@ -288,6 +302,11 @@ int radix_tree_preload(gfp_t gfp_mask)
- out:
- 	return ret;
- }
-+
-+int radix_tree_preload(gfp_t gfp_mask)
-+{
-+	return radix_tree_preload_count(1, gfp_mask);
-+}
- EXPORT_SYMBOL(radix_tree_preload);
- 
- /*
--- 
-1.7.10.4
-
+	Arnd
