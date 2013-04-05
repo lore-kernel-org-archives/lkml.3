@@ -1,85 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161853Ab3DEKYt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 06:24:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59957 "EHLO mx1.redhat.com"
+	id S1161866Ab3DEKYz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 06:24:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21779 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161175Ab3DEKYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 06:24:47 -0400
+	id S1161175Ab3DEKYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 06:24:53 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: David Teigland <teigland@redhat.com>,
+Cc: Bob Peterson <rpeterso@redhat.com>,
         Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 5/6] GFS2: Fix unlock of fcntl locks during withdrawn state
-Date: Fri,  5 Apr 2013 10:57:15 +0100
-Message-Id: <1365155836-3069-6-git-send-email-swhiteho@redhat.com>
+Subject: [PATCH 6/6] GFS2: Issue discards in 512b sectors
+Date: Fri,  5 Apr 2013 10:57:16 +0100
+Message-Id: <1365155836-3069-7-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1365155836-3069-1-git-send-email-swhiteho@redhat.com>
 References: <1365155836-3069-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Teigland <teigland@redhat.com>
+From: Bob Peterson <rpeterso@redhat.com>
 
-This reminded me of another old patch I had sitting around which I never
-had a chance to test.  I copied this idea from the nfs code.  The problem
-is that when the kernel clears flocks/plocks during close, it calls posix
-unlock even if there are no posix locks on the file.  Without this patch,
-that extraneous unlock propagates up to controld, across the cluster, and
-back down to the kernel.  That can amount to a lot of plock activity on a
-fs that may have never used a single plock (only flocks).  With this
-patch, we should detect that the unlock is extraneous (since it doesn't
-exist in the vfs), and skip all the userland traffic.
+This patch changes GFS2's discard issuing code so that it calls
+function sb_issue_discard rather than blkdev_issue_discard. The
+code was calling blkdev_issue_discard and specifying the correct
+sector offset and sector size, but blkdev_issue_discard expects
+these values to be in terms of 512 byte sectors, even if the native
+sector size for the device is different. Calling sb_issue_discard
+with the BLOCK size instead ensures the correct block-to-512b-sector
+translation. I verified that "minlen" is specified in blocks, so
+comparing it to a number of blocks is correct.
 
-Signed-off-by: David Teigland <teigland@redhat.com>
+Signed-off-by: Bob Peterson <rpeterso@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/dlm/plock.c b/fs/dlm/plock.c
-index 01fd5c1..f704458 100644
---- a/fs/dlm/plock.c
-+++ b/fs/dlm/plock.c
-@@ -247,6 +247,7 @@ int dlm_posix_unlock(dlm_lockspace_t *lockspace, u64 number, struct file *file,
- 	struct dlm_ls *ls;
- 	struct plock_op *op;
+diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
+index 70d1cd0..5a51265 100644
+--- a/fs/gfs2/rgrp.c
++++ b/fs/gfs2/rgrp.c
+@@ -1181,12 +1181,9 @@ int gfs2_rgrp_send_discards(struct gfs2_sbd *sdp, u64 offset,
+ 			     const struct gfs2_bitmap *bi, unsigned minlen, u64 *ptrimmed)
+ {
+ 	struct super_block *sb = sdp->sd_vfs;
+-	struct block_device *bdev = sb->s_bdev;
+-	const unsigned int sects_per_blk = sdp->sd_sb.sb_bsize /
+-					   bdev_logical_block_size(sb->s_bdev);
+ 	u64 blk;
+ 	sector_t start = 0;
+-	sector_t nr_sects = 0;
++	sector_t nr_blks = 0;
  	int rv;
-+	unsigned char fl_flags = fl->fl_flags;
- 
- 	ls = dlm_find_lockspace_local(lockspace);
- 	if (!ls)
-@@ -258,9 +259,18 @@ int dlm_posix_unlock(dlm_lockspace_t *lockspace, u64 number, struct file *file,
- 		goto out;
+ 	unsigned int x;
+ 	u32 trimmed = 0;
+@@ -1206,35 +1203,34 @@ int gfs2_rgrp_send_discards(struct gfs2_sbd *sdp, u64 offset,
+ 		if (diff == 0)
+ 			continue;
+ 		blk = offset + ((bi->bi_start + x) * GFS2_NBBY);
+-		blk *= sects_per_blk; /* convert to sectors */
+ 		while(diff) {
+ 			if (diff & 1) {
+-				if (nr_sects == 0)
++				if (nr_blks == 0)
+ 					goto start_new_extent;
+-				if ((start + nr_sects) != blk) {
+-					if (nr_sects >= minlen) {
+-						rv = blkdev_issue_discard(bdev,
+-							start, nr_sects,
++				if ((start + nr_blks) != blk) {
++					if (nr_blks >= minlen) {
++						rv = sb_issue_discard(sb,
++							start, nr_blks,
+ 							GFP_NOFS, 0);
+ 						if (rv)
+ 							goto fail;
+-						trimmed += nr_sects;
++						trimmed += nr_blks;
+ 					}
+-					nr_sects = 0;
++					nr_blks = 0;
+ start_new_extent:
+ 					start = blk;
+ 				}
+-				nr_sects += sects_per_blk;
++				nr_blks++;
+ 			}
+ 			diff >>= 2;
+-			blk += sects_per_blk;
++			blk++;
+ 		}
  	}
- 
--	if (posix_lock_file_wait(file, fl) < 0)
--		log_error(ls, "dlm_posix_unlock: vfs unlock error %llx",
--			  (unsigned long long)number);
-+	/* cause the vfs unlock to return ENOENT if lock is not found */
-+	fl->fl_flags |= FL_EXISTS;
-+
-+	rv = posix_lock_file_wait(file, fl);
-+	if (rv == -ENOENT) {
-+		rv = 0;
-+		goto out_free;
-+	}
-+	if (rv < 0) {
-+		log_error(ls, "dlm_posix_unlock: vfs unlock error %d %llx",
-+			  rv, (unsigned long long)number);
-+	}
- 
- 	op->info.optype		= DLM_PLOCK_OP_UNLOCK;
- 	op->info.pid		= fl->fl_pid;
-@@ -296,9 +306,11 @@ int dlm_posix_unlock(dlm_lockspace_t *lockspace, u64 number, struct file *file,
- 	if (rv == -ENOENT)
- 		rv = 0;
- 
-+out_free:
- 	kfree(op);
- out:
- 	dlm_put_lockspace(ls);
-+	fl->fl_flags = fl_flags;
- 	return rv;
- }
- EXPORT_SYMBOL_GPL(dlm_posix_unlock);
+-	if (nr_sects >= minlen) {
+-		rv = blkdev_issue_discard(bdev, start, nr_sects, GFP_NOFS, 0);
++	if (nr_blks >= minlen) {
++		rv = sb_issue_discard(sb, start, nr_blks, GFP_NOFS, 0);
+ 		if (rv)
+ 			goto fail;
+-		trimmed += nr_sects;
++		trimmed += nr_blks;
+ 	}
+ 	if (ptrimmed)
+ 		*ptrimmed = trimmed;
 -- 
 1.7.4
 
