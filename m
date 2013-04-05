@@ -1,49 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162800Ab3DEUdw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 16:33:52 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:51687 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162735Ab3DEUdv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 16:33:51 -0400
-Message-ID: <515F352D.8020405@gmail.com>
-Date: Fri, 05 Apr 2013 16:33:49 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        kosaki.motohiro@gmail.com
-Subject: Re: [PATCH 01/10] migrate: add migrate_entry_wait_huge()
-References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1363983835-20184-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1363983835-20184-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	id S1162814Ab3DEUeT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 16:34:19 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:40412 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1162735Ab3DEUeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 16:34:18 -0400
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/3] mm: fixup changers of per cpu pageset's ->high and ->batch
+Date: Fri,  5 Apr 2013 13:33:47 -0700
+Message-Id: <1365194030-28939-1-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.2
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040520-5806-0000-0000-0000209E80D0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git v3.9-rc3.orig/mm/hugetlb.c v3.9-rc3/mm/hugetlb.c
-> index 0a0be33..98a478e 100644
-> --- v3.9-rc3.orig/mm/hugetlb.c
-> +++ v3.9-rc3/mm/hugetlb.c
-> @@ -2819,7 +2819,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->  	if (ptep) {
->  		entry = huge_ptep_get(ptep);
->  		if (unlikely(is_hugetlb_entry_migration(entry))) {
-> -			migration_entry_wait(mm, (pmd_t *)ptep, address);
-> +			migration_entry_wait_huge(mm, (pmd_t *)ptep, address);
+In one case while modifying the ->high and ->batch fields of per cpu pagesets
+we're unneededly using stop_machine() (patches 1 & 2), and in another we don't have any
+syncronization at all (patch 3).
 
-Hm.
+This patchset fixes both of them.
 
-How do you test this? From x86 point of view, this patch seems unnecessary because
-hugetlb_fault call "address &= hugetlb_mask()" at first and then migration_entry_wait()
-could grab right pte lock. And from !x86 point of view, this funciton still doesn't work
-because huge page != pmd on some arch.
+Note that it results in a change to the behavior of zone_pcp_update(), which is
+used by memory_hotplug. I _think_ that I've diserned (and preserved) the
+essential behavior (changing ->high and ->batch), and only eliminated unneeded
+actions (draining the per cpu pages), but this may not be the case.
 
-I might be missing something though.
+--
+ mm/page_alloc.c | 63 +++++++++++++++++++++++++++------------------------------
+ 1 file changed, 30 insertions(+), 33 deletions(-)
+
