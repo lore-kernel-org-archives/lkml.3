@@ -1,60 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab3DEC2O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 22:28:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35987 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932505Ab3DEC2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 22:28:13 -0400
-From: Thomas Renninger <trenn@suse.de>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 00/22] x86, ACPI, numa: Parse numa info early
-Date: Fri, 05 Apr 2013 04:28:10 +0200
-Message-ID: <2084826.BkfVPXvXDZ@skinner.arch.suse.de>
-Organization: SUSE Products GmbH
-User-Agent: KMail/4.10 (Linux/3.7.10-1.1-desktop; KDE/4.10.0; x86_64; ; )
-In-Reply-To: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
-References: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
+	id S1161337Ab3DECed (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 22:34:33 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:33844 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161117Ab3DECea (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 22:34:30 -0400
+X-Greylist: delayed 1099 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Apr 2013 22:34:30 EDT
+Message-ID: <515E3833.7070505@hitachi.com>
+Date: Fri, 05 Apr 2013 11:34:27 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Oskar Andero <oskar.andero@sonymobile.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        davem@davemloft.net, anil.s.keshavamurthy@intel.com, ananth@in.ibm.com,
+        radovan.lekanovic@sonymobile.com, bjorn.davidsson@sonymobile.com,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH v2 2/4] kprobes: split blacklist into common and arch
+References: <1365079889-21525-1-git-send-email-oskar.andero@sonymobile.com> <1365079889-21525-3-git-send-email-oskar.andero@sonymobile.com>
+In-Reply-To: <1365079889-21525-3-git-send-email-oskar.andero@sonymobile.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 04, 2013 04:46:04 PM Yinghai Lu wrote:
-> One commit that tried to parse SRAT early get reverted before v3.9-rc1.
+(2013/04/04 21:51), Oskar Andero wrote:
+> Some blackpoints are only valid for specific architectures. To let each
+> architecture specify its own blackpoints the list has been split in two
+> lists: common and arch. The common list is kept in kernel/kprobes.c and
+> the arch list is kept in the arch/ directory.
 > 
-> | commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
-> | Author: Tang Chen <tangchen@cn.fujitsu.com>
-> | Date:   Fri Feb 22 16:33:44 2013 -0800
-> | 
-> |    acpi, memory-hotplug: parse SRAT before memblock is ready
-> 
-> It broke several things, like acpi override and fall back path etc.
-> 
-> This patchset is clean implementation that will parse numa info early.
 
-I tried acpi table overriding, but it did not work for me.
-In your tree there seem to miss acpi initrd overriding doku:
-Documentation/acpi/initrd_table_override.txt
-?
-And your tree is 3.6.0-rc6-default+ based, right?
+Here I missed one racing issue.
 
-I tried it like that:
-mkdir -p kernel/firmware/acpi
-cp dsdt.aml kernel/firmware/acpi
-find kernel | cpio -H newc --create > /boot/instrumented_initrd
-cat /boot/initrd >>/boot/instrumented_initrd
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index 0a270e5..7654278 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+[...]
+>  
+>  /* it can take some time ( > 100ms ) to initialise the
+>   * blacklist so we delay this until we actually need it
+>   */
+>  static void init_kprobe_blacklist(void)
+>  {
+> -	int i;
+> -	unsigned long offset = 0, size = 0;
+> -	char *modname, namebuf[128];
+> -	const char *symbol_name;
+> -	void *addr;
+> -	struct kprobe_blackpoint *kb;
+> +	int i, j = 0;
+>  
+>  	mutex_lock(&kprobe_mutex);
+> -	if (kprobe_blacklist_initialized)
+> +	if (kprobe_blacklist)
+>  		goto out;
+>  
+> +	kprobe_blacklist_size = common_kprobes_blacksyms_size +
+> +				arch_kprobes_blacksyms_size;
+> +	kprobe_blacklist = kzalloc(sizeof(*kprobe_blacklist) *
+> +				   kprobe_blacklist_size, GFP_KERNEL);
 
-modified /boot/grub/menu.lst and pointed to /boot/instrumented_initrd
+If you'd like to use kprobe_blacklist itself as an initialized flag,
+you must prepare the "blacklist" local pointer to allocate and
+initialize entries.
 
--> no override messages in dmesg, no overriding happened at all.
+> @@ -151,7 +175,6 @@ static void init_kprobe_blacklist(void)
+>  				       kretprobe_blacklist[i].name);
+>  		}
+>  	}
+> -	kprobe_blacklist_initialized = 1;
 
-Did I oversee something?
+And after initialized, assign blacklist to kprobe_blacklist.
 
-    Thomas
+Without that, other thread may refer the uninitialized (but allocated)
+black list.
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
