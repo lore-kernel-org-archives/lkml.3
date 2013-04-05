@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161734Ab3DEMDT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 08:03:19 -0400
-Received: from mga11.intel.com ([192.55.52.93]:64472 "EHLO mga11.intel.com"
+	id S1161786Ab3DEMDw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 08:03:52 -0400
+Received: from mga03.intel.com ([143.182.124.21]:25371 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161568Ab3DEL6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1161540Ab3DEL6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Apr 2013 07:58:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,414,1363158000"; 
-   d="scan'208";a="317363701"
+   d="scan'208";a="223209026"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv3, RFC 26/34] mm: add huge_fault() callback to vm_operations_struct
-Date: Fri,  5 Apr 2013 14:59:50 +0300
-Message-Id: <1365163198-29726-27-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv3, RFC 22/34] thp, mm: truncate support for transparent huge page cache
+Date: Fri,  5 Apr 2013 14:59:46 +0300
+Message-Id: <1365163198-29726-23-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,26 +33,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-huge_fault() should try to setup huge page for the pgoff, if possbile.
-VM_FAULT_OOM return code means we need to fallback to small pages.
+If we starting position of truncation is in tail page we have to spilit
+the huge page page first.
+
+We also have to split if end is within the huge page. Otherwise we can
+truncate whole huge page at once.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/mm.h |    1 +
- 1 file changed, 1 insertion(+)
+ mm/truncate.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 09530c7..d978de8 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -195,6 +195,7 @@ struct vm_operations_struct {
- 	void (*open)(struct vm_area_struct * area);
- 	void (*close)(struct vm_area_struct * area);
- 	int (*fault)(struct vm_area_struct *vma, struct vm_fault *vmf);
-+	int (*huge_fault)(struct vm_area_struct *vma, struct vm_fault *vmf);
+diff --git a/mm/truncate.c b/mm/truncate.c
+index c75b736..0152feb 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -231,6 +231,17 @@ void truncate_inode_pages_range(struct address_space *mapping,
+ 			if (index > end)
+ 				break;
  
- 	/* notification that a previously read-only page is about to become
- 	 * writable, if an error is returned it will cause a SIGBUS */
++			/* split page if we start from tail page */
++			if (PageTransTail(page))
++				split_huge_page(compound_trans_head(page));
++			if (PageTransHuge(page)) {
++				/* split if end is within huge page */
++				if (index == (end & ~HPAGE_CACHE_INDEX_MASK))
++					split_huge_page(page);
++				else
++					/* skip tail pages */
++					i += HPAGE_CACHE_NR - 1;
++			}
+ 			if (!trylock_page(page))
+ 				continue;
+ 			WARN_ON(page->index != index);
+@@ -280,6 +291,8 @@ void truncate_inode_pages_range(struct address_space *mapping,
+ 			if (index > end)
+ 				break;
+ 
++			if (PageTransHuge(page))
++				split_huge_page(page);
+ 			lock_page(page);
+ 			WARN_ON(page->index != index);
+ 			wait_on_page_writeback(page);
 -- 
 1.7.10.4
 
