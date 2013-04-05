@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932569Ab3DEK3k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 06:29:40 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55553 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751323Ab3DEK3j (ORCPT
+	id S932587Ab3DEKaJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 06:30:09 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:53913 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932475Ab3DEKaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 06:29:39 -0400
-Date: Fri, 5 Apr 2013 11:29:32 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH linux-next] regmap: cache: Fix format specifier in dev_dbg
-Message-ID: <20130405102932.GK6597@opensource.wolfsonmicro.com>
-References: <515DAD0D.1010806@semaphore.gr>
+	Fri, 5 Apr 2013 06:30:05 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9RxwyT9MtfFuvYYZ"
-Content-Disposition: inline
-In-Reply-To: <515DAD0D.1010806@semaphore.gr>
-X-Cookie: Make a wish, it might come true.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKohpo=wNHsV0vFhcTWg0g7=Wtbdx=g2wqpNPfidQfGhhK9Cig@mail.gmail.com>
+References: <03ca6f17860d290cfc67e51969062612f0ab26ab.1364643234.git.viresh.kumar@linaro.org>
+	<2835305.o7Hvg1cesG@vostro.rjw.lan>
+	<CAKohpo=vorTDONBR2czcZpP64sCfv1Qa-u8zGkHys9miwQrURw@mail.gmail.com>
+	<6766028.RBJyPM3lJj@vostro.rjw.lan>
+	<CAKohpo=wNHsV0vFhcTWg0g7=Wtbdx=g2wqpNPfidQfGhhK9Cig@mail.gmail.com>
+Date: Fri, 5 Apr 2013 16:00:04 +0530
+Message-ID: <CAKohpo=jUOciKCAWWJ_bC-uSKzdk4a49r39gaOsuroVbqSRyFg@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: Raname index as data in cpufreq_frequency_table
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, robin.randhawa@arm.com, Steve.Bannister@arm.com,
+        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
+        arvind.chauhan@arm.com, Sekhar Nori <nsekhar@ti.com>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Arnd Bergmann <arnd@arndb.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 31 March 2013 09:16, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 31 March 2013 07:16, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> On Sunday, March 31, 2013 07:03:04 AM Viresh Kumar wrote:
+>>> On 31 March 2013 03:31, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>> > Sorry, I won't apply this.  It changes too much stuff at a time and I'm not
+>>> > really sure if the change being made is necessary.
+>>>
+>>> Hmm.. I thought it is important  as it puts the real meaning of "index" in the
+>>> code.
+>>
+>> And what does that change, really?  What about documenting the meaning of
+>> "index" instead?
+>
+> Probably not the logic but perception. People don't necessarily go through
+> Documentation but code for writing new stuff. And so code should reflect the
+> real meaning.
+>
+> In case we write something like following in documentation:
+> "Index: This is driver specific data for each frequency. Core doesn't use it."
+>
+> Then "Index" looks even more wrong. Its not the right name for any such
+> variable. And so it should be fixed.
 
---9RxwyT9MtfFuvYYZ
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Forgot reply to all earlier :(
 
-On Thu, Apr 04, 2013 at 07:40:45PM +0300, Stratos Karafotis wrote:
-> Fix format specifier in dev_dbg and suppress the following warning
->=20
-> drivers/base/regmap/regcache.c: In function
-> =E2=80=98regcache_sync_block_raw_flush=E2=80=99:
-> drivers/base/regmap/regcache.c:593:2: warning: format =E2=80=98%d=E2=80=
-=99 expects
-> argument of type =E2=80=98int=E2=80=99, but argument 4 has type =E2=80=98=
-size_t=E2=80=99 [-Wformat]
+You have any more comments on this patch? I really thought this change
+would be good. I agree it touches lot of stuff but for clean/clear code.
 
-Applied, thanks.
-
---9RxwyT9MtfFuvYYZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRXqeCAAoJELSic+t+oim9W7cP/3l8Jeb75SKGw7XXUgLk1aFD
-+AYbKoXhLMKYB8MJqmm7Rr4/aNCYRacUbIXndCPtfpdUvNxzr59NPfn0MZlB5R8+
-ttDT3FgSI5U7DSVSX+06V9v7ZM3nqgga0u2WDN0Q3c1NF6OyEv1f4EmE5EhOS8wx
-+MoAj4+UceMveH0yE2uRqK16ZRgsG7ZKLhX/rn+maG37W6kL1yRCwbYmwdHTY7vT
-9FWIwNI3C+CnYhNsFctNDjJlLRaZMKYeQU0+LMHaen5m5S3Axnd4QYQ2wcK+Unul
-rx+Ze1/IjBLqyLWvzEJuStAxVipTQv0Dp52uZU2+Hi0aAfFI0qU0hL4F6zyZe7jf
-9tVGJRi403C5A1ttI7/Cp1HI9Q2O1Hvg7Ww39IUDZm4j5nYNQ+CYmke7ndKyha1l
-WOdD7clumoEfhX1c+a19h+qqI0+qpFATG963Hf3G+jWgR/CBVpGetf+kcVoAGW1f
-th+XedOYYfZjlXJzKETCix0dCfpEztw3xf5NO98DCQhHAkos41xQGtGPROMy8Cbe
-vzC5qsLm3ZJIZO1Ntl8uYl3hMukks99RFBU527blbRY5zecyX2MW6/m56xMQfgPz
-uCpY345H+HztxXH4dzwNd/auvAKVuL7w1C0vCzsA09fEX0Ks/8z+0hfHfHtGt6sj
-QFK0VEmVW0DaJO6RLlDO
-=HLfw
------END PGP SIGNATURE-----
-
---9RxwyT9MtfFuvYYZ--
+--
+viresh
