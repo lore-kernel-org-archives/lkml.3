@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422697Ab3DEVAr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 17:00:47 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:53157 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162169Ab3DEVAp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 17:00:45 -0400
-Date: Fri, 5 Apr 2013 22:00:43 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Nathan Zimmer <nzimmer@sgi.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Woodhouse <dwmw2@infradead.org>, stable@vger.kernel.org
-Subject: Re: [PATCH resend] fs/proc: Move kfree outside pde_unload_lock
-Message-ID: <20130405210042.GH4068@ZenIV.linux.org.uk>
-References: <515D9F8A.2060505@sgi.com>
- <1365090819-25448-1-git-send-email-nzimmer@sgi.com>
- <20130404161140.GR21522@ZenIV.linux.org.uk>
- <515DB465.1060004@sgi.com>
- <20130404204459.GU21522@ZenIV.linux.org.uk>
- <515F0456.9040803@sgi.com>
- <20130405173623.GE4068@ZenIV.linux.org.uk>
- <515F3A71.9080008@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515F3A71.9080008@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1162529Ab3DEVDG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 17:03:06 -0400
+Received: from mga14.intel.com ([143.182.124.37]:40523 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1162095Ab3DEVDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 17:03:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,416,1363158000"; 
+   d="scan'208";a="223402316"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        Platform Driver <platform-driver-x86@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>, Randy Dunlap <rdunlap@infradead.org>,
+        Paul Bolle <pebolle@tiscali.nl>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH v2] RAPL (Running Average Power Limit) driver
+Date: Fri,  5 Apr 2013 14:02:03 -0700
+Message-Id: <1365195724-8945-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 05, 2013 at 03:56:17PM -0500, Nathan Zimmer wrote:
+Changes since V2:
+	- use 'struct device' instead of raw kobject to represent
+	  RAPL domains
+	- changed eventfd control interface to use event string
+	  instead of passing file descriptors that cannot be
+	  authenticated in sysfs directory
+	- clean ups based on v1 reviews
+		- use kcalloc for arrays
+		- drop dependencies on X86
+		- misc cleanups
 
-> That didn't produce anything.  I'll run some bisections over the
-> weekend and see what I can sort out.
+I don have a checkpatch error which I think it is not valid. I can
+fix it by avoiding the macro/adding more lines.
 
-*Ugh*
+ERROR: Macros with complex values should be enclosed in parenthesis
+#735: FILE: platform/x86/intel_rapl.c:735:
++#define RO_PRIMITIVE(name)						\
++	primitive_show_fn(name)						\
++	static DEVICE_ATTR(name, S_IRUGO, show_##name, NULL)
 
-I'd try to build with DEBUG_KMEMLEAK and slapped printks on the entry
-and exit from close_pdeo().  If that doesn't show anything interesting,
-it's probably unrelated to procfs...
+If i put parenthesis around it to mute the error then it won't compile.
+
+I attempted to come up with a simple version as Greg suggested to
+just expose cooling device but then I realized we could lose many
+key functionalities partially due to the correlations among RAPL
+control knobs. I am still working on this since it is not as simple as
+deleting the advanced interfaces, I would have to do some setup based
+on best guesses.
+
+Jacob Pan (1):
+  Introduce Intel RAPL cooling device driver
+
+ Documentation/ABI/testing/sysfs-class-intel-rapl |  121 ++
+ drivers/platform/x86/Kconfig                     |    9 +
+ drivers/platform/x86/Makefile                    |    1 +
+ drivers/platform/x86/intel_rapl.c                | 1285 ++++++++++++++++++++++
+ drivers/platform/x86/intel_rapl.h                |  244 ++++
+ 5 files changed, 1660 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-intel-rapl
+ create mode 100644 drivers/platform/x86/intel_rapl.c
+ create mode 100644 drivers/platform/x86/intel_rapl.h
+
+-- 
+1.7.9.5
+
