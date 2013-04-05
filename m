@@ -1,91 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932488Ab3DECYY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 22:24:24 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:37782 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932459Ab3DECYX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 22:24:23 -0400
+	id S932525Ab3DEC2O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 22:28:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35987 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932505Ab3DEC2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Apr 2013 22:28:13 -0400
+From: Thomas Renninger <trenn@suse.de>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 00/22] x86, ACPI, numa: Parse numa info early
+Date: Fri, 05 Apr 2013 04:28:10 +0200
+Message-ID: <2084826.BkfVPXvXDZ@skinner.arch.suse.de>
+Organization: SUSE Products GmbH
+User-Agent: KMail/4.10 (Linux/3.7.10-1.1-desktop; KDE/4.10.0; x86_64; ; )
+In-Reply-To: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
+References: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Message-ID: <7058b4bf-4473-4755-a017-e32f5389a73f@default>
-Date: Thu, 4 Apr 2013 19:22:21 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, Bob Liu <lliubbo@gmail.com>
-Subject: RE: [PATCHv8 5/8] mm: break up swap_writepage() for frontswap
- backends
-References: <1365113446-25647-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <1365113446-25647-6-git-send-email-sjenning@linux.vnet.ibm.com>
- <515DFF08.3060005@linux.vnet.ibm.com>
-In-Reply-To: <515DFF08.3060005@linux.vnet.ibm.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6668.5000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> Subject: Re: [PATCHv8 5/8] mm: break up swap_writepage() for frontswap backends
+On Thursday, April 04, 2013 04:46:04 PM Yinghai Lu wrote:
+> One commit that tried to parse SRAT early get reverted before v3.9-rc1.
 > 
-> On 04/04/2013 05:10 PM, Seth Jennings wrote:
-> > swap_writepage() is currently where frontswap hooks into the swap
-> > write path to capture pages with the frontswap_store() function.
-> > However, if a frontswap backend wants to "resume" the writeback of
-> > a page to the swap device, it can't call swap_writepage() as
-> > the page will simply reenter the backend.
-> >
-> > This patch separates swap_writepage() into a top and bottom half, the
-> > bottom half named __swap_writepage() to allow a frontswap backend,
-> > like zswap, to resume writeback beyond the frontswap_store() hook.
-> >
-> > __add_to_swap_cache() is also made non-static so that the page for
-> > which writeback is to be resumed can be added to the swap cache.
-> >
-> > Acked-by: Minchan Kim <minchan@kernel.org>
-> > Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> | commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
+> | Author: Tang Chen <tangchen@cn.fujitsu.com>
+> | Date:   Fri Feb 22 16:33:44 2013 -0800
+> | 
+> |    acpi, memory-hotplug: parse SRAT before memblock is ready
 > 
-> Adding Cc Bob Liu.
+> It broke several things, like acpi override and fall back path etc.
 > 
-> I just remembered that Bob had done a repost of the 5 and 6 patches,
-> outside the zswap thread,  with a small change to avoid a checkpatch
-> warning.  I didn't pull that change into my version, but I should have.
-> 
-> It doesn't make a functional difference, so this patch can still go
-> forward and the checkpatch warning can be cleaned up in a subsequent
-> patch.  If another revision of the patchset is needed for other
-> reasons, I'll pull this change into the next version.
-> 
-> I think Dan and Bob would be ok with their tags being applied to 5 and 6:
-> 
-> Acked-by: Bob Liu <bob.liu@oracle.com>
-> Reviewed-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> 
-> That ok?
+> This patchset is clean implementation that will parse numa info early.
 
-OK with me.  I do support these two MM patches as candidates for the
-3.10 window since both zswap AND in-tree zcache depend on them,
-but the silence from Andrew was a bit deafening.
+I tried acpi table overriding, but it did not work for me.
+In your tree there seem to miss acpi initrd overriding doku:
+Documentation/acpi/initrd_table_override.txt
+?
+And your tree is 3.6.0-rc6-default+ based, right?
 
-Seth, perhaps you could add a #ifdef CONFIG_ZSWAP_WRITEBACK
-to the zswap code and Kconfig (as zcache has done) and then
-these two patches in your patchset can be reviewed
-separately?
+I tried it like that:
+mkdir -p kernel/firmware/acpi
+cp dsdt.aml kernel/firmware/acpi
+find kernel | cpio -H newc --create > /boot/instrumented_initrd
+cat /boot/initrd >>/boot/instrumented_initrd
+
+modified /boot/grub/menu.lst and pointed to /boot/instrumented_initrd
+
+-> no override messages in dmesg, no overriding happened at all.
+
+Did I oversee something?
+
+    Thomas
