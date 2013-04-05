@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab3DEEQO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 00:16:14 -0400
-Received: from mail-gg0-f169.google.com ([209.85.161.169]:55556 "EHLO
-	mail-gg0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752326Ab3DEEQN (ORCPT
+	id S1756626Ab3DEESW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 00:18:22 -0400
+Received: from mail-gh0-f179.google.com ([209.85.160.179]:51581 "EHLO
+	mail-gh0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753488Ab3DEESV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 00:16:13 -0400
+	Fri, 5 Apr 2013 00:18:21 -0400
 From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-To: linux@arm.linux.org.uk, shawn.guo@linaro.org, fabio.estevam@freescale.com,
-        otavio@ossystems.com.br, marex@denx.de,
-        maxime.ripard@free-electrons.com, f.koliqi@gmail.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+To: cjb@laptop.org, shawn.guo@linaro.org, marex@denx.de,
+        fabio.estevam@freescale.com, otavio@ossystems.com.br,
+        broonie@opensource.wolfsonmicro.com, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Cc: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Subject: [PATCH] ARM: dts: imx23-olinuxino: Set the sdcard as non-removable
-Date: Fri,  5 Apr 2013 01:16:53 -0300
-Message-Id: <1365135413-31493-1-git-send-email-aletes.xgr@gmail.com>
+Subject: [PATCH] mmc: mxs-mmc: Add support for non-removable cards
+Date: Fri,  5 Apr 2013 01:18:38 -0300
+Message-Id: <1365135518-31549-1-git-send-email-aletes.xgr@gmail.com>
 X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The imx23-olinuxino sdcard doesn't support card detect.
+Some boards and card slots doesn't have card detect feature available.
+In that case allow to mark the cards as non-removable, via devicetree.
 
 Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 ---
- arch/arm/boot/dts/imx23-olinuxino.dts |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/mmc/host/mxs-mmc.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/arm/boot/dts/imx23-olinuxino.dts b/arch/arm/boot/dts/imx23-olinuxino.dts
-index e7484e4..03f55c2 100644
---- a/arch/arm/boot/dts/imx23-olinuxino.dts
-+++ b/arch/arm/boot/dts/imx23-olinuxino.dts
-@@ -29,6 +29,7 @@
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&mmc0_4bit_pins_a &mmc0_pins_fixup>;
- 				bus-width = <4>;
-+				non-removable;
- 				status = "okay";
- 			};
+diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
+index 4efe302..7d2cd74 100644
+--- a/drivers/mmc/host/mxs-mmc.c
++++ b/drivers/mmc/host/mxs-mmc.c
+@@ -95,6 +95,9 @@ static int mxs_mmc_get_cd(struct mmc_host *mmc)
+ 	struct mxs_mmc_host *host = mmc_priv(mmc);
+ 	struct mxs_ssp *ssp = &host->ssp;
  
++	if (mmc->caps & MMC_CAP_NONREMOVABLE)
++		return 1;
++
+ 	return !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
+ 		 BM_SSP_STATUS_CARD_DETECT);
+ }
+@@ -691,6 +694,9 @@ static int mxs_mmc_probe(struct platform_device *pdev)
+ 	if (flags & OF_GPIO_ACTIVE_LOW)
+ 		host->wp_inverted = 1;
+ 
++	if (of_find_property(np, "non-removable", NULL))
++		mmc->caps |= MMC_CAP_NONREMOVABLE;
++
+ 	mmc->f_min = 400000;
+ 	mmc->f_max = 288000000;
+ 	mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
 -- 
 1.7.10
 
