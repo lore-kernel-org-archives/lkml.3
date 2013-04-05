@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162791Ab3DEUmI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 16:42:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:63541 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162655Ab3DEUmF (ORCPT
+	id S1162859Ab3DEUmh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 16:42:37 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:20083 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162655Ab3DEUmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 16:42:05 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH v2 1/9] arm: mvebu: Limit the DMA zone when LPAE is selected
-Date: Fri, 5 Apr 2013 22:41:14 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, Nicolas Pitre <nico@fluxnic.net>,
-        Lior Amsalem <alior@marvell.com>, Maen Suleiman <maen@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
-        "Eran Ben-Avi" <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
-        David Marlin <dmarlin@redhat.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-References: <1365193444-13441-1-git-send-email-gregory.clement@free-electrons.com> <1365193444-13441-2-git-send-email-gregory.clement@free-electrons.com>
-In-Reply-To: <1365193444-13441-2-git-send-email-gregory.clement@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304052241.14865.arnd@arndb.de>
-X-Provags-ID: V02:K0:f3UZ0tGhitqCXNPPs+WjZrk4BsGsQ7v7xDraWcjf9lR
- jEW4mtrmIMIPQ0q/1myMo4M9QQxLybxhzdG7W7nrLppNCVec3a
- z0EXZ1VdfUMehHlbWe+3nZ5RaZJSPU3cRl87Ga7XwHseKOpYKr
- o72sdKPABSD/ITVkWsownGK9Tly7OhDDkGV3QvTRZHLc96ch7M
- QLWWG55neEhAWebBiQVT7m5I/xhvbskFpgmiuenbvikAGxmqQA
- dUqaVQnviQNq/BR+1rZSQJDH5bwVErnWwHGKaW8yWi+79ftgB0
- VArfiQpqFbDtYaswr6tH4gwMzS9I7z0ktoD0f1zjIo4XRSKNuh
- 05tBQxWs80zaJUYV1/ag=
+	Fri, 5 Apr 2013 16:42:33 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        x86@kernel.org, hpa@zytor.com, konrad@kernel.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 4/4] x86/wakeup/sleep:  Use pvops functions for changing GDT entries.
+Date: Fri,  5 Apr 2013 16:42:24 -0400
+Message-Id: <1365194544-14648-5-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1365194544-14648-1-git-send-email-konrad.wilk@oracle.com>
+References: <1365194544-14648-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 05 April 2013, Gregory CLEMENT wrote:
-> When LPAE is activated on Armada XP, all registers and IOs are still
-> 32bit, the 40bit extension is on the CPU to DRAM path (windows) only.
-> That means that all the DMA transfer are restricted to the low 32 bits
-> address space. This is limitation is achieved by selecting ZONE_DMA.
-> 
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+From: "konrad@kernel.org" <konrad@kernel.org>
 
+We check the TSS descriptor before we try to dereference it.
+Also we document what the value '9' actually means using the
+AMD64 Architecture Programmer's Manual Volume 2, pg 90:
+"Hex value 9: Available 64-bit TSS" and pg 91:
+"The available 32-bit TSS (09h), which is redefined as the
+available 64-bit TSS."
 
-Shouldn't that be ZONE_DMA32?
+Without this, on Xen, where the GDT is available as R/O (to
+protect the hypervisor from the guest modifying it), we end up
+with a pagetable fault.
 
-	Arnd
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/power/cpu.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
+index 571176f..6d6e907 100644
+--- a/arch/x86/power/cpu.c
++++ b/arch/x86/power/cpu.c
+@@ -133,7 +133,10 @@ static void fix_processor_context(void)
+ {
+ 	int cpu = smp_processor_id();
+ 	struct tss_struct *t = &per_cpu(init_tss, cpu);
+-
++#ifdef CONFIG_X86_64
++	struct desc_struct *desc = get_cpu_gdt_table(cpu);
++	tss_desc tss;
++#endif
+ 	set_tss_desc(cpu, t);	/*
+ 				 * This just modifies memory; should not be
+ 				 * necessary. But... This is necessary, because
+@@ -142,7 +145,9 @@ static void fix_processor_context(void)
+ 				 */
+ 
+ #ifdef CONFIG_X86_64
+-	get_cpu_gdt_table(cpu)[GDT_ENTRY_TSS].type = 9;
++	memcpy(&tss, &desc[GDT_ENTRY_TSS], sizeof(tss_desc));
++	tss.type = 0x9; /* The available 64-bit TSS (see AMD vol 2, pg 91 */
++	write_gdt_entry(desc, GDT_ENTRY_TSS, &tss, DESC_TSS);
+ 
+ 	syscall_init();				/* This sets MSR_*STAR and related */
+ #endif
+-- 
+1.8.1.4
+
