@@ -1,84 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163058Ab3DEWqU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 18:46:20 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:50793 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162909Ab3DEWqS (ORCPT
+	id S1163049Ab3DEXD2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 19:03:28 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39583 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1162833Ab3DEXD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 18:46:18 -0400
-Date: Fri, 5 Apr 2013 15:46:16 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [RFC] revoke(2) and generic handling of things like
- remove_proc_entry()
-Message-ID: <20130405224616.GA10377@kroah.com>
-References: <20130405042932.GB4068@ZenIV.linux.org.uk>
- <20130405195609.GA8745@kroah.com>
- <20130405205137.GG4068@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130405205137.GG4068@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 5 Apr 2013 19:03:26 -0400
+X-Sasl-enc: N7iSl4JisUyiDB+yM5DVuZ+d+WdQjKk9Cu99i4jYu7xQ 1365203005
+From: Alan Ott <alan@signal11.us>
+To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Ott <alan@signal11.us>
+Subject: [PATCH v2] mac802154: Keep track of the channel when changed
+Date: Fri,  5 Apr 2013 19:03:10 -0400
+Message-Id: <1365202990-9006-1-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <515F4017.6060404@signal11.us>
+References: <515F4017.6060404@signal11.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 05, 2013 at 09:51:37PM +0100, Al Viro wrote:
-> On Fri, Apr 05, 2013 at 12:56:09PM -0700, Greg Kroah-Hartman wrote:
-> > > 4) nasty semantics issue - mmap() vs. revoke (of any sort, including
-> > > remove_proc_entry(), etc.).  Suppose a revokable file had been mmapped;
-> > > now it's going away.  What should we do to its VMAs?  Right now sysfs
-> > > and procfs get away with that, but only because there's only one thing
-> > > that has ->mmap() there - /proc/bus/pci and sysfs equivalents.  I've
-> > > no idea how does pci_mmap_page_range() interact with PCI hotplug (and
-> > > I'm not at all sure that whatever it does isn't racy wrt device removal),
-> > 
-> > The page range should just start returning 0xff all over the place, the
-> > BIOS should have kept the mapping around, as it can't really assign it
-> > anywhere else, so all _should_ be fine here.
-> 
-> Umm... 0xff or SIGSEGV?
+Two sections checked whether the current channel != the new channel
+without ever setting the current channel variables.
 
-I think, at first glance, 0xff, as the area is still "mapped" to the
-device, and that never gets invaldated from what I can tell, despite the
-device now being gone.
+1. net/mac802154/tx.c: Prevent set_channel() from getting called every
+time a packet is sent.
 
-> > I think that's a reasonable constraint, although tearing down the VMAs
-> > might be possible if we just invalidate the file handle "forcefully"
-> > (i.e. manually tear them down and then further accesses should through a
-> > SIGSEV fail, or am I missing something more basic here?)
-> 
-> The question is how to do that in a reasonably clean way; we would've done
-> as part of ->kick(), I suppose, or right next to it.
+2. net/mac802154/mib.c: Lock (pib_lock) accesses to current_channel and
+current_page and make sure they are updated when the channel has been
+changed.
 
-I don't really know, sorry.
+Signed-off-by: Alan Ott <alan@signal11.us>
+---
+ net/mac802154/mib.c | 12 +++++++++++-
+ net/mac802154/tx.c  |  3 +++
+ 2 files changed, 14 insertions(+), 1 deletion(-)
 
-> > > 6) how do we get from revoke(2) to call of revoke_it() on the right object?
-> > > Note that revoke(2) is done by pathname; we might want an ...at() variant,
-> > > but all we'll have to play with will be inode, not an opened file.
-> > 
-> > Can we make revoke(2) require a valid file handle?  Is there a POSIX
-> > spec for revoke(2) that we have to follow here, or given that we haven't
-> > had one yet, are we free to define whatever we want without people
-> > getting that upset?
-> 
-> BSD one takes a pathname and so do all derived ones...
+diff --git a/net/mac802154/mib.c b/net/mac802154/mib.c
+index f03e55f..8ded97c 100644
+--- a/net/mac802154/mib.c
++++ b/net/mac802154/mib.c
+@@ -176,9 +176,15 @@ static void phy_chan_notify(struct work_struct *work)
+ 	struct mac802154_sub_if_data *priv = netdev_priv(nw->dev);
+ 	int res;
+ 
++	mutex_lock(&priv->hw->phy->pib_lock);
+ 	res = hw->ops->set_channel(&hw->hw, priv->page, priv->chan);
+ 	if (res)
+ 		pr_debug("set_channel failed\n");
++	else {
++		priv->hw->phy->current_channel = priv->chan;
++		priv->hw->phy->current_page = priv->page;
++	}
++	mutex_unlock(&priv->hw->phy->pib_lock);
+ 
+ 	kfree(nw);
+ }
+@@ -195,8 +201,11 @@ void mac802154_dev_set_page_channel(struct net_device *dev, u8 page, u8 chan)
+ 	priv->chan = chan;
+ 	spin_unlock_bh(&priv->mib_lock);
+ 
++	mutex_lock(&priv->hw->phy->pib_lock);
+ 	if (priv->hw->phy->current_channel != priv->chan ||
+ 	    priv->hw->phy->current_page != priv->page) {
++		mutex_unlock(&priv->hw->phy->pib_lock);
++
+ 		work = kzalloc(sizeof(*work), GFP_ATOMIC);
+ 		if (!work)
+ 			return;
+@@ -204,5 +213,6 @@ void mac802154_dev_set_page_channel(struct net_device *dev, u8 page, u8 chan)
+ 		INIT_WORK(&work->work, phy_chan_notify);
+ 		work->dev = dev;
+ 		queue_work(priv->hw->dev_workqueue, &work->work);
+-	}
++	} else
++		mutex_unlock(&priv->hw->phy->pib_lock);
+ }
+diff --git a/net/mac802154/tx.c b/net/mac802154/tx.c
+index 3fd3e07..6d16473 100644
+--- a/net/mac802154/tx.c
++++ b/net/mac802154/tx.c
+@@ -58,6 +58,9 @@ static void mac802154_xmit_worker(struct work_struct *work)
+ 			pr_debug("set_channel failed\n");
+ 			goto out;
+ 		}
++
++		xw->priv->phy->current_channel = xw->chan;
++		xw->priv->phy->current_page = xw->page;
+ 	}
+ 
+ 	res = xw->priv->ops->xmit(&xw->priv->hw, xw->skb);
+-- 
+1.7.11.2
 
-Ugh, ok, they were there first, fair enough.
-
-Hm, how do they solve this type of race condition?  Last time I looked
-(middle of last year) at one of the revoke BSD implementations, I don't
-recall anything special to try to prevent this.  Is it that they just
-don't care as almost no one uses it, and it's only for tty devices?  Or
-did I miss something?
-
-thanks,
-
-greg k-h
