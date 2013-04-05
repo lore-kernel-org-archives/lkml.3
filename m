@@ -1,69 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161758Ab3DEMBW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 08:01:22 -0400
-Received: from mga14.intel.com ([143.182.124.37]:23000 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1765499Ab3DEL60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 07:58:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,414,1363158000"; 
-   d="scan'208";a="281245180"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv3, RFC 33/34] thp: call __vma_adjust_trans_huge() for file-backed VMA
-Date: Fri,  5 Apr 2013 14:59:57 +0300
-Message-Id: <1365163198-29726-34-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
+	id S1161750Ab3DEMB7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 08:01:59 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:65380 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161226Ab3DEMB5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 08:01:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <1363618233-6375-4-git-send-email-nschichan@freebox.fr>
+References: <1363618233-6375-1-git-send-email-nschichan@freebox.fr>
+	<1363618233-6375-4-git-send-email-nschichan@freebox.fr>
+Date: Fri, 5 Apr 2013 14:01:55 +0200
+Message-ID: <CAN9tCgQB1xa_AVBSjt4kYeJmXLPJ+X+oRp4T2PydsvVxWEfeSQ@mail.gmail.com>
+Subject: Re: [PATCH V2 3/3] ARM: net: bpf_jit: add support for jitted seccomp filters.
+From: Mircea Gherzan <mgherzan@gmail.com>
+To: Nicolas Schichan <nschichan@freebox.fr>
+Cc: Will Drewry <wad@chromium.org>,
+        "linux-kernel@vger.kernel.org >> linux-kernel@vger.kernel.org" 
+	<linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <daniel.borkmann@tik.ee.ethz.ch>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+2013/3/18 Nicolas Schichan <nschichan@freebox.fr>:
+> This patch selects HAVE_SECCOMP_FILTER_JIT in the ARM Kconfig file,
+> implements and seccomp_jit_compile() and seccomp_jit_free(), and adds
+> support for BPF_S_ANC_SECCOMP_LD_W instruction.
+>
+> BPF_S_ANC_SECCOMP_LD_W instructions trigger the generation of a call
+> to C function seccomp_bpf_load().
+>
+> Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
+> ---
+>  arch/arm/Kconfig          |    1 +
+>  arch/arm/net/bpf_jit_32.c |   36 ++++++++++++++++++++++++++++++++++++
+>  2 files changed, 37 insertions(+)
+>
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index dedf02b..b3dce17 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -24,6 +24,7 @@ config ARM
+>         select HAVE_ARCH_SECCOMP_FILTER
+>         select HAVE_ARCH_TRACEHOOK
+>         select HAVE_BPF_JIT
+> +       select HAVE_SECCOMP_FILTER_JIT
+>         select HAVE_C_RECORDMCOUNT
+>         select HAVE_DEBUG_KMEMLEAK
+>         select HAVE_DMA_API_DEBUG
+> diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
+> index 0ea29e0..86e3b78 100644
+> --- a/arch/arm/net/bpf_jit_32.c
+> +++ b/arch/arm/net/bpf_jit_32.c
+> @@ -548,6 +548,15 @@ load_common:
+>                         emit_err_ret(ARM_COND_NE, ctx);
+>                         emit(ARM_MOV_R(r_A, ARM_R0), ctx);
+>                         break;
+> +#ifdef CONFIG_SECCOMP_FILTER_JIT
+> +               case BPF_S_ANC_SECCOMP_LD_W:
+> +                       ctx->seen |= SEEN_CALL;
+> +                       emit_mov_i(ARM_R3, (u32)seccomp_bpf_load, ctx);
+> +                       emit_mov_i(ARM_R0, k, ctx);
+> +                       emit_blx_r(ARM_R3, ctx);
+> +                       emit(ARM_MOV_R(r_A, ARM_R0), ctx);
+> +                       break;
+> +#endif
+>                 case BPF_S_LD_W_IND:
+>                         load_order = 2;
+>                         goto load_ind;
+> @@ -956,3 +965,30 @@ void bpf_jit_free(struct sk_filter *fp)
+>                 schedule_work(work);
+>         }
+>  }
+> +
+> +#ifdef CONFIG_SECCOMP_FILTER_JIT
+> +void seccomp_jit_compile(struct seccomp_filter *fp)
+> +{
+> +       struct jit_ctx ctx;
+> +
+> +       memset(&ctx, 0, sizeof(ctx));
+> +       ctx.prog_len = fp->len;
+> +       ctx.prog_insns = fp->insns;
+> +
+> +       __bpf_jit_compile(&ctx);
+> +       if (ctx.target)
+> +               fp->bpf_func = (void*)ctx.target;
+> +}
+> +
+> +void seccomp_jit_free(struct seccomp_filter *fp)
+> +{
+> +       struct work_struct *work;
+> +
+> +       if (fp->bpf_func != sk_run_filter) {
+> +               work = (struct work_struct *)fp->bpf_func;
+> +
+> +               INIT_WORK(work, bpf_jit_free_worker);
+> +               schedule_work(work);
+> +       }
+> +}
+> +#endif
+> --
+> 1.7.10.4
+>
 
-Since we're going to have huge pages in page cache, we need to call
-__vma_adjust_trans_huge() for file-backed VMA, which potentially can
-contain huge pages.
-
-For now we call it for all VMAs with vm_ops->huge_fault defined.
-
-Probably later we will need to introduce a flag to indicate that the VMA
-has huge pages.
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- include/linux/huge_mm.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index aa52c48..c6e3aef 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -161,9 +161,9 @@ static inline void vma_adjust_trans_huge(struct vm_area_struct *vma,
- 					 unsigned long end,
- 					 long adjust_next)
- {
--	if (!vma->anon_vma || vma->vm_ops)
--		return;
--	__vma_adjust_trans_huge(vma, start, end, adjust_next);
-+	if ((vma->anon_vma && !vma->vm_ops) ||
-+			(vma->vm_ops && vma->vm_ops->huge_fault))
-+		__vma_adjust_trans_huge(vma, start, end, adjust_next);
- }
- static inline int hpage_nr_pages(struct page *page)
- {
--- 
-1.7.10.4
-
+Acked-by: Mircea Gherzan <mgherzan@gmail.com>
