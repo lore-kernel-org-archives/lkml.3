@@ -1,123 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162371Ab3DER5w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 13:57:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:36070 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162254Ab3DER5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 13:57:51 -0400
-Message-ID: <515F1035.8090500@ti.com>
-Date: Fri, 5 Apr 2013 20:56:05 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Roger Quadros <rogerq@ti.com>, <b-cousson@ti.com>,
-        <linux@arm.linux.org.uk>, <rnayak@ti.com>, <balbi@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, Paul Walmsley <paul@pwsan.com>,
-        "Menon, Nishanth" <nm@ti.com>
-Subject: Re: [RFC][PATCH 1/2] ARM: OMAP4: clock: Add device tree support for
- AUXCLKs
-References: <1363703220-4777-1-git-send-email-rogerq@ti.com> <1363703220-4777-2-git-send-email-rogerq@ti.com> <20130403234242.GE10155@atomide.com> <515D2D30.3000306@ti.com> <20130404164137.GH10155@atomide.com>
-In-Reply-To: <20130404164137.GH10155@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1162384Ab3DER63 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 13:58:29 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:63055 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162211Ab3DER61 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 13:58:27 -0400
+Message-ID: <1365184705.3887.0.camel@edumazet-glaptop>
+Subject: Re: PROBLEM: IPv6 TCP-Connections resetting
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Tetja Rediske <tetja@tetja.de>
+Cc: linux-kernel@vger.kernel.org, Duan Jiong <djduanjiong@gmail.com>,
+        netdev <netdev@vger.kernel.org>
+Date: Fri, 05 Apr 2013 10:58:25 -0700
+In-Reply-To: <20130405174828.310a02c3@trediske.ws.office.manitu.net>
+References: <20130405174828.310a02c3@trediske.ws.office.manitu.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.249]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2013 07:41 PM, Tony Lindgren wrote:
-> * Roger Quadros <rogerq@ti.com> [130404 00:39]:
->> On 04/04/2013 02:42 AM, Tony Lindgren wrote:
->>>> --- a/arch/arm/mach-omap2/cclock44xx_data.c
->>>> +++ b/arch/arm/mach-omap2/cclock44xx_data.c
->>>> @@ -27,6 +27,7 @@
->>>>   #include <linux/clk-private.h>
->>>>   #include <linux/clkdev.h>
->>>>   #include <linux/io.h>
->>>> +#include <linux/of.h>
->>>>   
->>>>   #include "soc.h"
->>>>   #include "iomap.h"
->>>> @@ -1663,6 +1664,40 @@ static struct omap_clk omap44xx_clks[] = {
->>>>   	CLK(NULL,	"cpufreq_ck",	&dpll_mpu_ck,	CK_443X),
->>>>   };
->>>>   
->>>> +static struct clk *scrm_clks[] = {
->>>> +	&auxclk0_ck,
->>>> +	&auxclk1_ck,
->>>> +	&auxclk2_ck,
->>>> +	&auxclk3_ck,
->>>> +	&auxclk4_ck,
->>>> +	&auxclk5_ck,
->>>> +};
->>> Hmm I don't like the idea of specifying the auxclk both in the
->>> cclock44xx_data.c and in DT..
->> Right, but till we have all clocks moved to DT we only need this
->> approach for general purpose clocks that are not mapped to devices
->> by hwmod.
-> For v3.10, let's just make sure that USB works with DT as then
-> after v3.10 we can make omap4 DT only and get rid of estimated
-> 7K lines of code and data. I guess this is the last piece missing
-> for that, or are we also missing something else?
->
-> Can't you set up a clock alias for your device so it can find the
-> auxclk when requesting it with the dev entry?
->
-> For the DT clock driver if needed for v3.10, how about just do a
-> minimal drivers/clock/omap/ that uses the standard binding?
-> Then that driver can just do clk_get() from cclock44xx_data.c
-> for now? And then later on we'll just move all the clocks to a
-> combination of DT + /lib/firmware.
->
-Hi Roger, Rajendra, All
+On Fri, 2013-04-05 at 17:48 +0200, Tetja Rediske wrote:
+> Hi,
+> 
 
-Sorry that disturbing you.
+CC netdev and Duan Jiong (author of bad commit)
 
-I'm supporting Android OMAP4 kernels (K3.0/K3.4) and like to clarify few
-points regarding this approach (having into account possible future 
-migrations
-on newer Kernels and OMAP5).
-If I understand everything right, this patch series allows to create 
-clock binding
-in DT using following syntax: clocks = <&aux_clks 3>
-  - does it means that in worst case there will be ~200 clock IDs defined?
-  - does it means that clock nodes binding using phandles 
-(human-friendly notation)
-isn't going to be supported?
-for example:
-     clocks = <&sys_clkin_ck>
-     clocks = <&dss_sys_clk &dss_tv_clk &dss_dss_clk>)
+> [1.] One line summary of the problem:
+> 
+> IPv6 TCP-Connections resetting 
+> 
+> [2.] Full description of the problem/report:
+> 
+> In the last weeks we updated some of our systems to a 3.8.4 Kernel.
+> Since then sometimes we can't connect to services running IPv6,
+> Apache and Openssh tested. 
+> 
+> We got this on different machines with x86 and x86_64 Kernels. On
+> x86_64 it is more random, but on x86 i can reproduce it permanently
+> (Just opening any TCP Connection 1st time or after some short delay).
+> Connecting quick after the reset again will work as expected. It will
+> also work, if you keep another connection open.
+> 
+> Before I got to the Kernel, I just kept an strace on an userspace
+> process, but it did not notice the connection attempt. After this I
+> monitored the connection with tcpdump, but nothing unusual.
+> 
+> Then I did a rollback to the older Kernel and it worked as expected.
+> 
+> I tracked it down with 'git bisect' to commit:
+> 
+>   093d04d42fa094f6740bb188f0ad0c215ff61e2c
+> 
+> I also tested latest git state available.
+> 
+> [3.] Keywords (i.e., modules, networking, kernel):
+> 
+> networking, IPv6
+> 
+> [4.] Kernel information
+> [4.1.] Kernel version (from /proc/version): 
+> 
+>   since commit: 093d04d42fa094f6740bb188f0ad0c215ff61e2c
+> 
+> [4.2.] Kernel .config file:
+> [5.] Most recent kernel version which did not have the bug:
+> 
+> none
+> 
+> [6.] Output of Oops.. message (if applicable) with symbolic information
+>      resolved (see Documentation/oops-tracing.txt)
+> [7.] A small shell script or example program which triggers the
+>      problem (if possible)
+> [8.] Environment
+> [8.1.] Software (add the output of the ver_linux script here)
+> 
+> Different systems, mostly reproduced on this one:
+> 
+> Linux dns03.tetja.de 3.9.0-rc5+ #10 SMP Fri Apr 5 16:55:54 CEST 2013
+> i686 AMD Athlon(tm) 64 X2 Dual Core Processor 5600+ AuthenticAMD
+> GNU/Linux
+> 
+> Gnu C                  4.4.5
+> Gnu make               3.82
+> binutils               2.22
+> util-linux             2.22.2
+> mount                  debug
+> module-init-tools      12
+> e2fsprogs              1.42
+> jfsutils               1.1.15
+> reiserfsprogs          3.6.21
+> xfsprogs               3.1.10
+> Linux C Library        2.15
+> Dynamic linker (ldd)   2.15
+> Procps                 3.3.4
+> Net-tools              1.60_p20120127084908
+> Kbd                    1.15.3wip
+> Sh-utils               8.20
+> Modules Loaded
+> 
+> Connections looking like this on booth sites:
+> 
+> 11:52:04.634315 IP6 2a00:1828:0:1::10.51808 >
+> 2a00:1828:1000:1102::2.80: Flags [S], seq 103067898, win 5760, options
+> [mss 1440,sackOK,TS val 232579708 ecr 0,nop,wscale 7], length 0
+> 
+> 11:52:04.634354 IP6 2a00:1828:1000:1102::2.80 >
+> 2a00:1828:0:1::10.51808: Flags [S.], seq 3352491415, ack 103067899, win
+> 14280, options [mss 1440,sackOK,TS val 174797959 ecr
+> 232579708,nop,wscale 7], length 0 
+> 
+> 11:52:04.634656 IP6 fe80::92e2:baff:fe00:c120 > 2a00:1828:1000:1102::2:
+> ICMP6, redirect, 2a00:1828:0:1::10 to 2a00:1828:0:1::10, length 136
+> 
+> 11:52:04.634715 IP6 2a00:1828:0:1::10.51808 >
+> 2a00:1828:1000:1102::2.80: Flags [.], ack 1, win 45, options
+> [nop,nop,TS val 232579708 ecr 174797959], length 0
+> 
+> 11:52:04.634726 IP6 2a00:1828:1000:1102::2.80 >
+> 2a00:1828:0:1::10.51808: Flags [R], seq 3352491416, win 0, length 0
+> 
+> 11:52:04.635027 IP6 2a00:1828:0:1::10.51808 >
+> 2a00:1828:1000:1102::2.80: Flags [P.], seq 1:359, ack 1, win 45,
+> options [nop,nop,TS val 232579708 ecr 174797959], length 358
+> 
+> 11:52:04.635037 IP6 2a00:1828:1000:1102::2.80 >
+> 2a00:1828:0:1::10.51808: Flags [R], seq 3352491416, win 0, length 0
+> 
+> 11:52:04.635071 IP6 fe80::92e2:baff:fe00:c120 > 2a00:1828:1000:1102::2:
+> ICMP6, redirect, 2a00:1828:0:1::10 to 2a00:1828:0:1::10, length 112
+> 
+> 11:52:04.635246 IP6 fe80::92e2:baff:fe00:c120 > 2a00:1828:1000:1102::2:
+> ICMP6, redirect, 2a00:1828:0:1::10 to 2a00:1828:0:1::10, length 112
+> 
+> Kind Regards and keep up the good work! :)
+> 
+> Tetja Rediske
 
-I was horrified to think about the problems of this approach support
-(in case if there would be more then ~30 IDs) - just miss with on digit
-and weeks of debugging would be guaranteed.
-
-Please, say me that i'm wrong.
-And why clock DT data can't be auto-generated like all other OMAP data
-to close this questions?
-
-Thanks.
-
->> e.g. auxclk are required to be specified in DT nodes for USB PHY.
->> Without this we can't get USB host working on Panda.
-> OK. So if the USB PHY has a dev entry, can't you just set up a
-> clock alias in struct omap_clk omap44xx_clks[] for it?
->   
->> As Rajendra points out, it seems moving entire clock data to DT is not
->> going to happen soon. So this is the simplistic way things can work.
-> Right but seems like we can get started there without moving
-> them all at once.
->
-> Regards,
->
-> Tony
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
