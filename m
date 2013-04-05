@@ -1,108 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161768Ab3DENmV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 09:42:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46890 "EHLO mx1.redhat.com"
+	id S1161773Ab3DENqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 09:46:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59679 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161548Ab3DENmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 09:42:19 -0400
-From: Nikola Pajkovsky <npajkovs@redhat.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] ipc: use list_for_each_entry for list traversing
-Date: Fri,  5 Apr 2013 15:42:11 +0200
-Message-Id: <63a5135b37c9a45abad27eed9f78d69dd4deba76.1365168828.git.npajkovs@redhat.com>
+	id S1161650Ab3DENp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 09:45:59 -0400
+Date: Fri, 5 Apr 2013 15:45:57 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Li Zefan <lizefan@huawei.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC][PATCH 2/7] memcg: don't use mem_cgroup_get() when creating
+ a kmemcg cache
+Message-ID: <20130405134557.GG31132@dhcp22.suse.cz>
+References: <515BF233.6070308@huawei.com>
+ <515BF275.5080408@huawei.com>
+ <20130403153133.GM16471@dhcp22.suse.cz>
+ <515EA73C.8050602@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515EA73C.8050602@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the ipc/msg.c code does all list operations by hand and it open-codes
-the accesses, instead of using for_each_entry.
+On Fri 05-04-13 14:28:12, Glauber Costa wrote:
+> On 04/03/2013 07:31 PM, Michal Hocko wrote:
+> > On Wed 03-04-13 17:12:21, Li Zefan wrote:
+> >> Use css_get()/css_put() instead of mem_cgroup_get()/mem_cgroup_put().
+> >>
+> >> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> >> ---
+> >>  mm/memcontrol.c | 10 +++++-----
+> >>  1 file changed, 5 insertions(+), 5 deletions(-)
+> >>
+> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> >> index 43ca91d..dafacb8 100644
+> >> --- a/mm/memcontrol.c
+> >> +++ b/mm/memcontrol.c
+> >> @@ -3191,7 +3191,7 @@ void memcg_release_cache(struct kmem_cache *s)
+> >>  	list_del(&s->memcg_params->list);
+> >>  	mutex_unlock(&memcg->slab_caches_mutex);
+> >>  
+> >> -	mem_cgroup_put(memcg);
+> >> +	css_put(&memcg->css);
+> >>  out:
+> >>  	kfree(s->memcg_params);
+> >>  }
+> >> @@ -3350,16 +3350,18 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+> >>  
+> >>  	mutex_lock(&memcg_cache_mutex);
+> >>  	new_cachep = cachep->memcg_params->memcg_caches[idx];
+> >> -	if (new_cachep)
+> >> +	if (new_cachep) {
+> >> +		css_put(&memcg->css);
+> >>  		goto out;
+> >> +	}
+> >>  
+> >>  	new_cachep = kmem_cache_dup(memcg, cachep);
+> >>  	if (new_cachep == NULL) {
+> >>  		new_cachep = cachep;
+> >> +		css_put(&memcg->css);
+> >>  		goto out;
+> >>  	}
+> >>  
+> >> -	mem_cgroup_get(memcg);
+> >>  	atomic_set(&new_cachep->memcg_params->nr_pages , 0);
+> >>  
+> >>  	cachep->memcg_params->memcg_caches[idx] = new_cachep;
+> >> @@ -3449,8 +3451,6 @@ static void memcg_create_cache_work_func(struct work_struct *w)
+> >>  
+> >>  	cw = container_of(w, struct create_work, work);
+> >>  	memcg_create_kmem_cache(cw->memcg, cw->cachep);
+> >> -	/* Drop the reference gotten when we enqueued. */
+> >> -	css_put(&cw->memcg->css);
+> >>  	kfree(cw);
+> >>  }
+> > 
+> > You are putting references but I do not see any single css_{try}get
+> > here. /me puzzled.
+> > 
+> 
+> There are two things being done in this code:
+> First, we acquired a css_ref to make sure that the underlying cgroup
+> would not go away. That is a short lived reference, and it is put as
+> soon as the cache is created.
+> At this point, we acquire a long-lived per-cache memcg reference count
+> to guarantee that the memcg will still be alive.
+> 
+> so it is:
+> 
+> enqueue: css_get
+> create : memcg_get, css_put
+> destroy: css_put
+> 
+> If I understand Li's patch correctly, he is not touching the first
+> css_get, only turning that into the long lived reference (which was not
+> possible before, since that would prevent rmdir).
+> 
+> Then he only needs to get rid of the memcg_get, change the memcg_put to
+> css_put, and get rid of the now extra css_put.
+> 
+> He is issuing extra css_puts in memcg_create_kmem_cache, but only in
+> failure paths. So the code reads as:
+> * css_get on enqueue (already done, so not shown in patch)
+> * if it fails, css_put
+> * if it succeeds, don't do anything. This is already the long-lived
+> reference count. put it at release time.
 
-Signed-off-by: Nikola Pajkovsky <npajkovs@redhat.com>
----
- ipc/msg.c |   35 ++++++++---------------------------
- 1 files changed, 8 insertions(+), 27 deletions(-)
+OK, this makes more sense now. It is __memcg_create_cache_enqueue which
+takes the reference and it is not put after this because it replaced
+mem_cgroup reference counting.
+Li, please put something along these lines into the changelog. This is
+really tricky and easy to get misunderstand.
 
-diff --git a/ipc/msg.c b/ipc/msg.c
-index fede1d0..8eca57a 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -237,14 +237,9 @@ static inline void ss_del(struct msg_sender *mss)
- 
- static void ss_wakeup(struct list_head *h, int kill)
- {
--	struct list_head *tmp;
-+	struct msg_sender *mss, *t;
- 
--	tmp = h->next;
--	while (tmp != h) {
--		struct msg_sender *mss;
--
--		mss = list_entry(tmp, struct msg_sender, list);
--		tmp = tmp->next;
-+	list_for_each_entry_safe(mss, t, h, list) {
- 		if (kill)
- 			mss->list.next = NULL;
- 		wake_up_process(mss->tsk);
-@@ -253,14 +248,9 @@ static void ss_wakeup(struct list_head *h, int kill)
- 
- static void expunge_all(struct msg_queue *msq, int res)
- {
--	struct list_head *tmp;
--
--	tmp = msq->q_receivers.next;
--	while (tmp != &msq->q_receivers) {
--		struct msg_receiver *msr;
-+	struct msg_receiver *msr, *t;
- 
--		msr = list_entry(tmp, struct msg_receiver, r_list);
--		tmp = tmp->next;
-+	list_for_each_entry_safe(msr, t, &msq->q_receivers, r_list) {
- 		msr->r_msg = NULL;
- 		wake_up_process(msr->r_tsk);
- 		smp_mb();
-@@ -278,7 +268,7 @@ static void expunge_all(struct msg_queue *msq, int res)
-  */
- static void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
- {
--	struct list_head *tmp;
-+	struct msg_msg *msg;
- 	struct msg_queue *msq = container_of(ipcp, struct msg_queue, q_perm);
- 
- 	expunge_all(msq, -EIDRM);
-@@ -286,11 +276,7 @@ static void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
- 	msg_rmid(ns, msq);
- 	msg_unlock(msq);
- 
--	tmp = msq->q_messages.next;
--	while (tmp != &msq->q_messages) {
--		struct msg_msg *msg = list_entry(tmp, struct msg_msg, m_list);
--
--		tmp = tmp->next;
-+	list_for_each_entry(msg, &msq->q_messages, m_list) {
- 		atomic_dec(&ns->msg_hdrs);
- 		free_msg(msg);
- 	}
-@@ -602,14 +588,9 @@ static int testmsg(struct msg_msg *msg, long type, int mode)
- 
- static inline int pipelined_send(struct msg_queue *msq, struct msg_msg *msg)
- {
--	struct list_head *tmp;
--
--	tmp = msq->q_receivers.next;
--	while (tmp != &msq->q_receivers) {
--		struct msg_receiver *msr;
-+	struct msg_receiver *msr, *t;
- 
--		msr = list_entry(tmp, struct msg_receiver, r_list);
--		tmp = tmp->next;
-+	list_for_each_entry_safe(msr, t, &msq->q_receivers, r_list) {
- 		if (testmsg(msg, msr->r_msgtype, msr->r_mode) &&
- 		    !security_msg_queue_msgrcv(msq, msg, msr->r_tsk,
- 					       msr->r_msgtype, msr->r_mode)) {
+You can put my Acked-by then.
+
+> The code looks correct, and of course, extremely simpler due to the
+> use of a single reference.
+> 
+> Li, am I right in my understanding that this is your intention?
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 -- 
-1.7.1
-
+Michal Hocko
+SUSE Labs
