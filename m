@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569Ab3DEF7I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 01:59:08 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43909 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161640Ab3DEF7B (ORCPT
+	id S1161656Ab3DEF7x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 01:59:53 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:45556 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161485Ab3DEF7w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 01:59:01 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <515E680D.5040805@jp.fujitsu.com>
-Date: Fri, 05 Apr 2013 14:58:37 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Fri, 5 Apr 2013 01:59:52 -0400
 MIME-Version: 1.0
-To: Li Zefan <lizefan@huawei.com>
-CC: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC][PATCH 5/7] cgroup: make sure parent won't be destroyed
- before its children
-References: <515BF233.6070308@huawei.com> <515BF2A4.1070703@huawei.com>
-In-Reply-To: <515BF2A4.1070703@huawei.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [93.172.123.88]
+In-Reply-To: <1361466940-6813-1-git-send-email-sjur.brandeland@stericsson.com>
+References: <1361466940-6813-1-git-send-email-sjur.brandeland@stericsson.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Fri, 5 Apr 2013 08:59:29 +0300
+Message-ID: <CAK=WgbYX0ghFSmv3-U52icVTv4gr8FH5aUZyeQiykXv=uO9ZxQ@mail.gmail.com>
+Subject: Re: [PATCHv2 00/10] remoteproc: Support bi-directional vdev config space
+To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
+Cc: Ido Yariv <ido@wizery.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Erwan Yvin <erwan.yvin@stericsson.com>,
+        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur@brendeland.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/04/03 18:13), Li Zefan wrote:
-> Suppose we rmdir a cgroup and there're still css refs, this cgroup won't
-> be freed. Then we rmdir the parent cgroup, and the parent is freed due
-> to css ref draining to 0. Now it would be a disaster if the child cgroup
-> tries to access its parent.
-> 
-> Make sure this won't happen.
-> 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
-> ---
->   kernel/cgroup.c | 10 ++++++++++
->   1 file changed, 10 insertions(+)
-> 
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index fa54b92..78204bc 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -888,6 +888,13 @@ static void cgroup_free_fn(struct work_struct *work)
->   	mutex_unlock(&cgroup_mutex);
->   
->   	/*
-> +	 * We get a ref to the parent's dentry, and put the ref when
-> +	 * this cgroup is being freed, so it's guaranteed that the
-> +	 * parent won't be destroyed before its children.
-> +	 */
-> +	dput(cgrp->parent->dentry);
-> +
-> +	/*
->   	 * Drop the active superblock reference that we took when we
->   	 * created the cgroup
->   	 */
-> @@ -4171,6 +4178,9 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
->   	for_each_subsys(root, ss)
->   		dget(dentry);
->   
-> +	/* hold a ref to the parent's dentry */
-> +	dget(parent->dentry);
-> +
->   	/* creation succeeded, notify subsystems */
->   	for_each_subsys(root, ss) {
->   		err = online_css(ss, cgrp);
-> 
+On Thu, Feb 21, 2013 at 7:15 PM, <sjur.brandeland@stericsson.com> wrote:
+>
+> From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+>
+> This patch-set adds support for shared resource table between
+> Linux kernel and remote devices.
+> - dynamically-allocated address of the vrings can be communicated
+> - vdev statuses can be communicated
+> - virtio config space becomes bi-directional
+> - virtio feature negotiation is two-way
+>
+> Changes since v1:
+> - Address all of Ido's review comments on the previous patch-set.
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+At long last I've applied and pushed out the patches, after some
+changes to make it easier to read the code. These are mostly
+style/terminology changes, as well as some cleanups and sporadic
+addition of function documentation. Patches have also been rebased -
+thanks Sjur for helping that feat privately.
 
+The fixes were pushed to the fixes branch of remoteproc, and will be
+pushed to Linus ASAP. The patches that add new functionality were
+pushed to the for-next branch, and will subsequently show up in
+linux-next. These will be pushed to Linus as soon as the next merge
+window opens.
 
+Sjur thanks for your effort and cooperation all along - the patches are great!
 
+And sorry again for the delay - it was a hectic time and hopefully
+we're back on track now.
+
+Thanks,
+Ohad.
