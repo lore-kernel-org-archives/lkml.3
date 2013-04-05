@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161786Ab3DEMDw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 08:03:52 -0400
-Received: from mga03.intel.com ([143.182.124.21]:25371 "EHLO mga03.intel.com"
+	id S1161691Ab3DEMDu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 08:03:50 -0400
+Received: from mga11.intel.com ([192.55.52.93]:64460 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161540Ab3DEL6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1161182Ab3DEL6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Apr 2013 07:58:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,414,1363158000"; 
-   d="scan'208";a="223209026"
+   d="scan'208";a="317363696"
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 To: Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
@@ -21,9 +21,9 @@ Cc: Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Hillf Danton <dhillf@gmail.com>, Dave Hansen <dave@sr71.net>,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCHv3, RFC 22/34] thp, mm: truncate support for transparent huge page cache
-Date: Fri,  5 Apr 2013 14:59:46 +0300
-Message-Id: <1365163198-29726-23-git-send-email-kirill.shutemov@linux.intel.com>
+Subject: [PATCHv3, RFC 19/34] thp, libfs: initial support of thp in simple_read/write_begin/write_end
+Date: Fri,  5 Apr 2013 14:59:43 +0300
+Message-Id: <1365163198-29726-20-git-send-email-kirill.shutemov@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
 References: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
@@ -33,48 +33,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-If we starting position of truncation is in tail page we have to spilit
-the huge page page first.
-
-We also have to split if end is within the huge page. Otherwise we can
-truncate whole huge page at once.
+For now we try to grab a huge cache page if gfp_mask has __GFP_COMP.
+It's probably to weak condition and need to be reworked later.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- mm/truncate.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ fs/libfs.c              |   48 ++++++++++++++++++++++++++++++++++++-----------
+ include/linux/pagemap.h |    8 ++++++++
+ 2 files changed, 45 insertions(+), 11 deletions(-)
 
-diff --git a/mm/truncate.c b/mm/truncate.c
-index c75b736..0152feb 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -231,6 +231,17 @@ void truncate_inode_pages_range(struct address_space *mapping,
- 			if (index > end)
- 				break;
+diff --git a/fs/libfs.c b/fs/libfs.c
+index 916da8c..6e5286d 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -383,7 +383,7 @@ EXPORT_SYMBOL(simple_setattr);
  
-+			/* split page if we start from tail page */
-+			if (PageTransTail(page))
-+				split_huge_page(compound_trans_head(page));
-+			if (PageTransHuge(page)) {
-+				/* split if end is within huge page */
-+				if (index == (end & ~HPAGE_CACHE_INDEX_MASK))
-+					split_huge_page(page);
-+				else
-+					/* skip tail pages */
-+					i += HPAGE_CACHE_NR - 1;
-+			}
- 			if (!trylock_page(page))
- 				continue;
- 			WARN_ON(page->index != index);
-@@ -280,6 +291,8 @@ void truncate_inode_pages_range(struct address_space *mapping,
- 			if (index > end)
- 				break;
+ int simple_readpage(struct file *file, struct page *page)
+ {
+-	clear_highpage(page);
++	clear_pagecache_page(page);
+ 	flush_dcache_page(page);
+ 	SetPageUptodate(page);
+ 	unlock_page(page);
+@@ -394,21 +394,42 @@ int simple_write_begin(struct file *file, struct address_space *mapping,
+ 			loff_t pos, unsigned len, unsigned flags,
+ 			struct page **pagep, void **fsdata)
+ {
+-	struct page *page;
++	struct page *page = NULL;
+ 	pgoff_t index;
  
-+			if (PageTransHuge(page))
-+				split_huge_page(page);
- 			lock_page(page);
- 			WARN_ON(page->index != index);
- 			wait_on_page_writeback(page);
+ 	index = pos >> PAGE_CACHE_SHIFT;
+ 
+-	page = grab_cache_page_write_begin(mapping, index, flags);
++	/* XXX: too weak condition. Good enough for initial testing */
++	if (mapping_can_have_hugepages(mapping)) {
++		page = grab_thp_write_begin(mapping,
++				index & ~HPAGE_CACHE_INDEX_MASK, flags);
++		/* fallback to small page */
++		if (!page || !PageTransHuge(page)) {
++			unsigned long offset;
++			offset = pos & ~PAGE_CACHE_MASK;
++			len = min_t(unsigned long,
++					len, PAGE_CACHE_SIZE - offset);
++		}
++	}
++	if (!page)
++		page = grab_cache_page_write_begin(mapping, index, flags);
+ 	if (!page)
+ 		return -ENOMEM;
+-
+ 	*pagep = page;
+ 
+-	if (!PageUptodate(page) && (len != PAGE_CACHE_SIZE)) {
+-		unsigned from = pos & (PAGE_CACHE_SIZE - 1);
+-
+-		zero_user_segments(page, 0, from, from + len, PAGE_CACHE_SIZE);
++	if (!PageUptodate(page)) {
++		unsigned from;
++
++		if (PageTransHuge(page) && len != HPAGE_PMD_SIZE) {
++			from = pos & ~HPAGE_PMD_MASK;
++			zero_huge_user_segment(page, 0, from);
++			zero_huge_user_segment(page,
++					from + len, HPAGE_PMD_SIZE);
++		} else if (len != PAGE_CACHE_SIZE) {
++			from = pos & ~PAGE_CACHE_MASK;
++			zero_user_segments(page, 0, from,
++					from + len, PAGE_CACHE_SIZE);
++		}
+ 	}
+ 	return 0;
+ }
+@@ -443,9 +464,14 @@ int simple_write_end(struct file *file, struct address_space *mapping,
+ 
+ 	/* zero the stale part of the page if we did a short copy */
+ 	if (copied < len) {
+-		unsigned from = pos & (PAGE_CACHE_SIZE - 1);
+-
+-		zero_user(page, from + copied, len - copied);
++		unsigned from;
++		if (PageTransHuge(page)) {
++			from = pos & ~HPAGE_PMD_MASK;
++			zero_huge_user(page, from + copied, len - copied);
++		} else {
++			from = pos & ~PAGE_CACHE_MASK;
++			zero_user(page, from + copied, len - copied);
++		}
+ 	}
+ 
+ 	if (!PageUptodate(page))
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 5a7dda9..c64d19c 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -581,4 +581,12 @@ static inline int add_to_page_cache(struct page *page,
+ 	return error;
+ }
+ 
++static inline void clear_pagecache_page(struct page *page)
++{
++	if (PageTransHuge(page))
++		zero_huge_user(page, 0, HPAGE_PMD_SIZE);
++	else
++		clear_highpage(page);
++}
++
+ #endif /* _LINUX_PAGEMAP_H */
 -- 
 1.7.10.4
 
