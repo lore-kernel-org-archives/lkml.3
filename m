@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161907Ab3DEIh0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 04:37:26 -0400
-Received: from cmexedge1.ext.emulex.com ([138.239.224.99]:58900 "EHLO
-	CMEXEDGE1.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab3DEIhY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 04:37:24 -0400
-From: "Perla, Sathya" <Sathya.Perla@Emulex.Com>
-To: David Miller <davem@davemloft.net>,
-        "ivecera@redhat.com" <ivecera@redhat.com>
-CC: "craig.hada@hp.com" <craig.hada@hp.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Seetharaman, Subramanian" <subbu.seetharaman@Emulex.Com>,
-        "Khaparde, Ajit" <Ajit.Khaparde@Emulex.Com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2 net-next] drivers/net: Enable IOMMU pass through for
- be2net
-Thread-Topic: [PATCH v2 net-next] drivers/net: Enable IOMMU pass through for
- be2net
-Thread-Index: AQHN9exzgQ95vzcl2EOGCHA2SRVWSZhQciKAgHe8GwCAAAk7gP//jUfg
-Date: Fri, 5 Apr 2013 08:37:19 +0000
-Message-ID: <bc200e62-f150-4235-832e-e73546738b48@CMEXHTCAS1.ad.emulex.com>
-References: <1358562195-2028-1-git-send-email-craig.hada@hp.com>
-	<1358562195-2028-2-git-send-email-craig.hada@hp.com>
-	<515E827C.3070702@redhat.com>
- <20130405.042427.456273365605730206.davem@davemloft.net>
-In-Reply-To: <20130405.042427.456273365605730206.davem@davemloft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [138.239.140.87]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1161926Ab3DEIrQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 04:47:16 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40286 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751070Ab3DEIrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 04:47:12 -0400
+Message-ID: <515E8F85.2060700@ti.com>
+Date: Fri, 5 Apr 2013 11:47:01 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
+To: <linux-omap@vger.kernel.org>
+CC: Roger Quadros <rogerq@ti.com>, Paul Walmsley <paul@pwsan.com>,
+        <tony@atomide.com>, <rnayak@ti.com>, <b-cousson@ti.com>,
+        <santosh.shilimkar@ti.com>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        "Menon, Nishanth" <nm@ti.com>
+Subject: Re: [PATCH v2] ARM: OMAP4: clock: Add device tree support for AUXCLKs
+References: <1363703220-4777-2-git-send-email-rogerq@ti.com> <1364293408-20677-1-git-send-email-rogerq@ti.com> <515A958B.5080905@ti.com>
+In-Reply-To: <515A958B.5080905@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: David Miller [mailto:davem@davemloft.net]
+On 04/02/2013 11:23 AM, Roger Quadros wrote:
+> + Paul
 > 
-> From: Ivan Vecera <ivecera@redhat.com>
-> Date: Fri, 05 Apr 2013 09:51:24 +0200
-> 
-> > Dave, I'd like to ask when do you plan to apply this patch?
-> 
-> I'm waiting for the be2net driver maintainers to integrate it and resend it to
-> me, they're usually very good about that.
+> On 03/26/2013 12:23 PM, Roger Quadros wrote:
+>> Register a device tree clock provider for the clocks
+>> on the OMAP4 SoC. Also provide the binding information.
+>>
+>> For now we only provide AUXCLKs.
 
-Ok, I'll do it and send out a patch soon...thanks!
+NOTE: this patch depends on
+https://patchwork.kernel.org/patch/2312211/
+
+>>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> ---
+>>  .../devicetree/bindings/clock/omap4-clock.txt      |   33 ++++++++++++++++
+>>  arch/arm/boot/dts/omap4.dtsi                       |    5 ++
+>>  arch/arm/mach-omap2/cclock44xx_data.c              |   41 ++++++++++++++++++++
+>>  3 files changed, 79 insertions(+), 0 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/clock/omap4-clock.txt
+>>
+
+cheers,
+-roger
