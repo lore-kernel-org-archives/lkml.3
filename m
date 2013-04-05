@@ -1,74 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162919Ab3DEUnS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 16:43:18 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:59884 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162808Ab3DEUnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 16:43:13 -0400
-Date: Fri, 5 Apr 2013 22:43:06 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Julien Tinnes <jln@google.com>
-Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Will Drewry <wad@chromium.org>
-Subject: Re: [PATCH 3/3] x86: kernel base offset ASLR
-Message-ID: <20130405204306.GA14092@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Julien Tinnes <jln@google.com>, Kees Cook <keescook@chromium.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"kernel-hardening@lists.openwall.com" <kernel-hardening@lists.openwall.com>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
-	Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-	Matthew Garrett <mjg@redhat.com>,
-	Matt Fleming <matt.fleming@intel.com>,
-	Eric Northup <digitaleric@google.com>,
-	Dan Rosenberg <drosenberg@vsecurity.com>,
-	Will Drewry <wad@chromium.org>
-References: <1365106055-22939-1-git-send-email-keescook@chromium.org>
- <1365106055-22939-4-git-send-email-keescook@chromium.org>
- <20130405144954.GC29290@pd.tnic>
- <CAKyRK=iEXpq9KnG_VJMYW-tpBxU_2TGaO_hZRkNY=J+7SNoQkA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAKyRK=iEXpq9KnG_VJMYW-tpBxU_2TGaO_hZRkNY=J+7SNoQkA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1162891Ab3DEUnD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 16:43:03 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:42110 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162804Ab3DEUme (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 16:42:34 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        x86@kernel.org, hpa@zytor.com, konrad@kernel.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 1/4] x86/gdt/64-bit: store/load GDT for ACPI S3 or hibernate/resume path is not needed.
+Date: Fri,  5 Apr 2013 16:42:21 -0400
+Message-Id: <1365194544-14648-2-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1365194544-14648-1-git-send-email-konrad.wilk@oracle.com>
+References: <1365194544-14648-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 05, 2013 at 01:19:39PM -0700, Julien Tinnes wrote:
-> I think it'd be perfectly ok for OOPS to print out the kernel base.
+During the ACPI S3 resume path the trampoline code handles it already.
 
-Yeah, ok, this still would need some massaging of the oops output per
-script, but it shouldn't be a big problem.
+During the ACPI S3 suspend phase (acpi_suspend_lowlevel) we set:
+early_gdt_descr.address = (..)get_cpu_gdt_table(smp_processor_id());
 
-Also, you probably need to make clear in the oops itself that the
-addresses have been randomized. Or, is the mere presence of kernel base
-going to imply that?
+which is then used during the resume path and has the same exact
+value as what the store/load_gdt do with the saved_context
+(which is saved/restored via save/restore_processor_state()).
 
-> Restricting access to these oopses becomes a different problem
-> (privilege separation). Some existing sandboxes (Chromium, vsftpd,
-> openssh..) are already defending against it.
+The flow during resume is complex and for 64-bit kernels we use three GDTs
+- one early bootstrap GDT (wakeup_igdt) that we load to workaround
+broken BIOSes, an early Protected Mode to Long Mode transition one
+(tr_gdt), and the final one - early_gdt_descr (which points to the real GDT).
 
-Ok.
+The early ('wakeup_gdt') is loaded in 'trampoline_start' for working
+around broken BIOSes, and then when we end up in Protected Mode in the
+startup_32 (in trampoline_64.s, not head_32.s) we use the 'tr_gdt'
+(still in trampoline_64.s). This 'tr_gdt' has a a 32-bit code segment,
+64-bit code segment with L=1, and a 32-bit data segment.
 
-Thanks.
+Once we have transitioned from Protected Mode to Long Mode we then
+set the GDT to 'early_gdt_desc' and then via an iretq emerge in
+wakeup_long64 (set via 'initial_code' variable in acpi_suspend_lowlevel).
 
+In the wakeup_long64 we end up restoring the %rip (which is set to
+'resume_point') and jump there.
+
+In 'resume_point' we call 'restore_processor_state' which does
+the load_gdt on the saved context. This load_gdt is redundant as the
+GDT loaded via early_gdt_desc is the same.
+
+Here is the call-chain:
+ wakeup_start
+   |- lgdtl wakeup_gdt [the work-around broken BIOSes]
+   |
+   \-- trampoline_start (trampoline_64.S)
+         |- lgdtl tr_gdt
+         |
+         \-- startup_32 (trampoline_64.S)
+               |
+               \-- startup_64 (trampoline_64.S)
+                      |
+                      \-- secondary_startup_64
+                               |- lgdtl early_gdt_desc
+                               | ...
+                               |- movq initial_code(%rip), %eax
+                               |-.. lretq
+                               \-- wakeup_64
+                                     |-- other registers are reloaded
+                                     |-- call restore_processor_state
+
+The hibernate path is much simpler. During the saving of the hibernation
+image we call save_processor_state() and save the contents of that along
+with the rest of the kernel in the hibernation image destination.
+We save the EIP of 'restore_registers' (restore_jump_address) and cr3
+(restore_cr3).
+
+During hibernate resume, the 'restore_registers' (via the
+'restore_jump_address) in hibernate_asm_64.S is invoked which restores
+the contents of most registers. Naturally the resume path benefits from
+already being in 64-bit mode, so it does not have to load the GDT.
+
+It only reloads the cr3 (from restore_cr3) and continues on. Note that
+the restoration of the restore image page-tables is done prior to this.
+
+After the 'restore_registers' it returns and we end up called
+restore_processor_state() - where we reload the GDT. The reload of
+the GDT is not needed as bootup kernel has already loaded the GDT which
+is at the same physical location as the the restored kernel.
+
+Note that the hibernation path assumes the GDT is correct during its
+'restore_registers'. The assumption in the code is that the restored
+image is the same as saved - meaning we are not trying to restore
+an different kernel in the virtual address space of a new kernel.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/include/asm/suspend_64.h | 3 ---
+ arch/x86/power/cpu.c              | 2 --
+ 2 files changed, 5 deletions(-)
+
+diff --git a/arch/x86/include/asm/suspend_64.h b/arch/x86/include/asm/suspend_64.h
+index 09b0bf1..97b84e0 100644
+--- a/arch/x86/include/asm/suspend_64.h
++++ b/arch/x86/include/asm/suspend_64.h
+@@ -25,9 +25,6 @@ struct saved_context {
+ 	u64 misc_enable;
+ 	bool misc_enable_saved;
+ 	unsigned long efer;
+-	u16 gdt_pad;
+-	u16 gdt_limit;
+-	unsigned long gdt_base;
+ 	u16 idt_pad;
+ 	u16 idt_limit;
+ 	unsigned long idt_base;
+diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
+index 3c68768..fdca260 100644
+--- a/arch/x86/power/cpu.c
++++ b/arch/x86/power/cpu.c
+@@ -66,7 +66,6 @@ static void __save_processor_state(struct saved_context *ctxt)
+ 	store_idt(&ctxt->idt);
+ #else
+ /* CONFIG_X86_64 */
+-	store_gdt((struct desc_ptr *)&ctxt->gdt_limit);
+ 	store_idt((struct desc_ptr *)&ctxt->idt_limit);
+ #endif
+ 	store_tr(ctxt->tr);
+@@ -187,7 +186,6 @@ static void __restore_processor_state(struct saved_context *ctxt)
+ 	load_idt(&ctxt->idt);
+ #else
+ /* CONFIG_X86_64 */
+-	load_gdt((const struct desc_ptr *)&ctxt->gdt_limit);
+ 	load_idt((const struct desc_ptr *)&ctxt->idt_limit);
+ #endif
+ 
 -- 
-Regards/Gruss,
-    Boris.
+1.8.1.4
 
-Sent from a fat crate under my desk. Formatting is fine.
---
