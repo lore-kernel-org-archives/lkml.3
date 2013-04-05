@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751136Ab3DEEB4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 00:01:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53231 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab3DEEBz (ORCPT
+	id S1751608Ab3DEED1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 00:03:27 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:63499 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383Ab3DEED0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 00:01:55 -0400
-Message-ID: <515E4CB7.6020405@infradead.org>
-Date: Thu, 04 Apr 2013 21:01:59 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Fri, 5 Apr 2013 00:03:26 -0400
+Message-ID: <515E4D05.5090807@gmail.com>
+Date: Fri, 05 Apr 2013 12:03:17 +0800
+From: Ric Mason <ric.masonn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Julian Calaby <julian.calaby@gmail.com>
-CC: Wang YanQing <udknight@gmail.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] lib80211: make lib80211 can be enabled independently
-References: <20130404160130.GA2577@udknight> <CAGRGNgXj7mSF0Fgyjek4Xcc34N26WHtt4HMmHk7DOopaEPrYFw@mail.gmail.com>
-In-Reply-To: <CAGRGNgXj7mSF0Fgyjek4Xcc34N26WHtt4HMmHk7DOopaEPrYFw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2, RFC 11/30] thp, mm: handle tail pages in page_cache_get_speculative()
+References: <1363283435-7666-1-git-send-email-kirill.shutemov@linux.intel.com> <1363283435-7666-12-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1363283435-7666-12-git-send-email-kirill.shutemov@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/13 16:51, Julian Calaby wrote:
-> Hi Wang,
-> 
-> On Fri, Apr 5, 2013 at 3:01 AM, Wang YanQing <udknight@gmail.com> wrote:
->>
->> Current we can only enable lib80211 by enable a driver
->> in tree use it which will select it, but some out tree's
->> drivers also use it, so I think it has sense to make lib80211
->> can be enabled independently.
-> 
-> Just as a bit of explanation for Johannes' NACK:
-> 
-> 1. The only reason lib80211 still exists is because a couple of
-> in-tree drivers still use it. If this weren't the case, the code would
-> have been removed a long time ago as it's been completely replaced by
-> mac80211 and cfg80211. All modern drivers _must_ use mac80211 or
-> cfg80211 without exception.
-> 2. In general, there is no official in-kernel support for
-> out-of-kernel drivers, regardless of quality, status or importance.
-> 3. I believe that the in-tree brcmsmac driver already supports the
-> Broadcom card you reference.
+Hi Kirill,
+On 03/15/2013 01:50 AM, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+>
+> For tail page we call __get_page_tail(). It has the same semantics, but
+> for tail page.
+>
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> ---
+>   include/linux/pagemap.h |    4 +++-
+>   1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+> index 3521b0d..408c4e3 100644
+> --- a/include/linux/pagemap.h
+> +++ b/include/linux/pagemap.h
+> @@ -159,6 +159,9 @@ static inline int page_cache_get_speculative(struct page *page)
 
+What's the different between page_cache_get_speculative and page_cache_get?
 
-3b.  If 3. is not correct, someone should endeavor to merge this
-out-of-tree driver into the kernel tree.
+>   {
+>   	VM_BUG_ON(in_interrupt());
+>   
+> +	if (unlikely(PageTail(page)))
+> +		return __get_page_tail(page);
+> +
+>   #ifdef CONFIG_TINY_RCU
+>   # ifdef CONFIG_PREEMPT_COUNT
+>   	VM_BUG_ON(!in_atomic());
+> @@ -185,7 +188,6 @@ static inline int page_cache_get_speculative(struct page *page)
+>   		return 0;
+>   	}
+>   #endif
+> -	VM_BUG_ON(PageTail(page));
+>   
+>   	return 1;
+>   }
 
-
--- 
-~Randy
