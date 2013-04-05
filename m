@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162220Ab3DERej (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 13:34:39 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:7535 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1162183Ab3DERei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 13:34:38 -0400
-X-IronPort-AV: E=Sophos;i="4.87,416,1363132800"; 
-   d="scan'208";a="16953028"
-Date: Fri, 5 Apr 2013 18:34:30 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-Subject: Re: [PATCH v6 4/4] xen/arm: introduce xen_early_init, use PSCI on
- xen
-In-Reply-To: <alpine.DEB.2.02.1304051725580.21065@kaball.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1304051825390.21065@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-4-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.LFD.2.03.1304051217560.1171@syhkavp.arg> <alpine.DEB.2.02.1304051725580.21065@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1162231Ab3DERg3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 13:36:29 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52396 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162201Ab3DERg1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 13:36:27 -0400
+Date: Fri, 5 Apr 2013 18:36:23 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Woodhouse <dwmw2@infradead.org>, stable@vger.kernel.org
+Subject: Re: [PATCH resend] fs/proc: Move kfree outside pde_unload_lock
+Message-ID: <20130405173623.GE4068@ZenIV.linux.org.uk>
+References: <515D9F8A.2060505@sgi.com>
+ <1365090819-25448-1-git-send-email-nzimmer@sgi.com>
+ <20130404161140.GR21522@ZenIV.linux.org.uk>
+ <515DB465.1060004@sgi.com>
+ <20130404204459.GU21522@ZenIV.linux.org.uk>
+ <515F0456.9040803@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515F0456.9040803@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Apr 2013, Stefano Stabellini wrote:
-> On Fri, 5 Apr 2013, Nicolas Pitre wrote:
-> > On Fri, 5 Apr 2013, Stefano Stabellini wrote:
-> > 
-> > > Split xen_guest_init in two functions, one of them (xen_early_init) is
-> > > going to be called very early from setup_arch.
-> > > 
-> > > Change machine_desc->smp_init to xen_smp_init if Xen is present on the
-> > > platform. xen_smp_init just sets smp_ops to psci_smp_ops.
-> > 
-> > I still think the above is redundant, especially since psci_smp_ops has 
-> > priority over default mdesc->smp_ops.  And doing so does break MCPM. But 
-> > we're apparently going in circle over this issue.
+On Fri, Apr 05, 2013 at 12:05:26PM -0500, Nathan Zimmer wrote:
+> On 04/04/2013 03:44 PM, Al Viro wrote:
+> >On Thu, Apr 04, 2013 at 12:12:05PM -0500, Nathan Zimmer wrote:
+> >
+> >>Ok I am cloning the tree now.
+> >>It does look like the patches would conflict.
+> >>I'll run some tests and take a deeper look.
+> >FWIW, I've just pushed there a tentative patch that switches to hopefully
+> >saner locking (head should be at cb673c115c1f99d3480471ca5d8cb3f89a1e3bee).
+> >Is that more or less what you want wrt spinlock contention?
+> >
+> >One note: for any given pde_opener, close_pdeo() can be called at most
+> >by two threads - final fput() and remove_proc_entry() resp.  I think
+> >the use of completion + flag is safe there; pde->pde_unload_lock
+> >should serialize the critical areas.
 > 
-> Did you read my last email on this issue?
+> Something isn't quite right.  I keep getting hung during boot.
+> dracut: Mounted root filesystem /dev/sda8
+> dracut: Switching root
 > 
-> http://marc.info/?l=linux-arm-kernel&m=136500098703317&w=2
-> 
-> 
-> Let's examine the use cases here, assuming that your MCPM patch series
-> has been applied.
-> 
-> 
-> This is what happens:
-> 
-> - No Xen
-> Xen is not running on the platform and a Xen hypervisor node is not
-> available on device tree.
-> Everything keeps working seamlessly, this patch doesn't change anything.
-> 
-> - we are running on Xen
-> Xen is running on the platform, we are running as a guest on Xen and an
-> hypervisor node is available on device tree.
-> Let's also assume that there aren't any "arm,cci" compatible nodes on
-> device tree because Xen wouldn't export this kind of information to any
-> guests right now. Therefore PSCI should be used to boot secondary cpus.
+> I'll try to get some more info on a smaller box.
 
-Just in case this isn't clear enough: we don't have big.LITTLE support
-in Xen right now, not in the hypervisor and certainly not in guests.
-I'm keen on having big.LITTLE support in the hypervisor (thus some code
-similar to your MCPM patch series will probably end up in Xen at some
-point) but I doubt we'll expose big.LITTLE to guests any time soon.
-It's going to be years, so I am not particularly worried about it right
-now.
-
-
-> Because the versatile express machine sets smp_init to
-> vexpress_smp_init_ops, vexpress_smp_init_ops will be called.
-> vexpress_smp_init_ops sets smp_ops to vexpress_smp_ops, that *break*
-> Xen.
-> 
-> With this patch, xen_smp_init will be called instead of
-> vexpress_smp_init_ops, and smp_ops will be set to psci_smp_ops,
-> therefore *unbreaking* Xen.
-> 
-> In fact what makes this patch really necessary is smp_init together with
-> the MCPM series.
-> 
-> 
-> Do you agree with me?
-> 
+Umm...  Try to add WARN_ON(1) in entry_rundown(), just to see what's
+getting hit (don't bother with entry name, stack trace will be enough).
