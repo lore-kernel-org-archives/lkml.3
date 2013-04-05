@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161617Ab3DEFv5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 01:51:57 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33264 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161162Ab3DEFv4 (ORCPT
+	id S1161628Ab3DEFwd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 01:52:33 -0400
+Received: from atlantis.wh2.tu-dresden.de ([141.30.228.39]:52641 "EHLO
+	atlantis.wh2.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1161162Ab3DEFwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 01:51:56 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <515E664E.5060005@jp.fujitsu.com>
-Date: Fri, 05 Apr 2013 14:51:10 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Fri, 5 Apr 2013 01:52:31 -0400
+From: Lars Poeschel <larsi@wh2.tu-dresden.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v4] gpio: mcp23s08: convert driver to DT
+Date: Fri, 5 Apr 2013 07:51:01 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Lars Poeschel <poeschel@lemonage.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        spi mailing list <spi-devel-general@lists.sourceforge.net>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+References: <1365069722-15408-1-git-send-email-larsi@wh2.tu-dresden.de> <CACRpkdZdOabqWHo9j+Kq_MHWFEaj9=+d8vBxLtH6OZbBX3vGJw@mail.gmail.com>
+In-Reply-To: <CACRpkdZdOabqWHo9j+Kq_MHWFEaj9=+d8vBxLtH6OZbBX3vGJw@mail.gmail.com>
 MIME-Version: 1.0
-To: Li Zefan <lizefan@huawei.com>
-CC: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC][PATCH 2/7] memcg: don't use mem_cgroup_get() when creating
- a kmemcg cache
-References: <515BF233.6070308@huawei.com> <515BF275.5080408@huawei.com>
-In-Reply-To: <515BF275.5080408@huawei.com>
-Content-Type: text/plain; charset=GB2312
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201304050751.02172.larsi@wh2.tu-dresden.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/04/03 18:12), Li Zefan wrote:
-> Use css_get()/css_put() instead of mem_cgroup_get()/mem_cgroup_put().
+On Thursday 04 April 2013 15:44:08 Linus Walleij wrote:
+> On Thu, Apr 4, 2013 at 12:02 PM, Lars Poeschel <larsi@wh2.tu-dresden.de> 
+wrote:
+> > From: Lars Poeschel <poeschel@lemonage.de>
+> > 
+> > This converts the mcp23s08 driver to be able to be used with device
+> > tree.
+> > There is a "spi-present-mask" device tree property, that allows to
+> > use multiple of this spi chips on the same chipselect.
+> > 
+> > Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+> > ---
+> > v4:
+> > - removed the ability to specify the pullup from device tree
+> > - updated binding doc
 > 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
-> ---
->   mm/memcontrol.c | 10 +++++-----
->   1 file changed, 5 insertions(+), 5 deletions(-)
+> (...)
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 43ca91d..dafacb8 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3191,7 +3191,7 @@ void memcg_release_cache(struct kmem_cache *s)
->   	list_del(&s->memcg_params->list);
->   	mutex_unlock(&memcg->slab_caches_mutex);
->   
-> -	mem_cgroup_put(memcg);
-> +	css_put(&memcg->css);
->   out:
->   	kfree(s->memcg_params);
->   }
-> @@ -3350,16 +3350,18 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
->   
->   	mutex_lock(&memcg_cache_mutex);
->   	new_cachep = cachep->memcg_params->memcg_caches[idx];
-> -	if (new_cachep)
-> +	if (new_cachep) {
-> +		css_put(&memcg->css);
->   		goto out;
-> +	}
+> > @@ -668,6 +742,7 @@ static struct spi_driver mcp23s08_driver = {
+> > 
+> >         .driver = {
+> >         
+> >                 .name   = "mcp23s08",
+> >                 .owner  = THIS_MODULE,
+> > 
+> > +               .of_match_table = of_match_ptr(mcp23s08_spi_of_match),
+> 
+> Will this compile if CONFIG_OF is not enabled?
 
-Where css_get() against this is done ?
+Yes, of_match_ptr(blah) after preprocessing gets NULL then.
 
-Thanks,
--Kame
-
+Regards,
+Lars
