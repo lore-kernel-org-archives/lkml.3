@@ -1,87 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161144Ab3DEBxh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Apr 2013 21:53:37 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:36934 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161131Ab3DEBxf (ORCPT
+	id S1161158Ab3DEBxm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Apr 2013 21:53:42 -0400
+Received: from mailxx.hitachi.co.jp ([133.145.228.50]:43312 "EHLO
+	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161131Ab3DEBxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Apr 2013 21:53:35 -0400
-Date: Fri, 5 Apr 2013 09:53:27 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, slava@dubeyko.com
-Subject: Re: mkfs.f2fs gets stuck with "blk_update_request: bio idx 0 >= vcnt
- 0" on 3.8
-Message-ID: <20130405015327.GA319@kernel.org>
-References: <CAMo8BfLusS_vT4LWU93iCXpVSgN_Uvi1mBvLUVx+892V67X1JQ@mail.gmail.com>
- <254789F5-7950-4239-AB7B-2DB9DC73565F@dubeyko.com>
- <5159EC3D.2020501@gmail.com>
- <1364884045.3301.18.camel@slavad-ubuntu>
- <CAMo8Bf+83t3ML_Ctr4V-pVL7Meei=pdOeC5cgtrPJB12tOcGtA@mail.gmail.com>
- <CAMo8BfKgTPO6AJng6zo1my4K_PivC1gJFQmcvy8q=iDYWSO2Pw@mail.gmail.com>
+	Thu, 4 Apr 2013 21:53:40 -0400
+X-AuditID: 85900ec0-d42c9b900000151e-74-515e2e1cf976
+Subject: [PATCH 1/2] trace-cmd: Define general functions for
+ outputting/inputting saved_cmdlines
+To: Steven Rostedt <rostedt@goodmis.org>
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
+Date: Fri, 05 Apr 2013 10:54:41 +0900
+Message-ID: <20130405015441.19807.52303.stgit@yunodevel>
+In-Reply-To: <20130405015439.19807.43932.stgit@yunodevel>
+References: <20130405015439.19807.43932.stgit@yunodevel>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMo8BfKgTPO6AJng6zo1my4K_PivC1gJFQmcvy8q=iDYWSO2Pw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 06:00:18AM +0400, Max Filippov wrote:
-> Hi,
-> 
-> On Tue, Apr 2, 2013 at 7:41 PM, Max Filippov <jcmvbkbc@gmail.com> wrote:
-> > I'm trying to create f2fs filesystem on SD card on pandaboard using
-> > f2fs-tools v1.0.0.
-> > It works fine on Linus' v3.6, but fails on both v3.8 and stable v3.8.5:
-> >
-> > # mkfs.f2fs /dev/mmcblk0p3
-> > Info: sector size = 512
-> > Info: total sectors = 11370496 (in 512bytes)
-> > Info: zone aligned segment0 blkaddr: 512
-> > [  257.789764] blk_update_request: bio idx 0 >= vcnt 0
-> >
-> > mkfs process gets stuck in D state and I see the following in the dmesg:
-> >
-> > [  257.789733] __end_that: dev mmcblk0: type=1, flags=122c8081
-> > [  257.789764]   sector 4194304, nr/cnr 2981888/4294959104
-> > [  257.789764]   bio df3840c0, biotail df3848c0, buffer   (null), len 1526726656
-> > [  257.789764] blk_update_request: bio idx 0 >= vcnt 0
-> > [  257.794921] request botched: dev mmcblk0: type=1, flags=122c8081
-> > [  257.794921]   sector 4194304, nr/cnr 2981888/4294959104
-> > [  257.794921]   bio df3840c0, biotail df3848c0, buffer   (null), len 1526726656
-> 
-> [...]
-> 
-> >> So, I think that it needs to investigate issue in the direction of
-> >> BLKDISCARD code on the kernel side. It makes sense to debug
-> >> f2fs_trim_device() method of mkfs.f2fs utility too. But I can't see
-> >> anything strange in this function at a glance.
-> >
-> > Ok, I'll try to find what has changed in that ioctl handler since 3.6.
-> 
-> the commit 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9 'block: add plug
-> for blkdev_issue_discard'
-> have added merge opportunity for DISCARD requests. When I do
-> mkfs.f2fs on a 5G partition (0xad8000 sectors) it submits two bios,
-> one for 0x7fe000 sectors (0xffc00000 bytes) and another for
-> 0x2da000 sectors (0x5b400000 bytes). Prior to that commit these
-> bios weren't merged into one request. Now the second bio gets
-> merged with the first, but the request's __data_len field is unsigned int
-> and it gets wrapped to 0x5b000000 bytes instead of 0x15b000000
-> in the bio_attempt_back_merge. Later this reduced size is passed to
-> the blk_update_request causing KERN_ERR and not completed
-> request. Reverting this commit fixes mkfs.f2fs for me.
+Currently, trace-cmd outputs data of saved_cmdlines to a trace.dat file
+in create_file_fd() and inputs the data from the file in tracecmd_init_data().
+On the other hand, trace-cmd will also output and input data of trace_clock in
+those functions in the patch "trace-cmd: Support trace_clock extraction".
+The source code of the output/input of saved_cmdlines data can be reused when
+extract trace_clock, so we define general functions for outputting/inputting a
+file on debugfs.
 
-A workaround is setting limits.max_discard_sectors to a smaller value.
+Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+---
+ trace-input.c  |   45 +++++++++++++++++++++++++++++------------
+ trace-output.c |   62 ++++++++++++++++++++++++++++++++------------------------
+ 2 files changed, 67 insertions(+), 40 deletions(-)
 
-So the question is why __data_len isn't sector based? Since disk is sector
-based, is there any disk finishing IO in byte granularity? Maybe Jens can
-answer.
+diff --git a/trace-input.c b/trace-input.c
+index 6f60409..ba3a21e 100644
+--- a/trace-input.c
++++ b/trace-input.c
+@@ -1758,6 +1758,37 @@ static int handle_options(struct tracecmd_input *handle)
+ 	return 0;
+ }
+ 
++static int read_data_and_size(struct tracecmd_input *handle,
++				     char **data, unsigned long long *size)
++{
++	*size = read8(handle);
++	if (*size < 0)
++		return -1;
++	*data = malloc(*size + 1);
++	if (!*data)
++		return -1;
++	if (do_read_check(handle, *data, *size)) {
++		free(*data);
++		return -1;
++	}
++
++	return 0;
++}
++
++static int read_and_parse_cmdlines(struct tracecmd_input *handle,
++							struct pevent *pevent)
++{
++	unsigned long long size;
++	char *cmdlines;
++
++	if (read_data_and_size(handle, &cmdlines, &size) < 0)
++		return -1;
++	cmdlines[size] = 0;
++	parse_cmdlines(pevent, cmdlines, size);
++	free(cmdlines);
++	return 0;
++}
++
+ /**
+  * tracecmd_init_data - prepare reading the data from trace.dat
+  * @handle: input handle for the trace.dat file
+@@ -1771,23 +1802,11 @@ int tracecmd_init_data(struct tracecmd_input *handle)
+ 	enum kbuffer_long_size long_size;
+ 	enum kbuffer_endian endian;
+ 	unsigned long long size;
+-	char *cmdlines;
+ 	char buf[10];
+ 	int cpu;
+ 
+-	size = read8(handle);
+-	if (size < 0)
+-		return -1;
+-	cmdlines = malloc(size + 1);
+-	if (!cmdlines)
++	if (read_and_parse_cmdlines(handle, pevent) < 0)
+ 		return -1;
+-	if (do_read_check(handle, cmdlines, size)) {
+-		free(cmdlines);
+-		return -1;
+-	}
+-	cmdlines[size] = 0;
+-	parse_cmdlines(pevent, cmdlines, size);
+-	free(cmdlines);
+ 
+ 	handle->cpus = read4(handle);
+ 	if (handle->cpus < 0)
+diff --git a/trace-output.c b/trace-output.c
+index c4d668d..e0d4ff4 100644
+--- a/trace-output.c
++++ b/trace-output.c
+@@ -686,6 +686,39 @@ static int read_ftrace_printk(struct tracecmd_output *handle)
+ 	return -1;
+ }
+ 
++static int save_tracing_file_data(struct tracecmd_output *handle,
++						const char *filename)
++{
++	unsigned long long endian8;
++	char *file = NULL;
++	struct stat st;
++	off64_t check_size;
++	off64_t size;
++	int ret;
++
++	file = get_tracing_file(handle, filename);
++	ret = stat(file, &st);
++	if (ret >= 0) {
++		size = get_size(file);
++		endian8 = convert_endian_8(handle, size);
++		if (do_write_check(handle, &endian8, 8))
++			return -1;
++		check_size = copy_file(handle, file);
++		if (size != check_size) {
++			errno = EINVAL;
++			warning("error in size of file '%s'", file);
++			return -1;
++		}
++	} else {
++		size = 0;
++		endian8 = convert_endian_8(handle, size);
++		if (do_write_check(handle, &endian8, 8))
++			return -1;
++	}
++	put_tracing_file(file);
++	return 0;
++}
++
+ static struct tracecmd_output *
+ create_file_fd(int fd, struct tracecmd_input *ihandle,
+ 	       const char *tracing_dir,
+@@ -693,15 +726,9 @@ create_file_fd(int fd, struct tracecmd_input *ihandle,
+ 	       struct tracecmd_event_list *list)
+ {
+ 	struct tracecmd_output *handle;
+-	unsigned long long endian8;
+ 	struct pevent *pevent;
+ 	char buf[BUFSIZ];
+-	char *file = NULL;
+-	struct stat st;
+-	off64_t check_size;
+-	off64_t size;
+ 	int endian4;
+-	int ret;
+ 
+ 	handle = malloc(sizeof(*handle));
+ 	if (!handle)
+@@ -774,27 +801,8 @@ create_file_fd(int fd, struct tracecmd_input *ihandle,
+ 	/*
+ 	 * Save the command lines;
+ 	 */
+-	file = get_tracing_file(handle, "saved_cmdlines");
+-	ret = stat(file, &st);
+-	if (ret >= 0) {
+-		size = get_size(file);
+-		endian8 = convert_endian_8(handle, size);
+-		if (do_write_check(handle, &endian8, 8))
+-			goto out_free;
+-		check_size = copy_file(handle, file);
+-		if (size != check_size) {
+-			errno = EINVAL;
+-			warning("error in size of file '%s'", file);
+-			goto out_free;
+-		}
+-	} else {
+-		size = 0;
+-		endian8 = convert_endian_8(handle, size);
+-		if (do_write_check(handle, &endian8, 8))
+-			goto out_free;
+-	}
+-	put_tracing_file(file);
+-	file = NULL;
++	if (save_tracing_file_data(handle, "saved_cmdlines") < 0)
++		goto out_free;
+ 
+ 	return handle;
+ 
 
-Thanks,
-Shaohua
