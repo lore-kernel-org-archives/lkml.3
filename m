@@ -1,68 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161628Ab3DEFwd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 01:52:33 -0400
-Received: from atlantis.wh2.tu-dresden.de ([141.30.228.39]:52641 "EHLO
-	atlantis.wh2.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161162Ab3DEFwb (ORCPT
+	id S1161470Ab3DEF5S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 01:57:18 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55761 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab3DEF5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 01:52:31 -0400
-From: Lars Poeschel <larsi@wh2.tu-dresden.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v4] gpio: mcp23s08: convert driver to DT
-Date: Fri, 5 Apr 2013 07:51:01 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Lars Poeschel <poeschel@lemonage.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        spi mailing list <spi-devel-general@lists.sourceforge.net>,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-References: <1365069722-15408-1-git-send-email-larsi@wh2.tu-dresden.de> <CACRpkdZdOabqWHo9j+Kq_MHWFEaj9=+d8vBxLtH6OZbBX3vGJw@mail.gmail.com>
-In-Reply-To: <CACRpkdZdOabqWHo9j+Kq_MHWFEaj9=+d8vBxLtH6OZbBX3vGJw@mail.gmail.com>
+	Fri, 5 Apr 2013 01:57:17 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <515E679F.2030901@jp.fujitsu.com>
+Date: Fri, 05 Apr 2013 14:56:47 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Li Zefan <lizefan@huawei.com>
+CC: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC][PATCH 4/7] memcg: use css_get/put for swap memcg
+References: <515BF233.6070308@huawei.com> <515BF296.3080406@huawei.com>
+In-Reply-To: <515BF296.3080406@huawei.com>
+Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304050751.02172.larsi@wh2.tu-dresden.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 04 April 2013 15:44:08 Linus Walleij wrote:
-> On Thu, Apr 4, 2013 at 12:02 PM, Lars Poeschel <larsi@wh2.tu-dresden.de> 
-wrote:
-> > From: Lars Poeschel <poeschel@lemonage.de>
-> > 
-> > This converts the mcp23s08 driver to be able to be used with device
-> > tree.
-> > There is a "spi-present-mask" device tree property, that allows to
-> > use multiple of this spi chips on the same chipselect.
-> > 
-> > Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
-> > ---
-> > v4:
-> > - removed the ability to specify the pullup from device tree
-> > - updated binding doc
+(2013/04/03 18:12), Li Zefan wrote:
+> Use css_get/put instead of mem_cgroup_get/put.
 > 
-> (...)
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> ---
+>   mm/memcontrol.c | 26 ++++++++++++++++----------
+>   1 file changed, 16 insertions(+), 10 deletions(-)
 > 
-> > @@ -668,6 +742,7 @@ static struct spi_driver mcp23s08_driver = {
-> > 
-> >         .driver = {
-> >         
-> >                 .name   = "mcp23s08",
-> >                 .owner  = THIS_MODULE,
-> > 
-> > +               .of_match_table = of_match_ptr(mcp23s08_spi_of_match),
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 877551d..ad576e8 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -4137,12 +4137,12 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype,
+>   	unlock_page_cgroup(pc);
+>   	/*
+>   	 * even after unlock, we have memcg->res.usage here and this memcg
+> -	 * will never be freed.
+> +	 * will never be freed, so it's safe to call css_get().
+>   	 */
+>   	memcg_check_events(memcg, page);
+>   	if (do_swap_account && ctype == MEM_CGROUP_CHARGE_TYPE_SWAPOUT) {
+>   		mem_cgroup_swap_statistics(memcg, true);
+> -		mem_cgroup_get(memcg);
+> +		css_get(&memcg->css);
+>   	}
+>   	/*
+>   	 * Migration does not charge the res_counter for the
+> @@ -4242,7 +4242,7 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
+>   
+>   	/*
+>   	 * record memcg information,  if swapout && memcg != NULL,
+> -	 * mem_cgroup_get() was called in uncharge().
+> +	 * css_get() was called in uncharge().
+>   	 */
+>   	if (do_swap_account && swapout && memcg)
+>   		swap_cgroup_record(ent, css_id(&memcg->css));
+> @@ -4273,7 +4273,7 @@ void mem_cgroup_uncharge_swap(swp_entry_t ent)
+>   		if (!mem_cgroup_is_root(memcg))
+>   			res_counter_uncharge(&memcg->memsw, PAGE_SIZE);
+>   		mem_cgroup_swap_statistics(memcg, false);
+> -		mem_cgroup_put(memcg);
+> +		css_put(&memcg->css);
+>   	}
+>   	rcu_read_unlock();
+>   }
+> @@ -4307,11 +4307,14 @@ static int mem_cgroup_move_swap_account(swp_entry_t entry,
+>   		 * This function is only called from task migration context now.
+>   		 * It postpones res_counter and refcount handling till the end
+>   		 * of task migration(mem_cgroup_clear_mc()) for performance
+> -		 * improvement. But we cannot postpone mem_cgroup_get(to)
+> -		 * because if the process that has been moved to @to does
+> -		 * swap-in, the refcount of @to might be decreased to 0.
+> +		 * improvement. But we cannot postpone css_get(to)  because if
+> +		 * the process that has been moved to @to does swap-in, the
+> +		 * refcount of @to might be decreased to 0.
+> +		 *
+> +		 * We are in attach() phase, so the cgroup is guaranteed to be
+> +		 * alive, so we can just call css_get().
+>   		 */
+> -		mem_cgroup_get(to);
+> +		css_get(&to->css);
+>   		return 0;
+>   	}
+>   	return -EINVAL;
+> @@ -6597,6 +6600,7 @@ static void __mem_cgroup_clear_mc(void)
+>   {
+>   	struct mem_cgroup *from = mc.from;
+>   	struct mem_cgroup *to = mc.to;
+> +	int i;
+>   
+>   	/* we must uncharge all the leftover precharges from mc.to */
+>   	if (mc.precharge) {
+> @@ -6617,7 +6621,9 @@ static void __mem_cgroup_clear_mc(void)
+>   		if (!mem_cgroup_is_root(mc.from))
+>   			res_counter_uncharge(&mc.from->memsw,
+>   						PAGE_SIZE * mc.moved_swap);
+> -		__mem_cgroup_put(mc.from, mc.moved_swap);
+> +
+> +		for (i = 0; i < mc.moved_swap; i++)
+> +			css_put(&mc.from->css);
+>   
+>   		if (!mem_cgroup_is_root(mc.to)) {
+>   			/*
+> @@ -6627,7 +6633,7 @@ static void __mem_cgroup_clear_mc(void)
+>   			res_counter_uncharge(&mc.to->res,
+>   						PAGE_SIZE * mc.moved_swap);
+>   		}
+> -		/* we've already done mem_cgroup_get(mc.to) */
+> +		/* we've already done css_get(mc.to) */
+>   		mc.moved_swap = 0;
+>   	}
+>   	memcg_oom_recover(from);
 > 
-> Will this compile if CONFIG_OF is not enabled?
 
-Yes, of_match_ptr(blah) after preprocessing gets NULL then.
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Regards,
-Lars
+
+
+
