@@ -1,93 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161780Ab3DENst (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 09:48:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59886 "EHLO mx2.suse.de"
+	id S1161741Ab3DENuR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 09:50:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12076 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161650Ab3DENsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 09:48:47 -0400
-Date: Fri, 5 Apr 2013 15:48:44 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Li Zefan <lizefan@huawei.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC][PATCH 3/7] memcg: use css_get/put when charging/uncharging
- kmem
-Message-ID: <20130405134844.GI31132@dhcp22.suse.cz>
-References: <515BF233.6070308@huawei.com>
- <515BF284.7060401@huawei.com>
- <20130404094333.GE29911@dhcp22.suse.cz>
- <515EA532.4050706@parallels.com>
+	id S1161203Ab3DENuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 09:50:15 -0400
+Date: Fri, 5 Apr 2013 09:49:29 -0400
+From: Dave Jones <davej@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: tytso@mit.edu, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: ext4 object already free.
+Message-ID: <20130405134929.GA1648@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, Jan Kara <jack@suse.cz>,
+	tytso@mit.edu, Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-ext4@vger.kernel.org
+References: <20130329155855.GB5313@redhat.com>
+ <20130405102553.GB3848@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <515EA532.4050706@parallels.com>
+In-Reply-To: <20130405102553.GB3848@quack.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 05-04-13 14:19:30, Glauber Costa wrote:
-> 
-> > 	 * __mem_cgroup_free will issue static_key_slow_dec because this
-> > 	 * memcg is active already. If the later initialization fails
-> > 	 * then the cgroup core triggers the cleanup so we do not have
-> > 	 * to do it here.
-> > 	 */
-> >> -	mem_cgroup_get(memcg);
-> >>  	static_key_slow_inc(&memcg_kmem_enabled_key);
-> >>  
-> >>  	mutex_lock(&set_limit_mutex);
-> >> @@ -5823,23 +5814,33 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
-> >>  	return mem_cgroup_sockets_init(memcg, ss);
-> >>  };
-> >>  
-> >> -static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
-> >> +static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
-> >>  {
-> >> -	mem_cgroup_sockets_destroy(memcg);
-> >> +	/*
-> >> +	 * kmem charges can outlive the cgroup. In the case of slab
-> >> +	 * pages, for instance, a page contain objects from various
-> >> +	 * processes, so it is unfeasible to migrate them away. We
-> >> +	 * need to reference count the memcg because of that.
-> >> +	 */
-> > 
-> > I would prefer if we could merge all three comments in this function
-> > into a single one. What about something like the following?
-> > 	/*
-> > 	 * kmem charges can outlive the cgroup. In the case of slab
-> > 	 * pages, for instance, a page contain objects from various
-> > 	 * processes. As we prevent from taking a reference for every
-> > 	 * such allocation we have to be careful when doing uncharge
-> > 	 * (see memcg_uncharge_kmem) and here during offlining.
-> > 	 * The idea is that that only the _last_ uncharge which sees
-> > 	 * the dead memcg will drop the last reference. An additional
-> > 	 * reference is taken here before the group is marked dead
-> > 	 * which is then paired with css_put during uncharge resp. here.
-> > 	 * Although this might sound strange as this path is called when
-> > 	 * the reference has already dropped down to 0 and shouldn't be
-> > 	 * incremented anymore (css_tryget would fail) we do not have
-> > 	 * other options because of the kmem allocations lifetime.
-> > 	 */
-> >> +	css_get(&memcg->css);
-> > 
-> > I think that you need a write memory barrier here because css_get
-> > nor memcg_kmem_mark_dead implies it. memcg_uncharge_kmem uses
-> > memcg_kmem_test_and_clear_dead which imply a full memory barrier but it
-> > should see the elevated reference count. No?
-> > 
-> 
-> We don't use barriers for any other kind of reference counting. What is
-> different here?
+On Fri, Apr 05, 2013 at 12:25:53PM +0200, Jan Kara wrote:
+ 
+ > > [   93.672257]  [<ffffffff812c2da9>] sys_msgctl+0x139/0x400
+ > > [   93.674641]  [<ffffffff816c5d4d>] ? retint_swapgs+0xe/0x13
+ > > [   93.677056]  [<ffffffff810b6c55>] ? trace_hardirqs_on_caller+0x115/0x1a0
+ > > [   93.679626]  [<ffffffff8134b39e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ > > [   93.682159]  [<ffffffff816cd942>] system_call_fastpath+0x16/0x1b
+ > > [   93.799329] FIX kmalloc-64: Object at 0xffff88009997e620 not freed
+ >   And then sys_msgctl() came and wanted to free it again without
+ > allocating. So it looks like a problem with IPC? 
 
-Now we need to make sure that the racing uncharge sees an elevated
-reference count before the group is marked dead. Otherwise we could see
-a dead group with ref count == 0, no?
+Seems plausible, considering the bugs Linus & others found there in the 
+last week.  Should be fixed now, so I'll holler if I see this again.
 
--- 
-Michal Hocko
-SUSE Labs
+thanks,
+
+	Dave
+
+ 
