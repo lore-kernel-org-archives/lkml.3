@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162590Ab3DEVG1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 17:06:27 -0400
-Received: from mail.openmoko.org ([88.198.124.205]:50603 "EHLO
-	mail.openmoko.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162241Ab3DEVGZ (ORCPT
+	id S1162625Ab3DEVGw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 17:06:52 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:60850 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162376Ab3DEVGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 17:06:25 -0400
-Date: Fri, 5 Apr 2013 18:05:14 -0300
-From: Werner Almesberger <werner@almesberger.net>
-To: Alan Ott <alan@signal11.us>
-Cc: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-zigbee-devel@lists.sourceforge.net
-Subject: Re: [Linux-zigbee-devel] [PATCH] mac802154: Keep track of the
- channel when changed
-Message-ID: <20130405210514.GF28141@ws>
-References: <1365194201-2635-1-git-send-email-alan@signal11.us>
+	Fri, 5 Apr 2013 17:06:51 -0400
+Date: Fri, 5 Apr 2013 14:06:48 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Platform Driver <platform-driver-x86@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Joe Perches <joe@perches.com>, Randy Dunlap <rdunlap@infradead.org>,
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: Re: [PATCH v2] Introduce Intel RAPL cooling device driver
+Message-ID: <20130405210648.GB18505@kroah.com>
+References: <1365195724-8945-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1365195724-8945-2-git-send-email-jacob.jun.pan@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365194201-2635-1-git-send-email-alan@signal11.us>
+In-Reply-To: <1365195724-8945-2-git-send-email-jacob.jun.pan@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Ott wrote:
-> Prevent set_channel() from getting called every time a packet is sent. This
-> looks like it was an oversight.
+On Fri, Apr 05, 2013 at 02:02:04PM -0700, Jacob Pan wrote:
+> RAPL(Running Average Power Limit) interface provides platform software
+> with the ability to monitor, control, and get notifications on SOC
+> power consumptions. Since its first appearance on Sandy Bridge, more
+> features have being added to extend its usage. In RAPL, platforms are
+> divided into domains for fine grained control. These domains include
+> package, DRAM controller, CPU core (Power Plane 0), graphics uncore
+> (power plane 1), etc.
+> 
+> The purpose of this driver is to expose RAPL for userspace
+> consumption. Overall, RAPL fits in the generic thermal layer in
+> that platform level power capping and monitoring are mainly used for
+> thermal management and thermal layer provides the abstracted interface
+> needed to have portable applications.
+> 
+> Specifically, userspace is presented with per domain cooling device
+> with sysfs links to its true device. Although RAPL domain provides many
+> parameters for fine tuning, long term power limit is exposed as the
+> single knob via cooling device state. Whereas the rest of the
+> parameters are still accessible via the linked RAPL class devices.
+> This interface allows both simple and advanced use cases.
+> 
+> Eventfd is used to provide notifications to the userspace. At per domain
+> level, use can choose any event capable parameters to register for
+> threshold crossing notifications. This is shamelessly "borrowed" from
+> cgroup with some trimming/fitting.
+> 
+> Zhang, Rui's initial RAPL driver was used as a reference and starting
+> point. Many thanks.
+> https://lkml.org/lkml/2011/5/26/93
+> 
+> Unlike the patch above, which is mainly for monitoring, this driver
+> focus on the control and usability by user applications.
+> 
+> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-at86rf230.c and derivatives avoid this problem by setting
-phy->current_* in the *_channel function.
+As described in the cover letter response:
+	NACKed-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-But I'd agree that it's nicer to do this in one place, not in
-every driver.
+please redo this based on those comments.
 
-In case a driver had a weird failure mode in which it leaves the
-original channel but only makes it halfway to the new channel, it
-could still set phy->current_* and return an error. So there's no
-loss of functionality with your change.
-
-- Werner
+greg k-h
