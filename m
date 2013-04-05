@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161640Ab3DEJje (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 05:39:34 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56998 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1161341Ab3DEJhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1161371Ab3DEJhU (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 5 Apr 2013 05:37:20 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:12694 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1765166Ab3DEJhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 05:37:17 -0400
 X-IronPort-AV: E=Sophos;i="4.87,413,1363104000"; 
-   d="scan'208";a="7001887"
+   d="scan'208";a="7001882"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
         yinghai@kernel.org, akpm@linux-foundation.org, wency@cn.fujitsu.com,
@@ -20,207 +20,76 @@ To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
         guz.fnst@cn.fujitsu.com
 Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 06/11] X86, numa, acpi, memory-hotplug: Add hotpluggable ranges to movablemem_map.
-Date: Fri, 5 Apr 2013 17:39:56 +0800
-Message-Id: <1365154801-473-7-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH 05/11] x86, numa, acpi, memory-hotplug: Consider hotplug info when cleanup numa_meminfo.
+Date: Fri, 5 Apr 2013 17:39:55 +0800
+Message-Id: <1365154801-473-6-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1365154801-473-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1365154801-473-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/04/05 17:36:10,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/05 17:36:12,
-	Serialize complete at 2013/04/05 17:36:12
+ 2013/04/05 17:36:11,
+	Serialize complete at 2013/04/05 17:36:11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When parsing SRAT, we are able to know which memory ranges are hotpluggable,
-and we add them to movablemem_map. So movablemem_map could be used to prevent
-memblock from allocating memory in area which will be set as ZONE_MOVABLE later.
+Since we have introduced hotplug info into struct numa_meminfo, we need
+to consider it when cleanup numa_meminfo.
+
+The original logic in numa_cleanup_meminfo() is:
+Merge blocks on the same node, holes between which don't overlap with
+memory on other nodes.
+
+This patch modifies numa_cleanup_meminfo() logic like this:
+Merge blocks with the same hotpluggable type on the same node, holes
+between which don't overlap with memory on other nodes.
 
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- arch/x86/mm/numa.c |   39 ++++++++++++++++++++++
- include/linux/mm.h |    4 ++
- mm/page_alloc.c    |   92 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 135 insertions(+), 0 deletions(-)
+ arch/x86/mm/numa.c |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
 
 diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 26d1800..73e7934 100644
+index ecf37fd..26d1800 100644
 --- a/arch/x86/mm/numa.c
 +++ b/arch/x86/mm/numa.c
-@@ -725,6 +725,43 @@ static void __init early_x86_numa_init_mapping(void)
- }
- #endif
+@@ -296,18 +296,22 @@ int __init numa_cleanup_meminfo(struct numa_meminfo *mi)
+ 			}
  
-+#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
-+/**
-+ * early_mem_hotplug_init - Add hotpluggable memory ranges to movablemem_map.
-+ *
-+ * This function scan numa_meminfo.blk[], and add all the hotpluggable memory 
-+ * ranges to movablemem_map. movablemem_map can be used to prevent memblock
-+ * from allocating memory in area which will be set as ZONE_MOVABLE later, so
-+ * this function should be called after memory mapping is initialized because
-+ * we will put pagetable pages in local node even if the memory of that node is
-+ * hotpluggable.
-+ *
-+ * If users specify movablemem_map=acpi, then:
-+ *
-+ * SRAT:                |_____| |_____| |_________| |_________| ......
-+ * node id:                0       1         1           2
-+ * hotpluggable:           n       y         y           n
-+ * movablemem_map:              |_____| |_________|
-+ */
-+static void __init early_mem_hotplug_init()
-+{
-+	int i;
+ 			/*
+-			 * Join together blocks on the same node, holes
+-			 * between which don't overlap with memory on other
+-			 * nodes.
++			 * Join together blocks on the same node, with the same
++			 * hotpluggable flags, holes between which don't overlap
++			 * with memory on other nodes.
+ 			 */
+ 			if (bi->nid != bj->nid)
+ 				continue;
++			if (bi->hotpluggable != bj->hotpluggable)
++				continue;
 +
-+	if (!movablemem_map.acpi)
-+		return;
-+
-+	for (i = 0; i < numa_meminfo.nr_blks; i++) {
-+		if (numa_meminfo.blk[i].hotpluggable)
-+			movablemem_map_add_region(numa_meminfo.blk[i].start,
-+						  numa_meminfo.blk[i].end);
-+	}
-+}
-+#else          /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
-+static inline void early_mem_hotplug_init()
-+{
-+}
-+#endif         /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
-+
- void __init early_initmem_init(void)
- {
- 	early_x86_numa_init();
-@@ -734,6 +771,8 @@ void __init early_initmem_init(void)
- 	load_cr3(swapper_pg_dir);
- 	__flush_tlb_all();
+ 			start = min(bi->start, bj->start);
+ 			end = max(bi->end, bj->end);
+ 			for (k = 0; k < mi->nr_blks; k++) {
+ 				struct numa_memblk *bk = &mi->blk[k];
  
-+	early_mem_hotplug_init();
-+
- 	early_memtest(0, max_pfn_mapped<<PAGE_SHIFT);
- }
+-				if (bi->nid == bk->nid)
++				if (bi->nid == bk->nid &&
++				    bi->hotpluggable == bk->hotpluggable)
+ 					continue;
+ 				if (start < bk->end && end > bk->start)
+ 					break;
+@@ -327,6 +331,7 @@ int __init numa_cleanup_meminfo(struct numa_meminfo *mi)
+ 	for (i = mi->nr_blks; i < ARRAY_SIZE(mi->blk); i++) {
+ 		mi->blk[i].start = mi->blk[i].end = 0;
+ 		mi->blk[i].nid = NUMA_NO_NODE;
++		mi->blk[i].hotpluggable = false;
+ 	}
  
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 52c3558..7468221 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1344,6 +1344,10 @@ struct movablemem_map {
- 	struct movablemem_entry map[MOVABLEMEM_MAP_MAX];
- };
- 
-+extern struct movablemem_map movablemem_map;
-+
-+extern void __init movablemem_map_add_region(u64 start, u64 size);
-+
- #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
- 
- #if !defined(CONFIG_HAVE_MEMBLOCK_NODE_MAP) && \
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 475fd8b..2a7904f 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5068,6 +5068,98 @@ early_param("kernelcore", cmdline_parse_kernelcore);
- early_param("movablecore", cmdline_parse_movablecore);
- 
- /**
-+ * insert_movablemem_map - Insert a memory range in to movablemem_map.map.
-+ * @start_pfn: start pfn of the range
-+ * @end_pfn:   end pfn of the range
-+ *
-+ * This function will also merge the overlapped ranges, and sort the array
-+ * by start_pfn in monotonic increasing order.
-+ */
-+static void __init insert_movablemem_map(unsigned long start_pfn,
-+					 unsigned long end_pfn)
-+{
-+	int pos, overlap;
-+
-+	/*
-+	 * pos will be at the 1st overlapped range, or the position
-+	 * where the element should be inserted.
-+	 */
-+	for (pos = 0; pos < movablemem_map.nr_map; pos++)
-+		if (start_pfn <= movablemem_map.map[pos].end_pfn)
-+			break;
-+
-+	/* If there is no overlapped range, just insert the element. */
-+	if (pos == movablemem_map.nr_map ||
-+	    end_pfn < movablemem_map.map[pos].start_pfn) {
-+		/*
-+		 * If pos is not the end of array, we need to move all
-+		 * the rest elements backward.
-+		 */
-+		if (pos < movablemem_map.nr_map)
-+			memmove(&movablemem_map.map[pos+1],
-+				&movablemem_map.map[pos],
-+				sizeof(struct movablemem_entry) *
-+				(movablemem_map.nr_map - pos));
-+		movablemem_map.map[pos].start_pfn = start_pfn;
-+		movablemem_map.map[pos].end_pfn = end_pfn;
-+		movablemem_map.nr_map++;
-+		return;
-+	}
-+
-+	/* overlap will be at the last overlapped range */
-+	for (overlap = pos + 1; overlap < movablemem_map.nr_map; overlap++)
-+		if (end_pfn < movablemem_map.map[overlap].start_pfn)
-+			break;
-+
-+	/*
-+	 * If there are more ranges overlapped, we need to merge them,
-+	 * and move the rest elements forward.
-+	 */
-+	overlap--;
-+	movablemem_map.map[pos].start_pfn = min(start_pfn,
-+					movablemem_map.map[pos].start_pfn);
-+	movablemem_map.map[pos].end_pfn = max(end_pfn,
-+					movablemem_map.map[overlap].end_pfn);
-+
-+	if (pos != overlap && overlap + 1 != movablemem_map.nr_map)
-+		memmove(&movablemem_map.map[pos+1],
-+			&movablemem_map.map[overlap+1],
-+			sizeof(struct movablemem_entry) *
-+			(movablemem_map.nr_map - overlap - 1));
-+
-+	movablemem_map.nr_map -= overlap - pos;
-+}
-+
-+/**
-+ * movablemem_map_add_region - Add a memory range into movablemem_map.
-+ * @start:     physical start address of range
-+ * @end:       physical end address of range
-+ *
-+ * This function transform the physical address into pfn, and then add the
-+ * range into movablemem_map by calling insert_movablemem_map().
-+ */
-+void __init movablemem_map_add_region(u64 start, u64 size)
-+{
-+	unsigned long start_pfn, end_pfn;
-+
-+	/* In case size == 0 or start + size overflows */
-+	if (start + size <= start)
-+		return;
-+
-+	if (movablemem_map.nr_map >= ARRAY_SIZE(movablemem_map.map)) {
-+		pr_err("movablemem_map: too many entries; "
-+		       "ignoring [mem %#010llx-%#010llx]\n",
-+		       (unsigned long long) start,
-+		       (unsigned long long) (start + size - 1));
-+		return;
-+	}
-+
-+	start_pfn = PFN_DOWN(start);
-+	end_pfn = PFN_UP(start + size);
-+	insert_movablemem_map(start_pfn, end_pfn);
-+}
-+
-+/**
-  * cmdline_parse_movablemem_map - Parse boot option movablemem_map.
-  * @p:	The boot option of the following format:
-  *	movablemem_map=acpi
+ 	return 0;
 -- 
 1.7.1
 
