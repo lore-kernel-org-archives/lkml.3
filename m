@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162975Ab3DEWQu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 18:16:50 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:50854 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162791Ab3DEWQs (ORCPT
+	id S1162995Ab3DEWSH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 18:18:07 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:50124 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162979Ab3DEWSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 18:16:48 -0400
+	Fri, 5 Apr 2013 18:18:04 -0400
+Message-ID: <515F4D9A.3060009@gmail.com>
+Date: Fri, 05 Apr 2013 18:18:02 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <CA+8MBbJMk2w77VGBswoYCEKQZ4HTC9jBhWun5UzGLOj15Nqrmg@mail.gmail.com>
-References: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
-	<1365119186-23487-18-git-send-email-yinghai@kernel.org>
-	<CA+8MBbJMk2w77VGBswoYCEKQZ4HTC9jBhWun5UzGLOj15Nqrmg@mail.gmail.com>
-Date: Fri, 5 Apr 2013 15:16:48 -0700
-X-Google-Sender-Auth: CkVOXUHIBU6y5UpOSSBhP0xxvf0
-Message-ID: <CAE9FiQW9LsXo7gRvpAUv2ORbe2iuZaYO9nNOP-vTWa-_P450tg@mail.gmail.com>
-Subject: Re: [PATCH v3 17/22] x86, ACPI, numa, ia64: split SLIT handling out
-From: Yinghai Lu <yinghai@kernel.org>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi <linux-acpi@vger.kernel.org>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        kosaki.motohiro@gmail.com
+Subject: Re: [PATCH 07/10] mbind: add hugepage migration code to mbind()
+References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1363983835-20184-8-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1363983835-20184-8-git-send-email-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 5, 2013 at 2:54 PM, Tony Luck <tony.luck@gmail.com> wrote:
-> On Thu, Apr 4, 2013 at 4:46 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> It should not break ia64 by replacing acpi_numa_init with
->> acpi_numa_init_srat/acpi_numa_init_slit/acpi_num_arch_fixup.
->
-> You are right - it doesn't break ia64.  All my test configs still
-> build.  Machines both with and without NUMA still boot and
-> nothing strange happens.
->
-> Tested-by: Tony Luck <tony.luck@intel.com>
+> @@ -1277,14 +1279,10 @@ static long do_mbind(unsigned long start, unsigned long len,
+>  	if (!err) {
+>  		int nr_failed = 0;
+>  
+> -		if (!list_empty(&pagelist)) {
+> -			WARN_ON_ONCE(flags & MPOL_MF_LAZY);
+> -			nr_failed = migrate_pages(&pagelist, new_vma_page,
+> +		WARN_ON_ONCE(flags & MPOL_MF_LAZY);
 
-Great, Thanks a lot for testing them.
+???
+MPOL_MF_LAZY always output warn? It seems really insane.
 
-Yinghai
+
