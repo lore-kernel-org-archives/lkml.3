@@ -1,42 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162845Ab3DEWDH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 18:03:07 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:58791 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1162779Ab3DEWDF (ORCPT
+	id S1162854Ab3DEWGG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 18:06:06 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:54661 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1162779Ab3DEWGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 18:03:05 -0400
-Date: Fri, 5 Apr 2013 15:03:03 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Bill Pemberton <wfp5p@virginia.edu>,
-        Joe Perches <joe@perches.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: Re: [PATCH] staging/adt7316 Fix some 'interesting' string operations
-Message-ID: <20130405220303.GA31802@kroah.com>
-References: <515df29417437372eb@agluck-desk.sc.intel.com>
+	Fri, 5 Apr 2013 18:06:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515df29417437372eb@agluck-desk.sc.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130405071144.GB26889@gmail.com>
+References: <1365106055-22939-1-git-send-email-keescook@chromium.org>
+	<1365106055-22939-4-git-send-email-keescook@chromium.org>
+	<20130405071144.GB26889@gmail.com>
+Date: Fri, 5 Apr 2013 15:06:02 -0700
+Message-ID: <CAKyRK=h0sDFn6vqdKwmWds4EubqwnqVYG4JgKk=5-EDV7dJ36g@mail.gmail.com>
+Subject: Re: [PATCH 3/3] x86: kernel base offset ASLR
+From: Julien Tinnes <jln@google.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Will Drewry <wad@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 02:37:24PM -0700, Luck, Tony wrote:
-> Calling memcmp() to check the value of the first byte in a string is overkill.
-> Just use buf[0] == '1' or buf[0] != '1' as appropriate.
-> 
-> Signed-off-by: Tony Luck <tony.luck@intel.com>
+On Fri, Apr 5, 2013 at 12:11 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Kees Cook <keescook@chromium.org> wrote:
+>
+>> This creates CONFIG_RANDOMIZE_BASE, so that the base offset of the kernel
+>> can be randomized at boot.
+>>
+>> This makes kernel vulnerabilities harder to reliably exploit, especially
+>> from remote attacks and local processes in seccomp containers. Keeping
+>> the location of kernel addresses secret becomes very important when using
+>> this feature, so enabling kptr_restrict and dmesg_restrict is recommended.
+>> Besides direct address leaks, several other attacks are possible to bypass
+>> this on local systems, including cache timing[1]. However, the benefits of
+>> this feature in certain environments exceed the perceived weaknesses[2].
+>>
+>> An added security benefit is making the IDT read-only.
+>>
+>> Current entropy is low, since the kernel has basically a minimum 2MB
+>> alignment and has been built with -2G memory addressing. As a result,
+>> available entropy will be 8 bits in the best case. The e820 entries on
+>> a given system may further limit the available memory.
+>>
+>> This feature is presently incompatible with hibernation.
+>>
+>> When built into the kernel, the "noaslr" kernel command line option will
+>> disable the feature.
+>>
+>> Heavily based on work by Dan Rosenberg[3] and Neill Clift.
+>>
+>> [1] http://www.internetsociety.org/sites/default/files/Practical%20Timing%20Side%20Channel%20Attacks%20Against%20Kernel%20Space%20ASLR.pdf
+>> [2] http://forums.grsecurity.net/viewtopic.php?f=7&t=3367
+>> [3] http://lkml.indiana.edu/hypermail/linux/kernel/1105.3/index.html#00520
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> Cc: Eric Northup <digitaleric@google.com>
+>> ---
+>>  Documentation/kernel-parameters.txt  |    4 +
+>>  arch/x86/Kconfig                     |   51 +++++++++++--
+>>  arch/x86/Makefile                    |    3 +
+>>  arch/x86/boot/compressed/head_32.S   |   21 +++++-
+>>  arch/x86/boot/compressed/head_64.S   |  135 ++++++++++++++++++++++++++++++++--
+>>  arch/x86/include/asm/fixmap.h        |    4 +
+>>  arch/x86/include/asm/page_32_types.h |    2 +
+>>  arch/x86/include/asm/page_64_types.h |    4 -
+>>  arch/x86/include/asm/page_types.h    |    4 +
+>>  arch/x86/kernel/asm-offsets.c        |   14 ++++
+>>  arch/x86/kernel/setup.c              |   24 ++++++
+>>  arch/x86/kernel/traps.c              |    6 ++
+>>  12 files changed, 251 insertions(+), 21 deletions(-)
+>
+> Before going into the details, I have a structural request: could you
+> please further increase the granularity of the patch-set?
+>
+> In particular I'd suggest introducing a helper Kconfig bool that makes the
+> IDT readonly - instead of using CONFIG_RANDOMIZE_BASE for that.
+> CONFIG_RANDOMIZE_BASE can then select this helper Kconfig switch.
+>
+> Users could also select a readonly-IDT - even if they don't want a
+> randomized kernel.
 
-I'll let Jonathan take this through his tree which eventually makes it
-to mine.
+Speaking of IDT, and to capture some off-thread discussion here, we
+should remember that the "SGDT" and "SIDT" instructions aren't
+privileged on x86, so user-land can leak these out without any way for
+the kernel to intercept that.
 
-thanks,
+Adding their own random offsets to these two tables would be very
+useful. This could be done in a later patchset of course.
 
-greg k-h
+Julien
