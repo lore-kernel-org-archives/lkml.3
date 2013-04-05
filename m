@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161602Ab3DEJxC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 05:53:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49366 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751345Ab3DEJxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 05:53:01 -0400
-Date: Fri, 5 Apr 2013 11:52:58 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Simon Jeons <simon.jeons@gmail.com>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] mm/hugetlb: gigantic hugetlb page pools shrink
- supporting
-Message-ID: <20130405095258.GC31132@dhcp22.suse.cz>
-References: <1365066554-29195-1-git-send-email-liwanp@linux.vnet.ibm.com>
- <20130404161746.GP29911@dhcp22.suse.cz>
- <20130404234123.GA362@hacker.(null)>
- <20130405081239.GC14882@dhcp22.suse.cz>
- <515E9154.6050709@gmail.com>
+	id S1161699Ab3DEJzB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 05:55:01 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34405 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1161625Ab3DEJzA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 05:55:00 -0400
+Date: Fri, 5 Apr 2013 10:54:57 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        Doug Anderson <dianders@chromium.org>
+Subject: Re: [PATCH] regulator: core: don't require a supply when supply_name
+ is specified
+Message-ID: <20130405095457.GB6597@opensource.wolfsonmicro.com>
+References: <1365114467-16357-1-git-send-email-abrestic@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dc+cDN39EJAMEtIO"
 Content-Disposition: inline
-In-Reply-To: <515E9154.6050709@gmail.com>
+In-Reply-To: <1365114467-16357-1-git-send-email-abrestic@chromium.org>
+X-Cookie: Make a wish, it might come true.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 05-04-13 16:54:44, Simon Jeons wrote:
-> Hi Michal,
-> On 04/05/2013 04:12 PM, Michal Hocko wrote:
-> >On Fri 05-04-13 07:41:23, Wanpeng Li wrote:
-> >>On Thu, Apr 04, 2013 at 06:17:46PM +0200, Michal Hocko wrote:
-> >>>On Thu 04-04-13 17:09:08, Wanpeng Li wrote:
-> >>>>order >= MAX_ORDER pages are only allocated at boot stage using the
-> >>>>bootmem allocator with the "hugepages=xxx" option. These pages are never
-> >>>>free after boot by default since it would be a one-way street(>= MAX_ORDER
-> >>>>pages cannot be allocated later), but if administrator confirm not to
-> >>>>use these gigantic pages any more, these pinned pages will waste memory
-> >>>>since other users can't grab free pages from gigantic hugetlb pool even
-> >>>>if OOM, it's not flexible.  The patchset add hugetlb gigantic page pools
-> >>>>shrink supporting. Administrator can enable knob exported in sysctl to
-> >>>>permit to shrink gigantic hugetlb pool.
-> >>>I am not sure I see why the new knob is needed.
-> >>>/sys/kernel/mm/hugepages/hugepages-*/nr_hugepages is root interface so
-> >>>an additional step to allow writing to the file doesn't make much sense
-> >>>to me to be honest.
-> >>>
-> >>>Support for shrinking gigantic huge pages makes some sense to me but I
-> >>>would be interested in the real world example. GB pages are usually used
-> >>>in very specific environments where the amount is usually well known.
-> >>Gigantic huge pages in hugetlb means h->order >= MAX_ORDER instead of GB
-> >>pages. ;-)
-> >Yes, I am aware of that but the question remains the same (and
-> >unanswered). What is the use case?
-> 
-> As patch description, "if administrator confirm not to use these
-> gigantic pages any more, these pinned pages will waste memory since
-> other users can't grab free pages from gigantic hugetlb pool even if
-> OOM".
 
-Is this a use case that we care about? How often something like that
-happens? I understand this is "nice to have" but I am interested whether
-somebody actually _needs_ this.
--- 
-Michal Hocko
-SUSE Labs
+--dc+cDN39EJAMEtIO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Thu, Apr 04, 2013 at 03:27:47PM -0700, Andrew Bresticker wrote:
+
+> Regulator drivers may specify regulator_desc->supply_name which
+> regulator_register() will use to find the supply node for a regulator.
+> If no supply was specified in the device tree or the supply has yet
+> to be registered regulator_register() will fail, deferring the probe
+> of the regulator.  In the case where no supply node was specified in the
+> device tree, there is no supply and it is pointless to try and find one
+> later, so go ahead and add the regulator without the supply.
+
+I'd call this a broken device tree to be honest, the regulators ought to
+have a supply specified.  We should complain about it.  We probably
+ought to be doing this though so I'll apply.
+
+--dc+cDN39EJAMEtIO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRXp9eAAoJELSic+t+oim9FE4P/jj3TgvovG6Y7oofvoyCYtP3
+Z00p51Er6qXcXLwQqaDM3GEMj32EM42aFF2164KZ18ufoGbRmQfGLOSzJ4XjvIrK
+Q2lfuAQNmd6dhE9VhQAlLew6L+MuRKtWqaORwEGhTSpfbuI2tmrl9WqR5/FqFJnz
+R7JNR3a1GYg9qETEIEGtWAP1OH/FAyqhsGmOjhdYm1os2i/COspPpuxPFzuLmm9x
+XWtTIGtzzomM6z7I0FuiO2O/JQa2pKturJFJqhaNSABnZ5PR6KL3cZqLRtJUQNxO
+LX/ZGv3HJb0Ud8BMMXtaPzsLPqyyFYJ2TaAMDah+Pq3cgcsqAA6LKla9l4TTKF5x
+/TdTRA5NCH30NDGWxOf960/L43xBEQNQp8kGMLHW5FrgP+Dijvu00WUrsbqXONDk
+3E3zm0XAqA8/p0Zg75gaRIRoP+A4DG1XQSvmQrwKkSwCWt6g1prGoUP4h4Q8TeOp
+RuiB70T3eqGuIL3emEhSCIXVWCWabEXC3NxODfrku+mjj6tYDmF34avPiDb6kqS/
+WiNQqYUbfTFuHGgPofaNm0lEwh/rnvu4Uy3p2gAhyi4ULE8xjkFMxYM/CjTRvAKT
+j/uhl7Fgqjqwj32JXZgHGDFp9htJuKiRMONJzhqyZ7ve01Bi6YOwHLTLaLmBJcOC
+4uRiYgcUrpaTtfoAxhFG
+=nTPK
+-----END PGP SIGNATURE-----
+
+--dc+cDN39EJAMEtIO--
