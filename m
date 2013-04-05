@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1162347Ab3DERAf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 13:00:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34772 "EHLO
+	id S1162088Ab3DERCx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 13:02:53 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60608 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1162142Ab3DERAe (ORCPT
+	by vger.kernel.org with ESMTP id S1162028Ab3DERCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 13:00:34 -0400
-Date: Fri, 5 Apr 2013 18:00:31 +0100
+	Fri, 5 Apr 2013 13:02:52 -0400
+Date: Fri, 5 Apr 2013 18:02:50 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Takashi Iwai <tiwai@suse.de>, Liam Girdwood <lgirdwood@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Sound fixes for 3.9-rc6
-Message-ID: <20130405170030.GM6597@opensource.wolfsonmicro.com>
-References: <s5hzjxd2zec.wl%tiwai@suse.de>
- <CA+55aFzeB+75fSQZzqiNdN7JdcNd0qAxWeZuCm9h8Znh+wdZ3A@mail.gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] SPI updates for v3.9
+Message-ID: <20130405170250.GN6597@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Z/kiM2A+9acXa48/"
+	protocol="application/pgp-signature"; boundary="R92lf0Oi2sxyK3LA"
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzeB+75fSQZzqiNdN7JdcNd0qAxWeZuCm9h8Znh+wdZ3A@mail.gmail.com>
 X-Cookie: Make a wish, it might come true.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,46 +24,74 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Z/kiM2A+9acXa48/
+--R92lf0Oi2sxyK3LA
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Fri, Apr 05, 2013 at 09:06:43AM -0700, Linus Torvalds wrote:
+The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
 
-> Argh, Takashi, you're usually so reliable...
+  Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
 
-> But you actually meant for me to pull the sound-3.9 tag, didn't you?
-> That "for-linus" branch isn't a signed tag..
+are available in the git repository at:
 
-> Please double-check your scripts,
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git tags/spi-fix-v3.9-rc5
 
-Probably needs a git upgrade - for a while git would silently substitute
-a branch if it had the same head as a signed tag when generating pull
-requests (which was very annoying if you'd had a public branch which you
-were just getting round to signing).  Current versions should get this
-right and insist on the tag if that was what was supplied on the command
-line.
+for you to fetch changes up to 1ad849aee5f53353ed88d9cd3d68a51b03a7d44f:
 
---Z/kiM2A+9acXa48/
+  spi/mpc512x-psc: optionally keep PSC SS asserted across xfer segmensts (2013-04-01 14:30:26 +0100)
+
+----------------------------------------------------------------
+spi: Fixes for v3.9
+
+A bunch of small driver fixes plus a fix for error handling in the core
+- nothing too exciting overall.
+
+----------------------------------------------------------------
+Anatolij Gustschin (1):
+      spi/mpc512x-psc: optionally keep PSC SS asserted across xfer segmensts
+
+Bryan Freed (1):
+      spi: Unlock a spinlock before calling into the controller driver.
+
+Girish K S (1):
+      spi/s3c64xx: modified error interrupt handling and init
+
+Jonas Gorski (1):
+      spi/bcm63xx: don't disable non enabled clocks in probe error path
+
+Kevin Cernekee (1):
+      spi/bcm63xx: Remove unused variable
+
+Laxman Dewangan (1):
+      spi: slink-tegra20: move runtime pm calls to transfer_one_message
+
+ drivers/spi/spi-bcm63xx.c       |    3 +--
+ drivers/spi/spi-mpc512x-psc.c   |    2 +-
+ drivers/spi/spi-s3c64xx.c       |   41 ++++++++++++++++++++++++---------------
+ drivers/spi/spi-tegra20-slink.c |   25 ++++++++----------------
+ drivers/spi/spi.c               |   15 +++++++-------
+ 5 files changed, 42 insertions(+), 44 deletions(-)
+
+--R92lf0Oi2sxyK3LA
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRXwMoAAoJELSic+t+oim9aWcP/09q5262hf/4rJqUbPANId5J
-+tWlS9lQj7nKJqxr8kR9ZKVkfHqClP9sMaIJprfQnYb1eMNDZST9ToeWu6zTFDFp
-nESDahznADkrQ1AdpD8gRwzpauw9d4P7TeWAYz2aqKnpwtADixwd2uL3pywZfBoe
-2a5T26c5snZlv+TYpRrfO8N+9GFmQ+xF1+YC0ZotkRu4AnD1aaakvOFRwGMNOKiv
-z0oFc8deldH5+DkLYV5fuStqX24sMXuJbtOW1IkbFDrYHlACGg9XWGjkCXfbKOpk
-S6Lx2hD/S/VEjEqzFazANn+mnCQlqpIxWBJEU2lSVlutYLzPVh2kjF8AulzfcYE/
-EndQeVVPZ+BWa73ogDaElm5rf/YBZfHVz5eptoYGOZYb2HDm3l75GjmNQYacB81u
-+k4jg5oVbn8HBNs4wYibQvqlVyLujXSx8CAmewvgPxOu47TIRKr0SJrZATawpUig
-x724Lws72RMZTiMIR6Rpxd25sN2raV1jTVZVOS13UGrh7f/bkoT7h8nN3fp5rZ3Z
-KAQmCLQnqML5JLdcCWgnL3I/G/JHJbwtRg9mGrjRKStBzstJeeJMeaM77tPgUC3K
-ZaKey220kV/fx3T+/4DWdgowfZuCv/nNdHSj3SQb1hMu3L7rljllq6uHixmHmtKt
-3AKyujObqQQjAU41YVzS
-=tN2U
+iQIcBAEBAgAGBQJRXwOyAAoJELSic+t+oim95UYP/1gNw7+YHlx42g1Hmt8km81H
+X3nJpNbUoafkw2JNw0nyHLA2JvPq6OEOwNa8CYalhoBX+Tnrkr25F3pYZa2HLfpI
+Hz3dBnH3u1wdpDQlE7qirHFNmAv6gQXh4R7Skf1Zsb8aFi/tkCooYg1jZMVXa12c
+TAightVHVqYltFLmqPUQkljlPtfK4Oz61aa6NR4eXpwTgXjRKGJ0NrQ7PFE14XwC
+vjzKWHBkCBXGSnURZ+Gi8OxbpLntgIuNvcLdXWImUfma/g0GmhUGwUNLNzLC567z
+U+Lrm7UaDnHnnztJ+tUq1Zejed85CdK+WeHCtIIZb8hj6N0CwcJ/ZGJ+6etD5phc
+0BlKnpVSLxim6mPCrLPnmRBY0Q+jLjlN1OFLCmbrPK2UHeBNLqsUnkDXWDB+8gn+
+jHKmXwUXh57QObjJfDHz6Lg2/O74mxzOh6/jpS17PiIEZhDbz98dt7C1XKomnels
+5Icc5FOhgwDIF+dn0yWPesg/dc5XWyEbuap8v3Cz2yD4fZyruvkccGWxzK2f+ojm
+6WJm7/JMHU2o+J97wCtWzX/S02bNelPQFDSq+zKjKSk0ITqirWMo0w2mzXnMD6le
+PPFIt5JU4peqqo/r4am9gySPl90QYNyGn2yB+/o5y7M6a5RZOge1m05mNM5LOM7j
+Aw80sOgDU0hy9eOrvDYj
+=Bo3X
 -----END PGP SIGNATURE-----
 
---Z/kiM2A+9acXa48/--
+--R92lf0Oi2sxyK3LA--
