@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163210Ab3DFDrv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 23:47:51 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64094 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756805Ab3DFDru (ORCPT
+	id S1163221Ab3DFDwK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 23:52:10 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:55694 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756759Ab3DFDwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 23:47:50 -0400
-X-Originating-IP: 108.223.40.66
-Date: Fri, 5 Apr 2013 20:47:50 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: 3.8.3 and 3.9git occasional watchdog oops
-Message-ID: <20130406034750.GA25339@roeck-us.net>
-References: <201303142154.20501.arekm@maven.pl>
- <201304050023.31143.a.miskiewicz@gmail.com>
- <20130405015959.GA2566@roeck-us.net>
+	Fri, 5 Apr 2013 23:52:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130405015959.GA2566@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Sat, 6 Apr 2013 11:52:07 +0800
+Message-ID: <CAPgLHd8ffGFuLdAFnx=bDmBS5U0FrH-fqCeneOHeWQQSE+v4wg@mail.gmail.com>
+Subject: [PATCH -next] virtio_console: make local symbols static
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: amit.shah@redhat.com, arnd@arndb.de, rusty@rustcorp.com.au,
+        gregkh@linuxfoundation.org
+Cc: yongjun_wei@trendmicro.com.cn, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 06:59:59PM -0700, Guenter Roeck wrote:
-> On Fri, Apr 05, 2013 at 12:23:30AM +0200, Arkadiusz Miskiewicz wrote:
-> > On Thursday 14 of March 2013, Arkadiusz Miśkiewicz wrote:
-> > > Hi.
-> > > 
-> > > Just hit watchdog related oops in 3.8.3 kernel. Unfortunately photos only.
-> > > 
-> > > http://ixion.pld-linux.org/~arekm/watchdog-oops-3.8.3/IMG_8942.JPG
-> > > http://ixion.pld-linux.org/~arekm/watchdog-oops-3.8.3/IMG_8941.JPG
-> > 
-> > 3.9git from today isn't any better unfortunately:
-> > 
-> > http://ixion.pld-linux.org/~arekm/watchdog-oops-3.9git.jpg
-> > 
-> > > 
-> > > oops started after I enabled systemd watchdog functionality. Cannot
-> > > reproduce easily.
-> > > 
-> > > watchdog here (thinkpad t400) is:
-> > >  iTCO_wdt: Found a ICH9M-E TCO device (Version=2, TCOBASE=0x1060)
-> > 
-> > 
-> Wonder if there is a race condition in the watchdog driver: The watchdog device
-> is opened before watchdog_register_device returns. I suspect systemd waits for
-> a udev event, or by some other means detects that /dev/watchdog was created,
-> and opens it immediately.
-> 
-> I just have no idea where exactly the race condition, if there is one, is
-> hiding. Or maybe I am completely off track.
-> 
-I _think_ I understand the sequence of events.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-- The driver is the first watchdog driver to register.
-- watchdog_dev_register() gets called and creates the watchdog misc device
-  by calling misc_register().
-  At that time, the matching character device (/dev/watchdog0) does not yet
-  exist, and old_wdd is not set either.
-- Userspace gets an event and opens /dev/watchdog
-- watchdog_open() is called and sets sets wdd = old_wdd, which is still NULL,
-  and tries to dereference it. Bang.
+Those symbols only used within this file, and should be static.
 
-If this is the problem, a simple fix would be to set old_wdd before calling
-misc_register().
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/char/virtio_console.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Can you test a patch ?
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index 13ad9b1..f73ad64 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -78,8 +78,8 @@ struct ports_driver_data {
+ };
+ static struct ports_driver_data pdrvdata;
+ 
+-DEFINE_SPINLOCK(pdrvdata_lock);
+-DECLARE_COMPLETION(early_console_added);
++static DEFINE_SPINLOCK(pdrvdata_lock);
++static DECLARE_COMPLETION(early_console_added);
+ 
+ /* This struct holds information that's relevant only for console ports */
+ struct console {
+@@ -1202,7 +1202,7 @@ int __init virtio_cons_early_init(int (*put_chars)(u32, const char *, int))
+ 	return hvc_instantiate(0, 0, &hv_ops);
+ }
+ 
+-int init_port_console(struct port *port)
++static int init_port_console(struct port *port)
+ {
+ 	int ret;
+ 
 
-Guenter
