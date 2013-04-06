@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932680Ab3DFGmv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 02:42:51 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:51663 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754321Ab3DFGmt (ORCPT
+	id S932687Ab3DFGn0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 02:43:26 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:61021 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755147Ab3DFGnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 02:42:49 -0400
-X-AuditID: cbfee691-b7f5f6d000002fda-fe-515fc3e879ab
+	Sat, 6 Apr 2013 02:43:25 -0400
+X-AuditID: cbfee68e-b7f946d000001e37-2f-515fc40ccd87
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Samuel Ortiz'" <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/6] mfd: wm831x: use spi_get_drvdata() and spi_set_drvdata()
-Date: Sat, 06 Apr 2013 15:42:48 +0900
-Message-id: <001701ce3291$f3f29090$dbd7b1b0$%han@samsung.com>
+References: <001701ce3291$f3f29090$dbd7b1b0$%han@samsung.com>
+In-reply-to: <001701ce3291$f3f29090$dbd7b1b0$%han@samsung.com>
+Subject: [PATCH 2/6] mfd: da9052: use spi_get_drvdata() and spi_set_drvdata()
+Date: Sat, 06 Apr 2013 15:43:23 +0900
+Message-id: <001801ce3292$0925a880$1b70f980$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4ykfPaYTuV5qPCS+S/kzkYYtE9uw==
+Thread-index: Ac4ykfPaYTuV5qPCS+S/kzkYYtE9uwAAAY6w
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJIsWRmVeSWpSXmKPExsVy+t8zY90Xh+MDDTZv0rG4vPASq8XlXXPY
-	LE53szowe8w7GejRt2UVo8fnTXIBzFFcNimpOZllqUX6dglcGZ/P9LAX3OWqeDbtHXMD42+O
-	LkZODgkBE4nFh3ezQdhiEhfurQeyuTiEBJYxSsz60sYMUzT9+0xWiMR0Rokr3y9DOb8YJZou
-	fGEBqWITUJP48uUwO4gtIqAl0X3sPNAoDg5mAReJo9NEQMLCAr4S69tvgw1lEVCVaDt8Eczm
-	FbCVeHB6JxOELSjxY/I9sJHMQGPW7zzOBGHLS2xe85YZZKSEgLrEo7+6EJv0JL593A1VLiKx
-	78U7RpDTJATmsUssXLqPEWKXgMS3yYdYIHplJTYdgPpLUuLgihssExjFZiHZPAvJ5llINs9C
-	smIBI8sqRtHUguSC4qT0IlO94sTc4tK8dL3k/NxNjJBomriD8f4B60OMyUDrJzJLiSbnA6Mx
-	ryTe0NjMyMLUxNTYyNzSjDRhJXFe9RbrQCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2M+S8s
-	nJYs+b/2ttyLKYt5G6+73f78Lsv47eL//zf+Pleft9X6nsqSwl8n0yvPFmVZej3crZr/qDHw
-	7PPzd69/Z5Y+J8G76JbEubmW3RxM3yc9T+1hmyCz5UR4XrUsJ3+OwV9t+d7mWXNWLxEKljke
-	+Trf3+T7SdVrL31EJ20/a64gVqxx6VitkRJLcUaioRZzUXEiAJewob28AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjleLIzCtJLcpLzFFi42I5/e+xoO6Lw/GBBl9uq1tcXniJ1eLyrjls
-	Fqe7WR2YPeadDPTo27KK0ePzJrkA5qgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11D
-	SwtzJYW8xNxUWyUXnwBdt8wcoD1KCmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQ
-	QMI6xozPZ3rYC+5yVTyb9o65gfE3RxcjJ4eEgInE9O8zWSFsMYkL99azdTFycQgJTGeUuPL9
-	MiuE84tRounCFxaQKjYBNYkvXw6zg9giAloS3cfOA3VwcDALuEgcnSYCEhYW8JVY336bGcRm
-	EVCVaDt8EczmFbCVeHB6JxOELSjxY/I9sJHMQGPW7zzOBGHLS2xe85YZZKSEgLrEo7+6EJv0
-	JL593A1VLiKx78U7xgmMArOQTJqFZNIsJJNmIWlZwMiyilE0tSC5oDgpPddQrzgxt7g0L10v
-	OT93EyM4Vp9J7WBc2WBxiFGAg1GJh9fidlygEGtiWXFl7iFGCQ5mJRFe2edAId6UxMqq1KL8
-	+KLSnNTiQ4zJQI9OZJYSTc4HppG8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtFoHCgmkJ5akZqem
-	FqQWwWxh4uCUamCcEMxv0WIjz25VG/hDmFVkTsx3Bhm5vXNi/jiVBtQUnA7J4ZC+2fzpqp2J
-	2LtZ/5KX3f32zHWpoXxD8F+uhJVtC3UXRaVGn6tfkxMZvp6nbvPf96x3S018fWU3d/utctdS
-	jjx/U+Ol2P+AunX/2OyLbIUMTrW2yu+1n/T4puqGFGbu5Je2+UosxRmJhlrMRcWJAPkXQVUZ	AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zI12eI/GBBtumCllcXniJ1eLyrjls
+	Fqe7WR2YPeadDPTo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujP4ld5gKjnNUNL68xdTAOJm9
+	i5GTQ0LAROLCtlUsELaYxIV769m6GLk4hASWMUrc+N3IAlP0fFMfI4gtJDCdUWLZM3WIol+M
+	EhcnPWQFSbAJqEl8+XIYbKqIgJZE97HzQJM4OJgFXCSOThOB6LWV2DzrENhMTgE7iTP/t4HN
+	FBbwldjc3M4EYrMIqEos/t7PDtLKC1S//JELSJhXQFDix+R7YK3MQNPX7zzOBGHLS2xe85YZ
+	pFxCQF3i0V9dEFNEwEhi8qwoiAoRiX0v3jGCHCwhsItd4sXS1YwQmwQkvk0GuQakVVZi0wFm
+	iGclJQ6uuMEygVFiFpLFs5AsnoVk8SwkKxYwsqxiFE0tSC4oTkovMtIrTswtLs1L10vOz93E
+	CIm7vh2MNw9YH2JMBlo/kVlKNDkfGLd5JfGGxmZGFqYmpsZG5pZmpAkrifOqtVgHCgmkJ5ak
+	ZqemFqQWxReV5qQWH2Jk4uCUamBsMKv9L8Q9o/1Veu2tRMUdIjEhQVO/K3xmvXd4SUtv/Mcm
+	ns+1+yQDT7g+iL4gsJxp7b8WI2H1t40bqg4L8DktcOvdEaNvyrnsUl270+NVyv4e1SWLys/U
+	vHlc4lL/2ag493jQ4e+R1ya0c78r4Kwz3ORRkPDni018VYlDduhlgQSJ+Zub5yqxFGckGmox
+	FxUnAgAVfuie0QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jQV2eI/GBBi17eC0uL7zEanF51xw2
+	i9PdrA7MHvNOBnr0bVnF6PF5k1wAc1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6h
+	pYW5kkJeYm6qrZKLT4CuW2YO0B4lhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZo
+	IGEdY0b/kjtMBcc5Khpf3mJqYJzM3sXIySEhYCLxfFMfI4QtJnHh3no2EFtIYDqjxLJn6l2M
+	XED2L0aJi5MesoIk2ATUJL58OQzWLCKgJdF97DxQAwcHs4CLxNFpIhC9thKbZx1iAbE5Bewk
+	zvzfBjZfWMBXYnNzOxOIzSKgKrH4ez87SCsvUP3yRy4gYV4BQYkfk++BtTIDTV+/8zgThC0v
+	sXnNW2aQcgkBdYlHf3VBTBEBI4nJs6IgKkQk9r14xziBUWgWkkGzkAyahWTQLCQtCxhZVjGK
+	phYkFxQnpeca6hUn5haX5qXrJefnbmIER/UzqR2MKxssDjEKcDAq8fBa3I4LFGJNLCuuzD3E
+	KMHBrCTCK/scKMSbklhZlVqUH19UmpNafIgxGejNicxSosn5wISTVxJvaGxiZmRpZGZhZGJu
+	TpqwkjjvgVbrQCGB9MSS1OzU1ILUIpgtTBycUg2MghytNxZfF1JcNWOWrjUr52Uev8W/DO8k
+	7eaReHhnjQCf4hsRtaO6bUuv7gl8m/eVb9/2ZULGxRMiut85GCSoft1rvnL69w0H/GZeaskT
+	2xzQlTLh0Wmb77HXMu3Zrnd8Uwp6HD7HOW/m7g0XZ7y5Yxx95kjFrDuWzrU766+mPOK+r125
+	zMbjjRJLcUaioRZzUXEiALo/P3cuAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,40 +60,31 @@ can directly pass a struct spi_device.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/mfd/wm831x-spi.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/mfd/da9052-spi.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/wm831x-spi.c b/drivers/mfd/wm831x-spi.c
-index 4e70e15..e7ed14f66 100644
---- a/drivers/mfd/wm831x-spi.c
-+++ b/drivers/mfd/wm831x-spi.c
-@@ -37,7 +37,7 @@ static int wm831x_spi_probe(struct spi_device *spi)
- 	spi->bits_per_word = 16;
- 	spi->mode = SPI_MODE_0;
+diff --git a/drivers/mfd/da9052-spi.c b/drivers/mfd/da9052-spi.c
+index 61d63b9..0680bcb 100644
+--- a/drivers/mfd/da9052-spi.c
++++ b/drivers/mfd/da9052-spi.c
+@@ -38,7 +38,7 @@ static int da9052_spi_probe(struct spi_device *spi)
+ 	da9052->dev = &spi->dev;
+ 	da9052->chip_irq = spi->irq;
  
--	dev_set_drvdata(&spi->dev, wm831x);
-+	spi_set_drvdata(spi, wm831x);
- 	wm831x->dev = &spi->dev;
+-	dev_set_drvdata(&spi->dev, da9052);
++	spi_set_drvdata(spi, da9052);
  
- 	wm831x->regmap = devm_regmap_init_spi(spi, &wm831x_regmap_config);
-@@ -53,7 +53,7 @@ static int wm831x_spi_probe(struct spi_device *spi)
+ 	da9052_regmap_config.read_flag_mask = 1;
+ 	da9052_regmap_config.write_flag_mask = 0;
+@@ -60,7 +60,7 @@ static int da9052_spi_probe(struct spi_device *spi)
  
- static int wm831x_spi_remove(struct spi_device *spi)
+ static int da9052_spi_remove(struct spi_device *spi)
  {
--	struct wm831x *wm831x = dev_get_drvdata(&spi->dev);
-+	struct wm831x *wm831x = spi_get_drvdata(spi);
+-	struct da9052 *da9052 = dev_get_drvdata(&spi->dev);
++	struct da9052 *da9052 = spi_get_drvdata(spi);
  
- 	wm831x_device_exit(wm831x);
- 
-@@ -69,7 +69,7 @@ static int wm831x_spi_suspend(struct device *dev)
- 
- static void wm831x_spi_shutdown(struct spi_device *spi)
- {
--	struct wm831x *wm831x = dev_get_drvdata(&spi->dev);
-+	struct wm831x *wm831x = spi_get_drvdata(spi);
- 
- 	wm831x_device_shutdown(wm831x);
- }
+ 	da9052_device_exit(da9052);
+ 	return 0;
 -- 
 1.7.2.5
 
