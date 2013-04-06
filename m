@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163160Ab3DFCcV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 22:32:21 -0400
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:50138 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754549Ab3DFCcT (ORCPT
+	id S932575Ab3DFDBR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 23:01:17 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:54156 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754549Ab3DFDBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 22:32:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <7u61w2ppuct79kmjwclqv15y.1365211547178@email.android.com>
-References: <7u61w2ppuct79kmjwclqv15y.1365211547178@email.android.com>
-Date: Fri, 5 Apr 2013 19:32:19 -0700
-X-Google-Sender-Auth: RktUohvycKa2M1wawc1yvJFTSlw
-Message-ID: <CAE9FiQVuLCaCxTrgpVm7nmJbFkAWTRJqA9T6oJo3LSqSKwq3Fg@mail.gmail.com>
-Subject: Re: [PATCH v6] irq: add quirk for broken interrupt remapping on 55XX chipsets
-From: Yinghai Lu <yinghai@kernel.org>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Prarit Bhargava <prarit@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Don Dutile <ddutile@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Asit Mallick <asit.k.mallick@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 5 Apr 2013 23:01:15 -0400
+Date: Sat, 6 Apr 2013 05:01:13 +0200
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [RFC] revoke(2) and generic handling of things like remove_proc_entry()
+Message-ID: <20130406030113.GB30194@order.stressinduktion.org>
+Mail-Followup-To: Al Viro <viro@ZenIV.linux.org.uk>,
+	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Rik van Riel <riel@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Alexey Dobriyan <adobriyan@gmail.com>
+References: <20130405042932.GB4068@ZenIV.linux.org.uk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130405042932.GB4068@ZenIV.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 5, 2013 at 6:25 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
-> I'm sorry.  Forgot to change the wording of the error for the new model that I'm following here.  Although the message is mostly right as bios is responsible for setting and clearing the IRQ remapping feature bit in the chips capabilities register.
->
-> I'll fix and repost Monday
+On Fri, Apr 05, 2013 at 05:29:32AM +0100, Al Viro wrote:
+> 4) nasty semantics issue - mmap() vs. revoke (of any sort, including
+> remove_proc_entry(), etc.).  Suppose a revokable file had been mmapped;
+> now it's going away.  What should we do to its VMAs?  Right now sysfs
+> and procfs get away with that, but only because there's only one thing
+> that has ->mmap() there - /proc/bus/pci and sysfs equivalents.  I've
+> no idea how does pci_mmap_page_range() interact with PCI hotplug (and
+> I'm not at all sure that whatever it does isn't racy wrt device removal),
+> but I suspect that it strongly depends on lack of ->fault() for those
+> VMAs, which makes killing all PTEs pointing to pages in question enough.
+> How generic do we want to make it?  Anybody wanting to add more files
+> that could be mmapped in procfs/sysfs/debugfs deserves to be hurt, but
+> if we start playing with revoke(2), restriction might become inconvenient.
+> I'm not sure what kind of behaviour do we want there - *BSD at least
+> used to have revoke(2) only for character devices that had no mmap()...
 
->>> diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
->>> index d56f8c1..2b56e92 100644
->>> --- a/drivers/iommu/irq_remapping.c
->>> +++ b/drivers/iommu/irq_remapping.c
->>> @@ -19,6 +19,7 @@
->>>  int irq_remapping_enabled;
->>>
->>>  int disable_irq_remap;
->>> +int irq_remap_broken;
->>>  int disable_sourceid_checking;
->>>  int no_x2apic_optout;
->>>
->>> @@ -216,6 +217,17 @@ int irq_remapping_supported(void)
->>>         if (disable_irq_remap)
->>>                 return 0;
->>>
->>> +       if (irq_remap_broken) {
->>> +               WARN_TAINT(1, TAIN_FIRMWARE_WORKAROUND,
->>> +                          "This system BIOS has enabled interrupt remapping\n"
->>> +                          "on a chipset that contains an erratum making that\n"
->>> +                          "feature unstable.  Please reboot with nointremap\n"
->>> +                          "added to the kernel command line and contact\n"
->>> +                          "your BIOS vendor for an update");
+I am seeing possible problems in software implementing their own memory
+management ontop SIGSEGV e.g. java. I hope they sanely distinguish
+between heap mappings and file mmaps.
 
-Also please put those warning code in to
-drivers/iommu/intel_irq_remapping.c::intel_irq_remapping_supported()
+FreeBSD allowes tearing down a mmap on MAC security relabel. Two possible
+actions are available: SIGSEGV generation by tearing down the mapping
+forcefully or enable some kind of copy-on-write semantics on revoke:
 
-It does not belong to drivers/iommu/irq_remapping.c.
+http://svnweb.freebsd.org/base/head/sys/security/mac/mac_process.c?revision=248084&view=markup
 
-Thanks
+I like to see something like revoke being worked on, thanks!
 
-Yinghai
+Greetings,
+
+  Hannes
+
