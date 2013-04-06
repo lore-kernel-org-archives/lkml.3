@@ -1,99 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757096Ab3DFSSl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 14:18:41 -0400
-Received: from mail-da0-f54.google.com ([209.85.210.54]:43674 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756370Ab3DFSSj (ORCPT
+	id S1758079Ab3DFSWD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 14:22:03 -0400
+Received: from smtprelay.restena.lu ([158.64.1.62]:34979 "EHLO
+	smtprelay.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756626Ab3DFSWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 14:18:39 -0400
-Date: Sat, 6 Apr 2013 11:18:36 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Lucas <canolucas@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.8.6
-Message-ID: <20130406181836.GA2406@kroah.com>
-References: <20130405174012.GA28836@kroah.com>
- <51606512.8030703@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51606512.8030703@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 6 Apr 2013 14:22:02 -0400
+X-Greylist: delayed 638 seconds by postgrey-1.27 at vger.kernel.org; Sat, 06 Apr 2013 14:22:02 EDT
+Date: Sat, 6 Apr 2013 20:11:14 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Vassilis Virvilis <v.virvilis@biovista.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Debugging COW (copy on write) memory after fork: Is it possible
+ to dump only the private anonymous memory of a process?
+Message-ID: <20130406201114.6477d1e4@neptune.home>
+In-Reply-To: <515E9F0C.1000204@biovista.com>
+References: <515E9F0C.1000204@biovista.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.16; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 06, 2013 at 03:10:26PM -0300, Lucas wrote:
-> On 05/04/13 14:40, Greg KH wrote:
-> >I'm announcing the release of the 3.8.6 kernel.
-> >
-> >All users of the 3.8 kernel series must upgrade.
-> >
-> >The updated 3.8.y git tree can be found at:
-> >	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.8.y
-> >and can be browsed at the normal kernel.org git web browser:
-> >	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-> >
-> >thanks,
-> >
-> >greg k-h
-> >
+On Fri, 05 April 2013 Vassilis Virvilis <v.virvilis@biovista.com> wrote:
+> Hello, sorry if this is off topic. Just point me to the right direction. 
+> Please cc me also in the reply.
 > 
-> Hi Greg, I have an issue with a Lenovo T60's Notebook, which has an
-> Intel VGA card.
+> Question
+> --------
 > 
-> [lucas@tux ~]$ lspci | grep "VGA"
-> 00:02.0 VGA compatible controller: Intel Corporation Mobile
-> 945GM/GMS, 943/940GML Express Integrated Graphics Controller (rev
-> 03)
-> 
-> The screen turns black whenever X is executed, due to the following bug:
-> 
-> https://bugs.freedesktop.org/show_bug.cgi?id=57365
-> 
-> https://bugs.archlinux.org/task/33062
-> 
-> Those sites havethe error output that is generated from X attempts
-> to start. Nonetheless, the causes of this issue have already been
-> figured:
-> 
-> According to comment #32 in the freedesktop site (
-> https://bugs.freedesktop.org/show_bug.cgi?id=57365#c32 ), the fix
-> has been introduced in the 3.9 series.
-> 
-> Believe it or not, the last stable release in which X is able to
-> start is 3.6.11. The whole 3.7 and 3.8 series together were unable
-> to tackle this issue down. Seems that Intel is not doing its
-> homework here :(
-> 
-> My question is:
-> 
-> Knowing that the following patches solve the issue, can they be
-> backported and included in the next release of 3.8 ?
-> 
-> Thank you very much,
-> Lucas
-> 
-> 
-> commit 24a1f16de97c4cf0029d9acd04be06db32208726
-> Author: Mika Kuoppala <mika.kuoppala@linux.intel.com>
-> Date:   Fri Feb 8 16:35:37 2013 +0200
-> 
->     drm/i915: disable shared panel fitter for pipe
-> 
-> 
-> commit 9d6d9f19e8146fa24903cb561e204a22232740e3
-> Author: Mika Kuoppala <mika.kuoppala@linux.intel.com>
-> Date:   Fri Feb 8 16:35:38 2013 +0200
-> 
->     drm/i915: clean up panel fitter handling in lvds
+> Is it possible to dump only the private anonymous memory of a process?
 
-Sure, can you cc: the authors of those patches, and anyone who
-signed-off on them in order to get their approval as well?
+I don't know if that's possible, but from your background you could
+probably work around it be mmap()ing the memory you need and once
+initialized mark all of that memory read-only (if you mmap very large
+chunks you can even benefit from huge-pages).
 
-thanks,
+Any of the forked processes that tried to access the memory would then
+get a signal if they ever tried to write to the data (and thus unsharing it)
 
-greg k-h
+
+If you allocate and initialize all of your memory in little malloc()'ed
+chunks it's possibly glibc's memory housekeeping that unshares all those
+pages over time.
+
+Bruno
+
+> Background
+> ----------
+> 
+> I have a process where it reads and it initializes a large portion of 
+> the memory (around 2.3GB). This memory is effectively read only from 
+> that point and on. After the initialization I fork the process to 
+> several children in order to take advantage of the multicore 
+> architecture of modern cpus. The problem is that finally the program 
+> ends up requiring number_of_process * 2.3GB memory effectively entering 
+> swap thrashing and destroying the performance.
+> 
+> Steps so far
+> ------------
+> 
+> The first thing I did is to monitor the memory. I found about 
+> /proc/$pid/smaps and the http://wingolog.org/pub/mem_usage.py.
+> 
+> What happens is the following
+> 
+>      The program starts reads from disk and has 2.3GB of private mappings
+>      The program forks. Immediately the 2.3GB become shared mapping 
+> between the parent and the child. Excellent so far.
+>      As the time goes and the child starts performing its tasks the 
+> shared memory is slowly migrating to the private mappings of each 
+> process effectively blowing up the memory requirements.
+> 
+> I thought that if I could see (dump) the private mappings of each 
+> process I could see from the data why the shared mappings are being 
+> touched so I tried to dump the core with gcore and by playing with 
+> /proc/$pid/coredump_filter like this
+> 
+> echo 0x1 > /proc/$pid/coredump_filter
+> gcore $pid
+> 
+> Unfortunately it always dumps 2.3GB despite the setting in 
+> /proc/$pid/coredump_filter which says private anonymous mappings.
+> 
+> I have researched the question in google.
+> 
+> I even posted it in stack overflow.
+> 
+> Any other ideas?
+> 
+> Thanks in advance
+> 
+> 	Vassilis Virvilis
