@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab3DFFpy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 01:45:54 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:47010 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456Ab3DFFpw (ORCPT
+	id S1754220Ab3DFFqG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 01:46:06 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:56669 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753211Ab3DFFqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 01:45:52 -0400
+	Sat, 6 Apr 2013 01:46:04 -0400
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: jaegeuk.kim@samsung.com, rostedt@goodmis.org
 Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
         Namjae Jeon <namjae.jeon@samsung.com>,
         Pankaj Kumar <pankaj.km@samsung.com>
-Subject: [PATCH v3 1/7] f2fs: add tracepoints for sync & Inode operations
-Date: Sat,  6 Apr 2013 14:45:44 +0900
-Message-Id: <1365227144-15390-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH v3 2/7] f2fs: add tracepoints for truncate operation
+Date: Sat,  6 Apr 2013 14:45:57 +0900
+Message-Id: <1365227157-15424-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,244 +23,198 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Add tracepoints in f2fs for tracing the syncing
-operations like filesystem sync, file sync enter/exit.
-It will helf to trace the code under debugging scenarios.
+add tracepoints for tracing the truncate operations
+like truncate node/data blocks, f2fs_truncate etc.
 
-Also add tracepoints for tracing the various inode operations
-like building inode, eviction of inode, link/unlink of
-inodes.
+Tracepoints are added at entry and exit of operation
+to trace the success & failure of operation.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
 ---
- fs/f2fs/file.c              |    3 +
- fs/f2fs/inode.c             |    3 +
- fs/f2fs/namei.c             |    3 +
- fs/f2fs/super.c             |    4 ++
- include/trace/events/f2fs.h |  164 +++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 177 insertions(+)
- create mode 100644 include/trace/events/f2fs.h
+ fs/f2fs/file.c              |    6 ++-
+ fs/f2fs/node.c              |    7 +++
+ include/trace/events/f2fs.h |  108 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 120 insertions(+), 1 deletion(-)
 
 diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index ac8cbb2..c937d7b 100644
+index c937d7b..f082a16 100644
 --- a/fs/f2fs/file.c
 +++ b/fs/f2fs/file.c
-@@ -25,6 +25,7 @@
+@@ -175,6 +175,8 @@ static int truncate_data_blocks_range(struct dnode_of_data *dn, int count)
+ 	struct f2fs_node *raw_node;
+ 	__le32 *addr;
+ 
++	trace_f2fs_truncate_data_blocks_range_enter(dn->inode,
++						 dn->data_blkaddr, dn->nid);
+ 	raw_node = page_address(dn->node_page);
+ 	addr = blkaddr_in_node(raw_node) + ofs;
+ 
+@@ -193,6 +195,8 @@ static int truncate_data_blocks_range(struct dnode_of_data *dn, int count)
+ 		sync_inode_page(dn);
+ 	}
+ 	dn->ofs_in_node = ofs;
++
++	trace_f2fs_truncate_data_blocks_range_exit(dn->inode, nr_free);
+ 	return nr_free;
+ }
+ 
+@@ -271,7 +275,7 @@ void f2fs_truncate(struct inode *inode)
+ 	if (!(S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode) ||
+ 				S_ISLNK(inode->i_mode)))
+ 		return;
+-
++	trace_f2fs_truncate(inode);
+ 	if (!truncate_blocks(inode, i_size_read(inode))) {
+ 		inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+ 		mark_inode_dirty(inode);
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index 7555fb7..7db4813 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -19,6 +19,7 @@
+ #include "f2fs.h"
+ #include "node.h"
  #include "segment.h"
- #include "xattr.h"
- #include "acl.h"
 +#include <trace/events/f2fs.h>
  
- static int f2fs_vm_page_mkwrite(struct vm_area_struct *vma,
- 						struct vm_fault *vmf)
-@@ -118,6 +119,7 @@ int f2fs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
- 	if (inode->i_sb->s_flags & MS_RDONLY)
- 		return 0;
+ static struct kmem_cache *nat_entry_slab;
+ static struct kmem_cache *free_nid_slab;
+@@ -547,6 +548,7 @@ static int truncate_nodes(struct dnode_of_data *dn, unsigned int nofs,
+ 	int freed = 0;
+ 	int i, ret;
  
-+	trace_f2fs_sync_file_enter(file, datasync);
- 	ret = filemap_write_and_wait_range(inode->i_mapping, start, end);
- 	if (ret)
- 		return ret;
-@@ -155,6 +157,7 @@ int f2fs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
++	trace_f2fs_truncate_nodes_enter(dn->inode, dn->data_blkaddr, dn->nid);
+ 	if (dn->nid == 0)
+ 		return NIDS_PER_BLOCK + 1;
+ 
+@@ -594,10 +596,12 @@ static int truncate_nodes(struct dnode_of_data *dn, unsigned int nofs,
+ 	} else {
+ 		f2fs_put_page(page, 1);
  	}
- out:
- 	mutex_unlock(&inode->i_mutex);
-+	trace_f2fs_sync_file_exit(inode, ret);
++	trace_f2fs_truncate_nodes_exit(dn->inode, freed);
+ 	return freed;
+ 
+ out_err:
+ 	f2fs_put_page(page, 1);
++	trace_f2fs_truncate_nodes_exit(dn->inode, ret);
  	return ret;
  }
  
-diff --git a/fs/f2fs/inode.c b/fs/f2fs/inode.c
-index f798ddf..41ea158 100644
---- a/fs/f2fs/inode.c
-+++ b/fs/f2fs/inode.c
-@@ -15,6 +15,7 @@
+@@ -612,6 +616,8 @@ static int truncate_partial_nodes(struct dnode_of_data *dn,
+ 	int i;
+ 	int idx = depth - 2;
  
- #include "f2fs.h"
- #include "node.h"
-+#include <trace/events/f2fs.h>
- 
- void f2fs_set_inode_flags(struct inode *inode)
- {
-@@ -93,6 +94,7 @@ struct inode *f2fs_iget(struct super_block *sb, unsigned long ino)
- 	struct inode *inode;
- 	int ret;
- 
-+	trace_f2fs_iget(sb, ino);
- 	inode = iget_locked(sb, ino);
- 	if (!inode)
- 		return ERR_PTR(-ENOMEM);
-@@ -236,6 +238,7 @@ void f2fs_evict_inode(struct inode *inode)
- {
- 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
- 
-+	trace_f2fs_evict_inode(inode);
- 	truncate_inode_pages(&inode->i_data, 0);
- 
- 	if (inode->i_ino == F2FS_NODE_INO(sbi) ||
-diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
-index 7c6e219..a16036a 100644
---- a/fs/f2fs/namei.c
-+++ b/fs/f2fs/namei.c
-@@ -18,6 +18,7 @@
- #include "node.h"
- #include "xattr.h"
- #include "acl.h"
-+#include <trace/events/f2fs.h>
- 
- static struct inode *f2fs_new_inode(struct inode *dir, umode_t mode)
- {
-@@ -230,6 +231,7 @@ static int f2fs_unlink(struct inode *dir, struct dentry *dentry)
- 	struct page *page;
- 	int err = -ENOENT;
- 
-+	trace_f2fs_unlink_enter(dir, dentry);
- 	f2fs_balance_fs(sbi);
- 
- 	de = f2fs_find_entry(dir, &dentry->d_name, &page);
-@@ -248,6 +250,7 @@ static int f2fs_unlink(struct inode *dir, struct dentry *dentry)
- 	/* In order to evict this inode,  we set it dirty */
- 	mark_inode_dirty(inode);
++	trace_f2fs_truncate_partial_nodes_enter(dn->inode,
++						 dn->data_blkaddr, dn->nid);
+ 	nid[0] = le32_to_cpu(ri->i_nid[offset[0] - NODE_DIR1_BLOCK]);
+ 	if (!nid[0])
+ 		return 0;
+@@ -652,6 +658,7 @@ static int truncate_partial_nodes(struct dnode_of_data *dn,
  fail:
-+	trace_f2fs_unlink_exit(inode, err);
+ 	for (i = depth - 3; i >= 0; i--)
+ 		f2fs_put_page(pages[i], 1);
++	trace_f2fs_truncate_partial_nodes_exit(dn->inode, err);
  	return err;
  }
  
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index a756204..0d5300b 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -29,6 +29,9 @@
- #include "segment.h"
- #include "xattr.h"
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/f2fs.h>
-+
- static struct kmem_cache *f2fs_inode_cachep;
- 
- enum {
-@@ -134,6 +137,7 @@ int f2fs_sync_fs(struct super_block *sb, int sync)
- {
- 	struct f2fs_sb_info *sbi = F2FS_SB(sb);
- 
-+	trace_f2fs_sync_fs(sb, sync);
- 	if (!sbi->s_dirty && !get_pages(sbi, F2FS_DIRTY_NODES))
- 		return 0;
- 
 diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
-new file mode 100644
-index 0000000..fd50db9
---- /dev/null
+index fd50db9..0d39f58 100644
+--- a/include/trace/events/f2fs.h
 +++ b/include/trace/events/f2fs.h
-@@ -0,0 +1,164 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM f2fs
+@@ -158,6 +158,114 @@ DEFINE_EVENT(f2fs_file_inode_ret, f2fs_unlink_exit,
+ 	TP_ARGS(inode, ret)
+ );
+ 
++DECLARE_EVENT_CLASS(f2fs__truncate_op,
++	TP_PROTO(struct inode *inode, block_t blk_addr, unsigned int nid),
 +
-+#if !defined(_TRACE_F2FS_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_F2FS_H
-+
-+#include <linux/tracepoint.h>
-+
-+
-+TRACE_EVENT(f2fs_sync_file_enter,
-+	TP_PROTO(struct file *file, int datasync),
-+
-+	TP_ARGS(file, datasync),
++	TP_ARGS(inode, blk_addr, nid),
 +
 +	TP_STRUCT__entry(
 +		__field(dev_t,	dev)
 +		__field(ino_t,	ino)
-+		__field(ino_t,	parent)
-+		__field(int,	datasync)
++		__field(block_t, addr)
++		__field(unsigned int,	nid)
 +	),
 +
 +	TP_fast_assign(
-+		struct dentry *dentry = file->f_path.dentry;
-+
-+		__entry->dev		= dentry->d_inode->i_sb->s_dev;
-+		__entry->ino		= dentry->d_inode->i_ino;
-+		__entry->datasync	= datasync;
-+		__entry->parent		= dentry->d_parent->d_inode->i_ino;
++		__entry->dev	= inode->i_sb->s_dev;
++		__entry->ino	= inode->i_ino;
++		__entry->addr	= blk_addr;
++		__entry->nid	= nid;
 +	),
 +
-+	TP_printk("dev %d,%d ino %lu parent %lu datasync %d ",
++	TP_printk("dev %d,%d ino %lu block_address %llu Nid %d ",
 +		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  (unsigned long) __entry->ino,
-+		  (unsigned long) __entry->parent, __entry->datasync)
++		  (unsigned long) __entry->ino, __entry->addr, __entry->nid)
 +);
 +
-+DECLARE_EVENT_CLASS(f2fs_file_inode_ret,
-+	TP_PROTO(struct inode *inode, int ret),
-+	TP_ARGS(inode, ret),
++DEFINE_EVENT(f2fs__truncate_op, f2fs_truncate_data_blocks_range_enter,
++
++	TP_PROTO(struct inode *inode, block_t blk_addr, unsigned int nid),
++
++	TP_ARGS(inode, blk_addr, nid)
++);
++
++DEFINE_EVENT(f2fs__truncate_op, f2fs_truncate_nodes_enter,
++
++	TP_PROTO(struct inode *inode, block_t blk_addr, unsigned int nid),
++
++	TP_ARGS(inode, blk_addr, nid)
++);
++
++DEFINE_EVENT(f2fs__truncate_op, f2fs_truncate_partial_nodes_enter,
++
++	TP_PROTO(struct inode *inode, block_t blk_addr, unsigned int nid),
++
++	TP_ARGS(inode, blk_addr, nid)
++);
++
++DECLARE_EVENT_CLASS(f2fs__truncate_op_exit,
++	TP_PROTO(struct inode *inode, int value),
++	TP_ARGS(inode, value),
 +
 +	TP_STRUCT__entry(
-+		__field(int,	ret)
-+		__field(ino_t,	ino)
 +		__field(dev_t,	dev)
++		__field(ino_t,	ino)
++		__field(int,	val)
 +	),
 +
 +	TP_fast_assign(
-+		__entry->ret		= ret;
-+		__entry->ino		= inode->i_ino;
-+		__entry->dev		= inode->i_sb->s_dev;
++		__entry->dev	= inode->i_sb->s_dev;
++		__entry->ino	= inode->i_ino;
++		__entry->val	= value;
 +	),
 +
-+	TP_printk("dev %d,%d ino %lu ret %d",
++	TP_printk("dev %d,%d ino %lu with return value %d ",
 +		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  (unsigned long) __entry->ino,
-+		  __entry->ret)
++		  (unsigned long) __entry->ino, __entry->val)
 +);
 +
-+DEFINE_EVENT(f2fs_file_inode_ret, f2fs_sync_file_exit,
++DEFINE_EVENT(f2fs__truncate_op_exit, f2fs_truncate_data_blocks_range_exit,
++
++	TP_PROTO(struct inode *inode, int nr_free),
++
++	TP_ARGS(inode, nr_free)
++);
++
++DEFINE_EVENT(f2fs__truncate_op_exit, f2fs_truncate_nodes_exit,
 +
 +	TP_PROTO(struct inode *inode, int ret),
 +
 +	TP_ARGS(inode, ret)
 +);
 +
-+TRACE_EVENT(f2fs_sync_fs,
-+	TP_PROTO(struct super_block *sb, int wait),
++DEFINE_EVENT(f2fs__truncate_op_exit, f2fs_truncate_partial_nodes_exit,
 +
-+	TP_ARGS(sb, wait),
++	TP_PROTO(struct inode *inode, int err),
 +
-+	TP_STRUCT__entry(
-+		__field(dev_t,	dev)
-+		__field(int,	wait)
-+
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev	= sb->s_dev;
-+		__entry->wait	= wait;
-+	),
-+
-+	TP_printk("dev %d,%d wait %d",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  __entry->wait)
++	TP_ARGS(inode, err)
 +);
 +
-+TRACE_EVENT(f2fs_iget,
-+	TP_PROTO(struct super_block *sb, unsigned long ino),
++TRACE_EVENT(f2fs_truncate,
 +
-+	TP_ARGS(sb, ino),
-+
-+	TP_STRUCT__entry(
-+		__field(dev_t,	dev)
-+		__field(unsigned long,	ino)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev	= sb->s_dev;
-+		__entry->ino	= ino;
-+	),
-+
-+	TP_printk("dev %d,%d ino %lu ",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  (unsigned long) __entry->ino)
-+);
-+
-+TRACE_EVENT(f2fs_evict_inode,
 +	TP_PROTO(struct inode *inode),
 +
 +	TP_ARGS(inode),
@@ -268,56 +222,21 @@ index 0000000..fd50db9
 +	TP_STRUCT__entry(
 +		__field(dev_t,	dev)
 +		__field(ino_t,	ino)
-+		__field(int,	nlink)
 +	),
 +
 +	TP_fast_assign(
 +		__entry->dev	= inode->i_sb->s_dev;
 +		__entry->ino	= inode->i_ino;
-+		__entry->nlink	= inode->i_nlink;
 +	),
 +
-+	TP_printk("dev %d,%d ino %lu nlink %d",
++	TP_printk("dev %d,%d ino %lu ",
 +		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  (unsigned long) __entry->ino, __entry->nlink)
++		  (unsigned long) __entry->ino)
 +);
 +
-+TRACE_EVENT(f2fs_unlink_enter,
-+	TP_PROTO(struct inode *parent, struct dentry *dentry),
-+
-+	TP_ARGS(parent, dentry),
-+
-+	TP_STRUCT__entry(
-+		__field(ino_t,	parent)
-+		__field(ino_t,	ino)
-+		__field(loff_t,	size)
-+		__field(dev_t,	dev)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->parent		= parent->i_ino;
-+		__entry->ino		= dentry->d_inode->i_ino;
-+		__entry->size		= dentry->d_inode->i_size;
-+		__entry->dev		= dentry->d_inode->i_sb->s_dev;
-+	),
-+
-+	TP_printk("dev %d,%d ino %lu size %lld parent %lu",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  (unsigned long) __entry->ino, __entry->size,
-+		  (unsigned long) __entry->parent)
-+);
-+
-+DEFINE_EVENT(f2fs_file_inode_ret, f2fs_unlink_exit,
-+
-+	TP_PROTO(struct inode *inode, int ret),
-+
-+	TP_ARGS(inode, ret)
-+);
-+
-+#endif /* _TRACE_F2FS_H */
-+
-+ /* This part must be outside protection */
-+#include <trace/define_trace.h>
+ #endif /* _TRACE_F2FS_H */
+ 
+  /* This part must be outside protection */
 -- 
 1.7.9.5
 
