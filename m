@@ -1,103 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163134Ab3DFB7f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 21:59:35 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:54732 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756336Ab3DFB7d (ORCPT
+	id S1163160Ab3DFCcV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 22:32:21 -0400
+Received: from mail-ia0-f173.google.com ([209.85.210.173]:50138 "EHLO
+	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754549Ab3DFCcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 21:59:33 -0400
+	Fri, 5 Apr 2013 22:32:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo5w=uJ2sXzXhyS0AyPFTbxPM44djdEMb6bR2SQu1O+u2A@mail.gmail.com>
-References: <CAErSpo5w=uJ2sXzXhyS0AyPFTbxPM44djdEMb6bR2SQu1O+u2A@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 5 Apr 2013 19:59:13 -0600
-Message-ID: <CAErSpo68qt+5oJ2u96z5TQsGpnvm5wmA+=CVzkwnYKZMNf0+mg@mail.gmail.com>
-Subject: Re: [GIT PULL] PCI updates for v3.9
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Yinghai Lu <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <7u61w2ppuct79kmjwclqv15y.1365211547178@email.android.com>
+References: <7u61w2ppuct79kmjwclqv15y.1365211547178@email.android.com>
+Date: Fri, 5 Apr 2013 19:32:19 -0700
+X-Google-Sender-Auth: RktUohvycKa2M1wawc1yvJFTSlw
+Message-ID: <CAE9FiQVuLCaCxTrgpVm7nmJbFkAWTRJqA9T6oJo3LSqSKwq3Fg@mail.gmail.com>
+Subject: Re: [PATCH v6] irq: add quirk for broken interrupt remapping on 55XX chipsets
+From: Yinghai Lu <yinghai@kernel.org>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Prarit Bhargava <prarit@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Don Dutile <ddutile@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Asit Mallick <asit.k.mallick@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc linux-kernel]
+On Fri, Apr 5, 2013 at 6:25 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
+> I'm sorry.  Forgot to change the wording of the error for the new model that I'm following here.  Although the message is mostly right as bios is responsible for setting and clearing the IRQ remapping feature bit in the chips capabilities register.
+>
+> I'll fix and repost Monday
 
-On Fri, Apr 5, 2013 at 7:31 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> Hi Linus,
->
-> Here are some fixes for v3.9.  They include fixes for an ASPM problem
-> that affects pre-1.1 PCIe devices, a kexec problem, the platform ROM
-> image problem, a couple hotplug issues related to PM, and a fix for
-> PCI-EISA bridges that have been broken for a long time.
->
-> Bjorn
->
->
-> The following changes since commit 8bb9660418e05bb1845ac1a2428444d78e322cc7:
->
->   Linux 3.9-rc4 (2013-03-23 16:52:44 -0700)
->
-> are available in the git repository at:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git
-> tags/pci-v3.9-fixes-1
->
-> for you to fetch changes up to de7d5f729c72638f41d7c17487bccb1c570ff144:
->
->   PCI/PM: Disable runtime PM of PCIe ports (2013-04-03 15:54:59 -0600)
->
-> ----------------------------------------------------------------
-> PCI updates for v3.9:
->
->   ASPM
->       Revert "PCI/ACPI: Request _OSC control before scanning PCI root bus"
->   kexec
->       PCI: Don't try to disable Bus Master on disconnected PCI devices
->   Platform ROM images
->       PCI: Add PCI ROM helper for platform-provided ROM images
->       nouveau: Attempt to use platform-provided ROM image
->       radeon: Attempt to use platform-provided ROM image
->   Hotplug
->       PCI/ACPI: Always resume devices on ACPI wakeup notifications
->       PCI/PM: Disable runtime PM of PCIe ports
->   EISA
->       EISA/PCI: Fix bus res reference
->       EISA/PCI: Init EISA early, before PNP
->
-> ----------------------------------------------------------------
-> Bjorn Helgaas (3):
->       Merge branch 'pci/mjg-rom' into for-linus
->       Merge branch 'pci/yinghai-eisa' into for-linus
->       Revert "PCI/ACPI: Request _OSC control before scanning PCI root bus"
->
-> Konstantin Khlebnikov (1):
->       PCI: Don't try to disable Bus Master on disconnected PCI devices
->
-> Matthew Garrett (3):
->       PCI: Add PCI ROM helper for platform-provided ROM images
->       nouveau: Attempt to use platform-provided ROM image
->       radeon: Attempt to use platform-provided ROM image
->
-> Rafael J. Wysocki (2):
->       PCI/ACPI: Always resume devices on ACPI wakeup notifications
->       PCI/PM: Disable runtime PM of PCIe ports
->
-> Yinghai Lu (2):
->       EISA/PCI: Fix bus res reference
->       EISA/PCI: Init EISA early, before PNP
->
->  drivers/acpi/pci_root.c                         | 76 ++++++++++++-------------
->  drivers/eisa/pci_eisa.c                         | 67 +++++++++++++++-------
->  drivers/gpu/drm/nouveau/core/subdev/bios/base.c | 17 ++++++
->  drivers/gpu/drm/radeon/radeon_bios.c            | 26 +++++++++
->  drivers/pci/pci-acpi.c                          | 15 ++---
->  drivers/pci/pci-driver.c                        |  5 +-
->  drivers/pci/pcie/portdrv_pci.c                  | 13 -----
->  drivers/pci/rom.c                               | 67 ++++++++++------------
->  include/linux/pci.h                             |  1 +
->  9 files changed, 169 insertions(+), 118 deletions(-)
+>>> diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+>>> index d56f8c1..2b56e92 100644
+>>> --- a/drivers/iommu/irq_remapping.c
+>>> +++ b/drivers/iommu/irq_remapping.c
+>>> @@ -19,6 +19,7 @@
+>>>  int irq_remapping_enabled;
+>>>
+>>>  int disable_irq_remap;
+>>> +int irq_remap_broken;
+>>>  int disable_sourceid_checking;
+>>>  int no_x2apic_optout;
+>>>
+>>> @@ -216,6 +217,17 @@ int irq_remapping_supported(void)
+>>>         if (disable_irq_remap)
+>>>                 return 0;
+>>>
+>>> +       if (irq_remap_broken) {
+>>> +               WARN_TAINT(1, TAIN_FIRMWARE_WORKAROUND,
+>>> +                          "This system BIOS has enabled interrupt remapping\n"
+>>> +                          "on a chipset that contains an erratum making that\n"
+>>> +                          "feature unstable.  Please reboot with nointremap\n"
+>>> +                          "added to the kernel command line and contact\n"
+>>> +                          "your BIOS vendor for an update");
+
+Also please put those warning code in to
+drivers/iommu/intel_irq_remapping.c::intel_irq_remapping_supported()
+
+It does not belong to drivers/iommu/irq_remapping.c.
+
+Thanks
+
+Yinghai
