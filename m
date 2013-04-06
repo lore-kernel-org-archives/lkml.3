@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163299Ab3DFLtj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 07:49:39 -0400
-Received: from mga03.intel.com ([143.182.124.21]:25940 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1163272Ab3DFLti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 07:49:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,420,1363158000"; 
-   d="scan'208";a="223605402"
-Message-ID: <51600BBE.7060506@intel.com>
-Date: Sat, 06 Apr 2013 19:49:18 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1163293Ab3DFLv0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 07:51:26 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:52478 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1163289Ab3DFLvY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Apr 2013 07:51:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Daniel Tang <dt.tangr@gmail.com>
+Subject: Re: [RFC PATCH arm: initial TI-Nspire support]
+Date: Sat, 6 Apr 2013 13:51:00 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        fabian@ritter-vogt.de, Lionel Debroux <lionel_debroux@yahoo.fr>,
+        linux-kernel@vger.kernel.org
+References: <6FE4B33E-A503-4A75-AEED-831CB2C06D83@gmail.com> <201304041112.25780.arnd@arndb.de> <8FB21B56-58BC-4530-8C7A-71A32856210D@gmail.com>
+In-Reply-To: <8FB21B56-58BC-4530-8C7A-71A32856210D@gmail.com>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, efault@gmx.de, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
-        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
-        riel@redhat.com
-Subject: Re: [patch v7 15/21] sched: pull all tasks from source group
-References: <1365040862-8390-1-git-send-email-alex.shi@intel.com> <1365040862-8390-16-git-send-email-alex.shi@intel.com> <87a9peesz7.fsf@sejong.aot.lge.com>
-In-Reply-To: <87a9peesz7.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201304061351.00889.arnd@arndb.de>
+X-Provags-ID: V02:K0:O18BLVMsKTIGEs6pa1Nv3GBN1zvRJ/EJFN8KMvbJzGT
+ u2l7kn+mvTqCQzjKuS+fIhIZtGbpGAKj7wcgtIuRyhlH0UWypg
+ YAyGDKEIMB9mSKKLyMobxlDWg4ZQwBwSOSeCLaZMu43wSGG4qP
+ DasXFJgSSjEtwoLzKVKaqYv/wWlL6id9quhGN3EADQbSygaIsW
+ QddgcGUHCrdjnj4xk5WBfF5SMp4YUgA4ki0HXgSHe68XzjzqE4
+ KQ39Y5vX+q6noU/PfIHDRZ4jnuOWKkBZLAh2WZJoVuoCoZ7iAi
+ 6d0Nr3/hal0H/Fyy/bvLOMoxal1pIB/smrT0dhk1H96DqrtYYn
+ NEBcUb0ZFTLJxXEkCBjk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2013 01:59 PM, Namhyung Kim wrote:
->> > -		if (capacity && rq->nr_running == 1 && wl > env->imbalance)
->> > +		if (rq->nr_running == 0 ||
->> > +			(!(env->flags & LBF_POWER_BAL) && capacity &&
->> > +				rq->nr_running == 1 && wl > env->imbalance))
-> Just out of curious.
+On Saturday 06 April 2013, Daniel Tang wrote:
+> Hi,
 > 
-> In load_balance(), we only move normal tasks, right?
+> First of all, thank you for your comments!
 > 
-> Then shouldn't it check rq->cfs.h_nr_running rather than rq->nr_running?
+> On 04/04/2013, at 10:12 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> 
+> > For new platforms, we want to have only the absolute minimum amount of
+> > code in arch/arm and move everything else into drivers. However, that
+> > is only possible using device tree. It should not add any significant
+> > complexity to your code, and you can easily bundle the device tree blob
+> > with the kernel.
+> 
+> Given that most of your comments described some very fundamental changes
+> (esp switching to DTB) to the structure of our port, we've decided we'll
+> probably start from scratch and fix the issues you outlined as we
+> reimplement our platform.
+> 
+> At the moment, we're working on getting a basic DTB-booting kernel working
+> so our next patch will be starting from basics.
 
-Yes, it seems so.
-What's your opinion of this, Peter?
+Ok, whichever way you prefer. If you have questions while working on this,
+feel free to join #armlinux on irc.freenode.net, there are usually other
+people working on the same things.
 
--- 
-Thanks
-    Alex
+	Arnd
