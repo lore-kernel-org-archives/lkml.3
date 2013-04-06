@@ -1,122 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932832Ab3DFVNM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 17:13:12 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:41126 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932713Ab3DFVNL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 17:13:11 -0400
-Date: Sat, 6 Apr 2013 17:13:07 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Message-ID: <20130406211307.GA32683@Krystal>
+	id S932876Ab3DFVNi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 17:13:38 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:48838 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932713Ab3DFVNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Apr 2013 17:13:37 -0400
+Message-ID: <51608FFD.2020706@ispras.ru>
+Date: Sun, 07 Apr 2013 01:13:33 +0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Vyacheslav Dubeyko <slava@dubeyko.com>
+CC: Al Viro <viro@zeniv.linux.org.uk>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Christoph Hellwig <hch@lst.de>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org,
+        Hin-Tak Leung <htl10@users.sourceforge.net>
+Subject: Re: [PATCH] hfs: add error checking for hfs_find_init()
+References: <1364593487-11034-1-git-send-email-khoroshilov@ispras.ru> <0D203BE4-D965-42FE-ADA7-831070860222@dubeyko.com>
+In-Reply-To: <0D203BE4-D965-42FE-ADA7-831070860222@dubeyko.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bcc: 
-Subject: Re: [PATCH] wfcqueue: add function for unsynchronized prepend
-Reply-To: 
-In-Reply-To: <20130329081016.GA15979@dcvr.yhbt.net>
-X-Editor: vi
-X-Info: http://www.efficios.com
+Hi Vyacheslav,
 
-* Eric Wong (normalperson@yhbt.net) wrote:
-> In some situations, it is necessary to prepend a node to a queue.
-> For epoll, this is necessary for two rare conditions:
-> 
-> * when the user triggers -EFAULT
-> * when reinjecting elements from the ovflist (implemented as a stack)
-> 
-> Signed-off-by: Eric Wong <normalperson@yhbt.net>
-> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> ---
->  This is on top of my other patch to implement __wfcq_enqueue
-> 
->  include/linux/wfcqueue.h | 35 +++++++++++++++++++++++++++--------
->  1 file changed, 27 insertions(+), 8 deletions(-)
-> 
-> diff --git a/include/linux/wfcqueue.h b/include/linux/wfcqueue.h
-> index a452ab9..4cb8f22 100644
-> --- a/include/linux/wfcqueue.h
-> +++ b/include/linux/wfcqueue.h
-> @@ -56,15 +56,17 @@
->   * [5] __wfcq_first
->   * [6] __wfcq_next
->   * [7] __wfcq_enqueue
-> + * [8] __wfcq_prepend
->   *
-> - *     [1] [2] [3] [4] [5] [6] [7]
-> - * [1]  -   -   -   -   -   -   X
-> - * [2]  -   -   -   -   -   -   X
-> - * [3]  -   -   X   X   X   X   X
-> - * [4]  -   -   X   -   X   X   X
-> - * [5]  -   -   X   X   -   -   X
-> - * [6]  -   -   X   X   -   -   X
-> - * [7]  X   X   X   X   X   X   X
-> + *     [1] [2] [3] [4] [5] [6] [7] [8]
-> + * [1]  -   -   -   -   -   -   X   X
-> + * [2]  -   -   -   -   -   -   X   X
-> + * [3]  -   -   X   X   X   X   X   X
-> + * [4]  -   -   X   -   X   X   X   X
-> + * [5]  -   -   X   X   -   -   X   X
-> + * [6]  -   -   X   X   -   -   X   X
-> + * [7]  X   X   X   X   X   X   X   X
-> + * [8]  X   X   X   X   X   X   X   X
+On 03/30/2013 03:35 PM, Vyacheslav Dubeyko wrote:
+>> Found by Linux Driver Verification project (linuxtesting.org).
+>>
+>> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+>> ---
+>> fs/hfs/catalog.c |   12 +++++++++---
+>> fs/hfs/dir.c     |    8 ++++++--
+>> fs/hfs/extent.c  |   48 +++++++++++++++++++++++++++++++++---------------
+>> fs/hfs/hfs_fs.h  |    2 +-
+>> fs/hfs/inode.c   |   11 +++++++++--
+>> fs/hfs/super.c   |    4 +++-
+>> 6 files changed, 61 insertions(+), 24 deletions(-)
+>>
+>> diff --git a/fs/hfs/catalog.c b/fs/hfs/catalog.c
+>> index 424b033..9569b39 100644
+>> --- a/fs/hfs/catalog.c
+>> +++ b/fs/hfs/catalog.c
+>> @@ -92,7 +92,9 @@ int hfs_cat_create(u32 cnid, struct inode *dir, struct qstr *str, struct inode *
+>> 		return -ENOSPC;
+>>
+>> 	sb = dir->i_sb;
+>> -	hfs_find_init(HFS_SB(sb)->cat_tree, &fd);
+>> +	err = hfs_find_init(HFS_SB(sb)->cat_tree, &fd);
+>> +	if (err)
+>> +		return err;
+>>
+>> 	hfs_cat_build_key(sb, fd.search_key, cnid, NULL);
+>> 	entry_size = hfs_cat_build_thread(sb, &entry, S_ISDIR(inode->i_mode) ?
+>> @@ -214,7 +216,9 @@ int hfs_cat_delete(u32 cnid, struct inode *dir, struct qstr *str)
+>>
+>> 	dprint(DBG_CAT_MOD, "delete_cat: %s,%u\n", str ? str->name : NULL, cnid);
+>> 	sb = dir->i_sb;
+>> -	hfs_find_init(HFS_SB(sb)->cat_tree, &fd);
+>> +	res = hfs_find_init(HFS_SB(sb)->cat_tree, &fd);
+>> +	if (res)
+>> +		return res;
+>>
+>> 	hfs_cat_build_key(sb, fd.search_key, dir->i_ino, str);
+>> 	res = hfs_brec_find(&fd);
+>> @@ -281,7 +285,9 @@ int hfs_cat_move(u32 cnid, struct inode *src_dir, struct qstr *src_name,
+>> 	dprint(DBG_CAT_MOD, "rename_cat: %u - %lu,%s - %lu,%s\n", cnid, src_dir->i_ino, src_name->name,
+>> 		dst_dir->i_ino, dst_name->name);
+>> 	sb = src_dir->i_sb;
+>> -	hfs_find_init(HFS_SB(sb)->cat_tree, &src_fd);
+>> +	err = hfs_find_init(HFS_SB(sb)->cat_tree, &src_fd);
+>> +	if (err)
+>> +		return err;
+>> 	dst_fd = src_fd;
+>>
+>> 	/* find the old dir entry and read the data */
+>> diff --git a/fs/hfs/dir.c b/fs/hfs/dir.c
+>> index 5f7f1ab..e1c8048 100644
+>> --- a/fs/hfs/dir.c
+>> +++ b/fs/hfs/dir.c
+>> @@ -25,7 +25,9 @@ static struct dentry *hfs_lookup(struct inode *dir, struct dentry *dentry,
+>> 	struct inode *inode = NULL;
+>> 	int res;
+>>
+>> -	hfs_find_init(HFS_SB(dir->i_sb)->cat_tree, &fd);
+>> +	res = hfs_find_init(HFS_SB(dir->i_sb)->cat_tree, &fd);
+>> +	if (res)
+>> +		return ERR_PTR(res);
+>> 	hfs_cat_build_key(dir->i_sb, fd.search_key, dir->i_ino, &dentry->d_name);
+>> 	res = hfs_brec_read(&fd, &rec, sizeof(rec));
+>> 	if (res) {
+>> @@ -63,7 +65,9 @@ static int hfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
+>> 	if (filp->f_pos >= inode->i_size)
+>> 		return 0;
+>>
+>> -	hfs_find_init(HFS_SB(sb)->cat_tree, &fd);
+>> +	err = hfs_find_init(HFS_SB(sb)->cat_tree, &fd);
+>> +	if (err)
+>> +		return err;
+>> 	hfs_cat_build_key(sb, fd.search_key, inode->i_ino, NULL);
+>> 	err = hfs_brec_find(&fd);
+>> 	if (err)
+>> diff --git a/fs/hfs/extent.c b/fs/hfs/extent.c
+>> index a67955a..813447b 100644
+>> --- a/fs/hfs/extent.c
+>> +++ b/fs/hfs/extent.c
+>> @@ -107,7 +107,7 @@ static u16 hfs_ext_lastblock(struct hfs_extent *ext)
+>> 	return be16_to_cpu(ext->block) + be16_to_cpu(ext->count);
+>> }
+>>
+>> -static void __hfs_ext_write_extent(struct inode *inode, struct hfs_find_data *fd)
+>> +static int __hfs_ext_write_extent(struct inode *inode, struct hfs_find_data *fd)
+>> {
+>> 	int res;
+>>
+>> @@ -116,26 +116,31 @@ static void __hfs_ext_write_extent(struct inode *inode, struct hfs_find_data *fd
+>> 	res = hfs_brec_find(fd);
+>> 	if (HFS_I(inode)->flags & HFS_FLG_EXT_NEW) {
+>> 		if (res != -ENOENT)
+>> -			return;
+>> +			return res;
+>> 		hfs_brec_insert(fd, HFS_I(inode)->cached_extents, sizeof(hfs_extent_rec));
+>> 		HFS_I(inode)->flags &= ~(HFS_FLG_EXT_DIRTY|HFS_FLG_EXT_NEW);
+>> 	} else {
+>> 		if (res)
+>> -			return;
+>> +			return res;
+>> 		hfs_bnode_write(fd->bnode, HFS_I(inode)->cached_extents, fd->entryoffset, fd->entrylength);
+>> 		HFS_I(inode)->flags &= ~HFS_FLG_EXT_DIRTY;
+>> 	}
+>> +	return 0;
+>> }
+> As I see, this fix makes sense and for hfsplus also. Please, make it and for hfsplus.
+Sorry, I did not catch which fix do you mean. Could you please clarify it.
 
-I don't think this table is accurate, and there is likely an issue with
-the implementation below.
+Thank you,
+Alexey
 
-AFAIU, you plan to use wait-free enqueue (to tail) concurrently with
-enqueue to head (prepend). Therefore, the table above should reflect
-this.
-
-I'll look into this and try to come up with a correct implementation.
-
-Thanks,
-
-Mathieu
-
->   *
->   * Besides locking, mutual exclusion of dequeue, splice and iteration
->   * can be ensured by performing all of those operations from a single
-> @@ -441,6 +443,23 @@ static inline enum wfcq_ret __wfcq_splice(
->  }
->  
->  /*
-> + * __wfcq_prepend: prepend a node into a queue, requiring mutual exclusion.
-> + *
-> + * No memory barriers are issued.  Mutual exclusion is the responsibility
-> + * of the caller.
-> + */
-> +static inline void __wfcq_prepend(struct wfcq_head *head,
-> +				struct wfcq_tail *tail, struct wfcq_node *node)
-> +{
-> +	node->next = head->node.next;
-> +	head->node.next = node;
-> +
-> +	/* if the queue was empty before, it is no longer empty now */
-> +	if (tail->p == &head->node)
-> +		tail->p = node;
-> +}
-> +
-> +/*
->   * __wfcq_for_each: Iterate over all nodes in a queue,
->   * without dequeuing them.
->   * @head: head of the queue (struct wfcq_head pointer).
-> -- 
-> Eric Wong
-> 
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
