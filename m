@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752292Ab3DFQqT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 12:46:19 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:49524 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764577Ab3DFQqQ (ORCPT
+	id S1765933Ab3DFQqV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 12:46:21 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:62165 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750890Ab3DFQqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 12:46:16 -0400
+	Sat, 6 Apr 2013 12:46:15 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -25,9 +25,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
         Mike Galbraith <efault@gmx.de>
-Subject: [PATCH 4/7] sched: Update rq clock earlier in unthrottle_cfs_rq
-Date: Sat,  6 Apr 2013 18:45:57 +0200
-Message-Id: <1365266760-24725-5-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 3/7] sched: Update rq clock on tickless CPUs before calling check_preempt_curr()
+Date: Sat,  6 Apr 2013 18:45:56 +0200
+Message-Id: <1365266760-24725-4-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1365266760-24725-1-git-send-email-fweisbec@gmail.com>
 References: <1365266760-24725-1-git-send-email-fweisbec@gmail.com>
@@ -35,9 +35,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In this function we are making use of rq->clock right before the
-update of the rq clock, let's just call update_rq_clock() just
-before that to avoid using a stale rq clock value.
+check_preempt_wakeup() of fair class needs an uptodate sched clock
+value to update runtime stats of the current task.
+
+When a task is woken up, activate_task() is usually called right before
+ttwu_do_wakeup() unless the task is still in the runqueue. In this
+case we need to update the rq clock manually in case the CPU runs
+tickless because ttwu_do_wakeup() calls check_preempt_wakeup().
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -58,31 +62,45 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Paul Turner <pjt@google.com>
 Cc: Mike Galbraith <efault@gmx.de>
 ---
- kernel/sched/fair.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ kernel/sched/core.c |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6d35f8a..fdff363 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2278,14 +2278,15 @@ void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
- 	long task_delta;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 1826e00..e4ec9d5 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1352,6 +1352,12 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
  
- 	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
--
- 	cfs_rq->throttled = 0;
-+
-+	update_rq_clock(rq);
-+
- 	raw_spin_lock(&cfs_b->lock);
- 	cfs_b->throttled_time += rq->clock - cfs_rq->throttled_clock;
- 	list_del_rcu(&cfs_rq->throttled_list);
- 	raw_spin_unlock(&cfs_b->lock);
+ 	rq = __task_rq_lock(p);
+ 	if (p->on_rq) {
++		/*
++		 * Ensure check_preempt_curr() won't deal with a stale value
++		 * of rq clock if the CPU is tickless. BTW do we actually need
++		 * check_preempt_curr() to be called here?
++		 */
++		update_nohz_rq_clock(rq);
+ 		ttwu_do_wakeup(rq, p, wake_flags);
+ 		ret = 1;
+ 	}
+@@ -1529,8 +1535,17 @@ static void try_to_wake_up_local(struct task_struct *p)
+ 	if (!(p->state & TASK_NORMAL))
+ 		goto out;
  
--	update_rq_clock(rq);
- 	/* update hierarchical throttle state */
- 	walk_tg_tree_from(cfs_rq->tg, tg_nop, tg_unthrottle_up, (void *)rq);
+-	if (!p->on_rq)
++	if (!p->on_rq) {
+ 		ttwu_activate(rq, p, ENQUEUE_WAKEUP);
++	} else {
++		/*
++		 * Even if the task is on the runqueue we still
++		 * need to ensure check_preempt_curr() won't
++		 * deal with a stale rq clock value on a tickless
++		 * CPU
++		 */
++		update_nohz_rq_clock(rq);
++	}
  
+ 	ttwu_do_wakeup(rq, p, 0);
+ 	ttwu_stat(p, smp_processor_id(), 0);
 -- 
 1.7.5.4
 
