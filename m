@@ -1,186 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756432Ab3DFB0Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 21:26:16 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:51722 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756222Ab3DFB0P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 21:26:15 -0400
-Date: Fri, 05 Apr 2013 21:25:47 -0400
-Subject: Re: [PATCH v6] irq: add quirk for broken interrupt remapping on
- 55XX chipsets
-Message-ID: <7u61w2ppuct79kmjwclqv15y.1365211547178@email.android.com>
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Prarit Bhargava <prarit@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Don Dutile <ddutile@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Asit Mallick <asit.k.mallick@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        " linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+	id S1163130Ab3DFBry (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 21:47:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33961 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1162960Ab3DFBrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 21:47:53 -0400
+Date: Sat, 6 Apr 2013 02:47:48 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Darrick J. Wong" <darrick.wong@oracle.com>, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org, Joe Thornber <ejt@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [git pull] device-mapper fixes for 3.9-rc6
+Message-ID: <20130406014748.GA10444@agk-dp.fab.redhat.com>
+Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	"Darrick J. Wong" <darrick.wong@oracle.com>, dm-devel@redhat.com,
+	linux-kernel@vger.kernel.org, Joe Thornber <ejt@redhat.com>,
+	Mike Snitzer <snitzer@redhat.com>
+References: <20130321022625.GA25054@agk-dp.fab.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Spam-Score: -2.9 (--)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130321022625.GA25054@agk-dp.fab.redhat.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r361QHkn012658
 
-I'm sorry.  Forgot to change the wording of the error for the new model that I'm following here.  Although the message is mostly right as bios is responsible for setting and clearing the IRQ remapping feature bit in the chips capabilities register.
+Please pull from:
 
-I'll fix and repost Monday
+  git://git.kernel.org/pub/scm/linux/kernel/git/agk/linux-dm tags/dm-3.9-fixes-2
+ 
+to get the following device-mapper fixes for 3.9.
 
-Neil
+Thanks,
+Alasdair
+ 
+----------------------------------------------------------------
+A pair of patches to fix the writethrough mode of the device-mapper
+cache target when the device being cached is not itself wrapped with
+device-mapper.
 
-Yinghai Lu <yinghai@kernel.org> wrote:
+----------------------------------------------------------------
+Darrick J. Wong (1):
+      dm cache: fix writes to cache device in writethrough mode
 
->On Fri, Apr 5, 2013 at 12:31 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
->> A few years back intel published a spec update:
->> http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
->>
->> For the 5520 and 5500 chipsets which contained an errata (specificially errata
->> 53), which noted that these chipsets can't properly do interrupt remapping, and
->> as a result the recommend that interrupt remapping be disabled in bios.  While
->> many vendors have a bios update to do exactly that, not all do, and of course
->> not all users update their bios to a level that corrects the problem.  As a
->> result, occasionally interrupts can arrive at a cpu even after affinity for that
->> interrupt has be moved, leading to lost or spurrious interrupts (usually
->> characterized by the message:
->> kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
->>
->> There have been several incidents recently of people seeing this error, and
->> investigation has shown that they have system for which their BIOS level is such
->> that this feature was not properly turned off.  As such, it would be good to
->> give them a reminder that their systems are vulnurable to this problem.
->>
->> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
->> CC: Prarit Bhargava <prarit@redhat.com>
->> CC: Don Zickus <dzickus@redhat.com>
->> CC: Don Dutile <ddutile@redhat.com>
->> CC: Bjorn Helgaas <bhelgaas@google.com>
->> CC: Asit Mallick <asit.k.mallick@intel.com>
->> CC: David Woodhouse <dwmw2@infradead.org>
->> CC: linux-pci@vger.kernel.org
->> ---
->>
->> Change notes:
->>
->> v2)
->>
->> * Moved the quirk to the x86 arch, since consensus seems to be that the 55XX
->> chipset series is x86 only.  I decided however to keep the quirk as a regular
->> quirk, not an early_quirk.  Early quirks have no way currently to determine if
->> BIOS has properly disabled the feature in the iommu, at least not without
->> significant hacking, and since its quite possible this will be a short lived
->> quirk, should Don Z's workaround code prove successful (and it looks like it may
->> well), I don't think that necessecary.
->>
->> * Removed the WARNING banner from the quirk, and added the HW_ERR token to the
->> string, I opted to leave the newlines in place however, as I really couldnt
->> find a way to keep the text on a single line is still legible from a code
->> perspective.  I think theres enough language in there that using cscope on just
->> about any substring however will turn it up, and again, this may be a short
->> lived quirk.
->>
->> v3)
->>
->> * Removed defines from pci_ids.h, and used direct id values as per request from
->> Bjorn.
->>
->> v4)
->>
->> * Converted pr_warn to WARN_TAINT(TAINT_FIRMWARE_WORKAROUND) as per David
->> Woodhouse
->>
->> v5)
->>
->> * Moved check to an early quirk, and flagged the broken chip, so we could
->> reasonably disable irq remapping during bootup.
->>
->> v6)
->> * Clean up of stupid extra thrash in quirks.c
->> ---
->>  arch/x86/kernel/early-quirks.c | 25 +++++++++++++++++++++++++
->>  drivers/iommu/irq_remapping.c  | 12 ++++++++++++
->>  drivers/iommu/irq_remapping.h  |  1 +
->>  3 files changed, 38 insertions(+)
->>
->> diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
->> index 3755ef4..bfa3139 100644
->> --- a/arch/x86/kernel/early-quirks.c
->> +++ b/arch/x86/kernel/early-quirks.c
->> @@ -192,6 +192,27 @@ static void __init ati_bugs_contd(int num, int slot, int func)
->>  }
->>  #endif
->>
->> +#ifdef CONFIG_IRQ_REMAP
->> +static void __init intel_remapping_check(int num, int slot, int func)
->> +{
->> +       u8 revision;
->> +
->> +       revision = pci_read_config_byte(num, slot, func , PCI_REVISION_ID);
->> +
->> +       /*
->> +        * Revision 0x13 of this chipset supports irq remapping
->> +        * but has an erratum that breaks its behavior, flag it as such
->> +        */
->> +       if (revision == 0x13)
->> +               irq_remap_broken = 1;
->> +
->> +}
->> +#else
->> +static void __init intel_remapping_check(int num, int slot, int func)
->> +{
->> +}
->> +#endif
->> +
->>  #define QFLAG_APPLY_ONCE       0x1
->>  #define QFLAG_APPLIED          0x2
->>  #define QFLAG_DONE             (QFLAG_APPLY_ONCE|QFLAG_APPLIED)
->> @@ -221,6 +242,10 @@ static struct chipset early_qrk[] __initdata = {
->>           PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs },
->>         { PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
->>           PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs_contd },
->> +       { PCI_VENDOR_ID_INTEL, 0x3403, PCI_CLASS_BRIDGE_HOST,
->> +         PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
->> +       { PCI_VENDOR_ID_INTEL, 0x3406, PCI_CLASS_BRIDGE_HOST,
->> +         PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
->>         {}
->>  };
->>
->> diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
->> index d56f8c1..2b56e92 100644
->> --- a/drivers/iommu/irq_remapping.c
->> +++ b/drivers/iommu/irq_remapping.c
->> @@ -19,6 +19,7 @@
->>  int irq_remapping_enabled;
->>
->>  int disable_irq_remap;
->> +int irq_remap_broken;
->>  int disable_sourceid_checking;
->>  int no_x2apic_optout;
->>
->> @@ -216,6 +217,17 @@ int irq_remapping_supported(void)
->>         if (disable_irq_remap)
->>                 return 0;
->>
->> +       if (irq_remap_broken) {
->> +               WARN_TAINT(1, TAIN_FIRMWARE_WORKAROUND,
->> +                          "This system BIOS has enabled interrupt remapping\n"
->> +                          "on a chipset that contains an erratum making that\n"
->> +                          "feature unstable.  Please reboot with nointremap\n"
->> +                          "added to the kernel command line and contact\n"
->> +                          "your BIOS vendor for an update");
->
->What do you mean "This system BIOS has enabled interrupt remapping" ?
->BIOS have interrupt pre-enabled or BIOS just provide DMAR table ?
->
->Why do you need "Please reboot with nointremap" ?
->
->Thanks
->
->Yinghai
->
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Mike Snitzer (1):
+      dm cache: reduce bio front_pad size in writeback mode
+
+ drivers/md/dm-cache-target.c |   51 +++++++++++++++++++++++++++++++-----------
+ 1 file changed, 38 insertions(+), 13 deletions(-)
