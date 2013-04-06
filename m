@@ -1,96 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423230Ab3DFPxY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 11:53:24 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:45058 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423208Ab3DFPxW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 11:53:22 -0400
-Date: Sat, 6 Apr 2013 17:53:17 +0200
-From: Robert Richter <rric@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Borislav Petkov <bp@suse.de>
-Subject: Re: [RFC PATCH 1/3] perf: Add persistent events
-Message-ID: <20130406155317.GE11652@rric.localhost>
-References: <1363352789-17991-1-git-send-email-bp@alien8.de>
- <1363352789-17991-2-git-send-email-bp@alien8.de>
+	id S1423247Ab3DFQBH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 12:01:07 -0400
+Received: from smtp3.nethome.no ([92.62.33.13]:36873 "EHLO smtp.nethome.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1423221Ab3DFQBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Apr 2013 12:01:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363352789-17991-2-git-send-email-bp@alien8.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Sat, 06 Apr 2013 18:00:59 +0200
+From: peterasplund@gentoo.se
+To: Kent Yoder <shpedoikal@gmail.com>
+Cc: <Peter.Huewe@infineon.com>, <mail@srajiv.net>, <aaron.lu@intel.com>,
+        <tpmdd-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>
+Subject: Re: [tpmdd-devel] =?UTF-8?Q?tpm=5Ftis=20driver=20failed=20to=20su?=
+ =?UTF-8?Q?spend=2C=20error=20-=36=32?=
+In-Reply-To: <CAM0nabGXCfNipOHhzhoFT-yAN-RDOZG9EObQCY-QdRM5LfMCfQ@mail.gmail.com>
+References: <20130319023440.GA12425@aaronlu.sh.intel.com>
+ <CAA25o9RJJ5Rkti9_fTJz2ieaHvrtSp5mE_2LTW_t16_cf_TNcg@mail.gmail.com>
+ <ed364e68730267510d49b2bdc38679a0@gentoo.se>
+ <CAEQAOwpmnLXBCJQTf_xU-oSKvAtmpQjHWwMYDm_QOsP+1Kd_aQ@mail.gmail.com>
+ <CAEQAOwqWL=WekQqg5WY8TGxzB3x9nB9MVj_UTAVK0ro7TqB2WQ@mail.gmail.com>
+ <51540408.3000702@intel.com>
+ <74A44E99E3274B4CB570415926B37D4414B14E@MUCSE501.eu.infineon.com>
+ <733a6b303b7e9a3c4fb396acad9d9c5c@gentoo.se>
+ <CAM0nabGXCfNipOHhzhoFT-yAN-RDOZG9EObQCY-QdRM5LfMCfQ@mail.gmail.com>
+Message-ID: <d9741eb17fbc5731469a79b8bca3ed07@gentoo.se>
+User-Agent: Roundcube Webmail/0.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Boris,
+2013-04-02 16:03 skrev Kent Yoder:
+> Hi Peter,
+>
+> On Mon, Apr 1, 2013 at 4:17 PM,  <peterasplund@gentoo.se> wrote:
+>> 2013-03-28 14:12 skrev Peter.Huewe@infineon.com:
+>>> What also might be worth a look - in your bugzilla it states:
+>>> [ 0.225891] pnp 00:0a: Plug and Play ACPI device, IDs IFX0102 
+>>> PNP0c31
+>>> (active)
+>>> [ 9.150673] tpm_tis 00:0a: 1.2 TPM (device-id 0xB, rev-id 16)
+>>> [ 9.292148] tpm_tis 00:0a: Adjusting TPM timeout parameters.
+>>> [ 10.084067] tpm_tis 00:0a: A TPM error (7) occurred attempting to
+>>> read a pcr
+>>> value
+>>> [ 10.084077] tpm_tis 00:0a: TPM is disabled/deactivated (0x7)
+>>>
+>>>
+>>> Can you perhaps try to enable your TPM in the BIOS? It's quite 
+>>> often
+>>> hidden under "embedded security device" or "system security".
+>>> Quite often you have to have a bios password set to access these
+>>> settings.
+>>> If your system does not have bios support for TPMs, please tell me 
+>>> so
+>>> and I'll try to help you out.
+>>>
+>>
+>> I've enabled it in BIOS now, and the output seems to be a bit
+>> different. Not too uplifting though...
+>>
+>> root@zepto:/home/peter# dmesg | grep tpm
+>> [   14.631662] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
+>> [   14.748276] tpm_tis 00:08: Adjusting TPM timeout parameters.
+>> [   34.908128] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+>> [  125.992108] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+>> [  212.908502] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+>> root@zepto:/home/peter# tpm_version
+>> Tspi_Context_Connect failed: 0x00003011 - layer=tsp, code=0011 (17),
+>> Communication failure
+>> root@zepto:/home/peter# tcsd -f
+>> TCSD TDDL ioctl: (25) Inappropriate ioctl for device
+>> TCSD TDDL Falling back to Read/Write device support.
+>> TCSD TDDL ERROR: write to device /dev/tpm0 failed: Timer expired
+>> TCSD TCS ERROR: TCS GetCapability failed with result = 0x1087
+>
+>   Can you cat /sys/class/misc/tpm0/device/timeouts? Ivan Pryvalov
+> reported that his TPM showed values that were too small to keep from
+> causing timeouts waiting on TPM commands, but too big to trigger the
+> driver's code to scale them.  (He saw 12000 for the 3 timeout 
+> values.)
+>
+Hi Kent
 
-On 15.03.13 14:06:27, Borislav Petkov wrote:
-> Add the needed pieces for persistent events which makes them
-> process-agnostic. Also, make their buffers read-only when mmaping them
-> from userspace.
+The values I'm seeing are:
 
-> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-> index 9fa9c622a7f4..4a4ae56195e1 100644
-> --- a/include/uapi/linux/perf_event.h
-> +++ b/include/uapi/linux/perf_event.h
-> @@ -270,8 +270,9 @@ struct perf_event_attr {
->  
->  				exclude_callchain_kernel : 1, /* exclude kernel callchains */
->  				exclude_callchain_user   : 1, /* exclude user callchains */
-> +				persistent     :  1, /* always-on event */
+root@zepto:~# cat /sys/class/misc/tpm0/device/timeouts
+752000 2000000 752000 752000 [adjusted]
 
-based on the discussion we have had a couple of days ago I got the
-idea that we do not necessarily need the persistent flag. The purpose
-of the persistent flag is to indicate that an existing event buffer
-that is already enabled should be used. This means the buffer is
-shared by multiple consumers. Enabled events with the following
-conditions allow this too:
+So I guess these are within a normal range?
 
- * buffer mappings are readonly,
- * event is systemwide,
- * struct perf_event_attr is identical.
+Thanks,
+Peter
 
-This means that an event with readonly buffers (PROT_WRITE unset,
-over-write unread data) and the same struct perf_event_attr can be
-simply reused. So, we don't need the flag: When setting up a
-systemwide and readonly event we just check if there is already one
-event running. If so we increment the use count of that event and
-share its buffer, otherwise we create a new event.
-
-This also has the advantage that the syscall i/f does not change. We
-simply setup the event in the same way as we do already. Maybe the
-only thing we need is a sysfs extension to report existing systemwide
-events to userland.
-
-Now, to have persistent events in the sense that the event is running
-since system startup, we simply enable an in-kernel-counter. If
-userland later sets up the same event, the kernel is aware of the
-already running counter and redirects it to its buffer and all
-(persistent) samples of the current buffer are now available to
-userland.
-
-The above also has the advantage of sharing systemwide events which
-saves system resources, e.g. hardware counters. Suppose two processes
-are collecting cpu-clocks, currently there are two hw counters and
-buffers used for this, but only one counter would be sufficient.
-
-I currently see the following problem with the approach. If we map to
-an already running counter, there might be samples in the buffer that
-had been collected before the syscall was setup. But the profiling
-tool might be interested only in newer samples. So userland must be
-aware of this and might be able to drop those samples. This should be
-also backward compatible with the existing syscall i/f.
-
-Another problem is different buffer size. I don't know if it is
-possible to simply resize mmap'ed regions to the biggest buffer
-requested. Though this problem already exist with your code.
-
-Maybe it's worth to look at this approach. I need to review more perf
-code for this.
-
--Robert
+>  If you're seeing similar values, can you try the attached patch?
+>
+> Thanks,
+> Kent
+>
+>> /Peter A
+>>
+>> 
+>> ------------------------------------------------------------------------------
+>> Own the Future-Intel&reg; Level Up Game Demo Contest 2013
+>> Rise to greatness in Intel's independent game demo contest.
+>> Compete for recognition, cash, and the chance to get your game
+>> on Steam. $5K grand prize plus 10 genre and skill prizes.
+>> Submit your demo by 6/6/13. http://p.sf.net/sfu/intel_levelupd2d
+>> _______________________________________________
+>> tpmdd-devel mailing list
+>> tpmdd-devel@lists.sourceforge.net
+>> https://lists.sourceforge.net/lists/listinfo/tpmdd-devel
