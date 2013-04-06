@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423342Ab3DFQnv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 12:43:51 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:53086 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423316Ab3DFQnu (ORCPT
+	id S1752890Ab3DFQpG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 12:45:06 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:38884 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab3DFQpE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 12:43:50 -0400
-From: Jiang Liu <liuj97@gmail.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] AVR32: fix building warnings caused by redifinitions of HZ
-Date: Sun,  7 Apr 2013 00:43:36 +0800
-Message-Id: <1365266616-8424-1-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-To: unlisted-recipients:; (no To-header on input)
+	Sat, 6 Apr 2013 12:45:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <51601B25.5050801@gmx.de>
+References: <515DB2A6.7020902@gmx.de>
+	<CAFLxGvyDxdL9BJHFH5O6OSqZ3ZyBatBvmZGJWP3B=D=0xcgVng@mail.gmail.com>
+	<51601958.3090806@gmx.de>
+	<51601B25.5050801@gmx.de>
+Date: Sat, 6 Apr 2013 18:45:02 +0200
+Message-ID: <CAFLxGvzQ=_jGr+oaRfOPKdEV3YogDYwHN3UwUXtcFArnV2bkCg@mail.gmail.com>
+Subject: Re: user mode linux: trinity syscall "madvise" triggers quickly BUG:
+ Bad page map
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
+Cc: "user-mode-linux-user@lists.sourceforge.net" 
+	<user-mode-linux-user@lists.sourceforge.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix building warnings caused by redifinitions of HZ:
-In file included from /ws/linux/kernel/linux.git/include/uapi/linux/param.h:4,
-                 from include/linux/timex.h:63,
-                 from include/linux/jiffies.h:8,
-                 from include/linux/ktime.h:25,
-                 from include/linux/timer.h:5,
-                 from include/linux/workqueue.h:8,
-                 from include/linux/srcu.h:34,
-                 from include/linux/notifier.h:15,
-                 from include/linux/memory_hotplug.h:6,
-                 from include/linux/mmzone.h:777,
-                 from include/linux/gfp.h:4,
-                 from arch/avr32/mm/init.c:10:
-/ws/linux/kernel/linux.git/arch/avr32/include/asm/param.h:6:1: warning: "HZ" redefined
-In file included from /ws/linux/kernel/linux.git/arch/avr32/include/asm/param.h:4,
-                 from /ws/linux/kernel/linux.git/include/uapi/linux/param.h:4,
-                 from include/linux/timex.h:63,
-                 from include/linux/jiffies.h:8,
-                 from include/linux/ktime.h:25,
-                 from include/linux/timer.h:5,
-                 from include/linux/workqueue.h:8,
-                 from include/linux/srcu.h:34,
-                 from include/linux/notifier.h:15,
-                 from include/linux/memory_hotplug.h:6,
-                 from include/linux/mmzone.h:777,
-                 from include/linux/gfp.h:4,
-                 from arch/avr32/mm/init.c:10:
-/ws/linux/kernel/linux.git/arch/avr32/include/uapi/asm/param.h:6:1: warning: this is the location of the previous definition
+On Sat, Apr 6, 2013 at 2:55 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
+> On 04/06/2013 02:47 PM, Toralf Förster wrote:
+>> On 04/06/2013 01:43 PM, richard -rw- weinberger wrote:
+>>>> What I get with the this trinity command line
+>>>>
+>>>> gt; trinity --children 2 -c madvise
+>>>
+>>> Does the attached patch fix the problem?
+>>
+>> yes, the issue for this syscall is fixed now.
+>>
+>
+> But now I get - after running this command for a longer time :
+>
+>
+> 2013-04-06T14:49:55.755+02:00 trinity kernel: do_syscall_stub : ret = -12, offset = 1052680, data = 3f2ff008
+> 2013-04-06T14:49:55.755+02:00 trinity kernel: do_syscall_stub: syscall 192 failed, return value = 0xfffffff4, expected return value = 0x280e5000
+> 2013-04-06T14:49:55.755+02:00 trinity kernel: syscall parameters: 0x280e5000 0x1000 0x7 0x11 0x3 0x11cba
+> 2013-04-06T14:49:55.755+02:00 trinity kernel: Failed to flush page for address 0x280e5000
+> 2013-04-06T14:49:57.600+02:00 trinity kernel: do_syscall_stub : ret = -12, offset = 1052680, data = 3f397008
+> 2013-04-06T14:49:57.600+02:00 trinity kernel: do_syscall_stub: syscall 192 failed, return value = 0xfffffff4, expected return value = 0x280e5000
+> 2013-04-06T14:49:57.600+02:00 trinity kernel: syscall parameters: 0x280e5000 0x1000 0x7 0x11 0x3 0x1ad80
+> 2013-04-06T14:49:57.600+02:00 trinity kernel: Failed to flush page for address 0x280e5000
+> 2013-04-06T14:50:01.000+02:00 trinity cron[1071]: (root) CMD (test -x /usr/sbin/run-crons && /usr/sbin/run-crons)
+> 2013-04-06T14:51:15.336+02:00 trinity kernel: do_syscall_stub : ret = -12, offset = 1052680, data = 3f2fe008
+> 2013-04-06T14:51:15.336+02:00 trinity kernel: do_syscall_stub: syscall 192 failed, return value = 0xfffffff4, expected return value = 0x280e3000
+> 2013-04-06T14:51:15.336+02:00 trinity kernel: syscall parameters: 0x280e3000 0x1000 0x7 0x11 0x3 0xd561
+> 2013-04-06T14:51:15.336+02:00 trinity kernel: Failed to flush page for address 0x280e3000
+> 2013-04-06T14:51:20.224+02:00 trinity kernel: do_syscall_stub : ret = -12, offset = 1052680, data = 3f394008
+> 2013-04-06T14:51:20.224+02:00 trinity kernel: do_syscall_stub: syscall 192 failed, return value = 0xfffffff4, expected return value = 0x280e5000
+> 2013-04-06T14:51:20.224+02:00 trinity kernel: syscall parameters: 0x280e5000 0x1000 0x7 0x11 0x3 0x29571
+> 2013-04-06T14:51:20.224+02:00 trinity kernel: Failed to flush page for address 0x280e5000
+> 2013-04-06T14:52:34.379+02:00 trinity kernel: do_syscall_stub : ret = -12, offset = 1052680, data = 3f22a008
+> 2013-04-06T14:52:34.379+02:00 trinity kernel: do_syscall_stub: syscall 192 failed, return value = 0xfffffff4, expected return value = 0x280e3000
+> 2013-04-06T14:52:34.379+02:00 trinity kernel: syscall parameters: 0x280e3000 0x1000 0x7 0x11 0x3 0x9b50
+> 2013-04-06T14:52:34.379+02:00 trinity kernel: Failed to flush page for address 0x280e3000
+> 2013-04-06T14:52:40.422+02:00 trinity kernel: do_syscall_stub : ret = -12, offset = 1052680, data = 3f397008
+> 2013-04-06T14:52:40.422+02:00 trinity kernel: do_syscall_stub: syscall 192 failed, return value = 0xfffffff4, expected return value = 0x280e3000
+> 2013-04-06T14:52:40.422+02:00 trinity kernel: syscall parameters: 0x280e3000 0x1000 0x7 0x11 0x3 0xde37
+> 2013-04-06T14:52:40.422+02:00 trinity kernel: Failed to flush page for address 0x280e3000
+>
+> and the appropriate linux - process at the host process runs at 100%
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
-Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Cc: linux-kernel@vger.kernel.org
----
- arch/avr32/include/uapi/asm/param.h |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+You are running out of available memory mappings on the host side.
+mmap() fails because you have too much mappings installed.
+See vm.max_map_count
 
-diff --git a/arch/avr32/include/uapi/asm/param.h b/arch/avr32/include/uapi/asm/param.h
-index d28aa5e..abda103 100644
---- a/arch/avr32/include/uapi/asm/param.h
-+++ b/arch/avr32/include/uapi/asm/param.h
-@@ -2,7 +2,11 @@
- #define _UAPI__ASM_AVR32_PARAM_H
- 
- 
--#ifndef HZ
-+#ifndef __KERNEL__
-+   /*
-+    * Technically, this is wrong, but some old apps still refer to it.
-+    * The proper way to get the HZ value is via sysconf(_SC_CLK_TCK).
-+    */
- # define HZ		100
- #endif
- 
--- 
-1.7.9.5
-
+--
+Thanks,
+//richard
