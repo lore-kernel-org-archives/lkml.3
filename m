@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422683Ab3DFL0o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 07:26:44 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:43826 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932834Ab3DFL0n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 07:26:43 -0400
-Date: Sat, 6 Apr 2013 13:26:41 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-cc: Linux/PPC Development <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: Build regressions/improvements in v3.9-rc5
-In-Reply-To: <alpine.DEB.2.00.1304061323250.9581@ayla.of.borg>
-Message-ID: <alpine.DEB.2.00.1304061324130.9593@ayla.of.borg>
-References: <alpine.DEB.2.00.1304061323250.9581@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1163286Ab3DFL1F (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 07:27:05 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46829 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1163238Ab3DFL1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Apr 2013 07:27:03 -0400
+Date: Sat, 6 Apr 2013 13:26:57 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Michael D. Setzer II" <msetzerii@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: Error in linux-3.0.72 build.
+Message-ID: <20130406112657.GA3625@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Michael D. Setzer II" <msetzerii@gmail.com>,
+	linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+References: <515FF835.28644.1FF1E@msetzerii.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <515FF835.28644.1FF1E@msetzerii.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 6 Apr 2013, Geert Uytterhoeven wrote:
-> JFYI, when comparing v3.9-rc5 to v3.9-rc4[3], the summaries are:
->   - build errors: +129/-0
+On Sat, Apr 06, 2013 at 08:25:57PM +1000, Michael D. Setzer II wrote:
+> Just downloaded new kernels, and find this error in build.
+> 
+> fs/built-in.o: In function `find_group_flex':
+> /home/msetzerii/data/linux-3.0.72/fs/ext4/ialloc.c:359: undefined 
+> reference to `__udivdi3'
+> /home/msetzerii/data/linux-3.0.72/fs/ext4/ialloc.c:374: undefined 
+> reference to `__udivdi3'
+> make: *** [.tmp_vmlinux1] Error 1
 
-> Note that there may be false regressions, as some logs are incomplete.
-> Still, they're build errors/warnings.
+Looks like your compiler is generating 64-bit division which is a call
+into libgcc. Which gcc version are you using?
 
-I think the only real one (in powerpc-randconfig) is:
++ext4 folks.
 
-+ arch/powerpc/kernel/tm.S: Error: unsupported relocation against THREAD_VR0:  => 323
-+ arch/powerpc/kernel/tm.S: Error: unsupported relocation against THREAD_VSCR:  => 320
+-- 
+Regards/Gruss,
+    Boris.
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/6041/ (118 out of 117 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/6015/ (80 out of 117 configs)
-
-Gr{oetje,eeting}s,
-
-						Geert
-
+Sent from a fat crate under my desk. Formatting is fine.
 --
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
