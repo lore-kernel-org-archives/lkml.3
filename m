@@ -1,93 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422896Ab3DFNQD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 09:16:03 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:59791 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422801Ab3DFNQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 09:16:00 -0400
-Date: Sat, 6 Apr 2013 09:15:14 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Subject: Re: Excessive stall times on ext4 in 3.9-rc2
-Message-ID: <20130406131514.GB7816@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Jiri Slaby <jslaby@suse.cz>, Mel Gorman <mgorman@suse.de>,
-	linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-	Linux-MM <linux-mm@kvack.org>
-References: <20130402142717.GH32241@suse.de>
- <20130402150651.GB31577@thunk.org>
- <20130402151436.GC31577@thunk.org>
- <20130403101925.GA7341@suse.de>
- <515F4DA3.2000000@suse.cz>
- <20130405231635.GA6521@thunk.org>
- <515FCEEC.9070504@suse.cz>
+	id S1422912Ab3DFNZI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 09:25:08 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:55091 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757236Ab3DFNZG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Apr 2013 09:25:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Daniel Tang <dt.tangr@gmail.com>
+Subject: Re: [RFC PATCH arm: initial TI-Nspire support]
+Date: Sat, 6 Apr 2013 15:24:56 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        fabian@ritter-vogt.de, Lionel Debroux <lionel_debroux@yahoo.fr>,
+        linux-kernel@vger.kernel.org
+References: <6FE4B33E-A503-4A75-AEED-831CB2C06D83@gmail.com> <201304061351.00889.arnd@arndb.de> <F832F4F9-8162-43B8-B9E0-D5D8C8B8C77A@gmail.com>
+In-Reply-To: <F832F4F9-8162-43B8-B9E0-D5D8C8B8C77A@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515FCEEC.9070504@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304061524.56502.arnd@arndb.de>
+X-Provags-ID: V02:K0:mV1u+fQcJ6A4GU4uByFQEj0V8nS0yNt2EfhF2grCyfr
+ 8Vw81naj1vPiOFYEEQ/Hx9VSVC3EpkSrCqKQkVnVcsMb8uNshI
+ qaolEX3uiSZvRiWDvZO6+HMzZwJkkUjesg9PglESzyq89E+XED
+ RjyvWo7ucwLBrG19e2TIuUgRO3UhAF8Z5du4a4udikHDmtz9SP
+ gkzp9y9Ntomdipd+wfT6MfYLEqZ9ivgawCVbT1dfczi82oKoRD
+ 1H4JHW8ugQHenfG/N8lIWIgXoAN/jT8q9XCTK5uWlaiYJGWGjg
+ C7PUxBPq4A8zd3rZbYcagveyhZKnzOD6HebHgszbDh6b5kHGzk
+ EVEOvZWiEq/rhwHP/UvM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 06, 2013 at 09:29:48AM +0200, Jiri Slaby wrote:
+On Saturday 06 April 2013, Daniel Tang wrote:
+> Hi,
 > 
-> I'm not sure, as I am using -next like for ever. But sure, there was a
-> kernel which didn't ahve this problem.
+> 
+> On 06/04/2013, at 10:51 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > 
+> > Ok, whichever way you prefer. If you have questions while working on this,
+> > feel free to join #armlinux on irc.freenode.net, there are usually other
+> > people working on the same things.
+> > 
+> 
+> Cheers.
+> 
+> We already have something basic that boots successfully using device trees. 
+> 
+> Some comments before we continue would be greatly appreciated.
+> 
+> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
 
-Any chance you could try rolling back to 3.2 or 3.5 to see if you can
-get a starting point?  Even a high-level bisection search would be
-helpful to give us a hint.
+Wow, that was quick!
 
->Ok,
->  dd if=/dev/zero of=xxx
->is enough instead of "kernel update".
+The patch looks great overall, I just found a few details and have some comments
+that you might find helpful.
 
-Was the dd running in the VM or in the host OS?  Basically, is running
-the VM required?
+>  arch/arm/Kconfig                                |   13 ++
+>  arch/arm/Makefile                               |    3 +-
+>  arch/arm/boot/dts/nspire-cx.dts                 |   85 +++++++++++++
+>  arch/arm/boot/dts/nspire.dtsi                   |  154 +++++++++++++++++++++++
+>  arch/arm/mach-nspire/Makefile                   |    3 +
+>  arch/arm/mach-nspire/include/mach/debug-macro.S |   25 ++++
+>  arch/arm/mach-nspire/include/mach/timex.h       |   15 +++
+>  arch/arm/mach-nspire/include/mach/uncompress.h  |   25 ++++
+>  arch/arm/mach-nspire/mmio.h                     |   13 ++
+>  arch/arm/mach-nspire/nspire.c                   |  107 ++++++++++++++++
 
-> Nothing, just VM (kernel update from console) and mplayer2 on the host.
-> This is more-or-less reproducible with these two.
+A good next step before doing anything else might be to put it under
+CONFIG_ARCH_MULTIPLATFORM and remove the include/mach directory.
 
-No browser or anything else running that might be introducing a stream
-of fsync()'s?
+The only requirement for that should be to move debug-macro.S to
+include/debug/nspire.S
 
->     jbd2/sda5-8-10969 [000] ....   403.679552: jbd2_run_stats: dev
->259,655360 tid 348895 wait 0 request_delay 0 running 5000 locked 1040
->flushing 0 logging 112 handle_count 148224 blocks 1 blocks_logged 2
+> +config ARCH_NSPIRE
+> +	bool "TI-NSPIRE based"
+> +	depends on MMU
+> +	select CPU_ARM926T
+> +	select COMMON_CLK
+> +	select GENERIC_CLOCKEVENTS
+> +	select SPARSE_IRQ
+> +	select ARM_AMBA
+> +	select ARM_VIC
+> +	select ARM_TIMER_SP804
+> +	help
+> +	  This enables support for systems using the TI-NSPIRE CPU
 
->      jbd2/md2-8-959   [000] ....   408.111339: jbd2_run_stats: dev 9,2
->tid 382991 wait 0 request_delay 0 running 5156 locked 2268 flushing 0
->logging 124 handle_count 5 blocks 1 blocks_logged 2
+Since this has all the required changes already.
 
-OK, so this is interesting.  The commit is stalling for 1 second in
-the the transaction commit on sda5, and then very shortly thereafter
-for 2.2 seconds on md2, while we are trying to lock down the
-transaction.  What that means is that we are waiting for all of the
-transaction handles opened against that particular commit to complete
-before we can let the transaction commit proceed.
+> @@ -313,7 +314,7 @@ define archhelp
+>    echo  '  Image         - Uncompressed kernel image (arch/$(ARCH)/boot/Image)'
+>    echo  '* xipImage      - XIP kernel image, if configured (arch/$(ARCH)/boot/xipImage)'
+>    echo  '  uImage        - U-Boot wrapped zImage'
+> -  echo  '  bootpImage    - Combined zImage and initial RAM disk' 
+> +  echo  '  bootpImage    - Combined zImage and initial RAM disk'
+>    echo  '                  (supply initrd image via make variable INITRD=<path>)'
+>    echo  '* dtbs          - Build device tree blobs for enabled boards'
+>    echo  '  install       - Install uncompressed kernel'
 
-Is md2 sharing the same disk spindle as sda5?  And to which disk were
-you doing the "dd if=/dev/zero of=/dev/XXX" command?
+This looks like it wasn't meant to be in the patch.
 
-If I had to guess what's going on, the disk is accepting a huge amount
-of writes to its track buffer, and then occasionally it is going out
-to lunch trying to write all of this data to the disk platter.  This
-is not (always) happening when we do the commit (with its attended
-cache flush command), but in a few cases, we are doing a read command
-which is getting stalled.  There are a few cases where we start a
-transaction handle, and then discover that we need to read in a disk
-block, and if that read stalls for a long period of time, it will hold
-the transaction handle open, and this will in turn stall the commit.
+> +		tdes: tdes@C8010000 {
+> +			reg = <0xC8010000 0x1000>;
+> +		};
+> +
+> +		sha256: sha256@CC000000 {
+> +			reg = <0xCC000000 0x1000>;
+> +		};
 
-If you were to grab a blocktrace, I suspect that is what you will
-find; that it's actually a read command which is stalling at some
-point, correlated with when we are trying to start transaction commit.
+maybe rename the actual nodes to "crypto@c...". The device name should
+be a really generic word in general.
 
-       		       	       	   	     - Ted
+> +			uart: uart@90020000 {
+> +				reg = <0x90020000 0x1000>;
+> +				interrupts = <1>;
+> +
+> +				clocks = <&uart_clk>;
+> +				clock-names = "uart_clk";
+> +			};
+
+The name for a uart should be "serial". Since this is a pl01x, please add
+the required properties for the device, e.g. 
+
+	compatible = "arm,pl011", "arm,primecell";
+
+You will need the "arm,primecell" bit to make the device appear on the
+amba bus rather than the platform bus.
+
+> +			timer0: timer0@900C0000 {
+> +				reg = <0x900C0000 0x1000>;
+> +				interrupts = <18>;
+> +
+> +				clocks = <&timer_clk>;
+> +				clock-names = "timer_clk";
+> +			};
+> +
+> +			timer1: timer1@900D0000 {
+> +				reg = <0x900D0000 0x1000>;
+> +				interrupts = <19>;
+> +
+> +				clocks = <&timer_clk>;
+> +				clock-names = "timer_clk";
+> +			};
+
+Name the devices "timer", not "timer0" and "timer1", the address after @ is
+used to disambiguate them. There are currently patches for sp804 under
+discussion on the mailing list, you should probably watch those.
+
+> --- /dev/null
+> +++ b/arch/arm/mach-nspire/Makefile
+> @@ -0,0 +1,3 @@
+> +obj-y				:=
+> +
+> +obj-y				+= nspire.o
+
+The first line is not actually needed.
+
+> +
+> +#include "../../mmio.h"
+> +
+> +.macro	addruart, rp, rv, tmp
+> +	ldr \rp, =(NSPIRE_EARLY_UART_PHYS_BASE)		@ physical base address
+> +	ldr \rv, =(NSPIRE_EARLY_UART_VIRT_BASE)		@ virtual base address
+> +.endm
+> +
+> +#include <asm/hardware/debug-pl01x.S>
+> +
+
+There is no nice solution for getting the addresses here, but the consensus
+was to just define the macros in this file rather than try to include a
+header from elsewhere.
+
+
+> +	err = of_property_read_string(of_aliases, "timer0", &path);
+> +	if (WARN_ON(err))
+> +		return;
+> +
+> +	timer = of_find_node_by_path(path);
+> +	base = of_iomap(timer, 0);
+> +	if (WARN_ON(!base))
+> +		return;
+> +
+> +	clk = of_clk_get_by_name(timer, NULL);
+> +	clk_register_clkdev(clk, timer->name, "sp804");
+> +
+> +	sp804_clocksource_init(base, timer->name);
+> +
+> +	err = of_property_read_string(of_aliases, "timer1", &path);
+> +	if (WARN_ON(err))
+> +		return;
+
+In particular, I think the method of using aliases to pick the right sp804
+instance is being deprecated now. If both timers are identical, the kernel
+will now just pick one of them.
+
+	Arnd
