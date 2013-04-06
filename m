@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932774Ab3DFK0F (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 06:26:05 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:43918 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757071Ab3DFK0E convert rfc822-to-8bit (ORCPT
+	id S932752Ab3DFKil (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 06:38:41 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:39508 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab3DFKij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 06:26:04 -0400
-From: "Michael D. Setzer II" <msetzerii@gmail.com>
-To: linux-kernel@vger.kernel.org
-Date: Sat, 06 Apr 2013 20:25:57 +1000
+	Sat, 6 Apr 2013 06:38:39 -0400
+Date: Sat, 6 Apr 2013 12:40:53 +0200
+From: Philip Kranz <philip.kranz@googlemail.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Sebastian Wankerl <sisewank@cip.cs.fau.de>,
+        linux-kernel@vger.kernel.org,
+        Philip Kranz <philip.kranz@googlemail.com>,
+        i4passt@lists.informatik.uni-erlangen.de, linux-parisc@vger.kernel.org
+Subject: Re: [PATCH] Add non-zero module sections to sysfs
+Message-ID: <20130406104053.GA24710@yoda.lan>
+References: <1364994499-23708-1-git-send-email-sisewank@cip.cs.fau.de> <87mwtf3ya1.fsf@rustcorp.com.au> <515D4A7F.5070102@cip.cs.fau.de> <87vc81lj7x.fsf@rustcorp.com.au> <1365156435.1970.31.camel@dabdike>
 MIME-Version: 1.0
-Subject: Error in linux-3.0.72 build.
-Message-ID: <515FF835.28644.1FF1E@msetzerii.gmail.com>
-X-mailer: Pegasus Mail for Windows (4.63)
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 8BIT
-Content-description: Mail message body
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365156435.1970.31.camel@dabdike>
+User-Agent: Mutt/1.5.14 (2007-03-31)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just downloaded new kernels, and find this error in build.
+Hello.
 
-fs/built-in.o: In function `find_group_flex':
-/home/msetzerii/data/linux-3.0.72/fs/ext4/ialloc.c:359: undefined 
-reference to `__udivdi3'
-/home/msetzerii/data/linux-3.0.72/fs/ext4/ialloc.c:374: undefined 
-reference to `__udivdi3'
-make: *** [.tmp_vmlinux1] Error 1
-  
-+----------------------------------------------------------+
-  Michael D. Setzer II -  Computer Science Instructor      
-  Guam Community College  Computer Center                  
-  mailto:mikes@kuentos.guam.net                            
-  mailto:msetzerii@gmail.com
-  http://www.guam.net/home/mikes
-  Guam - Where America's Day Begins                        
-  G4L Disk Imaging Project maintainer 
-  http://sourceforge.net/projects/g4l/
-+----------------------------------------------------------+
+On Fri, Apr 05, 2013 at 12:07:15PM +0200, James Bottomley wrote:
+> Just so you know: this isn't a parisc specific problem.  Gcc produces
+> duplicate section names under various circumstances, but the one that
+> bites us is -ffunction-sections.  Note that there are proposals to use
+> -ffunction-sections on all architectures (so we can garbage collect
+> unused functions) in which case you'll induce the bug identified in
+> 35dead4235e2b67da7275b4122fed37099c2f462 on every architecture
 
-http://setiathome.berkeley.edu (Original)
-Number of Seti Units Returned:  19,471
-Processing time:  32 years, 290 days, 12 hours, 58 minutes
-(Total Hours: 287,489)
+I am not able to produce an object file with duplicate section names
+using gcc on x86. Even with -ffunction-sections, every section gets a
+unique name. Is this architecture-specific behaviour of gcc?
 
-BOINC@HOME CREDITS
-SETI        14361044.287140   |   EINSTEIN    10723942.979852
-ROSETTA      6832434.144171   |   ABC         15903532.519753
+Greetings,
+Philip
 
