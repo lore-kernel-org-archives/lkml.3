@@ -1,92 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423490Ab3DFOqF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 10:46:05 -0400
-Received: from mail-da0-f45.google.com ([209.85.210.45]:34064 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423464Ab3DFOp4 (ORCPT
+	id S1423506Ab3DFOqP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 10:46:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59994 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423464Ab3DFOqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 10:45:56 -0400
-Message-ID: <51603516.4040002@gmail.com>
-Date: Sat, 06 Apr 2013 22:45:42 +0800
+	Sat, 6 Apr 2013 10:46:11 -0400
 From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
         Minchan Kim <minchan@kernel.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>,
         James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH v4, part3 08/15] mm: fix some trivial typos in comments
-References: <1365256509-29024-1-git-send-email-jiang.liu@huawei.com> <1365256509-29024-9-git-send-email-jiang.liu@huawei.com> <516032EC.9080905@cogentembedded.com>
-In-Reply-To: <516032EC.9080905@cogentembedded.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Arnd Bergmann <arnd@arndb.de>, linux@openrisc.net
+Subject: [PATCH v4, part3 29/41] mm/openrisc: prepare for removing num_physpages and simplify mem_init()
+Date: Sat,  6 Apr 2013 22:32:28 +0800
+Message-Id: <1365258760-30821-30-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1365258760-30821-1-git-send-email-jiang.liu@huawei.com>
+References: <1365258760-30821-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2013 10:36 PM, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 06-04-2013 17:55, Jiang Liu wrote:
-> 
->> Fix some trivial typos in comments.
-> 
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> Cc: Wen Congyang <wency@cn.fujitsu.com>
->> Cc: Tang Chen <tangchen@cn.fujitsu.com>
->> Cc: Jiang Liu <jiang.liu@huawei.com>
->> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> Cc: Mel Gorman <mgorman@suse.de>
->> Cc: Minchan Kim <minchan@kernel.org>
->> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
->> Cc: linux-mm@kvack.org
->> Cc: linux-kernel@vger.kernel.org
-> [...]
-> 
->> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
->> index 57decb2..a5b8fde 100644
->> --- a/mm/memory_hotplug.c
->> +++ b/mm/memory_hotplug.c
->> @@ -309,7 +309,7 @@ static int __meminit move_pfn_range_left(struct zone *z1, struct zone *z2,
->>       /* can't move pfns which are higher than @z2 */
->>       if (end_pfn > zone_end_pfn(z2))
->>           goto out_fail;
->> -    /* the move out part mast at the left most of @z2 */
->> +    /* the move out part must at the left most of @z2 */
-> 
->    Maybe "must be"?
-Good catch!
+Prepare for removing num_physpages and simplify mem_init().
 
-> 
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index 6bd697c..c3c3eda 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -2863,7 +2863,7 @@ EXPORT_SYMBOL(free_pages_exact);
->>    * nr_free_zone_pages() counts the number of counts pages which are beyond the
->>    * high watermark within all zones at or below a given zone index.  For each
->>    * zone, the number of pages is calculated as:
->> - *     present_pages - high_pages
->> + *     managed_pages - high_pages
-> 
->    I'm not sure it's that trivial.
-We just changes the comments to follow the code, so mark it as "trivial".
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: Jonas Bonn <jonas@southpole.se>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: linux@lists.openrisc.net
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/openrisc/mm/init.c |   44 ++++----------------------------------------
+ 1 file changed, 4 insertions(+), 40 deletions(-)
 
-Regards!
-Gerry
-
-> 
-> WBR, Sergei
-> 
+diff --git a/arch/openrisc/mm/init.c b/arch/openrisc/mm/init.c
+index da26482..ac438ab 100644
+--- a/arch/openrisc/mm/init.c
++++ b/arch/openrisc/mm/init.c
+@@ -202,56 +202,20 @@ void __init paging_init(void)
+ 
+ /* References to section boundaries */
+ 
+-static int __init free_pages_init(void)
+-{
+-	int reservedpages, pfn;
+-
+-	/* this will put all low memory onto the freelists */
+-	free_all_bootmem();
+-
+-	reservedpages = 0;
+-	for (pfn = 0; pfn < max_low_pfn; pfn++) {
+-		/*
+-		 * Only count reserved RAM pages
+-		 */
+-		if (PageReserved(mem_map + pfn))
+-			reservedpages++;
+-	}
+-
+-	return reservedpages;
+-}
+-
+-static void __init set_max_mapnr_init(void)
+-{
+-	max_mapnr = num_physpages = max_low_pfn;
+-}
+-
+ void __init mem_init(void)
+ {
+-	int codesize, reservedpages, datasize, initsize;
+-
+ 	BUG_ON(!mem_map);
+ 
+-	set_max_mapnr_init();
+-
++	max_mapnr = max_low_pfn;
+ 	high_memory = (void *)__va(max_low_pfn * PAGE_SIZE);
+ 
+ 	/* clear the zero-page */
+ 	memset((void *)empty_zero_page, 0, PAGE_SIZE);
+ 
+-	reservedpages = free_pages_init();
+-
+-	codesize = (unsigned long)&_etext - (unsigned long)&_stext;
+-	datasize = (unsigned long)&_edata - (unsigned long)&_etext;
+-	initsize = (unsigned long)&__init_end - (unsigned long)&__init_begin;
++	/* this will put all low memory onto the freelists */
++	free_all_bootmem();
+ 
+-	printk(KERN_INFO
+-	       "Memory: %luk/%luk available (%dk kernel code, %dk reserved, %dk data, %dk init, %ldk highmem)\n",
+-	       (unsigned long)nr_free_pages() << (PAGE_SHIFT - 10),
+-	       max_mapnr << (PAGE_SHIFT - 10), codesize >> 10,
+-	       reservedpages << (PAGE_SHIFT - 10), datasize >> 10,
+-	       initsize >> 10, (unsigned long)(0 << (PAGE_SHIFT - 10))
+-	    );
++	mem_init_print_info(NULL);
+ 
+ 	printk("mem_init_done ...........................................\n");
+ 	mem_init_done = 1;
+-- 
+1.7.9.5
 
