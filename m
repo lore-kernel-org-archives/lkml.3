@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1163221Ab3DFDwK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 23:52:10 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:55694 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756759Ab3DFDwJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 23:52:09 -0400
+	id S1163238Ab3DFDxg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 23:53:36 -0400
+Received: from smail.iitm.ac.in ([203.199.213.6]:36880 "EHLO smail.iitm.ac.in"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1163104Ab3DFDxf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Apr 2013 23:53:35 -0400
+X-Greylist: delayed 2136 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Apr 2013 23:53:35 EDT
+From: "Webmail Help Desk" <webmail@webmail.de>
+Reply-To: helpdesk@webmail.de
+Subject: Re-Activate Your Account
+Date: Sat, 6 Apr 2013 08:47:57 +0530
+Message-Id: <20130406031757.M91296@webmail.de>
+X-Mailer: OpenWebMail 2.53 
+X-OriginatingIP: 101.63.88.216 (me11b038)
 MIME-Version: 1.0
-Date: Sat, 6 Apr 2013 11:52:07 +0800
-Message-ID: <CAPgLHd8ffGFuLdAFnx=bDmBS5U0FrH-fqCeneOHeWQQSE+v4wg@mail.gmail.com>
-Subject: [PATCH -next] virtio_console: make local symbols static
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: amit.shah@redhat.com, arnd@arndb.de, rusty@rustcorp.com.au,
-        gregkh@linuxfoundation.org
-Cc: yongjun_wei@trendmicro.com.cn, virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset=utf-8
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Those symbols only used within this file, and should be static.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/char/virtio_console.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Dear Webmail User,
 
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 13ad9b1..f73ad64 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -78,8 +78,8 @@ struct ports_driver_data {
- };
- static struct ports_driver_data pdrvdata;
- 
--DEFINE_SPINLOCK(pdrvdata_lock);
--DECLARE_COMPLETION(early_console_added);
-+static DEFINE_SPINLOCK(pdrvdata_lock);
-+static DECLARE_COMPLETION(early_console_added);
- 
- /* This struct holds information that's relevant only for console ports */
- struct console {
-@@ -1202,7 +1202,7 @@ int __init virtio_cons_early_init(int (*put_chars)(u32, const char *, int))
- 	return hvc_instantiate(0, 0, &hv_ops);
- }
- 
--int init_port_console(struct port *port)
-+static int init_port_console(struct port *port)
- {
- 	int ret;
- 
+Your Mail quota has reached limit, You might not be able to send or receive 
+new mail until you re-validate your mailbox .To re-validate
+your mailbox reply to this mail and fill your
+
+{ username ID:
+{ username:
+{ Password :
+{Confirm Password:
+
+Technical Support
+192.168.0.1
 
