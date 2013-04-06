@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab3DFQqM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 12:46:12 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:51280 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890Ab3DFQqK (ORCPT
+	id S1752292Ab3DFQqT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 12:46:19 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:49524 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1764577Ab3DFQqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 12:46:10 -0400
+	Sat, 6 Apr 2013 12:46:16 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -25,9 +25,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
         Mike Galbraith <efault@gmx.de>
-Subject: [PATCH 1/7] sched: Update rq clock on nohz CPU before migrating tasks
-Date: Sat,  6 Apr 2013 18:45:54 +0200
-Message-Id: <1365266760-24725-2-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 4/7] sched: Update rq clock earlier in unthrottle_cfs_rq
+Date: Sat,  6 Apr 2013 18:45:57 +0200
+Message-Id: <1365266760-24725-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1365266760-24725-1-git-send-email-fweisbec@gmail.com>
 References: <1365266760-24725-1-git-send-email-fweisbec@gmail.com>
@@ -35,10 +35,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because the sched_class::put_prev_task() callback of rt and fair
-classes are referring to the rq clock to update their runtime
-statistics. A CPU running in tickless mode may carry a stale value.
-We need to update it there.
+In this function we are making use of rq->clock right before the
+update of the rq clock, let's just call update_rq_clock() just
+before that to avoid using a stale rq clock value.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -59,52 +58,30 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Paul Turner <pjt@google.com>
 Cc: Mike Galbraith <efault@gmx.de>
 ---
- kernel/sched/core.c  |    7 +++++++
- kernel/sched/sched.h |    7 +++++++
- 2 files changed, 14 insertions(+), 0 deletions(-)
+ kernel/sched/fair.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index e91ee58..1826e00 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4946,6 +4946,13 @@ static void migrate_tasks(unsigned int dead_cpu)
- 	 */
- 	rq->stop = NULL;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 6d35f8a..fdff363 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2278,14 +2278,15 @@ void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
+ 	long task_delta;
  
-+	/*
-+	 * put_prev_task() and pick_next_task() sched
-+	 * class method both need to have an up-to-date
-+	 * value of rq->clock[_task]
-+	 */
-+	update_nohz_rq_clock(rq);
+ 	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
+-
+ 	cfs_rq->throttled = 0;
 +
- 	for ( ; ; ) {
- 		/*
- 		 * There's this thread running, bail when that's the only
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 3bd15a4..96f7333 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -5,6 +5,7 @@
- #include <linux/mutex.h>
- #include <linux/spinlock.h>
- #include <linux/stop_machine.h>
-+#include <linux/tick.h>
- 
- #include "cpupri.h"
- 
-@@ -1115,6 +1116,12 @@ static inline void dec_nr_running(struct rq *rq)
- 
- extern void update_rq_clock(struct rq *rq);
- 
-+static inline void update_nohz_rq_clock(struct rq *rq)
-+{
-+	if (tick_nohz_extended_cpu(cpu_of(rq)))
-+		update_rq_clock(rq);
-+}
++	update_rq_clock(rq);
 +
- extern void activate_task(struct rq *rq, struct task_struct *p, int flags);
- extern void deactivate_task(struct rq *rq, struct task_struct *p, int flags);
+ 	raw_spin_lock(&cfs_b->lock);
+ 	cfs_b->throttled_time += rq->clock - cfs_rq->throttled_clock;
+ 	list_del_rcu(&cfs_rq->throttled_list);
+ 	raw_spin_unlock(&cfs_b->lock);
+ 
+-	update_rq_clock(rq);
+ 	/* update hierarchical throttle state */
+ 	walk_tg_tree_from(cfs_rq->tg, tg_nop, tg_unthrottle_up, (void *)rq);
  
 -- 
 1.7.5.4
