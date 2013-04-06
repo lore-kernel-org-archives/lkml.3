@@ -1,83 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763138Ab3DFSdD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 14:33:03 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:58100 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760476Ab3DFSdB (ORCPT
+	id S1765110Ab3DFSky (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 14:40:54 -0400
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:33855 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759107Ab3DFSkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 14:33:01 -0400
-Message-ID: <51606A7F.3050803@prisktech.co.nz>
-Date: Sun, 07 Apr 2013 06:33:35 +1200
-From: Tony Prisk <linux@prisktech.co.nz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Sat, 6 Apr 2013 14:40:53 -0400
+Message-ID: <51606D06.5020606@gmail.com>
+Date: Sat, 06 Apr 2013 15:44:22 -0300
+From: Lucas <canolucas@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130403 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: thierry.reding@avionic-design.de, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        broonie@opensource.wolfsonmicro.com, akpm@linux-foundation.org
-Subject: PWM backlight build warning
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+Newsgroups: gmane.linux.kernel.stable,gmane.linux.kernel
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, daniel.vetter@ffwll.ch,
+        chris@chris-wilson.co.uk, stable@vger.kernel.org,
+        mika.kuoppala@intel.com, andreas.sturmlechner@gmail.com
+Subject: Re: Linux 3.8.6
+References: <20130405174012.GA28836@kroah.com> <51606512.8030703@gmail.com> <20130406181836.GA2406@kroah.com>
+In-Reply-To: <20130406181836.GA2406@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thierry,
+Alright, CC'ing the mantainers as well.
 
-Sorry it's taken so long to report this but I've been tied up with other 
-patches recently. I noticed a build warning on the pwm_bl driver in 
-3.9-rcX but I'm not sure what the correct resolution would be. This patch:
+Thanks again,
+Lucas
 
-commit e2c17bc6f717a8847df2a867caec6ba4fe85f3fc
-backlight: convert pwm_bl to dev_pm_ops
+On 06/04/13 15:18, Greg KH wrote:
+>
+> Sure, can you cc: the authors of those patches, and anyone who
+> signed-off on them in order to get their approval as well?
+>
+> thanks,
+>
+> greg k-h
+>
 
-Should be no functional changes, mainly a reorganisation to support 
-future work.
-
-[akpm@linux-foundation.org: fix CONFIG_PM=n build]
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-has introduced a two build warnings in my config:
-drivers/video/backlight/pwm_bl.c:278:12: warning: 
-‘pwm_backlight_suspend’ defined but not used [-Wunused-function]
-drivers/video/backlight/pwm_bl.c:292:12: warning: ‘pwm_backlight_resume’ 
-defined but not used [-Wunused-function]
-
-Although I noticed it doesn't have your acked-by ;)
-
-
-Selecting "Run-time PM core functionality" without "Suspend to RAM and 
-standby" causes the unused function warning.
-With CONFIG_PM=n, no warnings. With CONFIG_PM=y and CONFIG_PM_SLEEP=y, 
-no warnings.
-
-The problem occurs because when CONFIG_PM=y but CONFIG_PM_SLEEP=n:
-
-#define SIMPLE_DEV_PM_OPS(name, suspend_fn, resume_fn) \
-const struct dev_pm_ops name = { \
-SET_SYSTEM_SLEEP_PM_OPS(syspend_fn, resume_fn) \
-}
-
-#ifdef CONFIG_PM_SLEEP
-#define SET_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn) \
-.suspend = suspend_fn, \
-.resume = resume_fn, \
-.freeze = suspend_fn, \
-.thaw = resume_fn, \
-.poweroff = suspend_fn, \
-.restore = resume_fn,
-#else
-#define SET_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn)
-#endif
-
-I guess this would be a problem on every driver that has been converted 
-to SIMPLE_DEV_PM_OPS.
-I don't know enough about the PM code to offer a fix, or whethermy 
-chosen config is just 'invalid'.
-
-Regards
-Tony P
