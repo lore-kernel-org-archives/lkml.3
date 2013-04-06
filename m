@@ -1,196 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756410Ab3DFBWH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Apr 2013 21:22:07 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:62601 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756222Ab3DFBWF (ORCPT
+	id S1756432Ab3DFB0Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Apr 2013 21:26:16 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:51722 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756222Ab3DFB0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Apr 2013 21:22:05 -0400
-Date: Fri, 5 Apr 2013 18:21:59 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org
-Cc: bsingharora@gmail.com, dhaval.giani@gmail.com,
-        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe@redhat.com,
-        berrange@redhat.com, lpoetter@redhat.com, workman-devel@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: cgroup: status-quo and userland efforts
-Message-ID: <20130406012159.GA17159@mtj.dyndns.org>
+	Fri, 5 Apr 2013 21:26:15 -0400
+Date: Fri, 05 Apr 2013 21:25:47 -0400
+Subject: Re: [PATCH v6] irq: add quirk for broken interrupt remapping on
+ 55XX chipsets
+Message-ID: <7u61w2ppuct79kmjwclqv15y.1365211547178@email.android.com>
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Prarit Bhargava <prarit@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Don Dutile <ddutile@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Asit Mallick <asit.k.mallick@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        " linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r361QHkn012658
 
-Hello, guys.
+I'm sorry.  Forgot to change the wording of the error for the new model that I'm following here.  Although the message is mostly right as bios is responsible for setting and clearing the IRQ remapping feature bit in the chips capabilities register.
 
- Status-quo
- ==========
+I'll fix and repost Monday
 
-It's been about a year since I wrote up a summary on cgroup status quo
-and future plans.  We're not there yet but much closer than we were
-before.  At least the locking and object life-time management aren't
-crazy anymore and most controllers now support proper hierarchy
-although not all of them agree on how to treat inheritance.
+Neil
 
-IIRC, the yet-to-be-converted ones are blk-throttle and perf.  cpu
-needs to be updated so that it at least supports a similar mechanism
-as cfq-iosched for configuring ratio between tasks on an internal
-cgroup and its children.  Also, we really should update how cpuset
-handles a cgroup becoming empty (no cpus or memory node left due to
-hot-unplug).  It currently transfers all its tasks to the nearest
-ancestor with executing resources, which is an irreversible process
-which would affect all other co-mounted controllers.  We probably want
-it to just take on the masks of the ancestor until its own executing
-resources become online again, and the new behavior should be gated
-behind a switch (Li, can you please look into this?).
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-While we have still ways to go, I feel relatively confident saying
-that we aren't too far out now, well, except for the writeback mess
-that still needs to be tackled.  Anyways, once the remaining bits are
-settled, we can proceed to implement the unified hierarchy mode I've
-been talking about forever.  I can't think of any fundamental
-roadblocks at the moment but who knows?  The devil usually is in the
-details.  Let's hope it goes okay.
-
-So, while we aren't moving as fast as we wish we were, the kernel side
-of things are falling into places.  At least, that's how I see it.
->From now on, I think how to make it actually useable to userland
-deserves a bit more focus, and by "useable to userland", I don't mean
-some group hacking up an elaborate, manual configuration which is
-tailored to the point of being eccentric to suit the needs of the said
-group.  There's nothing wrong with that and they can continue to do
-so, but it just isn't generically useable or useful.  It should be
-possible to generically and automatically split resources among, say,
-several servers and a couple users sharing a system without resorting
-to indecipherable ad-hoc shell script running off rc.local.
-
-
- Userland efforts
- ================
-
-There are currently a few userland efforts trying to make interfacing
-with cgroup less painful.
-
-* libcg: Make cgroup interface accessible from programming languages
-  with support for configuration persistency, which also brings its
-  own config files to remember what to do on the next boot.  Sans the
-  persistence part, it just seems to directly translate the filesystem
-  interface to function interface.
-
-  http://libcg.sourceforge.net/
-
-* Workman: It's a rather young project but as its name (workload
-  management) implies, its aims are higher level than that of libcg.
-  It aims to provide high-level resource allocation and management and
-  introduces new concepts like resource partitions to represent its
-  view of resource hierarchy.  Like libcg, this one is implemented as
-  a library but provides bindings for more languages.
-
-  https://gitorious.org/workman/pages/Home
-
-* Pax Controla Groupiana: A document on how not to step on other's
-  toes while using cgroup.  It's not a software project but tries to
-  define precautions that a software or user can take to avoid
-  breaking or confusing other users of the cgroup filesystem.
-
-  http://www.freedesktop.org/wiki/Software/systemd/PaxControlGroups
-
-All try to play nice with other possible users of the cgroup
-filesystem - be it libvirt cgroup, applications doing their own cgroup
-tricks, or hand-crafted custom scripts.  While the approach is
-understandable given that those usages already exist, I don't think
-it's a workable solution in the long term.  There are several reasons
-for that.
-
-* The configurations aren't independent.  e.g. for weight-based
-  controllers, your weight is only meaningful in relation to other
-  weights at that level.  Distributing configuration to whatever
-  entities which may write to cgroupfs simply cannot work.  It's
-  fundamentally flawed.
-
-* It's fragile like hell.  There's no accountability.  Nobody really
-  knows what's going on.  Is this subdirectory still there due to a
-  bug in this program, or something or someone else created it and
-  crashed / forgot to remove it, or what?  Oh, the cgroup I wanted to
-  create already exists.  Maybe the previous instance created it and
-  then crashed or maybe some other program just happened to choose the
-  same name.  Who owns config knobs in that directory?  This way lies
-  madness.  I understand why the Pax doc exists but I'm not sure its
-  long-term effect would be positive - best practices which ultimately
-  lead to utter confusion and fragility.
-
-* In many cases, resource distribution is system-wide policy decisions
-  and determining what to do often requires system-wide knowledge.
-  You can't provision memory limits without knowing what's available
-  in the system and what else is going on in the system, and you want
-  to be able to adjust them as situation and configuration changes.
-  Without anybody having full picture of how resources are
-  provisioned, how would any of that be possible?
-
-I think this anything-goes approach is prevalent largely because the
-cgroup filesystem interface encourages such usage.  From the looks of
-it, the filesystem permissions combined with hierarchy should be able
-to handle delegation perfectly.  Well, as it currently stands, it's
-anything but and the interface is just misleading.  Hierarchy support
-was an utter mess, configuration schemes aren't uniform across
-controllers, and, more fundamentally, hierarchy itself is expensive -
-we can't delegate hierarchy creation to unpriviledged users or
-programs safely.
-
-It is in the realm of possibility to make all cgroup operations and
-controllers to do all that; however, it's a very tall order.  Just
-think about how much effort it has been to achieve and maintain proper
-delegation in the core elements of the kernel - processes and
-filesystems, and there will be security implications with cgroup
-likely involving a lot of gotchas and extensions of security
-infrastructures, and, even then, I'm pretty sure it's gonna require
-helps from userland to effect proper policy decisions and config
-changes.  We have things like polkit for a reason and are likely to
-need finer-grained, domain-aware access control than is possible with
-tweaking directory permissions.
-
-Given the above and how relatively marginal cgroup is, I'm extremely
-skeptical that implementing full delegation in kernel is the right
-course of action and likely to scream like a banshee at any attempt
-driving things that way.
-
-I think the only logical thing to do is creating a centralized
-userland authority which takes full ownership of the cgroup filesystem
-interface, gives it a sane structure, represents available resources
-in a sane form, and makes policy decisions based on configuration and
-requests.  I don't have a concerete idea what that authority should be
-like, but I think there already are pretty similar facilities in our
-userland, and don't see why this should be much different.
-
-Another reason why this could be helpful is that we're gonna be
-morphing towards unified hierarchy and it'd very nice to have
-something which can match impedance between the old and new ways and
-not require each individual consumer of cgroup to handle such changes.
-As for the unified hierarchy, we just have to.  It's currently
-fundamentally broken in that it's impossible to tell which cgroup a
-resource belongs to independent of which task is looking at it.  It's
-like this damn thing is designed to honor Hisenberg and Einstein.  No
-disrespect for the great minds, but it just doens't look like the
-proper place.
-
-Even apart from the unified hierarchy thing, I think it generally is a
-good idea to have a buffer layer between the kernel interface and
-individual consumers for cgroup, which is still very immature and
-kinda tightly coupled with internal implementation details.
-
-So, umm, that's what I want.  When I first heard of WorkMan, I was
-excited thinking maybe the universe is being really nice and making
-things happen to my wishes without me actually doing anything. :) Oh
-well, one can dream, but everything is still early, so hopefully we
-have enough time to figure things out.
-
-What do you guys think?
-
-Thanks.
-
---
-tejun
+>On Fri, Apr 5, 2013 at 12:31 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
+>> A few years back intel published a spec update:
+>> http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
+>>
+>> For the 5520 and 5500 chipsets which contained an errata (specificially errata
+>> 53), which noted that these chipsets can't properly do interrupt remapping, and
+>> as a result the recommend that interrupt remapping be disabled in bios.  While
+>> many vendors have a bios update to do exactly that, not all do, and of course
+>> not all users update their bios to a level that corrects the problem.  As a
+>> result, occasionally interrupts can arrive at a cpu even after affinity for that
+>> interrupt has be moved, leading to lost or spurrious interrupts (usually
+>> characterized by the message:
+>> kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
+>>
+>> There have been several incidents recently of people seeing this error, and
+>> investigation has shown that they have system for which their BIOS level is such
+>> that this feature was not properly turned off.  As such, it would be good to
+>> give them a reminder that their systems are vulnurable to this problem.
+>>
+>> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+>> CC: Prarit Bhargava <prarit@redhat.com>
+>> CC: Don Zickus <dzickus@redhat.com>
+>> CC: Don Dutile <ddutile@redhat.com>
+>> CC: Bjorn Helgaas <bhelgaas@google.com>
+>> CC: Asit Mallick <asit.k.mallick@intel.com>
+>> CC: David Woodhouse <dwmw2@infradead.org>
+>> CC: linux-pci@vger.kernel.org
+>> ---
+>>
+>> Change notes:
+>>
+>> v2)
+>>
+>> * Moved the quirk to the x86 arch, since consensus seems to be that the 55XX
+>> chipset series is x86 only.  I decided however to keep the quirk as a regular
+>> quirk, not an early_quirk.  Early quirks have no way currently to determine if
+>> BIOS has properly disabled the feature in the iommu, at least not without
+>> significant hacking, and since its quite possible this will be a short lived
+>> quirk, should Don Z's workaround code prove successful (and it looks like it may
+>> well), I don't think that necessecary.
+>>
+>> * Removed the WARNING banner from the quirk, and added the HW_ERR token to the
+>> string, I opted to leave the newlines in place however, as I really couldnt
+>> find a way to keep the text on a single line is still legible from a code
+>> perspective.  I think theres enough language in there that using cscope on just
+>> about any substring however will turn it up, and again, this may be a short
+>> lived quirk.
+>>
+>> v3)
+>>
+>> * Removed defines from pci_ids.h, and used direct id values as per request from
+>> Bjorn.
+>>
+>> v4)
+>>
+>> * Converted pr_warn to WARN_TAINT(TAINT_FIRMWARE_WORKAROUND) as per David
+>> Woodhouse
+>>
+>> v5)
+>>
+>> * Moved check to an early quirk, and flagged the broken chip, so we could
+>> reasonably disable irq remapping during bootup.
+>>
+>> v6)
+>> * Clean up of stupid extra thrash in quirks.c
+>> ---
+>>  arch/x86/kernel/early-quirks.c | 25 +++++++++++++++++++++++++
+>>  drivers/iommu/irq_remapping.c  | 12 ++++++++++++
+>>  drivers/iommu/irq_remapping.h  |  1 +
+>>  3 files changed, 38 insertions(+)
+>>
+>> diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+>> index 3755ef4..bfa3139 100644
+>> --- a/arch/x86/kernel/early-quirks.c
+>> +++ b/arch/x86/kernel/early-quirks.c
+>> @@ -192,6 +192,27 @@ static void __init ati_bugs_contd(int num, int slot, int func)
+>>  }
+>>  #endif
+>>
+>> +#ifdef CONFIG_IRQ_REMAP
+>> +static void __init intel_remapping_check(int num, int slot, int func)
+>> +{
+>> +       u8 revision;
+>> +
+>> +       revision = pci_read_config_byte(num, slot, func , PCI_REVISION_ID);
+>> +
+>> +       /*
+>> +        * Revision 0x13 of this chipset supports irq remapping
+>> +        * but has an erratum that breaks its behavior, flag it as such
+>> +        */
+>> +       if (revision == 0x13)
+>> +               irq_remap_broken = 1;
+>> +
+>> +}
+>> +#else
+>> +static void __init intel_remapping_check(int num, int slot, int func)
+>> +{
+>> +}
+>> +#endif
+>> +
+>>  #define QFLAG_APPLY_ONCE       0x1
+>>  #define QFLAG_APPLIED          0x2
+>>  #define QFLAG_DONE             (QFLAG_APPLY_ONCE|QFLAG_APPLIED)
+>> @@ -221,6 +242,10 @@ static struct chipset early_qrk[] __initdata = {
+>>           PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs },
+>>         { PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
+>>           PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs_contd },
+>> +       { PCI_VENDOR_ID_INTEL, 0x3403, PCI_CLASS_BRIDGE_HOST,
+>> +         PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
+>> +       { PCI_VENDOR_ID_INTEL, 0x3406, PCI_CLASS_BRIDGE_HOST,
+>> +         PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
+>>         {}
+>>  };
+>>
+>> diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+>> index d56f8c1..2b56e92 100644
+>> --- a/drivers/iommu/irq_remapping.c
+>> +++ b/drivers/iommu/irq_remapping.c
+>> @@ -19,6 +19,7 @@
+>>  int irq_remapping_enabled;
+>>
+>>  int disable_irq_remap;
+>> +int irq_remap_broken;
+>>  int disable_sourceid_checking;
+>>  int no_x2apic_optout;
+>>
+>> @@ -216,6 +217,17 @@ int irq_remapping_supported(void)
+>>         if (disable_irq_remap)
+>>                 return 0;
+>>
+>> +       if (irq_remap_broken) {
+>> +               WARN_TAINT(1, TAIN_FIRMWARE_WORKAROUND,
+>> +                          "This system BIOS has enabled interrupt remapping\n"
+>> +                          "on a chipset that contains an erratum making that\n"
+>> +                          "feature unstable.  Please reboot with nointremap\n"
+>> +                          "added to the kernel command line and contact\n"
+>> +                          "your BIOS vendor for an update");
+>
+>What do you mean "This system BIOS has enabled interrupt remapping" ?
+>BIOS have interrupt pre-enabled or BIOS just provide DMAR table ?
+>
+>Why do you need "Please reboot with nointremap" ?
+>
+>Thanks
+>
+>Yinghai
+>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
