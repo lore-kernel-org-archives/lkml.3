@@ -1,112 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422996Ab3DFOHc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 10:07:32 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:61024 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422958Ab3DFOHb (ORCPT
+	id S1423011Ab3DFOTe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 10:19:34 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:48943 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422983Ab3DFOTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 10:07:31 -0400
-Message-ID: <51602C13.7030907@gmail.com>
-Date: Sat, 06 Apr 2013 22:07:15 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Sat, 6 Apr 2013 10:19:33 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Chris Clayton <chris2553@googlemail.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2, part1 03/29] mm/ARM: use common help functions to
- free reserved pages
-References: <1362896833-21104-1-git-send-email-jiang.liu@huawei.com> <1362896833-21104-4-git-send-email-jiang.liu@huawei.com> <201304041547.52539.arnd@arndb.de>
-In-Reply-To: <201304041547.52539.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51602A0B.6020405@pengutronix.de>
+References: <1365255828-6416-1-git-send-email-aletes.xgr@gmail.com>
+	<51602A0B.6020405@pengutronix.de>
+Date: Sat, 6 Apr 2013 11:19:32 -0300
+Message-ID: <CAAAP30Gmc+aR1AY2Grd_M5LyXUO9szMxoLLA62ROq7=Hzz3ZEQ@mail.gmail.com>
+Subject: Re: [PATCH] mmc: mxs-mmc: Add broken-cd devicetree property
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: Chris Ball <cjb@laptop.org>, Shawn Guo <shawn.guo@linaro.org>,
+        =?UTF-8?B?TWFyZWsgVmHFoXV0?= <marex@denx.de>,
+        fabio.estevam@freescale.com, Otavio Salvador <otavio@ossystems.com.br>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-mmc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
-	Missed some type casts for ARM. Could you please help check the patch at
-http://marc.info/?l=linux-mm&m=136525654717201&w=2?
-	Thanks!
-	Gerry
+On Sat, Apr 6, 2013 at 10:58 AM, Marc Kleine-Budde <mkl@pengutronix.de> wrote:
+> According to the documentation broken card detect is something different
+> than non-removable:
+>
+> >   - broken-cd: There is no card detection available; polling must be used.
+> >   - non-removable: non-removable slot (like eMMC); assume always present.
+>
+> But mxs-mmc set MMC_CAP_NEEDS_POLL unconditionally.
 
-On 04/04/2013 11:47 PM, Arnd Bergmann wrote:
-> On Sunday 10 March 2013, Jiang Liu wrote:
->> Use common help functions to free reserved pages.
->>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: Catalin Marinas <catalin.marinas@arm.com>
->> Cc: Will Deacon <will.deacon@arm.com>
->> Cc: linux-arm-kernel@lists.infradead.org
->> Cc: linux-kernel@vger.kernel.org
-> 
-> Hello Jiang Liu,
-> 
-> I'm getting a few new build warnings from this patch in linux-next, can you please
-> have a look what's going on here? 
-> 
->> @@ -609,8 +600,7 @@ void __init mem_init(void)
->>  
->>  #ifdef CONFIG_SA1111
->>  	/* now that our DMA memory is actually so designated, we can free it */
->> -	totalram_pages += free_area(PHYS_PFN_OFFSET,
->> -				    __phys_to_pfn(__pa(swapper_pg_dir)), NULL);
->> +	free_reserved_area(__va(PHYS_PFN_OFFSET), swapper_pg_dir, 0, NULL);
->>  #endif
-> 
-> Using neponset_defconfig:
-> 
-> arch/arm/mm/init.c: In function 'mem_init':
-> arch/arm/mm/init.c:603:2: warning: passing argument 1 of 'free_reserved_area' makes integer from pointer without a cast [enabled by default]
->   free_reserved_area(__va(PHYS_PFN_OFFSET), swapper_pg_dir, 0, NULL);
->   ^
-> In file included from include/linux/mman.h:4:0,
->                  from arch/arm/mm/init.c:15:
-> include/linux/mm.h:1301:22: note: expected 'long unsigned int' but argument is of type 'void *'
->  extern unsigned long free_reserved_area(unsigned long start, unsigned long end,
->                       ^
-> 
->> @@ -738,16 +728,12 @@ void free_initmem(void)
->>  	extern char __tcm_start, __tcm_end;
->>  
->>  	poison_init_mem(&__tcm_start, &__tcm_end - &__tcm_start);
->> -	totalram_pages += free_area(__phys_to_pfn(__pa(&__tcm_start)),
->> -				    __phys_to_pfn(__pa(&__tcm_end)),
->> -				    "TCM link");
->> +	free_reserved_area(&__tcm_start, &__tcm_end, 0, "TCM link");
->>  #endif
-> 
-> Using one of {realview,s3c6400,u300}_defconfig:
-> 
-> /git/arm-soc/arch/arm/mm/init.c: In function 'free_initmem':
-> /git/arm-soc/arch/arm/mm/init.c:731:2: warning: passing argument 1 of 'free_reserved_area' makes integer from pointer without a cast [enabled by default]
->   free_reserved_area(&__tcm_start, &__tcm_end, 0, "TCM link");
->   ^
-> In file included from /git/arm-soc/include/linux/mman.h:4:0,
->                  from /git/arm-soc/arch/arm/mm/init.c:15:
-> /git/arm-soc/include/linux/mm.h:1301:22: note: expected 'long unsigned int' but argument is of type 'char *'
->  extern unsigned long free_reserved_area(unsigned long start, unsigned long end,
->                       ^
-> 
-> 	Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+I will work on a better way to fix this.
