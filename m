@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab3DFFqz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 01:46:55 -0400
-Received: from mail-da0-f52.google.com ([209.85.210.52]:42475 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754869Ab3DFFqx (ORCPT
+	id S1756842Ab3DFFrK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 01:47:10 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:54386 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756655Ab3DFFrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 01:46:53 -0400
+	Sat, 6 Apr 2013 01:47:06 -0400
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: jaegeuk.kim@samsung.com, rostedt@goodmis.org
 Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
         Namjae Jeon <namjae.jeon@samsung.com>,
         Pankaj Kumar <pankaj.km@samsung.com>
-Subject: [PATCH v3 6/7] f2fs: add tracepoints for write page operations
-Date: Sat,  6 Apr 2013 14:46:46 +0900
-Message-Id: <1365227206-15560-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH v3 7/7] f2fs: add tracepoints to debug checkpoint request
+Date: Sat,  6 Apr 2013 14:46:58 +0900
+Message-Id: <1365227218-15594-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,125 +23,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Add tracepoints to debug the various page write operation
-like data pages, meta pages.
+Add tracepoints to debug checkpoint request.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
 ---
- fs/f2fs/checkpoint.c        |    2 ++
- fs/f2fs/data.c              |    2 ++
- include/trace/events/f2fs.h |   62 +++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 66 insertions(+)
+ fs/f2fs/checkpoint.c        |    1 +
+ include/trace/events/f2fs.h |   18 ++++++++++++++++++
+ 2 files changed, 19 insertions(+)
 
 diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index 93fd57d..c0606b1 100644
+index c0606b1..f1bcf35 100644
 --- a/fs/f2fs/checkpoint.c
 +++ b/fs/f2fs/checkpoint.c
-@@ -20,6 +20,7 @@
- #include "f2fs.h"
- #include "node.h"
- #include "segment.h"
-+#include <trace/events/f2fs.h>
+@@ -606,6 +606,7 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
+ 	void *kaddr;
+ 	int i;
  
- static struct kmem_cache *orphan_entry_slab;
- static struct kmem_cache *inode_entry_slab;
-@@ -75,6 +76,7 @@ static int f2fs_write_meta_page(struct page *page,
- 	struct inode *inode = page->mapping->host;
- 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
- 
-+	trace_f2fs_write_page(page, META);
- 	/* Should not write any meta pages, if any IO error was occurred */
- 	if (wbc->for_reclaim ||
- 			is_set_ckpt_flags(F2FS_CKPT(sbi), CP_ERROR_FLAG)) {
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index a517ec2..9ed6500 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -490,6 +490,7 @@ static int f2fs_write_data_page(struct page *page,
- 	unsigned offset;
- 	int err = 0;
- 
-+	trace_f2fs_write_page(page, DATA);
- 	if (page->index < end_index)
- 		goto out;
- 
-@@ -598,6 +599,7 @@ static int f2fs_write_begin(struct file *file, struct address_space *mapping,
- 	struct dnode_of_data dn;
- 	int err = 0;
- 
-+	trace_f2fs_write_begin(inode, pos, len, flags);
- 	/* for nobh_write_end */
- 	*fsdata = NULL;
- 
++	trace_f2fs_do_checkpoint(sbi->sb);
+ 	/* Flush all the NAT/SIT pages */
+ 	while (get_pages(sbi, F2FS_DIRTY_META))
+ 		sync_meta_pages(sbi, META, LONG_MAX);
 diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
-index 5665619..858375b 100644
+index 858375b..8ec02ea 100644
 --- a/include/trace/events/f2fs.h
 +++ b/include/trace/events/f2fs.h
-@@ -423,6 +423,68 @@ TRACE_EVENT(f2fs_reserve_new_block,
- 		   __entry->nid)
+@@ -485,6 +485,24 @@ DEFINE_EVENT(f2fs_page_type_op, f2fs_write_page,
+ 	TP_ARGS(page, type)
  );
  
-+TRACE_EVENT(f2fs_write_begin,
++TRACE_EVENT(f2fs_do_checkpoint,
++	TP_PROTO(struct super_block *sb),
 +
-+	TP_PROTO(struct inode *inode, loff_t pos, unsigned int len,
-+		 unsigned int flags),
-+
-+	TP_ARGS(inode, pos, len, flags),
++	TP_ARGS(sb),
 +
 +	TP_STRUCT__entry(
 +		__field(dev_t,	dev)
-+		__field(ino_t,	ino)
-+		__field(loff_t,	pos)
-+		__field(unsigned int, len)
-+		__field(unsigned int, flags)
 +	),
 +
 +	TP_fast_assign(
-+		__entry->dev	= inode->i_sb->s_dev;
-+		__entry->ino	= inode->i_ino;
-+		__entry->pos	= pos;
-+		__entry->len	= len;
-+		__entry->flags	= flags;
++		__entry->dev	= sb->s_dev;
 +	),
 +
-+	TP_printk("dev %d,%d ino %lu pos %lld len %u flags %u",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  (unsigned long) __entry->ino,
-+		  __entry->pos, __entry->len, __entry->flags)
-+);
++	TP_printk("dev %d,%d ",
++		  MAJOR(__entry->dev), MINOR(__entry->dev))
 +
-+DECLARE_EVENT_CLASS(f2fs_page_type_op,
-+	TP_PROTO(struct page *page, int type),
-+
-+	TP_ARGS(page, type),
-+
-+	TP_STRUCT__entry(
-+		__field(pgoff_t, index)
-+		__field(int, type)
-+		__field(ino_t,	ino)
-+		__field(dev_t,	dev)
-+
-+	),
-+
-+	TP_fast_assign(
-+		__entry->index	= page->index;
-+		__entry->type	= type;
-+		__entry->ino	= page->mapping->host->i_ino;
-+		__entry->dev	= page->mapping->host->i_sb->s_dev;
-+	),
-+
-+	TP_printk("dev %d,%d ino %lu page_index %lu type %d",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  (unsigned long) __entry->ino,
-+		  (unsigned long) __entry->index, __entry->type)
-+);
-+
-+DEFINE_EVENT(f2fs_page_type_op, f2fs_write_page,
-+
-+	TP_PROTO(struct page *page, int type),
-+
-+	TP_ARGS(page, type)
 +);
 +
  #endif /* _TRACE_F2FS_H */
