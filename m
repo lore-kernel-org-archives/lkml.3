@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423128Ab3DFPHB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 11:07:01 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:35388 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423040Ab3DFPHA (ORCPT
+	id S1423172Ab3DFPHX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 11:07:23 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:57590 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423040Ab3DFPHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 11:07:00 -0400
-X-Auth-Info: fbkJQ9oJ1LePb/GwjhkhTW42dsj7rxn9jTlUx/mxe5Y=
-From: Marek Vasut <marex@denx.de>
-To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
-Subject: Re: [PATCH] mmc: mxs-mmc: Add broken-cd devicetree property
-Date: Sat, 6 Apr 2013 17:06:54 +0200
-User-Agent: KMail/1.13.7 (Linux/3.8-trunk-amd64; KDE/4.8.4; x86_64; ; )
-Cc: "Marc Kleine-Budde" <mkl@pengutronix.de>, Chris Ball <cjb@laptop.org>,
-        Shawn Guo <shawn.guo@linaro.org>, fabio.estevam@freescale.com,
-        Otavio Salvador <otavio@ossystems.com.br>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-mmc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-References: <1365255828-6416-1-git-send-email-aletes.xgr@gmail.com> <51602A0B.6020405@pengutronix.de> <CAAAP30Gmc+aR1AY2Grd_M5LyXUO9szMxoLLA62ROq7=Hzz3ZEQ@mail.gmail.com>
-In-Reply-To: <CAAAP30Gmc+aR1AY2Grd_M5LyXUO9szMxoLLA62ROq7=Hzz3ZEQ@mail.gmail.com>
+	Sat, 6 Apr 2013 11:07:19 -0400
+Message-ID: <51603877.7070904@gmail.com>
+Date: Sat, 06 Apr 2013 17:00:07 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: Matthew Wilcox <matthew@wil.cx>
+CC: linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@fusionio.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Jaegeuk Kim <jaegeuk.kim@samsung.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
+        cluster-devel@redhat.com, linux-nilfs@vger.kernel.org,
+        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 3/4] fsfreeze: manage kill signal when sb_start_pagefault
+ is called
+References: <515FF380.5020406@gmail.com> <20130406132028.GD28744@parisc-linux.org>
+In-Reply-To: <20130406132028.GD28744@parisc-linux.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304061706.54320.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Alexandre Pereira da Silva,
+Il 06/04/2013 15:20, Matthew Wilcox ha scritto:
+> On Sat, Apr 06, 2013 at 12:05:52PM +0200, Marco Stornelli wrote:
+>> In every place where sb_start_pagefault was called now we must manage
+>> the error code and return VM_FAULT_RETRY.
+>
+> Erm ... in patch 1/4:
+>
+>   static inline void sb_start_pagefault(struct super_block *sb)
+>   {
+> -       __sb_start_write(sb, SB_FREEZE_PAGEFAULT, true);
+> +       __sb_start_write_wait(sb, SB_FREEZE_PAGEFAULT, false);
+>   }
+>
+>>
+>> -	sb_start_pagefault(inode->i_sb);
+>> +	ret = sb_start_pagefault(inode->i_sb);
+>> +	if (ret)
+>> +		return VM_FAULT_RETRY;
+>>   	ret  = btrfs_delalloc_reserve_space(inode, PAGE_CACHE_SIZE);
+>
+> Does the compiler not warn that you're assigning void to 'ret'?  Or was
+> there some other SNAFU sending these patches?
+>
 
-> On Sat, Apr 6, 2013 at 10:58 AM, Marc Kleine-Budde <mkl@pengutronix.de> wrote:
-> > According to the documentation broken card detect is something different
-> > 
-> > than non-removable:
-> > >   - broken-cd: There is no card detection available; polling must be
-> > >   used. - non-removable: non-removable slot (like eMMC); assume always
-> > >   present.
-> > 
-> > But mxs-mmc set MMC_CAP_NEEDS_POLL unconditionally.
-> 
-> I will work on a better way to fix this.
+I'm sorry, my fault :) As I said in 00 these patches are completely 
+*not* tested, it was only a "quick coding & review" to understand if 
+someone can see any problem to this kind of implementation, since I 
+touched several points in the kernel. So there is still on-going work 
+and I need to do several tests. Maybe I had to add the RFC tag, sorry again.
 
-NEEDS_POLL looks nice and seems to fit this case.
-
-Best regards,
-Marek Vasut
+Marco
