@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422933Ab3DFN0N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 09:26:13 -0400
-Received: from palinux.external.hp.com ([192.25.206.14]:56619 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422883Ab3DFN0L (ORCPT
+	id S1422953Ab3DFNeg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 09:34:36 -0400
+Received: from vaxjo.synopsys.com ([198.182.60.75]:46260 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422919Ab3DFNee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 09:26:11 -0400
-Date: Sat, 6 Apr 2013 07:20:29 -0600
-From: Matthew Wilcox <matthew@wil.cx>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@fusionio.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
-        cluster-devel@redhat.com, linux-nilfs@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org,
-        Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 3/4] fsfreeze: manage kill signal when
-	sb_start_pagefault is called
-Message-ID: <20130406132028.GD28744@parisc-linux.org>
-References: <515FF380.5020406@gmail.com>
+	Sat, 6 Apr 2013 09:34:34 -0400
+Message-ID: <51602459.3040105@synopsys.com>
+Date: Sat, 6 Apr 2013 19:04:17 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515FF380.5020406@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Newsgroups: gmane.linux.kernel
+To: <tglx@linutronix.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [PATCH] Gaurantee spinlocks implicit barrier for !PREEMPT_COUNT
+References: <alpine.LFD.2.02.1304031433350.21884@ionos> <1364998282-21437-1-git-send-email-vgupta@synopsys.com> <20130404152808.GB15261@ab42.lan> <515E54BD.2090300@synopsys.com>
+In-Reply-To: <515E54BD.2090300@synopsys.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.39]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 06, 2013 at 12:05:52PM +0200, Marco Stornelli wrote:
-> In every place where sb_start_pagefault was called now we must manage
-> the error code and return VM_FAULT_RETRY.
+> On 04/05/2013 10:06 AM, Vineet Gupta wrote:
+> Hi Thomas,
+> 
+> Given that we are closing on 3.9 release, and that one/more of these patches fix a
+> real issue for us - can you please consider my earlier patch to fix
+> timer_pending() only for 3.9 [http://www.spinics.net/lists/kernel/msg1508224.html]
+> This will be a localized / low risk change for this late in cycle.
+> 
+> For 3.10 - assuming preempt_* change is blessed, we can revert this one and add
+> that fuller/better fix.
+> 
+> What do you think ?
+> 
+> Thx,
+> -Vineet
+> 
 
-Erm ... in patch 1/4:
+Ping ! Sorry for pestering, but one of the fixes is needed before 3.9 goes out.
 
- static inline void sb_start_pagefault(struct super_block *sb)
- {
--       __sb_start_write(sb, SB_FREEZE_PAGEFAULT, true);
-+       __sb_start_write_wait(sb, SB_FREEZE_PAGEFAULT, false);
- }
+Simple localized fix: http://www.spinics.net/lists/kernel/msg1508224.html
+Better but risky: http://www.spinics.net/lists/kernel/msg1510885.html
 
->  
-> -	sb_start_pagefault(inode->i_sb);
-> +	ret = sb_start_pagefault(inode->i_sb);
-> +	if (ret)
-> +		return VM_FAULT_RETRY;
->  	ret  = btrfs_delalloc_reserve_space(inode, PAGE_CACHE_SIZE);
-
-Does the compiler not warn that you're assigning void to 'ret'?  Or was
-there some other SNAFU sending these patches?
-
--- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+Thx,
+-Vineet
