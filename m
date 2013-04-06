@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161172Ab3DFVup (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 17:50:45 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56504 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161113Ab3DFVun (ORCPT
+	id S1161175Ab3DFWGX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 18:06:23 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:63481 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161138Ab3DFWGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 17:50:43 -0400
-Date: Sat, 6 Apr 2013 22:50:33 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Steve French <sfrench@samba.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Anton Altaparmakov <anton@tuxera.com>, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>, Ben Myers <bpm@sgi.com>,
-        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com,
-        Matthew Wilcox <matthew@wil.cx>, Mike Snitzer <snitzer@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-ext4@vger.kernel.org,
-        fuse-devel@lists.sourceforge.net, linux-ntfs-dev@lists.sourceforge.net,
-        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org,
-        Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 2/4] fsfreeze: manage kill signal when sb_start_write is
- called
-Message-ID: <20130406215033.GM4068@ZenIV.linux.org.uk>
-References: <515FF344.8040705@gmail.com>
+	Sat, 6 Apr 2013 18:06:22 -0400
+Message-ID: <51609C81.5030207@prisktech.co.nz>
+Date: Sun, 07 Apr 2013 10:06:57 +1200
+From: Tony Prisk <linux@prisktech.co.nz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <515FF344.8040705@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        akpm@linux-foundation.org
+Subject: Re: PWM backlight build warning
+References: <51606A7F.3050803@prisktech.co.nz> <20130406200251.GO6597@opensource.wolfsonmicro.com> <20130406211041.GA15987@avionic-0098.mockup.avionic-design.de>
+In-Reply-To: <20130406211041.GA15987@avionic-0098.mockup.avionic-design.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 06, 2013 at 12:04:52PM +0200, Marco Stornelli wrote:
-> In every place where sb_start_write was called now we must manage
-> the error code and return -EINTR.
+On 07/04/13 09:10, Thierry Reding wrote:
+> On Sat, Apr 06, 2013 at 09:02:51PM +0100, Mark Brown wrote:
+>> On Sun, Apr 07, 2013 at 06:33:35AM +1200, Tony Prisk wrote:
+>>
+>>> The problem occurs because when CONFIG_PM=y but CONFIG_PM_SLEEP=n:
+>>> I guess this would be a problem on every driver that has been
+>>> converted to SIMPLE_DEV_PM_OPS.
+>>> I don't know enough about the PM code to offer a fix, or whethermy
+>>> chosen config is just 'invalid'.
+>> You just need to put the system suspend functions inside an ifdef
+>> CONFIG_PM_SLEEP instead of CONFIG_PM.
+> I carry a fix for that in my for-next branch.
+>
+> Thierry
+Ahh ok, all is good then.
 
-Now go and look for callers of mnt_want_write() ;-/  The really
-painful one is in do_last(), but kern_path_create() is not much
-better; mq_open() would be bad too, had it not been about something
-you are not going to freeze anyway...
+Regards
+Tony P
