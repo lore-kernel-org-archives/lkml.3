@@ -1,59 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab3DFKDk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 06:03:40 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:37746 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604Ab3DFKDj (ORCPT
+	id S1757517Ab3DFKGe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 06:06:34 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:52096 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754162Ab3DFKGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 06:03:39 -0400
+	Sat, 6 Apr 2013 06:06:33 -0400
+Message-ID: <515FF438.6090305@metafoo.de>
+Date: Sat, 06 Apr 2013 12:08:56 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <CAKb7Uvgxm7ouX0AvPo=eLGn_ruJK7FMCaEMVyK8HxhQ3Ekk0sQ@mail.gmail.com>
-References: <CAKb7UviwOk9asT=WxYgDUzfm3J+tGXobroUycpoTvzOX5kkofQ@mail.gmail.com>
-	<0000013dc73c284d-29fd15db-416b-40cc-81b6-81abc5bd3c02-000000@email.amazonses.com>
-	<CAKb7Uvgxm7ouX0AvPo=eLGn_ruJK7FMCaEMVyK8HxhQ3Ekk0sQ@mail.gmail.com>
-Date: Sat, 6 Apr 2013 06:03:37 -0400
-X-Google-Sender-Auth: UtYJefBDcop901suEUSHm2UnX_w
-Message-ID: <CAKb7Uvjza68+W58=1UHuQxg5M=P7kM+rcwa7A1NEEfcDHPggAQ@mail.gmail.com>
-Subject: Re: system death under oom - 3.7.9
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Christoph Lameter <cl@linux.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        nouveau@lists.freedesktop.org, linux-mm@kvack.org,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Luck, Tony" <tony.luck@intel.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Bill Pemberton <wfp5p@virginia.edu>,
+        Joe Perches <joe@perches.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: Re: [PATCH] staging/adt7316 Fix some 'interesting' string operations
+References: <515df29417437372eb@agluck-desk.sc.intel.com>
+In-Reply-To: <515df29417437372eb@agluck-desk.sc.intel.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 6, 2013 at 5:01 AM, Ilia Mirkin <imirkin@alum.mit.edu> wrote:
-> On Mon, Apr 1, 2013 at 4:14 PM, Christoph Lameter <cl@linux.com> wrote:
->> On Wed, 27 Mar 2013, Ilia Mirkin wrote:
->>
->>> The GPF happens at +160, which is in the argument setup for the
->>> cmpxchg in slab_alloc_node. I think it's the call to
->>> get_freepointer(). There was a similar bug report a while back,
->>> https://lkml.org/lkml/2011/5/23/199, and the recommendation was to run
->>> with slub debugging. Is that still the case, or is there a simpler
->>> explanation? I can't reproduce this at will, not sure how many times
->>> this has happened but definitely not many.
->>
->> slub debugging will help to track down the cause of the memory corruption.
->
-> OK, with slub_debug=FZP, I get (after a while):
->
-> http://pastebin.com/cbHiKhdq
->
-> Which definitely makes it look like something in the nouveau
-> context/whatever alloc failure path causes some stomping to happen. (I
-> don't suppose it's reasonable to warn when the stomping happens
-> through some sort of page protection... would explode the size since
-> each n-byte object would be at least 4K, but might be worth it for
-> debugging...)
+On 04/04/2013 11:37 PM, Luck, Tony wrote:
+> Calling memcmp() to check the value of the first byte in a string is overkill.
+> Just use buf[0] == '1' or buf[0] != '1' as appropriate.
+> 
+> Signed-off-by: Tony Luck <tony.luck@intel.com>
+> 
 
-OK, after staring for a while at this code, I found an issue, and
-looks like it's already fixed by
-cfd376b6bfccf33782a0748a9c70f7f752f8b869 (drm/nouveau/vm: fix memory
-corruption when pgt allocation fails), which didn't make it into
-3.7.9, but is in 3.7.10. Time to upgrade, I guess. Thanks for the
-various suggestions.
+I think it is a good idea to switch directly to strtobool. But anyway, if you
+don't want to respin the patch it is fine as it is.
+
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+
+> ---
+> 
+> [Inspired by a rant on IRC about a different driver doing something similar]
+> 
+> diff --git a/drivers/staging/iio/addac/adt7316.c b/drivers/staging/iio/addac/adt7316.c
+> index 0b431bc..506b5a7 100644
+> --- a/drivers/staging/iio/addac/adt7316.c
+> +++ b/drivers/staging/iio/addac/adt7316.c
+> @@ -256,7 +256,7 @@ static ssize_t adt7316_store_enabled(struct device *dev,
+>  	struct adt7316_chip_info *chip = iio_priv(dev_info);
+>  	int enable;
+>  
+> -	if (!memcmp(buf, "1", 1))
+> +	if (buf[0] == '1')
+>  		enable = 1;
+>  	else
+>  		enable = 0;
+> @@ -299,7 +299,7 @@ static ssize_t adt7316_store_select_ex_temp(struct device *dev,
+>  		return -EPERM;
+>  
+>  	config1 = chip->config1 & (~ADT7516_SEL_EX_TEMP);
+> -	if (!memcmp(buf, "1", 1))
+> +	if (buf[0] == '1')
+>  		config1 |= ADT7516_SEL_EX_TEMP;
+>  
+>  	ret = chip->bus.write(chip->bus.client, ADT7316_CONFIG1, config1);
+> @@ -495,7 +495,7 @@ static ssize_t adt7316_store_disable_averaging(struct device *dev,
+>  	int ret;
+>  
+>  	config2 = chip->config2 & (~ADT7316_DISABLE_AVERAGING);
+> -	if (!memcmp(buf, "1", 1))
+> +	if (buf[0] == '1')
+>  		config2 |= ADT7316_DISABLE_AVERAGING;
+>  
+>  	ret = chip->bus.write(chip->bus.client, ADT7316_CONFIG2, config2);
+> @@ -534,7 +534,7 @@ static ssize_t adt7316_store_enable_smbus_timeout(struct device *dev,
+>  	int ret;
+>  
+>  	config2 = chip->config2 & (~ADT7316_EN_SMBUS_TIMEOUT);
+> -	if (!memcmp(buf, "1", 1))
+> +	if (buf[0] == '1')
+>  		config2 |= ADT7316_EN_SMBUS_TIMEOUT;
+>  
+>  	ret = chip->bus.write(chip->bus.client, ADT7316_CONFIG2, config2);
+> @@ -597,7 +597,7 @@ static ssize_t adt7316_store_powerdown(struct device *dev,
+>  	int ret;
+>  
+>  	config1 = chip->config1 & (~ADT7316_PD);
+> -	if (!memcmp(buf, "1", 1))
+> +	if (buf[0] == '1')
+>  		config1 |= ADT7316_PD;
+>  
+>  	ret = chip->bus.write(chip->bus.client, ADT7316_CONFIG1, config1);
+> @@ -635,7 +635,7 @@ static ssize_t adt7316_store_fast_ad_clock(struct device *dev,
+>  	int ret;
+>  
+>  	config3 = chip->config3 & (~ADT7316_ADCLK_22_5);
+> -	if (!memcmp(buf, "1", 1))
+> +	if (buf[0] == '1')
+>  		config3 |= ADT7316_ADCLK_22_5;
+>  
+>  	ret = chip->bus.write(chip->bus.client, ADT7316_CONFIG3, config3);
+> @@ -681,7 +681,7 @@ static ssize_t adt7316_store_da_high_resolution(struct device *dev,
+>  
+>  	chip->dac_bits = 8;
+>  
+> -	if (!memcmp(buf, "1", 1)) {
+> +	if (buf[0] == '1') {
+>  		config3 = chip->config3 | ADT7316_DA_HIGH_RESOLUTION;
+>  		if (chip->id == ID_ADT7316 || chip->id == ID_ADT7516)
+>  			chip->dac_bits = 12;
+> @@ -731,7 +731,7 @@ static ssize_t adt7316_store_AIN_internal_Vref(struct device *dev,
+>  	if ((chip->id & ID_FAMILY_MASK) != ID_ADT75XX)
+>  		return -EPERM;
+>  
+> -	if (memcmp(buf, "1", 1))
+> +	if (buf[0] != '1')
+>  		config3 = chip->config3 & (~ADT7516_AIN_IN_VREF);
+>  	else
+>  		config3 = chip->config3 | ADT7516_AIN_IN_VREF;
+> @@ -773,7 +773,7 @@ static ssize_t adt7316_store_enable_prop_DACA(struct device *dev,
+>  	int ret;
+>  
+>  	config3 = chip->config3 & (~ADT7316_EN_IN_TEMP_PROP_DACA);
+> -	if (!memcmp(buf, "1", 1))
+> +	if (buf[0] == '1')
+>  		config3 |= ADT7316_EN_IN_TEMP_PROP_DACA;
+>  
+>  	ret = chip->bus.write(chip->bus.client, ADT7316_CONFIG3, config3);
+> @@ -812,7 +812,7 @@ static ssize_t adt7316_store_enable_prop_DACB(struct device *dev,
+>  	int ret;
+>  
+>  	config3 = chip->config3 & (~ADT7316_EN_EX_TEMP_PROP_DACB);
+> -	if (!memcmp(buf, "1", 1))
+> +	if (buf[0] == '1')
+>  		config3 |= ADT7316_EN_EX_TEMP_PROP_DACB;
+>  
+>  	ret = chip->bus.write(chip->bus.client, ADT7316_CONFIG3, config3);
+> @@ -1018,7 +1018,7 @@ static ssize_t adt7316_store_DA_AB_Vref_bypass(struct device *dev,
+>  		return -EPERM;
+>  
+>  	dac_config = chip->dac_config & (~ADT7316_VREF_BYPASS_DAC_AB);
+> -	if (!memcmp(buf, "1", 1))
+> +	if (buf[0] == '1')
+>  		dac_config |= ADT7316_VREF_BYPASS_DAC_AB;
+>  
+>  	ret = chip->bus.write(chip->bus.client, ADT7316_DAC_CONFIG, dac_config);
+> @@ -1063,7 +1063,7 @@ static ssize_t adt7316_store_DA_CD_Vref_bypass(struct device *dev,
+>  		return -EPERM;
+>  
+>  	dac_config = chip->dac_config & (~ADT7316_VREF_BYPASS_DAC_CD);
+> -	if (!memcmp(buf, "1", 1))
+> +	if (buf[0] == '1')
+>  		dac_config |= ADT7316_VREF_BYPASS_DAC_CD;
+>  
+>  	ret = chip->bus.write(chip->bus.client, ADT7316_DAC_CONFIG, dac_config);
+> @@ -1982,7 +1982,7 @@ static ssize_t adt7316_set_int_enabled(struct device *dev,
+>  	int ret;
+>  
+>  	config1 = chip->config1 & (~ADT7316_INT_EN);
+> -	if (!memcmp(buf, "1", 1))
+> +	if (buf[0] == '1')
+>  		config1 |= ADT7316_INT_EN;
+>  
+>  	ret = chip->bus.write(chip->bus.client, ADT7316_CONFIG1, config1);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
