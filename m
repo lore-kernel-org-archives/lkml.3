@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422694Ab3DFLcN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 07:32:13 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:48706 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1163267Ab3DFLcM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 07:32:12 -0400
-From: "Michael D. Setzer II" <msetzerii@gmail.com>
-To: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Date: Sat, 06 Apr 2013 21:32:06 +1000
+	id S1163299Ab3DFLtj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 07:49:39 -0400
+Received: from mga03.intel.com ([143.182.124.21]:25940 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1163272Ab3DFLti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Apr 2013 07:49:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,420,1363158000"; 
+   d="scan'208";a="223605402"
+Message-ID: <51600BBE.7060506@intel.com>
+Date: Sat, 06 Apr 2013 19:49:18 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-Subject: Re: Error in linux-3.0.72 build.
-Message-ID: <516007B6.26486.625F6@msetzerii.gmail.com>
-In-reply-to: <20130406112657.GA3625@pd.tnic>
-References: <515FF835.28644.1FF1E@msetzerii.gmail.com>, <20130406112657.GA3625@pd.tnic>
-X-mailer: Pegasus Mail for Windows (4.63)
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7BIT
-Content-description: Mail message body
+To: Namhyung Kim <namhyung@kernel.org>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, efault@gmx.de, morten.rasmussen@arm.com,
+        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
+        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
+        riel@redhat.com
+Subject: Re: [patch v7 15/21] sched: pull all tasks from source group
+References: <1365040862-8390-1-git-send-email-alex.shi@intel.com> <1365040862-8390-16-git-send-email-alex.shi@intel.com> <87a9peesz7.fsf@sejong.aot.lge.com>
+In-Reply-To: <87a9peesz7.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 Apr 2013 at 13:26, Borislav Petkov wrote:
-
-Date sent:      	Sat, 6 Apr 2013 13:26:57 +0200
-From:           	Borislav Petkov <bp@alien8.de>
-To:             	"Michael D. Setzer II" <msetzerii@gmail.com>
-Copies to:      	linux-kernel@vger.kernel.org, 
-linux-ext4@vger.kernel.org
-Subject:        	Re: Error in linux-3.0.72 build.
-
-> On Sat, Apr 06, 2013 at 08:25:57PM +1000, Michael D. Setzer II wrote:
-> > Just downloaded new kernels, and find this error in build.
-> > 
-> > fs/built-in.o: In function `find_group_flex':
-> > /home/msetzerii/data/linux-3.0.72/fs/ext4/ialloc.c:359: undefined 
-> > reference to `__udivdi3'
-> > /home/msetzerii/data/linux-3.0.72/fs/ext4/ialloc.c:374: undefined 
-> > reference to `__udivdi3'
-> > make: *** [.tmp_vmlinux1] Error 1
+On 04/04/2013 01:59 PM, Namhyung Kim wrote:
+>> > -		if (capacity && rq->nr_running == 1 && wl > env->imbalance)
+>> > +		if (rq->nr_running == 0 ||
+>> > +			(!(env->flags & LBF_POWER_BAL) && capacity &&
+>> > +				rq->nr_running == 1 && wl > env->imbalance))
+> Just out of curious.
 > 
-> Looks like your compiler is generating 64-bit division which is a call
-> into libgcc. Which gcc version are you using?
+> In load_balance(), we only move normal tasks, right?
 > 
+> Then shouldn't it check rq->cfs.h_nr_running rather than rq->nr_running?
 
-gcc (GCC) 4.5.1 20100924 (Red Hat 4.5.1-4)
+Yes, it seems so.
+What's your opinion of this, Peter?
 
-Other two new kernel built fine, and all the previous 3.0.x kernels 
-have build using the same .config on system.
-
-It is a quad core phenom II machine running Fedora 14 with the 
-linux32 option to build 32bit kernels for use on my g4l project cd 
-image.
-
-
-
-> +ext4 folks.
-> 
-> -- 
-> Regards/Gruss,
->     Boris.
-> 
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
-
-
-+----------------------------------------------------------+
-  Michael D. Setzer II -  Computer Science Instructor      
-  Guam Community College  Computer Center                  
-  mailto:mikes@kuentos.guam.net                            
-  mailto:msetzerii@gmail.com
-  http://www.guam.net/home/mikes
-  Guam - Where America's Day Begins                        
-  G4L Disk Imaging Project maintainer 
-  http://sourceforge.net/projects/g4l/
-+----------------------------------------------------------+
-
-http://setiathome.berkeley.edu (Original)
-Number of Seti Units Returned:  19,471
-Processing time:  32 years, 290 days, 12 hours, 58 minutes
-(Total Hours: 287,489)
-
-BOINC@HOME CREDITS
-SETI        14361044.287140   |   EINSTEIN    10723942.979852
-ROSETTA      6832434.144171   |   ABC         15903532.519753
-
+-- 
+Thanks
+    Alex
