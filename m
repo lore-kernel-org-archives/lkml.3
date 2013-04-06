@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932697Ab3DFGnv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 02:43:51 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:61048 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754705Ab3DFGnu (ORCPT
+	id S932705Ab3DFGoR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 02:44:17 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:27380 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753436Ab3DFGoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 02:43:50 -0400
-X-AuditID: cbfee68d-b7f786d000005188-16-515fc425fd04
+	Sat, 6 Apr 2013 02:44:16 -0400
+X-AuditID: cbfee691-b7f5f6d000002fda-d5-515fc43f1f7c
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Samuel Ortiz'" <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <001701ce3291$f3f29090$dbd7b1b0$%han@samsung.com>
 In-reply-to: <001701ce3291$f3f29090$dbd7b1b0$%han@samsung.com>
-Subject: [PATCH 3/6] mfd: ezx-pcap: use spi_get_drvdata() and spi_set_drvdata()
-Date: Sat, 06 Apr 2013 15:43:48 +0900
-Message-id: <001901ce3292$1803f690$480be3b0$%han@samsung.com>
+Subject: [PATCH 4/6] mfd: mc13xxx: use spi_get_drvdata() and spi_set_drvdata()
+Date: Sat, 06 Apr 2013 15:44:14 +0900
+Message-id: <001a01ce3292$27532ee0$75f98ca0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4ykfPaYTuV5qPCS+S/kzkYYtE9uwAABY5g
+Thread-index: Ac4ykfPaYTuV5qPCS+S/kzkYYtE9uwAACTkA
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zY13VI/GBBhNP8FlcXniJ1eLyrjls
-	Fqe7WR2YPeadDPTo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujKW7LjAXfOaoeNryiKmBcRd7
-	FyMHh4SAicT+h6ZdjJxAppjEhXvr2boYuTiEBJYxSjw69YMJImEisal7MiNEYjqjxKmjH5kg
-	nF+MEs+mtLGAVLEJqEl8+XKYHcQWEdCS6D52ng1kA7OAi8TRaSIgYSEBW4nNsw6BlXMK2Emc
-	+b+NEcQWFvCX2LLuBTOIzSKgKrHy4hMwmxeofsL776wQtqDEj8n3wHqZgcav33mcCcKWl9i8
-	5i0zxDPqEo/+6kJcYCSx+Xs3VImIxL4X78DulxDYxS7R9uMPK8QuAYlvk0HuAemVldh0gBni
-	X0mJgytusExglJiFZPMsJJtnIdk8C8mKBYwsqxhFUwuSC4qT0osM9YoTc4tL89L1kvNzNzFC
-	Yq93B+PtA9aHGJOB1k9klhJNzgfGbl5JvKGxmZGFqYmpsZG5pRlpwkrivGot1oFCAumJJanZ
-	qakFqUXxRaU5qcWHGJk4OKUaGG+9DdcMu5KkYlbOpP1GxXFq9bFMb6sv28797bWyeDptsVrz
-	2vi0coezFw43yv38lT7xykzROzyq/BvTayZYiPu+mLfP+6NUsUKpZH3rMpMk3vLuxH+fnr65
-	r5Gpf2avz5HVN89zLLz6b90Bg5O7ao/dXDS9yWvDodP5Zr9vsQsdevmkMjDb444SS3FGoqEW
-	c1FxIgCaY7ZX0wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jQV3VI/GBBu0vOS0uL7zEanF51xw2
-	i9PdrA7MHvNOBnr0bVnF6PF5k1wAc1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6h
-	pYW5kkJeYm6qrZKLT4CuW2YO0B4lhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZo
-	IGEdY8bSXReYCz5zVDxtecTUwLiLvYuRk0NCwERiU/dkRghbTOLCvfVsXYxcHEIC0xklTh39
-	yATh/GKUeDaljQWkik1ATeLLl8Ng3SICWhLdx84DdXBwMAu4SBydJgISFhKwldg86xBYOaeA
-	ncSZ/9vAFggL+EtsWfeCGcRmEVCVWHnxCZjNC1Q/4f13VghbUOLH5HtgvcxA49fvPM4EYctL
-	bF7zlhlklYSAusSjv7oQFxhJbP7eDVUiIrHvxTvGCYxCs5BMmoVk0iwkk2YhaVnAyLKKUTS1
-	ILmgOCk910ivODG3uDQvXS85P3cTIzi2n0nvYFzVYHGIUYCDUYmH1+J2XKAQa2JZcWXuIUYJ
-	DmYlEV7Z50Ah3pTEyqrUovz4otKc1OJDjMlAj05klhJNzgemnbySeENjEzMjSyMzCyMTc3PS
-	hJXEeQ+2WgcKCaQnlqRmp6YWpBbBbGHi4JRqYIzhu5+gWPa2zPDxXpGfFl9O6l9Y3Hzy0d2l
-	EVaeO29rH7qXclIgWevXxi8CjS5HIkQf/12ovHLz6ZeNucc+ph0PXvvwoSmL6nahFaWJGX4y
-	c3eZBHLFhRme8DJk/ivxW7fuz4S8qlDnT0H8Sv+3LBU84Xlk3ZwNjQnX/xQUbZ9c3772ZBWT
-	W5wSS3FGoqEWc1FxIgAZASWUMQMAAA==
+x-cr-hashedpuzzle: B9FT DgxA HnvL Lngc M0JK Odw2 QxqV TevZ TfXl V/e9 bXT9 eWUl
+ ea0L etp+ inOE
+ i+ld;3;agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBzAGEAbQBlAG8AQABsAGkAbgB1AHgALgBpAG4AdABlAGwALgBjAG8AbQA=;Sosha1_v1;7;{9DE8D711-0575-4AE6-AD76-2181262AE07E};agBnADEALgBoAGEAbgBAAHMAYQBtAHMAdQBuAGcALgBjAG8AbQA=;Sat,
+ 06 Apr 2013 06:44:09
+ GMT;WwBQAEEAVABDAEgAIAA0AC8ANgBdACAAbQBmAGQAOgAgAG0AYwAxADMAeAB4AHgAOgAgAHUAcwBlACAAcwBwAGkAXwBnAGUAdABfAGQAcgB2AGQAYQB0AGEAKAApACAAYQBuAGQAIABzAHAAaQBfAHMAZQB0AF8AZAByAHYAZABhAHQAYQAoACkA
+x-cr-puzzleid: {9DE8D711-0575-4AE6-AD76-2181262AE07E}
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t8zA137I/GBBkeXcVlcXniJ1eLyrjls
+	Fqe7WR2YPeadDPTo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujE27BQtOclVsOHqDvYHxDkcX
+	IyeHhICJxMf+1UwQtpjEhXvr2boYuTiEBJYxSpw8u40Vpqhv8y1miMQiRomH/YugnF+MEr3t
+	98Gq2ATUJL58OcwOYosIaEl0HzsPNIqDg1nAReLoNBGQsJCArcTmWYdYQGxOATuJM/+3MYLY
+	wgJ+Et37D7CB2CwCqhL3Zl0Gu4gXqP7I31ssELagxI/J98BsZqDx63ceZ4Kw5SU2r3nLDLJK
+	QkBd4tFfXYgLjCQ2P25kgygRkdj34h0jyMkSAi9YJLY8/c8M8ZipRMeGN+wQ9iV2iWv3QiFu
+	EJD4NhnkTpCZshKbDkCVS0ocXHGDZQKj1CwkF81CctEsJBfNQrJ6ASPLKkbR1ILkguKk9CJT
+	veLE3OLSvHS95PzcTYyQWJ24g/H+AetDjMlA6ycyS4km5wNjPa8k3tDYzMjC1MTU2Mjc0ow0
+	YSVxXvUW60AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjLJNTz+/Ll7l1CrGtuhB8EzhozOX
+	OP3ZdNvjzskHjjI/hHPtN7/ykF6h/lfi0ruWqkj9M78YAn4v+F/h/mSS1PLsv284tdsK2BKF
+	1+1ZUyiqzeHaXJF06R1baotp/YLzx3t8ti01u8iSaJHz5qJe5+7nLv3MjuVRzCpGi9YLrs3x
+	PHlEfecvayWW4oxEQy3mouJEANG6TP/rAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGKsWRmVeSWpSXmKPExsVy+t9jAV37I/GBBvvusVpcXngJSOyaw2Zx
+	upvVgdlj3slAj74tqxg9Pm+SC2COamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0
+	MFdSyEvMTbVVcvEJ0HXLzAHao6RQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0k
+	rGPM2LRbsOAkV8WGozfYGxjvcHQxcnJICJhI9G2+xQxhi0lcuLeerYuRi0NIYBGjxMP+RcwQ
+	zi9Gid72+6wgVWwCahJfvhxmB7FFBLQkuo+dB+rg4GAWcJE4Ok0EJCwkYCuxedYhFhCbU8BO
+	4sz/bYwgtrCAn0T3/gNsIDaLgKrEvVmXmUBsXqD6I39vsUDYghI/Jt8Ds5mBxq/feZwJwpaX
+	2LzmLTPIKgkBdYlHf3UhLjCS2Py4kQ2iRERi34t3jCAnSwi8YJHY8vQ/1GOmEh0b3rBPYBSZ
+	hWTFLCQrZiFZMQvJrAWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxglPBM+kdjKsaLA4x
+	CnAwKvHwWtyOCxRiTSwrrsw9xCjBwawkwiv7HCjEm5JYWZValB9fVJqTWnyIMRkYAhOZpUST
+	84FpKq8k3tDYxMzI0sjMwsjE3Jw0YSVx3oOt1oFCAumJJanZqakFqUUwW5g4OKUaGJcKbbQ8
+	rF2wRcjRvUHJ+PufZa3fl32X03y1ZDv3n/JpD3pqexsEFgY8snNpyG9++Ew7x2LWdvuWa6Hu
+	HvNmLrJgiinc7tQtn/gnubztibryhdBTu4IuhzzOvNcfK9KbtWTqr8sr4jJ5Fd04v1Zt3rAj
+	43bLrU+JkqU2z+7IPpX5PXv5zhDry0osxRmJhlrMRcWJAOJ/5uFJAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,31 +66,40 @@ can directly pass a struct spi_device.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/mfd/ezx-pcap.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/mfd/mc13xxx-spi.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mfd/ezx-pcap.c b/drivers/mfd/ezx-pcap.c
-index b7a61f0..bbebe8d 100644
---- a/drivers/mfd/ezx-pcap.c
-+++ b/drivers/mfd/ezx-pcap.c
-@@ -393,7 +393,7 @@ static int pcap_add_subdev(struct pcap_chip *pcap,
+diff --git a/drivers/mfd/mc13xxx-spi.c b/drivers/mfd/mc13xxx-spi.c
+index 3032bae..77189da 100644
+--- a/drivers/mfd/mc13xxx-spi.c
++++ b/drivers/mfd/mc13xxx-spi.c
+@@ -131,7 +131,7 @@ static int mc13xxx_spi_probe(struct spi_device *spi)
+ 	if (!mc13xxx)
+ 		return -ENOMEM;
  
- static int ezx_pcap_remove(struct spi_device *spi)
+-	dev_set_drvdata(&spi->dev, mc13xxx);
++	spi_set_drvdata(spi, mc13xxx);
+ 	spi->mode = SPI_MODE_0 | SPI_CS_HIGH;
+ 
+ 	mc13xxx->dev = &spi->dev;
+@@ -144,7 +144,7 @@ static int mc13xxx_spi_probe(struct spi_device *spi)
+ 		ret = PTR_ERR(mc13xxx->regmap);
+ 		dev_err(mc13xxx->dev, "Failed to initialize register map: %d\n",
+ 				ret);
+-		dev_set_drvdata(&spi->dev, NULL);
++		spi_set_drvdata(spi, NULL);
+ 		return ret;
+ 	}
+ 
+@@ -164,7 +164,7 @@ static int mc13xxx_spi_probe(struct spi_device *spi)
+ 
+ static int mc13xxx_spi_remove(struct spi_device *spi)
  {
--	struct pcap_chip *pcap = dev_get_drvdata(&spi->dev);
-+	struct pcap_chip *pcap = spi_get_drvdata(spi);
- 	struct pcap_platform_data *pdata = spi->dev.platform_data;
- 	int i, adc_irq;
+-	struct mc13xxx *mc13xxx = dev_get_drvdata(&spi->dev);
++	struct mc13xxx *mc13xxx = spi_get_drvdata(spi);
  
-@@ -441,7 +441,7 @@ static int ezx_pcap_probe(struct spi_device *spi)
- 	mutex_init(&pcap->adc_mutex);
- 	INIT_WORK(&pcap->isr_work, pcap_isr_work);
- 	INIT_WORK(&pcap->msr_work, pcap_msr_work);
--	dev_set_drvdata(&spi->dev, pcap);
-+	spi_set_drvdata(spi, pcap);
+ 	mc13xxx_common_cleanup(mc13xxx);
  
- 	/* setup spi */
- 	spi->bits_per_word = 32;
 -- 
 1.7.2.5
 
