@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423431Ab3DFOpa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 10:45:30 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:39017 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423252Ab3DFOp0 (ORCPT
+	id S1423446Ab3DFOpg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 10:45:36 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:41024 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423252Ab3DFOpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 10:45:26 -0400
+	Sat, 6 Apr 2013 10:45:33 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -18,12 +18,10 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Greg Ungerer <gerg@uclinux.org>, linux-m68k@vger.kernel.org
-Subject: [PATCH v4, part3 24/41] mm/m68k: prepare for removing num_physpages and simplify mem_init()
-Date: Sat,  6 Apr 2013 22:32:23 +0800
-Message-Id: <1365258760-30821-25-git-send-email-jiang.liu@huawei.com>
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v4, part3 25/41] mm/metag: prepare for removing num_physpages and simplify mem_init()
+Date: Sat,  6 Apr 2013 22:32:24 +0800
+Message-Id: <1365258760-30821-26-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365258760-30821-1-git-send-email-jiang.liu@huawei.com>
 References: <1365258760-30821-1-git-send-email-jiang.liu@huawei.com>
@@ -34,67 +32,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Prepare for removing num_physpages and simplify mem_init().
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg Ungerer <gerg@uclinux.org>
-Cc: linux-m68k@lists.linux-m68k.org
-Cc: linux-kernel@vger.kernel.org
 ---
- arch/m68k/mm/init.c |   31 ++-----------------------------
- 1 file changed, 2 insertions(+), 29 deletions(-)
+ arch/metag/mm/init.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-diff --git a/arch/m68k/mm/init.c b/arch/m68k/mm/init.c
-index 2485a8c..0723141 100644
---- a/arch/m68k/mm/init.c
-+++ b/arch/m68k/mm/init.c
-@@ -149,33 +149,11 @@ void __init print_memmap(void)
- void __init mem_init(void)
- {
- 	pg_data_t *pgdat;
--	int codepages = 0;
--	int datapages = 0;
--	int initpages = 0;
- 	int i;
+diff --git a/arch/metag/mm/init.c b/arch/metag/mm/init.c
+index 279d701..e00586f 100644
+--- a/arch/metag/mm/init.c
++++ b/arch/metag/mm/init.c
+@@ -388,22 +388,16 @@ void __init mem_init(void)
+ 	reset_all_zones_managed_pages();
+ 	for (tmp = highstart_pfn; tmp < highend_pfn; tmp++)
+ 		free_highmem_page(pfn_to_page(tmp));
+-	num_physpages += totalhigh_pages;
+ #endif /* CONFIG_HIGHMEM */
  
- 	/* this will put all memory onto the freelists */
--	num_physpages = 0;
--	for_each_online_pgdat(pgdat) {
+ 	for_each_online_node(nid) {
+ 		pg_data_t *pgdat = NODE_DATA(nid);
+ 
 -		num_physpages += pgdat->node_present_pages;
 -
-+	for_each_online_pgdat(pgdat)
- 		free_all_bootmem_node(pgdat);
--		for (i = 0; i < pgdat->node_spanned_pages; i++) {
--			struct page *page = pgdat->node_mem_map + i;
--			char *addr = page_to_virt(page);
+ 		if (pgdat->node_spanned_pages)
+ 			free_all_bootmem_node(pgdat);
+ 	}
+ 
+-	pr_info("Memory: %luk/%luk available\n",
+-		(unsigned long)nr_free_pages() << (PAGE_SHIFT - 10),
+-		num_physpages << (PAGE_SHIFT - 10));
 -
--			if (!PageReserved(page))
--				continue;
--			if (addr >= _text &&
--			    addr < _etext)
--				codepages++;
--			else if (addr >= __init_begin &&
--				 addr < __init_end)
--				initpages++;
--			else
--				datapages++;
--		}
--	}
- 
- #if defined(CONFIG_MMU) && !defined(CONFIG_SUN3) && !defined(CONFIG_COLDFIRE)
- 	/* insert pointer tables allocated so far into the tablelist */
-@@ -190,12 +168,7 @@ void __init mem_init(void)
- 		init_pointer_table((unsigned long)zero_pgtable);
- #endif
- 
--	pr_info("Memory: %luk/%luk available (%dk kernel code, %dk data, %dk init)\n",
--	       nr_free_pages() << (PAGE_SHIFT-10),
--	       totalram_pages << (PAGE_SHIFT-10),
--	       codepages << (PAGE_SHIFT-10),
--	       datapages << (PAGE_SHIFT-10),
--	       initpages << (PAGE_SHIFT-10));
 +	mem_init_print_info(NULL);
- 	print_memmap();
- }
+ 	show_mem(0);
  
+ 	return;
 -- 
 1.7.9.5
 
