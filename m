@@ -1,122 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932933Ab3DFVmg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 17:42:36 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:41446 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932735Ab3DFVmf (ORCPT
+	id S1161172Ab3DFVup (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 17:50:45 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56504 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161113Ab3DFVun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 17:42:35 -0400
-Date: Sat, 6 Apr 2013 17:42:33 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [RFC PATCH] wfcqueue: implement __wfcq_enqueue_head()
-Message-ID: <20130406214233.GA3631@Krystal>
-References: <20130311213602.GB9829@Krystal> <20130329081016.GA15979@dcvr.yhbt.net> <20130402130541.GC11621@Krystal> <20130402211527.GA17261@dcvr.yhbt.net>
+	Sat, 6 Apr 2013 17:50:43 -0400
+Date: Sat, 6 Apr 2013 22:50:33 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Steve French <sfrench@samba.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Anton Altaparmakov <anton@tuxera.com>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com,
+        Matthew Wilcox <matthew@wil.cx>, Mike Snitzer <snitzer@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-ext4@vger.kernel.org,
+        fuse-devel@lists.sourceforge.net, linux-ntfs-dev@lists.sourceforge.net,
+        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 2/4] fsfreeze: manage kill signal when sb_start_write is
+ called
+Message-ID: <20130406215033.GM4068@ZenIV.linux.org.uk>
+References: <515FF344.8040705@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130402211527.GA17261@dcvr.yhbt.net>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <515FF344.8040705@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement enqueue-to-head. It can run concurrently with enqueue and
-splice to queue, but requires a mutex against all other queue
-operations.
+On Sat, Apr 06, 2013 at 12:04:52PM +0200, Marco Stornelli wrote:
+> In every place where sb_start_write was called now we must manage
+> the error code and return -EINTR.
 
-Useful for special-cases where a queue needs to have nodes enqueued into
-its head.
-
-This patch is only compile-tested.
-
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
----
- include/linux/wfcqueue.h |   54 ++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 47 insertions(+), 7 deletions(-)
-
-Index: linux/include/linux/wfcqueue.h
-===================================================================
---- linux.orig/include/linux/wfcqueue.h
-+++ linux/include/linux/wfcqueue.h
-@@ -55,14 +55,16 @@
-  * [4] __wfcq_splice (source queue)
-  * [5] __wfcq_first
-  * [6] __wfcq_next
-+ * [7] __wfcq_enqueue_head
-  *
-- *     [1] [2] [3] [4] [5] [6]
-- * [1]  -   -   -   -   -   -
-- * [2]  -   -   -   -   -   -
-- * [3]  -   -   X   X   X   X
-- * [4]  -   -   X   -   X   X
-- * [5]  -   -   X   X   -   -
-- * [6]  -   -   X   X   -   -
-+ *     [1] [2] [3] [4] [5] [6] [7]
-+ * [1]  -   -   -   -   -   -   -
-+ * [2]  -   -   -   -   -   -   X
-+ * [3]  -   -   X   X   X   X   X
-+ * [4]  -   -   X   -   X   X   X
-+ * [5]  -   -   X   X   -   -   X
-+ * [6]  -   -   X   X   -   -   X
-+ * [7]  -   X   X   X   X   X   X
-  *
-  * Besides locking, mutual exclusion of dequeue, splice and iteration
-  * can be ensured by performing all of those operations from a single
-@@ -230,6 +232,44 @@ ___wfcq_node_sync_next(struct wfcq_node
- }
- 
- /*
-+ * __wfcq_enqueue_head: prepend a node into a queue.
-+ *
-+ * No memory barriers are issued. Mutual exclusion is the responsibility
-+ * of the caller.
-+ *
-+ * Returns false if the queue was empty prior to adding the node.
-+ * Returns true otherwise.
-+ */
-+static inline bool __wfcq_enqueue_head(struct wfcq_head *head,
-+		struct wfcq_tail *tail,
-+		struct wfcq_node *node)
-+{
-+	bool not_empty = 0;
-+
-+        /*
-+	 * Move tail if queue was empty. Tail pointer is the
-+	 * linearization point of enqueuers.
-+	 */
-+	if (cmpxchg(&tail->p, &head->node, node) != &head->node) {
-+		not_empty = 1;
-+		/*
-+		 * Queue was non-empty. We need to wait for
-+		 * head->node.next to become non-NULL, because a
-+		 * concurrent wfcq_append may be updating it.
-+		 */
-+		node->next = ___wfcq_node_sync_next(&head->node);
-+	}
-+	/*
-+	 * From this point, we know that wfcq_append cannot touch
-+	 * head->node.next, either because we successfully moved tail->p
-+	 * to node, or because we waited for head->node.next to become
-+	 * non-NULL. It is therefore safe to update it.
-+	 */
-+	head->node.next = node;
-+	return not_empty;
-+}
-+
-+/*
-  * __wfcq_first: get first node of a queue, without dequeuing.
-  *
-  * Content written into the node before enqueue is guaranteed to be
-
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+Now go and look for callers of mnt_want_write() ;-/  The really
+painful one is in do_last(), but kern_path_create() is not much
+better; mq_open() would be bad too, had it not been about something
+you are not going to freeze anyway...
