@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751461Ab3DFEYi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 00:24:38 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57131 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab3DFEYh (ORCPT
+	id S1751911Ab3DFEid (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 00:38:33 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:40335 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894Ab3DFEic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 00:24:37 -0400
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Fri, 05 Apr 2013 23:24:37 -0500
-X-Originating-IP: 108.223.40.66
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-watchdog@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
-        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] watchdog: Fix race condition in registration code
-Date: Fri,  5 Apr 2013 21:22:43 -0700
-Message-Id: <1365222163-26761-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Sat, 6 Apr 2013 00:38:32 -0400
+MIME-Version: 1.0
+Date: Sat, 6 Apr 2013 12:38:30 +0800
+Message-ID: <CAPgLHd_TF5QwAL3Bibr7rPdRtJoCqmQQWNtHiH0GP7a8hnK5xA@mail.gmail.com>
+Subject: [PATCH -next v2] drbd: fix error return code in drbd_init()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: drbd-dev@lists.linbit.com
+Cc: yongjun_wei@trendmicro.com.cn, drbd-user@lists.linbit.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A race condition exists when registering the first watchdog device.
-Sequence of events:
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-- watchdog_register_device calls watchdog_dev_register
-- watchdog_dev_register creates the watchdog misc device by calling
-  misc_register.
-  At that time, the matching character device (/dev/watchdog0) does not yet
-  exist, and old_wdd is not set either.
-- Userspace gets an event and opens /dev/watchdog
-- watchdog_open is called and sets sets wdd = old_wdd, which is still NULL,
-  and tries to dereference it. This causes the kernel to panic.
+Fix to return a negative error code from the error handling
+case instead of 0, as returned elsewhere in this function.
 
-Seen with systemd trying to open /dev/watchdog immediately after
-it was created.
-
-Reported-by: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
-Arkadiusz,
+ drivers/block/drbd/drbd_main.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-would be great if you can test this in your system.
-
- drivers/watchdog/watchdog_dev.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
-index 08b48bb..faf4e18 100644
---- a/drivers/watchdog/watchdog_dev.c
-+++ b/drivers/watchdog/watchdog_dev.c
-@@ -523,6 +523,7 @@ int watchdog_dev_register(struct watchdog_device *watchdog)
- 	int err, devno;
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index 1b93a726..93b3505 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -2763,8 +2763,6 @@ int __init drbd_init(void)
+ 	/*
+ 	 * allocate all necessary structs
+ 	 */
+-	err = -ENOMEM;
+-
+ 	init_waitqueue_head(&drbd_pp_wait);
  
- 	if (watchdog->id == 0) {
-+		old_wdd = watchdog;
- 		watchdog_miscdev.parent = watchdog->parent;
- 		err = misc_register(&watchdog_miscdev);
- 		if (err != 0) {
-@@ -531,9 +532,9 @@ int watchdog_dev_register(struct watchdog_device *watchdog)
- 			if (err == -EBUSY)
- 				pr_err("%s: a legacy watchdog module is probably present.\n",
- 					watchdog->info->identity);
-+			old_wdd = NULL;
- 			return err;
- 		}
--		old_wdd = watchdog;
- 	}
+ 	drbd_proc = NULL; /* play safe for drbd_cleanup */
+@@ -2774,6 +2772,7 @@ int __init drbd_init(void)
+ 	if (err)
+ 		goto fail;
  
- 	/* Fill in the data structures */
--- 
-1.7.9.7
++	err = -ENOMEM;
+ 	drbd_proc = proc_create_data("drbd", S_IFREG | S_IRUGO , NULL, &drbd_proc_fops, NULL);
+ 	if (!drbd_proc)	{
+ 		printk(KERN_ERR "drbd: unable to register proc file\n");
+@@ -2804,7 +2803,6 @@ int __init drbd_init(void)
+ fail:
+ 	drbd_cleanup();
+ 	if (err == -ENOMEM)
+-		/* currently always the case */
+ 		printk(KERN_ERR "drbd: ran out of memory\n");
+ 	else
+ 		printk(KERN_ERR "drbd: initialization failure\n");
 
