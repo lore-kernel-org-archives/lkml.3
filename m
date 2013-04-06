@@ -1,135 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422737Ab3DFHht (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 03:37:49 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:46663 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754626Ab3DFHhr (ORCPT
+	id S1422765Ab3DFIKo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 04:10:44 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54673 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422750Ab3DFIKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 03:37:47 -0400
-Message-ID: <515FD0C6.5050001@suse.cz>
-Date: Sat, 06 Apr 2013 09:37:42 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
+	Sat, 6 Apr 2013 04:10:38 -0400
+Date: Sat, 6 Apr 2013 10:10:27 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
+        "Wulsch, Siegfried" <Siegfried.Wulsch@rovema.de>
+Subject: [PATCH] sched_clock: Prevent 64bit inatomicity on 32bit systems
+Message-ID: <alpine.LFD.2.02.1304051544160.21884@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Mel Gorman <mgorman@suse.de>,
-        linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>
-Subject: Re: Excessive stall times on ext4 in 3.9-rc2
-References: <20130402142717.GH32241@suse.de> <20130402150651.GB31577@thunk.org> <20130402151436.GC31577@thunk.org> <20130403101925.GA7341@suse.de> <515F4DA3.2000000@suse.cz> <20130405231635.GA6521@thunk.org> <515FCEEC.9070504@suse.cz>
-In-Reply-To: <515FCEEC.9070504@suse.cz>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2013 09:29 AM, Jiri Slaby wrote:
-> On 04/06/2013 01:16 AM, Theodore Ts'o wrote:
->> On Sat, Apr 06, 2013 at 12:18:11AM +0200, Jiri Slaby wrote:
->>> Ok, so now I'm runnning 3.9.0-rc5-next-20130404, it's not that bad, but
->>> it still sucks. Updating a kernel in a VM still results in "Your system
->>> is too SLOW to play this!" by mplayer and frame dropping.
->>
->> What was the first kernel where you didn't have the problem?  Were you
->> using the 3.8 kernel earlier, and did you see the interactivity
->> problems there?
-> 
-> I'm not sure, as I am using -next like for ever. But sure, there was a
-> kernel which didn't ahve this problem.
-> 
->> What else was running in on your desktop at the same time?
-> 
-> Nothing, just VM (kernel update from console) and mplayer2 on the host.
-> This is more-or-less reproducible with these two.
+The sched_clock_remote() implementation has the following inatomicity
+problem on 32bit systems when accessing the remote scd->clock, which
+is a 64bit value.
 
-Ok,
-  dd if=/dev/zero of=xxx
-is enough instead of "kernel update".
+CPU0			CPU1
 
-Writeback mount doesn't help.
+sched_clock_local()	sched_clock_remote(CPU0)
+...
+			remote_clock = scd[CPU0]->clock
+			    read_low32bit(scd[CPU0]->clock)
+cmpxchg64(scd->clock,...)
+			    read_high32bit(scd[CPU0]->clock)
 
->> How was
->> the file system mounted,
-> 
-> Both are actually a single device /dev/sda5:
-> /dev/sda5 on /win type ext4 (rw,noatime,data=ordered)
-> 
-> Should I try writeback?
-> 
->> and can you send me the output of dumpe2fs -h
->> /dev/XXX?
-> 
-> dumpe2fs 1.42.7 (21-Jan-2013)
-> Filesystem volume name:   <none>
-> Last mounted on:          /win
-> Filesystem UUID:          cd4bf4d2-bc32-4777-a437-ee24c4ee5f1b
-> Filesystem magic number:  0xEF53
-> Filesystem revision #:    1 (dynamic)
-> Filesystem features:      has_journal ext_attr resize_inode dir_index
-> filetype needs_recovery extent flex_bg sparse_super large_file huge_file
-> uninit_bg dir_nlink extra_isize
-> Filesystem flags:         signed_directory_hash
-> Default mount options:    user_xattr acl
-> Filesystem state:         clean
-> Errors behavior:          Continue
-> Filesystem OS type:       Linux
-> Inode count:              30507008
-> Block count:              122012416
-> Reserved block count:     0
-> Free blocks:              72021328
-> Free inodes:              30474619
-> First block:              0
-> Block size:               4096
-> Fragment size:            4096
-> Reserved GDT blocks:      994
-> Blocks per group:         32768
-> Fragments per group:      32768
-> Inodes per group:         8192
-> Inode blocks per group:   512
-> RAID stride:              32747
-> Flex block group size:    16
-> Filesystem created:       Fri Sep  7 20:44:21 2012
-> Last mount time:          Thu Apr  4 12:22:01 2013
-> Last write time:          Thu Apr  4 12:22:01 2013
-> Mount count:              256
-> Maximum mount count:      -1
-> Last checked:             Sat Sep  8 21:13:28 2012
-> Check interval:           0 (<none>)
-> Lifetime writes:          1011 GB
-> Reserved blocks uid:      0 (user root)
-> Reserved blocks gid:      0 (group root)
-> First inode:              11
-> Inode size:               256
-> Required extra isize:     28
-> Desired extra isize:      28
-> Journal inode:            8
-> Default directory hash:   half_md4
-> Directory Hash Seed:      b6ad3f8b-72ce-49d6-92cb-abccd7dbe98e
-> Journal backup:           inode blocks
-> Journal features:         journal_incompat_revoke
-> Journal size:             128M
-> Journal length:           32768
-> Journal sequence:         0x00054dc7
-> Journal start:            8193
-> 
->> Oh, and what options were you using to when you kicked off
->> the VM?
-> 
-> qemu-kvm -k en-us -smp 2 -m 1200 -soundhw hda -usb -usbdevice tablet
-> -net user -net nic,model=e1000 -serial pty -balloon virtio -hda x.img
-> 
->> The other thing that would be useful was to enable the jbd2_run_stats
->> tracepoint and to send the output of the trace log when you notice the
->> interactivity problems.
-> 
-> Ok, I will try.
-> 
-> thanks,
-> 
+While the update of scd->clock is using an atomic64 mechanism, the
+readout on the remote cpu is not, which can cause completely bogus
+readouts.
 
+It is a quite rare problem, because it requires the update to hit the
+narrow race window between the low/high readout and the update must go
+across the 32bit boundary.
 
--- 
-js
-suse labs
+The resulting misbehaviour is, that CPU1 will see the sched_clock on
+CPU1 ~4 seconds ahead of it's own and update CPU1s sched_clock value
+to this bogus timestamp. This stays that way due to the clamping
+implementation for about 4 seconds until the synchronization with
+CLOCK_MONOTONIC undoes the problem.
+
+The issue is hard to observe, because it might only result in a less
+accurate SCHED_OTHER timeslicing behaviour. To create observable
+damage on realtime scheduling classes, it is necessary that the bogus
+update of CPU1 sched_clock happens in the context of an realtime
+thread, which then gets charged 4 seconds of RT runtime, which results
+in the RT throttler mechanism to trigger and prevent scheduling of RT
+tasks for a little less than 4 seconds. So this is quite unlikely as
+well.
+
+The issue was quite hard to decode as the reproduction time is between
+2 days and 3 weeks and intrusive tracing makes it less likely, but the
+following trace recorded with trace_clock=global, which uses
+sched_clock_local(), gave the final hint:
+
+  <idle>-0   0d..30 400269.477150: hrtimer_cancel: hrtimer=0xf7061e80
+  <idle>-0   0d..30 400269.477151: hrtimer_start:  hrtimer=0xf7061e80 ...
+irq/20-S-587 1d..32 400273.772118: sched_wakeup:   comm= ... target_cpu=0
+  <idle>-0   0dN.30 400273.772118: hrtimer_cancel: hrtimer=0xf7061e80
+
+What happens is that CPU0 goes idle and invokes
+sched_clock_idle_sleep_event() which invokes sched_clock_local() and
+CPU1 runs a remote wakeup for CPU0 at the same time, which invokes
+sched_remote_clock(). The time jump gets propagated to CPU0 via
+sched_remote_clock() and stays stale on both cores for ~4 seconds.
+
+There are only two other possibilities, which could cause a stale
+sched clock:
+
+1) ktime_get() which reads out CLOCK_MONOTONIC returns a sporadic
+   wrong value.
+
+2) sched_clock() which reads the TSC returns a sporadic wrong value.
+
+#1 can be excluded because sched_clock would continue to increase for
+   one jiffy and then go stale.
+
+#2 can be excluded because it would not make the clock jump
+   forward. It would just result in a stale sched_clock for one jiffy.
+
+After quite some brain twisting and finding the same pattern on other
+traces, sched_clock_remote() remained the only place which could cause
+such a problem and as explained above it's indeed racy on 32bit
+systems.
+
+So while on 64bit systems the readout is atomic, we need to verify the
+remote readout on 32bit machines. We need to protect the local->clock
+readout in sched_clock_remote() on 32bit as well because an NMI could
+hit between the low and the high readout, call sched_clock_local() and
+modify local->clock.
+
+Thanks to Siegfried Wulsch for bearing with my debug requests and
+going through the tedious tasks of running a bunch of reproducer
+systems to generate the debug information which let me decode the
+issue.
+
+Reported-by: Siegfried Wulsch <Siegfried.Wulsch@rovema.de>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable@vger.kernel.org
+
+---
+Index: linux-stable/kernel/sched/clock.c
+===================================================================
+--- linux.orig/kernel/sched/clock.c
++++ linux/kernel/sched/clock.c
+@@ -176,10 +176,36 @@ static u64 sched_clock_remote(struct sch
+ 	u64 this_clock, remote_clock;
+ 	u64 *ptr, old_val, val;
+ 
++#if BITS_PER_LONG != 64
++again:
++	/*
++	 * Careful here: The local and the remote clock values need to
++	 * be read out atomic as we need to compare the values and
++	 * then update either the local or the remote side. So the
++	 * cmpxchg64 below only protects one readout.
++	 *
++	 * We must reread via sched_clock_local() in the retry case on
++	 * 32bit as an NMI could use sched_clock_local() via the
++	 * tracer and hit between the readout of
++	 * the low32bit and the high 32bit portion.
++	 */
++	this_clock = sched_clock_local(my_scd);
++	/*
++	 * We must enforce atomic readout on 32bit, otherwise the
++	 * update on the remote cpu can hit inbetween the readout of
++	 * the low32bit and the high 32bit portion.
++	 */
++	remote_clock = cmpxchg64(&scd->clock, 0, 0);
++#else
++	/*
++	 * On 64bit the read of [my]scd->clock is atomic versus the
++	 * update, so we can avoid the above 32bit dance.
++	 */
+ 	sched_clock_local(my_scd);
+ again:
+ 	this_clock = my_scd->clock;
+ 	remote_clock = scd->clock;
++#endif
+ 
+ 	/*
+ 	 * Use the opportunity that we have both locks
+
