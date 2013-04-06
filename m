@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932831Ab3DFJBg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 05:01:36 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:38226 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932815Ab3DFJBe (ORCPT
+	id S1163242Ab3DFJcS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 05:32:18 -0400
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:48110 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1163221Ab3DFJcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 05:01:34 -0400
+	Sat, 6 Apr 2013 05:32:16 -0400
+Message-ID: <515FEB92.9060707@synopsys.com>
+Date: Sat, 6 Apr 2013 15:02:02 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <0000013dc73c284d-29fd15db-416b-40cc-81b6-81abc5bd3c02-000000@email.amazonses.com>
-References: <CAKb7UviwOk9asT=WxYgDUzfm3J+tGXobroUycpoTvzOX5kkofQ@mail.gmail.com>
-	<0000013dc73c284d-29fd15db-416b-40cc-81b6-81abc5bd3c02-000000@email.amazonses.com>
-Date: Sat, 6 Apr 2013 05:01:32 -0400
-X-Google-Sender-Auth: Gn1Jh_pT1f7KIfE483EZ08dL1R0
-Message-ID: <CAKb7Uvgxm7ouX0AvPo=eLGn_ruJK7FMCaEMVyK8HxhQ3Ekk0sQ@mail.gmail.com>
-Subject: Re: system death under oom - 3.7.9
-From: Ilia Mirkin <imirkin@alum.mit.edu>
-To: Christoph Lameter <cl@linux.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        nouveau@lists.freedesktop.org, linux-mm@kvack.org,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: lkml <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        "Jiri Slaby" <jslaby@suse.cz>
+Subject: Re: n_tty_write() going into schedule but NOT coming out
+References: <5156DC21.20901@synopsys.com> <5159925B.5050806@synopsys.com>  <1364829008.3617.21.camel@thor.lan> <515ADC96.7090908@synopsys.com> <1365191567.3585.10.camel@thor.lan>
+In-Reply-To: <1365191567.3585.10.camel@thor.lan>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.39]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 1, 2013 at 4:14 PM, Christoph Lameter <cl@linux.com> wrote:
-> On Wed, 27 Mar 2013, Ilia Mirkin wrote:
->
->> The GPF happens at +160, which is in the argument setup for the
->> cmpxchg in slab_alloc_node. I think it's the call to
->> get_freepointer(). There was a similar bug report a while back,
->> https://lkml.org/lkml/2011/5/23/199, and the recommendation was to run
->> with slub debugging. Is that still the case, or is there a simpler
->> explanation? I can't reproduce this at will, not sure how many times
->> this has happened but definitely not many.
->
-> slub debugging will help to track down the cause of the memory corruption.
+On 04/06/2013 01:22 AM, Peter Hurley wrote:
+> I'll see if I can reproduce this over the weekend on an old single-core laptop I
+> still have.
 
-OK, with slub_debug=FZP, I get (after a while):
+TIA for doing this.
 
-http://pastebin.com/cbHiKhdq
+> There were some race conditions in the N_TTY line discipline which I
+> recently fixed. Those changes are in linux-next. Can you test if this is
+> reproducible on linux-next?
 
-Which definitely makes it look like something in the nouveau
-context/whatever alloc failure path causes some stomping to happen. (I
-don't suppose it's reasonable to warn when the stomping happens
-through some sort of page protection... would explode the size since
-each n-byte object would be at least 4K, but might be worth it for
-debugging...)
+I tried today's -next and I see the same issue :-(
+
+> Assuming I don't reproduce this on the laptop, the only other
+> explanation I can think of right now is that ARCLinux is not properly
+> handling signal-driven i/o (assuming the BusyBox /bin/sh uses SIGIO). Do
+> you know if there is anything special about the way ARCLinux handle
+> signals?
+
+No, it's pretty standard stuff - we are uClibc based though - as opposed to glibc
+so there might be some subtleties - but we do run LTP open posix regularly. Also
+the test setup is a slowish 80MHz FPGA so this is not something many people have
+in their regular test setups.
+
+I'll start reading the relevant code myself - and will be willing to take any
+debug/test patches which help with troubleshooting of this issue.
+
+Just to re-iterate, my test setup has a minimal busybox based rootfs, 3 telnet
+sessions, each running a
+while true; do find / -name "*" ; done
+
+I'm running out of ramfs, no external disk/nfs mounts to reduce the peripheral I/O
+slowing down the find (although NFS stuff will be caches anyways after first fetch).
+
+Also please make sure you have CONFIG_PREEMPT_COUNT otherwise there's a
+possibility (atleast on ARC builds) that a stale register causes timer list to be
+corrupted in mod_timer().
+
+Thx,
+-Vineet
