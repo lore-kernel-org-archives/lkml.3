@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab3DFFSL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 01:18:11 -0400
-Received: from ozlabs.org ([203.10.76.45]:43033 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752161Ab3DFFSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 01:18:10 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Sebastian Wankerl <sisewank@cip.cs.fau.de>
-Cc: linux-kernel@vger.kernel.org, Philip Kranz <philip.kranz@googlemail.com>,
-        i4passt@lists.informatik.uni-erlangen.de
-Subject: Re: [PATCH] Add non-zero module sections to sysfs
-In-Reply-To: <515EE63A.6050307@cip.cs.fau.de>
-References: <1364994499-23708-1-git-send-email-sisewank@cip.cs.fau.de> <87mwtf3ya1.fsf@rustcorp.com.au> <515D4A7F.5070102@cip.cs.fau.de> <87vc81lj7x.fsf@rustcorp.com.au> <515EE63A.6050307@cip.cs.fau.de>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Sat, 06 Apr 2013 15:01:43 +1030
-Message-ID: <87zjxcjn4g.fsf@rustcorp.com.au>
+	id S1754184Ab3DFFoL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 01:44:11 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:15361 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753862Ab3DFFoK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Apr 2013 01:44:10 -0400
+X-Spam-Score: -100.8
+Message-ID: <515FB60B.3090506@asianux.com>
+Date: Sat, 06 Apr 2013 13:43:39 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Mirsal Ennaime <mirsal@mirsal.fr>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Staging: Android: looping issue, need break when get
+ value firstly.
+References: <515E85C5.7010706@asianux.com> <20130405220156.GC31680@kroah.com> <CAMP5Xgd=wVrDVCc84L2kMk9ADy7avokB6D=4+kdAm8jF+NLVyg@mail.gmail.com> <515FAD37.4090300@asianux.com>
+In-Reply-To: <515FAD37.4090300@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian Wankerl <sisewank@cip.cs.fau.de> writes:
-> On 04/05/13 06:00, Rusty Russell wrote:
->> Sebastian Wankerl <sisewank@cip.cs.fau.de> writes:
->>> On 04/04/13 03:00, Rusty Russell wrote:
->>>> Sebastian Wankerl <sisewank@cip.cs.fau.de> writes:
->>>>> Add non-zero module sections to sysfs on architectures unequal to PARISC.
->>>>> KGDB needs all module sections for proper module debugging. Therefore, commit 
->>>>> 35dead4235e2b67da7275b4122fed37099c2f462 is revoked except for PARISC
->>>>> architecture.
->>>> #ifdef CONFIG_PARISC in the middle of kernel/module.c is super-ugly, and
->>>> wrong.
->>> I don't see why this is wrong. It used to load all sections to sysfs
->>> until the patch mentioned. Actually, it is the PARISC build chain which
->>> is broken.
->
-> We worked on that topic further. Now we have another suggestion: would
-> it be okay to add a field to struct module for use by kgdb where we save
-> the section names for our use. This seems to be the most valuable
-> solution as solving the sysfs stuff is rather hard.
+On 2013年04月06日 13:05, Chen Gang wrote:
+> On 2013年04月06日 07:48, Arve Hjønnevåg wrote:
+>> Theoretically this should not change the behavior. The purpose of this
+>> code it to make sure only thread per process is part of a transaction
+>> stack, so if it finds more than one transaction with a matching
+>> process, they should all point to the same thread object. I think a
+>> better change description is needed though.
+> 
 
-It is hard.  But being a kernel hacker isn't just about making newbies
-eat flaming death; sometimes we need to solve problems.
+  oh, sorry, I forgot to be sure one thing before send patch v2.
+    (the reason maybe is my English is not quite well)
 
-We'll see what we can do; but we'll continue this in the branch of the
-thread that cc's linux-parisc...
+  I guess what your meaning is:
+    in this condition:
+      one thread is related with one process.
+      also one process is related with one thread.
 
-Thanks,
-Rusty.
+  is it correct ?
+
+  thanks.
+
+> 
+>   ok, thanks.
+>   I will send patch v2 (also mark you as Signed-off).
+>     (if the patch v2 still need improvement, please reply in time).
+> 
+> 
+>   thanks.
+> 
+>   :-)
+> 
+
+
+-- 
+Chen Gang
+
+Asianux Corporation
