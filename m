@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423692Ab3DFOrt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 10:47:49 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:38796 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423085Ab3DFOrr (ORCPT
+	id S1423706Ab3DFOr6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 10:47:58 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:47453 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423085Ab3DFOrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 10:47:47 -0400
+	Sat, 6 Apr 2013 10:47:55 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -19,12 +19,12 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
         Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
         linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-xtensa@linux-xtensa.org
-Subject: [PATCH v4, part3 40/41] mm/xtensa: prepare for removing num_physpages and simplify mem_init()
-Date: Sat,  6 Apr 2013 22:32:39 +0800
-Message-Id: <1365258760-30821-41-git-send-email-jiang.liu@huawei.com>
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>
+Subject: [PATCH v4, part3 41/41] mm: kill global variable num_physpages
+Date: Sat,  6 Apr 2013 22:32:40 +0800
+Message-Id: <1365258760-30821-42-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365258760-30821-1-git-send-email-jiang.liu@huawei.com>
 References: <1365258760-30821-1-git-send-email-jiang.liu@huawei.com>
@@ -32,64 +32,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for removing num_physpages and simplify mem_init().
+Now all references to num_physpages have been removed, so kill it.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Chris Zankel <chris@zankel.net>
-Cc: Max Filippov <jcmvbkbc@gmail.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-xtensa@linux-xtensa.org
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/xtensa/mm/init.c |   27 ++-------------------------
- 1 file changed, 2 insertions(+), 25 deletions(-)
+ include/linux/mm.h |    1 -
+ mm/memory.c        |    2 --
+ mm/nommu.c         |    2 --
+ 3 files changed, 5 deletions(-)
 
-diff --git a/arch/xtensa/mm/init.c b/arch/xtensa/mm/init.c
-index dc6e009..267428e 100644
---- a/arch/xtensa/mm/init.c
-+++ b/arch/xtensa/mm/init.c
-@@ -173,12 +173,8 @@ void __init zones_init(void)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 7758014..f9f9f3c 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -29,7 +29,6 @@ struct writeback_control;
+ extern unsigned long max_mapnr;
+ #endif
  
- void __init mem_init(void)
- {
--	unsigned long codesize, reservedpages, datasize, initsize;
--	unsigned long highmemsize, tmp, ram;
--
--	max_mapnr = num_physpages = max_low_pfn - ARCH_PFN_OFFSET;
-+	max_mapnr = max_low_pfn - ARCH_PFN_OFFSET;
- 	high_memory = (void *) __va(max_low_pfn << PAGE_SHIFT);
--	highmemsize = 0;
+-extern unsigned long num_physpages;
+ extern unsigned long totalram_pages;
+ extern void * high_memory;
+ extern int page_cluster;
+diff --git a/mm/memory.c b/mm/memory.c
+index 494526a..13e1adc 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -82,7 +82,6 @@ EXPORT_SYMBOL(max_mapnr);
+ EXPORT_SYMBOL(mem_map);
+ #endif
  
- #ifdef CONFIG_HIGHMEM
- #error HIGHGMEM not implemented in init.c
-@@ -186,26 +182,7 @@ void __init mem_init(void)
+-unsigned long num_physpages;
+ /*
+  * A number of key systems in x86 including ioremap() rely on the assumption
+  * that high_memory defines the upper bound on direct map memory, then end
+@@ -92,7 +91,6 @@ unsigned long num_physpages;
+  */
+ void * high_memory;
  
- 	free_all_bootmem();
+-EXPORT_SYMBOL(num_physpages);
+ EXPORT_SYMBOL(high_memory);
  
--	reservedpages = ram = 0;
--	for (tmp = 0; tmp < max_mapnr; tmp++) {
--		ram++;
--		if (PageReserved(mem_map+tmp))
--			reservedpages++;
--	}
--
--	codesize =  (unsigned long) _etext - (unsigned long) _stext;
--	datasize =  (unsigned long) _edata - (unsigned long) _sdata;
--	initsize =  (unsigned long) __init_end - (unsigned long) __init_begin;
--
--	printk("Memory: %luk/%luk available (%ldk kernel code, %ldk reserved, "
--	       "%ldk data, %ldk init %ldk highmem)\n",
--	       nr_free_pages() << (PAGE_SHIFT-10),
--	       ram << (PAGE_SHIFT-10),
--	       codesize >> 10,
--	       reservedpages << (PAGE_SHIFT-10),
--	       datasize >> 10,
--	       initsize >> 10,
--	       highmemsize >> 10);
-+	mem_init_print_info(NULL);
- }
+ /*
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 3cc034c..ba73cf1 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -56,7 +56,6 @@
+ void *high_memory;
+ struct page *mem_map;
+ unsigned long max_mapnr;
+-unsigned long num_physpages;
+ unsigned long highest_memmap_pfn;
+ struct percpu_counter vm_committed_as;
+ int sysctl_overcommit_memory = OVERCOMMIT_GUESS; /* heuristic overcommit */
+@@ -83,7 +82,6 @@ unsigned long vm_memory_committed(void)
+ EXPORT_SYMBOL_GPL(vm_memory_committed);
  
- #ifdef CONFIG_BLK_DEV_INITRD
+ EXPORT_SYMBOL(mem_map);
+-EXPORT_SYMBOL(num_physpages);
+ 
+ /* list of mapped, potentially shareable regions */
+ static struct kmem_cache *vm_region_jar;
 -- 
 1.7.9.5
 
