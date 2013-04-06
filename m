@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423272Ab3DFQNz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 12:13:55 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:37080 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423244Ab3DFQNy (ORCPT
+	id S1423298Ab3DFQX2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 12:23:28 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:48604 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423278Ab3DFQX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 12:13:54 -0400
+	Sat, 6 Apr 2013 12:23:27 -0400
+Date: Sat, 6 Apr 2013 18:23:21 +0200
+From: Robert Richter <rric@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, oprofile-list@lists.sourceforge.net
+Subject: [GIT PULL] oprofile updates for v3.10
+Message-ID: <20130406162321.GF11652@rric.localhost>
 MIME-Version: 1.0
-In-Reply-To: <51602459.3040105@synopsys.com>
-References: <alpine.LFD.2.02.1304031433350.21884@ionos>
-	<1364998282-21437-1-git-send-email-vgupta@synopsys.com>
-	<20130404152808.GB15261@ab42.lan>
-	<515E54BD.2090300@synopsys.com>
-	<51602459.3040105@synopsys.com>
-Date: Sat, 6 Apr 2013 09:13:53 -0700
-X-Google-Sender-Auth: BEiTS2vsumsyBvMcpAR3-zsZvuU
-Message-ID: <CA+55aFw=-oJxujka-emxyRcY54MSe3qEjZ6xgzoE-roe3EFk5g@mail.gmail.com>
-Subject: Re: [PATCH] [PATCH] Gaurantee spinlocks implicit barrier for !PREEMPT_COUNT
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mailer: git-send-email 1.7.7
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is all *COMPLETELY* wrong.
+(resent with proper 'from' address)
 
-Neither the normal preempt macros, nor the plain spinlocks, should
-protect anything at all against interrupts.
+Ingo,
 
-The real protection should come from the  spin_lock_irqsave() in
-lock_timer_base(), not from spinlocks, and not from preemption.
+please pull updates for 3.10 (tip/perf/core):
 
-It sounds like ARC is completely buggered, and hasn't made the irq
-disable be a compiler barrier. That's an ARC bug, and it's a big one,
-and can affect a lot more than just the timers.
+ git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git for-tip
 
-So the real fix is to add a "memory" clobber to
-arch_local_irq_save/restore() and friends, so that the compiler
-doesn't get to cache memory state from the irq-enabled region into the
-irq-disabled one.
+Just one trivial patch.
 
-Fix ARC, don't try to blame generic code. You should have asked
-yourself why only ARC saw this bug, when the code apparently works
-fine for everybody else!
+Thanks,
 
-                   Linus
+-Robert
 
-On Sat, Apr 6, 2013 at 6:34 AM, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
->> On 04/05/2013 10:06 AM, Vineet Gupta wrote:
->> Hi Thomas,
->>
->> Given that we are closing on 3.9 release, and that one/more of these patches fix a
->> real issue for us - can you please consider my earlier patch to fix
->> timer_pending() only for 3.9 [http://www.spinics.net/lists/kernel/msg1508224.html]
->> This will be a localized / low risk change for this late in cycle.
->>
->> For 3.10 - assuming preempt_* change is blessed, we can revert this one and add
->> that fuller/better fix.
->>
->> What do you think ?
->>
->> Thx,
->> -Vineet
->>
->
-> Ping ! Sorry for pestering, but one of the fixes is needed before 3.9 goes out.
->
-> Simple localized fix: http://www.spinics.net/lists/kernel/msg1508224.html
-> Better but risky: http://www.spinics.net/lists/kernel/msg1510885.html
->
-> Thx,
-> -Vineet
+
+
+The following changes since commit 07961ac7c0ee8b546658717034fe692fd12eefa9:
+
+  Linux 3.9-rc5 (2013-03-31 15:12:43 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git master
+
+for you to fetch changes up to 23995bbee01d75f09f72b1380bd6045a5b02947b:
+
+  oprofile, s390: Add support for IBM zEnterprise EC12 (2013-04-06 15:25:42 +0200)
+
+----------------------------------------------------------------
+Andreas Krebbel (1):
+      oprofile, s390: Add support for IBM zEnterprise EC12
+
+ arch/s390/oprofile/init.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+
+
+
+>From 23995bbee01d75f09f72b1380bd6045a5b02947b Mon Sep 17 00:00:00 2001
+From: Andreas Krebbel <krebbel@linux.vnet.ibm.com>
+Date: Wed, 9 Jan 2013 10:13:55 +0100
+Subject: [PATCH] oprofile, s390: Add support for IBM zEnterprise EC12
+
+This patch adds support for the latest release of the
+IBM mainframe series - the IBM zEnterprise EC12 (zEC12).
+
+The CPU measurement facility didn't change.  So only the new CPU type
+has to be tolerated.
+
+Signed-off-by: Andreas Krebbel <krebbel@linux.vnet.ibm.com>
+Signed-off-by: Robert Richter <rric@kernel.org>
+---
+ arch/s390/oprofile/init.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/s390/oprofile/init.c b/arch/s390/oprofile/init.c
+index 584b936..ffeb17c 100644
+--- a/arch/s390/oprofile/init.c
++++ b/arch/s390/oprofile/init.c
+@@ -440,6 +440,7 @@ static int oprofile_hwsampler_init(struct oprofile_operations *ops)
+ 		switch (id.machine) {
+ 		case 0x2097: case 0x2098: ops->cpu_type = "s390/z10"; break;
+ 		case 0x2817: case 0x2818: ops->cpu_type = "s390/z196"; break;
++		case 0x2827:              ops->cpu_type = "s390/zEC12"; break;
+ 		default: return -ENODEV;
+ 		}
+ 	}
+-- 
+1.8.1.1
+
