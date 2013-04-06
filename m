@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713Ab3DFGod (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 02:44:33 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:27394 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754638Ab3DFGob (ORCPT
+	id S932720Ab3DFGoy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 02:44:54 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:51776 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756514Ab3DFGow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 02:44:31 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-54-515fc44ea8d1
+	Sat, 6 Apr 2013 02:44:52 -0400
+X-AuditID: cbfee691-b7f5f6d000002fda-b0-515fc4630f38
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Samuel Ortiz'" <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <001701ce3291$f3f29090$dbd7b1b0$%han@samsung.com>
 In-reply-to: <001701ce3291$f3f29090$dbd7b1b0$%han@samsung.com>
-Subject: [PATCH 5/6] mfd: arizona: use spi_get_drvdata()
-Date: Sat, 06 Apr 2013 15:44:30 +0900
-Message-id: <001b01ce3292$309072b0$91b15810$%han@samsung.com>
+Subject: [PATCH 6/6] mfd: stmpe: use spi_get_drvdata()
+Date: Sat, 06 Apr 2013 15:44:51 +0900
+Message-id: <001c01ce3292$3d293d90$b77bb8b0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4ykfPaYTuV5qPCS+S/kzkYYtE9uwAADD/w
+Thread-index: Ac4ykfPaYTuV5qPCS+S/kzkYYtE9uwAAD1yg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zfV2/I/GBBmtnSllcXniJ1eLyrjls
-	Fqe7WR2YPeadDPTo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujJn/N7MXLGOrOPrqD2MD4yLW
-	LkZODgkBE4mmS1uZIGwxiQv31rN1MXJxCAksY5Rof72bGaZo+fOHLBCJRYwSp17/YIdwfjFK
-	zPr5khGkik1ATeLLl8PsILaIgJZE97HzQKM4OJgFXCSOThMBCQsJ2EpsnnWIBcTmFLCTOPN/
-	GyNIibCAhcSBy/kgYRYBVYmltyexgdi8QOXLr26FsgUlfky+B9bKDDR9/c7jTBC2vMTmNW+Z
-	QcZICKhLPPqrC3GAkUT/7n5WiBIRiX0v3jGCXCwhsItdYnv7KiaIXQIS3yaDnAPSKyux6QDU
-	u5ISB1fcYJkA9BuSzbOQbJ6FZPMsJCsWMLKsYhRNLUguKE5KLzLWK07MLS7NS9dLzs/dxAiJ
-	vf4djHcPWB9iTAZaP5FZSjQ5Hxi7eSXxhsZmRhamJqbGRuaWZqQJK4nzqrVYBwoJpCeWpGan
-	phakFsUXleakFh9iZOLglGpg9E9r31EvWMSjvG3pjqkFgj/26P/7pHFzjj9Tn8WJDQ1851M2
-	sL62zkx9e/HUp26WVRx9fzRO+imHx6ntTOeQaTPu8mEo75qitvoej0xkZaiVxul9vgWmn9+n
-	/1Y5YdT8xqkk9E5X8Eax6YxLWO986A7Y8bFf0v1SeVx3d8IzvfP3Fd75OE9VYinOSDTUYi4q
-	TgQAGyS9T9MCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jAV2/I/GBBuvPiVpcXniJ1eLyrjls
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t8zQ93kI/GBBid2K1pcXniJ1eLyrjls
+	Fqe7WR2YPeadDPTo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSujGX3jrMV/GOteNXey9rA+Jel
+	i5GDQ0LAROLXZvcuRk4gU0ziwr31bF2MXBxCAssYJQ61zGaESJhIzH+0gxEisYhRYv7ho+wQ
+	zi9GiUkzfjGDVLEJqEl8+XKYHcQWEdCS6D52ng1kA7OAi8TRaSIgYSEBW4nNsw6xgNicAnYS
+	Z/5vA1sgLGAmcfneWlYQm0VAVeL8vj1MIDYvUP3V/RvYIWxBiR+T74H1MgONX7/zOBOELS+x
+	ec1bZohn1CUe/dUFMUUEjCQ+X82BqBCR2PfiHdj5EgL72CWuP3nOBrFKQOLb5EPQcJCV2HSA
+	GeJdSYmDK26wTGCUmIVk8Swki2chWTwLyYoFjCyrGEVTC5ILipPSi0z1ihNzi0vz0vWS83M3
+	MUIib+IOxvsHrA8xJgOtn8gsJZqcD4zcvJJ4Q2MzIwtTE1NjI3NLM9KElcR51VusA4UE0hNL
+	UrNTUwtSi+KLSnNSiw8xMnFwSjUwCrl0/wr8dNlk26JF1qsuCe26cViq53Rk7eEu//Izf9MO
+	H+w4lxjzo8pg2a3FnPxlAfsPMc/gubnoy6rEi/wN57ienJmZtpV18qrX0bONblv5vJa69tKn
+	zLJo2fyVWVaVJxpcozYtnfb74zoLWRGbHzr2nlsOvJzp8fGtlNKXFLY7F/0O+Z+VL1RiKc5I
+	NNRiLipOBACvmDql0gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jAd3kI/GBBk9+yFhcXniJ1eLyrjls
 	Fqe7WR2YPeadDPTo27KK0ePzJrkA5qgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11D
 	SwtzJYW8xNxUWyUXnwBdt8wcoD1KCmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQ
-	QMI6xoyZ/zezFyxjqzj66g9jA+Mi1i5GTg4JAROJ5c8fskDYYhIX7q1n62Lk4hASWMQocer1
-	D3YI5xejxKyfLxlBqtgE1CS+fDnMDmKLCGhJdB87D9TBwcEs4CJxdJoISFhIwFZi86xDYEM5
-	BewkzvzfxghSIixgIXHgcj5ImEVAVWLp7UlsIDYvUPnyq1uhbEGJH5PvgbUyA01fv/M4E4Qt
-	L7F5zVtmkDESAuoSj/7qQhxgJNG/u58VokREYt+Ld4wTGIVmIZk0C8mkWUgmzULSsoCRZRWj
-	aGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcGQ/k97BuKrB4hCjAAejEg+vxe24QCHWxLLiytxD
-	jBIczEoivLLPgUK8KYmVValF+fFFpTmpxYcYk4EencgsJZqcD0w6eSXxhsYmZkaWRmYWRibm
-	5qQJK4nzHmy1DhQSSE8sSc1OTS1ILYLZwsTBKdXAKPbue1l0tlRVEFtGTHXCAbsZUlNDuEz4
-	UhoMTG9q3r2hKpH2Z+VJdqbyatM1YU8MlvSH/w7Ly3r+6nHo2x/Vr+Vz5II+iX5Z/89hecCZ
-	Y6rr9v/eNflpx5lP30qrnl5v9VgSPXm6neItuWMqrnzZV2bOXy/wflmVbUXAklyG4LAXp1ct
-	3im6UomlOCPRUIu5qDgRAAZjzO4wAwAA
+	QMI6xoxl946zFfxjrXjV3svawPiXpYuRk0NCwERi/qMdjBC2mMSFe+vZuhi5OIQEFjFKzD98
+	lB3C+cUoMWnGL2aQKjYBNYkvXw6zg9giAloS3cfOA3VwcDALuEgcnSYCEhYSsJXYPOsQ2AJO
+	ATuJM/+3gS0QFjCTuHxvLSuIzSKgKnF+3x4mEJsXqP7q/g3sELagxI/J98B6mYHGr995nAnC
+	lpfYvOYtM8gqCQF1iUd/dUFMEQEjic9XcyAqRCT2vXjHOIFRaBaSQbOQDJqFZNAsJC0LGFlW
+	MYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgRH9jPpHYyrGiwOMQpwMCrx8FrcjgsUYk0sK67M
+	PcQowcGsJMIr+xwoxJuSWFmVWpQfX1Sak1p8iDEZ6M+JzFKiyfnApJNXEm9obGJmZGlkZmFk
+	Ym5OmrCSOO/BVutAIYH0xJLU7NTUgtQimC1MHJxSDYwx3DxfGL2ELs3yT71s7HrL3CKIrXEm
+	G8edvcxtz75t6b5rorH818Gf0/9r/I7Id/t98PEDH+vcrT9jlrLuKitZGLKuap3Rt0e9uWdz
+	nVeI/Iiu5fHmu7PtxX5RszWG+yTKjPdOLbWIdCz3ztK+K/xk79Ea/SUvV5tc/dj6v9r7hbqC
+	anHQJ1YlluKMREMt5qLiRAAjTClpMAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,21 +60,21 @@ can directly pass a struct spi_device.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/mfd/arizona-spi.c |    2 +-
+ drivers/mfd/stmpe-spi.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mfd/arizona-spi.c b/drivers/mfd/arizona-spi.c
-index 1b9fdd6..b57e642 100644
---- a/drivers/mfd/arizona-spi.c
-+++ b/drivers/mfd/arizona-spi.c
-@@ -67,7 +67,7 @@ static int arizona_spi_probe(struct spi_device *spi)
+diff --git a/drivers/mfd/stmpe-spi.c b/drivers/mfd/stmpe-spi.c
+index 973659f..a81badb 100644
+--- a/drivers/mfd/stmpe-spi.c
++++ b/drivers/mfd/stmpe-spi.c
+@@ -103,7 +103,7 @@ stmpe_spi_probe(struct spi_device *spi)
  
- static int arizona_spi_remove(struct spi_device *spi)
+ static int stmpe_spi_remove(struct spi_device *spi)
  {
--	struct arizona *arizona = dev_get_drvdata(&spi->dev);
-+	struct arizona *arizona = spi_get_drvdata(spi);
- 	arizona_dev_exit(arizona);
- 	return 0;
+-	struct stmpe *stmpe = dev_get_drvdata(&spi->dev);
++	struct stmpe *stmpe = spi_get_drvdata(spi);
+ 
+ 	return stmpe_remove(stmpe);
  }
 -- 
 1.7.2.5
