@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756842Ab3DFFrK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 01:47:10 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:54386 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756655Ab3DFFrG (ORCPT
+	id S1757064Ab3DFF54 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 01:57:56 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:59058 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754702Ab3DFF5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 01:47:06 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com, rostedt@goodmis.org
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>
-Subject: [PATCH v3 7/7] f2fs: add tracepoints to debug checkpoint request
-Date: Sat,  6 Apr 2013 14:46:58 +0900
-Message-Id: <1365227218-15594-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 6 Apr 2013 01:57:55 -0400
+Date: Fri, 5 Apr 2013 22:57:51 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Mirsal Ennaime <mirsal@mirsal.fr>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Staging: Android: looping issue, need break when get
+ value firstly.
+Message-ID: <20130406055751.GA11001@kroah.com>
+References: <515E85C5.7010706@asianux.com>
+ <20130405220156.GC31680@kroah.com>
+ <CAMP5Xgd=wVrDVCc84L2kMk9ADy7avokB6D=4+kdAm8jF+NLVyg@mail.gmail.com>
+ <515FAD37.4090300@asianux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <515FAD37.4090300@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+On Sat, Apr 06, 2013 at 01:05:59PM +0800, Chen Gang wrote:
+> On 2013年04月06日 07:48, Arve Hjønnevåg wrote:
+> > On Fri, Apr 5, 2013 at 3:01 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> > On Fri, Apr 05, 2013 at 04:05:25PM +0800, Chen Gang wrote:
+> >>> >>
+> >>> >>   need break when 'target_thread' get value, firstly.
+> >>> >>
+> >>> >>     'tmp' is a stack (thread->transaction_stack),
+> >>> >>     if 'proc' was the same between child node and parent node,
+> >>> >>     the child would have higher priority than parent.
+> >> >
+> >> > Are you sure about this?
+> >> >
+> >> > have you tested it?
+> >> >
+> > Theoretically this should not change the behavior. The purpose of this
+> > code it to make sure only thread per process is part of a transaction
+> > stack, so if it finds more than one transaction with a matching
+> > process, they should all point to the same thread object. I think a
+> > better change description is needed though.
+> 
+> 
+>   ok, thanks.
+>   I will send patch v2 (also mark you as Signed-off).
 
-Add tracepoints to debug checkpoint request.
+You can NEVER add someone else's "Signed-off-by", unless they actually
+do it (hint, that did not happen here at all.)
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
----
- fs/f2fs/checkpoint.c        |    1 +
- include/trace/events/f2fs.h |   18 ++++++++++++++++++
- 2 files changed, 19 insertions(+)
+Please go read Documentation/SubmittingPatches again to learn exactly
+what Signed-off-by: really is (a legal agreement), it is not something
+to throw around lightly like this.
 
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index c0606b1..f1bcf35 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -606,6 +606,7 @@ static void do_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
- 	void *kaddr;
- 	int i;
- 
-+	trace_f2fs_do_checkpoint(sbi->sb);
- 	/* Flush all the NAT/SIT pages */
- 	while (get_pages(sbi, F2FS_DIRTY_META))
- 		sync_meta_pages(sbi, META, LONG_MAX);
-diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
-index 858375b..8ec02ea 100644
---- a/include/trace/events/f2fs.h
-+++ b/include/trace/events/f2fs.h
-@@ -485,6 +485,24 @@ DEFINE_EVENT(f2fs_page_type_op, f2fs_write_page,
- 	TP_ARGS(page, type)
- );
- 
-+TRACE_EVENT(f2fs_do_checkpoint,
-+	TP_PROTO(struct super_block *sb),
-+
-+	TP_ARGS(sb),
-+
-+	TP_STRUCT__entry(
-+		__field(dev_t,	dev)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev	= sb->s_dev;
-+	),
-+
-+	TP_printk("dev %d,%d ",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev))
-+
-+);
-+
- #endif /* _TRACE_F2FS_H */
- 
-  /* This part must be outside protection */
--- 
-1.7.9.5
+>     (if the patch v2 still need improvement, please reply in time).
 
+In time for what?
+
+Please test these patches before you resend them.
+
+greg k-h
