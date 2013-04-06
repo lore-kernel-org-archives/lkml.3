@@ -1,94 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423298Ab3DFQX2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 12:23:28 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:48604 "EHLO
+	id S1423312Ab3DFQ3N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 12:29:13 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:59951 "EHLO
 	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423278Ab3DFQX1 (ORCPT
+	with ESMTP id S1423289Ab3DFQ3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 12:23:27 -0400
-Date: Sat, 6 Apr 2013 18:23:21 +0200
+	Sat, 6 Apr 2013 12:29:12 -0400
+Date: Sat, 6 Apr 2013 18:29:07 +0200
 From: Robert Richter <rric@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, oprofile-list@lists.sourceforge.net
-Subject: [GIT PULL] oprofile updates for v3.10
-Message-ID: <20130406162321.GF11652@rric.localhost>
+To: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Borislav Petkov <bp@suse.de>
+Subject: Re: [RFC PATCH 2/3] perf: Add persistent event facilities
+Message-ID: <20130406162907.GG11652@rric.localhost>
+References: <1363352789-17991-1-git-send-email-bp@alien8.de>
+ <1363352789-17991-3-git-send-email-bp@alien8.de>
+ <20130328181516.GR11449@rric.localhost>
+ <20130403172712.GA4716@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mailer: git-send-email 1.7.7
+In-Reply-To: <20130403172712.GA4716@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(resent with proper 'from' address)
+On 03.04.13 19:27:12, Borislav Petkov wrote:
+> > > +	list_for_each_entry(desc, &per_cpu(pers_events, cpu), plist) {
+> > > +
+> > > +		if (desc->attr->config != attr->config)
+> > > +			continue;
+> > 
+> > Umm, the attr->config is not sufficient as a selector since it must be
+> > unique which is not granted (of course it works for one event only).
+> 
+> Right, so the tracepoints are enumerated by tracing code at boot
+> time. But not the hw events, for example. How can we select events
+> unambiguously?
 
-Ingo,
-
-please pull updates for 3.10 (tip/perf/core):
-
- git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git for-tip
-
-Just one trivial patch.
-
-Thanks,
+As we discussed personally, in a first version we should allow only
+the tracepoint pmu to be used for persistent events. The config value
+is then unique and the above works.
 
 -Robert
-
-
-
-The following changes since commit 07961ac7c0ee8b546658717034fe692fd12eefa9:
-
-  Linux 3.9-rc5 (2013-03-31 15:12:43 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git master
-
-for you to fetch changes up to 23995bbee01d75f09f72b1380bd6045a5b02947b:
-
-  oprofile, s390: Add support for IBM zEnterprise EC12 (2013-04-06 15:25:42 +0200)
-
-----------------------------------------------------------------
-Andreas Krebbel (1):
-      oprofile, s390: Add support for IBM zEnterprise EC12
-
- arch/s390/oprofile/init.c | 1 +
- 1 file changed, 1 insertion(+)
-
-
-
-
->From 23995bbee01d75f09f72b1380bd6045a5b02947b Mon Sep 17 00:00:00 2001
-From: Andreas Krebbel <krebbel@linux.vnet.ibm.com>
-Date: Wed, 9 Jan 2013 10:13:55 +0100
-Subject: [PATCH] oprofile, s390: Add support for IBM zEnterprise EC12
-
-This patch adds support for the latest release of the
-IBM mainframe series - the IBM zEnterprise EC12 (zEC12).
-
-The CPU measurement facility didn't change.  So only the new CPU type
-has to be tolerated.
-
-Signed-off-by: Andreas Krebbel <krebbel@linux.vnet.ibm.com>
-Signed-off-by: Robert Richter <rric@kernel.org>
----
- arch/s390/oprofile/init.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/s390/oprofile/init.c b/arch/s390/oprofile/init.c
-index 584b936..ffeb17c 100644
---- a/arch/s390/oprofile/init.c
-+++ b/arch/s390/oprofile/init.c
-@@ -440,6 +440,7 @@ static int oprofile_hwsampler_init(struct oprofile_operations *ops)
- 		switch (id.machine) {
- 		case 0x2097: case 0x2098: ops->cpu_type = "s390/z10"; break;
- 		case 0x2817: case 0x2818: ops->cpu_type = "s390/z196"; break;
-+		case 0x2827:              ops->cpu_type = "s390/zEC12"; break;
- 		default: return -ENODEV;
- 		}
- 	}
--- 
-1.8.1.1
-
