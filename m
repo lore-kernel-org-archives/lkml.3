@@ -1,213 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932775Ab3DFKNH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 06:13:07 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:41226 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757419Ab3DFKNF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 06:13:05 -0400
-Message-ID: <515FF380.5020406@gmail.com>
-Date: Sat, 06 Apr 2013 12:05:52 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S932825Ab3DFKNl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 06:13:41 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:41345 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757419Ab3DFKNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Apr 2013 06:13:38 -0400
+X-IronPort-AV: E=Sophos;i="4.87,420,1363104000"; 
+   d="scan'208";a="7004277"
+Message-ID: <515FF581.5040403@cn.fujitsu.com>
+Date: Sat, 06 Apr 2013 18:14:25 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org
-CC: Chris Mason <chris.mason@fusionio.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Matthew Wilcox <matthew@wil.cx>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
-        cluster-devel@redhat.com, linux-nilfs@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 3/4] fsfreeze: manage kill signal when sb_start_pagefault
- is called
-Content-Type: text/plain; charset=ISO-8859-15
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        linux-scsi@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        rusty@rustcorp.com.au, mst@redhat.com, asias@redhat.com,
+        venkateshs@google.com, pbonzini@redhat.com,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH V7 0/5] virtio-scsi multiqueue
+References: <1364038124-32479-1-git-send-email-gaowanlong@cn.fujitsu.com>  <5153A953.2000101@cn.fujitsu.com> <515E918D.3090307@cn.fujitsu.com> <1365237613.2787.1.camel@dabdike>
+In-Reply-To: <1365237613.2787.1.camel@dabdike>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/06 18:12:30,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/06 18:12:31,
+	Serialize complete at 2013/04/06 18:12:31
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In every place where sb_start_pagefault was called now we must manage
-the error code and return VM_FAULT_RETRY.
+On 04/06/2013 04:40 PM, James Bottomley wrote:
+> On Fri, 2013-04-05 at 16:55 +0800, Wanlong Gao wrote:
+>> On 03/28/2013 10:22 AM, Wanlong Gao wrote:
+>>> On 03/23/2013 07:28 PM, Wanlong Gao wrote:
+>>>> This series implements virtio-scsi queue steering, which gives
+>>>> performance improvements of up to 50% (measured both with QEMU and
+>>>> tcm_vhost backends).
+>>>>
+>>>> This version rebased on Rusty's virtio ring rework patches, which
+>>>> has already gone into virtio-next today.
+>>>> We hope this can go into virtio-next together with the virtio ring
+>>>> rework pathes.
+>>>>
+>>>> V7: respin to fix the patch apply error
+>>>>
+>>>> V6: rework "redo allocation of target data" (James)
+>>>>     fix comments (Venkatesh)
+>>>>     rebase to virtio-next
+>>>>
+>>>> V5: improving the grammar of 1/5 (Paolo)
+>>>>     move the dropping of sg_elems to 'virtio-scsi: use virtqueue_add_sgs for command buffers'. (Asias)
+>>>>
+>>>> V4: rebase on virtio ring rework patches (rusty's pending-rebases branch)
+>>>>
+>>>> V3 and be found http://marc.info/?l=linux-virtualization&m=136067440717154&w=2
+>>>>
+>>>>
+>>>> It would probably be easier to get it in via Rusty's tree
+>>>> because of the prerequisites.  James, can we get your Acked-by?
+>>>
+>>> James, any thoughts for this version?
+>>
+>> Ping James....
+> 
+> Well, I haven't had time to look at anything other than the patch I
+> commented on.  I'm happy with your fix, so you can add my acked by to
+> that one.  Since it's going through the virtio tree, don't wait for me,
+> put it in and I'll make you fix up anything I find later that I'm
+> unhappy with.
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
----
- fs/btrfs/inode.c   |    4 +++-
- fs/buffer.c        |    4 +++-
- fs/ext4/inode.c    |    4 +++-
- fs/f2fs/file.c     |    4 +++-
- fs/gfs2/file.c     |    4 +++-
- fs/nilfs2/file.c   |    4 +++-
- fs/ocfs2/mmap.c    |    4 +++-
- include/linux/fs.h |    6 ++++--
- mm/filemap.c       |    7 +++++--
- 9 files changed, 30 insertions(+), 11 deletions(-)
+Got it, thank you James.
 
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 09c58a3..a6166f4 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -7559,7 +7559,9 @@ int btrfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	u64 page_start;
- 	u64 page_end;
- 
--	sb_start_pagefault(inode->i_sb);
-+	ret = sb_start_pagefault(inode->i_sb);
-+	if (ret)
-+		return VM_FAULT_RETRY;
- 	ret  = btrfs_delalloc_reserve_space(inode, PAGE_CACHE_SIZE);
- 	if (!ret) {
- 		ret = file_update_time(vma->vm_file);
-diff --git a/fs/buffer.c b/fs/buffer.c
-index b4dcb34..6d3d2cc 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -2383,7 +2383,9 @@ int block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
- 	int ret;
- 	struct super_block *sb = file_inode(vma->vm_file)->i_sb;
- 
--	sb_start_pagefault(sb);
-+	ret = sb_start_pagefault(sb);
-+	if (ret)
-+		return VM_FAULT_RETRY;
- 
- 	/*
- 	 * Update file times before taking page lock. We may end up failing the
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index b3a5213..efc47f6 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -5023,7 +5023,9 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	get_block_t *get_block;
- 	int retries = 0;
- 
--	sb_start_pagefault(inode->i_sb);
-+	ret = sb_start_pagefault(inode->i_sb);
-+	if (ret)
-+		return VM_FAULT_RETRY;
- 	file_update_time(vma->vm_file);
- 	/* Delalloc case is easy... */
- 	if (test_opt(inode->i_sb, DELALLOC) &&
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index 958a46d..cce4147 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -37,7 +37,9 @@ static int f2fs_vm_page_mkwrite(struct vm_area_struct *vma,
- 
- 	f2fs_balance_fs(sbi);
- 
--	sb_start_pagefault(inode->i_sb);
-+	err = sb_start_pagefault(inode->i_sb);
-+	if (err)
-+		return VM_FAULT_RETRY;
- 
- 	mutex_lock_op(sbi, DATA_NEW);
- 
-diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
-index d79c2da..071e777 100644
---- a/fs/gfs2/file.c
-+++ b/fs/gfs2/file.c
-@@ -396,7 +396,9 @@ static int gfs2_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	loff_t size;
- 	int ret;
- 
--	sb_start_pagefault(inode->i_sb);
-+	ret = sb_start_pagefault(inode->i_sb);
-+	if (ret)
-+		return VM_FAULT_RETRY;
- 
- 	/* Update file times before taking page lock */
- 	file_update_time(vma->vm_file);
-diff --git a/fs/nilfs2/file.c b/fs/nilfs2/file.c
-index 08fdb77..1c7678a 100644
---- a/fs/nilfs2/file.c
-+++ b/fs/nilfs2/file.c
-@@ -74,7 +74,9 @@ static int nilfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	if (unlikely(nilfs_near_disk_full(inode->i_sb->s_fs_info)))
- 		return VM_FAULT_SIGBUS; /* -ENOSPC */
- 
--	sb_start_pagefault(inode->i_sb);
-+	ret = sb_start_pagefault(inode->i_sb);
-+	if (ret)
-+		return VM_FAULT_RETRY;
- 	lock_page(page);
- 	if (page->mapping != inode->i_mapping ||
- 	    page_offset(page) >= i_size_read(inode) || !PageUptodate(page)) {
-diff --git a/fs/ocfs2/mmap.c b/fs/ocfs2/mmap.c
-index 10d66c7..f0973ae 100644
---- a/fs/ocfs2/mmap.c
-+++ b/fs/ocfs2/mmap.c
-@@ -136,7 +136,9 @@ static int ocfs2_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	sigset_t oldset;
- 	int ret;
- 
--	sb_start_pagefault(inode->i_sb);
-+	ret = sb_start_pagefault(inode->i_sb);
-+	if (ret)
-+		return VM_FAULT_RETRY;
- 	ocfs2_block_signals(&oldset);
- 
- 	/*
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 03921d6..550574e 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1407,6 +1407,8 @@ static inline int sb_start_write_trylock(struct super_block *sb)
-  * sb_start_pagefault - get write access to a superblock from a page fault
-  * @sb: the super we write to
-  *
-+ * It returns zero when no error occured, the error code otherwise.
-+ *
-  * When a process starts handling write page fault, it should embed the
-  * operation into sb_start_pagefault() - sb_end_pagefault() pair to get
-  * exclusion against file system freezing. This is needed since the page fault
-@@ -1422,9 +1424,9 @@ static inline int sb_start_write_trylock(struct super_block *sb)
-  * mmap_sem
-  *   -> sb_start_pagefault
-  */
--static inline void sb_start_pagefault(struct super_block *sb)
-+static inline int sb_start_pagefault(struct super_block *sb)
- {
--	__sb_start_write_wait(sb, SB_FREEZE_PAGEFAULT, false);
-+	__sb_start_write_wait(sb, SB_FREEZE_PAGEFAULT, true);
- }
- 
- /*
-diff --git a/mm/filemap.c b/mm/filemap.c
-index b238671..acf8d97 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1712,9 +1712,11 @@ int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- {
- 	struct page *page = vmf->page;
- 	struct inode *inode = file_inode(vma->vm_file);
--	int ret = VM_FAULT_LOCKED;
-+	int ret = 0;
- 
--	sb_start_pagefault(inode->i_sb);
-+	ret = sb_start_pagefault(inode->i_sb);
-+	if (ret)
-+		return VM_FAULT_RETRY;
- 	file_update_time(vma->vm_file);
- 	lock_page(page);
- 	if (page->mapping != inode->i_mapping) {
-@@ -1727,6 +1729,7 @@ int filemap_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	 * progress, we are guaranteed that writeback during freezing will
- 	 * see the dirty page and writeprotect it again.
- 	 */
-+	ret = VM_FAULT_LOCKED;
- 	set_page_dirty(page);
- 	wait_for_stable_page(page);
- out:
--- 
-1.7.3.4
+Regards,
+Wanlong Gao
+
+> 
+> James
+> 
+> 
+> 
+
