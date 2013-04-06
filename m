@@ -1,97 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab3DFSB0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 14:01:26 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:46780 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753631Ab3DFSBY (ORCPT
+	id S1756480Ab3DFSPQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 14:15:16 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:38990 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754978Ab3DFSPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 14:01:24 -0400
+	Sat, 6 Apr 2013 14:15:14 -0400
+Message-ID: <51606512.8030703@gmail.com>
+Date: Sat, 06 Apr 2013 15:10:26 -0300
+From: Lucas <canolucas@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130403 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFw=-oJxujka-emxyRcY54MSe3qEjZ6xgzoE-roe3EFk5g@mail.gmail.com>
-References: <alpine.LFD.2.02.1304031433350.21884@ionos>
-	<1364998282-21437-1-git-send-email-vgupta@synopsys.com>
-	<20130404152808.GB15261@ab42.lan>
-	<515E54BD.2090300@synopsys.com>
-	<51602459.3040105@synopsys.com>
-	<CA+55aFw=-oJxujka-emxyRcY54MSe3qEjZ6xgzoE-roe3EFk5g@mail.gmail.com>
-Date: Sat, 6 Apr 2013 11:01:23 -0700
-X-Google-Sender-Auth: BsJ8y1Cj7Ugcczw8WX1aoz5jMrE
-Message-ID: <CA+55aFyvD2NtQatdaFZt+Q6ZPD0USofhgZHEock8rOx0ihSLhQ@mail.gmail.com>
-Subject: Re: [PATCH] [PATCH] Gaurantee spinlocks implicit barrier for !PREEMPT_COUNT
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Mark Salter <msalter@redhat.com>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        linux-c6x-dev@linux-c6x.org
-Content-Type: text/plain; charset=UTF-8
+Newsgroups: gmane.linux.kernel.stable,gmane.linux.kernel
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Linux 3.8.6
+References: <20130405174012.GA28836@kroah.com>
+In-Reply-To: <20130405174012.GA28836@kroah.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looking around, it looks like c6x has the same bug.
+On 05/04/13 14:40, Greg KH wrote:
+> I'm announcing the release of the 3.8.6 kernel.
+>
+> All users of the 3.8 kernel series must upgrade.
+>
+> The updated 3.8.y git tree can be found at:
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.8.y
+> and can be browsed at the normal kernel.org git web browser:
+> 	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+>
+> thanks,
+>
+> greg k-h
+>
 
-Some other architectures (tile) have such subtle implementations
-(where is __insn_mtspr() defined?) that I have a hard time judging.
-And maybe I missed something, but the rest seem ok.
+Hi Greg, I have an issue with a Lenovo T60's Notebook, which has an 
+Intel VGA card.
 
-                Linus
+[lucas@tux ~]$ lspci | grep "VGA"
+00:02.0 VGA compatible controller: Intel Corporation Mobile 945GM/GMS, 
+943/940GML Express Integrated Graphics Controller (rev 03)
 
-On Sat, Apr 6, 2013 at 9:13 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> This is all *COMPLETELY* wrong.
->
-> Neither the normal preempt macros, nor the plain spinlocks, should
-> protect anything at all against interrupts.
->
-> The real protection should come from the  spin_lock_irqsave() in
-> lock_timer_base(), not from spinlocks, and not from preemption.
->
-> It sounds like ARC is completely buggered, and hasn't made the irq
-> disable be a compiler barrier. That's an ARC bug, and it's a big one,
-> and can affect a lot more than just the timers.
->
-> So the real fix is to add a "memory" clobber to
-> arch_local_irq_save/restore() and friends, so that the compiler
-> doesn't get to cache memory state from the irq-enabled region into the
-> irq-disabled one.
->
-> Fix ARC, don't try to blame generic code. You should have asked
-> yourself why only ARC saw this bug, when the code apparently works
-> fine for everybody else!
->
->                    Linus
->
-> On Sat, Apr 6, 2013 at 6:34 AM, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
->>> On 04/05/2013 10:06 AM, Vineet Gupta wrote:
->>> Hi Thomas,
->>>
->>> Given that we are closing on 3.9 release, and that one/more of these patches fix a
->>> real issue for us - can you please consider my earlier patch to fix
->>> timer_pending() only for 3.9 [http://www.spinics.net/lists/kernel/msg1508224.html]
->>> This will be a localized / low risk change for this late in cycle.
->>>
->>> For 3.10 - assuming preempt_* change is blessed, we can revert this one and add
->>> that fuller/better fix.
->>>
->>> What do you think ?
->>>
->>> Thx,
->>> -Vineet
->>>
->>
->> Ping ! Sorry for pestering, but one of the fixes is needed before 3.9 goes out.
->>
->> Simple localized fix: http://www.spinics.net/lists/kernel/msg1508224.html
->> Better but risky: http://www.spinics.net/lists/kernel/msg1510885.html
->>
->> Thx,
->> -Vineet
+The screen turns black whenever X is executed, due to the following bug:
+
+https://bugs.freedesktop.org/show_bug.cgi?id=57365
+
+https://bugs.archlinux.org/task/33062
+
+Those sites havethe error output that is generated from X attempts to 
+start. Nonetheless, the causes of this issue have already been figured:
+
+According to comment #32 in the freedesktop site ( 
+https://bugs.freedesktop.org/show_bug.cgi?id=57365#c32 ), the fix has 
+been introduced in the 3.9 series.
+
+Believe it or not, the last stable release in which X is able to start 
+is 3.6.11. The whole 3.7 and 3.8 series together were unable to tackle 
+this issue down. Seems that Intel is not doing its homework here :(
+
+My question is:
+
+Knowing that the following patches solve the issue, can they be 
+backported and included in the next release of 3.8 ?
+
+Thank you very much,
+Lucas
+
+
+commit 24a1f16de97c4cf0029d9acd04be06db32208726
+Author: Mika Kuoppala <mika.kuoppala@linux.intel.com>
+Date:   Fri Feb 8 16:35:37 2013 +0200
+
+     drm/i915: disable shared panel fitter for pipe
+
+
+commit 9d6d9f19e8146fa24903cb561e204a22232740e3
+Author: Mika Kuoppala <mika.kuoppala@linux.intel.com>
+Date:   Fri Feb 8 16:35:38 2013 +0200
+
+     drm/i915: clean up panel fitter handling in lvds
+
