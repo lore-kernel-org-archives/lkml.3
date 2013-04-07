@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934043Ab3DGQav (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 12:30:51 -0400
-Received: from mail-da0-f48.google.com ([209.85.210.48]:47515 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934026Ab3DGQat (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 12:30:49 -0400
-Date: Sun, 7 Apr 2013 09:30:45 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] cgroup: unexport locking interface
-Message-ID: <20130407163045.GB12038@htj.dyndns.org>
-References: <1365118589-10619-1-git-send-email-tj@kernel.org>
- <5161064D.30000@huawei.com>
+	id S934055Ab3DGQeK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 12:34:10 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34832 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934025Ab3DGQeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 12:34:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,423,1363158000"; 
+   d="scan'208";a="314096798"
+Message-ID: <51619FFF.30705@linux.intel.com>
+Date: Sun, 07 Apr 2013 09:34:07 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5161064D.30000@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@alien8.de>, Dave Hansen <dave@sr71.net>,
+        linux-kernel@vger.kernel.org, penguin-kernel@i-love.sakura.ne.jp,
+        x86@kernel.org, akpm@linux-foundation.org, suresh.b.siddha@intel.com,
+        khlebnikov@openvz.org, bhelgaas@google.com
+Subject: Re: [PATCH] do not try to sync identity map for non-mapped pages
+References: <20130307163151.D9B58C4E@kernel.stglabs.ibm.com> <20130407133346.GD31299@pd.tnic>
+In-Reply-To: <20130407133346.GD31299@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 07, 2013 at 01:38:21PM +0800, Li Zefan wrote:
-> On 2013/4/5 7:36, Tejun Heo wrote:
-> > Hello,
-> > 
-> > Most cgroup_mutex abuses outside cgroup core proper have been
-> > eradicated but there's still one use remaining and locking interface
-> > is still exported.  This patchset updates the last user and unexports
-> > the locking interface and is composed of the following five patches.
-> > 
-> >  0001-cgroup-cpuset-replace-move_member_tasks_to_cpuset-wi.patch
-> >  0002-cgroup-relocate-cgroup_lock_live_group-and-cgroup_at.patch
-> >  0003-cgroup-unexport-locking-interface-and-cgroup_attach_.patch
-> >  0004-cgroup-kill-cgroup_-un-lock.patch
-> >  0005-cgroup-remove-cgroup_lock_is_held.patch
-> > 
+On 04/07/2013 06:33 AM, Borislav Petkov wrote:
 > 
-> Acked-by: Li Zefan <lizefan@huawei.com>
+> looks like we haven't whacked all the moles - I keep seeing this when
+> testing 32-bit builds in qemu on latest Linus + tip. I'd guess this is
+> still that /dev/mem accessing thing called wdm.
+> 
+> I'm still wondering though whether we should BUG_ON on a /dev/mem
+> access?
+> 
 
-Applied to cgroup/for-3.10.
+We shouldn't, no.  /dev/mem really needs to be fixed along a bunch of
+axes.  Yes, it is privileged and extra creepy, but it should either work
+or it should fail cleanly.
 
-Thanks.
+	-hpa
 
--- 
-tejun
