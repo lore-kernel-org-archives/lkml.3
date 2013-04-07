@@ -1,66 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933905Ab3DGPJL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 11:09:11 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:53189 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933858Ab3DGPJK (ORCPT
+	id S933908Ab3DGPMg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 11:12:36 -0400
+Received: from mail-da0-f42.google.com ([209.85.210.42]:54564 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933860Ab3DGPMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 11:09:10 -0400
-Message-ID: <51618C0A.1040205@gmail.com>
-Date: Sun, 07 Apr 2013 23:08:58 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Simon Jeons <simon.jeons@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4, part3 00/15] accurately calculate memory statisitic
- information
-References: <1365256509-29024-1-git-send-email-jiang.liu@huawei.com> <5160CD19.8070705@gmail.com>
-In-Reply-To: <5160CD19.8070705@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 7 Apr 2013 11:12:35 -0400
+Message-ID: <1365347548.9931.1.camel@phoenix>
+Subject: [PATCH 1/4] regulator: ab8500: Get rid of is_enabled from struct
+ ab8500_regulator_info
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Sun, 07 Apr 2013 23:12:28 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/2013 09:34 AM, Simon Jeons wrote:
-> Hi Jiang,
-> On 04/06/2013 09:54 PM, Jiang Liu wrote:
->> Jiang Liu (15):
->>    mm: fix build warnings caused by free_reserved_area()
->>    mm: enhance free_reserved_area() to support poisoning memory with
->>      zero
->>    mm/ARM64: kill poison_init_mem()
->>    mm/x86: use free_reserved_area() to simplify code
->>    mm/tile: use common help functions to free reserved pages
->>    mm, powertv: use free_reserved_area() to simplify code
->>    mm, acornfb: use free_reserved_area() to simplify code
->>    mm: fix some trivial typos in comments
->>    mm: use managed_pages to calculate default zonelist order
->>    mm: accurately calculate zone->managed_pages for highmem zones
->>    mm: use a dedicated lock to protect totalram_pages and
->>      zone->managed_pages
->>    mm: make __free_pages_bootmem() only available at boot time
->>    mm: correctly update zone->mamaged_pages
->>    mm: concentrate modification of totalram_pages into the mm core
->>    mm: report available pages as "MemTotal" for each NUMA node
-> 
-> What I interested in is how you test different platform? I don't think you can have all the physical platform.
-> 
-Hi Simon,
-	That's one issue I'm facing, I only have limited hardware platforms for testing,
-so I could ask for help from the community to review and test the patch series.
-	Regards!
-	Gerry	
+The intention of this patch is to simplify the code.
+
+Maintain the is_enabled flag is not trivial, it not only needs to set/clear the
+flag in disable()/enable() but also needs to set the flag in is_enable() to get
+initial status. The only benefit of keeping is_enabled flag is just save a
+register read when set_mode(). Remove is_enabled flag makes the code simpler.
+
+This patch also moves ab8500_regulator_is_enabled() close to
+ab8500_regulator_[en|dis]able functions.
+This is required to avoid a forward declaration because now we call
+ab8500_regulator_is_enabled() in ab8500_regulator_set_mode().
+This change also makes the code better in readability by moving similar
+functions to one place.
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/ab8500.c |   72 ++++++++++++++++++++------------------------
+ 1 file changed, 32 insertions(+), 40 deletions(-)
+
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index 517305e..9ebd131 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -46,7 +46,6 @@ struct ab8500_shared_mode {
+  * @desc: regulator description
+  * @regulator_dev: regulator device
+  * @shared_mode: used when mode is shared between two regulators
+- * @is_enabled: status of regulator (on/off)
+  * @load_lp_uA: maximum load in idle (low power) mode
+  * @update_bank: bank to control on/off
+  * @update_reg: register to control on/off
+@@ -69,7 +68,6 @@ struct ab8500_regulator_info {
+ 	struct regulator_desc	desc;
+ 	struct regulator_dev	*regulator;
+ 	struct ab8500_shared_mode *shared_mode;
+-	bool is_enabled;
+ 	int load_lp_uA;
+ 	u8 update_bank;
+ 	u8 update_reg;
+@@ -259,8 +257,6 @@ static int ab8500_regulator_enable(struct regulator_dev *rdev)
+ 		return ret;
+ 	}
+ 
+-	info->is_enabled = true;
+-
+ 	dev_vdbg(rdev_get_dev(rdev),
+ 		"%s-enable (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
+ 		info->desc.name, info->update_bank, info->update_reg,
+@@ -288,8 +284,6 @@ static int ab8500_regulator_disable(struct regulator_dev *rdev)
+ 		return ret;
+ 	}
+ 
+-	info->is_enabled = false;
+-
+ 	dev_vdbg(rdev_get_dev(rdev),
+ 		"%s-disable (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
+ 		info->desc.name, info->update_bank, info->update_reg,
+@@ -298,6 +292,37 @@ static int ab8500_regulator_disable(struct regulator_dev *rdev)
+ 	return ret;
+ }
+ 
++static int ab8500_regulator_is_enabled(struct regulator_dev *rdev)
++{
++	int ret;
++	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
++	u8 regval;
++
++	if (info == NULL) {
++		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
++		return -EINVAL;
++	}
++
++	ret = abx500_get_register_interruptible(info->dev,
++		info->update_bank, info->update_reg, &regval);
++	if (ret < 0) {
++		dev_err(rdev_get_dev(rdev),
++			"couldn't read 0x%x register\n", info->update_reg);
++		return ret;
++	}
++
++	dev_vdbg(rdev_get_dev(rdev),
++		"%s-is_enabled (bank, reg, mask, value): 0x%x, 0x%x, 0x%x,"
++		" 0x%x\n",
++		info->desc.name, info->update_bank, info->update_reg,
++		info->update_mask, regval);
++
++	if (regval & info->update_mask)
++		return 1;
++	else
++		return 0;
++}
++
+ static unsigned int ab8500_regulator_get_optimum_mode(
+ 		struct regulator_dev *rdev, int input_uV,
+ 		int output_uV, int load_uA)
+@@ -398,7 +423,7 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
+ 		mask = info->update_mask;
+ 	}
+ 
+-	if (info->is_enabled || dmr) {
++	if (dmr || ab8500_regulator_is_enabled(rdev)) {
+ 		ret = abx500_mask_and_set_register_interruptible(info->dev,
+ 			bank, reg, mask, val);
+ 		if (ret < 0)
+@@ -464,39 +489,6 @@ static unsigned int ab8500_regulator_get_mode(struct regulator_dev *rdev)
+ 	return ret;
+ }
+ 
+-static int ab8500_regulator_is_enabled(struct regulator_dev *rdev)
+-{
+-	int ret;
+-	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+-	u8 regval;
+-
+-	if (info == NULL) {
+-		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
+-		return -EINVAL;
+-	}
+-
+-	ret = abx500_get_register_interruptible(info->dev,
+-		info->update_bank, info->update_reg, &regval);
+-	if (ret < 0) {
+-		dev_err(rdev_get_dev(rdev),
+-			"couldn't read 0x%x register\n", info->update_reg);
+-		return ret;
+-	}
+-
+-	dev_vdbg(rdev_get_dev(rdev),
+-		"%s-is_enabled (bank, reg, mask, value): 0x%x, 0x%x, 0x%x,"
+-		" 0x%x\n",
+-		info->desc.name, info->update_bank, info->update_reg,
+-		info->update_mask, regval);
+-
+-	if (regval & info->update_mask)
+-		info->is_enabled = true;
+-	else
+-		info->is_enabled = false;
+-
+-	return info->is_enabled;
+-}
+-
+ static int ab8500_regulator_get_voltage_sel(struct regulator_dev *rdev)
+ {
+ 	int ret, val;
+-- 
+1.7.10.4
+
+
 
