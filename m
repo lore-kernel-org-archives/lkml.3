@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab3DGGBL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 02:01:11 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:16153 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928Ab3DGGBJ (ORCPT
+	id S1754286Ab3DGGQe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 02:16:34 -0400
+Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:9355
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751213Ab3DGGQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 02:01:09 -0400
-Message-ID: <51610B78.7080001@huawei.com>
-Date: Sun, 7 Apr 2013 14:00:24 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Sun, 7 Apr 2013 02:16:33 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Sun, 7 Apr 2013 14:16:27 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+CC: <linux@arm.linux.org.uk>, <fabio.estevam@freescale.com>,
+        <otavio@ossystems.com.br>, <marex@denx.de>,
+        <maxime.ripard@free-electrons.com>, <f.koliqi@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: dts: imx23-olinuxino: mark sdcard cd as broken
+Message-ID: <20130407061625.GA11898@S2101-09.ap.freescale.net>
+References: <1365255730-6299-1-git-send-email-aletes.xgr@gmail.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC][PATCH 0/7] memcg: make memcg's life cycle the same as cgroup
-References: <515BF233.6070308@huawei.com> <20130404120049.GI29911@dhcp22.suse.cz>
-In-Reply-To: <20130404120049.GI29911@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1365255730-6299-1-git-send-email-aletes.xgr@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/4/4 20:00, Michal Hocko wrote:
-> On Wed 03-04-13 17:11:15, Li Zefan wrote:
->> (I'll be off from my office soon, and I won't be responsive in the following
->> 3 days.)
->>
->> I'm working on converting memcg to use cgroup->id, and then we can kill css_id.
->>
->> Now memcg has its own refcnt, so when a cgroup is destroyed, the memcg can
->> still be alive. This patchset converts memcg to always use css_get/put, so
->> memcg will have the same life cycle as its corresponding cgroup, and then
->> it's always safe for memcg to use cgroup->id.
->>
->> The historical reason that memcg didn't use css_get in some cases, is that
->> cgroup couldn't be removed if there're still css refs. The situation has
->> changed so that rmdir a cgroup will succeed regardless css refs, but won't
->> be freed until css refs goes down to 0.
->>
->> This is an early post, and it's NOT TESTED. I just want to see if the changes
->> are fine in general.
+On Sat, Apr 06, 2013 at 10:42:10AM -0300, Alexandre Pereira da Silva wrote:
+> The imx23-olinuxino sdcard doesn't have card detect.
 > 
-> yes, I like the approach and it looks correct as well (some minor things
-> mentioned in the patches). Thanks a lot Li! This will make our lifes much
-> easier. The separate ref counting was PITA especially after
-> introduction of kmem accounting which made its usage even more trickier.
-> 
->> btw, after this patchset I think we don't need to free memcg via RCU, because
->> cgroup is already freed in RCU callback.
-> 
-> But this depends on changes waiting in for-3.10 branch, right?
+> Signed-off-by: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
 
-What changes? memcg changes or cgroup core changes? I don't think this depends
-on anything in cgroup 3.10 branch.
+Applied, thanks.
 
-> Anyway, I think we should be safe with the workqueue based releasing as
-> well once mem_cgroup_{get,put} are gone, right?
+> ---
+>  arch/arm/boot/dts/imx23-olinuxino.dts |    1 +
+>  1 file changed, 1 insertion(+)
 > 
-
-cgroup calls mem_cgroup_css_free() in a work function, so seems memcg doesn't
-need to use RCU or workqueue in mem_cgroup_css_free().
+> diff --git a/arch/arm/boot/dts/imx23-olinuxino.dts b/arch/arm/boot/dts/imx23-olinuxino.dts
+> index a43141a..d4cc9f8 100644
+> --- a/arch/arm/boot/dts/imx23-olinuxino.dts
+> +++ b/arch/arm/boot/dts/imx23-olinuxino.dts
+> @@ -29,6 +29,7 @@
+>  				pinctrl-names = "default";
+>  				pinctrl-0 = <&mmc0_4bit_pins_a &mmc0_pins_fixup>;
+>  				bus-width = <4>;
+> +				broken-cd;
+>  				status = "okay";
+>  			};
+>  
+> -- 
+> 1.7.10
+> 
 
