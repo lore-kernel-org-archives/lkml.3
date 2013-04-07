@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161563Ab3DGIPI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 04:15:08 -0400
-Received: from smtp-out-201.synserver.de ([212.40.185.201]:1047 "EHLO
-	smtp-out-198.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1161542Ab3DGIPD (ORCPT
+	id S1161615Ab3DGIdv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 04:33:51 -0400
+Received: from smtp-out-202.synserver.de ([212.40.185.202]:1537 "EHLO
+	smtp-out-200.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1161582Ab3DGIdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 04:15:03 -0400
+	Sun, 7 Apr 2013 04:33:49 -0400
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 28971
+X-SynServer-PPID: 3519
 From: Lars-Peter Clausen <lars@metafoo.de>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: Archit Taneja <archit@ti.com>, linux-omap@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] OMAPDSS: nec-nl8048 panel: Use dev_pm_ops
-Date: Sun,  7 Apr 2013 11:14:13 +0200
-Message-Id: <1365326053-16248-1-git-send-email-lars@metafoo.de>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Ben Dooks <ben-linux@fluff.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 1/2] net: ks8851: Use module_spi_driver
+Date: Sun,  7 Apr 2013 11:33:03 +0200
+Message-Id: <1365327184-22956-1-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use dev_pm_ops instead of the deprecated legacy suspend/resume callbacks.
+By using module_spi_driver we can eliminate a few lines of boilerplate code.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 ---
- .../video/omap2/displays/panel-nec-nl8048hl11-01b.c  | 20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/micrel/ks8851.c | 14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
-diff --git a/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c b/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
-index 1e0097d..20c3cd9 100644
---- a/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
-+++ b/drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c
-@@ -242,16 +242,22 @@ static int nec_8048_spi_remove(struct spi_device *spi)
- 	return 0;
- }
- 
--static int nec_8048_spi_suspend(struct spi_device *spi, pm_message_t mesg)
-+#ifdef CONFIG_PM_SLEEP
-+
-+static int nec_8048_spi_suspend(struct device *dev)
- {
-+	struct spi_device *spi = to_spi_device(dev);
-+
- 	nec_8048_spi_send(spi, 2, 0x01);
- 	mdelay(40);
- 
- 	return 0;
- }
- 
--static int nec_8048_spi_resume(struct spi_device *spi)
-+static int nec_8048_spi_resume(struct device *dev)
- {
-+	struct spi_device *spi = to_spi_device(dev);
-+
- 	/* reinitialize the panel */
- 	spi_setup(spi);
- 	nec_8048_spi_send(spi, 2, 0x00);
-@@ -260,14 +266,20 @@ static int nec_8048_spi_resume(struct spi_device *spi)
- 	return 0;
- }
- 
-+static SIMPLE_DEV_PM_OPS(nec_8048_spi_pm_ops, nec_8048_spi_suspend,
-+		nec_8048_spi_resume);
-+#define NEC_8048_SPI_PM_OPS (&nec_8048_spi_pm_ops)
-+#else
-+#define NEC_8048_SPI_PM_OPS NULL
-+#endif
-+
- static struct spi_driver nec_8048_spi_driver = {
- 	.probe		= nec_8048_spi_probe,
- 	.remove		= nec_8048_spi_remove,
--	.suspend	= nec_8048_spi_suspend,
--	.resume		= nec_8048_spi_resume,
- 	.driver		= {
- 		.name	= "nec_8048_spi",
- 		.owner	= THIS_MODULE,
-+		.pm	= NEC_8048_SPI_PM_OPS,
- 	},
+diff --git a/drivers/net/ethernet/micrel/ks8851.c b/drivers/net/ethernet/micrel/ks8851.c
+index 8fb4812..84ca876 100644
+--- a/drivers/net/ethernet/micrel/ks8851.c
++++ b/drivers/net/ethernet/micrel/ks8851.c
+@@ -1538,19 +1538,7 @@ static struct spi_driver ks8851_driver = {
+ 	.suspend = ks8851_suspend,
+ 	.resume = ks8851_resume,
  };
+-
+-static int __init ks8851_init(void)
+-{
+-	return spi_register_driver(&ks8851_driver);
+-}
+-
+-static void __exit ks8851_exit(void)
+-{
+-	spi_unregister_driver(&ks8851_driver);
+-}
+-
+-module_init(ks8851_init);
+-module_exit(ks8851_exit);
++module_spi_driver(ks8851_driver);
  
+ MODULE_DESCRIPTION("KS8851 Network driver");
+ MODULE_AUTHOR("Ben Dooks <ben@simtec.co.uk>");
 -- 
 1.8.0
 
