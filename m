@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934190Ab3DGRrO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 13:47:14 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:55357 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934144Ab3DGRrN (ORCPT
+	id S934219Ab3DGRsO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 13:48:14 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:57723 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934193Ab3DGRsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 13:47:13 -0400
-Date: Sun, 7 Apr 2013 10:43:13 -0700
-From: Anton Vorontsov <anton@enomsg.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Bryan Freed <bfreed@chromium.org>, Tony Luck <tony.luck@intel.com>,
-        keescook@chromium.org, marco.stornelli@gmail.com,
-        gregkh@linuxfoundation.org,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        sboyd@codeaurora.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v6] pstore/ram: Add ramoops support for the Flattened
- Device Tree.
-Message-ID: <20130407174313.GA7168@lizard>
-References: <1347042576-17675-1-git-send-email-bfreed@chromium.org>
- <20120908052907.GA4724@lizard>
- <20120917062302.GA768@lizard>
- <CAL_JsqK_L9nN6+oxUQzNwFjbFf3+3NroeEwzbMdPS4T6=Mnemg@mail.gmail.com>
+	Sun, 7 Apr 2013 13:48:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAL_JsqK_L9nN6+oxUQzNwFjbFf3+3NroeEwzbMdPS4T6=Mnemg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAB=NE6UgJoQzwrCzdc0P04vSRHGK4FtNEcJTBnN0nsQSKDviEw@mail.gmail.com>
+References: <1365302138-19736-1-git-send-email-mcgrof@do-not-panic.com> <CAB=NE6UgJoQzwrCzdc0P04vSRHGK4FtNEcJTBnN0nsQSKDviEw@mail.gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Sun, 7 Apr 2013 10:47:49 -0700
+X-Google-Sender-Auth: AEbp0c4FHpUsGquvsOQpMtkk1eE
+Message-ID: <CAB=NE6XLzzm8fDL=UznJGARHGsAT1OMTpmV4vtD6j5JoHQiv6g@mail.gmail.com>
+Subject: Re: [PATCH 0/3] backports: adds regulator and media susbsystems
+To: "backports@vger.kernel.org" <backports@vger.kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 09:03:47PM -0500, Rob Herring wrote:
-> On Mon, Sep 17, 2012 at 1:23 AM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
-> > On Fri, Sep 07, 2012 at 10:29:10PM -0700, Anton Vorontsov wrote:
-> >> On Fri, Sep 07, 2012 at 11:29:36AM -0700, Bryan Freed wrote:
-> >> > When called with a non-zero of_node, fill out a new ramoops_platform_data
-> >> > with data from the specified Flattened Device Tree node.
-> >> > Update ramoops documentation with the new FDT interface.
-> >> > Update devicetree/binding documentation with pstore/ramoops.txt.
-> >>
-> >> Thanks for your work, Bryan! There were a few issues, I fixed
-> >> them myself but I need your confirmation if you're OK w/ all
-> >> the changes.
-> > [...]
-> >> So, the resulting patch is down below. But I have not pushed
-> >> it out yet, I'm waiting for your sign off. If you're OK with the
-> >> changes, please reply with
-> >> 'Signed-off-by: Bryan Freed <bfreed@chromium.org>'
-> >
-> > Bryan, have you had a chance to look into this?
-> 
-> Whatever happened to this? Olof was also looking at doing a binding
-> back in Jan 2012:
-> 
-> http://www.mail-archive.com/devicetree-discuss@lists.ozlabs.org/msg09905.html
+On Sat, Apr 6, 2013 at 7:37 PM, Luis R. Rodriguez
+<mcgrof@do-not-panic.com> wrote:
+> On Sat, Apr 6, 2013 at 7:35 PM, Luis R. Rodriguez
+> <mcgrof@do-not-panic.com> wrote:
+>> Segmentation fault
+>> make[8]: *** [/home/mcgrof/tmp/build/compat/core.o] Error 139
 
-I don't know. Bryan's patch looked good, I'd happily apply it. But I still
-need Bryan's Signed-off-by tag. :-/ Or, somebody needs to sign off on his
-behalf (anyone from Chromium project?). Or redo the patch.
+I've narrowed the segfault to a core.c file with just:
 
-Thanks,
+#include <linux/async.h>
+#include <linux/module.h>
 
-Anton
+void poo(void)
+{
+}
+EXPORT_SYMBOL_GPL(poo);
+
+Removing asynch.h fixes it. Doing this on an standalone module works
+
+  Luis
