@@ -1,102 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab3DGFtg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 01:49:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50608 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752665Ab3DGFte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 01:49:34 -0400
-Date: Sat, 6 Apr 2013 22:49:06 -0700
-Message-Id: <201304070549.r375n6wj013205@tazenda.hos.anvin.org>
-From: "H. Peter Anvin" <hpa@zytor.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x86 fixes for v3.9-rc6
-Cc: <stable@vger.kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Jan Beulich <jbeulich@suse.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Matthew Garrett <mjg@redhat.com>, Paul Moore <pmoore@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Will Drewry <wad@chromium.org>
+	id S1755038Ab3DGFyh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 01:54:37 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:46375 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332Ab3DGFyg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 01:54:36 -0400
+Message-ID: <51610A25.4010301@oracle.com>
+Date: Sun, 07 Apr 2013 13:54:45 +0800
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xen-devel <xen-devel@lists.xen.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Feng Jin <joe.jin@oracle.com>, Tamon Shiose <tamon.shiose@oracle.com>
+Subject: [PATCH-v2] xen: Don't call arch_trigger_all_cpu_backtrace in dom0(pvm)
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+nmi isn't supported in dom0, fallback to general all cpu backtrace code.
 
-Two quite small fixes: one a build problem, and the other fixes
-seccomp filters on x32.
+Without fix, on xAPIC system, doing sysrq+l, no backtrace is showed,
+as xen_send_IPI_all is called and it doesn't support nmi vector.
 
-The following changes since commit 07961ac7c0ee8b546658717034fe692fd12eefa9:
+On x2APIC enabled system, got NULL pointer dereference as below.
 
-  Linux 3.9-rc5 (2013-03-31 15:12:43 -0700)
+    SysRq : Show backtrace of all active CPUs
+    BUG: unable to handle kernel NULL pointer dereference at           (null)
+    IP: [<ffffffff8125e3cb>] memcpy+0xb/0x120
+    Call Trace:
+     [<ffffffff81039633>] ? __x2apic_send_IPI_mask+0x73/0x160
+     [<ffffffff8103973e>] x2apic_send_IPI_all+0x1e/0x20
+     [<ffffffff8103498c>] arch_trigger_all_cpu_backtrace+0x6c/0xb0
+     [<ffffffff81501be4>] ? _raw_spin_lock_irqsave+0x34/0x50
+     [<ffffffff8131654e>] sysrq_handle_showallcpus+0xe/0x10
+     [<ffffffff8131616d>] __handle_sysrq+0x7d/0x140
+     [<ffffffff81316230>] ? __handle_sysrq+0x140/0x140
+     [<ffffffff81316287>] write_sysrq_trigger+0x57/0x60
+     [<ffffffff811ca996>] proc_reg_write+0x86/0xc0
+     [<ffffffff8116dd8e>] vfs_write+0xce/0x190
+     [<ffffffff8116e3e5>] sys_write+0x55/0x90
+     [<ffffffff8150a242>] system_call_fastpath+0x16/0x1b
 
-are available in the git repository at:
+That's because apic points to apic_x2apic_cluster or apic_x2apic_phys
+but the basic element like cpumask isn't initialized.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+-v2: Mask x2APIC feature in pvm to avoid overwrite of apic pointer,
+     update commit message per Konrad's suggestion.
 
-for you to fetch changes up to 918708245e92941df16a634dc201b407d12bcd91:
+Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Tested-by: Tamon Shiose <tamon.shiose@oracle.com>
+---
+ arch/x86/xen/enlighten.c |    3 +++
+ include/linux/nmi.h      |    2 ++
+ 2 files changed, 5 insertions(+), 0 deletions(-)
 
-  x86: Fix rebuild with EFI_STUB enabled (2013-04-05 13:59:23 -0700)
-
-----------------------------------------------------------------
-Jan Beulich (1):
-      x86: Fix rebuild with EFI_STUB enabled
-
-Paul Moore (1):
-      x86: remove the x32 syscall bitmask from syscall_get_nr()
-
- arch/x86/boot/compressed/Makefile | 5 ++---
- arch/x86/include/asm/syscall.h    | 4 ++--
- 2 files changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-index 8a84501..5ef205c 100644
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -4,7 +4,7 @@
- # create a compressed vmlinux image from the original vmlinux
- #
- 
--targets := vmlinux.lds vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.xz vmlinux.bin.lzo head_$(BITS).o misc.o string.o cmdline.o early_serial_console.o piggy.o
-+targets := vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.xz vmlinux.bin.lzo
- 
- KBUILD_CFLAGS := -m$(BITS) -D__KERNEL__ $(LINUX_INCLUDE) -O2
- KBUILD_CFLAGS += -fno-strict-aliasing -fPIC
-@@ -29,7 +29,6 @@ VMLINUX_OBJS = $(obj)/vmlinux.lds $(obj)/head_$(BITS).o $(obj)/misc.o \
- 	$(obj)/piggy.o
- 
- $(obj)/eboot.o: KBUILD_CFLAGS += -fshort-wchar -mno-red-zone
--$(obj)/efi_stub_$(BITS).o: KBUILD_CLFAGS += -fshort-wchar -mno-red-zone
- 
- ifeq ($(CONFIG_EFI_STUB), y)
- 	VMLINUX_OBJS += $(obj)/eboot.o $(obj)/efi_stub_$(BITS).o
-@@ -43,7 +42,7 @@ OBJCOPYFLAGS_vmlinux.bin :=  -R .comment -S
- $(obj)/vmlinux.bin: vmlinux FORCE
- 	$(call if_changed,objcopy)
- 
--targets += vmlinux.bin.all vmlinux.relocs
-+targets += $(patsubst $(obj)/%,%,$(VMLINUX_OBJS)) vmlinux.bin.all vmlinux.relocs
- 
- CMD_RELOCS = arch/x86/tools/relocs
- quiet_cmd_relocs = RELOCS  $@
-diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
-index 1ace47b..2e188d6 100644
---- a/arch/x86/include/asm/syscall.h
-+++ b/arch/x86/include/asm/syscall.h
-@@ -29,13 +29,13 @@ extern const unsigned long sys_call_table[];
-  */
- static inline int syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index c8e1c7b..12b0718 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -386,6 +386,9 @@ static void __init xen_init_cpuid_mask(void)
+ 		cpuid_leaf1_edx_mask &=
+ 			~((1 << X86_FEATURE_APIC) |  /* disable local APIC */
+ 			  (1 << X86_FEATURE_ACPI));  /* disable ACPI */
++
++	cpuid_leaf1_ecx_mask &= ~(1 << (X86_FEATURE_X2APIC % 32));
++
+ 	ax = 1;
+ 	cx = 0;
+ 	xen_cpuid(&ax, &bx, &cx, &dx);
+diff --git a/include/linux/nmi.h b/include/linux/nmi.h
+index db50840..b845757 100644
+--- a/include/linux/nmi.h
++++ b/include/linux/nmi.h
+@@ -32,6 +32,8 @@ static inline void touch_nmi_watchdog(void)
+ #ifdef arch_trigger_all_cpu_backtrace
+ static inline bool trigger_all_cpu_backtrace(void)
  {
--	return regs->orig_ax & __SYSCALL_MASK;
-+	return regs->orig_ax;
- }
++	if (xen_domain())
++		return false;
+ 	arch_trigger_all_cpu_backtrace();
  
- static inline void syscall_rollback(struct task_struct *task,
- 				    struct pt_regs *regs)
- {
--	regs->ax = regs->orig_ax & __SYSCALL_MASK;
-+	regs->ax = regs->orig_ax;
- }
- 
- static inline long syscall_get_error(struct task_struct *task,
+ 	return true;
+-- 
+1.7.3
+
