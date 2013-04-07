@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934938Ab3DGXcg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:32:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46823 "EHLO
+	id S934950Ab3DGXcl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:32:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46827 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934759Ab3DGXcd (ORCPT
+	by vger.kernel.org with ESMTP id S934759Ab3DGXci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:32:33 -0400
+	Sun, 7 Apr 2013 19:32:38 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Veaceslav Falico" <vfalico@redhat.com>
-Date: Sun, 07 Apr 2013 23:45:43 +0100
-Message-ID: <lsq.1365374743.727557614@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Neal Cardwell" <ncardwell@google.com>,
+        "Yuchung Cheng" <ycheng@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Sun, 07 Apr 2013 23:45:42 +0100
+Message-ID: <lsq.1365374742.154097199@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [60/74] bonding: remove already created master sysfs link on  failure
+Subject: [55/74] tcp: undo spurious timeout after SACK reneging
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,34 +32,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Veaceslav Falico <vfalico@redhat.com>
+From: Yuchung Cheng <ycheng@google.com>
 
-[ Upstream commit 9fe16b78ee17579cb4f333534cf7043e94c67024 ]
+[ Upstream commit 7ebe183c6d444ef5587d803b64a1f4734b18c564 ]
 
-If slave sysfs symlink failes to be created - we end up without removing
-the master sysfs symlink. Remove it in case of failure.
+On SACK reneging the sender immediately retransmits and forces a
+timeout but disables Eifel (undo). If the (buggy) receiver does not
+drop any packet this can trigger a false slow-start retransmit storm
+driven by the ACKs of the original packets. This can be detected with
+undo and TCP timestamps.
 
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Signed-off-by: Yuchung Cheng <ycheng@google.com>
+Acked-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/bonding/bond_sysfs.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ net/ipv4/tcp_input.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/bonding/bond_sysfs.c b/drivers/net/bonding/bond_sysfs.c
-index a549f36..8d923d3 100644
---- a/drivers/net/bonding/bond_sysfs.c
-+++ b/drivers/net/bonding/bond_sysfs.c
-@@ -184,6 +184,11 @@ int bond_create_slave_symlinks(struct net_device *master,
- 	sprintf(linkname, "slave_%s", slave->name);
- 	ret = sysfs_create_link(&(master->dev.kobj), &(slave->dev.kobj),
- 				linkname);
-+
-+	/* free the master link created earlier in case of error */
-+	if (ret)
-+		sysfs_remove_link(&(slave->dev.kobj), "master");
-+
- 	return ret;
+diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+index 1b1f7af..3124e17 100644
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -2265,11 +2265,8 @@ void tcp_enter_loss(struct sock *sk, int how)
+ 	if (tcp_is_reno(tp))
+ 		tcp_reset_reno_sack(tp);
  
- }
+-	if (!how) {
+-		/* Push undo marker, if it was plain RTO and nothing
+-		 * was retransmitted. */
+-		tp->undo_marker = tp->snd_una;
+-	} else {
++	tp->undo_marker = tp->snd_una;
++	if (how) {
+ 		tp->sacked_out = 0;
+ 		tp->fackets_out = 0;
+ 	}
 
