@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934695Ab3DGX3L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:29:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46675 "EHLO
+	id S934709Ab3DGX3R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:29:17 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46681 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934586Ab3DGX3H (ORCPT
+	by vger.kernel.org with ESMTP id S934558Ab3DGX3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:29:07 -0400
+	Sun, 7 Apr 2013 19:29:13 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Bjorn Helgaas" <bhelgaas@google.com>,
-        "Yinghai Lu" <yinghai@kernel.org>,
-        "Matthew Whitehead" <mwhitehe@redhat.com>
+CC: akpm@linux-foundation.org,
+        "Gustavo Padovan" <gustavo.padovan@collabora.co.uk>,
+        "Ming Lei" <ming.lei@canonical.com>
 Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.879424092@decadent.org.uk>
+Message-ID: <lsq.1365374742.892770894@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [44/74] EISA/PCI: Init EISA early, before PNP
+Subject: [11/74] Bluetooth: Add support for Dell[QCA 0cf3:0036]
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,97 +32,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Ming Lei <ming.lei@canonical.com>
 
-commit c5fb301ae83bec6892e54984e6ec765c47df8e10 upstream.
+commit d66629c1325399cf080ba8b2fb086c10e5439cdd upstream.
 
-Matthew reported kernels fail the pci_eisa probe and are later successful
-with the virtual_eisa_root_init force probe without slot0.
+Add support for the AR9462 chip
 
-The reason for that is: PNP probing is before pci_eisa_init gets called
-as pci_eisa_init is called via pci_driver.
+T:  Bus=03 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#=  3 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0cf3 ProdID=0036 Rev= 0.02
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+A:  FirstIf#= 0 IfCount= 2 Cls=e0(wlcon) Sub=01 Prot=01
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-pnp 00:0f has 0xc80 - 0xc84 reserved.
-[    9.700409] pnp 00:0f: [io  0x0c80-0x0c84]
-
-so eisa_probe will fail from pci_eisa_init
-				==>eisa_root_register
-					==>eisa_probe path.
-as force_probe is not set in pci_eisa_root, it will bail early when
-slot0 is not probed and initialized.
-
-Try to use subsys_initcall_sync instead, and will keep following sequence:
-	pci_subsys_init
-	pci_eisa_init_early
-	pnpacpi_init/isapnp_init
-
-After this patch EISA can be initialized properly, and PNP overlapping
-resource will not be reserved.
-[   10.104434] system 00:0f: [io  0x0c80-0x0c84] could not be reserved
-
-Reported-by: Matthew Whitehead <mwhitehe@redhat.com>
-Tested-by: Matthew Whitehead <mwhitehe@redhat.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/eisa/pci_eisa.c |   39 +++++++++++++++++++++------------------
- 1 file changed, 21 insertions(+), 18 deletions(-)
+ drivers/bluetooth/ath3k.c |    2 ++
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 3 insertions(+)
 
---- a/drivers/eisa/pci_eisa.c
-+++ b/drivers/eisa/pci_eisa.c
-@@ -19,8 +19,7 @@
- /* There is only *one* pci_eisa device per machine, right ? */
- static struct eisa_root_device pci_eisa_root;
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -72,6 +72,7 @@ static struct usb_device_id ath3k_table[
+ 	{ USB_DEVICE(0x03F0, 0x311D) },
  
--static int __init pci_eisa_init(struct pci_dev *pdev,
--				const struct pci_device_id *ent)
-+static int __init pci_eisa_init(struct pci_dev *pdev)
- {
- 	int rc;
+ 	/* Atheros AR3012 with sflash firmware*/
++	{ USB_DEVICE(0x0CF3, 0x0036) },
+ 	{ USB_DEVICE(0x0CF3, 0x3004) },
+ 	{ USB_DEVICE(0x0CF3, 0x3008) },
+ 	{ USB_DEVICE(0x0CF3, 0x311D) },
+@@ -106,6 +107,7 @@ MODULE_DEVICE_TABLE(usb, ath3k_table);
+ static struct usb_device_id ath3k_blist_tbl[] = {
  
-@@ -45,22 +44,26 @@ static int __init pci_eisa_init(struct p
- 	return 0;
- }
+ 	/* Atheros AR3012 with sflash firmware*/
++	{ USB_DEVICE(0x0CF3, 0x0036), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3008), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -139,6 +139,7 @@ static struct usb_device_id blacklist_ta
+ 	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
  
--static struct pci_device_id pci_eisa_pci_tbl[] = {
--	{ PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
--	  PCI_CLASS_BRIDGE_EISA << 8, 0xffff00, 0 },
--	{ 0, }
--};
--
--static struct pci_driver __refdata pci_eisa_driver = {
--	.name		= "pci_eisa",
--	.id_table	= pci_eisa_pci_tbl,
--	.probe		= pci_eisa_init,
--};
--
--static int __init pci_eisa_init_module (void)
-+/*
-+ * We have to call pci_eisa_init_early() before pnpacpi_init()/isapnp_init().
-+ *   Otherwise pnp resource will get enabled early and could prevent eisa
-+ *   to be initialized.
-+ * Also need to make sure pci_eisa_init_early() is called after
-+ * x86/pci_subsys_init().
-+ * So need to use subsys_initcall_sync with it.
-+ */
-+static int __init pci_eisa_init_early(void)
- {
--	return pci_register_driver (&pci_eisa_driver);
--}
-+	struct pci_dev *dev = NULL;
-+	int ret;
-+
-+	for_each_pci_dev(dev)
-+		if ((dev->class >> 8) == PCI_CLASS_BRIDGE_EISA) {
-+			ret = pci_eisa_init(dev);
-+			if (ret)
-+				return ret;
-+		}
- 
--device_initcall(pci_eisa_init_module);
--MODULE_DEVICE_TABLE(pci, pci_eisa_pci_tbl);
-+	return 0;
-+}
-+subsys_initcall_sync(pci_eisa_init_early);
+ 	/* Atheros 3012 with sflash firmware */
++	{ USB_DEVICE(0x0cf3, 0x0036), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3008), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
 
