@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934697Ab3DGX2S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:28:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46654 "EHLO
+	id S934615Ab3DGX27 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:28:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46663 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757645Ab3DGX2Q (ORCPT
+	by vger.kernel.org with ESMTP id S934488Ab3DGX26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:28:16 -0400
+	Sun, 7 Apr 2013 19:28:58 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jan Kara" <jack@suse.cz>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Ian Abbott" <abbotti@mev.co.uk>
 Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.6984269@decadent.org.uk>
+Message-ID: <lsq.1365374742.27182830@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [49/74] udf: Fix bitmap overflow on large filesystems with small
- block size
+Subject: [29/74] staging: comedi: s626: fix continuous acquisition
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,37 +32,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 89b1f39eb4189de745fae554b0d614d87c8d5c63 upstream.
+commit e4317ce877a31dbb9d96375391c1c4ad2210d637 upstream.
 
-For large UDF filesystems with 512-byte blocks the number of necessary
-bitmap blocks is larger than 2^16 so s_nr_groups in udf_bitmap overflows
-(the number will overflow for filesystems larger than 128 GB with
-512-byte blocks). That results in ENOSPC errors despite the filesystem
-has plenty of free space.
+For the s626 driver, there is a bug in the handling of asynchronous
+commands on the AI subdevice when the stop source is `TRIG_NONE`.  The
+command should run continuously until cancelled, but the interrupt
+handler stops the command running after the first scan.
 
-Fix the problem by changing s_nr_groups' type to 'int'. That is enough
-even for filesystems 2^32 blocks (UDF maximum) and 512-byte blocksize.
+The command set-up function `s626_ai_cmd()` contains this code:
 
-Reported-and-tested-by: v10lator@myway.de
-Signed-off-by: Jan Kara <jack@suse.cz>
+	switch (cmd->stop_src) {
+	case TRIG_COUNT:
+		/*  data arrives as one packet */
+		devpriv->ai_sample_count = cmd->stop_arg;
+		devpriv->ai_continous = 0;
+		break;
+	case TRIG_NONE:
+		/*  continous acquisition */
+		devpriv->ai_continous = 1;
+		devpriv->ai_sample_count = 0;
+		break;
+	}
+
+The interrupt handler `s626_irq_handler()` contains this code:
+
+		if (!(devpriv->ai_continous))
+			devpriv->ai_sample_count--;
+		if (devpriv->ai_sample_count <= 0) {
+			devpriv->ai_cmd_running = 0;
+			/* ... */
+		}
+
+So `devpriv->ai_sample_count` is only decremented for the `TRIG_COUNT`
+case, but `devpriv->ai_cmd_running` is set to 0 (and the command
+stopped) regardless.
+
+Fix this in `s626_ai_cmd()` by setting `devpriv->ai_sample_count = 1`
+for the `TRIG_NONE` case.  The interrupt handler will not decrement it
+so it will remain greater than 0 and the check for stopping the
+acquisition will fail.
+
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/udf/udf_sb.h |    2 +-
+ drivers/staging/comedi/drivers/s626.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/udf/udf_sb.h b/fs/udf/udf_sb.h
-index 5f02722..8d1c9d4 100644
---- a/fs/udf/udf_sb.h
-+++ b/fs/udf/udf_sb.h
-@@ -82,7 +82,7 @@ struct udf_virtual_data {
- struct udf_bitmap {
- 	__u32			s_extLength;
- 	__u32			s_extPosition;
--	__u16			s_nr_groups;
-+	int			s_nr_groups;
- 	struct buffer_head 	**s_block_bitmap;
- };
+--- a/drivers/staging/comedi/drivers/s626.c
++++ b/drivers/staging/comedi/drivers/s626.c
+@@ -1882,7 +1882,7 @@ static int s626_ai_cmd(struct comedi_dev
+ 	case TRIG_NONE:
+ 		/*  continous acquisition */
+ 		devpriv->ai_continous = 1;
+-		devpriv->ai_sample_count = 0;
++		devpriv->ai_sample_count = 1;
+ 		break;
+ 	}
  
 
