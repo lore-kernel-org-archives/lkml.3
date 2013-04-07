@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935106Ab3DGXew (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:34:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46878 "EHLO
+	id S935042Ab3DGXdt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:33:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46866 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935058Ab3DGXdy (ORCPT
+	by vger.kernel.org with ESMTP id S935021Ab3DGXdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:33:54 -0400
+	Sun, 7 Apr 2013 19:33:42 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Trond Myklebust" <Trond.Myklebust@netapp.com>
+CC: akpm@linux-foundation.org,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "Jan Beulich" <jbeulich@suse.com>, "Jan Beulich" <JBeulich@suse.com>
 Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.727870826@decadent.org.uk>
+Message-ID: <lsq.1365374742.239793909@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [27/74] SUNRPC: Add barriers to ensure read ordering in
- rpc_wake_up_task_queue_locked
+Subject: [19/74] xen-blkback: fix dispatch_rw_block_io() error path
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,45 +32,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Jan Beulich <JBeulich@suse.com>
 
-commit 1166fde6a923c30f4351515b6a9a1efc513e7d00 upstream.
+commit 0e5e098ac22dae38f957e951b70d3cf73beff0f7 upstream.
 
-We need to be careful when testing task->tk_waitqueue in
-rpc_wake_up_task_queue_locked, because it can be changed while we
-are holding the queue->lock.
-By adding appropriate memory barriers, we can ensure that it is safe to
-test task->tk_waitqueue for equality if the RPC_TASK_QUEUED bit is set.
+Commit 7708992 ("xen/blkback: Seperate the bio allocation and the bio
+submission") consolidated the pendcnt updates to just a single write,
+neglecting the fact that the error path relied on it getting set to 1
+up front (such that the decrement in __end_block_io_op() would actually
+drop the count to zero, triggering the necessary cleanup actions).
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Also remove a misleading and a stale (after said commit) comment.
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sunrpc/sched.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/block/xen-blkback/blkback.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -139,6 +139,8 @@ static void __rpc_add_wait_queue(struct
- 		list_add_tail(&task->u.tk_wait.list, &queue->tasks[0]);
- 	task->tk_waitqueue = queue;
- 	queue->qlen++;
-+	/* barrier matches the read in rpc_wake_up_task_queue_locked() */
-+	smp_wmb();
- 	rpc_set_queued(task);
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -758,13 +758,7 @@ static int dispatch_rw_block_io(struct x
+ 		}
+ 	}
  
- 	dprintk("RPC: %5u added to queue %p \"%s\"\n",
-@@ -389,8 +391,11 @@ static void __rpc_do_wake_up_task(struct
-  */
- static void rpc_wake_up_task_queue_locked(struct rpc_wait_queue *queue, struct rpc_task *task)
- {
--	if (RPC_IS_QUEUED(task) && task->tk_waitqueue == queue)
--		__rpc_do_wake_up_task(queue, task);
-+	if (RPC_IS_QUEUED(task)) {
-+		smp_rmb();
-+		if (task->tk_waitqueue == queue)
-+			__rpc_do_wake_up_task(queue, task);
-+	}
- }
+-	/*
+-	 * We set it one so that the last submit_bio does not have to call
+-	 * atomic_inc.
+-	 */
+ 	atomic_set(&pending_req->pendcnt, nbio);
+-
+-	/* Get a reference count for the disk queue and start sending I/O */
+ 	blk_start_plug(&plug);
  
- /*
+ 	for (i = 0; i < nbio; i++)
+@@ -792,6 +786,7 @@ static int dispatch_rw_block_io(struct x
+  fail_put_bio:
+ 	for (i = 0; i < nbio; i++)
+ 		bio_put(biolist[i]);
++	atomic_set(&pending_req->pendcnt, 1);
+ 	__end_block_io_op(pending_req, -EINVAL);
+ 	msleep(1); /* back off a bit */
+ 	return -EIO;
 
