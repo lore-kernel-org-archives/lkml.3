@@ -1,246 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932786Ab3DGH0Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 03:26:25 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:65317 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755530Ab3DGH0Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 03:26:24 -0400
-Message-ID: <51611F94.7060801@gmail.com>
-Date: Sun, 07 Apr 2013 15:26:12 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S932832Ab3DGHax (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 03:30:53 -0400
+Received: from mga09.intel.com ([134.134.136.24]:41326 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755744Ab3DGHaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 03:30:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,423,1363158000"; 
+   d="scan'208";a="313857536"
+Message-ID: <5161208F.1040209@intel.com>
+Date: Sun, 07 Apr 2013 15:30:23 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Shaohua Li <shli@kernel.org>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC] mm: remove swapcache page early
-References: <1364350932-12853-1-git-send-email-minchan@kernel.org> <alpine.LNX.2.00.1303271230210.29687@eggly.anvils> <515ADFCF.4010209@gmail.com>
-In-Reply-To: <515ADFCF.4010209@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
+        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
+        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
+        mgorman@suse.de, riel@redhat.com
+Subject: Re: [patch v3 0/8] sched: use runnable avg in load balance
+References: <1364873008-3169-1-git-send-email-alex.shi@intel.com> <515A877B.3020908@linux.vnet.ibm.com> <515BEC5F.60001@intel.com> <5160E355.6000701@linux.vnet.ibm.com>
+In-Reply-To: <5160E355.6000701@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping Minchan.
-On 04/02/2013 09:40 PM, Simon Jeons wrote:
-> Hi Hugh,
-> On 03/28/2013 05:41 AM, Hugh Dickins wrote:
->> On Wed, 27 Mar 2013, Minchan Kim wrote:
->>
->>> Swap subsystem does lazy swap slot free with expecting the page
->>> would be swapped out again so we can't avoid unnecessary write.
->>                               so we can avoid unnecessary write.
->
-> If page can be swap out again, which codes can avoid unnecessary 
-> write? Could you point out to me? Thanks in advance. ;-)
->
->>> But the problem in in-memory swap is that it consumes memory space
->>> until vm_swap_full(ie, used half of all of swap device) condition
->>> meet. It could be bad if we use multiple swap device, small 
->>> in-memory swap
->>> and big storage swap or in-memory swap alone.
->> That is a very good realization: it's surprising that none of us
->> thought of it before - no disrespect to you, well done, thank you.
->>
->> And I guess swap readahead is utterly unhelpful in this case too.
->>
->>> This patch changes vm_swap_full logic slightly so it could free
->>> swap slot early if the backed device is really fast.
->>> For it, I used SWP_SOLIDSTATE but It might be controversial.
->> But I strongly disagree with almost everything in your patch :)
->> I disagree with addressing it in vm_swap_full(), I disagree that
->> it can be addressed by device, I disagree that it has anything to
->> do with SWP_SOLIDSTATE.
->>
->> This is not a problem with swapping to /dev/ram0 or to /dev/zram0,
->> is it?  In those cases, a fixed amount of memory has been set aside
->> for swap, and it works out just like with disk block devices. The
->> memory set aside may be wasted, but that is accepted upfront.
->>
->> Similarly, this is not a problem with swapping to SSD.  There might
->> or might not be other reasons for adjusting the vm_swap_full() logic
->> for SSD or generally, but those have nothing to do with this issue.
->>
->> The problem here is peculiar to frontswap, and the variably sized
->> memory behind it, isn't it?  We are accustomed to using swap to free
->> up memory by transferring its data to some other, cheaper but slower
->> resource.
->>
->> But in the case of frontswap and zmem (I'll say that to avoid thinking
->> through which backends are actually involved), it is not a cheaper and
->> slower resource, but the very same memory we are trying to save: swap
->> is stolen from the memory under reclaim, so any duplication becomes
->> counter-productive (if we ignore cpu compression/decompression costs:
->> I have no idea how fair it is to do so, but anyone who chooses zmem
->> is prepared to pay some cpu price for that).
->>
->> And because it's a frontswap thing, we cannot decide this by device:
->> frontswap may or may not stand in front of each device.  There is no
->> problem with swapcache duplicated on disk (until that area approaches
->> being full or fragmented), but at the higher level we cannot see what
->> is in zmem and what is on disk: we only want to free up the zmem dup.
->>
->> I believe the answer is for frontswap/zmem to invalidate the frontswap
->> copy of the page (to free up the compressed memory when possible) and
->> SetPageDirty on the PageUptodate PageSwapCache page when swapping in
->> (setting page dirty so nothing will later go to read it from the
->> unfreed location on backing swap disk, which was never written).
->>
->> We cannot rely on freeing the swap itself, because in general there
->> may be multiple references to the swap, and we only satisfy the one
->> which has faulted.  It may or may not be a good idea to use rmap to
->> locate the other places to insert pte in place of swap entry, to
->> resolve them all at once; but we have chosen not to do so in the
->> past, and there's no need for that, if the zmem gets invalidated
->> and the swapcache page set dirty.
->>
->> Hugh
->>
->>> So let's add Ccing Shaohua and Hugh.
->>> If it's a problem for SSD, I'd like to create new type SWP_INMEMORY
->>> or something for z* family.
->>>
->>> Other problem is zram is block device so that it can set SWP_INMEMORY
->>> or SWP_SOLIDSTATE easily(ie, actually, zram is already done) but
->>> I have no idea to use it for frontswap.
->>>
->>> Any idea?
->>>
->>> Other optimize point is we remove it unconditionally when we
->>> found it's exclusive when swap in happen.
->>> It could help frontswap family, too.
->>> What do you think about it?
->>>
->>> Cc: Hugh Dickins <hughd@google.com>
->>> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
->>> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
->>> Cc: Nitin Gupta <ngupta@vflare.org>
->>> Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
->>> Cc: Shaohua Li <shli@kernel.org>
->>> Signed-off-by: Minchan Kim <minchan@kernel.org>
->>> ---
->>>   include/linux/swap.h | 11 ++++++++---
->>>   mm/memory.c          |  3 ++-
->>>   mm/swapfile.c        | 11 +++++++----
->>>   mm/vmscan.c          |  2 +-
->>>   4 files changed, 18 insertions(+), 9 deletions(-)
->>>
->>> diff --git a/include/linux/swap.h b/include/linux/swap.h
->>> index 2818a12..1f4df66 100644
->>> --- a/include/linux/swap.h
->>> +++ b/include/linux/swap.h
->>> @@ -359,9 +359,14 @@ extern struct page 
->>> *swapin_readahead(swp_entry_t, gfp_t,
->>>   extern atomic_long_t nr_swap_pages;
->>>   extern long total_swap_pages;
->>>   -/* Swap 50% full? Release swapcache more aggressively.. */
->>> -static inline bool vm_swap_full(void)
->>> +/*
->>> + * Swap 50% full or fast backed device?
->>> + * Release swapcache more aggressively.
->>> + */
->>> +static inline bool vm_swap_full(struct swap_info_struct *si)
->>>   {
->>> +    if (si->flags & SWP_SOLIDSTATE)
->>> +        return true;
->>>       return atomic_long_read(&nr_swap_pages) * 2 < total_swap_pages;
->>>   }
->>>   @@ -405,7 +410,7 @@ mem_cgroup_uncharge_swapcache(struct page 
->>> *page, swp_entry_t ent, bool swapout)
->>>   #define get_nr_swap_pages()            0L
->>>   #define total_swap_pages            0L
->>>   #define total_swapcache_pages()            0UL
->>> -#define vm_swap_full()                0
->>> +#define vm_swap_full(si)            0
->>>     #define si_swapinfo(val) \
->>>       do { (val)->freeswap = (val)->totalswap = 0; } while (0)
->>> diff --git a/mm/memory.c b/mm/memory.c
->>> index 705473a..1ca21a9 100644
->>> --- a/mm/memory.c
->>> +++ b/mm/memory.c
->>> @@ -3084,7 +3084,8 @@ static int do_swap_page(struct mm_struct *mm, 
->>> struct vm_area_struct *vma,
->>>       mem_cgroup_commit_charge_swapin(page, ptr);
->>>         swap_free(entry);
->>> -    if (vm_swap_full() || (vma->vm_flags & VM_LOCKED) || 
->>> PageMlocked(page))
->>> +    if (likely(PageSwapCache(page)) && 
->>> (vm_swap_full(page_swap_info(page))
->>> +            || (vma->vm_flags & VM_LOCKED) || PageMlocked(page)))
->>>           try_to_free_swap(page);
->>>       unlock_page(page);
->>>       if (page != swapcache) {
->>> diff --git a/mm/swapfile.c b/mm/swapfile.c
->>> index 1bee6fa..f9cc701 100644
->>> --- a/mm/swapfile.c
->>> +++ b/mm/swapfile.c
->>> @@ -293,7 +293,7 @@ checks:
->>>           scan_base = offset = si->lowest_bit;
->>>         /* reuse swap entry of cache-only swap if not busy. */
->>> -    if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
->>> +    if (vm_swap_full(si) && si->swap_map[offset] == SWAP_HAS_CACHE) {
->>>           int swap_was_freed;
->>>           spin_unlock(&si->lock);
->>>           swap_was_freed = __try_to_reclaim_swap(si, offset);
->>> @@ -382,7 +382,8 @@ scan:
->>>               spin_lock(&si->lock);
->>>               goto checks;
->>>           }
->>> -        if (vm_swap_full() && si->swap_map[offset] == 
->>> SWAP_HAS_CACHE) {
->>> +        if (vm_swap_full(si) &&
->>> +            si->swap_map[offset] == SWAP_HAS_CACHE) {
->>>               spin_lock(&si->lock);
->>>               goto checks;
->>>           }
->>> @@ -397,7 +398,8 @@ scan:
->>>               spin_lock(&si->lock);
->>>               goto checks;
->>>           }
->>> -        if (vm_swap_full() && si->swap_map[offset] == 
->>> SWAP_HAS_CACHE) {
->>> +        if (vm_swap_full(si) &&
->>> +            si->swap_map[offset] == SWAP_HAS_CACHE) {
->>>               spin_lock(&si->lock);
->>>               goto checks;
->>>           }
->>> @@ -763,7 +765,8 @@ int free_swap_and_cache(swp_entry_t entry)
->>>            * Also recheck PageSwapCache now page is locked (above).
->>>            */
->>>           if (PageSwapCache(page) && !PageWriteback(page) &&
->>> -                (!page_mapped(page) || vm_swap_full())) {
->>> +                (!page_mapped(page) ||
->>> +                  vm_swap_full(page_swap_info(page)))) {
->>>               delete_from_swap_cache(page);
->>>               SetPageDirty(page);
->>>           }
->>> diff --git a/mm/vmscan.c b/mm/vmscan.c
->>> index df78d17..145c59c 100644
->>> --- a/mm/vmscan.c
->>> +++ b/mm/vmscan.c
->>> @@ -933,7 +933,7 @@ cull_mlocked:
->>>     activate_locked:
->>>           /* Not a candidate for swapping, so reclaim swap space. */
->>> -        if (PageSwapCache(page) && vm_swap_full())
->>> +        if (PageSwapCache(page) && vm_swap_full(page_swap_info(page)))
->>>               try_to_free_swap(page);
->>>           VM_BUG_ON(PageActive(page));
->>>           SetPageActive(page);
->>> -- 
->>> 1.8.2
->> -- 
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+> 
+> According to these data, 90us == 90000 is the inflection point on my box
+> for 22 MB 32 clients item, other test items show different float, so
+> 80~90us is the conclusion.
 
+Thanks a lot for the testing!
+> 
+> Now the concern is how to deal with this issue, the results may changed
+> on different deployment, static value is not acceptable, so we need
+> another new knob here?
+> 
+> I'm not sure whether you have take a look at the wake-affine throttle
+> patch I sent weeks ago, it's purpose is throttle the wake-affine to not
+> work too frequently.
+
+Yes. In the patch your directly set the target cpu to this_cpu when no
+wake_affine. Maybe this is the key points, not the wake_affine cost give
+the improvement. Basically I agree with this. but if so, it is a bit
+blind. but, but, The interesting point is the blind target cpu setting
+has the best performance in our current testing. :)
+
+> 
+> And since the aim problem is caused by the imbalance which is the
+> side-effect of frequently succeed wake-affine, may be the throttle patch
+> could help to address that issue too, if it is, then we only need to add
+> one new knob.
+
+As to the aim7 problem, I need apologise to you all!
+The aim7 regression exist with the patch v2 that base on 3.8 kernel, not
+with this v3 version base on 3.9.
+
+After the lock-stealing RW sem patch introduced in 3.9 kernel, the aim7
+has recovered the cpu task imbalance, So on balanced 3.9 kernel, this v3
+version won't bring extra imbalance on aim7. no clear regression on
+aim7, no extra imbalance on aim7.
+
+So, I referenced a old testing result without double confirming, tried
+to resolve a disappeared problem. I am sorry and applogize to you all.
+
+And this burst patch doesn't need on 3.9 kernel. Patch 1,2,4,5,6,7 are
+enough and valid.
+
+-- 
+Thanks Alex
