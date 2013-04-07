@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934567Ab3DGW4F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 18:56:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46350 "EHLO
+	id S934551Ab3DGW4B (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 18:56:01 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46335 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934522Ab3DGW4D (ORCPT
+	by vger.kernel.org with ESMTP id S934522Ab3DGWz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 18:56:03 -0400
+	Sun, 7 Apr 2013 18:55:57 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Erik Hugne" <erik.hugne@ericsson.com>,
-        "YOSHIFUJI Hideaki" <yoshfuji@linux-ipv6.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Hannes Frederic Sowa" <hannes@stressinduktion.org>
+CC: akpm@linux-foundation.org,
+        "Max.Nekludov@us.elster.com" <Max.Nekludov@us.elster.com>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Sun, 07 Apr 2013 23:45:43 +0100
-Message-ID: <lsq.1365374743.623744856@decadent.org.uk>
+Message-ID: <lsq.1365374743.456176645@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [66/74] ipv6: don't accept multicast traffic with scope 0
+Subject: [69/74] ks8851: Fix interpretation of rxlen field.
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,43 +32,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: "Max.Nekludov@us.elster.com" <Max.Nekludov@us.elster.com>
 
-[ Upstream commit 20314092c1b41894d8c181bf9aa6f022be2416aa ]
+[ Upstream commit 14bc435ea54cb888409efb54fc6b76c13ef530e9 ]
 
-v2:
-a) moved before multicast source address check
-b) changed comment to netdev style
+According to the Datasheet (page 52):
+15-12 Reserved
+11-0 RXBC Receive Byte Count
+This field indicates the present received frame byte size.
 
-Cc: Erik Hugne <erik.hugne@ericsson.com>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Acked-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+The code has a bug:
+                 rxh = ks8851_rdreg32(ks, KS_RXFHSR);
+                 rxstat = rxh & 0xffff;
+                 rxlen = rxh >> 16; // BUG!!! 0xFFF mask should be applied
+
+Signed-off-by: Max Nekludov <Max.Nekludov@us.elster.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv6/ip6_input.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/net/ethernet/micrel/ks8851.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv6/ip6_input.c b/net/ipv6/ip6_input.c
-index f8d24dd..15295e9 100644
---- a/net/ipv6/ip6_input.c
-+++ b/net/ipv6/ip6_input.c
-@@ -111,6 +111,15 @@ int ipv6_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt
- 	    ipv6_addr_loopback(&hdr->daddr))
- 		goto err;
+diff --git a/drivers/net/ethernet/micrel/ks8851.c b/drivers/net/ethernet/micrel/ks8851.c
+index f56743a..115e374 100644
+--- a/drivers/net/ethernet/micrel/ks8851.c
++++ b/drivers/net/ethernet/micrel/ks8851.c
+@@ -490,7 +490,7 @@ static void ks8851_rx_pkts(struct ks8851_net *ks)
+ 	for (; rxfc != 0; rxfc--) {
+ 		rxh = ks8851_rdreg32(ks, KS_RXFHSR);
+ 		rxstat = rxh & 0xffff;
+-		rxlen = rxh >> 16;
++		rxlen = (rxh >> 16) & 0xfff;
  
-+	/* RFC4291 2.7
-+	 * Nodes must not originate a packet to a multicast address whose scope
-+	 * field contains the reserved value 0; if such a packet is received, it
-+	 * must be silently dropped.
-+	 */
-+	if (ipv6_addr_is_multicast(&hdr->daddr) &&
-+	    IPV6_ADDR_MC_SCOPE(&hdr->daddr) == 0)
-+		goto err;
-+
- 	/*
- 	 * RFC4291 2.7
- 	 * Multicast addresses must not be used as source addresses in IPv6
+ 		netif_dbg(ks, rx_status, ks->netdev,
+ 			  "rx: stat 0x%04x, len 0x%04x\n", rxstat, rxlen);
 
