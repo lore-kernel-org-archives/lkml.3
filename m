@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934550Ab3DGX0M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:26:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46565 "EHLO
+	id S934573Ab3DGX0V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:26:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46573 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934461Ab3DGX0J (ORCPT
+	by vger.kernel.org with ESMTP id S934461Ab3DGX0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:26:09 -0400
+	Sun, 7 Apr 2013 19:26:18 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Mark Rutland" <mark.rutland@arm.com>
-Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.974515383@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Jay Vosburgh" <fubar@us.ibm.com>,
+        "nikolay@redhat.com" <nikolay@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Sun, 07 Apr 2013 23:45:43 +0100
+Message-ID: <lsq.1365374743.574335065@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [01/74] clockevents: Don't allow dummy broadcast timers
+Subject: [58/74] bonding: fix miimon and arp_interval delayed work race 
+ conditions
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,39 +33,286 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Rutland <mark.rutland@arm.com>
+From: "nikolay@redhat.com" <nikolay@redhat.com>
 
-commit a7dc19b8652c862d5b7c4d2339bd3c428bd29c4a upstream.
+[ Upstream commit fbb0c41b814d497c656fc7be9e35456f139cb2fb ]
 
-Currently tick_check_broadcast_device doesn't reject clock_event_devices
-with CLOCK_EVT_FEAT_DUMMY, and may select them in preference to real
-hardware if they have a higher rating value. In this situation, the
-dummy timer is responsible for broadcasting to itself, and the core
-clockevents code may attempt to call non-existent callbacks for
-programming the dummy, eventually leading to a panic.
+First I would give three observations which will be used later.
+Observation 1: if (delayed_work_pending(wq)) cancel_delayed_work(wq)
+ This usage is wrong because the pending bit is cleared just before the
+ work's fn is executed and if the function re-arms itself we might end up
+ with the work still running. It's safe to call cancel_delayed_work_sync()
+ even if the work is not queued at all.
+Observation 2: Use of INIT_DELAYED_WORK()
+ Work needs to be initialized only once prior to (de/en)queueing.
+Observation 3: IFF_UP is set only after ndo_open is called
 
-This patch makes tick_check_broadcast_device always reject dummy timers,
-preventing this problem.
+Related race conditions:
+1. Race between bonding_store_miimon() and bonding_store_arp_interval()
+ Because of Obs.1 we can end up having both works enqueued.
+2. Multiple races with INIT_DELAYED_WORK()
+ Since the works are not protected by anything between INIT_DELAYED_WORK()
+ and calls to (en/de)queue it is possible for races between the following
+ functions:
+ (races are also possible between the calls to INIT_DELAYED_WORK()
+  and workqueue code)
+ bonding_store_miimon() - bonding_store_arp_interval(), bond_close(),
+			  bond_open(), enqueued functions
+ bonding_store_arp_interval() - bonding_store_miimon(), bond_close(),
+				bond_open(), enqueued functions
+3. By Obs.1 we need to change bond_cancel_all()
 
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Bugs 1 and 2 are fixed by moving all work initializations in bond_open
+which by Obs. 2 and Obs. 3 and the fact that we make sure that all works
+are cancelled in bond_close(), is guaranteed not to have any work
+enqueued.
+Also RTNL lock is now acquired in bonding_store_miimon/arp_interval so
+they can't race with bond_close and bond_open. The opposing work is
+cancelled only if the IFF_UP flag is set and it is cancelled
+unconditionally. The opposing work is already cancelled if the interface
+is down so no need to cancel it again. This way we don't need new
+synchronizations for the bonding workqueue. These bugs (and fixes) are
+tied together and belong in the same patch.
+Note: I have left 1 line intentionally over 80 characters (84) because I
+      didn't like how it looks broken down. If you'd prefer it otherwise,
+      then simply break it.
+
+ v2: Make description text < 75 columns
+
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/time/tick-broadcast.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/bonding/bond_main.c  | 88 ++++++++++++----------------------------
+ drivers/net/bonding/bond_sysfs.c | 34 +++++-----------
+ 2 files changed, 36 insertions(+), 86 deletions(-)
 
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -66,7 +66,8 @@ static void tick_broadcast_start_periodi
-  */
- int tick_check_broadcast_device(struct clock_event_device *dev)
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 63e3c47..2d9faa1 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -3422,6 +3422,28 @@ static int bond_xmit_hash_policy_l2(struct sk_buff *skb, int count)
+ 
+ /*-------------------------- Device entry points ----------------------------*/
+ 
++static void bond_work_init_all(struct bonding *bond)
++{
++	INIT_DELAYED_WORK(&bond->mcast_work,
++			  bond_resend_igmp_join_requests_delayed);
++	INIT_DELAYED_WORK(&bond->alb_work, bond_alb_monitor);
++	INIT_DELAYED_WORK(&bond->mii_work, bond_mii_monitor);
++	if (bond->params.mode == BOND_MODE_ACTIVEBACKUP)
++		INIT_DELAYED_WORK(&bond->arp_work, bond_activebackup_arp_mon);
++	else
++		INIT_DELAYED_WORK(&bond->arp_work, bond_loadbalance_arp_mon);
++	INIT_DELAYED_WORK(&bond->ad_work, bond_3ad_state_machine_handler);
++}
++
++static void bond_work_cancel_all(struct bonding *bond)
++{
++	cancel_delayed_work_sync(&bond->mii_work);
++	cancel_delayed_work_sync(&bond->arp_work);
++	cancel_delayed_work_sync(&bond->alb_work);
++	cancel_delayed_work_sync(&bond->ad_work);
++	cancel_delayed_work_sync(&bond->mcast_work);
++}
++
+ static int bond_open(struct net_device *bond_dev)
  {
--	if ((tick_broadcast_device.evtdev &&
-+	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
-+	    (tick_broadcast_device.evtdev &&
- 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
- 	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
- 		return 0;
+ 	struct bonding *bond = netdev_priv(bond_dev);
+@@ -3444,41 +3466,27 @@ static int bond_open(struct net_device *bond_dev)
+ 	}
+ 	read_unlock(&bond->lock);
+ 
+-	INIT_DELAYED_WORK(&bond->mcast_work, bond_resend_igmp_join_requests_delayed);
++	bond_work_init_all(bond);
+ 
+ 	if (bond_is_lb(bond)) {
+ 		/* bond_alb_initialize must be called before the timer
+ 		 * is started.
+ 		 */
+-		if (bond_alb_initialize(bond, (bond->params.mode == BOND_MODE_ALB))) {
+-			/* something went wrong - fail the open operation */
++		if (bond_alb_initialize(bond, (bond->params.mode == BOND_MODE_ALB)))
+ 			return -ENOMEM;
+-		}
+-
+-		INIT_DELAYED_WORK(&bond->alb_work, bond_alb_monitor);
+ 		queue_delayed_work(bond->wq, &bond->alb_work, 0);
+ 	}
+ 
+-	if (bond->params.miimon) {  /* link check interval, in milliseconds. */
+-		INIT_DELAYED_WORK(&bond->mii_work, bond_mii_monitor);
++	if (bond->params.miimon)  /* link check interval, in milliseconds. */
+ 		queue_delayed_work(bond->wq, &bond->mii_work, 0);
+-	}
+ 
+ 	if (bond->params.arp_interval) {  /* arp interval, in milliseconds. */
+-		if (bond->params.mode == BOND_MODE_ACTIVEBACKUP)
+-			INIT_DELAYED_WORK(&bond->arp_work,
+-					  bond_activebackup_arp_mon);
+-		else
+-			INIT_DELAYED_WORK(&bond->arp_work,
+-					  bond_loadbalance_arp_mon);
+-
+ 		queue_delayed_work(bond->wq, &bond->arp_work, 0);
+ 		if (bond->params.arp_validate)
+ 			bond->recv_probe = bond_arp_rcv;
+ 	}
+ 
+ 	if (bond->params.mode == BOND_MODE_8023AD) {
+-		INIT_DELAYED_WORK(&bond->ad_work, bond_3ad_state_machine_handler);
+ 		queue_delayed_work(bond->wq, &bond->ad_work, 0);
+ 		/* register to receive LACPDUs */
+ 		bond->recv_probe = bond_3ad_lacpdu_recv;
+@@ -3493,34 +3501,10 @@ static int bond_close(struct net_device *bond_dev)
+ 	struct bonding *bond = netdev_priv(bond_dev);
+ 
+ 	write_lock_bh(&bond->lock);
+-
+ 	bond->send_peer_notif = 0;
+-
+ 	write_unlock_bh(&bond->lock);
+ 
+-	if (bond->params.miimon) {  /* link check interval, in milliseconds. */
+-		cancel_delayed_work_sync(&bond->mii_work);
+-	}
+-
+-	if (bond->params.arp_interval) {  /* arp interval, in milliseconds. */
+-		cancel_delayed_work_sync(&bond->arp_work);
+-	}
+-
+-	switch (bond->params.mode) {
+-	case BOND_MODE_8023AD:
+-		cancel_delayed_work_sync(&bond->ad_work);
+-		break;
+-	case BOND_MODE_TLB:
+-	case BOND_MODE_ALB:
+-		cancel_delayed_work_sync(&bond->alb_work);
+-		break;
+-	default:
+-		break;
+-	}
+-
+-	if (delayed_work_pending(&bond->mcast_work))
+-		cancel_delayed_work_sync(&bond->mcast_work);
+-
++	bond_work_cancel_all(bond);
+ 	if (bond_is_lb(bond)) {
+ 		/* Must be called only after all
+ 		 * slaves have been released
+@@ -4364,26 +4348,6 @@ static void bond_setup(struct net_device *bond_dev)
+ 	bond_dev->features |= bond_dev->hw_features;
+ }
+ 
+-static void bond_work_cancel_all(struct bonding *bond)
+-{
+-	if (bond->params.miimon && delayed_work_pending(&bond->mii_work))
+-		cancel_delayed_work_sync(&bond->mii_work);
+-
+-	if (bond->params.arp_interval && delayed_work_pending(&bond->arp_work))
+-		cancel_delayed_work_sync(&bond->arp_work);
+-
+-	if (bond->params.mode == BOND_MODE_ALB &&
+-	    delayed_work_pending(&bond->alb_work))
+-		cancel_delayed_work_sync(&bond->alb_work);
+-
+-	if (bond->params.mode == BOND_MODE_8023AD &&
+-	    delayed_work_pending(&bond->ad_work))
+-		cancel_delayed_work_sync(&bond->ad_work);
+-
+-	if (delayed_work_pending(&bond->mcast_work))
+-		cancel_delayed_work_sync(&bond->mcast_work);
+-}
+-
+ /*
+ * Destroy a bonding device.
+ * Must be under rtnl_lock when this function is called.
+diff --git a/drivers/net/bonding/bond_sysfs.c b/drivers/net/bonding/bond_sysfs.c
+index a03fde9..a549f36 100644
+--- a/drivers/net/bonding/bond_sysfs.c
++++ b/drivers/net/bonding/bond_sysfs.c
+@@ -514,6 +514,8 @@ static ssize_t bonding_store_arp_interval(struct device *d,
+ 	int new_value, ret = count;
+ 	struct bonding *bond = to_bond(d);
+ 
++	if (!rtnl_trylock())
++		return restart_syscall();
+ 	if (sscanf(buf, "%d", &new_value) != 1) {
+ 		pr_err("%s: no arp_interval value specified.\n",
+ 		       bond->dev->name);
+@@ -540,10 +542,6 @@ static ssize_t bonding_store_arp_interval(struct device *d,
+ 		pr_info("%s: ARP monitoring cannot be used with MII monitoring. %s Disabling MII monitoring.\n",
+ 			bond->dev->name, bond->dev->name);
+ 		bond->params.miimon = 0;
+-		if (delayed_work_pending(&bond->mii_work)) {
+-			cancel_delayed_work(&bond->mii_work);
+-			flush_workqueue(bond->wq);
+-		}
+ 	}
+ 	if (!bond->params.arp_targets[0]) {
+ 		pr_info("%s: ARP monitoring has been set up, but no ARP targets have been specified.\n",
+@@ -555,19 +553,12 @@ static ssize_t bonding_store_arp_interval(struct device *d,
+ 		 * timer will get fired off when the open function
+ 		 * is called.
+ 		 */
+-		if (!delayed_work_pending(&bond->arp_work)) {
+-			if (bond->params.mode == BOND_MODE_ACTIVEBACKUP)
+-				INIT_DELAYED_WORK(&bond->arp_work,
+-						  bond_activebackup_arp_mon);
+-			else
+-				INIT_DELAYED_WORK(&bond->arp_work,
+-						  bond_loadbalance_arp_mon);
+-
+-			queue_delayed_work(bond->wq, &bond->arp_work, 0);
+-		}
++		cancel_delayed_work_sync(&bond->mii_work);
++		queue_delayed_work(bond->wq, &bond->arp_work, 0);
+ 	}
+ 
+ out:
++	rtnl_unlock();
+ 	return ret;
+ }
+ static DEVICE_ATTR(arp_interval, S_IRUGO | S_IWUSR,
+@@ -963,6 +954,8 @@ static ssize_t bonding_store_miimon(struct device *d,
+ 	int new_value, ret = count;
+ 	struct bonding *bond = to_bond(d);
+ 
++	if (!rtnl_trylock())
++		return restart_syscall();
+ 	if (sscanf(buf, "%d", &new_value) != 1) {
+ 		pr_err("%s: no miimon value specified.\n",
+ 		       bond->dev->name);
+@@ -994,10 +987,6 @@ static ssize_t bonding_store_miimon(struct device *d,
+ 				bond->params.arp_validate =
+ 					BOND_ARP_VALIDATE_NONE;
+ 			}
+-			if (delayed_work_pending(&bond->arp_work)) {
+-				cancel_delayed_work(&bond->arp_work);
+-				flush_workqueue(bond->wq);
+-			}
+ 		}
+ 
+ 		if (bond->dev->flags & IFF_UP) {
+@@ -1006,15 +995,12 @@ static ssize_t bonding_store_miimon(struct device *d,
+ 			 * timer will get fired off when the open function
+ 			 * is called.
+ 			 */
+-			if (!delayed_work_pending(&bond->mii_work)) {
+-				INIT_DELAYED_WORK(&bond->mii_work,
+-						  bond_mii_monitor);
+-				queue_delayed_work(bond->wq,
+-						   &bond->mii_work, 0);
+-			}
++			cancel_delayed_work_sync(&bond->arp_work);
++			queue_delayed_work(bond->wq, &bond->mii_work, 0);
+ 		}
+ 	}
+ out:
++	rtnl_unlock();
+ 	return ret;
+ }
+ static DEVICE_ATTR(miimon, S_IRUGO | S_IWUSR,
 
