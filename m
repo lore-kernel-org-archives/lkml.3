@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934689Ab3DGXcq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:32:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46831 "EHLO
+	id S934967Ab3DGXd0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:33:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46841 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934943Ab3DGXcl (ORCPT
+	by vger.kernel.org with ESMTP id S934761Ab3DGXdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:32:41 -0400
+	Sun, 7 Apr 2013 19:33:23 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Josh Boyer" <jwboyer@redhat.com>,
-        "Jiri Kosina" <jkosina@suse.cz>
+CC: akpm@linux-foundation.org,
+        "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
+        "Sascha Hauer" <s.hauer@pengutronix.de>,
+        "Markus Pargmann" <mpa@pengutronix.de>
 Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.231481774@decadent.org.uk>
+Message-ID: <lsq.1365374742.587931136@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [14/74] HID: usbhid: quirk for MSI GX680R led panel
+Subject: [02/74] ASoC: imx-ssi: Fix occasional AC97 reset failure
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,44 +33,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Sascha Hauer <s.hauer@pengutronix.de>
 
-commit 620ae90ed8ca8b6e40cb9e10279b4f5ef9f0ab81 upstream.
+commit b6e51600f4e983e757b1b6942becaa1ae7d82e67 upstream.
 
-This keyboard backlight device causes a 10 second delay to boot.  Add it
-to the quirk list with HID_QUIRK_NO_INIT_REPORTS.
-
-This fixes Red Hat bugzilla https://bugzilla.redhat.com/show_bug.cgi?id=907221
-
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hid/hid-ids.h           |    3 +++
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 2 files changed, 4 insertions(+)
+ sound/soc/imx/imx-ssi.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -539,6 +539,9 @@
- #define USB_VENDOR_ID_MONTEREY		0x0566
- #define USB_DEVICE_ID_GENIUS_KB29E	0x3004
+--- a/sound/soc/imx/imx-ssi.c
++++ b/sound/soc/imx/imx-ssi.c
+@@ -573,6 +573,8 @@ static void imx_ssi_ac97_reset(struct sn
  
-+#define USB_VENDOR_ID_MSI		0x1770
-+#define USB_DEVICE_ID_MSI_GX680R_LED_PANEL	0xff00
+ 	if (imx_ssi->ac97_reset)
+ 		imx_ssi->ac97_reset(ac97);
++	/* First read sometimes fails, do a dummy read */
++	imx_ssi_ac97_read(ac97, 0);
+ }
+ 
+ static void imx_ssi_ac97_warm_reset(struct snd_ac97 *ac97)
+@@ -581,6 +583,9 @@ static void imx_ssi_ac97_warm_reset(stru
+ 
+ 	if (imx_ssi->ac97_warm_reset)
+ 		imx_ssi->ac97_warm_reset(ac97);
 +
- #define USB_VENDOR_ID_NATIONAL_SEMICONDUCTOR 0x0400
- #define USB_DEVICE_ID_N_S_HARMONY	0xc359
++	/* First read sometimes fails, do a dummy read */
++	imx_ssi_ac97_read(ac97, 0);
+ }
  
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -71,6 +71,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
-+	{ USB_VENDIR_ID_MSI, USB_DEVICE_ID_MSI_GX680R_LED_PANEL, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN2, HID_QUIRK_NO_INIT_REPORTS },
+ struct snd_ac97_bus_ops soc_ac97_ops = {
 
