@@ -1,59 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933418Ab3DGLiz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 07:38:55 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:48620 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933297Ab3DGLix (ORCPT
+	id S933458Ab3DGLnR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 07:43:17 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:38675 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933429Ab3DGLnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 07:38:53 -0400
-X-Spam-Score: -100.7
-Message-ID: <51615AB0.9060502@asianux.com>
-Date: Sun, 07 Apr 2013 19:38:24 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Sun, 7 Apr 2013 07:43:16 -0400
+Date: Sun, 7 Apr 2013 17:07:23 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Anton Arapov <anton@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Josh Stone <jistone@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
+Subject: Re: [PATCH v1 1/9] uretprobes: Introduce
+ uprobe_consumer->ret_handler()
+Message-ID: <20130407113723.GA2186@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <1365004839-21982-1-git-send-email-anton@redhat.com>
+ <1365004839-21982-2-git-send-email-anton@redhat.com>
 MIME-Version: 1.0
-To: rusty@rustcorp.com.au
-CC: "linux-kernel@vger.kernel.org >> \"linux-kernel@vger.kernel.org\"" 
-	<linux-kernel@vger.kernel.org>
-Subject: [PATCH] kernel: module: strncpy issue, using strlcpy instead of strncpy
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1365004839-21982-2-git-send-email-anton@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040711-7282-0000-0000-000015F7C880
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Anton Arapov <anton@redhat.com> [2013-04-03 18:00:31]:
 
-  ownername and namebuf are all NUL terminated string.
+> Enclose return probes implementation, introduce ->ret_handler() and update
+> existing code to rely on ->handler() *and* ->ret_handler() for uprobe and
+> uretprobe respectively.
+> 
+> v1 changes:
+> * add bp_vaddr argument to ->ret_handler()
+> 
+> RFCv5 changes:
+> * don't remove uprobe in case there are no uprobe consumer(handler),
+>   see handler_chain() changes.
+> 
+> RFCv3 changes: (the patch is introduced in v3)
+> * check whether at least one of the consumer's handlers were set.
+> * a 'TODO' cap that will be removed once return probes be implemented.
+> * introduce ->ret_handler().
+> 
+> Signed-off-by: Anton Arapov <anton@redhat.com>
 
-  need always let them ended by '\0'.
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- kernel/module.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> ---
+>  include/linux/uprobes.h |  3 +++
+>  kernel/events/uprobes.c | 17 ++++++++++++++---
+>  2 files changed, 17 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+> index 02b83db..4042cad 100644
+> --- a/include/linux/uprobes.h
+> +++ b/include/linux/uprobes.h
+> @@ -46,6 +46,9 @@ enum uprobe_filter_ctx {
+> 
+>  struct uprobe_consumer {
+>  	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
+> +	int (*ret_handler)(struct uprobe_consumer *self,
+> +				unsigned long func,
+> +				struct pt_regs *regs);
+>  	bool (*filter)(struct uprobe_consumer *self,
+>  				enum uprobe_filter_ctx ctx,
+>  				struct mm_struct *mm);
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 21d8a65..27c964b 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -815,6 +815,14 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
+>  	struct uprobe *uprobe;
+>  	int ret;
+> 
+> +	/* Uprobe must have at least one set consumer */
+> +	if (!uc->handler && !uc->ret_handler)
+> +		return -EINVAL;
+> +
+> +	/* TODO: Implement return probes */
+> +	if (uc->ret_handler)
+> +		return -ENOSYS;
+> +
+>  	/* Racy, just to catch the obvious mistakes */
+>  	if (offset > i_size_read(inode))
+>  		return -EINVAL;
+> @@ -1473,10 +1481,13 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
+> 
+>  	down_read(&uprobe->register_rwsem);
+>  	for (uc = uprobe->consumers; uc; uc = uc->next) {
+> -		int rc = uc->handler(uc, regs);
+> +		int rc = 0;
+> 
+> -		WARN(rc & ~UPROBE_HANDLER_MASK,
+> -			"bad rc=0x%x from %pf()\n", rc, uc->handler);
+> +		if (uc->handler) {
+> +			rc = uc->handler(uc, regs);
+> +			WARN(rc & ~UPROBE_HANDLER_MASK,
+> +				"bad rc=0x%x from %pf()\n", rc, uc->handler);
+> +		}
+>  		remove &= rc;
+>  	}
+> 
+> -- 
+> 1.8.1.4
+> 
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 3c2c72d..597efd8 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -1283,7 +1283,7 @@ static const struct kernel_symbol *resolve_symbol(struct module *mod,
- 
- getname:
- 	/* We must make copy under the lock if we failed to get ref. */
--	strncpy(ownername, module_name(owner), MODULE_NAME_LEN);
-+	strlcpy(ownername, module_name(owner), MODULE_NAME_LEN);
- unlock:
- 	mutex_unlock(&module_mutex);
- 	return sym;
-@@ -3464,7 +3464,7 @@ const char *module_address_lookup(unsigned long addr,
- 	}
- 	/* Make a copy in here where it's safe */
- 	if (ret) {
--		strncpy(namebuf, ret, KSYM_NAME_LEN - 1);
-+		strlcpy(namebuf, ret, KSYM_NAME_LEN);
- 		ret = namebuf;
- 	}
- 	preempt_enable();
 -- 
-1.7.7.6
+Thanks and Regards
+Srikar Dronamraju
+
