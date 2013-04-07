@@ -1,124 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933836Ab3DGOdI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 10:33:08 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:56817 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933815Ab3DGOdG (ORCPT
+	id S933881Ab3DGOvc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 10:51:32 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:45898 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933823Ab3DGOv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 10:33:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Daniel Tang <dt.tangr@gmail.com>
-Subject: Re: [RFC PATCH arm: initial TI-Nspire support]
-Date: Sun, 7 Apr 2013 16:32:55 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        fabian@ritter-vogt.de, Lionel Debroux <lionel_debroux@yahoo.fr>,
-        linux-kernel@vger.kernel.org
-References: <6FE4B33E-A503-4A75-AEED-831CB2C06D83@gmail.com> <201304061524.56502.arnd@arndb.de> <4B3FD561-84FC-40CD-B747-13851692D673@gmail.com>
-In-Reply-To: <4B3FD561-84FC-40CD-B747-13851692D673@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304071632.55922.arnd@arndb.de>
-X-Provags-ID: V02:K0:nSUcmxELzARPe/X5xj+UQVjGmBGoug8ZWfyipjnp/wH
- wLlw78Oe85vL7UfFB7hCNJysmgB03NPYzP0aUgy1bc4pmFaDER
- wTbcOM9XopEb8eg8aebKGSD/m4LHdhDMOq5brY31aKvKoFelAl
- WEoYOQlyeuI7p8k9rp4SH/fYDJNgqve0kcneHopuhhJqejSdOq
- C/VjHxFRYi2EECGZCaaPwU93znB2/GdVShd9JGd1/xHZa1EYlu
- mz7UFQNGCeZ7oNPcHKF9wGrfwrD7ETMnLUstrKH5peMAMzzXkk
- ApP4ZAUC5finBEmRmwzvFT14nrEBDrZs/i29FewGWieZUiFuff
- MycZDY4cZBVMe6bC1QUw=
+	Sun, 7 Apr 2013 10:51:29 -0400
+From: Johan Hovold <jhovold@gmail.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        trivial@kernel.org, Johan Hovold <jhovold@gmail.com>
+Subject: [PATCH 1/2] ARM: at91/setup: fix trivial typos
+Date: Sun,  7 Apr 2013 16:49:58 +0200
+Message-Id: <1365346199-29525-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 07 April 2013, Daniel Tang wrote:
-> On 07/04/2013, at 12:24 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > 
-> >> @@ -313,7 +314,7 @@ define archhelp
-> >>   echo  '  Image         - Uncompressed kernel image (arch/$(ARCH)/boot/Image)'
-> >>   echo  '* xipImage      - XIP kernel image, if configured (arch/$(ARCH)/boot/xipImage)'
-> >>   echo  '  uImage        - U-Boot wrapped zImage'
-> >> -  echo  '  bootpImage    - Combined zImage and initial RAM disk' 
-> >> +  echo  '  bootpImage    - Combined zImage and initial RAM disk'
-> >>   echo  '                  (supply initrd image via make variable INITRD=<path>)'
-> >>   echo  '* dtbs          - Build device tree blobs for enabled boards'
-> >>   echo  '  install       - Install uncompressed kernel'
-> > 
-> > This looks like it wasn't meant to be in the patch.
-> 
-> It probably isn't. I think there was trailing whitespace on that and my editor happened to remove it automatically.
-> 
-> Should this be a separate patch to fix up formatting or should I leave it in as a drive-by fix?
+Fix a few trivial typos in panic, warning and debug messages.
 
-Any cleanups like this should be separate patches, and ideally even
-part of a different patch series.
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ arch/arm/mach-at91/setup.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-> > 
-> >> +			uart: uart@90020000 {
-> >> +				reg = <0x90020000 0x1000>;
-> >> +				interrupts = <1>;
-> >> +
-> >> +				clocks = <&uart_clk>;
-> >> +				clock-names = "uart_clk";
-> >> +			};
-> > 
-> > The name for a uart should be "serial". Since this is a pl01x, please add
-> > the required properties for the device, e.g. 
-> > 
-> > 	compatible = "arm,pl011", "arm,primecell";
-> > 
-> > You will need the "arm,primecell" bit to make the device appear on the
-> > amba bus rather than the platform bus.
-> 
-> That was actually deliberate because different models of the TI-NSPIRE have different
-> serial hardware. On the newer CX models, it is a PL01x and on the older models, it has
-> a 8250-like interface. They all reside at the same address with the same IRQ though.
-> 
-> I thought it might be cleaner to specify the interrupts and registers in the common file
-> and leave it to the board specific ones to implement the "compatible" property.
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index 4b67847..9e7c1e1 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -333,7 +333,7 @@ static void at91_dt_rstc(void)
+ 
+ 	of_id = of_match_node(rstc_ids, np);
+ 	if (!of_id)
+-		panic("AT91: rtsc no restart function availlable\n");
++		panic("AT91: rtsc no restart function available\n");
+ 
+ 	arm_pm_restart = of_id->data;
+ 
+@@ -353,7 +353,7 @@ static void at91_dt_ramc(void)
+ 
+ 	np = of_find_matching_node(NULL, ramc_ids);
+ 	if (!np)
+-		panic("unable to find compatible ram conroller node in dtb\n");
++		panic("unable to find compatible ram controller node in dtb\n");
+ 
+ 	at91_ramc_base[0] = of_iomap(np, 0);
+ 	if (!at91_ramc_base[0])
+@@ -403,7 +403,7 @@ static void at91_dt_shdwc(void)
+ 
+ 	np = of_find_matching_node(NULL, shdwc_ids);
+ 	if (!np) {
+-		pr_debug("AT91: unable to find compatible shutdown (shdwc) conroller node in dtb\n");
++		pr_debug("AT91: unable to find compatible shutdown (shdwc) controller node in dtb\n");
+ 		return;
+ 	}
+ 
+@@ -419,7 +419,7 @@ static void at91_dt_shdwc(void)
+ 
+ 	if (!of_property_read_u32(np, "atmel,wakeup-counter", &reg)) {
+ 		if (reg > AT91_SHDW_CPTWK0_MAX) {
+-			pr_warn("AT91: shdwc wakeup conter 0x%x > 0x%x reduce it to 0x%x\n",
++			pr_warn("AT91: shdwc wakeup counter 0x%x > 0x%x reduce it to 0x%x\n",
+ 				reg, AT91_SHDW_CPTWK0_MAX, AT91_SHDW_CPTWK0_MAX);
+ 			reg = AT91_SHDW_CPTWK0_MAX;
+ 		}
+-- 
+1.8.1.5
 
-I see. It seems a little confusing to the reader though. I don't have a good answer,
-but there are two other options how this can be handled:
-
-* Put both devices in the devicetree and mark them as status="disabled" in the main file,
-but enable one of them in the version specific files.
-
-* leave them out of the .dtsi file and only define them in the specific .dts files.
-> >> +	err = of_property_read_string(of_aliases, "timer0", &path);
-> >> +	if (WARN_ON(err))
-> >> +		return;
-> >> +
-> >> +	timer = of_find_node_by_path(path);
-> >> +	base = of_iomap(timer, 0);
-> >> +	if (WARN_ON(!base))
-> >> +		return;
-> >> +
-> >> +	clk = of_clk_get_by_name(timer, NULL);
-> >> +	clk_register_clkdev(clk, timer->name, "sp804");
-> >> +
-> >> +	sp804_clocksource_init(base, timer->name);
-> >> +
-> >> +	err = of_property_read_string(of_aliases, "timer1", &path);
-> >> +	if (WARN_ON(err))
-> >> +		return;
-> > 
-> > In particular, I think the method of using aliases to pick the right sp804
-> > instance is being deprecated now. If both timers are identical, the kernel
-> > will now just pick one of them.
-> 
-> Sorry, I don't quite understand. 
-> 
-> Out of the timers, I want to add one as a clocksource and one as a clockevent.
-> If they're identical (i.e. without using aliases), how should I tell the kernel,
-> "Take the first timer you see and make it a clocksource, take the next one you
-> see and make it a clockevent"?
-
-The modified sp804 driver will have logic to do that. I think in the end we
-decided that the driver should first look for any device that can be used as
-a clocksource and use it that way. If it finds a second device, that can be
-used as clockevent.
-
-	Arnd
