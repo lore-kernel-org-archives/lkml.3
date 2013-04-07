@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934782Ab3DGXbH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:31:07 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46756 "EHLO
+	id S934829Ab3DGXbM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:31:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46764 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934583Ab3DGXbF (ORCPT
+	by vger.kernel.org with ESMTP id S934583Ab3DGXbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:31:05 -0400
+	Sun, 7 Apr 2013 19:31:08 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Daniel Schaal" <farbing@web.de>,
-        "Gustavo Padovan" <gustavo.padovan@collabora.co.uk>
+CC: akpm@linux-foundation.org,
+        "Artem Bityutskiy" <artem.bityutskiy@linux.intel.com>,
+        "Mark Jackson" <mpfj-list@mimc.co.uk>
 Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.148531774@decadent.org.uk>
+Message-ID: <lsq.1365374742.164890553@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [05/74] Bluetooth: Add support for GC-WB300D PCIe [04ca:3006] to
- ath3k.
+Subject: [03/74] UBIFS: make space fixup work in the remount case
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,71 +32,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Schaal <farbing@web.de>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 2c262b2a5235b7f5b18d4d58394511f76371d7cb upstream.
+commit 67e753ca41782913d805ff4a8a2b0f60b26b7915 upstream.
 
-T:  Bus=02 Lev=02 Prnt=02 Port=06 Cnt=01 Dev#=  4 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=04ca ProdID=3006 Rev= 0.02
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+The UBIFS space fixup is a useful feature which allows to fixup the "broken"
+flash space at the time of the first mount. The "broken" space is usually the
+result of using a "dumb" industrial flasher which is not able to skip empty
+NAND pages and just writes all 0xFFs to the empty space, which has grave
+side-effects for UBIFS when UBIFS trise to write useful data to those empty
+pages.
 
-Signed-off-by: Daniel Schaal <farbing@web.de>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+The fix-up feature works roughly like this:
+1. mkfs.ubifs sets the fixup flag in UBIFS superblock when creating the image
+   (see -F option)
+2. when the file-system is mounted for the first time, UBIFS notices the fixup
+   flag and re-writes the entire media atomically, which may take really a lot
+   of time.
+3. UBIFS clears the fixup flag in the superblock.
+
+This works fine when the file system is mounted R/W for the very first time.
+But it did not really work in the case when we first mount the file-system R/O,
+and then re-mount R/W. The reason was that we started the fixup procedure too
+late, which we cannot really do because we have to fixup the space before it
+starts being used.
+
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reported-by: Mark Jackson <mpfj-list@mimc.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/bluetooth/ath3k.c |    2 ++
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 3 insertions(+)
+ fs/ubifs/super.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -76,6 +76,7 @@ static struct usb_device_id ath3k_table[
- 	{ USB_DEVICE(0x0CF3, 0x311D) },
- 	{ USB_DEVICE(0x13d3, 0x3375) },
- 	{ USB_DEVICE(0x04CA, 0x3005) },
-+	{ USB_DEVICE(0x04CA, 0x3006) },
- 	{ USB_DEVICE(0x13d3, 0x3362) },
- 	{ USB_DEVICE(0x0CF3, 0xE004) },
- 	{ USB_DEVICE(0x0930, 0x0219) },
-@@ -104,6 +105,7 @@ static struct usb_device_id ath3k_blist_
- 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -143,6 +143,7 @@ static struct usb_device_id blacklist_ta
- 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
+--- a/fs/ubifs/super.c
++++ b/fs/ubifs/super.c
+@@ -1583,6 +1583,12 @@ static int ubifs_remount_rw(struct ubifs
+ 	c->remounting_rw = 1;
+ 	c->ro_mount = 0;
+ 
++	if (c->space_fixup) {
++		err = ubifs_fixup_free_space(c);
++		if (err)
++			return err;
++	}
++
+ 	err = check_free_space(c);
+ 	if (err)
+ 		goto out;
+@@ -1699,12 +1705,6 @@ static int ubifs_remount_rw(struct ubifs
+ 		err = dbg_check_space_info(c);
+ 	}
+ 
+-	if (c->space_fixup) {
+-		err = ubifs_fixup_free_space(c);
+-		if (err)
+-			goto out;
+-	}
+-
+ 	mutex_unlock(&c->umount_mutex);
+ 	return err;
+ 
 
