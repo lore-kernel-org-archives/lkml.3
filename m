@@ -1,96 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934301Ab3DGUnA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 16:43:00 -0400
-Received: from smtprelay-h12.telenor.se ([62.127.194.5]:41119 "EHLO
-	smtprelay-h12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934228Ab3DGUm7 (ORCPT
+	id S934312Ab3DGUpK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 16:45:10 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58207 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934257Ab3DGUpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 16:42:59 -0400
-X-Greylist: delayed 1998 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Apr 2013 16:42:59 EDT
-X-SENDER-IP: [85.230.168.206]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApTnAFzKYVFV5qjOPGdsb2JhbABRgwUBAYJ2hSOySIZzBAGBABcDAQEBATg1gk0vEwEPGIECChoTiBi9ORWNSieBHYNIA50GjCuBXjqBLg
-X-Suspected-Spam: Yes
-X-IronPort-AV: E=Sophos;i="4.87,426,1363129200"; 
-   d="scan'208";a="231849031"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH] Input: MT - handle semi-mt devices in core
-Date: Sun,  7 Apr 2013 21:41:32 +0200
-Message-Id: <1365363692-986-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.8.2
+	Sun, 7 Apr 2013 16:45:09 -0400
+Date: Sun, 07 Apr 2013 16:45:07 -0400 (EDT)
+Message-Id: <20130407.164507.795222306786228518.davem@davemloft.net>
+To: romieu@fr.zoreil.com
+Cc: hayeswang@realtek.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 net-next 1/8] r8169: Remove firmware code
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130404234229.GA13629@electric-eye.fr.zoreil.com>
+References: <1364891022-3220-1-git-send-email-hayeswang@realtek.com>
+	<20130404.174717.2232220782916755499.davem@davemloft.net>
+	<20130404234229.GA13629@electric-eye.fr.zoreil.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sun, 07 Apr 2013 13:45:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most semi-mt drivers use the slots in a manual way, but really only
-need to treat the finger count manually. With this patch, a semi-mt
-driver may use the input-mt core for everything else.
+From: Francois Romieu <romieu@fr.zoreil.com>
+Date: Fri, 5 Apr 2013 01:42:29 +0200
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
-Hi Dmitry,
+> David Miller <davem@davemloft.net> :
+> [...]
+>> If so, should I just apply this series as-is ?
+> 
+> Yes.
+> 
+> - the series is imho -stable unfriendly: whoever wants to figure what
+>   should be fed into a -stable branch will have a hard time. :o/
+> - the driver could had been more careful about firmware version/magic
+>   checks and firmware opcodes recycling. It's a bit late. It won't
+>   necessarily hurt.
+> - there is a whole release cycle ahead to find problems - if any - due
+>   to the hw_start flow change. It seems sane.
+> - the relative amount of binary like cruft is going down.
+> 
+> I am not overflowed with enthusiasm but the gain should exceed the pain.
 
-an earlier version of this patch came about as a test to handle the
-synaptics profile sensor without too much extra work. I do not know
-how that test panned out (no response), but this patch will likely be
-useful regardless.
-
-Henrik
-
- drivers/input/input-mt.c | 8 +++++++-
- include/linux/input/mt.h | 1 +
- 2 files changed, 8 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
-index 71db193..d398f13 100644
---- a/drivers/input/input-mt.c
-+++ b/drivers/input/input-mt.c
-@@ -79,6 +79,8 @@ int input_mt_init_slots(struct input_dev *dev, unsigned int num_slots,
- 	}
- 	if (flags & INPUT_MT_DIRECT)
- 		__set_bit(INPUT_PROP_DIRECT, dev->propbit);
-+	if (flags & INPUT_MT_SEMI_MT)
-+		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
- 	if (flags & INPUT_MT_TRACK) {
- 		unsigned int n2 = num_slots * num_slots;
- 		mt->red = kcalloc(n2, sizeof(*mt->red), GFP_KERNEL);
-@@ -246,6 +248,7 @@ void input_mt_sync_frame(struct input_dev *dev)
- {
- 	struct input_mt *mt = dev->mt;
- 	struct input_mt_slot *s;
-+	bool use_count = false;
- 
- 	if (!mt)
- 		return;
-@@ -259,7 +262,10 @@ void input_mt_sync_frame(struct input_dev *dev)
- 		}
- 	}
- 
--	input_mt_report_pointer_emulation(dev, (mt->flags & INPUT_MT_POINTER));
-+	if ((mt->flags & INPUT_MT_POINTER) && !(mt->flags & INPUT_MT_SEMI_MT))
-+		use_count = true;
-+
-+	input_mt_report_pointer_emulation(dev, use_count);
- 
- 	mt->frame++;
- }
-diff --git a/include/linux/input/mt.h b/include/linux/input/mt.h
-index 2e86bd0..1b1dfa8 100644
---- a/include/linux/input/mt.h
-+++ b/include/linux/input/mt.h
-@@ -19,6 +19,7 @@
- #define INPUT_MT_DIRECT		0x0002	/* direct device, e.g. touchscreen */
- #define INPUT_MT_DROP_UNUSED	0x0004	/* drop contacts not seen in frame */
- #define INPUT_MT_TRACK		0x0008	/* use in-kernel tracking */
-+#define INPUT_MT_SEMI_MT	0x0010	/* semi-mt device, finger count handled manually */
- 
- /**
-  * struct input_mt_slot - represents the state of an input MT slot
--- 
-1.8.2
-
+All applied to net-next, thanks!
