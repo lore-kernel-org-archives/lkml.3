@@ -1,84 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934545Ab3DGXtb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:49:31 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:39556 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934500Ab3DGXt3 (ORCPT
+	id S934619Ab3DGXzI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:55:08 -0400
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:56514 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934511Ab3DGXzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:49:29 -0400
-Message-ID: <51620604.4070204@gmail.com>
-Date: Mon, 08 Apr 2013 01:49:24 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Dom Cobley <popcornmix@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rabeeh Khoury <rabeeh@solid-run.com>, Daniel Mack <zonque@gmail.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [v5] clk: add si5351 i2c common clock driver
-References: <1365139415-17815-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130407225046.GA16326@roeck-us.net>
-In-Reply-To: <20130407225046.GA16326@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 7 Apr 2013 19:55:06 -0400
+From: Dan Savilonis <djs@n-cube.org>
+To: Takashi Iwai <tiwai@suse.de>,
+        David Henningsson <david.henningsson@canonical.com>,
+        alsa-devel@alsa-project.org
+Cc: linux-kernel@vger.kernel.org, perex@perex.cz,
+        Dan Savilonis <djs@n-cube.org>
+Subject: [PATCH] ALSA: hda: fix mute led on HP Envy 15
+Date: Sun,  7 Apr 2013 19:54:22 -0400
+Message-Id: <1365378862-10296-1-git-send-email-djs@n-cube.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2013 12:50 AM, Guenter Roeck wrote:
-> On Fri, Apr 05, 2013 at 05:23:35AM -0000, Sebastian Hesselbarth wrote:
->> This patch adds a common clock driver for Silicon Labs Si5351a/b/c
->> i2c programmable clock generators. Currently, the driver supports
->> DT kernels only and VXCO feature of si5351b is not implemented. DT
->> bindings selectively allow to overwrite stored Si5351 configuration
->> which is very helpful for clock generators with empty eeprom
->> configuration. Corresponding device tree binding documentation is
->> also added.
->>
->> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
->> Tested-by: Daniel Mack<zonque@gmail.com>
->>
-> [ ... ]
->
->> +static inline void _si5351_msynth_set_pll_master(
->> +	struct si5351_driver_data *drvdata, unsigned char num, int is_master)
->> +{
->> +	unsigned long flags;
->> +
->> +	if (num>  8 ||
->> +	    (drvdata->variant == SI5351_VARIANT_A3&&  num>  3))
->> +		return;
->> +
->> +	flags = __clk_get_flags(drvdata->msynth[num].hw.clk);
->> +	if (is_master)
->> +		flags |= CLK_SET_RATE_PARENT;
->> +	else
->> +		flags&= ~CLK_SET_RATE_PARENT;
->> +	__clk_set_flags(drvdata->msynth[num].hw.clk, flags);
->> +}
->> +
-> Unless I am missing something, neither __clk_get_flags() nor the new
-> __clk_set_flags is exported.
->
-> Did you try to build and load the driver as module ?
+This laptop reports the string HP_Mute_LED_P_G in DMI, but the guess made in
+hp_set_mute_led() is wrong. So, hard-code the GPIO id.
 
-Well, good catch. I didn't try to build v5 as a module, but I guess it
-will fail. But I consider this as something that has to be addressed in
-clk framework itself, not in this patch. There will be other
-clk-providers built as module in the future for sure.
+Signed-off-by: Dan Savilonis <djs@n-cube.org>
+---
+ sound/pci/hda/patch_sigmatel.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-Sebastian
+diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
+index 1d9d642..3a6b111 100644
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -100,6 +100,7 @@ enum {
+ 	STAC_92HD83XXX_HEADSET_JACK,
+ 	STAC_92HD83XXX_HP,
+ 	STAC_HP_ENVY_BASS,
++	STAC_HP_ENVY_15,
+ 	STAC_92HD83XXX_MODELS
+ };
+ 
+@@ -2092,6 +2093,15 @@ static void stac92hd83xxx_fixup_hp_mic_led(struct hda_codec *codec,
+ 		spec->mic_mute_led_gpio = 0x08; /* GPIO3 */
+ }
+ 
++static void stac92hd83xxx_fixup_hp_envy_15(struct hda_codec *codec,
++				   const struct hda_fixup *fix, int action)
++{
++	struct sigmatel_spec *spec = codec->spec;
++
++	if (action == HDA_FIXUP_ACT_PRE_PROBE)
++		spec->gpio_led = 0x01; /* GPIO0 */
++}
++
+ static void stac92hd83xxx_fixup_headset_jack(struct hda_codec *codec,
+ 				   const struct hda_fixup *fix, int action)
+ {
+@@ -2101,6 +2111,7 @@ static void stac92hd83xxx_fixup_headset_jack(struct hda_codec *codec,
+ 		spec->headset_jack = 1;
+ }
+ 
++
+ static const struct hda_fixup stac92hd83xxx_fixups[] = {
+ 	[STAC_92HD83XXX_REF] = {
+ 		.type = HDA_FIXUP_PINS,
+@@ -2169,6 +2180,12 @@ static const struct hda_fixup stac92hd83xxx_fixups[] = {
+ 			{}
+ 		},
+ 	},
++	[STAC_HP_ENVY_15] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = stac92hd83xxx_fixup_hp_envy_15,
++		.chained = true,
++		.chain_id = STAC_92HD83XXX_HP,
++	},
+ };
+ 
+ static const struct hda_model_fixup stac92hd83xxx_models[] = {
+@@ -2184,6 +2201,7 @@ static const struct hda_model_fixup stac92hd83xxx_models[] = {
+ 	{ .id = STAC_92HD83XXX_HP_MIC_LED, .name = "hp-mic-led" },
+ 	{ .id = STAC_92HD83XXX_HEADSET_JACK, .name = "headset-jack" },
+ 	{ .id = STAC_HP_ENVY_BASS, .name = "hp-envy-bass" },
++	{ .id = STAC_HP_ENVY_15, .name = "hp-envy-15" },
+ 	{}
+ };
+ 
+@@ -2269,6 +2287,8 @@ static const struct snd_pci_quirk stac92hd83xxx_fixup_tbl[] = {
+ 			  "HP Pavilion dv5", STAC_92HD83XXX_HP_INV_LED),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x148a,
+ 		      "HP Mini", STAC_92HD83XXX_HP_LED),
++	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1688,
++			  "HP Envy 15", STAC_HP_ENVY_15),
+ 	SND_PCI_QUIRK_VENDOR(PCI_VENDOR_ID_HP, "HP", STAC_92HD83XXX_HP),
+ 	{} /* terminator */
+ };
+@@ -3968,6 +3988,7 @@ static int patch_stac92hd83xxx(struct hda_codec *codec)
+ 
+ 	snd_hda_add_verbs(codec, stac92hd83xxx_core_init);
+ 
++
+ 	snd_hda_pick_fixup(codec, stac92hd83xxx_models, stac92hd83xxx_fixup_tbl,
+ 			   stac92hd83xxx_fixups);
+ 	snd_hda_apply_fixup(codec, HDA_FIXUP_ACT_PRE_PROBE);
+-- 
+1.8.1.2
+
