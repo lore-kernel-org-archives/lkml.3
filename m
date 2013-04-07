@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935024Ab3DGXfw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:35:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46857 "EHLO
+	id S934650Ab3DGXda (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:33:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46845 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934939Ab3DGXdg (ORCPT
+	by vger.kernel.org with ESMTP id S934761Ab3DGXd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:33:36 -0400
+	Sun, 7 Apr 2013 19:33:27 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
@@ -14,13 +14,13 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Sasha Levin" <levinsasha928@gmail.com>,
-        "Dave Jones" <davej@redhat.com>, "Ming Lei" <ming.lei@canonical.com>
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Anatol Pomozov" <anatol.pomozov@gmail.com>,
+        "Al Viro" <viro@zeniv.linux.org.uk>
 Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.954887030@decadent.org.uk>
+Message-ID: <lsq.1365374742.143558874@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [21/74] sysfs: fix race between readdir and lseek
+Subject: [51/74] loop: prevent bdev freeing while device in use
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,51 +33,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
 
-commit 991f76f837bf22c5bb07261cfd86525a0a96650c upstream.
+commit c1681bf8a7b1b98edee8b862a42c19c4e53205fd upstream.
 
-While readdir() is running, lseek() may set filp->f_pos as zero,
-then may leave filp->private_data pointing to one sysfs_dirent
-object without holding its reference counter, so the sysfs_dirent
-object may be used after free in next readdir().
+struct block_device lifecycle is defined by its inode (see fs/block_dev.c) -
+block_device allocated first time we access /dev/loopXX and deallocated on
+bdev_destroy_inode. When we create the device "losetup /dev/loopXX afile"
+we want that block_device stay alive until we destroy the loop device
+with "losetup -d".
 
-This patch holds inode->i_mutex to avoid the problem since
-the lock is always held in readdir path.
+But because we do not hold /dev/loopXX inode its counter goes 0, and
+inode/bdev can be destroyed at any moment. Usually it happens at memory
+pressure or when user drops inode cache (like in the test below). When later in
+loop_clr_fd() we want to use bdev we have use-after-free error with following
+stack:
 
-Reported-by: Dave Jones <davej@redhat.com>
-Tested-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: open-code file_inode() which we don't have]
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000280
+  bd_set_size+0x10/0xa0
+  loop_clr_fd+0x1f8/0x420 [loop]
+  lo_ioctl+0x200/0x7e0 [loop]
+  lo_compat_ioctl+0x47/0xe0 [loop]
+  compat_blkdev_ioctl+0x341/0x1290
+  do_filp_open+0x42/0xa0
+  compat_sys_ioctl+0xc1/0xf20
+  do_sys_open+0x16e/0x1d0
+  sysenter_dispatch+0x7/0x1a
+
+To prevent use-after-free we need to grab the device in loop_set_fd()
+and put it later in loop_clr_fd().
+
+The issue is reprodusible on current Linus head and v3.3. Here is the test:
+
+  dd if=/dev/zero of=loop.file bs=1M count=1
+  while [ true ]; do
+    losetup /dev/loop0 loop.file
+    echo 2 > /proc/sys/vm/drop_caches
+    losetup -d /dev/loop0
+  done
+
+[ Doing bdgrab/bput in loop_set_fd/loop_clr_fd is safe, because every
+  time we call loop_set_fd() we check that loop_device->lo_state is
+  Lo_unbound and set it to Lo_bound If somebody will try to set_fd again
+  it will get EBUSY.  And if we try to loop_clr_fd() on unbound loop
+  device we'll get ENXIO.
+
+  loop_set_fd/loop_clr_fd (and any other loop ioctl) is called under
+  loop_device->lo_ctl_mutex. ]
+
+Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/sysfs/dir.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/block/loop.c |    9 ++++++++-
+ fs/block_dev.c       |    1 +
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -1023,10 +1023,21 @@ static int sysfs_readdir(struct file * f
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -907,6 +907,11 @@ static int loop_set_fd(struct loop_devic
+ 		lo->lo_flags |= LO_FLAGS_PARTSCAN;
+ 	if (lo->lo_flags & LO_FLAGS_PARTSCAN)
+ 		ioctl_by_bdev(bdev, BLKRRPART, 0);
++
++	/* Grab the block_device to prevent its destruction after we
++	 * put /dev/loopXX inode. Later in loop_clr_fd() we bdput(bdev).
++	 */
++	bdgrab(bdev);
  	return 0;
+ 
+ out_clr:
+@@ -1003,8 +1008,10 @@ static int loop_clr_fd(struct loop_devic
+ 	memset(lo->lo_encrypt_key, 0, LO_KEY_SIZE);
+ 	memset(lo->lo_crypt_name, 0, LO_NAME_SIZE);
+ 	memset(lo->lo_file_name, 0, LO_NAME_SIZE);
+-	if (bdev)
++	if (bdev) {
++		bdput(bdev);
+ 		invalidate_bdev(bdev);
++	}
+ 	set_capacity(lo->lo_disk, 0);
+ 	loop_sysfs_exit(lo);
+ 	if (bdev) {
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -587,6 +587,7 @@ struct block_device *bdgrab(struct block
+ 	ihold(bdev->bd_inode);
+ 	return bdev;
  }
++EXPORT_SYMBOL(bdgrab);
  
-+static loff_t sysfs_dir_llseek(struct file *file, loff_t offset, int whence)
-+{
-+	struct inode *inode = file->f_path.dentry->d_inode;
-+	loff_t ret;
-+
-+	mutex_lock(&inode->i_mutex);
-+	ret = generic_file_llseek(file, offset, whence);
-+	mutex_unlock(&inode->i_mutex);
-+
-+	return ret;
-+}
- 
- const struct file_operations sysfs_dir_operations = {
- 	.read		= generic_read_dir,
- 	.readdir	= sysfs_readdir,
- 	.release	= sysfs_dir_release,
--	.llseek		= generic_file_llseek,
-+	.llseek		= sysfs_dir_llseek,
- };
+ long nr_blockdev_pages(void)
+ {
 
