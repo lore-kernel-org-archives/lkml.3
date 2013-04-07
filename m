@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932939Ab3DGHcY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 03:32:24 -0400
-Received: from mail-ia0-f171.google.com ([209.85.210.171]:53228 "EHLO
-	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932921Ab3DGHcW (ORCPT
+	id S932959Ab3DGHfq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 03:35:46 -0400
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:63802 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932686Ab3DGHfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 03:32:22 -0400
-Message-ID: <516120FA.6060303@gmail.com>
-Date: Sun, 07 Apr 2013 15:32:10 +0800
+	Sun, 7 Apr 2013 03:35:45 -0400
+Message-ID: <516121C7.6070508@gmail.com>
+Date: Sun, 07 Apr 2013 15:35:35 +0800
 From: Will Huck <will.huckk@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
@@ -18,7 +18,8 @@ CC: Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
         Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
         Zlatko Calusic <zcalusic@bitsync.net>, dormando <dormando@rydia.net>,
         Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
+        LKML <linux-kernel@vger.kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
 Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd reclaims
  at each priority
 References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-2-git-send-email-mgorman@suse.de> <20130321155705.GA27848@cmpxchg.org> <514BA04D.2090002@gmail.com> <514BD56F.6050709@redhat.com> <514BD665.5020803@gmail.com> <514BE54C.4050106@gmail.com> <514C5640.8000902@redhat.com> <515E1548.5040801@gmail.com>
@@ -29,7 +30,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping Rik.
+cc Fengguang,
 On 04/05/2013 08:05 AM, Will Huck wrote:
 > Hi Rik,
 > On 03/22/2013 09:01 PM, Rik van Riel wrote:
