@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934615Ab3DGX27 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:28:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46663 "EHLO
+	id S934678Ab3DGX3E (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:29:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46668 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934488Ab3DGX26 (ORCPT
+	by vger.kernel.org with ESMTP id S934586Ab3DGX27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:28:58 -0400
+	Sun, 7 Apr 2013 19:28:59 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
@@ -14,12 +14,14 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Ian Abbott" <abbotti@mev.co.uk>
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Hugh Dickins" <hughd@google.com>,
+        "David Rientjes" <rientjes@google.com>,
+        "Jan Stancek" <jstancek@redhat.com>
 Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.27182830@decadent.org.uk>
+Message-ID: <lsq.1365374742.143652390@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [29/74] staging: comedi: s626: fix continuous acquisition
+Subject: [45/74] mm: prevent mmap_cache race in find_vma()
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,64 +34,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Jan Stancek <jstancek@redhat.com>
 
-commit e4317ce877a31dbb9d96375391c1c4ad2210d637 upstream.
+commit b6a9b7f6b1f21735a7456d534dc0e68e61359d2c upstream.
 
-For the s626 driver, there is a bug in the handling of asynchronous
-commands on the AI subdevice when the stop source is `TRIG_NONE`.  The
-command should run continuously until cancelled, but the interrupt
-handler stops the command running after the first scan.
+find_vma() can be called by multiple threads with read lock
+held on mm->mmap_sem and any of them can update mm->mmap_cache.
+Prevent compiler from re-fetching mm->mmap_cache, because other
+readers could update it in the meantime:
 
-The command set-up function `s626_ai_cmd()` contains this code:
+               thread 1                             thread 2
+                                        |
+  find_vma()                            |  find_vma()
+    struct vm_area_struct *vma = NULL;  |
+    vma = mm->mmap_cache;               |
+    if (!(vma && vma->vm_end > addr     |
+        && vma->vm_start <= addr)) {    |
+                                        |    mm->mmap_cache = vma;
+    return vma;                         |
+     ^^ compiler may optimize this      |
+        local variable out and re-read  |
+        mm->mmap_cache                  |
 
-	switch (cmd->stop_src) {
-	case TRIG_COUNT:
-		/*  data arrives as one packet */
-		devpriv->ai_sample_count = cmd->stop_arg;
-		devpriv->ai_continous = 0;
-		break;
-	case TRIG_NONE:
-		/*  continous acquisition */
-		devpriv->ai_continous = 1;
-		devpriv->ai_sample_count = 0;
-		break;
-	}
+This issue can be reproduced with gcc-4.8.0-1 on s390x by running
+mallocstress testcase from LTP, which triggers:
 
-The interrupt handler `s626_irq_handler()` contains this code:
+  kernel BUG at mm/rmap.c:1088!
+    Call Trace:
+     ([<000003d100c57000>] 0x3d100c57000)
+      [<000000000023a1c0>] do_wp_page+0x2fc/0xa88
+      [<000000000023baae>] handle_pte_fault+0x41a/0xac8
+      [<000000000023d832>] handle_mm_fault+0x17a/0x268
+      [<000000000060507a>] do_protection_exception+0x1e2/0x394
+      [<0000000000603a04>] pgm_check_handler+0x138/0x13c
+      [<000003fffcf1f07a>] 0x3fffcf1f07a
+    Last Breaking-Event-Address:
+      [<000000000024755e>] page_add_new_anon_rmap+0xc2/0x168
 
-		if (!(devpriv->ai_continous))
-			devpriv->ai_sample_count--;
-		if (devpriv->ai_sample_count <= 0) {
-			devpriv->ai_cmd_running = 0;
-			/* ... */
-		}
+Thanks to Jakub Jelinek for his insight on gcc and helping to
+track this down.
 
-So `devpriv->ai_sample_count` is only decremented for the `TRIG_COUNT`
-case, but `devpriv->ai_cmd_running` is set to 0 (and the command
-stopped) regardless.
-
-Fix this in `s626_ai_cmd()` by setting `devpriv->ai_sample_count = 1`
-for the `TRIG_NONE` case.  The interrupt handler will not decrement it
-so it will remain greater than 0 and the check for stopping the
-acquisition will fail.
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Jan Stancek <jstancek@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust context, indentation]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/comedi/drivers/s626.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/mmap.c  |    2 +-
+ mm/nommu.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/comedi/drivers/s626.c
-+++ b/drivers/staging/comedi/drivers/s626.c
-@@ -1882,7 +1882,7 @@ static int s626_ai_cmd(struct comedi_dev
- 	case TRIG_NONE:
- 		/*  continous acquisition */
- 		devpriv->ai_continous = 1;
--		devpriv->ai_sample_count = 0;
-+		devpriv->ai_sample_count = 1;
- 		break;
- 	}
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1573,7 +1573,7 @@ struct vm_area_struct *find_vma(struct m
+ 	if (mm) {
+ 		/* Check the cache first. */
+ 		/* (Cache hit rate is typically around 35%.) */
+-		vma = mm->mmap_cache;
++		vma = ACCESS_ONCE(mm->mmap_cache);
+ 		if (!(vma && vma->vm_end > addr && vma->vm_start <= addr)) {
+ 			struct rb_node * rb_node;
+ 
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -807,7 +807,7 @@ struct vm_area_struct *find_vma(struct m
+ 	struct vm_area_struct *vma;
+ 
+ 	/* check the cache first */
+-	vma = mm->mmap_cache;
++	vma = ACCESS_ONCE(mm->mmap_cache);
+ 	if (vma && vma->vm_start <= addr && vma->vm_end > addr)
+ 		return vma;
  
 
