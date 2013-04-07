@@ -1,90 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934394Ab3DGVRQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 17:17:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45289 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1762413Ab3DGVRP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 17:17:15 -0400
-Message-ID: <1365369424.2840.115.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 105/124] af_unix: dont send SCM_CREDENTIAL when dest socket
- is NULL
-From: Ben Hutchings <ben@decadent.org.uk>
-To: David Miller <davem@davemloft.net>
-Cc: svenjoac@gmx.de, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, dingtianhong@huawei.com, edumazet@google.com
-Date: Sun, 07 Apr 2013 22:17:04 +0100
-In-Reply-To: <20130405.004715.1638901359632228839.davem@davemloft.net>
-References: <20130402221104.163133110@linuxfoundation.org>
-	 <20130402221116.307254752@linuxfoundation.org>
-	 <87vc833kpf.fsf@turtle.gmx.de>
-	 <20130405.004715.1638901359632228839.davem@davemloft.net>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-yondcfY4OA+DThx2J8R/"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S934397Ab3DGVWJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 17:22:09 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:60036 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762040Ab3DGVWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 17:22:08 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Vyacheslav Dubeyko <slava@dubeyko.com>,
+        Hin-Tak Leung <htl10@users.sourceforge.net>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Christoph Hellwig <hch@lst.de>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH 1/2] hfsplus: add error propagation to  __hfsplus_ext_write_extent()
+Date: Mon,  8 Apr 2013 01:21:34 +0400
+Message-Id: <1365369695-8340-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <0199BA74-9971-4928-A133-DB1FC562DC43@dubeyko.com>
+References: <0199BA74-9971-4928-A133-DB1FC562DC43@dubeyko.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+__hfsplus_ext_write_extent() suppresses errors coming from hfs_brec_find().
+The patch implements error code propagation.
 
---=-yondcfY4OA+DThx2J8R/
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ fs/hfsplus/extents.c |   21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
 
-On Fri, 2013-04-05 at 00:47 -0400, David Miller wrote:
-> From: Sven Joachim <svenjoac@gmx.de>
-> Date: Wed, 03 Apr 2013 13:41:32 +0200
->=20
-> > On 2013-04-03 00:11 +0200, Greg Kroah-Hartman wrote:
-> >=20
-> >> 3.8-stable review patch.  If anyone has any objections, please let me =
-know.
-> >=20
-> > I'm seeing several complaints from udevd at boot in both 3.8.6-rc1 and
-> > 3.9-rc5: "udevd[56]: sender uid=3D65534, message ignored".  Reverting t=
-he
-> > patch below on top of 3.8.6-rc1 fixes that.  I'm using udev version 175
-> > here, and 65534 is the uid of user "nobody".
->=20
-> Greg and Ben, please stop this patch from all of the -stable trees.
->=20
-> I'm going to revert it and use Eric Biederman's fix instead.
->=20
-> Thanks!
+diff --git a/fs/hfsplus/extents.c b/fs/hfsplus/extents.c
+index a94f0f7..fed73f7 100644
+--- a/fs/hfsplus/extents.c
++++ b/fs/hfsplus/extents.c
+@@ -83,7 +83,7 @@ static u32 hfsplus_ext_lastblock(struct hfsplus_extent *ext)
+ 	return be32_to_cpu(ext->start_block) + be32_to_cpu(ext->block_count);
+ }
+ 
+-static void __hfsplus_ext_write_extent(struct inode *inode,
++static int __hfsplus_ext_write_extent(struct inode *inode,
+ 		struct hfs_find_data *fd)
+ {
+ 	struct hfsplus_inode_info *hip = HFSPLUS_I(inode);
+@@ -98,13 +98,13 @@ static void __hfsplus_ext_write_extent(struct inode *inode,
+ 	res = hfs_brec_find(fd, hfs_find_rec_by_key);
+ 	if (hip->extent_state & HFSPLUS_EXT_NEW) {
+ 		if (res != -ENOENT)
+-			return;
++			return res;
+ 		hfs_brec_insert(fd, hip->cached_extents,
+ 				sizeof(hfsplus_extent_rec));
+ 		hip->extent_state &= ~(HFSPLUS_EXT_DIRTY | HFSPLUS_EXT_NEW);
+ 	} else {
+ 		if (res)
+-			return;
++			return res;
+ 		hfs_bnode_write(fd->bnode, hip->cached_extents,
+ 				fd->entryoffset, fd->entrylength);
+ 		hip->extent_state &= ~HFSPLUS_EXT_DIRTY;
+@@ -117,11 +117,13 @@ static void __hfsplus_ext_write_extent(struct inode *inode,
+ 	 * to explicily mark the inode dirty, too.
+ 	 */
+ 	set_bit(HFSPLUS_I_EXT_DIRTY, &hip->flags);
++
++	return 0;
+ }
+ 
+ static int hfsplus_ext_write_extent_locked(struct inode *inode)
+ {
+-	int res;
++	int res = 0;
+ 
+ 	if (HFSPLUS_I(inode)->extent_state & HFSPLUS_EXT_DIRTY) {
+ 		struct hfs_find_data fd;
+@@ -129,10 +131,10 @@ static int hfsplus_ext_write_extent_locked(struct inode *inode)
+ 		res = hfs_find_init(HFSPLUS_SB(inode->i_sb)->ext_tree, &fd);
+ 		if (res)
+ 			return res;
+-		__hfsplus_ext_write_extent(inode, &fd);
++		res = __hfsplus_ext_write_extent(inode, &fd);
+ 		hfs_find_exit(&fd);
+ 	}
+-	return 0;
++	return res;
+ }
+ 
+ int hfsplus_ext_write_extent(struct inode *inode)
+@@ -175,8 +177,11 @@ static inline int __hfsplus_ext_cache_extent(struct hfs_find_data *fd,
+ 
+ 	WARN_ON(!mutex_is_locked(&hip->extents_lock));
+ 
+-	if (hip->extent_state & HFSPLUS_EXT_DIRTY)
+-		__hfsplus_ext_write_extent(inode, fd);
++	if (hip->extent_state & HFSPLUS_EXT_DIRTY) {
++		res = __hfsplus_ext_write_extent(inode, fd);
++		if (res)
++			return res;
++	}
+ 
+ 	res = __hfsplus_ext_read_extent(fd, hip->cached_extents, inode->i_ino,
+ 					block, HFSPLUS_IS_RSRC(inode) ?
+-- 
+1.7.9.5
 
-OK, dropped it.
-
-Ben.
-
---=20
-Ben Hutchings
-I'm not a reverse psychological virus.  Please don't copy me into your sig.
-
---=-yondcfY4OA+DThx2J8R/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUWHiUOe/yOyVhhEJAQpZOhAAkJx4Zo62noTx6v+oU8rqeb4IN2dYdPC9
-jZan4CeRhXleMiBetUHz9fzd0RCWOMhcckjMclqy+ZulRO0s4ZwNZXesKtCipB1g
-7p28HUjv4t0MktWfk4aJw1RnU9KlxP7+xb5KmGdhl9+bwR+UxmceH3t52noKFuWq
-fU3JhKB1IAazF5kyLRfjTLdqxVt07F9Dhpv585nNUPzfPloSSwtedhEyyiKTzj/o
-KVQpxI2S4zv3+8gNdJ3FzTkrtTDP7tPiaSGModyWFjny0lw1/oWXXizUJwGZ4ik5
-Ut8WCk2LKg9dYG0RJZUDw536qHZwIo4PbV+Rtkmp5VybVTzyKhB3UeEmfQUNyzJp
-+FNpra1MLtMMqCTs9T1EqNJn/Ek8OzMfj0Yzy0xG+sJ/+oLH/P5JTzOvy2p/fCHW
-R6eOcLtjtbFtJ8op1cZApB6515Wu5b9bKy1Mf/vEOgUPsczRjBmsmKOh0XYTLOSJ
-y+dMzxnkTSq0F9NOCaSX1nco/MO5SbJBI4m8434hD9/oS9T1SgfDNCKAG6ODLQA6
-aGwXOLWnMWzBlCsndSGwKndzY0rgrLzbppVaC7gitt0TScK6hj/oTL9hyuezVAHE
-ROt1hyxwQady2602PAvLl3qJTzJo25kA+7VkSnVdEhTqc8yFOyxCThMBvBVa+kzW
-ntY+NR3RUX0=
-=XsHf
------END PGP SIGNATURE-----
-
---=-yondcfY4OA+DThx2J8R/--
