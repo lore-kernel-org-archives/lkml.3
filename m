@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab3DGGh1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 02:37:27 -0400
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:34587 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab3DGGh0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 02:37:26 -0400
-Message-ID: <5161141C.8030007@gmail.com>
-Date: Sun, 07 Apr 2013 14:37:16 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1756423Ab3DGHAl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 03:00:41 -0400
+Received: from mga03.intel.com ([143.182.124.21]:48416 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755520Ab3DGHAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 03:00:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,423,1363158000"; 
+   d="scan'208";a="223920281"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: "Zheng, Lv" <lv.zheng@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Paul Bolle <pebolle@tiscali.nl>
+CC: Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Moore, Robert" <robert.moore@intel.com>
+Subject: RE: [PATCH] ACPI: remove "config ACPI_DEBUG_FUNC_TRACE"
+Thread-Topic: [PATCH] ACPI: remove "config ACPI_DEBUG_FUNC_TRACE"
+Thread-Index: AQHOJI56FFAru2ZVDk2aChD9lKJnP5i3fgqAgBKPb+CAAGICcA==
+Date: Sun, 7 Apr 2013 07:00:34 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88015CDB97@SHSMSX101.ccr.corp.intel.com>
+References: <1363689661.1390.9.camel@x61.thuisdomein>
+ <3588021.V98D5VToQr@vostro.rjw.lan>
+ <1AE640813FDE7649BE1B193DEA596E88015CD54B@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88015CD54B@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Hedi Berriche <hedi@sgi.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: page_alloc: Avoid marking zones full prematurely
- after zone_reclaim()
-References: <20130320181957.GA1878@suse.de> <514A7163.5070700@gmail.com> <20130321081902.GD6094@dhcp22.suse.cz> <515E6FC4.5000202@gmail.com>
-In-Reply-To: <515E6FC4.5000202@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3770x2C018141
 
-Ping!
-On 04/05/2013 02:31 PM, Simon Jeons wrote:
-> Hi Michal,
-> On 03/21/2013 04:19 PM, Michal Hocko wrote:
->> On Thu 21-03-13 10:33:07, Simon Jeons wrote:
->>> Hi Mel,
->>> On 03/21/2013 02:19 AM, Mel Gorman wrote:
->>>> The following problem was reported against a distribution kernel when
->>>> zone_reclaim was enabled but the same problem applies to the mainline
->>>> kernel. The reproduction case was as follows
->>>>
->>>> 1. Run numactl -m +0 dd if=largefile of=/dev/null
->>>>     This allocates a large number of clean pages in node 0
->>> I confuse why this need allocate a large number of clean pages?
->> It reads from file and puts pages into the page cache. The pages are not
->> modified so they are clean. Output file is /dev/null so no pages are
->> written. dd doesn't call fadvise(POSIX_FADV_DONTNEED) on the input file
->> by default so pages from the file stay in the page cache
->
-> I try this in v3.9-rc5:
-> dd if=/dev/sda of=/dev/null bs=1MB
-> 14813+0 records in
-> 14812+0 records out
-> 14812000000 bytes (15 GB) copied, 105.988 s, 140 MB/s
->
-> free -m -s 1
->
->                    total       used       free     shared buffers     
-> cached
-> Mem:          7912       1181       6731          0 663        239
-> -/+ buffers/cache:        277       7634
-> Swap:         8011          0       8011
->
-> It seems that almost 15GB copied before I stop dd, but the used pages 
-> which I monitor during dd always around 1200MB. Weird, why?
->
+> > > Kconfig symbol ACPI_DEBUG_FUNC_TRACE was only used (through its
+> > > corresponding macro) in drivers/acpi/acpica/acmacros.h. That macro
+> > > was removed from that header in v3.8, with commit
+> > > 86ff0e508f88eda6e479a897476026055831d2d8 ("ACPICA: Fix unmerged
+> > > acmacros.h divergences."). That commit did not explain why that
+> > > macro was removed. But it seems that ACPI_DEBUG_FUNC_TRACE can
+> now
+> > > be removed too, as it is unused.
+> >
+> > Lv, can you please comment here?
+> 
+> Sorry for the delayed reply.
+> 
+> The commit should have done something that already have been done in the
+> ACPICA.
+> I'll take a look at this.
 
+The original commit deleted CONFIG_ACPI_DEBUG_FUNC_TRACE from acmacros.h as it is in the __wrong__ place.
+CONFIG_xxx is linux specific codes thus should appear in OSL layer - aclinux.h.
+ACPICA specific codes should only use selective definitions in #ifdef ACPI_xxx style and such codes should be merged into ACPICA rather than being merged into Linux ACPI.
+
+Now we have two choices:
+Re-implement it in the aclinux.h using "ACPI_DEBUG_OUTPUT" defined/undefined or delete this kernel configuration item temporarily.
+
+Thanks and best regards
+-Lv
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
