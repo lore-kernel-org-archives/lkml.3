@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935079Ab3DGXeA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:34:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46882 "EHLO
+	id S934684Ab3DGXeG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:34:06 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46887 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935069Ab3DGXd4 (ORCPT
+	by vger.kernel.org with ESMTP id S935075Ab3DGXd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:33:56 -0400
+	Sun, 7 Apr 2013 19:33:59 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Sasha Levin" <levinsasha928@gmail.com>,
-        "Dave Jones" <davej@redhat.com>, "Ming Lei" <ming.lei@canonical.com>
+CC: akpm@linux-foundation.org, "Chris Vine" <chris@cvine.freeserve.co.uk>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Iestyn C. Elfick" <isedev@gmail.com>,
+        "Larry Finger" <Larry.Finger@lwfinger.net>
 Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.796935683@decadent.org.uk>
+Message-ID: <lsq.1365374742.146497790@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [22/74] sysfs: handle failure path correctly for readdir()
+Subject: [35/74] b43: A fix for DMA transmission sequence errors
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,46 +33,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: "Iestyn C. Elfick" <isedev@gmail.com>
 
-commit e5110f411d2ee35bf8d202ccca2e89c633060dca upstream.
+commit b251412db99ccd4495ce372fec7daee27bf06923 upstream.
 
-In case of 'if (filp->f_pos ==  0 or 1)' of sysfs_readdir(),
-the failure from filldir() isn't handled, and the reference counter
-of the sysfs_dirent object pointed by filp->private_data will be
-released without clearing filp->private_data, so use after free
-bug will be triggered later.
+Intermittently, b43 will report "Out of order TX status report on DMA ring".
+When this happens, the driver must be reset before communication can resume.
+The cause of the problem is believed to be an error in the closed-source
+firmware; however, all versions of the firmware are affected.
 
-This patch returns immeadiately under the situation for fixing the bug,
-and it is reasonable to return from readdir() when filldir() fails.
+This change uses the observation that the expected status is always 2 less
+than the observed value, and supplies a fake status report to skip one
+header/data pair.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Tested-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Not all devices suffer from this problem, but it can occur several times
+per second under heavy load. As each occurence kills the unmodified driver,
+this patch makes if possible for the affected devices to function. The patch
+logs only the first instance of the reset operation to prevent spamming
+the logs.
+
+Tested-by: Chris Vine <chris@cvine.freeserve.co.uk>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/sysfs/dir.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/wireless/b43/dma.c |   65 ++++++++++++++++++++++++++++++++--------
+ 1 file changed, 53 insertions(+), 12 deletions(-)
 
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -985,6 +985,8 @@ static int sysfs_readdir(struct file * f
- 		ino = parent_sd->s_ino;
- 		if (filldir(dirent, ".", 1, filp->f_pos, ino, DT_DIR) == 0)
- 			filp->f_pos++;
-+		else
-+			return 0;
+--- a/drivers/net/wireless/b43/dma.c
++++ b/drivers/net/wireless/b43/dma.c
+@@ -1482,8 +1482,12 @@ void b43_dma_handle_txstatus(struct b43_
+ 	const struct b43_dma_ops *ops;
+ 	struct b43_dmaring *ring;
+ 	struct b43_dmadesc_meta *meta;
++	static const struct b43_txstatus fake; /* filled with 0 */
++	const struct b43_txstatus *txstat;
+ 	int slot, firstused;
+ 	bool frame_succeed;
++	int skip;
++	static u8 err_out1, err_out2;
+ 
+ 	ring = parse_cookie(dev, status->cookie, &slot);
+ 	if (unlikely(!ring))
+@@ -1496,13 +1500,36 @@ void b43_dma_handle_txstatus(struct b43_
+ 	firstused = ring->current_slot - ring->used_slots + 1;
+ 	if (firstused < 0)
+ 		firstused = ring->nr_slots + firstused;
++
++	skip = 0;
+ 	if (unlikely(slot != firstused)) {
+ 		/* This possibly is a firmware bug and will result in
+-		 * malfunction, memory leaks and/or stall of DMA functionality. */
+-		b43dbg(dev->wl, "Out of order TX status report on DMA ring %d. "
+-		       "Expected %d, but got %d\n",
+-		       ring->index, firstused, slot);
+-		return;
++		 * malfunction, memory leaks and/or stall of DMA functionality.
++		 */
++		if (slot == next_slot(ring, next_slot(ring, firstused))) {
++			/* If a single header/data pair was missed, skip over
++			 * the first two slots in an attempt to recover.
++			 */
++			slot = firstused;
++			skip = 2;
++			if (!err_out1) {
++				/* Report the error once. */
++				b43dbg(dev->wl,
++				       "Skip on DMA ring %d slot %d.\n",
++				       ring->index, slot);
++				err_out1 = 1;
++			}
++		} else {
++			/* More than a single header/data pair were missed.
++			 * Report this error once.
++			 */
++			if (!err_out2)
++				b43dbg(dev->wl,
++				       "Out of order TX status report on DMA ring %d. Expected %d, but got %d\n",
++				       ring->index, firstused, slot);
++			err_out2 = 1;
++			return;
++		}
  	}
- 	if (filp->f_pos == 1) {
- 		if (parent_sd->s_parent)
-@@ -993,6 +995,8 @@ static int sysfs_readdir(struct file * f
- 			ino = parent_sd->s_ino;
- 		if (filldir(dirent, "..", 2, filp->f_pos, ino, DT_DIR) == 0)
- 			filp->f_pos++;
-+		else
-+			return 0;
+ 
+ 	ops = ring->ops;
+@@ -1517,11 +1544,13 @@ void b43_dma_handle_txstatus(struct b43_
+ 			       slot, firstused, ring->index);
+ 			break;
+ 		}
++
+ 		if (meta->skb) {
+ 			struct b43_private_tx_info *priv_info =
+-				b43_get_priv_tx_info(IEEE80211_SKB_CB(meta->skb));
++			     b43_get_priv_tx_info(IEEE80211_SKB_CB(meta->skb));
+ 
+-			unmap_descbuffer(ring, meta->dmaaddr, meta->skb->len, 1);
++			unmap_descbuffer(ring, meta->dmaaddr,
++					 meta->skb->len, 1);
+ 			kfree(priv_info->bouncebuffer);
+ 			priv_info->bouncebuffer = NULL;
+ 		} else {
+@@ -1533,8 +1562,9 @@ void b43_dma_handle_txstatus(struct b43_
+ 			struct ieee80211_tx_info *info;
+ 
+ 			if (unlikely(!meta->skb)) {
+-				/* This is a scatter-gather fragment of a frame, so
+-				 * the skb pointer must not be NULL. */
++				/* This is a scatter-gather fragment of a frame,
++				 * so the skb pointer must not be NULL.
++				 */
+ 				b43dbg(dev->wl, "TX status unexpected NULL skb "
+ 				       "at slot %d (first=%d) on ring %d\n",
+ 				       slot, firstused, ring->index);
+@@ -1545,9 +1575,18 @@ void b43_dma_handle_txstatus(struct b43_
+ 
+ 			/*
+ 			 * Call back to inform the ieee80211 subsystem about
+-			 * the status of the transmission.
++			 * the status of the transmission. When skipping over
++			 * a missed TX status report, use a status structure
++			 * filled with zeros to indicate that the frame was not
++			 * sent (frame_count 0) and not acknowledged
+ 			 */
+-			frame_succeed = b43_fill_txstatus_report(dev, info, status);
++			if (unlikely(skip))
++				txstat = &fake;
++			else
++				txstat = status;
++
++			frame_succeed = b43_fill_txstatus_report(dev, info,
++								 txstat);
+ #ifdef CONFIG_B43_DEBUG
+ 			if (frame_succeed)
+ 				ring->nr_succeed_tx_packets++;
+@@ -1575,12 +1614,14 @@ void b43_dma_handle_txstatus(struct b43_
+ 		/* Everything unmapped and free'd. So it's not used anymore. */
+ 		ring->used_slots--;
+ 
+-		if (meta->is_last_fragment) {
++		if (meta->is_last_fragment && !skip) {
+ 			/* This is the last scatter-gather
+ 			 * fragment of the frame. We are done. */
+ 			break;
+ 		}
+ 		slot = next_slot(ring, slot);
++		if (skip > 0)
++			--skip;
  	}
- 	mutex_lock(&sysfs_mutex);
- 	for (pos = sysfs_dir_pos(ns, parent_sd, filp->f_pos, pos);
+ 	if (ring->stopped) {
+ 		B43_WARN_ON(free_slots(ring) < TX_SLOTS_PER_FRAME);
 
