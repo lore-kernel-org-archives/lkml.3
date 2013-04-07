@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934686Ab3DGXji (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:39:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46685 "EHLO
+	id S934749Ab3DGXj7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:39:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46671 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934598Ab3DGX3P (ORCPT
+	by vger.kernel.org with ESMTP id S934628Ab3DGX3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:29:15 -0400
+	Sun, 7 Apr 2013 19:29:03 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Roland Dreier" <roland@purestorage.com>,
-        "Dean Luick" <dean.luick@intel.com>,
-        "Mike Marciniszyn" <mike.marciniszyn@intel.com>
+CC: akpm@linux-foundation.org, "Alan Cox" <alan@linux.intel.com>,
+        "David Howells" <dhowells@redhat.com>
 Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.361422891@decadent.org.uk>
+Message-ID: <lsq.1365374742.185082284@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [26/74] IPoIB: Fix send lockup due to missed TX completion
+Subject: [48/74] key: Fix resource leak
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,49 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
+From: Alan Cox <alan@linux.intel.com>
 
-commit 1ee9e2aa7b31427303466776f455d43e5e3c9275 upstream.
+commit a84a921978b7d56e0e4b87ffaca6367429b4d8ff upstream.
 
-Commit f0dc117abdfa ("IPoIB: Fix TX queue lockup with mixed UD/CM
-traffic") attempts to solve an issue where unprocessed UD send
-completions can deadlock the netdev.
+On an error iov may still have been reallocated and need freeing
 
-The patch doesn't fully resolve the issue because if more than half
-the tx_outstanding's were UD and all of the destinations are RC
-reachable, arming the CQ doesn't solve the issue.
-
-This patch uses the IB_CQ_REPORT_MISSED_EVENTS on the
-ib_req_notify_cq().  If the rc is above 0, the UD send cq completion
-callback is called directly to re-arm the send completion timer.
-
-This issue is seen in very large parallel filesystem deployments
-and the patch has been shown to correct the issue.
-
-Reviewed-by: Dean Luick <dean.luick@intel.com>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/infiniband/ulp/ipoib/ipoib_cm.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ security/keys/keyctl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/infiniband/ulp/ipoib/ipoib_cm.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_cm.c
-@@ -755,9 +755,13 @@ void ipoib_cm_send(struct net_device *de
- 		if (++priv->tx_outstanding == ipoib_sendq_size) {
- 			ipoib_dbg(priv, "TX ring 0x%x full, stopping kernel net queue\n",
- 				  tx->qp->qp_num);
--			if (ib_req_notify_cq(priv->send_cq, IB_CQ_NEXT_COMP))
--				ipoib_warn(priv, "request notify on send CQ failed\n");
- 			netif_stop_queue(dev);
-+			rc = ib_req_notify_cq(priv->send_cq,
-+				IB_CQ_NEXT_COMP | IB_CQ_REPORT_MISSED_EVENTS);
-+			if (rc < 0)
-+				ipoib_warn(priv, "request notify on send CQ failed\n");
-+			else if (rc)
-+				ipoib_send_comp_handler(priv->send_cq, dev);
- 		}
- 	}
- }
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -1067,12 +1067,12 @@ long keyctl_instantiate_key_iov(key_seri
+ 	ret = rw_copy_check_uvector(WRITE, _payload_iov, ioc,
+ 				    ARRAY_SIZE(iovstack), iovstack, &iov, 1);
+ 	if (ret < 0)
+-		return ret;
++		goto err;
+ 	if (ret == 0)
+ 		goto no_payload_free;
+ 
+ 	ret = keyctl_instantiate_key_common(id, iov, ioc, ret, ringid);
+-
++err:
+ 	if (iov != iovstack)
+ 		kfree(iov);
+ 	return ret;
 
