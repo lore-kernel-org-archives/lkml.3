@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933058Ab3DGJUS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 05:20:18 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57164 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757845Ab3DGJUQ (ORCPT
+	id S933054Ab3DGJYG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 05:24:06 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:18311 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933016Ab3DGJYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 05:20:16 -0400
-Date: Sun, 7 Apr 2013 11:20:10 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-cc: Dave Hansen <dave@sr71.net>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, dhillf@gmail.com,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: kernel BUG at kernel/smpboot.c:134!
-In-Reply-To: <alpine.LFD.2.02.1304061019000.21884@ionos>
-Message-ID: <alpine.LFD.2.02.1304071119100.21884@ionos>
-References: <515F457E.5050505@sr71.net> <515FCAC6.8090806@linux.vnet.ibm.com> <alpine.LFD.2.02.1304061019000.21884@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Sun, 7 Apr 2013 05:24:04 -0400
+X-Spam-Score: -100.8
+Message-ID: <51613B16.3030406@asianux.com>
+Date: Sun, 07 Apr 2013 17:23:34 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Drivers: Base: Regmap: fix warnings, use %lu instead
+ of %d for printf format
+References: <5160E113.9080502@asianux.com> <8761zybtdg.fsf@nemi.mork.no>
+In-Reply-To: <8761zybtdg.fsf@nemi.mork.no>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 6 Apr 2013, Thomas Gleixner wrote:
-> This is Hillfs proposed patch:
+On 2013年04月07日 17:08, Bjørn Mork wrote:
+> Chen Gang <gang.chen@asianux.com> writes:
 > 
-> > --- a/kernel/kthread.c	Sat Jan 19 13:03:52 2013
-> > +++ b/kernel/kthread.c	Sat Jan 19 13:17:54 2013
-> > @@ -306,6 +306,7 @@ struct task_struct *kthread_create_on_cp
-> >   	  return p;
-> > 	  set_bit(KTHREAD_IS_PER_CPU, &to_kthread(p)->flags);
-> > 	  to_kthread(p)->cpu = cpu;
-> > +	  __kthread_bind(p, cpu);
-> > 	  /* Park the thread to get it out of TASK_UNINTERRUPTIBLE state */
-> > 	  kthread_park(p);
-> > 	  return p;
->  
-> That's bogus. Simply because when we create the thread then the thread
+>> >   fix warnings (with EXTRA_CFLAGS=-W):
+>> >     format ‘%d’ expects argument of type ‘int’,
+>> >     but argument 4 has type ‘size_t’ [-Wformat]
+>> >
+>> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> > ---
+>> >  drivers/base/regmap/regcache.c |    2 +-
+>> >  1 files changed, 1 insertions(+), 1 deletions(-)
+>> >
+>> > diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+>> > index d81f605..275a2d2 100644
+>> > --- a/drivers/base/regmap/regcache.c
+>> > +++ b/drivers/base/regmap/regcache.c
+>> > @@ -590,7 +590,7 @@ static int regcache_sync_block_raw_flush(struct regmap *map, const void **data,
+>> >  
+>> >  	count = cur - base;
+>> >  
+>> > -	dev_dbg(map->dev, "Writing %d bytes for %d registers from 0x%x-0x%x\n",
+>> > +	dev_dbg(map->dev, "Writing %lu bytes for %d registers from 0x%x-0x%x\n",
+>> >  		count * val_bytes, count, base, cur - 1);
+>> >  
+>> >  	map->cache_bypass = 1;
+> 
+> Please read Documentation/printk-formats.txt. Thanks.
+> 
 
-And it's even more bogus because the cpu to which we would bind in
-kthread_create_on_cpu() is not yet online.
+  thanks, I will send patch v2 (I should use "%zu" instead of "%lu")
 
-Thanks,
+  :-)
 
-	tglx
+> 
+> Bjørn
+> 
+> 
 
+
+-- 
+Chen Gang
+
+Asianux Corporation
