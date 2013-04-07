@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161626Ab3DGIlG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 04:41:06 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:53159 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161601Ab3DGIlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 04:41:00 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Moore, Robert" <robert.moore@intel.com>
-Subject: Re: [PATCH] ACPI: remove "config ACPI_DEBUG_FUNC_TRACE"
-Date: Sun, 07 Apr 2013 10:48:41 +0200
-Message-ID: <1425689.yaSMfvQtv5@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88015CDB97@SHSMSX101.ccr.corp.intel.com>
-References: <1363689661.1390.9.camel@x61.thuisdomein> <1AE640813FDE7649BE1B193DEA596E88015CD54B@SHSMSX101.ccr.corp.intel.com> <1AE640813FDE7649BE1B193DEA596E88015CDB97@SHSMSX101.ccr.corp.intel.com>
+	id S932963Ab3DGIoZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 04:44:25 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:1353 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760004Ab3DGIoW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 04:44:22 -0400
+Message-ID: <516131D7.8030004@huawei.com>
+Date: Sun, 7 Apr 2013 16:44:07 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>
+CC: <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC][PATCH 0/7] memcg: make memcg's life cycle the same as cgroup
+References: <515BF233.6070308@huawei.com>
+In-Reply-To: <515BF233.6070308@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, April 07, 2013 07:00:34 AM Zheng, Lv wrote:
-> > > > Kconfig symbol ACPI_DEBUG_FUNC_TRACE was only used (through its
-> > > > corresponding macro) in drivers/acpi/acpica/acmacros.h. That macro
-> > > > was removed from that header in v3.8, with commit
-> > > > 86ff0e508f88eda6e479a897476026055831d2d8 ("ACPICA: Fix unmerged
-> > > > acmacros.h divergences."). That commit did not explain why that
-> > > > macro was removed. But it seems that ACPI_DEBUG_FUNC_TRACE can
-> > now
-> > > > be removed too, as it is unused.
-> > >
-> > > Lv, can you please comment here?
-> > 
-> > Sorry for the delayed reply.
-> > 
-> > The commit should have done something that already have been done in the
-> > ACPICA.
-> > I'll take a look at this.
+Hi,
+
+I'm rebasing this patchset against latest linux-next, and it conflicts with
+"[PATCH v2] memcg: debugging facility to access dangling memcgs." slightly.
+
+That is a debugging patch and will never be pushed into mainline, so should I
+still base this patchset on that debugging patch?
+
+Also that patch needs update (and can be simplified) after this patchset:
+- move memcg_dangling_add() to mem_cgroup_css_offline()
+- remove memcg->memcg_name, and use cgroup_path() in mem_cgroup_dangling_read()?
+
+On 2013/4/3 17:11, Li Zefan wrote:
+> (I'll be off from my office soon, and I won't be responsive in the following
+> 3 days.)
 > 
-> The original commit deleted CONFIG_ACPI_DEBUG_FUNC_TRACE from acmacros.h as it is in the __wrong__ place.
-> CONFIG_xxx is linux specific codes thus should appear in OSL layer - aclinux.h.
-> ACPICA specific codes should only use selective definitions in #ifdef ACPI_xxx style and such codes should be merged into ACPICA rather than being merged into Linux ACPI.
+> I'm working on converting memcg to use cgroup->id, and then we can kill css_id.
 > 
-> Now we have two choices:
-> Re-implement it in the aclinux.h using "ACPI_DEBUG_OUTPUT" defined/undefined or delete
-> this kernel configuration item temporarily.
+> Now memcg has its own refcnt, so when a cgroup is destroyed, the memcg can
+> still be alive. This patchset converts memcg to always use css_get/put, so
+> memcg will have the same life cycle as its corresponding cgroup, and then
+> it's always safe for memcg to use cgroup->id.
+> 
+> The historical reason that memcg didn't use css_get in some cases, is that
+> cgroup couldn't be removed if there're still css refs. The situation has
+> changed so that rmdir a cgroup will succeed regardless css refs, but won't
+> be freed until css refs goes down to 0.
+> 
+> This is an early post, and it's NOT TESTED. I just want to see if the changes
+> are fine in general.
+> 
+> btw, after this patchset I think we don't need to free memcg via RCU, because
+> cgroup is already freed in RCU callback.
+> 
+> Note this patchset is based on a few memcg fixes I sent (but hasn't been
+> accepted)
+> 
+> --
+>  kernel/cgroup.c |  10 ++++++++
+>  mm/memcontrol.c | 129 ++++++++++++++++++++++++++++++++++++++-------------------------------------------------------
+>  2 files changed, 62 insertions(+), 77 deletions(-)
+> 
 
-OK
-
-I'll apply the Paul's patch then and we'll decide what to do with that config
-option later.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
