@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934577Ab3DGW42 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 18:56:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46346 "EHLO
+	id S934537Ab3DGW4A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 18:56:00 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934539Ab3DGW4B (ORCPT
+	by vger.kernel.org with ESMTP id S934447Ab3DGWz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 18:56:01 -0400
+	Sun, 7 Apr 2013 18:55:56 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Hong Zhiguo" <honkiko@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paulmck@us.ibm.com>,
+        "Steven Rostedt" <rostedt@goodmis.org>,
+        "Eric Dumazet" <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Jiri Pirko" <jpirko@redhat.com>
 Date: Sun, 07 Apr 2013 23:45:43 +0100
-Message-ID: <lsq.1365374743.145534820@decadent.org.uk>
+Message-ID: <lsq.1365374743.91885527@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [67/74] ipv6: fix bad free of addrconf_init_net
+Subject: [70/74] net: add a synchronize_net() in  netdev_rx_handler_unregister()
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,56 +35,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hong Zhiguo <honkiko@gmail.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit a79ca223e029aa4f09abb337accf1812c900a800 ]
+[ Upstream commit 00cfec37484761a44a3b6f4675a54caa618210ae ]
 
-Signed-off-by: Hong Zhiguo <honkiko@gmail.com>
+commit 35d48903e97819 (bonding: fix rx_handler locking) added a race
+in bonding driver, reported by Steven Rostedt who did a very good
+diagnosis :
+
+<quoting Steven>
+
+I'm currently debugging a crash in an old 3.0-rt kernel that one of our
+customers is seeing. The bug happens with a stress test that loads and
+unloads the bonding module in a loop (I don't know all the details as
+I'm not the one that is directly interacting with the customer). But the
+bug looks to be something that may still be present and possibly present
+in mainline too. It will just be much harder to trigger it in mainline.
+
+In -rt, interrupts are threads, and can schedule in and out just like
+any other thread. Note, mainline now supports interrupt threads so this
+may be easily reproducible in mainline as well. I don't have the ability
+to tell the customer to try mainline or other kernels, so my hands are
+somewhat tied to what I can do.
+
+But according to a core dump, I tracked down that the eth irq thread
+crashed in bond_handle_frame() here:
+
+        slave = bond_slave_get_rcu(skb->dev);
+        bond = slave->bond; <--- BUG
+
+the slave returned was NULL and accessing slave->bond caused a NULL
+pointer dereference.
+
+Looking at the code that unregisters the handler:
+
+void netdev_rx_handler_unregister(struct net_device *dev)
+{
+
+        ASSERT_RTNL();
+        RCU_INIT_POINTER(dev->rx_handler, NULL);
+        RCU_INIT_POINTER(dev->rx_handler_data, NULL);
+}
+
+Which is basically:
+        dev->rx_handler = NULL;
+        dev->rx_handler_data = NULL;
+
+And looking at __netif_receive_skb() we have:
+
+        rx_handler = rcu_dereference(skb->dev->rx_handler);
+        if (rx_handler) {
+                if (pt_prev) {
+                        ret = deliver_skb(skb, pt_prev, orig_dev);
+                        pt_prev = NULL;
+                }
+                switch (rx_handler(&skb)) {
+
+My question to all of you is, what stops this interrupt from happening
+while the bonding module is unloading?  What happens if the interrupt
+triggers and we have this:
+
+        CPU0                    CPU1
+        ----                    ----
+  rx_handler = skb->dev->rx_handler
+
+                        netdev_rx_handler_unregister() {
+                           dev->rx_handler = NULL;
+                           dev->rx_handler_data = NULL;
+
+  rx_handler()
+   bond_handle_frame() {
+    slave = skb->dev->rx_handler;
+    bond = slave->bond; <-- NULL pointer dereference!!!
+
+What protection am I missing in the bond release handler that would
+prevent the above from happening?
+
+</quoting Steven>
+
+We can fix bug this in two ways. First is adding a test in
+bond_handle_frame() and others to check if rx_handler_data is NULL.
+
+A second way is adding a synchronize_net() in
+netdev_rx_handler_unregister() to make sure that a rcu protected reader
+has the guarantee to see a non NULL rx_handler_data.
+
+The second way is better as it avoids an extra test in fast path.
+
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Jiri Pirko <jpirko@redhat.com>
+Cc: Paul E. McKenney <paulmck@us.ibm.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv6/addrconf.c | 26 ++++++++++----------------
- 1 file changed, 10 insertions(+), 16 deletions(-)
+ net/core/dev.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index b27baed..8589c2d 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -4658,26 +4658,20 @@ static void addrconf_sysctl_unregister(struct inet6_dev *idev)
+diff --git a/net/core/dev.c b/net/core/dev.c
+index b23bbbf..720aea0 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3193,6 +3193,7 @@ int netdev_rx_handler_register(struct net_device *dev,
+ 	if (dev->rx_handler)
+ 		return -EBUSY;
  
- static int __net_init addrconf_init_net(struct net *net)
- {
--	int err;
-+	int err = -ENOMEM;
- 	struct ipv6_devconf *all, *dflt;
++	/* Note: rx_handler_data must be set before rx_handler */
+ 	rcu_assign_pointer(dev->rx_handler_data, rx_handler_data);
+ 	rcu_assign_pointer(dev->rx_handler, rx_handler);
  
--	err = -ENOMEM;
--	all = &ipv6_devconf;
--	dflt = &ipv6_devconf_dflt;
-+	all = kmemdup(&ipv6_devconf, sizeof(ipv6_devconf), GFP_KERNEL);
-+	if (all == NULL)
-+		goto err_alloc_all;
+@@ -3213,6 +3214,11 @@ void netdev_rx_handler_unregister(struct net_device *dev)
  
--	if (!net_eq(net, &init_net)) {
--		all = kmemdup(all, sizeof(ipv6_devconf), GFP_KERNEL);
--		if (all == NULL)
--			goto err_alloc_all;
-+	dflt = kmemdup(&ipv6_devconf_dflt, sizeof(ipv6_devconf_dflt), GFP_KERNEL);
-+	if (dflt == NULL)
-+		goto err_alloc_dflt;
- 
--		dflt = kmemdup(dflt, sizeof(ipv6_devconf_dflt), GFP_KERNEL);
--		if (dflt == NULL)
--			goto err_alloc_dflt;
--	} else {
--		/* these will be inherited by all namespaces */
--		dflt->autoconf = ipv6_defaults.autoconf;
--		dflt->disable_ipv6 = ipv6_defaults.disable_ipv6;
--	}
-+	/* these will be inherited by all namespaces */
-+	dflt->autoconf = ipv6_defaults.autoconf;
-+	dflt->disable_ipv6 = ipv6_defaults.disable_ipv6;
- 
- 	net->ipv6.devconf_all = all;
- 	net->ipv6.devconf_dflt = dflt;
+ 	ASSERT_RTNL();
+ 	RCU_INIT_POINTER(dev->rx_handler, NULL);
++	/* a reader seeing a non NULL rx_handler in a rcu_read_lock()
++	 * section has a guarantee to see a non NULL rx_handler_data
++	 * as well.
++	 */
++	synchronize_net();
+ 	RCU_INIT_POINTER(dev->rx_handler_data, NULL);
+ }
+ EXPORT_SYMBOL_GPL(netdev_rx_handler_unregister);
 
