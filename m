@@ -1,120 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933494Ab3DGLu1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 07:50:27 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:46292 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933477Ab3DGLu0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 07:50:26 -0400
-Date: Sun, 7 Apr 2013 17:14:41 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Anton Arapov <anton@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Josh Stone <jistone@redhat.com>, Frank Eigler <fche@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: Re: [PATCH v1 2/9] uretprobes: Reserve the first slot in xol_vma
- for trampoline
-Message-ID: <20130407114441.GB2186@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1365004839-21982-1-git-send-email-anton@redhat.com>
- <1365004839-21982-3-git-send-email-anton@redhat.com>
+	id S933603Ab3DGLyM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 07:54:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53489 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933396Ab3DGLyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 07:54:10 -0400
+Date: Sun, 7 Apr 2013 14:54:07 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: fix MMIO/PIO collision misdetection
+Message-ID: <20130407115407.GS17919@redhat.com>
+References: <20130404102720.GA5707@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365004839-21982-3-git-send-email-anton@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040711-3620-0000-0000-000001EDACB7
+In-Reply-To: <20130404102720.GA5707@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Anton Arapov <anton@redhat.com> [2013-04-03 18:00:32]:
-
-> Allocate trampoline page, as the very first one in uprobed
-> task xol area, and fill it with breakpoint opcode.
+On Thu, Apr 04, 2013 at 01:27:21PM +0300, Michael S. Tsirkin wrote:
+> PIO and MMIO are separate address spaces, but
+> ioeventfd registration code mistakenly detected
+> two eventfds as duplicate if they use the same address,
+> even if one is PIO and another one MMIO.
 > 
-> Also introduce get_trampoline_vaddr() helper, to wrap the
-> trampoline address extraction from area->vaddr. That removes
-> confusion and eases the debug experience in case ->vaddr
-> notion will be changed.
-> 
-> v1 changes:
-> * rework get_trampoline_vaddr() helper.
-> * init xol_area->slot_count.
-> 
-> Signed-off-by: Anton Arapov <anton@redhat.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Applied, thanks.
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-
-(one small check below:)
 > ---
->  kernel/events/uprobes.c | 25 +++++++++++++++++++++++++
->  1 file changed, 25 insertions(+)
+>  virt/kvm/eventfd.c | 8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
 > 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 27c964b..d3c8201 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -1109,6 +1109,7 @@ static struct xol_area *get_xol_area(void)
->  {
->  	struct mm_struct *mm = current->mm;
->  	struct xol_area *area;
-> +	uprobe_opcode_t insn = UPROBE_SWBP_INSN;
-> 
->  	area = mm->uprobes_state.xol_area;
->  	if (area)
-> @@ -1126,7 +1127,12 @@ static struct xol_area *get_xol_area(void)
->  	if (!area->page)
->  		goto free_bitmap;
-> 
-> +	/* allocate first slot of task's xol_area for the return probes */
-> +	set_bit(0, area->bitmap);
-> +	copy_to_page(area->page, 0, &insn, UPROBE_SWBP_INSN_SIZE);
-> +	atomic_set(&area->slot_count, 1);
->  	init_waitqueue_head(&area->wq);
-> +
->  	if (!xol_add_vma(area))
->  		return area;
-> 
-> @@ -1323,6 +1329,25 @@ static struct uprobe_task *get_utask(void)
->  	return current->utask;
->  }
-> 
-> +/*
-> + * Current area->vaddr notion assume the trampoline address is always
-> + * equal area->vaddr.
-> + *
-> + * Returns -1 in case the xol_area is not allocated.
-> + */
-> +static unsigned long get_trampoline_vaddr(void)
-> +{
-> +	struct xol_area *area;
-> +	unsigned long trampoline_vaddr = -1;
-> +
-> +	area = current->mm->uprobes_state.xol_area;
-> +	smp_read_barrier_depends();
-
-check: do we need this barrier?
-
-> +	if (area)
-> +		trampoline_vaddr = area->vaddr;
-> +
-> +	return trampoline_vaddr;
-> +}
-> +
->  /* Prepare to single-step probed instruction out of line. */
->  static int
->  pre_ssout(struct uprobe *uprobe, struct pt_regs *regs, unsigned long bp_vaddr)
+> diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+> index adb17f2..93e5b05 100644
+> --- a/virt/kvm/eventfd.c
+> +++ b/virt/kvm/eventfd.c
+> @@ -577,6 +577,7 @@ struct _ioeventfd {
+>  	struct eventfd_ctx  *eventfd;
+>  	u64                  datamatch;
+>  	struct kvm_io_device dev;
+> +	u8                   bus_idx;
+>  	bool                 wildcard;
+>  };
+>  
+> @@ -669,7 +670,8 @@ ioeventfd_check_collision(struct kvm *kvm, struct _ioeventfd *p)
+>  	struct _ioeventfd *_p;
+>  
+>  	list_for_each_entry(_p, &kvm->ioeventfds, list)
+> -		if (_p->addr == p->addr && _p->length == p->length &&
+> +		if (_p->bus_idx == p->bus_idx &&
+> +		    _p->addr == p->addr && _p->length == p->length &&
+>  		    (_p->wildcard || p->wildcard ||
+>  		     _p->datamatch == p->datamatch))
+>  			return true;
+> @@ -717,6 +719,7 @@ kvm_assign_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+>  
+>  	INIT_LIST_HEAD(&p->list);
+>  	p->addr    = args->addr;
+> +	p->bus_idx = bus_idx;
+>  	p->length  = args->len;
+>  	p->eventfd = eventfd;
+>  
+> @@ -775,7 +778,8 @@ kvm_deassign_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+>  	list_for_each_entry_safe(p, tmp, &kvm->ioeventfds, list) {
+>  		bool wildcard = !(args->flags & KVM_IOEVENTFD_FLAG_DATAMATCH);
+>  
+> -		if (p->eventfd != eventfd  ||
+> +		if (p->bus_idx != bus_idx ||
+> +		    p->eventfd != eventfd  ||
+>  		    p->addr != args->addr  ||
+>  		    p->length != args->len ||
+>  		    p->wildcard != wildcard)
 > -- 
-> 1.8.1.4
-> 
+> MST
 
--- 
-Thanks and Regards
-Srikar Dronamraju
-
+--
+			Gleb.
