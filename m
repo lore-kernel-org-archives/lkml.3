@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934414Ab3DGVxS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 17:53:18 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:52896 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934381Ab3DGVxQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 17:53:16 -0400
-Date: Sun, 7 Apr 2013 23:53:03 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: David R <david@unsolicited.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org
-Subject: Re: AMD Vi error and lost networking with r8169
-Message-ID: <20130407215303.GA28778@electric-eye.fr.zoreil.com>
-References: <51616695.7080305@unsolicited.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51616695.7080305@unsolicited.net>
-X-Organisation: Land of Sunshine Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934421Ab3DGWAV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 18:00:21 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:60642 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758412Ab3DGWAU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 18:00:20 -0400
+Message-ID: <1365372019.8922.17.camel@joe-AO722>
+Subject: Re: [PATCH 2/2] hfsplus: add printk to log allocation failure in
+ hfs_find_init()
+From: Joe Perches <joe@perches.com>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: Vyacheslav Dubeyko <slava@dubeyko.com>,
+        Hin-Tak Leung <htl10@users.sourceforge.net>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Christoph Hellwig <hch@lst.de>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Date: Sun, 07 Apr 2013 15:00:19 -0700
+In-Reply-To: <1365369695-8340-2-git-send-email-khoroshilov@ispras.ru>
+References: <0199BA74-9971-4928-A133-DB1FC562DC43@dubeyko.com>
+	 <1365369695-8340-1-git-send-email-khoroshilov@ispras.ru>
+	 <1365369695-8340-2-git-send-email-khoroshilov@ispras.ru>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David R <david@unsolicited.net> :
-> I'm been seeing some problems with my new ish AMD motherboard/processor
-> combo and networking (r8169). I see the following page fault :-
-> 
-> Apr  7 12:25:14 david kernel: [156421.436545] AMD-Vi: Event logged
-> [IO_PAGE_FAULT device=02:00.0 domain=0x0015 address=0x0000000000003000
-> flags=0x0050]
+On Mon, 2013-04-08 at 01:21 +0400, Alexey Khoroshilov wrote:
+> Add printk to log allocation failure in hfs_find_init(),
+> "so that there is a sign in dmesg when the error condition is triggered".
+> (per Hin-Tak Leung request)
 
-Can you give the hack below a try ?
+Not needed.  There already is a generic dump_stack
+on all allocation failures without __GFP_NOWARN.
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 28fb50a..ed8625d 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -4125,6 +4125,8 @@ static void rtl_init_rxcfg(struct rtl8169_private *tp)
- 	case RTL_GIGA_MAC_VER_23:
- 	case RTL_GIGA_MAC_VER_24:
- 	case RTL_GIGA_MAC_VER_34:
-+	case RTL_GIGA_MAC_VER_35:
-+	case RTL_GIGA_MAC_VER_36:
- 		RTL_W32(RxConfig, RX128_INT_EN | RX_MULTI_EN | RX_DMA_BURST);
- 		break;
- 	default:
+> diff --git a/fs/hfsplus/bfind.c b/fs/hfsplus/bfind.c
+[]
+> @@ -18,8 +18,10 @@ int hfs_find_init(struct hfs_btree *tree, struct hfs_find_data *fd)
+
+> +	if (!ptr) {
+> +		printk(KERN_ERR "hfs: allocation failed in hfs_find_init()\n");
+>  		return -ENOMEM;
+
+
