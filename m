@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934439Ab3DGWAl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 18:00:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16552 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934424Ab3DGWAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 18:00:35 -0400
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Excessive stall times on ext4 in 3.9-rc2
-References: <20130402142717.GH32241@suse.de>
-	<20130402150651.GB31577@thunk.org> <20130402151436.GC31577@thunk.org>
-	<20130402181940.GA4936@thunk.org>
-From: fche@redhat.com (Frank Ch. Eigler)
-Date: Sun, 07 Apr 2013 17:59:06 -0400
-In-Reply-To: <20130402181940.GA4936@thunk.org> (Theodore Ts'o's message of "Tue, 2 Apr 2013 14:19:40 -0400")
-Message-ID: <y0mwqsehuj9.fsf@fche.csb>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
+	id S934442Ab3DGWTc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 18:19:32 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:33452 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758412Ab3DGWTb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 18:19:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CAOMZO5A0=TxfAiqUnL4dihu5y1Hq5n8K9zgA973Sf4Pi_Haq2Q@mail.gmail.com>
+References: <CAAAP30FOjuXNTZb-NarVpfU80Ad60=KbXN8x_EoUb7BUuEKmwA@mail.gmail.com>
+	<CAOMZO5A0=TxfAiqUnL4dihu5y1Hq5n8K9zgA973Sf4Pi_Haq2Q@mail.gmail.com>
+Date: Sun, 7 Apr 2013 19:19:29 -0300
+Message-ID: <CAAAP30FuQE4Lu9_+HOQmBY1V06Hfn==1j9FfzFuAH1uD2sqdng@mail.gmail.com>
+Subject: Re: IMX23 usb instability on 3.9-rc5
+From: Alexandre Pereira da Silva <aletes.xgr@gmail.com>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        alexander.shishkin@linux.intel.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        fabio.estevam@freescale.com, Otavio Salvador <otavio@ossystems.com.br>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi -
-
-
-tytso wrote:
-
-> So I tried to reproduce the problem, and so I installed systemtap
-> (bleeding edge, since otherwise it won't work with development
-> kernel), and then rebuilt a kernel with all of the necessary CONFIG
-> options enabled:
+On Sat, Apr 6, 2013 at 4:44 PM, Fabio Estevam <festevam@gmail.com> wrote:
+> Maybe bad DDR initialization? Are using U-boot or bootlets to setup the DDR?
 >
-> 	CONFIG_DEBUG_INFO, CONFIG_KPROBES, CONFIG_RELAY, CONFIG_DEBUG_FS,
-> 	CONFIG_MODULES, CONFIG_MODULE_UNLOAD
-> [...]
+> What is your DDR frequency: 133 or 96MHz? I saw some posts in the
+> olimex forum that people had to run it at 96MHz to get stable
+> operation.
 
-That sounds about right.
+Thanks Fabio,
 
+That seems to be the case. I did two of the mods sugested on olimex forums.
+1) Remove R17.
+2) Drop DDR speed to 96MHZ.
 
-> I then pulled down mmtests, and tried running watch-dstate.pl, which
-> is what I assume you were using [...]
+The first improved the behavior a lot, but still have crashes. The
+second have almost eliminated them.
 
-I just took a look at the mmtests, particularly the stap-fix.sh stuff.
-The heroics therein are really not called for.  git kernel developers
-should use git systemtap, as has always been the case.  All
-compatibility hacks in stap-fix.sh have already been merged, in many
-cases for months.
-
-
-> [...]
-> semantic error: while resolving probe point: identifier 'kprobe' at /tmp/stapdjN4_l:18:7
->         source: probe kprobe.function("get_request_wait")
->                       ^
-> Pass 2: analysis failed.  [man error::pass2]
-> Unexpected exit of STAP script at ./watch-dstate.pl line 296.
-> I have no clue what to do next.  Can you give me a hint?
-
-You should see the error::pass2 man page, which refers to
-error::reporting, which refers to involving stap folks and running
-stap-report to gather needed info.
-
-But in this case, that's unnecessary: the problem is most likely that
-the get_request_wait function does not actually exist any longer, since
-
-commit a06e05e6afab70b4b23c0a7975aaeae24b195cd6
-Author: Tejun Heo <tj@kernel.org>
-Date:   Mon Jun 4 20:40:55 2012 -0700
-
-    block: refactor get_request[_wait]()
-
-
-Systemtap could endavour to list roughly-matching functions that do
-exist, if you think that's be helpful.
-
-
-- FChE
+On Sat, Apr 6, 2013 at 4:44 PM, Fabio Estevam <festevam@gmail.com> wrote:
+> Alexandre,
+>
+> On Sat, Apr 6, 2013 at 4:39 PM, Alexandre Pereira da Silva
+> <aletes.xgr@gmail.com> wrote:
+>> Hello,
+>>
+>> I am testing a usb key connected on a IMX23-Olinuxino board. The
+>> kernel panics at heavy usb trafic. This was build with the mxs
+>> defconfig
+>>
+>> This happens everytime with "dd if=/dev/sda of=/dev/null bs=4k". The
+>> messages of the failure varies a lot from run to run.
+>
+> Maybe bad DDR initialization? Are using U-boot or bootlets to setup the DDR?
+>
+> What is your DDR frequency: 133 or 96MHz? I saw some posts in the
+> olimex forum that people had to run it at 96MHz to get stable
+> operation.
