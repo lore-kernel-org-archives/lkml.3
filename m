@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933185Ab3DGTWI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 15:22:08 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33122 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932959Ab3DGTWH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 15:22:07 -0400
-Date: Sun, 7 Apr 2013 20:21:58 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alexander Shiyan <shc_work@mail.ru>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: [PATCH] regulator: mc13783: Add device tree probe support
-Message-ID: <20130407192157.GQ6597@opensource.wolfsonmicro.com>
-References: <1365354131-9770-1-git-send-email-shc_work@mail.ru>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SlnaBQtdWG0gYnqZ"
-Content-Disposition: inline
-In-Reply-To: <1365354131-9770-1-git-send-email-shc_work@mail.ru>
-X-Cookie: Make a wish, it might come true.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933458Ab3DGTrX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 15:47:23 -0400
+Received: from pequod.mess.org ([46.65.169.142]:51451 "EHLO pequod.mess.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933168Ab3DGTrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 15:47:22 -0400
+From: Sean Young <sean@mess.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Josh Boyer <jwboyer@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vincent Deffontaines <vincent@gryzor.com>, tkil@scrye.com,
+        stable@vger.kernel.org
+Subject: [PATCH] Revert "tty/8250_pnp: serial port detection regression since v3.7"
+Date: Sun,  7 Apr 2013 20:47:18 +0100
+Message-Id: <1365364038-3959-1-git-send-email-sean@mess.org>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This reverts commit 77e372a3d82e5e4878ce1962207edd766773cc76.
 
---SlnaBQtdWG0gYnqZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Checking for disabled resources board breaks detection pnp on another
+board "AMI UEFI implementation (Version: 0406 Release Date: 06/06/2012)".
+I'm working with the reporter of the original bug to write and test
+a better fix.
 
-On Sun, Apr 07, 2013 at 09:02:11PM +0400, Alexander Shiyan wrote:
-> Patch adds device tree probe support for mc13783-regulator driver.
+https://bugzilla.redhat.com/show_bug.cgi?id=928246
 
-I'd expect to see a document describing the binding for any new binding.
+Signed-off-by: Sean Young <sean@mess.org>
+Cc: stable <stable@kernel.org>
+---
+ drivers/tty/serial/8250/8250_pnp.c | 12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
-> +	if (num_parsed !=3D num_regulators) {
-> +		dev_warn(&pdev->dev,
-> +		"parsed %d !=3D regulators %d - check your device tree!\n",
-> +			num_parsed, num_regulators);
-> =20
-> -		init_data =3D &pdata->regulators[i];
-> -		desc =3D &mc13783_regulators[init_data->id].desc;
-> +		num_regulators =3D num_parsed;
-> +		priv->num_regulators =3D num_regulators;
+diff --git a/drivers/tty/serial/8250/8250_pnp.c b/drivers/tty/serial/8250/8250_pnp.c
+index b3455a9..35d9ab9 100644
+--- a/drivers/tty/serial/8250/8250_pnp.c
++++ b/drivers/tty/serial/8250/8250_pnp.c
+@@ -429,7 +429,6 @@ serial_pnp_probe(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
+ {
+ 	struct uart_8250_port uart;
+ 	int ret, line, flags = dev_id->driver_data;
+-	struct resource *res = NULL;
+ 
+ 	if (flags & UNKNOWN_DEV) {
+ 		ret = serial_pnp_guess_board(dev);
+@@ -440,12 +439,11 @@ serial_pnp_probe(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
+ 	memset(&uart, 0, sizeof(uart));
+ 	if (pnp_irq_valid(dev, 0))
+ 		uart.port.irq = pnp_irq(dev, 0);
+-	if ((flags & CIR_PORT) && pnp_port_valid(dev, 2))
+-		res = pnp_get_resource(dev, IORESOURCE_IO, 2);
+-	else if (pnp_port_valid(dev, 0))
+-		res = pnp_get_resource(dev, IORESOURCE_IO, 0);
+-	if (pnp_resource_enabled(res)) {
+-		uart.port.iobase = res->start;
++	if ((flags & CIR_PORT) && pnp_port_valid(dev, 2)) {
++		uart.port.iobase = pnp_port_start(dev, 2);
++		uart.port.iotype = UPIO_PORT;
++	} else if (pnp_port_valid(dev, 0)) {
++		uart.port.iobase = pnp_port_start(dev, 0);
+ 		uart.port.iotype = UPIO_PORT;
+ 	} else if (pnp_mem_valid(dev, 0)) {
+ 		uart.port.mapbase = pnp_mem_start(dev, 0);
+-- 
+1.8.1.4
 
-Why is this something we warn about?  Users should be able to omit
-unused regulators, no point in adding nodes that don't have any real
-information.
-
---SlnaBQtdWG0gYnqZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRYcdOAAoJELSic+t+oim9XXMP/AmlN0zhSD0kpDDHDHbmCy18
-U61xlu0Od2ZtOz7OFn0ZX/NXE2rU90WOxaLG9DPCdP7h3/YYrkclciIu0Kt3DlXH
-4Wp2UKP3tCPHeziGnR5ggUs2m0EA4eLd57bv6hB6Dx6kGzAudzbovhhELbqG7ItZ
-0vuubPfKE/FkT/e/EDFISPYQlvcMdYdPhjGTLAk1LiSlOwQNrgHY3SV1q3BQADO0
-CV4IV/he6qIGt85xx1dR+3SEWgJygWnEQ/BZ4sPWGAkKVRhamZsSo8q00piDtfqS
-sOcdtfbgMQTz7PkJZw1yhc5Wp/BNJdP3YrY7aZv2GGhm5Kgm2nkH3DhcOZkcvwtU
-U+sphTyXDNNUr3Nf1OTco2mfxIbZmKRCuzBZzHSJpzHfMZLCdG9aboMDlDV+e6Oy
-eVUjglObpKrDluqqEY4Gcr+pJjsPJs/iXxYK0YazBDsrlsxUPTIfGRaE98ToI6yp
-ddwnGxa5ldVzrWGE2PCuuFXxjBcF4bRfXkEe8UWlRtLHZHqO5eecvt4B9C7vCyYu
-NNHE8OWJwAVyy845r0EtiDS39AzonzCJf0wHz727tRAS5lLFpW/KnujFNOJ9JWBq
-CBKXDtto45WZ+6J3yHVWiq11m4FsLJeR+YuQSqTqh++oLprvZ61B7WhBUgtPKDQ4
-gVxKh4O3uyErH5jTa6Ir
-=nYHE
------END PGP SIGNATURE-----
-
---SlnaBQtdWG0gYnqZ--
