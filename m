@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934678Ab3DGX3E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:29:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46668 "EHLO
+	id S934695Ab3DGX3L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:29:11 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46675 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934586Ab3DGX27 (ORCPT
+	by vger.kernel.org with ESMTP id S934586Ab3DGX3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:28:59 -0400
+	Sun, 7 Apr 2013 19:29:07 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Hugh Dickins" <hughd@google.com>,
-        "David Rientjes" <rientjes@google.com>,
-        "Jan Stancek" <jstancek@redhat.com>
+CC: akpm@linux-foundation.org, "Bjorn Helgaas" <bhelgaas@google.com>,
+        "Yinghai Lu" <yinghai@kernel.org>,
+        "Matthew Whitehead" <mwhitehe@redhat.com>
 Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.143652390@decadent.org.uk>
+Message-ID: <lsq.1365374742.879424092@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [45/74] mm: prevent mmap_cache race in find_vma()
+Subject: [44/74] EISA/PCI: Init EISA early, before PNP
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,77 +32,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Stancek <jstancek@redhat.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit b6a9b7f6b1f21735a7456d534dc0e68e61359d2c upstream.
+commit c5fb301ae83bec6892e54984e6ec765c47df8e10 upstream.
 
-find_vma() can be called by multiple threads with read lock
-held on mm->mmap_sem and any of them can update mm->mmap_cache.
-Prevent compiler from re-fetching mm->mmap_cache, because other
-readers could update it in the meantime:
+Matthew reported kernels fail the pci_eisa probe and are later successful
+with the virtual_eisa_root_init force probe without slot0.
 
-               thread 1                             thread 2
-                                        |
-  find_vma()                            |  find_vma()
-    struct vm_area_struct *vma = NULL;  |
-    vma = mm->mmap_cache;               |
-    if (!(vma && vma->vm_end > addr     |
-        && vma->vm_start <= addr)) {    |
-                                        |    mm->mmap_cache = vma;
-    return vma;                         |
-     ^^ compiler may optimize this      |
-        local variable out and re-read  |
-        mm->mmap_cache                  |
+The reason for that is: PNP probing is before pci_eisa_init gets called
+as pci_eisa_init is called via pci_driver.
 
-This issue can be reproduced with gcc-4.8.0-1 on s390x by running
-mallocstress testcase from LTP, which triggers:
+pnp 00:0f has 0xc80 - 0xc84 reserved.
+[    9.700409] pnp 00:0f: [io  0x0c80-0x0c84]
 
-  kernel BUG at mm/rmap.c:1088!
-    Call Trace:
-     ([<000003d100c57000>] 0x3d100c57000)
-      [<000000000023a1c0>] do_wp_page+0x2fc/0xa88
-      [<000000000023baae>] handle_pte_fault+0x41a/0xac8
-      [<000000000023d832>] handle_mm_fault+0x17a/0x268
-      [<000000000060507a>] do_protection_exception+0x1e2/0x394
-      [<0000000000603a04>] pgm_check_handler+0x138/0x13c
-      [<000003fffcf1f07a>] 0x3fffcf1f07a
-    Last Breaking-Event-Address:
-      [<000000000024755e>] page_add_new_anon_rmap+0xc2/0x168
+so eisa_probe will fail from pci_eisa_init
+				==>eisa_root_register
+					==>eisa_probe path.
+as force_probe is not set in pci_eisa_root, it will bail early when
+slot0 is not probed and initialized.
 
-Thanks to Jakub Jelinek for his insight on gcc and helping to
-track this down.
+Try to use subsys_initcall_sync instead, and will keep following sequence:
+	pci_subsys_init
+	pci_eisa_init_early
+	pnpacpi_init/isapnp_init
 
-Signed-off-by: Jan Stancek <jstancek@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context, indentation]
+After this patch EISA can be initialized properly, and PNP overlapping
+resource will not be reserved.
+[   10.104434] system 00:0f: [io  0x0c80-0x0c84] could not be reserved
+
+Reported-by: Matthew Whitehead <mwhitehe@redhat.com>
+Tested-by: Matthew Whitehead <mwhitehe@redhat.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/mmap.c  |    2 +-
- mm/nommu.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/eisa/pci_eisa.c |   39 +++++++++++++++++++++------------------
+ 1 file changed, 21 insertions(+), 18 deletions(-)
 
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1573,7 +1573,7 @@ struct vm_area_struct *find_vma(struct m
- 	if (mm) {
- 		/* Check the cache first. */
- 		/* (Cache hit rate is typically around 35%.) */
--		vma = mm->mmap_cache;
-+		vma = ACCESS_ONCE(mm->mmap_cache);
- 		if (!(vma && vma->vm_end > addr && vma->vm_start <= addr)) {
- 			struct rb_node * rb_node;
+--- a/drivers/eisa/pci_eisa.c
++++ b/drivers/eisa/pci_eisa.c
+@@ -19,8 +19,7 @@
+ /* There is only *one* pci_eisa device per machine, right ? */
+ static struct eisa_root_device pci_eisa_root;
  
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -807,7 +807,7 @@ struct vm_area_struct *find_vma(struct m
- 	struct vm_area_struct *vma;
+-static int __init pci_eisa_init(struct pci_dev *pdev,
+-				const struct pci_device_id *ent)
++static int __init pci_eisa_init(struct pci_dev *pdev)
+ {
+ 	int rc;
  
- 	/* check the cache first */
--	vma = mm->mmap_cache;
-+	vma = ACCESS_ONCE(mm->mmap_cache);
- 	if (vma && vma->vm_start <= addr && vma->vm_end > addr)
- 		return vma;
+@@ -45,22 +44,26 @@ static int __init pci_eisa_init(struct p
+ 	return 0;
+ }
  
+-static struct pci_device_id pci_eisa_pci_tbl[] = {
+-	{ PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+-	  PCI_CLASS_BRIDGE_EISA << 8, 0xffff00, 0 },
+-	{ 0, }
+-};
+-
+-static struct pci_driver __refdata pci_eisa_driver = {
+-	.name		= "pci_eisa",
+-	.id_table	= pci_eisa_pci_tbl,
+-	.probe		= pci_eisa_init,
+-};
+-
+-static int __init pci_eisa_init_module (void)
++/*
++ * We have to call pci_eisa_init_early() before pnpacpi_init()/isapnp_init().
++ *   Otherwise pnp resource will get enabled early and could prevent eisa
++ *   to be initialized.
++ * Also need to make sure pci_eisa_init_early() is called after
++ * x86/pci_subsys_init().
++ * So need to use subsys_initcall_sync with it.
++ */
++static int __init pci_eisa_init_early(void)
+ {
+-	return pci_register_driver (&pci_eisa_driver);
+-}
++	struct pci_dev *dev = NULL;
++	int ret;
++
++	for_each_pci_dev(dev)
++		if ((dev->class >> 8) == PCI_CLASS_BRIDGE_EISA) {
++			ret = pci_eisa_init(dev);
++			if (ret)
++				return ret;
++		}
+ 
+-device_initcall(pci_eisa_init_module);
+-MODULE_DEVICE_TABLE(pci, pci_eisa_pci_tbl);
++	return 0;
++}
++subsys_initcall_sync(pci_eisa_init_early);
 
