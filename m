@@ -1,76 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933371Ab3DGLDm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 07:03:42 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:10473 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932249Ab3DGLDl (ORCPT
+	id S933390Ab3DGLKX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 07:10:23 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50821 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933360Ab3DGLKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 07:03:41 -0400
-X-Spam-Score: -100.7
-Message-ID: <5161526F.8070306@asianux.com>
-Date: Sun, 07 Apr 2013 19:03:11 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: jason.wessel@windriver.com, anton.vorontsov@linaro.org,
-        sasha.levin@oracle.com, vincent.stehle@laposte.net,
-        john.blackwood@ccur.com
-CC: kgdb-bugreport@lists.sourceforge.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kernel: debug: kdb: strncpy issue, using strlcpy instead
- of strncpy.
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 7 Apr 2013 07:10:22 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <florian@openwrt.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] net: mvmdio: get and enable optional clock
+Date: Sun,  7 Apr 2013 13:09:47 +0200
+Message-Id: <1365332988-9053-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Marvell mdio driver uses internal registers that can be clock gated on
+some SoCs. This patch just adds optional clock handling, to allow to pass
+and enable the corresponding clock.
 
-  cmd_cur and cmd_hist[] are all NUL terminated string.
-  need using strlcpy instead of strncpy.
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
- kernel/debug/kdb/kdb_main.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Florian Fainelli <florian@openwrt.org>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/net/ethernet/marvell/mvmdio.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 00eb8f7..a2b04d7 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -1063,12 +1063,12 @@ static int handle_ctrl_cmd(char *cmd)
- 	case CTRL_P:
- 		if (cmdptr != cmd_tail)
- 			cmdptr = (cmdptr-1) % KDB_CMD_HISTORY_COUNT;
--		strncpy(cmd_cur, cmd_hist[cmdptr], CMD_BUFLEN);
-+		strlcpy(cmd_cur, cmd_hist[cmdptr], CMD_BUFLEN);
- 		return 1;
- 	case CTRL_N:
- 		if (cmdptr != cmd_head)
- 			cmdptr = (cmdptr+1) % KDB_CMD_HISTORY_COUNT;
--		strncpy(cmd_cur, cmd_hist[cmdptr], CMD_BUFLEN);
-+		strlcpy(cmd_cur, cmd_hist[cmdptr], CMD_BUFLEN);
- 		return 1;
- 	}
+diff --git a/drivers/net/ethernet/marvell/mvmdio.c b/drivers/net/ethernet/marvell/mvmdio.c
+index 7b5158f..e2f6626 100644
+--- a/drivers/net/ethernet/marvell/mvmdio.c
++++ b/drivers/net/ethernet/marvell/mvmdio.c
+@@ -28,6 +28,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/delay.h>
+ #include <linux/io.h>
++#include <linux/clk.h>
+ #include <linux/of_mdio.h>
+ #include <linux/sched.h>
+ #include <linux/wait.h>
+@@ -46,6 +47,7 @@
+ struct orion_mdio_dev {
+ 	struct mutex lock;
+ 	void __iomem *regs;
++	struct clk *clk;
+ 	/*
+ 	 * If we have access to the error interrupt pin (which is
+ 	 * somewhat misnamed as it not only reflects internal errors
+@@ -230,6 +232,10 @@ static int orion_mdio_probe(struct platform_device *pdev)
+ 
+ 	init_waitqueue_head(&dev->smi_busy_wait);
+ 
++	dev->clk = devm_clk_get(&pdev->dev, NULL);
++	if (!IS_ERR(dev->clk))
++		clk_prepare_enable(dev->clk);
++
+ 	dev->err_interrupt = platform_get_irq(pdev, 0);
+ 	if (dev->err_interrupt != -ENXIO) {
+ 		ret = devm_request_irq(&pdev->dev, dev->err_interrupt,
+@@ -258,6 +264,8 @@ static int orion_mdio_probe(struct platform_device *pdev)
  	return 0;
-@@ -1260,7 +1260,7 @@ do_full_getstr:
- 		if (*cmdbuf != '\n') {
- 			if (*cmdbuf < 32) {
- 				if (cmdptr == cmd_head) {
--					strncpy(cmd_hist[cmd_head], cmd_cur,
-+					strlcpy(cmd_hist[cmd_head], cmd_cur,
- 						CMD_BUFLEN);
- 					*(cmd_hist[cmd_head] +
- 					  strlen(cmd_hist[cmd_head])-1) = '\0';
-@@ -1270,7 +1270,7 @@ do_full_getstr:
- 				cmdbuf = cmd_cur;
- 				goto do_full_getstr;
- 			} else {
--				strncpy(cmd_hist[cmd_head], cmd_cur,
-+				strlcpy(cmd_hist[cmd_head], cmd_cur,
- 					CMD_BUFLEN);
- 			}
+ 
+ out_mdio:
++	if (!IS_ERR(dev->clk))
++		clk_disable_unprepare(dev->clk);
+ 	kfree(bus->irq);
+ 	mdiobus_free(bus);
+ 	return ret;
+@@ -272,6 +280,9 @@ static int orion_mdio_remove(struct platform_device *pdev)
+ 	mdiobus_unregister(bus);
+ 	kfree(bus->irq);
+ 	mdiobus_free(bus);
++	if (!IS_ERR(dev->clk))
++		clk_disable_unprepare(dev->clk);
++
+ 	return 0;
+ }
  
 -- 
-1.7.7.6
+1.7.10.4
+
