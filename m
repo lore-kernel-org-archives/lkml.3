@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934483Ab3DGWuo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 18:50:44 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:55052 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934466Ab3DGWum (ORCPT
+	id S934500Ab3DGWzt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 18:55:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46309 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934447Ab3DGWzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 18:50:42 -0400
-X-Originating-IP: 108.223.40.66
-Date: Sun, 7 Apr 2013 15:50:46 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Dom Cobley <popcornmix@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rabeeh Khoury <rabeeh@solid-run.com>, Daniel Mack <zonque@gmail.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [v5] clk: add si5351 i2c common clock driver
-Message-ID: <20130407225046.GA16326@roeck-us.net>
-References: <1365139415-17815-1-git-send-email-sebastian.hesselbarth@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Sun, 7 Apr 2013 18:55:46 -0400
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <1365139415-17815-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Geert Uytterhoeven" <geert@linux-m68k.org>,
+        "Jiri Kosina" <jkosina@suse.cz>, "Jiri Slaby" <jslaby@suse.cz>
+Date: Sun, 07 Apr 2013 23:45:43 +0100
+Message-ID: <lsq.1365374743.250578417@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [74/74] HID: microsoft: do not use compound literal - fix build
+In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 05, 2013 at 05:23:35AM -0000, Sebastian Hesselbarth wrote:
-> This patch adds a common clock driver for Silicon Labs Si5351a/b/c
-> i2c programmable clock generators. Currently, the driver supports
-> DT kernels only and VXCO feature of si5351b is not implemented. DT
-> bindings selectively allow to overwrite stored Si5351 configuration
-> which is very helpful for clock generators with empty eeprom
-> configuration. Corresponding device tree binding documentation is
-> also added.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> Tested-by: Daniel Mack <zonque@gmail.com>
->
-[ ... ]
+3.2.43-rc1 review patch.  If anyone has any objections, please let me know.
 
-> +static inline void _si5351_msynth_set_pll_master(
-> +	struct si5351_driver_data *drvdata, unsigned char num, int is_master)
-> +{
-> +	unsigned long flags;
-> +
-> +	if (num > 8 ||
-> +	    (drvdata->variant == SI5351_VARIANT_A3 && num > 3))
-> +		return;
-> +
-> +	flags = __clk_get_flags(drvdata->msynth[num].hw.clk);
-> +	if (is_master)
-> +		flags |= CLK_SET_RATE_PARENT;
-> +	else
-> +		flags &= ~CLK_SET_RATE_PARENT;
-> +	__clk_set_flags(drvdata->msynth[num].hw.clk, flags);
-> +}
-> +
-Unless I am missing something, neither __clk_get_flags() nor the new
-__clk_set_flags is exported.
+------------------
 
-Did you try to build and load the driver as module ?
+From: Jiri Slaby <jslaby@suse.cz>
 
-Thanks,
-Guenter
+commit 6b90466cfec2a2fe027187d675d8d14217c12d82 upstream.
+
+In patch "HID: microsoft: fix invalid rdesc for 3k kbd" I fixed
+support for MS 3k keyboards. However the added check using memcmp and
+a compound statement breaks build on architectures where memcmp is a
+macro with parameters.
+
+hid-microsoft.c:51:18: error: macro "memcmp" passed 6 arguments, but takes just 3
+
+On x86_64, memcmp is a function, so I did not see the error.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/hid/hid-microsoft.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/drivers/hid/hid-microsoft.c
++++ b/drivers/hid/hid-microsoft.c
+@@ -47,9 +47,9 @@ static __u8 *ms_report_fixup(struct hid_
+ 		rdesc[559] = 0x45;
+ 	}
+ 	/* the same as above (s/usage/physical/) */
+-	if ((quirks & MS_RDESC_3K) && *rsize == 106 &&
+-			!memcmp((char []){ 0x19, 0x00, 0x29, 0xff },
+-				&rdesc[94], 4)) {
++	if ((quirks & MS_RDESC_3K) && *rsize == 106 && rdesc[94] == 0x19 &&
++			rdesc[95] == 0x00 && rdesc[96] == 0x29 &&
++			rdesc[97] == 0xff) {
+ 		rdesc[94] = 0x35;
+ 		rdesc[96] = 0x45;
+ 	}
+
