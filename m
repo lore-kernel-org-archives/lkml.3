@@ -1,40 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933793Ab3DGOFl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 10:05:41 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:53259 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933717Ab3DGOFk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 10:05:40 -0400
-Message-ID: <51617D37.1020502@gmail.com>
-Date: Sun, 07 Apr 2013 10:05:43 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S933804Ab3DGOSg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 10:18:36 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:34071 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933741Ab3DGOSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 10:18:35 -0400
+Date: Sun, 7 Apr 2013 19:42:50 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Anton Arapov <anton@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] uprobes/tracing: Introduce is_ret_probe() and
+ uretprobe_dispatcher()
+Message-ID: <20130407141250.GB8672@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20130401160827.GA19206@redhat.com>
+ <20130401160848.GA19573@redhat.com>
 MIME-Version: 1.0
-To: Simon Jeons <simon.jeons@gmail.com>
-CC: Michal Hocko <mhocko@suse.cz>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linux kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        David Rientjes <rientjes@google.com>, kosaki.motohiro@gmail.com
-Subject: Re: [RFC][PATCH 0/9] extend hugepage migration
-References: <1361475708-25991-1-git-send-email-n-horiguchi@ah.jp.nec.com> <5148F830.3070601@gmail.com> <1363815326-urchkyxr-mutt-n-horiguchi@ah.jp.nec.com> <514A4B1C.6020201@gmail.com> <20130321125628.GB6051@dhcp22.suse.cz> <514B9BD8.9050207@gmail.com> <20130322081532.GC31457@dhcp22.suse.cz> <515E2592.7020607@gmail.com> <20130405080828.GA14882@dhcp22.suse.cz> <515E92CA.4000507@gmail.com> <20130405093034.GB31132@dhcp22.suse.cz> <5160BE9E.1050905@gmail.com>
-In-Reply-To: <5160BE9E.1050905@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20130401160848.GA19573@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040714-5806-0000-0000-000020A14DC1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Please refer to hugetlb_fault for more information.
-> 
-> Thanks for your pointing out. So my assume is correct, is it? Can pmd 
-> which support 2MB map 32MB pages work well?
+* Oleg Nesterov <oleg@redhat.com> [2013-04-01 18:08:48]:
 
-Simon, Please stop hijaking unrelated threads. This is not question and answer thread.
+> Create the new functions we need to support uretprobes, and change
+> alloc_trace_uprobe() to initialize consumer.ret_handler if the new
+> "is_ret" argument is true. Curently this argument is always false,
+> so the new code is never called and is_ret_probe(tu) is false too.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+> ---
+>  kernel/trace/trace_uprobe.c |   42 ++++++++++++++++++++++++++++++++++++++++--
+>  1 files changed, 40 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index 2ea9961..e91a354 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -75,6 +75,8 @@ static DEFINE_MUTEX(uprobe_lock);
+>  static LIST_HEAD(uprobe_list);
+> 
+>  static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs);
+> +static int uretprobe_dispatcher(struct uprobe_consumer *con,
+> +				unsigned long func, struct pt_regs *regs);
+> 
+>  static inline void init_trace_uprobe_filter(struct trace_uprobe_filter *filter)
+>  {
+> @@ -88,11 +90,16 @@ static inline bool uprobe_filter_is_empty(struct trace_uprobe_filter *filter)
+>  	return !filter->nr_systemwide && list_empty(&filter->perf_events);
+>  }
+> 
+> +static inline bool is_ret_probe(struct trace_uprobe *tu)
+> +{
+> +	return tu->consumer.ret_handler != NULL;
+> +}
+> +
+>  /*
+>   * Allocate new trace_uprobe and initialize it (including uprobes).
+>   */
+>  static struct trace_uprobe *
+> -alloc_trace_uprobe(const char *group, const char *event, int nargs)
+> +alloc_trace_uprobe(const char *group, const char *event, int nargs, bool is_ret)
+>  {
+>  	struct trace_uprobe *tu;
+> 
+> @@ -117,6 +124,8 @@ alloc_trace_uprobe(const char *group, const char *event, int nargs)
+> 
+>  	INIT_LIST_HEAD(&tu->list);
+>  	tu->consumer.handler = uprobe_dispatcher;
+> +	if (is_ret)
+> +		tu->consumer.ret_handler = uretprobe_dispatcher;
+>  	init_trace_uprobe_filter(&tu->filter);
+>  	return tu;
+> 
+> @@ -314,7 +323,7 @@ static int create_trace_uprobe(int argc, char **argv)
+>  		kfree(tail);
+>  	}
+> 
+> -	tu = alloc_trace_uprobe(group, event, argc);
+> +	tu = alloc_trace_uprobe(group, event, argc, false);
+>  	if (IS_ERR(tu)) {
+>  		pr_info("Failed to allocate trace_uprobe.(%d)\n", (int)PTR_ERR(tu));
+>  		ret = PTR_ERR(tu);
+> @@ -529,6 +538,12 @@ static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
+>  	return 0;
+>  }
+> 
+> +static void uretprobe_trace_func(struct trace_uprobe *tu, unsigned long func,
+> +				struct pt_regs *regs)
+> +{
+> +	uprobe_trace_print(tu, func, regs);
+> +}
+> +
+>  /* Event entry printers */
+>  static enum print_line_t
+>  print_uprobe_event(struct trace_iterator *iter, int flags, struct trace_event *event)
+> @@ -799,6 +814,12 @@ static int uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
+>  	uprobe_perf_print(tu, 0, regs);
+>  	return 0;
+>  }
+> +
+> +static void uretprobe_perf_func(struct trace_uprobe *tu, unsigned long func,
+> +				struct pt_regs *regs)
+> +{
+> +	uprobe_perf_print(tu, func, regs);
+> +}
+>  #endif	/* CONFIG_PERF_EVENTS */
+> 
+>  static
+> @@ -853,6 +874,23 @@ static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
+>  	return ret;
+>  }
+> 
+> +static int uretprobe_dispatcher(struct uprobe_consumer *con,
+> +				unsigned long func, struct pt_regs *regs)
+> +{
+> +	struct trace_uprobe *tu;
+> +
+> +	tu = container_of(con, struct trace_uprobe, consumer);
+> +
+> +	if (tu->flags & TP_FLAG_TRACE)
+> +		uretprobe_trace_func(tu, func, regs);
+> +
+> +#ifdef CONFIG_PERF_EVENTS
+> +	if (tu->flags & TP_FLAG_PROFILE)
+> +		uretprobe_perf_func(tu, func, regs);
+> +#endif
+> +	return 0;
+> +}
+> +
+>  static struct trace_event_functions uprobe_funcs = {
+>  	.trace		= print_uprobe_event
+>  };
+> -- 
+> 1.5.5.1
+> 
+
+-- 
+Thanks and Regards
+Srikar Dronamraju
 
