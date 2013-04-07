@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933054Ab3DGJYG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 05:24:06 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:18311 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933016Ab3DGJYE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 05:24:04 -0400
-X-Spam-Score: -100.8
-Message-ID: <51613B16.3030406@asianux.com>
-Date: Sun, 07 Apr 2013 17:23:34 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S933106Ab3DGJ0Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 05:26:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60521 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932997Ab3DGJ0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 05:26:13 -0400
+Date: Sun, 7 Apr 2013 10:41:13 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Christoffer Dall <cdall@cs.columbia.edu>
+Cc: Alexander Graf <agraf@suse.de>, Gleb Natapov <gleb@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH RFC] kvm: add PV MMIO EVENTFD
+Message-ID: <20130407074113.GB10317@redhat.com>
+References: <20130404123806.GG17919@redhat.com>
+ <EF153515-9835-4FB9-B6BC-73D0BDC86492@suse.de>
+ <20130404124501.GH17919@redhat.com>
+ <1B68D701-103D-4B1A-8F5E-3916753699CB@suse.de>
+ <20130404125649.GI17919@redhat.com>
+ <8E65D34D-2DA7-4C2E-9C3E-BE3A7DBC3279@suse.de>
+ <20130404133318.GI6467@redhat.com>
+ <14B443D5-5785-487D-9EA3-0AD20141BC06@suse.de>
+ <20130404153629.GN6467@redhat.com>
+ <CAEDV+gKpCj1Sgn4TYw5ViYK-x4_c=-9nOpBwGfTBXRkJaN=gNg@mail.gmail.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Drivers: Base: Regmap: fix warnings, use %lu instead
- of %d for printf format
-References: <5160E113.9080502@asianux.com> <8761zybtdg.fsf@nemi.mork.no>
-In-Reply-To: <8761zybtdg.fsf@nemi.mork.no>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAEDV+gKpCj1Sgn4TYw5ViYK-x4_c=-9nOpBwGfTBXRkJaN=gNg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月07日 17:08, Bjørn Mork wrote:
-> Chen Gang <gang.chen@asianux.com> writes:
+On Thu, Apr 04, 2013 at 04:32:01PM -0700, Christoffer Dall wrote:
+> [...]
 > 
->> >   fix warnings (with EXTRA_CFLAGS=-W):
->> >     format ‘%d’ expects argument of type ‘int’,
->> >     but argument 4 has type ‘size_t’ [-Wformat]
->> >
->> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> > ---
->> >  drivers/base/regmap/regcache.c |    2 +-
->> >  1 files changed, 1 insertions(+), 1 deletions(-)
->> >
->> > diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
->> > index d81f605..275a2d2 100644
->> > --- a/drivers/base/regmap/regcache.c
->> > +++ b/drivers/base/regmap/regcache.c
->> > @@ -590,7 +590,7 @@ static int regcache_sync_block_raw_flush(struct regmap *map, const void **data,
->> >  
->> >  	count = cur - base;
->> >  
->> > -	dev_dbg(map->dev, "Writing %d bytes for %d registers from 0x%x-0x%x\n",
->> > +	dev_dbg(map->dev, "Writing %lu bytes for %d registers from 0x%x-0x%x\n",
->> >  		count * val_bytes, count, base, cur - 1);
->> >  
->> >  	map->cache_bypass = 1;
-> 
-> Please read Documentation/printk-formats.txt. Thanks.
-> 
+> >> >> to give us some idea how much performance we would gain from each approach? Thoughput should be completely unaffected anyway, since virtio just coalesces kicks internally.
+> >> >
+> >> > Latency is dominated by the scheduling latency.
+> >> > This means virtio-net is not the best benchmark.
+> >>
+> >> So what is a good benchmark?
+> >
+> > E.g. ping pong stress will do but need to look at CPU utilization,
+> > that's what is affected, not latency.
+> >
+> >> Is there any difference in speed at all? I strongly doubt it. One of virtio's main points is to reduce the number of kicks.
+> >
+> > For this stage of the project I think microbenchmarks are more appropriate.
+> > Doubling the price of exit is likely to be measureable. 30 cycles likely
+> > not ...
+> >
+> I don't quite understand this point here. If we don't have anything
+> real-world where we can measure a decent difference, then why are we
+> doing this? I would agree with Alex that the three test scenarios
+> proposed by him should be tried out before adding this complexity,
+> measured in CPU utilization or latency as you wish.
 
-  thanks, I will send patch v2 (I should use "%zu" instead of "%lu")
+Sure, plan to do real world benchmarks for PV MMIO versus PIO as well.
+I don't see why I should bother implementing hypercalls given that the
+kvm maintainer says they won't be merged.
 
-  :-)
+> FWIW, ARM always uses MMIO and provides hardware decoding of all sane
+> (not user register-writeback) instruction, but the hypercall vs. mmio
+> looks like this:
+> 
+> hvc:  4,917
+> mmio_kernel: 6,248
+
+So 20% difference?  That's not far from what happens on my intel laptop:
+vmcall 1519
+outl_to_kernel 1745
+10% difference here.
 
 > 
-> Bjørn
+> But I doubt that an hvc wrapper around mmio decoding would take care
+> of all this difference, because the mmio operation needs to do other
+> work not realated to emulating the instruction in software, which
+> you'd have to do for an hvc anyway (populate kvm_mmio structure etc.)
 > 
-> 
+> -Christoffer
 
+Instead of speculating, someone with relevant hardware
+could just try this, but kvm unittest doesn't seem to have arm support
+at the moment. Anyone working on this?
 
 -- 
-Chen Gang
-
-Asianux Corporation
+MST
