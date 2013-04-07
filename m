@@ -1,126 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933272Ab3DGKcH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 06:32:07 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34877 "EHLO mail.skyhub.de"
+	id S933295Ab3DGKcT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 06:32:19 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:37517 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933217Ab3DGKcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 06:32:05 -0400
-Date: Sun, 7 Apr 2013 12:31:56 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Robert Richter <rric@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Borislav Petkov <bp@suse.de>
-Subject: Re: [RFC PATCH 1/3] perf: Add persistent events
-Message-ID: <20130407103156.GC31299@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Robert Richter <rric@kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Ingo Molnar <mingo@kernel.org>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Borislav Petkov <bp@suse.de>
-References: <1363352789-17991-1-git-send-email-bp@alien8.de>
- <1363352789-17991-2-git-send-email-bp@alien8.de>
- <20130406155317.GE11652@rric.localhost>
+	id S933217Ab3DGKcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 06:32:14 -0400
+Date: Sun, 7 Apr 2013 16:01:59 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Anton Arapov <anton@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] uprobes/tracing: Make uprobe_{trace,perf}_print()
+ uretprobe-friendly
+Message-ID: <20130407103159.GA6810@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20130401160827.GA19206@redhat.com>
+ <20130401160851.GA19576@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130406155317.GE11652@rric.localhost>
+In-Reply-To: <20130401160851.GA19576@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040710-5806-0000-0000-000020A1204D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 06, 2013 at 05:53:17PM +0200, Robert Richter wrote:
-> Boris,
+* Oleg Nesterov <oleg@redhat.com> [2013-04-01 18:08:51]:
+
+> Change uprobe_trace_print() and uprobe_perf_print() to check
+> is_ret_probe() and fill ring_buffer_event accordingly.
 > 
-> On 15.03.13 14:06:27, Borislav Petkov wrote:
-> > Add the needed pieces for persistent events which makes them
-> > process-agnostic. Also, make their buffers read-only when mmaping them
-> > from userspace.
+> Also change uprobe_trace_func() and uprobe_perf_func() to not
+> _print() if is_ret_probe() is true. Note that we keep ->handler()
+> nontrivial even for uretprobe, we need this for filtering and for
+> other potential extensions.
 > 
-> > diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-> > index 9fa9c622a7f4..4a4ae56195e1 100644
-> > --- a/include/uapi/linux/perf_event.h
-> > +++ b/include/uapi/linux/perf_event.h
-> > @@ -270,8 +270,9 @@ struct perf_event_attr {
-> >  
-> >  				exclude_callchain_kernel : 1, /* exclude kernel callchains */
-> >  				exclude_callchain_user   : 1, /* exclude user callchains */
-> > +				persistent     :  1, /* always-on event */
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/trace/trace_uprobe.c |   42 +++++++++++++++++++++++++++++++++---------
+>  1 files changed, 33 insertions(+), 9 deletions(-)
 > 
-> based on the discussion we have had a couple of days ago I got the
-> idea that we do not necessarily need the persistent flag. The purpose
-> of the persistent flag is to indicate that an existing event buffer
-> that is already enabled should be used. This means the buffer is
-> shared by multiple consumers. Enabled events with the following
-> conditions allow this too:
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index e91a354..db2718a 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -515,15 +515,26 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+>  	int size, i;
+>  	struct ftrace_event_call *call = &tu->call;
 > 
->  * buffer mappings are readonly,
->  * event is systemwide,
->  * struct perf_event_attr is identical.
+> -	size = SIZEOF_TRACE_ENTRY(1) + tu->size;
+> +	if (is_ret_probe(tu))
+
+One nit:
+Here and couple of places below .. we could check for func instead of
+is_ret_probe() right?
+Or is there an advantage of checking is_ret_probe() over func?
+
+> +		size = SIZEOF_TRACE_ENTRY(2);
+> +	else
+> +		size = SIZEOF_TRACE_ENTRY(1);
+> +
+>  	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
+> -						  size, 0, 0);
+> +						  size + tu->size, 0, 0);
+>  	if (!event)
+>  		return;
 > 
-> This means that an event with readonly buffers (PROT_WRITE unset,
-> over-write unread data) and the same struct perf_event_attr can be
-> simply reused. So, we don't need the flag: When setting up a
-> systemwide and readonly event we just check if there is already one
-> event running. If so we increment the use count of that event and
-> share its buffer, otherwise we create a new event.
+>  	entry = ring_buffer_event_data(event);
+> -	entry->vaddr[0] = instruction_pointer(regs);
+> -	data = DATAOF_TRACE_ENTRY(entry, 1);
+> +	if (is_ret_probe(tu)) {
+> +		entry->vaddr[0] = func;
+> +		entry->vaddr[1] = instruction_pointer(regs);
+> +		data = DATAOF_TRACE_ENTRY(entry, 2);
+> +	} else {
+> +		entry->vaddr[0] = instruction_pointer(regs);
+> +		data = DATAOF_TRACE_ENTRY(entry, 1);
+> +	}
+> +
+>  	for (i = 0; i < tu->nr_args; i++)
+>  		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
 > 
-> This also has the advantage that the syscall i/f does not change. We
-> simply setup the event in the same way as we do already. Maybe the
-> only thing we need is a sysfs extension to report existing systemwide
-> events to userland.
+> @@ -534,7 +545,8 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+>  /* uprobe handler */
+>  static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
+>  {
+> -	uprobe_trace_print(tu, 0, regs);
+> +	if (!is_ret_probe(tu))
+> +		uprobe_trace_print(tu, 0, regs);
 
-I'm not entirely sure why we want to do that? Just for informational
-purposes? I mean, if we enable the events on the kernel command line, we
-already know which are the persistent ones.
+Should this hunk be in the previous patch?
 
-> Now, to have persistent events in the sense that the event is running
-> since system startup, we simply enable an in-kernel-counter. If
-> userland later sets up the same event, the kernel is aware of the
-> already running counter and redirects it to its buffer and all
-> (persistent) samples of the current buffer are now available to
-> userland.
->
-> The above also has the advantage of sharing systemwide events which
-> saves system resources, e.g. hardware counters. Suppose two processes
-> are collecting cpu-clocks, currently there are two hw counters and
-> buffers used for this, but only one counter would be sufficient.
+Also something for the future:
+Most times a user uses a return probe, the user probably wants to probe
+the function entry too. So should we extend the abi from p+r to
+p+r+..<something else> to mean it traces both function entry and return.
+Esp given that uretprobe has been elegantly been designed to make this a
+possibility.
 
-I'm all up for efficiency. :)
 
-> I currently see the following problem with the approach. If we map to
-> an already running counter, there might be samples in the buffer that
-> had been collected before the syscall was setup. But the profiling
-> tool might be interested only in newer samples. So userland must be
-> aware of this and might be able to drop those samples. This should be
-> also backward compatible with the existing syscall i/f.
+>  	return 0;
+>  }
+> 
+> @@ -783,7 +795,11 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
+>  	void *data;
+>  	int size, rctx, i;
+> 
+> -	size = SIZEOF_TRACE_ENTRY(1);
+> +	if (is_ret_probe(tu))
+> +		size = SIZEOF_TRACE_ENTRY(2);
+> +	else
+> +		size = SIZEOF_TRACE_ENTRY(1);
+> +
+>  	size = ALIGN(size + tu->size + sizeof(u32), sizeof(u64)) - sizeof(u32);
+>  	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE, "profile buffer not large enough"))
+>  		return;
+> @@ -794,8 +810,15 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
+>  		goto out;
+> 
+>  	ip = instruction_pointer(regs);
+> -	entry->vaddr[0] = ip;
+> -	data = DATAOF_TRACE_ENTRY(entry, 1);
+> +	if (is_ret_probe(tu)) {
+> +		entry->vaddr[0] = func;
+> +		entry->vaddr[1] = ip;
+> +		data = DATAOF_TRACE_ENTRY(entry, 2);
+> +	} else {
+> +		entry->vaddr[0] = ip;
+> +		data = DATAOF_TRACE_ENTRY(entry, 1);
+> +	}
+> +
+>  	for (i = 0; i < tu->nr_args; i++)
+>  		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
+> 
+> @@ -811,7 +834,8 @@ static int uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
+>  	if (!uprobe_perf_filter(&tu->consumer, 0, current->mm))
+>  		return UPROBE_HANDLER_REMOVE;
+> 
+> -	uprobe_perf_print(tu, 0, regs);
+> +	if (!is_ret_probe(tu))
+> +		uprobe_perf_print(tu, 0, regs);
+>  	return 0;
+>  }
+> 
+> -- 
+> 1.5.5.1
+> 
 
-Hmm, so the perf tool should actually know about persistent events
-after all. If we open the persistent event from userspace, we get *all*
-samples. If we simply do a normal perf session, we get only the new
-samples.
-
-> Another problem is different buffer size. I don't know if it is
-> possible to simply resize mmap'ed regions to the biggest buffer
-> requested. Though this problem already exist with your code.
-
-Hmm, that needs more code staring I guess.
-
-> Maybe it's worth to look at this approach. I need to review more perf
-> code for this.
-
-Yeah, me too.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
