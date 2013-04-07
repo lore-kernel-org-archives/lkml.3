@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933185Ab3DGJd2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 05:33:28 -0400
-Received: from mail-pa0-f67.google.com ([209.85.220.67]:58165 "EHLO
-	mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932947Ab3DGJd1 (ORCPT
+	id S933219Ab3DGJhV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 05:37:21 -0400
+Received: from mail-da0-f45.google.com ([209.85.210.45]:59961 "EHLO
+	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933164Ab3DGJhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 05:33:27 -0400
-From: k80c <k80ck80c@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        k80c <k80ck80c@gmail.com>
-Subject: [PATCH 1/1] mmap.c: find_vma: eliminate initial if(mm) check
-Date: Sun,  7 Apr 2013 14:48:12 +0530
-Message-Id: <1365326292-2761-1-git-send-email-k80ck80c@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sun, 7 Apr 2013 05:37:19 -0400
+From: chenggang qin <chenggang.qin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: <chenggang.qcg@taobao.com>, David Ahern <dsahern@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Yanmin Zhang <yanmin.zhang@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] perf/core: Fix a warning in util/trace-event-parse.c
+Date: Sun,  7 Apr 2013 17:36:58 +0800
+Message-Id: <1365327418-6617-1-git-send-email-chenggang.qin@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per commit 841e31e5cc6219d62054788faa289b6ed682d068,
-we dont really need this if(mm) check anymore.
+From: <chenggang.qcg@taobao.com>
 
-A WARN_ON_ONCE was added just for safety, but there have been no bug
-reports about this so far.
+While I compile the perf in Red Hat Enterprise Linux Server release 5.4 (Tikanga),
+I got a warning:
 
-Removing this if(mm) check.
+CC util/trace-event-parse.o
+cc1: warnings being treated as errors
+util/trace-event-parse.c: In function 'parse_proc_kallsyms':
+util/trace-event-parse.c:232: warning: 'fmt' may be used uninitialized in this function
+make: *** [util/trace-event-parse.o] Error 1
 
-Signed-off-by: k80c <k80ck80c@gmail.com>
+The version of gcc is:  4.1.2
+
+The reason is that the local variable 'fmt' is not initialized before we use it.
+It is fixed in this patch.
+
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Yanmin Zhang <yanmin.zhang@intel.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
+
 ---
- mm/mmap.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ tools/perf/util/trace-event-parse.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 0db0de1..b2c363f 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1935,9 +1935,6 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
- {
- 	struct vm_area_struct *vma = NULL;
+diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+index 3aabcd6..630e331 100644
+--- a/tools/perf/util/trace-event-parse.c
++++ b/tools/perf/util/trace-event-parse.c
+@@ -229,7 +229,7 @@ void parse_proc_kallsyms(struct pevent *pevent,
+ 	char *next = NULL;
+ 	char *addr_str;
+ 	char *mod;
+-	char *fmt;
++	char *fmt = NULL;
  
--	if (WARN_ON_ONCE(!mm))		/* Remove this in linux-3.6 */
--		return NULL;
--
- 	/* Check the cache first. */
- 	/* (Cache hit rate is typically around 35%.) */
- 	vma = ACCESS_ONCE(mm->mmap_cache);
+ 	line = strtok_r(file, "\n", &next);
+ 	while (line) {
 -- 
-1.7.5.4
+1.5.5.6
 
