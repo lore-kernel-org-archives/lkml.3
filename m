@@ -1,138 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933060Ab3DGJNB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 05:13:01 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:38949 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760660Ab3DGJNA (ORCPT
+	id S933058Ab3DGJUS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 05:20:18 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57164 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757845Ab3DGJUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 05:13:00 -0400
-Message-ID: <5161388F.7060905@gmail.com>
-Date: Sun, 07 Apr 2013 17:12:47 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Sun, 7 Apr 2013 05:20:16 -0400
+Date: Sun, 7 Apr 2013 11:20:10 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+cc: Dave Hansen <dave@sr71.net>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, dhillf@gmail.com,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: kernel BUG at kernel/smpboot.c:134!
+In-Reply-To: <alpine.LFD.2.02.1304061019000.21884@ionos>
+Message-ID: <alpine.LFD.2.02.1304071119100.21884@ionos>
+References: <515F457E.5050505@sr71.net> <515FCAC6.8090806@linux.vnet.ibm.com> <alpine.LFD.2.02.1304061019000.21884@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Bob Liu <bob.liu@oracle.com>
-Subject: Re: [PATCH part2 v6 0/3] staging: zcache: Support zero-filled pages
- more efficiently
-References: <1364984183-9711-1-git-send-email-liwanp@linux.vnet.ibm.com> <5161367e.c60c320a.5936.ffff86a9SMTPIN_ADDED_BROKEN@mx.google.com>
-In-Reply-To: <5161367e.c60c320a.5936.ffff86a9SMTPIN_ADDED_BROKEN@mx.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cc Bob
-On 04/07/2013 05:03 PM, Wanpeng Li wrote:
-> On Wed, Apr 03, 2013 at 06:16:20PM +0800, Wanpeng Li wrote:
->> Changelog:
->> v5 -> v6:
->>   * shove variables in debug.c and in debug.h just have an extern, spotted by Konrad
->>   * update patch description, spotted by Konrad
->> v4 -> v5:
->>   * fix compile error, reported by Fengguang, Geert
->>   * add check for !is_ephemeral(pool), spotted by Bob
->> v3 -> v4:
->>   * handle duplication in page_is_zero_filled, spotted by Bob
->>   * fix zcache writeback in dubugfs
->>   * fix pers_pageframes|_max isn't exported in debugfs
->>   * fix static variable defined in debug.h but used in multiple C files
->>   * rebase on Greg's staging-next
->> v2 -> v3:
->>   * increment/decrement zcache_[eph|pers]_zpages for zero-filled pages, spotted by Dan
->>   * replace "zero" or "zero page" by "zero_filled_page", spotted by Dan
->> v1 -> v2:
->>   * avoid changing tmem.[ch] entirely, spotted by Dan.
->>   * don't accumulate [eph|pers]pageframe and [eph|pers]zpages for
->>     zero-filled pages, spotted by Dan
->>   * cleanup TODO list
->>   * add Dan Acked-by.
->>
-> Hi Dan,
->
-> Some issues against Ramster:
->
-> - Ramster who takes advantage of zcache also should support zero-filled
->    pages more efficiently, correct? It doesn't handle zero-filled pages well
->    currently.
-> - Ramster DebugFS counters are exported in /sys/kernel/mm/, but zcache/frontswap/cleancache
->    all are exported in /sys/kernel/debug/, should we unify them?
-> - If ramster also should move DebugFS counters to a single file like
->    zcache do?
->
-> If you confirm these issues are make sense to fix, I will start coding. ;-)
->
-> Regards,
-> Wanpeng Li
->
->> Motivation:
->>
->> - Seth Jennings points out compress zero-filled pages with LZO(a lossless
->>   data compression algorithm) will waste memory and result in fragmentation.
->>   https://lkml.org/lkml/2012/8/14/347
->> - Dan Magenheimer add "Support zero-filled pages more efficiently" feature
->>   in zcache TODO list https://lkml.org/lkml/2013/2/13/503
->>
->> Design:
->>
->> - For store page, capture zero-filled pages(evicted clean page cache pages and
->>   swap pages), but don't compress them, set pampd which store zpage address to
->>   0x2(since 0x0 and 0x1 has already been ocuppied) to mark special zero-filled
->>   case and take advantage of tmem infrastructure to transform handle-tuple(pool
->>   id, object id, and an index) to a pampd. Twice compress zero-filled pages will
->>   contribute to one zcache_[eph|pers]_pageframes count accumulated.
->> - For load page, traverse tmem hierachical to transform handle-tuple to pampd
->>   and identify zero-filled case by pampd equal to 0x2 when filesystem reads
->>   file pages or a page needs to be swapped in, then refill the page to zero
->>   and return.
->>
->> Test:
->>
->> dd if=/dev/zero of=zerofile bs=1MB count=500
->> vmtouch -t zerofile
->> vmtouch -e zerofile
->>
->> formula:
->> - fragmentation level = (zcache_[eph|pers]_pageframes * PAGE_SIZE - zcache_[eph|pers]_zbytes)
->>   * 100 / (zcache_[eph|pers]_pageframes * PAGE_SIZE)
->> - memory zcache occupy = zcache_[eph|pers]_zbytes
->>
->> Result:
->>
->> without zero-filled awareness:
->> - fragmentation level: 98%
->> - memory zcache occupy: 238MB
->> with zero-filled awareness:
->> - fragmentation level: 0%
->> - memory zcache occupy: 0MB
->>
->> Wanpeng Li (3):
->>   staging: zcache: fix static variables defined in debug.h but used in
->>     mutiple C files
->>   staging: zcache: introduce zero-filled page stat count
->>   staging: zcache: clean TODO list
->>
->> drivers/staging/zcache/TODO          |    3 +-
->> drivers/staging/zcache/debug.c       |   35 +++++++++++++++
->> drivers/staging/zcache/debug.h       |   79 ++++++++++++++++++++-------------
->> drivers/staging/zcache/zcache-main.c |    4 ++
->> 4 files changed, 88 insertions(+), 33 deletions(-)
->>
->> -- 
->> 1.7.5.4
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+On Sat, 6 Apr 2013, Thomas Gleixner wrote:
+> This is Hillfs proposed patch:
+> 
+> > --- a/kernel/kthread.c	Sat Jan 19 13:03:52 2013
+> > +++ b/kernel/kthread.c	Sat Jan 19 13:17:54 2013
+> > @@ -306,6 +306,7 @@ struct task_struct *kthread_create_on_cp
+> >   	  return p;
+> > 	  set_bit(KTHREAD_IS_PER_CPU, &to_kthread(p)->flags);
+> > 	  to_kthread(p)->cpu = cpu;
+> > +	  __kthread_bind(p, cpu);
+> > 	  /* Park the thread to get it out of TASK_UNINTERRUPTIBLE state */
+> > 	  kthread_park(p);
+> > 	  return p;
+>  
+> That's bogus. Simply because when we create the thread then the thread
+
+And it's even more bogus because the cpu to which we would bind in
+kthread_create_on_cpu() is not yet online.
+
+Thanks,
+
+	tglx
 
