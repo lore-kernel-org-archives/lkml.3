@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932963Ab3DGIoZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 04:44:25 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:1353 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760004Ab3DGIoW (ORCPT
+	id S933009Ab3DGIt4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 04:49:56 -0400
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:53106 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932988Ab3DGItz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 04:44:22 -0400
-Message-ID: <516131D7.8030004@huawei.com>
-Date: Sun, 7 Apr 2013 16:44:07 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Sun, 7 Apr 2013 04:49:55 -0400
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>
-CC: <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC][PATCH 0/7] memcg: make memcg's life cycle the same as cgroup
-References: <515BF233.6070308@huawei.com>
-In-Reply-To: <515BF233.6070308@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20130407075625.GN4068@ZenIV.linux.org.uk>
+References: <CADZ9YHiQBips5DB=xo0Kh-Nx_s60K+W+5RK-kCrHMfy6AGkhyA@mail.gmail.com>
+	<20130407075625.GN4068@ZenIV.linux.org.uk>
+Date: Sun, 7 Apr 2013 14:49:54 +0600
+Message-ID: <CADZ9YHiROer+sNAVz5TVAdFB3ec6tiJ96aKAMh6YUn=Dom5e2w@mail.gmail.com>
+Subject: Re: old->umask copying without spin_lock, in copy_fs_struct()
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Apr 7, 2013 at 1:56 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Sun, Apr 07, 2013 at 11:37:27AM +0600, Rakib Mullick wrote:
+>> Hello,
+>>
+>> In copy_fs_struct(), old->umask is assigned to fs->umask outside of
+>> spin_lock(&old->lock). Shouldn't it be inside spin_lock()? Since we're
+>> dealing with  fs_struct *old ? Isn't it unsafe? Following lines -
+>>
+>>               fs->umask = old->umask;
+>>
+>>                 spin_lock(&old->lock);
+>
+> What would moving it down buy us?  Root, pwd and umask are all modified
+> independently; the *only* reason why we hold old->lock for root and
+> pwd (and we might drop and regain it between copying those - it would
+> be pointless, so we don't bother, but it wouldn't have affected correctness)
+> is that we want the values of root.mnt and root.dentry taken at the same
+> time and we want to grab extra references on those while they are still
+> valid.  The same goes for pwd, of course.  That's what old->lock
+> protects - we want the damn thing atomic wrt set_fs_root() and set_fs_pwd().
+> umask is an integer; its updates are atomic anyway, so it's not as if we
+> could see a half-updated value or needed to do anything with refcounts.
 
-I'm rebasing this patchset against latest linux-next, and it conflicts with
-"[PATCH v2] memcg: debugging facility to access dangling memcgs." slightly.
+Thanks for your explanation! The ->umask operation is trivial and as
+you've explained (I was also looking at the code),
+it seems that code execution order makes sure that nothing goes wrong.
+fs_struct's data are protected with the ->lock, that's what I was
+thinking in that way and was just making sure it wasn't missed out
+accidentally.
 
-That is a debugging patch and will never be pushed into mainline, so should I
-still base this patchset on that debugging patch?
-
-Also that patch needs update (and can be simplified) after this patchset:
-- move memcg_dangling_add() to mem_cgroup_css_offline()
-- remove memcg->memcg_name, and use cgroup_path() in mem_cgroup_dangling_read()?
-
-On 2013/4/3 17:11, Li Zefan wrote:
-> (I'll be off from my office soon, and I won't be responsive in the following
-> 3 days.)
-> 
-> I'm working on converting memcg to use cgroup->id, and then we can kill css_id.
-> 
-> Now memcg has its own refcnt, so when a cgroup is destroyed, the memcg can
-> still be alive. This patchset converts memcg to always use css_get/put, so
-> memcg will have the same life cycle as its corresponding cgroup, and then
-> it's always safe for memcg to use cgroup->id.
-> 
-> The historical reason that memcg didn't use css_get in some cases, is that
-> cgroup couldn't be removed if there're still css refs. The situation has
-> changed so that rmdir a cgroup will succeed regardless css refs, but won't
-> be freed until css refs goes down to 0.
-> 
-> This is an early post, and it's NOT TESTED. I just want to see if the changes
-> are fine in general.
-> 
-> btw, after this patchset I think we don't need to free memcg via RCU, because
-> cgroup is already freed in RCU callback.
-> 
-> Note this patchset is based on a few memcg fixes I sent (but hasn't been
-> accepted)
-> 
-> --
->  kernel/cgroup.c |  10 ++++++++
->  mm/memcontrol.c | 129 ++++++++++++++++++++++++++++++++++++++-------------------------------------------------------
->  2 files changed, 62 insertions(+), 77 deletions(-)
-> 
-
+Thanks
+Rakib.
