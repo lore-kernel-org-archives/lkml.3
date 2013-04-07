@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934671Ab3DGXk5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:40:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46598 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934561Ab3DGX0z (ORCPT
+	id S934545Ab3DGXtb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:49:31 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:39556 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934500Ab3DGXt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:26:55 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Sun, 7 Apr 2013 19:49:29 -0400
+Message-ID: <51620604.4070204@gmail.com>
+Date: Mon, 08 Apr 2013 01:49:24 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Stephen Hemminger" <stephen@networkplumber.org>,
-        "Mirko Lindner" <mlindner@marvell.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.862077413@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [53/74] sky2: Threshold for Pause Packet is set wrong
-In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Dom Cobley <popcornmix@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rabeeh Khoury <rabeeh@solid-run.com>, Daniel Mack <zonque@gmail.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [v5] clk: add si5351 i2c common clock driver
+References: <1365139415-17815-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130407225046.GA16326@roeck-us.net>
+In-Reply-To: <20130407225046.GA16326@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.43-rc1 review patch.  If anyone has any objections, please let me know.
+On 04/08/2013 12:50 AM, Guenter Roeck wrote:
+> On Fri, Apr 05, 2013 at 05:23:35AM -0000, Sebastian Hesselbarth wrote:
+>> This patch adds a common clock driver for Silicon Labs Si5351a/b/c
+>> i2c programmable clock generators. Currently, the driver supports
+>> DT kernels only and VXCO feature of si5351b is not implemented. DT
+>> bindings selectively allow to overwrite stored Si5351 configuration
+>> which is very helpful for clock generators with empty eeprom
+>> configuration. Corresponding device tree binding documentation is
+>> also added.
+>>
+>> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
+>> Tested-by: Daniel Mack<zonque@gmail.com>
+>>
+> [ ... ]
+>
+>> +static inline void _si5351_msynth_set_pll_master(
+>> +	struct si5351_driver_data *drvdata, unsigned char num, int is_master)
+>> +{
+>> +	unsigned long flags;
+>> +
+>> +	if (num>  8 ||
+>> +	    (drvdata->variant == SI5351_VARIANT_A3&&  num>  3))
+>> +		return;
+>> +
+>> +	flags = __clk_get_flags(drvdata->msynth[num].hw.clk);
+>> +	if (is_master)
+>> +		flags |= CLK_SET_RATE_PARENT;
+>> +	else
+>> +		flags&= ~CLK_SET_RATE_PARENT;
+>> +	__clk_set_flags(drvdata->msynth[num].hw.clk, flags);
+>> +}
+>> +
+> Unless I am missing something, neither __clk_get_flags() nor the new
+> __clk_set_flags is exported.
+>
+> Did you try to build and load the driver as module ?
 
-------------------
+Well, good catch. I didn't try to build v5 as a module, but I guess it
+will fail. But I consider this as something that has to be addressed in
+clk framework itself, not in this patch. There will be other
+clk-providers built as module in the future for sure.
 
-From: Mirko Lindner <mlindner@marvell.com>
-
-[ Upstream commit 74f9f42c1c1650e74fb464f76644c9041f996851 ]
-
-The sky2 driver sets the Rx Upper Threshold for Pause Packet generation to a
-wrong value which leads to only 2kB of RAM remaining space. This can lead to
-Rx overflow errors even with activated flow-control.
-
-Fix: We should increase the value to 8192/8
-
-Signed-off-by: Mirko Lindner <mlindner@marvell.com>
-Acked-by: Stephen Hemminger <stephen@networkplumber.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/net/ethernet/marvell/sky2.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
-index 69fc888..94f9a8f 100644
---- a/drivers/net/ethernet/marvell/sky2.c
-+++ b/drivers/net/ethernet/marvell/sky2.c
-@@ -1066,7 +1066,7 @@ static void sky2_ramset(struct sky2_hw *hw, u16 q, u32 start, u32 space)
- 		sky2_write32(hw, RB_ADDR(q, RB_RX_UTHP), tp);
- 		sky2_write32(hw, RB_ADDR(q, RB_RX_LTHP), space/2);
- 
--		tp = space - 2048/8;
-+		tp = space - 8192/8;
- 		sky2_write32(hw, RB_ADDR(q, RB_RX_UTPP), tp);
- 		sky2_write32(hw, RB_ADDR(q, RB_RX_LTPP), space/4);
- 	} else {
-
+Sebastian
