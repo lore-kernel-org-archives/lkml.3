@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934620Ab3DGX2B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:28:01 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46637 "EHLO
+	id S934684Ab3DGX2O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:28:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46650 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757645Ab3DGX16 (ORCPT
+	by vger.kernel.org with ESMTP id S1757645Ab3DGX2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:27:58 -0400
+	Sun, 7 Apr 2013 19:28:10 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Pawel Wieczorkiewicz" <wpawel@gmail.com>,
-        "Nicolas Ferre" <nicolas.ferre@atmel.com>
+CC: akpm@linux-foundation.org, niktr@mail.ru,
+        "Josh Boyer" <jwboyer@redhat.com>,
+        "Gustavo Padovan" <gustavo.padovan@collabora.co.uk>
 Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.242317789@decadent.org.uk>
+Message-ID: <lsq.1365374742.888649961@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [12/74] tty: atmel_serial_probe(): index of atmel_ports[] fix
+Subject: [09/74] Bluetooth: Add support for atheros 04ca:3004 device to ath3k
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,58 +32,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pawel Wieczorkiewicz <wpawel@gmail.com>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit 503bded92da283b2f31d87e054c4c6d30c3c2340 upstream.
+commit 3f63c340a72f2872a9362245cb2e03f3d2bb73a6 upstream.
 
-Index of atmel_ports[ATMEL_MAX_UART] should be smaller
-than ATMEL_MAX_UART.
+Yet another version of the atheros bluetooth chipset
 
-Signed-off-by: Pawel Wieczorkiewicz <wpawel@gmail.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+T:  Bus=01 Lev=02 Prnt=02 Port=03 Cnt=01 Dev#=  3 Spd=12  MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=04ca ProdID=3004 Rev=00.01
+S:  Manufacturer=Atheros Communications
+S:  Product=Bluetooth USB Host Controller
+S:  SerialNumber=Alaska Day 2006
+C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+
+This resolves https://bugzilla.redhat.com/show_bug.cgi?id=844750
+
+Reported-by: niktr@mail.ru
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/serial/atmel_serial.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/bluetooth/ath3k.c |    2 ++
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 3 insertions(+)
 
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -159,7 +159,7 @@ struct atmel_uart_port {
- };
- 
- static struct atmel_uart_port atmel_ports[ATMEL_MAX_UART];
--static unsigned long atmel_ports_in_use;
-+static DECLARE_BITMAP(atmel_ports_in_use, ATMEL_MAX_UART);
- 
- #ifdef SUPPORT_SYSRQ
- static struct console atmel_console;
-@@ -1784,15 +1784,14 @@ static int __devinit atmel_serial_probe(
- 	if (ret < 0)
- 		/* port id not found in platform data nor device-tree aliases:
- 		 * auto-enumerate it */
--		ret = find_first_zero_bit(&atmel_ports_in_use,
--				sizeof(atmel_ports_in_use));
-+		ret = find_first_zero_bit(atmel_ports_in_use, ATMEL_MAX_UART);
- 
--	if (ret > ATMEL_MAX_UART) {
-+	if (ret >= ATMEL_MAX_UART) {
- 		ret = -ENODEV;
- 		goto err;
- 	}
- 
--	if (test_and_set_bit(ret, &atmel_ports_in_use)) {
-+	if (test_and_set_bit(ret, atmel_ports_in_use)) {
- 		/* port already in use */
- 		ret = -EBUSY;
- 		goto err;
-@@ -1866,7 +1865,7 @@ static int __devexit atmel_serial_remove
- 
- 	/* "port" is allocated statically, so we shouldn't free it */
- 
--	clear_bit(port->line, &atmel_ports_in_use);
-+	clear_bit(port->line, atmel_ports_in_use);
- 
- 	clk_put(atmel_port->clk);
- 
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -75,6 +75,7 @@ static struct usb_device_id ath3k_table[
+ 	{ USB_DEVICE(0x0CF3, 0x3004) },
+ 	{ USB_DEVICE(0x0CF3, 0x311D) },
+ 	{ USB_DEVICE(0x13d3, 0x3375) },
++	{ USB_DEVICE(0x04CA, 0x3004) },
+ 	{ USB_DEVICE(0x04CA, 0x3005) },
+ 	{ USB_DEVICE(0x04CA, 0x3006) },
+ 	{ USB_DEVICE(0x04CA, 0x3008) },
+@@ -107,6 +108,7 @@ static struct usb_device_id ath3k_blist_
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x04ca, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info = BTUSB_ATH3012 },
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -142,6 +142,7 @@ static struct usb_device_id blacklist_ta
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x04ca, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3008), .driver_info = BTUSB_ATH3012 },
 
