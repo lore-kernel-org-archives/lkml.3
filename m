@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933458Ab3DGTrX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 15:47:23 -0400
-Received: from pequod.mess.org ([46.65.169.142]:51451 "EHLO pequod.mess.org"
+	id S933828Ab3DGTrc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 15:47:32 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:59241 "EHLO mail.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933168Ab3DGTrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 15:47:22 -0400
-From: Sean Young <sean@mess.org>
+	id S933168Ab3DGTrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 15:47:31 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Josh Boyer <jwboyer@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vincent Deffontaines <vincent@gryzor.com>, tkil@scrye.com,
-        stable@vger.kernel.org
-Subject: [PATCH] Revert "tty/8250_pnp: serial port detection regression since v3.7"
-Date: Sun,  7 Apr 2013 20:47:18 +0100
-Message-Id: <1365364038-3959-1-git-send-email-sean@mess.org>
-X-Mailer: git-send-email 1.7.2.5
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] tty: mxser: fix cycle termination condition in mxser_probe() and mxser_module_init()
+Date: Sun,  7 Apr 2013 23:46:47 +0400
+Message-Id: <1365364007-6298-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <51545EB0.7020600@suse.cz>
+References: <51545EB0.7020600@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 77e372a3d82e5e4878ce1962207edd766773cc76.
+There is a bug in resources deallocation code in mxser_probe() and mxser_module_init().
+As soon as variable 'i' is unsigned int, cycle termination condition i >= 0 is always true.
+The patch fixes the issue.
 
-Checking for disabled resources board breaks detection pnp on another
-board "AMI UEFI implementation (Version: 0406 Release Date: 06/06/2012)".
-I'm working with the reporter of the original bug to write and test
-a better fix.
-
-https://bugzilla.redhat.com/show_bug.cgi?id=928246
-
-Signed-off-by: Sean Young <sean@mess.org>
-Cc: stable <stable@kernel.org>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
- drivers/tty/serial/8250/8250_pnp.c | 12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ drivers/tty/mxser.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/tty/serial/8250/8250_pnp.c b/drivers/tty/serial/8250/8250_pnp.c
-index b3455a9..35d9ab9 100644
---- a/drivers/tty/serial/8250/8250_pnp.c
-+++ b/drivers/tty/serial/8250/8250_pnp.c
-@@ -429,7 +429,6 @@ serial_pnp_probe(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
- {
- 	struct uart_8250_port uart;
- 	int ret, line, flags = dev_id->driver_data;
--	struct resource *res = NULL;
- 
- 	if (flags & UNKNOWN_DEV) {
- 		ret = serial_pnp_guess_board(dev);
-@@ -440,12 +439,11 @@ serial_pnp_probe(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
- 	memset(&uart, 0, sizeof(uart));
- 	if (pnp_irq_valid(dev, 0))
- 		uart.port.irq = pnp_irq(dev, 0);
--	if ((flags & CIR_PORT) && pnp_port_valid(dev, 2))
--		res = pnp_get_resource(dev, IORESOURCE_IO, 2);
--	else if (pnp_port_valid(dev, 0))
--		res = pnp_get_resource(dev, IORESOURCE_IO, 0);
--	if (pnp_resource_enabled(res)) {
--		uart.port.iobase = res->start;
-+	if ((flags & CIR_PORT) && pnp_port_valid(dev, 2)) {
-+		uart.port.iobase = pnp_port_start(dev, 2);
-+		uart.port.iotype = UPIO_PORT;
-+	} else if (pnp_port_valid(dev, 0)) {
-+		uart.port.iobase = pnp_port_start(dev, 0);
- 		uart.port.iotype = UPIO_PORT;
- 	} else if (pnp_mem_valid(dev, 0)) {
- 		uart.port.mapbase = pnp_mem_start(dev, 0);
+diff --git a/drivers/tty/mxser.c b/drivers/tty/mxser.c
+index 484b6a3..302909c 100644
+--- a/drivers/tty/mxser.c
++++ b/drivers/tty/mxser.c
+@@ -2643,9 +2643,9 @@ static int mxser_probe(struct pci_dev *pdev,
+ 				mxvar_sdriver, brd->idx + i, &pdev->dev);
+ 		if (IS_ERR(tty_dev)) {
+ 			retval = PTR_ERR(tty_dev);
+-			for (i--; i >= 0; i--)
++			for (; i > 0; i--)
+ 				tty_unregister_device(mxvar_sdriver,
+-					brd->idx + i);
++					brd->idx + i - 1);
+ 			goto err_relbrd;
+ 		}
+ 	}
+@@ -2751,9 +2751,9 @@ static int __init mxser_module_init(void)
+ 			tty_dev = tty_port_register_device(&brd->ports[i].port,
+ 					mxvar_sdriver, brd->idx + i, NULL);
+ 			if (IS_ERR(tty_dev)) {
+-				for (i--; i >= 0; i--)
++				for (; i > 0; i--)
+ 					tty_unregister_device(mxvar_sdriver,
+-						brd->idx + i);
++						brd->idx + i - 1);
+ 				for (i = 0; i < brd->info->nports; i++)
+ 					tty_port_destroy(&brd->ports[i].port);
+ 				free_irq(brd->irq, brd);
 -- 
-1.8.1.4
+1.7.9.5
 
