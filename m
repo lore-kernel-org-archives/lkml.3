@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934684Ab3DGXeG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:34:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46887 "EHLO
+	id S935067Ab3DGXd4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:33:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46876 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935075Ab3DGXd7 (ORCPT
+	by vger.kernel.org with ESMTP id S935041Ab3DGXdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:33:59 -0400
+	Sun, 7 Apr 2013 19:33:53 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Chris Vine" <chris@cvine.freeserve.co.uk>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Iestyn C. Elfick" <isedev@gmail.com>,
-        "Larry Finger" <Larry.Finger@lwfinger.net>
+CC: akpm@linux-foundation.org, "AceLan Kao" <acelan.kao@canonical.com>,
+        "Gustavo Padovan" <gustavo.padovan@collabora.co.uk>
 Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.146497790@decadent.org.uk>
+Message-ID: <lsq.1365374742.820939442@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [35/74] b43: A fix for DMA transmission sequence errors
+Subject: [07/74] Bluetooth: Add support for Foxconn / Hon Hai [0489:e056]
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,153 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Iestyn C. Elfick" <isedev@gmail.com>
+From: AceLan Kao <acelan.kao@canonical.com>
 
-commit b251412db99ccd4495ce372fec7daee27bf06923 upstream.
+commit 2582d529c44d12502a700f1c3db062b9f44679bc upstream.
 
-Intermittently, b43 will report "Out of order TX status report on DMA ring".
-When this happens, the driver must be reset before communication can resume.
-The cause of the problem is believed to be an error in the closed-source
-firmware; however, all versions of the firmware are affected.
+Add support for the AR9462 chip
 
-This change uses the observation that the expected status is always 2 less
-than the observed value, and supplies a fake status report to skip one
-header/data pair.
+T: Bus=01 Lev=02 Prnt=02 Port=05 Cnt=01 Dev#= 4 Spd=12 MxCh= 0
+D: Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
+P: Vendor=0489 ProdID=e056 Rev=00.01
+C: #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I: If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+I: If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
 
-Not all devices suffer from this problem, but it can occur several times
-per second under heavy load. As each occurence kills the unmodified driver,
-this patch makes if possible for the affected devices to function. The patch
-logs only the first instance of the reset operation to prevent spamming
-the logs.
-
-Tested-by: Chris Vine <chris@cvine.freeserve.co.uk>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/b43/dma.c |   65 ++++++++++++++++++++++++++++++++--------
- 1 file changed, 53 insertions(+), 12 deletions(-)
+ drivers/bluetooth/ath3k.c |    2 ++
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 3 insertions(+)
 
---- a/drivers/net/wireless/b43/dma.c
-+++ b/drivers/net/wireless/b43/dma.c
-@@ -1482,8 +1482,12 @@ void b43_dma_handle_txstatus(struct b43_
- 	const struct b43_dma_ops *ops;
- 	struct b43_dmaring *ring;
- 	struct b43_dmadesc_meta *meta;
-+	static const struct b43_txstatus fake; /* filled with 0 */
-+	const struct b43_txstatus *txstat;
- 	int slot, firstused;
- 	bool frame_succeed;
-+	int skip;
-+	static u8 err_out1, err_out2;
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -83,6 +83,7 @@ static struct usb_device_id ath3k_table[
+ 	{ USB_DEVICE(0x0489, 0xe057) },
+ 	{ USB_DEVICE(0x13d3, 0x3393) },
+ 	{ USB_DEVICE(0x0489, 0xe04e) },
++	{ USB_DEVICE(0x0489, 0xe056) },
  
- 	ring = parse_cookie(dev, status->cookie, &slot);
- 	if (unlikely(!ring))
-@@ -1496,13 +1500,36 @@ void b43_dma_handle_txstatus(struct b43_
- 	firstused = ring->current_slot - ring->used_slots + 1;
- 	if (firstused < 0)
- 		firstused = ring->nr_slots + firstused;
-+
-+	skip = 0;
- 	if (unlikely(slot != firstused)) {
- 		/* This possibly is a firmware bug and will result in
--		 * malfunction, memory leaks and/or stall of DMA functionality. */
--		b43dbg(dev->wl, "Out of order TX status report on DMA ring %d. "
--		       "Expected %d, but got %d\n",
--		       ring->index, firstused, slot);
--		return;
-+		 * malfunction, memory leaks and/or stall of DMA functionality.
-+		 */
-+		if (slot == next_slot(ring, next_slot(ring, firstused))) {
-+			/* If a single header/data pair was missed, skip over
-+			 * the first two slots in an attempt to recover.
-+			 */
-+			slot = firstused;
-+			skip = 2;
-+			if (!err_out1) {
-+				/* Report the error once. */
-+				b43dbg(dev->wl,
-+				       "Skip on DMA ring %d slot %d.\n",
-+				       ring->index, slot);
-+				err_out1 = 1;
-+			}
-+		} else {
-+			/* More than a single header/data pair were missed.
-+			 * Report this error once.
-+			 */
-+			if (!err_out2)
-+				b43dbg(dev->wl,
-+				       "Out of order TX status report on DMA ring %d. Expected %d, but got %d\n",
-+				       ring->index, firstused, slot);
-+			err_out2 = 1;
-+			return;
-+		}
- 	}
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE02C) },
+@@ -113,6 +114,7 @@ static struct usb_device_id ath3k_blist_
+ 	{ USB_DEVICE(0x0489, 0xe057), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0489, 0xe04e), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
  
- 	ops = ring->ops;
-@@ -1517,11 +1544,13 @@ void b43_dma_handle_txstatus(struct b43_
- 			       slot, firstused, ring->index);
- 			break;
- 		}
-+
- 		if (meta->skb) {
- 			struct b43_private_tx_info *priv_info =
--				b43_get_priv_tx_info(IEEE80211_SKB_CB(meta->skb));
-+			     b43_get_priv_tx_info(IEEE80211_SKB_CB(meta->skb));
+ 	/* Atheros AR5BBU22 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -150,6 +150,7 @@ static struct usb_device_id blacklist_ta
+ 	{ USB_DEVICE(0x0489, 0xe057), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0489, 0xe04e), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
  
--			unmap_descbuffer(ring, meta->dmaaddr, meta->skb->len, 1);
-+			unmap_descbuffer(ring, meta->dmaaddr,
-+					 meta->skb->len, 1);
- 			kfree(priv_info->bouncebuffer);
- 			priv_info->bouncebuffer = NULL;
- 		} else {
-@@ -1533,8 +1562,9 @@ void b43_dma_handle_txstatus(struct b43_
- 			struct ieee80211_tx_info *info;
- 
- 			if (unlikely(!meta->skb)) {
--				/* This is a scatter-gather fragment of a frame, so
--				 * the skb pointer must not be NULL. */
-+				/* This is a scatter-gather fragment of a frame,
-+				 * so the skb pointer must not be NULL.
-+				 */
- 				b43dbg(dev->wl, "TX status unexpected NULL skb "
- 				       "at slot %d (first=%d) on ring %d\n",
- 				       slot, firstused, ring->index);
-@@ -1545,9 +1575,18 @@ void b43_dma_handle_txstatus(struct b43_
- 
- 			/*
- 			 * Call back to inform the ieee80211 subsystem about
--			 * the status of the transmission.
-+			 * the status of the transmission. When skipping over
-+			 * a missed TX status report, use a status structure
-+			 * filled with zeros to indicate that the frame was not
-+			 * sent (frame_count 0) and not acknowledged
- 			 */
--			frame_succeed = b43_fill_txstatus_report(dev, info, status);
-+			if (unlikely(skip))
-+				txstat = &fake;
-+			else
-+				txstat = status;
-+
-+			frame_succeed = b43_fill_txstatus_report(dev, info,
-+								 txstat);
- #ifdef CONFIG_B43_DEBUG
- 			if (frame_succeed)
- 				ring->nr_succeed_tx_packets++;
-@@ -1575,12 +1614,14 @@ void b43_dma_handle_txstatus(struct b43_
- 		/* Everything unmapped and free'd. So it's not used anymore. */
- 		ring->used_slots--;
- 
--		if (meta->is_last_fragment) {
-+		if (meta->is_last_fragment && !skip) {
- 			/* This is the last scatter-gather
- 			 * fragment of the frame. We are done. */
- 			break;
- 		}
- 		slot = next_slot(ring, slot);
-+		if (skip > 0)
-+			--skip;
- 	}
- 	if (ring->stopped) {
- 		B43_WARN_ON(free_slots(ring) < TX_SLOTS_PER_FRAME);
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
 
