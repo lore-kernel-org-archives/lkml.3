@@ -1,176 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933908Ab3DGPMg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 11:12:36 -0400
-Received: from mail-da0-f42.google.com ([209.85.210.42]:54564 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933860Ab3DGPMf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 11:12:35 -0400
-Message-ID: <1365347548.9931.1.camel@phoenix>
-Subject: [PATCH 1/4] regulator: ab8500: Get rid of is_enabled from struct
- ab8500_regulator_info
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Sun, 07 Apr 2013 23:12:28 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933913Ab3DGPNU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 11:13:20 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:47329 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933860Ab3DGPNT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 11:13:19 -0400
+Date: Sun, 7 Apr 2013 11:13:16 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [RFC PATCH] wfcqueue: implement __wfcq_enqueue_head() (v3)
+Message-ID: <20130407151316.GB10154@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The intention of this patch is to simplify the code.
+Implement enqueue-to-head. It can run concurrently with enqueue, splice
+to queue, and iteration, but requires a mutex against dequeue and splice
+from queue operations.
 
-Maintain the is_enabled flag is not trivial, it not only needs to set/clear the
-flag in disable()/enable() but also needs to set the flag in is_enable() to get
-initial status. The only benefit of keeping is_enabled flag is just save a
-register read when set_mode(). Remove is_enabled flag makes the code simpler.
+Useful for special-cases where a queue needs to have nodes enqueued into
+its head.
 
-This patch also moves ab8500_regulator_is_enabled() close to
-ab8500_regulator_[en|dis]able functions.
-This is required to avoid a forward declaration because now we call
-ab8500_regulator_is_enabled() in ab8500_regulator_set_mode().
-This change also makes the code better in readability by moving similar
-functions to one place.
+This patch is only compile-tested.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Changes since v1:
+* Don't require mutual exclusion between traversals and
+  __wfcq_enqueue_head().
+
+Changes since v2:
+* Only issue cmpxchg() if queue was empty.
+* Add missing memory barrier.
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 ---
- drivers/regulator/ab8500.c |   72 ++++++++++++++++++++------------------------
- 1 file changed, 32 insertions(+), 40 deletions(-)
+ include/linux/wfcqueue.h |   76 ++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 69 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 517305e..9ebd131 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -46,7 +46,6 @@ struct ab8500_shared_mode {
-  * @desc: regulator description
-  * @regulator_dev: regulator device
-  * @shared_mode: used when mode is shared between two regulators
-- * @is_enabled: status of regulator (on/off)
-  * @load_lp_uA: maximum load in idle (low power) mode
-  * @update_bank: bank to control on/off
-  * @update_reg: register to control on/off
-@@ -69,7 +68,6 @@ struct ab8500_regulator_info {
- 	struct regulator_desc	desc;
- 	struct regulator_dev	*regulator;
- 	struct ab8500_shared_mode *shared_mode;
--	bool is_enabled;
- 	int load_lp_uA;
- 	u8 update_bank;
- 	u8 update_reg;
-@@ -259,8 +257,6 @@ static int ab8500_regulator_enable(struct regulator_dev *rdev)
- 		return ret;
- 	}
- 
--	info->is_enabled = true;
--
- 	dev_vdbg(rdev_get_dev(rdev),
- 		"%s-enable (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
- 		info->desc.name, info->update_bank, info->update_reg,
-@@ -288,8 +284,6 @@ static int ab8500_regulator_disable(struct regulator_dev *rdev)
- 		return ret;
- 	}
- 
--	info->is_enabled = false;
--
- 	dev_vdbg(rdev_get_dev(rdev),
- 		"%s-disable (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
- 		info->desc.name, info->update_bank, info->update_reg,
-@@ -298,6 +292,37 @@ static int ab8500_regulator_disable(struct regulator_dev *rdev)
- 	return ret;
+Index: linux/include/linux/wfcqueue.h
+===================================================================
+--- linux.orig/include/linux/wfcqueue.h
++++ linux/include/linux/wfcqueue.h
+@@ -55,14 +55,16 @@
+  * [4] __wfcq_splice (source queue)
+  * [5] __wfcq_first
+  * [6] __wfcq_next
++ * [7] __wfcq_enqueue_head
+  *
+- *     [1] [2] [3] [4] [5] [6]
+- * [1]  -   -   -   -   -   -
+- * [2]  -   -   -   -   -   -
+- * [3]  -   -   X   X   X   X
+- * [4]  -   -   X   -   X   X
+- * [5]  -   -   X   X   -   -
+- * [6]  -   -   X   X   -   -
++ *     [1] [2] [3] [4] [5] [6] [7]
++ * [1]  -   -   -   -   -   -   -
++ * [2]  -   -   -   -   -   -   X
++ * [3]  -   -   X   X   X   X   X
++ * [4]  -   -   X   -   X   X   X
++ * [5]  -   -   X   X   -   -   -
++ * [6]  -   -   X   X   -   -   -
++ * [7]  -   X   X   X   -   -   X
+  *
+  * Besides locking, mutual exclusion of dequeue, splice and iteration
+  * can be ensured by performing all of those operations from a single
+@@ -230,6 +232,66 @@ ___wfcq_node_sync_next(struct wfcq_node
  }
  
-+static int ab8500_regulator_is_enabled(struct regulator_dev *rdev)
+ /*
++ * __wfcq_enqueue_head: prepend a node into a queue.
++ *
++ * Issues a write memory barrier before enqueue to head. Mutual
++ * exclusion is the responsibility of the caller.
++ *
++ * Returns false if the queue was empty prior to adding the node.
++ * Returns true otherwise.
++ */
++static inline bool __wfcq_enqueue_head(struct wfcq_head *head,
++		struct wfcq_tail *tail,
++		struct wfcq_node *node)
 +{
-+	int ret;
-+	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
-+	u8 regval;
++	bool not_empty = 0;
 +
-+	if (info == NULL) {
-+		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
-+		return -EINVAL;
++        /*
++	 * Move tail if queue was empty. Tail pointer is the
++	 * linearisation point of enqueuers.
++	 */
++	if (CMM_LOAD_SHARED(tail->p) != &head->node
++			|| cmpxchg(&tail->p, &head->node, node)
++				!= &head->node) {
++		not_empty = 1;
++
++		/*
++		 * Queue was non-empty. We need to wait for
++		 * head->node.next to become non-NULL, because a
++		 * concurrent wfcq_append may be updating it.
++		 */
++		CMM_STORE_SHARED(node->next,
++			___wfcq_node_sync_next(&head->node));
 +	}
 +
-+	ret = abx500_get_register_interruptible(info->dev,
-+		info->update_bank, info->update_reg, &regval);
-+	if (ret < 0) {
-+		dev_err(rdev_get_dev(rdev),
-+			"couldn't read 0x%x register\n", info->update_reg);
-+		return ret;
-+	}
++	/*
++	 * If cmpxchg succeeds (queue was empty), tail now points to
++	 * node, but head->node.next is still NULL. Concurrent
++	 * traversals seeing this state will busy-wait until we set
++	 * head->node.next.
++	 *
++	 * Else, queue was observed as not empty: traversals will only
++	 * see node after we set head->node.next.
++	 */
 +
-+	dev_vdbg(rdev_get_dev(rdev),
-+		"%s-is_enabled (bank, reg, mask, value): 0x%x, 0x%x, 0x%x,"
-+		" 0x%x\n",
-+		info->desc.name, info->update_bank, info->update_reg,
-+		info->update_mask, regval);
++	/*
++	 * Orders earlier stores to data structure containing node and
++	 * setting node->next to NULL (or to previous head->node.next
++	 * value) before publication.
++	 */
++	smp_wmb();
 +
-+	if (regval & info->update_mask)
-+		return 1;
-+	else
-+		return 0;
++	/*
++	 * From this point, we know that wfcq_append cannot touch
++	 * head->node.next, either because we successfully moved tail->p
++	 * to node, or because we waited for head->node.next to become
++	 * non-NULL. It is therefore safe to update it.
++	 */
++	CMM_STORE_SHARED(head->node.next, node);
++	return not_empty;
 +}
 +
- static unsigned int ab8500_regulator_get_optimum_mode(
- 		struct regulator_dev *rdev, int input_uV,
- 		int output_uV, int load_uA)
-@@ -398,7 +423,7 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
- 		mask = info->update_mask;
- 	}
- 
--	if (info->is_enabled || dmr) {
-+	if (dmr || ab8500_regulator_is_enabled(rdev)) {
- 		ret = abx500_mask_and_set_register_interruptible(info->dev,
- 			bank, reg, mask, val);
- 		if (ret < 0)
-@@ -464,39 +489,6 @@ static unsigned int ab8500_regulator_get_mode(struct regulator_dev *rdev)
- 	return ret;
- }
- 
--static int ab8500_regulator_is_enabled(struct regulator_dev *rdev)
--{
--	int ret;
--	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
--	u8 regval;
--
--	if (info == NULL) {
--		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
--		return -EINVAL;
--	}
--
--	ret = abx500_get_register_interruptible(info->dev,
--		info->update_bank, info->update_reg, &regval);
--	if (ret < 0) {
--		dev_err(rdev_get_dev(rdev),
--			"couldn't read 0x%x register\n", info->update_reg);
--		return ret;
--	}
--
--	dev_vdbg(rdev_get_dev(rdev),
--		"%s-is_enabled (bank, reg, mask, value): 0x%x, 0x%x, 0x%x,"
--		" 0x%x\n",
--		info->desc.name, info->update_bank, info->update_reg,
--		info->update_mask, regval);
--
--	if (regval & info->update_mask)
--		info->is_enabled = true;
--	else
--		info->is_enabled = false;
--
--	return info->is_enabled;
--}
--
- static int ab8500_regulator_get_voltage_sel(struct regulator_dev *rdev)
- {
- 	int ret, val;
++/*
+  * __wfcq_first: get first node of a queue, without dequeuing.
+  *
+  * Content written into the node before enqueue is guaranteed to be
+
 -- 
-1.7.10.4
-
-
-
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
