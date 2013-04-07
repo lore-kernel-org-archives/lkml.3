@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934366Ab3DGVG6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 17:06:58 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:58464 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934308Ab3DGVG5 (ORCPT
+	id S1762464Ab3DGVLw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 17:11:52 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:38060 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762164Ab3DGVLu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 17:06:57 -0400
-Date: Sun, 07 Apr 2013 17:06:54 -0400 (EDT)
-Message-Id: <20130407.170654.613017631446034661.davem@davemloft.net>
-To: alan@signal11.us
-Cc: alex.bluesman.smirnov@gmail.com, dbaryshkov@gmail.com,
-        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/4] 802.15.4 and 6LoWPAN Buffering Fixes
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1364997658-16498-1-git-send-email-alan@signal11.us>
-References: <1364928481-1813-1-git-send-email-alan@signal11.us>
-	<1364997658-16498-1-git-send-email-alan@signal11.us>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sun, 07 Apr 2013 14:06:56 -0700 (PDT)
+	Sun, 7 Apr 2013 17:11:50 -0400
+Date: Sun, 7 Apr 2013 14:11:47 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [patch -next] usb, gadget: use appropriate warning accessors
+In-Reply-To: <515DCB78.3010207@infradead.org>
+Message-ID: <alpine.DEB.2.02.1304071407520.3441@chino.kir.corp.google.com>
+References: <20130404182232.bd2dbfba27620bdab9e0de42@canb.auug.org.au> <515DCB78.3010207@infradead.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Ott <alan@signal11.us>
-Date: Wed,  3 Apr 2013 10:00:54 -0400
+Use the appropriate WARN() and WARN_ON() accessors to avoid a build error 
+when CONFIG_BUG=n:
 
-> Version 2 of this patch series:
-> 
-> Differences from v1:
-> 
-> 1. Patches previously numbered 5 and 6 were squashed (to become current
-> patch #4) at the request of Alexander Smirnov.
-> 
-> 2. Current patch #2 had extraneous braces removed.
-> 
-> 3. Current patch #1 was changed. It is now a patch to make mac802154 _not_
-> retry sending packets on failure. I believe this to be consistent with the
-> 802.15.4 specification (Section 7.5.6.4.3 of IEEE 802.15.4-2006)
+	drivers/usb/gadget/configfs.c: In function 'config_usb_cfg_unlink':
+	drivers/usb/gadget/configfs.c:442:2: error: implicit declaration of function '__WARN_printf'
+	drivers/usb/gadget/configfs.c: In function 'configfs_do_nothing':
+	drivers/usb/gadget/configfs.c:733:2: error: implicit declaration of function '__WARN'
 
-Series applied, thanks.
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ drivers/usb/gadget/configfs.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/gadget/configfs.c b/drivers/usb/gadget/configfs.c
+--- a/drivers/usb/gadget/configfs.c
++++ b/drivers/usb/gadget/configfs.c
+@@ -439,7 +439,7 @@ static int config_usb_cfg_unlink(
+ 		}
+ 	}
+ 	mutex_unlock(&gi->lock);
+-	__WARN_printf("Unable to locate function to unbind\n");
++	WARN(1, "Unable to locate function to unbind\n");
+ 	return 0;
+ }
+ 
+@@ -730,7 +730,7 @@ USB_CONFIG_STRINGS_LANG(gadget_strings, gadget_info);
+ 
+ static int configfs_do_nothing(struct usb_composite_dev *cdev)
+ {
+-	__WARN();
++	WARN_ON(1);
+ 	return -EINVAL;
+ }
+ 
