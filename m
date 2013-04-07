@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933214Ab3DGKOA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 06:14:00 -0400
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:57429 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933144Ab3DGKN6 (ORCPT
+	id S933187Ab3DGKSD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 06:18:03 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:60160 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933115Ab3DGKSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 06:13:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <1365326292-2761-1-git-send-email-k80ck80c@gmail.com>
-References: <1365326292-2761-1-git-send-email-k80ck80c@gmail.com>
-Date: Sun, 7 Apr 2013 03:13:57 -0700
-Message-ID: <CANN689GH8eYz+ELX-EyD5pJOUUu_+F0Oxje50P_qpsz2CcTZPQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] mmap.c: find_vma: eliminate initial if(mm) check
-From: Michel Lespinasse <walken@google.com>
-To: k80c <k80ck80c@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 7 Apr 2013 06:18:01 -0400
+Message-ID: <1365329658.27045.6.camel@beeld>
+Subject: [PATCH] auditsc: Use kzalloc instead of kmalloc+memset.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Sun, 07 Apr 2013 16:14:18 +0600
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 7, 2013 at 2:18 AM, k80c <k80ck80c@gmail.com> wrote:
-> As per commit 841e31e5cc6219d62054788faa289b6ed682d068,
-> we dont really need this if(mm) check anymore.
->
-> A WARN_ON_ONCE was added just for safety, but there have been no bug
-> reports about this so far.
->
-> Removing this if(mm) check.
->
-> Signed-off-by: k80c <k80ck80c@gmail.com>
-> ---
->  mm/mmap.c |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
->
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index 0db0de1..b2c363f 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -1935,9 +1935,6 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
->  {
->         struct vm_area_struct *vma = NULL;
->
-> -       if (WARN_ON_ONCE(!mm))          /* Remove this in linux-3.6 */
-> -               return NULL;
-> -
->         /* Check the cache first. */
->         /* (Cache hit rate is typically around 35%.) */
->         vma = ACCESS_ONCE(mm->mmap_cache);
+  In function audit_alloc_context(), use kzalloc, instead of kmalloc+memset. Patch also renames audit_zero_context() to 
+audit_set_context(), to represent it's inner workings properly.
 
-Looks good to me.
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+---
 
-Reviewed-by: Michel Lespinasse <walken@google.com>
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index a371f85..f5b6dc5 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -1034,10 +1034,9 @@ static inline void audit_free_aux(struct audit_context *context)
+ 	}
+ }
+ 
+-static inline void audit_zero_context(struct audit_context *context,
++static inline void audit_set_context(struct audit_context *context,
+ 				      enum audit_state state)
+ {
+-	memset(context, 0, sizeof(*context));
+ 	context->state      = state;
+ 	context->prio = state == AUDIT_RECORD_CONTEXT ? ~0ULL : 0;
+ }
+@@ -1046,9 +1045,10 @@ static inline struct audit_context *audit_alloc_context(enum audit_state state)
+ {
+ 	struct audit_context *context;
+ 
+-	if (!(context = kmalloc(sizeof(*context), GFP_KERNEL)))
++	context = kzalloc(sizeof(*context), GFP_KERNEL);
++	if (!context)
+ 		return NULL;
+-	audit_zero_context(context, state);
++	audit_set_context(context, state);
+ 	INIT_LIST_HEAD(&context->killed_trees);
+ 	INIT_LIST_HEAD(&context->names_list);
+ 	return context;
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+
