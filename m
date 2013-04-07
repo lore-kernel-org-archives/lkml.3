@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934644Ab3DGX1N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:27:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46617 "EHLO
+	id S934624Ab3DGX1D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:27:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46604 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934537Ab3DGX1J (ORCPT
+	by vger.kernel.org with ESMTP id S1759308Ab3DGX07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:27:09 -0400
+	Sun, 7 Apr 2013 19:26:59 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Josh Boyer" <jwboyer@redhat.com>,
-        "Jiri Kosina" <jkosina@suse.cz>
-Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.418858042@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Masatake YAMATO" <yamato@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Sun, 07 Apr 2013 23:45:43 +0100
+Message-ID: <lsq.1365374743.693726952@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [13/74] HID: usbhid: quirk for Realtek Multi-card reader
+Subject: [57/74] thermal: shorten too long mcast group name
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,44 +31,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Masatake YAMATO <yamato@redhat.com>
 
-commit 3d464d9b71ef2f2b40a4bc9dcf06794fd1be9d12 upstream.
+[ Upstream commits 73214f5d9f33b79918b1f7babddd5c8af28dd23d
+  and f1e79e208076ffe7bad97158275f1c572c04f5c7, the latter
+  adds an assertion to genetlink to prevent this from happening
+  again in the future. ]
 
-This device needs to be added to the quirks list with HID_QUIRK_NO_INIT_REPORTS,
-otherwise it causes 10 seconds timeout during report initialization.
+The original name is too long.
 
-This fixes Red Hat bugzilla https://bugzilla.redhat.com/show_bug.cgi?id=806587
-
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Masatake YAMATO <yamato@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hid/hid-ids.h           |    3 +++
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 2 files changed, 4 insertions(+)
+ include/linux/thermal.h | 2 +-
+ net/netlink/genetlink.c | 1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -621,6 +621,9 @@
- #define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH	0x3000
- #define USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN	0x3001
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+index 47b4a27..5ef859a 100644
+--- a/include/linux/thermal.h
++++ b/include/linux/thermal.h
+@@ -108,7 +108,7 @@ struct thermal_zone_device {
+ /* Adding event notification support elements */
+ #define THERMAL_GENL_FAMILY_NAME                "thermal_event"
+ #define THERMAL_GENL_VERSION                    0x01
+-#define THERMAL_GENL_MCAST_GROUP_NAME           "thermal_mc_group"
++#define THERMAL_GENL_MCAST_GROUP_NAME           "thermal_mc_grp"
  
-+#define USB_VENDOR_ID_REALTEK		0x0bda
-+#define USB_DEVICE_ID_REALTEK_READER	0x0152
-+
- #define USB_VENDOR_ID_ROCCAT		0x1e7d
- #define USB_DEVICE_ID_ROCCAT_ARVO	0x30d4
- #define USB_DEVICE_ID_ROCCAT_KONE	0x2ced
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -76,6 +76,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN2, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PRODIGE, USB_DEVICE_ID_PRODIGE_CORDLESS, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_REALTEK, USB_DEVICE_ID_REALTEK_READER, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SUN, USB_DEVICE_ID_RARITAN_KVM_DONGLE, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_1, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_2, HID_QUIRK_NOGET },
+ enum events {
+ 	THERMAL_AUX0,
+diff --git a/net/netlink/genetlink.c b/net/netlink/genetlink.c
+index 482fa57..874f8ff 100644
+--- a/net/netlink/genetlink.c
++++ b/net/netlink/genetlink.c
+@@ -134,6 +134,7 @@ int genl_register_mc_group(struct genl_family *family,
+ 	int err = 0;
+ 
+ 	BUG_ON(grp->name[0] == '\0');
++	BUG_ON(memchr(grp->name, '\0', GENL_NAMSIZ) == NULL);
+ 
+ 	genl_lock();
+ 
 
