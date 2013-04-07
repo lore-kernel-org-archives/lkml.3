@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934397Ab3DGVWJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 17:22:09 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:60036 "EHLO mail.ispras.ru"
+	id S934419Ab3DGVWR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 17:22:17 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:60044 "EHLO mail.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762040Ab3DGVWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 17:22:08 -0400
+	id S934402Ab3DGVWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 17:22:15 -0400
 From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 To: Vyacheslav Dubeyko <slava@dubeyko.com>,
         Hin-Tak Leung <htl10@users.sourceforge.net>
@@ -14,95 +14,42 @@ Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
         Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
         Christoph Hellwig <hch@lst.de>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH 1/2] hfsplus: add error propagation to  __hfsplus_ext_write_extent()
-Date: Mon,  8 Apr 2013 01:21:34 +0400
-Message-Id: <1365369695-8340-1-git-send-email-khoroshilov@ispras.ru>
+Subject: [PATCH 2/2] hfsplus: add printk to log allocation failure in hfs_find_init()
+Date: Mon,  8 Apr 2013 01:21:35 +0400
+Message-Id: <1365369695-8340-2-git-send-email-khoroshilov@ispras.ru>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <0199BA74-9971-4928-A133-DB1FC562DC43@dubeyko.com>
+In-Reply-To: <1365369695-8340-1-git-send-email-khoroshilov@ispras.ru>
 References: <0199BA74-9971-4928-A133-DB1FC562DC43@dubeyko.com>
+ <1365369695-8340-1-git-send-email-khoroshilov@ispras.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__hfsplus_ext_write_extent() suppresses errors coming from hfs_brec_find().
-The patch implements error code propagation.
+Add printk to log allocation failure in hfs_find_init(),
+"so that there is a sign in dmesg when the error condition is triggered".
+(per Hin-Tak Leung request)
 
 Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
- fs/hfsplus/extents.c |   21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
+ fs/hfsplus/bfind.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/hfsplus/extents.c b/fs/hfsplus/extents.c
-index a94f0f7..fed73f7 100644
---- a/fs/hfsplus/extents.c
-+++ b/fs/hfsplus/extents.c
-@@ -83,7 +83,7 @@ static u32 hfsplus_ext_lastblock(struct hfsplus_extent *ext)
- 	return be32_to_cpu(ext->start_block) + be32_to_cpu(ext->block_count);
- }
- 
--static void __hfsplus_ext_write_extent(struct inode *inode,
-+static int __hfsplus_ext_write_extent(struct inode *inode,
- 		struct hfs_find_data *fd)
- {
- 	struct hfsplus_inode_info *hip = HFSPLUS_I(inode);
-@@ -98,13 +98,13 @@ static void __hfsplus_ext_write_extent(struct inode *inode,
- 	res = hfs_brec_find(fd, hfs_find_rec_by_key);
- 	if (hip->extent_state & HFSPLUS_EXT_NEW) {
- 		if (res != -ENOENT)
--			return;
-+			return res;
- 		hfs_brec_insert(fd, hip->cached_extents,
- 				sizeof(hfsplus_extent_rec));
- 		hip->extent_state &= ~(HFSPLUS_EXT_DIRTY | HFSPLUS_EXT_NEW);
- 	} else {
- 		if (res)
--			return;
-+			return res;
- 		hfs_bnode_write(fd->bnode, hip->cached_extents,
- 				fd->entryoffset, fd->entrylength);
- 		hip->extent_state &= ~HFSPLUS_EXT_DIRTY;
-@@ -117,11 +117,13 @@ static void __hfsplus_ext_write_extent(struct inode *inode,
- 	 * to explicily mark the inode dirty, too.
- 	 */
- 	set_bit(HFSPLUS_I_EXT_DIRTY, &hip->flags);
-+
-+	return 0;
- }
- 
- static int hfsplus_ext_write_extent_locked(struct inode *inode)
- {
--	int res;
-+	int res = 0;
- 
- 	if (HFSPLUS_I(inode)->extent_state & HFSPLUS_EXT_DIRTY) {
- 		struct hfs_find_data fd;
-@@ -129,10 +131,10 @@ static int hfsplus_ext_write_extent_locked(struct inode *inode)
- 		res = hfs_find_init(HFSPLUS_SB(inode->i_sb)->ext_tree, &fd);
- 		if (res)
- 			return res;
--		__hfsplus_ext_write_extent(inode, &fd);
-+		res = __hfsplus_ext_write_extent(inode, &fd);
- 		hfs_find_exit(&fd);
- 	}
--	return 0;
-+	return res;
- }
- 
- int hfsplus_ext_write_extent(struct inode *inode)
-@@ -175,8 +177,11 @@ static inline int __hfsplus_ext_cache_extent(struct hfs_find_data *fd,
- 
- 	WARN_ON(!mutex_is_locked(&hip->extents_lock));
- 
--	if (hip->extent_state & HFSPLUS_EXT_DIRTY)
--		__hfsplus_ext_write_extent(inode, fd);
-+	if (hip->extent_state & HFSPLUS_EXT_DIRTY) {
-+		res = __hfsplus_ext_write_extent(inode, fd);
-+		if (res)
-+			return res;
+diff --git a/fs/hfsplus/bfind.c b/fs/hfsplus/bfind.c
+index d73c98d..067ddb5 100644
+--- a/fs/hfsplus/bfind.c
++++ b/fs/hfsplus/bfind.c
+@@ -18,8 +18,10 @@ int hfs_find_init(struct hfs_btree *tree, struct hfs_find_data *fd)
+ 	fd->tree = tree;
+ 	fd->bnode = NULL;
+ 	ptr = kmalloc(tree->max_key_len * 2 + 4, GFP_KERNEL);
+-	if (!ptr)
++	if (!ptr) {
++		printk(KERN_ERR "hfs: allocation failed in hfs_find_init()\n");
+ 		return -ENOMEM;
 +	}
- 
- 	res = __hfsplus_ext_read_extent(fd, hip->cached_extents, inode->i_ino,
- 					block, HFSPLUS_IS_RSRC(inode) ?
+ 	fd->search_key = ptr;
+ 	fd->key = ptr + tree->max_key_len + 2;
+ 	dprint(DBG_BNODE_REFS, "find_init: %d (%p)\n",
 -- 
 1.7.9.5
 
