@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934634Ab3DGX1H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:27:07 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46608 "EHLO
+	id S934644Ab3DGX1N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:27:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46617 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934537Ab3DGX1D (ORCPT
+	by vger.kernel.org with ESMTP id S934537Ab3DGX1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:27:03 -0400
+	Sun, 7 Apr 2013 19:27:09 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Huang, Xiong" <xiong@qca.qualcomm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "=?UTF-8?Q?Christian=20S=C3=BCnkenb?=erg" 
-	<christian.suenkenberg@student.kit.edu>,
-        "rebelyouth" <rebelyouth.hacklab@gmail.com>,
-        "Hannes Frederic Sowa" <hannes@stressinduktion.org>
-Date: Sun, 07 Apr 2013 23:45:43 +0100
-Message-ID: <lsq.1365374743.9901736@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Josh Boyer" <jwboyer@redhat.com>,
+        "Jiri Kosina" <jkosina@suse.cz>
+Date: Sun, 07 Apr 2013 23:45:42 +0100
+Message-ID: <lsq.1365374742.418858042@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [64/74] atl1e: drop pci-msi support because of packet  corruption
+Subject: [13/74] HID: usbhid: quirk for Realtek Multi-card reader
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,77 +31,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Josh Boyer <jwboyer@redhat.com>
 
-[ Upstream commit 188ab1b105c96656f6bcfb49d0d8bb1b1936b632 ]
+commit 3d464d9b71ef2f2b40a4bc9dcf06794fd1be9d12 upstream.
 
-Usage of pci-msi results in corrupted dma packet transfers to the host.
+This device needs to be added to the quirks list with HID_QUIRK_NO_INIT_REPORTS,
+otherwise it causes 10 seconds timeout during report initialization.
 
-Reported-by: rebelyouth <rebelyouth.hacklab@gmail.com>
-Cc: Huang, Xiong <xiong@qca.qualcomm.com>
-Tested-by: Christian Sünkenberg <christian.suenkenberg@student.kit.edu>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This fixes Red Hat bugzilla https://bugzilla.redhat.com/show_bug.cgi?id=806587
+
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/atheros/atl1e/atl1e.h      |  1 -
- drivers/net/ethernet/atheros/atl1e/atl1e_main.c | 22 ++--------------------
- 2 files changed, 2 insertions(+), 21 deletions(-)
+ drivers/hid/hid-ids.h           |    3 +++
+ drivers/hid/usbhid/hid-quirks.c |    1 +
+ 2 files changed, 4 insertions(+)
 
-diff --git a/drivers/net/ethernet/atheros/atl1e/atl1e.h b/drivers/net/ethernet/atheros/atl1e/atl1e.h
-index 829b5ad..edfdf6b 100644
---- a/drivers/net/ethernet/atheros/atl1e/atl1e.h
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e.h
-@@ -438,7 +438,6 @@ struct atl1e_adapter {
- 	struct atl1e_hw        hw;
- 	struct atl1e_hw_stats  hw_stats;
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -621,6 +621,9 @@
+ #define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH	0x3000
+ #define USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN	0x3001
  
--	bool have_msi;
- 	u32 wol;
- 	u16 link_speed;
- 	u16 link_duplex;
-diff --git a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-index 95483bc..c69dc29 100644
---- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-@@ -1867,37 +1867,19 @@ static void atl1e_free_irq(struct atl1e_adapter *adapter)
- 	struct net_device *netdev = adapter->netdev;
- 
- 	free_irq(adapter->pdev->irq, netdev);
--
--	if (adapter->have_msi)
--		pci_disable_msi(adapter->pdev);
- }
- 
- static int atl1e_request_irq(struct atl1e_adapter *adapter)
- {
- 	struct pci_dev    *pdev   = adapter->pdev;
- 	struct net_device *netdev = adapter->netdev;
--	int flags = 0;
- 	int err = 0;
- 
--	adapter->have_msi = true;
--	err = pci_enable_msi(adapter->pdev);
--	if (err) {
--		netdev_dbg(adapter->netdev,
--			   "Unable to allocate MSI interrupt Error: %d\n", err);
--		adapter->have_msi = false;
--	} else
--		netdev->irq = pdev->irq;
--
--
--	if (!adapter->have_msi)
--		flags |= IRQF_SHARED;
--	err = request_irq(adapter->pdev->irq, atl1e_intr, flags,
--			netdev->name, netdev);
-+	err = request_irq(pdev->irq, atl1e_intr, IRQF_SHARED,
-+			  netdev->name, netdev);
- 	if (err) {
- 		netdev_dbg(adapter->netdev,
- 			   "Unable to allocate interrupt Error: %d\n", err);
--		if (adapter->have_msi)
--			pci_disable_msi(adapter->pdev);
- 		return err;
- 	}
- 	netdev_dbg(adapter->netdev, "atl1e_request_irq OK\n");
++#define USB_VENDOR_ID_REALTEK		0x0bda
++#define USB_DEVICE_ID_REALTEK_READER	0x0152
++
+ #define USB_VENDOR_ID_ROCCAT		0x1e7d
+ #define USB_DEVICE_ID_ROCCAT_ARVO	0x30d4
+ #define USB_DEVICE_ID_ROCCAT_KONE	0x2ced
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -76,6 +76,7 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN2, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_PRODIGE, USB_DEVICE_ID_PRODIGE_CORDLESS, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NOGET },
++	{ USB_VENDOR_ID_REALTEK, USB_DEVICE_ID_REALTEK_READER, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_SUN, USB_DEVICE_ID_RARITAN_KVM_DONGLE, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_1, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_2, HID_QUIRK_NOGET },
 
