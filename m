@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161353Ab3DGCgN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 22:36:13 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:65154 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161269Ab3DGCgK (ORCPT
+	id S1161446Ab3DGCgW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 22:36:22 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:41238 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161269Ab3DGCgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 22:36:10 -0400
+	Sat, 6 Apr 2013 22:36:16 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: backports@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [PATCH 1/3] compat: redefine core_initcall() and late_initcall()
-Date: Sat,  6 Apr 2013 19:35:36 -0700
-Message-Id: <1365302138-19736-2-git-send-email-mcgrof@do-not-panic.com>
+Subject: [PATCH 2/3] backports: add support for voltage / current regulator subsystem
+Date: Sat,  6 Apr 2013 19:35:37 -0700
+Message-Id: <1365302138-19736-3-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1365302138-19736-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1365302138-19736-1-git-send-email-mcgrof@do-not-panic.com>
@@ -23,48 +23,301 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
-It is questionable if we'd want to backport calls declared
-through late_initcall() or core_initcall() on the kernel
-but if this ends up being desired the current of copying
-kernel code requires either patching or redefining these
-symbols to make them build.
-
-To avoid having to maintain patches for these components
-and having to delcare these routines on header files through
-compat manually use these init macros to help us define
-symbols we *can* use on the compat module init.
+This is enabled only for >= 3.2 and enables all regulator
+drivers. This is required by some media subsystem drivers.
 
 Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
 ---
- backport/include/linux/compat-2.6.h |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ backport/Makefile.kernel                           |    1 +
+ backport/compat/Kconfig                            |   18 +++++
+ backport/compat/main.c                             |    5 ++
+ backport/defconfigs/regulator                      |   63 +++++++++++++++++
+ backport/include/linux/compat-3.3.h                |    8 +++
+ copy-list                                          |   27 +++++++
+ dependencies                                       |    3 +
+ .../regulator/0001-disable-ftrace.patch            |   74 ++++++++++++++++++++
+ 8 files changed, 199 insertions(+)
+ create mode 100644 backport/defconfigs/regulator
+ create mode 100644 patches/collateral-evolutions/regulator/0001-disable-ftrace.patch
 
-diff --git a/backport/include/linux/compat-2.6.h b/backport/include/linux/compat-2.6.h
-index 57a1c13..109afd4 100644
---- a/backport/include/linux/compat-2.6.h
-+++ b/backport/include/linux/compat-2.6.h
-@@ -18,6 +18,21 @@
- #include <linux/init.h>
- #include <linux/uidgid.h>
+diff --git a/backport/Makefile.kernel b/backport/Makefile.kernel
+index 8aa3e4a..3b2c1a4 100644
+--- a/backport/Makefile.kernel
++++ b/backport/Makefile.kernel
+@@ -23,3 +23,4 @@ obj-$(CPTCFG_SSB) += drivers/ssb/
+ obj-$(CPTCFG_BCMA) += drivers/bcma/
+ obj-$(CPTCFG_ETHERNET) += drivers/net/ethernet/
+ obj-$(CPTCFG_DRM) += drivers/gpu/drm/
++obj-$(CPTCFG_REGULATOR) += drivers/regulator/
+diff --git a/backport/compat/Kconfig b/backport/compat/Kconfig
+index df58dcc..6ed7c71 100644
+--- a/backport/compat/Kconfig
++++ b/backport/compat/Kconfig
+@@ -156,6 +156,24 @@ config BACKPORT_BUILD_HDMI
+ config BACKPORT_HDMI
+ 	bool
  
-+#define backport_init_sym(fn) extern void backport_##fn(void);
-+#define backport_init_call(fn) backport_##fn()
++config BACKPORT_BUILD_REGULATOR
++	bool
++	# not possible on kernel < 3.2
++	depends on !BACKPORT_KERNEL_3_2
++	# don't build if base kernel has it, except on kernel < 3.9
++	depends on !HDMI || BACKPORT_KERNEL_3_9
++	# build for testing
++	default y if BACKPORT_USERSEL_BUILD_ALL
++	# build if a driver needs it
++	default y if BACKPORT_REGULATOR
++	#c-file drivers/regulator/core.c
++	#c-file drivers/regulator/dummy.c
++	#c-file drivers/regulator/fixed-helper.c
++	#h-file linux/regulator/consumer.h
 +
-+#define backport_initcall(fn)			\
-+	void backport_##fn(void)		\
-+	{					\
-+		fn();				\
-+	}
++config BACKPORT_REGULATOR
++	bool
 +
-+#undef core_initcall
-+#undef late_initcall
+ config BACKPORT_USERSEL_BUILD_ALL
+ 	bool "Build all compat code"
+ 	help
+diff --git a/backport/compat/main.c b/backport/compat/main.c
+index 6f1bfb7..9c5e5a6 100644
+--- a/backport/compat/main.c
++++ b/backport/compat/main.c
+@@ -38,6 +38,8 @@ void backport_dependency_symbol(void)
+ }
+ EXPORT_SYMBOL_GPL(backport_dependency_symbol);
+ 
++backport_init_sym(regulator_init);
++backport_init_sym(regulator_init_complete);
+ 
+ static int __init backport_init(void)
+ {
+@@ -45,6 +47,9 @@ static int __init backport_init(void)
+ 	backport_system_workqueue_create();
+ 	backport_init_mmc_pm_flags();
+ 
++	backport_init_call(regulator_init);
++	backport_init_call(regulator_init_complete);
 +
-+#define core_initcall	backport_initcall
-+#define late_initcall	backport_initcall
+ 	printk(KERN_INFO "Loading modules backported from " BACKPORTED_KERNEL_NAME " version " BACKPORTED_KERNEL_VERSION "\n");
+ 	printk(KERN_INFO "Backport generated by backports.git " BACKPORTS_VERSION "\n");
+ 
+diff --git a/backport/defconfigs/regulator b/backport/defconfigs/regulator
+new file mode 100644
+index 0000000..c080747
+--- /dev/null
++++ b/backport/defconfigs/regulator
+@@ -0,0 +1,63 @@
++CPTCFG_REGULATOR=y
++CPTCFG_REGULATOR_88PM8607=y
++CPTCFG_REGULATOR_AAT2870=y
++CPTCFG_REGULATOR_AB3100=y
++CPTCFG_REGULATOR_AB8500=y
++CPTCFG_REGULATOR_AD5398=y
++CPTCFG_REGULATOR_ANATOP=y
++CPTCFG_REGULATOR_ARIZONA=y
++CPTCFG_REGULATOR_AS3711=y
++CPTCFG_REGULATOR_DA903X=y
++CPTCFG_REGULATOR_DA9052=y
++CPTCFG_REGULATOR_DA9055=y
++CPTCFG_REGULATOR_DB8500_PRCMU=y
++CPTCFG_REGULATOR_DBX500_PRCMU=y
++CPTCFG_REGULATOR_DEBUG=y
++CPTCFG_REGULATOR_FAN53555=y
++CPTCFG_REGULATOR_FIXED_VOLTAGE=y
++CPTCFG_REGULATOR_GPIO=y
++CPTCFG_REGULATOR_ISL6271A=y
++CPTCFG_REGULATOR_LP3971=y
++CPTCFG_REGULATOR_LP3972=y
++CPTCFG_REGULATOR_LP872X=y
++CPTCFG_REGULATOR_LP8755=y
++CPTCFG_REGULATOR_LP8788=y
++CPTCFG_REGULATOR_MAX1586=y
++CPTCFG_REGULATOR_MAX77686=y
++CPTCFG_REGULATOR_MAX8649=y
++CPTCFG_REGULATOR_MAX8660=y
++CPTCFG_REGULATOR_MAX8907=y
++CPTCFG_REGULATOR_MAX8925=y
++CPTCFG_REGULATOR_MAX8952=y
++CPTCFG_REGULATOR_MAX8973=y
++CPTCFG_REGULATOR_MAX8997=y
++CPTCFG_REGULATOR_MAX8998=y
++CPTCFG_REGULATOR_MC13783=y
++CPTCFG_REGULATOR_MC13892=y
++CPTCFG_REGULATOR_MC13XXX_CORE=y
++CPTCFG_REGULATOR_PALMAS=y
++CPTCFG_REGULATOR_PCAP=y
++CPTCFG_REGULATOR_PCF50633=y
++CPTCFG_REGULATOR_RC5T583=y
++CPTCFG_REGULATOR_S2MPS11=y
++CPTCFG_REGULATOR_S5M8767=y
++CPTCFG_REGULATOR_TPS51632=y
++CPTCFG_REGULATOR_TPS6105X=y
++CPTCFG_REGULATOR_TPS62360=y
++CPTCFG_REGULATOR_TPS65023=y
++CPTCFG_REGULATOR_TPS6507X=y
++CPTCFG_REGULATOR_TPS65090=y
++CPTCFG_REGULATOR_TPS65217=y
++CPTCFG_REGULATOR_TPS6524X=y
++CPTCFG_REGULATOR_TPS6586X=y
++CPTCFG_REGULATOR_TPS65910=y
++CPTCFG_REGULATOR_TPS65912=y
++CPTCFG_REGULATOR_TPS80031=y
++CPTCFG_REGULATOR_TWL4030=y
++CPTCFG_REGULATOR_USERSPACE_CONSUMER=y
++CPTCFG_REGULATOR_VEXPRESS=y
++CPTCFG_REGULATOR_VIRTUAL_CONSUMER=y
++CPTCFG_REGULATOR_WM831X=y
++CPTCFG_REGULATOR_WM8350=y
++CPTCFG_REGULATOR_WM8400=y
++CPTCFG_REGULATOR_WM8994=y
+diff --git a/backport/include/linux/compat-3.3.h b/backport/include/linux/compat-3.3.h
+index 2af4a52..e09ba91 100644
+--- a/backport/include/linux/compat-3.3.h
++++ b/backport/include/linux/compat-3.3.h
+@@ -14,6 +14,14 @@
+ #include <linux/mii.h>
+ #include <linux/netdevice.h>
+ 
++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,2,0))
++/*
++ * In order to get help the regulatory core.c that gets
++ * pulled into the compat module get it without any changes
++ */
++#include <linux/async.h>
++#endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,2,0)) */
 +
  /*
-  * The define overwriting module_init is based on the original module_init
-  * which looks like this:
+  * BQL was added as of v3.3 but some Linux distributions
+  * have backported BQL to their v3.2 kernels or older. To
+diff --git a/copy-list b/copy-list
+index 8c1fb61..7ca33b0 100644
+--- a/copy-list
++++ b/copy-list
+@@ -121,3 +121,30 @@ include/uapi/drm/
+ drivers/platform/x86/intel_ips.h
+ 
+ drivers/gpu/drm/
++
++# Regulator
++# we don't include the whole directory as we need
++# to do hackery with linux/regulator/consumer.h
++include/linux/regulator/ab8500.h
++include/linux/regulator/db8500-prcmu.h
++include/linux/regulator/driver.h
++include/linux/regulator/fan53555.h
++include/linux/regulator/fixed.h
++include/linux/regulator/gpio-regulator.h
++include/linux/regulator/lp3971.h
++include/linux/regulator/lp3972.h
++include/linux/regulator/lp872x.h
++include/linux/regulator/machine.h
++include/linux/regulator/max1586.h
++include/linux/regulator/max8649.h
++include/linux/regulator/max8660.h
++include/linux/regulator/max8952.h
++include/linux/regulator/max8973-regulator.h
++include/linux/regulator/of_regulator.h
++include/linux/regulator/tps51632-regulator.h
++include/linux/regulator/tps62360.h
++include/linux/regulator/tps6507x.h
++include/linux/regulator/userspace-consumer.h
++
++drivers/regulator/dummy.h -> compat/dummy.h
++drivers/regulator/
+diff --git a/dependencies b/dependencies
+index d001a38..6821c5a 100644
+--- a/dependencies
++++ b/dependencies
+@@ -46,6 +46,9 @@ HDMI 3.2
+ DRM 3.2
+ DRM_TTM 3.2
+ 
++# Regulator
++REGULATOR 3.2
++
+ # This requires proc_create(), and that doesn't exist before 2.6.24
+ LIBIPW_DEBUG 2.6.25
+ 
+diff --git a/patches/collateral-evolutions/regulator/0001-disable-ftrace.patch b/patches/collateral-evolutions/regulator/0001-disable-ftrace.patch
+new file mode 100644
+index 0000000..e32694c
+--- /dev/null
++++ b/patches/collateral-evolutions/regulator/0001-disable-ftrace.patch
+@@ -0,0 +1,74 @@
++--- a/compat/core.c
+++++ b/compat/core.c
++@@ -32,9 +32,6 @@
++ #include <linux/regulator/machine.h>
++ #include <linux/module.h>
++ 
++-#define CREATE_TRACE_POINTS
++-#include <trace/events/regulator.h>
++-
++ #include "dummy.h"
++ 
++ #define rdev_crit(rdev, fmt, ...)					\
++@@ -1578,8 +1575,6 @@ static int _regulator_do_enable(struct r
++ 		delay = 0;
++ 	}
++ 
++-	trace_regulator_enable(rdev_get_name(rdev));
++-
++ 	if (rdev->ena_pin) {
++ 		ret = regulator_ena_gpio_ctrl(rdev, true);
++ 		if (ret < 0)
++@@ -1596,7 +1591,6 @@ static int _regulator_do_enable(struct r
++ 	/* Allow the regulator to ramp; it would be useful to extend
++ 	 * this for bulk operations so that the regulators can ramp
++ 	 * together.  */
++-	trace_regulator_enable_delay(rdev_get_name(rdev));
++ 
++ 	if (delay >= 1000) {
++ 		mdelay(delay / 1000);
++@@ -1605,8 +1599,6 @@ static int _regulator_do_enable(struct r
++ 		udelay(delay);
++ 	}
++ 
++-	trace_regulator_enable_complete(rdev_get_name(rdev));
++-
++ 	return 0;
++ }
++ 
++@@ -1683,8 +1675,6 @@ static int _regulator_do_disable(struct
++ {
++ 	int ret;
++ 
++-	trace_regulator_disable(rdev_get_name(rdev));
++-
++ 	if (rdev->ena_pin) {
++ 		ret = regulator_ena_gpio_ctrl(rdev, false);
++ 		if (ret < 0)
++@@ -1697,8 +1687,6 @@ static int _regulator_do_disable(struct
++ 			return ret;
++ 	}
++ 
++-	trace_regulator_disable_complete(rdev_get_name(rdev));
++-
++ 	_notifier_call_chain(rdev, REGULATOR_EVENT_DISABLE,
++ 			     NULL);
++ 	return 0;
++@@ -2319,8 +2307,6 @@ static int _regulator_do_set_voltage(str
++ 	unsigned int selector;
++ 	int old_selector = -1;
++ 
++-	trace_regulator_set_voltage(rdev_get_name(rdev), min_uV, max_uV);
++-
++ 	min_uV += rdev->constraints->uV_offset;
++ 	max_uV += rdev->constraints->uV_offset;
++ 
++@@ -2407,8 +2393,6 @@ static int _regulator_do_set_voltage(str
++ 				     (void *)data);
++ 	}
++ 
++-	trace_regulator_set_voltage_complete(rdev_get_name(rdev), best_val);
++-
++ 	return ret;
++ }
++ 
 -- 
 1.7.10.4
 
