@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934749Ab3DGXj7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:39:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46671 "EHLO
+	id S934671Ab3DGXk5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:40:57 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46598 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934628Ab3DGX3D (ORCPT
+	by vger.kernel.org with ESMTP id S934561Ab3DGX0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:29:03 -0400
+	Sun, 7 Apr 2013 19:26:55 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Alan Cox" <alan@linux.intel.com>,
-        "David Howells" <dhowells@redhat.com>
+CC: akpm@linux-foundation.org,
+        "Stephen Hemminger" <stephen@networkplumber.org>,
+        "Mirko Lindner" <mlindner@marvell.com>,
+        "David S. Miller" <davem@davemloft.net>
 Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.185082284@decadent.org.uk>
+Message-ID: <lsq.1365374742.862077413@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [48/74] key: Fix resource leak
+Subject: [53/74] sky2: Threshold for Pause Packet is set wrong
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,34 +33,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Mirko Lindner <mlindner@marvell.com>
 
-commit a84a921978b7d56e0e4b87ffaca6367429b4d8ff upstream.
+[ Upstream commit 74f9f42c1c1650e74fb464f76644c9041f996851 ]
 
-On an error iov may still have been reallocated and need freeing
+The sky2 driver sets the Rx Upper Threshold for Pause Packet generation to a
+wrong value which leads to only 2kB of RAM remaining space. This can lead to
+Rx overflow errors even with activated flow-control.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Fix: We should increase the value to 8192/8
+
+Signed-off-by: Mirko Lindner <mlindner@marvell.com>
+Acked-by: Stephen Hemminger <stephen@networkplumber.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- security/keys/keyctl.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/marvell/sky2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/security/keys/keyctl.c
-+++ b/security/keys/keyctl.c
-@@ -1067,12 +1067,12 @@ long keyctl_instantiate_key_iov(key_seri
- 	ret = rw_copy_check_uvector(WRITE, _payload_iov, ioc,
- 				    ARRAY_SIZE(iovstack), iovstack, &iov, 1);
- 	if (ret < 0)
--		return ret;
-+		goto err;
- 	if (ret == 0)
- 		goto no_payload_free;
+diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
+index 69fc888..94f9a8f 100644
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -1066,7 +1066,7 @@ static void sky2_ramset(struct sky2_hw *hw, u16 q, u32 start, u32 space)
+ 		sky2_write32(hw, RB_ADDR(q, RB_RX_UTHP), tp);
+ 		sky2_write32(hw, RB_ADDR(q, RB_RX_LTHP), space/2);
  
- 	ret = keyctl_instantiate_key_common(id, iov, ioc, ret, ringid);
--
-+err:
- 	if (iov != iovstack)
- 		kfree(iov);
- 	return ret;
+-		tp = space - 2048/8;
++		tp = space - 8192/8;
+ 		sky2_write32(hw, RB_ADDR(q, RB_RX_UTPP), tp);
+ 		sky2_write32(hw, RB_ADDR(q, RB_RX_LTPP), space/4);
+ 	} else {
 
