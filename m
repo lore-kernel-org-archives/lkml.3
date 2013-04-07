@@ -1,44 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161605Ab3DGD54 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 23:57:56 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:17181 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161336Ab3DGD5z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 23:57:55 -0400
-X-Spam-Score: -100.8
-Message-ID: <5160EEA6.3090505@asianux.com>
-Date: Sun, 07 Apr 2013 11:57:26 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1750933Ab3DGEBx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 00:01:53 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:43259 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1749667Ab3DGEBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 00:01:52 -0400
+Date: Sun, 7 Apr 2013 12:01:36 +0800
+From: Ram Pai <linuxram@us.ibm.com>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, tmac@hp.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        tangchen@cn.fujitsu.com, jiang.liu@huawei.com
+Subject: Re: [PATCH 2/3] resource: Add release_mem_region_adjustable()
+Message-ID: <20130407040136.GA13533@ram.oc3035372033.ibm.com>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <1364919450-8741-1-git-send-email-toshi.kani@hp.com>
+ <1364919450-8741-3-git-send-email-toshi.kani@hp.com>
+ <20130403053720.GA26398@ram.oc3035372033.ibm.com>
+ <1365018905.11159.113.camel@misato.fc.hp.com>
+ <20130404064849.GA5709@ram.oc3035372033.ibm.com>
+ <1365084464.11159.118.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: airlied@linux.ie, bskeggs@redhat.com, airlied@redhat.com,
-        dri-devel@lists.freedesktop.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/gpu/drm/nouveau: remove erroneous semicolon
-References: <51529E77.2010906@asianux.com> <515BE1E7.7070905@asianux.com> <5160C5FB.8030409@asianux.com> <20130407034943.GA8159@kroah.com>
-In-Reply-To: <20130407034943.GA8159@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365084464.11159.118.camel@misato.fc.hp.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040704-7182-0000-0000-0000062030BF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月07日 11:49, Greg KH wrote:
-> On Sun, Apr 07, 2013 at 09:03:55AM +0800, Chen Gang wrote:
->> Hello Greg KH:
->>
->>   when you have time, can you help to check this patch whether OK ?
+On Thu, Apr 04, 2013 at 08:07:44AM -0600, Toshi Kani wrote:
+> On Thu, 2013-04-04 at 14:48 +0800, Ram Pai wrote:
+> > On Wed, Apr 03, 2013 at 01:55:05PM -0600, Toshi Kani wrote:
+> > > On Wed, 2013-04-03 at 13:37 +0800, Ram Pai wrote:
+> > > > On Tue, Apr 02, 2013 at 10:17:29AM -0600, Toshi Kani wrote:
+> > > > > +	while ((res = *p)) {
+> > 
+> > ...snip...
+> > 
+> > > > > +		if (res->start > start || res->end < end) {
+> > > > 
+> > > > This check looks sub-optimal; possbily wrong, to me.  if the res->start
+> > > > is greater than 'start', then obviously its sibling's start will
+> > > > also be greater than 'start'. So it will loop through all the
+> > > > resources unnecesarily.
+> > > 
+> > > I think this check is necessary to check if the requested range fits
+> > > into a resource.  It needs to check both sides to verify this.  I will
+> > > add some comment on this check.
+> > > 
+> > > >   you might want something like
+> > > > 
+> > > > 		if (start >= res->end) {
+> > > 
+> > > I agree that this list is sorted, so we can optimize an error case (i.e.
+> > > no matching entry is found) with an additional check.  I will add the
+> > > following check at the beginning of the while loop.  
+> > > 
+> > >                 if (res->start >= end)
+> > >                         break;
+> > > 
+> > > I also realized that the function returns 0 when no matching entry is
+> > > found.  I will change it to return -EINVAL as well.  
+> > 
+> > ok. this will take care of it.
+> > 
+> > > 
+> > > > 		
+> > > > > +			p = &res->sibling;
+> > > > > +			continue;
+> > > > > +		}
+> > > > > +
+> > > > > +		if (!(res->flags & IORESOURCE_MEM)) {
+> > > > > +			ret = -EINVAL;
+> > > > > +			break;
+> > > > > +		}
+> > > > > +
+> > > > > +		if (!(res->flags & IORESOURCE_BUSY)) {
+> > > > > +			p = &res->child;
+> > > > > +			continue;
+> > > > > +		}
+> > > > > +
+> > > > > +		if (res->start == start && res->end == end) {
+> > > > > +			/* free the whole entry */
+> > > > > +			*p = res->sibling;
+> > > > > +			kfree(res);
+> > > > 
+> > > > This is incomplete. the prev resource's sibling should now point to
+> > > > this resource's sibling. The parent's child has to be updated if
+> > > > this resource is the first child resource. no?
+> > > 
+> > > If this resource is the first child, *p is set to &parent->child.  So,
+> > > it will update the parents' child.
+> > 
+> > But if the resource is not the parent's first child? will it update the
+> > previous siblings ->sibling ?
 > 
-> No.
-> 
-> 
+> Yes.  When it continues in the while loop, p is set to &res->sibling.
+> So, it will update the previous sibling's ->sibling.
 
-  Why ?  does it also need a test ??
+You are right. It does update the pointers correctly. I mis-read the
+code.
+RP
 
--- 
-Chen Gang
-
-Asianux Corporation
