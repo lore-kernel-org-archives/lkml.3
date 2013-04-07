@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933157Ab3DGJdJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 05:33:09 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:39076 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932947Ab3DGJdI (ORCPT
+	id S933185Ab3DGJd2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 05:33:28 -0400
+Received: from mail-pa0-f67.google.com ([209.85.220.67]:58165 "EHLO
+	mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932947Ab3DGJd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 05:33:08 -0400
-X-Spam-Score: -100.8
-Message-ID: <51613D37.6060901@asianux.com>
-Date: Sun, 07 Apr 2013 17:32:39 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] Drivers: Base: Regmap: fix warnings, use %zu instead of
- %d for printf format
-References: <5160E113.9080502@asianux.com> <8761zybtdg.fsf@nemi.mork.no> <51613B16.3030406@asianux.com>
-In-Reply-To: <51613B16.3030406@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sun, 7 Apr 2013 05:33:27 -0400
+From: k80c <k80ck80c@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        k80c <k80ck80c@gmail.com>
+Subject: [PATCH 1/1] mmap.c: find_vma: eliminate initial if(mm) check
+Date: Sun,  7 Apr 2013 14:48:12 +0530
+Message-Id: <1365326292-2761-1-git-send-email-k80ck80c@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+As per commit 841e31e5cc6219d62054788faa289b6ed682d068,
+we dont really need this if(mm) check anymore.
 
-  fix warnings (with EXTRA_CFLAGS=-W):
-    format ‘%d’ expects argument of type ‘int’,
-    but argument 4 has type ‘size_t’ [-Wformat]
+A WARN_ON_ONCE was added just for safety, but there have been no bug
+reports about this so far.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
+Removing this if(mm) check.
+
+Signed-off-by: k80c <k80ck80c@gmail.com>
 ---
- drivers/base/regmap/regcache.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ mm/mmap.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
-index d81f605..a469748 100644
---- a/drivers/base/regmap/regcache.c
-+++ b/drivers/base/regmap/regcache.c
-@@ -590,7 +590,7 @@ static int regcache_sync_block_raw_flush(struct regmap *map, const void **data,
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 0db0de1..b2c363f 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1935,9 +1935,6 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
+ {
+ 	struct vm_area_struct *vma = NULL;
  
- 	count = cur - base;
- 
--	dev_dbg(map->dev, "Writing %d bytes for %d registers from 0x%x-0x%x\n",
-+	dev_dbg(map->dev, "Writing %zu bytes for %d registers from 0x%x-0x%x\n",
- 		count * val_bytes, count, base, cur - 1);
- 
- 	map->cache_bypass = 1;
+-	if (WARN_ON_ONCE(!mm))		/* Remove this in linux-3.6 */
+-		return NULL;
+-
+ 	/* Check the cache first. */
+ 	/* (Cache hit rate is typically around 35%.) */
+ 	vma = ACCESS_ONCE(mm->mmap_cache);
 -- 
-1.7.7.6
+1.7.5.4
+
