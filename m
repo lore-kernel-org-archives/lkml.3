@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934899Ab3DGXbl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:31:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46802 "EHLO
+	id S934906Ab3DGXb6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:31:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46798 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934583Ab3DGXbi (ORCPT
+	by vger.kernel.org with ESMTP id S934776Ab3DGXbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:31:38 -0400
+	Sun, 7 Apr 2013 19:31:35 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Nandita Dukkipati" <nanditad@google.com>,
-        "Neal Cardwell" <ncardwell@google.com>,
-        "Yuchung Cheng" <ycheng@google.com>,
-        "Eric Dumazet" <edumazet@google.com>, "Van Jacobson" <vanj@google.com>,
-        "David S. Miller" <davem@davemloft.net>
+CC: akpm@linux-foundation.org, "Al Viro" <viro@zeniv.linux.org.uk>
 Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.166043882@decadent.org.uk>
+Message-ID: <lsq.1365374742.832741758@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [54/74] tcp: preserve ACK clocking in TSO
+Subject: [31/74] Nest rename_lock inside vfsmount_lock
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,88 +30,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-[ Upstream commit f4541d60a449afd40448b06496dcd510f505928e ]
+commit 7ea600b5314529f9d1b9d6d3c41cb26fce6a7a4a upstream.
 
-A long standing problem with TSO is the fact that tcp_tso_should_defer()
-rearms the deferred timer, while it should not.
+... lest we get livelocks between path_is_under() and d_path() and friends.
 
-Current code leads to following bad bursty behavior :
+The thing is, wrt fairness lglocks are more similar to rwsems than to rwlocks;
+it is possible to have thread B spin on attempt to take lock shared while thread
+A is already holding it shared, if B is on lower-numbered CPU than A and there's
+a thread C spinning on attempt to take the same lock exclusive.
 
-20:11:24.484333 IP A > B: . 297161:316921(19760) ack 1 win 119
-20:11:24.484337 IP B > A: . ack 263721 win 1117
-20:11:24.485086 IP B > A: . ack 265241 win 1117
-20:11:24.485925 IP B > A: . ack 266761 win 1117
-20:11:24.486759 IP B > A: . ack 268281 win 1117
-20:11:24.487594 IP B > A: . ack 269801 win 1117
-20:11:24.488430 IP B > A: . ack 271321 win 1117
-20:11:24.489267 IP B > A: . ack 272841 win 1117
-20:11:24.490104 IP B > A: . ack 274361 win 1117
-20:11:24.490939 IP B > A: . ack 275881 win 1117
-20:11:24.491775 IP B > A: . ack 277401 win 1117
-20:11:24.491784 IP A > B: . 316921:332881(15960) ack 1 win 119
-20:11:24.492620 IP B > A: . ack 278921 win 1117
-20:11:24.493448 IP B > A: . ack 280441 win 1117
-20:11:24.494286 IP B > A: . ack 281961 win 1117
-20:11:24.495122 IP B > A: . ack 283481 win 1117
-20:11:24.495958 IP B > A: . ack 285001 win 1117
-20:11:24.496791 IP B > A: . ack 286521 win 1117
-20:11:24.497628 IP B > A: . ack 288041 win 1117
-20:11:24.498459 IP B > A: . ack 289561 win 1117
-20:11:24.499296 IP B > A: . ack 291081 win 1117
-20:11:24.500133 IP B > A: . ack 292601 win 1117
-20:11:24.500970 IP B > A: . ack 294121 win 1117
-20:11:24.501388 IP B > A: . ack 295641 win 1117
-20:11:24.501398 IP A > B: . 332881:351881(19000) ack 1 win 119
+As the result, we need consistent ordering between vfsmount_lock (lglock) and
+rename_lock (seq_lock), even though everything that takes both is going to take
+vfsmount_lock only shared.
 
-While the expected behavior is more like :
-
-20:19:49.259620 IP A > B: . 197601:202161(4560) ack 1 win 119
-20:19:49.260446 IP B > A: . ack 154281 win 1212
-20:19:49.261282 IP B > A: . ack 155801 win 1212
-20:19:49.262125 IP B > A: . ack 157321 win 1212
-20:19:49.262136 IP A > B: . 202161:206721(4560) ack 1 win 119
-20:19:49.262958 IP B > A: . ack 158841 win 1212
-20:19:49.263795 IP B > A: . ack 160361 win 1212
-20:19:49.264628 IP B > A: . ack 161881 win 1212
-20:19:49.264637 IP A > B: . 206721:211281(4560) ack 1 win 119
-20:19:49.265465 IP B > A: . ack 163401 win 1212
-20:19:49.265886 IP B > A: . ack 164921 win 1212
-20:19:49.266722 IP B > A: . ack 166441 win 1212
-20:19:49.266732 IP A > B: . 211281:215841(4560) ack 1 win 119
-20:19:49.267559 IP B > A: . ack 167961 win 1212
-20:19:49.268394 IP B > A: . ack 169481 win 1212
-20:19:49.269232 IP B > A: . ack 171001 win 1212
-20:19:49.269241 IP A > B: . 215841:221161(5320) ack 1 win 119
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Van Jacobson <vanj@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Nandita Dukkipati <nanditad@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Spotted-by: Brad Spengler <spender@grsecurity.net>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - s/&vfsmount_lock/vfsmount_lock/]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/tcp_output.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ fs/dcache.c |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 9bb7400..5c1807c 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1587,8 +1587,11 @@ static int tcp_tso_should_defer(struct sock *sk, struct sk_buff *skb)
- 			goto send_now;
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2445,7 +2445,6 @@ static int prepend_path(const struct pat
+ 	bool slash = false;
+ 	int error = 0;
+ 
+-	br_read_lock(vfsmount_lock);
+ 	while (dentry != root->dentry || vfsmnt != root->mnt) {
+ 		struct dentry * parent;
+ 
+@@ -2475,8 +2474,6 @@ static int prepend_path(const struct pat
+ 	if (!error && !slash)
+ 		error = prepend(buffer, buflen, "/", 1);
+ 
+-out:
+-	br_read_unlock(vfsmount_lock);
+ 	return error;
+ 
+ global_root:
+@@ -2493,7 +2490,7 @@ global_root:
+ 		error = prepend(buffer, buflen, "/", 1);
+ 	if (!error)
+ 		error = vfsmnt->mnt_ns ? 1 : 2;
+-	goto out;
++	return error;
+ }
+ 
+ /**
+@@ -2520,9 +2517,11 @@ char *__d_path(const struct path *path,
+ 	int error;
+ 
+ 	prepend(&res, &buflen, "\0", 1);
++	br_read_lock(vfsmount_lock);
+ 	write_seqlock(&rename_lock);
+ 	error = prepend_path(path, root, &res, &buflen);
+ 	write_sequnlock(&rename_lock);
++	br_read_unlock(vfsmount_lock);
+ 
+ 	if (error < 0)
+ 		return ERR_PTR(error);
+@@ -2539,9 +2538,11 @@ char *d_absolute_path(const struct path
+ 	int error;
+ 
+ 	prepend(&res, &buflen, "\0", 1);
++	br_read_lock(vfsmount_lock);
+ 	write_seqlock(&rename_lock);
+ 	error = prepend_path(path, &root, &res, &buflen);
+ 	write_sequnlock(&rename_lock);
++	br_read_unlock(vfsmount_lock);
+ 
+ 	if (error > 1)
+ 		error = -EINVAL;
+@@ -2605,11 +2606,13 @@ char *d_path(const struct path *path, ch
+ 		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
+ 
+ 	get_fs_root(current->fs, &root);
++	br_read_lock(vfsmount_lock);
+ 	write_seqlock(&rename_lock);
+ 	error = path_with_deleted(path, &root, &res, &buflen);
++	write_sequnlock(&rename_lock);
++	br_read_unlock(vfsmount_lock);
+ 	if (error < 0)
+ 		res = ERR_PTR(error);
+-	write_sequnlock(&rename_lock);
+ 	path_put(&root);
+ 	return res;
+ }
+@@ -2764,6 +2767,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
+ 	get_fs_root_and_pwd(current->fs, &root, &pwd);
+ 
+ 	error = -ENOENT;
++	br_read_lock(vfsmount_lock);
+ 	write_seqlock(&rename_lock);
+ 	if (!d_unlinked(pwd.dentry)) {
+ 		unsigned long len;
+@@ -2773,6 +2777,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
+ 		prepend(&cwd, &buflen, "\0", 1);
+ 		error = prepend_path(&pwd, &root, &cwd, &buflen);
+ 		write_sequnlock(&rename_lock);
++		br_read_unlock(vfsmount_lock);
+ 
+ 		if (error < 0)
+ 			goto out;
+@@ -2793,6 +2798,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
+ 		}
+ 	} else {
+ 		write_sequnlock(&rename_lock);
++		br_read_unlock(vfsmount_lock);
  	}
  
--	/* Ok, it looks like it is advisable to defer.  */
--	tp->tso_deferred = 1 | (jiffies << 1);
-+	/* Ok, it looks like it is advisable to defer.
-+	 * Do not rearm the timer if already set to not break TCP ACK clocking.
-+	 */
-+	if (!tp->tso_deferred)
-+		tp->tso_deferred = 1 | (jiffies << 1);
- 
- 	return 1;
- 
+ out:
 
