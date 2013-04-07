@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934160Ab3DGR2Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 13:28:25 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:51362 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934138Ab3DGR2X (ORCPT
+	id S934190Ab3DGRrO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 13:47:14 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:55357 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934144Ab3DGRrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 13:28:23 -0400
-Date: Sun, 7 Apr 2013 10:28:18 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>, Aristeu Rozanski <aris@redhat.com>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH cgroup/for-3.10] devcg: remove broken_hierarchy tag
-Message-ID: <20130407172818.GD12038@htj.dyndns.org>
+	Sun, 7 Apr 2013 13:47:13 -0400
+Date: Sun, 7 Apr 2013 10:43:13 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Bryan Freed <bfreed@chromium.org>, Tony Luck <tony.luck@intel.com>,
+        keescook@chromium.org, marco.stornelli@gmail.com,
+        gregkh@linuxfoundation.org,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        sboyd@codeaurora.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v6] pstore/ram: Add ramoops support for the Flattened
+ Device Tree.
+Message-ID: <20130407174313.GA7168@lizard>
+References: <1347042576-17675-1-git-send-email-bfreed@chromium.org>
+ <20120908052907.GA4724@lizard>
+ <20120917062302.GA768@lizard>
+ <CAL_JsqK_L9nN6+oxUQzNwFjbFf3+3NroeEwzbMdPS4T6=Mnemg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+In-Reply-To: <CAL_JsqK_L9nN6+oxUQzNwFjbFf3+3NroeEwzbMdPS4T6=Mnemg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From f913fbedbdfc08eeff742c4b3077e267d8fc867f Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Sun, 7 Apr 2013 10:25:39 -0700
+On Thu, Apr 04, 2013 at 09:03:47PM -0500, Rob Herring wrote:
+> On Mon, Sep 17, 2012 at 1:23 AM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
+> > On Fri, Sep 07, 2012 at 10:29:10PM -0700, Anton Vorontsov wrote:
+> >> On Fri, Sep 07, 2012 at 11:29:36AM -0700, Bryan Freed wrote:
+> >> > When called with a non-zero of_node, fill out a new ramoops_platform_data
+> >> > with data from the specified Flattened Device Tree node.
+> >> > Update ramoops documentation with the new FDT interface.
+> >> > Update devicetree/binding documentation with pstore/ramoops.txt.
+> >>
+> >> Thanks for your work, Bryan! There were a few issues, I fixed
+> >> them myself but I need your confirmation if you're OK w/ all
+> >> the changes.
+> > [...]
+> >> So, the resulting patch is down below. But I have not pushed
+> >> it out yet, I'm waiting for your sign off. If you're OK with the
+> >> changes, please reply with
+> >> 'Signed-off-by: Bryan Freed <bfreed@chromium.org>'
+> >
+> > Bryan, have you had a chance to look into this?
+> 
+> Whatever happened to this? Olof was also looking at doing a binding
+> back in Jan 2012:
+> 
+> http://www.mail-archive.com/devicetree-discuss@lists.ozlabs.org/msg09905.html
 
-bd2953ebbb ("devcg: propagate local changes down the hierarchy")
-implemented proper hierarchy support.  Remove the broken tag.
+I don't know. Bryan's patch looked good, I'd happily apply it. But I still
+need Bryan's Signed-off-by tag. :-/ Or, somebody needs to sign off on his
+behalf (anyone from Chromium project?). Or redo the patch.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Aristeu Rozanski <aris@redhat.com>
----
-Applying to cgroup/for-3.10.
+Thanks,
 
-Thanks.
-
- security/device_cgroup.c | 9 ---------
- 1 file changed, 9 deletions(-)
-
-diff --git a/security/device_cgroup.c b/security/device_cgroup.c
-index 221967d..994aecc 100644
---- a/security/device_cgroup.c
-+++ b/security/device_cgroup.c
-@@ -739,15 +739,6 @@ struct cgroup_subsys devices_subsys = {
- 	.css_offline = devcgroup_offline,
- 	.subsys_id = devices_subsys_id,
- 	.base_cftypes = dev_cgroup_files,
--
--	/*
--	 * While devices cgroup has the rudimentary hierarchy support which
--	 * checks the parent's restriction, it doesn't properly propagates
--	 * config changes in ancestors to their descendents.  A child
--	 * should only be allowed to add more restrictions to the parent's
--	 * configuration.  Fix it and remove the following.
--	 */
--	.broken_hierarchy = true,
- };
- 
- /**
--- 
-1.8.1.4
-
+Anton
