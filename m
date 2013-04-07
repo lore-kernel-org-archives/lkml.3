@@ -1,49 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934392Ab3DGVXw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 17:23:52 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64637 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762040Ab3DGVXu (ORCPT
+	id S934402Ab3DGVZV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 17:25:21 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:53048 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762463Ab3DGVZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 17:23:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Daniel Tang <dt.tangr@gmail.com>
-Subject: Re: [RFC PATCH arm: initial TI-Nspire support]
-Date: Sun, 7 Apr 2013 23:23:41 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        fabian@ritter-vogt.de, Lionel Debroux <lionel_debroux@yahoo.fr>,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-References: <6FE4B33E-A503-4A75-AEED-831CB2C06D83@gmail.com> <4B3FD561-84FC-40CD-B747-13851692D673@gmail.com> <521DFDFC-7E9E-47EA-ACDA-C91BBDC8454E@gmail.com>
-In-Reply-To: <521DFDFC-7E9E-47EA-ACDA-C91BBDC8454E@gmail.com>
+	Sun, 7 Apr 2013 17:25:20 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304072323.42173.arnd@arndb.de>
-X-Provags-ID: V02:K0:mDe5NgvHgQYPVSfsIQUvrDTcgqhmXArSDIj7Bbk6Eiv
- I730x6VVdqwPwsuuxjRk6DFshgkKoBud6BNwNCoC2DYy1Zj2jT
- BR7afcELD6Z78PjB1MtdgKmizAJX59E1dtkXea+fbcPeClqp9j
- cFZvBs0hia7c3QDGZ2AefEPd/g2sdsS4jDCmC2p5KJbvClXq9y
- Rs3RSi4u8Dxu+103WVcrsXtSZ/WcBRwL009ODxLv4K4jGuWoEO
- ASykvH/DYQGnvXV2U3GLYrMRUdFqDjNojzxjB8xIBUTyrz4eaY
- AL/BWmitVUbhkE3YBrqiuPkSb3Vv2gvXV1xMb3F9YU0R5G8KV9
- 2gvHx1KW9qImyAZlbGew=
+In-Reply-To: <20130407074113.GB10317@redhat.com>
+References: <20130404123806.GG17919@redhat.com>
+	<EF153515-9835-4FB9-B6BC-73D0BDC86492@suse.de>
+	<20130404124501.GH17919@redhat.com>
+	<1B68D701-103D-4B1A-8F5E-3916753699CB@suse.de>
+	<20130404125649.GI17919@redhat.com>
+	<8E65D34D-2DA7-4C2E-9C3E-BE3A7DBC3279@suse.de>
+	<20130404133318.GI6467@redhat.com>
+	<14B443D5-5785-487D-9EA3-0AD20141BC06@suse.de>
+	<20130404153629.GN6467@redhat.com>
+	<CAEDV+gKpCj1Sgn4TYw5ViYK-x4_c=-9nOpBwGfTBXRkJaN=gNg@mail.gmail.com>
+	<20130407074113.GB10317@redhat.com>
+Date: Sun, 7 Apr 2013 14:25:19 -0700
+X-Google-Sender-Auth: -Yiox0KsVCAzANoCJHCcLToPTEI
+Message-ID: <CAEDV+g+ard7e86vmfo6XF+1AmkndYVqnv_nRS3fXEx317MuXaA@mail.gmail.com>
+Subject: Re: [PATCH RFC] kvm: add PV MMIO EVENTFD
+From: Christoffer Dall <cdall@cs.columbia.edu>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Alexander Graf <agraf@suse.de>, Gleb Natapov <gleb@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 07 April 2013, Daniel Tang wrote:
-> Here's an updated patch that enables support for the LCD.
-> 
-> I looked into drivers/video/of_display_timing.c but it doesn't have the fields to describe the PL11x specific options needed in struct clcd_panel. At the moment, it is implemented by hardcoding the values in the kernel and using the device tree to select the correct configuration.
-> 
-> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
+On Sun, Apr 7, 2013 at 12:41 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> On Thu, Apr 04, 2013 at 04:32:01PM -0700, Christoffer Dall wrote:
+>> [...]
+>>
+>> >> >> to give us some idea how much performance we would gain from each approach? Thoughput should be completely unaffected anyway, since virtio just coalesces kicks internally.
+>> >> >
+>> >> > Latency is dominated by the scheduling latency.
+>> >> > This means virtio-net is not the best benchmark.
+>> >>
+>> >> So what is a good benchmark?
+>> >
+>> > E.g. ping pong stress will do but need to look at CPU utilization,
+>> > that's what is affected, not latency.
+>> >
+>> >> Is there any difference in speed at all? I strongly doubt it. One of virtio's main points is to reduce the number of kicks.
+>> >
+>> > For this stage of the project I think microbenchmarks are more appropriate.
+>> > Doubling the price of exit is likely to be measureable. 30 cycles likely
+>> > not ...
+>> >
+>> I don't quite understand this point here. If we don't have anything
+>> real-world where we can measure a decent difference, then why are we
+>> doing this? I would agree with Alex that the three test scenarios
+>> proposed by him should be tried out before adding this complexity,
+>> measured in CPU utilization or latency as you wish.
+>
+> Sure, plan to do real world benchmarks for PV MMIO versus PIO as well.
+> I don't see why I should bother implementing hypercalls given that the
+> kvm maintainer says they won't be merged.
+>
 
-I think you should for now keep the clcd stuff in a separate file,
-since it will be replaced with DT logic eventually. For now, the
-auxdata method is ok, but Linus Walleij might already have thought
-about how pl111 should get all its data from the device tree.
+the implementation effort to simply measure the hypercall performance
+should be minimal, no? If we can measure a true difference in
+performance, I'm sure we can revisit the issue of what will be merged
+and what won't be, but until we have those numbers it's all
+speculation.
 
-	Arnd
+>> FWIW, ARM always uses MMIO and provides hardware decoding of all sane
+>> (not user register-writeback) instruction, but the hypercall vs. mmio
+>> looks like this:
+>>
+>> hvc:  4,917
+>> mmio_kernel: 6,248
+>
+> So 20% difference?  That's not far from what happens on my intel laptop:
+> vmcall 1519
+> outl_to_kernel 1745
+> 10% difference here.
+>
+>>
+>> But I doubt that an hvc wrapper around mmio decoding would take care
+>> of all this difference, because the mmio operation needs to do other
+>> work not realated to emulating the instruction in software, which
+>> you'd have to do for an hvc anyway (populate kvm_mmio structure etc.)
+>>
+>
+> Instead of speculating, someone with relevant hardware
+> could just try this, but kvm unittest doesn't seem to have arm support
+> at the moment. Anyone working on this?
+>
+We have a branch called kvm-selftest that replicates much of the
+functionality, which is what I run to get these measurements. I can
+port it over to unittest at some point, but I'm not active working on
+that.
+
+I can measure it, but we have bigger fish to fry on the ARM side right
+now, so it'll be a while until I get to that.
