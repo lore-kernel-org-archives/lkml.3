@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934593Ab3DGX0x (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:26:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46592 "EHLO
+	id S934612Ab3DGX04 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:26:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46594 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759308Ab3DGX0v (ORCPT
+	by vger.kernel.org with ESMTP id S1759308Ab3DGX0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:26:51 -0400
+	Sun, 7 Apr 2013 19:26:54 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Al Viro" <viro@zeniv.linux.org.uk>
+CC: akpm@linux-foundation.org, "AceLan Kao" <acelan.kao@canonical.com>,
+        "Gustavo Padovan" <gustavo.padovan@collabora.co.uk>
 Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.513879356@decadent.org.uk>
+Message-ID: <lsq.1365374742.21194270@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [32/74] vt: synchronize_rcu() under spinlock is not nice...
+Subject: [06/74] Bluetooth: Add support for Foxconn / Hon Hai [0489:e04e]
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,45 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: AceLan Kao <acelan.kao@canonical.com>
 
-commit e8cd81693bbbb15db57d3c9aa7dd90eda4842874 upstream.
+commit 3a61eda81ebcfc006ebb1496764299d53e5bf67f upstream.
 
-vcs_poll_data_free() calls unregister_vt_notifier(), which calls
-atomic_notifier_chain_unregister(), which calls synchronize_rcu().
-Do it *after* we'd dropped ->f_lock.
+Add support for the AR9462 chip
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  5 Spd=12  MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0489 ProdID=e04e Rev=00.02
+C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+
+Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/vt/vc_screen.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/bluetooth/ath3k.c |    2 ++
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 3 insertions(+)
 
-diff --git a/drivers/tty/vt/vc_screen.c b/drivers/tty/vt/vc_screen.c
-index e4ca345..d7799de 100644
---- a/drivers/tty/vt/vc_screen.c
-+++ b/drivers/tty/vt/vc_screen.c
-@@ -93,7 +93,7 @@ vcs_poll_data_free(struct vcs_poll_data *poll)
- static struct vcs_poll_data *
- vcs_poll_data_get(struct file *file)
- {
--	struct vcs_poll_data *poll = file->private_data;
-+	struct vcs_poll_data *poll = file->private_data, *kill = NULL;
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -82,6 +82,7 @@ static struct usb_device_id ath3k_table[
+ 	{ USB_DEVICE(0x0930, 0x0219) },
+ 	{ USB_DEVICE(0x0489, 0xe057) },
+ 	{ USB_DEVICE(0x13d3, 0x3393) },
++	{ USB_DEVICE(0x0489, 0xe04e) },
  
- 	if (poll)
- 		return poll;
-@@ -122,10 +122,12 @@ vcs_poll_data_get(struct file *file)
- 		file->private_data = poll;
- 	} else {
- 		/* someone else raced ahead of us */
--		vcs_poll_data_free(poll);
-+		kill = poll;
- 		poll = file->private_data;
- 	}
- 	spin_unlock(&file->f_lock);
-+	if (kill)
-+		vcs_poll_data_free(kill);
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE02C) },
+@@ -111,6 +112,7 @@ static struct usb_device_id ath3k_blist_
+ 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0489, 0xe057), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0489, 0xe04e), .driver_info = BTUSB_ATH3012 },
  
- 	return poll;
- }
+ 	/* Atheros AR5BBU22 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -149,6 +149,7 @@ static struct usb_device_id blacklist_ta
+ 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0489, 0xe057), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x0489, 0xe04e), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
 
