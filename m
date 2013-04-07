@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933538Ab3DGL6q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 07:58:46 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:50013 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933444Ab3DGL6p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 07:58:45 -0400
-Date: Sun, 7 Apr 2013 17:22:57 +0530
+	id S933530Ab3DGMBP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 08:01:15 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:52610 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933468Ab3DGMBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 08:01:14 -0400
+Date: Sun, 7 Apr 2013 17:25:27 +0530
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Anton Arapov <anton@redhat.com>
 Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
@@ -15,237 +14,108 @@ Cc: Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: Re: [PATCH v1 5/9] uretprobes: Return probe entry,
- prepare_uretprobe()
-Message-ID: <20130407115257.GE2186@linux.vnet.ibm.com>
+Subject: Re: [PATCH v1 7/9] uretprobes: Limit the depth of return probe
+ nestedness
+Message-ID: <20130407115527.GF2186@linux.vnet.ibm.com>
 Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 References: <1365004839-21982-1-git-send-email-anton@redhat.com>
- <1365004839-21982-6-git-send-email-anton@redhat.com>
+ <1365004839-21982-8-git-send-email-anton@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1365004839-21982-6-git-send-email-anton@redhat.com>
+In-Reply-To: <1365004839-21982-8-git-send-email-anton@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040711-2398-0000-0000-00001304C86D
+x-cbid: 13040712-5806-0000-0000-000020A13039
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Anton Arapov <anton@redhat.com> [2013-04-03 18:00:35]:
+* Anton Arapov <anton@redhat.com> [2013-04-03 18:00:37]:
 
-> When a uprobe with return probe consumer is hit, prepare_uretprobe()
-> function is invoked. It creates return_instance, hijacks return address
-> and replaces it with the trampoline.
+> Unlike the kretprobes we can't trust userspace, thus must have
+> protection from user space attacks. User-space have  "unlimited"
+> stack, and this patch limits the return probes nestedness as a
+> simple remedy for it.
 > 
-> * Return instances are kept as stack per uprobed task.
-> * Return instance is chained, when the original return address is
->   trampoline's page vaddr (e.g. recursive call of the probed function).
+> Note that this implementation leaks return_instance on siglongjmp
+> until exit()/exec().
 > 
-> v1 changes:
-> * preserve address of the breakpoint in return_instance.
-> * don't forget NULLify return_instances on free_utask.
-> * simplify prepare_uretprobe().
+> The intention is to have KISS and bare minimum solution for the
+> initial implementation in order to not complicate the uretprobes
+> code.
 > 
-> RFCv6 changes:
-> * rework prepare_uretprobe() logic in order to make further unwinding
->   in handler_uretprobe() simplier.
-> * introduce the 'dirty' field.
-> 
-> RFCv5 changes:
-> * switch from hlist to simply linked list for tracking ->*return_uprobes.
-> * preallocate first slot xol_area for return probes, see xol_get_area()
->   changes.
-> * add get_trampoline_vaddr() helper, to emphasize area->vaddr overload.
-> 
-> RFCv4 changes:
-> * get rid of area->rp_trampoline_vaddr as it always the same as ->vaddr.
-> * cleanup ->return_uprobes list in uprobe_free_utask(), because the
->   task can exit from inside the ret-probe'd function(s).
-> * in find_active_uprobe(): Once we inserted "int3" we must ensure that
->   handle_swbp() will be called even if this uprobe goes away. We have
->   the reference but it only protects uprobe itself, it can't protect
->   agains delete_uprobe().
->   IOW, we must ensure that uprobe_pre_sstep_notifier() can't return 0.
-> 
-> RFCv3 changes:
-> * protected uprobe with refcounter. See atomic_inc in prepare_uretprobe()
->   and put_uprobe() in a following patch in handle_uretprobe().
-> 
-> RFCv2 changes:
-> * get rid of ->return_consumers member from struct uprobe, introduce
->   ret_handler() in consumer.
+> In the future we may come up with more sophisticated solution that
+> remove this depth limitation. It is not easy task and lays beyond
+> this patchset.
 > 
 > Signed-off-by: Anton Arapov <anton@redhat.com>
 
 Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
 > ---
->  include/linux/uprobes.h |  1 +
->  kernel/events/uprobes.c | 92 ++++++++++++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 92 insertions(+), 1 deletion(-)
+>  include/linux/uprobes.h |  3 +++
+>  kernel/events/uprobes.c | 11 +++++++++++
+>  2 files changed, 14 insertions(+)
 > 
 > diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-> index 4042cad..5f8960e 100644
+> index 5f8960e..d7bcf10 100644
 > --- a/include/linux/uprobes.h
 > +++ b/include/linux/uprobes.h
-> @@ -71,6 +71,7 @@ struct uprobe_task {
->  	enum uprobe_task_state		state;
+> @@ -38,6 +38,8 @@ struct inode;
+>  #define UPROBE_HANDLER_REMOVE		1
+>  #define UPROBE_HANDLER_MASK		1
+> 
+> +#define MAX_URETPROBE_DEPTH		64
+> +
+>  enum uprobe_filter_ctx {
+>  	UPROBE_FILTER_REGISTER,
+>  	UPROBE_FILTER_UNREGISTER,
+> @@ -72,6 +74,7 @@ struct uprobe_task {
 >  	struct arch_uprobe_task		autask;
 > 
-> +	struct return_instance		*return_instances;
+>  	struct return_instance		*return_instances;
+> +	unsigned int			depth;
 >  	struct uprobe			*active_uprobe;
 > 
 >  	unsigned long			xol_vaddr;
 > diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index d3c8201..08ecfff 100644
+> index d129c1d..489f5e3 100644
 > --- a/kernel/events/uprobes.c
 > +++ b/kernel/events/uprobes.c
-> @@ -75,6 +75,15 @@ struct uprobe {
->  	struct arch_uprobe	arch;
->  };
-> 
-> +struct return_instance {
-> +	struct uprobe		*uprobe;
-> +	unsigned long		func;
-> +	unsigned long		orig_ret_vaddr; /* original return address */
-> +	bool			chained;	/* true, if instance is nested */
-> +
-> +	struct return_instance	*next;		/* keep as stack */
-> +};
-> +
->  /*
->   * valid_vma: Verify if the specified vma is an executable vma
->   * Relax restrictions while unregistering: vm_flags might have
-> @@ -1294,6 +1303,7 @@ unsigned long __weak uprobe_get_swbp_addr(struct pt_regs *regs)
->  void uprobe_free_utask(struct task_struct *t)
->  {
->  	struct uprobe_task *utask = t->utask;
-> +	struct return_instance *ri, *tmp;
-> 
+> @@ -1381,6 +1381,13 @@ static void prepare_uretprobe(struct uprobe *uprobe, struct pt_regs *regs)
 >  	if (!utask)
 >  		return;
-> @@ -1301,6 +1311,15 @@ void uprobe_free_utask(struct task_struct *t)
->  	if (utask->active_uprobe)
->  		put_uprobe(utask->active_uprobe);
 > 
-> +	ri = utask->return_instances;
-> +	while (ri) {
-> +		tmp = ri;
-> +		ri = ri->next;
-> +
-> +		put_uprobe(tmp->uprobe);
-> +		kfree(tmp);
+> +	if (utask->depth >= MAX_URETPROBE_DEPTH) {
+> +		printk_ratelimited(KERN_INFO "uprobe: omit uretprobe due to"
+> +				" nestedness limit pid/tgid=%d/%d\n",
+> +				current->pid, current->tgid);
+> +		return;
 > +	}
 > +
->  	xol_free_insn_slot(t);
->  	kfree(utask);
->  	t->utask = NULL;
-> @@ -1348,6 +1367,65 @@ static unsigned long get_trampoline_vaddr(void)
->  	return trampoline_vaddr;
->  }
+>  	ri = kzalloc(sizeof(struct return_instance), GFP_KERNEL);
+>  	if (!ri)
+>  		goto fail;
+> @@ -1416,6 +1423,8 @@ static void prepare_uretprobe(struct uprobe *uprobe, struct pt_regs *regs)
+>  	ri->orig_ret_vaddr = orig_ret_vaddr;
+>  	ri->chained = chained;
 > 
-> +static void prepare_uretprobe(struct uprobe *uprobe, struct pt_regs *regs)
-> +{
-> +	struct return_instance *ri;
-> +	struct uprobe_task *utask;
-> +	unsigned long orig_ret_vaddr, trampoline_vaddr;
-> +	bool chained = false;
+> +	utask->depth++;
 > +
-> +	if (!get_xol_area())
-> +		return;
-> +
-> +	utask = get_utask();
-> +	if (!utask)
-> +		return;
-> +
-> +	ri = kzalloc(sizeof(struct return_instance), GFP_KERNEL);
-> +	if (!ri)
-> +		goto fail;
-> +
-> +	trampoline_vaddr = get_trampoline_vaddr();
-> +	orig_ret_vaddr = arch_uretprobe_hijack_return_addr(trampoline_vaddr, regs);
-> +	if (orig_ret_vaddr == -1)
-> +		goto fail;
-> +
-> +	/*
-> +	 * We don't want to keep trampoline address in stack, rather keep the
-> +	 * original return address of first caller thru all the consequent
-> +	 * instances. This also makes breakpoint unwrapping easier.
-> +	 */
-> +	if (orig_ret_vaddr == trampoline_vaddr) {
-> +		if (!utask->return_instances) {
-> +			/*
-> +			 * This situation is not possible. Likely we have an
-> +			 * attack from user-space.
-> +			 */
-> +			pr_warn("uprobe: unable to set uretprobe pid/tgid=%d/%d\n",
-> +						current->pid, current->tgid);
-> +			goto fail;
-> +		}
-> +
-> +		chained = true;
-> +		orig_ret_vaddr = utask->return_instances->orig_ret_vaddr;
-> +	}
-> +
-> +	atomic_inc(&uprobe->ref);
-> +	ri->uprobe = uprobe;
-> +	ri->func = instruction_pointer(regs);
-> +	ri->orig_ret_vaddr = orig_ret_vaddr;
-> +	ri->chained = chained;
-> +
-> +	/* add instance to the stack */
-> +	ri->next = utask->return_instances;
-> +	utask->return_instances = ri;
-> +
-> +	return;
-> +
-> + fail:
-> +	kfree(ri);
-> +}
-> +
->  /* Prepare to single-step probed instruction out of line. */
->  static int
->  pre_ssout(struct uprobe *uprobe, struct pt_regs *regs, unsigned long bp_vaddr)
-> @@ -1503,6 +1581,7 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
->  {
->  	struct uprobe_consumer *uc;
->  	int remove = UPROBE_HANDLER_REMOVE;
-> +	bool need_prep = false; /* prepare return uprobe, when needed */
+>  	/* add instance to the stack */
+>  	ri->next = utask->return_instances;
+>  	utask->return_instances = ri;
+> @@ -1652,6 +1661,8 @@ static bool handler_uretprobe(struct pt_regs *regs)
+>  		if (!chained)
+>  			break;
 > 
->  	down_read(&uprobe->register_rwsem);
->  	for (uc = uprobe->consumers; uc; uc = uc->next) {
-> @@ -1513,9 +1592,16 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
->  			WARN(rc & ~UPROBE_HANDLER_MASK,
->  				"bad rc=0x%x from %pf()\n", rc, uc->handler);
->  		}
+> +		utask->depth--;
 > +
-> +		if (uc->ret_handler)
-> +			need_prep = true;
-> +
->  		remove &= rc;
+>  		BUG_ON(!ri);
 >  	}
 > 
-> +	if (need_prep && !remove)
-> +		prepare_uretprobe(uprobe, regs); /* put bp at return */
-> +
->  	if (remove && uprobe->consumers) {
->  		WARN_ON(!uprobe_is_active(uprobe));
->  		unapply_uprobe(uprobe, current->mm);
-> @@ -1634,7 +1720,11 @@ void uprobe_notify_resume(struct pt_regs *regs)
->   */
->  int uprobe_pre_sstep_notifier(struct pt_regs *regs)
->  {
-> -	if (!current->mm || !test_bit(MMF_HAS_UPROBES, &current->mm->flags))
-> +	if (!current->mm)
-> +		return 0;
-> +
-> +	if (!test_bit(MMF_HAS_UPROBES, &current->mm->flags) &&
-> +	    (!current->utask || !current->utask->return_instances))
->  		return 0;
-> 
->  	set_thread_flag(TIF_UPROBE);
 > -- 
 > 1.8.1.4
 > 
