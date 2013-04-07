@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934620Ab3DGW56 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 18:57:58 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46317 "EHLO
+	id S934485Ab3DGWzr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 18:55:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46308 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758909Ab3DGWzs (ORCPT
+	by vger.kernel.org with ESMTP id S1758909Ab3DGWzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 18:55:48 -0400
+	Sun, 7 Apr 2013 18:55:46 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
@@ -14,12 +14,13 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org, "Eric Dumazet" <edumazet@google.com>,
+        "Patrick McHardy" <kaber@trash.net>,
         "David S. Miller" <davem@davemloft.net>,
-        "Veaceslav Falico" <vfalico@redhat.com>
-Date: Sun, 07 Apr 2013 23:45:43 +0100
-Message-ID: <lsq.1365374743.816443706@decadent.org.uk>
+        "Cong Wang" <amwang@redhat.com>
+Date: Sun, 07 Apr 2013 23:45:42 +0100
+Message-ID: <lsq.1365374742.398438224@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [73/74] bonding: get netdev_rx_handler_unregister out of locks
+Subject: [56/74] 8021q: fix a potential use-after-free
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,36 +33,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Veaceslav Falico <vfalico@redhat.com>
+From: Cong Wang <amwang@redhat.com>
 
-commit fcd99434fb5c137274d2e15dd2a6a7455f0f29ff upstream.
+[ Upstream commit 4a7df340ed1bac190c124c1601bfc10cde9fb4fb ]
 
-Now that netdev_rx_handler_unregister contains synchronize_net(), we need
-to call it outside of bond->lock, cause it might sleep. Also, remove the
-already unneded synchronize_net().
+vlan_vid_del() could possibly free ->vlan_info after a RCU grace
+period, however, we may still refer to the freed memory area
+by 'grp' pointer. Found by code inspection.
 
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+This patch moves vlan_vid_del() as behind as possible.
+
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Cong Wang <amwang@redhat.com>
 Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/bonding/bond_main.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ net/8021q/vlan.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1934,12 +1934,11 @@ int bond_release(struct net_device *bond
- 		return -EINVAL;
+diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
+index 5471628..963f285 100644
+--- a/net/8021q/vlan.c
++++ b/net/8021q/vlan.c
+@@ -110,13 +110,6 @@ void unregister_vlan_dev(struct net_device *dev, struct list_head *head)
+ 	grp = rtnl_dereference(real_dev->vlgrp);
+ 	BUG_ON(!grp);
+ 
+-	/* Take it out of our own structures, but be sure to interlock with
+-	 * HW accelerating devices or SW vlan input packet processing if
+-	 * VLAN is not 0 (leave it there for 802.1p).
+-	 */
+-	if (vlan_id && (real_dev->features & NETIF_F_HW_VLAN_FILTER))
+-		ops->ndo_vlan_rx_kill_vid(real_dev, vlan_id);
+-
+ 	grp->nr_vlans--;
+ 
+ 	if (vlan->flags & VLAN_FLAG_GVRP)
+@@ -139,6 +132,13 @@ void unregister_vlan_dev(struct net_device *dev, struct list_head *head)
+ 		call_rcu(&grp->rcu, vlan_rcu_free);
  	}
  
-+	write_unlock_bh(&bond->lock);
- 	/* unregister rx_handler early so bond_handle_frame wouldn't be called
- 	 * for this slave anymore.
- 	 */
- 	netdev_rx_handler_unregister(slave_dev);
--	write_unlock_bh(&bond->lock);
--	synchronize_net();
- 	write_lock_bh(&bond->lock);
- 
- 	if (!bond->params.fail_over_mac) {
++	/* Take it out of our own structures, but be sure to interlock with
++	 * HW accelerating devices or SW vlan input packet processing if
++	 * VLAN is not 0 (leave it there for 802.1p).
++	 */
++	if (vlan_id && (real_dev->features & NETIF_F_HW_VLAN_FILTER))
++		ops->ndo_vlan_rx_kill_vid(real_dev, vlan_id);
++
+ 	/* Get rid of the vlan's reference to real_dev */
+ 	dev_put(real_dev);
+ }
 
