@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934370Ab3DGVCv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 17:02:51 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:53632 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934312Ab3DGVCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 17:02:50 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg KH <gregkh@linuxfoundation.org>, Huacai Chen <chenhc@lemote.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Fuxin Zhang <zhangfx@lemote.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] PM/reboot: call syscore_shutdown() after disable_nonboot_cpus()
-Date: Sun, 07 Apr 2013 23:10:30 +0200
-Message-ID: <2582863.XOOaeZz0rz@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130407152932.GA18032@kroah.com>
-References: <1365300854-3133-1-git-send-email-chenhc@lemote.com> <3513307.9cks2gqsZt@vostro.rjw.lan> <20130407152932.GA18032@kroah.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S934366Ab3DGVG6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 17:06:58 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58464 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934308Ab3DGVG5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 17:06:57 -0400
+Date: Sun, 07 Apr 2013 17:06:54 -0400 (EDT)
+Message-Id: <20130407.170654.613017631446034661.davem@davemloft.net>
+To: alan@signal11.us
+Cc: alex.bluesman.smirnov@gmail.com, dbaryshkov@gmail.com,
+        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/4] 802.15.4 and 6LoWPAN Buffering Fixes
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1364997658-16498-1-git-send-email-alan@signal11.us>
+References: <1364928481-1813-1-git-send-email-alan@signal11.us>
+	<1364997658-16498-1-git-send-email-alan@signal11.us>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sun, 07 Apr 2013 14:06:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, April 07, 2013 08:29:32 AM Greg KH wrote:
-> On Sun, Apr 07, 2013 at 10:46:00AM +0200, Rafael J. Wysocki wrote:
-> > On Sunday, April 07, 2013 10:14:14 AM Huacai Chen wrote:
-> > > As commit 40dc166c (PM / Core: Introduce struct syscore_ops for core
-> > > subsystems PM) say, syscore_ops operations should be carried with one
-> > > CPU on-line and interrupts disabled. However, after commit f96972f2d
-> > > (kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()),
-> > > syscore_shutdown() is called before disable_nonboot_cpus(), so break
-> > > the rules. We have a MIPS machine with a 8259A PIC, and there is an
-> > > external timer (HPET) linked at 8259A. Since 8259A has been shutdown
-> > > too early (by syscore_shutdown()), disable_nonboot_cpus() runs without
-> > > timer interrupt, so it hangs and reboot fails. This patch call
-> > > syscore_shutdown() a little later (after disable_nonboot_cpus()) to
-> > > avoid reboot failure, this is the same way as poweroff does.
-> > > 
-> > > BTW, add disable_nonboot_cpus() in kernel_halt() for consistency.
-> > > 
-> > > Signed-off-by: Huacai Chen <chenhc@lemote.com>
-> > > Cc: <stable@vger.kernel.org>
-> > 
-> > While I agree with the changes, I'm not sure if I'm the right maintainer,
-> > as this isn't really PM code.
-> > 
-> > Andrew, should I take this?
+From: Alan Ott <alan@signal11.us>
+Date: Wed,  3 Apr 2013 10:00:54 -0400
+
+> Version 2 of this patch series:
 > 
-> Andrew is on vacation for a few weeks, so you might need to take this
-> through your tree.
+> Differences from v1:
+> 
+> 1. Patches previously numbered 5 and 6 were squashed (to become current
+> patch #4) at the request of Alexander Smirnov.
+> 
+> 2. Current patch #2 had extraneous braces removed.
+> 
+> 3. Current patch #1 was changed. It is now a patch to make mac802154 _not_
+> retry sending packets on failure. I believe this to be consistent with the
+> 802.15.4 specification (Section 7.5.6.4.3 of IEEE 802.15.4-2006)
 
-OK
-
-But, it looks like we should actually disable interrupts on the remaining
-CPU after we've called disable_nonboot_cpus() so that the syscore_shutdown()
-assumptions are satisfied which the patch doesn't do.
-
-Chen (I apologize if that's not the right part of your full name to use here),
-do you think that's not necessary and if so, then for what reason?
-
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Series applied, thanks.
