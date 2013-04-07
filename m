@@ -1,95 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab3DGFyh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 01:54:37 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:46375 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332Ab3DGFyg (ORCPT
+	id S1753286Ab3DGGBL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 02:01:11 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:16153 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928Ab3DGGBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 01:54:36 -0400
-Message-ID: <51610A25.4010301@oracle.com>
-Date: Sun, 07 Apr 2013 13:54:45 +0800
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Reply-To: zhenzhong.duan@oracle.com
-Organization: oracle
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Sun, 7 Apr 2013 02:01:09 -0400
+Message-ID: <51610B78.7080001@huawei.com>
+Date: Sun, 7 Apr 2013 14:00:24 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xen-devel <xen-devel@lists.xen.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Feng Jin <joe.jin@oracle.com>, Tamon Shiose <tamon.shiose@oracle.com>
-Subject: [PATCH-v2] xen: Don't call arch_trigger_all_cpu_backtrace in dom0(pvm)
-Content-Type: text/plain; charset=GB2312
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC][PATCH 0/7] memcg: make memcg's life cycle the same as cgroup
+References: <515BF233.6070308@huawei.com> <20130404120049.GI29911@dhcp22.suse.cz>
+In-Reply-To: <20130404120049.GI29911@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nmi isn't supported in dom0, fallback to general all cpu backtrace code.
+On 2013/4/4 20:00, Michal Hocko wrote:
+> On Wed 03-04-13 17:11:15, Li Zefan wrote:
+>> (I'll be off from my office soon, and I won't be responsive in the following
+>> 3 days.)
+>>
+>> I'm working on converting memcg to use cgroup->id, and then we can kill css_id.
+>>
+>> Now memcg has its own refcnt, so when a cgroup is destroyed, the memcg can
+>> still be alive. This patchset converts memcg to always use css_get/put, so
+>> memcg will have the same life cycle as its corresponding cgroup, and then
+>> it's always safe for memcg to use cgroup->id.
+>>
+>> The historical reason that memcg didn't use css_get in some cases, is that
+>> cgroup couldn't be removed if there're still css refs. The situation has
+>> changed so that rmdir a cgroup will succeed regardless css refs, but won't
+>> be freed until css refs goes down to 0.
+>>
+>> This is an early post, and it's NOT TESTED. I just want to see if the changes
+>> are fine in general.
+> 
+> yes, I like the approach and it looks correct as well (some minor things
+> mentioned in the patches). Thanks a lot Li! This will make our lifes much
+> easier. The separate ref counting was PITA especially after
+> introduction of kmem accounting which made its usage even more trickier.
+> 
+>> btw, after this patchset I think we don't need to free memcg via RCU, because
+>> cgroup is already freed in RCU callback.
+> 
+> But this depends on changes waiting in for-3.10 branch, right?
 
-Without fix, on xAPIC system, doing sysrq+l, no backtrace is showed,
-as xen_send_IPI_all is called and it doesn't support nmi vector.
+What changes? memcg changes or cgroup core changes? I don't think this depends
+on anything in cgroup 3.10 branch.
 
-On x2APIC enabled system, got NULL pointer dereference as below.
+> Anyway, I think we should be safe with the workqueue based releasing as
+> well once mem_cgroup_{get,put} are gone, right?
+> 
 
-    SysRq : Show backtrace of all active CPUs
-    BUG: unable to handle kernel NULL pointer dereference at           (null)
-    IP: [<ffffffff8125e3cb>] memcpy+0xb/0x120
-    Call Trace:
-     [<ffffffff81039633>] ? __x2apic_send_IPI_mask+0x73/0x160
-     [<ffffffff8103973e>] x2apic_send_IPI_all+0x1e/0x20
-     [<ffffffff8103498c>] arch_trigger_all_cpu_backtrace+0x6c/0xb0
-     [<ffffffff81501be4>] ? _raw_spin_lock_irqsave+0x34/0x50
-     [<ffffffff8131654e>] sysrq_handle_showallcpus+0xe/0x10
-     [<ffffffff8131616d>] __handle_sysrq+0x7d/0x140
-     [<ffffffff81316230>] ? __handle_sysrq+0x140/0x140
-     [<ffffffff81316287>] write_sysrq_trigger+0x57/0x60
-     [<ffffffff811ca996>] proc_reg_write+0x86/0xc0
-     [<ffffffff8116dd8e>] vfs_write+0xce/0x190
-     [<ffffffff8116e3e5>] sys_write+0x55/0x90
-     [<ffffffff8150a242>] system_call_fastpath+0x16/0x1b
-
-That's because apic points to apic_x2apic_cluster or apic_x2apic_phys
-but the basic element like cpumask isn't initialized.
-
--v2: Mask x2APIC feature in pvm to avoid overwrite of apic pointer,
-     update commit message per Konrad's suggestion.
-
-Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Tested-by: Tamon Shiose <tamon.shiose@oracle.com>
----
- arch/x86/xen/enlighten.c |    3 +++
- include/linux/nmi.h      |    2 ++
- 2 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index c8e1c7b..12b0718 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -386,6 +386,9 @@ static void __init xen_init_cpuid_mask(void)
- 		cpuid_leaf1_edx_mask &=
- 			~((1 << X86_FEATURE_APIC) |  /* disable local APIC */
- 			  (1 << X86_FEATURE_ACPI));  /* disable ACPI */
-+
-+	cpuid_leaf1_ecx_mask &= ~(1 << (X86_FEATURE_X2APIC % 32));
-+
- 	ax = 1;
- 	cx = 0;
- 	xen_cpuid(&ax, &bx, &cx, &dx);
-diff --git a/include/linux/nmi.h b/include/linux/nmi.h
-index db50840..b845757 100644
---- a/include/linux/nmi.h
-+++ b/include/linux/nmi.h
-@@ -32,6 +32,8 @@ static inline void touch_nmi_watchdog(void)
- #ifdef arch_trigger_all_cpu_backtrace
- static inline bool trigger_all_cpu_backtrace(void)
- {
-+	if (xen_domain())
-+		return false;
- 	arch_trigger_all_cpu_backtrace();
- 
- 	return true;
--- 
-1.7.3
+cgroup calls mem_cgroup_css_free() in a work function, so seems memcg doesn't
+need to use RCU or workqueue in mem_cgroup_css_free().
 
