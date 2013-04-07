@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933955Ab3DGP3j (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 11:29:39 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:46267 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933901Ab3DGP3g (ORCPT
+	id S933966Ab3DGPjD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 11:39:03 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:35759 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933945Ab3DGPjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 11:29:36 -0400
-Date: Sun, 7 Apr 2013 08:29:32 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Huacai Chen <chenhc@lemote.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Fuxin Zhang <zhangfx@lemote.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] PM/reboot: call syscore_shutdown() after
- disable_nonboot_cpus()
-Message-ID: <20130407152932.GA18032@kroah.com>
-References: <1365300854-3133-1-git-send-email-chenhc@lemote.com>
- <3513307.9cks2gqsZt@vostro.rjw.lan>
+	Sun, 7 Apr 2013 11:39:01 -0400
+Message-ID: <5161931A.8060501@gmail.com>
+Date: Sun, 07 Apr 2013 11:39:06 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3513307.9cks2gqsZt@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        kosaki.motohiro@gmail.com
+Subject: Re: [PATCH 2/3] mm/page_alloc: convert zone_pcp_update() to use on_each_cpu()
+ instead of stop_machine()
+References: <1365194030-28939-1-git-send-email-cody@linux.vnet.ibm.com> <1365194030-28939-3-git-send-email-cody@linux.vnet.ibm.com>
+In-Reply-To: <1365194030-28939-3-git-send-email-cody@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 07, 2013 at 10:46:00AM +0200, Rafael J. Wysocki wrote:
-> On Sunday, April 07, 2013 10:14:14 AM Huacai Chen wrote:
-> > As commit 40dc166c (PM / Core: Introduce struct syscore_ops for core
-> > subsystems PM) say, syscore_ops operations should be carried with one
-> > CPU on-line and interrupts disabled. However, after commit f96972f2d
-> > (kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()),
-> > syscore_shutdown() is called before disable_nonboot_cpus(), so break
-> > the rules. We have a MIPS machine with a 8259A PIC, and there is an
-> > external timer (HPET) linked at 8259A. Since 8259A has been shutdown
-> > too early (by syscore_shutdown()), disable_nonboot_cpus() runs without
-> > timer interrupt, so it hangs and reboot fails. This patch call
-> > syscore_shutdown() a little later (after disable_nonboot_cpus()) to
-> > avoid reboot failure, this is the same way as poweroff does.
-> > 
-> > BTW, add disable_nonboot_cpus() in kernel_halt() for consistency.
-> > 
-> > Signed-off-by: Huacai Chen <chenhc@lemote.com>
-> > Cc: <stable@vger.kernel.org>
+(4/5/13 4:33 PM), Cody P Schafer wrote:
+> No off-cpu users of the percpu pagesets exist.
 > 
-> While I agree with the changes, I'm not sure if I'm the right maintainer,
-> as this isn't really PM code.
+> zone_pcp_update()'s goal is to adjust the ->high and ->mark members of a
+> percpu pageset based on a zone's ->managed_pages. We don't need to drain
+> the entire percpu pageset just to modify these fields. Avoid calling
+> setup_pageset() (and the draining required to call it) and instead just
+> set the fields' values.
 > 
-> Andrew, should I take this?
+> This does change the behavior of zone_pcp_update() as the percpu
+> pagesets will not be drained when zone_pcp_update() is called (they will
+> end up being shrunk, not completely drained, later when a 0-order page
+> is freed in free_hot_cold_page()).
+> 
+> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 
-Andrew is on vacation for a few weeks, so you might need to take this
-through your tree.
+NAK.
 
-greg k-h
+1) zone_pcp_update() is only used from memory hotplug and it require page drain.
+2) stop_machin is used for avoiding race. just removing it is insane.
+
+
