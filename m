@@ -1,94 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161309Ab3DGCV3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 22:21:29 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:58075 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161185Ab3DGCV2 (ORCPT
+	id S1161325Ab3DGCgJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 22:36:09 -0400
+Received: from mail-da0-f50.google.com ([209.85.210.50]:36394 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161269Ab3DGCgG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 22:21:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130407015846.GA2232@kernel.org>
-References: <CAMo8BfLusS_vT4LWU93iCXpVSgN_Uvi1mBvLUVx+892V67X1JQ@mail.gmail.com>
-	<254789F5-7950-4239-AB7B-2DB9DC73565F@dubeyko.com>
-	<5159EC3D.2020501@gmail.com>
-	<1364884045.3301.18.camel@slavad-ubuntu>
-	<CAMo8Bf+83t3ML_Ctr4V-pVL7Meei=pdOeC5cgtrPJB12tOcGtA@mail.gmail.com>
-	<CAMo8BfKgTPO6AJng6zo1my4K_PivC1gJFQmcvy8q=iDYWSO2Pw@mail.gmail.com>
-	<20130405015327.GA319@kernel.org>
-	<CAMo8Bf+ccoU7jccOsxoyPqo2o8HaHhnuiocoNj1j67+S07aq_g@mail.gmail.com>
-	<20130407015846.GA2232@kernel.org>
-Date: Sun, 7 Apr 2013 06:21:27 +0400
-Message-ID: <CAMo8BfKK+YYVKccGyymA40xJ8G=BVrJQS7Gz6RM1hnmef=YuBA@mail.gmail.com>
-Subject: Re: mkfs.f2fs gets stuck with "blk_update_request: bio idx 0 >= vcnt
- 0" on 3.8
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Shaohua Li <shli@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, slava@dubeyko.com
-Content-Type: text/plain; charset=UTF-8
+	Sat, 6 Apr 2013 22:36:06 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: backports@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Subject: [PATCH 0/3] backports: adds regulator and media susbsystems
+Date: Sat,  6 Apr 2013 19:35:35 -0700
+Message-Id: <1365302138-19736-1-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 7, 2013 at 5:58 AM, Shaohua Li <shli@kernel.org> wrote:
-> On Fri, Apr 05, 2013 at 06:18:10AM +0400, Max Filippov wrote:
->> On Fri, Apr 5, 2013 at 5:53 AM, Shaohua Li <shli@kernel.org> wrote:
->> > On Thu, Apr 04, 2013 at 06:00:18AM +0400, Max Filippov wrote:
->>
->> [...]
->>
->> >> the commit 0cfbcafcae8b7364b5fa96c2b26ccde7a3a296a9 'block: add plug
->> >> for blkdev_issue_discard'
->> >> have added merge opportunity for DISCARD requests. When I do
->> >> mkfs.f2fs on a 5G partition (0xad8000 sectors) it submits two bios,
->> >> one for 0x7fe000 sectors (0xffc00000 bytes) and another for
->> >> 0x2da000 sectors (0x5b400000 bytes). Prior to that commit these
->> >> bios weren't merged into one request. Now the second bio gets
->> >> merged with the first, but the request's __data_len field is unsigned int
->> >> and it gets wrapped to 0x5b000000 bytes instead of 0x15b000000
->> >> in the bio_attempt_back_merge. Later this reduced size is passed to
->> >> the blk_update_request causing KERN_ERR and not completed
->> >> request. Reverting this commit fixes mkfs.f2fs for me.
->> >
->> > A workaround is setting limits.max_discard_sectors to a smaller value.
->>
->> I'm not sure:
->> 1) in my case max_discard_sectors is 0x7fe000 (0xffc00000 bytes,
->>     which still fits into 32 bits) and
->> 2) this parameter will only change size of individual discard requests for
->>     the discarded range, but as long as these requests are done inside
->>     the plug they will be merged anyway with an overflow if we try
->>     to discard more than 4G at once.
->
-> No, merge in plug list checks max_discard_sectors. Please see
-> ll_back_merge_fn() in bio_attempt_back_merge(). Merge in unplug checks
-> max_discard_sectors too. I didn't see any chance a merge doesn't check
-> max_discard_sectors. Can you post a blktrace when the discard ioctl runs and
-> double check if max_discard_sectors is really 0x7fe000?
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
-Ok, max_discard_sectors is a bit ambiguous here.
-There's a variable inside blkdev_issue_discard called max_discard_sectors,
-I looked at it and it was 0x7fe000. But the q->limits.max_discard_sectors
-is initialized to 0xffffffff in the mmc_queue_setup_discard. The following
-change fixes the original issue too:
+This is just test work I've been doing on the side, that really
+just started from scratching an itch to see what is possible.
+In the compat-drivers trees I had actually gotten to run time
+test the USB video camera driver and that worked fine. Under
+the new backports tree we are encouraged to just backport the
+entire subsystem so I gave that a shot and this is where I got
+up to. It turned out a few drivers required mucking with the
+regulator and as I started backporting some functionality I
+realized that the 3.2 regulator was just stubs so ended up trying
+to port all of the regulator and its drivers as well.
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index aaed768..0753986 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -1920,7 +1920,7 @@ unsigned int mmc_calc_max_discard(struct mmc_card *card)
-        unsigned int max_discard, max_trim;
+The media drivers should now compile *if* we fix the regulator
+issues but as it turns out the last issues I ran into hit a gcc
+segfault :)
 
-        if (!host->max_discard_to)
--               return UINT_MAX;
-+               return UINT_MAX >> 9;
+These patches depend on the other 9 patches I just posted. I hadn't
+tested ckmake yet with the other patches...
 
-        /*
-         * Without erase_group_def set, MMC erase timeout depends on clock
+Note one thing I realize from this exercise is that it'd be nice
+to be able to rename the upstream target file when being sucked
+into compat as part of compat-y or perhaps its best to do this
+always with a _backport prefix ? See core.c from regulator and
+how it gets pulled into compat/
 
+I do realize that porting the regulator code may not make make sense
+and if so then perhaps any media drivers that rely on it shoud likley
+not be ported... But that sounds like a cheap "solution". For mobile
+for example I do envision it being desirable to port over any media
+or regulator drivers. One possibility I have only been toying with
+in thought has been using ksplice... but that seems a bit over kill
+and likely very fragile for adding new symbols. Can we extend a kernel
+with backport ELF sections ? If so so, we don't necessarily need to
+have the functionality to patch a kernel and keep it running at runtime
+but *if* this is possible perhaps that may allow for us to add our own
+sections to call on the kernel. The only issue with that of course is
+that then compat-y as a whole would need to be thrown in there.
+
+  CC [M]  /home/mcgrof/tmp/build/compat/main.o
+  CC [M]  /home/mcgrof/tmp/build/compat/compat-3.3.o
+  CC [M]  /home/mcgrof/tmp/build/compat/compat-3.4.o
+  CC [M]  /home/mcgrof/tmp/build/compat/compat-3.5.o
+  CC [M]  /home/mcgrof/tmp/build/compat/user_namespace.o
+  CC [M]  /home/mcgrof/tmp/build/compat/compat-3.6.o
+  CC [M]  /home/mcgrof/tmp/build/compat/compat-3.7.o
+  CC [M]  /home/mcgrof/tmp/build/compat/compat-3.8.o
+  CC [M]  /home/mcgrof/tmp/build/compat/compat-3.9.o
+  CC [M]  /home/mcgrof/tmp/build/compat/core.o
+Segmentation fault
+make[8]: *** [/home/mcgrof/tmp/build/compat/core.o] Error 139
+
+Luis R. Rodriguez (3):
+  compat: redefine core_initcall() and late_initcall()
+  backports: add support for voltage / current regulator subsystem
+  backports: add media subsystem drivers
+
+ .blacklist.map                                     |    9 +
+ backport/Makefile.kernel                           |    8 +
+ backport/Makefile.real                             |    1 +
+ backport/compat/Kconfig                            |   18 +
+ backport/compat/main.c                             |    5 +
+ backport/defconfigs/media                          |  506 ++++++++++++++++++++
+ backport/defconfigs/regulator                      |   63 +++
+ backport/include/linux/compat-2.6.h                |   15 +
+ backport/include/linux/compat-3.3.h                |    8 +
+ copy-list                                          |   44 ++
+ dependencies                                       |    6 +
+ lib/blacklist.sh                                   |   35 ++
+ .../media/0001-media_entity_info.patch             |   67 +++
+ .../regulator/0001-disable-ftrace.patch            |   74 +++
+ 14 files changed, 859 insertions(+)
+ create mode 100644 .blacklist.map
+ create mode 100644 backport/defconfigs/media
+ create mode 100644 backport/defconfigs/regulator
+ create mode 100755 lib/blacklist.sh
+ create mode 100644 patches/collateral-evolutions/media/0001-media_entity_info.patch
+ create mode 100644 patches/collateral-evolutions/regulator/0001-disable-ftrace.patch
 
 -- 
-Thanks.
--- Max
+1.7.10.4
+
