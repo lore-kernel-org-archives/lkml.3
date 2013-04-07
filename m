@@ -1,56 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933009Ab3DGIt4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 04:49:56 -0400
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:53106 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932988Ab3DGItz (ORCPT
+	id S933039Ab3DGIz4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 04:55:56 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:29569 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932988Ab3DGIzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 04:49:55 -0400
+	Sun, 7 Apr 2013 04:55:54 -0400
+X-Spam-Score: -100.8
+Message-ID: <5161347B.8090604@asianux.com>
+Date: Sun, 07 Apr 2013 16:55:23 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130407075625.GN4068@ZenIV.linux.org.uk>
-References: <CADZ9YHiQBips5DB=xo0Kh-Nx_s60K+W+5RK-kCrHMfy6AGkhyA@mail.gmail.com>
-	<20130407075625.GN4068@ZenIV.linux.org.uk>
-Date: Sun, 7 Apr 2013 14:49:54 +0600
-Message-ID: <CADZ9YHiROer+sNAVz5TVAdFB3ec6tiJ96aKAMh6YUn=Dom5e2w@mail.gmail.com>
-Subject: Re: old->umask copying without spin_lock, in copy_fs_struct()
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>
+To: Al Viro <viro@zeniv.linux.org.uk>, eparis@redhat.com
+CC: David Miller <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: [PATCH] kernel: audit: beautify code, for extern function, better
+ to check its parameters by itself
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 7, 2013 at 1:56 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Sun, Apr 07, 2013 at 11:37:27AM +0600, Rakib Mullick wrote:
->> Hello,
->>
->> In copy_fs_struct(), old->umask is assigned to fs->umask outside of
->> spin_lock(&old->lock). Shouldn't it be inside spin_lock()? Since we're
->> dealing with  fs_struct *old ? Isn't it unsafe? Following lines -
->>
->>               fs->umask = old->umask;
->>
->>                 spin_lock(&old->lock);
->
-> What would moving it down buy us?  Root, pwd and umask are all modified
-> independently; the *only* reason why we hold old->lock for root and
-> pwd (and we might drop and regain it between copying those - it would
-> be pointless, so we don't bother, but it wouldn't have affected correctness)
-> is that we want the values of root.mnt and root.dentry taken at the same
-> time and we want to grab extra references on those while they are still
-> valid.  The same goes for pwd, of course.  That's what old->lock
-> protects - we want the damn thing atomic wrt set_fs_root() and set_fs_pwd().
-> umask is an integer; its updates are atomic anyway, so it's not as if we
-> could see a half-updated value or needed to do anything with refcounts.
 
-Thanks for your explanation! The ->umask operation is trivial and as
-you've explained (I was also looking at the code),
-it seems that code execution order makes sure that nothing goes wrong.
-fs_struct's data are protected with the ->lock, that's what I was
-thinking in that way and was just making sure it wasn't missed out
-accidentally.
+  __audit_socketcall is an extern function.
+  better to check its parameters by itself.
 
-Thanks
-Rakib.
+    also can return error code, when fail (find invalid parameters).
+    also use macro instead of real hard code number
+    also give related comments for it.
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ include/linux/audit.h |   12 ++++++++----
+ kernel/auditsc.c      |    9 ++++++---
+ net/socket.c          |    6 ++++--
+ 3 files changed, 18 insertions(+), 9 deletions(-)
+
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 5a6d718..3fe9b7b 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -84,6 +84,9 @@ extern int audit_classify_arch(int arch);
+ #define	AUDIT_TYPE_CHILD_DELETE 3	/* a child being deleted */
+ #define	AUDIT_TYPE_CHILD_CREATE 4	/* a child being created */
+ 
++/* maximized args number that audit_socketcall can process */
++#define AUDITSC_ARGS		6
++
+ struct filename;
+ 
+ #ifdef CONFIG_AUDITSYSCALL
+@@ -190,7 +193,7 @@ extern void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk
+ extern void __audit_ipc_obj(struct kern_ipc_perm *ipcp);
+ extern void __audit_ipc_set_perm(unsigned long qbytes, uid_t uid, gid_t gid, umode_t mode);
+ extern int __audit_bprm(struct linux_binprm *bprm);
+-extern void __audit_socketcall(int nargs, unsigned long *args);
++extern int __audit_socketcall(int nargs, unsigned long *args);
+ extern int __audit_sockaddr(int len, void *addr);
+ extern void __audit_fd_pair(int fd1, int fd2);
+ extern void __audit_mq_open(int oflag, umode_t mode, struct mq_attr *attr);
+@@ -224,10 +227,11 @@ static inline int audit_bprm(struct linux_binprm *bprm)
+ 		return __audit_bprm(bprm);
+ 	return 0;
+ }
+-static inline void audit_socketcall(int nargs, unsigned long *args)
++static inline int audit_socketcall(int nargs, unsigned long *args)
+ {
+ 	if (unlikely(!audit_dummy_context()))
+-		__audit_socketcall(nargs, args);
++		return __audit_socketcall(nargs, args);
++	return 0;
+ }
+ static inline int audit_sockaddr(int len, void *addr)
+ {
+@@ -354,7 +358,7 @@ static inline int audit_bprm(struct linux_binprm *bprm)
+ {
+ 	return 0;
+ }
+-static inline void audit_socketcall(int nargs, unsigned long *args)
++static inline int audit_socketcall(int nargs, unsigned long *args)
+ { }
+ static inline void audit_fd_pair(int fd1, int fd2)
+ { }
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index a371f85..91270f0 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -226,7 +226,7 @@ struct audit_context {
+ 	union {
+ 		struct {
+ 			int nargs;
+-			long args[6];
++			long args[AUDITSC_ARGS];
+ 		} socketcall;
+ 		struct {
+ 			kuid_t			uid;
+@@ -2477,17 +2477,20 @@ int __audit_bprm(struct linux_binprm *bprm)
+ 
+ /**
+  * audit_socketcall - record audit data for sys_socketcall
+- * @nargs: number of args
++ * @nargs: number of args, which should not be more than AUDITSC_ARGS.
+  * @args: args array
+  *
+  */
+-void __audit_socketcall(int nargs, unsigned long *args)
++int __audit_socketcall(int nargs, unsigned long *args)
+ {
+ 	struct audit_context *context = current->audit_context;
+ 
++	if (nargs <= 0 || nargs > AUDITSC_ARGS || !args)
++		return -EINVAL;
+ 	context->type = AUDIT_SOCKETCALL;
+ 	context->socketcall.nargs = nargs;
+ 	memcpy(context->socketcall.args, args, nargs * sizeof(unsigned long));
++	return 0;
+ }
+ 
+ /**
+diff --git a/net/socket.c b/net/socket.c
+index 88f759a..122e460 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -2434,7 +2434,7 @@ static const unsigned char nargs[21] = {
+ 
+ SYSCALL_DEFINE2(socketcall, int, call, unsigned long __user *, args)
+ {
+-	unsigned long a[6];
++	unsigned long a[AUDITSC_ARGS];
+ 	unsigned long a0, a1;
+ 	int err;
+ 	unsigned int len;
+@@ -2450,7 +2450,9 @@ SYSCALL_DEFINE2(socketcall, int, call, unsigned long __user *, args)
+ 	if (copy_from_user(a, args, len))
+ 		return -EFAULT;
+ 
+-	audit_socketcall(nargs[call] / sizeof(unsigned long), a);
++	err = audit_socketcall(nargs[call] / sizeof(unsigned long), a);
++	if (err)
++		return err;
+ 
+ 	a0 = a[0];
+ 	a1 = a[1];
+-- 
+1.7.7.6
