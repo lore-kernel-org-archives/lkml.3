@@ -1,112 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934402Ab3DGVZV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 17:25:21 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:53048 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762463Ab3DGVZU (ORCPT
+	id S934404Ab3DGV0D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 17:26:03 -0400
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:43122 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762413Ab3DGV0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 17:25:20 -0400
+	Sun, 7 Apr 2013 17:26:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130407074113.GB10317@redhat.com>
-References: <20130404123806.GG17919@redhat.com>
-	<EF153515-9835-4FB9-B6BC-73D0BDC86492@suse.de>
-	<20130404124501.GH17919@redhat.com>
-	<1B68D701-103D-4B1A-8F5E-3916753699CB@suse.de>
-	<20130404125649.GI17919@redhat.com>
-	<8E65D34D-2DA7-4C2E-9C3E-BE3A7DBC3279@suse.de>
-	<20130404133318.GI6467@redhat.com>
-	<14B443D5-5785-487D-9EA3-0AD20141BC06@suse.de>
-	<20130404153629.GN6467@redhat.com>
-	<CAEDV+gKpCj1Sgn4TYw5ViYK-x4_c=-9nOpBwGfTBXRkJaN=gNg@mail.gmail.com>
-	<20130407074113.GB10317@redhat.com>
-Date: Sun, 7 Apr 2013 14:25:19 -0700
-X-Google-Sender-Auth: -Yiox0KsVCAzANoCJHCcLToPTEI
-Message-ID: <CAEDV+g+ard7e86vmfo6XF+1AmkndYVqnv_nRS3fXEx317MuXaA@mail.gmail.com>
-Subject: Re: [PATCH RFC] kvm: add PV MMIO EVENTFD
-From: Christoffer Dall <cdall@cs.columbia.edu>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Alexander Graf <agraf@suse.de>, Gleb Natapov <gleb@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130407032304.GA11500@cbz-workstation>
+References: <1364562678-8945-1-git-send-email-acourbot@nvidia.com> <20130407032304.GA11500@cbz-workstation>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Sun, 7 Apr 2013 14:25:39 -0700
+Message-ID: <CAAVeFuL185oiZfmv9waN9kOqVqfhnbC11JEs3Y59gpXNfiW34Q@mail.gmail.com>
+Subject: Re: [PATCH 0/3] gpio: remove GENERIC_GPIO completely
+To: Chen Baozi <baozich@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Romain Naour <romain.naour@openwide.fr>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r37LQ8bf020762
 
-On Sun, Apr 7, 2013 at 12:41 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> On Thu, Apr 04, 2013 at 04:32:01PM -0700, Christoffer Dall wrote:
->> [...]
->>
->> >> >> to give us some idea how much performance we would gain from each approach? Thoughput should be completely unaffected anyway, since virtio just coalesces kicks internally.
->> >> >
->> >> > Latency is dominated by the scheduling latency.
->> >> > This means virtio-net is not the best benchmark.
->> >>
->> >> So what is a good benchmark?
->> >
->> > E.g. ping pong stress will do but need to look at CPU utilization,
->> > that's what is affected, not latency.
->> >
->> >> Is there any difference in speed at all? I strongly doubt it. One of virtio's main points is to reduce the number of kicks.
->> >
->> > For this stage of the project I think microbenchmarks are more appropriate.
->> > Doubling the price of exit is likely to be measureable. 30 cycles likely
->> > not ...
->> >
->> I don't quite understand this point here. If we don't have anything
->> real-world where we can measure a decent difference, then why are we
->> doing this? I would agree with Alex that the three test scenarios
->> proposed by him should be tried out before adding this complexity,
->> measured in CPU utilization or latency as you wish.
->
-> Sure, plan to do real world benchmarks for PV MMIO versus PIO as well.
-> I don't see why I should bother implementing hypercalls given that the
-> kvm maintainer says they won't be merged.
->
+Hi Chen,
 
-the implementation effort to simply measure the hypercall performance
-should be minimal, no? If we can measure a true difference in
-performance, I'm sure we can revisit the issue of what will be merged
-and what won't be, but until we have those numbers it's all
-speculation.
+Cool, thanks! Can you send a formatted patch to include in the series,
+or do you prefer me to squash it in the relevant patch and add your
+signoff for this file?
 
->> FWIW, ARM always uses MMIO and provides hardware decoding of all sane
->> (not user register-writeback) instruction, but the hypercall vs. mmio
->> looks like this:
->>
->> hvc:  4,917
->> mmio_kernel: 6,248
->
-> So 20% difference?  That's not far from what happens on my intel laptop:
-> vmcall 1519
-> outl_to_kernel 1745
-> 10% difference here.
->
->>
->> But I doubt that an hvc wrapper around mmio decoding would take care
->> of all this difference, because the mmio operation needs to do other
->> work not realated to emulating the instruction in software, which
->> you'd have to do for an hvc anyway (populate kvm_mmio structure etc.)
->>
->
-> Instead of speculating, someone with relevant hardware
-> could just try this, but kvm unittest doesn't seem to have arm support
-> at the moment. Anyone working on this?
->
-We have a branch called kvm-selftest that replicates much of the
-functionality, which is what I run to get these measurements. I can
-port it over to unittest at some point, but I'm not active working on
-that.
+Alex.
 
-I can measure it, but we have bigger fish to fry on the ARM side right
-now, so it'll be a while until I get to that.
+2013/4/6 Chen Baozi <baozich@gmail.com>:
+> On Fri, Mar 29, 2013 at 06:11:15AM -0700, Alexandre Courbot wrote:
+>> Another issue, I could not update the Chinese documentation in a satisfying
+>> manner due to my absence of Chinese skills. Hope that will be forgiven.
+>>
+> Hi Alexandre,
+>
+> I have changed the Chinese documentation according to your update as
+> follows. Hopefully it would be helpful, :)
+>
+> ---
+>  Documentation/zh_CN/gpio.txt | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/Documentation/zh_CN/gpio.txt b/Documentation/zh_CN/gpio.txt
+> index 4fa7b4e..d5b8f01 100644
+> --- a/Documentation/zh_CN/gpio.txt
+> +++ b/Documentation/zh_CN/gpio.txt
+> @@ -84,10 +84,10 @@ GPIO 公约
+>  控制器的抽象函数来实现它。(有一些可选的代码能支持这种策略的实现,本文档
+>  后面会介绍，但作为 GPIO 接口的客户端驱动程序必须与它的实现无关。)
+>
+> -也就是说,如果在他们的平台上支持这个公约，驱动应尽可能的使用它。平台
+> -必须在 Kconfig 中声明对 GENERIC_GPIO的支持 (布尔型 true)，并提供
+> -一个 <asm/gpio.h> 文件。那些调用标准 GPIO 函数的驱动应该在 Kconfig
+> -入口中声明依赖GENERIC_GPIO。当驱动包含文件:
+> +也就是说,如果在他们的平台上支持这个公约，驱动应尽可能的使用它。同时，平台
+> +必须在 Kconfig 中选择 ARCH_REQUIRE_GPIOLIB 或者 ARCH_WANT_OPTIONAL_GPIOLIB
+> +选项。那些调用标准 GPIO 函数的驱动应该在 Kconfig
+> 入口中声明依赖GENERIC_GPIO。
+> +当驱动包含文件:
+>
+>         #include <linux/gpio.h>
+>
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
