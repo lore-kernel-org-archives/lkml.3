@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935067Ab3DGXd4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:33:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46876 "EHLO
+	id S935099Ab3DGXeY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:34:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46894 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935041Ab3DGXdx (ORCPT
+	by vger.kernel.org with ESMTP id S934697Ab3DGXeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:33:53 -0400
+	Sun, 7 Apr 2013 19:34:20 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "AceLan Kao" <acelan.kao@canonical.com>,
-        "Gustavo Padovan" <gustavo.padovan@collabora.co.uk>
+CC: akpm@linux-foundation.org, "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
+        "Vivek Gautam" <gautam.vivek@samsung.com>
 Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.820939442@decadent.org.uk>
+Message-ID: <lsq.1365374742.373564978@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [07/74] Bluetooth: Add support for Foxconn / Hon Hai [0489:e056]
+Subject: [28/74] usb: xhci: Fix TRB transfer length macro used for Event TRB.
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,53 +31,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: AceLan Kao <acelan.kao@canonical.com>
+From: Vivek Gautam <gautam.vivek@samsung.com>
 
-commit 2582d529c44d12502a700f1c3db062b9f44679bc upstream.
+commit 1c11a172cb30492f5f6a82c6e118fdcd9946c34f upstream.
 
-Add support for the AR9462 chip
+Use proper macro while extracting TRB transfer length from
+Transfer event TRBs. Adding a macro EVENT_TRB_LEN (bits 0:23)
+for the same, and use it instead of TRB_LEN (bits 0:16) in
+case of event TRBs.
 
-T: Bus=01 Lev=02 Prnt=02 Port=05 Cnt=01 Dev#= 4 Spd=12 MxCh= 0
-D: Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
-P: Vendor=0489 ProdID=e056 Rev=00.01
-C: #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I: If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I: If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+This patch should be backported to kernels as old as 2.6.31, that
+contain the commit b10de142119a676552df3f0d2e3a9d647036c26a "USB: xhci:
+Bulk transfer support".  This patch will have issues applying to older
+kernels.
 
-Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Vivek gautam <gautam.vivek@samsung.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/bluetooth/ath3k.c |    2 ++
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 3 insertions(+)
+ drivers/usb/host/xhci-ring.c |   24 ++++++++++++------------
+ drivers/usb/host/xhci.h      |    4 ++++
+ 2 files changed, 16 insertions(+), 12 deletions(-)
 
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -83,6 +83,7 @@ static struct usb_device_id ath3k_table[
- 	{ USB_DEVICE(0x0489, 0xe057) },
- 	{ USB_DEVICE(0x13d3, 0x3393) },
- 	{ USB_DEVICE(0x0489, 0xe04e) },
-+	{ USB_DEVICE(0x0489, 0xe056) },
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1964,8 +1964,8 @@ static int process_ctrl_td(struct xhci_h
+ 		if (event_trb != ep_ring->dequeue &&
+ 				event_trb != td->last_trb)
+ 			td->urb->actual_length =
+-				td->urb->transfer_buffer_length
+-				- TRB_LEN(le32_to_cpu(event->transfer_len));
++				td->urb->transfer_buffer_length -
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+ 		else
+ 			td->urb->actual_length = 0;
  
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE02C) },
-@@ -113,6 +114,7 @@ static struct usb_device_id ath3k_blist_
- 	{ USB_DEVICE(0x0489, 0xe057), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe04e), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
+@@ -1997,7 +1997,7 @@ static int process_ctrl_td(struct xhci_h
+ 		/* Maybe the event was for the data stage? */
+ 			td->urb->actual_length =
+ 				td->urb->transfer_buffer_length -
+-				TRB_LEN(le32_to_cpu(event->transfer_len));
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+ 			xhci_dbg(xhci, "Waiting for status "
+ 					"stage event\n");
+ 			return 0;
+@@ -2033,7 +2033,7 @@ static int process_isoc_td(struct xhci_h
+ 	/* handle completion code */
+ 	switch (trb_comp_code) {
+ 	case COMP_SUCCESS:
+-		if (TRB_LEN(le32_to_cpu(event->transfer_len)) == 0) {
++		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) == 0) {
+ 			frame->status = 0;
+ 			break;
+ 		}
+@@ -2078,7 +2078,7 @@ static int process_isoc_td(struct xhci_h
+ 				len += TRB_LEN(le32_to_cpu(cur_trb->generic.field[2]));
+ 		}
+ 		len += TRB_LEN(le32_to_cpu(cur_trb->generic.field[2])) -
+-			TRB_LEN(le32_to_cpu(event->transfer_len));
++			EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
  
- 	/* Atheros AR5BBU22 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xE03C), .driver_info = BTUSB_ATH3012 },
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -150,6 +150,7 @@ static struct usb_device_id blacklist_ta
- 	{ USB_DEVICE(0x0489, 0xe057), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0489, 0xe04e), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x0489, 0xe056), .driver_info = BTUSB_ATH3012 },
+ 		if (trb_comp_code != COMP_STOP_INVAL) {
+ 			frame->actual_length = len;
+@@ -2136,7 +2136,7 @@ static int process_bulk_intr_td(struct x
+ 	case COMP_SUCCESS:
+ 		/* Double check that the HW transferred everything. */
+ 		if (event_trb != td->last_trb ||
+-				TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
++		    EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
+ 			xhci_warn(xhci, "WARN Successful completion "
+ 					"on short TX\n");
+ 			if (td->urb->transfer_flags & URB_SHORT_NOT_OK)
+@@ -2164,18 +2164,18 @@ static int process_bulk_intr_td(struct x
+ 				"%d bytes untransferred\n",
+ 				td->urb->ep->desc.bEndpointAddress,
+ 				td->urb->transfer_buffer_length,
+-				TRB_LEN(le32_to_cpu(event->transfer_len)));
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)));
+ 	/* Fast path - was this the last TRB in the TD for this URB? */
+ 	if (event_trb == td->last_trb) {
+-		if (TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
++		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
+ 			td->urb->actual_length =
+ 				td->urb->transfer_buffer_length -
+-				TRB_LEN(le32_to_cpu(event->transfer_len));
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+ 			if (td->urb->transfer_buffer_length <
+ 					td->urb->actual_length) {
+ 				xhci_warn(xhci, "HC gave bad length "
+ 						"of %d bytes left\n",
+-					  TRB_LEN(le32_to_cpu(event->transfer_len)));
++					  EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)));
+ 				td->urb->actual_length = 0;
+ 				if (td->urb->transfer_flags & URB_SHORT_NOT_OK)
+ 					*status = -EREMOTEIO;
+@@ -2217,7 +2217,7 @@ static int process_bulk_intr_td(struct x
+ 		if (trb_comp_code != COMP_STOP_INVAL)
+ 			td->urb->actual_length +=
+ 				TRB_LEN(le32_to_cpu(cur_trb->generic.field[2])) -
+-				TRB_LEN(le32_to_cpu(event->transfer_len));
++				EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));
+ 	}
  
- 	/* Atheros AR5BBU12 with sflash firmware */
- 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
+ 	return finish_td(xhci, td, event_trb, event, ep, status, false);
+@@ -2283,7 +2283,7 @@ static int handle_tx_event(struct xhci_h
+ 	 * transfer type
+ 	 */
+ 	case COMP_SUCCESS:
+-		if (TRB_LEN(le32_to_cpu(event->transfer_len)) == 0)
++		if (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) == 0)
+ 			break;
+ 		if (xhci->quirks & XHCI_TRUST_TX_LENGTH)
+ 			trb_comp_code = COMP_SHORT_TX;
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -968,6 +968,10 @@ struct xhci_transfer_event {
+ 	__le32	flags;
+ };
+ 
++/* Transfer event TRB length bit mask */
++/* bits 0:23 */
++#define	EVENT_TRB_LEN(p)		((p) & 0xffffff)
++
+ /** Transfer Event bit fields **/
+ #define	TRB_TO_EP_ID(p)	(((p) >> 16) & 0x1f)
+ 
 
