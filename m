@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161446Ab3DGCgW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Apr 2013 22:36:22 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:41238 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161269Ab3DGCgQ (ORCPT
+	id S1161503Ab3DGCg2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Apr 2013 22:36:28 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:55816 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161269Ab3DGCgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Apr 2013 22:36:16 -0400
+	Sat, 6 Apr 2013 22:36:25 -0400
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 To: backports@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [PATCH 2/3] backports: add support for voltage / current regulator subsystem
-Date: Sat,  6 Apr 2013 19:35:37 -0700
-Message-Id: <1365302138-19736-3-git-send-email-mcgrof@do-not-panic.com>
+Subject: [PATCH 3/3] backports: add media subsystem drivers
+Date: Sat,  6 Apr 2013 19:35:38 -0700
+Message-Id: <1365302138-19736-4-git-send-email-mcgrof@do-not-panic.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1365302138-19736-1-git-send-email-mcgrof@do-not-panic.com>
 References: <1365302138-19736-1-git-send-email-mcgrof@do-not-panic.com>
@@ -23,301 +23,739 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
-This is enabled only for >= 3.2 and enables all regulator
-drivers. This is required by some media subsystem drivers.
+This adds backport support for all media subsystem
+drivers. This is enabled only for >= 3.2.
 
 Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
 ---
- backport/Makefile.kernel                           |    1 +
- backport/compat/Kconfig                            |   18 +++++
- backport/compat/main.c                             |    5 ++
- backport/defconfigs/regulator                      |   63 +++++++++++++++++
- backport/include/linux/compat-3.3.h                |    8 +++
- copy-list                                          |   27 +++++++
+ .blacklist.map                                     |    9 +
+ backport/Makefile.kernel                           |    7 +
+ backport/Makefile.real                             |    1 +
+ backport/defconfigs/media                          |  506 ++++++++++++++++++++
+ copy-list                                          |   17 +
  dependencies                                       |    3 +
- .../regulator/0001-disable-ftrace.patch            |   74 ++++++++++++++++++++
- 8 files changed, 199 insertions(+)
- create mode 100644 backport/defconfigs/regulator
- create mode 100644 patches/collateral-evolutions/regulator/0001-disable-ftrace.patch
+ lib/blacklist.sh                                   |   35 ++
+ .../media/0001-media_entity_info.patch             |   67 +++
+ 8 files changed, 645 insertions(+)
+ create mode 100644 .blacklist.map
+ create mode 100644 backport/defconfigs/media
+ create mode 100755 lib/blacklist.sh
+ create mode 100644 patches/collateral-evolutions/media/0001-media_entity_info.patch
 
+diff --git a/.blacklist.map b/.blacklist.map
+new file mode 100644
+index 0000000..84847e7
+--- /dev/null
++++ b/.blacklist.map
+@@ -0,0 +1,9 @@
++# Update this map when a driver gets renamed or
++# symbols from old drivers get moved to a newer
++# driver. If you have the driver on the right
++# hand side it will be blacklisted upon installation
++# only if you actually installed the driver on the
++# left.
++
++# new-driver	old-driver
++videodev	v4l2-compat-ioctl32
 diff --git a/backport/Makefile.kernel b/backport/Makefile.kernel
-index 8aa3e4a..3b2c1a4 100644
+index 3b2c1a4..5075e1d 100644
 --- a/backport/Makefile.kernel
 +++ b/backport/Makefile.kernel
-@@ -23,3 +23,4 @@ obj-$(CPTCFG_SSB) += drivers/ssb/
- obj-$(CPTCFG_BCMA) += drivers/bcma/
+@@ -7,6 +7,12 @@ NOSTDINC_FLAGS := \
+ 	-I$(M)/include/ \
+ 	-I$(M)/include/uapi \
+ 	-I$(M)/include/drm \
++	-I$(M)/drivers/media/dvb-core/ \
++	-I$(M)/drivers/media/tuners/ \
++	-I$(M)/drivers/media/dvb-frontends/ \
++	-I$(M)/drivers/media/common/siano/ \
++	-I$(M)/drivers/media/common/b2c2/ \
++	-I$(M)/drivers/media/pci/bt8xx/ \
+ 	-include $(M)/include/linux/compat-2.6.h \
+ 	$(call backport-cc-disable-warning, unused-but-set-variable) \
+ 	$(CFLAGS)
+@@ -24,3 +30,4 @@ obj-$(CPTCFG_BCMA) += drivers/bcma/
  obj-$(CPTCFG_ETHERNET) += drivers/net/ethernet/
  obj-$(CPTCFG_DRM) += drivers/gpu/drm/
-+obj-$(CPTCFG_REGULATOR) += drivers/regulator/
-diff --git a/backport/compat/Kconfig b/backport/compat/Kconfig
-index df58dcc..6ed7c71 100644
---- a/backport/compat/Kconfig
-+++ b/backport/compat/Kconfig
-@@ -156,6 +156,24 @@ config BACKPORT_BUILD_HDMI
- config BACKPORT_HDMI
- 	bool
- 
-+config BACKPORT_BUILD_REGULATOR
-+	bool
-+	# not possible on kernel < 3.2
-+	depends on !BACKPORT_KERNEL_3_2
-+	# don't build if base kernel has it, except on kernel < 3.9
-+	depends on !HDMI || BACKPORT_KERNEL_3_9
-+	# build for testing
-+	default y if BACKPORT_USERSEL_BUILD_ALL
-+	# build if a driver needs it
-+	default y if BACKPORT_REGULATOR
-+	#c-file drivers/regulator/core.c
-+	#c-file drivers/regulator/dummy.c
-+	#c-file drivers/regulator/fixed-helper.c
-+	#h-file linux/regulator/consumer.h
-+
-+config BACKPORT_REGULATOR
-+	bool
-+
- config BACKPORT_USERSEL_BUILD_ALL
- 	bool "Build all compat code"
- 	help
-diff --git a/backport/compat/main.c b/backport/compat/main.c
-index 6f1bfb7..9c5e5a6 100644
---- a/backport/compat/main.c
-+++ b/backport/compat/main.c
-@@ -38,6 +38,8 @@ void backport_dependency_symbol(void)
- }
- EXPORT_SYMBOL_GPL(backport_dependency_symbol);
- 
-+backport_init_sym(regulator_init);
-+backport_init_sym(regulator_init_complete);
- 
- static int __init backport_init(void)
- {
-@@ -45,6 +47,9 @@ static int __init backport_init(void)
- 	backport_system_workqueue_create();
- 	backport_init_mmc_pm_flags();
- 
-+	backport_init_call(regulator_init);
-+	backport_init_call(regulator_init_complete);
-+
- 	printk(KERN_INFO "Loading modules backported from " BACKPORTED_KERNEL_NAME " version " BACKPORTED_KERNEL_VERSION "\n");
- 	printk(KERN_INFO "Backport generated by backports.git " BACKPORTS_VERSION "\n");
- 
-diff --git a/backport/defconfigs/regulator b/backport/defconfigs/regulator
+ obj-$(CPTCFG_REGULATOR) += drivers/regulator/
++obj-$(CPTCFG_MEDIA_SUPPORT) += drivers/media/
+diff --git a/backport/Makefile.real b/backport/Makefile.real
+index 954fc86..7b3fcc1 100644
+--- a/backport/Makefile.real
++++ b/backport/Makefile.real
+@@ -82,6 +82,7 @@ install: modules
+ 	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_PWD)			\
+ 		INSTALL_MOD_DIR=$(KMODDIR) $(KMODPATH_ARG)		\
+ 		modules_install
++	@./scripts/blacklist.sh $(KLIB)/ $(KLIB)/$(KMODDIR)
+ 	@/sbin/depmod -ae
+ 	@echo
+ 	@echo Your backported driver modules should be installed now.
+diff --git a/backport/defconfigs/media b/backport/defconfigs/media
 new file mode 100644
-index 0000000..c080747
+index 0000000..cbaf99f
 --- /dev/null
-+++ b/backport/defconfigs/regulator
-@@ -0,0 +1,63 @@
-+CPTCFG_REGULATOR=y
-+CPTCFG_REGULATOR_88PM8607=y
-+CPTCFG_REGULATOR_AAT2870=y
-+CPTCFG_REGULATOR_AB3100=y
-+CPTCFG_REGULATOR_AB8500=y
-+CPTCFG_REGULATOR_AD5398=y
-+CPTCFG_REGULATOR_ANATOP=y
-+CPTCFG_REGULATOR_ARIZONA=y
-+CPTCFG_REGULATOR_AS3711=y
-+CPTCFG_REGULATOR_DA903X=y
-+CPTCFG_REGULATOR_DA9052=y
-+CPTCFG_REGULATOR_DA9055=y
-+CPTCFG_REGULATOR_DB8500_PRCMU=y
-+CPTCFG_REGULATOR_DBX500_PRCMU=y
-+CPTCFG_REGULATOR_DEBUG=y
-+CPTCFG_REGULATOR_FAN53555=y
-+CPTCFG_REGULATOR_FIXED_VOLTAGE=y
-+CPTCFG_REGULATOR_GPIO=y
-+CPTCFG_REGULATOR_ISL6271A=y
-+CPTCFG_REGULATOR_LP3971=y
-+CPTCFG_REGULATOR_LP3972=y
-+CPTCFG_REGULATOR_LP872X=y
-+CPTCFG_REGULATOR_LP8755=y
-+CPTCFG_REGULATOR_LP8788=y
-+CPTCFG_REGULATOR_MAX1586=y
-+CPTCFG_REGULATOR_MAX77686=y
-+CPTCFG_REGULATOR_MAX8649=y
-+CPTCFG_REGULATOR_MAX8660=y
-+CPTCFG_REGULATOR_MAX8907=y
-+CPTCFG_REGULATOR_MAX8925=y
-+CPTCFG_REGULATOR_MAX8952=y
-+CPTCFG_REGULATOR_MAX8973=y
-+CPTCFG_REGULATOR_MAX8997=y
-+CPTCFG_REGULATOR_MAX8998=y
-+CPTCFG_REGULATOR_MC13783=y
-+CPTCFG_REGULATOR_MC13892=y
-+CPTCFG_REGULATOR_MC13XXX_CORE=y
-+CPTCFG_REGULATOR_PALMAS=y
-+CPTCFG_REGULATOR_PCAP=y
-+CPTCFG_REGULATOR_PCF50633=y
-+CPTCFG_REGULATOR_RC5T583=y
-+CPTCFG_REGULATOR_S2MPS11=y
-+CPTCFG_REGULATOR_S5M8767=y
-+CPTCFG_REGULATOR_TPS51632=y
-+CPTCFG_REGULATOR_TPS6105X=y
-+CPTCFG_REGULATOR_TPS62360=y
-+CPTCFG_REGULATOR_TPS65023=y
-+CPTCFG_REGULATOR_TPS6507X=y
-+CPTCFG_REGULATOR_TPS65090=y
-+CPTCFG_REGULATOR_TPS65217=y
-+CPTCFG_REGULATOR_TPS6524X=y
-+CPTCFG_REGULATOR_TPS6586X=y
-+CPTCFG_REGULATOR_TPS65910=y
-+CPTCFG_REGULATOR_TPS65912=y
-+CPTCFG_REGULATOR_TPS80031=y
-+CPTCFG_REGULATOR_TWL4030=y
-+CPTCFG_REGULATOR_USERSPACE_CONSUMER=y
-+CPTCFG_REGULATOR_VEXPRESS=y
-+CPTCFG_REGULATOR_VIRTUAL_CONSUMER=y
-+CPTCFG_REGULATOR_WM831X=y
-+CPTCFG_REGULATOR_WM8350=y
-+CPTCFG_REGULATOR_WM8400=y
-+CPTCFG_REGULATOR_WM8994=y
-diff --git a/backport/include/linux/compat-3.3.h b/backport/include/linux/compat-3.3.h
-index 2af4a52..e09ba91 100644
---- a/backport/include/linux/compat-3.3.h
-+++ b/backport/include/linux/compat-3.3.h
-@@ -14,6 +14,14 @@
- #include <linux/mii.h>
- #include <linux/netdevice.h>
- 
-+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,2,0))
-+/*
-+ * In order to get help the regulatory core.c that gets
-+ * pulled into the compat module get it without any changes
-+ */
-+#include <linux/async.h>
-+#endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,2,0)) */
-+
- /*
-  * BQL was added as of v3.3 but some Linux distributions
-  * have backported BQL to their v3.2 kernels or older. To
++++ b/backport/defconfigs/media
+@@ -0,0 +1,506 @@
++CPTCFG_DVB_A8293=y
++CPTCFG_DVB_AF9013=y
++CPTCFG_DVB_AF9033=y
++CPTCFG_DVB_ATBM8830=y
++CPTCFG_DVB_AU8522=y
++CPTCFG_DVB_AU8522_DTV=y
++CPTCFG_DVB_AU8522_V4L=y
++CPTCFG_DVB_AV7110=y
++CPTCFG_DVB_B2C2_FLEXCOP=y
++CPTCFG_DVB_B2C2_FLEXCOP_PCI=y
++CPTCFG_DVB_B2C2_FLEXCOP_USB=y
++CPTCFG_DVB_BCM3510=y
++CPTCFG_DVB_BT8XX=y
++CPTCFG_DVB_BUDGET=y
++CPTCFG_DVB_BUDGET_AV=y
++CPTCFG_DVB_BUDGET_CI=y
++CPTCFG_DVB_BUDGET_CORE=y
++CPTCFG_DVB_BUDGET_PATCH=y
++CPTCFG_DVB_CORE=y
++CPTCFG_DVB_CX22700=y
++CPTCFG_DVB_CX22702=y
++CPTCFG_DVB_CX24110=y
++CPTCFG_DVB_CX24116=y
++CPTCFG_DVB_CX24123=y
++CPTCFG_DVB_CXD2820R=y
++CPTCFG_DVB_DDBRIDGE=y
++CPTCFG_DVB_DIB3000MB=y
++CPTCFG_DVB_DIB3000MC=y
++CPTCFG_DVB_DIB7000M=y
++CPTCFG_DVB_DIB7000P=y
++CPTCFG_DVB_DIB8000=y
++CPTCFG_DVB_DIB9000=y
++CPTCFG_DVB_DM1105=y
++CPTCFG_DVB_DRXD=y
++CPTCFG_DVB_DRXK=y
++CPTCFG_DVB_DS3000=y
++CPTCFG_DVB_DUMMY_FE=y
++CPTCFG_DVB_EC100=y
++CPTCFG_DVB_FIREDTV=y
++CPTCFG_DVB_FIREDTV_INPUT=y
++CPTCFG_DVB_HD29L2=y
++CPTCFG_DVB_HOPPER=y
++CPTCFG_DVB_ISL6405=y
++CPTCFG_DVB_ISL6421=y
++CPTCFG_DVB_ISL6423=y
++CPTCFG_DVB_IT913X_FE=y
++CPTCFG_DVB_IX2505V=y
++CPTCFG_DVB_L64781=y
++CPTCFG_DVB_LG2160=y
++CPTCFG_DVB_LGDT3305=y
++CPTCFG_DVB_LGDT330X=y
++CPTCFG_DVB_LGS8GL5=y
++CPTCFG_DVB_LGS8GXX=y
++CPTCFG_DVB_LNBP21=y
++CPTCFG_DVB_LNBP22=y
++CPTCFG_DVB_M88RS2000=y
++CPTCFG_DVB_MANTIS=y
++CPTCFG_DVB_MB86A16=y
++CPTCFG_DVB_MB86A20S=y
++CPTCFG_DVB_MT312=y
++CPTCFG_DVB_MT352=y
++CPTCFG_DVB_NGENE=y
++CPTCFG_DVB_NXT200X=y
++CPTCFG_DVB_NXT6000=y
++CPTCFG_DVB_OR51132=y
++CPTCFG_DVB_OR51211=y
++CPTCFG_DVB_PLL=y
++CPTCFG_DVB_PLUTO2=y
++CPTCFG_DVB_PT1=y
++CPTCFG_DVB_RTL2830=y
++CPTCFG_DVB_RTL2832=y
++CPTCFG_DVB_S5H1409=y
++CPTCFG_DVB_S5H1411=y
++CPTCFG_DVB_S5H1420=y
++CPTCFG_DVB_S5H1432=y
++CPTCFG_DVB_S921=y
++CPTCFG_DVB_SI21XX=y
++CPTCFG_DVB_SP8870=y
++CPTCFG_DVB_SP887X=y
++CPTCFG_DVB_STB0899=y
++CPTCFG_DVB_STB6000=y
++CPTCFG_DVB_STB6100=y
++CPTCFG_DVB_STV0288=y
++CPTCFG_DVB_STV0297=y
++CPTCFG_DVB_STV0299=y
++CPTCFG_DVB_STV0367=y
++CPTCFG_DVB_STV0900=y
++CPTCFG_DVB_STV090x=y
++CPTCFG_DVB_STV6110=y
++CPTCFG_DVB_STV6110x=y
++CPTCFG_DVB_TDA10021=y
++CPTCFG_DVB_TDA10023=y
++CPTCFG_DVB_TDA10048=y
++CPTCFG_DVB_TDA1004X=y
++CPTCFG_DVB_TDA10071=y
++CPTCFG_DVB_TDA10086=y
++CPTCFG_DVB_TDA18271C2DD=y
++CPTCFG_DVB_TDA665x=y
++CPTCFG_DVB_TDA8083=y
++CPTCFG_DVB_TDA8261=y
++CPTCFG_DVB_TDA826X=y
++CPTCFG_DVB_TS2020=y
++CPTCFG_DVB_TTUSB_BUDGET=y
++CPTCFG_DVB_TTUSB_DEC=y
++CPTCFG_DVB_TUA6100=y
++CPTCFG_DVB_TUNER_CX24113=y
++CPTCFG_DVB_TUNER_DIB0070=y
++CPTCFG_DVB_TUNER_DIB0090=y
++CPTCFG_DVB_TUNER_ITD1000=y
++CPTCFG_DVB_USB=y
++CPTCFG_DVB_USB_A800=y
++CPTCFG_DVB_USB_AF9005=y
++CPTCFG_DVB_USB_AF9005_REMOTE=y
++CPTCFG_DVB_USB_AF9015=y
++CPTCFG_DVB_USB_AF9035=y
++CPTCFG_DVB_USB_ANYSEE=y
++CPTCFG_DVB_USB_AU6610=y
++CPTCFG_DVB_USB_AZ6007=y
++CPTCFG_DVB_USB_AZ6027=y
++CPTCFG_DVB_USB_CE6230=y
++CPTCFG_DVB_USB_CINERGY_T2=y
++CPTCFG_DVB_USB_CXUSB=y
++CPTCFG_DVB_USB_CYPRESS_FIRMWARE=y
++CPTCFG_DVB_USB_DIB0700=y
++CPTCFG_DVB_USB_DIBUSB_MB=y
++CPTCFG_DVB_USB_DIBUSB_MC=y
++CPTCFG_DVB_USB_DIGITV=y
++CPTCFG_DVB_USB_DTT200U=y
++CPTCFG_DVB_USB_DTV5100=y
++CPTCFG_DVB_USB_DW2102=y
++CPTCFG_DVB_USB_EC168=y
++CPTCFG_DVB_USB_FRIIO=y
++CPTCFG_DVB_USB_GL861=y
++CPTCFG_DVB_USB_GP8PSK=y
++CPTCFG_DVB_USB_IT913X=y
++CPTCFG_DVB_USB_LME2510=y
++CPTCFG_DVB_USB_M920X=y
++CPTCFG_DVB_USB_MXL111SF=y
++CPTCFG_DVB_USB_NOVA_T_USB2=y
++CPTCFG_DVB_USB_OPERA1=y
++CPTCFG_DVB_USB_PCTV452E=y
++CPTCFG_DVB_USB_RTL28XXU=y
++CPTCFG_DVB_USB_TECHNISAT_USB2=y
++CPTCFG_DVB_USB_TTUSB2=y
++CPTCFG_DVB_USB_UMT_010=y
++CPTCFG_DVB_USB_V2=y
++CPTCFG_DVB_USB_VP702X=y
++CPTCFG_DVB_USB_VP7045=y
++CPTCFG_DVB_VES1820=y
++CPTCFG_DVB_VES1X93=y
++CPTCFG_DVB_ZL10036=y
++CPTCFG_DVB_ZL10039=y
++CPTCFG_DVB_ZL10353=y
++CPTCFG_I2C_SI470X=y
++CPTCFG_I2C_SI4713=y
++CPTCFG_IR_ENE=y
++CPTCFG_IR_FINTEK=y
++CPTCFG_IR_GPIO_CIR=y
++CPTCFG_IR_IGUANA=y
++CPTCFG_IR_IMON=y
++CPTCFG_IR_ITE_CIR=y
++CPTCFG_IR_JVC_DECODER=y
++CPTCFG_IR_LIRC_CODEC=y
++CPTCFG_IR_MCE_KBD_DECODER=y
++CPTCFG_IR_MCEUSB=y
++CPTCFG_IR_NEC_DECODER=y
++CPTCFG_IR_NUVOTON=y
++CPTCFG_IR_RC5_DECODER=y
++CPTCFG_IR_RC5_SZ_DECODER=y
++CPTCFG_IR_RC6_DECODER=y
++CPTCFG_IR_REDRAT3=y
++CPTCFG_IR_RX51=y
++CPTCFG_IR_SANYO_DECODER=y
++CPTCFG_IR_SONY_DECODER=y
++CPTCFG_IR_STREAMZAP=y
++CPTCFG_IR_TTUSBIR=y
++CPTCFG_IR_WINBOND_CIR=y
++CPTCFG_LIRC=y
++CPTCFG_MANTIS_CORE=y
++CPTCFG_MEDIA_ALTERA_CI=y
++CPTCFG_MEDIA_SUPPORT=y
++CPTCFG_MEDIA_TUNER_E4000=y
++CPTCFG_MEDIA_TUNER_FC0011=y
++CPTCFG_MEDIA_TUNER_FC0012=y
++CPTCFG_MEDIA_TUNER_FC0013=y
++CPTCFG_MEDIA_TUNER_FC2580=y
++CPTCFG_MEDIA_TUNER_IT913X=y
++CPTCFG_MEDIA_TUNER_MAX2165=y
++CPTCFG_MEDIA_TUNER_MC44S803=y
++CPTCFG_MEDIA_TUNER_MT2060=y
++CPTCFG_MEDIA_TUNER_MT2063=y
++CPTCFG_MEDIA_TUNER_MT20XX=y
++CPTCFG_MEDIA_TUNER_MT2131=y
++CPTCFG_MEDIA_TUNER_MT2266=y
++CPTCFG_MEDIA_TUNER_MXL5005S=y
++CPTCFG_MEDIA_TUNER_MXL5007T=y
++CPTCFG_MEDIA_TUNER_QT1010=y
++CPTCFG_MEDIA_TUNER_SIMPLE=y
++CPTCFG_MEDIA_TUNER_TDA18212=y
++CPTCFG_MEDIA_TUNER_TDA18218=y
++CPTCFG_MEDIA_TUNER_TDA18271=y
++CPTCFG_MEDIA_TUNER_TDA827X=y
++CPTCFG_MEDIA_TUNER_TDA8290=y
++CPTCFG_MEDIA_TUNER_TDA9887=y
++CPTCFG_MEDIA_TUNER_TEA5761=y
++CPTCFG_MEDIA_TUNER_TEA5767=y
++CPTCFG_MEDIA_TUNER_TUA9001=y
++CPTCFG_MEDIA_TUNER_XC2028=y
++CPTCFG_MEDIA_TUNER_XC4000=y
++CPTCFG_MEDIA_TUNER_XC5000=y
++CPTCFG_RADIO_AZTECH=y
++CPTCFG_RADIO_CADET=y
++CPTCFG_RADIO_GEMTEK=y
++CPTCFG_RADIO_ISA=y
++CPTCFG_RADIO_MAXIRADIO=y
++CPTCFG_RADIO_MIROPCM20=y
++CPTCFG_RADIO_RTRACK=y
++CPTCFG_RADIO_RTRACK2=y
++CPTCFG_RADIO_SAA7706H=y
++CPTCFG_RADIO_SF16FMI=y
++CPTCFG_RADIO_SF16FMR2=y
++CPTCFG_RADIO_SHARK=y
++CPTCFG_RADIO_SHARK2=y
++CPTCFG_RADIO_SI470X=y
++CPTCFG_RADIO_SI4713=y
++CPTCFG_RADIO_TEA5764=y
++CPTCFG_RADIO_TEF6862=y
++CPTCFG_RADIO_TERRATEC=y
++CPTCFG_RADIO_TIMBERDALE=y
++CPTCFG_RADIO_TRUST=y
++CPTCFG_RADIO_TYPHOON=y
++CPTCFG_RADIO_WL1273=y
++CPTCFG_RADIO_WL128X=y
++CPTCFG_RADIO_ZOLTRIX=y
++CPTCFG_RC_ATI_REMOTE=y
++CPTCFG_RC_CORE=y
++CPTCFG_RC_LOOPBACK=y
++CPTCFG_RC_MAP=y
++CPTCFG_SMS_SDIO_DRV=y
++CPTCFG_SMS_SIANO_MDTV=y
++CPTCFG_SMS_USB_DRV=y
++CPTCFG_SOC_CAMERA=y
++CPTCFG_SOC_CAMERA_IMX074=y
++CPTCFG_SOC_CAMERA_MT9M001=y
++CPTCFG_SOC_CAMERA_MT9M111=y
++CPTCFG_SOC_CAMERA_MT9T031=y
++CPTCFG_SOC_CAMERA_MT9T112=y
++CPTCFG_SOC_CAMERA_MT9V022=y
++CPTCFG_SOC_CAMERA_OV2640=y
++CPTCFG_SOC_CAMERA_OV5642=y
++CPTCFG_SOC_CAMERA_OV6650=y
++CPTCFG_SOC_CAMERA_OV772X=y
++CPTCFG_SOC_CAMERA_OV9640=y
++CPTCFG_SOC_CAMERA_OV9740=y
++CPTCFG_SOC_CAMERA_PLATFORM=y
++CPTCFG_SOC_CAMERA_RJ54N1=y
++CPTCFG_SOC_CAMERA_TW9910=y
++CPTCFG_STA2X11_VIP=y
++CPTCFG_TTPCI_EEPROM=y
++CPTCFG_USB_DSBR=y
++CPTCFG_USB_GL860=y
++CPTCFG_USB_GSPCA=y
++CPTCFG_USB_GSPCA_BENQ=y
++CPTCFG_USB_GSPCA_CONEX=y
++CPTCFG_USB_GSPCA_CPIA1=y
++CPTCFG_USB_GSPCA_ETOMS=y
++CPTCFG_USB_GSPCA_FINEPIX=y
++CPTCFG_USB_GSPCA_JEILINJ=y
++CPTCFG_USB_GSPCA_JL2005BCD=y
++CPTCFG_USB_GSPCA_KINECT=y
++CPTCFG_USB_GSPCA_KONICA=y
++CPTCFG_USB_GSPCA_MARS=y
++CPTCFG_USB_GSPCA_MR97310A=y
++CPTCFG_USB_GSPCA_NW80X=y
++CPTCFG_USB_GSPCA_OV519=y
++CPTCFG_USB_GSPCA_OV534=y
++CPTCFG_USB_GSPCA_OV534_9=y
++CPTCFG_USB_GSPCA_PAC207=y
++CPTCFG_USB_GSPCA_PAC7302=y
++CPTCFG_USB_GSPCA_PAC7311=y
++CPTCFG_USB_GSPCA_SE401=y
++CPTCFG_USB_GSPCA_SN9C2028=y
++CPTCFG_USB_GSPCA_SN9C20X=y
++CPTCFG_USB_GSPCA_SONIXB=y
++CPTCFG_USB_GSPCA_SONIXJ=y
++CPTCFG_USB_GSPCA_SPCA1528=y
++CPTCFG_USB_GSPCA_SPCA500=y
++CPTCFG_USB_GSPCA_SPCA501=y
++CPTCFG_USB_GSPCA_SPCA505=y
++CPTCFG_USB_GSPCA_SPCA506=y
++CPTCFG_USB_GSPCA_SPCA508=y
++CPTCFG_USB_GSPCA_SPCA561=y
++CPTCFG_USB_GSPCA_SQ905=y
++CPTCFG_USB_GSPCA_SQ905C=y
++CPTCFG_USB_GSPCA_SQ930X=y
++CPTCFG_USB_GSPCA_STK014=y
++CPTCFG_USB_GSPCA_STV0680=y
++CPTCFG_USB_GSPCA_SUNPLUS=y
++CPTCFG_USB_GSPCA_T613=y
++CPTCFG_USB_GSPCA_TOPRO=y
++CPTCFG_USB_GSPCA_TV8532=y
++CPTCFG_USB_GSPCA_VC032X=y
++CPTCFG_USB_GSPCA_VICAM=y
++CPTCFG_USB_GSPCA_XIRLINK_CIT=y
++CPTCFG_USB_GSPCA_ZC3XX=y
++CPTCFG_USB_KEENE=y
++CPTCFG_USB_M5602=y
++CPTCFG_USB_MA901=y
++CPTCFG_USB_MR800=y
++CPTCFG_USB_PWC=y
++CPTCFG_USB_S2255=y
++CPTCFG_USB_SI470X=y
++CPTCFG_USB_SN9C102=y
++CPTCFG_USB_STKWEBCAM=y
++CPTCFG_USB_STV06XX=y
++CPTCFG_USB_VIDEO_CLASS=y
++CPTCFG_USB_ZR364XX=y
++CPTCFG_V4L2_MEM2MEM_DEV=y
++CPTCFG_VIDEO_AD9389B=y
++CPTCFG_VIDEO_ADP1653=y
++CPTCFG_VIDEO_ADV7170=y
++CPTCFG_VIDEO_ADV7175=y
++CPTCFG_VIDEO_ADV7180=y
++CPTCFG_VIDEO_ADV7183=y
++CPTCFG_VIDEO_ADV7343=y
++CPTCFG_VIDEO_ADV7393=y
++CPTCFG_VIDEO_ADV7604=y
++CPTCFG_VIDEO_AK881X=y
++CPTCFG_VIDEO_APTINA_PLL=y
++CPTCFG_VIDEO_AS3645A=y
++CPTCFG_VIDEO_ATMEL_ISI=y
++CPTCFG_VIDEO_AU0828=y
++CPTCFG_VIDEO_BLACKFIN_CAPTURE=y
++CPTCFG_VIDEO_BLACKFIN_PPI=y
++CPTCFG_VIDEO_BT819=y
++CPTCFG_VIDEO_BT848=y
++CPTCFG_VIDEO_BT856=y
++CPTCFG_VIDEO_BT866=y
++CPTCFG_VIDEO_BTCX=y
++CPTCFG_VIDEOBUF2_CORE=y
++CPTCFG_VIDEOBUF2_DMA_CONTIG=y
++CPTCFG_VIDEOBUF2_DMA_SG=y
++CPTCFG_VIDEOBUF2_MEMOPS=y
++CPTCFG_VIDEOBUF2_VMALLOC=y
++CPTCFG_VIDEOBUF_DMA_CONTIG=y
++CPTCFG_VIDEOBUF_DMA_SG=y
++CPTCFG_VIDEOBUF_DVB=y
++CPTCFG_VIDEOBUF_GEN=y
++CPTCFG_VIDEOBUF_VMALLOC=y
++CPTCFG_VIDEO_BWQCAM=y
++CPTCFG_VIDEO_CAFE_CCIC=y
++CPTCFG_VIDEO_CODA=y
++CPTCFG_VIDEO_CPIA2=y
++CPTCFG_VIDEO_CQCAM=y
++CPTCFG_VIDEO_CS5345=y
++CPTCFG_VIDEO_CS53L32A=y
++CPTCFG_VIDEO_CX18=y
++CPTCFG_VIDEO_CX18_ALSA=y
++CPTCFG_VIDEO_CX231XX=y
++CPTCFG_VIDEO_CX231XX_ALSA=y
++CPTCFG_VIDEO_CX231XX_DVB=y
++CPTCFG_VIDEO_CX231XX_RC=y
++CPTCFG_VIDEO_CX2341X=y
++CPTCFG_VIDEO_CX23885=y
++CPTCFG_VIDEO_CX25821=y
++CPTCFG_VIDEO_CX25821_ALSA=y
++CPTCFG_VIDEO_CX25840=y
++CPTCFG_VIDEO_CX88=y
++CPTCFG_VIDEO_CX88_ALSA=y
++CPTCFG_VIDEO_CX88_BLACKBIRD=y
++CPTCFG_VIDEO_CX88_DVB=y
++CPTCFG_VIDEO_CX88_MPEG=y
++CPTCFG_VIDEO_CX88_VP3054=y
++CPTCFG_VIDEO_DAVINCI_VPBE_DISPLAY=y
++CPTCFG_VIDEO_DAVINCI_VPIF=y
++CPTCFG_VIDEO_DAVINCI_VPIF_CAPTURE=y
++CPTCFG_VIDEO_DAVINCI_VPIF_DISPLAY=y
++CPTCFG_VIDEO_DEV=y
++CPTCFG_VIDEO_DM355_CCDC=y
++CPTCFG_VIDEO_DM6446_CCDC=y
++CPTCFG_VIDEO_EM28XX=y
++CPTCFG_VIDEO_EM28XX_ALSA=y
++CPTCFG_VIDEO_EM28XX_DVB=y
++CPTCFG_VIDEO_EM28XX_RC=y
++CPTCFG_VIDEO_EXYNOS_FIMC_LITE=y
++CPTCFG_VIDEO_FB_IVTV=y
++CPTCFG_VIDEO_HDPVR=y
++CPTCFG_VIDEO_HEXIUM_GEMINI=y
++CPTCFG_VIDEO_HEXIUM_ORION=y
++CPTCFG_VIDEO_IR_I2C=y
++CPTCFG_VIDEO_ISIF=y
++CPTCFG_VIDEO_IVTV=y
++CPTCFG_VIDEO_IVTV_ALSA=y
++CPTCFG_VIDEO_KS0127=y
++CPTCFG_VIDEO_M32R_AR_M64278=y
++CPTCFG_VIDEO_M52790=y
++CPTCFG_VIDEO_M5MOLS=y
++CPTCFG_VIDEO_MEM2MEM_DEINTERLACE=y
++CPTCFG_VIDEO_MEM2MEM_TESTDEV=y
++CPTCFG_VIDEO_MEYE=y
++CPTCFG_VIDEO_MMP_CAMERA=y
++CPTCFG_VIDEO_MSP3400=y
++CPTCFG_VIDEO_MT9M032=y
++CPTCFG_VIDEO_MT9P031=y
++CPTCFG_VIDEO_MT9T001=y
++CPTCFG_VIDEO_MT9V011=y
++CPTCFG_VIDEO_MT9V032=y
++CPTCFG_VIDEO_MX1=y
++CPTCFG_VIDEO_MX2=y
++CPTCFG_VIDEO_MX2_EMMAPRP=y
++CPTCFG_VIDEO_MX3=y
++CPTCFG_VIDEO_MXB=y
++CPTCFG_VIDEO_NOON010PC30=y
++CPTCFG_VIDEO_OMAP1=y
++CPTCFG_VIDEO_OMAP2=y
++CPTCFG_VIDEO_OMAP2_VOUT=y
++CPTCFG_VIDEO_OMAP3=y
++CPTCFG_VIDEO_OMAP3_DEBUG=y
++CPTCFG_VIDEO_OV7640=y
++CPTCFG_VIDEO_OV7670=y
++CPTCFG_VIDEO_OV9650=y
++CPTCFG_VIDEO_PMS=y
++CPTCFG_VIDEO_PVRUSB2=y
++CPTCFG_VIDEO_PXA27x=y
++CPTCFG_VIDEO_S3C_CAMIF=y
++CPTCFG_VIDEO_S5C73M3=y
++CPTCFG_VIDEO_S5K4ECGX=y
++CPTCFG_VIDEO_S5K6AA=y
++CPTCFG_VIDEO_S5P_FIMC=y
++CPTCFG_VIDEO_S5P_MIPI_CSIS=y
++CPTCFG_VIDEO_SAA6588=y
++CPTCFG_VIDEO_SAA7110=y
++CPTCFG_VIDEO_SAA711X=y
++CPTCFG_VIDEO_SAA7127=y
++CPTCFG_VIDEO_SAA7134=y
++CPTCFG_VIDEO_SAA7134_ALSA=y
++CPTCFG_VIDEO_SAA7134_DVB=y
++CPTCFG_VIDEO_SAA7134_RC=y
++CPTCFG_VIDEO_SAA7146=y
++CPTCFG_VIDEO_SAA7146_VV=y
++CPTCFG_VIDEO_SAA7164=y
++CPTCFG_VIDEO_SAA717X=y
++CPTCFG_VIDEO_SAA7185=y
++CPTCFG_VIDEO_SAA7191=y
++CPTCFG_VIDEO_SAMSUNG_EXYNOS_GSC=y
++CPTCFG_VIDEO_SAMSUNG_S5P_FIMC=y
++CPTCFG_VIDEO_SAMSUNG_S5P_G2D=y
++CPTCFG_VIDEO_SAMSUNG_S5P_HDMI=y
++CPTCFG_VIDEO_SAMSUNG_S5P_HDMIPHY=y
++CPTCFG_VIDEO_SAMSUNG_S5P_JPEG=y
++CPTCFG_VIDEO_SAMSUNG_S5P_MFC=y
++CPTCFG_VIDEO_SAMSUNG_S5P_MIXER=y
++CPTCFG_VIDEO_SAMSUNG_S5P_SDO=y
++CPTCFG_VIDEO_SAMSUNG_S5P_SII9234=y
++CPTCFG_VIDEO_SAMSUNG_S5P_TV=y
++CPTCFG_VIDEO_SH_MOBILE_CEU=y
++CPTCFG_VIDEO_SH_MOBILE_CSI2=y
++CPTCFG_VIDEO_SH_VEU=y
++CPTCFG_VIDEO_SH_VOU=y
++CPTCFG_VIDEO_SMIAPP=y
++CPTCFG_VIDEO_SMIAPP_PLL=y
++CPTCFG_VIDEO_SONY_BTF_MPX=y
++CPTCFG_VIDEO_SR030PC30=y
++CPTCFG_VIDEO_STK1160=y
++CPTCFG_VIDEO_TCM825X=y
++CPTCFG_VIDEO_TDA7432=y
++CPTCFG_VIDEO_TDA9840=y
++CPTCFG_VIDEO_TEA6415C=y
++CPTCFG_VIDEO_TEA6420=y
++CPTCFG_VIDEO_THS7303=y
++CPTCFG_VIDEO_TIMBERDALE=y
++CPTCFG_VIDEO_TLG2300=y
++CPTCFG_VIDEO_TLV320AIC23B=y
++CPTCFG_VIDEO_TM6000=y
++CPTCFG_VIDEO_TM6000_ALSA=y
++CPTCFG_VIDEO_TM6000_DVB=y
++CPTCFG_VIDEO_TUNER=y
++CPTCFG_VIDEO_TVAUDIO=y
++CPTCFG_VIDEO_TVEEPROM=y
++CPTCFG_VIDEO_TVP514X=y
++CPTCFG_VIDEO_TVP5150=y
++CPTCFG_VIDEO_TVP7002=y
++CPTCFG_VIDEO_TW2804=y
++CPTCFG_VIDEO_TW9903=y
++CPTCFG_VIDEO_TW9906=y
++CPTCFG_VIDEO_UDA1342=y
++CPTCFG_VIDEO_UPD64031A=y
++CPTCFG_VIDEO_UPD64083=y
++CPTCFG_VIDEO_USBVISION=y
++CPTCFG_VIDEO_V4L2=y
++CPTCFG_VIDEO_V4L2_INT_DEVICE=y
++CPTCFG_VIDEO_VIA_CAMERA=y
++CPTCFG_VIDEO_VINO=y
++CPTCFG_VIDEO_VIU=y
++CPTCFG_VIDEO_VIVI=y
++CPTCFG_VIDEO_VP27SMPX=y
++CPTCFG_VIDEO_VPFE_CAPTURE=y
++CPTCFG_VIDEO_VPSS_SYSTEM=y
++CPTCFG_VIDEO_VPX3220=y
++CPTCFG_VIDEO_VS6624=y
++CPTCFG_VIDEO_W9966=y
++CPTCFG_VIDEO_WM8739=y
++CPTCFG_VIDEO_WM8775=y
++CPTCFG_VIDEO_ZORAN=y
++CPTCFG_VIDEO_ZORAN_DC30=y
++CPTCFG_VIDEO_ZORAN_ZR36060=y
 diff --git a/copy-list b/copy-list
-index 8c1fb61..7ca33b0 100644
+index 7ca33b0..17a3404 100644
 --- a/copy-list
 +++ b/copy-list
-@@ -121,3 +121,30 @@ include/uapi/drm/
- drivers/platform/x86/intel_ips.h
+@@ -148,3 +148,20 @@ include/linux/regulator/userspace-consumer.h
  
- drivers/gpu/drm/
+ drivers/regulator/dummy.h -> compat/dummy.h
+ drivers/regulator/
 +
-+# Regulator
-+# we don't include the whole directory as we need
-+# to do hackery with linux/regulator/consumer.h
-+include/linux/regulator/ab8500.h
-+include/linux/regulator/db8500-prcmu.h
-+include/linux/regulator/driver.h
-+include/linux/regulator/fan53555.h
-+include/linux/regulator/fixed.h
-+include/linux/regulator/gpio-regulator.h
-+include/linux/regulator/lp3971.h
-+include/linux/regulator/lp3972.h
-+include/linux/regulator/lp872x.h
-+include/linux/regulator/machine.h
-+include/linux/regulator/max1586.h
-+include/linux/regulator/max8649.h
-+include/linux/regulator/max8660.h
-+include/linux/regulator/max8952.h
-+include/linux/regulator/max8973-regulator.h
-+include/linux/regulator/of_regulator.h
-+include/linux/regulator/tps51632-regulator.h
-+include/linux/regulator/tps62360.h
-+include/linux/regulator/tps6507x.h
-+include/linux/regulator/userspace-consumer.h
++# Media
++include/media/
 +
-+drivers/regulator/dummy.h -> compat/dummy.h
-+drivers/regulator/
++include/linux/videodev2.h
++include/linux/video_output.h
++
++include/uapi/linux/media.h
++include/uapi/linux/dvb/
++include/uapi/linux/v4l2-common.h
++include/uapi/linux/v4l2-controls.h
++include/uapi/linux/v4l2-dv-timings.h
++include/uapi/linux/v4l2-mediabus.h
++include/uapi/linux/v4l2-subdev.h
++include/uapi/linux/videodev2.h
++
++drivers/media/
 diff --git a/dependencies b/dependencies
-index d001a38..6821c5a 100644
+index 6821c5a..c54b967 100644
 --- a/dependencies
 +++ b/dependencies
-@@ -46,6 +46,9 @@ HDMI 3.2
- DRM 3.2
- DRM_TTM 3.2
+@@ -49,6 +49,9 @@ DRM_TTM 3.2
+ # Regulator
+ REGULATOR 3.2
  
-+# Regulator
-+REGULATOR 3.2
++# Media
++MEDIA 3.2
 +
  # This requires proc_create(), and that doesn't exist before 2.6.24
  LIBIPW_DEBUG 2.6.25
  
-diff --git a/patches/collateral-evolutions/regulator/0001-disable-ftrace.patch b/patches/collateral-evolutions/regulator/0001-disable-ftrace.patch
-new file mode 100644
-index 0000000..e32694c
+diff --git a/lib/blacklist.sh b/lib/blacklist.sh
+new file mode 100755
+index 0000000..921585f
 --- /dev/null
-+++ b/patches/collateral-evolutions/regulator/0001-disable-ftrace.patch
-@@ -0,0 +1,74 @@
-+--- a/compat/core.c
-++++ b/compat/core.c
-+@@ -32,9 +32,6 @@
-+ #include <linux/regulator/machine.h>
-+ #include <linux/module.h>
-+ 
-+-#define CREATE_TRACE_POINTS
-+-#include <trace/events/regulator.h>
-+-
-+ #include "dummy.h"
-+ 
-+ #define rdev_crit(rdev, fmt, ...)					\
-+@@ -1578,8 +1575,6 @@ static int _regulator_do_enable(struct r
-+ 		delay = 0;
-+ 	}
-+ 
-+-	trace_regulator_enable(rdev_get_name(rdev));
-+-
-+ 	if (rdev->ena_pin) {
-+ 		ret = regulator_ena_gpio_ctrl(rdev, true);
++++ b/lib/blacklist.sh
+@@ -0,0 +1,35 @@
++#!/bin/bash
++
++BLACKLIST_CONF="/etc/modprobe.d/backports.conf"
++BLACKLIST_MAP=".blacklist.map"
++
++MODULE_DIR=$1
++MODULE_UPDATES=$2
++
++if [[ ! -d $MODULE_DIR ]]; then
++	exit
++fi
++
++if [[ ! -d $MODULE_UPDATES ]]; then
++	exit
++fi
++
++mkdir -p $(dirname $BLACKLIST_CONF)
++rm -f $BLACKLIST_CONF
++
++echo "# To be used when using backported drivers" >> $BLACKLIST_CONF
++
++for i in $(grep -v ^# $BLACKLIST_MAP | cut -f 2); do
++	MODULE="${i}.ko"
++	MODULE_UPDATE="$(grep -v ^# $BLACKLIST_MAP | grep $i | cut -f 1 | head -1).ko"
++
++	COUNT=$(find $MODULE_DIR -type f -name ${MODULE} -or -name ${MODULE}.gz | wc -l)
++	COUNT_REPLACE=$(find $MODULE_UPDATES -type f -name ${MODULE_UPDATE} -or -name ${MODULE_UPDATE}.gz | wc -l)
++
++	if [ $COUNT -ne 0 ]; then
++		if [ $COUNT_REPLACE -ne 0 ]; then
++			echo "Blacklisting $MODULE ..."
++			echo blacklist $i >> $BLACKLIST_CONF
++		fi
++	fi
++done
+diff --git a/patches/collateral-evolutions/media/0001-media_entity_info.patch b/patches/collateral-evolutions/media/0001-media_entity_info.patch
+new file mode 100644
+index 0000000..5e1b60a
+--- /dev/null
++++ b/patches/collateral-evolutions/media/0001-media_entity_info.patch
+@@ -0,0 +1,67 @@
++Patch fa5034c6 added a name to a union part of struct media_entity.
++We can use the same values in older kernels, we just can't access
++them via the union name.
++
++mcgrof@frijol ~/linux-next (git::master)$ git describe --contains fa5034c6
++v3.3-rc1~48^2~416
++
++Homework: Use SmPL to generate this patch instead. Below SmPL
++contributed by Julia. I'm commenting it out to not confuse patch
++
++#@@
++#struct media_entity m;
++#@@
++#
++#-m.info
++#+m
++
++commit fa5034c667c224be48db31a0d043dba305e8e7a8
++Author: Clemens Ladisch <clemens@ladisch.de>
++Date:   Sat Nov 5 18:42:01 2011 -0300
++
++    [media] media: fix truncated entity specification
++    
++    When enumerating an entity, assign the entire entity specification
++    instead of only the first two words. (This requires giving the
++    specification union a name.)
++    
++    So far, no driver actually uses more than two words, but this will
++    be needed for ALSA entities.
++    
++    Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
++    [laurent.pinchart@ideasonboard.com: Rename specification to info]
++    Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
++    Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
++
++--- a/drivers/media/v4l2-core/v4l2-dev.c
+++++ b/drivers/media/v4l2-core/v4l2-dev.c
++@@ -924,8 +924,13 @@ int __video_register_device(struct video
++ 	    vdev->vfl_type != VFL_TYPE_SUBDEV) {
++ 		vdev->entity.type = MEDIA_ENT_T_DEVNODE_V4L;
++ 		vdev->entity.name = vdev->name;
+++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0))
++ 		vdev->entity.info.v4l.major = VIDEO_MAJOR;
++ 		vdev->entity.info.v4l.minor = vdev->minor;
+++#else
+++		vdev->entity.v4l.major = VIDEO_MAJOR;
+++		vdev->entity.v4l.minor = vdev->minor;
+++#endif
++ 		ret = media_device_register_entity(vdev->v4l2_dev->mdev,
++ 			&vdev->entity);
 + 		if (ret < 0)
-+@@ -1596,7 +1591,6 @@ static int _regulator_do_enable(struct r
-+ 	/* Allow the regulator to ramp; it would be useful to extend
-+ 	 * this for bulk operations so that the regulators can ramp
-+ 	 * together.  */
-+-	trace_regulator_enable_delay(rdev_get_name(rdev));
-+ 
-+ 	if (delay >= 1000) {
-+ 		mdelay(delay / 1000);
-+@@ -1605,8 +1599,6 @@ static int _regulator_do_enable(struct r
-+ 		udelay(delay);
++--- a/drivers/media/v4l2-core/v4l2-device.c
+++++ b/drivers/media/v4l2-core/v4l2-device.c
++@@ -232,8 +232,13 @@ int v4l2_device_register_subdev_nodes(st
++ 			goto clean_up;
++ 		}
++ #if defined(CONFIG_MEDIA_CONTROLLER)
+++#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0))
++ 		sd->entity.info.v4l.major = VIDEO_MAJOR;
++ 		sd->entity.info.v4l.minor = vdev->minor;
+++#else
+++		sd->entity.v4l.major = VIDEO_MAJOR;
+++		sd->entity.v4l.minor = vdev->minor;
+++#endif
++ #endif
++ 		sd->devnode = vdev;
 + 	}
-+ 
-+-	trace_regulator_enable_complete(rdev_get_name(rdev));
-+-
-+ 	return 0;
-+ }
-+ 
-+@@ -1683,8 +1675,6 @@ static int _regulator_do_disable(struct
-+ {
-+ 	int ret;
-+ 
-+-	trace_regulator_disable(rdev_get_name(rdev));
-+-
-+ 	if (rdev->ena_pin) {
-+ 		ret = regulator_ena_gpio_ctrl(rdev, false);
-+ 		if (ret < 0)
-+@@ -1697,8 +1687,6 @@ static int _regulator_do_disable(struct
-+ 			return ret;
-+ 	}
-+ 
-+-	trace_regulator_disable_complete(rdev_get_name(rdev));
-+-
-+ 	_notifier_call_chain(rdev, REGULATOR_EVENT_DISABLE,
-+ 			     NULL);
-+ 	return 0;
-+@@ -2319,8 +2307,6 @@ static int _regulator_do_set_voltage(str
-+ 	unsigned int selector;
-+ 	int old_selector = -1;
-+ 
-+-	trace_regulator_set_voltage(rdev_get_name(rdev), min_uV, max_uV);
-+-
-+ 	min_uV += rdev->constraints->uV_offset;
-+ 	max_uV += rdev->constraints->uV_offset;
-+ 
-+@@ -2407,8 +2393,6 @@ static int _regulator_do_set_voltage(str
-+ 				     (void *)data);
-+ 	}
-+ 
-+-	trace_regulator_set_voltage_complete(rdev_get_name(rdev), best_val);
-+-
-+ 	return ret;
-+ }
-+ 
 -- 
 1.7.10.4
 
