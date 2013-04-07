@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934071Ab3DGUVi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 16:21:38 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:49290 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933552Ab3DGUVg (ORCPT
+	id S934301Ab3DGUnA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 16:43:00 -0400
+Received: from smtprelay-h12.telenor.se ([62.127.194.5]:41119 "EHLO
+	smtprelay-h12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934228Ab3DGUm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 16:21:36 -0400
-Date: Sun, 7 Apr 2013 22:21:30 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC][PATCH 0/7] memcg: make memcg's life cycle the same as
- cgroup
-Message-ID: <20130407202130.GB12678@dhcp22.suse.cz>
-References: <515BF233.6070308@huawei.com>
- <20130404120049.GI29911@dhcp22.suse.cz>
- <51610B78.7080001@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51610B78.7080001@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 7 Apr 2013 16:42:59 -0400
+X-Greylist: delayed 1998 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Apr 2013 16:42:59 EDT
+X-SENDER-IP: [85.230.168.206]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApTnAFzKYVFV5qjOPGdsb2JhbABRgwUBAYJ2hSOySIZzBAGBABcDAQEBATg1gk0vEwEPGIECChoTiBi9ORWNSieBHYNIA50GjCuBXjqBLg
+X-Suspected-Spam: Yes
+X-IronPort-AV: E=Sophos;i="4.87,426,1363129200"; 
+   d="scan'208";a="231849031"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH] Input: MT - handle semi-mt devices in core
+Date: Sun,  7 Apr 2013 21:41:32 +0200
+Message-Id: <1365363692-986-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 07-04-13 14:00:24, Li Zefan wrote:
-> On 2013/4/4 20:00, Michal Hocko wrote:
-> > On Wed 03-04-13 17:11:15, Li Zefan wrote:
-> >> (I'll be off from my office soon, and I won't be responsive in the following
-> >> 3 days.)
-> >>
-> >> I'm working on converting memcg to use cgroup->id, and then we can kill css_id.
-> >>
-> >> Now memcg has its own refcnt, so when a cgroup is destroyed, the memcg can
-> >> still be alive. This patchset converts memcg to always use css_get/put, so
-> >> memcg will have the same life cycle as its corresponding cgroup, and then
-> >> it's always safe for memcg to use cgroup->id.
-> >>
-> >> The historical reason that memcg didn't use css_get in some cases, is that
-> >> cgroup couldn't be removed if there're still css refs. The situation has
-> >> changed so that rmdir a cgroup will succeed regardless css refs, but won't
-> >> be freed until css refs goes down to 0.
-> >>
-> >> This is an early post, and it's NOT TESTED. I just want to see if the changes
-> >> are fine in general.
-> > 
-> > yes, I like the approach and it looks correct as well (some minor things
-> > mentioned in the patches). Thanks a lot Li! This will make our lifes much
-> > easier. The separate ref counting was PITA especially after
-> > introduction of kmem accounting which made its usage even more trickier.
-> > 
-> >> btw, after this patchset I think we don't need to free memcg via RCU, because
-> >> cgroup is already freed in RCU callback.
-> > 
-> > But this depends on changes waiting in for-3.10 branch, right?
-> 
-> What changes? memcg changes or cgroup core changes? I don't think this depends
-> on anything in cgroup 3.10 branch.
+Most semi-mt drivers use the slots in a manual way, but really only
+need to treat the finger count manually. With this patch, a semi-mt
+driver may use the input-mt core for everything else.
 
-cgroup (be445626 e.g.) but now I've noticed that those are already
-merged in Linus tree.
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+---
+Hi Dmitry,
 
-FYI: I've cherry-picked themo my -mm git tree.
+an earlier version of this patch came about as a test to handle the
+synaptics profile sensor without too much extra work. I do not know
+how that test panned out (no response), but this patch will likely be
+useful regardless.
+
+Henrik
+
+ drivers/input/input-mt.c | 8 +++++++-
+ include/linux/input/mt.h | 1 +
+ 2 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
+index 71db193..d398f13 100644
+--- a/drivers/input/input-mt.c
++++ b/drivers/input/input-mt.c
+@@ -79,6 +79,8 @@ int input_mt_init_slots(struct input_dev *dev, unsigned int num_slots,
+ 	}
+ 	if (flags & INPUT_MT_DIRECT)
+ 		__set_bit(INPUT_PROP_DIRECT, dev->propbit);
++	if (flags & INPUT_MT_SEMI_MT)
++		__set_bit(INPUT_PROP_SEMI_MT, dev->propbit);
+ 	if (flags & INPUT_MT_TRACK) {
+ 		unsigned int n2 = num_slots * num_slots;
+ 		mt->red = kcalloc(n2, sizeof(*mt->red), GFP_KERNEL);
+@@ -246,6 +248,7 @@ void input_mt_sync_frame(struct input_dev *dev)
+ {
+ 	struct input_mt *mt = dev->mt;
+ 	struct input_mt_slot *s;
++	bool use_count = false;
+ 
+ 	if (!mt)
+ 		return;
+@@ -259,7 +262,10 @@ void input_mt_sync_frame(struct input_dev *dev)
+ 		}
+ 	}
+ 
+-	input_mt_report_pointer_emulation(dev, (mt->flags & INPUT_MT_POINTER));
++	if ((mt->flags & INPUT_MT_POINTER) && !(mt->flags & INPUT_MT_SEMI_MT))
++		use_count = true;
++
++	input_mt_report_pointer_emulation(dev, use_count);
+ 
+ 	mt->frame++;
+ }
+diff --git a/include/linux/input/mt.h b/include/linux/input/mt.h
+index 2e86bd0..1b1dfa8 100644
+--- a/include/linux/input/mt.h
++++ b/include/linux/input/mt.h
+@@ -19,6 +19,7 @@
+ #define INPUT_MT_DIRECT		0x0002	/* direct device, e.g. touchscreen */
+ #define INPUT_MT_DROP_UNUSED	0x0004	/* drop contacts not seen in frame */
+ #define INPUT_MT_TRACK		0x0008	/* use in-kernel tracking */
++#define INPUT_MT_SEMI_MT	0x0010	/* semi-mt device, finger count handled manually */
+ 
+ /**
+  * struct input_mt_slot - represents the state of an input MT slot
 -- 
-Michal Hocko
-SUSE Labs
+1.8.2
+
