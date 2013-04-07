@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933828Ab3DGTrc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 15:47:32 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:59241 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933168Ab3DGTrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 15:47:31 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH] tty: mxser: fix cycle termination condition in mxser_probe() and mxser_module_init()
-Date: Sun,  7 Apr 2013 23:46:47 +0400
-Message-Id: <1365364007-6298-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <51545EB0.7020600@suse.cz>
-References: <51545EB0.7020600@suse.cz>
+	id S933639Ab3DGTvT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 15:51:19 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:40148 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933400Ab3DGTvS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 15:51:18 -0400
+Date: Sun, 7 Apr 2013 21:51:12 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Glauber Costa <glommer@parallels.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC][PATCH 0/7] memcg: make memcg's life cycle the same as
+ cgroup
+Message-ID: <20130407195112.GA12678@dhcp22.suse.cz>
+References: <515BF233.6070308@huawei.com>
+ <516131D7.8030004@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <516131D7.8030004@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a bug in resources deallocation code in mxser_probe() and mxser_module_init().
-As soon as variable 'i' is unsigned int, cycle termination condition i >= 0 is always true.
-The patch fixes the issue.
+On Sun 07-04-13 16:44:07, Li Zefan wrote:
+> Hi,
+> 
+> I'm rebasing this patchset against latest linux-next, and it conflicts with
+> "[PATCH v2] memcg: debugging facility to access dangling memcgs." slightly.
+> 
+> That is a debugging patch and will never be pushed into mainline, so should I
+> still base this patchset on that debugging patch?
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/tty/mxser.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Could you split CONFIG_MEMCG_DEBUG_ASYNC_DESTROY changes into a separate
+patch so that Andrew could put it on top of the mentioned patch?
 
-diff --git a/drivers/tty/mxser.c b/drivers/tty/mxser.c
-index 484b6a3..302909c 100644
---- a/drivers/tty/mxser.c
-+++ b/drivers/tty/mxser.c
-@@ -2643,9 +2643,9 @@ static int mxser_probe(struct pci_dev *pdev,
- 				mxvar_sdriver, brd->idx + i, &pdev->dev);
- 		if (IS_ERR(tty_dev)) {
- 			retval = PTR_ERR(tty_dev);
--			for (i--; i >= 0; i--)
-+			for (; i > 0; i--)
- 				tty_unregister_device(mxvar_sdriver,
--					brd->idx + i);
-+					brd->idx + i - 1);
- 			goto err_relbrd;
- 		}
- 	}
-@@ -2751,9 +2751,9 @@ static int __init mxser_module_init(void)
- 			tty_dev = tty_port_register_device(&brd->ports[i].port,
- 					mxvar_sdriver, brd->idx + i, NULL);
- 			if (IS_ERR(tty_dev)) {
--				for (i--; i >= 0; i--)
-+				for (; i > 0; i--)
- 					tty_unregister_device(mxvar_sdriver,
--						brd->idx + i);
-+						brd->idx + i - 1);
- 				for (i = 0; i < brd->info->nports; i++)
- 					tty_port_destroy(&brd->ports[i].port);
- 				free_irq(brd->irq, brd);
+> Also that patch needs update (and can be simplified) after this patchset:
+> - move memcg_dangling_add() to mem_cgroup_css_offline()
+> - remove memcg->memcg_name, and use cgroup_path() in mem_cgroup_dangling_read()?
+
+Every improvement is welcome.
+
+Thanks
 -- 
-1.7.9.5
-
+Michal Hocko
+SUSE Labs
