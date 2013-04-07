@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934551Ab3DGX1y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 19:27:54 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46629 "EHLO
+	id S934638Ab3DGX16 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 19:27:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46632 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757645Ab3DGX1v (ORCPT
+	by vger.kernel.org with ESMTP id S1757645Ab3DGX1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 19:27:51 -0400
+	Sun, 7 Apr 2013 19:27:55 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Chuck Lever" <chuck.lever@oracle.com>,
-        "Trond Myklebust" <Trond.Myklebust@netapp.com>
+CC: akpm@linux-foundation.org, "Gerhard Sittig" <gerhard.sittig@ifm.com>,
+        "Mark Brown" <broonie@opensource.wolfsonmicro.com>,
+        "Anatolij Gustschin" <agust@denx.de>
 Date: Sun, 07 Apr 2013 23:45:42 +0100
-Message-ID: <lsq.1365374742.174077105@decadent.org.uk>
+Message-ID: <lsq.1365374742.961917932@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [50/74] NFS: nfs_getaclargs.acl_len is a size_t
+Subject: [43/74] spi/mpc512x-psc: optionally keep PSC SS asserted across
+ xfer segmensts
 In-Reply-To: <lsq.1365374742.214522651@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:b4b3:7e2a:e2d0:3478
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,38 +33,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chuck Lever <chuck.lever@oracle.com>
+From: Anatolij Gustschin <agust@denx.de>
 
-commit 56d08fef2369d5ca9ad2e1fc697f5379fd8af751 upstream.
+commit 1ad849aee5f53353ed88d9cd3d68a51b03a7d44f upstream.
 
-Squelch compiler warnings:
+Some SPI slave devices require asserted chip select signal across
+multiple transfer segments of an SPI message. Currently the driver
+always de-asserts the internal SS signal for every single transfer
+segment of the message and ignores the 'cs_change' flag of the
+transfer description. Disable the internal chip select (SS) only
+if this is needed and indicated by the 'cs_change' flag.
 
-fs/nfs/nfs4proc.c: In function ‘__nfs4_get_acl_uncached’:
-fs/nfs/nfs4proc.c:3811:14: warning: comparison between signed and
-	unsigned integer expressions [-Wsign-compare]
-fs/nfs/nfs4proc.c:3818:15: warning: comparison between signed and
-	unsigned integer expressions [-Wsign-compare]
+Without this change, each partial transfer of a surrounding
+multi-part SPI transaction might erroneously change the SS
+signal, which might prevent slaves from answering the request
+that was sent in a previous transfer segment because the
+transaction could be considered aborted (SS was de-asserted
+before reading the response).
 
-Introduced by commit bf118a34 "NFSv4: include bitmap in nfsv4 get
-acl data", Dec 7, 2011.
-
-Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Reported-by: Gerhard Sittig <gerhard.sittig@ifm.com>
+Signed-off-by: Anatolij Gustschin <agust@denx.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfs/nfs4proc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/spi/spi-mpc512x-psc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -3578,7 +3578,8 @@ static ssize_t __nfs4_get_acl_uncached(s
- 		.rpc_argp = &args,
- 		.rpc_resp = &res,
- 	};
--	int ret = -ENOMEM, npages, i, acl_len = 0;
-+	int ret = -ENOMEM, npages, i;
-+	size_t acl_len = 0;
+--- a/drivers/spi/spi-mpc512x-psc.c
++++ b/drivers/spi/spi-mpc512x-psc.c
+@@ -164,7 +164,7 @@ static int mpc512x_psc_spi_transfer_rxtx
  
- 	npages = (buflen + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 	/* As long as we're doing a round trip to the server anyway,
+ 		for (i = count; i > 0; i--) {
+ 			data = tx_buf ? *tx_buf++ : 0;
+-			if (len == EOFBYTE)
++			if (len == EOFBYTE && t->cs_change)
+ 				setbits32(&fifo->txcmd, MPC512x_PSC_FIFO_EOF);
+ 			out_8(&fifo->txdata_8, data);
+ 			len--;
 
