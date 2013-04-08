@@ -1,69 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935185Ab3DHJ1H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:27:07 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:56151 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934802Ab3DHJ1G (ORCPT
+	id S935198Ab3DHJ1M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:27:12 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:56615 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934802Ab3DHJ1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:27:06 -0400
+	Mon, 8 Apr 2013 05:27:10 -0400
 From: Prabhakar lad <prabhakar.csengg@gmail.com>
 To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         LAK <linux-arm-kernel@lists.infradead.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v8 0/2] ARM: davinci: dm355: add support for vpbe display
-Date: Mon,  8 Apr 2013 14:56:53 +0530
-Message-Id: <1365413215-3632-1-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH v8 1/2] ARM: davinci: dm355: add support for v4l2 video display
+Date: Mon,  8 Apr 2013 14:56:54 +0530
+Message-Id: <1365413215-3632-2-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1365413215-3632-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1365413215-3632-1-git-send-email-prabhakar.csengg@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-This patch series enables VPBE display driver on DM355.
+Create platform devices for various video modules like venc,osd,
+vpbe and v4l2 driver for dm355.
 
-This patch series is dependent on VPSS clock cleanup patches
-(http://www.mail-archive.com/davinci-linux-open-source@linux.davincidsp.com/msg25613.html)
-posted.
-
-Changes for v8:
-1: Removed extra line after break's and defines as pointed
-   by Sekhar.
-2: Included Ack from Sekhar for the second patch of the series.
-
-Changes for v7:
-1: Fixed nits pointed by Sekhar for DM365 series.
-
-Changes for v6:
-1: Fixed nits pointed by Sekhar.
-
-Changes for v5:
-1: Rebased on 3.9, fix review comments pointed by Sekhar for DM365 series.
-
-Changes for v4:
-1: pass different platform names to handle different ip's.
-
-Changes for v3:
-1: Replaced obsolete preset API by timings API.
-
-Changes for v2:
-1: Removed VPSS clock alias for master and slave which was
-   sent for VPSS driver. since this patch was dependent on
-   patch[1]. I will revist this patch once MC(captrure driver)
-   goes into mainline.
-   [1] http://www.spinics.net/lists/linux-media/msg50562.html
-
-Lad, Prabhakar (2):
-  ARM: davinci: dm355: add support for v4l2 video display
-  ARM: davinci: dm355 EVM: add support for VPBE display
-
- arch/arm/mach-davinci/board-dm355-evm.c |   71 +++++++++++++-
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ arch/arm/mach-davinci/board-dm355-evm.c |    4 +-
  arch/arm/mach-davinci/davinci.h         |    3 +-
  arch/arm/mach-davinci/dm355.c           |  167 ++++++++++++++++++++++++++++++-
- 3 files changed, 233 insertions(+), 8 deletions(-)
+ 3 files changed, 166 insertions(+), 8 deletions(-)
 
+diff --git a/arch/arm/mach-davinci/board-dm355-evm.c b/arch/arm/mach-davinci/board-dm355-evm.c
+index 147b8e1..37d12cc 100644
+--- a/arch/arm/mach-davinci/board-dm355-evm.c
++++ b/arch/arm/mach-davinci/board-dm355-evm.c
+@@ -253,8 +253,6 @@ static struct davinci_uart_config uart_config __initdata = {
+ 
+ static void __init dm355_evm_map_io(void)
+ {
+-	/* setup input configuration for VPFE input devices */
+-	dm355_set_vpfe_config(&vpfe_cfg);
+ 	dm355_init();
+ }
+ 
+@@ -344,6 +342,8 @@ static __init void dm355_evm_init(void)
+ 	davinci_setup_mmc(0, &dm355evm_mmc_config);
+ 	davinci_setup_mmc(1, &dm355evm_mmc_config);
+ 
++	dm355_init_video(&vpfe_cfg, NULL);
++
+ 	dm355_init_spi0(BIT(0), dm355_evm_spi_info,
+ 			ARRAY_SIZE(dm355_evm_spi_info));
+ 
+diff --git a/arch/arm/mach-davinci/davinci.h b/arch/arm/mach-davinci/davinci.h
+index a9de512..c4d9be5 100644
+--- a/arch/arm/mach-davinci/davinci.h
++++ b/arch/arm/mach-davinci/davinci.h
+@@ -39,6 +39,7 @@
+ #define SYSMOD_VDAC_CONFIG		0x2c
+ #define SYSMOD_VIDCLKCTL		0x38
+ #define SYSMOD_VPSS_CLKCTL		0x44
++#define VPSS_MUXSEL_EXTCLK_ENABLE	BIT(1)
+ #define VPSS_VENCCLKEN_ENABLE		BIT(3)
+ #define VPSS_DACCLKEN_ENABLE		BIT(4)
+ #define VPSS_PLLC2SYSCLK5_ENABLE	BIT(5)
+@@ -79,7 +80,7 @@ void __init dm355_init(void);
+ void dm355_init_spi0(unsigned chipselect_mask,
+ 		const struct spi_board_info *info, unsigned len);
+ void __init dm355_init_asp1(u32 evt_enable, struct snd_platform_data *pdata);
+-void dm355_set_vpfe_config(struct vpfe_config *cfg);
++int dm355_init_video(struct vpfe_config *, struct vpbe_config *);
+ 
+ /* DM365 function declarations */
+ void __init dm365_init(void);
+diff --git a/arch/arm/mach-davinci/dm355.c b/arch/arm/mach-davinci/dm355.c
+index 8e98bb0..bf9a9d4 100644
+--- a/arch/arm/mach-davinci/dm355.c
++++ b/arch/arm/mach-davinci/dm355.c
+@@ -35,6 +35,8 @@
+ #include "asp.h"
+ 
+ #define DM355_UART2_BASE	(IO_PHYS + 0x206000)
++#define DM355_OSD_BASE		(IO_PHYS + 0x70200)
++#define DM355_VENC_BASE		(IO_PHYS + 0x70400)
+ 
+ /*
+  * Device specific clocks
+@@ -744,11 +746,146 @@ static struct platform_device vpfe_capture_dev = {
+ 	},
+ };
+ 
+-void dm355_set_vpfe_config(struct vpfe_config *cfg)
++static struct resource dm355_osd_resources[] = {
++	{
++		.start	= DM355_OSD_BASE,
++		.end	= DM355_OSD_BASE + 0x17f,
++		.flags	= IORESOURCE_MEM,
++	},
++};
++
++static struct platform_device dm355_osd_dev = {
++	.name		= DM355_VPBE_OSD_SUBDEV_NAME,
++	.id		= -1,
++	.num_resources	= ARRAY_SIZE(dm355_osd_resources),
++	.resource	= dm355_osd_resources,
++	.dev		= {
++		.dma_mask		= &vpfe_capture_dma_mask,
++		.coherent_dma_mask	= DMA_BIT_MASK(32),
++	},
++};
++
++static struct resource dm355_venc_resources[] = {
++	{
++		.start	= IRQ_VENCINT,
++		.end	= IRQ_VENCINT,
++		.flags	= IORESOURCE_IRQ,
++	},
++	/* venc registers io space */
++	{
++		.start	= DM355_VENC_BASE,
++		.end	= DM355_VENC_BASE + 0x17f,
++		.flags	= IORESOURCE_MEM,
++	},
++	/* VDAC config register io space */
++	{
++		.start	= DAVINCI_SYSTEM_MODULE_BASE + SYSMOD_VDAC_CONFIG,
++		.end	= DAVINCI_SYSTEM_MODULE_BASE + SYSMOD_VDAC_CONFIG + 3,
++		.flags	= IORESOURCE_MEM,
++	},
++};
++
++static struct resource dm355_v4l2_disp_resources[] = {
++	{
++		.start	= IRQ_VENCINT,
++		.end	= IRQ_VENCINT,
++		.flags	= IORESOURCE_IRQ,
++	},
++	/* venc registers io space */
++	{
++		.start	= DM355_VENC_BASE,
++		.end	= DM355_VENC_BASE + 0x17f,
++		.flags	= IORESOURCE_MEM,
++	},
++};
++
++static int dm355_vpbe_setup_pinmux(enum v4l2_mbus_pixelcode if_type,
++			    int field)
++{
++	switch (if_type) {
++	case V4L2_MBUS_FMT_SGRBG8_1X8:
++		davinci_cfg_reg(DM355_VOUT_FIELD_G70);
++		break;
++	case V4L2_MBUS_FMT_YUYV10_1X20:
++		if (field)
++			davinci_cfg_reg(DM355_VOUT_FIELD);
++		else
++			davinci_cfg_reg(DM355_VOUT_FIELD_G70);
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	davinci_cfg_reg(DM355_VOUT_COUTL_EN);
++	davinci_cfg_reg(DM355_VOUT_COUTH_EN);
++
++	return 0;
++}
++
++static int dm355_venc_setup_clock(enum vpbe_enc_timings_type type,
++				   unsigned int pclock)
+ {
+-	vpfe_capture_dev.dev.platform_data = cfg;
++	void __iomem *vpss_clk_ctrl_reg;
++
++	vpss_clk_ctrl_reg = DAVINCI_SYSMOD_VIRT(SYSMOD_VPSS_CLKCTL);
++
++	switch (type) {
++	case VPBE_ENC_STD:
++		writel(VPSS_DACCLKEN_ENABLE | VPSS_VENCCLKEN_ENABLE,
++		       vpss_clk_ctrl_reg);
++		break;
++	case VPBE_ENC_DV_TIMINGS:
++		if (pclock > 27000000)
++			/*
++			 * For HD, use external clock source since we cannot
++			 * support HD mode with internal clocks.
++			 */
++			writel(VPSS_MUXSEL_EXTCLK_ENABLE, vpss_clk_ctrl_reg);
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
+ }
+ 
++static struct platform_device dm355_vpbe_display = {
++	.name		= "vpbe-v4l2",
++	.id		= -1,
++	.num_resources	= ARRAY_SIZE(dm355_v4l2_disp_resources),
++	.resource	= dm355_v4l2_disp_resources,
++	.dev		= {
++		.dma_mask		= &vpfe_capture_dma_mask,
++		.coherent_dma_mask	= DMA_BIT_MASK(32),
++	},
++};
++
++struct venc_platform_data dm355_venc_pdata = {
++	.setup_pinmux	= dm355_vpbe_setup_pinmux,
++	.setup_clock	= dm355_venc_setup_clock,
++};
++
++static struct platform_device dm355_venc_dev = {
++	.name		= DM355_VPBE_VENC_SUBDEV_NAME,
++	.id		= -1,
++	.num_resources	= ARRAY_SIZE(dm355_venc_resources),
++	.resource	= dm355_venc_resources,
++	.dev		= {
++		.dma_mask		= &vpfe_capture_dma_mask,
++		.coherent_dma_mask	= DMA_BIT_MASK(32),
++		.platform_data		= (void *)&dm355_venc_pdata,
++	},
++};
++
++static struct platform_device dm355_vpbe_dev = {
++	.name		= "vpbe_controller",
++	.id		= -1,
++	.dev		= {
++		.dma_mask		= &vpfe_capture_dma_mask,
++		.coherent_dma_mask	= DMA_BIT_MASK(32),
++	},
++};
++
+ /*----------------------------------------------------------------------*/
+ 
+ static struct map_desc dm355_io_desc[] = {
+@@ -868,6 +1005,29 @@ void __init dm355_init(void)
+ 	davinci_map_sysmod();
+ }
+ 
++int __init dm355_init_video(struct vpfe_config *vpfe_cfg,
++				struct vpbe_config *vpbe_cfg)
++{
++	if (vpfe_cfg || vpbe_cfg)
++		platform_device_register(&dm355_vpss_device);
++
++	if (vpfe_cfg) {
++		vpfe_capture_dev.dev.platform_data = vpfe_cfg;
++		platform_device_register(&dm355_ccdc_dev);
++		platform_device_register(&vpfe_capture_dev);
++	}
++
++	if (vpbe_cfg) {
++		dm355_vpbe_dev.dev.platform_data = vpbe_cfg;
++		platform_device_register(&dm355_osd_dev);
++		platform_device_register(&dm355_venc_dev);
++		platform_device_register(&dm355_vpbe_dev);
++		platform_device_register(&dm355_vpbe_display);
++	}
++
++	return 0;
++}
++
+ static int __init dm355_init_devices(void)
+ {
+ 	if (!cpu_is_davinci_dm355())
+@@ -875,9 +1035,6 @@ static int __init dm355_init_devices(void)
+ 
+ 	davinci_cfg_reg(DM355_INT_EDMA_CC);
+ 	platform_device_register(&dm355_edma_device);
+-	platform_device_register(&dm355_vpss_device);
+-	platform_device_register(&dm355_ccdc_dev);
+-	platform_device_register(&vpfe_capture_dev);
+ 
+ 	return 0;
+ }
 -- 
 1.7.4.1
 
