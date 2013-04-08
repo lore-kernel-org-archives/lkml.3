@@ -1,71 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935996Ab3DHXHG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 19:07:06 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:33039 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760264Ab3DHXHC (ORCPT
+	id S936305Ab3DHXJo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 19:09:44 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:51803 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760264Ab3DHXJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 19:07:02 -0400
-Date: Tue, 9 Apr 2013 00:06:58 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, Nathan Zimmer <nzimmer@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Woodhouse <dwmw2@infradead.org>, stable@vger.kernel.org,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: hangs on boot in 9984d7394618df9
-Message-ID: <20130408230658.GY4068@ZenIV.linux.org.uk>
-References: <20130405173623.GE4068@ZenIV.linux.org.uk>
- <515F3A71.9080008@sgi.com>
- <20130405210042.GH4068@ZenIV.linux.org.uk>
- <5162E36F.5020305@sgi.com>
- <20130408155847.GS4068@ZenIV.linux.org.uk>
- <51632DF8.2080402@sgi.com>
- <20130408212327.GU4068@ZenIV.linux.org.uk>
- <20130408214834.GV4068@ZenIV.linux.org.uk>
- <516341ED.5060803@wwwdotorg.org>
- <CAD=FV=WodJER2g45u5pEw0edf+K4uYJjyt0w4ZfX9q=o1a7pYw@mail.gmail.com>
+	Mon, 8 Apr 2013 19:09:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAD=FV=WodJER2g45u5pEw0edf+K4uYJjyt0w4ZfX9q=o1a7pYw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <003401ce3453$19d1e8c0$4d75ba40$%jun@samsung.com>
+References: <1363382956-14557-1-git-send-email-dianders@chromium.org>
+	<5146EAB0.1030705@samsung.com>
+	<CAD=FV=Ww-iK=-vg4jnJe6w4836-yQUoUyxNvCYsDQ5w0q-OMMQ@mail.gmail.com>
+	<515E88E3.5070507@samsung.com>
+	<003401ce3453$19d1e8c0$4d75ba40$%jun@samsung.com>
+Date: Mon, 8 Apr 2013 16:09:39 -0700
+X-Google-Sender-Auth: 9_uwNUaFFIOdVr17x_qPfO2o9yg
+Message-ID: <CAD=FV=V+ZZ0MUtuWKUOgR9NPyAquUjFC6KtHvAP-4iHXAYpjqA@mail.gmail.com>
+Subject: Re: [PATCH] RFC: mmc: dw_mmc: Always go to STATE_DATA_BUSY from STATE_DATA_ERROR
+From: Doug Anderson <dianders@chromium.org>
+To: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <cjb@laptop.org>,
+        Will Newton <will.newton@gmail.com>, Bing Zhao <bzhao@marvell.com>,
+        Ashok Nagarajan <asnagarajan@chromium.org>,
+        Paul Stewart <pstew@chromium.org>, Olof Johansson <olof@lixom.net>,
+        linux-mmc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 03:45:31PM -0700, Doug Anderson wrote:
-> Hi,
-> 
-> On Mon, Apr 8, 2013 at 3:17 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> >> Anyway, I've just pushed a splitup of that commit (carved in 3 pieces)
-> >> into vfs.git#pipe-splitup; could you check which part triggers that
-> >> hang?  Should propagate in a few...
-> >
-> > It looks like "pipe: unify ->release() and ->open()" introduces the
-> > problem. Note that I had to add a prototype for fifo_open() before the
-> > structs that reference it for that commit to compile.
-> 
-> It sounds like Stephen has provided you the info you needed so not
-> doing any extra testing now, but I figured I'd chime in that I hit
-> problems this morning with linux-next and it appears to be the same
-> thing.  I did a revert of 9984d7394618df9 and (plus a revert of a
-> handful of patches to the same file) and problems are resolved.  The
-> failure case is really weird in that everything works well booting to
-> a simple /bin/bash but fails when you do more complex tasks.
-> 
-> Anyway: If you need some extra testing feel free to CC me.
+Seungwon,
 
-Folks, see if vfs.git#experimental works for you; the PITA had apparently
-been caused by change of open() semantics for /proc/<pid>/fd/<some_pipe> -
-it started to behave like a FIFO, i.e. wait for peer to show up.  Normally
-that's not a problem, but if you have closed e.g. the write end of a pipe
-and try to open /proc/<pid>/fd/<read_end_of_pipe>, you'll get open() waiting
-for writers to appear.  Which isn't what we used to do here (open succeeded
-immediately) and apparently that was enough to trip drakut.
+On Mon, Apr 8, 2013 at 5:17 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
+> I guess Doug are debugging it with wifi, right?
 
-Branch head should be at 574179469f7370aadb9cbac1ceca7c3723c17bee.
+Yes, we're debugging it on the Samsung ARM Chromebook on a part that
+has an SDIO WiFi module by Marvell.  Bing Zhao (CCed) has a unit in
+hand that generates lots of CRC errors and has been testing patches
+I've sent him.
+
+
+> The problem happens when dw_mci_stop_dma is called in the middle of data transfers.
+> If data error occurs in the end of block, EVENT_XFER_COMPLETE might be set. So, it's fine.
+> Actually, dw_mci_idmac_stop_dma stops the dma working, there is no further interrupt for dma completion.
+
+That sounds right to me.
+
+
+> There are two solutions we have applied.
+
+I'm a little confused.  Have you already applied one or both of the
+solutions you list below, or are you proposing them as alternates to
+the patch I submitted?
+
+> #1. deferring the call of dw_mci_stop_dma until EVENT_XFER_COMPLETE flag is set into pending_events.
+> In this case, dma transfer will be continued with error.
+>
+> @@ -1062,7 +1062,6 @@ static void dw_mci_tasklet_func(unsigned long priv)
+>                 case STATE_SENDING_DATA:
+>                         if (test_and_clear_bit(EVENT_DATA_ERROR,
+>                                                &host->pending_events)) {
+> -                               dw_mci_stop_dma(host);
+>                                 if (data->stop)
+>                                         send_stop_cmd(host, data);
+>                                 state = STATE_DATA_ERROR;
+> @@ -1155,6 +1154,9 @@ static void dw_mci_tasklet_func(unsigned long priv)
+>                                                 &host->pending_events))
+>                                 break;
+>
+> +                       dw_mci_stop_dma(host);
+> +                       set_bit(EVENT_XFER_COMPLETE, &host->completed_events);
+> +
+>                         state = STATE_DATA_BUSY;
+>                         break;
+
+I can't say that I'm quite familiar enough with the intricate details
+of the driver to know whether this is a good idea or guaranteed to
+work.  Do we really think that we'll still get the end of the transfer
+properly if we've seen an error already?  I worry that we won't.
+
+
+> #2. set EVENT_XFER_COMPLETE flag when dw_mci_stop_dma is called regardless using_dma.
+>
+> @@ -299,10 +299,9 @@ static void dw_mci_stop_dma(struct dw_mci *host)
+>         if (host->using_dma) {
+>                 host->dma_ops->stop(host);
+>                 host->dma_ops->cleanup(host);
+> -       } else {
+> -               /* Data transfer was stopped by the interrupt handler */
+> -               set_bit(EVENT_XFER_COMPLETE, &host->pending_events);
+>         }
+> +
+> +       set_bit(EVENT_XFER_COMPLETE, &host->pending_events);
+>  }
+
+This is fairly similar to my patch but goes further.  I believe my
+patch has this effect but only for the call to dw_mci_stop_dma() in
+STATE_SENDING_DATA in the tasklet.  Your affects all 3 calls to
+dw_mci_stop_dma().
+
+This seems reasonable but I don't have confidence in my understanding
+of this driver's state machine (especially with regards to the error
+conditions) that I can say which is better.  If you think that this is
+a more correct solution than mine then we can give it some testing.
+
+Thanks!
+
+-Doug
