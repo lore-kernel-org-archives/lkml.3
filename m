@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965056Ab3DHKNG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:13:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42799 "EHLO
+	id S935669Ab3DHJvy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:51:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42769 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935673Ab3DHJv4 (ORCPT
+	with ESMTP id S935635Ab3DHJvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:51:56 -0400
+	Mon, 8 Apr 2013 05:51:49 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 045/102] USB: mos7840: fix use-after-free in TIOCMIWAIT
-Date: Mon,  8 Apr 2013 10:50:00 +0100
-Message-Id: <1365414657-29191-46-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 039/102] USB: f81232: fix use-after-free in TIOCMIWAIT
+Date: Mon,  8 Apr 2013 10:49:54 +0100
+Message-Id: <1365414657-29191-40-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
@@ -30,7 +30,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit a14430db686b8e459e1cf070a6ecf391515c9ab9 upstream.
+commit 508f940f1407656076a2e7d8f7fa059b567ecac2 upstream.
 
 Use the port wait queue and make sure to check the serial disconnected
 flag before accessing private port data after waking up.
@@ -40,61 +40,57 @@ itself) can be gone when waking up after a disconnect.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backport to 3.5; adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/mos7840.c | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/usb/serial/f81232.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
-index be5f09b..2727955 100644
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -224,7 +224,6 @@ struct moschip_port {
- 	char open;
- 	char open_ports;
- 	wait_queue_head_t wait_chase;	/* for handling sleeping while waiting for chase to finish */
--	wait_queue_head_t delta_msr_wait;	/* for handling sleeping while waiting for msr change to happen */
- 	int delta_msr_cond;
- 	struct async_icount icount;
- 	struct usb_serial_port *port;	/* loop back to the owner of this object */
-@@ -444,7 +443,7 @@ static void mos7840_handle_new_msr(struct moschip_port *port, __u8 new_msr)
- 		}
+diff --git a/drivers/usb/serial/f81232.c b/drivers/usb/serial/f81232.c
+index 499b15f..ea88b47 100644
+--- a/drivers/usb/serial/f81232.c
++++ b/drivers/usb/serial/f81232.c
+@@ -49,7 +49,6 @@ MODULE_DEVICE_TABLE(usb, id_table);
  
- 		mos7840_port->delta_msr_cond = 1;
--		wake_up_interruptible(&mos7840_port->delta_msr_wait);
-+		wake_up_interruptible(&port->port->delta_msr_wait);
+ struct f81232_private {
+ 	spinlock_t lock;
+-	wait_queue_head_t delta_msr_wait;
+ 	u8 line_control;
+ 	u8 line_status;
+ };
+@@ -114,7 +113,7 @@ static void f81232_process_read_urb(struct urb *urb)
+ 	line_status = priv->line_status;
+ 	priv->line_status &= ~UART_STATE_TRANSIENT_MASK;
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+-	wake_up_interruptible(&priv->delta_msr_wait);
++	wake_up_interruptible(&port->delta_msr_wait);
+ 
+ 	if (!urb->actual_length)
+ 		return;
+@@ -262,11 +261,14 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 
+ 	while (1) {
+-		interruptible_sleep_on(&priv->delta_msr_wait);
++		interruptible_sleep_on(&port->delta_msr_wait);
+ 		/* see if a signal did it */
+ 		if (signal_pending(current))
+ 			return -ERESTARTSYS;
+ 
++		if (port->serial->disconnected)
++			return -EIO;
++
+ 		spin_lock_irqsave(&priv->lock, flags);
+ 		status = priv->line_status;
+ 		spin_unlock_irqrestore(&priv->lock, flags);
+@@ -329,7 +331,6 @@ static int f81232_startup(struct usb_serial *serial)
+ 		if (!priv)
+ 			goto cleanup;
+ 		spin_lock_init(&priv->lock);
+-		init_waitqueue_head(&priv->delta_msr_wait);
+ 		usb_set_serial_port_data(serial->port[i], priv);
  	}
- }
- 
-@@ -1166,7 +1165,6 @@ static int mos7840_open(struct tty_struct *tty, struct usb_serial_port *port)
- 
- 	/* initialize our wait queues */
- 	init_waitqueue_head(&mos7840_port->wait_chase);
--	init_waitqueue_head(&mos7840_port->delta_msr_wait);
- 
- 	/* initialize our icount structure */
- 	memset(&(mos7840_port->icount), 0x00, sizeof(mos7840_port->icount));
-@@ -2307,13 +2305,18 @@ static int mos7840_ioctl(struct tty_struct *tty,
- 		while (1) {
- 			/* interruptible_sleep_on(&mos7840_port->delta_msr_wait); */
- 			mos7840_port->delta_msr_cond = 0;
--			wait_event_interruptible(mos7840_port->delta_msr_wait,
--						 (mos7840_port->
-+			wait_event_interruptible(port->delta_msr_wait,
-+						 (port->serial->disconnected ||
-+						  mos7840_port->
- 						  delta_msr_cond == 1));
- 
- 			/* see if a signal did it */
- 			if (signal_pending(current))
- 				return -ERESTARTSYS;
-+
-+			if (port->serial->disconnected)
-+				return -EIO;
-+
- 			cnow = mos7840_port->icount;
- 			smp_rmb();
- 			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
+ 	return 0;
 -- 
 1.8.1.2
 
