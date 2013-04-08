@@ -1,87 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936658Ab3DHPxN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 11:53:13 -0400
-Received: from ns.omicron.at ([212.183.10.25]:43175 "EHLO ns.omicron.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936519Ab3DHPxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 11:53:12 -0400
-X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Apr 2013 11:53:11 EDT
-From: Michael Riesch <michael.riesch@omicron.at>
-To: <netdev@vger.kernel.org>
-CC: Michael Riesch <michael.riesch@omicron.at>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Benc <jbenc@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] rtnetlink: Call nlmsg_parse() with correct header length
-Date: Mon, 8 Apr 2013 17:45:26 +0200
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
-Message-ID: <e04bc546-fcf6-41d2-a585-5fddff388e06@mary.at.omicron.at>
+	id S936673Ab3DHPzi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 11:55:38 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2321 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936631Ab3DHPzh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 11:55:37 -0400
+X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=6YC5YRaTPZoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=7doBReAiqyEA:10 a=20KFwNOVAAAA:8 a=TMUsVjcZFrTr7aPyPjwA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1365436535.25498.12.camel@gandalf.local.home>
+Subject: Re: [PATCH 4/4] uprobes/tracing: generalize struct
+ uprobe_trace_entry_head
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Date: Mon, 08 Apr 2013 11:55:35 -0400
+In-Reply-To: <20130329181548.GA20700@redhat.com>
+References: <20130329181548.GA20700@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2013-03-29 at 19:15 +0100, Oleg Nesterov wrote:
+> struct uprobe_trace_entry_head has a single member for reporting,
+> "unsigned long ip". If we want to support uretprobes we need to
+> create another struct which has "func" and "ret_ip" and duplicate
+> a lot of functions, like trace_kprobe.c does.
+> 
+> To avoid this copy-and-paste horror we turn ->ip into ->vaddr[]
+> and add couple of trivial helpers to calculate sizeof/data. This
+> uglifies the code a bit, but this allows us to avoid a lot more
+> complications later, when we add the support for ret-probes.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/trace/trace.h        |    5 ---
+>  kernel/trace/trace_uprobe.c |   61 ++++++++++++++++++++++++------------------
+>  2 files changed, 35 insertions(+), 31 deletions(-)
+> 
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index 57d7e53..6ca57cf 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -103,11 +103,6 @@ struct kretprobe_trace_entry_head {
+>  	unsigned long		ret_ip;
+>  };
+>  
+> -struct uprobe_trace_entry_head {
+> -	struct trace_entry	ent;
+> -	unsigned long		ip;
+> -};
+> -
+>  /*
+>   * trace_flag_type is an enumeration that holds different
+>   * states when a trace occurs. These are:
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index 43d258d..92a4b08 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -28,6 +28,17 @@
+>  
+>  #define UPROBE_EVENT_SYSTEM	"uprobes"
+>  
+> +struct uprobe_trace_entry_head {
+> +	struct trace_entry	ent;
+> +	unsigned long		vaddr[];
+> +};
+> +
+> +#define SIZEOF_TRACE_ENTRY(nr)	\
+> +	(sizeof(struct uprobe_trace_entry_head) + sizeof(unsigned long) * (nr))
+> +
+> +#define DATAOF_TRACE_ENTRY(entry, nr)	\
+> +	((void*)&(entry)->vaddr[nr])
+> +
+>  struct trace_uprobe_filter {
+>  	rwlock_t		rwlock;
+>  	int			nr_systemwide;
+> @@ -491,20 +502,19 @@ static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
+>  	struct uprobe_trace_entry_head *entry;
+>  	struct ring_buffer_event *event;
+>  	struct ring_buffer *buffer;
+> -	u8 *data;
+> +	void *data;
+>  	int size, i;
+>  	struct ftrace_event_call *call = &tu->call;
+>  
+> -	size = sizeof(*entry) + tu->size;
+> -
+> +	size = SIZEOF_TRACE_ENTRY(1) + tu->size;
 
-Signed-off-by: Michael Riesch <michael.riesch@omicron.at>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Benc <jbenc@redhat.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-kernel@vger.kernel.org
----
-Habidere,
+That '1' is confusing. When I first looked at this code, I thought it
+was a bug as it should have been '0' (thinking of arrays). And then I
+realized that you want the entry *after* the element.
 
-I encountered a netlink kernel warning when running avahi 0.6.31 on my system
-with kernel v3.4.35 (it appears several times):
+Instead of '1' and I assume '2' for ret probes, how about defining an
+enum:
 
-	netlink: 12 bytes leftover after parsing attributes.
+enum {
+	UPROBE_NORM	= 1,
+	UPROBE_RET	= 2,
+};
 
-Searching the web showed that commit "115c9b81928360d769a76c632bae62d15206a94a 
-rtnetlink: Fix problem with buffer allocation" introduced this behaviour[1].
+and then you can have;
 
-Now I - knowing nothing about netlink whatsoever - assume that the nlmsg_parse
-function is called with the wrong header length. In user space the request
-message consists out of the message header (struct nlmsghdr, 16 bytes) and an
-ifinfomsg (struct ifinfomsg, 16 bytes). After that, request attributes could
-follow. nlmsg_parse checks for this attributes after a given header length. In
-rtnl_get_link() this header length is sizeof(struct ifinfomsg), but in
-rtnl_calcit() as well as in rntl_dump_ifinfo() the header length is
-sizeof(struct rtgenmsg), which is 1 byte.
+	size = SIZEOF_TRACE_ENTRY(UPROBE_NORM);
 
-With this patch I got rid of these warnings. However, I do not know whether
-this is the correct solution, so I am looking forward to your comments.
-Regards, Michael
+and later:
 
-[1] http://lists.infradead.org/pipermail/libnl/2012-April/000515.html
+	size = SIZEOF_TRACE_ENTRY(UPROBE_RET);
 
- net/core/rtnetlink.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Same goes for DATAOF_TRACE_ENTRY().
 
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 900fc61..ebf6ace 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1065,7 +1065,7 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
- 	rcu_read_lock();
- 	cb->seq = net->dev_base_seq;
- 
--	if (nlmsg_parse(cb->nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
-+	if (nlmsg_parse(cb->nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
- 			ifla_policy) >= 0) {
- 
- 		if (tb[IFLA_EXT_MASK])
-@@ -1909,7 +1909,7 @@ static u16 rtnl_calcit(struct sk_buff *skb, struct nlmsghdr *nlh)
- 	u32 ext_filter_mask = 0;
- 	u16 min_ifinfo_dump_size = 0;
- 
--	if (nlmsg_parse(nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
-+	if (nlmsg_parse(nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
- 			ifla_policy) >= 0) {
- 		if (tb[IFLA_EXT_MASK])
- 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
--- 
-1.7.9.5
+This would make it a lot easier to understand and review, and much less
+bug prone when we have to deal with two different types of
+uprobe_trace_entry_head's.
+
+-- Steve
+
+>  	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
+>  						  size, 0, 0);
+>  	if (!event)
+>  		return 0;
+>  
+>  	entry = ring_buffer_event_data(event);
+> -	entry->ip = instruction_pointer(regs);
+> -	data = (u8 *)&entry[1];
+> +	entry->vaddr[0] = instruction_pointer(regs);
+> +	data = DATAOF_TRACE_ENTRY(entry, 1);
+>  	for (i = 0; i < tu->nr_args; i++)
+>  		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
+>  
+> @@ -518,22 +528,22 @@ static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
+>  static enum print_line_t
+>  print_uprobe_event(struct trace_iterator *iter, int flags, struct trace_event *event)
+>  {
+> -	struct uprobe_trace_entry_head *field;
+> +	struct uprobe_trace_entry_head *entry;
+>  	struct trace_seq *s = &iter->seq;
+>  	struct trace_uprobe *tu;
+>  	u8 *data;
+>  	int i;
+>  
+> -	field = (struct uprobe_trace_entry_head *)iter->ent;
+> +	entry = (struct uprobe_trace_entry_head *)iter->ent;
+>  	tu = container_of(event, struct trace_uprobe, call.event);
+>  
+> -	if (!trace_seq_printf(s, "%s: (0x%lx)", tu->call.name, field->ip))
+> +	if (!trace_seq_printf(s, "%s: (0x%lx)", tu->call.name, entry->vaddr[0]))
+>  		goto partial;
+>  
+> -	data = (u8 *)&field[1];
+> +	data = DATAOF_TRACE_ENTRY(entry, 1);
+>  	for (i = 0; i < tu->nr_args; i++) {
+>  		if (!tu->args[i].type->print(s, tu->args[i].name,
+> -					     data + tu->args[i].offset, field))
+> +					     data + tu->args[i].offset, entry))
+>  			goto partial;
+>  	}
+>  
+> @@ -585,16 +595,17 @@ static void probe_event_disable(struct trace_uprobe *tu, int flag)
+>  
+>  static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
+>  {
+> -	int ret, i;
+> +	int ret, i, size;
+>  	struct uprobe_trace_entry_head field;
+> -	struct trace_uprobe *tu = (struct trace_uprobe *)event_call->data;
+> +	struct trace_uprobe *tu = event_call->data;
+>  
+> -	DEFINE_FIELD(unsigned long, ip, FIELD_STRING_IP, 0);
+> +	DEFINE_FIELD(unsigned long, vaddr[0], FIELD_STRING_IP, 0);
+> +	size = SIZEOF_TRACE_ENTRY(1);
+>  	/* Set argument names as fields */
+>  	for (i = 0; i < tu->nr_args; i++) {
+>  		ret = trace_define_field(event_call, tu->args[i].type->fmttype,
+>  					 tu->args[i].name,
+> -					 sizeof(field) + tu->args[i].offset,
+> +					 size + tu->args[i].offset,
+>  					 tu->args[i].type->size,
+>  					 tu->args[i].type->is_signed,
+>  					 FILTER_OTHER);
+> @@ -748,33 +759,31 @@ static int uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
+>  	struct ftrace_event_call *call = &tu->call;
+>  	struct uprobe_trace_entry_head *entry;
+>  	struct hlist_head *head;
+> -	u8 *data;
+> -	int size, __size, i;
+> -	int rctx;
+> +	unsigned long ip;
+> +	void *data;
+> +	int size, rctx, i;
+>  
+>  	if (!uprobe_perf_filter(&tu->consumer, 0, current->mm))
+>  		return UPROBE_HANDLER_REMOVE;
+>  
+> -	__size = sizeof(*entry) + tu->size;
+> -	size = ALIGN(__size + sizeof(u32), sizeof(u64));
+> -	size -= sizeof(u32);
+> +	size = SIZEOF_TRACE_ENTRY(1);
+> +	size = ALIGN(size + tu->size + sizeof(u32), sizeof(u64)) - sizeof(u32);
+>  	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE, "profile buffer not large enough"))
+>  		return 0;
+>  
+>  	preempt_disable();
+> -
+>  	entry = perf_trace_buf_prepare(size, call->event.type, regs, &rctx);
+>  	if (!entry)
+>  		goto out;
+>  
+> -	entry->ip = instruction_pointer(regs);
+> -	data = (u8 *)&entry[1];
+> +	ip = instruction_pointer(regs);
+> +	entry->vaddr[0] = ip;
+> +	data = DATAOF_TRACE_ENTRY(entry, 1);
+>  	for (i = 0; i < tu->nr_args; i++)
+>  		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
+>  
+>  	head = this_cpu_ptr(call->perf_events);
+> -	perf_trace_buf_submit(entry, size, rctx, entry->ip, 1, regs, head, NULL);
+> -
+> +	perf_trace_buf_submit(entry, size, rctx, ip, 1, regs, head, NULL);
+>   out:
+>  	preempt_enable();
+>  	return 0;
+> @@ -784,7 +793,7 @@ static int uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
+>  static
+>  int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type, void *data)
+>  {
+> -	struct trace_uprobe *tu = (struct trace_uprobe *)event->data;
+> +	struct trace_uprobe *tu = event->data;
+>  
+>  	switch (type) {
+>  	case TRACE_REG_REGISTER:
+
 
