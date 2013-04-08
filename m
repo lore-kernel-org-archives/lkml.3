@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934609Ab3DHQOF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 12:14:05 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:62110 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934330Ab3DHQOD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 12:14:03 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 3/5] dmaengine: ste_dma40: Move default memcpy configs into the driver
-Date: Mon, 8 Apr 2013 18:14:00 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>
-References: <1365434591-21569-1-git-send-email-lee.jones@linaro.org> <1365434591-21569-3-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1365434591-21569-3-git-send-email-lee.jones@linaro.org>
+	id S934670Ab3DHQOQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 12:14:16 -0400
+Received: from mga03.intel.com ([143.182.124.21]:61324 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760248Ab3DHQOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 12:14:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,432,1363158000"; 
+   d="scan'208";a="224619603"
+Date: Mon, 8 Apr 2013 18:14:10 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: swarren@nvidia.com, broonie@opensource.wolfsonmicro.com,
+        gg@slimlogic.co.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: palmas: initialise client->of_node for dummy
+ created client
+Message-ID: <20130408161410.GB24058@zurbaran>
+References: <1363683500-24891-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304081814.00868.arnd@arndb.de>
-X-Provags-ID: V02:K0:CWVmOjeNR7kD49tHQecQaE6aC5q1W3LdEA0hk0fWrKT
- T919WgOdHjYNwp6J0kC6cqjtvnIDJxNUOgQOjWo/9VJZa+uMDo
- uD+kgci+aBXK15AQllZDhlPbF0h7T1jIxX/0yVHajtMe8wzTLe
- 5dMvlcKSlvQa3cFrjWPEMINr1T8a6aqTtP0DzXppMQQCbEdnc1
- azhY6FLBUyb3n8pit/TlFJGx9mCmC8uaigeon/N/A1eCQVvVk9
- TT7kjie4z+MwdD/EA3B3miy41msvJniR9fYxpk84uefOfdKCJe
- Xiz2FLVkzMps37Hx5dFkCnWoW55y8xttH04CVIkztrFyqLPW47
- 2+4lMf8Fgz9fjrWsAzMU=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363683500-24891-1-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 April 2013, Lee Jones wrote:
-> There are only two default memcpy configurations used for the DMA40
-> driver; one for physical memcpy and one for logical memcpy. Instead
-> of invariably passing the same configurations though platform data,
-> we're moving them into the driver instead.
-> 
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <djbw@fb.com>
-> Cc: Per Forlin <per.forlin@stericsson.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Hi Laxman,
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+On Tue, Mar 19, 2013 at 02:28:20PM +0530, Laxman Dewangan wrote:
+> Palmas device have three different i2c addresses. The device creates
+> the two new dummy i2c clients for accessing the register by using
+> primary client adapter. This new dummy i2c client have their of_node
+> as NULL.
+> 
+> The dummy i2c client is used for registering interrupt and on this,
+> it creates irq domain handle. This created irq domain handle has
+> their of_node as NULL.
+> 
+> Now when any child of this device is registered through the DT as
+> follows:
+>          palmas: tps65913@58 {
+>          	::::::::::::::::::
+> 
+>          	#interrupt-cells = <2>;
+>                 interrupt-controller;
+> 
+>                 palmas_rtc {
+>                        compatible = "ti,palmas-rtc";
+>                        interrupt-parent = <&palmas>;
+>                        interrupts = <8 0>;
+>                 };
+>                 ::::::::::;;;
+>          };
+> 
+> And child driver (palam-rtc in this case) get their irq number as
+> 	irq = platform_get_irq(pdev, 0);
+> 
+> The returned irq number is error in this case. The reason is that
+> the created irq_domain handle for the palmas interrupt does not have
+> valid node and so matching of node fails with palmas node.
+> 
+> Hence initialising the newly dummy created client->of_node with the
+> primary clients of_node so that irq_domain handle have proper of_node
+> for matching.
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> ---
+>  drivers/mfd/palmas.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+Applied to mfd-next, thanks.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
