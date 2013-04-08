@@ -1,110 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935395Ab3DHSNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 14:13:48 -0400
-Received: from mga03.intel.com ([143.182.124.21]:44226 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934719Ab3DHSNr convert rfc822-to-8bit (ORCPT
+	id S935423Ab3DHSP3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 14:15:29 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:58746 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935348Ab3DHSP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 14:13:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,432,1363158000"; 
-   d="scan'208";a="224682993"
-From: "Rustad, Mark D" <mark.d.rustad@intel.com>
-To: Michael Riesch <michael.riesch@omicron.at>
-CC: "<netdev@vger.kernel.org>" <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Benc <jbenc@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rtnetlink: Call nlmsg_parse() with correct header length
-Thread-Topic: [PATCH] rtnetlink: Call nlmsg_parse() with correct header
- length
-Thread-Index: AQHONHFFYz6bF+X44UGK1FzxpiedMpjNFgYA
-Date: Mon, 8 Apr 2013 18:13:36 +0000
-Message-ID: <CD31A507-C3E1-4499-9F06-2F83B3FBFE61@intel.com>
-References: <e04bc546-fcf6-41d2-a585-5fddff388e06@mary.at.omicron.at>
-In-Reply-To: <e04bc546-fcf6-41d2-a585-5fddff388e06@mary.at.omicron.at>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [134.134.170.158]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <2C017A33302C9E4DB393DD3D46112705@intel.com>
-Content-Transfer-Encoding: 8BIT
+	Mon, 8 Apr 2013 14:15:27 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX187OmWOtdJYM77jlzsF4hv6
+Date: Mon, 8 Apr 2013 11:15:24 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Anton Vorontsov <cbou@mail.ru>, Keerthy <j-keerthy@ti.com>,
+        Kyle Manna <kyle@kylemanna.com>, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 1/2] mfd: twl4030-madc: Add support for raw value in
+ twl4030_madc_conversion
+Message-ID: <20130408181524.GU10155@atomide.com>
+References: <1360969010-8571-1-git-send-email-pali.rohar@gmail.com>
+ <201303022323.06091@pali>
+ <201303241503.29912@pali>
+ <201304041132.21158@pali>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201304041132.21158@pali>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 8, 2013, at 8:45 AM, Michael Riesch <michael.riesch@omicron.at> wrote:
+* Pali Rohár <pali.rohar@gmail.com> [130404 02:37]:
+> On Sunday 24 March 2013 15:03:29 Pali Rohár wrote:
+> > On Saturday 02 March 2013 23:23:05 Pali Rohár wrote:
+> > > On Friday 15 February 2013 23:56:49 Pali Rohár wrote:
+> > > > Driver twl4030-madc has hardcoded channel types (10 -
+> > > > battery current, 1 - battery temperature) and also
+> > > > conversation data in variable twl4030_divider_ratios.
+> > > > These hardcoded channels are incorrect for Nokia RX-51
+> > > > board (where is channel 0 - battery temperature).
+> > > > 
+> > > > For Nokia RX-51 there is rx51_battery power_supply driver
+> > > > which reporting battery information via
+> > > > twl4030_madc_conversion. But this driver needs raw values
+> > > > (not converted via some hardcoded functions). So this
+> > > > patch adding new parameter "raw" to struct
+> > > > twl4030_madc_request which tell twl4030-madc driver to
+> > > > not convert values, but rather return raw.
+> > > > 
+> > > > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> > > > ---
+> > > > 
+> > > >  drivers/mfd/twl4030-madc.c       |   14 ++++++++++----
+> > > >  include/linux/i2c/twl4030-madc.h |    2 ++
+> > > >  2 files changed, 12 insertions(+), 4 deletions(-)
+> > > 
+> > > Hello, can somebody review this twl4030-madc patch?
+> > 
+> > Bump.
+> > 
+> > Can some of mfd maintainers look at this patch and include it
+> > to mfd tree? It is needed for rx51_battery power supply
+> > driver.
+> 
+> CCing Tony, can you look at this patch?
 
-> 
-> Signed-off-by: Michael Riesch <michael.riesch@omicron.at>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Jiri Benc <jbenc@redhat.com>
-> Cc: "Theodore Ts'o" <tytso@mit.edu>
-> Cc: linux-kernel@vger.kernel.org
-> ---
-> Habidere,
-> 
-> I encountered a netlink kernel warning when running avahi 0.6.31 on my system
-> with kernel v3.4.35 (it appears several times):
-> 
-> 	netlink: 12 bytes leftover after parsing attributes.
-> 
-> Searching the web showed that commit "115c9b81928360d769a76c632bae62d15206a94a 
-> rtnetlink: Fix problem with buffer allocation" introduced this behaviour[1].
-> 
-> Now I - knowing nothing about netlink whatsoever - assume that the nlmsg_parse
-> function is called with the wrong header length. In user space the request
-> message consists out of the message header (struct nlmsghdr, 16 bytes) and an
-> ifinfomsg (struct ifinfomsg, 16 bytes). After that, request attributes could
-> follow. nlmsg_parse checks for this attributes after a given header length. In
-> rtnl_get_link() this header length is sizeof(struct ifinfomsg), but in
-> rtnl_calcit() as well as in rntl_dump_ifinfo() the header length is
-> sizeof(struct rtgenmsg), which is 1 byte.
-> 
-> With this patch I got rid of these warnings. However, I do not know whether
-> this is the correct solution, so I am looking forward to your comments.
-> Regards, Michael
-> 
-> [1] http://lists.infradead.org/pipermail/libnl/2012-April/000515.html
-> 
-> net/core/rtnetlink.c |    4 ++--
-> 1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-> index 900fc61..ebf6ace 100644
-> --- a/net/core/rtnetlink.c
-> +++ b/net/core/rtnetlink.c
-> @@ -1065,7 +1065,7 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
-> 	rcu_read_lock();
-> 	cb->seq = net->dev_base_seq;
-> 
-> -	if (nlmsg_parse(cb->nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
-> +	if (nlmsg_parse(cb->nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
-> 			ifla_policy) >= 0) {
-> 
-> 		if (tb[IFLA_EXT_MASK])
-> @@ -1909,7 +1909,7 @@ static u16 rtnl_calcit(struct sk_buff *skb, struct nlmsghdr *nlh)
-> 	u32 ext_filter_mask = 0;
-> 	u16 min_ifinfo_dump_size = 0;
-> 
-> -	if (nlmsg_parse(nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
-> +	if (nlmsg_parse(nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
-> 			ifla_policy) >= 0) {
-> 		if (tb[IFLA_EXT_MASK])
-> 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
-> -- 
-> 1.7.9.5
+Sorry for the delay in replying, I've been going through my
+inbox for the merge window and noticed this.
 
+I suggest resend with Peter Ujfalusi cc:d as he is the de-facto
+twl/tps maintainer and expert by now.
 
-I found that fcoemon has also been triggering these messages for some time. I found the same problem and arrived at exactly the same solution. I would have already sent it, but it is still in validation. As far as I am concerned:
+Regards,
 
-Acked-by: Mark Rustad <mark.d.rustad@intel.com>
-
--- 
-Mark Rustad, Networking Division, Intel Corporation
+Tony
