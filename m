@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936217Ab3DHOQZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 10:16:25 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:56433 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936037Ab3DHOQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 10:16:24 -0400
-Date: Mon, 8 Apr 2013 16:15:57 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@canonical.com>, Mel Gorman <mgorman@suse.de>
-Subject: Re: x86/mm/pageattr: Code without effect?
-Message-ID: <20130408141557.GD4395@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Stefan Bader <stefan.bader@canonical.com>,
-	Ingo Molnar <mingo@kernel.org>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Andy Whitcroft <apw@canonical.com>, Mel Gorman <mgorman@suse.de>
-References: <515E92CE.2000509@canonical.com>
- <20130405142104.GB29290@pd.tnic>
- <20130406145804.GJ3423@redhat.com>
- <20130406154751.GB3612@pd.tnic>
- <20130408115344.GA7513@gmail.com>
- <20130408115959.GB4395@pd.tnic>
- <5162B7FF.7010603@canonical.com>
- <20130408125129.GC4395@pd.tnic>
- <5162C1A8.4060904@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5162C1A8.4060904@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S936273Ab3DHOYD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 10:24:03 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:55993 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935411Ab3DHOYB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 10:24:01 -0400
+Message-ID: <1365431039.1830.102.camel@x61.thuisdomein>
+Subject: [PATCH] ARM: imx: remove configs ARCH_MX5 and ARCH_MX51
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Mon, 08 Apr 2013 16:23:59 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Apr 2013 14:23:59.0226 (UTC) FILETIME=[B5D3E5A0:01CE3464]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 03:10:00PM +0200, Stefan Bader wrote:
->          * that we limited the number of possible pages already to
->          * the number of pages in the large page.
->          */
->         if (address == (address & pmask) && cpa->numpages == (psize >>
-> PAGE_SHIFT)) {
->                 /*
->                  * The address is aligned and the number of pages
->                  * covers the full page.
->                  */
->                 new_pte = pfn_pte(pte_pfn(old_pte), new_prot);
->                                                      ^
-> 
-> This one. The first patch changed
-> 
-> -               new_pte = pfn_pte(pte_pfn(old_pte), canon_pgprot(new_prot));
-> +               new_pte = pfn_pte(pte_pfn(old_pte), new_prot);
-> 
-> The fixup patch drops new_prot completely from being initialized and only works
-> on req_prot. Probably it would be best to also drop the definition of new_prot.
-> I think it then completely unused.
+The Kconfig symbols ARCH_MX5 and ARCH_MX51 are unused since v3.3. They
+can safely be removed.
 
-Actually, we do need and initialize new_prot at line 495:
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Tested with "git grep" only.
 
-	pfn = pte_pfn(old_pte) + ((address & (psize - 1)) >> PAGE_SHIFT);
-	cpa->pfn = pfn;
+ arch/arm/mach-imx/Kconfig | 10 ----------
+ 1 file changed, 10 deletions(-)
 
-	new_prot = static_protections(req_prot, address, pfn);		<---
-
-and we need it for the subsequent loop where we go over the 512 PTEs to
-decide whether to split or not.
-
-So it is needed after all, AFAICT.
-
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+index 6d9ae09..cbd6942 100644
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -92,12 +92,6 @@ config ARCH_MX25
+ config MACH_MX27
+ 	bool
+ 
+-config ARCH_MX5
+-	bool
+-
+-config ARCH_MX51
+-	bool
+-
+ config ARCH_MX53
+ 	bool
+ 
+@@ -155,7 +149,6 @@ config SOC_IMX35
+ config SOC_IMX5
+ 	bool
+ 	select ARCH_HAS_CPUFREQ
+-	select ARCH_MX5
+ 	select ARCH_MXC_IOMUX_V3
+ 	select COMMON_CLK
+ 	select CPU_V7
+@@ -163,8 +156,6 @@ config SOC_IMX5
+ 
+ config	SOC_IMX51
+ 	bool
+-	select ARCH_MX5
+-	select ARCH_MX51
+ 	select PINCTRL
+ 	select PINCTRL_IMX51
+ 	select SOC_IMX5
+@@ -787,7 +778,6 @@ comment "Device tree only"
+ 
+ config	SOC_IMX53
+ 	bool "i.MX53 support"
+-	select ARCH_MX5
+ 	select ARCH_MX53
+ 	select HAVE_CAN_FLEXCAN if CAN
+ 	select IMX_HAVE_PLATFORM_IMX2_WDT
 -- 
-Regards/Gruss,
-    Boris.
+1.7.11.7
 
-Sent from a fat crate under my desk. Formatting is fine.
---
