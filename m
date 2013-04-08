@@ -1,86 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936394Ab3DHVrm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 17:47:42 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54679 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935090Ab3DHVrl (ORCPT
+	id S936407Ab3DHVsh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 17:48:37 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:32844 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935961Ab3DHVsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 17:47:41 -0400
-Date: Mon, 8 Apr 2013 22:47:19 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Kevin Hilman <khilman@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [patch 08/34] arm: Use generic idle loop
-Message-ID: <20130408214719.GN17995@n2100.arm.linux.org.uk>
-References: <20130321214930.752934102@linutronix.de> <20130321215233.826238797@linutronix.de> <87zjxv9lga.fsf@linaro.org> <alpine.LFD.2.02.1303251230440.22263@ionos> <20130325114808.GQ4977@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1303251501520.22263@ionos>
+	Mon, 8 Apr 2013 17:48:36 -0400
+Date: Mon, 8 Apr 2013 22:48:34 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Woodhouse <dwmw2@infradead.org>, stable@vger.kernel.org,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: hangs on boot in 9984d7394618df9
+Message-ID: <20130408214834.GV4068@ZenIV.linux.org.uk>
+References: <515DB465.1060004@sgi.com>
+ <20130404204459.GU21522@ZenIV.linux.org.uk>
+ <515F0456.9040803@sgi.com>
+ <20130405173623.GE4068@ZenIV.linux.org.uk>
+ <515F3A71.9080008@sgi.com>
+ <20130405210042.GH4068@ZenIV.linux.org.uk>
+ <5162E36F.5020305@sgi.com>
+ <20130408155847.GS4068@ZenIV.linux.org.uk>
+ <51632DF8.2080402@sgi.com>
+ <20130408212327.GU4068@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1303251501520.22263@ionos>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20130408212327.GU4068@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 25, 2013 at 03:02:39PM +0100, Thomas Gleixner wrote:
-> On Mon, 25 Mar 2013, Russell King - ARM Linux wrote:
+On Mon, Apr 08, 2013 at 10:23:27PM +0100, Al Viro wrote:
+> On Mon, Apr 08, 2013 at 03:52:08PM -0500, Nathan Zimmer wrote:
 > 
-> > On Mon, Mar 25, 2013 at 12:31:20PM +0100, Thomas Gleixner wrote:
-> > > On Fri, 22 Mar 2013, Kevin Hilman wrote:
-> > > 
-> > > > Hi Thomas,
-> > > > 
-> > > > Thomas Gleixner <tglx@linutronix.de> writes:
-> > > > 
-> > > > > Use the generic idle loop and replace enable/disable_hlt with the
-> > > > > respective core functions.
-> > > > >
-> > > > > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> > > > > Cc: Russell King <linux@arm.linux.org.uk>
-> > > > 
-> > > > I gave patches 1-5 + this a quick spin on ARM (specifially some OMAP3 and
-> > > > OMAP4 platforms, with and without CPUidle enabled.)
-> > > > 
-> > > > The OMAP stuff needed a couple minor compile fixes (below), but
-> > > > otherwise it passes the quick "seems to work" test.
-> > > 
-> > > Yeah, that's needed for the other arch/arm conversions as well.
-> > 
-> > So, the only patch I got was this one, which is useless to test on its
-> > own...
+> > Further digging seems to indicate 9984d7394618df9, the one right
+> > after the commit I previously identified.
+> > Not sure what I did wrong with my bisect to put it off by one.
 > 
-> I'm testing V2 now and will post an git URL with a testing branch
-> later tonight.
+> Ugh...  Can't reproduce here ;-/  Could you give more details on your
+> setup?
 
-So, how can I review these changes when all there is is a git URL, and
-I *do* not want to pull them into my tree without first looking at the
-patches, possibly reviewing them and *replying* with the patch inline?
-
-I see you've now added this stuff to -tip.  I guess ARM doesn't matter
-to you at all.  I guess having ARM people review the core changes doesn't
-matter either.
-
-Well, I guess if it's broken, we'll just have to fix it up after the
-merge window.
-
-One rule for x86, a different one for ARM.  Let x86 maintainers moan
-about ARM people, but don't let ARM people moan about x86 maintainers.
-Yes, sure, right, I get it.
-
-So, explicitly, my concern is this replacement of enable_hlt()/disable_hlt()
-with this cpu_idle_poll_ctrl(), and whether this interface is still
-counted - so that it's possible to call disable_hlt() to _permanently_
-disable any hlt-based idle loop.
-
-If that's not possible with your revised interface, you have just broken
-some ARM platforms.  I can only guess... because you never copied your
-entire patch set to me nor to the ARM lists.
+Anyway, I've just pushed a splitup of that commit (carved in 3 pieces)
+into vfs.git#pipe-splitup; could you check which part triggers that
+hang?  Should propagate in a few...
