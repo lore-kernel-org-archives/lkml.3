@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934837Ab3DHGeX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 02:34:23 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:19944 "EHLO
+	id S935027Ab3DHGem (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 02:34:42 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:20289 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761255Ab3DHGeT (ORCPT
+	with ESMTP id S934734Ab3DHGej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 02:34:19 -0400
-Message-ID: <516264D6.3090100@huawei.com>
-Date: Mon, 8 Apr 2013 14:33:58 +0800
+	Mon, 8 Apr 2013 02:34:39 -0400
+Message-ID: <516264E4.5090405@huawei.com>
+Date: Mon, 8 Apr 2013 14:34:12 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
@@ -18,8 +18,7 @@ CC: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
         LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
         <linux-mm@kvack.org>
-Subject: [PATCH 04/12] memcg, kmem: fix reference count handling on the error
- path
+Subject: [PATCH 05/12] memcg: use css_get() in sock_update_memcg()
 References: <5162648B.9070802@huawei.com>
 In-Reply-To: <5162648B.9070802@huawei.com>
 Content-Type: text/plain; charset="GB2312"
@@ -30,51 +29,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Hocko <mhocko@suse.cz>
+Use css_get/css_put instead of mem_cgroup_get/put.
 
-mem_cgroup_css_online calls mem_cgroup_put if memcg_init_kmem
-fails. This is not correct because only memcg_propagate_kmem takes an
-additional reference while mem_cgroup_sockets_init is allowed to fail as
-well (although no current implementation fails) but it doesn't take any
-reference. This all suggests that it should be memcg_propagate_kmem that
-should clean up after itself so this patch moves mem_cgroup_put over
-there.
-
-Unfortunately this is not that easy (as pointed out by Li Zefan) because
-memcg_kmem_mark_dead marks the group dead (KMEM_ACCOUNTED_DEAD) if it
-is marked active (KMEM_ACCOUNTED_ACTIVE) which is the case even if
-memcg_propagate_kmem fails so the additional reference is dropped in
-that case in kmem_cgroup_destroy which means that the reference would be
-dropped two times.
-
-The easiest way then would be to simply remove mem_cgrroup_put from
-mem_cgroup_css_online and rely on kmem_cgroup_destroy doing the right
-thing.
+Note, if at the same time someone is moving @current to a different
+cgroup and removing the old cgroup, css_tryget() may return false,
+and sock->sk_cgrp won't be initialized, which is fine.
 
 Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Cc: <stable@vger.kernel.org> # 3.8.x
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
 ---
- mm/memcontrol.c | 8 --------
- 1 file changed, 8 deletions(-)
+ mm/memcontrol.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 44cec72..e65eaac 100644
+index e65eaac..bbf5bf3 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -6243,14 +6243,6 @@ mem_cgroup_css_online(struct cgroup *cont)
+@@ -536,15 +536,15 @@ void sock_update_memcg(struct sock *sk)
+ 		 */
+ 		if (sk->sk_cgrp) {
+ 			BUG_ON(mem_cgroup_is_root(sk->sk_cgrp->memcg));
+-			mem_cgroup_get(sk->sk_cgrp->memcg);
++			css_get(&sk->sk_cgrp->memcg->css);
+ 			return;
+ 		}
  
- 	error = memcg_init_kmem(memcg, &mem_cgroup_subsys);
- 	mutex_unlock(&memcg_create_mutex);
--	if (error) {
--		/*
--		 * We call put now because our (and parent's) refcnts
--		 * are already in place. mem_cgroup_put() will internally
--		 * call __mem_cgroup_free, so return directly
--		 */
+ 		rcu_read_lock();
+ 		memcg = mem_cgroup_from_task(current);
+ 		cg_proto = sk->sk_prot->proto_cgroup(memcg);
+-		if (!mem_cgroup_is_root(memcg) && memcg_proto_active(cg_proto)) {
+-			mem_cgroup_get(memcg);
++		if (!mem_cgroup_is_root(memcg) &&
++		    memcg_proto_active(cg_proto) && css_tryget(&memcg->css)) {
+ 			sk->sk_cgrp = cg_proto;
+ 		}
+ 		rcu_read_unlock();
+@@ -558,7 +558,7 @@ void sock_release_memcg(struct sock *sk)
+ 		struct mem_cgroup *memcg;
+ 		WARN_ON(!sk->sk_cgrp->memcg);
+ 		memcg = sk->sk_cgrp->memcg;
 -		mem_cgroup_put(memcg);
--	}
- 	return error;
++		css_put(&sk->sk_cgrp->memcg->css);
+ 	}
  }
  
 -- 
