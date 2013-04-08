@@ -1,231 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936418Ab3DHV3F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 17:29:05 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:41250 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936268Ab3DHV1i (ORCPT
+	id S936439Ab3DHV3Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 17:29:25 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58525 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936268Ab3DHV3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 17:27:38 -0400
-X-IronPort-AV: E=Sophos;i="4.87,433,1363158000"; 
-   d="scan'208";a="36848522"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCHv4 11/11] ARM: smp: Remove local timer API
-Date: Mon,  8 Apr 2013 14:27:33 -0700
-Message-Id: <1365456453-16297-12-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.2
-In-Reply-To: <1365456453-16297-1-git-send-email-sboyd@codeaurora.org>
-References: <1365456453-16297-1-git-send-email-sboyd@codeaurora.org>
+	Mon, 8 Apr 2013 17:29:22 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Fabian Vogt" <fabian@ritter-vogt.de>
+Subject: Re: [RFC PATCH arm: initial TI-Nspire support]
+Date: Mon, 8 Apr 2013 23:29:07 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Daniel Tang" <dt.tangr@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, "Lionel Debroux" <lionel_debroux@yahoo.fr>,
+        linux-kernel@vger.kernel.org,
+        "Linus Walleij" <linus.walleij@linaro.org>
+References: <6FE4B33E-A503-4A75-AEED-831CB2C06D83@gmail.com> <201304082138.15875.arnd@arndb.de> <op.wu8ng3wyu7prd4@fabians-laptop.fritz.box>
+In-Reply-To: <op.wu8ng3wyu7prd4@fabians-laptop.fritz.box>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304082329.08105.arnd@arndb.de>
+X-Provags-ID: V02:K0:foZQsuR69ACFvvBSkMeWJepUoLUJkgnA6idBGHTl7oo
+ gUOxfNKHFfWIyWxaMUNAhIKVDjYjlGO3W8y0xTQYqK5SLhnste
+ kBU5T8ONTs171Njyjkf92PoKW1t1rJ/+LcuVTk6Vva0I35i7L4
+ ociWavib7ACqsqaQuIFoPI34NPhU7DK2yoKAXCBjSpIN2ieFme
+ CvsuGM+jaWgknHaRzYJOXm0WnahH9zDFl4rDQYU8iIBaecu2jC
+ SDGabbjbv9A5k4yrrq9YukuQZE14c6nmdTdMdhdmXREnLn5q+7
+ ZNsQ1wjrR/qI7cZeg+1+kgk7QbfGN7aEnGz5ZXrNQz4cOfKGjF
+ nW6wbzUOumab0cmjYIlo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are no more users of this API, remove it.
+On Monday 08 April 2013, Fabian Vogt wrote:
+> Yes, I've heard that before, but than it would work/not work independently
+> of NO_HZ. Can printk's be executet within console_lock() ..  
+> console_unlock() blocks?
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Acked-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/Kconfig                  | 10 ------
- arch/arm/include/asm/localtimer.h | 34 -------------------
- arch/arm/kernel/smp.c             | 69 ---------------------------------------
- 3 files changed, 113 deletions(-)
- delete mode 100644 arch/arm/include/asm/localtimer.h
+I think it's legal to call printk in that case, but the message will
+not be printed until you reach the console_unlock()
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index ee6bb9d..f97a980 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1643,16 +1643,6 @@ config ARM_PSCI
- 	  0022A ("Power State Coordination Interface System Software on
- 	  ARM processors").
- 
--config LOCAL_TIMERS
--	bool "Use local timer interrupts"
--	depends on SMP
--	default y
--	help
--	  Enable support for local timers on SMP platforms, rather then the
--	  legacy IPI broadcast method.  Local timers allows the system
--	  accounting to be spread across the timer interval, preventing a
--	  "thundering herd" at every timer tick.
--
- # The GPIO number here must be sorted by descending number. In case of
- # a multiplatform kernel, we just want the highest value required by the
- # selected platforms.
-diff --git a/arch/arm/include/asm/localtimer.h b/arch/arm/include/asm/localtimer.h
-deleted file mode 100644
-index f77ffc1..0000000
---- a/arch/arm/include/asm/localtimer.h
-+++ /dev/null
-@@ -1,34 +0,0 @@
--/*
-- *  arch/arm/include/asm/localtimer.h
-- *
-- *  Copyright (C) 2004-2005 ARM Ltd.
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--#ifndef __ASM_ARM_LOCALTIMER_H
--#define __ASM_ARM_LOCALTIMER_H
--
--#include <linux/errno.h>
--
--struct clock_event_device;
--
--struct local_timer_ops {
--	int  (*setup)(struct clock_event_device *);
--	void (*stop)(struct clock_event_device *);
--};
--
--#ifdef CONFIG_LOCAL_TIMERS
--/*
-- * Register a local timer driver
-- */
--int local_timer_register(struct local_timer_ops *);
--#else
--static inline int local_timer_register(struct local_timer_ops *ops)
--{
--	return -ENXIO;
--}
--#endif
--
--#endif
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 4de4d14..4c49138 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -41,7 +41,6 @@
- #include <asm/sections.h>
- #include <asm/tlbflush.h>
- #include <asm/ptrace.h>
--#include <asm/localtimer.h>
- #include <asm/smp_plat.h>
- #include <asm/virt.h>
- #include <asm/mach/arch.h>
-@@ -133,8 +132,6 @@ int __cpuinit boot_secondary(unsigned int cpu, struct task_struct *idle)
- }
- 
- #ifdef CONFIG_HOTPLUG_CPU
--static void percpu_timer_stop(void);
--
- static int platform_cpu_kill(unsigned int cpu)
- {
- 	if (smp_ops.cpu_kill)
-@@ -178,11 +175,6 @@ int __cpuinit __cpu_disable(void)
- 	migrate_irqs();
- 
- 	/*
--	 * Stop the local timer for this CPU.
--	 */
--	percpu_timer_stop();
--
--	/*
- 	 * Flush user cache and TLB mappings, and then remove this CPU
- 	 * from the vm mask set of all processes.
- 	 *
-@@ -269,8 +261,6 @@ static void __cpuinit smp_store_cpu_info(unsigned int cpuid)
- 	store_cpu_topology(cpuid);
- }
- 
--static void percpu_timer_setup(void);
--
- /*
-  * This is the secondary CPU boot entry.  We're using this CPUs
-  * idle thread stack, but a set of temporary page tables.
-@@ -325,11 +315,6 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
- 	set_cpu_online(cpu, true);
- 	complete(&cpu_running);
- 
--	/*
--	 * Setup the percpu timer for this CPU.
--	 */
--	percpu_timer_setup();
--
- 	local_irq_enable();
- 	local_fiq_enable();
- 
-@@ -376,12 +361,6 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
- 		max_cpus = ncores;
- 	if (ncores > 1 && max_cpus) {
- 		/*
--		 * Enable the local timer or broadcast device for the
--		 * boot CPU, but only if we have more than one CPU.
--		 */
--		percpu_timer_setup();
--
--		/*
- 		 * Initialise the present map, which describes the set of CPUs
- 		 * actually populated at the present time. A platform should
- 		 * re-initialize the map in the platforms smp_prepare_cpus()
-@@ -457,11 +436,6 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
- 	return sum;
- }
- 
--/*
-- * Timer (local or broadcast) support
-- */
--static DEFINE_PER_CPU(struct clock_event_device, percpu_clockevent);
--
- #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
- void tick_broadcast(const struct cpumask *mask)
- {
-@@ -469,49 +443,6 @@ void tick_broadcast(const struct cpumask *mask)
- }
- #endif
- 
--static struct local_timer_ops *lt_ops;
--
--#ifdef CONFIG_LOCAL_TIMERS
--int local_timer_register(struct local_timer_ops *ops)
--{
--	if (!is_smp() || !setup_max_cpus)
--		return -ENXIO;
--
--	if (lt_ops)
--		return -EBUSY;
--
--	lt_ops = ops;
--	return 0;
--}
--#endif
--
--static void __cpuinit percpu_timer_setup(void)
--{
--	unsigned int cpu = smp_processor_id();
--	struct clock_event_device *evt = &per_cpu(percpu_clockevent, cpu);
--
--	evt->cpumask = cpumask_of(cpu);
--
--	if (lt_ops)
--		lt_ops->setup(evt);
--}
--
--#ifdef CONFIG_HOTPLUG_CPU
--/*
-- * The generic clock events code purposely does not stop the local timer
-- * on CPU_DEAD/CPU_DEAD_FROZEN hotplug events, so we have to do it
-- * manually here.
-- */
--static void percpu_timer_stop(void)
--{
--	unsigned int cpu = smp_processor_id();
--	struct clock_event_device *evt = &per_cpu(percpu_clockevent, cpu);
--
--	if (lt_ops)
--		lt_ops->stop(evt);
--}
--#endif
--
- static DEFINE_RAW_SPINLOCK(stop_lock);
- 
- /*
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> If not, it could be fb_notifier_call_chain, too, but that wouldn't be  
+> likely at all.
+> I also tried spinlock/mutex debugging and soft lockup detection,
+> but neither of them outputs anything.
 
+Unfortunately, lockdep does not help with console_lock, since that
+is a weird semaphore variant, not a standard mutex or spinlock.
+
+	Arnd
