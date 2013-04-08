@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936180Ab3DHKD1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:03:27 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33923 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936149Ab3DHKDZ (ORCPT
+	id S964865Ab3DHKDz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:03:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42948 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935837Ab3DHJwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 06:03:25 -0400
-Message-ID: <516295E7.70200@linutronix.de>
-Date: Mon, 08 Apr 2013 12:03:19 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-Subject: Re: [PATCH 2/3] kernel/SRCU: provide a static initializer
-References: <1363702606-31586-1-git-send-email-bigeasy@linutronix.de> <1363702606-31586-2-git-send-email-bigeasy@linutronix.de> <515E7B79.2020707@cn.fujitsu.com>
-In-Reply-To: <515E7B79.2020707@cn.fujitsu.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 8 Apr 2013 05:52:30 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Andrey Vagin <avagin@openvz.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 071/102] net: fix *_DIAG_MAX constants
+Date: Mon,  8 Apr 2013 10:50:26 +0100
+Message-Id: <1365414657-29191-72-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
+References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2013 09:21 AM, Lai Jiangshan wrote:
-> Hi, Sebastian
+3.5.7.10 -stable review patch.  If anyone has any objections, please let me know.
 
-Hi Lai,
+------------------
 
-> I don't want to expose __SRCU_STRUCT_INIT(),
-> due to it has strong coupling with the percpu array.
-> 
-> I hope other structure which uses SRCU should use init_srcu_struct().
+From: Andrey Vagin <avagin@openvz.org>
 
-I need a static initialization for this kind. Patch #3 shows one
-example I have another one pending for crypto.
-Do you have any idea how I could get it done without this? Do you want
-to move/merge header files?
+commit ae5fc98728c8bbbd6d7cab0b9781671fc4419c1b upstream.
 
-> 
-> Thanks,
-> Lai
+Follow the common pattern and define *_DIAG_MAX like:
 
-Sebastian
+        [...]
+        __XXX_DIAG_MAX,
+};
+
+Because everyone is used to do:
+
+        struct nlattr *attrs[XXX_DIAG_MAX+1];
+
+        nla_parse([...], XXX_DIAG_MAX, [...]
+
+Reported-by: Thomas Graf <tgraf@suug.ch>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backport to 3.5:
+  - fix unix_diag.h path
+  - packet_diag.h does not exist ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ include/linux/unix_diag.h | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/unix_diag.h b/include/linux/unix_diag.h
+index b1d2bf1..0ff4d32 100644
+--- a/include/linux/unix_diag.h
++++ b/include/linux/unix_diag.h
+@@ -38,9 +38,11 @@ enum {
+ 	UNIX_DIAG_RQLEN,
+ 	UNIX_DIAG_MEMINFO,
+ 
+-	UNIX_DIAG_MAX,
++	__UNIX_DIAG_MAX,
+ };
+ 
++#define UNIX_DIAG_MAX (__UNIX_DIAG_MAX - 1)
++
+ struct unix_diag_vfs {
+ 	__u32	udiag_vfs_ino;
+ 	__u32	udiag_vfs_dev;
+-- 
+1.8.1.2
+
