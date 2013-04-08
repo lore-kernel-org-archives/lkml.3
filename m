@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935889Ab3DHJwi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:52:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42972 "EHLO
+	id S935984Ab3DHJwz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:52:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43043 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935853Ab3DHJwe (ORCPT
+	with ESMTP id S935946Ab3DHJwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:52:34 -0400
+	Mon, 8 Apr 2013 05:52:50 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Erik Hugne <erik.hugne@ericsson.com>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Chris Metcalf <cmetcalf@tilera.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 077/102] ipv6: don't accept node local multicast traffic from the wire
-Date: Mon,  8 Apr 2013 10:50:32 +0100
-Message-Id: <1365414657-29191-78-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 092/102] tile: expect new initramfs name from hypervisor file system
+Date: Mon,  8 Apr 2013 10:50:47 +0100
+Message-Id: <1365414657-29191-93-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
@@ -30,51 +27,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-commit 1c4a154e5253687c51123956dfcee9e9dfa8542d upstream.
+commit ff7f3efb9abf986f4ecd8793a9593f7ca4d6431a upstream.
 
-Erik Hugne's errata proposal (Errata ID: 3480) to RFC4291 has been
-verified: http://www.rfc-editor.org/errata_search.php?eid=3480
+The current Tilera boot infrastructure now provides the initramfs
+to Linux as a Tilera-hypervisor file named "initramfs", rather than
+"initramfs.cpio.gz", as before.  (This makes it reasonable to use
+other compression techniques than gzip on the file without having to
+worry about the name causing confusion.)  Adapt to use the new name,
+but also fall back to checking for the old name.
 
-We have to check for pkt_type and loopback flag because either the
-packets are allowed to travel over the loopback interface (in which case
-pkt_type is PACKET_HOST and IFF_LOOPBACK flag is set) or they travel
-over a non-loopback interface back to us (in which case PACKET_TYPE is
-PACKET_LOOPBACK and IFF_LOOPBACK flag is not set).
+Cc'ing to stable so that older kernels will remain compatible with
+newer Tilera boot infrastructure.
 
-Cc: Erik Hugne <erik.hugne@ericsson.com>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv6/ip6_input.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ arch/tile/kernel/setup.c | 25 ++++++++++++-------------
+ 1 file changed, 12 insertions(+), 13 deletions(-)
 
-diff --git a/net/ipv6/ip6_input.c b/net/ipv6/ip6_input.c
-index 311eac7..594a4ec 100644
---- a/net/ipv6/ip6_input.c
-+++ b/net/ipv6/ip6_input.c
-@@ -111,6 +111,18 @@ int ipv6_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt
- 	    ipv6_addr_loopback(&hdr->daddr))
- 		goto err;
+diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
+index dd87f34..3d2190b 100644
+--- a/arch/tile/kernel/setup.c
++++ b/arch/tile/kernel/setup.c
+@@ -990,15 +990,8 @@ void __cpuinit setup_cpu(int boot)
  
-+	/* RFC4291 Errata ID: 3480
-+	 * Interface-Local scope spans only a single interface on a
-+	 * node and is useful only for loopback transmission of
-+	 * multicast.  Packets with interface-local scope received
-+	 * from another node must be discarded.
-+	 */
-+	if (!(skb->pkt_type == PACKET_LOOPBACK ||
-+	      dev->flags & IFF_LOOPBACK) &&
-+	    ipv6_addr_is_multicast(&hdr->daddr) &&
-+	    IPV6_ADDR_MC_SCOPE(&hdr->daddr) == 1)
-+		goto err;
-+
- 	/* RFC4291 2.7
- 	 * Nodes must not originate a packet to a multicast address whose scope
- 	 * field contains the reserved value 0; if such a packet is received, it
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 
+-/*
+- * Note that the kernel can potentially support other compression
+- * techniques than gz, though we don't do so by default.  If we ever
+- * decide to do so we can either look for other filename extensions,
+- * or just allow a file with this name to be compressed with an
+- * arbitrary compressor (somewhat counterintuitively).
+- */
+ static int __initdata set_initramfs_file;
+-static char __initdata initramfs_file[128] = "initramfs.cpio.gz";
++static char __initdata initramfs_file[128] = "initramfs";
+ 
+ static int __init setup_initramfs_file(char *str)
+ {
+@@ -1012,9 +1005,9 @@ static int __init setup_initramfs_file(char *str)
+ early_param("initramfs_file", setup_initramfs_file);
+ 
+ /*
+- * We look for an "initramfs.cpio.gz" file in the hvfs.
+- * If there is one, we allocate some memory for it and it will be
+- * unpacked to the initramfs.
++ * We look for a file called "initramfs" in the hvfs.  If there is one, we
++ * allocate some memory for it and it will be unpacked to the initramfs.
++ * If it's compressed, the initd code will uncompress it first.
+  */
+ static void __init load_hv_initrd(void)
+ {
+@@ -1024,10 +1017,16 @@ static void __init load_hv_initrd(void)
+ 
+ 	fd = hv_fs_findfile((HV_VirtAddr) initramfs_file);
+ 	if (fd == HV_ENOENT) {
+-		if (set_initramfs_file)
++		if (set_initramfs_file) {
+ 			pr_warning("No such hvfs initramfs file '%s'\n",
+ 				   initramfs_file);
+-		return;
++			return;
++		} else {
++			/* Try old backwards-compatible name. */
++			fd = hv_fs_findfile((HV_VirtAddr)"initramfs.cpio.gz");
++			if (fd == HV_ENOENT)
++				return;
++		}
+ 	}
+ 	BUG_ON(fd < 0);
+ 	stat = hv_fs_fstat(fd);
 -- 
 1.8.1.2
 
