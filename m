@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936169Ab3DHUon (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 16:44:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49798 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935536Ab3DHUol (ORCPT
+	id S936146Ab3DHUpR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 16:45:17 -0400
+Received: from zimbra.linbit.com ([212.69.161.123]:50093 "EHLO
+	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935724Ab3DHUpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 16:44:41 -0400
-Date: Mon, 8 Apr 2013 13:44:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, linuxram@us.ibm.com,
-        guz.fnst@cn.fujitsu.com, tmac@hp.com, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, tangchen@cn.fujitsu.com, jiang.liu@huawei.com
-Subject: Re: [PATCH v2 0/3] Support memory hot-delete to boot memory
-Message-Id: <20130408134438.2a4388a07163e10a37158eed@linux-foundation.org>
-In-Reply-To: <1365440996-30981-1-git-send-email-toshi.kani@hp.com>
-References: <1365440996-30981-1-git-send-email-toshi.kani@hp.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Apr 2013 16:45:15 -0400
+Date: Mon, 8 Apr 2013 22:45:10 +0200
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: drbd-dev@lists.linbit.com, drbd-user@lists.linbit.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/block/drbd: remove erroneous semicolon
+Message-ID: <20130408204510.GB13761@soda.linbit>
+Mail-Followup-To: Chen Gang <gang.chen@asianux.com>,
+	drbd-dev@lists.linbit.com, drbd-user@lists.linbit.com,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <5152980D.8090903@asianux.com>
+ <515BE19F.2080709@asianux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <515BE19F.2080709@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  8 Apr 2013 11:09:53 -0600 Toshi Kani <toshi.kani@hp.com> wrote:
+On Wed, Apr 03, 2013 at 04:00:31PM +0800, Chen Gang wrote:
+> Hello maintainers:
+> 
+>   when you have time, please help to check this patch whether is OK.
+> 
+>   thanks.
 
-> Memory hot-delete to a memory range present at boot causes an
-> error message in __release_region(), such as:
-> 
->  Trying to free nonexistent resource <0000000070000000-0000000077ffffff>
-> 
-> Hot-delete operation still continues since __release_region() is 
-> a void function, but the target memory range is not freed from
-> iomem_resource as the result.  This also leads a failure in a 
-> subsequent hot-add operation to the same memory range since the
-> address range is still in-use in iomem_resource.
-> 
-> This problem happens because the granularity of memory resource ranges
-> may be different between boot and hot-delete.
+Thanks.
 
-So we don't need this new code if CONFIG_MEMORY_HOTPLUG=n?  If so, can
-we please arrange for it to not be present if the user doesn't need it?
+It has already been queued in:
+http://git.kernel.dk/?p=linux-block.git;a=commit;h=0b6ef4164f50698eee536903d69d086add1a7889
 
->  During bootup,
-> iomem_resource is set up from the boot descriptor table, such as EFI
-> Memory Table and e820.  Each resource entry usually covers the whole
-> contiguous memory range.  Hot-delete request, on the other hand, may
-> target to a particular range of memory resource, and its size can be
-> much smaller than the whole contiguous memory.  Since the existing
-> release interfaces like __release_region() require a requested region
-> to be exactly matched to a resource entry, they do not allow a partial
-> resource to be released.
-> 
-> This patchset introduces release_mem_region_adjustable() for memory
-> hot-delete operations, which allows releasing a partial memory range
-> and adjusts remaining resource accordingly.  This patchset makes no
-> changes to the existing interfaces since their restriction is still
-> valid for I/O resources.
+> On 2013年03月27日 14:56, Chen Gang wrote:
+> > 
+> >   need remove it, or always return -EBUSY.
+> >   it is found by compiler with 'EXTRA_CFLAG=-W'.
+> > 
+> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> > ---
+> >  drivers/block/drbd/drbd_actlog.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/block/drbd/drbd_actlog.c b/drivers/block/drbd/drbd_actlog.c
+> > index 6afe173..6608076 100644
+> > --- a/drivers/block/drbd/drbd_actlog.c
+> > +++ b/drivers/block/drbd/drbd_actlog.c
+> > @@ -389,7 +389,7 @@ int drbd_al_begin_io_nonblock(struct drbd_conf *mdev, struct drbd_interval *i)
+> >  		if (unlikely(tmp != NULL)) {
+> >  			struct bm_extent  *bm_ext = lc_entry(tmp, struct bm_extent, lce);
+> >  			if (test_bit(BME_NO_WRITES, &bm_ext->flags)) {
+> > -				if (!test_and_set_bit(BME_PRIORITY, &bm_ext->flags));
+> > +				if (!test_and_set_bit(BME_PRIORITY, &bm_ext->flags))
+> >  					return -EBUSY;
+> >  				return -EWOULDBLOCK;
+> >  			}
+> > 
