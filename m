@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965067Ab3DHPc4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 11:32:56 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:49423 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964942Ab3DHPcz (ORCPT
+	id S965161Ab3DHPdV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 11:33:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37897 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965001Ab3DHPdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 11:32:55 -0400
-Date: Mon, 8 Apr 2013 17:32:50 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Turner <pjt@google.com>
-Subject: Re: [PATCH -tip 0/4] do not make cputime scaling in kernel
-Message-ID: <20130408153250.GA17500@gmail.com>
-References: <1365066635-2959-1-git-send-email-sgruszka@redhat.com>
- <CAFTL4hx-k42Af1qhpf+0jra6HZ3LBxL=1A8J3xabzjWLAxH9GQ@mail.gmail.com>
- <20130404131003.GE1367@redhat.com>
- <CAFTL4hxZ8RJ0Wd-+sScfa90_c5j0bX3eufH+RC+u8i7=7hN+ig@mail.gmail.com>
+	Mon, 8 Apr 2013 11:33:16 -0400
+Date: Mon, 8 Apr 2013 08:33:01 -0700
+From: tip-bot for Stephane Eranian <tipbot@zytor.com>
+Message-ID: <tip-cc2f5a8adbc7ab1fdb7d9bcf4ea9838c73e82dfe@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+In-Reply-To: <20130405144941.GA30503@quad>
+References: <20130405144941.GA30503@quad>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf: Fix comments in PERF_MEM_LVL bitmask
+Git-Commit-ID: cc2f5a8adbc7ab1fdb7d9bcf4ea9838c73e82dfe
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <CAFTL4hxZ8RJ0Wd-+sScfa90_c5j0bX3eufH+RC+u8i7=7hN+ig@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 08 Apr 2013 08:33:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  cc2f5a8adbc7ab1fdb7d9bcf4ea9838c73e82dfe
+Gitweb:     http://git.kernel.org/tip/cc2f5a8adbc7ab1fdb7d9bcf4ea9838c73e82dfe
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Fri, 5 Apr 2013 16:49:41 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 8 Apr 2013 13:54:24 +0200
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+perf: Fix comments in PERF_MEM_LVL bitmask
 
-> 2013/4/4 Stanislaw Gruszka <sgruszka@redhat.com>:
-> > On Thu, Apr 04, 2013 at 02:31:42PM +0200, Frederic Weisbecker wrote:
-> >> I don't know. I'm not convinced userland is the right place to perform
-> >> this kind of check. The kernel perhaps doesn't give guarantee about
-> >> utime/stime precision but now users may have got used to that scaled
-> >> behaviour. It's also a matter of security, a malicous app can hide
-> >> from the tick to make its activity less visible from tools like top.
-> >>
-> >> It's sortof an ABI breakage to remove such an implicit protection. And
-> >> fixing that from userspace with a lib or so won't change that fact.
-> >
-> > I think number of fields in /proc/PID/stat is not part of ABI. For
-> > example commit 5b172087f99189416d5f47fd7ab5e6fb762a9ba3 add various
-> > new fields at the end of the file. What is imported to keep unchanged
-> > ABI is not changing order or meaning of fields we already have.
-> 
-> Oh I wasn't considering the layout of the proc file but the semantic
-> change in its utime/stime fields.
+This small patch fixes a mistake in the comments
+for the PERF_MEM_LVL_* events. The L2, L3 bits simply
+represent cache levels, not hits or misses. That is
+encoded in PERF_MEM_LVL_MISS/PERF_MEM_LVL_HIT.
 
-Btw., even the ordering of fields in /proc/PID/stat might be an ABI, iif an 
-application relies on it and breaks if we change it.
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: peterz@infradead.org
+Cc: jolsa@redhat.com
+Link: http://lkml.kernel.org/r/20130405144941.GA30503@quad
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/uapi/linux/perf_event.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-What matters is what applications do, not what we think they do or what we think 
-they should do in an ideal world.
-
-> > Regarding top, I added those additional fields to allow top to detect those 
-> > malicious software. Patched top will work well with old and new (patched) 
-> > kernel. Problem is old top with new kernel, but I believe users who care about 
-> > security update they software regularly.
-> 
-> The usual rule is that but you can't remove a feature from the kernel and tell 
-> userspace to fix it itself. That's basically an ABI breakage.
-
-Correct.
-
-Thanks,
-
-	Ingo
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 964a450..fb104e5 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -645,8 +645,8 @@ union perf_mem_data_src {
+ #define PERF_MEM_LVL_MISS	0x04  /* miss level  */
+ #define PERF_MEM_LVL_L1		0x08  /* L1 */
+ #define PERF_MEM_LVL_LFB	0x10  /* Line Fill Buffer */
+-#define PERF_MEM_LVL_L2		0x20  /* L2 hit */
+-#define PERF_MEM_LVL_L3		0x40  /* L3 hit */
++#define PERF_MEM_LVL_L2		0x20  /* L2 */
++#define PERF_MEM_LVL_L3		0x40  /* L3 */
+ #define PERF_MEM_LVL_LOC_RAM	0x80  /* Local DRAM */
+ #define PERF_MEM_LVL_REM_RAM1	0x100 /* Remote DRAM (1 hop) */
+ #define PERF_MEM_LVL_REM_RAM2	0x200 /* Remote DRAM (2 hops) */
