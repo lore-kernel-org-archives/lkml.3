@@ -1,113 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935854Ab3DHTyF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 15:54:05 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:52383 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935775Ab3DHTyD (ORCPT
+	id S935892Ab3DHUAY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 16:00:24 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:41447 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935846Ab3DHUAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 15:54:03 -0400
+	Mon, 8 Apr 2013 16:00:23 -0400
+X-Auth-Info: WgkbK1TmQPyCpYPlzA6BCXLJoVq1iZBK0RMWRDP8uKQ=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Junio C Hamano <gitster@pobox.com>
+Cc: git@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Git v1.8.1.6
+References: <7vehel3ng6.fsf@alter.siamese.dyndns.org>
+X-Yow: Hey, LOOK!!  A pair of SIZE 9 CAPRI PANTS!!  They probably belong to
+ SAMMY DAVIS, JR.!!
+Date: Mon, 08 Apr 2013 22:00:13 +0200
+In-Reply-To: <7vehel3ng6.fsf@alter.siamese.dyndns.org> (Junio C. Hamano's
+	message of "Sun, 07 Apr 2013 16:55:53 -0700")
+Message-ID: <m2ip3woks2.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20130407174313.GA7168@lizard>
-References: <1347042576-17675-1-git-send-email-bfreed@chromium.org>
-	<20120908052907.GA4724@lizard>
-	<20120917062302.GA768@lizard>
-	<CAL_JsqK_L9nN6+oxUQzNwFjbFf3+3NroeEwzbMdPS4T6=Mnemg@mail.gmail.com>
-	<20130407174313.GA7168@lizard>
-Date: Mon, 8 Apr 2013 12:54:01 -0700
-X-Google-Sender-Auth: 78PMME55ipShdO9vgK_BbJZfUkw
-Message-ID: <CAEYUcX0rQKDGD3_pbc7JnDO6WJ_QMd8AWW+X1giNVL313wODyA@mail.gmail.com>
-Subject: Re: [PATCH v6] pstore/ram: Add ramoops support for the Flattened
- Device Tree.
-From: Bryan Freed <bfreed@chromium.org>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: Rob Herring <robherring2@gmail.com>, Tony Luck <tony.luck@intel.com>,
-        Kees Cook <keescook@chromium.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for dropping the ball on this one, Anton.
+Junio C Hamano <gitster@pobox.com> writes:
 
-Thank you for your feedback and modifications in the code.
-I gotta ask, however, why do you completely remove key ramoops fields
-like record_size and ftrace_size?
-
->From your 9/7/2012 comments (again, sorry for the delay in getting back to you):
-> Personally, I don't see how this fits into device tree. It doesn't
-> describe hardware, instead it's more a configuration stuff, which
-> usually we try to not put into the device tree.
+> A maintenance release Git v1.8.1.6 is now available at the
+> usual places.
 >
-> It would be better to have a sane defaults in ramoops, instead of
-> introducing more "virtual" stuff in the device tree. That is, feel
-> free to change defaults if they seem to be not enough for most your
-> setups.
-
-So there are only two alternatives I can see to set these fields.
-1. Pass kernel command line parameters, or
-2. Modify the defaults in ram.c.
-
-Neither of these alternatives is particularly clean to me.  The first
-is shunned to avoid clutter on the command line.
-And the second requires us to maintain our own version of ram.c or
-push our defaults on the rest of the community.
-
-We (ok, maybe just 'I') prefer to keep our device specific values in
-the device tree, even though it is not strictly defining hardware in
-the system.
-What do you think of at least keeping the record_size, console_size
-and ftrace_size fields as optional in the ramoops device tree
-specification?
-
-And as a more general question, why should we try not to put
-configuration in the device tree?  It seems like a great (and
-portable) place to put this stuff.
-It certainly seems better to have it there than hardwired in the
-kernel or tacked onto the kernel command line.
-
-Thanks,
-
-bryan.
-
-On Sun, Apr 7, 2013 at 10:43 AM, Anton Vorontsov <anton@enomsg.org> wrote:
-> On Thu, Apr 04, 2013 at 09:03:47PM -0500, Rob Herring wrote:
->> On Mon, Sep 17, 2012 at 1:23 AM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
->> > On Fri, Sep 07, 2012 at 10:29:10PM -0700, Anton Vorontsov wrote:
->> >> On Fri, Sep 07, 2012 at 11:29:36AM -0700, Bryan Freed wrote:
->> >> > When called with a non-zero of_node, fill out a new ramoops_platform_data
->> >> > with data from the specified Flattened Device Tree node.
->> >> > Update ramoops documentation with the new FDT interface.
->> >> > Update devicetree/binding documentation with pstore/ramoops.txt.
->> >>
->> >> Thanks for your work, Bryan! There were a few issues, I fixed
->> >> them myself but I need your confirmation if you're OK w/ all
->> >> the changes.
->> > [...]
->> >> So, the resulting patch is down below. But I have not pushed
->> >> it out yet, I'm waiting for your sign off. If you're OK with the
->> >> changes, please reply with
->> >> 'Signed-off-by: Bryan Freed <bfreed@chromium.org>'
->> >
->> > Bryan, have you had a chance to look into this?
->>
->> Whatever happened to this? Olof was also looking at doing a binding
->> back in Jan 2012:
->>
->> http://www.mail-archive.com/devicetree-discuss@lists.ozlabs.org/msg09905.html
+> The release tarballs are found at:
 >
-> I don't know. Bryan's patch looked good, I'd happily apply it. But I still
-> need Bryan's Signed-off-by tag. :-/ Or, somebody needs to sign off on his
-> behalf (anyone from Chromium project?). Or redo the patch.
->
-> Thanks,
->
-> Anton
+>     http://code.google.com/p/git-core/downloads/list
+
+The description on the download page
+<http://code.google.com/p/git-core/downloads/detail?name=git-1.8.2.1.tar.gz>
+is garbled:
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+ad9f833e509ba31c83efe336fd3599e89a39394b  git-1.8.2.1.tar.gz
+bf4abd0e020d24ee47c64760e9fe4372c596d354  git-htmldocs-1.8.2.1.tar.gz
+6c40ace4682188d0c01b1091b37276151bc77a74  git-manpages-1.8.2.1.tar.gz-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRYfrbAAoJELC16IaWr+bLH0EQANm9GihAS+37VGysxpSvkKuL
+NEWDpmesCH0IYIxeiw8ECXMhxwWGfhSH3lRJkSIu4SxIZINsdMFRKxweYfHDbs6M
+3pdAwocZnUkL7jVtxjUjaHI9H+/kQfimKtxp1Mdell4kKkybc6XTOsn+ibEd3sFp
+CULKEg0fnS/B8g+RZALhWjyS5iPXChfQF0Vn5xoqTPLSj06Nqxq0uyF7FX9x/9ti
+y3j8m8vE9tk/T1Q9P7o3Az2hV5mnC0VhRrB0wcBHWHK2N1H2v5RKjyUaVteVY1LL
+iJjEJziJhoBYQo4ptnGyQo9NaL/FV9DvuPYKoa/qBKTxilYBFI5ZTrnTpZzzsi47
+l18fZtDUN86voMIFPQzO7m3c5JPDbsJn0oUiwqKWLEIvufBaLAgNFJRi5xwQJQ0P
+FkfDGFKutfnVFnfBffrP4YVemZX5hN9TdH7NfPfHJUKuxUn3sDEGkuvbqJ1EZj7r
+bkuFF7S8JTsRxJ92hdctDVAjCA9fW23t8smBmmQ1PQka+wzawNeV/wAmMJ9Um51h
+8ut8jnfWbZNsJfwYnpo3AB6iqT/gRZ5fTjhAwXcr9da/FG05OWk9RpkwI3vbTvw+
+7YDSrBDgS59rnhXKjJrVQ6vMsKttvt3LPl7Cr2uMjxAtZuvUCnjLxfSbF8axE5SU
+KtGfnAbYvCQYBfIKKSwS
+=kNrb
+-----END PGP SIGNATURE-----
+
+Note the missing newline before "-----BEGIN PGP SIGNATURE-----".
+
+Andreas.
+
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
