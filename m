@@ -1,56 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964982Ab3DHOer (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 10:34:47 -0400
-Received: from mga11.intel.com ([192.55.52.93]:34334 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964883Ab3DHOeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 10:34:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,432,1363158000"; 
-   d="scan'208";a="315983360"
-Date: Mon, 8 Apr 2013 16:34:33 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Anton Vorontsov <cbou@mail.ru>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mfd: twl4030-madc: Add support for raw value in
- twl4030_madc_conversion
-Message-ID: <20130408143433.GC21256@zurbaran>
-References: <1360969010-8571-1-git-send-email-pali.rohar@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1360969010-8571-1-git-send-email-pali.rohar@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S965013Ab3DHOhG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 10:37:06 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:28158 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964984Ab3DHOhE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 10:37:04 -0400
+Message-ID: <1365431076.2186.1.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 2/3] resource: Add release_mem_region_adjustable()
+From: Toshi Kani <toshi.kani@hp.com>
+To: Ram Pai <linuxram@us.ibm.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, tmac@hp.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        tangchen@cn.fujitsu.com, jiang.liu@huawei.com
+Date: Mon, 08 Apr 2013 08:24:36 -0600
+In-Reply-To: <20130407040136.GA13533@ram.oc3035372033.ibm.com>
+References: <1364919450-8741-1-git-send-email-toshi.kani@hp.com>
+	 <1364919450-8741-3-git-send-email-toshi.kani@hp.com>
+	 <20130403053720.GA26398@ram.oc3035372033.ibm.com>
+	 <1365018905.11159.113.camel@misato.fc.hp.com>
+	 <20130404064849.GA5709@ram.oc3035372033.ibm.com>
+	 <1365084464.11159.118.camel@misato.fc.hp.com>
+	 <20130407040136.GA13533@ram.oc3035372033.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pali,
-
-On Fri, Feb 15, 2013 at 11:56:49PM +0100, Pali Rohár wrote:
-> Driver twl4030-madc has hardcoded channel types (10 - battery current,
-> 1 - battery temperature) and also conversation data in variable
-> twl4030_divider_ratios. These hardcoded channels are incorrect for
-> Nokia RX-51 board (where is channel 0 - battery temperature).
+On Sun, 2013-04-07 at 12:01 +0800, Ram Pai wrote:
+> On Thu, Apr 04, 2013 at 08:07:44AM -0600, Toshi Kani wrote:
+> > On Thu, 2013-04-04 at 14:48 +0800, Ram Pai wrote:
+> > > On Wed, Apr 03, 2013 at 01:55:05PM -0600, Toshi Kani wrote:
+> > > > On Wed, 2013-04-03 at 13:37 +0800, Ram Pai wrote:
+> > > > > On Tue, Apr 02, 2013 at 10:17:29AM -0600, Toshi Kani wrote:
+> > > > > > +	while ((res = *p)) {
+> > > 
+> > > ...snip...
+> > > 
+> > > > > > +		if (res->start > start || res->end < end) {
+> > > > > 
+> > > > > This check looks sub-optimal; possbily wrong, to me.  if the res->start
+> > > > > is greater than 'start', then obviously its sibling's start will
+> > > > > also be greater than 'start'. So it will loop through all the
+> > > > > resources unnecesarily.
+> > > > 
+> > > > I think this check is necessary to check if the requested range fits
+> > > > into a resource.  It needs to check both sides to verify this.  I will
+> > > > add some comment on this check.
+> > > > 
+> > > > >   you might want something like
+> > > > > 
+> > > > > 		if (start >= res->end) {
+> > > > 
+> > > > I agree that this list is sorted, so we can optimize an error case (i.e.
+> > > > no matching entry is found) with an additional check.  I will add the
+> > > > following check at the beginning of the while loop.  
+> > > > 
+> > > >                 if (res->start >= end)
+> > > >                         break;
+> > > > 
+> > > > I also realized that the function returns 0 when no matching entry is
+> > > > found.  I will change it to return -EINVAL as well.  
+> > > 
+> > > ok. this will take care of it.
+> > > 
+> > > > 
+> > > > > 		
+> > > > > > +			p = &res->sibling;
+> > > > > > +			continue;
+> > > > > > +		}
+> > > > > > +
+> > > > > > +		if (!(res->flags & IORESOURCE_MEM)) {
+> > > > > > +			ret = -EINVAL;
+> > > > > > +			break;
+> > > > > > +		}
+> > > > > > +
+> > > > > > +		if (!(res->flags & IORESOURCE_BUSY)) {
+> > > > > > +			p = &res->child;
+> > > > > > +			continue;
+> > > > > > +		}
+> > > > > > +
+> > > > > > +		if (res->start == start && res->end == end) {
+> > > > > > +			/* free the whole entry */
+> > > > > > +			*p = res->sibling;
+> > > > > > +			kfree(res);
+> > > > > 
+> > > > > This is incomplete. the prev resource's sibling should now point to
+> > > > > this resource's sibling. The parent's child has to be updated if
+> > > > > this resource is the first child resource. no?
+> > > > 
+> > > > If this resource is the first child, *p is set to &parent->child.  So,
+> > > > it will update the parents' child.
+> > > 
+> > > But if the resource is not the parent's first child? will it update the
+> > > previous siblings ->sibling ?
+> > 
+> > Yes.  When it continues in the while loop, p is set to &res->sibling.
+> > So, it will update the previous sibling's ->sibling.
 > 
-> For Nokia RX-51 there is rx51_battery power_supply driver which reporting
-> battery information via twl4030_madc_conversion. But this driver needs
-> raw values (not converted via some hardcoded functions). So this patch
-> adding new parameter "raw" to struct twl4030_madc_request which tell
-> twl4030-madc driver to not convert values, but rather return raw.
-> 
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> ---
->  drivers/mfd/twl4030-madc.c       |   14 ++++++++++----
->  include/linux/i2c/twl4030-madc.h |    2 ++
->  2 files changed, 12 insertions(+), 4 deletions(-)
-I appled this patch and the power one to my mfd-next tree.
+> You are right. It does update the pointers correctly. I mis-read the
+> code.
 
-Cheers,
-Samuel.
+No problem.  Thanks for reviewing it!
+-Toshi
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
