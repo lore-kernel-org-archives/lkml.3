@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762270Ab3DHHCr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 03:02:47 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50200 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759089Ab3DHHCq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 03:02:46 -0400
-Date: Mon, 8 Apr 2013 17:02:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Akinobu Mita <akinobu.mita@gmail.com>
-Subject: linux-next: manual merge of the akpm tree with the scsi tree
-Message-Id: <20130408170231.3c50013bb8bacebab8ca4cea@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__8_Apr_2013_17_02_31_+1000_2Rs1i1qywv8upa7/"
+	id S933990Ab3DHHMP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 03:12:15 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55153 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932092Ab3DHHMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 03:12:14 -0400
+Message-ID: <51626D88.8020809@ti.com>
+Date: Mon, 8 Apr 2013 09:11:04 +0200
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
+CC: Tony Lindgren <tony@atomide.com>, Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Peter Meerwald <pmeerw@pmeerw.net>
+Subject: Re: [RFC v2] dmaengine: omap-dma: Start DMA without delay for cyclic
+ channels
+References: <1364987862-14597-1-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1364987862-14597-1-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__8_Apr_2013_17_02_31_+1000_2Rs1i1qywv8upa7/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Russell,
 
-Hi Andrew,
+On 04/03/2013 01:17 PM, Peter Ujfalusi wrote:
+> cyclic DMA is only used by audio which needs DMA to be started without a
+> delay.
+> If the DMA for audio is started using the tasklet we experience random
+> channel switch (to be more precise: channel shift).
+> 
+> Reported-by: Peter Meerwald <pmeerw@pmeerw.net>
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> ---
+> Hi Russell,
+> 
+> Instead of removing the tasklet we can identify the DMA channel used by audio
+> based on the cyclic flag of the channel.
+> I think this can be used as a short term solution to fix the audio channel shift
+> issue and later when we have the dynamic DMA channel allocation we can adjust
+> the code.
 
-Today's linux-next merge of the akpm tree got a conflict in
-drivers/scsi/qla2xxx/qla_attr.c between commit 4a9fa41bd404 ("[SCSI]
-qla2xxx: Remove debug code that msleeps for random duration") from the
-scsi tree and commit "scsi: rename random32() to prandom_u32()" from the
-akpm tree.
+Could you, please look at this patch?
 
-The former removed the code in this file that was updated by the latter,
-so I did that (and dropped the next patch ("scsi: fix the wrong position
-of the comment") and can carry the fix as necessary (no action is
-required).
+Thank you,
+Péter
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> Regards,
+> Peter
+> 
+>  drivers/dma/omap-dma.c | 20 ++++++++++++++------
+>  1 file changed, 14 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
+> index 2ea3d7e..ec3fc4f 100644
+> --- a/drivers/dma/omap-dma.c
+> +++ b/drivers/dma/omap-dma.c
+> @@ -282,12 +282,20 @@ static void omap_dma_issue_pending(struct dma_chan *chan)
+>  
+>  	spin_lock_irqsave(&c->vc.lock, flags);
+>  	if (vchan_issue_pending(&c->vc) && !c->desc) {
+> -		struct omap_dmadev *d = to_omap_dma_dev(chan->device);
+> -		spin_lock(&d->lock);
+> -		if (list_empty(&c->node))
+> -			list_add_tail(&c->node, &d->pending);
+> -		spin_unlock(&d->lock);
+> -		tasklet_schedule(&d->task);
+> +		/*
+> +		 * c->cyclic is used only by audio and in this case the DMA need
+> +		 * to be started without delay.
+> +		 */
+> +		if (!c->cyclic) {
+> +			struct omap_dmadev *d = to_omap_dma_dev(chan->device);
+> +			spin_lock(&d->lock);
+> +			if (list_empty(&c->node))
+> +				list_add_tail(&c->node, &d->pending);
+> +			spin_unlock(&d->lock);
+> +			tasklet_schedule(&d->task);
+> +		} else {
+> +			omap_dma_start_desc(c);
+> +		}
+>  	}
+>  	spin_unlock_irqrestore(&c->vc.lock, flags);
+>  }
+> 
 
---Signature=_Mon__8_Apr_2013_17_02_31_+1000_2Rs1i1qywv8upa7/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRYmuHAAoJEECxmPOUX5FEUwoP/0lQgdzAZp9ID4EePVRAOYn1
-DqQcBeSZjpIgL6c3e9mGaPA6FB2OmrUTtjZu4BOM3IuoqTYD2oTCV5OocSHrCqbC
-19UGjpwSFoMKg5ZJI0DPt2H9wdMCZaOoMghSwS+38ghuYKgGw5LFMOubKut6yzYm
-YFM+0JHDnZ4IsglJc7hNmKZ0EB/k1OY6f4xCFPqUpoWvAcraPx86x+czs73Gx9Au
-fzuV85Onb1UAgAq7vZGHTZQtkPUHaRINcK2Y9SpSDpw40axCzng1UakHDqvfMhwW
-CQxDdeJd5zOaTTln2a/ix25VDUfqx+3sQT4Tz+edqtX10HfvmLDzKLzL71xBBiB7
-oMzAdlVmy43Zy7xNuKmPmWeza3NSICaTMMnqKRDn0AxakOjdo5HF509LkiygTt0k
-87WEQ4R0JJi46Fc9f2v9RC8ML2DenozKWFDXLoqvJawndZC9FUWf7UEVM8Cs3BYu
-xzG0ZrqX7FNoZZqOlobZ6RiZE9+RflB7AzKtwQTt0QvMoTi8YkLe6xd7Mh68fHbo
-z0xpPtBHe+Ih+RR7C9w+3gCNMUeNjOMhXj0fen9opt/vy0J01LeAz+3yjvNo0k/q
-BdSsJ/MiqVwbC1+YLE/VT+bOU6pGNOTn8XMvoIn+Vo0XTzzvkPWAbwq1jWkE9HjB
-AcEdbHTjEiZTZAF99S9z
-=NI+5
------END PGP SIGNATURE-----
-
---Signature=_Mon__8_Apr_2013_17_02_31_+1000_2Rs1i1qywv8upa7/--
