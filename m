@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935588Ab3DHNMo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 09:12:44 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:39082 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935201Ab3DHNMn convert rfc822-to-8bit (ORCPT
+	id S935721Ab3DHNWQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 09:22:16 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:60498 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935600Ab3DHNWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 09:12:43 -0400
-Message-ID: <5162C251.7060606@arm.com>
-Date: Mon, 08 Apr 2013 14:12:49 +0100
-From: Serban Constantinescu <Serban.Constantinescu@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 8 Apr 2013 09:22:15 -0400
+X-Greylist: delayed 361 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Apr 2013 09:22:15 EDT
+X-Sasl-enc: hiJ0GwR6YeW0bmItFTFH+d5y901kPx8OM5E0ZSr12Zxt 1365426972
+Message-ID: <5162C31A.6040209@ladisch.de>
+Date: Mon, 08 Apr 2013 15:16:10 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: =?windows-1252?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-CC: Greg KH <gregkh@linuxfoundation.org>, LKML <linux-kernel@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Dave Butcher <Dave.Butcher@arm.com>
-Subject: Re: [PATCH 0/8] Android Binder IPC Fixes
-References: <1365078758-28674-1-git-send-email-serban.constantinescu@arm.com> <20130405220039.GA31680@kroah.com> <CAMP5Xgeh-5nLY1CLBOma2jNcS7J2tMMCkZO8Jg-_W0vCke4zmw@mail.gmail.com>
-In-Reply-To: <CAMP5Xgeh-5nLY1CLBOma2jNcS7J2tMMCkZO8Jg-_W0vCke4zmw@mail.gmail.com>
-X-OriginalArrivalTime: 08 Apr 2013 13:12:37.0450 (UTC) FILETIME=[BDB0BAA0:01CE345A]
-X-MC-Unique: 113040814124108401
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+        linux-fsdevel@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: Re: [alsa-devel] [RFC] revoke(2) and generic handling of things like
+ remove_proc_entry()
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/13 00:38, Arve Hjønnevåg wrote:
-> On Fri, Apr 5, 2013 at 3:00 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> On Thu, Apr 04, 2013 at 01:32:30PM +0100, Serban Constantinescu wrote:
->>> Hi all,
->>>
->>> This set of patches will clean-up and fix some of the issues that arise
->>> with the current binder interface when moving to a 64bit kernel. All these
->>> changes will not affect the existing 32bit Android interface and are meant
->>> to stand as the base for the 64bit binder compat layer.
->>>
->>> This patch set has been successfully tested on 32bit platforms(ARMv7 VExpress)
->>> and 64bit platforms(ARMv8 RTSM) running a 32bit Android userspace and an in
->>> kernel binder compat layer.
->>
->> I need some acks from some of the Android developers before I can take
->> this.
->>
->
-> I still think it is better to change user-space to use 64 bit pointer
-> types when running on a 64 bit kernel. These changes do not seem to
-> allow 64 bit user-space processes on a 64 bit kernel.
+Al Viro wrote:
+> BTW, snd_card_disconnect() doesn't do anything to existing mappings; smells
+> like a bug, and there we do have ones with non-trivial ->mmap().  Could
+> ALSA folks comment?
 
-This patch set is independent of whether the binder compat layer lives 
-in the kernel or in the userspace. However we need these changes so that 
-the same kernel driver supports calls from 32bit userspace and calls 
-from 64bit userspace(from the binder kernel driver perspective same as 
-64bit kernel/32bit userspace with the compat layer expanding pointers 
-and structures to 64bit in the userspace).
+I don't know of any hotplug sound driver that maps memory from a device.
+All hotplug buses (PCIe, USB, FireWire) involve DMAing from/to main
+memory.
 
-We have tested 64/64 functionality using a 64bit Linux filesystem and 
-64bit binder unit tests. All tests passed for both kernel/filesystem 
-configurations supported by this patch set - 32/32 and 64/64.
+When a sound device is unplugged, sample transfers just stop, but the
+buffer itself stays as long as the device node is kept opened.  (In the
+case of a capture device, that actually makes sense.)
 
-Thanks for your feedback,
-Serban
 
+Regards,
+Clemens
