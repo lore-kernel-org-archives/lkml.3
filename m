@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936645Ab3DHPwK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 11:52:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21072 "EHLO mx1.redhat.com"
+	id S936658Ab3DHPxN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 11:53:13 -0400
+Received: from ns.omicron.at ([212.183.10.25]:43175 "EHLO ns.omicron.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936624Ab3DHPwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 11:52:08 -0400
-Date: Mon, 8 Apr 2013 17:51:56 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Peter Zijlstra <peterz@infradead.org>, acme@infradead.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        rob@landley.net
-Subject: Re: [RFC/PATCH] perf: Expand definition of sysfs format attribute
-Message-ID: <20130408155156.GB1287@krava.redhat.com>
-References: <1362370865-4437-1-git-send-email-michael@ellerman.id.au>
- <1365411915.2609.143.camel@laptop>
- <20130408115749.GB17849@concordia>
+	id S936519Ab3DHPxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 11:53:12 -0400
+X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Apr 2013 11:53:11 EDT
+From: Michael Riesch <michael.riesch@omicron.at>
+To: <netdev@vger.kernel.org>
+CC: Michael Riesch <michael.riesch@omicron.at>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Benc <jbenc@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] rtnetlink: Call nlmsg_parse() with correct header length
+Date: Mon, 8 Apr 2013 17:45:26 +0200
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130408115749.GB17849@concordia>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+Message-ID: <e04bc546-fcf6-41d2-a585-5fddff388e06@mary.at.omicron.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 09:57:50PM +1000, Michael Ellerman wrote:
 
-SNIP
+Signed-off-by: Michael Riesch <michael.riesch@omicron.at>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Benc <jbenc@redhat.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-kernel@vger.kernel.org
+---
+Habidere,
 
-> > 
-> > ISTR discussing this with Jiri at some point.. I think we ended up with
-> > being fine with overlapping ranges but having perf issue a warning (not
-> > an error) when attributes of a single event have overlap.
-> 
-> OK great.
-> 
-> > I'm not sure the latter was ever implemented in the userspace side.
-> 
-> Yeah not that I can see with a quick look. It's fairly advanced usage
-> IMHO so a warning would be nice, but not essential.
+I encountered a netlink kernel warning when running avahi 0.6.31 on my system
+with kernel v3.4.35 (it appears several times):
 
-oops, missed this email.. sry
+	netlink: 12 bytes leftover after parsing attributes.
 
-it should be ok to overlap.. we don't check those ranges in perf
-tool now.. just take whatever is defined in format file
+Searching the web showed that commit "115c9b81928360d769a76c632bae62d15206a94a 
+rtnetlink: Fix problem with buffer allocation" introduced this behaviour[1].
 
-adding the warning to my todo list ;-)
+Now I - knowing nothing about netlink whatsoever - assume that the nlmsg_parse
+function is called with the wrong header length. In user space the request
+message consists out of the message header (struct nlmsghdr, 16 bytes) and an
+ifinfomsg (struct ifinfomsg, 16 bytes). After that, request attributes could
+follow. nlmsg_parse checks for this attributes after a given header length. In
+rtnl_get_link() this header length is sizeof(struct ifinfomsg), but in
+rtnl_calcit() as well as in rntl_dump_ifinfo() the header length is
+sizeof(struct rtgenmsg), which is 1 byte.
 
-jirka
+With this patch I got rid of these warnings. However, I do not know whether
+this is the correct solution, so I am looking forward to your comments.
+Regards, Michael
+
+[1] http://lists.infradead.org/pipermail/libnl/2012-April/000515.html
+
+ net/core/rtnetlink.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 900fc61..ebf6ace 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1065,7 +1065,7 @@ static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
+ 	rcu_read_lock();
+ 	cb->seq = net->dev_base_seq;
+ 
+-	if (nlmsg_parse(cb->nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
++	if (nlmsg_parse(cb->nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
+ 			ifla_policy) >= 0) {
+ 
+ 		if (tb[IFLA_EXT_MASK])
+@@ -1909,7 +1909,7 @@ static u16 rtnl_calcit(struct sk_buff *skb, struct nlmsghdr *nlh)
+ 	u32 ext_filter_mask = 0;
+ 	u16 min_ifinfo_dump_size = 0;
+ 
+-	if (nlmsg_parse(nlh, sizeof(struct rtgenmsg), tb, IFLA_MAX,
++	if (nlmsg_parse(nlh, sizeof(struct ifinfomsg), tb, IFLA_MAX,
+ 			ifla_policy) >= 0) {
+ 		if (tb[IFLA_EXT_MASK])
+ 			ext_filter_mask = nla_get_u32(tb[IFLA_EXT_MASK]);
+-- 
+1.7.9.5
+
