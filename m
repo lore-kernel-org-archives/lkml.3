@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934675Ab3DHLFX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 07:05:23 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:41020 "EHLO SMTP.CITRIX.COM"
+	id S935010Ab3DHLFg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 07:05:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50873 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757022Ab3DHLFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 07:05:21 -0400
-X-IronPort-AV: E=Sophos;i="4.87,429,1363132800"; 
-   d="scan'208";a="18053266"
-Date: Mon, 8 Apr 2013 12:05:17 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 0/4 v6] arm: introduce psci_smp_ops and use them on Xen
-In-Reply-To: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1304081102500.5353@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1760137Ab3DHLFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 07:05:34 -0400
+Date: Mon, 8 Apr 2013 13:05:32 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Bin Wang <wbin00@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] scripts/package/Makefile: compare objtree with
+ srctree instead of test KBUILD_OUTPUT
+Message-ID: <20130408110532.GA3291@sepie.suse.cz>
+References: <1361761524-9495-1-git-send-email-wbin00@gmail.com>
+ <CAD_32VUREUgiBt2ScK31ig-p8282g7VZta+Q6Fq0pkEaDGxm+A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAD_32VUREUgiBt2ScK31ig-p8282g7VZta+Q6Fq0pkEaDGxm+A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof,
-do you have any thoughts on this series?
-Would you be happy to carry it in the arm-soc tree?
+On Thu, Mar 14, 2013 at 09:30:32AM +0800, Bin Wang wrote:
+> Hi, Michal
+> 
+> Is there any comments on this?
 
-The last patch, "xen/arm: introduce xen_early_init, use PSCI on xen" has
-a (small) dependency on this series:
+Sorry, I missed this one. I applied it to kbuild.git#misc now.
 
-http://marc.info/?l=linux-kernel&m=136430893610688&w=2
-
-would you be OK with taking that one too, or should that go through the
-Xen tree?
-
-Cheers,
-
-Stefano
-
-On Fri, 5 Apr 2013, Stefano Stabellini wrote:
-> Hi all,
-> this is the sixth version of the patch series to move virt_smp_ops out of
-> mach-virt and make it a generic set of reusable PSCI based smp_ops.
-> psci_smp_ops are preferred over the platform smp_ops.
-> I added a patch to introduce smp_init to this series.
-> In the last patch I am using smp_init to switch to psci_smp_ops if Xen
-> is detected on the platform.
+Michal
 > 
-> 
-> Jon Medhurst (1):
->       ARM: Enable selection of SMP operations at boot time
-> 
-> Stefano Stabellini (3):
->       arm: introduce psci_smp_ops
->       arm: prefer psci_smp_ops over mdesc->smp
->       xen/arm: introduce xen_early_init, use PSCI on xen
-> 
->  arch/arm/Kconfig                      |    1 +
->  arch/arm/include/asm/mach/arch.h      |    3 +
->  arch/arm/include/asm/psci.h           |   29 ++++++++++++++
->  arch/arm/include/asm/xen/hypervisor.h |    6 +++
->  arch/arm/kernel/Makefile              |    5 ++-
->  arch/arm/kernel/psci.c                |    7 +--
->  arch/arm/kernel/psci_smp.c            |   67 +++++++++++++++++++++++++++++++++
->  arch/arm/kernel/setup.c               |   12 +++++-
->  arch/arm/mach-virt/Makefile           |    1 -
->  arch/arm/mach-virt/platsmp.c          |   58 ----------------------------
->  arch/arm/mach-virt/virt.c             |    3 -
->  arch/arm/xen/enlighten.c              |   36 ++++++++++++++----
->  12 files changed, 152 insertions(+), 76 deletions(-)
-> 
->     
-> git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 3.9-rc3-smp-6
-> 
-> 
-> Cheers,
-> 
-> Stefano
-> 
+> 2013/2/25 Bin Wang <wbin00@gmail.com>:
+> > KBUILD_OUTPUT is always empty here, so it is useless to test it. But
+> > while use O=.., objtree and srctree will be different. I compare them
+> > instead.
+> >
+> > Signed-off-by: Bin Wang <wbin00@gmail.com>
+> > ---
+> >  scripts/package/Makefile | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/scripts/package/Makefile b/scripts/package/Makefile
+> > index 87bf080..d7b3285 100644
+> > --- a/scripts/package/Makefile
+> > +++ b/scripts/package/Makefile
+> > @@ -36,7 +36,7 @@ $(objtree)/kernel.spec: $(MKSPEC) $(srctree)/Makefile
+> >         $(CONFIG_SHELL) $(MKSPEC) > $@
+> >
+> >  rpm-pkg rpm: $(objtree)/kernel.spec FORCE
+> > -       @if test -n "$(KBUILD_OUTPUT)"; then \
+> > +       @if test "$(objtree)" != "$(srctree)"; then \
+> >                 echo "Building source + binary RPM is not possible outside the"; \
+> >                 echo "kernel source tree. Don't set KBUILD_OUTPUT, or use the"; \
+> >                 echo "binrpm-pkg target instead."; \
+> > --
+> > 1.8.1.4
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
