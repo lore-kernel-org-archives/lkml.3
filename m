@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935812Ab3DHJwX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:52:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42900 "EHLO
+	id S936251Ab3DHKGo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:06:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42911 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935754Ab3DHJwT (ORCPT
+	with ESMTP id S935805Ab3DHJwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:52:19 -0400
+	Mon, 8 Apr 2013 05:52:23 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Moore <pmoore@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Nikolay Aleksandrov <nikolay@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 065/102] unix: fix a race condition in unix_release()
-Date: Mon,  8 Apr 2013 10:50:20 +0100
-Message-Id: <1365414657-29191-66-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 068/102] bonding: fix disabling of arp_interval and miimon
+Date: Mon,  8 Apr 2013 10:50:23 +0100
+Message-Id: <1365414657-29191-69-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
@@ -27,68 +28,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: "nikolay@redhat.com" <nikolay@redhat.com>
 
-commit ded34e0fe8fe8c2d595bfa30626654e4b87621e0 upstream.
+commit 1bc7db16782c2a581fb4d53ca853631050f31611 upstream.
 
-As reported by Jan, and others over the past few years, there is a
-race condition caused by unix_release setting the sock->sk pointer
-to NULL before properly marking the socket as dead/orphaned.  This
-can cause a problem with the LSM hook security_unix_may_send() if
-there is another socket attempting to write to this partially
-released socket in between when sock->sk is set to NULL and it is
-marked as dead/orphaned.  This patch fixes this by only setting
-sock->sk to NULL after the socket has been marked as dead; I also
-take the opportunity to make unix_release_sock() a void function
-as it only ever returned 0/success.
+Currently if either arp_interval or miimon is disabled, they both get
+disabled, and upon disabling they get executed once more which is not
+the proper behaviour. Also when doing a no-op and disabling an already
+disabled one, the other again gets disabled.
+Also fix the error messages with the proper valid ranges, and a small
+typo fix in the up delay error message (outputting "down delay", instead
+of "up delay").
 
-Dave, I think this one should go on the -stable pile.
-
-Special thanks to Jan for coming up with a reproducer for this
-problem.
-
-Reported-by: Jan Stancek <jan.stancek@gmail.com>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/unix/af_unix.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/net/bonding/bond_sysfs.c | 92 +++++++++++++++++++++-------------------
+ 1 file changed, 48 insertions(+), 44 deletions(-)
 
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 9aa708c..023db69 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -375,7 +375,7 @@ static void unix_sock_destructor(struct sock *sk)
- #endif
- }
- 
--static int unix_release_sock(struct sock *sk, int embrion)
-+static void unix_release_sock(struct sock *sk, int embrion)
- {
- 	struct unix_sock *u = unix_sk(sk);
- 	struct path path;
-@@ -444,8 +444,6 @@ static int unix_release_sock(struct sock *sk, int embrion)
- 
- 	if (unix_tot_inflight)
- 		unix_gc();		/* Garbage collect fds */
+diff --git a/drivers/net/bonding/bond_sysfs.c b/drivers/net/bonding/bond_sysfs.c
+index 1e2ad41..ed4f9e5 100644
+--- a/drivers/net/bonding/bond_sysfs.c
++++ b/drivers/net/bonding/bond_sysfs.c
+@@ -527,7 +527,7 @@ static ssize_t bonding_store_arp_interval(struct device *d,
+ 		goto out;
+ 	}
+ 	if (new_value < 0) {
+-		pr_err("%s: Invalid arp_interval value %d not in range 1-%d; rejected.\n",
++		pr_err("%s: Invalid arp_interval value %d not in range 0-%d; rejected.\n",
+ 		       bond->dev->name, new_value, INT_MAX);
+ 		ret = -EINVAL;
+ 		goto out;
+@@ -542,14 +542,15 @@ static ssize_t bonding_store_arp_interval(struct device *d,
+ 	pr_info("%s: Setting ARP monitoring interval to %d.\n",
+ 		bond->dev->name, new_value);
+ 	bond->params.arp_interval = new_value;
+-	if (bond->params.miimon) {
+-		pr_info("%s: ARP monitoring cannot be used with MII monitoring. %s Disabling MII monitoring.\n",
+-			bond->dev->name, bond->dev->name);
+-		bond->params.miimon = 0;
+-	}
+-	if (!bond->params.arp_targets[0]) {
+-		pr_info("%s: ARP monitoring has been set up, but no ARP targets have been specified.\n",
+-			bond->dev->name);
++	if (new_value) {
++		if (bond->params.miimon) {
++			pr_info("%s: ARP monitoring cannot be used with MII monitoring. %s Disabling MII monitoring.\n",
++				bond->dev->name, bond->dev->name);
++			bond->params.miimon = 0;
++		}
++		if (!bond->params.arp_targets[0])
++			pr_info("%s: ARP monitoring has been set up, but no ARP targets have been specified.\n",
++				bond->dev->name);
+ 	}
+ 	if (bond->dev->flags & IFF_UP) {
+ 		/* If the interface is up, we may need to fire off
+@@ -557,10 +558,13 @@ static ssize_t bonding_store_arp_interval(struct device *d,
+ 		 * timer will get fired off when the open function
+ 		 * is called.
+ 		 */
+-		cancel_delayed_work_sync(&bond->mii_work);
+-		queue_delayed_work(bond->wq, &bond->arp_work, 0);
++		if (!new_value) {
++			cancel_delayed_work_sync(&bond->arp_work);
++		} else {
++			cancel_delayed_work_sync(&bond->mii_work);
++			queue_delayed_work(bond->wq, &bond->arp_work, 0);
++		}
+ 	}
 -
--	return 0;
- }
- 
- static void init_peercred(struct sock *sk)
-@@ -695,9 +693,10 @@ static int unix_release(struct socket *sock)
- 	if (!sk)
- 		return 0;
- 
-+	unix_release_sock(sk, 0);
- 	sock->sk = NULL;
- 
--	return unix_release_sock(sk, 0);
-+	return 0;
- }
- 
- static int unix_autobind(struct socket *sock)
+ out:
+ 	rtnl_unlock();
+ 	return ret;
+@@ -702,7 +706,7 @@ static ssize_t bonding_store_downdelay(struct device *d,
+ 	}
+ 	if (new_value < 0) {
+ 		pr_err("%s: Invalid down delay value %d not in range %d-%d; rejected.\n",
+-		       bond->dev->name, new_value, 1, INT_MAX);
++		       bond->dev->name, new_value, 0, INT_MAX);
+ 		ret = -EINVAL;
+ 		goto out;
+ 	} else {
+@@ -757,8 +761,8 @@ static ssize_t bonding_store_updelay(struct device *d,
+ 		goto out;
+ 	}
+ 	if (new_value < 0) {
+-		pr_err("%s: Invalid down delay value %d not in range %d-%d; rejected.\n",
+-		       bond->dev->name, new_value, 1, INT_MAX);
++		pr_err("%s: Invalid up delay value %d not in range %d-%d; rejected.\n",
++		       bond->dev->name, new_value, 0, INT_MAX);
+ 		ret = -EINVAL;
+ 		goto out;
+ 	} else {
+@@ -968,37 +972,37 @@ static ssize_t bonding_store_miimon(struct device *d,
+ 	}
+ 	if (new_value < 0) {
+ 		pr_err("%s: Invalid miimon value %d not in range %d-%d; rejected.\n",
+-		       bond->dev->name, new_value, 1, INT_MAX);
++		       bond->dev->name, new_value, 0, INT_MAX);
+ 		ret = -EINVAL;
+ 		goto out;
+-	} else {
+-		pr_info("%s: Setting MII monitoring interval to %d.\n",
+-			bond->dev->name, new_value);
+-		bond->params.miimon = new_value;
+-		if (bond->params.updelay)
+-			pr_info("%s: Note: Updating updelay (to %d) since it is a multiple of the miimon value.\n",
+-				bond->dev->name,
+-				bond->params.updelay * bond->params.miimon);
+-		if (bond->params.downdelay)
+-			pr_info("%s: Note: Updating downdelay (to %d) since it is a multiple of the miimon value.\n",
+-				bond->dev->name,
+-				bond->params.downdelay * bond->params.miimon);
+-		if (bond->params.arp_interval) {
+-			pr_info("%s: MII monitoring cannot be used with ARP monitoring. Disabling ARP monitoring...\n",
+-				bond->dev->name);
+-			bond->params.arp_interval = 0;
+-			if (bond->params.arp_validate) {
+-				bond->params.arp_validate =
+-					BOND_ARP_VALIDATE_NONE;
+-			}
+-		}
+-
+-		if (bond->dev->flags & IFF_UP) {
+-			/* If the interface is up, we may need to fire off
+-			 * the MII timer. If the interface is down, the
+-			 * timer will get fired off when the open function
+-			 * is called.
+-			 */
++	}
++	pr_info("%s: Setting MII monitoring interval to %d.\n",
++		bond->dev->name, new_value);
++	bond->params.miimon = new_value;
++	if (bond->params.updelay)
++		pr_info("%s: Note: Updating updelay (to %d) since it is a multiple of the miimon value.\n",
++			bond->dev->name,
++			bond->params.updelay * bond->params.miimon);
++	if (bond->params.downdelay)
++		pr_info("%s: Note: Updating downdelay (to %d) since it is a multiple of the miimon value.\n",
++			bond->dev->name,
++			bond->params.downdelay * bond->params.miimon);
++	if (new_value && bond->params.arp_interval) {
++		pr_info("%s: MII monitoring cannot be used with ARP monitoring. Disabling ARP monitoring...\n",
++			bond->dev->name);
++		bond->params.arp_interval = 0;
++		if (bond->params.arp_validate)
++			bond->params.arp_validate = BOND_ARP_VALIDATE_NONE;
++	}
++	if (bond->dev->flags & IFF_UP) {
++		/* If the interface is up, we may need to fire off
++		 * the MII timer. If the interface is down, the
++		 * timer will get fired off when the open function
++		 * is called.
++		 */
++		if (!new_value) {
++			cancel_delayed_work_sync(&bond->mii_work);
++		} else {
+ 			cancel_delayed_work_sync(&bond->arp_work);
+ 			queue_delayed_work(bond->wq, &bond->mii_work, 0);
+ 		}
 -- 
 1.8.1.2
 
