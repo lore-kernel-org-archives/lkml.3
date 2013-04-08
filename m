@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936400Ab3DHWRW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 18:17:22 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42189 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934846Ab3DHWRU (ORCPT
+	id S936456Ab3DHWRn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 18:17:43 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:42148 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934846Ab3DHWRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 18:17:20 -0400
-Message-ID: <516341ED.5060803@wwwdotorg.org>
-Date: Mon, 08 Apr 2013 16:17:17 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 8 Apr 2013 18:17:41 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX187aUk8Rbg5d7XFfxB7oEqV
+Date: Mon, 8 Apr 2013 15:17:32 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] omap2+: Remove useless Makefile line
+Message-ID: <20130408221732.GD10155@atomide.com>
+References: <1365156749.1830.60.camel@x61.thuisdomein>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Nathan Zimmer <nzimmer@sgi.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Woodhouse <dwmw2@infradead.org>, stable@vger.kernel.org,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: hangs on boot in 9984d7394618df9
-References: <515DB465.1060004@sgi.com> <20130404204459.GU21522@ZenIV.linux.org.uk> <515F0456.9040803@sgi.com> <20130405173623.GE4068@ZenIV.linux.org.uk> <515F3A71.9080008@sgi.com> <20130405210042.GH4068@ZenIV.linux.org.uk> <5162E36F.5020305@sgi.com> <20130408155847.GS4068@ZenIV.linux.org.uk> <51632DF8.2080402@sgi.com> <20130408212327.GU4068@ZenIV.linux.org.uk> <20130408214834.GV4068@ZenIV.linux.org.uk>
-In-Reply-To: <20130408214834.GV4068@ZenIV.linux.org.uk>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365156749.1830.60.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2013 03:48 PM, Al Viro wrote:
-> On Mon, Apr 08, 2013 at 10:23:27PM +0100, Al Viro wrote:
->> On Mon, Apr 08, 2013 at 03:52:08PM -0500, Nathan Zimmer wrote:
->>
->>> Further digging seems to indicate 9984d7394618df9, the one right
->>> after the commit I previously identified.
->>> Not sure what I did wrong with my bisect to put it off by one.
->>
->> Ugh...  Can't reproduce here ;-/  Could you give more details on your
->> setup?
-> 
-> Anyway, I've just pushed a splitup of that commit (carved in 3 pieces)
-> into vfs.git#pipe-splitup; could you check which part triggers that
-> hang?  Should propagate in a few...
+* Paul Bolle <pebolle@tiscali.nl> [130405 03:17]:
+> Commit f41caddbe73f52a42f529d668ce47b4d693fd2c0 ("omap2+: Use Kconfig
+> symbol in Makefile instead of obj-y") reorganized this Makefile. But,
+> for some reason, it also added references to CONFIG_MACH_ENCORE and
+> board-omap3encore.o. But there's no Kconfig symbol MACH_ENCORE and
+> there's no file board-omap3encore.c. This line can safely be removed.
 
-It looks like "pipe: unify ->release() and ->open()" introduces the
-problem. Note that I had to add a prototype for fifo_open() before the
-structs that reference it for that commit to compile.
+Thanks applying into omap-for-v3.10/board.
+
+Tony
+ 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+>  arch/arm/mach-omap2/Makefile | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+> index b068b7f..3d0697c 100644
+> --- a/arch/arm/mach-omap2/Makefile
+> +++ b/arch/arm/mach-omap2/Makefile
+> @@ -229,7 +229,6 @@ obj-$(CONFIG_MACH_DEVKIT8000)     	+= board-devkit8000.o
+>  obj-$(CONFIG_MACH_OMAP_LDP)		+= board-ldp.o
+>  obj-$(CONFIG_MACH_OMAP3530_LV_SOM)      += board-omap3logic.o
+>  obj-$(CONFIG_MACH_OMAP3_TORPEDO)        += board-omap3logic.o
+> -obj-$(CONFIG_MACH_ENCORE)		+= board-omap3encore.o
+>  obj-$(CONFIG_MACH_OVERO)		+= board-overo.o
+>  obj-$(CONFIG_MACH_OMAP3EVM)		+= board-omap3evm.o
+>  obj-$(CONFIG_MACH_OMAP3_PANDORA)	+= board-omap3pandora.o
+> -- 
+> 1.7.11.7
+> 
+> 
+> 
