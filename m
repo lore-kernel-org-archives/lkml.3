@@ -1,104 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936383Ab3DHKPN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:15:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42758 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935617Ab3DHJvq (ORCPT
+	id S936399Ab3DHKPf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:15:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35352 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S936346Ab3DHKPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:51:46 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 037/102] USB: ch341: fix use-after-free in TIOCMIWAIT
-Date: Mon,  8 Apr 2013 10:49:52 +0100
-Message-Id: <1365414657-29191-38-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
-References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Mon, 8 Apr 2013 06:15:33 -0400
+Date: Mon, 8 Apr 2013 11:15:30 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Girish KS <girishks2000@gmail.com>
+Cc: spi-devel-general@lists.sourceforge.net,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH V3 4/5] spi: s3c64xx: Added provision for dedicated cs pin
+Message-ID: <20130408101530.GC9243@opensource.wolfsonmicro.com>
+References: <1363157014-9615-1-git-send-email-ks.giri@samsung.com>
+ <1363157014-9615-5-git-send-email-ks.giri@samsung.com>
+ <20130401125744.GG18636@opensource.wolfsonmicro.com>
+ <CAKrE-Kd+YAFmteDdh3odtV+YU1=OjoMuQV9usF4NmUse+TXhTg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wxDdMuZNg1r63Hyj"
+Content-Disposition: inline
+In-Reply-To: <CAKrE-Kd+YAFmteDdh3odtV+YU1=OjoMuQV9usF4NmUse+TXhTg@mail.gmail.com>
+X-Cookie: Your love life will be... interesting.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.10 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--wxDdMuZNg1r63Hyj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Johan Hovold <jhovold@gmail.com>
+On Mon, Apr 08, 2013 at 03:21:03PM +0530, Girish KS wrote:
+> On Mon, Apr 1, 2013 at 6:27 PM, Mark Brown
 
-commit fa1e11d5231c001c80a479160b5832933c5d35fb upstream.
+> > It's also a bit odd that we end up checking cs_gpio and then using line
+> > in the code, it'd be more idiomatic if cs_gpio were the GPIO number.
 
-Use the port wait queue and make sure to check the serial disconnected
-flag before accessing private port data after waking up.
+> In the original driver it was assumed that the cs line is always a gpio pin.
+> But the current controller that i am working on has no gpio pin for cs
+> selection.
+> All the lines to the device are internally connected. There is no
+> option to select
+> the cs signal. So cs-gpio property parsing has to skipped for this
+> controller, that means
+> cs_gpio cannot be a GPIO number. If it has to be a number then it has
+> to be < 0 to say
+> it is not gpio. Any >= 0 number implies it is a valid gpio (in reality
+> for this controller it is not.)
 
-This is is needed as the private port data (including the wait queue
-itself) can be gone when waking up after a disconnect.
+Two options here, one is to just assume nobody will use GPIO 0 and the
+other is to set the number appopriately during probe so that only probe
+needs to worry about the issue.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/usb/serial/ch341.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+--wxDdMuZNg1r63Hyj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/drivers/usb/serial/ch341.c b/drivers/usb/serial/ch341.c
-index cabd1b1..93c835e 100644
---- a/drivers/usb/serial/ch341.c
-+++ b/drivers/usb/serial/ch341.c
-@@ -82,7 +82,6 @@ MODULE_DEVICE_TABLE(usb, id_table);
- 
- struct ch341_private {
- 	spinlock_t lock; /* access lock */
--	wait_queue_head_t delta_msr_wait; /* wait queue for modem status */
- 	unsigned baud_rate; /* set baud rate */
- 	u8 line_control; /* set line control value RTS/DTR */
- 	u8 line_status; /* active status of modem control inputs */
-@@ -253,7 +252,6 @@ static int ch341_attach(struct usb_serial *serial)
- 		return -ENOMEM;
- 
- 	spin_lock_init(&priv->lock);
--	init_waitqueue_head(&priv->delta_msr_wait);
- 	priv->baud_rate = DEFAULT_BAUD_RATE;
- 	priv->line_control = CH341_BIT_RTS | CH341_BIT_DTR;
- 
-@@ -289,7 +287,7 @@ static void ch341_dtr_rts(struct usb_serial_port *port, int on)
- 		priv->line_control &= ~(CH341_BIT_RTS | CH341_BIT_DTR);
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 	ch341_set_handshake(port->serial->dev, priv->line_control);
--	wake_up_interruptible(&priv->delta_msr_wait);
-+	wake_up_interruptible(&port->delta_msr_wait);
- }
- 
- static void ch341_close(struct usb_serial_port *port)
-@@ -482,7 +480,7 @@ static void ch341_read_int_callback(struct urb *urb)
- 			tty_kref_put(tty);
- 		}
- 
--		wake_up_interruptible(&priv->delta_msr_wait);
-+		wake_up_interruptible(&port->delta_msr_wait);
- 	}
- 
- exit:
-@@ -508,11 +506,14 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 
- 	while (!multi_change) {
--		interruptible_sleep_on(&priv->delta_msr_wait);
-+		interruptible_sleep_on(&port->delta_msr_wait);
- 		/* see if a signal did it */
- 		if (signal_pending(current))
- 			return -ERESTARTSYS;
- 
-+		if (port->serial->disconnected)
-+			return -EIO;
-+
- 		spin_lock_irqsave(&priv->lock, flags);
- 		status = priv->line_status;
- 		multi_change = priv->multi_status_change;
--- 
-1.8.1.2
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJRYpi0AAoJELSic+t+oim9j60QAJw2B4Zu6vyrC1EQu05J9Os9
+glBg+SSQBE5nnDXv3NrcZv/dVxDrVvNpYwCsEBmM83YCgpJb68MVWAFgA+fzZxgy
+AN5HFH0EegxoImk+6tGyBNC11Ytti/HA1m0sGotV22f9xXnDETsxzT7FBPpx9BsC
+dSb2GnuHgUwL6JGU2JuYicJid8d4Bn9g8dkgttD7J+z2dcTrRtsNgMOnWy1h48Xj
+eOlbtwPYYTsV7GR4XPgNmHWozIu68rmHTtGISwCCPDtVWRLrowYLWNd3J5WjbbM4
+XuzRK5oElLCHimWVqThEzdpqjNRHvy6oWaMFaXkv2USNvL3MvlFF/erhOFe0u0sC
+I2eFYhMXAgDdnstwddYVzLsIP/MV9cKlAIspgaqeaQyrierhbNgSmjnVhbUlbL7F
+E/39u4oDdQIj7MDQW2qbyIkpq5TQCM22z+ez+7+FP7/7ZSBJ0OfmVS/z8M/FepLw
+TfrnoQS3oBboyEMLCG+7Iv5Xd3nQndcWYsp9Heohb6T5bXuoK/yNFk1+/MFbpRUq
+Guy4mm+aeFu1+8Ayc2jjs9UZOAYH+TklCiDdnjra8tHtzwIEGCI85vAmHv8+uOnS
+8DgAZao7VZSDVA8IYdJQxd0x1d+nnHapY57B/4JlVrZJgu8W/n1ua4/eGoRUMpc2
+vpTbF7V8s51f5mqvHUqQ
+=rtNQ
+-----END PGP SIGNATURE-----
+
+--wxDdMuZNg1r63Hyj--
