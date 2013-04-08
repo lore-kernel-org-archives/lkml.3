@@ -1,100 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935800Ab3DHM1y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 08:27:54 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:55667 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935294Ab3DHM1x convert rfc822-to-8bit (ORCPT
+	id S935844Ab3DHM3B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 08:29:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44163 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935007Ab3DHM27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 08:27:53 -0400
-From: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
-To: Stefan Hajnoczi <stefanha@gmail.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "Huangweidong (C)" <weidong.huang@huawei.com>,
-        Zanghongyong <zanghongyong@huawei.com>,
-        Luonengjun <luonengjun@huawei.com>,
-        Zhanghuanzhong <zhanghuanzhong@huawei.com>
-Subject: reply: reply: [Qemu-devel] qemu crashed when starting vm(kvm) with
- vnc connect
-Thread-Topic: reply: reply: [Qemu-devel] qemu crashed when starting vm(kvm)
- with vnc connect
-Thread-Index: AQHONFRixqFJYdYKykydYbRqNI0DKw==
-Date: Mon, 8 Apr 2013 12:27:06 +0000
-Message-ID: <D3E216785288A145B7BC975F83A2ED103FE16749@szxeml556-mbx.china.huawei.com>
-References: <D3E216785288A145B7BC975F83A2ED103FE154C1@szxeml556-mbx.china.huawei.com>
- <20130405063456.GA27569@stefanha-thinkpad.redhat.com>
- <D3E216785288A145B7BC975F83A2ED103FE16528@szxeml556-mbx.china.huawei.com>
- <20130408105052.GC12076@stefanha-thinkpad.redhat.com>
-In-Reply-To: <20130408105052.GC12076@stefanha-thinkpad.redhat.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.135.68.97]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 8 Apr 2013 08:28:59 -0400
+Message-ID: <5162B7FF.7010603@canonical.com>
+Date: Mon, 08 Apr 2013 14:28:47 +0200
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+To: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>, Mel Gorman <mgorman@suse.de>
+Subject: Re: x86/mm/pageattr: Code without effect?
+References: <515E92CE.2000509@canonical.com> <20130405142104.GB29290@pd.tnic> <20130406145804.GJ3423@redhat.com> <20130406154751.GB3612@pd.tnic> <20130408115344.GA7513@gmail.com> <20130408115959.GB4395@pd.tnic>
+In-Reply-To: <20130408115959.GB4395@pd.tnic>
+X-Enigmail-Version: 1.4.6
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="------------enig8DBCC990AE501458D21073D6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 07, 2013 at 04:58:07AM +0000, Zhanghaoyu (A) wrote:
-> >>> I start a kvm VM with vnc(using the zrle protocol) connect, sometimes qemu program crashed during starting period, received signal SIGABRT.
-> >>> Trying about 20 times, this crash may be reproduced.
-> >>> I guess the cause memory corruption or double free.
-> >>
-> >> Which version of QEMU are you running?
-> >> 
-> >> Please try qemu.git/master.
-> >> 
-> >> Stefan
-> >
-> >I used the QEMU download from qemu.git (http://git.qemu.org/git/qemu.git).
->
-> Great, thanks!  Can you please post a backtrace?
-> 
-> The easiest way is:
-> 
->  $ ulimit -c unlimited
->  $ qemu-system-x86_64 -enable-kvm -m 1024 ...
->  ...crash...
->  $ gdb -c qemu-system-x86_64.core
->  (gdb) bt
-> 
-> Depending on how your system is configured the core file might have a different filename but there should be a file name *core* the current working directory
-after the crash.
-> 
-> The backtrace will make it possible to find out where the crash occurred.
-> 
-> Thanks,
-> Stefan
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig8DBCC990AE501458D21073D6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-backtrace from core file is shown as below:
+On 08.04.2013 13:59, Borislav Petkov wrote:
+> On Mon, Apr 08, 2013 at 01:53:44PM +0200, Ingo Molnar wrote:
+>>
+>> * Borislav Petkov <bp@alien8.de> wrote:
+>>
+>>>> have been the source of the confusion. Remove the noop initializatio=
+n
+>>>> accordingly.
+>>>>
+>>>> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+>>>
+>>> Yeah, looks good to me. I've folded it into my pile of changes touchi=
+ng this and=20
+>>> there are no visible issues. [...]
+>>
+>> Logistics question: is this fix coming upstream-wards via your pile of=
+ changes=20
+>> anytime soon?
+>=20
+> Actually I was thinking Andrea would send it since it is his fix. And
+> besides, my pile is still stinking. :-)
+>=20
+> AFAICT, the patch fixes a noop so the current code works anyway - IOW,
+> it is basically a code correctness fix which doesn't have any other
+> effect. What I mean by that is, no need to go in now for 3.9 and stable=
+=2E
+>=20
+> Long story, short: best it would be, IMO, if Andrea would send it to
+> you soonish but you apply it for 3.10 so that it sees a whole cycle of
+> testing just in case - it is CPA code after all.
 
-Program received signal SIGABRT, Aborted.
-0x00007f32eda3dd95 in raise () from /lib64/libc.so.6
-(gdb) bt
-#0  0x00007f32eda3dd95 in raise () from /lib64/libc.so.6
-#1  0x00007f32eda3f2ab in abort () from /lib64/libc.so.6
-#2  0x00007f32eda77ece in __libc_message () from /lib64/libc.so.6
-#3  0x00007f32eda7dc06 in malloc_printerr () from /lib64/libc.so.6
-#4  0x00007f32eda7ecda in _int_free () from /lib64/libc.so.6
-#5  0x00007f32efd3452c in free_and_trace (mem=0x7f3290000cd0) at vl.c:2880
-#6  0x00007f32efd251a1 in buffer_free (buffer=0x7f32f0c82890) at ui/vnc.c:505
-#7  0x00007f32efd20c56 in vnc_zrle_clear (vs=0x7f32f0c762d0)
-    at ui/vnc-enc-zrle.c:364
-#8  0x00007f32efd26d07 in vnc_disconnect_finish (vs=0x7f32f0c762d0)
-    at ui/vnc.c:1050
-#9  0x00007f32efd275c5 in vnc_client_read (opaque=0x7f32f0c762d0)
-    at ui/vnc.c:1349
-#10 0x00007f32efcb397c in qemu_iohandler_poll (readfds=0x7f32f074d020,
-    writefds=0x7f32f074d0a0, xfds=0x7f32f074d120, ret=1) at iohandler.c:124
-#11 0x00007f32efcb46e8 in main_loop_wait (nonblocking=0) at main-loop.c:417
-#12 0x00007f32efd31159 in main_loop () at vl.c:2133
-#13 0x00007f32efd38070 in main (argc=46, argv=0x7fff7f5df178,
-    envp=0x7fff7f5df2f0) at vl.c:4481
+To me it would read as someone or something may use change page attribute=
+ to set
+PSE or GLOBAL (or any or the masked off bits from canon_pgprot) in an une=
+xpected
+way for a huge page as long as it is not split.
+As Boris says, it has not happened as far as it is known. Probably even i=
+f it
+happens it is one of those "on the right day of week when the phase of th=
+e moon
+is right" errors...
+To enforce the PSE bit here sounds reasonably right. And also apply
+canon_pgprot, too. GLOBAL I don't know for sure.
 
-Zhang Haoyu
+By the way there is a usage of new_prot a bit down of try_preserve_large_=
+page
+which probably should be changed into req_prot, too. That was enforcing t=
+he
+canon_pgprot before the change. So that may be considered a regression to=
+ before.
+
+-Stefan
+>=20
+> Thanks.
+>=20
+
+
+
+--------------enig8DBCC990AE501458D21073D6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
+
+iQIcBAEBCgAGBQJRYrf/AAoJEOhnXe7L7s6jHPMP/2aEmMFpiXx82WCQPrl6Sz3h
+6ACADTSDcD3wbzEgGqAqBDP938tC4ACFXxMMXfUdlDQezIcKb5Q/ixg6XyPH6FJt
+BZsNrw6n6nWBhJn7Ex8B0cyRO9SQM+UC28PX+kUah6sNSVIw6iqbPhfTjckwNwcp
+ynABKRQKzMLWYGFY7uBz0yvvtcvv1oiuEc6srXVYPKCYpibv1Nfh+/LhGdGQzQU8
+4wzvrOUWkAGKeQ5P7/xcOMA7mMCfYEgULDo2X8vUsD+V66UHTk62BVb+c2HrrSld
+oJbC8y5R3pQPK2+NRfQFraCke7/KqB0am49EGdPFxLzSG9moGRIAzap4s+d4e3b2
+poM45Q/g/3V0wd7DSlNGavzZvxox0ulw0tUwUDbL/ti8Ryn/nAeKDtsc/Aw+mDwl
+HulsaiUiTwCYIzYLzDTG4iDPQ0cSXPcJMQZ4f/7b+2CQ5t26Nigj5ZB6gIQYcPYD
+oncqnEOuhKNPo/D0B2wyxxwXEu/7L5JPYe782lhE+90SDdD5iUK7Hj5BNSs6V7Gx
+qbgSxH2Rg/y/ShMN3tYFU05C3VYFt2Y17XoFKJIygtBAXC+flFuybm3A91AZ7jRX
+J+n5SMtbhdCPY4fDEnGBr67wMJJdoMYTQuvirUkqTOskd9PI0YxOjxDO4J6xCB+j
+tswIqkBUAt+MH1MPJI4Y
+=VxOT
+-----END PGP SIGNATURE-----
+
+--------------enig8DBCC990AE501458D21073D6--
