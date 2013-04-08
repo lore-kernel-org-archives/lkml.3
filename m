@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936252Ab3DHVYM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 17:24:12 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:64383 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762574Ab3DHVYK (ORCPT
+	id S965122Ab3DHV1o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 17:27:44 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:41245 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936265Ab3DHV1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 17:24:10 -0400
-Message-ID: <5163356F.50406@gmail.com>
-Date: Mon, 08 Apr 2013 23:23:59 +0200
-From: Gabriel <g2p.code@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Kent Overstreet <koverstreet@google.com>
-CC: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gabriel <g2p.code+bcache@gmail.com>
-Subject: Re: [PATCH] bcache: Take data offset from the bdev superblock.
-References: <51629766.6030805@gmail.com> <1365415866-16344-1-git-send-email-g2p.code+bcache@gmail.com> <20130408204956.GH15749@google.com>
-In-Reply-To: <20130408204956.GH15749@google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 8 Apr 2013 17:27:38 -0400
+X-IronPort-AV: E=Sophos;i="4.87,433,1363158000"; 
+   d="scan'208";a="36848521"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: [PATCHv4 09/11] clocksource: time-armada-370-xp: Fix sparse warning
+Date: Mon,  8 Apr 2013 14:27:31 -0700
+Message-Id: <1365456453-16297-10-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.2
+In-Reply-To: <1365456453-16297-1-git-send-email-sboyd@codeaurora.org>
+References: <1365456453-16297-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lun. 08 avril 2013 22:49:56 CEST, Kent Overstreet a écrit :
-> On Mon, Apr 08, 2013 at 12:11:06PM +0200, Gabriel wrote:
->> Add a new superblock version, and consolidate related defines.
->
-> So, I think BDEV_WITH_OFFSET looks ok, but what's the use case for it? I
-> was going to add it way back but we decided not to implement the hack we
-> thought we needed it for - if you or someone is going to use it I'll go
-> ahead and apply it.
+drivers/clocksource/time-armada-370-xp.c:217:13: warning: symbol
+'armada_370_xp_timer_init' was not declared. Should it be static?
 
-It's for converting existing devices to bcache.
+Also remove the __init marking in the prototype as it's
+unnecessary along with the init.h include.
 
-https://github.com/g2p/blocks converts a partition to bcache by putting
-a bcache superblock immediately before and shifting the partition start
-to the left by exactly 1MB.  The 1MB alignment is to play nice with 
-other partitioning tools and drives with 4k sectors.
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clocksource/time-armada-370-xp.c | 3 ++-
+ include/linux/time-armada-370-xp.h       | 4 +---
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-blocks also converts logical volumes to bcache, and for that it has to 
-insert exactly 4MB (an LVM physical extent) before the filesystem data.
+diff --git a/drivers/clocksource/time-armada-370-xp.c b/drivers/clocksource/time-armada-370-xp.c
+index 47a6730..efe4aef 100644
+--- a/drivers/clocksource/time-armada-370-xp.c
++++ b/drivers/clocksource/time-armada-370-xp.c
+@@ -27,10 +27,11 @@
+ #include <linux/of_address.h>
+ #include <linux/irq.h>
+ #include <linux/module.h>
++#include <linux/percpu.h>
++#include <linux/time-armada-370-xp.h>
+ 
+ #include <asm/sched_clock.h>
+ #include <asm/localtimer.h>
+-#include <linux/percpu.h>
+ /*
+  * Timer block registers.
+  */
+diff --git a/include/linux/time-armada-370-xp.h b/include/linux/time-armada-370-xp.h
+index dfdfdc0..6fb0856 100644
+--- a/include/linux/time-armada-370-xp.h
++++ b/include/linux/time-armada-370-xp.h
+@@ -11,8 +11,6 @@
+ #ifndef __TIME_ARMADA_370_XPPRCMU_H
+ #define __TIME_ARMADA_370_XPPRCMU_H
+ 
+-#include <linux/init.h>
+-
+-void __init armada_370_xp_timer_init(void);
++void armada_370_xp_timer_init(void);
+ 
+ #endif
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-I'm already using the new format, it allowed me to get rid of some 
-complicated stuff that sandwiched a partition table on top of an LV so 
-that the original filesystem data was at the start of its container device.
-
-> As for BCACHE_SB_VERSION_CDEV_WITH_UUID, can you explain why you added
-> that? I suspect it's needed but I can't remember why I didn't add it
-> when I added the new UUID format (or perhaps I just forgot)
-
-I took the name from a comment in the kernel-side bcache.h.
-BCACHE_SB_VERSION_CDEV is the version make-bcache writes, and 
-BCACHE_SB_VERSION_CDEV_WITH_UUID is what the kernel updates it too; I 
-just changed the version names so that user-side and kernel-side were 
-more consistent, internally and with each other.
-The kernel doesn't discriminate these two versions when opening, so it 
-should be possible to define only the latter and deprecate the other.
