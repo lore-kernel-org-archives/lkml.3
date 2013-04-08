@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936063Ab3DHU0L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 16:26:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57501 "EHLO mx1.redhat.com"
+	id S936031Ab3DHU0d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 16:26:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34907 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935781Ab3DHU0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 16:26:08 -0400
-Date: Mon, 8 Apr 2013 15:25:58 -0500
-From: Clark Williams <williams@redhat.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [ANNOUNCE] 3.8.4-rt2
-Message-ID: <20130408152558.627dc8b1@riff.lan>
-In-Reply-To: <20130408183012.GA5778@linutronix.de>
-References: <20130326201722.GA14220@linutronix.de>
-	<CAP=VYLoXfECaSBuvYdZ3qbsnR9QMYpoRnKGZdY=P6zS_TYOcCA@mail.gmail.com>
-	<20130408183012.GA5778@linutronix.de>
-Organization: Red Hat, Inc
+	id S1762703Ab3DHU0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 16:26:31 -0400
+Date: Mon, 08 Apr 2013 16:25:29 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org
+Message-ID: <1365452729-dczpcd7w-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <515F4D9A.3060009@gmail.com>
+References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1363983835-20184-8-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <515F4D9A.3060009@gmail.com>
+Subject: Re: [PATCH 07/10] mbind: add hugepage migration code to mbind()
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/XMfRqybk0s1cRRQN_SpW_=s"; protocol="application/pgp-signature"
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <515F4D9A.3060009@gmail.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/XMfRqybk0s1cRRQN_SpW_=s
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, Apr 05, 2013 at 06:18:02PM -0400, KOSAKI Motohiro wrote:
+> > @@ -1277,14 +1279,10 @@ static long do_mbind(unsigned long start, unsigned long len,
+> >  	if (!err) {
+> >  		int nr_failed = 0;
+> >  
+> > -		if (!list_empty(&pagelist)) {
+> > -			WARN_ON_ONCE(flags & MPOL_MF_LAZY);
+> > -			nr_failed = migrate_pages(&pagelist, new_vma_page,
+> > +		WARN_ON_ONCE(flags & MPOL_MF_LAZY);
+> 
+> ???
+> MPOL_MF_LAZY always output warn? It seems really insane.
 
-On Mon, 8 Apr 2013 20:30:12 +0200
-Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
-
-> * Paul Gortmaker | 2013-04-05 19:35:51 [-0400]:
->=20
-> >Thanks for the work in putting this together.  Just a heads up that the
-> >split queue fails on a patch with no author/date/subject as follows:
-> >
-> >[...]
-> >git am of percpu-rwsem-compilefix.patch failed.
-> >
-> >This "treercu-use-simple-waitqueue.patch" has the exact same problem.
-> >
-> >Note that I'm using git directly, and not quilt -- which is more
-> >strict in what it will accept, hence it catches these kinds of things.
->=20
-> I just fixed up those two. "git quiltimport" works now.
->
-
-Thanks Sebastian.=20
-
-BTW I imported -rt onto v3.8.6 with no hiccups from 'git quiltimport'
-other than what you just fixed. Not much runtime on it  but it booted
-without complaint and ran just fine until I tried a suspend/resume.=20
-
-Resume seems to be borken on all the 3.8-rt kernels so far.
-
-Clark
-
---Sig_/XMfRqybk0s1cRRQN_SpW_=s
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlFjJ9oACgkQHyuj/+TTEp3UZgCfeZIWeI7rNn1+sgwWprTxewmV
-0YMAoI06XnwFXZqqGBCgbgytydOrN9HI
-=1CGe
------END PGP SIGNATURE-----
-
---Sig_/XMfRqybk0s1cRRQN_SpW_=s--
+So I'll stop replacing this block into migrate_movable_pages() and
+leave this WARN as it is.
