@@ -1,80 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935423Ab3DHSP3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 14:15:29 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:58746 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935348Ab3DHSP1 (ORCPT
+	id S935436Ab3DHSQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 14:16:14 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:51922 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934766Ab3DHSQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 14:15:27 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX187OmWOtdJYM77jlzsF4hv6
-Date: Mon, 8 Apr 2013 11:15:24 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Anton Vorontsov <cbou@mail.ru>, Keerthy <j-keerthy@ti.com>,
-        Kyle Manna <kyle@kylemanna.com>, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 1/2] mfd: twl4030-madc: Add support for raw value in
- twl4030_madc_conversion
-Message-ID: <20130408181524.GU10155@atomide.com>
-References: <1360969010-8571-1-git-send-email-pali.rohar@gmail.com>
- <201303022323.06091@pali>
- <201303241503.29912@pali>
- <201304041132.21158@pali>
+	Mon, 8 Apr 2013 14:16:13 -0400
+Date: Mon, 8 Apr 2013 11:16:07 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, bsingharora@gmail.com,
+        Kay Sievers <kay.sievers@vrfy.org>, lpoetter@redhat.com,
+        linux-kernel@vger.kernel.org, dhaval.giani@gmail.com,
+        workman-devel@redhat.com
+Subject: Re: [Workman-devel] cgroup: status-quo and userland efforts
+Message-ID: <20130408181607.GI3021@htj.dyndns.org>
+References: <20130406012159.GA17159@mtj.dyndns.org>
+ <20130408175925.GE28292@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201304041132.21158@pali>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130408175925.GE28292@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pali Rohár <pali.rohar@gmail.com> [130404 02:37]:
-> On Sunday 24 March 2013 15:03:29 Pali Rohár wrote:
-> > On Saturday 02 March 2013 23:23:05 Pali Rohár wrote:
-> > > On Friday 15 February 2013 23:56:49 Pali Rohár wrote:
-> > > > Driver twl4030-madc has hardcoded channel types (10 -
-> > > > battery current, 1 - battery temperature) and also
-> > > > conversation data in variable twl4030_divider_ratios.
-> > > > These hardcoded channels are incorrect for Nokia RX-51
-> > > > board (where is channel 0 - battery temperature).
-> > > > 
-> > > > For Nokia RX-51 there is rx51_battery power_supply driver
-> > > > which reporting battery information via
-> > > > twl4030_madc_conversion. But this driver needs raw values
-> > > > (not converted via some hardcoded functions). So this
-> > > > patch adding new parameter "raw" to struct
-> > > > twl4030_madc_request which tell twl4030-madc driver to
-> > > > not convert values, but rather return raw.
-> > > > 
-> > > > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> > > > ---
-> > > > 
-> > > >  drivers/mfd/twl4030-madc.c       |   14 ++++++++++----
-> > > >  include/linux/i2c/twl4030-madc.h |    2 ++
-> > > >  2 files changed, 12 insertions(+), 4 deletions(-)
-> > > 
-> > > Hello, can somebody review this twl4030-madc patch?
-> > 
-> > Bump.
-> > 
-> > Can some of mfd maintainers look at this patch and include it
-> > to mfd tree? It is needed for rx51_battery power supply
-> > driver.
+Hey, Vivek.
+
+On Mon, Apr 08, 2013 at 01:59:26PM -0400, Vivek Goyal wrote:
+> But using the library admin application should be able to query the
+> full "paritition" hierarchy and their weigths and calculate % system
+> resources. I think one problem there is cpu controller where % resoruce
+> of a cgroup depends on tasks entities which are peer to group. But that's
+> a kernel issue and not user space thing.
+
+Yeah, we're gonna have to implement a different operation mode.
+
+> So I am not sure what are potential problems with proposed model of
+> configuration in workman. All the consumer managers still follow what
+> libarary has told them to do.
+
+Sure, if we assume everyone follows the rules and behaves nicely.
+It's more about the general approach.  Allowing / encouraging sharing
+or distributing control of cgroup hierarchy without forcing structure
+and rigid control over it is likely to lead to confusion and
+fragility.
+
+> >  or maybe some other program just happened to choose the
+> >   same name.
 > 
-> CCing Tony, can you look at this patch?
+> Two programs ideally would have their own sub hiearchy. And if not one
+> of the programs should get the conflict when trying to create cgroup and
+> should back-off or fail or give warning...
 
-Sorry for the delay in replying, I've been going through my
-inbox for the merge window and noticed this.
+And who's responsible for deleting it?  What if the program crashes?
 
-I suggest resend with Peter Ujfalusi cc:d as he is the de-facto
-twl/tps maintainer and expert by now.
+> > Who owns config knobs in that directory?
+> 
+> IIUC, workman was looking at two types of cgroups. Once called
+> "partitions" which will be created by library at startup time and
+> library manages the configuration (something like cgconfig.conf).
+> 
+> And individual managers create their own children groups for various
+> services under that partition and control the config knobs for those
+> services.
+> 
+> 			user-defined-partition
+> 			     /    |    \
+>                            virt1  virt2 virt3  
+> 
+> So user should be able to define a partition and control the configuration
+> using workman lib. And if multiple virtual machines are being run in
+> the partition, then they create their own cgroups and libvirt controls
+> the properties of virt1, virt2, virt3 cgroups. I thought that was the
+> the understanding when we dicussed ownership of config knobs las time.
+> But things might have changed since last time. Workman folks should
+> be able to shed light on this.
 
-Regards,
+I just read the introduction doc and haven't delved into the API or
+code so I could be off but why should there be multiple managers?
+What's the benefit of that?  Wouldn't it make more sense to just have
+a central arbitrator that everyone talks to?  What's the benefit of
+distributing the responsiblities here?  It's not like we can put them
+in different security domains.
 
-Tony
+> > * In many cases, resource distribution is system-wide policy decisions
+> >   and determining what to do often requires system-wide knowledge.
+> >   You can't provision memory limits without knowing what's available
+> >   in the system and what else is going on in the system, and you want
+> >   to be able to adjust them as situation and configuration changes.
+> >   Without anybody having full picture of how resources are
+> >   provisioned, how would any of that be possible?
+> 
+> I thought workman library will provide interfaces so that one can query
+> and be able to construct the full system view.
+> 
+> Their doc says.
+> 
+> GList *workmanager_partition_get_children(WorkmanPartition *partition,
+>                                             GError **error);
+> 
+> So I am assuming this can be used to construct the full partition
+> hierarchy and associated resource allocation.
+
+Sure, maybe it can be used as a building block.
+
+> [..]
+> > I think the only logical thing to do is creating a centralized
+> > userland authority which takes full ownership of the cgroup filesystem
+> > interface, gives it a sane structure,
+> 
+> Right now systemd seems to be giving initial structure. I guess we will
+> require some changes where systemd itself runs in a cgroup and that
+> allows one to create peer groups. Something like.
+> 				
+> 				root
+> 				/  \
+> 			   systemd other-groups
+
+No, we need a single structured hierarchy which everyone uses
+*including* systemd.
+
+> > represents available resources
+> > in a sane form, and makes policy decisions based on configuration and
+> > requests.
+> 
+> Given the fact that library has view of full system resoruces (both
+> persistent view and active view), shouldn't we just be able to extend
+> the API to meet additional configuration or resource needs.
+
+Maybe, I don't know.  It just looks like a weird approach to me.
+Wouldn't it make more sense to implement it as a dbus service that
+everyone talks to?  That's how our base system is structured these
+days.  Why should this be any different?
+
+Thanks.
+
+-- 
+tejun
