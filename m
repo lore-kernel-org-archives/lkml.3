@@ -1,59 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936559Ab3DIWLg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 18:11:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50456 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761010Ab3DIWLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 18:11:34 -0400
-Date: Wed, 10 Apr 2013 00:11:32 +0200
-From: Jan Kara <jack@suse.cz>
-To: Fredrik Tolf <fredrik@dolda2000.com>
-Cc: Bart Van Assche <bvanassche@acm.org>, linux-kernel@vger.kernel.org
-Subject: Re: I/O blocked while dirty pages are being flushed
-Message-ID: <20130409221132.GE15214@quack.suse.cz>
-References: <alpine.DEB.2.02.1303240543280.4028@shack.dolda2000.com>
- <514ED516.4020009@acm.org>
- <alpine.DEB.2.02.1303250827120.4028@shack.dolda2000.com>
+	id S964833Ab3DIWOq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 18:14:46 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:62147 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1764959Ab3DIWOp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 18:14:45 -0400
+Date: Mon, 8 Apr 2013 17:00:40 -0400
+From: Andrew Shewmaker <agshew@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        simon.jeons@gmail.com, ric.masonn@gmail.com
+Subject: Re: [PATCH v8 3/3] mm: reinititalise user and admin reserves if
+ memory is added or removed
+Message-ID: <20130408210039.GA3396@localhost.localdomain>
+References: <20130408190738.GC2321@localhost.localdomain>
+ <20130408133712.bd327017dec19a2c14e22662@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1303250827120.4028@shack.dolda2000.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130408133712.bd327017dec19a2c14e22662@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 25-03-13 08:31:43, Fredrik Tolf wrote:
-> On Sun, 24 Mar 2013, Bart Van Assche wrote:
-> >On 03/24/13 06:12, Fredrik Tolf wrote:
-> >>While this flush is running, I find that many a process goes into disk
-> >>sleep waiting for the flush to complete. This includes the process
-> >>manipulating the mmapped file whenever it tries to redirty a page
-> >>currently waiting to be flushed, but also, for instance, programs that
-> >>write() to log files (since, I guess, the buffer page backing the last
-> >>written portion of the log file is being flushed).
-> >
-> >Had you already encountered this article: Jonathan Corbet, The
-> >trouble with stable pages, March 13, 2012
-> >(http://lwn.net/Articles/486311/) ?
+On Mon, Apr 08, 2013 at 01:37:12PM -0700, Andrew Morton wrote:
+> On Mon, 8 Apr 2013 15:07:38 -0400 Andrew Shewmaker <agshew@gmail.com> wrote:
 > 
-> I had not, but that certainly does seem to be the exact problem I'm
-> having. Thanks for the link; it was a very interesting read! Does
-> anyone know if any progress has been made since about any resolution
-> of the situation?
-  Patches to fix the situation are already merged in Linus' tree and will
-be in 3.9. So stay tuned...
+> > This patch alters the admin and user reserves of the previous patches 
+> > in this series when memory is added or removed.
+> > 
+> > If memory is added and the reserves have been eliminated or increased above
+> > the default max, then we'll trust the admin.
+> > 
+> > If memory is removed and there isn't enough free memory, then we
+> > need to reset the reserves.
+> > 
+> > Otherwise keep the reserve set by the admin.
+> > 
+> > The reserve reset code is the same as the reserve initialization code.
+> > 
+> > Does this sound reasonable to other people? I figured that hot removal
+> > with too large of memory in the reserves was the most important case 
+> > to get right.
+> 
+> Seems reasonable to me.
+> 
+> I don't understand the magic numbers 1<<13 and 1<<17.  How could I? 
+> Please add comments explaining how and why these were chosen.
 
-> I notice linked mail threads with people saying that they have
-> simply removed the calls to wait_on_page_writeback to resolve their
-> problems. Can this still be considered safe, or have other systems
-> than this block-device checksumming started depending on stable
-> pages since? Like software RAID, for instance?
-  It should be safe. Noone except HW really realies on stable pages (or
-better, they do the copying if they do need it).
+I'm preparing a new version with this and the other changes you 
+gave me. Thank you!
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Should I add the memory notifier code to mm/nommu.c too?
+I'm guessing that if a system doesn't have an mmu that it also 
+won't be hotplugging memory.
+
+> Your patch adds 400 bytes of unusable code to the
+> CONFIG_MEMORY_HOTPLUG=n kernel.  We have a fix for that in the CPU
+> hotplug case: register_hotcpu_notifier().  Memory hotplug has its own
+> hotplug_memory_notifier() but a) it's broken and b) it just doesn't
+> work!  With my gcc-4.4.4, the unused functions are still included in
+> the .o file.
+> 
+> So I did this:
+> 
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: include/linux/memory.h: implement register_hotmemory_notifier()
+> 
+> When CONFIG_MEMORY_HOTPLUG=n, we don't want the memory-hotplug notifier
+> handlers to be included in the .o files, for space reasons.
+> 
+> The existing hotplug_memory_notifier() tries to handle this but testing
+> with gcc-4.4.4 shows that it doesn't work - the hotplug functions are
+> still present in the .o files.
+> 
+> So implement a new register_hotmemory_notifier() which is a copy of
+> register_hotcpu_notifier(), and which actually works as desired. 
+> hotplug_memory_notifier() and register_memory_notifier() callsites should
+> be converted to use this new register_hotmemory_notifier().
+> 
+> While we're there, let's repair the existing hotplug_memory_notifier(): it
+> simply stomps on the register_memory_notifier() return value, so
+> well-behaved code cannot check for errors.  Apparently non of the existing
+> callers were well-behaved :(
+> 
+> Cc: Andrew Shewmaker <agshew@gmail.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  include/linux/memory.h   |   15 ++++++++++++---
+>  include/linux/notifier.h |    5 ++++-
+>  2 files changed, 16 insertions(+), 4 deletions(-)
+> 
+> diff -puN include/linux/memory.h~include-linux-memoryh-implement-register_hotmemory_notifier include/linux/memory.h
+> --- a/include/linux/memory.h~include-linux-memoryh-implement-register_hotmemory_notifier
+> +++ a/include/linux/memory.h
+> @@ -18,6 +18,7 @@
+>  #include <linux/node.h>
+>  #include <linux/compiler.h>
+>  #include <linux/mutex.h>
+> +#include <linux/notifier.h>
+>  
+>  #define MIN_MEMORY_BLOCK_SIZE     (1UL << SECTION_SIZE_BITS)
+>  
+> @@ -127,13 +128,21 @@ enum mem_add_context { BOOT, HOTPLUG };
+>  #endif /* CONFIG_MEMORY_HOTPLUG_SPARSE */
+>  
+>  #ifdef CONFIG_MEMORY_HOTPLUG
+> -#define hotplug_memory_notifier(fn, pri) {			\
+> +#define hotplug_memory_notifier(fn, pri) ({			\
+>  	static __meminitdata struct notifier_block fn##_mem_nb =\
+>  		{ .notifier_call = fn, .priority = pri };	\
+>  	register_memory_notifier(&fn##_mem_nb);			\
+> -}
+> +})
+> +#define register_hotmemory_notifier(nb)		register_memory_notifier(nb)
+> +#define unregister_hotmemory_notifier(nb) 	unregister_memory_notifier(nb)
+>  #else
+> -#define hotplug_memory_notifier(fn, pri) do { } while (0)
+> +static inline int hotplug_memory_notifier(notifier_fn_t fn, int priority)
+> +{
+> +	return 0;
+> +}
+> +/* These aren't inline functions due to a GCC bug. */
+> +#define register_hotmemory_notifier(nb)    ({ (void)(nb); 0; })
+> +#define unregister_hotmemory_notifier(nb)  ({ (void)(nb); })
+>  #endif
+>  
+>  /*
+> diff -puN include/linux/notifier.h~include-linux-memoryh-implement-register_hotmemory_notifier include/linux/notifier.h
+> --- a/include/linux/notifier.h~include-linux-memoryh-implement-register_hotmemory_notifier
+> +++ a/include/linux/notifier.h
+> @@ -47,8 +47,11 @@
+>   * runtime initialization.
+>   */
+>  
+> +typedef	int (*notifier_fn_t)(struct notifier_block *nb,
+> +			unsigned long action, void *data);
+> +
+>  struct notifier_block {
+> -	int (*notifier_call)(struct notifier_block *, unsigned long, void *);
+> +	notifier_fn_t notifier_call;
+>  	struct notifier_block __rcu *next;
+>  	int priority;
+>  };
+> _
+> 
+> 
+> And then I changed your patch thusly:
+> 
+> --- a/mm/mmap.c~mm-reinititalise-user-and-admin-reserves-if-memory-is-added-or-removed-fix
+> +++ a/mm/mmap.c
+> @@ -3198,7 +3198,7 @@ static struct notifier_block reserve_mem
+>  
+>  int __meminit init_reserve_notifier(void)
+>  {
+> -	if (register_memory_notifier(&reserve_mem_nb))
+> +	if (register_hotmemory_notifier(&reserve_mem_nb))
+>  		printk("Failed registering memory add/remove notifier for admin reserve");
+>  
+>  	return 0;
+> _
+> 
+> and voila, no more bloat.
