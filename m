@@ -1,43 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757636Ab3DHHY1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 03:24:27 -0400
-Received: from ozlabs.org ([203.10.76.45]:33361 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934440Ab3DHHYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 03:24:25 -0400
-Date: Mon, 8 Apr 2013 17:24:22 +1000
-From: Michael Ellerman <michael@ellerman.id.au>
-To: acme@infradead.org
-Cc: peterz@infradead.org, jolsa@redhat.com, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, rob@landley.net
-Subject: Re: [RFC/PATCH] perf: Expand definition of sysfs format attribute
-Message-ID: <20130408072422.GA4476@concordia>
-References: <1362370865-4437-1-git-send-email-michael@ellerman.id.au>
+	id S934506Ab3DHHlx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 03:41:53 -0400
+Received: from a2s31.a2hosting.com ([216.119.140.66]:58495 "EHLO
+	a2s31.a2hosting.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933171Ab3DHHls (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 03:41:48 -0400
+Message-ID: <516274B7.4050002@biovista.com>
+Date: Mon, 08 Apr 2013 10:41:43 +0300
+From: Vassilis Virvilis <v.virvilis@biovista.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362370865-4437-1-git-send-email-michael@ellerman.id.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Debugging COW (copy on write) memory after fork: Is it possible
+ to dump only the private anonymous memory of a process?
+References: <515E9F0C.1000204@biovista.com> <20130406201114.6477d1e4@neptune.home>
+In-Reply-To: <20130406201114.6477d1e4@neptune.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - a2s31.a2hosting.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - biovista.com
+X-Get-Message-Sender-Via: a2s31.a2hosting.com: authenticated_id: v.virvilis@biovista.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 04, 2013 at 03:21:05PM +1100, Michael Ellerman wrote:
-> Make it explicit that the format attributes may define overlapping bit
-> ranges. Unfortunately this was left unspecified originally, and all the
-> examples show non-overlapping ranges. I don't believe this is an ABI
-> change, as we are defining something that was previously undefined, but
-> others may disagree.
-> 
-> The POWER8 PMU would like to define overlapping ranges, as bit ranges in
-> the event code have different meanings for certain events. It will also
-> allow us to define an overarching "event" field, that encompasses all
-> others.
-> 
-> As far as I can see perf is comfortable with this change, however I am
-> not sure if there are any other users of the interface.
+On 04/06/2013 09:11 PM, Bruno Prémont wrote:
+> On Fri, 05 April 2013 Vassilis Virvilis<v.virvilis@biovista.com>  wrote:
+>>
+>> Question
+>> --------
+>>
+>> Is it possible to dump only the private anonymous memory of a process?
+>
+> I don't know if that's possible, but from your background you could
+> probably work around it be mmap()ing the memory you need and once
+> initialized mark all of that memory read-only (if you mmap very large
+> chunks you can even benefit from huge-pages).
+>
+> Any of the forked processes that tried to access the memory would then
+> get a signal if they ever tried to write to the data (and thus unsharing it)
+>
 
-Any comments on this one?
+I can't do that. We are talking about an existing system (in perl with C 
+modules) that has been parallelized in a second step.
 
-cheers
+> If you allocate and initialize all of your memory in little malloc()'ed
+> chunks it's possibly glibc's memory housekeeping that unshares all those
+> pages over time.
+
+Yes I suppose it is a series of mallocs. I could easily verify that with 
+strace. However if glibc's memory housekeeping undermines the COW 
+behaviour that would be very bad.
+
+I have unit tests that I was able to work around the usual perl problems 
+that cause memory unsharing such as the reference counting and hash 
+accessing. Garbage collector shouldn't be a problem because there is 
+nothing to collect from the shared memory, only private local variables 
+that go out of scope. The problem is when I am employing these 
+workarounds in the live system (with considerable IO) I am getting 
+massive unsharing. So I thought to have a look and see what's going in 
+two or three consecutive private memory dumps.
+
+The point is I need to locate the source of the memory unsharing. Any 
+ideas how this can be done?
+
+At this point I could try in house compiled kernels if I can enable some 
+logging to track this behavior. Does any knob like this exist? Even as 
+an #ifdef?
+
+	Vassilis
