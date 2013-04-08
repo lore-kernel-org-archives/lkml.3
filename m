@@ -1,53 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936189Ab3DHOFw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 10:05:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48363 "EHLO mx1.redhat.com"
+	id S936204Ab3DHOGD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 10:06:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60699 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934619Ab3DHOFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 10:05:50 -0400
-Subject: Re: [PATCH] [PATCH] Gaurantee spinlocks implicit barrier for
- !PREEMPT_COUNT
-From: Steven Rostedt <srostedt@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <CA+55aFyFWjpSVQM6M266tKrG_ZXJzZ-nYejpmXYQXbrr42mGPQ@mail.gmail.com>
-References: <alpine.LFD.2.02.1304031433350.21884@ionos>
-	 <1364998282-21437-1-git-send-email-vgupta@synopsys.com>
-	 <20130404152808.GB15261@ab42.lan> <515E54BD.2090300@synopsys.com>
-	 <51602459.3040105@synopsys.com>
-	 <CA+55aFw=-oJxujka-emxyRcY54MSe3qEjZ6xgzoE-roe3EFk5g@mail.gmail.com>
-	 <51624591.4010303@synopsys.com>
-	 <CA+55aFyFWjpSVQM6M266tKrG_ZXJzZ-nYejpmXYQXbrr42mGPQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Mon, 08 Apr 2013 10:05:22 -0400
-Message-ID: <1365429922.2733.4.camel@fedora>
-Mime-Version: 1.0
+	id S935950Ab3DHOFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 10:05:51 -0400
+Message-ID: <5162CEC1.5070400@suse.cz>
+Date: Mon, 08 Apr 2013 16:05:53 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130105 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, Joerg Roedel <joro@8bytes.org>,
+        linux-kbuild@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH] buildtar: Add ARCH to the archive name
+References: <1362557147-14393-1-git-send-email-bp@alien8.de> <20130307110659.GC22602@8bytes.org> <20130307110910.GA5834@pd.tnic>
+In-Reply-To: <20130307110910.GA5834@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-04-07 at 21:48 -0700, Linus Torvalds wrote:
+On 7.3.2013 12:09, Borislav Petkov wrote:
+> On Thu, Mar 07, 2013 at 12:06:59PM +0100, Joerg Roedel wrote:
+>> Good idea, but I already hear people yelling about their scripts that
+>> break with this change :)
+> 
+> They better fix them then. :-)
 
-> Ingo? Peter? I'm not sure anybody really uses UP+no-preempt on x86,
-> but it does seem to be a bug.. Comments?
+OK, I applied the patch to kbuild.git#misc. Let's see how many people
+protest...
 
-I believe a lot of people still use no-preempt. Well, at least voluntary
-preemption, which would have the same bug.
-
-I'm thinking that we may have just been lucky that gcc didn't move the
-get_user() into a place that would cause issues.
-
-Sounds like a bug to me.
-
--- Steve
-
+Michal
 
