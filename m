@@ -1,199 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934743Ab3DHCBo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 22:01:44 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57975 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934716Ab3DHCBn (ORCPT
+	id S934762Ab3DHCCN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 22:02:13 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:16497 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934704Ab3DHCCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 22:01:43 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <516224E4.5010409@jp.fujitsu.com>
-Date: Mon, 8 Apr 2013 11:01:08 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <linuxram@us.ibm.com>,
-        <guz.fnst@cn.fujitsu.com>, <tmac@hp.com>, <wency@cn.fujitsu.com>,
-        <tangchen@cn.fujitsu.com>, <jiang.liu@huawei.com>
-Subject: Re: [UPDATE][PATCH 2/3] resource: Add release_mem_region_adjustable()
-References: <1365031405-25206-1-git-send-email-toshi.kani@hp.com>
-In-Reply-To: <1365031405-25206-1-git-send-email-toshi.kani@hp.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+	Sun, 7 Apr 2013 22:02:12 -0400
+X-AuditID: cbfee68f-b7f4a6d000001436-08-5162252289cf
+Message-id: <51622526.8000302@samsung.com>
+Date: Mon, 08 Apr 2013 11:02:14 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        =?UTF-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>
+Subject: [GIT PULL] extcon fixes for 3.9-rc6
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsVy+t8zHV0l1aRAg4WvTCyuf3nOatG8eD2b
+	xdmmN+wWl3fNYbO43biCzYHVY//cNewefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlfH75l6W
+	gmNcFZPXPmRvYLzF0cXIySEhYCJx8PwPNghbTOLCvfVANheHkMAyRonTf1cwwRT1/7jGDJGY
+	ziixbMUSqKoXjBLf/v8Eq+IV0JL41feJsYuRg4NFQFVi4hlmkDAbUHj/ixtgG0QFwiRWTr/C
+	AlEuKPFj8j0wW0RAQ+Ll0VtgNrPAKkaJpydkQGxhAR2JE00z2CDi6hKT5i1ihrDlJTavecsM
+	cdxkdol5MwpAbBYBAYlvkw+xgJwgISArsekAVImkxMEVN1gmMIrMQrJ5FpKps5BMXcDIvIpR
+	NLUguaA4Kb3IWK84Mbe4NC9dLzk/dxMjJDr6dzDePWB9iDEZaOVEZinR5HxgdOWVxBsamxlZ
+	mJqYGhuZW5qRJqwkzqvWYh0oJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgdHiQV/p/Nl5vhtZ
+	83gfrrbr3dQ1k3lqw1SZr3FiyQzWfcJ/j8TPvmr+QTsqnd9KYFv20QZjleNOa2bFsEkUP116
+	kbdsqtmXTzuuHJg1aTFTrrTDvYTj0ftmcHz4qPrk1NLm7VOW/q/dY6Xe2pdd8+/z2ynLjH3P
+	lAYHhP5vC/duebJDreVk6RMlluKMREMt5qLiRAAfDyOypAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsVy+t9jQV0l1aRAg9cHDCyuf3nOatG8eD2b
+	xdmmN+wWl3fNYbO43biCzYHVY//cNewefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZdu
+	q+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RTSaEsMacUKBSQWFyspG+HaUJoiJuu
+	BUxjhK5vSBBcj5EBGkhYx5jx++ZeloJjXBWT1z5kb2C8xdHFyMkhIWAi0f/jGjOELSZx4d56
+	ti5GLg4hgemMEstWLIFyXjBKfPv/kwmkildAS+JX3yfGLkYODhYBVYmJZ8Ca2YDC+1/cYAOx
+	RQXCJFZOv8ICUS4o8WPyPTBbREBD4uXRW2A2s8AqRomnJ2RAbGEBHYkTTTPYIOLqEpPmLWKG
+	sOUlNq95yzyBkW8WklGzkJTNQlK2gJF5FaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZw9D2T
+	3sG4qsHiEKMAB6MSD++Br4mBQqyJZcWVuYcYJTiYlUR4A5WTAoV4UxIrq1KL8uOLSnNSiw8x
+	JgM9OpFZSjQ5H5gY8kriDY1NzIwsjcyMTcyNjUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmD
+	U6qBUWuueXHvrGWONxlnrSxpPCxlqmGud0NVkk+rf6/mzaIfOczZsulHlztEP1wQJr9Jj8lR
+	iqFXosyJN1VguWjUxhX6zx5xHz+p8HfFloMh7h2n6mdumxcnxhqytr5LM8B6tYfK1aKbLgXM
+	bCJTTTPnBxxSelJb06ulmnljz2bZveymBzlXPw9SYinOSDTUYi4qTgQAhP+EUQIDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Toshi,
+Hi Greg,
 
-2013/04/04 8:23, Toshi Kani wrote:
-> Added release_mem_region_adjustable(), which releases a requested
-> region from a currently busy memory resource.  This interface
-> adjusts the matched memory resource accordingly if the requested
-> region does not match exactly but still fits into.
-> 
-> This new interface is intended for memory hot-delete.  During
-> bootup, memory resources are inserted from the boot descriptor
-> table, such as EFI Memory Table and e820.  Each memory resource
-> entry usually covers the whole contigous memory range.  Memory
-> hot-delete request, on the other hand, may target to a particular
-> range of memory resource, and its size can be much smaller than
-> the whole contiguous memory.  Since the existing release interfaces
-> like __release_region() require a requested region to be exactly
-> matched to a resource entry, they do not allow a partial resource
-> to be released.
-> 
-> There is no change to the existing interfaces since their restriction
-> is valid for I/O resources.
-> 
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+This is extcon fixes for 3.9-rc6
+Please pull extcon with following updates.
 
-Reviewed-by : Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Best Regards and thanks,
+Chanwoo Choi
 
-One nitpick below.
+The following changes since commit 07961ac7c0ee8b546658717034fe692fd12eefa9:
 
-> ---
-> 
-> Updated per code reviews from Yasuaki Ishimatsu, Ram Pai and
-> Gu Zheng.
-> 
-> ---
->   include/linux/ioport.h |    2 +
->   kernel/resource.c      |   93 ++++++++++++++++++++++++++++++++++++++++++++++++
->   2 files changed, 95 insertions(+)
-> 
-> diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-> index 85ac9b9b..0fe1a82 100644
-> --- a/include/linux/ioport.h
-> +++ b/include/linux/ioport.h
-> @@ -192,6 +192,8 @@ extern struct resource * __request_region(struct resource *,
->   extern int __check_region(struct resource *, resource_size_t, resource_size_t);
->   extern void __release_region(struct resource *, resource_size_t,
->   				resource_size_t);
-> +extern int release_mem_region_adjustable(struct resource *, resource_size_t,
-> +				resource_size_t);
->   
->   static inline int __deprecated check_region(resource_size_t s,
->   						resource_size_t n)
-> diff --git a/kernel/resource.c b/kernel/resource.c
-> index ae246f9..c7966c3 100644
-> --- a/kernel/resource.c
-> +++ b/kernel/resource.c
-> @@ -1021,6 +1021,99 @@ void __release_region(struct resource *parent, resource_size_t start,
->   }
->   EXPORT_SYMBOL(__release_region);
->   
-> +/**
-> + * release_mem_region_adjustable - release a previously reserved memory region
-> + * @parent: parent resource descriptor
-> + * @start: resource start address
-> + * @size: resource region size
-> + *
-> + * The requested region is released from a currently busy memory resource.
-> + * It adjusts the matched busy memory resource accordingly if the requested
-> + * region does not match exactly but still fits into.  Existing children of
-> + * the busy memory resource must be immutable in this request.
-> + *
-> + * Note, when the busy memory resource gets split into two entries, the code
-> + * assumes that all children remain in the lower address entry for simplicity.
-> + * Enhance this logic when necessary.
-> + */
-> +int release_mem_region_adjustable(struct resource *parent,
-> +			resource_size_t start, resource_size_t size)
-> +{
-> +	struct resource **p;
-> +	struct resource *res, *new;
-> +	resource_size_t end;
-> +	int ret = -EINVAL;
-> +
+  Linux 3.9-rc5 (2013-03-31 15:12:43 -0700)
 
-> +	end = start + size - 1;
-> +	if ((start < parent->start) || (end > parent->end))
-> +		return -EINVAL;
+are available in the git repository at:
 
-"ret" is initialized to -EINVAL. So how about use it?
+  git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-3.9-rc6
 
-Thanks,
-Yasuaki Ishimatsu
+for you to fetch changes up to 2fbeb4347e02078828510e5fe43ab4bea21b20d1:
 
-> +
-> +	p = &parent->child;
-> +	write_lock(&resource_lock);
-> +
-> +	while ((res = *p)) {
-> +		if (res->start >= end)
-> +			break;
-> +
-> +		/* look for the next resource if it does not fit into */
-> +		if (res->start > start || res->end < end) {
-> +			p = &res->sibling;
-> +			continue;
-> +		}
-> +
-> +		if (!(res->flags & IORESOURCE_MEM))
-> +			break;
-> +
-> +		if (!(res->flags & IORESOURCE_BUSY)) {
-> +			p = &res->child;
-> +			continue;
-> +		}
-> +
-> +		/* found the target resource; let's adjust accordingly */
-> +		if (res->start == start && res->end == end) {
-> +			/* free the whole entry */
-> +			*p = res->sibling;
-> +			kfree(res);
-> +			ret = 0;
-> +		} else if (res->start == start && res->end != end) {
-> +			/* adjust the start */
-> +			ret = __adjust_resource(res, end + 1,
-> +						res->end - end);
-> +		} else if (res->start != start && res->end == end) {
-> +			/* adjust the end */
-> +			ret = __adjust_resource(res, res->start,
-> +						start - res->start);
-> +		} else {
-> +			/* split into two entries */
-> +			new = kzalloc(sizeof(struct resource), GFP_KERNEL);
-> +			if (!new) {
-> +				ret = -ENOMEM;
-> +				break;
-> +			}
-> +			new->name = res->name;
-> +			new->start = end + 1;
-> +			new->end = res->end;
-> +			new->flags = res->flags;
-> +			new->parent = res->parent;
-> +			new->sibling = res->sibling;
-> +			new->child = NULL;
-> +
-> +			ret = __adjust_resource(res, res->start,
-> +						start - res->start);
-> +			if (ret) {
-> +				kfree(new);
-> +				break;
-> +			}
-> +			res->sibling = new;
-> +		}
-> +
-> +		break;
-> +	}
-> +
-> +	write_unlock(&resource_lock);
-> +	return ret;
-> +}
-> +
->   /*
->    * Managed region resource
->    */
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+  extcon: max8997: Fix return value (2013-04-08 09:13:18 +0900)
 
+----------------------------------------------------------------
+This is small fixes for extcon driver.
 
+MAX77693 extcon driver
+- Add 'static' keryword to internal data structure
+- Fix return value using 'ret' instead of hardcoding
+
+MAX8997 extcon driver
+- Use dev_err() instead of pr_err()
+- Fix return value using 'ret' instead of hardcoding
+
+----------------------------------------------------------------
+Jingoo Han (1):
+      extcon: max8997: use dev_err() instead of pr_err()
+
+Sachin Kamat (3):
+      extcon: max77693: Staticize default_init_data
+      extcon: max77693: Fix return value
+      extcon: max8997: Fix return value
+
+ drivers/extcon/extcon-max77693.c | 10 +++++-----
+ drivers/extcon/extcon-max8997.c  | 12 ++++++------
+ 2 files changed, 11 insertions(+), 11 deletions(-)
