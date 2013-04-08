@@ -1,45 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934711Ab3DHQJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 12:09:57 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49230 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934098Ab3DHQJy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 12:09:54 -0400
-Date: Mon, 08 Apr 2013 12:09:52 -0400 (EDT)
-Message-Id: <20130408.120952.822851879685807558.davem@davemloft.net>
-To: alan@signal11.us
-Cc: alex.bluesman.smirnov@gmail.com, dbaryshkov@gmail.com,
-        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mac802154: Keep track of the channel when changed
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1365202990-9006-1-git-send-email-alan@signal11.us>
-References: <515F4017.6060404@signal11.us>
-	<1365202990-9006-1-git-send-email-alan@signal11.us>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 08 Apr 2013 09:09:54 -0700 (PDT)
+	id S934746Ab3DHQKK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 12:10:10 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58048 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934098Ab3DHQKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 12:10:07 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+To: <rui.zhang@intel.com>
+CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: [PATCH RESEND 06/11] thermal: use EXPORT_SYMBOL_GPL
+Date: Mon, 8 Apr 2013 12:07:33 -0400
+Message-ID: <1365437258-31412-7-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.7.7.1.488.ge8e1c
+In-Reply-To: <1365437258-31412-1-git-send-email-eduardo.valentin@ti.com>
+References: <1365437258-31412-1-git-send-email-eduardo.valentin@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Ott <alan@signal11.us>
-Date: Fri,  5 Apr 2013 19:03:10 -0400
+Restrict usage of GPL modules.
 
-> Two sections checked whether the current channel != the new channel
-> without ever setting the current channel variables.
-> 
-> 1. net/mac802154/tx.c: Prevent set_channel() from getting called every
-> time a packet is sent.
-> 
-> 2. net/mac802154/mib.c: Lock (pib_lock) accesses to current_channel and
-> current_page and make sure they are updated when the channel has been
-> changed.
-> 
-> Signed-off-by: Alan Ott <alan@signal11.us>
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+---
+ drivers/thermal/thermal_sys.c |   24 ++++++++++++------------
+ 1 files changed, 12 insertions(+), 12 deletions(-)
 
-Applied.
+diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+index 242c82a..602596e 100644
+--- a/drivers/thermal/thermal_sys.c
++++ b/drivers/thermal/thermal_sys.c
+@@ -168,7 +168,7 @@ int thermal_zone_trend_get(struct thermal_zone_device *tz, int trip)
+ 
+ 	return trend;
+ }
+-EXPORT_SYMBOL(thermal_zone_trend_get);
++EXPORT_SYMBOL_GPL(thermal_zone_trend_get);
+ 
+ struct thermal_instance *thermal_instance_get(struct thermal_zone_device *tz,
+ 			struct thermal_cooling_device *cdev, int trip)
+@@ -191,7 +191,7 @@ struct thermal_instance *thermal_instance_get(struct thermal_zone_device *tz,
+ 
+ 	return target_instance;
+ }
+-EXPORT_SYMBOL(thermal_instance_get);
++EXPORT_SYMBOL_GPL(thermal_instance_get);
+ 
+ static void print_bind_err_msg(struct thermal_zone_device *tz,
+ 			struct thermal_cooling_device *cdev, int ret)
+@@ -434,7 +434,7 @@ void thermal_zone_device_update(struct thermal_zone_device *tz)
+ 	for (count = 0; count < tz->trips; count++)
+ 		handle_thermal_trip(tz, count);
+ }
+-EXPORT_SYMBOL(thermal_zone_device_update);
++EXPORT_SYMBOL_GPL(thermal_zone_device_update);
+ 
+ static void thermal_zone_device_check(struct work_struct *work)
+ {
+@@ -1197,7 +1197,7 @@ free_mem:
+ 	kfree(dev);
+ 	return result;
+ }
+-EXPORT_SYMBOL(thermal_zone_bind_cooling_device);
++EXPORT_SYMBOL_GPL(thermal_zone_bind_cooling_device);
+ 
+ /**
+  * thermal_zone_unbind_cooling_device - unbind a cooling device from a thermal zone
+@@ -1237,7 +1237,7 @@ unbind:
+ 	kfree(pos);
+ 	return 0;
+ }
+-EXPORT_SYMBOL(thermal_zone_unbind_cooling_device);
++EXPORT_SYMBOL_GPL(thermal_zone_unbind_cooling_device);
+ 
+ static void thermal_release(struct device *dev)
+ {
+@@ -1334,7 +1334,7 @@ unregister:
+ 	device_unregister(&cdev->device);
+ 	return ERR_PTR(result);
+ }
+-EXPORT_SYMBOL(thermal_cooling_device_register);
++EXPORT_SYMBOL_GPL(thermal_cooling_device_register);
+ 
+ /**
+  * thermal_cooling_device_unregister - removes the registered thermal cooling device
+@@ -1394,7 +1394,7 @@ void thermal_cooling_device_unregister(struct thermal_cooling_device *cdev)
+ 	device_unregister(&cdev->device);
+ 	return;
+ }
+-EXPORT_SYMBOL(thermal_cooling_device_unregister);
++EXPORT_SYMBOL_GPL(thermal_cooling_device_unregister);
+ 
+ void thermal_cdev_update(struct thermal_cooling_device *cdev)
+ {
+@@ -1417,7 +1417,7 @@ void thermal_cdev_update(struct thermal_cooling_device *cdev)
+ 	cdev->ops->set_cur_state(cdev, target);
+ 	cdev->updated = true;
+ }
+-EXPORT_SYMBOL(thermal_cdev_update);
++EXPORT_SYMBOL_GPL(thermal_cdev_update);
+ 
+ /**
+  * thermal_notify_framework - Sensor drivers use this API to notify framework
+@@ -1435,7 +1435,7 @@ void thermal_notify_framework(struct thermal_zone_device *tz, int trip)
+ {
+ 	handle_thermal_trip(tz, trip);
+ }
+-EXPORT_SYMBOL(thermal_notify_framework);
++EXPORT_SYMBOL_GPL(thermal_notify_framework);
+ 
+ /**
+  * create_trip_attrs - create attributes for trip points
+@@ -1687,7 +1687,7 @@ unregister:
+ 	device_unregister(&tz->device);
+ 	return ERR_PTR(result);
+ }
+-EXPORT_SYMBOL(thermal_zone_device_register);
++EXPORT_SYMBOL_GPL(thermal_zone_device_register);
+ 
+ /**
+  * thermal_device_unregister - removes the registered thermal zone device
+@@ -1754,7 +1754,7 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
+ 	device_unregister(&tz->device);
+ 	return;
+ }
+-EXPORT_SYMBOL(thermal_zone_device_unregister);
++EXPORT_SYMBOL_GPL(thermal_zone_device_unregister);
+ 
+ #ifdef CONFIG_NET
+ static struct genl_family thermal_event_genl_family = {
+@@ -1832,7 +1832,7 @@ int thermal_generate_netlink_event(struct thermal_zone_device *tz,
+ 
+ 	return result;
+ }
+-EXPORT_SYMBOL(thermal_generate_netlink_event);
++EXPORT_SYMBOL_GPL(thermal_generate_netlink_event);
+ 
+ static int genetlink_init(void)
+ {
+-- 
+1.7.7.1.488.ge8e1c
+
