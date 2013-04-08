@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935615Ab3DHSte (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 14:49:34 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50640 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S935238Ab3DHStd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 14:49:33 -0400
-Message-ID: <1365446973.2029.7.camel@joe-AO722>
-Subject: [PATCH] checkpatch: Fix stringification macro defect
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Vincent =?ISO-8859-1?Q?Stehl=E9?= <v-stehle@ti.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 08 Apr 2013 11:49:33 -0700
-In-Reply-To: <51630753.6030609@ti.com>
-References: <51630753.6030609@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S935674Ab3DHSts (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 14:49:48 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:63182 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935284Ab3DHStq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 14:49:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <5160C244.6080807@gmail.com>
+References: <20130325134247.GB1393@localhost.localdomain> <515CF884.8010103@gmail.com>
+ <CAF-E8XFQFm9GrBnkax+TiByUPHxp=Ukp1LcuAWjYL0OeLE1Saw@mail.gmail.com> <5160C244.6080807@gmail.com>
+From: Andrew Shewmaker <agshew@gmail.com>
+Date: Mon, 8 Apr 2013 12:49:25 -0600
+Message-ID: <CAF-E8XHnTTUPm1s5RF2wEC-sjt3wYDhLgj__UQRz-b6AyC++vQ@mail.gmail.com>
+Subject: Re: [PATCH v7 2/2] mm: replace hardcoded 3% with admin_reserve_pages knob
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        ric.masonn@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch misreporting defect with stringification macros
+On Sat, Apr 6, 2013 at 6:48 PM, Simon Jeons <simon.jeons@gmail.com> wrote:
+> Hi Andrew,
+>
+> On 04/05/2013 11:02 PM, Andrew Shewmaker wrote:
+>>
+>> On Wed, Apr 3, 2013 at 9:50 PM, Simon Jeons <simon.jeons@gmail.com> wrote:
+>>>>
+>>>> FAQ
+>>>>
+>> ...
+>>>>
+>>>>    * How do you calculate a minimum useful reserve?
+>>>>
+>>>>      A user or the admin needs enough memory to login and perform
+>>>>      recovery operations, which includes, at a minimum:
+>>>>
+>>>>      sshd or login + bash (or some other shell) + top (or ps, kill,
+>>>> etc.)
+>>>>
+>>>>      For overcommit 'guess', we can sum resident set sizes (RSS).
+>>>>      On x86_64 this is about 8MB.
+>>>>
+>>>>      For overcommit 'never', we can take the max of their virtual sizes
+>>>> (VSZ)
+>>>>      and add the sum of their RSS.
+>>>>      On x86_64 this is about 128MB.
+>>>
+>>>
+>>> 1.Why has this different between guess and never?
+>>
+>> The default, overcommit 'guess' mode, only needs a reserve for
+>> what the recovery programs will typically use. Overcommit 'never'
+>> mode will only successfully launch an app when it can fulfill all of
+>> its requested memory allocations--even if the app only uses a
+>> fraction of what it asks for.
+>
+>
+> VSZ has already cover RSS, is it? why account RSS again?
 
-ERROR: Macros with complex values should be enclosed in parenthesis
-  #27: FILE: arch/arm/include/asm/kgdb.h:41:
-  +#define ___to_string(X) #X
+Right. Technically, I could leave out the RSS of the process that
+I'm taking the VSZ of. Leaving it in makes the estimate 2-4 MB
+larger, but it is just an estimate.
 
-Reported-by: Vincent Stehlé <v-stehle@ti.com>
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl | 1 +
- 1 file changed, 1 insertion(+)
+Choosing a good minimum is difficult because the behavior with
+and without swap is different. With swap, only about 8MB reserves
+are needed whether overcommit is disabled or not. Without swap,
+I was always able to recover when I set the reserves to over 230MB
+each. However, I was often able to recover with much less.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 3fb6d86..2e802fc 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3024,6 +3024,7 @@ sub process {
- 			    $dstat !~ /^'X'$/ &&					# character constants
- 			    $dstat !~ /$exceptions/ &&
- 			    $dstat !~ /^\.$Ident\s*=/ &&				# .foo =
-+			    $dstat !~ /^(?:\#\s*$Ident|\#\s*$Constant)\s*$/ &&		# stringification #foo
- 			    $dstat !~ /^do\s*$Constant\s*while\s*$Constant;?$/ &&	# do {...} while (...); // do {...} while (...)
- 			    $dstat !~ /^for\s*$Constant$/ &&				# for (...)
- 			    $dstat !~ /^for\s*$Constant\s+(?:$Ident|-?$Constant)$/ &&	# for (...) bar()
+128MB seemed to me like a decent compromise between swap
+and noswap modes, but it isn't totally safe for the case when
+both swap and memory overcommit are disabled. In that case,
+I think that an admin will have to tune the reserves for their specific
+situation.
 
-
+--
+Andrew Shewmaker
