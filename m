@@ -1,78 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936425Ab3DHVan (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 17:30:43 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:38740 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936236Ab3DHV1h (ORCPT
+	id S936377Ab3DHVam (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 17:30:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50395 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936268Ab3DHVai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 17:27:37 -0400
-X-IronPort-AV: E=Sophos;i="4.87,433,1363158000"; 
-   d="scan'208";a="36684214"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCHv4 03/11] ARM: smp: Remove duplicate dummy timer implementation
-Date: Mon,  8 Apr 2013 14:27:25 -0700
-Message-Id: <1365456453-16297-4-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.2
-In-Reply-To: <1365456453-16297-1-git-send-email-sboyd@codeaurora.org>
-References: <1365456453-16297-1-git-send-email-sboyd@codeaurora.org>
+	Mon, 8 Apr 2013 17:30:38 -0400
+Date: Mon, 8 Apr 2013 14:30:37 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Chanho Min <chanho.min@lge.com>
+Cc: Nadia Yvette Chambers <nyc@holomorphy.com>, Jiri Kosina <jkosina@suse.cz>,
+        Guennadi Liakhovetski <lg@denx.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] bitmap: speedup in bitmap_find_free_region when order
+ is 0
+Message-Id: <20130408143037.5fe18306172315fc040329de@linux-foundation.org>
+In-Reply-To: <1365387828-24326-1-git-send-email-chanho.min@lge.com>
+References: <1365387828-24326-1-git-send-email-chanho.min@lge.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop ARM's version of the dummy timer now that we have a generic
-implementation in drivers/clocksource.
+On Mon,  8 Apr 2013 11:23:48 +0900 Chanho Min <chanho.min@lge.com> wrote:
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/kernel/smp.c | 22 ++--------------------
- 1 file changed, 2 insertions(+), 20 deletions(-)
+> If bitmap_find_free_region() is called with order=0, We can reduce
+> for-loops to find 1 free bit. First, It scans bitmap array by the
+> increment of long type, then find 1 free bit within 1 long type value.
 
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 79078ed..4de4d14 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -469,24 +469,6 @@ void tick_broadcast(const struct cpumask *mask)
- }
- #endif
- 
--static void broadcast_timer_set_mode(enum clock_event_mode mode,
--	struct clock_event_device *evt)
--{
--}
--
--static void __cpuinit broadcast_timer_setup(struct clock_event_device *evt)
--{
--	evt->name	= "dummy_timer";
--	evt->features	= CLOCK_EVT_FEAT_ONESHOT |
--			  CLOCK_EVT_FEAT_PERIODIC |
--			  CLOCK_EVT_FEAT_DUMMY;
--	evt->rating	= 100;
--	evt->mult	= 1;
--	evt->set_mode	= broadcast_timer_set_mode;
--
--	clockevents_register_device(evt);
--}
--
- static struct local_timer_ops *lt_ops;
- 
- #ifdef CONFIG_LOCAL_TIMERS
-@@ -510,8 +492,8 @@ static void __cpuinit percpu_timer_setup(void)
- 
- 	evt->cpumask = cpumask_of(cpu);
- 
--	if (!lt_ops || lt_ops->setup(evt))
--		broadcast_timer_setup(evt);
-+	if (lt_ops)
-+		lt_ops->setup(evt);
- }
- 
- #ifdef CONFIG_HOTPLUG_CPU
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+That seems sensible.  I assume-without-checking that single-bit is a
+common case?
+
+> In 32 bits system and 1024 bits size, in the worst case, We need 1024
+> for-loops to find 1 free bit. But, If This is applied, it takes
+> 64 for-loops. Instead, if free bit is in the first index of the bitmaps,
+> It will be needed additional 1 for-loop. But from second index, It
+> will be speed up significantly.
+> 
+> --- a/lib/bitmap.c
+> +++ b/lib/bitmap.c
+> @@ -1099,6 +1099,37 @@ done:
+>  }
+>  
+>  /**
+> + * bitmap_find_free_one - find a mem region
+> + *	@bitmap: array of unsigned longs corresponding to the bitmap
+> + *	@bits: number of bits in the bitmap
+> + *
+> + * Find one of free (zero) bits in a @bitmap of @bits bits and
+> + * allocate them (set them to one).
+> + *
+> + * Return the bit offset in bitmap of the allocated region,
+> + * or -errno on failure.
+> + */
+> +static int __bitmap_find_free_one(unsigned long *bitmap, int bits)
+> +{
+> +	int pos, i;
+> +	unsigned long mask = (unsigned long)(~((unsigned long) 0));
+
+That seems unnecessarily complicated.  "unsigned long mask = -1;" works :)
+
+> +	int nlongs_reg = BITS_TO_LONGS(bits);
+> +
+> +	for (i = 0 ; i < nlongs_reg ; i++) {
+> +		if ((bitmap[i] & mask) != mask) {
+
+But here we could just do "if (bitmap[i] != -1)".  Or ~0UL.
+
+> +			for (pos = 0 ; pos < BITS_PER_LONG ; pos++) {
+> +				if (!__reg_op(&bitmap[i], pos, 0,
+> +					REG_OP_ISFREE))
+> +					continue;
+> +				__reg_op(&bitmap[i], pos, 0, REG_OP_ALLOC);
+> +				return pos;
+> +			}
+> +		}
+> +	}
+> +	return -ENOMEM;
+> +}
+
+afacit the code is buggy - if `bits' is not an exact multiple of
+BITS_PER_LONG, this search will wander off the end of the specified
+region?
+
+> +/**
+>   * bitmap_find_free_region - find a contiguous aligned mem region
+>   *	@bitmap: array of unsigned longs corresponding to the bitmap
+>   *	@bits: number of bits in the bitmap
+> @@ -1116,6 +1147,9 @@ int bitmap_find_free_region(unsigned long *bitmap, int bits, int order)
+>  {
+>  	int pos, end;		/* scans bitmap by regions of size order */
+>  
+> +	if (order == 0)
+> +		return __bitmap_find_free_one(bitmap, bits);
+> +
+>  	for (pos = 0 ; (end = pos + (1 << order)) <= bits; pos = end) {
+>  		if (!__reg_op(bitmap, pos, order, REG_OP_ISFREE))
+>  			continue;
 
