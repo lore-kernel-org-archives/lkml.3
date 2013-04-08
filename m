@@ -1,422 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934440Ab3DHQ1M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 12:27:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38455 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761995Ab3DHQ1K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 12:27:10 -0400
-Date: Mon, 8 Apr 2013 09:26:09 -0700
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-c70293d0e3fef6b989cd8268027d410cf06ce384@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bp@suse.de
-In-Reply-To: <1365436666-9837-2-git-send-email-bp@alien8.de>
-References: <1365436666-9837-2-git-send-email-bp@alien8.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86: Get rid of ->hard_math and all the FPU asm fu
-Git-Commit-ID: c70293d0e3fef6b989cd8268027d410cf06ce384
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 08 Apr 2013 09:26:15 -0700 (PDT)
+	id S934734Ab3DHQ1z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 12:27:55 -0400
+Received: from f51.mail.ru ([217.69.128.71]:56845 "EHLO f51.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759492Ab3DHQ1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 12:27:54 -0400
+X-Greylist: delayed 42117 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Apr 2013 12:27:53 EDT
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?U2FtdWVsIE9ydGl6?= <sameo@linux.intel.com>
+Cc: =?UTF-8?B?U3RlcGhlbiBSb3Rod2VsbA==?= <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: =?UTF-8?B?UmVbMl06IGxpbnV4LW5leHQ6IGJ1aWxkIGZhaWx1cmUgYWZ0ZXIgbWVyZ2Ug?=
+ =?UTF-8?B?b2YgdGhlIG1mZCB0cmVl?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [188.134.40.128]
+Date: Mon, 08 Apr 2013 20:27:49 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1365438469.322553103@f51.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Spam: Not detected
+X-Mras: Ok
+In-Reply-To: <20130408092243.GK24058@zurbaran>
+References: <20130408142124.ac540429a889cdc9800e529a@canb.auug.org.au>
+ <1365396351.542317232@f36.mail.ru>
+ <20130408092243.GK24058@zurbaran>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r38GRtJS028616
 
-Commit-ID:  c70293d0e3fef6b989cd8268027d410cf06ce384
-Gitweb:     http://git.kernel.org/tip/c70293d0e3fef6b989cd8268027d410cf06ce384
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Mon, 8 Apr 2013 17:57:43 +0200
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Mon, 8 Apr 2013 09:07:14 -0700
+> > > After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
+> > > failed like this:
+> > > 
+> > > drivers/regulator/anatop-regulator.c: In function 'anatop_regulator_probe':
+> > > drivers/regulator/anatop-regulator.c:134:2: error: implicit declaration of function 'of_get_parent' [-Werror=implicit-function-declaration]
+> > > 
+> > > Caused by commit 5ab3a89a741f ("mfd: syscon: Add non-DT support").
+> > > 
+> > > I have used the mfd tree from next-20130405 for today.
+> > 
+> > This means that we do not have empty declarations for the
+> > of_xx functions in linux/of.h for !CONFIG_OF.
+> > OK to declare these functions or any other opinions?
+> Ok with me, but you'd need to get Grant and Rob's ACK.
 
-x86: Get rid of ->hard_math and all the FPU asm fu
+I've revised my initial opinion and write â€‹â€‹a quick patch for fix this issue.
 
-Reimplement FPU detection code in C and drop old, not-so-recommended
-detection method in asm. Move all the relevant stuff into i387.c where
-it conceptually belongs. Finally drop cpuinfo_x86.hard_math.
+>From a884d309d2978cbc44c52b650d669e56fef664e2 Mon Sep 17 00:00:00 2001
+From: Alexander Shiyan <shc_work@mail.ru>
+Date: Mon, 8 Apr 2013 19:13:10 +0400
+Subject: [PATCH] regulator: anatop: Make select dependency from
+ HAVE_IMX_ANATOP symbol
 
-[ hpa: huge thanks to Borislav for taking my original concept patch
-  and productizing it ]
+This patch make selection of anatop-regulator from HAVE_IMX_ANATOP
+kernel symbol. This fixes build kernel with syscon driver but without
+oftree support.
 
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Link: http://lkml.kernel.org/r/1365436666-9837-2-git-send-email-bp@alien8.de
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
 ---
- arch/x86/include/asm/fpu-internal.h |  2 --
- arch/x86/include/asm/processor.h    |  3 +-
- arch/x86/kernel/asm-offsets_32.c    |  1 -
- arch/x86/kernel/cpu/bugs.c          | 21 ++-----------
- arch/x86/kernel/cpu/common.c        |  3 +-
- arch/x86/kernel/cpu/cyrix.c         |  2 +-
- arch/x86/kernel/cpu/proc.c          |  4 +--
- arch/x86/kernel/head_32.S           | 21 -------------
- arch/x86/kernel/i387.c              | 59 ++++++++++++++++++++++++++++++-------
- arch/x86/kernel/xsave.c             |  5 ++--
- arch/x86/lguest/boot.c              |  2 +-
- arch/x86/xen/enlighten.c            |  2 +-
- 12 files changed, 60 insertions(+), 65 deletions(-)
+ drivers/regulator/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
-index e25cc33..fb808d7 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -62,10 +62,8 @@ extern user_regset_set_fn fpregs_set, xfpregs_set, fpregs_soft_set,
- #define xstateregs_active	fpregs_active
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index a5d97ea..078932d 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -133,7 +133,7 @@ config REGULATOR_FAN53555
  
- #ifdef CONFIG_MATH_EMULATION
--# define HAVE_HWFP		(boot_cpu_data.hard_math)
- extern void finit_soft_fpu(struct i387_soft_struct *soft);
- #else
--# define HAVE_HWFP		1
- static inline void finit_soft_fpu(struct i387_soft_struct *soft) {}
- #endif
- 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 22224b3..578f8b1 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -89,9 +89,9 @@ struct cpuinfo_x86 {
- 	char			wp_works_ok;	/* It doesn't on 386's */
- 
- 	/* Problems on some 486Dx4's and old 386's: */
--	char			hard_math;
- 	char			rfu;
- 	char			pad0;
-+	char			pad1;
- #else
- 	/* Number of 4K pages in DTLB/ITLB combined(in pages): */
- 	int			x86_tlbsize;
-@@ -164,6 +164,7 @@ extern const struct seq_operations cpuinfo_op;
- #define cache_line_size()	(boot_cpu_data.x86_cache_alignment)
- 
- extern void cpu_detect(struct cpuinfo_x86 *c);
-+extern void __cpuinit fpu_detect(struct cpuinfo_x86 *c);
- 
- extern void early_cpu_init(void);
- extern void identify_boot_cpu(void);
-diff --git a/arch/x86/kernel/asm-offsets_32.c b/arch/x86/kernel/asm-offsets_32.c
-index 85d98ab..a8ff7f9 100644
---- a/arch/x86/kernel/asm-offsets_32.c
-+++ b/arch/x86/kernel/asm-offsets_32.c
-@@ -28,7 +28,6 @@ void foo(void)
- 	OFFSET(CPUINFO_x86_vendor, cpuinfo_x86, x86_vendor);
- 	OFFSET(CPUINFO_x86_model, cpuinfo_x86, x86_model);
- 	OFFSET(CPUINFO_x86_mask, cpuinfo_x86, x86_mask);
--	OFFSET(CPUINFO_hard_math, cpuinfo_x86, hard_math);
- 	OFFSET(CPUINFO_cpuid_level, cpuinfo_x86, cpuid_level);
- 	OFFSET(CPUINFO_x86_capability, cpuinfo_x86, x86_capability);
- 	OFFSET(CPUINFO_x86_vendor_id, cpuinfo_x86, x86_vendor_id);
-diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
-index c59635e..efa24c0 100644
---- a/arch/x86/kernel/cpu/bugs.c
-+++ b/arch/x86/kernel/cpu/bugs.c
-@@ -17,15 +17,6 @@
- #include <asm/paravirt.h>
- #include <asm/alternative.h>
- 
--static int __init no_387(char *s)
--{
--	boot_cpu_data.hard_math = 0;
--	write_cr0(X86_CR0_TS | X86_CR0_EM | X86_CR0_MP | read_cr0());
--	return 1;
--}
--
--__setup("no387", no_387);
--
- static double __initdata x = 4195835.0;
- static double __initdata y = 3145727.0;
- 
-@@ -44,15 +35,6 @@ static void __init check_fpu(void)
- {
- 	s32 fdiv_bug;
- 
--	if (!boot_cpu_data.hard_math) {
--#ifndef CONFIG_MATH_EMULATION
--		pr_emerg("No coprocessor found and no math emulation present\n");
--		pr_emerg("Giving up\n");
--		for (;;) ;
--#endif
--		return;
--	}
--
- 	kernel_fpu_begin();
- 
- 	/*
-@@ -112,5 +94,6 @@ void __init check_bugs(void)
- 	 * kernel_fpu_begin/end() in check_fpu() relies on the patched
- 	 * alternative instructions.
- 	 */
--	check_fpu();
-+	if (cpu_has_fpu)
-+		check_fpu();
- }
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 22018f7..d4dd993 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -711,10 +711,9 @@ static void __init early_identify_cpu(struct cpuinfo_x86 *c)
- 		return;
- 
- 	cpu_detect(c);
--
- 	get_cpu_vendor(c);
--
- 	get_cpu_cap(c);
-+	fpu_detect(c);
- 
- 	if (this_cpu->c_early_init)
- 		this_cpu->c_early_init(c);
-diff --git a/arch/x86/kernel/cpu/cyrix.c b/arch/x86/kernel/cpu/cyrix.c
-index d048d5c..7582f47 100644
---- a/arch/x86/kernel/cpu/cyrix.c
-+++ b/arch/x86/kernel/cpu/cyrix.c
-@@ -333,7 +333,7 @@ static void __cpuinit init_cyrix(struct cpuinfo_x86 *c)
- 		switch (dir0_lsn) {
- 		case 0xd:  /* either a 486SLC or DLC w/o DEVID */
- 			dir0_msn = 0;
--			p = Cx486_name[(c->hard_math) ? 1 : 0];
-+			p = Cx486_name[(cpu_has_fpu ? 1 : 0)];
- 			break;
- 
- 		case 0xe:  /* a 486S A step */
-diff --git a/arch/x86/kernel/cpu/proc.c b/arch/x86/kernel/cpu/proc.c
-index 37a198b..aee6317 100644
---- a/arch/x86/kernel/cpu/proc.c
-+++ b/arch/x86/kernel/cpu/proc.c
-@@ -37,8 +37,8 @@ static void show_cpuinfo_misc(struct seq_file *m, struct cpuinfo_x86 *c)
- 		   static_cpu_has_bug(X86_BUG_FDIV) ? "yes" : "no",
- 		   static_cpu_has_bug(X86_BUG_F00F) ? "yes" : "no",
- 		   static_cpu_has_bug(X86_BUG_COMA) ? "yes" : "no",
--		   c->hard_math ? "yes" : "no",
--		   c->hard_math ? "yes" : "no",
-+		   static_cpu_has(X86_FEATURE_FPU) ? "yes" : "no",
-+		   static_cpu_has(X86_FEATURE_FPU) ? "yes" : "no",
- 		   c->cpuid_level,
- 		   c->wp_works_ok ? "yes" : "no");
- }
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index 73afd11..e65ddc6 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -444,7 +444,6 @@ is486:
- 	orl %ecx,%eax
- 	movl %eax,%cr0
- 
--	call check_x87
- 	lgdt early_gdt_descr
- 	lidt idt_descr
- 	ljmp $(__KERNEL_CS),$1f
-@@ -467,26 +466,6 @@ is486:
- 	pushl $0		# fake return address for unwinder
- 	jmp *(initial_code)
- 
--/*
-- * We depend on ET to be correct. This checks for 287/387.
-- */
--check_x87:
--	movb $0,X86_HARD_MATH
--	clts
--	fninit
--	fstsw %ax
--	cmpb $0,%al
--	je 1f
--	movl %cr0,%eax		/* no coprocessor: have to set bits */
--	xorl $4,%eax		/* set EM */
--	movl %eax,%cr0
--	ret
--	ALIGN
--1:	movb $1,X86_HARD_MATH
--	.byte 0xDB,0xE4		/* fsetpm for 287, ignored by 387 */
--	ret
--
--	
- #include "verify_cpu.S"
- 
- /*
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index 245a71d..3a64553 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -135,7 +135,7 @@ static void __cpuinit init_thread_xstate(void)
- 	 * xsave_init().
- 	 */
- 
--	if (!HAVE_HWFP) {
-+	if (!static_cpu_has(X86_FEATURE_FPU)) {
- 		/*
- 		 * Disable xsave as we do not support it if i387
- 		 * emulation is enabled.
-@@ -162,6 +162,14 @@ void __cpuinit fpu_init(void)
- 	unsigned long cr0;
- 	unsigned long cr4_mask = 0;
- 
-+#ifndef CONFIG_MATH_EMULATION
-+	if (!static_cpu_has(X86_FEATURE_FPU)) {
-+		pr_emerg("No FPU found and no math emulation present\n");
-+		pr_emerg("Giving up\n");
-+		for (;;)
-+			asm volatile("hlt");
-+	}
-+#endif
- 	if (cpu_has_fxsr)
- 		cr4_mask |= X86_CR4_OSFXSR;
- 	if (cpu_has_xmm)
-@@ -171,7 +179,7 @@ void __cpuinit fpu_init(void)
- 
- 	cr0 = read_cr0();
- 	cr0 &= ~(X86_CR0_TS|X86_CR0_EM); /* clear TS and EM */
--	if (!HAVE_HWFP)
-+	if (!static_cpu_has(X86_FEATURE_FPU))
- 		cr0 |= X86_CR0_EM;
- 	write_cr0(cr0);
- 
-@@ -189,7 +197,7 @@ void __cpuinit fpu_init(void)
- 
- void fpu_finit(struct fpu *fpu)
- {
--	if (!HAVE_HWFP) {
-+	if (!static_cpu_has(X86_FEATURE_FPU)) {
- 		finit_soft_fpu(&fpu->state->soft);
- 		return;
- 	}
-@@ -218,7 +226,7 @@ int init_fpu(struct task_struct *tsk)
- 	int ret;
- 
- 	if (tsk_used_math(tsk)) {
--		if (HAVE_HWFP && tsk == current)
-+		if (static_cpu_has(X86_FEATURE_FPU) && tsk == current)
- 			unlazy_fpu(tsk);
- 		tsk->thread.fpu.last_cpu = ~0;
- 		return 0;
-@@ -515,14 +523,13 @@ int fpregs_get(struct task_struct *target, const struct user_regset *regset,
- 	if (ret)
- 		return ret;
- 
--	if (!HAVE_HWFP)
-+	if (!static_cpu_has(X86_FEATURE_FPU))
- 		return fpregs_soft_get(target, regset, pos, count, kbuf, ubuf);
- 
--	if (!cpu_has_fxsr) {
-+	if (!cpu_has_fxsr)
- 		return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
- 					   &target->thread.fpu.state->fsave, 0,
- 					   -1);
--	}
- 
- 	sanitize_i387_state(target);
- 
-@@ -549,13 +556,13 @@ int fpregs_set(struct task_struct *target, const struct user_regset *regset,
- 
- 	sanitize_i387_state(target);
- 
--	if (!HAVE_HWFP)
-+	if (!static_cpu_has(X86_FEATURE_FPU))
- 		return fpregs_soft_set(target, regset, pos, count, kbuf, ubuf);
- 
--	if (!cpu_has_fxsr) {
-+	if (!cpu_has_fxsr)
- 		return user_regset_copyin(&pos, &count, &kbuf, &ubuf,
--					  &target->thread.fpu.state->fsave, 0, -1);
--	}
-+					  &target->thread.fpu.state->fsave, 0,
-+					  -1);
- 
- 	if (pos > 0 || count < sizeof(env))
- 		convert_from_fxsr(&env, target);
-@@ -596,3 +603,33 @@ int dump_fpu(struct pt_regs *regs, struct user_i387_struct *fpu)
- EXPORT_SYMBOL(dump_fpu);
- 
- #endif	/* CONFIG_X86_32 || CONFIG_IA32_EMULATION */
-+
-+static int __init no_387(char *s)
-+{
-+	setup_clear_cpu_cap(X86_FEATURE_FPU);
-+	return 1;
-+}
-+
-+__setup("no387", no_387);
-+
-+void __cpuinit fpu_detect(struct cpuinfo_x86 *c)
-+{
-+	unsigned long cr0;
-+	u16 fsw, fcw;
-+
-+	fsw = fcw = 0xffff;
-+
-+	cr0 = read_cr0();
-+	cr0 &= ~(X86_CR0_TS | X86_CR0_EM);
-+	write_cr0(cr0);
-+
-+	asm volatile("fninit ; fnstsw %0 ; fnstcw %1"
-+		     : "+m" (fsw), "+m" (fcw));
-+
-+	if (fsw == 0 && (fcw & 0x103f) == 0x003f)
-+		set_cpu_cap(c, X86_FEATURE_FPU);
-+	else
-+		clear_cpu_cap(c, X86_FEATURE_FPU);
-+
-+	/* The final cr0 value is set in fpu_init() */
-+}
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index ada87a3..d6c28ac 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -243,7 +243,7 @@ int save_xstate_sig(void __user *buf, void __user *buf_fx, int size)
- 	if (!access_ok(VERIFY_WRITE, buf, size))
- 		return -EACCES;
- 
--	if (!HAVE_HWFP)
-+	if (!static_cpu_has(X86_FEATURE_FPU))
- 		return fpregs_soft_get(current, NULL, 0,
- 			sizeof(struct user_i387_ia32_struct), NULL,
- 			(struct _fpstate_ia32 __user *) buf) ? -1 : 1;
-@@ -350,11 +350,10 @@ int __restore_xstate_sig(void __user *buf, void __user *buf_fx, int size)
- 	if (!used_math() && init_fpu(tsk))
- 		return -1;
- 
--	if (!HAVE_HWFP) {
-+	if (!static_cpu_has(X86_FEATURE_FPU))
- 		return fpregs_soft_set(current, NULL,
- 				       0, sizeof(struct user_i387_ia32_struct),
- 				       NULL, buf) != 0;
--	}
- 
- 	if (use_xsave()) {
- 		struct _fpx_sw_bytes fx_sw_user;
-diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
-index 1cbd89c..d3f2ab3 100644
---- a/arch/x86/lguest/boot.c
-+++ b/arch/x86/lguest/boot.c
-@@ -1409,7 +1409,7 @@ __init void lguest_init(void)
- 	new_cpu_data.x86_capability[0] = cpuid_edx(1);
- 
- 	/* Math is always hard! */
--	new_cpu_data.hard_math = 1;
-+	set_cpu_cap(&new_cpu_data, X86_FEATURE_FPU);
- 
- 	/* We don't have features.  We have puppies!  Puppies! */
- #ifdef CONFIG_X86_MCE
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index c8e1c7b..18833ff 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1463,7 +1463,7 @@ asmlinkage void __init xen_start_kernel(void)
- #ifdef CONFIG_X86_32
- 	/* set up basic CPUID stuff */
- 	cpu_detect(&new_cpu_data);
--	new_cpu_data.hard_math = 1;
-+	set_cpu_cap(&new_cpu_data, X86_FEATURE_FPU);
- 	new_cpu_data.wp_works_ok = 1;
- 	new_cpu_data.x86_capability[0] = cpuid_edx(1);
- #endif
+ config REGULATOR_ANATOP
+ 	tristate "Freescale i.MX on-chip ANATOP LDO regulators"
+-	depends on MFD_SYSCON
++	depends on HAVE_IMX_ANATOP
+ 	help
+ 	  Say y here to support Freescale i.MX on-chip ANATOP LDOs
+ 	  regulators. It is recommended that this option be
+-- 
+1.8.1.5
+
+---
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
