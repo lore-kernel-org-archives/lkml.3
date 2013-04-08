@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935027Ab3DHGem (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 02:34:42 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:20289 "EHLO
+	id S935040Ab3DHGez (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 02:34:55 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:20462 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934734Ab3DHGej (ORCPT
+	with ESMTP id S934734Ab3DHGew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 02:34:39 -0400
-Message-ID: <516264E4.5090405@huawei.com>
-Date: Mon, 8 Apr 2013 14:34:12 +0800
+	Mon, 8 Apr 2013 02:34:52 -0400
+Message-ID: <516264F1.8020904@huawei.com>
+Date: Mon, 8 Apr 2013 14:34:25 +0800
 From: Li Zefan <lizefan@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
@@ -18,7 +18,8 @@ CC: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
         LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
         <linux-mm@kvack.org>
-Subject: [PATCH 05/12] memcg: use css_get() in sock_update_memcg()
+Subject: [PATCH 06/12] memcg: don't use mem_cgroup_get() when creating a kmemcg
+ cache
 References: <5162648B.9070802@huawei.com>
 In-Reply-To: <5162648B.9070802@huawei.com>
 Content-Type: text/plain; charset="GB2312"
@@ -29,49 +30,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use css_get/css_put instead of mem_cgroup_get/put.
+Use css_get()/css_put() instead of mem_cgroup_get()/mem_cgroup_put().
 
-Note, if at the same time someone is moving @current to a different
-cgroup and removing the old cgroup, css_tryget() may return false,
-and sock->sk_cgrp won't be initialized, which is fine.
+There are two things being done in the current code:
+
+First, we acquired a css_ref to make sure that the underlying cgroup
+would not go away. That is a short lived reference, and it is put as
+soon as the cache is created.
+
+At this point, we acquire a long-lived per-cache memcg reference count
+to guarantee that the memcg will still be alive.
+
+so it is:
+
+enqueue: css_get
+create : memcg_get, css_put
+destroy: memcg_put
+
+So we only need to get rid of the memcg_get, change the memcg_put to
+css_put, and get rid of the now extra css_put.
+
+(This changelog is basically written by Glauber)
 
 Signed-off-by: Li Zefan <lizefan@huawei.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Acked-by: Michal Hocko <mhocko@suse.cz>
 ---
- mm/memcontrol.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ mm/memcontrol.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index e65eaac..bbf5bf3 100644
+index bbf5bf3..c308ea0 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -536,15 +536,15 @@ void sock_update_memcg(struct sock *sk)
- 		 */
- 		if (sk->sk_cgrp) {
- 			BUG_ON(mem_cgroup_is_root(sk->sk_cgrp->memcg));
--			mem_cgroup_get(sk->sk_cgrp->memcg);
-+			css_get(&sk->sk_cgrp->memcg->css);
- 			return;
- 		}
+@@ -3197,7 +3197,7 @@ void memcg_release_cache(struct kmem_cache *s)
+ 	list_del(&s->memcg_params->list);
+ 	mutex_unlock(&memcg->slab_caches_mutex);
  
- 		rcu_read_lock();
- 		memcg = mem_cgroup_from_task(current);
- 		cg_proto = sk->sk_prot->proto_cgroup(memcg);
--		if (!mem_cgroup_is_root(memcg) && memcg_proto_active(cg_proto)) {
--			mem_cgroup_get(memcg);
-+		if (!mem_cgroup_is_root(memcg) &&
-+		    memcg_proto_active(cg_proto) && css_tryget(&memcg->css)) {
- 			sk->sk_cgrp = cg_proto;
- 		}
- 		rcu_read_unlock();
-@@ -558,7 +558,7 @@ void sock_release_memcg(struct sock *sk)
- 		struct mem_cgroup *memcg;
- 		WARN_ON(!sk->sk_cgrp->memcg);
- 		memcg = sk->sk_cgrp->memcg;
--		mem_cgroup_put(memcg);
-+		css_put(&sk->sk_cgrp->memcg->css);
+-	mem_cgroup_put(memcg);
++	css_put(&memcg->css);
+ out:
+ 	kfree(s->memcg_params);
+ }
+@@ -3356,16 +3356,18 @@ static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
+ 
+ 	mutex_lock(&memcg_cache_mutex);
+ 	new_cachep = cachep->memcg_params->memcg_caches[idx];
+-	if (new_cachep)
++	if (new_cachep) {
++		css_put(&memcg->css);
+ 		goto out;
++	}
+ 
+ 	new_cachep = kmem_cache_dup(memcg, cachep);
+ 	if (new_cachep == NULL) {
+ 		new_cachep = cachep;
++		css_put(&memcg->css);
+ 		goto out;
  	}
+ 
+-	mem_cgroup_get(memcg);
+ 	atomic_set(&new_cachep->memcg_params->nr_pages , 0);
+ 
+ 	cachep->memcg_params->memcg_caches[idx] = new_cachep;
+@@ -3453,8 +3455,6 @@ static void memcg_create_cache_work_func(struct work_struct *w)
+ 
+ 	cw = container_of(w, struct create_work, work);
+ 	memcg_create_kmem_cache(cw->memcg, cw->cachep);
+-	/* Drop the reference gotten when we enqueued. */
+-	css_put(&cw->memcg->css);
+ 	kfree(cw);
  }
  
 -- 
