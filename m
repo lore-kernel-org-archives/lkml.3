@@ -1,86 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935660Ab3DHMVE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 08:21:04 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53007 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935638Ab3DHMVA (ORCPT
+	id S935718Ab3DHMWp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 08:22:45 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:52654 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935351Ab3DHMWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 08:21:00 -0400
-Date: Mon, 8 Apr 2013 13:20:57 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Girish KS <girishks2000@gmail.com>
-Cc: spi-devel-general@lists.sourceforge.net,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: Re: [PATCH V3 4/5] spi: s3c64xx: Added provision for dedicated cs pin
-Message-ID: <20130408122056.GG9243@opensource.wolfsonmicro.com>
-References: <1363157014-9615-1-git-send-email-ks.giri@samsung.com>
- <1363157014-9615-5-git-send-email-ks.giri@samsung.com>
- <20130401125744.GG18636@opensource.wolfsonmicro.com>
- <CAKrE-Kd+YAFmteDdh3odtV+YU1=OjoMuQV9usF4NmUse+TXhTg@mail.gmail.com>
- <20130408101530.GC9243@opensource.wolfsonmicro.com>
- <CAKrE-KevVramLc1n_9kcfHVb=RKT_kexQ8iUP-5+BL3wxpMPbQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EemXnrF2ob+xzFeB"
-Content-Disposition: inline
-In-Reply-To: <CAKrE-KevVramLc1n_9kcfHVb=RKT_kexQ8iUP-5+BL3wxpMPbQ@mail.gmail.com>
-X-Cookie: Your love life will be... interesting.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 8 Apr 2013 08:22:44 -0400
+From: Prabhakar lad <prabhakar.csengg@gmail.com>
+To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        LMML <linux-media@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Sekhar Nori <nsekhar@ti.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v3 3/3] davinic: vpss: trivial cleanup
+Date: Mon,  8 Apr 2013 17:49:13 +0530
+Message-Id: <1365423553-12619-4-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1365423553-12619-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1365423553-12619-1-git-send-email-prabhakar.csengg@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
---EemXnrF2ob+xzFeB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+this patch removes unnecessary header file inclusions and
+fixes the typo's.
 
-On Mon, Apr 08, 2013 at 05:15:26PM +0530, Girish KS wrote:
-> On Mon, Apr 8, 2013 at 3:45 PM, Mark Brown
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ drivers/media/platform/davinci/vpss.c |   11 +++--------
+ 1 files changed, 3 insertions(+), 8 deletions(-)
 
-> > Two options here, one is to just assume nobody will use GPIO 0 and the
-> > other is to set the number appopriately during probe so that only probe
-> > needs to worry about the issue.
->=20
-> In the second option if the gpio number is set in the probe, then we
-> are overwriting the
-> actual gpio number assigned in the platform data.
-> If I move the cs_gpio from the platform data to controller private
-> data then the dependency
-> on other platforms can be removed, but still the check (true or false)
-> before setting the gpio
-> line will remain. If agreed upon this i can go ahead and post the patch
+diff --git a/drivers/media/platform/davinci/vpss.c b/drivers/media/platform/davinci/vpss.c
+index d36429d..8a2f01e 100644
+--- a/drivers/media/platform/davinci/vpss.c
++++ b/drivers/media/platform/davinci/vpss.c
+@@ -17,13 +17,8 @@
+  *
+  * common vpss system module platform driver for all video drivers.
+  */
+-#include <linux/kernel.h>
+-#include <linux/sched.h>
+-#include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+-#include <linux/spinlock.h>
+-#include <linux/compiler.h>
+ #include <linux/io.h>
+ #include <linux/pm_runtime.h>
+ 
+@@ -101,7 +96,7 @@ enum vpss_platform_type {
+ 
+ /*
+  * vpss operations. Depends on platform. Not all functions are available
+- * on all platforms. The api, first check if a functio is available before
++ * on all platforms. The api, first check if a function is available before
+  * invoking it. In the probe, the function ptrs are initialized based on
+  * vpss name. vpss name can be "dm355_vpss", "dm644x_vpss" etc.
+  */
+@@ -116,7 +111,7 @@ struct vpss_hw_ops {
+ 	void (*set_sync_pol)(struct vpss_sync_pol);
+ 	/* set the PG_FRAME_SIZE register*/
+ 	void (*set_pg_frame_size)(struct vpss_pg_frame_size);
+-	/* check and clear interrupt if occured */
++	/* check and clear interrupt if occurred */
+ 	int (*dma_complete_interrupt)(void);
+ };
+ 
+@@ -235,7 +230,7 @@ EXPORT_SYMBOL(vpss_clear_wbl_overflow);
+ 
+ /*
+  *  dm355_enable_clock - Enable VPSS Clock
+- *  @clock_sel: CLock to be enabled/disabled
++ *  @clock_sel: Clock to be enabled/disabled
+  *  @en: enable/disable flag
+  *
+  *  This is called to enable or disable a vpss clock
+-- 
+1.7.4.1
 
-I think logic in probe should be fine, it just felt really cumbersome
-having this on every single use but doing it once on probe ought to be
-OK.
-
---EemXnrF2ob+xzFeB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRYrYaAAoJELSic+t+oim9FXEP/267JPgYOyCReHGdw06v0VBN
-WhBbRkU3HlKrWBrs1tD9owmL9q9BtDqTxpIXwUOpLpBqHqQW/r3V6bI8/xjNMH7U
-3OwysjbAJWnsuN4bp1M/0exT15gc9gcNn+9k1YSRJMR2c5PPryBROrBk7H4Dyqzy
-vBZlPabRp7Dk7rzwU1krRAR74BfhQ9xT3K4O9uASSyPzXu385vVBdPUzJ85XE0If
-FKtgQecE4DZ+P/hTA/CSmhv11iAEaOaDt3VEJn0XNYHfmpFX2+oOpzd9OwFO0iyY
-OsXVJ/ul3G9f+bNckapBa6yDth8T9R5OLttkddXv0+AQvbnCiV+GPHDhFDjXyheH
-6FW2flw5W02YQZWXAaA0JznypL6EgANlH3itJMWu1sfkFBWpO7st/BSJEV835XW1
-eVqb5YI8zwCZs2a7987sY8hhxm+SrqVbiFADkC7bf64PPTIroTbPdATqSRR2O9J1
-C6aplsBzoeTxCnjLgggZWSnfX1LqX0AaAA0FfcCud6ZDj6nZAaaYn2FzKZ66YTQ7
-TAOMM0DImOsZ0TQ2jEwkQ458tCC0p8VK7oSQwnfIMQVZBEKURayjgYWY1obSk4Rb
-ZCY7J/Rnf02lB9gelxA/jkKw5lHYNC79KmqJn7WcdbY/K0mEjpdxNWVv/UziZlAm
-JCsRjBJ7XUfgFmRkLA+d
-=GnQU
------END PGP SIGNATURE-----
-
---EemXnrF2ob+xzFeB--
