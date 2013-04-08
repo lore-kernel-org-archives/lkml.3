@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935034Ab3DHRjs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 13:39:48 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:37765 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762474Ab3DHRjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 13:39:47 -0400
-Message-ID: <516300C7.7000008@linux.vnet.ibm.com>
-Date: Mon, 08 Apr 2013 10:39:19 -0700
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S935302Ab3DHRlE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 13:41:04 -0400
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:65040 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935263Ab3DHRlD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 13:41:03 -0400
 MIME-Version: 1.0
-To: Simon Jeons <simon.jeons@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mm/page_alloc: factor out setting of pcp->high and
- pcp->batch.
-References: <1365194030-28939-1-git-send-email-cody@linux.vnet.ibm.com> <1365194030-28939-2-git-send-email-cody@linux.vnet.ibm.com> <5160CDD8.3050908@gmail.com>
-In-Reply-To: <5160CDD8.3050908@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040817-7182-0000-0000-0000062409AC
+Date: Mon, 8 Apr 2013 23:41:01 +0600
+Message-ID: <CADZ9YHgnss=9NrMGDgo3pO41YHQK17JZyGp=DsAUV2kVz4hSjw@mail.gmail.com>
+Subject: [QUESTION] loops_per_jiffy calculation from smp_callin().
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2013 06:37 PM, Simon Jeons wrote:
-> Hi Cody,
-> On 04/06/2013 04:33 AM, Cody P Schafer wrote:
->> Creates pageset_set_batch() for use in setup_pageset().
->> pageset_set_batch() imitates the functionality of
->> setup_pagelist_highmark(), but uses the boot time
->> (percpu_pagelist_fraction == 0) calculations for determining ->high
->
-> Why need adjust pcp->high, pcp->batch during system running? What's the
-> requirement?
->
+Hello Ingo and all,
 
-There is currently a sysctl (which I patch later in this series) which 
-allows adjusting the ->high mark (and, indirectly, ->batch). 
-Additionally, memory hotplug changes ->high and ->batch due to the zone 
-size changing (essentially, zone->managed_pages and zone->present_pages 
-have changed) , meaning that zone_batchsize(), which is used at boot to 
-set ->batch and (indirectly) ->high has a different output.
+In function arch/x86/kernel/smpboot.c::smp_callin(), we do a
+calibrate_delay(), the reason behind doing this is commented as
+follows:
 
-Note that in addition to the 2 users of this functionality mentioned 
-here, I'm currently working on anther resizer of zones (runtime NUMA 
-reconfiguration).
+         * Get our bogomips.
+         * Update loops_per_jiffy in cpu_data. Previous call to
+         * smp_store_cpu_info() stored a value that is close but not as
+         * accurate as the value just calculated.
 
+Now, if we look at the init/calibrate.c::calibrate_delay() - a percpu
+variable cpu_loops_per_jiffy is used to cache up the loops_per_jiffy
+value. If cpu_loop_per_jiffy value is set (which should be after first
+run) then it prevents calculating new loops_per_jiffy thus the
+accuracy expected from the callsite isn't getable (I'm thinking about
+cpu hotpluging for few times). Is it not something that we should care
+about? Is lpj value is that important to recalculate (when mostly we
+read from tsc)? And, if it's important, how cpu_loop_per_jiffy is
+helping?
+
+
+Thanks,
+Rakib.
