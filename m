@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936062Ab3DHJ4v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:56:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43053 "EHLO
+	id S935948Ab3DHJwu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:52:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43024 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935953Ab3DHJww (ORCPT
+	with ESMTP id S935927Ab3DHJwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:52:52 -0400
+	Mon, 8 Apr 2013 05:52:45 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+Cc: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 093/102] virtio: console: rename cvq_lock to c_ivq_lock
-Date: Mon,  8 Apr 2013 10:50:48 +0100
-Message-Id: <1365414657-29191-94-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 088/102] b43: N-PHY: increase initial value of "mind" in RSSI calibration
+Date: Mon,  8 Apr 2013 10:50:43 +0100
+Message-Id: <1365414657-29191-89-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,90 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amit Shah <amit.shah@redhat.com>
+From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
 
-commit 165b1b8bbc17c9469b053bab78b11b7cbce6d161 upstream.
+commit e67dd874e60529dbd2e8232babb1e23479ba2ffa upstream.
 
-The cvq_lock was taken for the c_ivq.  Rename the lock to make that
-obvious.
+We're using "mind" variable to find the VCM that got the best polling
+results. For each VCM we calculte "currd" which is compared to the
+"mind". For PHY rev3+ "currd" gets values around 14k-40k. Looking for a
+value smaller than 40 makes no sense, so increase the initial value.
 
-We'll also add a lock around the c_ovq in the next commit, so there's no
-ambiguity.
+This fixes a regression introduced in 3.4 by commit:
+e0c9a0219a8f542e3946fe972a68aacf8c3f906c
+(my BCM4322 performance dropped from 18,4Mb/s to 9,26Mb/s)
 
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-Reviewed-by: Asias He <asias@redhat.com>
-Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 [ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/char/virtio_console.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ drivers/net/wireless/b43/phy_n.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index f77e341..4c76834 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -131,7 +131,7 @@ struct ports_device {
- 	spinlock_t ports_lock;
- 
- 	/* To protect the vq operations for the control channel */
--	spinlock_t cvq_lock;
-+	spinlock_t c_ivq_lock;
- 
- 	/* The current config space is stored here */
- 	struct virtio_console_config config;
-@@ -1465,23 +1465,23 @@ static void control_work_handler(struct work_struct *work)
- 	portdev = container_of(work, struct ports_device, control_work);
- 	vq = portdev->c_ivq;
- 
--	spin_lock(&portdev->cvq_lock);
-+	spin_lock(&portdev->c_ivq_lock);
- 	while ((buf = virtqueue_get_buf(vq, &len))) {
--		spin_unlock(&portdev->cvq_lock);
-+		spin_unlock(&portdev->c_ivq_lock);
- 
- 		buf->len = len;
- 		buf->offset = 0;
- 
- 		handle_control_message(portdev, buf);
- 
--		spin_lock(&portdev->cvq_lock);
-+		spin_lock(&portdev->c_ivq_lock);
- 		if (add_inbuf(portdev->c_ivq, buf) < 0) {
- 			dev_warn(&portdev->vdev->dev,
- 				 "Error adding buffer to queue\n");
- 			free_buf(buf);
+diff --git a/drivers/net/wireless/b43/phy_n.c b/drivers/net/wireless/b43/phy_n.c
+index 1081188..5ae0b6a 100644
+--- a/drivers/net/wireless/b43/phy_n.c
++++ b/drivers/net/wireless/b43/phy_n.c
+@@ -1371,7 +1371,7 @@ static void b43_nphy_rev3_rssi_cal(struct b43_wldev *dev)
  		}
+ 		for (i = 0; i < 4; i++) {
+ 			s32 curr;
+-			s32 mind = 40;
++			s32 mind = 0x100000;
+ 			s32 minpoll = 249;
+ 			u8 minvcm = 0;
+ 			if (2 * core != i)
+@@ -1554,7 +1554,7 @@ static void b43_nphy_rev2_rssi_cal(struct b43_wldev *dev, u8 type)
  	}
--	spin_unlock(&portdev->cvq_lock);
-+	spin_unlock(&portdev->c_ivq_lock);
- }
  
- static void out_intr(struct virtqueue *vq)
-@@ -1742,10 +1742,11 @@ static int __devinit virtcons_probe(struct virtio_device *vdev)
- 	if (multiport) {
- 		unsigned int nr_added_bufs;
- 
--		spin_lock_init(&portdev->cvq_lock);
-+		spin_lock_init(&portdev->c_ivq_lock);
- 		INIT_WORK(&portdev->control_work, &control_work_handler);
- 
--		nr_added_bufs = fill_queue(portdev->c_ivq, &portdev->cvq_lock);
-+		nr_added_bufs = fill_queue(portdev->c_ivq,
-+					   &portdev->c_ivq_lock);
- 		if (!nr_added_bufs) {
- 			dev_err(&vdev->dev,
- 				"Error allocating buffers for control queue\n");
-@@ -1886,7 +1887,7 @@ static int virtcons_restore(struct virtio_device *vdev)
- 		return ret;
- 
- 	if (use_multiport(portdev))
--		fill_queue(portdev->c_ivq, &portdev->cvq_lock);
-+		fill_queue(portdev->c_ivq, &portdev->c_ivq_lock);
- 
- 	list_for_each_entry(port, &portdev->ports, list) {
- 		port->in_vq = portdev->in_vqs[port->id];
+ 	for (i = 0; i < 4; i++) {
+-		s32 mind = 40;
++		s32 mind = 0x100000;
+ 		u8 minvcm = 0;
+ 		s32 minpoll = 249;
+ 		s32 curr;
 -- 
 1.8.1.2
 
