@@ -1,96 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934762Ab3DHCCN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 22:02:13 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:16497 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934704Ab3DHCCM (ORCPT
+	id S934749Ab3DHCJM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 22:09:12 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:53728 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934691Ab3DHCJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 22:02:12 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-08-5162252289cf
-Message-id: <51622526.8000302@samsung.com>
-Date: Mon, 08 Apr 2013 11:02:14 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        =?UTF-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>
-Subject: [GIT PULL] extcon fixes for 3.9-rc6
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsVy+t8zHV0l1aRAg4WvTCyuf3nOatG8eD2b
-	xdmmN+wWl3fNYbO43biCzYHVY//cNewefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlfH75l6W
-	gmNcFZPXPmRvYLzF0cXIySEhYCJx8PwPNghbTOLCvfVANheHkMAyRonTf1cwwRT1/7jGDJGY
-	ziixbMUSqKoXjBLf/v8Eq+IV0JL41feJsYuRg4NFQFVi4hlmkDAbUHj/ixtgG0QFwiRWTr/C
-	AlEuKPFj8j0wW0RAQ+Ll0VtgNrPAKkaJpydkQGxhAR2JE00z2CDi6hKT5i1ihrDlJTavecsM
-	cdxkdol5MwpAbBYBAYlvkw+xgJwgISArsekAVImkxMEVN1gmMIrMQrJ5FpKps5BMXcDIvIpR
-	NLUguaA4Kb3IWK84Mbe4NC9dLzk/dxMjJDr6dzDePWB9iDEZaOVEZinR5HxgdOWVxBsamxlZ
-	mJqYGhuZW5qRJqwkzqvWYh0oJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgdHiQV/p/Nl5vhtZ
-	83gfrrbr3dQ1k3lqw1SZr3FiyQzWfcJ/j8TPvmr+QTsqnd9KYFv20QZjleNOa2bFsEkUP116
-	kbdsqtmXTzuuHJg1aTFTrrTDvYTj0ftmcHz4qPrk1NLm7VOW/q/dY6Xe2pdd8+/z2ynLjH3P
-	lAYHhP5vC/duebJDreVk6RMlluKMREMt5qLiRAAfDyOypAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPIsWRmVeSWpSXmKPExsVy+t9jQV0l1aRAg9cHDCyuf3nOatG8eD2b
-	xdmmN+wWl3fNYbO43biCzYHVY//cNewefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZdu
-	q+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RTSaEsMacUKBSQWFyspG+HaUJoiJuu
-	BUxjhK5vSBBcj5EBGkhYx5jx++ZeloJjXBWT1z5kb2C8xdHFyMkhIWAi0f/jGjOELSZx4d56
-	ti5GLg4hgemMEstWLIFyXjBKfPv/kwmkildAS+JX3yfGLkYODhYBVYmJZ8Ca2YDC+1/cYAOx
-	RQXCJFZOv8ICUS4o8WPyPTBbREBD4uXRW2A2s8AqRomnJ2RAbGEBHYkTTTPYIOLqEpPmLWKG
-	sOUlNq95yzyBkW8WklGzkJTNQlK2gJF5FaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZw9D2T
-	3sG4qsHiEKMAB6MSD++Br4mBQqyJZcWVuYcYJTiYlUR4A5WTAoV4UxIrq1KL8uOLSnNSiw8x
-	JgM9OpFZSjQ5H5gY8kriDY1NzIwsjcyMTcyNjUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmD
-	U6qBUWuueXHvrGWONxlnrSxpPCxlqmGud0NVkk+rf6/mzaIfOczZsulHlztEP1wQJr9Jj8lR
-	iqFXosyJN1VguWjUxhX6zx5xHz+p8HfFloMh7h2n6mdumxcnxhqytr5LM8B6tYfK1aKbLgXM
-	bCJTTTPnBxxSelJb06ulmnljz2bZveymBzlXPw9SYinOSDTUYi4qTgQAhP+EUQIDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 7 Apr 2013 22:09:10 -0400
+Message-ID: <516226BA.3000305@linux.vnet.ibm.com>
+Date: Mon, 08 Apr 2013 10:08:58 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [RFC PATCH] sched: wake-affine throttle
+References: <514FDF76.2060806@linux.vnet.ibm.com>
+In-Reply-To: <514FDF76.2060806@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040802-3864-0000-0000-0000079C2977
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On 03/25/2013 01:24 PM, Michael Wang wrote:
+> Recently testing show that wake-affine stuff cause regression on pgbench, the
+> hiding rat was finally catched out.
+> 
+> wake-affine stuff is always trying to pull wakee close to waker, by theory,
+> this will benefit us if waker's cpu cached hot data for wakee, or the extreme
+> ping-pong case.
+> 
+> However, the whole stuff is somewhat blindly, there is no examining on the
+> relationship between waker and wakee, and since the stuff itself
+> is time-consuming, some workload suffered, pgbench is just the one who
+> has been found.
+> 
+> Thus, throttle the wake-affine stuff for such workload is necessary.
+> 
+> This patch introduced a new knob 'sysctl_sched_wake_affine_interval' with the
+> default value 1ms, which means wake-affine stuff only effect once per 1ms, which
+> usually the minimum balance interval (the idea is that the rapid of wake-affine
+> should lower than the rapid of load-balance at least).
+> 
+> By turning the new knob, those workload who suffered will have the chance to
+> stop the regression.
 
-This is extcon fixes for 3.9-rc6
-Please pull extcon with following updates.
+My recently testing show this idea still works well after the
+wake-affine itself was optimized.
 
-Best Regards and thanks,
-Chanwoo Choi
+Throttle seems to be an easy and efficient way to stop the regression of
+pgbench caused by wake-affine stuff, should we adopt this approach?
 
-The following changes since commit 07961ac7c0ee8b546658717034fe692fd12eefa9:
+Please let me know if there are still any concerns ;-)
 
-  Linux 3.9-rc5 (2013-03-31 15:12:43 -0700)
+Regards,
+Michael Wang
 
-are available in the git repository at:
+> 
+> Test:
+> 	Test with 12 cpu X86 server and tip 3.9.0-rc2.
+> 
+> 	Default 1ms interval bring limited performance improvement(<5%) for
+> 	pgbench, significant improvement start to show when turning the
+> 	knob to 100ms.
+> 
+> 			    original	100ms	
+> 
+> 	| db_size | clients |  tps  |	|  tps  |
+> 	+---------+---------+-------+   +-------+
+> 	| 21 MB   |       1 | 10572 |   | 10675 |
+> 	| 21 MB   |       2 | 21275 |   | 21228 |
+> 	| 21 MB   |       4 | 41866 |   | 41946 |
+> 	| 21 MB   |       8 | 53931 |   | 55176 |
+> 	| 21 MB   |      12 | 50956 |   | 54457 |	+6.87%
+> 	| 21 MB   |      16 | 49911 |   | 55468 |	+11.11%
+> 	| 21 MB   |      24 | 46046 |   | 56446 |	+22.59%
+> 	| 21 MB   |      32 | 43405 |   | 55177 |	+27.12%
+> 	| 7483 MB |       1 |  7734 |   |  7721 |
+> 	| 7483 MB |       2 | 19375 |   | 19277 |
+> 	| 7483 MB |       4 | 37408 |   | 37685 |
+> 	| 7483 MB |       8 | 49033 |   | 49152 |
+> 	| 7483 MB |      12 | 45525 |   | 49241 |	+8.16%
+> 	| 7483 MB |      16 | 45731 |   | 51425 |	+12.45%
+> 	| 7483 MB |      24 | 41533 |   | 52349 |	+26.04%
+> 	| 7483 MB |      32 | 36370 |   | 51022 |	+40.28%
+> 	| 15 GB   |       1 |  7576 |   |  7422 |
+> 	| 15 GB   |       2 | 19157 |   | 19176 |
+> 	| 15 GB   |       4 | 37285 |   | 36982 |
+> 	| 15 GB   |       8 | 48718 |   | 48413 |
+> 	| 15 GB   |      12 | 45167 |   | 48497 |	+7.37%
+> 	| 15 GB   |      16 | 45270 |   | 51276 |	+13.27%
+> 	| 15 GB   |      24 | 40984 |   | 51628 |	+25.97%
+> 	| 15 GB   |      32 | 35918 |   | 51060 |	+42.16%
+> 
+> Suggested-by: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+> ---
+>  include/linux/sched.h |    5 +++++
+>  kernel/sched/fair.c   |   33 ++++++++++++++++++++++++++++++++-
+>  kernel/sysctl.c       |   10 ++++++++++
+>  3 files changed, 47 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index d35d2b6..e9efd3a 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1197,6 +1197,10 @@ enum perf_event_task_context {
+>  	perf_nr_task_contexts,
+>  };
+> 
+> +#ifdef CONFIG_SMP
+> +extern unsigned int sysctl_sched_wake_affine_interval;
+> +#endif
+> +
+>  struct task_struct {
+>  	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
+>  	void *stack;
+> @@ -1207,6 +1211,7 @@ struct task_struct {
+>  #ifdef CONFIG_SMP
+>  	struct llist_node wake_entry;
+>  	int on_cpu;
+> +	unsigned long next_wake_affine;
+>  #endif
+>  	int on_rq;
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 7a33e59..00d7f45 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3087,6 +3087,22 @@ static inline unsigned long effective_load(struct task_group *tg, int cpu,
+> 
+>  #endif
+> 
+> +/*
+> + * Default is 1ms, to prevent the wake_affine() stuff working too frequently.
+> + */
+> +unsigned int sysctl_sched_wake_affine_interval = 1U;
+> +
+> +static inline int wake_affine_throttled(struct task_struct *p)
+> +{
+> +	return time_before(jiffies, p->next_wake_affine);
+> +}
+> +
+> +static inline void wake_affine_throttle(struct task_struct *p)
+> +{
+> +	p->next_wake_affine = jiffies +
+> +			msecs_to_jiffies(sysctl_sched_wake_affine_interval);
+> +}
+> +
+>  static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+>  {
+>  	s64 this_load, load;
+> @@ -3096,6 +3112,9 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+>  	unsigned long weight;
+>  	int balanced;
+> 
+> +	if (wake_affine_throttled(p))
+> +		return 0;
+> +
+>  	idx	  = sd->wake_idx;
+>  	this_cpu  = smp_processor_id();
+>  	prev_cpu  = task_cpu(p);
+> @@ -3342,8 +3361,20 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+>  	}
+> 
+>  	if (affine_sd) {
+> -		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
+> +		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync)) {
+> +			/*
+> +			 * wake_affine() stuff try to pull wakee to the cpu
+> +			 * around waker, this will benefit us if the data
+> +			 * cached on waker cpu is hot for wakee, or the extreme
+> +			 * ping-pong case.
+> +			 *
+> +			 * However, do such blindly work too frequently will
+> +			 * cause regression to some workload, thus, each time
+> +			 * when wake_affine() succeed, throttle it for a while.
+> +			 */
+> +			wake_affine_throttle(p);
+>  			prev_cpu = cpu;
+> +		}
+> 
+>  		new_cpu = select_idle_sibling(p, prev_cpu);
+>  		goto unlock;
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index afc1dc6..6b798b6 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -437,6 +437,16 @@ static struct ctl_table kern_table[] = {
+>  		.extra1		= &one,
+>  	},
+>  #endif
+> +#ifdef CONFIG_SMP
+> +	{
+> +		.procname	= "sched_wake_affine_interval",
+> +		.data		= &sysctl_sched_wake_affine_interval,
+> +		.maxlen		= sizeof(unsigned int),
+> +		.mode		= 0644,
+> +		.proc_handler	= proc_dointvec_minmax,
+> +		.extra1		= &one,
+> +	},
+> +#endif
+>  #ifdef CONFIG_PROVE_LOCKING
+>  	{
+>  		.procname	= "prove_locking",
+> 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-3.9-rc6
-
-for you to fetch changes up to 2fbeb4347e02078828510e5fe43ab4bea21b20d1:
-
-  extcon: max8997: Fix return value (2013-04-08 09:13:18 +0900)
-
-----------------------------------------------------------------
-This is small fixes for extcon driver.
-
-MAX77693 extcon driver
-- Add 'static' keryword to internal data structure
-- Fix return value using 'ret' instead of hardcoding
-
-MAX8997 extcon driver
-- Use dev_err() instead of pr_err()
-- Fix return value using 'ret' instead of hardcoding
-
-----------------------------------------------------------------
-Jingoo Han (1):
-      extcon: max8997: use dev_err() instead of pr_err()
-
-Sachin Kamat (3):
-      extcon: max77693: Staticize default_init_data
-      extcon: max77693: Fix return value
-      extcon: max8997: Fix return value
-
- drivers/extcon/extcon-max77693.c | 10 +++++-----
- drivers/extcon/extcon-max8997.c  | 12 ++++++------
- 2 files changed, 11 insertions(+), 11 deletions(-)
