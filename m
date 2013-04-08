@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936315Ab3DHO7Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 10:59:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39599 "EHLO mx1.redhat.com"
+	id S936380Ab3DHPBV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 11:01:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35540 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936285Ab3DHO7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 10:59:22 -0400
-Subject: Re: [PATCH] [PATCH] Gaurantee spinlocks implicit barrier for
- !PREEMPT_COUNT
-From: Steven Rostedt <srostedt@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <CA+55aFx88-t_pm5hbxbrrhqm3_=+JQussO=zD1kT+05UVCAFCA@mail.gmail.com>
-References: <alpine.LFD.2.02.1304031433350.21884@ionos>
-	 <1364998282-21437-1-git-send-email-vgupta@synopsys.com>
-	 <20130404152808.GB15261@ab42.lan> <515E54BD.2090300@synopsys.com>
-	 <51602459.3040105@synopsys.com>
-	 <CA+55aFw=-oJxujka-emxyRcY54MSe3qEjZ6xgzoE-roe3EFk5g@mail.gmail.com>
-	 <51624591.4010303@synopsys.com>
-	 <CA+55aFyFWjpSVQM6M266tKrG_ZXJzZ-nYejpmXYQXbrr42mGPQ@mail.gmail.com>
-	 <1365428274.2609.160.camel@laptop> <1365431470.2733.16.camel@fedora>
-	 <CA+55aFx88-t_pm5hbxbrrhqm3_=+JQussO=zD1kT+05UVCAFCA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat
-Date: Mon, 08 Apr 2013 10:59:02 -0400
-Message-ID: <1365433142.2733.18.camel@fedora>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S936336Ab3DHPBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 11:01:20 -0400
+Date: Mon, 8 Apr 2013 17:01:17 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 6/8] memcg: fail to create cgroup if the cgroup id is too
+ big
+Message-ID: <20130408150117.GN17178@dhcp22.suse.cz>
+References: <51627DA9.7020507@huawei.com>
+ <51627E4A.6090807@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51627E4A.6090807@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-08 at 07:50 -0700, Linus Torvalds wrote:
+On Mon 08-04-13 16:22:34, Li Zefan wrote:
+> memcg requires the cgroup id to be smaller than 65536.
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
+
+But this should be moved up the patch stack as mentioned in the previous
+email.
+
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Minor nit bellow.
 
 > ---
->     diff --git a/include/linux/preempt.h b/include/linux/preempt.h
->     index 5a710b9c578e..465df1c13386 100644
->     --- a/include/linux/preempt.h
->     +++ b/include/linux/preempt.h
->     @@ -93,14 +93,17 @@ do { \
+>  mm/memcontrol.c | 9 +++++++++
+>  1 file changed, 9 insertions(+)
 > 
->      #else /* !CONFIG_PREEMPT_COUNT */
-> 
->     -#define preempt_disable() do { } while (0)
->     -#define sched_preempt_enable_no_resched() do { } while (0)
->     -#define preempt_enable_no_resched() do { } while (0)
->     -#define preempt_enable() do { } while (0)
->     -
->     -#define preempt_disable_notrace() do { } while (0)
->     -#define preempt_enable_no_resched_notrace() do { } while (0)
->     -#define preempt_enable_notrace() do { } while (0)
->     +/* This is only a barrier to other asms. Notably get_user/put_user */
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index c4e0173..947dff1 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -492,6 +492,12 @@ static inline bool mem_cgroup_is_root(struct mem_cgroup *memcg)
+>  	return (memcg == root_mem_cgroup);
+>  }
+>  
+> +/*
+> + * We restrict the id in the range of [0, 65535], so it can fit into
+> + * an unsigned short.
+> + */
+> +#define MEM_CGROUP_ID_MAX	(65535)
 
-Probably should add in the comment:
+USHRT_MAX ?
 
-	" or anything else that can cause a hidden schedule. "
-
--- Steve
-
->     +#define asm_barrier() asm volatile("")
->     +
->     +#define preempt_disable() asm_barrier()
->     +#define sched_preempt_enable_no_resched() asm_barrier()
->     +#define preempt_enable_no_resched() asm_barrier()
->     +#define preempt_enable() asm_barrier()
->     +
->     +#define preempt_disable_notrace() asm_barrier()
->     +#define preempt_enable_no_resched_notrace() asm_barrier()
->     +#define preempt_enable_notrace() asm_barrier()
-> 
->      #endif /* CONFIG_PREEMPT_COUNT */
-
-
+> +
+>  static inline unsigned short mem_cgroup_id(struct mem_cgroup *memcg)
+>  {
+>  	return memcg->css.cgroup->id;
+-- 
+Michal Hocko
+SUSE Labs
