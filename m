@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936488Ab3DHVaq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 17:30:46 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:41237 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936219Ab3DHV1h (ORCPT
+	id S936334Ab3DHVao (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 17:30:44 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:38748 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936229Ab3DHV1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Apr 2013 17:27:37 -0400
 X-IronPort-AV: E=Sophos;i="4.87,433,1363158000"; 
-   d="scan'208";a="36848516"
+   d="scan'208";a="36684213"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCHv4 04/11] ARM: smp_twd: Divorce smp_twd from local timer API
-Date: Mon,  8 Apr 2013 14:27:26 -0700
-Message-Id: <1365456453-16297-5-git-send-email-sboyd@codeaurora.org>
+Cc: Mark Rutland <mark.rutland@arm.com>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCHv4 02/11] clocksource: add generic dummy timer driver
+Date: Mon,  8 Apr 2013 14:27:24 -0700
+Message-Id: <1365456453-16297-3-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.2
 In-Reply-To: <1365456453-16297-1-git-send-email-sboyd@codeaurora.org>
 References: <1365456453-16297-1-git-send-email-sboyd@codeaurora.org>
@@ -24,219 +24,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate the smp_twd timers from the local timer API. This will
-allow us to remove ARM local timer support in the near future and
-gets us closer to moving this driver to drivers/clocksource.
+From: Mark Rutland <mark.rutland@arm.com>
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Tony Lindgren <tony@atomide.com>
-Tested-by: Mark Rutland <mark.rutland@arm.com>
+Several architectures have a dummy timer driver tightly coupled with
+their broadcast code to support machines without cpu-local timers (or
+where there is a lack of driver support).
+
+Since 12ad100046: "clockevents: Add generic timer broadcast function"
+it's been possible to write broadcast-capable timer drivers decoupled
+from the broadcast mechanism. We can use this functionality to implement
+a generic dummy timer driver that can be shared by all architectures
+with generic tick broadcast (ARCH_HAS_TICK_BROADCAST).
+
+This patch implements a generic dummy timer using this facility.
+
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+[sboyd: Make percpu data static, use __this_cpu_ptr(), move to
+        early_initcall to properly register on each CPU, only
+	register if more than one CPU possible]
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/Kconfig          |  2 +-
- arch/arm/kernel/smp_twd.c | 64 +++++++++++++++++++++++++++++++----------------
- 2 files changed, 44 insertions(+), 22 deletions(-)
+ drivers/clocksource/Makefile      |  1 +
+ drivers/clocksource/dummy_timer.c | 69 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 70 insertions(+)
+ create mode 100644 drivers/clocksource/dummy_timer.c
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 13b7394..ee6bb9d 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1523,6 +1523,7 @@ config SMP
- 	depends on HAVE_SMP
- 	depends on MMU
- 	select HAVE_ARM_SCU if !ARCH_MSM_SCORPIONMP
-+	select HAVE_ARM_TWD if (!ARCH_MSM_SCORPIONMP && !EXYNOS4_MCT)
- 	select USE_GENERIC_SMP_HELPERS
- 	help
- 	  This enables support for systems with more than one CPU. If you have
-@@ -1646,7 +1647,6 @@ config LOCAL_TIMERS
- 	bool "Use local timer interrupts"
- 	depends on SMP
- 	default y
--	select HAVE_ARM_TWD if (!ARCH_MSM_SCORPIONMP && !EXYNOS4_MCT)
- 	help
- 	  Enable support for local timers on SMP platforms, rather then the
- 	  legacy IPI broadcast method.  Local timers allows the system
-diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
-index 3f25650..a79476d 100644
---- a/arch/arm/kernel/smp_twd.c
-+++ b/arch/arm/kernel/smp_twd.c
-@@ -11,6 +11,7 @@
- #include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/clk.h>
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index 4d8283a..655d718 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -22,3 +22,4 @@ obj-$(CONFIG_VT8500_TIMER)	+= vt8500_timer.o
+ 
+ obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
+ obj-$(CONFIG_CLKSRC_METAG_GENERIC)	+= metag_generic.o
++obj-$(CONFIG_ARCH_HAS_TICK_BROADCAST)	+= dummy_timer.o
+diff --git a/drivers/clocksource/dummy_timer.c b/drivers/clocksource/dummy_timer.c
+new file mode 100644
+index 0000000..1f55f96
+--- /dev/null
++++ b/drivers/clocksource/dummy_timer.c
+@@ -0,0 +1,69 @@
++/*
++ *  linux/drivers/clocksource/dummy_timer.c
++ *
++ *  Copyright (C) 2013 ARM Ltd.
++ *  All Rights Reserved
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/clockchips.h>
 +#include <linux/cpu.h>
- #include <linux/delay.h>
- #include <linux/device.h>
- #include <linux/err.h>
-@@ -24,7 +25,6 @@
- 
- #include <asm/smp_plat.h>
- #include <asm/smp_twd.h>
--#include <asm/localtimer.h>
- 
- /* set up by the platform code */
- static void __iomem *twd_base;
-@@ -33,7 +33,7 @@ static struct clk *twd_clk;
- static unsigned long twd_timer_rate;
- static DEFINE_PER_CPU(bool, percpu_setup_called);
- 
--static struct clock_event_device __percpu **twd_evt;
-+static struct clock_event_device __percpu *twd_evt;
- static int twd_ppi;
- 
- static void twd_set_mode(enum clock_event_mode mode,
-@@ -90,8 +90,10 @@ static int twd_timer_ack(void)
- 	return 0;
- }
- 
--static void twd_timer_stop(struct clock_event_device *clk)
-+static void twd_timer_stop(void)
- {
-+	struct clock_event_device *clk = __this_cpu_ptr(twd_evt);
++#include <linux/init.h>
++#include <linux/percpu.h>
++#include <linux/cpumask.h>
 +
- 	twd_set_mode(CLOCK_EVT_MODE_UNUSED, clk);
- 	disable_percpu_irq(clk->irq);
- }
-@@ -106,7 +108,7 @@ static void twd_update_frequency(void *new_rate)
- {
- 	twd_timer_rate = *((unsigned long *) new_rate);
- 
--	clockevents_update_freq(*__this_cpu_ptr(twd_evt), twd_timer_rate);
-+	clockevents_update_freq(__this_cpu_ptr(twd_evt), twd_timer_rate);
- }
- 
- static int twd_rate_change(struct notifier_block *nb,
-@@ -132,7 +134,7 @@ static struct notifier_block twd_clk_nb = {
- 
- static int twd_clk_init(void)
- {
--	if (twd_evt && *__this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
-+	if (twd_evt && __this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
- 		return clk_notifier_register(twd_clk, &twd_clk_nb);
- 
- 	return 0;
-@@ -151,7 +153,7 @@ static void twd_update_frequency(void *data)
- {
- 	twd_timer_rate = clk_get_rate(twd_clk);
- 
--	clockevents_update_freq(*__this_cpu_ptr(twd_evt), twd_timer_rate);
-+	clockevents_update_freq(__this_cpu_ptr(twd_evt), twd_timer_rate);
- }
- 
- static int twd_cpufreq_transition(struct notifier_block *nb,
-@@ -177,7 +179,7 @@ static struct notifier_block twd_cpufreq_nb = {
- 
- static int twd_cpufreq_init(void)
- {
--	if (twd_evt && *__this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
-+	if (twd_evt && __this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
- 		return cpufreq_register_notifier(&twd_cpufreq_nb,
- 			CPUFREQ_TRANSITION_NOTIFIER);
- 
-@@ -228,7 +230,7 @@ static void __cpuinit twd_calibrate_rate(void)
- 
- static irqreturn_t twd_handler(int irq, void *dev_id)
- {
--	struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
-+	struct clock_event_device *evt = dev_id;
- 
- 	if (twd_timer_ack()) {
- 		evt->event_handler(evt);
-@@ -265,9 +267,9 @@ static void twd_get_clock(struct device_node *np)
- /*
-  * Setup the local clock events for a CPU.
-  */
--static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
-+static void __cpuinit twd_timer_setup(void)
- {
--	struct clock_event_device **this_cpu_clk;
-+	struct clock_event_device *clk = __this_cpu_ptr(twd_evt);
- 	int cpu = smp_processor_id();
- 
- 	/*
-@@ -276,9 +278,9 @@ static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
- 	 */
- 	if (per_cpu(percpu_setup_called, cpu)) {
- 		__raw_writel(0, twd_base + TWD_TIMER_CONTROL);
--		clockevents_register_device(*__this_cpu_ptr(twd_evt));
-+		clockevents_register_device(clk);
- 		enable_percpu_irq(clk->irq, 0);
--		return 0;
-+		return;
- 	}
- 	per_cpu(percpu_setup_called, cpu) = true;
- 
-@@ -297,27 +299,37 @@ static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
- 	clk->set_mode = twd_set_mode;
- 	clk->set_next_event = twd_set_next_event;
- 	clk->irq = twd_ppi;
--
--	this_cpu_clk = __this_cpu_ptr(twd_evt);
--	*this_cpu_clk = clk;
-+	clk->cpumask = cpumask_of(cpu);
- 
- 	clockevents_config_and_register(clk, twd_timer_rate,
- 					0xf, 0xffffffff);
- 	enable_percpu_irq(clk->irq, 0);
-+}
- 
--	return 0;
-+static int __cpuinit twd_timer_cpu_notify(struct notifier_block *self,
-+					   unsigned long action, void *hcpu)
++static DEFINE_PER_CPU(struct clock_event_device, dummy_timer_evt);
++
++static void dummy_timer_set_mode(enum clock_event_mode mode,
++			   struct clock_event_device *evt)
 +{
-+	switch (action & ~CPU_TASKS_FROZEN) {
-+	case CPU_STARTING:
-+		twd_timer_setup();
-+		break;
-+	case CPU_DYING:
-+		twd_timer_stop();
-+		break;
-+	}
++	/*
++	 * Core clockevents code will call this when exchanging timer devices.
++	 * We don't need to do anything here.
++	 */
++}
++
++static void __cpuinit dummy_timer_setup(void)
++{
++	int cpu = smp_processor_id();
++	struct clock_event_device *evt = __this_cpu_ptr(&dummy_timer_evt);
++
++	evt->name	= "dummy_timer";
++	evt->features	= CLOCK_EVT_FEAT_PERIODIC |
++			  CLOCK_EVT_FEAT_ONESHOT |
++			  CLOCK_EVT_FEAT_DUMMY;
++	evt->rating	= 100;
++	evt->set_mode	= dummy_timer_set_mode;
++	evt->cpumask	= cpumask_of(cpu);
++
++	clockevents_register_device(evt);
++}
++
++static int __cpuinit dummy_timer_cpu_notify(struct notifier_block *self,
++				      unsigned long action, void *hcpu)
++{
++	if ((action & ~CPU_TASKS_FROZEN) == CPU_STARTING)
++		dummy_timer_setup();
 +
 +	return NOTIFY_OK;
- }
- 
--static struct local_timer_ops twd_lt_ops __cpuinitdata = {
--	.setup	= twd_timer_setup,
--	.stop	= twd_timer_stop,
-+static struct notifier_block twd_timer_cpu_nb __cpuinitdata = {
-+	.notifier_call = twd_timer_cpu_notify,
- };
- 
- static int __init twd_local_timer_common_register(struct device_node *np)
- {
- 	int err;
- 
--	twd_evt = alloc_percpu(struct clock_event_device *);
-+	twd_evt = alloc_percpu(struct clock_event_device);
- 	if (!twd_evt) {
- 		err = -ENOMEM;
- 		goto out_free;
-@@ -329,12 +341,22 @@ static int __init twd_local_timer_common_register(struct device_node *np)
- 		goto out_free;
- 	}
- 
--	err = local_timer_register(&twd_lt_ops);
-+	err = register_cpu_notifier(&twd_timer_cpu_nb);
- 	if (err)
- 		goto out_irq;
- 
- 	twd_get_clock(np);
- 
-+	/*
-+	 * Immediately configure the timer on the boot CPU, unless we need
-+	 * jiffies to be incrementing to calibrate the rate in which case
-+	 * setup the timer in late_time_init.
-+	 */
-+	if (twd_timer_rate)
-+		twd_timer_setup();
-+	else
-+		late_time_init = twd_timer_setup;
++}
 +
- 	return 0;
- 
- out_irq:
++static struct notifier_block dummy_timer_cpu_nb __cpuinitdata = {
++	.notifier_call = dummy_timer_cpu_notify,
++};
++
++static int __init dummy_timer_register(void)
++{
++	int err = register_cpu_notifier(&dummy_timer_cpu_nb);
++	if (err)
++		return err;
++
++	/* We won't get a call on the boot CPU, so register immediately */
++	if (num_possible_cpus() > 1)
++		dummy_timer_setup();
++
++	return 0;
++}
++early_initcall(dummy_timer_register);
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
