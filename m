@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965422Ab3DHPGz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 11:06:55 -0400
-Received: from mail1.bemta7.messagelabs.com ([216.82.254.105]:26927 "EHLO
-	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965002Ab3DHPGx (ORCPT
+	id S965096Ab3DHPHP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 11:07:15 -0400
+Received: from a9-78.smtp-out.amazonses.com ([54.240.9.78]:41181 "EHLO
+	a9-78.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S936034Ab3DHPHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 11:06:53 -0400
-X-Env-Sender: Hector.Palacios@digi.com
-X-Msg-Ref: server-14.tower-201.messagelabs.com!1365433612!7207048!1
-X-Originating-IP: [66.77.174.14]
-X-StarScan-Received: 
-X-StarScan-Version: 6.8.6.1; banners=-,-,-
-X-VirusChecked: Checked
-From: Hector Palacios <hector.palacios@digi.com>
-To: <linux-watchdog@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linux@roeck-us.net>, <wim@iguana.be>,
-        <hector.palacios@digi.com>
-Subject: [PATCH v3] watchdog: core: don't try to stop device if not running
-Date: Mon, 8 Apr 2013 17:06:32 +0200
-Message-ID: <1365433592-25687-1-git-send-email-hector.palacios@digi.com>
-X-Mailer: git-send-email 1.8.2
+	Mon, 8 Apr 2013 11:07:13 -0400
+X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Apr 2013 11:07:12 EDT
+Date: Mon, 8 Apr 2013 14:57:18 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Ingo Molnar <mingo@kernel.org>
+cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 4/4] nohz: New option to force all CPUs in full dynticks
+ range
+In-Reply-To: <20130330091037.GA31743@gmail.com>
+Message-ID: <0000013dea26b171-8095c339-dc81-4459-a3ad-a8d69c803448-000000@email.amazonses.com>
+References: <1364398359-21990-1-git-send-email-fweisbec@gmail.com> <1364398359-21990-5-git-send-email-fweisbec@gmail.com> <20130328074507.GC24433@gmail.com> <CAFTL4hzQfodVP4O+nir1XwQ2QkUUqrfr_dBpWL0635f0u4oRBA@mail.gmail.com>
+ <20130330091037.GA31743@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.04.08-54.240.9.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A watchdog device may be stopped from userspace using WDIOC_SETOPTIONS
-ioctl and flag WDIOS_DISABLECARD. If the device is closed after this
-operation, watchdog_release() is called and status bits checked for
-stopping it. Besides, if the device has not been unregistered a critical
-message "watchdog did not stop!" is printed, although the ioctl may have
-successfully stopped it already.
+I think we could simplify things quite a bit if we either
 
-Without the patch a user application sample code like this will successfully
-stop the watchdog, but the kernel will output the message
-"watchdog did not stop!":
+1. Add any cpus specified with nohz_full/extended=xxx to
+rcu_nocb. No check is then necessary anymore.
 
-	wd_fd = open("/dev/watchdog", O_RDWR);
+or
 
-	flags = WDIOS_DISABLECARD;
-	ioctl(wd_fd, WDIOC_SETOPTIONS, &flags);
-
-	close(wd_fd);
-
-Signed-off-by: Hector Palacios <hector.palacios@digi.com>
----
-
-Changes from v1:
- - Make it less intrusive with 'if/else if' clauses.
- - Change the logic of 'err' variable for better readability of code.
- - Remove one-liner if brackets that broke coding sytle.
-Changes from v2:
- - Revert "Change the logic of 'err'..." from v1 because otherwise the
-   'else if' can't be reached if the watchdog is running.
-
- drivers/watchdog/watchdog_dev.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
-index ef8edec..6117c48 100644
---- a/drivers/watchdog/watchdog_dev.c
-+++ b/drivers/watchdog/watchdog_dev.c
-@@ -470,8 +470,10 @@ static int watchdog_release(struct inode *inode, struct file *file)
- 	 * or if WDIOF_MAGICCLOSE is not set. If nowayout was set then
- 	 * watchdog_stop will fail.
- 	 */
--	if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
--	    !(wdd->info->options & WDIOF_MAGICCLOSE))
-+	if (!test_bit(WDOG_ACTIVE, &wdd->status))
-+		err = 0;
-+	else if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
-+		 !(wdd->info->options & WDIOF_MAGICCLOSE))
- 		err = watchdog_stop(wdd);
- 
- 	/* If the watchdog was not stopped, send a keepalive ping */
--- 
-1.8.2
+2. Avoid the setting of cpus entirely? If full nohz mode is desired
+then pick one cpu (f.e. the first one or the one that is used for xtime
+updates) and then make all other cpus nohz. Set the affinity mask for the
+rcuoXXX threads to that cpu.
 
