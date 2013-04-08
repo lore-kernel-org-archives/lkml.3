@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935169Ab3DHJ01 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:26:27 -0400
-Received: from mga09.intel.com ([134.134.136.24]:30145 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934484Ab3DHJ00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:26:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,429,1363158000"; 
-   d="scan'208";a="314579500"
-Date: Mon, 8 Apr 2013 11:25:56 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 0/15] arizona updates for v3.10
-Message-ID: <20130408092556.GL24058@zurbaran>
-References: <20130401172748.GG18636@opensource.wolfsonmicro.com>
- <20130403180423.GA6985@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130403180423.GA6985@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S935185Ab3DHJ1H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:27:07 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:56151 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934802Ab3DHJ1G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 05:27:06 -0400
+From: Prabhakar lad <prabhakar.csengg@gmail.com>
+To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v8 0/2] ARM: davinci: dm355: add support for vpbe display
+Date: Mon,  8 Apr 2013 14:56:53 +0530
+Message-Id: <1365413215-3632-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-On Wed, Apr 03, 2013 at 07:04:23PM +0100, Mark Brown wrote:
-> On Mon, Apr 01, 2013 at 06:27:48PM +0100, Mark Brown wrote:
-> 
-> > mfd: arizona: Updates for v3.10
-> > 
-> > This is really a few separate topics which I can split out if required:
-> > 
-> >  - WM5102 updates to improve robustness
-> >  - Improved support for interoperation with edge triggered interrupt
-> >    controllers
-> >  - Support for some unusual clocking configurations
-> >  - A couple small single patch updates and fixes
-> > 
-> 
-> A few more updates for this which I'll post just now, I've updated the
-> tag and branch:
-> 
-> The following changes since commit 07961ac7c0ee8b546658717034fe692fd12eefa9:
-> 
->   Linux 3.9-rc5 (2013-03-31 15:12:43 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git tags/mfd-arizona-3.10
-Thanks, I pulled this one into mfd-next now.
+This patch series enables VPBE display driver on DM355.
 
-Cheers,
-Samuel.
+This patch series is dependent on VPSS clock cleanup patches
+(http://www.mail-archive.com/davinci-linux-open-source@linux.davincidsp.com/msg25613.html)
+posted.
+
+Changes for v8:
+1: Removed extra line after break's and defines as pointed
+   by Sekhar.
+2: Included Ack from Sekhar for the second patch of the series.
+
+Changes for v7:
+1: Fixed nits pointed by Sekhar for DM365 series.
+
+Changes for v6:
+1: Fixed nits pointed by Sekhar.
+
+Changes for v5:
+1: Rebased on 3.9, fix review comments pointed by Sekhar for DM365 series.
+
+Changes for v4:
+1: pass different platform names to handle different ip's.
+
+Changes for v3:
+1: Replaced obsolete preset API by timings API.
+
+Changes for v2:
+1: Removed VPSS clock alias for master and slave which was
+   sent for VPSS driver. since this patch was dependent on
+   patch[1]. I will revist this patch once MC(captrure driver)
+   goes into mainline.
+   [1] http://www.spinics.net/lists/linux-media/msg50562.html
+
+Lad, Prabhakar (2):
+  ARM: davinci: dm355: add support for v4l2 video display
+  ARM: davinci: dm355 EVM: add support for VPBE display
+
+ arch/arm/mach-davinci/board-dm355-evm.c |   71 +++++++++++++-
+ arch/arm/mach-davinci/davinci.h         |    3 +-
+ arch/arm/mach-davinci/dm355.c           |  167 ++++++++++++++++++++++++++++++-
+ 3 files changed, 233 insertions(+), 8 deletions(-)
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.4.1
+
