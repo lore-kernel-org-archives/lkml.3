@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965170Ab3DHOox (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 10:44:53 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:13121 "EHLO
-	mail.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965147Ab3DHOov (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 10:44:51 -0400
-X-Greylist: delayed 524 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Apr 2013 10:44:51 EDT
-Message-ID: <5162D5D5.9080906@itdev.co.uk>
-Date: Mon, 08 Apr 2013 15:36:05 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S965199Ab3DHOrN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 10:47:13 -0400
+Received: from mga01.intel.com ([192.55.52.88]:23791 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965181Ab3DHOrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 10:47:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,432,1363158000"; 
+   d="scan'208";a="315989816"
+Date: Mon, 8 Apr 2013 16:47:10 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Jean-Nicolas GRAUX <jean-nicolas.graux@stericsson.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH] mfd: support stmpe1801 18 bits enhanced port expander
+Message-ID: <20130408144710.GS24058@zurbaran>
+References: <1361206222-2341-1-git-send-email-jean-nicolas.graux@stericsson.com>
+ <20130408095601.GP24058@zurbaran>
+ <51629622.3040509@stericsson.com>
 MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
-Subject: Re: Atmel updates to atmel_mxt_ts touch controller driver
-References: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk> <20130329164841.GA2230@polaris.bitmath.org>
-In-Reply-To: <20130329164841.GA2230@polaris.bitmath.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51629622.3040509@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Henrik Rydberg wrote:
->> Most of my focus in working on these changes has been to support Atmel's
->> customers, who tend not to be using the mainline kernel. Unfortunately this 
->> has generated somewhat of a backlog in getting these improvements into
->> mainline. My current focus is to get these improvements upstream and I have
->> time allocated to make any alterations as necessary. Since the scope of this
->> patchset is so large any upstream delta tends to cause a big rebasing effort.
->> I would suggest that I merge any useful improvements from the other patchsets
->> to make a combined patchset.
-> 
-> Are you planning to submit a version for 3.9? If you do, please
-> consider sending a smaller set.
+Hi Jean-Nicolas,
 
-My goal is to try and get our changes into 3.10, we still have a couple of
-bugs to shake out (unfortunately in the bootloading code, which is at the
-front of the series), I will post an updated series once I have resolved that.
+On Mon, Apr 08, 2013 at 12:04:18PM +0200, Jean-Nicolas GRAUX wrote:
+> On 04/08/2013 11:56 AM, Samuel Ortiz wrote:
+> >Hi Jean-Nicolas,
+> >
+> >On Mon, Feb 18, 2013 at 05:50:22PM +0100, Jean-Nicolas Graux wrote:
+> >>Provides support for 1801 variant of stmpe gpio port expanders.
+> >>This chip has 18 gpios configurable as GPI, GPO, keypad matrix,
+> >>special key or dedicated key function.
+> >>
+> >>Note that special/dedicated key function is not supported yet.
+> >>
+> >>Change-Id: I6ea89af7b96e9a02478ebec3467291e7d7c510c9
+> >No Change-Id, please.
+> >
+> >>Signed-off-by: Jean-Nicolas Graux <jean-nicolas.graux@stericsson.com>
+> >>---
+> >>  drivers/gpio/gpio-stmpe.c             |   52 +++++--
+> >>  drivers/input/keyboard/stmpe-keypad.c |  267 ++++++++++++++++++++++++++-------
+> >>  drivers/mfd/Kconfig                   |    1 +
+> >>  drivers/mfd/stmpe-i2c.c               |    1 +
+> >>  drivers/mfd/stmpe.c                   |   97 +++++++++++-
+> >>  drivers/mfd/stmpe.h                   |   49 ++++++
+> >>  include/linux/mfd/stmpe.h             |    3 +
+> >>  7 files changed, 398 insertions(+), 72 deletions(-)
+> >This should be splitted into 3 patches, an mfd one and then an input and a
+> >gpio one. I would carry all 3 of them through the MFD tree on order to handle
+> >build dependencies.
+> >
+> >Cheers,
+> >Samuel.
+> >
+> Hello Samuel,
+> Ok, i do the split. I guess i should also rebase on latest 3.9 kernel.
+Or against mfd-next
+(git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-next.git).
 
-You can see the WIP here:
-https://github.com/ndyer/linux/commits/for-next
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
