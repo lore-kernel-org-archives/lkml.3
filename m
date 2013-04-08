@@ -1,136 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936196Ab3DHOPz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 10:15:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32994 "EHLO mx2.suse.de"
+	id S936217Ab3DHOQZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 10:16:25 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56433 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935411Ab3DHOPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 10:15:43 -0400
-Date: Mon, 8 Apr 2013 16:15:40 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 12/12] memcg: don't need to free memcg via RCU or
- workqueue
-Message-ID: <20130408141540.GG17178@dhcp22.suse.cz>
-References: <5162648B.9070802@huawei.com>
- <51626570.8000400@huawei.com>
+	id S936037Ab3DHOQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 10:16:24 -0400
+Date: Mon, 8 Apr 2013 16:15:57 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>, Mel Gorman <mgorman@suse.de>
+Subject: Re: x86/mm/pageattr: Code without effect?
+Message-ID: <20130408141557.GD4395@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Stefan Bader <stefan.bader@canonical.com>,
+	Ingo Molnar <mingo@kernel.org>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Andy Whitcroft <apw@canonical.com>, Mel Gorman <mgorman@suse.de>
+References: <515E92CE.2000509@canonical.com>
+ <20130405142104.GB29290@pd.tnic>
+ <20130406145804.GJ3423@redhat.com>
+ <20130406154751.GB3612@pd.tnic>
+ <20130408115344.GA7513@gmail.com>
+ <20130408115959.GB4395@pd.tnic>
+ <5162B7FF.7010603@canonical.com>
+ <20130408125129.GC4395@pd.tnic>
+ <5162C1A8.4060904@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <51626570.8000400@huawei.com>
+In-Reply-To: <5162C1A8.4060904@canonical.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 08-04-13 14:36:32, Li Zefan wrote:
-> Now memcg has the same life cycle with its corresponding cgroup, and
-> a cgroup is freed via RCU and then mem_cgroup_css_free() is called
-> in a work function, so we can simply call __mem_cgroup_free() in
-> mem_cgroup_css_free().
+On Mon, Apr 08, 2013 at 03:10:00PM +0200, Stefan Bader wrote:
+>          * that we limited the number of possible pages already to
+>          * the number of pages in the large page.
+>          */
+>         if (address == (address & pmask) && cpa->numpages == (psize >>
+> PAGE_SHIFT)) {
+>                 /*
+>                  * The address is aligned and the number of pages
+>                  * covers the full page.
+>                  */
+>                 new_pte = pfn_pte(pte_pfn(old_pte), new_prot);
+>                                                      ^
 > 
-> This actually reverts 59927fb984de1703c67bc640c3e522d8b5276c73
-> ("memcg: free mem_cgroup by RCU to fix oops").
+> This one. The first patch changed
 > 
-> Cc: Hugh Dickins <hughd@google.com>
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> -               new_pte = pfn_pte(pte_pfn(old_pte), canon_pgprot(new_prot));
+> +               new_pte = pfn_pte(pte_pfn(old_pte), new_prot);
+> 
+> The fixup patch drops new_prot completely from being initialized and only works
+> on req_prot. Probably it would be best to also drop the definition of new_prot.
+> I think it then completely unused.
 
-OK, makes sense after the previous changes.
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Actually, we do need and initialize new_prot at line 495:
 
-> ---
->  mm/memcontrol.c | 51 +++++----------------------------------------------
->  1 file changed, 5 insertions(+), 46 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index a6d44bc..5aa6e91 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -261,28 +261,10 @@ struct mem_cgroup {
->  	 */
->  	struct res_counter res;
->  
-> -	union {
-> -		/*
-> -		 * the counter to account for mem+swap usage.
-> -		 */
-> -		struct res_counter memsw;
-> -
-> -		/*
-> -		 * rcu_freeing is used only when freeing struct mem_cgroup,
-> -		 * so put it into a union to avoid wasting more memory.
-> -		 * It must be disjoint from the css field.  It could be
-> -		 * in a union with the res field, but res plays a much
-> -		 * larger part in mem_cgroup life than memsw, and might
-> -		 * be of interest, even at time of free, when debugging.
-> -		 * So share rcu_head with the less interesting memsw.
-> -		 */
-> -		struct rcu_head rcu_freeing;
-> -		/*
-> -		 * We also need some space for a worker in deferred freeing.
-> -		 * By the time we call it, rcu_freeing is no longer in use.
-> -		 */
-> -		struct work_struct work_freeing;
-> -	};
-> +	/*
-> +	 * the counter to account for mem+swap usage.
-> +	 */
-> +	struct res_counter memsw;
->  
->  	/*
->  	 * the counter to account for kernel memory usage.
-> @@ -6097,29 +6079,6 @@ static void __mem_cgroup_free(struct mem_cgroup *memcg)
->  		vfree(memcg);
->  }
->  
-> -
-> -/*
-> - * Helpers for freeing a kmalloc()ed/vzalloc()ed mem_cgroup by RCU,
-> - * but in process context.  The work_freeing structure is overlaid
-> - * on the rcu_freeing structure, which itself is overlaid on memsw.
-> - */
-> -static void free_work(struct work_struct *work)
-> -{
-> -	struct mem_cgroup *memcg;
-> -
-> -	memcg = container_of(work, struct mem_cgroup, work_freeing);
-> -	__mem_cgroup_free(memcg);
-> -}
-> -
-> -static void free_rcu(struct rcu_head *rcu_head)
-> -{
-> -	struct mem_cgroup *memcg;
-> -
-> -	memcg = container_of(rcu_head, struct mem_cgroup, rcu_freeing);
-> -	INIT_WORK(&memcg->work_freeing, free_work);
-> -	schedule_work(&memcg->work_freeing);
-> -}
-> -
->  /*
->   * Returns the parent mem_cgroup in memcgroup hierarchy with hierarchy enabled.
->   */
-> @@ -6269,7 +6228,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
->  
->  	mem_cgroup_sockets_destroy(memcg);
->  
-> -	call_rcu(&memcg->rcu_freeing, free_rcu);
-> +	__mem_cgroup_free(memcg);
->  }
->  
->  #ifdef CONFIG_MMU
-> -- 
-> 1.8.0.2
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+	pfn = pte_pfn(old_pte) + ((address & (psize - 1)) >> PAGE_SHIFT);
+	cpa->pfn = pfn;
+
+	new_prot = static_protections(req_prot, address, pfn);		<---
+
+and we need it for the subsequent loop where we go over the 512 PTEs to
+decide whether to split or not.
+
+So it is needed after all, AFAICT.
 
 -- 
-Michal Hocko
-SUSE Labs
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
