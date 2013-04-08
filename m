@@ -1,309 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935598Ab3DHTFQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 15:05:16 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:38223 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762460Ab3DHTFO (ORCPT
+	id S935637Ab3DHTGC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 15:06:02 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:37145 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934741Ab3DHTGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 15:05:14 -0400
-Date: Mon, 8 Apr 2013 15:05:10 -0400
-From: Andrew Shewmaker <agshew@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        simon.jeons@gmail.com, ric.masonn@gmail.com
-Subject: [PATCH v8 2/3] mm: replace hardcoded 3% with admin_reserve_pages knob
-Message-ID: <20130408190510.GB2321@localhost.localdomain>
+	Mon, 8 Apr 2013 15:06:00 -0400
+Message-ID: <51631510.6080401@linaro.org>
+Date: Mon, 08 Apr 2013 12:05:52 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pawel Moll <pawel.moll@arm.com>
+CC: Richard Cochran <richardcochran@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [RFC] perf: need to expose sched_clock to correlate user samples
+ with kernel samples
+References: <51586315.7080006@gmail.com> <5159D221.70304@linaro.org>  <1364889256.16858.1.camel@laptop> <515B0502.8070408@linaro.org>  <1365009558.26858.19.camel@hornet> <515C66FE.7030501@linaro.org>  <1365010502.26858.32.camel@hornet> <515C6C01.9070905@linaro.org>  <1365092963.26858.107.camel@hornet> <1365185813.25942.12.camel@hornet>  <20130406110507.GC7572@netboy> <1365443897.24306.12.camel@hornet>
+In-Reply-To: <1365443897.24306.12.camel@hornet>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an admin_reserve_kbytes knob to allow admins to change the
-hardcoded memory reserve to something other than 3%, which
-may be multiple gigabytes on large memory systems. Only about
-8MB is necessary to enable recovery in the default mode, and
-only a few hundred MB are required even when overcommit is
-disabled.
+On 04/08/2013 10:58 AM, Pawel Moll wrote:
+> Now, before I spend time doing all this, a question to John, Peter,
+> Stephane and the rest of the public - would a solution providing such
+> userspace interface:
+>
+> 	fd = sys_perf_open()
+> 	timestamp = clock_gettime((FD_TO_CLOCKID(fd), &ts)
+>
+> be acceptable to all?
 
-This affects OVERCOMMIT_GUESS and OVERCOMMIT_NEVER.
+So thinking this through further, I'm worried we may _not_ be able to 
+eventually enable this to be a vdso as I had earlier hoped. Mostly 
+because I'm not sure how the fd -> file -> clock lookup could be done in 
+userland (any ideas?).
 
-admin_reserve_kbytes is initialized to min(3% free pages, 8MB)
+So this makes this approach mostly equivalent long term to the ioctl 
+method, from a performance perspective. And makes the dynamic posix 
+clockid somewhat less of a middle-ground compromise between the ioctl 
+and generic constant clockid approach.
 
-I arrived at 8MB by summing the RSS of sshd or login,
-bash, and top.
+So while I'm not opposed to the sort of extention proposed above, I want 
+to make sure introducing the new approach is worth the effort when 
+compared with just adding an ioctl.
 
-Please see first patch in this series for full background,
-motivation, testing, and full changelog.
+thanks
+-john
 
-Abbreviated Patch Changelog
-
-v8:
- * Rebased onto v3.9-rc4-mmotm-2013-03-26-15-09
-
- * Clarified reasoning between different calculations for
-   overcommit 'guess' and 'never modes in FAQ entry
-   "How do you calculate a minimum useful reserve?"
-   in response to Simon Jeons.
-
- * Added third patch in series to handle hot-added or hot-swapped
-   memory.
-
-v7:
- * Rebased onto v3.9-rc3-mmotm-2013-03-22-15-21
-
- * Removed sysctl.h include. It wasn't needed since I removed my
-   custom handler in v5
-
- * Ran checkpatch.pl and cleaned up whitespace errors
-   A couple lines barely exceed 80 chars, but that seems common in
-   nearby code.
-
- * Added future work section
-
- v7 discussion:
-
-  * Simon Jeons asked for clarification of why reserves
-    should be different between different overcommit modes.
-    FAQ updated in v8.
-
-  * Simon Jeons asked if other architectures had been tested.
-    None have been.
-
-v6:
- * Rebased onto v3.9-rc1-mmotm-2013-03-07-15-45
-
- * Replace user_reserve_pages with user_reserve_kbytes
-
- * Replace admin_reserve_pages with admin_reserve_kbytes
-
- * Increase verbosity of patch changelog
-
- * Add Alan Cox's example of sparse arrays to the
-   documentation of the 'always' overcommit mode
-
- * Add note in overcommit_memory documentation that
-   user_reserve_kbytes affects 'never' mode
-
- * Improve wording of user_reserve_kbytes documentation
-
- * Clearly document risk of root-cant-log-in
-   in admin_reserve_kbytes documentation
-
- v6 discussion:
-
-  * Andrew Morton pointed to a need to modify reserves
-    when memory is hot-added or hot-removed
----
- Documentation/sysctl/vm.txt | 30 ++++++++++++++++++++++++++++++
- kernel/sysctl.c             |  8 ++++++++
- mm/mmap.c                   | 30 ++++++++++++++++++++++++++----
- mm/nommu.c                  | 30 ++++++++++++++++++++++++++----
- 4 files changed, 90 insertions(+), 8 deletions(-)
-
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index d49e41d..a5717c3 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -18,6 +18,7 @@ files can be found in mm/swap.c.
- 
- Currently, these files are in /proc/sys/vm:
- 
-+- admin_reserve_kbytes
- - block_dump
- - compact_memory
- - dirty_background_bytes
-@@ -59,6 +60,35 @@ Currently, these files are in /proc/sys/vm:
- 
- ==============================================================
- 
-+admin_reserve_kbytes
-+
-+The amount of free memory in the system that should be reserved for users
-+with the capability cap_sys_admin.
-+
-+admin_reserve_kbytes defaults to min(3% of free pages, 8MB)
-+
-+That should provide enough for the admin to log in and kill a process,
-+if necessary, under the default overcommit 'guess' mode.
-+
-+Systems running under overcommit 'never' should increase this to account
-+for the full Virtual Memory Size of programs used to recover. Otherwise,
-+root may not be able to log in to recover the system.
-+
-+How do you calculate a minimum useful reserve?
-+
-+sshd or login + bash (or some other shell) + top (or ps, kill, etc.)
-+
-+For overcommit 'guess', we can sum resident set sizes (RSS).
-+On x86_64 this is about 8MB.
-+
-+For overcommit 'never', we can take the max of their virtual sizes (VSZ)
-+and add the sum of their RSS.
-+On x86_64 this is about 128MB.
-+
-+Changing this takes effect whenever an application requests memory.
-+
-+==============================================================
-+
- block_dump
- 
- block_dump enables block I/O debugging when set to a nonzero value. More
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index d3abd65..888630e 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -98,6 +98,7 @@
- extern int sysctl_overcommit_memory;
- extern int sysctl_overcommit_ratio;
- extern unsigned long sysctl_user_reserve_kbytes;
-+extern unsigned long sysctl_admin_reserve_kbytes;
- extern int max_threads;
- extern int suid_dumpable;
- #ifdef CONFIG_COREDUMP
-@@ -1437,6 +1438,13 @@ static struct ctl_table vm_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_doulongvec_minmax,
- 	},
-+	{
-+		.procname	= "admin_reserve_kbytes",
-+		.data		= &sysctl_admin_reserve_kbytes,
-+		.maxlen		= sizeof(sysctl_admin_reserve_kbytes),
-+		.mode		= 0644,
-+		.proc_handler	= proc_doulongvec_minmax,
-+	},
- 	{ }
- };
- 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 6f983cc..8fb9d99 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -85,6 +85,7 @@ int sysctl_overcommit_memory __read_mostly = OVERCOMMIT_GUESS;  /* heuristic ove
- int sysctl_overcommit_ratio __read_mostly = 50;	/* default is 50% */
- int sysctl_max_map_count __read_mostly = DEFAULT_MAX_MAP_COUNT;
- unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
-+unsigned long sysctl_admin_reserve_kbytes __read_mostly = 1UL << 13; /* 8MB */
- /*
-  * Make sure vm_committed_as in one cacheline and not cacheline shared with
-  * other variables. It can be updated by several CPUs frequently.
-@@ -164,10 +165,10 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
- 			free -= totalreserve_pages;
- 
- 		/*
--		 * Leave the last 3% for root
-+		 * Reserve some for root
- 		 */
- 		if (!cap_sys_admin)
--			free -= free / 32;
-+			free -= sysctl_admin_reserve_kbytes  >> (PAGE_SHIFT - 10);
- 
- 		if (free > pages)
- 			return 0;
-@@ -178,10 +179,10 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
- 	allowed = (totalram_pages - hugetlb_total_pages())
- 	       	* sysctl_overcommit_ratio / 100;
- 	/*
--	 * Leave the last 3% for root
-+	 * Reserve some for root
- 	 */
- 	if (!cap_sys_admin)
--		allowed -= allowed / 32;
-+		allowed -= sysctl_admin_reserve_kbytes >> (PAGE_SHIFT - 10);
- 	allowed += total_swap_pages;
- 
- 	/*
-@@ -3089,3 +3090,24 @@ int __meminit init_user_reserve(void)
- 	return 0;
- }
- module_init(init_user_reserve)
-+
-+/*
-+ * Initialise sysctl_admin_reserve_kbytes.
-+ *
-+ * The purpose of sysctl_admin_reserve_kbytes is to allow the sys admin
-+ * to log in and kill a memory hogging process.
-+ *
-+ * Systems with more than 256MB will reserve 8MB, enough to recover
-+ * with sshd, bash, and top in OVERCOMMIT_GUESS. Smaller systems will
-+ * only reserve 3% of free pages by default.
-+ */
-+int __meminit init_admin_reserve(void)
-+{
-+	unsigned long free_kbytes;
-+
-+	free_kbytes = global_page_state(NR_FREE_PAGES) << (PAGE_SHIFT - 10);
-+
-+	sysctl_admin_reserve_kbytes = min(free_kbytes / 32, 1UL << 13);
-+	return 0;
-+}
-+module_init(init_admin_reserve)
-diff --git a/mm/nommu.c b/mm/nommu.c
-index 0018362..15015b3 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -64,6 +64,7 @@ int sysctl_overcommit_ratio = 50; /* default is 50% */
- int sysctl_max_map_count = DEFAULT_MAX_MAP_COUNT;
- int sysctl_nr_trim_pages = CONFIG_NOMMU_INITIAL_TRIM_EXCESS;
- unsigned long sysctl_user_reserve_kbytes __read_mostly = 1UL << 17; /* 128MB */
-+unsigned long sysctl_admin_reserve_kbytes __read_mostly = 1UL << 13; /* 8MB */
- int heap_stack_gap = 0;
- 
- atomic_long_t mmap_pages_allocated;
-@@ -1924,10 +1925,10 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
- 			free -= totalreserve_pages;
- 
- 		/*
--		 * Leave the last 3% for root
-+		 * Reserve some for root
- 		 */
- 		if (!cap_sys_admin)
--			free -= free / 32;
-+			free -= sysctl_admin_reserve_kbytes  >> (PAGE_SHIFT - 10);
- 
- 		if (free > pages)
- 			return 0;
-@@ -1937,10 +1938,10 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
- 
- 	allowed = totalram_pages * sysctl_overcommit_ratio / 100;
- 	/*
--	 * Leave the last 3% for root
-+	 * Reserve some 3% for root
- 	 */
- 	if (!cap_sys_admin)
--		allowed -= allowed / 32;
-+		allowed -= sysctl_admin_reserve_kbytes >> (PAGE_SHIFT - 10);
- 	allowed += total_swap_pages;
- 
- 	/*
-@@ -2132,3 +2133,24 @@ int __meminit init_user_reserve(void)
- 	return 0;
- }
- module_init(init_user_reserve)
-+
-+/*
-+ * Initialise sysctl_admin_reserve_kbytes.
-+ *
-+ * The purpose of sysctl_admin_reserve_kbytes is to allow the sys admin
-+ * to log in and kill a memory hogging process.
-+ *
-+ * Systems with more than 256MB will reserve 8MB, enough to recover
-+ * with sshd, bash, and top in OVERCOMMIT_GUESS. Smaller systems will
-+ * only reserve 3% of free pages by default.
-+ */
-+int __meminit init_admin_reserve(void)
-+{
-+	unsigned long free_kbytes;
-+
-+	free_kbytes = global_page_state(NR_FREE_PAGES) << (PAGE_SHIFT - 10);
-+
-+	sysctl_admin_reserve_kbytes = min(free_kbytes / 32, 1UL << 13);
-+	return 0;
-+}
-+module_init(init_admin_reserve)
--- 
-1.8.0.1
 
