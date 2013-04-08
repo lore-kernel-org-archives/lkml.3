@@ -1,264 +1,1091 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936543Ab3DHWxN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 18:53:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:16267 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936593Ab3DHWwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 18:52:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,434,1363158000"; 
-   d="scan'208";a="314995535"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next] mei: bus: Add device enabling and disabling API
-Date: Tue,  9 Apr 2013 01:51:38 +0300
-Message-Id: <1365461498-16580-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S936569Ab3DHWwg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 18:52:36 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:52150 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936498Ab3DHWwe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 18:52:34 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v3 7/9] ARM: dts: mvebu: Convert all the mvebu files to use the range property
+Date: Tue,  9 Apr 2013 00:52:15 +0200
+Message-Id: <1365461538-30702-8-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1365461538-30702-1-git-send-email-gregory.clement@free-electrons.com>
+References: <1365461538-30702-1-git-send-email-gregory.clement@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Samuel Ortiz <sameo@linux.intel.com>
+This conversion will allow to keep 32 bits addresses for the internal
+registers whereas the memory of the system will be 64 bits.
+Later it will also ease the move of the mvebu-mbus driver to the
+device tree support.
 
-It should be left to the drivers to enable and disable the device on the
-MEI bus when e.g getting probed.
-For drivers to be able to safely call the enable and disable hooks, the
-mei_cl_ops must be set before it's probed and thus this should happen
-before registering the device on the MEI bus. Hence the mei_cl_add_device()
-prototype change.
-
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 ---
- Documentation/misc-devices/mei/mei-client-bus.txt |  7 +-
- drivers/misc/mei/bus.c                            | 99 ++++++++++++++++++++++-
- drivers/misc/mei/mei_dev.h                        | 28 ++++---
- include/linux/mei_cl_bus.h                        |  3 +
- 4 files changed, 123 insertions(+), 14 deletions(-)
+ arch/arm/boot/dts/armada-370-db.dts              |   16 ++---
+ arch/arm/boot/dts/armada-370-mirabox.dts         |   14 ++--
+ arch/arm/boot/dts/armada-370-rd.dts              |   14 ++--
+ arch/arm/boot/dts/armada-370-xp.dtsi             |   83 +++++++++++-----------
+ arch/arm/boot/dts/armada-370.dtsi                |   49 ++++++-------
+ arch/arm/boot/dts/armada-xp-db.dts               |   28 ++++----
+ arch/arm/boot/dts/armada-xp-gp.dts               |   20 +++---
+ arch/arm/boot/dts/armada-xp-mv78230.dtsi         |   10 +--
+ arch/arm/boot/dts/armada-xp-mv78260.dtsi         |   18 ++---
+ arch/arm/boot/dts/armada-xp-mv78460.dtsi         |   18 ++---
+ arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts |   22 +++---
+ arch/arm/boot/dts/armada-xp.dtsi                 |   65 ++++++++---------
+ 12 files changed, 180 insertions(+), 177 deletions(-)
 
-diff --git a/Documentation/misc-devices/mei/mei-client-bus.txt b/Documentation/misc-devices/mei/mei-client-bus.txt
-index 9dc5ebf..f83910a 100644
---- a/Documentation/misc-devices/mei/mei-client-bus.txt
-+++ b/Documentation/misc-devices/mei/mei-client-bus.txt
-@@ -104,13 +104,16 @@ int contact_probe(struct mei_cl_device *dev, struct mei_cl_device_id *id)
- 	struct contact_driver *contact;
+diff --git a/arch/arm/boot/dts/armada-370-db.dts b/arch/arm/boot/dts/armada-370-db.dts
+index e34b280..183901c 100644
+--- a/arch/arm/boot/dts/armada-370-db.dts
++++ b/arch/arm/boot/dts/armada-370-db.dts
+@@ -30,11 +30,11 @@
+ 	};
  
- 	[...]
-+	mei_cl_enable_device(dev);
-+
- 	mei_cl_register_event_cb(dev, contact_event_cb, contact);
+ 	soc {
+-		serial@d0012000 {
++		serial@12000 {
+ 			clock-frequency = <200000000>;
+ 			status = "okay";
+ 		};
+-		sata@d00a0000 {
++		sata@a0000 {
+ 			nr-ports = <2>;
+ 			status = "okay";
+ 		};
+@@ -49,18 +49,18 @@
+ 			};
+ 		};
  
- 	return 0;
-  }
+-		ethernet@d0070000 {
++		ethernet@70000 {
+ 			status = "okay";
+ 			phy = <&phy0>;
+ 			phy-mode = "rgmii-id";
+ 		};
+-		ethernet@d0074000 {
++		ethernet@74000 {
+ 			status = "okay";
+ 			phy = <&phy1>;
+ 			phy-mode = "rgmii-id";
+ 		};
  
--In the probe routine the driver basically registers an ME bus event handler
--which is as close as it can get to registering a threaded IRQ handler.
-+In the probe routine the driver first enable the MEI device and then registers
-+an ME bus event handler which is as close as it can get to registering a
-+threaded IRQ handler.
- The handler implementation will typically call some I/O routine depending on
- the pending events:
+-		mvsdio@d00d4000 {
++		mvsdio@d4000 {
+ 			pinctrl-0 = <&sdio_pins1>;
+ 			pinctrl-names = "default";
+ 			/*
+@@ -75,15 +75,15 @@
+ 			/* No CD or WP GPIOs */
+ 		};
  
-diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-index 6badfa1..834ceeb 100644
---- a/drivers/misc/mei/bus.c
-+++ b/drivers/misc/mei/bus.c
-@@ -153,7 +153,8 @@ static struct mei_cl *mei_bus_find_mei_cl_by_uuid(struct mei_device *dev,
- 	return NULL;
- }
- struct mei_cl_device *mei_cl_add_device(struct mei_device *dev,
--				  uuid_le uuid, char *name)
-+					uuid_le uuid, char *name,
-+					struct mei_cl_ops *ops)
- {
- 	struct mei_cl_device *device;
- 	struct mei_cl *cl;
-@@ -168,6 +169,7 @@ struct mei_cl_device *mei_cl_add_device(struct mei_device *dev,
- 		return NULL;
+-		usb@d0050000 {
++		usb@50000 {
+ 			status = "okay";
+ 		};
  
- 	device->cl = cl;
-+	device->ops = ops;
+-		usb@d0051000 {
++		usb@51000 {
+ 			status = "okay";
+ 		};
  
- 	device->dev.parent = &dev->pdev->dev;
- 	device->dev.bus = &mei_cl_bus_type;
-@@ -408,6 +410,101 @@ void mei_cl_set_drvdata(struct mei_cl_device *device, void *data)
- }
- EXPORT_SYMBOL_GPL(mei_cl_set_drvdata);
+-		spi0: spi@d0010600 {
++		spi0: spi@10600 {
+ 			status = "okay";
  
-+int mei_cl_enable_device(struct mei_cl_device *device)
-+{
-+	int err;
-+	struct mei_device *dev;
-+	struct mei_cl *cl = device->cl;
-+
-+	if (cl == NULL)
-+		return -ENODEV;
-+
-+	dev = cl->dev;
-+
-+	mutex_lock(&dev->device_lock);
-+
-+	cl->state = MEI_FILE_CONNECTING;
-+
-+	err = mei_cl_connect(cl, NULL);
-+	if (err < 0) {
-+		mutex_unlock(&dev->device_lock);
-+		dev_err(&dev->pdev->dev, "Could not connect to the ME client");
-+
-+		return err;
-+	}
-+
-+	mutex_unlock(&dev->device_lock);
-+
-+	if (device->event_cb && !cl->read_cb)
-+		mei_cl_read_start(device->cl);
-+
-+	if (!device->ops || !device->ops->enable)
-+		return 0;
-+
-+	return device->ops->enable(device);
-+}
-+EXPORT_SYMBOL_GPL(mei_cl_enable_device);
-+
-+int mei_cl_disable_device(struct mei_cl_device *device)
-+{
-+	int err;
-+	struct mei_device *dev;
-+	struct mei_cl *cl = device->cl;
-+
-+	if (cl == NULL)
-+		return -ENODEV;
-+
-+	dev = cl->dev;
-+
-+	mutex_lock(&dev->device_lock);
-+
-+	if (cl->state != MEI_FILE_CONNECTED) {
-+		mutex_unlock(&dev->device_lock);
-+		dev_err(&dev->pdev->dev, "Already disconnected");
-+
-+		return 0;
-+	}
-+
-+	cl->state = MEI_FILE_DISCONNECTING;
-+
-+	err = mei_cl_disconnect(cl);
-+	if (err < 0) {
-+		mutex_unlock(&dev->device_lock);
-+		dev_err(&dev->pdev->dev,
-+			"Could not disconnect from the ME client");
-+
-+		return err;
-+	}
-+
-+	/* Flush queues and remove any pending read */
-+	mei_cl_flush_queues(cl);
-+
-+	if (cl->read_cb) {
-+		struct mei_cl_cb *cb = NULL;
-+
-+		cb = mei_cl_find_read_cb(cl);
-+		/* Remove entry from read list */
-+		if (cb)
-+			list_del(&cb->list);
-+
-+		cb = cl->read_cb;
-+		cl->read_cb = NULL;
-+
-+		if (cb) {
-+			mei_io_cb_free(cb);
-+			cb = NULL;
-+		}
-+	}
-+
-+	mutex_unlock(&dev->device_lock);
-+
-+	if (!device->ops || !device->ops->disable)
-+		return 0;
-+
-+	return device->ops->disable(device);
-+}
-+EXPORT_SYMBOL_GPL(mei_cl_disable_device);
-+
- void mei_cl_bus_rx_event(struct mei_cl *cl)
- {
- 	struct mei_cl_device *device = cl->device;
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index d786da6..c02967d 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -269,30 +269,36 @@ struct mei_hw_ops {
- };
+ 			spi-flash@0 {
+diff --git a/arch/arm/boot/dts/armada-370-mirabox.dts b/arch/arm/boot/dts/armada-370-mirabox.dts
+index 3234875..77dfec7 100644
+--- a/arch/arm/boot/dts/armada-370-mirabox.dts
++++ b/arch/arm/boot/dts/armada-370-mirabox.dts
+@@ -25,11 +25,11 @@
+ 	};
  
- /* MEI bus API*/
--struct mei_cl_device *mei_cl_add_device(struct mei_device *dev,
--				  uuid_le uuid, char *name);
--void mei_cl_remove_device(struct mei_cl_device *device);
--
--int __mei_cl_async_send(struct mei_cl *cl, u8 *buf, size_t length);
--int __mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length);
--int __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length);
+ 	soc {
+-		serial@d0012000 {
++		serial@12000 {
+ 			clock-frequency = <200000000>;
+ 			status = "okay";
+ 		};
+-		timer@d0020300 {
++		timer@20300 {
+ 			clock-frequency = <600000000>;
+ 			status = "okay";
+ 		};
+@@ -42,18 +42,18 @@
+ 				reg = <1>;
+ 			};
+ 		};
+-		ethernet@d0070000 {
++		ethernet@70000 {
+ 			status = "okay";
+ 			phy = <&phy0>;
+ 			phy-mode = "rgmii-id";
+ 		};
+-		ethernet@d0074000 {
++		ethernet@74000 {
+ 			status = "okay";
+ 			phy = <&phy1>;
+ 			phy-mode = "rgmii-id";
+ 		};
  
- /**
-- * struct mei_cl_transport_ops - MEI CL device transport ops
-+ * struct mei_cl_ops - MEI CL device ops
-  * This structure allows ME host clients to implement technology
-- * specific transport layers.
-+ * specific operations.
-  *
-+ * @enable: Enable an MEI CL device. Some devices require specific
-+ *	HECI commands to initialize completely.
-+ * @disable: Disable an MEI CL device.
-  * @send: Tx hook for the device. This allows ME host clients to trap
-  *	the device driver buffers before actually physically
-  *	pushing it to the ME.
-  * @recv: Rx hook for the device. This allows ME host clients to trap the
-  *	ME buffers before forwarding them to the device driver.
-  */
--struct mei_cl_transport_ops {
-+struct mei_cl_ops {
-+	int (*enable)(struct mei_cl_device *device);
-+	int (*disable)(struct mei_cl_device *device);
- 	int (*send)(struct mei_cl_device *device, u8 *buf, size_t length);
- 	int (*recv)(struct mei_cl_device *device, u8 *buf, size_t length);
- };
+-		mvsdio@d00d4000 {
++		mvsdio@d4000 {
+ 			pinctrl-0 = <&sdio_pins3>;
+ 			pinctrl-names = "default";
+ 			status = "okay";
+@@ -63,11 +63,11 @@
+ 			 */
+ 		};
  
-+struct mei_cl_device *mei_cl_add_device(struct mei_device *dev,
-+					uuid_le uuid, char *name,
-+					struct mei_cl_ops *ops);
-+void mei_cl_remove_device(struct mei_cl_device *device);
+-		usb@d0050000 {
++		usb@50000 {
+ 			status = "okay";
+ 		};
+ 
+-		usb@d0051000 {
++		usb@51000 {
+ 			status = "okay";
+ 		};
+ 	};
+diff --git a/arch/arm/boot/dts/armada-370-rd.dts b/arch/arm/boot/dts/armada-370-rd.dts
+index 070bba4..be209020 100644
+--- a/arch/arm/boot/dts/armada-370-rd.dts
++++ b/arch/arm/boot/dts/armada-370-rd.dts
+@@ -28,11 +28,11 @@
+ 	};
+ 
+ 	soc {
+-		serial@d0012000 {
++		serial@12000 {
+ 			clock-frequency = <200000000>;
+ 			status = "okay";
+ 		};
+-		sata@d00a0000 {
++		sata@a0000 {
+ 			nr-ports = <2>;
+ 			status = "okay";
+ 		};
+@@ -47,29 +47,29 @@
+ 			};
+ 		};
+ 
+-		ethernet@d0070000 {
++		ethernet@70000 {
+ 			status = "okay";
+ 			phy = <&phy0>;
+ 			phy-mode = "sgmii";
+ 		};
+-		ethernet@d0074000 {
++		ethernet@74000 {
+ 			status = "okay";
+ 			phy = <&phy1>;
+ 			phy-mode = "rgmii-id";
+ 		};
+ 
+-		mvsdio@d00d4000 {
++		mvsdio@d4000 {
+ 			pinctrl-0 = <&sdio_pins1>;
+ 			pinctrl-names = "default";
+ 			status = "okay";
+ 			/* No CD or WP GPIOs */
+ 		};
+ 
+-		usb@d0050000 {
++		usb@50000 {
+ 			status = "okay";
+ 		};
+ 
+-		usb@d0051000 {
++		usb@51000 {
+ 			status = "okay";
+ 		};
+ 	};
+diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
+index bd26c48..1874655 100644
+--- a/arch/arm/boot/dts/armada-370-xp.dtsi
++++ b/arch/arm/boot/dts/armada-370-xp.dtsi
+@@ -28,59 +28,60 @@
+ 		};
+ 	};
+ 
 +
-+int __mei_cl_async_send(struct mei_cl *cl, u8 *buf, size_t length);
-+int __mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length);
-+int __mei_cl_recv(struct mei_cl *cl, u8 *buf, size_t length);
- void mei_cl_bus_rx_event(struct mei_cl *cl);
- int mei_cl_bus_init(void);
- void mei_cl_bus_exit(void);
-@@ -319,7 +325,7 @@ struct mei_cl_device {
+ 	soc {
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+ 		compatible = "simple-bus";
+ 		interrupt-parent = <&mpic>;
+-		ranges;
++		ranges = <0 0xd0000000 0x100000>;
  
- 	struct mei_cl *cl;
+-		mpic: interrupt-controller@d0020000 {
+-			compatible = "marvell,mpic";
+-			#interrupt-cells = <1>;
+-			#size-cells = <1>;
+-			interrupt-controller;
++		mpic: interrupt-controller@20000 {
++				compatible = "marvell,mpic";
++				#interrupt-cells = <1>;
++				#size-cells = <1>;
++				interrupt-controller;
+ 		};
  
--	const struct mei_cl_transport_ops *ops;
-+	const struct mei_cl_ops *ops;
+-		coherency-fabric@d0020200 {
+-			compatible = "marvell,coherency-fabric";
+-			reg = <0xd0020200 0xb0>,
+-			      <0xd0021810 0x1c>;
++		coherency-fabric@20200 {
++				compatible = "marvell,coherency-fabric";
++				reg = <0x20200 0xb0>,
++				      <0x21810 0x1c>;
+ 		};
  
- 	struct work_struct event_work;
- 	mei_cl_event_cb_t event_cb;
-diff --git a/include/linux/mei_cl_bus.h b/include/linux/mei_cl_bus.h
-index 1bece18..d14af7b 100644
---- a/include/linux/mei_cl_bus.h
-+++ b/include/linux/mei_cl_bus.h
-@@ -38,4 +38,7 @@ int mei_cl_register_event_cb(struct mei_cl_device *device,
- void *mei_cl_get_drvdata(const struct mei_cl_device *device);
- void mei_cl_set_drvdata(struct mei_cl_device *device, void *data);
+-		serial@d0012000 {
++		serial@12000 {
+ 				compatible = "snps,dw-apb-uart";
+-				reg = <0xd0012000 0x100>;
++				reg = <0x12000 0x100>;
+ 				reg-shift = <2>;
+ 				interrupts = <41>;
+ 				reg-io-width = <1>;
+ 				status = "disabled";
+ 		};
+-		serial@d0012100 {
++		serial@12100 {
+ 				compatible = "snps,dw-apb-uart";
+-				reg = <0xd0012100 0x100>;
++				reg = <0x12100 0x100>;
+ 				reg-shift = <2>;
+ 				interrupts = <42>;
+ 				reg-io-width = <1>;
+ 				status = "disabled";
+ 		};
  
-+int mei_cl_enable_device(struct mei_cl_device *device);
-+int mei_cl_disable_device(struct mei_cl_device *device);
+-		timer@d0020300 {
++		timer@20300 {
+ 			       compatible = "marvell,armada-370-xp-timer";
+-			       reg = <0xd0020300 0x30>,
+-			       <0xd0021040 0x30>;
++			       reg = <0x20300 0x30>,
++			       <0x21040 0x30>;
+ 			       interrupts = <37>, <38>, <39>, <40>, <5>, <6>;
+ 			       clocks = <&coreclk 2>;
+ 		};
+ 
+-		addr-decoding@d0020000 {
++		addr-decoding@20000 {
+ 			compatible = "marvell,armada-addr-decoding-controller";
+-			reg = <0xd0020000 0x258>;
++			reg = <0x20000 0x258>;
+ 		};
+ 
+-		sata@d00a0000 {
++		sata@a0000 {
+ 			compatible = "marvell,orion-sata";
+-			reg = <0xd00a0000 0x2400>;
++			reg = <0xa0000 0x2400>;
+ 			interrupts = <55>;
+ 			clocks = <&gateclk 15>, <&gateclk 30>;
+ 			clock-names = "0", "1";
+@@ -91,28 +92,28 @@
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			compatible = "marvell,orion-mdio";
+-			reg = <0xd0072004 0x4>;
++			reg = <0x72004 0x4>;
+ 		};
+ 
+-		ethernet@d0070000 {
++		ethernet@70000 {
+ 				compatible = "marvell,armada-370-neta";
+-				reg = <0xd0070000 0x2500>;
++				reg = <0x70000 0x2500>;
+ 				interrupts = <8>;
+ 				clocks = <&gateclk 4>;
+ 				status = "disabled";
+ 		};
+ 
+-		ethernet@d0074000 {
++		ethernet@74000 {
+ 				compatible = "marvell,armada-370-neta";
+-				reg = <0xd0074000 0x2500>;
++				reg = <0x74000 0x2500>;
+ 				interrupts = <10>;
+ 				clocks = <&gateclk 3>;
+ 				status = "disabled";
+ 		};
+ 
+-		i2c0: i2c@d0011000 {
++		i2c0: i2c@11000 {
+ 			compatible = "marvell,mv64xxx-i2c";
+-			reg = <0xd0011000 0x20>;
++			reg = <0x11000 0x20>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			interrupts = <31>;
+@@ -121,9 +122,9 @@
+ 			status = "disabled";
+ 		};
+ 
+-		i2c1: i2c@d0011100 {
++		i2c1: i2c@11100 {
+ 			compatible = "marvell,mv64xxx-i2c";
+-			reg = <0xd0011100 0x20>;
++			reg = <0x11100 0x20>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			interrupts = <32>;
+@@ -134,35 +135,35 @@
+ 
+ 		rtc@10300 {
+ 			compatible = "marvell,orion-rtc";
+-			reg = <0xd0010300 0x20>;
++			reg = <0x10300 0x20>;
+ 			interrupts = <50>;
+ 		};
+ 
+-		mvsdio@d00d4000 {
++		mvsdio@d4000 {
+ 			compatible = "marvell,orion-sdio";
+-			reg = <0xd00d4000 0x200>;
++			reg = <0xd4000 0x200>;
+ 			interrupts = <54>;
+ 			clocks = <&gateclk 17>;
+ 			status = "disabled";
+ 		};
+ 
+-		usb@d0050000 {
++		usb@50000 {
+ 			compatible = "marvell,orion-ehci";
+-			reg = <0xd0050000 0x500>;
++			reg = <0x50000 0x500>;
+ 			interrupts = <45>;
+ 			status = "disabled";
+ 		};
+ 
+-		usb@d0051000 {
++		usb@51000 {
+ 			compatible = "marvell,orion-ehci";
+-			reg = <0xd0051000 0x500>;
++			reg = <0x51000 0x500>;
+ 			interrupts = <46>;
+ 			status = "disabled";
+ 		};
+ 
+-		spi0: spi@d0010600 {
++		spi0: spi@10600 {
+ 			compatible = "marvell,orion-spi";
+-			reg = <0xd0010600 0x28>;
++			reg = <0x10600 0x28>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			cell-index = <0>;
+@@ -171,9 +172,9 @@
+ 			status = "disabled";
+ 		};
+ 
+-		spi1: spi@d0010680 {
++		spi1: spi@10680 {
+ 			compatible = "marvell,orion-spi";
+-			reg = <0xd0010680 0x28>;
++			reg = <0x10680 0x28>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			cell-index = <1>;
+diff --git a/arch/arm/boot/dts/armada-370.dtsi b/arch/arm/boot/dts/armada-370.dtsi
+index 9bc092b..04a8004 100644
+--- a/arch/arm/boot/dts/armada-370.dtsi
++++ b/arch/arm/boot/dts/armada-370.dtsi
+@@ -28,14 +28,15 @@
+ 	};
+ 
+ 	soc {
+-		mpic: interrupt-controller@d0020000 {
+-			reg = <0xd0020a00 0x1d0>,
+-			      <0xd0021870 0x58>;
 +
- #endif /* _LINUX_MEI_CL_BUS_H */
++		mpic: interrupt-controller@20000 {
++			reg = <0x20a00 0x1d0>,
++			      <0x21870 0x58>;
+ 		};
+ 
+-		system-controller@d0018200 {
++		system-controller@18200 {
+ 				compatible = "marvell,armada-370-xp-system-controller";
+-				reg = <0xd0018200 0x100>;
++				reg = <0x18200 0x100>;
+ 		};
+ 
+ 		L2: l2-cache {
+@@ -47,7 +48,7 @@
+ 
+ 		pinctrl {
+ 			compatible = "marvell,mv88f6710-pinctrl";
+-			reg = <0xd0018000 0x38>;
++			reg = <0x18000 0x38>;
+ 
+ 			sdio_pins1: sdio-pins1 {
+ 			      marvell,pins = "mpp9",  "mpp11", "mpp12",
+@@ -68,9 +69,9 @@
+ 			};
+ 	        };
+ 
+-		gpio0: gpio@d0018100 {
++		gpio0: gpio@18100 {
+ 			compatible = "marvell,orion-gpio";
+-			reg = <0xd0018100 0x40>;
++			reg = <0x18100 0x40>;
+ 			ngpios = <32>;
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+@@ -79,9 +80,9 @@
+ 			interrupts = <82>, <83>, <84>, <85>;
+ 		};
+ 
+-		gpio1: gpio@d0018140 {
++		gpio1: gpio@18140 {
+ 			compatible = "marvell,orion-gpio";
+-			reg = <0xd0018140 0x40>;
++			reg = <0x18140 0x40>;
+ 			ngpios = <32>;
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+@@ -90,9 +91,9 @@
+ 			interrupts = <87>, <88>, <89>, <90>;
+ 		};
+ 
+-		gpio2: gpio@d0018180 {
++		gpio2: gpio@18180 {
+ 			compatible = "marvell,orion-gpio";
+-			reg = <0xd0018180 0x40>;
++			reg = <0x18180 0x40>;
+ 			ngpios = <2>;
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+@@ -101,23 +102,23 @@
+ 			interrupts = <91>;
+ 		};
+ 
+-		coreclk: mvebu-sar@d0018230 {
++		coreclk: mvebu-sar@18230 {
+ 			compatible = "marvell,armada-370-core-clock";
+-			reg = <0xd0018230 0x08>;
++			reg = <0x18230 0x08>;
+ 			#clock-cells = <1>;
+ 		};
+ 
+-		gateclk: clock-gating-control@d0018220 {
++		gateclk: clock-gating-control@18220 {
+ 			compatible = "marvell,armada-370-gating-clock";
+-			reg = <0xd0018220 0x4>;
++			reg = <0x18220 0x4>;
+ 			clocks = <&coreclk 0>;
+ 			#clock-cells = <1>;
+ 		};
+ 
+-		xor@d0060800 {
++		xor@60800 {
+ 			compatible = "marvell,orion-xor";
+-			reg = <0xd0060800 0x100
+-			       0xd0060A00 0x100>;
++			reg = <0x60800 0x100
++			       0x60A00 0x100>;
+ 			status = "okay";
+ 
+ 			xor00 {
+@@ -133,10 +134,10 @@
+ 			};
+ 		};
+ 
+-		xor@d0060900 {
++		xor@60900 {
+ 			compatible = "marvell,orion-xor";
+-			reg = <0xd0060900 0x100
+-			       0xd0060b00 0x100>;
++			reg = <0x60900 0x100
++			       0x60b00 0x100>;
+ 			status = "okay";
+ 
+ 			xor10 {
+@@ -152,11 +153,11 @@
+ 			};
+ 		};
+ 
+-		usb@d0050000 {
++		usb@50000 {
+ 			clocks = <&coreclk 0>;
+ 		};
+ 
+-		usb@d0051000 {
++		usb@51000 {
+ 			clocks = <&coreclk 0>;
+ 		};
+ 
+diff --git a/arch/arm/boot/dts/armada-xp-db.dts b/arch/arm/boot/dts/armada-xp-db.dts
+index e83505e..5e2b595 100644
+--- a/arch/arm/boot/dts/armada-xp-db.dts
++++ b/arch/arm/boot/dts/armada-xp-db.dts
+@@ -30,24 +30,24 @@
+ 	};
+ 
+ 	soc {
+-		serial@d0012000 {
++		serial@12000 {
+ 			clock-frequency = <250000000>;
+ 			status = "okay";
+ 		};
+-		serial@d0012100 {
++		serial@12100 {
+ 			clock-frequency = <250000000>;
+ 			status = "okay";
+ 		};
+-		serial@d0012200 {
++		serial@12200 {
+ 			clock-frequency = <250000000>;
+ 			status = "okay";
+ 		};
+-		serial@d0012300 {
++		serial@12300 {
+ 			clock-frequency = <250000000>;
+ 			status = "okay";
+ 		};
+ 
+-		sata@d00a0000 {
++		sata@a0000 {
+ 			nr-ports = <2>;
+ 			status = "okay";
+ 		};
+@@ -70,47 +70,47 @@
+ 			};
+ 		};
+ 
+-		ethernet@d0070000 {
++		ethernet@70000 {
+ 			status = "okay";
+ 			phy = <&phy0>;
+ 			phy-mode = "rgmii-id";
+ 		};
+-		ethernet@d0074000 {
++		ethernet@74000 {
+ 			status = "okay";
+ 			phy = <&phy1>;
+ 			phy-mode = "rgmii-id";
+ 		};
+-		ethernet@d0030000 {
++		ethernet@30000 {
+ 			status = "okay";
+ 			phy = <&phy2>;
+ 			phy-mode = "sgmii";
+ 		};
+-		ethernet@d0034000 {
++		ethernet@34000 {
+ 			status = "okay";
+ 			phy = <&phy3>;
+ 			phy-mode = "sgmii";
+ 		};
+ 
+-		mvsdio@d00d4000 {
++		mvsdio@d4000 {
+ 			pinctrl-0 = <&sdio_pins>;
+ 			pinctrl-names = "default";
+ 			status = "okay";
+ 			/* No CD or WP GPIOs */
+ 		};
+ 
+-		usb@d0050000 {
++		usb@50000 {
+ 			status = "okay";
+ 		};
+ 
+-		usb@d0051000 {
++		usb@51000 {
+ 			status = "okay";
+ 		};
+ 
+-		usb@d0052000 {
++		usb@52000 {
+ 			status = "okay";
+ 		};
+ 
+-		spi0: spi@d0010600 {
++		spi0: spi@10600 {
+ 			status = "okay";
+ 
+ 			spi-flash@0 {
+diff --git a/arch/arm/boot/dts/armada-xp-gp.dts b/arch/arm/boot/dts/armada-xp-gp.dts
+index 1c8afe2..12b98d3 100644
+--- a/arch/arm/boot/dts/armada-xp-gp.dts
++++ b/arch/arm/boot/dts/armada-xp-gp.dts
+@@ -37,24 +37,24 @@
+ 	};
+ 
+ 	soc {
+-		serial@d0012000 {
++		serial@12000 {
+ 			clock-frequency = <250000000>;
+ 			status = "okay";
+ 		};
+-		serial@d0012100 {
++		serial@12100 {
+ 			clock-frequency = <250000000>;
+ 			status = "okay";
+ 		};
+-		serial@d0012200 {
++		serial@12200 {
+ 			clock-frequency = <250000000>;
+ 			status = "okay";
+ 		};
+-		serial@d0012300 {
++		serial@12300 {
+ 			clock-frequency = <250000000>;
+ 			status = "okay";
+ 		};
+ 
+-		sata@d00a0000 {
++		sata@a0000 {
+ 			nr-ports = <2>;
+ 			status = "okay";
+ 		};
+@@ -77,28 +77,28 @@
+ 			};
+ 		};
+ 
+-		ethernet@d0070000 {
++		ethernet@70000 {
+ 			status = "okay";
+ 			phy = <&phy0>;
+ 			phy-mode = "rgmii-id";
+ 		};
+-		ethernet@d0074000 {
++		ethernet@74000 {
+ 			status = "okay";
+ 			phy = <&phy1>;
+ 			phy-mode = "rgmii-id";
+ 		};
+-		ethernet@d0030000 {
++		ethernet@30000 {
+ 			status = "okay";
+ 			phy = <&phy2>;
+ 			phy-mode = "rgmii-id";
+ 		};
+-		ethernet@d0034000 {
++		ethernet@34000 {
+ 			status = "okay";
+ 			phy = <&phy3>;
+ 			phy-mode = "rgmii-id";
+ 		};
+ 
+-		spi0: spi@d0010600 {
++		spi0: spi@10600 {
+ 			status = "okay";
+ 
+ 			spi-flash@0 {
+diff --git a/arch/arm/boot/dts/armada-xp-mv78230.dtsi b/arch/arm/boot/dts/armada-xp-mv78230.dtsi
+index 50180eb..757fd42 100644
+--- a/arch/arm/boot/dts/armada-xp-mv78230.dtsi
++++ b/arch/arm/boot/dts/armada-xp-mv78230.dtsi
+@@ -46,7 +46,7 @@
+ 	soc {
+ 		pinctrl {
+ 			compatible = "marvell,mv78230-pinctrl";
+-			reg = <0xd0018000 0x38>;
++			reg = <0x18000 0x38>;
+ 
+ 			sdio_pins: sdio-pins {
+ 				marvell,pins = "mpp30", "mpp31", "mpp32",
+@@ -55,9 +55,9 @@
+ 			};
+ 		};
+ 
+-		gpio0: gpio@d0018100 {
++		gpio0: gpio@18100 {
+ 			compatible = "marvell,orion-gpio";
+-			reg = <0xd0018100 0x40>;
++			reg = <0x18100 0x40>;
+ 			ngpios = <32>;
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+@@ -66,9 +66,9 @@
+ 			interrupts = <82>, <83>, <84>, <85>;
+ 		};
+ 
+-		gpio1: gpio@d0018140 {
++		gpio1: gpio@18140 {
+ 			compatible = "marvell,orion-gpio";
+-			reg = <0xd0018140 0x40>;
++			reg = <0x18140 0x40>;
+ 			ngpios = <17>;
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+diff --git a/arch/arm/boot/dts/armada-xp-mv78260.dtsi b/arch/arm/boot/dts/armada-xp-mv78260.dtsi
+index 3c433d5..2b572ab 100644
+--- a/arch/arm/boot/dts/armada-xp-mv78260.dtsi
++++ b/arch/arm/boot/dts/armada-xp-mv78260.dtsi
+@@ -47,7 +47,7 @@
+ 	soc {
+ 		pinctrl {
+ 			compatible = "marvell,mv78260-pinctrl";
+-			reg = <0xd0018000 0x38>;
++			reg = <0x18000 0x38>;
+ 
+ 			sdio_pins: sdio-pins {
+ 				marvell,pins = "mpp30", "mpp31", "mpp32",
+@@ -56,9 +56,9 @@
+ 			};
+ 		};
+ 
+-		gpio0: gpio@d0018100 {
++		gpio0: gpio@18100 {
+ 			compatible = "marvell,orion-gpio";
+-			reg = <0xd0018100 0x40>;
++			reg = <0x18100 0x40>;
+ 			ngpios = <32>;
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+@@ -67,9 +67,9 @@
+ 			interrupts = <82>, <83>, <84>, <85>;
+ 		};
+ 
+-		gpio1: gpio@d0018140 {
++		gpio1: gpio@18140 {
+ 			compatible = "marvell,orion-gpio";
+-			reg = <0xd0018140 0x40>;
++			reg = <0x18140 0x40>;
+ 			ngpios = <32>;
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+@@ -78,9 +78,9 @@
+ 			interrupts = <87>, <88>, <89>, <90>;
+ 		};
+ 
+-		gpio2: gpio@d0018180 {
++		gpio2: gpio@18180 {
+ 			compatible = "marvell,orion-gpio";
+-			reg = <0xd0018180 0x40>;
++			reg = <0x18180 0x40>;
+ 			ngpios = <3>;
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+@@ -89,9 +89,9 @@
+ 			interrupts = <91>;
+ 		};
+ 
+-		ethernet@d0034000 {
++		ethernet@34000 {
+ 				compatible = "marvell,armada-370-neta";
+-				reg = <0xd0034000 0x2500>;
++				reg = <0x34000 0x2500>;
+ 				interrupts = <14>;
+ 				clocks = <&gateclk 1>;
+ 				status = "disabled";
+diff --git a/arch/arm/boot/dts/armada-xp-mv78460.dtsi b/arch/arm/boot/dts/armada-xp-mv78460.dtsi
+index 4c38e942..79a121f 100644
+--- a/arch/arm/boot/dts/armada-xp-mv78460.dtsi
++++ b/arch/arm/boot/dts/armada-xp-mv78460.dtsi
+@@ -62,7 +62,7 @@
+ 	soc {
+ 		pinctrl {
+ 			compatible = "marvell,mv78460-pinctrl";
+-			reg = <0xd0018000 0x38>;
++			reg = <0x18000 0x38>;
+ 
+ 			sdio_pins: sdio-pins {
+ 				marvell,pins = "mpp30", "mpp31", "mpp32",
+@@ -71,9 +71,9 @@
+ 			};
+ 		};
+ 
+-		gpio0: gpio@d0018100 {
++		gpio0: gpio@18100 {
+ 			compatible = "marvell,orion-gpio";
+-			reg = <0xd0018100 0x40>;
++			reg = <0x18100 0x40>;
+ 			ngpios = <32>;
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+@@ -82,9 +82,9 @@
+ 			interrupts = <82>, <83>, <84>, <85>;
+ 		};
+ 
+-		gpio1: gpio@d0018140 {
++		gpio1: gpio@18140 {
+ 			compatible = "marvell,orion-gpio";
+-			reg = <0xd0018140 0x40>;
++			reg = <0x18140 0x40>;
+ 			ngpios = <32>;
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+@@ -93,9 +93,9 @@
+ 			interrupts = <87>, <88>, <89>, <90>;
+ 		};
+ 
+-		gpio2: gpio@d0018180 {
++		gpio2: gpio@18180 {
+ 			compatible = "marvell,orion-gpio";
+-			reg = <0xd0018180 0x40>;
++			reg = <0x18180 0x40>;
+ 			ngpios = <3>;
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+@@ -104,9 +104,9 @@
+ 			interrupts = <91>;
+ 		};
+ 
+-		ethernet@d0034000 {
++		ethernet@34000 {
+ 				compatible = "marvell,armada-370-neta";
+-				reg = <0xd0034000 0x2500>;
++				reg = <0x34000 0x2500>;
+ 				interrupts = <14>;
+ 				clocks = <&gateclk 1>;
+ 				status = "disabled";
+diff --git a/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts b/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
+index 3818a82..a7bade4 100644
+--- a/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
++++ b/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
+@@ -27,11 +27,11 @@
+ 	};
+ 
+ 	soc {
+-		serial@d0012000 {
++		serial@12000 {
+ 			clock-frequency = <250000000>;
+ 			status = "okay";
+ 		};
+-		serial@d0012100 {
++		serial@12100 {
+ 			clock-frequency = <250000000>;
+ 			status = "okay";
+ 		};
+@@ -96,31 +96,31 @@
+ 			};
+ 		};
+ 
+-		ethernet@d0070000 {
++		ethernet@70000 {
+ 			status = "okay";
+ 			phy = <&phy0>;
+ 			phy-mode = "sgmii";
+ 		};
+-		ethernet@d0074000 {
++		ethernet@74000 {
+ 			status = "okay";
+ 			phy = <&phy1>;
+ 			phy-mode = "sgmii";
+ 		};
+-		ethernet@d0030000 {
++		ethernet@30000 {
+ 			status = "okay";
+ 			phy = <&phy2>;
+ 			phy-mode = "sgmii";
+ 		};
+-		ethernet@d0034000 {
++		ethernet@34000 {
+ 			status = "okay";
+ 			phy = <&phy3>;
+ 			phy-mode = "sgmii";
+ 		};
+-		i2c@d0011000 {
++		i2c@11000 {
+ 			status = "okay";
+ 			clock-frequency = <400000>;
+ 		};
+-		i2c@d0011100 {
++		i2c@11100 {
+ 			status = "okay";
+ 			clock-frequency = <400000>;
+ 
+@@ -129,14 +129,14 @@
+ 				reg = <0x30>;
+ 			};
+ 		};
+-		sata@d00a0000 {
++		sata@a0000 {
+ 			nr-ports = <2>;
+ 			status = "okay";
+ 		};
+-		usb@d0050000 {
++		usb@50000 {
+ 			status = "okay";
+ 		};
+-		usb@d0051000 {
++		usb@51000 {
+ 			status = "okay";
+ 		};
+ 	};
+diff --git a/arch/arm/boot/dts/armada-xp.dtsi b/arch/arm/boot/dts/armada-xp.dtsi
+index e644cc5..6ca6b7a 100644
+--- a/arch/arm/boot/dts/armada-xp.dtsi
++++ b/arch/arm/boot/dts/armada-xp.dtsi
+@@ -22,83 +22,84 @@
+ 	model = "Marvell Armada XP family SoC";
+ 	compatible = "marvell,armadaxp", "marvell,armada-370-xp";
+ 
++
+ 	soc {
+ 		L2: l2-cache {
+ 			compatible = "marvell,aurora-system-cache";
+-			reg = <0xd0008000 0x1000>;
++			reg = <0x08000 0x1000>;
+ 			cache-id-part = <0x100>;
+ 			wt-override;
+ 		};
+ 
+-		mpic: interrupt-controller@d0020000 {
+-		      reg = <0xd0020a00 0x2d0>,
+-			    <0xd0021070 0x58>;
++		mpic: interrupt-controller@20000 {
++		      reg = <0x20a00 0x2d0>,
++			    <0x21070 0x58>;
+ 		};
+ 
+-		armada-370-xp-pmsu@d0022000 {
++		armada-370-xp-pmsu@22000 {
+ 			compatible = "marvell,armada-370-xp-pmsu";
+-			reg = <0xd0022100 0x430>,
+-			      <0xd0020800 0x20>;
++			reg = <0x22100 0x430>,
++			      <0x20800 0x20>;
+ 		};
+ 
+-		serial@d0012200 {
++		serial@12200 {
+ 				compatible = "snps,dw-apb-uart";
+-				reg = <0xd0012200 0x100>;
++				reg = <0x12200 0x100>;
+ 				reg-shift = <2>;
+ 				interrupts = <43>;
+ 				reg-io-width = <1>;
+ 				status = "disabled";
+ 		};
+-		serial@d0012300 {
++		serial@12300 {
+ 				compatible = "snps,dw-apb-uart";
+-				reg = <0xd0012300 0x100>;
++				reg = <0x12300 0x100>;
+ 				reg-shift = <2>;
+ 				interrupts = <44>;
+ 				reg-io-width = <1>;
+ 				status = "disabled";
+ 		};
+ 
+-		timer@d0020300 {
++		timer@20300 {
+ 				marvell,timer-25Mhz;
+ 		};
+ 
+-		coreclk: mvebu-sar@d0018230 {
++		coreclk: mvebu-sar@18230 {
+ 			compatible = "marvell,armada-xp-core-clock";
+-			reg = <0xd0018230 0x08>;
++			reg = <0x18230 0x08>;
+ 			#clock-cells = <1>;
+ 		};
+ 
+-		cpuclk: clock-complex@d0018700 {
++		cpuclk: clock-complex@18700 {
+ 			#clock-cells = <1>;
+ 			compatible = "marvell,armada-xp-cpu-clock";
+-			reg = <0xd0018700 0xA0>;
++			reg = <0x18700 0xA0>;
+ 			clocks = <&coreclk 1>;
+ 		};
+ 
+-		gateclk: clock-gating-control@d0018220 {
++		gateclk: clock-gating-control@18220 {
+ 			compatible = "marvell,armada-xp-gating-clock";
+-			reg = <0xd0018220 0x4>;
++			reg = <0x18220 0x4>;
+ 			clocks = <&coreclk 0>;
+ 			#clock-cells = <1>;
+ 		};
+ 
+-		system-controller@d0018200 {
++		system-controller@18200 {
+ 				compatible = "marvell,armada-370-xp-system-controller";
+-				reg = <0xd0018200 0x500>;
++				reg = <0x18200 0x500>;
+ 		};
+ 
+-		ethernet@d0030000 {
++		ethernet@30000 {
+ 				compatible = "marvell,armada-370-neta";
+-				reg = <0xd0030000 0x2500>;
++				reg = <0x30000 0x2500>;
+ 				interrupts = <12>;
+ 				clocks = <&gateclk 2>;
+ 				status = "disabled";
+ 		};
+ 
+-		xor@d0060900 {
++		xor@60900 {
+ 			compatible = "marvell,orion-xor";
+-			reg = <0xd0060900 0x100
+-			       0xd0060b00 0x100>;
++			reg = <0x60900 0x100
++			       0x60b00 0x100>;
+ 			clocks = <&gateclk 22>;
+ 			status = "okay";
+ 
+@@ -115,10 +116,10 @@
+ 			};
+ 		};
+ 
+-		xor@d00f0900 {
++		xor@f0900 {
+ 			compatible = "marvell,orion-xor";
+-			reg = <0xd00F0900 0x100
+-			       0xd00F0B00 0x100>;
++			reg = <0xF0900 0x100
++			       0xF0B00 0x100>;
+ 			clocks = <&gateclk 28>;
+ 			status = "okay";
+ 
+@@ -135,17 +136,17 @@
+ 			};
+ 		};
+ 
+-		usb@d0050000 {
++		usb@50000 {
+ 			clocks = <&gateclk 18>;
+ 		};
+ 
+-		usb@d0051000 {
++		usb@51000 {
+ 			clocks = <&gateclk 19>;
+ 		};
+ 
+-		usb@d0052000 {
++		usb@52000 {
+ 			compatible = "marvell,orion-ehci";
+-			reg = <0xd0052000 0x500>;
++			reg = <0x52000 0x500>;
+ 			interrupts = <47>;
+ 			clocks = <&gateclk 20>;
+ 			status = "disabled";
 -- 
-1.8.1.2
+1.7.9.5
 
