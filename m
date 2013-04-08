@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935968Ab3DHJwx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:52:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43045 "EHLO
+	id S935233Ab3DHJzR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:55:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43060 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935950Ab3DHJwu (ORCPT
+	with ESMTP id S935964Ab3DHJwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:52:50 -0400
+	Mon, 8 Apr 2013 05:52:53 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, Matt Carlson <mcarlson@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Amit Shah <amit.shah@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 091/102] tg3: fix length overflow in VPD firmware parsing
-Date: Mon,  8 Apr 2013 10:50:46 +0100
-Message-Id: <1365414657-29191-92-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 094/102] virtio: console: add locking around c_ovq operations
+Date: Mon,  8 Apr 2013 10:50:49 +0100
+Message-Id: <1365414657-29191-95-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
@@ -28,49 +27,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Amit Shah <amit.shah@redhat.com>
 
-commit 715230a44310a8cf66fbfb5a46f9a62a9b2de424 upstream.
+commit 9ba5c80b1aea8648a3efe5f22dc1f7cacdfbeeb8 upstream.
 
-Commit 184b89044fb6e2a74611dafa69b1dce0d98612c6 ("tg3: Use VPD fw version
-when present") introduced VPD parsing that contained a potential length
-overflow.
+When multiple ovq operations are being performed (lots of open/close
+operations on virtio_console fds), the __send_control_msg() function can
+get confused without locking.
 
-Limit the hardware's reported firmware string length (max 255 bytes) to
-stay inside the driver's firmware string length (32 bytes). On overflow,
-truncate the formatted firmware string instead of potentially overwriting
-portions of the tg3 struct.
+A simple recipe to cause badness is:
+* create a QEMU VM with two virtio-serial ports
+* in the guest, do
+  while true;do echo abc >/dev/vport0p1;done
+  while true;do echo edf >/dev/vport0p2;done
 
-http://cansecwest.com/slides/2013/PrivateCore%20CSW%202013.pdf
+In one run, this caused a panic in __send_control_msg().  In another, I
+got
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reported-by: Oded Horovitz <oded@privatecore.com>
-Reported-by: Brad Spengler <spender@grsecurity.net>
-Cc: Matt Carlson <mcarlson@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+   virtio_console virtio0: control-o:id 0 is not a head!
+
+This also results repeated messages similar to these on the host:
+
+  qemu-kvm: virtio-serial-bus: Unexpected port id 478762112 for device virtio-serial-bus.0
+  qemu-kvm: virtio-serial-bus: Unexpected port id 478762368 for device virtio-serial-bus.0
+
+Reported-by: FuXiangChun <xfu@redhat.com>
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reviewed-by: Asias He <asias@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/broadcom/tg3.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/char/virtio_console.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index ca3be73..c2450f4 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -13617,8 +13617,11 @@ static void __devinit tg3_read_vpd(struct tg3 *tp)
- 		if (j + len > block_end)
- 			goto partno;
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index 4c76834..957f293 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -132,6 +132,7 @@ struct ports_device {
  
--		memcpy(tp->fw_ver, &vpd_data[j], len);
--		strncat(tp->fw_ver, " bc ", vpdlen - len - 1);
-+		if (len >= sizeof(tp->fw_ver))
-+			len = sizeof(tp->fw_ver) - 1;
-+		memset(tp->fw_ver, 0, sizeof(tp->fw_ver));
-+		snprintf(tp->fw_ver, sizeof(tp->fw_ver), "%.*s bc ", len,
-+			 &vpd_data[j]);
+ 	/* To protect the vq operations for the control channel */
+ 	spinlock_t c_ivq_lock;
++	spinlock_t c_ovq_lock;
+ 
+ 	/* The current config space is stored here */
+ 	struct virtio_console_config config;
+@@ -457,11 +458,13 @@ static ssize_t __send_control_msg(struct ports_device *portdev, u32 port_id,
+ 	vq = portdev->c_ovq;
+ 
+ 	sg_init_one(sg, &cpkt, sizeof(cpkt));
++	spin_lock(&portdev->c_ovq_lock);
+ 	if (virtqueue_add_buf(vq, sg, 1, 0, &cpkt, GFP_ATOMIC) >= 0) {
+ 		virtqueue_kick(vq);
+ 		while (!virtqueue_get_buf(vq, &len))
+ 			cpu_relax();
  	}
++	spin_unlock(&portdev->c_ovq_lock);
+ 	return 0;
+ }
  
- partno:
+@@ -1743,6 +1746,7 @@ static int __devinit virtcons_probe(struct virtio_device *vdev)
+ 		unsigned int nr_added_bufs;
+ 
+ 		spin_lock_init(&portdev->c_ivq_lock);
++		spin_lock_init(&portdev->c_ovq_lock);
+ 		INIT_WORK(&portdev->control_work, &control_work_handler);
+ 
+ 		nr_added_bufs = fill_queue(portdev->c_ivq,
 -- 
 1.8.1.2
 
