@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934393Ab3DHHxe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 03:53:34 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:40515 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753646Ab3DHHxd (ORCPT
+	id S934543Ab3DHHyM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 03:54:12 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:42610 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934446Ab3DHHyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 03:53:33 -0400
-Date: Mon, 8 Apr 2013 08:53:28 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] regulator: ab8500-ext: Remove get_voltage to avoid
- duplicate implementation
-Message-ID: <20130408075328.GD3084@gmail.com>
-References: <1365347548.9931.1.camel@phoenix>
- <1365347870.9931.7.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1365347870.9931.7.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 8 Apr 2013 03:54:11 -0400
+Date: Mon, 8 Apr 2013 17:54:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus <torvalds@linux-foundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Wolf <mjw@linux.vnet.ibm.com>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        LKML <linux-kernel@vger.kernel.org>, paulus@samba.org
+Subject: [git pull] Please pull another powerpc fix
+Message-Id: <20130408175402.8d12d92737b1722865db45d3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__8_Apr_2013_17_54_02_+1000_+0rYtDrClgJo7Zpq"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 07 Apr 2013, Axel Lin wrote:
+--Signature=_Mon__8_Apr_2013_17_54_02_+1000_+0rYtDrClgJo7Zpq
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> The implementation of ab8500_ext_fixed_get_voltage is identical to
-> ab8500_ext_list_voltage. We can avoid the duplicate implementation by just
-> remove get_voltage. For fixed regulator, regulator core will call
-> list_voltage(rdev, 0) to get voltage if both get_voltage get_voltage_sel are
-> not implemented.
-> 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+The following changes since commit 875b7679abbb232b584f2eec59fa6e45690dd6c4:
 
-Nice simplification:
+  Merge git://git.kernel.org/pub/scm/virt/kvm/kvm (2013-04-07 13:01:25 -070=
+0)
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+are available in the git repository at:
 
-> ---
->  drivers/regulator/ab8500-ext.c |   16 ----------------
->  1 file changed, 16 deletions(-)
-> 
-> diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
-> index c7896af..9aee21c 100644
-> --- a/drivers/regulator/ab8500-ext.c
-> +++ b/drivers/regulator/ab8500-ext.c
-> @@ -237,21 +237,6 @@ static unsigned int ab8500_ext_regulator_get_mode(struct regulator_dev *rdev)
->  	return ret;
->  }
->  
-> -static int ab8500_ext_fixed_get_voltage(struct regulator_dev *rdev)
-> -{
-> -	struct regulation_constraints *regu_constraints = rdev->constraints;
-> -
-> -	if (regu_constraints == NULL) {
-> -		dev_err(rdev_get_dev(rdev), "regulator constraints null pointer\n");
-> -		return -EINVAL;
-> -	}
-> -	if (regu_constraints->min_uV && regu_constraints->max_uV) {
-> -		if (regu_constraints->min_uV == regu_constraints->max_uV)
-> -			return regu_constraints->min_uV;
-> -	}
-> -	return -EINVAL;
-> -}
-> -
->  static int ab8500_ext_list_voltage(struct regulator_dev *rdev,
->  				   unsigned selector)
->  {
-> @@ -275,7 +260,6 @@ static struct regulator_ops ab8500_ext_regulator_ops = {
->  	.is_enabled		= ab8500_ext_regulator_is_enabled,
->  	.set_mode		= ab8500_ext_regulator_set_mode,
->  	.get_mode		= ab8500_ext_regulator_get_mode,
-> -	.get_voltage		= ab8500_ext_fixed_get_voltage,
->  	.list_voltage		= ab8500_ext_list_voltage,
->  };
->  
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+  git://git.kernel.org/pub/scm/linux/kernel/git/sfr/next-fixes.git tags/for=
+-linus
+
+for you to fetch changes up to 9fb2640159f9d4f5a2a9d60e490482d4cbecafdb:
+
+  powerpc: pSeries_lpar_hpte_remove fails from Adjunct partition being perf=
+ormed before the ANDCOND test (2013-04-08 15:19:09 +1000)
+
+----------------------------------------------------------------
+A single BUG_ON fix for a condition that could happen for machines with
+certain hardware installed.
+
+----------------------------------------------------------------
+Michael Wolf (1):
+      powerpc: pSeries_lpar_hpte_remove fails from Adjunct partition being =
+performed before the ANDCOND test
+
+ arch/powerpc/platforms/pseries/lpar.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__8_Apr_2013_17_54_02_+1000_+0rYtDrClgJo7Zpq
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRYneaAAoJEECxmPOUX5FEjO8P/2GyzHtxbP+NaV77KyrTYMs3
+sWs2fgPCB0Wuz06XhGy5FZEamii+nf9cSDQX82rC2L5AcMbFr5wBfs04/6wy2ViA
+EzZ6LdN/o+FRs7HG0DTQdPtNtisAYNIp97BPZk926Tsp/pOUNgQLMR5L6Pwk37qP
+cDc4VnerwG8u6KjqupsInKe8ZDsj3mAPMdOQ2qImEIQ8fs9AxCJJgXaZR2fSZ7Ux
+fMOjqjw5lywdVw2wSUelgLFIQATITlWBGEpHtQPO327z+wEeq4yP7mRPferrMhfi
+Cmy0WeeFC/lbMvm/P0RhQPkwsm/BA87lSzkuh9siEdXjpXiYDeVZ4phgR4kxM04E
+zj2dy0ceT3huC2avj271X9tlLDXG72XnNQmu/kWi4vqtfiCnRBaYnXdzmCpdO+8s
+mRkwlbjUu+6VuesFZNkqRd8m83rUrKXhqGhyTYlXRx9SWAq3PCt5YfiUCTpbx6Om
+QrgyTcIJeiKpKplgbWc/0ic86hHMmFJwIXGCHXSmZVrIA/whqX32LzqtgWbdSod5
+3ONs0TtfSG5BvVmhvPHogeeA4AYSuy+zLPW/7zYNLbDQNBw0jJU5PB8izkiyPHSq
+yz4xVKmsGcDJDC9HIBdlix/IB5cdpWYGlwKNsLSFDhginlirliW6u1+ZUaOyQExP
+LSbSGhFcGgPfZqsuwdVz
+=WGP/
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__8_Apr_2013_17_54_02_+1000_+0rYtDrClgJo7Zpq--
