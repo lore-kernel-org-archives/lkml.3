@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935347Ab3DHQuy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 12:50:54 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:50669 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934484Ab3DHQuw (ORCPT
+	id S935371Ab3DHQvt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 12:51:49 -0400
+Received: from mail-ie0-f202.google.com ([209.85.223.202]:47736 "EHLO
+	mail-ie0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934686Ab3DHQvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 12:50:52 -0400
-X-Greylist: delayed 522 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Apr 2013 12:50:52 EDT
-X-Sasl-enc: vxyj+7R6YAHjOma8Ualxl/gPJRi5SC0dGWX140TgfoTj 1365439330
-Date: Mon, 8 Apr 2013 09:42:09 -0700
-From: Greg KH <greg@kroah.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-usb@vger.kernel.org, Manjunath Goudar <manjunath.goudar@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH V5 0/6] USB: EHCI multiplatform for 3.10
-Message-ID: <20130408164209.GA13694@kroah.com>
-References: <1364919844-1726-1-git-send-email-arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364919844-1726-1-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 8 Apr 2013 12:51:48 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Leela Krishna Amudala <l.krishna@samsung.com>,
+        Olof Johansson <olof@lixom.net>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        linux-samsung-soc@vger.kernel.org,
+        Doug Anderson <dianders@chromium.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: dts: fix bad merge of display timing node to exynos5250-smdk5250.dts
+Date: Mon,  8 Apr 2013 09:51:19 -0700
+Message-Id: <1365439879-3398-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 06:23:58PM +0200, Arnd Bergmann wrote:
-> Hi Greg,
-> 
-> Here are the EHCI patches that I think are good for inclusion in 3.10,
-> I hope you are willing to include them after the debacle over these
-> patches in 3.9.
-> 
-> The patches are all logically independent but sorted by priority,
-> so decide for yourself how many you want to take, starting at the
-> first one. The first six patches all have an Ack from Alan Stern
-> and from the respective ARM platform maintainers.
+The display timing node was added:
+  7ed2077 ARM: dts: Add display timing node to exynos5250-smdk5250.dts
+...and looks OK there.  ...but it looks like we lost a "};" in the
+merge and it no longer compiles.  Fix it.
 
-I don't see an ACK for the 6th patch from Alan, any reason for that?
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ arch/arm/boot/dts/exynos5250-smdk5250.dts | 1 +
+ 1 file changed, 1 insertion(+)
 
-I've applied the first 5 for now, if you want the 6th one applied,
-please resend.
+diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+index 4be14df..26d856b 100644
+--- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
++++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+@@ -239,6 +239,7 @@
+ 			vback-porch = <4>;
+ 			vfront-porch = <4>;
+ 			vsync-len = <4>;
++		};
+ 	};
+ 
+ 	fixed-rate-clocks {
+-- 
+1.8.1.3
 
-thanks,
-
-greg k-h
