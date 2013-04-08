@@ -1,107 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934795Ab3DHD1F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 23:27:05 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:47982 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761422Ab3DHD1D (ORCPT
+	id S934810Ab3DHD1k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 23:27:40 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:6683 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934604Ab3DHD1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 23:27:03 -0400
-Message-ID: <5162389F.4020208@linux.vnet.ibm.com>
-Date: Mon, 08 Apr 2013 08:55:19 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Sun, 7 Apr 2013 23:27:38 -0400
+X-Spam-Score: -100.8
+Message-ID: <5162390C.5060804@asianux.com>
+Date: Mon, 08 Apr 2013 11:27:08 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
-        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
-        riel@redhat.com
-Subject: Re: [patch v7 20/21] sched: don't do power balance on share cpu power
- domain
-References: <1365040862-8390-1-git-send-email-alex.shi@intel.com> <1365040862-8390-21-git-send-email-alex.shi@intel.com> <516236AE.60501@linux.vnet.ibm.com>
-In-Reply-To: <516236AE.60501@linux.vnet.ibm.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kernel: tsacct: strncpy, always be sure of NUL terminated.
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040803-5490-0000-0000-0000033CB2BC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
 
-I am sorry I overlooked the changes you have made to the power
-scheduling policies.Now you have just two : performance and powersave.
+  for NUL terminated string, always set '\0' at the end.
 
-Hence you can ignore my below comments.But if you use group->capacity
-instead of group->weight for threshold,like you did for balance policy
-in your version5 of this patchset, dont you think the below patch can be
-avoided? group->capacity being the threshold will automatically ensure
-that you dont pack onto domains that share cpu power.
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ kernel/tsacct.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Regards
-Preeti U Murthy
-
-On 04/08/2013 08:47 AM, Preeti U Murthy wrote:
-> Hi Alex,
-> 
-> On 04/04/2013 07:31 AM, Alex Shi wrote:
->> Packing tasks among such domain can't save power, just performance
->> losing. So no power balance on them.
-> 
-> As far as my understanding goes, powersave policy is the one that tries
-> to pack tasks onto a SIBLING domain( domain where SD_SHARE_CPUPOWER is
-> set).balance policy does not do that,meaning it does not pack on the
-> domain that shares CPU power,but packs across all other domains.So the
-> change you are making below results in nothing but the default behaviour
-> of balance policy.
-> 
-> Correct me if I am wrong but my point is,looks to me,that the powersave
-> policy is introduced in this patchset,and with the below patch its
-> characteristic behaviour of packing onto domains sharing cpu power is
-> removed,thus making it default to balance policy.Now there are two
-> policies which behave the same way:balance and powersave.
-> 
->>
->> Signed-off-by: Alex Shi <alex.shi@intel.com>
->> ---
->>  kernel/sched/fair.c | 7 ++++---
->>  1 file changed, 4 insertions(+), 3 deletions(-)
->>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index 047a1b3..3a0284b 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -3503,7 +3503,7 @@ static int get_cpu_for_power_policy(struct sched_domain *sd, int cpu,
->>
->>  	policy = get_sd_sched_balance_policy(sd, cpu, p, sds);
->>  	if (policy != SCHED_POLICY_PERFORMANCE && sds->group_leader) {
->> -		if (wakeup)
->> +		if (wakeup && !(sd->flags & SD_SHARE_CPUPOWER))
->>  			new_cpu = find_leader_cpu(sds->group_leader,
->>  							p, cpu, policy);
->>  		/* for fork balancing and a little busy task */
->> @@ -4410,8 +4410,9 @@ static unsigned long task_h_load(struct task_struct *p)
->>  static inline void init_sd_lb_power_stats(struct lb_env *env,
->>  						struct sd_lb_stats *sds)
->>  {
->> -	if (sched_balance_policy == SCHED_POLICY_PERFORMANCE ||
->> -				env->idle == CPU_NOT_IDLE) {
->> +	if (sched_balance_policy == SCHED_POLICY_PERFORMANCE
->> +			|| env->sd->flags & SD_SHARE_CPUPOWER
->> +			|| env->idle == CPU_NOT_IDLE) {
->>  		env->flags &= ~LBF_POWER_BAL;
->>  		env->flags |= LBF_PERF_BAL;
->>  		return;
->>
-> 
-> Regards
-> Preeti U Murthy
-> 
-
+diff --git a/kernel/tsacct.c b/kernel/tsacct.c
+index a1dd9a1..01bcc4e 100644
+--- a/kernel/tsacct.c
++++ b/kernel/tsacct.c
+@@ -78,7 +78,8 @@ void bacct_add_tsk(struct user_namespace *user_ns,
+ 	stats->ac_minflt = tsk->min_flt;
+ 	stats->ac_majflt = tsk->maj_flt;
+ 
+-	strncpy(stats->ac_comm, tsk->comm, sizeof(stats->ac_comm));
++	strncpy(stats->ac_comm, tsk->comm, sizeof(stats->ac_comm) - 1);
++	stats->ac_comm[sizeof(stats->ac_comm) - 1] = '\0';
+ }
+ 
+ 
+-- 
+1.7.7.6
