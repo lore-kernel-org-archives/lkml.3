@@ -1,61 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936693Ab3DHP4E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 11:56:04 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:57754 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936543Ab3DHP4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 11:56:02 -0400
-Message-ID: <5162E88E.9010204@slimlogic.co.uk>
-Date: Mon, 08 Apr 2013 16:55:58 +0100
-From: Graeme Gregory <gg@slimlogic.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S936703Ab3DHP5H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 11:57:07 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:50593 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761509Ab3DHP5F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 11:57:05 -0400
+Date: Mon, 8 Apr 2013 17:57:01 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Robin Holt <holt@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Russ Anderson <rja@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] Do not force shutdown/reboot to boot cpu.
+Message-ID: <20130408155701.GB19974@gmail.com>
+References: <20130403193743.GB29151@sgi.com>
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Ian Lartey <ian@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-leds@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, swarren@wwwdotorg.org,
-        grant.likely@secretlab.ca, broonie@opensource.wolfsonmicro.com,
-        rob.herring@calxeda.com, rob@landley.net, mturquette@linaro.org,
-        linus.walleij@linaro.org, cooloney@gmail.com, sfr@canb.auug.org.au,
-        rpurdie@rpsys.net, akpm@linux-foundation.org, wim@iguana.be,
-        lgirdwood@gmail.com, j-keerthy@ti.com, ldewangan@nvidia.com,
-        t-kristo@ti.com
-Subject: Re: [PATCH v10 0/12] Palmas updates
-References: <1363964122-19201-1-git-send-email-ian@slimlogic.co.uk> <20130405163056.GN17363@zurbaran>
-In-Reply-To: <20130405163056.GN17363@zurbaran>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130403193743.GB29151@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/04/13 17:30, Samuel Ortiz wrote:
-> Hi Ian,
->
-> On Fri, Mar 22, 2013 at 02:55:10PM +0000, Ian Lartey wrote:
->> This patchset adds to the support for the Palmas series of PMIC chips.
->>
->> Some of the patches have previously been submitted individually.
->> The DT bindings doc has been added first due to comments that it was missing.
->>
->> Patches based on linux-next-20130319
-> Are you expecting all those patches to go through the MFD tree ?
-> Also, you stil have a few comments from Milo and Stephen to adress. Are you
-> planning to send a v11 ?
->
->
-Hi Samuel,
 
-The device is an MFD so I suspect the best path is through MFD tree
-although I notice you have applied the patch that was required by all
-other patches so maybe this is not so much the case now!
+* Robin Holt <holt@sgi.com> wrote:
 
-Real life has got in the way of the next updated series of patches but
-they will be issued just as soon as we can.
+> We noticed that recently, reboot of a 1024 cpu machine takes approx 16
+> minutes of just stopping the cpus.  The slowdown was tracked to commit
+> f96972f which went into v3.7 and then to the stable trees.
+> 
+> x86 does not need to be running the boot cpu to pull reset and I don't
+> think it is really needed for shutdown either.
+> 
+> I decided to go the "simple" way and make this a config option that is
+> selected by the x86 arch.  I don't know which other arch's would also
+> benefit, if any.
+> 
+> Signed-off-by: Robin Holt <holt@sgi.com>
+> To: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Russ Anderson <rja@sgi.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Shawn Guo <shawn.guo@linaro.org>
+> Cc: <stable@vger.kernel.org>
+> 
+> ---
+>  arch/x86/Kconfig        | 3 +++
+>  kernel/Kconfig.shutdown | 3 +++
+>  kernel/sys.c            | 4 ++++
+>  3 files changed, 10 insertions(+)
+>  create mode 100644 kernel/Kconfig.shutdown
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 70c0f3d..9611942 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -120,6 +120,7 @@ config X86
+>  	select OLD_SIGSUSPEND3 if X86_32 || IA32_EMULATION
+>  	select OLD_SIGACTION if X86_32
+>  	select COMPAT_OLD_SIGACTION if IA32_EMULATION
+> +	select ARCH_SHUTDOWN_TO_ANY_CPU
+>  
+>  config INSTRUCTION_DECODER
+>  	def_bool y
+> @@ -839,6 +840,8 @@ config SCHED_MC
+>  	  making when dealing with multi-core CPU chips at a cost of slightly
+>  	  increased overhead in some places. If unsure say N here.
+>  
+> +source "kernel/Kconfig.shutdown"
+> +
+>  source "kernel/Kconfig.preempt"
+>  
+>  config X86_UP_APIC
+> diff --git a/kernel/Kconfig.shutdown b/kernel/Kconfig.shutdown
+> new file mode 100644
+> index 0000000..d79fc04
+> --- /dev/null
+> +++ b/kernel/Kconfig.shutdown
+> @@ -0,0 +1,3 @@
+> +
+> +config ARCH_SHUTDOWN_TO_ANY_CPU
+> +	bool
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index 39c9c4a..c0b8880 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -369,7 +369,9 @@ EXPORT_SYMBOL(unregister_reboot_notifier);
+>  void kernel_restart(char *cmd)
+>  {
+>  	kernel_restart_prepare(cmd);
+> +#ifndef CONFIG_ARCH_SHUTDOWN_TO_ANY_CPU
+>  	disable_nonboot_cpus();
+> +#endif
+>  	if (!cmd)
+>  		printk(KERN_EMERG "Restarting system.\n");
+>  	else
+> @@ -413,7 +415,9 @@ void kernel_power_off(void)
+>  	kernel_shutdown_prepare(SYSTEM_POWER_OFF);
+>  	if (pm_power_off_prepare)
+>  		pm_power_off_prepare();
+> +#ifndef CONFIG_ARCH_SHUTDOWN_TO_ANY_CPU
+>  	disable_nonboot_cpus();
+> +#endif
+>  	syscore_shutdown();
+>  	printk(KERN_EMERG "Power down.\n");
+>  	kmsg_dump(KMSG_DUMP_POWEROFF);
 
-Thanks
+Hm, the 'fix' is a pretty ugly workaround that does not fix much IMHO.
 
-Graeme
+I think the original commit:
 
+  f96972f2dc63 kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()
+
+actually regressed your 1024 CPU systems, and should possibly be reverted or fixed 
+in some other fashion - such as by migrating to the primary CPU (on architectures 
+that require that), instead of hotplug offlining every secondary CPU on every 
+architecture!
+
+Alternatively, disable_nonboot_cpus() could perhaps be improved to down CPUs in 
+parallel: issue the CPU-down requests to every CPU, then wait for them to complete 
+- instead of the loop over every CPU?
+
+This would be the conceptual counter part to parallel boot up of CPUs - something 
+SGI might be interested in as well?
+
+Thanks,
+
+	Ingo
