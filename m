@@ -1,82 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965073Ab3DHKN0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:13:26 -0400
-Received: from mail1.bemta8.messagelabs.com ([216.82.243.193]:60485 "EHLO
-	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965060Ab3DHKNP (ORCPT
+	id S965086Ab3DHKNp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:13:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42789 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935659Ab3DHJvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 06:13:15 -0400
-X-Env-Sender: Hector.Palacios@digi.com
-X-Msg-Ref: server-14.tower-45.messagelabs.com!1365415993!29985582!2
-X-Originating-IP: [66.77.174.14]
-X-StarScan-Received: 
-X-StarScan-Version: 6.8.6.1; banners=-,-,-
-X-VirusChecked: Checked
-From: Hector Palacios <hector.palacios@digi.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <maxime.ripard@free-electrons.com>, <marex@denx.de>,
-        <shawn.guo@linaro.org>, <fabio.estevam@freescale.com>,
-        <hector.palacios@digi.com>
-Subject: [PATCH RFC] ARM: dts: mxs: leave card detect out of common mmc pins config
-Date: Mon, 8 Apr 2013 12:12:20 +0200
-Message-ID: <1365415940-11609-1-git-send-email-hector.palacios@digi.com>
-X-Mailer: git-send-email 1.8.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 8 Apr 2013 05:51:53 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 043/102] USB: mct_u232: fix use-after-free in TIOCMIWAIT
+Date: Mon,  8 Apr 2013 10:49:58 +0100
+Message-Id: <1365414657-29191-44-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
+References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MicroSD card sockets don't usually have card detect line. This pin
-is actually not needed for the MMC to work and it is more of a
-platform design decission to have it.
-The card detect pin already has a configuration entry of its own:
-'mmc0_cd_cfg' so we complete the iomux configuration here and let
-platforms to include it or not depending on whether the card detect
-line is routed to the SD socket.
+3.5.7.10 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Hector Palacios <hector.palacios@digi.com>
+------------------
+
+From: Johan Hovold <jhovold@gmail.com>
+
+commit cf1d24443677a0758cfa88ca40f24858b89261c0 upstream.
+
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
+
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
+ drivers/usb/serial/mct_u232.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-Hello,
-
-All imx28 based platforms except 'bluegiga,apx4devkit' and 
-'schulercontrol,imx28-sps1', use 'mmc0_cd_cfg' in their mmc configuration
-so please check whether this patch would break these platforms.
-
- arch/arm/boot/dts/imx28.dtsi | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/boot/dts/imx28.dtsi b/arch/arm/boot/dts/imx28.dtsi
-index 9b18e81..4222e4e 100644
---- a/arch/arm/boot/dts/imx28.dtsi
-+++ b/arch/arm/boot/dts/imx28.dtsi
-@@ -449,7 +449,6 @@
- 						0x2060 /* MX28_PAD_SSP0_DATA6__SSP0_D6 */
- 						0x2070 /* MX28_PAD_SSP0_DATA7__SSP0_D7 */
- 						0x2080 /* MX28_PAD_SSP0_CMD__SSP0_CMD */
--						0x2090 /* MX28_PAD_SSP0_DETECT__SSP0_CARD_DETECT */
- 						0x20a0 /* MX28_PAD_SSP0_SCK__SSP0_SCK */
- 					>;
- 					fsl,drive-strength = <1>;
-@@ -465,7 +464,6 @@
- 						0x2020 /* MX28_PAD_SSP0_DATA2__SSP0_D2 */
- 						0x2030 /* MX28_PAD_SSP0_DATA3__SSP0_D3 */
- 						0x2080 /* MX28_PAD_SSP0_CMD__SSP0_CMD */
--						0x2090 /* MX28_PAD_SSP0_DETECT__SSP0_CARD_DETECT */
- 						0x20a0 /* MX28_PAD_SSP0_SCK__SSP0_SCK */
- 					>;
- 					fsl,drive-strength = <1>;
-@@ -477,6 +475,8 @@
- 					fsl,pinmux-ids = <
- 						0x2090 /* MX28_PAD_SSP0_DETECT__SSP0_CARD_DETECT */
- 					>;
-+					fsl,drive-strength = <1>;
-+					fsl,voltage = <1>;
- 					fsl,pull-up = <0>;
- 				};
+diff --git a/drivers/usb/serial/mct_u232.c b/drivers/usb/serial/mct_u232.c
+index 66b91d5..5f005cc 100644
+--- a/drivers/usb/serial/mct_u232.c
++++ b/drivers/usb/serial/mct_u232.c
+@@ -118,8 +118,6 @@ struct mct_u232_private {
+ 	unsigned char	     last_msr;      /* Modem Status Register */
+ 	unsigned int	     rx_flags;      /* Throttling flags */
+ 	struct async_icount  icount;
+-	wait_queue_head_t    msr_wait;	/* for handling sleeping while waiting
+-						for msr change to happen */
+ };
  
+ #define THROTTLED		0x01
+@@ -399,7 +397,6 @@ static int mct_u232_startup(struct usb_serial *serial)
+ 	if (!priv)
+ 		return -ENOMEM;
+ 	spin_lock_init(&priv->lock);
+-	init_waitqueue_head(&priv->msr_wait);
+ 	usb_set_serial_port_data(serial->port[0], priv);
+ 
+ 	init_waitqueue_head(&serial->port[0]->write_wait);
+@@ -416,7 +413,6 @@ static int mct_u232_startup(struct usb_serial *serial)
+ 	return 0;
+ } /* mct_u232_startup */
+ 
+-
+ static void mct_u232_release(struct usb_serial *serial)
+ {
+ 	struct mct_u232_private *priv;
+@@ -616,7 +612,7 @@ static void mct_u232_read_int_callback(struct urb *urb)
+ 		tty_kref_put(tty);
+ 	}
+ #endif
+-	wake_up_interruptible(&priv->msr_wait);
++	wake_up_interruptible(&port->delta_msr_wait);
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ exit:
+ 	retval = usb_submit_urb(urb, GFP_ATOMIC);
+@@ -827,13 +823,17 @@ static int  mct_u232_ioctl(struct tty_struct *tty,
+ 		cprev = mct_u232_port->icount;
+ 		spin_unlock_irqrestore(&mct_u232_port->lock, flags);
+ 		for ( ; ; ) {
+-			prepare_to_wait(&mct_u232_port->msr_wait,
++			prepare_to_wait(&port->delta_msr_wait,
+ 					&wait, TASK_INTERRUPTIBLE);
+ 			schedule();
+-			finish_wait(&mct_u232_port->msr_wait, &wait);
++			finish_wait(&port->delta_msr_wait, &wait);
+ 			/* see if a signal did it */
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
++
++			if (port->serial->disconnected)
++				return -EIO;
++
+ 			spin_lock_irqsave(&mct_u232_port->lock, flags);
+ 			cnow = mct_u232_port->icount;
+ 			spin_unlock_irqrestore(&mct_u232_port->lock, flags);
 -- 
-1.8.2
+1.8.1.2
 
