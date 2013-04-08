@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936489Ab3DHKSR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:18:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42730 "EHLO
+	id S936494Ab3DHKSo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:18:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42726 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935557Ab3DHJvj (ORCPT
+	with ESMTP id S935545Ab3DHJvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:51:39 -0400
+	Mon, 8 Apr 2013 05:51:38 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josef Bacik <jbacik@fusionio.com>,
+Cc: Chris Mason <chris.mason@fusionio.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 031/102] Btrfs: fix space leak when we fail to reserve metadata space
-Date: Mon,  8 Apr 2013 10:49:46 +0100
-Message-Id: <1365414657-29191-32-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 030/102] Btrfs: fix race between mmap writes and compression
+Date: Mon,  8 Apr 2013 10:49:45 +0100
+Message-Id: <1365414657-29191-31-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
@@ -27,88 +27,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Chris Mason <chris.mason@fusionio.com>
 
-commit f4881bc7a83eff263789dd524b7c269d138d4af5 upstream.
+commit 4adaa611020fa6ac65b0ac8db78276af4ec04e63 upstream.
 
-Dave reported a warning when running xfstest 275.  We have been leaking delalloc
-metadata space when our reservations fail.  This is because we were improperly
-calculating how much space to free for our checksum reservations.  The problem
-is we would sometimes free up space that had already been freed in another
-thread and we would end up with negative usage for the delalloc space.  This
-patch fixes the problem by calculating how much space the other threads would
-have already freed, and then calculate how much space we need to free had we not
-done the reservation at all, and then freeing any excess space.  This makes
-xfstests 275 no longer have leaked space.  Thanks
+Btrfs uses page_mkwrite to ensure stable pages during
+crc calculations and mmap workloads.  We call clear_page_dirty_for_io
+before we do any crcs, and this forces any application with the file
+mapped to wait for the crc to finish before it is allowed to change
+the file.
 
-Reported-by: David Sterba <dsterba@suse.cz>
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-[ luis: adjust context ]
+With compression on, the clear_page_dirty_for_io step is happening after
+we've compressed the pages.  This means the applications might be
+changing the pages while we are compressing them, and some of those
+modifications might not hit the disk.
+
+This commit adds the clear_page_dirty_for_io before compression starts
+and makes sure to redirty the page if we have to fallback to
+uncompressed IO as well.
+
+Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Reported-by: Alexandre Oliva <oliva@gnu.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/btrfs/extent-tree.c | 47 +++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 41 insertions(+), 6 deletions(-)
+ fs/btrfs/extent_io.c | 33 +++++++++++++++++++++++++++++++++
+ fs/btrfs/extent_io.h |  2 ++
+ fs/btrfs/inode.c     | 14 ++++++++++++++
+ 3 files changed, 49 insertions(+)
 
-diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
-index 6e1d367..fe6cec5 100644
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -4487,14 +4487,49 @@ int btrfs_delalloc_reserve_metadata(struct inode *inode, u64 num_bytes)
- 		 * If the inodes csum_bytes is the same as the original
- 		 * csum_bytes then we know we haven't raced with any free()ers
- 		 * so we can just reduce our inodes csum bytes and carry on.
--		 * Otherwise we have to do the normal free thing to account for
--		 * the case that the free side didn't free up its reserve
--		 * because of this outstanding reservation.
- 		 */
--		if (BTRFS_I(inode)->csum_bytes == csum_bytes)
-+		if (BTRFS_I(inode)->csum_bytes == csum_bytes) {
- 			calc_csum_metadata_size(inode, num_bytes, 0);
--		else
--			to_free = calc_csum_metadata_size(inode, num_bytes, 0);
-+		} else {
-+			u64 orig_csum_bytes = BTRFS_I(inode)->csum_bytes;
-+			u64 bytes;
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index b89ba9f..9d1970b 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -1229,6 +1229,39 @@ int unlock_extent(struct extent_io_tree *tree, u64 start, u64 end)
+ 				GFP_NOFS);
+ }
+ 
++int extent_range_clear_dirty_for_io(struct inode *inode, u64 start, u64 end)
++{
++	unsigned long index = start >> PAGE_CACHE_SHIFT;
++	unsigned long end_index = end >> PAGE_CACHE_SHIFT;
++	struct page *page;
 +
-+			/*
-+			 * This is tricky, but first we need to figure out how much we
-+			 * free'd from any free-ers that occured during this
-+			 * reservation, so we reset ->csum_bytes to the csum_bytes
-+			 * before we dropped our lock, and then call the free for the
-+			 * number of bytes that were freed while we were trying our
-+			 * reservation.
-+			 */
-+			bytes = csum_bytes - BTRFS_I(inode)->csum_bytes;
-+			BTRFS_I(inode)->csum_bytes = csum_bytes;
-+			to_free = calc_csum_metadata_size(inode, bytes, 0);
++	while (index <= end_index) {
++		page = find_get_page(inode->i_mapping, index);
++		BUG_ON(!page); /* Pages should be in the extent_io_tree */
++		clear_page_dirty_for_io(page);
++		page_cache_release(page);
++		index++;
++	}
++	return 0;
++}
 +
++int extent_range_redirty_for_io(struct inode *inode, u64 start, u64 end)
++{
++	unsigned long index = start >> PAGE_CACHE_SHIFT;
++	unsigned long end_index = end >> PAGE_CACHE_SHIFT;
++	struct page *page;
 +
-+			/*
-+			 * Now we need to see how much we would have freed had we not
-+			 * been making this reservation and our ->csum_bytes were not
-+			 * artificially inflated.
-+			 */
-+			BTRFS_I(inode)->csum_bytes = csum_bytes - num_bytes;
-+			bytes = csum_bytes - orig_csum_bytes;
-+			bytes = calc_csum_metadata_size(inode, bytes, 0);
++	while (index <= end_index) {
++		page = find_get_page(inode->i_mapping, index);
++		BUG_ON(!page); /* Pages should be in the extent_io_tree */
++		account_page_redirty(page);
++		__set_page_dirty_nobuffers(page);
++		page_cache_release(page);
++		index++;
++	}
++	return 0;
++}
 +
-+			/*
-+			 * Now reset ->csum_bytes to what it should be.  If bytes is
-+			 * more than to_free then we would have free'd more space had we
-+			 * not had an artificially high ->csum_bytes, so we need to free
-+			 * the remainder.  If bytes is the same or less then we don't
-+			 * need to do anything, the other free-ers did the correct
-+			 * thing.
-+			 */
-+			BTRFS_I(inode)->csum_bytes = orig_csum_bytes - num_bytes;
-+			if (bytes > to_free)
-+				to_free = bytes - to_free;
-+			else
-+				to_free = 0;
-+		}
- 		spin_unlock(&BTRFS_I(inode)->lock);
- 		if (dropped)
- 			to_free += btrfs_calc_trans_metadata_size(root, dropped);
+ /*
+  * helper function to set both pages and extents in the tree writeback
+  */
+diff --git a/fs/btrfs/extent_io.h b/fs/btrfs/extent_io.h
+index 25900af..c5003db 100644
+--- a/fs/btrfs/extent_io.h
++++ b/fs/btrfs/extent_io.h
+@@ -314,6 +314,8 @@ int map_private_extent_buffer(struct extent_buffer *eb, unsigned long offset,
+ 		      unsigned long *map_len);
+ int extent_range_uptodate(struct extent_io_tree *tree,
+ 			  u64 start, u64 end);
++int extent_range_clear_dirty_for_io(struct inode *inode, u64 start, u64 end);
++int extent_range_redirty_for_io(struct inode *inode, u64 start, u64 end);
+ int extent_clear_unlock_delalloc(struct inode *inode,
+ 				struct extent_io_tree *tree,
+ 				u64 start, u64 end, struct page *locked_page,
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index fadf1c3..4f71dc6 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -349,6 +349,7 @@ static noinline int compress_file_range(struct inode *inode,
+ 	int i;
+ 	int will_compress;
+ 	int compress_type = root->fs_info->compress_type;
++	int redirty = 0;
+ 
+ 	/* if this is a small write inside eof, kick off a defrag */
+ 	if ((end - start + 1) < 16 * 1024 &&
+@@ -411,6 +412,17 @@ again:
+ 		if (BTRFS_I(inode)->force_compress)
+ 			compress_type = BTRFS_I(inode)->force_compress;
+ 
++		/*
++		 * we need to call clear_page_dirty_for_io on each
++		 * page in the range.  Otherwise applications with the file
++		 * mmap'd can wander in and change the page contents while
++		 * we are compressing them.
++		 *
++		 * If the compression fails for any reason, we set the pages
++		 * dirty again later on.
++		 */
++		extent_range_clear_dirty_for_io(inode, start, end);
++		redirty = 1;
+ 		ret = btrfs_compress_pages(compress_type,
+ 					   inode->i_mapping, start,
+ 					   total_compressed, pages,
+@@ -552,6 +564,8 @@ cleanup_and_bail_uncompressed:
+ 			__set_page_dirty_nobuffers(locked_page);
+ 			/* unlocked later on in the async handlers */
+ 		}
++		if (redirty)
++			extent_range_redirty_for_io(inode, start, end);
+ 		add_async_extent(async_cow, start, end - start + 1,
+ 				 0, NULL, 0, BTRFS_COMPRESS_NONE);
+ 		*num_added += 1;
 -- 
 1.8.1.2
 
