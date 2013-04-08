@@ -1,112 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934888Ab3DHIqv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 04:46:51 -0400
-Received: from mail1.bemta7.messagelabs.com ([216.82.254.102]:16332 "EHLO
-	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934813Ab3DHIqs (ORCPT
+	id S934931Ab3DHIrL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 04:47:11 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:41031 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934401Ab3DHIrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 04:46:48 -0400
-X-Env-Sender: Hector.Palacios@digi.com
-X-Msg-Ref: server-14.tower-200.messagelabs.com!1365410790!11925506!14
-X-Originating-IP: [66.77.174.14]
-X-StarScan-Received: 
-X-StarScan-Version: 6.8.6.1; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <51628348.2080605@digi.com>
-Date: Mon, 8 Apr 2013 10:43:52 +0200
-From: Hector Palacios <hector.palacios@digi.com>
-Organization: Digi International
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Mon, 8 Apr 2013 04:47:07 -0400
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "wim@iguana.be" <wim@iguana.be>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] watchdog: core: don't try to stop device if not running
-References: <515EF748.6060504@digi.com> <20130405183450.GA29835@roeck-us.net> <51627669.1070900@digi.com> <20130408081644.GA22722@roeck-us.net>
-In-Reply-To: <20130408081644.GA22722@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1365409058-32643-2-git-send-email-amit.daniel@samsung.com>
+References: <1365409058-32643-1-git-send-email-amit.daniel@samsung.com>
+	<1365409058-32643-2-git-send-email-amit.daniel@samsung.com>
+Date: Mon, 8 Apr 2013 14:17:06 +0530
+Message-ID: <CAKohpo=CFTo2UCnECeeuKdz34cuedV_tqn7zGA9bzU_PiJ46qg@mail.gmail.com>
+Subject: Re: [PATCH V6 1/4] cpufreq: exynos: Add cpufreq driver for exynos5440
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>, cpufreq@vger.kernel.org,
+        Inderpal Singh <inderpal.singh@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2013 10:16 AM, Guenter Roeck wrote:
-> On Mon, Apr 08, 2013 at 09:48:57AM +0200, Hector Palacios wrote:
->> On 04/05/2013 08:34 PM, Guenter Roeck wrote:
->>> On Fri, Apr 05, 2013 at 06:09:44PM +0200, Hector Palacios wrote:
->>>> A watchdog device may be stopped from userspace using WDIOC_SETOPTIONS
->>>> ioctl and flag WDIOS_DISABLECARD. If the device is closed after this
->>>> operation, watchdog_release() is called and status bits checked for
->>>> stopping it. Besides, if the device has not been unregistered a critical
->>>> message "watchdog did not stop!" is printed, although the ioctl may have
->>>> successfully stopped it already.
->>>>
->>>> Without the patch a user application sample code like this will successfully
->>>> stop the watchdog, but the kernel will output the message
->>>> "watchdog did not stop!":
->>>>
->>>> 	wd_fd = open("/dev/watchdog", O_RDWR);
->>>>
->>>> 	flags = WDIOS_DISABLECARD;
->>>> 	ioctl(wd_fd, WDIOC_SETOPTIONS, &flags);
->>>>
->>>> 	close(wd_fd);
->>>>
->>>> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
->>>
->>> How about the following patch instead ?
->>>
->>> diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
->>> index 08b48bb..9775e8d 100644
->>> --- a/drivers/watchdog/watchdog_dev.c
->>> +++ b/drivers/watchdog/watchdog_dev.c
->>> @@ -469,7 +469,9 @@ static int watchdog_release(struct inode *inode, struct file *file)
->>>   	 * or if WDIOF_MAGICCLOSE is not set. If nowayout was set then
->>>   	 * watchdog_stop will fail.
->>>   	 */
->>> -	if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
->>> +	if (!test_bit(WDOG_ACTIVE, &wdd->status))
->>> +		err = 0;
->>> +	else if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
->>>   	    !(wdd->info->options & WDIOF_MAGICCLOSE))
->>>   		err = watchdog_stop(wdd);
->>>
->>> Much less invasive and the result is the same.
->>
->> I like the simplicity but it is kind of inverted logic to initially
->> define err = -EBUSY only to turn it to zero later, so I'm rebuilding
->> your approach like this:
->>
->> diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
->> index ef8edec..a4163cd 100644
->> --- a/drivers/watchdog/watchdog_dev.c
->> +++ b/drivers/watchdog/watchdog_dev.c
->> @@ -463,16 +463,19 @@ out:
->>   static int watchdog_release(struct inode *inode, struct file *file)
->>   {
->>          struct watchdog_device *wdd = file->private_data;
->> -       int err = -EBUSY;
->> +       int err = 0;
->>
->>          /*
->>           * We only stop the watchdog if we received the magic character
->>           * or if WDIOF_MAGICCLOSE is not set. If nowayout was set then
->>           * watchdog_stop will fail.
->>           */
->> -       if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
->> -           !(wdd->info->options & WDIOF_MAGICCLOSE))
->> +       if (test_bit(WDOG_ACTIVE, &wdd->status))
->> +               err = -EBUSY;
->> +       else if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
->> +           !(wdd->info->options & WDIOF_MAGICCLOSE)) {
->>                  err = watchdog_stop(wdd);
->> +       }
+On 8 April 2013 13:47, Amit Daniel Kachhap <amit.daniel@samsung.com> wrote:
+
+> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+> index f3f3b14..bce2195 100644
+> --- a/drivers/cpufreq/Kconfig.arm
+> +++ b/drivers/cpufreq/Kconfig.arm
+> @@ -42,6 +42,15 @@ config ARM_EXYNOS5250_CPUFREQ
+>           This adds the CPUFreq driver for Samsung EXYNOS5250
+>           SoC.
 >
-> Ok, but the added { } are unnecessary and violate coding style rules.
+> +config ARM_EXYNOS5440_CPUFREQ
+> +       def_bool SOC_EXYNOS5440
+> +       depends on HAVE_CLK && PM_OPP && OF
 
-Oops. Remainders of a debug message. Thanks for pointing out.
+Don't you need a depend on your Soc or mach or arch? Don't send another
+version for this now.. Just send a new patch over this patchset.
 
--- 
-Héctor Palacios
+> diff --git a/drivers/cpufreq/exynos5440-cpufreq.c b/drivers/cpufreq/exynos5440-cpufreq.c
+
+> +static int exynos_target(struct cpufreq_policy *policy,
+> +                         unsigned int target_freq,
+> +                         unsigned int relation)
+> +{
+> +       unsigned int index, tmp;
+> +       int ret = 0, i;
+> +       struct cpufreq_frequency_table *freq_table = dvfs_info->freq_table;
+> +
+> +       mutex_lock(&cpufreq_lock);
+> +       freqs.old = dvfs_info->cur_frequency;
+> +
+> +       ret = cpufreq_frequency_table_target(policy, freq_table,
+> +                                          target_freq, relation, &index);
+> +       if (ret)
+> +               goto out;
+> +
+
+Move freqs.old = *** here.
+
+> +       freqs.new = freq_table[index].frequency;
+> +       freqs.cpu = policy->cpu;
+
+You don't need this. Below call takes care of it.
+
+Rest is fine.. Just resend this patch with all above issues fixed and i will Ack
+it without any further reviews :)
+
+Don't wait for few days for doing this, send it right now. :)
