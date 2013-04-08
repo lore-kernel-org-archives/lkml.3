@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934970Ab3DHR3S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 13:29:18 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:54403 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934770Ab3DHR3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 13:29:17 -0400
-Message-ID: <5162FE4D.7020308@linux.vnet.ibm.com>
-Date: Mon, 08 Apr 2013 10:28:45 -0700
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S935120Ab3DHR3j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 13:29:39 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:64175 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935014Ab3DHR3h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 13:29:37 -0400
 MIME-Version: 1.0
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mm: when handling percpu_pagelist_fraction, use on_each_cpu()
- to set percpu pageset fields.
-References: <1365194030-28939-1-git-send-email-cody@linux.vnet.ibm.com> <1365194030-28939-4-git-send-email-cody@linux.vnet.ibm.com> <CAOtvUMdT0-oQMTsHAjFqL6K8vrLeCcXG2hX-sShxu6GGRBPxJw@mail.gmail.com>
-In-Reply-To: <CAOtvUMdT0-oQMTsHAjFqL6K8vrLeCcXG2hX-sShxu6GGRBPxJw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040817-5806-0000-0000-000020A43450
+In-Reply-To: <1365238164.2787.6.camel@dabdike>
+References: <20130321043449.7229.81056.stgit@amt.stowe> <20130321043502.7229.43877.stgit@amt.stowe>
+ <514BAB13.3000101@gmail.com> <CAErSpo4FajG4hz8ELinnFLjk_3j=gQpC9zi4jR6pi=qoOda5cg@mail.gmail.com>
+ <1365238164.2787.6.camel@dabdike>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 8 Apr 2013 11:29:17 -0600
+Message-ID: <CAErSpo5rgDUUPB6DX1t_3k_d+YD7eFkGPJmgX0bxs7iFsjowBw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] PCI: Handle device quirks when accessing sysfs
+ resource<N> entries
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Robert Hancock <hancockrwd@gmail.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Xiangliang Yu <yuxiangl@marvell.com>,
+        xiangliang yu <yxlraid@gmail.com>, Greg Kroah-Hartman <greg@kroah.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        Kay Sievers <kay@vrfy.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2013 05:20 AM, Gilad Ben-Yossef wrote:
-> On Fri, Apr 5, 2013 at 11:33 PM, Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
->> In free_hot_cold_page(), we rely on pcp->batch remaining stable.
->> Updating it without being on the cpu owning the percpu pageset
->> potentially destroys this stability.
+On Sat, Apr 6, 2013 at 2:49 AM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+> On Thu, 2013-04-04 at 12:06 -0600, Bjorn Helgaas wrote:
+>> On Thu, Mar 21, 2013 at 6:51 PM, Robert Hancock <hancockrwd@gmail.com> wrote:
+
+>> > -Reconsider whether supporting read/write on the resource files for IO port
+>> > regions like these makes any sense. Obviously mmap isn't very practical for
+>> > IO port access on x86 but you could even do something like an ioctl for this
+>> > purpose. Not very many pieces of software would need to access these files
+>> > so it's likely OK if the API is a bit ugly. That would prevent something
+>> > like grepping through sysfs from generating port accesses to random devices.
 >>
->> Change for_each_cpu() to on_each_cpu() to fix.
+>> This is the approach I'd like to push on for a kernel fix.
 >
-> Are you referring to this? -
-
-This was the case I noticed.
-
+> Me too.  I think the quirks approach is unsupportable.  Worst case I
+> think we should have an ability for the *driver* to mark the region as
+> having strange access rules.
 >
-> 1329         if (pcp->count >= pcp->high) {
-> 1330                 free_pcppages_bulk(zone, pcp->batch, pcp);
-> 1331                 pcp->count -= pcp->batch;
-> 1332         }
+>>   I'm not a
+>> VM person, but if it were possible to support .mmap() in such a way
+>> that a handler would be called for every access to the region, we
+>> could easily support I/O port access that way.
 >
-> I'm probably missing the obvious but won't it be simpler to do this in
->   free_hot_cold_page() -
->
-> 1329         if (pcp->count >= pcp->high) {
-> 1330                  unsigned int batch = ACCESS_ONCE(pcp->batch);
-> 1331                 free_pcppages_bulk(zone, batch, pcp);
-> 1332                 pcp->count -= batch;
-> 1333         }
->
+> We could ... the OS could trigger a page fault on every access using the
+> COW mechanism ... however, that mechanism wasn't intended for write
+> combining, so although it's theoretically possible to add it, I'd be a
+> bit wary.
 
-Potentially, yes. Note that this was simply the one case I noticed, 
-rather than certainly the only case.
+The current problem case is only I/O port accesses, so we only have to
+support 1/2/4-byte accesses, and I don't think write combining is an
+issue.  But it still sounds like COW might be trying to force a square
+peg into a round hole.  Maybe there are other approaches.  I just
+thought of .mmap() because that's already used for MEM space accesses.
 
-I also wonder whether there could be unexpected interactions between 
-->high and ->batch not changing together atomically. For example, could 
-adjusting this knob cause ->batch to rise enough that it is greater than 
-the previous ->high? If the code above then runs with the previous 
-->high, ->count wouldn't be correct (checking this inside 
-free_pcppages_bulk() might help on this one issue).
-
-> Now the batch value used is stable and you don't have to IPI every CPU
-> in the system just to change a config knob...
-
-Is this really considered an issue? I wouldn't have expected someone to 
-adjust the config knob often enough (or even more than once) to cause 
-problems. Of course as a "It'd be nice" thing, I completely agree.
-
+Bjorn
