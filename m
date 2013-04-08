@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936421Ab3DHO2n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 10:28:43 -0400
-Received: from ozlabs.org ([203.10.76.45]:36043 "EHLO ozlabs.org"
+	id S936406Ab3DHO2m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 10:28:42 -0400
+Received: from ozlabs.org ([203.10.76.45]:33034 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936198Ab3DHO2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S936221Ab3DHO2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Apr 2013 10:28:39 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Asias He <asias@redhat.com>
-Cc: gaowanlong@cn.fujitsu.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, mst@redhat.com,
-        venkateshs@google.com, pbonzini@redhat.com,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [PATCH V7 0/5] virtio-scsi multiqueue
-In-Reply-To: <20130407020140.GA6409@hj.localdomain>
-References: <1364038124-32479-1-git-send-email-gaowanlong@cn.fujitsu.com> <5153A953.2000101@cn.fujitsu.com> <515E918D.3090307@cn.fujitsu.com> <1365237613.2787.1.camel@dabdike> <20130407020140.GA6409@hj.localdomain>
+To: Amit Shah <amit.shah@redhat.com>, Wei Yongjun <weiyj.lk@gmail.com>
+Cc: arnd@arndb.de, gregkh@linuxfoundation.org, yongjun_wei@trendmicro.com.cn,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] virtio_console: make local symbols static
+In-Reply-To: <20130408055354.GC16207@amit.redhat.com>
+References: <CAPgLHd8ffGFuLdAFnx=bDmBS5U0FrH-fqCeneOHeWQQSE+v4wg@mail.gmail.com> <20130408055354.GC16207@amit.redhat.com>
 User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 08 Apr 2013 23:06:31 +0930
-Message-ID: <878v4t9mao.fsf@rustcorp.com.au>
+Date: Mon, 08 Apr 2013 22:58:45 +0930
+Message-ID: <87d2u59mnm.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Asias He <asias@redhat.com> writes:
-> On Sat, Apr 06, 2013 at 09:40:13AM +0100, James Bottomley wrote:
->> Well, I haven't had time to look at anything other than the patch I
->> commented on.  I'm happy with your fix, so you can add my acked by to
->> that one.  Since it's going through the virtio tree, don't wait for me,
->> put it in and I'll make you fix up anything I find later that I'm
->> unhappy with.
+Amit Shah <amit.shah@redhat.com> writes:
+
+> On (Sat) 06 Apr 2013 [11:52:07], Wei Yongjun wrote:
+>> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>> 
+>> Those symbols only used within this file, and should be static.
+>> 
+>> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 >
-> So, Rusty, could you pick this up in your virtio-next tree?
+> Acked-by: Amit Shah <amit.shah@redhat.com>
+>
+> 		Amit
 
-Done!
+Thanks, applied.
 
-Thanks,
+Cheers,
 Rusty.
