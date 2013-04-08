@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935984Ab3DHJwz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:52:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43043 "EHLO
+	id S936007Ab3DHJxD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:53:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43068 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935946Ab3DHJwu (ORCPT
+	with ESMTP id S935977Ab3DHJwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:52:50 -0400
+	Mon, 8 Apr 2013 05:52:55 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Metcalf <cmetcalf@tilera.com>,
+Cc: Anatol Pomozov <anatol.pomozov@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 092/102] tile: expect new initramfs name from hypervisor file system
-Date: Mon,  8 Apr 2013 10:50:47 +0100
-Message-Id: <1365414657-29191-93-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 096/102] loop: prevent bdev freeing while device in use
+Date: Mon,  8 Apr 2013 10:50:51 +0100
+Message-Id: <1365414657-29191-97-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
@@ -27,79 +29,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
 
-commit ff7f3efb9abf986f4ecd8793a9593f7ca4d6431a upstream.
+commit c1681bf8a7b1b98edee8b862a42c19c4e53205fd upstream.
 
-The current Tilera boot infrastructure now provides the initramfs
-to Linux as a Tilera-hypervisor file named "initramfs", rather than
-"initramfs.cpio.gz", as before.  (This makes it reasonable to use
-other compression techniques than gzip on the file without having to
-worry about the name causing confusion.)  Adapt to use the new name,
-but also fall back to checking for the old name.
+struct block_device lifecycle is defined by its inode (see fs/block_dev.c) -
+block_device allocated first time we access /dev/loopXX and deallocated on
+bdev_destroy_inode. When we create the device "losetup /dev/loopXX afile"
+we want that block_device stay alive until we destroy the loop device
+with "losetup -d".
 
-Cc'ing to stable so that older kernels will remain compatible with
-newer Tilera boot infrastructure.
+But because we do not hold /dev/loopXX inode its counter goes 0, and
+inode/bdev can be destroyed at any moment. Usually it happens at memory
+pressure or when user drops inode cache (like in the test below). When later in
+loop_clr_fd() we want to use bdev we have use-after-free error with following
+stack:
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000280
+  bd_set_size+0x10/0xa0
+  loop_clr_fd+0x1f8/0x420 [loop]
+  lo_ioctl+0x200/0x7e0 [loop]
+  lo_compat_ioctl+0x47/0xe0 [loop]
+  compat_blkdev_ioctl+0x341/0x1290
+  do_filp_open+0x42/0xa0
+  compat_sys_ioctl+0xc1/0xf20
+  do_sys_open+0x16e/0x1d0
+  sysenter_dispatch+0x7/0x1a
+
+To prevent use-after-free we need to grab the device in loop_set_fd()
+and put it later in loop_clr_fd().
+
+The issue is reprodusible on current Linus head and v3.3. Here is the test:
+
+  dd if=/dev/zero of=loop.file bs=1M count=1
+  while [ true ]; do
+    losetup /dev/loop0 loop.file
+    echo 2 > /proc/sys/vm/drop_caches
+    losetup -d /dev/loop0
+  done
+
+[ Doing bdgrab/bput in loop_set_fd/loop_clr_fd is safe, because every
+  time we call loop_set_fd() we check that loop_device->lo_state is
+  Lo_unbound and set it to Lo_bound If somebody will try to set_fd again
+  it will get EBUSY.  And if we try to loop_clr_fd() on unbound loop
+  device we'll get ENXIO.
+
+  loop_set_fd/loop_clr_fd (and any other loop ioctl) is called under
+  loop_device->lo_ctl_mutex. ]
+
+Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/tile/kernel/setup.c | 25 ++++++++++++-------------
- 1 file changed, 12 insertions(+), 13 deletions(-)
+ drivers/block/loop.c | 9 ++++++++-
+ fs/block_dev.c       | 1 +
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
-index dd87f34..3d2190b 100644
---- a/arch/tile/kernel/setup.c
-+++ b/arch/tile/kernel/setup.c
-@@ -990,15 +990,8 @@ void __cpuinit setup_cpu(int boot)
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index a77d9a5..c5e0f73 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -908,6 +908,11 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
+ 		lo->lo_flags |= LO_FLAGS_PARTSCAN;
+ 	if (lo->lo_flags & LO_FLAGS_PARTSCAN)
+ 		ioctl_by_bdev(bdev, BLKRRPART, 0);
++
++	/* Grab the block_device to prevent its destruction after we
++	 * put /dev/loopXX inode. Later in loop_clr_fd() we bdput(bdev).
++	 */
++	bdgrab(bdev);
+ 	return 0;
  
- #ifdef CONFIG_BLK_DEV_INITRD
+ out_clr:
+@@ -1004,8 +1009,10 @@ static int loop_clr_fd(struct loop_device *lo)
+ 	memset(lo->lo_encrypt_key, 0, LO_KEY_SIZE);
+ 	memset(lo->lo_crypt_name, 0, LO_NAME_SIZE);
+ 	memset(lo->lo_file_name, 0, LO_NAME_SIZE);
+-	if (bdev)
++	if (bdev) {
++		bdput(bdev);
+ 		invalidate_bdev(bdev);
++	}
+ 	set_capacity(lo->lo_disk, 0);
+ 	loop_sysfs_exit(lo);
+ 	if (bdev) {
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 77e86b3..1244094 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -604,6 +604,7 @@ struct block_device *bdgrab(struct block_device *bdev)
+ 	ihold(bdev->bd_inode);
+ 	return bdev;
+ }
++EXPORT_SYMBOL(bdgrab);
  
--/*
-- * Note that the kernel can potentially support other compression
-- * techniques than gz, though we don't do so by default.  If we ever
-- * decide to do so we can either look for other filename extensions,
-- * or just allow a file with this name to be compressed with an
-- * arbitrary compressor (somewhat counterintuitively).
-- */
- static int __initdata set_initramfs_file;
--static char __initdata initramfs_file[128] = "initramfs.cpio.gz";
-+static char __initdata initramfs_file[128] = "initramfs";
- 
- static int __init setup_initramfs_file(char *str)
+ long nr_blockdev_pages(void)
  {
-@@ -1012,9 +1005,9 @@ static int __init setup_initramfs_file(char *str)
- early_param("initramfs_file", setup_initramfs_file);
- 
- /*
-- * We look for an "initramfs.cpio.gz" file in the hvfs.
-- * If there is one, we allocate some memory for it and it will be
-- * unpacked to the initramfs.
-+ * We look for a file called "initramfs" in the hvfs.  If there is one, we
-+ * allocate some memory for it and it will be unpacked to the initramfs.
-+ * If it's compressed, the initd code will uncompress it first.
-  */
- static void __init load_hv_initrd(void)
- {
-@@ -1024,10 +1017,16 @@ static void __init load_hv_initrd(void)
- 
- 	fd = hv_fs_findfile((HV_VirtAddr) initramfs_file);
- 	if (fd == HV_ENOENT) {
--		if (set_initramfs_file)
-+		if (set_initramfs_file) {
- 			pr_warning("No such hvfs initramfs file '%s'\n",
- 				   initramfs_file);
--		return;
-+			return;
-+		} else {
-+			/* Try old backwards-compatible name. */
-+			fd = hv_fs_findfile((HV_VirtAddr)"initramfs.cpio.gz");
-+			if (fd == HV_ENOENT)
-+				return;
-+		}
- 	}
- 	BUG_ON(fd < 0);
- 	stat = hv_fs_fstat(fd);
 -- 
 1.8.1.2
 
