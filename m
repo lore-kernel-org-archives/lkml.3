@@ -1,159 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936049Ab3DHUhR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 16:37:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49714 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936032Ab3DHUhO (ORCPT
+	id S936186Ab3DHUhY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 16:37:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40916 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936032Ab3DHUhU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 16:37:14 -0400
-Date: Mon, 8 Apr 2013 13:37:12 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andrew Shewmaker <agshew@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        simon.jeons@gmail.com, ric.masonn@gmail.com
-Subject: Re: [PATCH v8 3/3] mm: reinititalise user and admin reserves if
- memory is added or removed
-Message-Id: <20130408133712.bd327017dec19a2c14e22662@linux-foundation.org>
-In-Reply-To: <20130408190738.GC2321@localhost.localdomain>
-References: <20130408190738.GC2321@localhost.localdomain>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Apr 2013 16:37:20 -0400
+Date: Mon, 8 Apr 2013 13:36:55 -0700
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-6862c05ce4bc59ac52165df66f2a55ad692ef941@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        rusty@rustcorp.com.au, torvalds@linux-foundation.org,
+        peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, magnus.damm@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, rusty@rustcorp.com.au,
+        peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, magnus.damm@gmail.com
+In-Reply-To: <20130321215234.886530981@linutronix.de>
+References: <20130321215234.886530981@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:smp/hotplug] openrisc: Use generic idle loop
+Git-Commit-ID: 6862c05ce4bc59ac52165df66f2a55ad692ef941
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 08 Apr 2013 13:37:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Apr 2013 15:07:38 -0400 Andrew Shewmaker <agshew@gmail.com> wrote:
+Commit-ID:  6862c05ce4bc59ac52165df66f2a55ad692ef941
+Gitweb:     http://git.kernel.org/tip/6862c05ce4bc59ac52165df66f2a55ad692ef941
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Thu, 21 Mar 2013 22:49:54 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 8 Apr 2013 17:39:27 +0200
 
-> This patch alters the admin and user reserves of the previous patches 
-> in this series when memory is added or removed.
-> 
-> If memory is added and the reserves have been eliminated or increased above
-> the default max, then we'll trust the admin.
-> 
-> If memory is removed and there isn't enough free memory, then we
-> need to reset the reserves.
-> 
-> Otherwise keep the reserve set by the admin.
-> 
-> The reserve reset code is the same as the reserve initialization code.
-> 
-> Does this sound reasonable to other people? I figured that hot removal
-> with too large of memory in the reserves was the most important case 
-> to get right.
+openrisc: Use generic idle loop
 
-Seems reasonable to me.
+Idle poller with an extra check_pgt_cache() invocation. Use the core
+code.
 
-I don't understand the magic numbers 1<<13 and 1<<17.  How could I? 
-Please add comments explaining how and why these were chosen.
-
-Your patch adds 400 bytes of unusable code to the
-CONFIG_MEMORY_HOTPLUG=n kernel.  We have a fix for that in the CPU
-hotplug case: register_hotcpu_notifier().  Memory hotplug has its own
-hotplug_memory_notifier() but a) it's broken and b) it just doesn't
-work!  With my gcc-4.4.4, the unused functions are still included in
-the .o file.
-
-So I did this:
-
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: include/linux/memory.h: implement register_hotmemory_notifier()
-
-When CONFIG_MEMORY_HOTPLUG=n, we don't want the memory-hotplug notifier
-handlers to be included in the .o files, for space reasons.
-
-The existing hotplug_memory_notifier() tries to handle this but testing
-with gcc-4.4.4 shows that it doesn't work - the hotplug functions are
-still present in the .o files.
-
-So implement a new register_hotmemory_notifier() which is a copy of
-register_hotcpu_notifier(), and which actually works as desired. 
-hotplug_memory_notifier() and register_memory_notifier() callsites should
-be converted to use this new register_hotmemory_notifier().
-
-While we're there, let's repair the existing hotplug_memory_notifier(): it
-simply stomps on the register_memory_notifier() return value, so
-well-behaved code cannot check for errors.  Apparently non of the existing
-callers were well-behaved :(
-
-Cc: Andrew Shewmaker <agshew@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Reviewed-by: Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Magnus Damm <magnus.damm@gmail.com>
+Link: http://lkml.kernel.org/r/20130321215234.886530981@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
+ arch/openrisc/Kconfig         |  1 +
+ arch/openrisc/kernel/Makefile |  2 +-
+ arch/openrisc/kernel/idle.c   | 73 -------------------------------------------
+ 3 files changed, 2 insertions(+), 74 deletions(-)
 
- include/linux/memory.h   |   15 ++++++++++++---
- include/linux/notifier.h |    5 ++++-
- 2 files changed, 16 insertions(+), 4 deletions(-)
-
-diff -puN include/linux/memory.h~include-linux-memoryh-implement-register_hotmemory_notifier include/linux/memory.h
---- a/include/linux/memory.h~include-linux-memoryh-implement-register_hotmemory_notifier
-+++ a/include/linux/memory.h
-@@ -18,6 +18,7 @@
- #include <linux/node.h>
- #include <linux/compiler.h>
- #include <linux/mutex.h>
-+#include <linux/notifier.h>
+diff --git a/arch/openrisc/Kconfig b/arch/openrisc/Kconfig
+index 9ab3bf2..e111b52 100644
+--- a/arch/openrisc/Kconfig
++++ b/arch/openrisc/Kconfig
+@@ -21,6 +21,7 @@ config OPENRISC
+ 	select GENERIC_CLOCKEVENTS
+ 	select GENERIC_STRNCPY_FROM_USER
+ 	select GENERIC_STRNLEN_USER
++	select GENERIC_IDLE_LOOP
+ 	select MODULES_USE_ELF_RELA
  
- #define MIN_MEMORY_BLOCK_SIZE     (1UL << SECTION_SIZE_BITS)
+ config MMU
+diff --git a/arch/openrisc/kernel/Makefile b/arch/openrisc/kernel/Makefile
+index 35f92ce..ec6d9d3 100644
+--- a/arch/openrisc/kernel/Makefile
++++ b/arch/openrisc/kernel/Makefile
+@@ -4,7 +4,7 @@
  
-@@ -127,13 +128,21 @@ enum mem_add_context { BOOT, HOTPLUG };
- #endif /* CONFIG_MEMORY_HOTPLUG_SPARSE */
+ extra-y	:= head.o vmlinux.lds
  
- #ifdef CONFIG_MEMORY_HOTPLUG
--#define hotplug_memory_notifier(fn, pri) {			\
-+#define hotplug_memory_notifier(fn, pri) ({			\
- 	static __meminitdata struct notifier_block fn##_mem_nb =\
- 		{ .notifier_call = fn, .priority = pri };	\
- 	register_memory_notifier(&fn##_mem_nb);			\
+-obj-y	:= setup.o idle.o or32_ksyms.o process.o dma.o \
++obj-y	:= setup.o or32_ksyms.o process.o dma.o \
+ 	   traps.o time.o irq.o entry.o ptrace.o signal.o \
+ 	   sys_call_table.o
+ 
+diff --git a/arch/openrisc/kernel/idle.c b/arch/openrisc/kernel/idle.c
+deleted file mode 100644
+index 5e8a3b6..0000000
+--- a/arch/openrisc/kernel/idle.c
++++ /dev/null
+@@ -1,73 +0,0 @@
+-/*
+- * OpenRISC idle.c
+- *
+- * Linux architectural port borrowing liberally from similar works of
+- * others.  All original copyrights apply as per the original source
+- * declaration.
+- *
+- * Modifications for the OpenRISC architecture:
+- * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
+- * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
+- *
+- *      This program is free software; you can redistribute it and/or
+- *      modify it under the terms of the GNU General Public License
+- *      as published by the Free Software Foundation; either version
+- *      2 of the License, or (at your option) any later version.
+- *
+- * Idle daemon for or32.  Idle daemon will handle any action
+- * that needs to be taken when the system becomes idle.
+- */
+-
+-#include <linux/errno.h>
+-#include <linux/sched.h>
+-#include <linux/kernel.h>
+-#include <linux/mm.h>
+-#include <linux/smp.h>
+-#include <linux/stddef.h>
+-#include <linux/unistd.h>
+-#include <linux/ptrace.h>
+-#include <linux/slab.h>
+-#include <linux/tick.h>
+-
+-#include <asm/pgtable.h>
+-#include <asm/uaccess.h>
+-#include <asm/io.h>
+-#include <asm/processor.h>
+-#include <asm/mmu.h>
+-#include <asm/cache.h>
+-#include <asm/pgalloc.h>
+-
+-void (*powersave) (void) = NULL;
+-
+-void cpu_idle(void)
+-{
+-	set_thread_flag(TIF_POLLING_NRFLAG);
+-
+-	/* endless idle loop with no priority at all */
+-	while (1) {
+-		tick_nohz_idle_enter();
+-		rcu_idle_enter();
+-
+-		while (!need_resched()) {
+-			check_pgt_cache();
+-			rmb();
+-
+-			clear_thread_flag(TIF_POLLING_NRFLAG);
+-
+-			local_irq_disable();
+-			/* Don't trace irqs off for idle */
+-			stop_critical_timings();
+-			if (!need_resched() && powersave != NULL)
+-				powersave();
+-			start_critical_timings();
+-			local_irq_enable();
+-			set_thread_flag(TIF_POLLING_NRFLAG);
+-		}
+-
+-		rcu_idle_exit();
+-		tick_nohz_idle_exit();
+-		preempt_enable_no_resched();
+-		schedule();
+-		preempt_disable();
+-	}
 -}
-+})
-+#define register_hotmemory_notifier(nb)		register_memory_notifier(nb)
-+#define unregister_hotmemory_notifier(nb) 	unregister_memory_notifier(nb)
- #else
--#define hotplug_memory_notifier(fn, pri) do { } while (0)
-+static inline int hotplug_memory_notifier(notifier_fn_t fn, int priority)
-+{
-+	return 0;
-+}
-+/* These aren't inline functions due to a GCC bug. */
-+#define register_hotmemory_notifier(nb)    ({ (void)(nb); 0; })
-+#define unregister_hotmemory_notifier(nb)  ({ (void)(nb); })
- #endif
- 
- /*
-diff -puN include/linux/notifier.h~include-linux-memoryh-implement-register_hotmemory_notifier include/linux/notifier.h
---- a/include/linux/notifier.h~include-linux-memoryh-implement-register_hotmemory_notifier
-+++ a/include/linux/notifier.h
-@@ -47,8 +47,11 @@
-  * runtime initialization.
-  */
- 
-+typedef	int (*notifier_fn_t)(struct notifier_block *nb,
-+			unsigned long action, void *data);
-+
- struct notifier_block {
--	int (*notifier_call)(struct notifier_block *, unsigned long, void *);
-+	notifier_fn_t notifier_call;
- 	struct notifier_block __rcu *next;
- 	int priority;
- };
-_
-
-
-And then I changed your patch thusly:
-
---- a/mm/mmap.c~mm-reinititalise-user-and-admin-reserves-if-memory-is-added-or-removed-fix
-+++ a/mm/mmap.c
-@@ -3198,7 +3198,7 @@ static struct notifier_block reserve_mem
- 
- int __meminit init_reserve_notifier(void)
- {
--	if (register_memory_notifier(&reserve_mem_nb))
-+	if (register_hotmemory_notifier(&reserve_mem_nb))
- 		printk("Failed registering memory add/remove notifier for admin reserve");
- 
- 	return 0;
-_
-
-and voila, no more bloat.
