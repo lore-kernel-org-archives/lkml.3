@@ -1,85 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965158Ab3DHPhH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 11:37:07 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22690 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964954Ab3DHPhF (ORCPT
+	id S965064Ab3DHPis (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 11:38:48 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:46589 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936341Ab3DHPip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 11:37:05 -0400
-X-Authority-Analysis: v=2.0 cv=Pu4Rnnw3 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=OBBN2wN6VI8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=B2NTZjWQ9qwA:10 a=WfulkdPnAAAA:8 a=QyXUC8HyAAAA:8 a=NkLCyU6eLXcKNtJZWf4A:9 a=QEXdDO2ut3YA:10 a=l29vjEC0CZ8A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1365435422.25498.7.camel@gandalf.local.home>
-Subject: Re: [PATCH] perf: Enable function tracing for perf core
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Frederic Weisbecker <fweisbec@gmail.com>
-Date: Mon, 08 Apr 2013 11:37:02 -0400
-In-Reply-To: <m2y5d7h6kb.fsf@firstfloor.org>
-References: <1362785086-12901-1-git-send-email-andi@firstfloor.org>
-	 <m2y5d7h6kb.fsf@firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Apr 2013 11:38:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130408145407.GA12243@roeck-us.net>
+References: <1365139415-17815-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<20130407225046.GA16326@roeck-us.net>
+	<51620604.4070204@gmail.com>
+	<20130408001725.GA16648@roeck-us.net>
+	<51625F9A.1050308@gmail.com>
+	<20130408145407.GA12243@roeck-us.net>
+Date: Mon, 8 Apr 2013 17:38:44 +0200
+Message-ID: <CABJ1b_T30trVjXps-rSbYTNo1DcPeT8WsZ+M18B9wTJPBnL-gA@mail.gmail.com>
+Subject: Re: [v5] clk: add si5351 i2c common clock driver
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Dom Cobley <popcornmix@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rabeeh Khoury <rabeeh@solid-run.com>, Daniel Mack <zonque@gmail.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-03-28 at 08:45 -0700, Andi Kleen wrote:
-> Andi Kleen <andi@firstfloor.org> writes:
-> 
-> > From: Andi Kleen <ak@linux.intel.com>
-> >
-> > According to Steven R. there is no reason left to not support
-> > function tracing for the perf core. This makes it easier to debug
-> > perf.
-> >
-> > Don't remove -pg for the x86 and generic perf core.
-> 
-> Ping! patch is missing review.
-> 
+On Mon, Apr 8, 2013 at 4:54 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> On Mon, Apr 08, 2013 at 08:11:38AM +0200, Sebastian Hesselbarth wrote:
+>> On 04/08/2013 02:17 AM, Guenter Roeck wrote:
+>> >On Mon, Apr 08, 2013 at 01:49:24AM +0200, Sebastian Hesselbarth wrote:
+>> >>On 04/08/2013 12:50 AM, Guenter Roeck wrote:
+>> >>>On Fri, Apr 05, 2013 at 05:23:35AM -0000, Sebastian Hesselbarth wrote:
+>> >>>>This patch adds a common clock driver for Silicon Labs Si5351a/b/c
+>> >>>>i2c programmable clock generators. Currently, the driver supports
+>> >>>>DT kernels only and VXCO feature of si5351b is not implemented. DT
+>> >>>>bindings selectively allow to overwrite stored Si5351 configuration
+>> >>>>which is very helpful for clock generators with empty eeprom
+>> >>>>configuration. Corresponding device tree binding documentation is
+>> >>>>also added.
+>> >>>>
+>> >>>>Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
+>> >>>>Tested-by: Daniel Mack<zonque@gmail.com>
+>> >>>>
+>> >>>[ ... ]
+>> >>>
+>> >>>>+static inline void _si5351_msynth_set_pll_master(
+>> >>>>+ struct si5351_driver_data *drvdata, unsigned char num, int is_master)
+>> >>>>+{
+>> >>>>+ unsigned long flags;
+>> >>>>+
+>> >>>>+ if (num>   8 ||
+>> >>>>+     (drvdata->variant == SI5351_VARIANT_A3&&   num>   3))
+>> >>>>+         return;
+>> >>>>+
+>> >>>>+ flags = __clk_get_flags(drvdata->msynth[num].hw.clk);
+>> >>>>+ if (is_master)
+>> >>>>+         flags |= CLK_SET_RATE_PARENT;
+>> >>>>+ else
+>> >>>>+         flags&= ~CLK_SET_RATE_PARENT;
+>> >>>>+ __clk_set_flags(drvdata->msynth[num].hw.clk, flags);
+>> >>>>+}
+>> >>>>+
+>> >>>Unless I am missing something, neither __clk_get_flags() nor the new
+>> >>>__clk_set_flags is exported.
+>> >>>
+>> >>>Did you try to build and load the driver as module ?
+>> >>
+>> >>Well, good catch. I didn't try to build v5 as a module, but I guess it
+>> >>will fail. But I consider this as something that has to be addressed in
+>> >>clk framework itself, not in this patch. There will be other
+>> >>clk-providers built as module in the future for sure.
+>> >>
+>> >Sure, but you provided the patch to make __clk_set_flags global. To avoid
+>> >build failures, I would suggest to either submit a patch to export the
+>> >missing functions, or to remove the ability to build the driver as module.
+>>
+>> Actually, I knew that __clk_set_flags patch will not be accepted
+>> before posting it ;)
+>>
+> Ah, but part of that is to get you to think about it again, and to defend it if
+> it is really needed. After all, "it can be abused" applies to pretty much every
+> API.
 
-This needs an acked-by from either Peter or Frederic.
+Guenter,
 
--- Steve
+I already thought about it a lot and I consider clk api broken in a way here.
 
-> 
-> >
-> > Cc: rostedt@goodmis.org
-> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> > ---
-> >  arch/x86/kernel/cpu/Makefile |    1 -
-> >  kernel/events/Makefile       |    4 ----
-> >  2 files changed, 0 insertions(+), 5 deletions(-)
-> >
-> > diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-> > index a0e067d..8eb5d28 100644
-> > --- a/arch/x86/kernel/cpu/Makefile
-> > +++ b/arch/x86/kernel/cpu/Makefile
-> > @@ -5,7 +5,6 @@
-> >  # Don't trace early stages of a secondary CPU boot
-> >  ifdef CONFIG_FUNCTION_TRACER
-> >  CFLAGS_REMOVE_common.o = -pg
-> > -CFLAGS_REMOVE_perf_event.o = -pg
-> >  endif
-> >  
-> >  # Make sure load_percpu_segment has no stackprotector
-> > diff --git a/kernel/events/Makefile b/kernel/events/Makefile
-> > index 103f5d1..a630994 100644
-> > --- a/kernel/events/Makefile
-> > +++ b/kernel/events/Makefile
-> > @@ -1,7 +1,3 @@
-> > -ifdef CONFIG_FUNCTION_TRACER
-> > -CFLAGS_REMOVE_core.o = -pg
-> > -endif
-> > -
-> >  obj-y := core.o ring_buffer.o callchain.o
-> >  
-> >  obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
-> 
+> Key question is if you _really_ need run-time flag modifications, or if you can
+> live with initialization-time settings. If you really need it, you'll have to
+> explain the reasons.
 
+The question is not if _I_ really need run-time flags but why the api allows to
+perform run-time modifications of the clock hierarchy without allowing different
+flags? There is clk_set_parent() so I guess clk api knows about run-time changes
+already, but you cannot have different flags per parent. And with
+__clk_set_flags()
+rejected, you are not allowed to change the flags.
 
+I understand that some flags are permanent and required at registration, but
+CLK_SET_PARENT_RATE is not. It is not limited by hardware but limited by api.
+One way would be a more generic clk-mux with per parent flags, but for
+the current
+implementation, I cannot see how clk-mux can be exploited here.
+
+I can live with it, because then dynamic muxing of clock hierarchy
+within clk-si5351
+is just not supported or will break function. Currently, there is no
+support for dynamic
+muxing, so everything is fine.
+
+>> >On a side note, do you happen to know anyone working on drivers for Si5319 or
+>> >Si5368 ?
+>>
+>> No.
+>
+> Too bad ... I may have to write that code myself then.
+
+Well, if clk-si5351 will ever get in mainline kernel, feel free to use
+it as a template ;)
+
+Sebastian
