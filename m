@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935428Ab3DHL54 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 07:57:56 -0400
-Received: from ozlabs.org ([203.10.76.45]:38217 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935183Ab3DHL5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 07:57:55 -0400
-Date: Mon, 8 Apr 2013 21:57:50 +1000
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: acme@infradead.org, jolsa@redhat.com, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, rob@landley.net
-Subject: Re: [RFC/PATCH] perf: Expand definition of sysfs format attribute
-Message-ID: <20130408115749.GB17849@concordia>
-References: <1362370865-4437-1-git-send-email-michael@ellerman.id.au>
- <1365411915.2609.143.camel@laptop>
+	id S935189Ab3DHL63 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 07:58:29 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:61979 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934591Ab3DHL62 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 07:58:28 -0400
+Date: Mon, 8 Apr 2013 13:58:23 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 3/3] x86: kernel base offset ASLR
+Message-ID: <20130408115823.GC7513@gmail.com>
+References: <1365106055-22939-1-git-send-email-keescook@chromium.org>
+ <1365106055-22939-4-git-send-email-keescook@chromium.org>
+ <515DE0C9.3030709@zytor.com>
+ <20130405080418.GG26889@gmail.com>
+ <515EEE25.1030402@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365411915.2609.143.camel@laptop>
+In-Reply-To: <515EEE25.1030402@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 11:05:15AM +0200, Peter Zijlstra wrote:
-> On Mon, 2013-03-04 at 15:21 +1100, Michael Ellerman wrote:
-> > Make it explicit that the format attributes may define overlapping bit
-> > ranges. Unfortunately this was left unspecified originally, and all the
-> > examples show non-overlapping ranges. I don't believe this is an ABI
-> > change, as we are defining something that was previously undefined, but
-> > others may disagree.
+
+* H. Peter Anvin <hpa@zytor.com> wrote:
+
+> On 04/05/2013 01:04 AM, Ingo Molnar wrote:
 > > 
-> > The POWER8 PMU would like to define overlapping ranges, as bit ranges in
-> > the event code have different meanings for certain events. It will also
-> > allow us to define an overarching "event" field, that encompasses all
-> > others.
+> > Random runtime shuffling of the kernel image - is that possible with 
+> > existing toolchains?
 > > 
-> > As far as I can see perf is comfortable with this change, however I am
-> > not sure if there are any other users of the interface.
-> > 
-> > Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
-> > ---
-> >  Documentation/ABI/testing/sysfs-bus-event_source-devices-format |    6 ++++++
-> >  1 file changed, 6 insertions(+)
-> > 
-> > diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-> > index 079afc7..77f47ff 100644
-> > --- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-> > +++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-> > @@ -9,6 +9,12 @@ Description:
-> >  		we want to export, so that userspace can deal with sane
-> >  		name/value pairs.
-> >  
-> > +		Userspace must be prepared for the possibility that attributes
-> > +		define overlapping bit ranges. For example:
-> > +			attr1 = 'config:0-23'
-> > +			attr2 = 'config:0-7'
-> > +			attr3 = 'config:12-35'
-> > +
-> >  		Example: 'config1:1,6-10,44'
-> >  		Defines contents of attribute that occupies bits 1,6-10,44 of
-> >  		perf_event_attr::config1.
 > 
-> ISTR discussing this with Jiri at some point.. I think we ended up with
-> being fine with overlapping ranges but having perf issue a warning (not
-> an error) when attributes of a single event have overlap.
+> Yes... the question is how much work we'd be willing to go through to make it 
+> happen.
+> 
+> One approach: the kernel already contains a linker -- used for modules -- and 
+> the bulk of the kernel could actually be composed to a "pile of modules" that 
+> gets linked on boot.  This would provide very large amounts of randomness.
 
-OK great.
+Is there no code generation / micro-performance disadvantage to that?
 
-> I'm not sure the latter was ever implemented in the userspace side.
+Thanks,
 
-Yeah not that I can see with a quick look. It's fairly advanced usage
-IMHO so a warning would be nice, but not essential.
-
-cheers
+	Ingo
