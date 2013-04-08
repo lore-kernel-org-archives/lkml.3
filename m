@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936795Ab3DHKuq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:50:46 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:57542 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab3DHKup (ORCPT
+	id S936806Ab3DHKu6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:50:58 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:42307 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934464Ab3DHKu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 06:50:45 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Anton Vorontsov <anton@enomsg.org>
-Subject: Re: [PATCH] power: rx51_battery: Fix reporting temperature
-Date: Mon, 8 Apr 2013 12:50:38 +0200
-User-Agent: KMail/1.13.7 (Linux/3.5.0-27-generic; KDE/4.10.2; x86_64; ; )
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-References: <20130216213248.GC1741@lizard.sbx05280.losalca.wayport.net> <1364488943-6481-1-git-send-email-pali.rohar@gmail.com>
-In-Reply-To: <1364488943-6481-1-git-send-email-pali.rohar@gmail.com>
+	Mon, 8 Apr 2013 06:50:56 -0400
+Date: Mon, 8 Apr 2013 12:50:52 +0200
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
+Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "Huangweidong (C)" <weidong.huang@huawei.com>,
+        Zanghongyong <zanghongyong@huawei.com>,
+        Luonengjun <luonengjun@huawei.com>,
+        Zhanghuanzhong <zhanghuanzhong@huawei.com>
+Subject: Re: =?utf-8?B?562U5aSNOiBbUWVtdS1kZXZlbA==?= =?utf-8?Q?=5D?= qemu
+ crashed when starting vm(kvm) with vnc connect
+Message-ID: <20130408105052.GC12076@stefanha-thinkpad.redhat.com>
+References: <D3E216785288A145B7BC975F83A2ED103FE154C1@szxeml556-mbx.china.huawei.com>
+ <20130405063456.GA27569@stefanha-thinkpad.redhat.com>
+ <D3E216785288A145B7BC975F83A2ED103FE16528@szxeml556-mbx.china.huawei.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1584136.4s9V5JOaFn";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304081250.38814@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <D3E216785288A145B7BC975F83A2ED103FE16528@szxeml556-mbx.china.huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1584136.4s9V5JOaFn
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Sun, Apr 07, 2013 at 04:58:07AM +0000, Zhanghaoyu (A) wrote:
+> >> I start a kvm VM with vnc(using the zrle protocol) connect, sometimes qemu program crashed during starting period, received signal SIGABRT.
+> >> Trying about 20 times, this crash may be reproduced.
+> >> I guess the cause memory corruption or double free.
+> >
+> > Which version of QEMU are you running?
+> > 
+> > Please try qemu.git/master.
+> > 
+> > Stefan
+> 
+> I used the QEMU download from qemu.git (http://git.qemu.org/git/qemu.git).
 
-On Thursday 28 March 2013 17:42:23 Pali Roh=C3=A1r wrote:
-> This patch fixing units (1/10 =C2=B0C) in which is temperature
-> reported.
->=20
-> Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> ---
->  drivers/power/rx51_battery.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/power/rx51_battery.c
-> b/drivers/power/rx51_battery.c index 8208888..527d256 100644
-> --- a/drivers/power/rx51_battery.c
-> +++ b/drivers/power/rx51_battery.c
-> @@ -119,7 +119,7 @@ static int
-> rx51_battery_read_temperature(struct rx51_device_info *di)
->=20
->  	/* First check for temperature in first direct table */
->  	if (raw < ARRAY_SIZE(rx51_temp_table1))
-> -		return rx51_temp_table1[raw] * 100;
-> +		return rx51_temp_table1[raw] * 10;
->=20
->  	/* Binary search RAW value in second inverse table */
->  	while (max - min > 1) {
-> @@ -132,7 +132,7 @@ static int
-> rx51_battery_read_temperature(struct rx51_device_info *di)
-> break;
->  	}
->=20
-> -	return (rx51_temp_table2_first - min) * 100;
-> +	return (rx51_temp_table2_first - min) * 10;
->  }
->=20
->  /*
+Great, thanks!  Can you please post a backtrace?
 
-Hi Anton, please include this patch into your battery tree.
+The easiest way is:
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+  $ ulimit -c unlimited
+  $ qemu-system-x86_64 -enable-kvm -m 1024 ...
+  ...crash...
+  $ gdb -c qemu-system-x86_64.core
+  (gdb) bt
 
---nextPart1584136.4s9V5JOaFn
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+Depending on how your system is configured the core file might have a
+different filename but there should be a file name *core* the current
+working directory after the crash.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+The backtrace will make it possible to find out where the crash
+occurred.
 
-iEYEABECAAYFAlFioP4ACgkQi/DJPQPkQ1KzEQCdFOgc1IvwX3XjK8vDpQrBIKXl
-1GoAn2P6eoDtMnEcV/r3JRlnEnJtm7NK
-=YmBy
------END PGP SIGNATURE-----
-
---nextPart1584136.4s9V5JOaFn--
+Thanks,
+Stefan
