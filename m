@@ -1,113 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935856Ab3DHNgA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 09:36:00 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:64213 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935819Ab3DHNf4 (ORCPT
+	id S935868Ab3DHNiI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 09:38:08 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:43205
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935827Ab3DHNiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 09:35:56 -0400
-Message-ID: <1365428154.1830.99.camel@x61.thuisdomein>
-Subject: [PATCH] locking: remove three unused Kconfig symbols
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux390@de.ibm.com, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 08 Apr 2013 15:35:54 +0200
+	Mon, 8 Apr 2013 09:38:06 -0400
+Message-ID: <1365428274.2609.160.camel@laptop>
+Subject: Re: [PATCH] [PATCH] Gaurantee spinlocks implicit barrier for
+ !PREEMPT_COUNT
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <srostedt@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Mon, 08 Apr 2013 15:37:54 +0200
+In-Reply-To: <CA+55aFyFWjpSVQM6M266tKrG_ZXJzZ-nYejpmXYQXbrr42mGPQ@mail.gmail.com>
+References: <alpine.LFD.2.02.1304031433350.21884@ionos>
+	 <1364998282-21437-1-git-send-email-vgupta@synopsys.com>
+	 <20130404152808.GB15261@ab42.lan> <515E54BD.2090300@synopsys.com>
+	 <51602459.3040105@synopsys.com>
+	 <CA+55aFw=-oJxujka-emxyRcY54MSe3qEjZ6xgzoE-roe3EFk5g@mail.gmail.com>
+	 <51624591.4010303@synopsys.com>
+	 <CA+55aFyFWjpSVQM6M266tKrG_ZXJzZ-nYejpmXYQXbrr42mGPQ@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Apr 2013 13:35:54.0114 (UTC) FILETIME=[FE2ABE20:01CE345D]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig symbols ARCH_INLINE_READ_UNLOCK_IRQ,
-ARCH_INLINE_SPIN_UNLOCK_IRQ, and ARCH_INLINE_WRITE_UNLOCK_IRQ were added
-in v2.6.33, but have never actually been used. It is safe to remove
-these.
+On Sun, 2013-04-07 at 21:48 -0700, Linus Torvalds wrote:
+> That said, thinking about barriers and preemption made me realize that
+> we do have a potential issue between: (a) non-preemption UP kernel
+> (with no barriers in the preempt_enable/disable()) and (b)
+> architectures that use inline asm without a memory clobber for
+> get_user/put_user(). That includes x86.
+> 
+> The reason is that I could imagine code like
+> 
+>     if (get_user(val, addr))
+>         return -EFAULT;
+>     preempt_disable();
+>     ... do something percpu ..
+>     preempt_enable();
+> 
+> and it turns out that for non-preempt UP, we don't tell the compiler
+> anywhere that it can't move the get_user past the preempt_disable. But
+> the get_user() can cause a preemption point because of a page fault,
+> obviously.
+> 
+> I suspect that the best way to fix this ends up relying on the gcc
+> "asm volatile" rules, and make the rule be that:
+>  - preempt_disable/enable have to generate an asm volatile() string
+> (preferably just a ASM comment saying "preempt disable/enable")
+>  - get_user/put_user doesn't need to add a memory clobber, but needs
+> to be done with an asm volatile too.
+> 
+> Then the gcc "no reordering of volatile asms" should make the above be
+> ok, without having to add an actual compiler memory barrier.
+> 
+> Ingo? Peter? I'm not sure anybody really uses UP+no-preempt on x86,
+> but it does seem to be a bug.. Comments?
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Untested. These three symbols were added in commit
-6beb000923882f6204ea2cfcd932e568e900803f ("locking: Make inlining
-decision Kconfig based").
+Right, stuff between preempt_disable() and preempt_enable() is supposed
+to appear atomic wrt scheduling contexts, allowing any schedule to
+happen in between would violate this.
 
- arch/s390/Kconfig    |  3 ---
- kernel/Kconfig.locks | 10 ----------
- 2 files changed, 13 deletions(-)
+I'm not seeing how this would be UP only though, I can see the same
+thing happening on SMP+no-preempt.
 
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index eb8fb62..8c544d2 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -70,7 +70,6 @@ config S390
- 	select ARCH_INLINE_READ_TRYLOCK
- 	select ARCH_INLINE_READ_UNLOCK
- 	select ARCH_INLINE_READ_UNLOCK_BH
--	select ARCH_INLINE_READ_UNLOCK_IRQ
- 	select ARCH_INLINE_READ_UNLOCK_IRQRESTORE
- 	select ARCH_INLINE_SPIN_LOCK
- 	select ARCH_INLINE_SPIN_LOCK_BH
-@@ -80,7 +79,6 @@ config S390
- 	select ARCH_INLINE_SPIN_TRYLOCK_BH
- 	select ARCH_INLINE_SPIN_UNLOCK
- 	select ARCH_INLINE_SPIN_UNLOCK_BH
--	select ARCH_INLINE_SPIN_UNLOCK_IRQ
- 	select ARCH_INLINE_SPIN_UNLOCK_IRQRESTORE
- 	select ARCH_INLINE_WRITE_LOCK
- 	select ARCH_INLINE_WRITE_LOCK_BH
-@@ -89,7 +87,6 @@ config S390
- 	select ARCH_INLINE_WRITE_TRYLOCK
- 	select ARCH_INLINE_WRITE_UNLOCK
- 	select ARCH_INLINE_WRITE_UNLOCK_BH
--	select ARCH_INLINE_WRITE_UNLOCK_IRQ
- 	select ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
- 	select ARCH_SAVE_PAGE_KEYS if HIBERNATION
- 	select ARCH_WANT_IPC_PARSE_VERSION
-diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
-index 44511d1..c438507 100644
---- a/kernel/Kconfig.locks
-+++ b/kernel/Kconfig.locks
-@@ -25,9 +25,6 @@ config ARCH_INLINE_SPIN_UNLOCK
- config ARCH_INLINE_SPIN_UNLOCK_BH
- 	bool
- 
--config ARCH_INLINE_SPIN_UNLOCK_IRQ
--	bool
--
- config ARCH_INLINE_SPIN_UNLOCK_IRQRESTORE
- 	bool
- 
-@@ -53,13 +50,9 @@ config ARCH_INLINE_READ_UNLOCK
- config ARCH_INLINE_READ_UNLOCK_BH
- 	bool
- 
--config ARCH_INLINE_READ_UNLOCK_IRQ
--	bool
--
- config ARCH_INLINE_READ_UNLOCK_IRQRESTORE
- 	bool
- 
--
- config ARCH_INLINE_WRITE_TRYLOCK
- 	bool
- 
-@@ -81,9 +74,6 @@ config ARCH_INLINE_WRITE_UNLOCK
- config ARCH_INLINE_WRITE_UNLOCK_BH
- 	bool
- 
--config ARCH_INLINE_WRITE_UNLOCK_IRQ
--	bool
--
- config ARCH_INLINE_WRITE_UNLOCK_IRQRESTORE
- 	bool
- 
--- 
-1.7.11.7
+Also, is {get,put}_user() the only construct that can do this? If so,
+using the "asm volatile" rules as described might be the best way,
+otherwise making the PREEMPT_COUNT=n operations be compiler barriers
+seems like the safer option.
+
+That said, I can't remember ever having seen a BUG like this, even
+though !PREEMPT is (or at least was) the most popular distro setting.
 
