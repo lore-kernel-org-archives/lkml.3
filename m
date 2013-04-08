@@ -1,33 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934714Ab3DHCAT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 22:00:19 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59180 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934673Ab3DHCAS (ORCPT
+	id S934743Ab3DHCBo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 22:01:44 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57975 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934716Ab3DHCBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 22:00:18 -0400
-Date: Mon, 8 Apr 2013 03:00:11 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Guenter Roeck <linux@roeck-us.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Make do_sysinfo() static
-Message-ID: <20130408020011.GQ4068@ZenIV.linux.org.uk>
-References: <20130408115325.1e4b35359271383b9c459ef9@canb.auug.org.au>
+	Sun, 7 Apr 2013 22:01:43 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <516224E4.5010409@jp.fujitsu.com>
+Date: Mon, 8 Apr 2013 11:01:08 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130408115325.1e4b35359271383b9c459ef9@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Toshi Kani <toshi.kani@hp.com>
+CC: <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <linuxram@us.ibm.com>,
+        <guz.fnst@cn.fujitsu.com>, <tmac@hp.com>, <wency@cn.fujitsu.com>,
+        <tangchen@cn.fujitsu.com>, <jiang.liu@huawei.com>
+Subject: Re: [UPDATE][PATCH 2/3] resource: Add release_mem_region_adjustable()
+References: <1365031405-25206-1-git-send-email-toshi.kani@hp.com>
+In-Reply-To: <1365031405-25206-1-git-send-email-toshi.kani@hp.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 11:53:25AM +1000, Stephen Rothwell wrote:
-> The only use outside of kernel/timer.c was in kernel/compat.c, so move
-> compat_sys_sysinfo() next to sys_sysinfo() in kernel/timer.c.
+Hi Toshi,
 
-Please, switch it to COMPAT_SYSCALL_DEFINE, while you are at it.
+2013/04/04 8:23, Toshi Kani wrote:
+> Added release_mem_region_adjustable(), which releases a requested
+> region from a currently busy memory resource.  This interface
+> adjusts the matched memory resource accordingly if the requested
+> region does not match exactly but still fits into.
+> 
+> This new interface is intended for memory hot-delete.  During
+> bootup, memory resources are inserted from the boot descriptor
+> table, such as EFI Memory Table and e820.  Each memory resource
+> entry usually covers the whole contigous memory range.  Memory
+> hot-delete request, on the other hand, may target to a particular
+> range of memory resource, and its size can be much smaller than
+> the whole contiguous memory.  Since the existing release interfaces
+> like __release_region() require a requested region to be exactly
+> matched to a resource entry, they do not allow a partial resource
+> to be released.
+> 
+> There is no change to the existing interfaces since their restriction
+> is valid for I/O resources.
+> 
+> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+
+Reviewed-by : Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+
+One nitpick below.
+
+> ---
+> 
+> Updated per code reviews from Yasuaki Ishimatsu, Ram Pai and
+> Gu Zheng.
+> 
+> ---
+>   include/linux/ioport.h |    2 +
+>   kernel/resource.c      |   93 ++++++++++++++++++++++++++++++++++++++++++++++++
+>   2 files changed, 95 insertions(+)
+> 
+> diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+> index 85ac9b9b..0fe1a82 100644
+> --- a/include/linux/ioport.h
+> +++ b/include/linux/ioport.h
+> @@ -192,6 +192,8 @@ extern struct resource * __request_region(struct resource *,
+>   extern int __check_region(struct resource *, resource_size_t, resource_size_t);
+>   extern void __release_region(struct resource *, resource_size_t,
+>   				resource_size_t);
+> +extern int release_mem_region_adjustable(struct resource *, resource_size_t,
+> +				resource_size_t);
+>   
+>   static inline int __deprecated check_region(resource_size_t s,
+>   						resource_size_t n)
+> diff --git a/kernel/resource.c b/kernel/resource.c
+> index ae246f9..c7966c3 100644
+> --- a/kernel/resource.c
+> +++ b/kernel/resource.c
+> @@ -1021,6 +1021,99 @@ void __release_region(struct resource *parent, resource_size_t start,
+>   }
+>   EXPORT_SYMBOL(__release_region);
+>   
+> +/**
+> + * release_mem_region_adjustable - release a previously reserved memory region
+> + * @parent: parent resource descriptor
+> + * @start: resource start address
+> + * @size: resource region size
+> + *
+> + * The requested region is released from a currently busy memory resource.
+> + * It adjusts the matched busy memory resource accordingly if the requested
+> + * region does not match exactly but still fits into.  Existing children of
+> + * the busy memory resource must be immutable in this request.
+> + *
+> + * Note, when the busy memory resource gets split into two entries, the code
+> + * assumes that all children remain in the lower address entry for simplicity.
+> + * Enhance this logic when necessary.
+> + */
+> +int release_mem_region_adjustable(struct resource *parent,
+> +			resource_size_t start, resource_size_t size)
+> +{
+> +	struct resource **p;
+> +	struct resource *res, *new;
+> +	resource_size_t end;
+> +	int ret = -EINVAL;
+> +
+
+> +	end = start + size - 1;
+> +	if ((start < parent->start) || (end > parent->end))
+> +		return -EINVAL;
+
+"ret" is initialized to -EINVAL. So how about use it?
+
+Thanks,
+Yasuaki Ishimatsu
+
+> +
+> +	p = &parent->child;
+> +	write_lock(&resource_lock);
+> +
+> +	while ((res = *p)) {
+> +		if (res->start >= end)
+> +			break;
+> +
+> +		/* look for the next resource if it does not fit into */
+> +		if (res->start > start || res->end < end) {
+> +			p = &res->sibling;
+> +			continue;
+> +		}
+> +
+> +		if (!(res->flags & IORESOURCE_MEM))
+> +			break;
+> +
+> +		if (!(res->flags & IORESOURCE_BUSY)) {
+> +			p = &res->child;
+> +			continue;
+> +		}
+> +
+> +		/* found the target resource; let's adjust accordingly */
+> +		if (res->start == start && res->end == end) {
+> +			/* free the whole entry */
+> +			*p = res->sibling;
+> +			kfree(res);
+> +			ret = 0;
+> +		} else if (res->start == start && res->end != end) {
+> +			/* adjust the start */
+> +			ret = __adjust_resource(res, end + 1,
+> +						res->end - end);
+> +		} else if (res->start != start && res->end == end) {
+> +			/* adjust the end */
+> +			ret = __adjust_resource(res, res->start,
+> +						start - res->start);
+> +		} else {
+> +			/* split into two entries */
+> +			new = kzalloc(sizeof(struct resource), GFP_KERNEL);
+> +			if (!new) {
+> +				ret = -ENOMEM;
+> +				break;
+> +			}
+> +			new->name = res->name;
+> +			new->start = end + 1;
+> +			new->end = res->end;
+> +			new->flags = res->flags;
+> +			new->parent = res->parent;
+> +			new->sibling = res->sibling;
+> +			new->child = NULL;
+> +
+> +			ret = __adjust_resource(res, res->start,
+> +						start - res->start);
+> +			if (ret) {
+> +				kfree(new);
+> +				break;
+> +			}
+> +			res->sibling = new;
+> +		}
+> +
+> +		break;
+> +	}
+> +
+> +	write_unlock(&resource_lock);
+> +	return ret;
+> +}
+> +
+>   /*
+>    * Managed region resource
+>    */
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
