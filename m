@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935511Ab3DHStN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 14:49:13 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44398 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935215Ab3DHStL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 14:49:11 -0400
-Date: Mon, 8 Apr 2013 20:48:36 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3] iommu/amd: Add logic to decode AMD IOMMU event flag
-Message-ID: <20130408184836.GI4395@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-	"iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-	"joro@8bytes.org" <joro@8bytes.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1364947610-3327-1-git-send-email-suravee.suthikulpanit@amd.com>
- <02D2024799561B48A732D1A51CB969E81959AF3E@sausexdag04.amd.com>
- <20130408145003.GC4723@pd.tnic>
- <5162E5B1.2030707@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5162E5B1.2030707@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S935615Ab3DHSte (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 14:49:34 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:50640 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S935238Ab3DHStd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 14:49:33 -0400
+Message-ID: <1365446973.2029.7.camel@joe-AO722>
+Subject: [PATCH] checkpatch: Fix stringification macro defect
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>,
+        Vincent =?ISO-8859-1?Q?Stehl=E9?= <v-stehle@ti.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 08 Apr 2013 11:49:33 -0700
+In-Reply-To: <51630753.6030609@ti.com>
+References: <51630753.6030609@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 10:43:45AM -0500, Suravee Suthikulanit wrote:
-> On 4/8/2013 9:50 AM, Borislav Petkov wrote:
-> >Independent from Joerg's feedback on this, I have only one question:
-> >you're not seriously considering on dumping this "Note:..." line above
-> >on*every*  IO-PF, right?
-> If you think that is obvious, I can get rid of this also.
+Fix checkpatch misreporting defect with stringification macros
 
-I don't know whether it is obvious or not, but this thing doesn't belong
-there. I'm sure you can think of a much better fitting location to point
-to the documentation. And while you do that, you can simply add a link
-to the pdf version of the spec so that people don't have to look for it
-at all.
+ERROR: Macros with complex values should be enclosed in parenthesis
+  #27: FILE: arch/arm/include/asm/kgdb.h:41:
+  +#define ___to_string(X) #X
 
--- 
-Regards/Gruss,
-    Boris.
+Reported-by: Vincent Stehlé <v-stehle@ti.com>
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 1 +
+ 1 file changed, 1 insertion(+)
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 3fb6d86..2e802fc 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3024,6 +3024,7 @@ sub process {
+ 			    $dstat !~ /^'X'$/ &&					# character constants
+ 			    $dstat !~ /$exceptions/ &&
+ 			    $dstat !~ /^\.$Ident\s*=/ &&				# .foo =
++			    $dstat !~ /^(?:\#\s*$Ident|\#\s*$Constant)\s*$/ &&		# stringification #foo
+ 			    $dstat !~ /^do\s*$Constant\s*while\s*$Constant;?$/ &&	# do {...} while (...); // do {...} while (...)
+ 			    $dstat !~ /^for\s*$Constant$/ &&				# for (...)
+ 			    $dstat !~ /^for\s*$Constant\s+(?:$Ident|-?$Constant)$/ &&	# for (...) bar()
+
+
