@@ -1,123 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935045Ab3DHGiN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 02:38:13 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:30231 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934863Ab3DHGiL (ORCPT
+	id S934979Ab3DHGkd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 02:40:33 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:53833 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934862Ab3DHGkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 02:38:11 -0400
-Message-ID: <51626570.8000400@huawei.com>
-Date: Mon, 8 Apr 2013 14:36:32 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Mon, 8 Apr 2013 02:40:31 -0400
+Message-ID: <51626610.2040607@huawei.com>
+Date: Mon, 8 Apr 2013 14:39:12 +0800
+From: libin <huawei.libin@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 12/12] memcg: don't need to free memcg via RCU or workqueue
-References: <5162648B.9070802@huawei.com>
-In-Reply-To: <5162648B.9070802@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <jiang.liu@huawei.com>,
+        <guohanjun@huawei.com>
+Subject: [PATCH resend] sched: Fix sd->*_idx limit range avoiding overflow
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
+X-Originating-IP: [10.135.74.57]
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now memcg has the same life cycle with its corresponding cgroup, and
-a cgroup is freed via RCU and then mem_cgroup_css_free() is called
-in a work function, so we can simply call __mem_cgroup_free() in
-mem_cgroup_css_free().
+Commit 201c373e8e ("sched/debug: Limit sd->*_idx range on sysctl")
+was an incomplete bug fix. This patch fixs sd->*_idx limit range to
+[0 ~ CPU_LOAD_IDX_MAX - 1] avioding array overflow caused by setting
+sd->*_idx to CPU_LOAD_IDX_MAX on sysctl.
 
-This actually reverts 59927fb984de1703c67bc640c3e522d8b5276c73
-("memcg: free mem_cgroup by RCU to fix oops").
-
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Libin <huawei.libin@huawei.com>
 ---
- mm/memcontrol.c | 51 +++++----------------------------------------------
- 1 file changed, 5 insertions(+), 46 deletions(-)
+ kernel/sched/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index a6d44bc..5aa6e91 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -261,28 +261,10 @@ struct mem_cgroup {
- 	 */
- 	struct res_counter res;
- 
--	union {
--		/*
--		 * the counter to account for mem+swap usage.
--		 */
--		struct res_counter memsw;
--
--		/*
--		 * rcu_freeing is used only when freeing struct mem_cgroup,
--		 * so put it into a union to avoid wasting more memory.
--		 * It must be disjoint from the css field.  It could be
--		 * in a union with the res field, but res plays a much
--		 * larger part in mem_cgroup life than memsw, and might
--		 * be of interest, even at time of free, when debugging.
--		 * So share rcu_head with the less interesting memsw.
--		 */
--		struct rcu_head rcu_freeing;
--		/*
--		 * We also need some space for a worker in deferred freeing.
--		 * By the time we call it, rcu_freeing is no longer in use.
--		 */
--		struct work_struct work_freeing;
--	};
-+	/*
-+	 * the counter to account for mem+swap usage.
-+	 */
-+	struct res_counter memsw;
- 
- 	/*
- 	 * the counter to account for kernel memory usage.
-@@ -6097,29 +6079,6 @@ static void __mem_cgroup_free(struct mem_cgroup *memcg)
- 		vfree(memcg);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 7f12624..ba89ada 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4999,7 +4999,7 @@ static void sd_free_ctl_entry(struct ctl_table **tablep)
  }
- 
--
--/*
-- * Helpers for freeing a kmalloc()ed/vzalloc()ed mem_cgroup by RCU,
-- * but in process context.  The work_freeing structure is overlaid
-- * on the rcu_freeing structure, which itself is overlaid on memsw.
-- */
--static void free_work(struct work_struct *work)
--{
--	struct mem_cgroup *memcg;
--
--	memcg = container_of(work, struct mem_cgroup, work_freeing);
--	__mem_cgroup_free(memcg);
--}
--
--static void free_rcu(struct rcu_head *rcu_head)
--{
--	struct mem_cgroup *memcg;
--
--	memcg = container_of(rcu_head, struct mem_cgroup, rcu_freeing);
--	INIT_WORK(&memcg->work_freeing, free_work);
--	schedule_work(&memcg->work_freeing);
--}
--
- /*
-  * Returns the parent mem_cgroup in memcgroup hierarchy with hierarchy enabled.
-  */
-@@ -6269,7 +6228,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
- 
- 	mem_cgroup_sockets_destroy(memcg);
- 
--	call_rcu(&memcg->rcu_freeing, free_rcu);
-+	__mem_cgroup_free(memcg);
- }
- 
- #ifdef CONFIG_MMU
--- 
-1.8.0.2
+
+ static int min_load_idx = 0;
+-static int max_load_idx = CPU_LOAD_IDX_MAX;
++static int max_load_idx = CPU_LOAD_IDX_MAX - 1;
+
+ static void
+ set_table_entry(struct ctl_table *entry,
+-- 1.6.0.2
+
