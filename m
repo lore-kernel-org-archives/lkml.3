@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936314Ab3DHXKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 19:10:22 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:65463 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760264Ab3DHXKU (ORCPT
+	id S936497Ab3DHXML (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 19:12:11 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:51882 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935512Ab3DHXMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 19:10:20 -0400
-Message-ID: <51634E58.4080104@gmail.com>
-Date: Mon, 08 Apr 2013 19:10:16 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Mon, 8 Apr 2013 19:12:09 -0400
 MIME-Version: 1.0
-To: Pavel Emelyanov <xemul@parallels.com>
-CC: Linux MM <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Matthew Wilcox <willy@linux.intel.com>, kosaki.motohiro@gmail.com
-Subject: Re: [RFC PATCH 1/1] mm: Another attempt to monitor task's memory
- changes
-References: <515F0484.1010703@parallels.com>
-In-Reply-To: <515F0484.1010703@parallels.com>
+In-Reply-To: <201304090003.47056.chunkeey@googlemail.com>
+References: <CAJ-Vmo=LVSzdEo6DhfOVT_0JHCTMmdPU1zGfMuBmhmr8QuDmJQ@mail.gmail.com>
+	<CAJ-VmomS_=1=QLZrfdD4vhu9Qy0w2JNQxEFrkt_OKjWetrWY4w@mail.gmail.com>
+	<CAFSJ42b7DD9UVtzT7YWhaEchzwpde0yW=pS3nJVeMCHoVQGBqQ@mail.gmail.com>
+	<201304090003.47056.chunkeey@googlemail.com>
+Date: Mon, 8 Apr 2013 16:12:07 -0700
+X-Google-Sender-Auth: eXv1DKZzI8eD0aXIh6Ofd-UWPSc
+Message-ID: <CAJ-VmomksDSNvTpKQpNRRQx+QboSVHpby7V4qq4rngqVkTvf+A@mail.gmail.com>
+Subject: Re: Version number policy!
+From: Adrian Chadd <adrian@freebsd.org>
+To: Christian Lamparter <chunkeey@googlemail.com>
+Cc: Eugene Krasnikov <k.eugene.e@gmail.com>, Kalle Valo <kvalo@adurom.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        ath9k_htc_fw <ath9k_htc_fw@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This approach works on any task via it's proc, and can be used on different
-> tasks in parallel.
-> 
-> Also, Andrew was asking for some performance numbers related to the change.
-> Now I can say, that as long as soft dirty bits are not cleared, no performance
-> penalty occur, since the soft dirty bit and the regular dirty bit are set at 
-> the same time within the same instruction. When soft dirty is cleared via 
-> clear_refs, the task in question might slow down, but it will depend on how
-> actively it uses the memory.
-> 
-> 
-> What do you think, does it make sense to develop this approach further?
+I'm a FreeBSD user. I know what it's like to have an alternate, out of
+linux implementation of ext2/3 that doesn't implement all of the
+features.
 
-When touching mmaped page, cpu turns on dirty bit but doesn't turn on soft dirty.
-So, I'm not convinced how to use this flag. Please show us your userland algorithm
-how to detect diff.
+I also know what kinds of crap happens when you try mounting a more
+recent extX filesystem on an earlier kernel. Ie, it doesn't
+necessarily end well. :-)
+
+Anyway, there's been a lot of good points in this discussion. Let's
+keep it in mind as we slowly march forward.
+
+There's only like, 60k of generated binary code on these things. Let's
+not overthink things too much for now. :)
 
 
+
+Adrian
