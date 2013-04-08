@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934593Ab3DHBK2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 21:10:28 -0400
-Received: from antispamout2.netnet.net ([206.40.99.69]:56490 "EHLO
-	antispamout2.netnet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934533Ab3DHBK1 (ORCPT
+	id S934605Ab3DHBO3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 21:14:29 -0400
+Received: from mail-gh0-f180.google.com ([209.85.160.180]:45802 "EHLO
+	mail-gh0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934526Ab3DHBO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 21:10:27 -0400
-X-Greylist: delayed 935 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Apr 2013 21:10:27 EDT
-X-ASG-Debug-ID: 1365382490-047f860edb2446740001-xx1T2L
-X-Barracuda-Envelope-From: sph@gmail.com
-X-Barracuda-Apparent-Source-IP: 206.40.99.79
-Message-ID: <20130407195639.xul9qb14yswwkock@webmail.lakefield.net>
-Date: Sun, 07 Apr 2013 19:56:39 -0500
-From: PHMS SECURITY COMPANY <sph@gmail.com>
-Reply-To: sphms@yahoo.com
-To: undisclosed-recipients:;
-Subject: Reply Immediately
+	Sun, 7 Apr 2013 21:14:27 -0400
+Message-ID: <51621AC2.4070706@gmail.com>
+Date: Sun, 07 Apr 2013 22:17:54 -0300
+From: Lucas <canolucas@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130403 Thunderbird/17.0.5
 MIME-Version: 1.0
-X-ASG-Orig-Subj: Reply Immediately
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
+Newsgroups: gmane.linux.kernel.stable,gmane.linux.kernel
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        stable <stable@vger.kernel.org>,
+        "Kuoppala, Mika" <mika.kuoppala@intel.com>,
+        Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
+Subject: Re: Linux 3.8.6
+References: <20130405174012.GA28836@kroah.com> <51606512.8030703@gmail.com> <20130406181836.GA2406@kroah.com> <51606D06.5020606@gmail.com> <CAKMK7uEF6sfvMvut7JVCjsKbgzarr8acqELnC0iLrHyKo=b+tQ@mail.gmail.com> <5160A81E.2010505@gmail.com> <CAKMK7uGjzYF0XG78US7OyoK2xnvn4jw25f26d28QS=CR_Ta=nQ@mail.gmail.com>
+In-Reply-To: <CAKMK7uGjzYF0XG78US7OyoK2xnvn4jw25f26d28QS=CR_Ta=nQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
-X-Barracuda-Connect: lake1.lakefield.net[206.40.99.79]
-X-Barracuda-Start-Time: 1365382490
-X-Barracuda-URL: http://206.40.99.69:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 2.06
-X-Barracuda-Spam-Status: No, SCORE=2.06 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=7.0 KILL_LEVEL=9.9 tests=ADVANCE_FEE_1, ADVANCE_FEE_2, ADVANCE_FEE_2_2
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.124302
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.01 ADVANCE_FEE_2          Appears to be advance fee fraud (Nigerian 419)
-	0.00 ADVANCE_FEE_1          Appears to be advance fee fraud (Nigerian 419)
-	2.05 ADVANCE_FEE_2_2        Appears to be advance fee fraud (Nigerian 419)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PHMS SECURITY COMPANY
-LAGOS-NIGERIA
+On 07/04/13 15:28, Daniel Vetter wrote:
+> On Sun, Apr 7, 2013 at 12:56 AM, Lucas <canolucas@gmail.com> wrote:
+>> Thanks for reporting in.
+>>
+>> Somehow the thread got all messed up in LKML. It didn't parse correctly
+>> there, but it seems that Gmane did. Here is the link:
+>>
+>> http://comments.gmane.org/gmane.linux.kernel.stable/48872
+>
+> Those patches still have an unresolved regression against them.
+> Unfortunately  I can't reproduce it despite that I have a very similar
+> system, and obviously a bunch of other people like you reported that
+> the exact same patches which regressed actually fix the lvds panel
+> fitter. So for now this stays in limbo :(
+> -Daniel
+> --
+> Daniel Vetter
+> Software Engineer, Intel Corporation
+> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+>
+Ok, if you need any help with testing or anything, just tell me.
+For me every release candidate of 3.9 from rc1 onwards is able to boot 
+X. Hope you can hunt this regresion down.
 
-Dear Beneficiary
-This is to inform you a security box containing ten million dollars has been
-deposited with us to deliver to you
+Thanks,
+Lucas
