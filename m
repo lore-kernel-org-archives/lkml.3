@@ -1,175 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936476Ab3DHWAG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 18:00:06 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:11172 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936374Ab3DHWAE (ORCPT
+	id S936482Ab3DHWDt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 18:03:49 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:57400 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934846Ab3DHWDr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 18:00:04 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, linuxram@us.ibm.com,
-        guz.fnst@cn.fujitsu.com, tmac@hp.com, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, tangchen@cn.fujitsu.com, jiang.liu@huawei.com,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [UPDATE][PATCH v2 2/3] resource: Add release_mem_region_adjustable()
-Date: Mon,  8 Apr 2013 15:47:35 -0600
-Message-Id: <1365457655-7453-1-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.8.1.4
+	Mon, 8 Apr 2013 18:03:47 -0400
+From: Christian Lamparter <chunkeey@googlemail.com>
+To: Eugene Krasnikov <k.eugene.e@gmail.com>
+Subject: Re: Version number policy!
+Date: Tue, 9 Apr 2013 00:03:46 +0200
+User-Agent: KMail/1.13.7 (Linux/3.9.0-rc5-wl-wl+; KDE/4.8.4; x86_64; ; )
+Cc: Adrian Chadd <adrian@freebsd.org>, Kalle Valo <kvalo@adurom.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "linux-bluetooth" <linux-bluetooth@vger.kernel.org>,
+        "linux-wireless" <linux-wireless@vger.kernel.org>,
+        "ath9k_htc_fw" <ath9k_htc_fw@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <CAJ-Vmo=LVSzdEo6DhfOVT_0JHCTMmdPU1zGfMuBmhmr8QuDmJQ@mail.gmail.com> <CAJ-VmomS_=1=QLZrfdD4vhu9Qy0w2JNQxEFrkt_OKjWetrWY4w@mail.gmail.com> <CAFSJ42b7DD9UVtzT7YWhaEchzwpde0yW=pS3nJVeMCHoVQGBqQ@mail.gmail.com>
+In-Reply-To: <CAFSJ42b7DD9UVtzT7YWhaEchzwpde0yW=pS3nJVeMCHoVQGBqQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="windows-1252"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201304090003.47056.chunkeey@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added release_mem_region_adjustable(), which releases a requested
-region from a currently busy memory resource.  This interface
-adjusts the matched memory resource accordingly even if the
-requested region does not match exactly but still fits into.
+Hello,
 
-This new interface is intended for memory hot-delete.  During
-bootup, memory resources are inserted from the boot descriptor
-table, such as EFI Memory Table and e820.  Each memory resource
-entry usually covers the whole contigous memory range.  Memory
-hot-delete request, on the other hand, may target to a particular
-range of memory resource, and its size can be much smaller than
-the whole contiguous memory.  Since the existing release interfaces
-like __release_region() require a requested region to be exactly
-matched to a resource entry, they do not allow a partial resource
-to be released.
+On Monday, April 08, 2013 10:37:08 PM Eugene Krasnikov wrote:
+> Did you have such a situation when e.g. one feature has 2 incompatible
+> implementations?
+I'm not aware of anything in particular. But we can look elsewhere for
+examples, maybe Kalle knows one? Or you could ask the file system folks.
+AFAIK ext2 fs is using one and they have maintained some basic 
+compatibility throughout the major releases.
 
-There is no change to the existing interfaces since their restriction
-is valid for I/O resources.
-
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-Reviewed-by : Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
----
-
-Added #ifdef CONFIG_MEMORY_HOTPLUG as suggested by Andrew Morton.
-
----
- include/linux/ioport.h |    4 ++
- kernel/resource.c      |   96 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 100 insertions(+)
-
-diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-index 85ac9b9b..961d4dc 100644
---- a/include/linux/ioport.h
-+++ b/include/linux/ioport.h
-@@ -192,6 +192,10 @@ extern struct resource * __request_region(struct resource *,
- extern int __check_region(struct resource *, resource_size_t, resource_size_t);
- extern void __release_region(struct resource *, resource_size_t,
- 				resource_size_t);
-+#ifdef CONFIG_MEMORY_HOTPLUG
-+extern int release_mem_region_adjustable(struct resource *, resource_size_t,
-+				resource_size_t);
-+#endif
+For example, it's possible to read data on a ext3 and ext4(dev) file
+system with the old ext2 module - this is very user-friendly [1]!
+Maybe, you can dig up more examples, just browse the web for "feature 
+bits/flags/..."
  
- static inline int __deprecated check_region(resource_size_t s,
- 						resource_size_t n)
-diff --git a/kernel/resource.c b/kernel/resource.c
-index ae246f9..25b945c 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -1021,6 +1021,102 @@ void __release_region(struct resource *parent, resource_size_t start,
- }
- EXPORT_SYMBOL(__release_region);
- 
-+#ifdef CONFIG_MEMORY_HOTPLUG
-+/**
-+ * release_mem_region_adjustable - release a previously reserved memory region
-+ * @parent: parent resource descriptor
-+ * @start: resource start address
-+ * @size: resource region size
-+ *
-+ * This interface is intended for memory hot-delete.  The requested region is
-+ * released from a currently busy memory resource.  It adjusts the matched
-+ * busy memory resource accordingly even if the requested region does not
-+ * match exactly but still fits into.  Existing children of the busy memory
-+ * resource must be immutable in this request.
-+ *
-+ * Note, when the busy memory resource gets split into two entries, the code
-+ * assumes that all children remain in the lower address entry for simplicity.
-+ * Enhance this logic when necessary.
-+ */
-+int release_mem_region_adjustable(struct resource *parent,
-+			resource_size_t start, resource_size_t size)
-+{
-+	struct resource **p;
-+	struct resource *res, *new;
-+	resource_size_t end;
-+	int ret = -EINVAL;
-+
-+	end = start + size - 1;
-+	if ((start < parent->start) || (end > parent->end))
-+		return ret;
-+
-+	p = &parent->child;
-+	write_lock(&resource_lock);
-+
-+	while ((res = *p)) {
-+		if (res->start >= end)
-+			break;
-+
-+		/* look for the next resource if it does not fit into */
-+		if (res->start > start || res->end < end) {
-+			p = &res->sibling;
-+			continue;
-+		}
-+
-+		if (!(res->flags & IORESOURCE_MEM))
-+			break;
-+
-+		if (!(res->flags & IORESOURCE_BUSY)) {
-+			p = &res->child;
-+			continue;
-+		}
-+
-+		/* found the target resource; let's adjust accordingly */
-+		if (res->start == start && res->end == end) {
-+			/* free the whole entry */
-+			*p = res->sibling;
-+			kfree(res);
-+			ret = 0;
-+		} else if (res->start == start && res->end != end) {
-+			/* adjust the start */
-+			ret = __adjust_resource(res, end + 1,
-+						res->end - end);
-+		} else if (res->start != start && res->end == end) {
-+			/* adjust the end */
-+			ret = __adjust_resource(res, res->start,
-+						start - res->start);
-+		} else {
-+			/* split into two entries */
-+			new = kzalloc(sizeof(struct resource), GFP_KERNEL);
-+			if (!new) {
-+				ret = -ENOMEM;
-+				break;
-+			}
-+			new->name = res->name;
-+			new->start = end + 1;
-+			new->end = res->end;
-+			new->flags = res->flags;
-+			new->parent = res->parent;
-+			new->sibling = res->sibling;
-+			new->child = NULL;
-+
-+			ret = __adjust_resource(res, res->start,
-+						start - res->start);
-+			if (ret) {
-+				kfree(new);
-+				break;
-+			}
-+			res->sibling = new;
-+		}
-+
-+		break;
-+	}
-+
-+	write_unlock(&resource_lock);
-+	return ret;
-+}
-+#endif	/* CONFIG_MEMORY_HOTPLUG */
-+
- /*
-  * Managed region resource
-  */
+> 2013/4/8 Adrian Chadd <adrian@freebsd.org>:
+> > On 8 April 2013 08:33, Christian Lamparter <chunkeey@googlemail.com> wrote:
+> >> On Monday, April 08, 2013 11:10:30 AM Eugene Krasnikov wrote:
+> >>> It’s a good idea to pack bitmap into the tail/header of the firmware
+> >>> binary to get capabilities even before fw loading. The plan is to add
+> >>> 8 bytes for caps and also add time stamp. Let me play around with that
+> >>> and provide fw and driver patch for review.
+> >>
+> >> Hm, come to think of it. Kalle, do you think ath9k_htc could use
+> >> some bits of the fw header format, parser or the complete infrastructure
+> >> from ath6kl? This could be great for Adrian, because he could
+> >> just point people to it and they could moved it into the code
+> >> into /drivers/net/wireless/ath/fw.c.
+> >
+> > Just remember that we (ath9k_htc and carl9170) aren't constrained by
+> > the same kinds of issues that closed firmware is. So version checks
+> > aren't that bad, because that way over time we don't end up needing to
+> > maintain lots of special cases for firmware options.
+
+I know, I know, but wouldn't it be great to have a common firmware parsing
+infrastructure for all the driver with firmware under ath/? [No, I'm not
+talking about writing a firmware that works on all devices. I want common
+rules for firmware header descriptors. But if you peg features (firmware
+or device!) to abstract firmware versions like "1.2.3.4-34+", then this is
+going to be difficult.] 
+
+> > I still like the idea of firmware options for build time options that
+> > people may wish to use - eg, say we want to support a version of
+> > ath9k-htc firmware that does offloaded TX rate control, versus not.
+> > But, maintaining multiple builds of the same firmware is IMHO going to
+> > be a path towards madness to maintain.
+> >
+> > The maintainability is why I'm hoping (!) to keep the number of
+> > options low and just do "clean slate" moves whenever we shift to the
+> > next major firmware version.
+
+Or like ext2,3,4 => just have a lowest common denominator. So users can
+at least always access the web and get a matching firmware. 
+
+Of course, it could be that we are just talking about completely different
+things. Anyway, Luis asked me, if I have any "input"... and not more ;-).
+
+Regards,
+	Christian
+
+[1] 
+<https://ext4.wiki.kernel.org/index.php/Frequently_Asked_Questions#Can_I_mount_existing_Ext3_as_Ext4.3F_And_vice_versa.3F_Similarly_from_Ext2_to_Ext4_and_its_reverse.3F>
