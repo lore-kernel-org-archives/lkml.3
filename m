@@ -1,43 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936531Ab3DHXyS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 19:54:18 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:56536 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760913Ab3DHXyR (ORCPT
+	id S1760879Ab3DHXyz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 19:54:55 -0400
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:56079 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935512Ab3DHXyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 19:54:17 -0400
-Date: Mon, 8 Apr 2013 16:54:11 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [GIT PULL] extcon for 3.10
-Message-ID: <20130408235411.GB14942@kroah.com>
-References: <51635022.7000204@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51635022.7000204@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 8 Apr 2013 19:54:53 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH] thermal: fix frequency table lookup bugs
+Date: Mon,  8 Apr 2013 16:54:47 -0700
+Message-Id: <1365465287-24530-1-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 08:17:54AM +0900, Chanwoo Choi wrote:
-> Hi Greg,
-> 
-> This is extcon pull request for v3.10.
-> Please pull extcon with following updates.
-> 
-> The following changes since commit 07961ac7c0ee8b546658717034fe692fd12eefa9:
-> 
->   Linux 3.9-rc5 (2013-03-31 15:12:43 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-for-3.10
+The loops which are used to perform lookups in CPU frequency tables in
+cpu_cooling and the Exynos thermal driver do not update the loop counter
+if they encounter an invalid table entry, leading to an infinite loop in
+that case.
 
-Pulled and pushed out, thanks.
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+---
+ drivers/thermal/cpu_cooling.c    | 19 ++++++++++---------
+ drivers/thermal/exynos_thermal.c |  8 ++++----
+ 2 files changed, 14 insertions(+), 13 deletions(-)
 
-greg k-h
+diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+index 836828e..e6db441 100644
+--- a/drivers/thermal/cpu_cooling.c
++++ b/drivers/thermal/cpu_cooling.c
+@@ -124,14 +124,14 @@ static int is_cpufreq_valid(int cpu)
+ static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
+ {
+ 	int ret = 0, i = 0;
+-	unsigned long level_index;
++	unsigned long level_index = 0;
+ 	bool descend = false;
+ 	struct cpufreq_frequency_table *table =
+ 					cpufreq_frequency_get_table(cpu);
+ 	if (!table)
+ 		return ret;
+ 
+-	while (table[i].frequency != CPUFREQ_TABLE_END) {
++	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+ 		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+ 			continue;
+ 
+@@ -143,24 +143,25 @@ static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long level)
+ 		}
+ 
+ 		/*return if level matched and table in descending order*/
+-		if (descend && i == level)
++		if (descend && level_index == level)
+ 			return table[i].frequency;
+-		i++;
++		level_index++;
+ 	}
+ 	i--;
++	level_index--;
+ 
+-	if (level > i || descend)
++	if (level > level_index || descend)
+ 		return ret;
+-	level_index = i - level;
++	level = level_index - level;
+ 
+ 	/*Scan the table in reverse order and match the level*/
+-	while (i >= 0) {
++	for (; i >= 0; i--) {
+ 		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+ 			continue;
+ 		/*return if level matched*/
+-		if (i == level_index)
++		if (level_index == level)
+ 			return table[i].frequency;
+-		i--;
++		level_index--;
+ 	}
+ 	return ret;
+ }
+diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
+index d5e6267..524b2a0 100644
+--- a/drivers/thermal/exynos_thermal.c
++++ b/drivers/thermal/exynos_thermal.c
+@@ -237,7 +237,7 @@ static int exynos_get_crit_temp(struct thermal_zone_device *thermal,
+ 
+ static int exynos_get_frequency_level(unsigned int cpu, unsigned int freq)
+ {
+-	int i = 0, ret = -EINVAL;
++	int i, level = 0, ret = -EINVAL;
+ 	struct cpufreq_frequency_table *table = NULL;
+ #ifdef CONFIG_CPU_FREQ
+ 	table = cpufreq_frequency_get_table(cpu);
+@@ -245,12 +245,12 @@ static int exynos_get_frequency_level(unsigned int cpu, unsigned int freq)
+ 	if (!table)
+ 		return ret;
+ 
+-	while (table[i].frequency != CPUFREQ_TABLE_END) {
++	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+ 		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+ 			continue;
+ 		if (table[i].frequency == freq)
+-			return i;
+-		i++;
++			return level;
++		level++;
+ 	}
+ 	return ret;
+ }
+-- 
+1.8.1.3
+
