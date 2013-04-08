@@ -1,125 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935832Ab3DHWn4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 18:43:56 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:56896 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762266Ab3DHWnz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 18:43:55 -0400
-Message-ID: <51634826.5010602@gmail.com>
-Date: Mon, 08 Apr 2013 17:43:50 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Bryan Freed <bfreed@chromium.org>
-CC: Anton Vorontsov <anton@enomsg.org>, Tony Luck <tony.luck@intel.com>,
+	id S936020Ab3DHWpY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 18:45:24 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:56189 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762266Ab3DHWpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 18:45:22 -0400
+Date: Mon, 8 Apr 2013 15:43:29 -0700
+From: Kees Cook <keescook@chromium.org>
+To: Ingo Molnar <mingo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
         Kees Cook <keescook@chromium.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v6] pstore/ram: Add ramoops support for the Flattened
- Device Tree.
-References: <1347042576-17675-1-git-send-email-bfreed@chromium.org> <20120908052907.GA4724@lizard> <20120917062302.GA768@lizard> <CAL_JsqK_L9nN6+oxUQzNwFjbFf3+3NroeEwzbMdPS4T6=Mnemg@mail.gmail.com> <20130407174313.GA7168@lizard> <CAEYUcX0rQKDGD3_pbc7JnDO6WJ_QMd8AWW+X1giNVL313wODyA@mail.gmail.com>
-In-Reply-To: <CAEYUcX0rQKDGD3_pbc7JnDO6WJ_QMd8AWW+X1giNVL313wODyA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Marcelo Tosatti <mtosatti@redhat.com>, Alex Shi <alex.shi@intel.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        kernel-hardening@lists.openwall.com,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
+        Eric Northup <digitaleric@google.com>
+Subject: [PATCH] x86: make IDT read-only
+Message-ID: <20130408224328.GA17641@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2013 02:54 PM, Bryan Freed wrote:
-> Sorry for dropping the ball on this one, Anton.
-> 
-> Thank you for your feedback and modifications in the code.
-> I gotta ask, however, why do you completely remove key ramoops fields
-> like record_size and ftrace_size?
-> 
-> From your 9/7/2012 comments (again, sorry for the delay in getting back to you):
->> Personally, I don't see how this fits into device tree. It doesn't
->> describe hardware, instead it's more a configuration stuff, which
->> usually we try to not put into the device tree.
->>
->> It would be better to have a sane defaults in ramoops, instead of
->> introducing more "virtual" stuff in the device tree. That is, feel
->> free to change defaults if they seem to be not enough for most your
->> setups.
-> 
-> So there are only two alternatives I can see to set these fields.
-> 1. Pass kernel command line parameters, or
-> 2. Modify the defaults in ram.c.
-> 
-> Neither of these alternatives is particularly clean to me.  The first
-> is shunned to avoid clutter on the command line.
-> And the second requires us to maintain our own version of ram.c or
-> push our defaults on the rest of the community.
-> 
-> We (ok, maybe just 'I') prefer to keep our device specific values in
-> the device tree, even though it is not strictly defining hardware in
-> the system.
-> What do you think of at least keeping the record_size, console_size
-> and ftrace_size fields as optional in the ramoops device tree
-> specification?
-> 
-> And as a more general question, why should we try not to put
-> configuration in the device tree?  It seems like a great (and
-> portable) place to put this stuff.
-> It certainly seems better to have it there than hardwired in the
-> kernel or tacked onto the kernel command line.
+This makes the IDT unconditionally read-only. This primarily removes
+the IDT from being a target for arbitrary memory write attacks. It has
+an added benefit of also not leaking (via the "sidt" instruction) the
+kernel base offset, if it has been relocated.
 
-You have to account for the fact that you may not be able to update the
-dtb which may be part of firmware. I can imagine you might want to
-change some of the sizes frequently based on what you are doing and
-trying to capture. So even if you put in the DT, you need some easy way
-to override the settings. This could always be fixed-up by the
-bootloader which is what is done for things we don't expect the firmware
-to know like initrd address/size and kernel command line. This is why
-the prior discussion I mentioned below suggested putting all this in the
-/chosen node.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Eric Northup <digitaleric@google.com>
+---
+ arch/x86/include/asm/fixmap.h |    4 +---
+ arch/x86/kernel/cpu/intel.c   |   15 ---------------
+ arch/x86/kernel/traps.c       |    8 ++++++++
+ arch/x86/xen/mmu.c            |    4 +---
+ 4 files changed, 10 insertions(+), 21 deletions(-)
 
-Rob
+diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
+index a09c285..51b9e32 100644
+--- a/arch/x86/include/asm/fixmap.h
++++ b/arch/x86/include/asm/fixmap.h
+@@ -104,9 +104,7 @@ enum fixed_addresses {
+ 	FIX_LI_PCIA,	/* Lithium PCI Bridge A */
+ 	FIX_LI_PCIB,	/* Lithium PCI Bridge B */
+ #endif
+-#ifdef CONFIG_X86_F00F_BUG
+-	FIX_F00F_IDT,	/* Virtual mapping for IDT */
+-#endif
++	FIX_RO_IDT,	/* Virtual mapping for read-only IDT */
+ #ifdef CONFIG_X86_CYCLONE_TIMER
+ 	FIX_CYCLONE_TIMER, /*cyclone timer register*/
+ #endif
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 1905ce9..76148a3 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -164,20 +164,6 @@ int __cpuinit ppro_with_ram_bug(void)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_X86_F00F_BUG
+-static void __cpuinit trap_init_f00f_bug(void)
+-{
+-	__set_fixmap(FIX_F00F_IDT, __pa_symbol(idt_table), PAGE_KERNEL_RO);
+-
+-	/*
+-	 * Update the IDT descriptor and reload the IDT so that
+-	 * it uses the read-only mapped virtual address.
+-	 */
+-	idt_descr.address = fix_to_virt(FIX_F00F_IDT);
+-	load_idt(&idt_descr);
+-}
+-#endif
+-
+ static void __cpuinit intel_smp_check(struct cpuinfo_x86 *c)
+ {
+ 	/* calling is from identify_secondary_cpu() ? */
+@@ -215,7 +201,6 @@ static void __cpuinit intel_workarounds(struct cpuinfo_x86 *c)
+ 
+ 		c->f00f_bug = 1;
+ 		if (!f00f_workaround_enabled) {
+-			trap_init_f00f_bug();
+ 			printk(KERN_NOTICE "Intel Pentium with F0 0F bug - workaround enabled.\n");
+ 			f00f_workaround_enabled = 1;
+ 		}
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 68bda7a..a2a9b78 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -753,6 +753,14 @@ void __init trap_init(void)
+ #endif
+ 
+ 	/*
++	 * Set the IDT descriptor to a fixed read-only location, so that the
++	 * "sidt" instruction will not leak the location of the kernel, and
++	 * to defend the IDT against arbitrary memory write vulnerabilities.
++	 * It will be reloaded in cpu_init() */
++	__set_fixmap(FIX_RO_IDT, __pa_symbol(idt_table), PAGE_KERNEL_RO);
++	idt_descr.address = fix_to_virt(FIX_RO_IDT);
++
++	/*
+ 	 * Should be a barrier for any external CPU state:
+ 	 */
+ 	cpu_init();
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 6afbb2c..8bc4dec 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2039,9 +2039,7 @@ static void xen_set_fixmap(unsigned idx, phys_addr_t phys, pgprot_t prot)
+ 
+ 	switch (idx) {
+ 	case FIX_BTMAP_END ... FIX_BTMAP_BEGIN:
+-#ifdef CONFIG_X86_F00F_BUG
+-	case FIX_F00F_IDT:
+-#endif
++	case FIX_RO_IDT:
+ #ifdef CONFIG_X86_32
+ 	case FIX_WP_TEST:
+ 	case FIX_VDSO:
+-- 
+1.7.9.5
 
-> 
-> Thanks,
-> 
-> bryan.
-> 
-> On Sun, Apr 7, 2013 at 10:43 AM, Anton Vorontsov <anton@enomsg.org> wrote:
->> On Thu, Apr 04, 2013 at 09:03:47PM -0500, Rob Herring wrote:
->>> On Mon, Sep 17, 2012 at 1:23 AM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
->>>> On Fri, Sep 07, 2012 at 10:29:10PM -0700, Anton Vorontsov wrote:
->>>>> On Fri, Sep 07, 2012 at 11:29:36AM -0700, Bryan Freed wrote:
->>>>>> When called with a non-zero of_node, fill out a new ramoops_platform_data
->>>>>> with data from the specified Flattened Device Tree node.
->>>>>> Update ramoops documentation with the new FDT interface.
->>>>>> Update devicetree/binding documentation with pstore/ramoops.txt.
->>>>>
->>>>> Thanks for your work, Bryan! There were a few issues, I fixed
->>>>> them myself but I need your confirmation if you're OK w/ all
->>>>> the changes.
->>>> [...]
->>>>> So, the resulting patch is down below. But I have not pushed
->>>>> it out yet, I'm waiting for your sign off. If you're OK with the
->>>>> changes, please reply with
->>>>> 'Signed-off-by: Bryan Freed <bfreed@chromium.org>'
->>>>
->>>> Bryan, have you had a chance to look into this?
->>>
->>> Whatever happened to this? Olof was also looking at doing a binding
->>> back in Jan 2012:
->>>
->>> http://www.mail-archive.com/devicetree-discuss@lists.ozlabs.org/msg09905.html
->>
->> I don't know. Bryan's patch looked good, I'd happily apply it. But I still
->> need Bryan's Signed-off-by tag. :-/ Or, somebody needs to sign off on his
->> behalf (anyone from Chromium project?). Or redo the patch.
->>
->> Thanks,
->>
->> Anton
 
+-- 
+Kees Cook
+Chrome OS Security
