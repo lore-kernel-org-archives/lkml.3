@@ -1,91 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183Ab3DHFL6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 01:11:58 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:58974 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260Ab3DHFL5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 01:11:57 -0400
+	id S934793Ab3DHFrZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 01:47:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28868 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934719Ab3DHFrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 01:47:23 -0400
+Message-ID: <516259D2.7000805@redhat.com>
+Date: Mon, 08 Apr 2013 13:46:58 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <515D48E5.1060700@ti.com>
-References: <1364903681-13914-1-git-send-email-prabhakar.csengg@gmail.com>
- <1364903681-13914-2-git-send-email-prabhakar.csengg@gmail.com> <515D48E5.1060700@ti.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Mon, 8 Apr 2013 10:41:35 +0530
-Message-ID: <CA+V-a8siF1HSRbpA=Oe-OMwtr_HuNP3scf3Qochb7He2Y+zwKQ@mail.gmail.com>
-Subject: Re: [PATCH v8 1/2] ARM: davinci: dm365: add support for v4l2 video display
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Don Zickus <dzickus@redhat.com>
+CC: linux-watchdog@vger.kernel.org, kexec@lists.infradead.org, wim@iguana.be,
+        LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com
+Subject: Re: [RFC PATCH] watchdog: Add hook for kicking in kdump path
+References: <1365192994-94850-1-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1365192994-94850-1-git-send-email-dzickus@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sekhar,
+On 04/06/2013 04:16 AM, Don Zickus wrote:
+> A common problem with kdump is that during the boot up of the
+> second kernel, the hardware watchdog times out and reboots the
+> machine before a vmcore can be captured.
+> 
+> Instead of tellling customers to disable their hardware watchdog
+> timers, I hacked up a hook to put in the kdump path that provides
+> one last kick before jumping into the second kernel.
+> 
+> The assumption is the watchdog timeout is at least 10-30 seconds
+> long, enough to get the second kernel to userspace to kick the watchdog
+> again, if needed.
 
-On Thu, Apr 4, 2013 at 3:03 PM, Sekhar Nori <nsekhar@ti.com> wrote:
-> On 4/2/2013 5:24 PM, Prabhakar lad wrote:
->> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->>
->> Create platform devices for various video modules like venc,osd,
->> vpbe and v4l2 driver for dm365.
->>
->> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->
-> Minor nits below:
->
->> diff --git a/arch/arm/mach-davinci/dm365.c b/arch/arm/mach-davinci/dm365.c
->> index c61dd94..786c860 100644
->> --- a/arch/arm/mach-davinci/dm365.c
->> +++ b/arch/arm/mach-davinci/dm365.c
->> @@ -40,10 +40,14 @@
->>
->>  #define DM365_REF_FREQ               24000000        /* 24 MHz on the DM365 EVM */
->>
->> +#define DM365_RTC_BASE                       0x01c69000
->> +
->>  /* Base of key scan register bank */
->>  #define DM365_KEYSCAN_BASE           0x01c69400
->>
->> -#define DM365_RTC_BASE                       0x01c69000
->> +#define DM365_OSD_BASE                       0x01c71c00
->> +
->> +#define DM365_VENC_BASE                      0x01c71e00
->>
->>  #define DAVINCI_DM365_VC_BASE                0x01d0c000
->
-> No need of empty lines between these definitions. While at it you can
-> also remove the useless comment "/* Base of key scan register bank */"
->
-OK
+For kdump kernel some devices need to reset, this might increase the
+boot time, it's not so reliable for the 10-30s for us to kicking the
+watchdog.
 
->> +static int dm365_vpbe_setup_pinmux(enum v4l2_mbus_pixelcode if_type,
->> +                         int field)
->> +{
->> +     switch (if_type) {
->> +     case V4L2_MBUS_FMT_SGRBG8_1X8:
->> +             davinci_cfg_reg(DM365_VOUT_FIELD_G81);
->> +             davinci_cfg_reg(DM365_VOUT_COUTL_EN);
->> +             davinci_cfg_reg(DM365_VOUT_COUTH_EN);
->> +             break;
->> +
->
-> No need of these empty lines after 'break'. Here and other places below.
->
-OK
+Could we have another option to disable/stop the watchdog while panic
+happens? Ie. add a kernel cmdline panic_stop_wd=<0|1> for 1st kernel, if
+it's set to 1, then just stop the watchdog or we can kick the watchdog
+like what you do in this patch. Of course stopping watchdog should be
+lockless as well..
 
-> The patch looks good overall though so you can fix the nits and add:
->
-> Acked-by: Sekhar Nori <nsekhar@ti.com>
+> 
+> Of course kdump is usually executed on a panic path, so grabbing the
+> watchdog mutexes to communicate with the hardware won't work.  For now,
+> I do everything locklessly.
+> 
+> I can attempt a 'mutex_trylock' but not sure what to do in the failure
+> case?  spin up to a second?
+> 
+> This patch is more of a proof of concept right now.  Hopefully feedback
+> will help solve this problem better.
+> 
+> I have tested this with a machine using iTCO_wdt and the 'watchdog' app.
+> The extra kicked happened as expected.
+> 
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
+> ---
+>  drivers/watchdog/watchdog_dev.c |   35 +++++++++++++++++++++++++++++++++++
+>  include/linux/watchdog.h        |    7 +++++++
+>  kernel/kexec.c                  |    6 ++++++
+>  3 files changed, 48 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
+> index 08b48bb..6393572 100644
+> --- a/drivers/watchdog/watchdog_dev.c
+> +++ b/drivers/watchdog/watchdog_dev.c
+> @@ -84,6 +84,41 @@ out_ping:
+>  }
+>  
+>  /*
+> + *	watchdog_kick_for_kdump: kick the watchdog in the kdump path
+> + *
+> + * 	The kdump path needs time to reboot the kernel back into
+> + * 	userspace.  This window is big enough the hardware watchdog
+> + * 	may come in and reboot the box.  This hook gives the watchdog
+> + * 	one final kick to get kdump over the hump.
+> + *
+> + * 	We don't know what devices are open, so just use the legacy
+> + * 	interface for now.  We have to do this locklessly as we can
+> + * 	not wait.
+> + */
+> +
+> +void watchdog_kick_for_kdump(void)
+> +{
+> +	struct watchdog_device *wddev = old_wdd;
+> +
+> +	/* FIXME - Perhaps use a mutex_trylock? */
+> +
+> +	if (!wddev)
+> +		return;
+> +
+> +	if (test_bit(WDOG_UNREGISTERED, &wddev->status))
+> +		return;
+> +
+> +	if (!watchdog_active(wddev))
+> +		return;
+> +
+> +	if (wddev->ops->ping)
+> +		wddev->ops->ping(wddev);  /* ping the watchdog */
+> +	else
+> +		wddev->ops->start(wddev); /* restart watchdog */
+> +}
+> +EXPORT_SYMBOL_GPL(watchdog_kick_for_kdump);
+> +
+> +/*
+>   *	watchdog_start: wrapper to start the watchdog.
+>   *	@wddev: the watchdog device to start
+>   *
+> diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
+> index 2a3038e..5dff975 100644
+> --- a/include/linux/watchdog.h
+> +++ b/include/linux/watchdog.h
+> @@ -142,4 +142,11 @@ extern int watchdog_init_timeout(struct watchdog_device *wdd,
+>  extern int watchdog_register_device(struct watchdog_device *);
+>  extern void watchdog_unregister_device(struct watchdog_device *);
+>  
+> +#ifdef CONFIG_WATCHDOG_CORE
+> +/* drivers/watchdog/watchdog_dev.c */
+> +extern void watchdog_kick_for_kdump(void);
+> +#else
+> +static inline void watchdog_kick_for_kdump(void) { };
+> +#endif
+> +
+>  #endif  /* ifndef _LINUX_WATCHDOG_H */
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index bddd3d7..ced7ccd 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/vmalloc.h>
+>  #include <linux/swap.h>
+>  #include <linux/syscore_ops.h>
+> +#include <linux/watchdog.h>
+>  
+>  #include <asm/page.h>
+>  #include <asm/uaccess.h>
+> @@ -1094,6 +1095,11 @@ void crash_kexec(struct pt_regs *regs)
+>  		if (kexec_crash_image) {
+>  			struct pt_regs fixed_regs;
+>  
+> +			/*
+> +			 * Give panic path a chance to do its post processing
+> +			 */
+> +			watchdog_kick_for_kdump();
+> +
+>  			crash_setup_regs(&fixed_regs, regs);
+>  			crash_save_vmcoreinfo();
+>  			machine_crash_shutdown(&fixed_regs);
+> 
 
-Thanks.
 
-Regards,
---Prabhakar
+-- 
+Thanks
+Dave
 
->
-> Thanks,
-> Sekhar
+
