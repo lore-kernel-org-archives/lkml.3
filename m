@@ -1,58 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934868Ab3DHRWu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 13:22:50 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52172 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934224Ab3DHRWr (ORCPT
+	id S1761509Ab3DHRXF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 13:23:05 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:33705 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762545Ab3DHRXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 13:22:47 -0400
-Message-ID: <5162FCE0.6090900@infradead.org>
-Date: Mon, 08 Apr 2013 10:22:40 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>
-CC: linux-kernel@vger.kernel.org, trivial@kernel.org, joe@perches.com
-Subject: Re: [PATCH/v2] [trivial]treewide: Fix typo in printks
-References: <1365440810-25964-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1365440810-25964-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Apr 2013 13:23:03 -0400
+From: Toshi Kani <toshi.kani@hp.com>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, linuxram@us.ibm.com,
+        guz.fnst@cn.fujitsu.com, tmac@hp.com, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, tangchen@cn.fujitsu.com, jiang.liu@huawei.com,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH v2 2/3] resource: Add release_mem_region_adjustable()
+Date: Mon,  8 Apr 2013 11:09:55 -0600
+Message-Id: <1365440996-30981-3-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1365440996-30981-1-git-send-email-toshi.kani@hp.com>
+References: <1365440996-30981-1-git-send-email-toshi.kani@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/13 10:06, Masanari Iida wrote:
-> Correct spelling typos in printk and comments.
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Added release_mem_region_adjustable(), which releases a requested
+region from a currently busy memory resource.  This interface
+adjusts the matched memory resource accordingly even if the
+requested region does not match exactly but still fits into.
 
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
+This new interface is intended for memory hot-delete.  During
+bootup, memory resources are inserted from the boot descriptor
+table, such as EFI Memory Table and e820.  Each memory resource
+entry usually covers the whole contigous memory range.  Memory
+hot-delete request, on the other hand, may target to a particular
+range of memory resource, and its size can be much smaller than
+the whole contiguous memory.  Since the existing release interfaces
+like __release_region() require a requested region to be exactly
+matched to a resource entry, they do not allow a partial resource
+to be released.
 
-Thanks.
+There is no change to the existing interfaces since their restriction
+is valid for I/O resources.
 
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+---
+ include/linux/ioport.h |    2 +
+ kernel/resource.c      |   93 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 95 insertions(+)
 
-> 
-> ---
->  drivers/media/pci/saa7164/saa7164-core.c | 2 +-
->  drivers/rtc/Kconfig                      | 4 ++--
->  drivers/rtc/rtc-max8997.c                | 2 +-
->  drivers/usb/misc/iowarrior.c             | 4 ++--
->  drivers/usb/misc/uss720.c                | 2 +-
->  drivers/video/amifb.c                    | 2 +-
->  drivers/video/auo_k190x.c                | 2 +-
->  drivers/video/goldfishfb.c               | 2 +-
->  drivers/video/s1d13xxxfb.c               | 2 +-
->  drivers/video/ssd1307fb.c                | 4 ++--
->  fs/nfs/objlayout/objio_osd.c             | 2 +-
->  fs/nfs/objlayout/objlayout.h             | 2 +-
->  sound/soc/codecs/wm8974.c                | 2 +-
->  tools/perf/tests/attr.c                  | 2 +-
->  tools/perf/tests/parse-events.c          | 2 +-
->  15 files changed, 18 insertions(+), 18 deletions(-)
-
-
-
--- 
-~Randy
+diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+index 85ac9b9b..0fe1a82 100644
+--- a/include/linux/ioport.h
++++ b/include/linux/ioport.h
+@@ -192,6 +192,8 @@ extern struct resource * __request_region(struct resource *,
+ extern int __check_region(struct resource *, resource_size_t, resource_size_t);
+ extern void __release_region(struct resource *, resource_size_t,
+ 				resource_size_t);
++extern int release_mem_region_adjustable(struct resource *, resource_size_t,
++				resource_size_t);
+ 
+ static inline int __deprecated check_region(resource_size_t s,
+ 						resource_size_t n)
+diff --git a/kernel/resource.c b/kernel/resource.c
+index ae246f9..870fb26 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -1021,6 +1021,99 @@ void __release_region(struct resource *parent, resource_size_t start,
+ }
+ EXPORT_SYMBOL(__release_region);
+ 
++/**
++ * release_mem_region_adjustable - release a previously reserved memory region
++ * @parent: parent resource descriptor
++ * @start: resource start address
++ * @size: resource region size
++ *
++ * The requested region is released from a currently busy memory resource.
++ * It adjusts the matched busy memory resource accordingly if the requested
++ * region does not match exactly but still fits into.  Existing children of
++ * the busy memory resource must be immutable in this request.
++ *
++ * Note, when the busy memory resource gets split into two entries, the code
++ * assumes that all children remain in the lower address entry for simplicity.
++ * Enhance this logic when necessary.
++ */
++int release_mem_region_adjustable(struct resource *parent,
++			resource_size_t start, resource_size_t size)
++{
++	struct resource **p;
++	struct resource *res, *new;
++	resource_size_t end;
++	int ret = -EINVAL;
++
++	end = start + size - 1;
++	if ((start < parent->start) || (end > parent->end))
++		return ret;
++
++	p = &parent->child;
++	write_lock(&resource_lock);
++
++	while ((res = *p)) {
++		if (res->start >= end)
++			break;
++
++		/* look for the next resource if it does not fit into */
++		if (res->start > start || res->end < end) {
++			p = &res->sibling;
++			continue;
++		}
++
++		if (!(res->flags & IORESOURCE_MEM))
++			break;
++
++		if (!(res->flags & IORESOURCE_BUSY)) {
++			p = &res->child;
++			continue;
++		}
++
++		/* found the target resource; let's adjust accordingly */
++		if (res->start == start && res->end == end) {
++			/* free the whole entry */
++			*p = res->sibling;
++			kfree(res);
++			ret = 0;
++		} else if (res->start == start && res->end != end) {
++			/* adjust the start */
++			ret = __adjust_resource(res, end + 1,
++						res->end - end);
++		} else if (res->start != start && res->end == end) {
++			/* adjust the end */
++			ret = __adjust_resource(res, res->start,
++						start - res->start);
++		} else {
++			/* split into two entries */
++			new = kzalloc(sizeof(struct resource), GFP_KERNEL);
++			if (!new) {
++				ret = -ENOMEM;
++				break;
++			}
++			new->name = res->name;
++			new->start = end + 1;
++			new->end = res->end;
++			new->flags = res->flags;
++			new->parent = res->parent;
++			new->sibling = res->sibling;
++			new->child = NULL;
++
++			ret = __adjust_resource(res, res->start,
++						start - res->start);
++			if (ret) {
++				kfree(new);
++				break;
++			}
++			res->sibling = new;
++		}
++
++		break;
++	}
++
++	write_unlock(&resource_lock);
++	return ret;
++}
++
+ /*
+  * Managed region resource
+  */
