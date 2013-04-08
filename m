@@ -1,118 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935225Ab3DHR6W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 13:58:22 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:34560 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934931Ab3DHR6U convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 13:58:20 -0400
-Message-ID: <1365443897.24306.12.camel@hornet>
-Subject: Re: [RFC] perf: need to expose sched_clock to correlate user
- samples with kernel samples
-From: Pawel Moll <pawel.moll@arm.com>
-To: Richard Cochran <richardcochran@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Stephane Eranian <eranian@google.com>
-Cc: David Ahern <dsahern@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Robert Richter <robert.richter@amd.com>
-Date: Mon, 08 Apr 2013 18:58:17 +0100
-In-Reply-To: <20130406110507.GC7572@netboy>
-References: <51586315.7080006@gmail.com> <5159D221.70304@linaro.org>
-	 <1364889256.16858.1.camel@laptop> <515B0502.8070408@linaro.org>
-	 <1365009558.26858.19.camel@hornet> <515C66FE.7030501@linaro.org>
-	 <1365010502.26858.32.camel@hornet> <515C6C01.9070905@linaro.org>
-	 <1365092963.26858.107.camel@hornet> <1365185813.25942.12.camel@hornet>
-	 <20130406110507.GC7572@netboy>
-X-Mailer: Evolution 3.6.2-0ubuntu0.1
-Mime-Version: 1.0
-X-OriginalArrivalTime: 08 Apr 2013 17:58:18.0066 (UTC) FILETIME=[A64B2B20:01CE3482]
-X-MC-Unique: 113040818581806501
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S935058Ab3DHR7f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 13:59:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56528 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762857Ab3DHR7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 13:59:33 -0400
+Date: Mon, 8 Apr 2013 13:59:26 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, bsingharora@gmail.com,
+        Kay Sievers <kay.sievers@vrfy.org>, lpoetter@redhat.com,
+        linux-kernel@vger.kernel.org, dhaval.giani@gmail.com,
+        workman-devel@redhat.com
+Subject: Re: [Workman-devel] cgroup: status-quo and userland efforts
+Message-ID: <20130408175925.GE28292@redhat.com>
+References: <20130406012159.GA17159@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130406012159.GA17159@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-04-06 at 12:05 +0100, Richard Cochran wrote:
-> On Fri, Apr 05, 2013 at 07:16:53PM +0100, Pawel Moll wrote:
-> > Ok, so how about the code below? Disclaimer: this is just a proposal.
-> > I'm not sure how welcomed would be an extra field in struct file, but
-> > this makes the clocks ultimately flexible - one can "attach" the clock
-> > to any arbitrary struct file. Alternatively we could mark a "clocked"
-> > file with a special flag in f_mode and have some kind of lookup.
+On Fri, Apr 05, 2013 at 06:21:59PM -0700, Tejun Heo wrote:
+
+[..]
+>  Userland efforts
+>  ================
 > 
-> Only a tiny minority of file instances will want to be clocks.
-> Therefore I think adding the extra field will be a hard sell.
+> There are currently a few userland efforts trying to make interfacing
+> with cgroup less painful.
 > 
-> The flag idea sounds harmless, but how do you perform the lookup?
-
-Hash table. I'll get some code typed and post it tomorrow.
- 
-> > Also, I can't stop thinking that the posix-clock.c shouldn't actually do
-> > anything about the character device... The PTP core (as the model of
-> > using character device seems to me just one of possible choices) could
-> > do this on its own and have simple open/release attaching/detaching the
-> > clock. This would remove a lot of "generic dev" code in the
-> > posix-clock.c and all the optional cdev methods in struct posix_clock.
-> > It's just a thought, though...
+> * libcg: Make cgroup interface accessible from programming languages
+>   with support for configuration persistency, which also brings its
+>   own config files to remember what to do on the next boot.  Sans the
+>   persistence part, it just seems to directly translate the filesystem
+>   interface to function interface.
 > 
-> Right, the chardev could be pushed into the PHC layer. The original
-> idea of chardev clocks did have precedents, though, like hpet and rtc.
-
-I'm not arguing about the use of cdev for PTP clocks, it's perfectly
-fine with me. I'm just not convinced that the "more generic" clock layer
-should enforce cdevs and nothing more. But I think we're more-or-less
-talking the same language here, so I'll simply create a patch and send
-it as RFC.
-
-> > And a couple of questions to Richard... Isn't the kref_put() in
-> > posix_clock_unregister() a bug? I'm not 100% but it looks like a simple
-> > register->unregister sequence was making the ref count == -1, so the
-> > delete_clock() won't be called.
+>   http://libcg.sourceforge.net/
 > 
-> Well,
+> * Workman: It's a rather young project but as its name (workload
+>   management) implies, its aims are higher level than that of libcg.
+>   It aims to provide high-level resource allocation and management and
+>   introduces new concepts like resource partitions to represent its
+>   view of resource hierarchy.  Like libcg, this one is implemented as
+>   a library but provides bindings for more languages.
 > 
-> 	posix_clock_register() -> kref_init() ->
-> 		atomic_set(&kref->refcount, 1);
+>   https://gitorious.org/workman/pages/Home
 > 
-> So refcount is now 1 ...
+> * Pax Controla Groupiana: A document on how not to step on other's
+>   toes while using cgroup.  It's not a software project but tries to
+>   define precautions that a software or user can take to avoid
+>   breaking or confusing other users of the cgroup filesystem.
 > 
-> 	posix_clock_unregister() -> kref_put() -> kref_sub(count=1) ->
-> 		atomic_sub_and_test((int) count, &kref->refcount)
+>   http://www.freedesktop.org/wiki/Software/systemd/PaxControlGroups
 > 
-> and refcount is now 0. Can't see how you would get -1 here.
-
-Eh. For some reason I was convinced that kref_init() sets the counter to
-0 not 1. My bad.
-
-> > And was there any particular reason that the ops in struct
-> > posix_clock are *not* a pointer?
+> All try to play nice with other possible users of the cgroup
+> filesystem - be it libvirt cgroup, applications doing their own cgroup
+> tricks, or hand-crafted custom scripts.  While the approach is
+> understandable given that those usages already exist, I don't think
+> it's a workable solution in the long term.  There are several reasons
+> for that.
 > 
-> One less run time indirection maybe? I don't really remember why or
-> how we arrived at this. The whole PHC review took a year, with
-> something like fifteen revisions.
+> * The configurations aren't independent.  e.g. for weight-based
+>   controllers, your weight is only meaningful in relation to other
+>   weights at that level.  Distributing configuration to whatever
+>   entities which may write to cgroupfs simply cannot work.  It's
+>   fundamentally flawed.
 
-Ok. As most of the *_ops seem to be referenced via pointers (including
-file ops, which are pretty heavily used ;-) and this makes it much
-easier to define static clocks, I'll propose a change in a separate
-patch.
+Hi Tejun,
 
-Now, before I spend time doing all this, a question to John, Peter,
-Stephane and the rest of the public - would a solution providing such
-userspace interface:
+I thought in workman, "partition" configuration was still centralized
+while individual "consumer" configuration was with consumer manger 
+(systemd, libvirt, .. etc). IOW, library can tell consumer manger to
+which partition to associate consumer with at startup time. (consumer
+manager can assume their own defaults if nothing has been told).
 
-	fd = sys_perf_open()
-	timestamp = clock_gettime((FD_TO_CLOCKID(fd), &ts)
+Agreed, that weight is meaningful only if one as full hierarchy view
+and then one should be able to calculate effective % share of resoures
+of a group.
 
-be acceptable to all?
+But using the library admin application should be able to query the
+full "paritition" hierarchy and their weigths and calculate % system
+resources. I think one problem there is cpu controller where % resoruce
+of a cgroup depends on tasks entities which are peer to group. But that's
+a kernel issue and not user space thing.
 
-Paweł
+So I am not sure what are potential problems with proposed model of
+configuration in workman. All the consumer managers still follow what
+libarary has told them to do.
+
+> 
+> * It's fragile like hell.  There's no accountability.  Nobody really
+>   knows what's going on.  Is this subdirectory still there due to a
+>   bug in this program, or something or someone else created it and
+>   crashed / forgot to remove it, or what?
+
+I thought any directory under a consumer manger is managed by that
+manager and nobody is supposed to dynamically create resource
+partition/cgroup there. So that takes away a bit of confusion.
+
+>  Oh, the cgroup I wanted to
+>   create already exists.  Maybe the previous instance created it and
+>   then crashed
+
+This should be the case as long as we stick to the notion of a manger
+managing its own sub-hierarchy.
+
+>  or maybe some other program just happened to choose the
+>   same name.
+
+Two programs ideally would have their own sub hiearchy. And if not one
+of the programs should get the conflict when trying to create cgroup and
+should back-off or fail or give warning...
+
+> Who owns config knobs in that directory?
+
+IIUC, workman was looking at two types of cgroups. Once called
+"partitions" which will be created by library at startup time and
+library manages the configuration (something like cgconfig.conf).
+
+And individual managers create their own children groups for various
+services under that partition and control the config knobs for those
+services.
+
+			user-defined-partition
+			     /    |    \
+                           virt1  virt2 virt3  
+
+So user should be able to define a partition and control the configuration
+using workman lib. And if multiple virtual machines are being run in
+the partition, then they create their own cgroups and libvirt controls
+the properties of virt1, virt2, virt3 cgroups. I thought that was the
+the understanding when we dicussed ownership of config knobs las time.
+But things might have changed since last time. Workman folks should
+be able to shed light on this.
+
+>  This way lies
+>   madness.  I understand why the Pax doc exists but I'm not sure its
+>   long-term effect would be positive - best practices which ultimately
+>   lead to utter confusion and fragility.
+> 
+> * In many cases, resource distribution is system-wide policy decisions
+>   and determining what to do often requires system-wide knowledge.
+>   You can't provision memory limits without knowing what's available
+>   in the system and what else is going on in the system, and you want
+>   to be able to adjust them as situation and configuration changes.
+>   Without anybody having full picture of how resources are
+>   provisioned, how would any of that be possible?
+
+I thought workman library will provide interfaces so that one can query
+and be able to construct the full system view.
+
+Their doc says.
+
+GList *workmanager_partition_get_children(WorkmanPartition *partition,
+                                            GError **error);
 
 
+So I am assuming this can be used to construct the full partition
+hierarchy and associated resource allocation.
+
+> 
+> I think this anything-goes approach is prevalent largely because the
+> cgroup filesystem interface encourages such usage.  From the looks of
+> it, the filesystem permissions combined with hierarchy should be able
+> to handle delegation perfectly.  Well, as it currently stands, it's
+> anything but and the interface is just misleading.  Hierarchy support
+> was an utter mess, configuration schemes aren't uniform across
+> controllers, and, more fundamentally, hierarchy itself is expensive -
+> we can't delegate hierarchy creation to unpriviledged users or
+> programs safely.
+> 
+> It is in the realm of possibility to make all cgroup operations and
+> controllers to do all that; however, it's a very tall order.  Just
+> think about how much effort it has been to achieve and maintain proper
+> delegation in the core elements of the kernel - processes and
+> filesystems, and there will be security implications with cgroup
+> likely involving a lot of gotchas and extensions of security
+> infrastructures, and, even then, I'm pretty sure it's gonna require
+> helps from userland to effect proper policy decisions and config
+> changes.  We have things like polkit for a reason and are likely to
+> need finer-grained, domain-aware access control than is possible with
+> tweaking directory permissions.
+> 
+> Given the above and how relatively marginal cgroup is, I'm extremely
+> skeptical that implementing full delegation in kernel is the right
+> course of action and likely to scream like a banshee at any attempt
+> driving things that way.
+> 
+
+[..]
+> I think the only logical thing to do is creating a centralized
+> userland authority which takes full ownership of the cgroup filesystem
+> interface, gives it a sane structure,
+
+Right now systemd seems to be giving initial structure. I guess we will
+require some changes where systemd itself runs in a cgroup and that
+allows one to create peer groups. Something like.
+				
+				root
+				/  \
+			   systemd other-groups
+	
+So currently no central authority is enforcing it. It seems to be just
+a matter of right defaults in systemd.
+	
+> represents available resources
+> in a sane form, and makes policy decisions based on configuration and
+> requests.
+
+Given the fact that library has view of full system resoruces (both
+persistent view and active view), shouldn't we just be able to extend
+the API to meet additional configuration or resource needs.
+
+>  I don't have a concerete idea what that authority should be
+> like, but I think there already are pretty similar facilities in our
+> userland, and don't see why this should be much different.
+
+
+Thanks
+Vivek
