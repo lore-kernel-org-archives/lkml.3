@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965190Ab3DHPms (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 11:42:48 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:51581 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936502Ab3DHPmq (ORCPT
+	id S936503Ab3DHPn1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 11:43:27 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:53177 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936279Ab3DHPn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 11:42:46 -0400
-Date: Mon, 8 Apr 2013 17:42:42 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [GIT PULL] x86/mce - clean up cmci_rediscover()
-Message-ID: <20130408154242.GA19974@gmail.com>
-References: <515c953a828839e37@agluck-desk.sc.intel.com>
+	Mon, 8 Apr 2013 11:43:26 -0400
+Date: Mon, 8 Apr 2013 08:43:19 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 2/8] cgroup: implement cgroup_from_id()
+Message-ID: <20130408154319.GD3021@htj.dyndns.org>
+References: <51627DA9.7020507@huawei.com>
+ <51627DEB.4090104@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <515c953a828839e37@agluck-desk.sc.intel.com>
+In-Reply-To: <51627DEB.4090104@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 08, 2013 at 04:20:59PM +0800, Li Zefan wrote:
+> +/**
+> + * cgroup_from_id - lookup cgroup by id
+> + * @ss: cgroup subsys to be looked into.
+> + * @id: the id
+> + *
+> + * Returns pointer to cgroup if there is valid one with id.
+> + * NULL if not. Should be called under rcu_read_lock()
+> + */
+> +struct cgroup *cgroup_from_id(struct cgroup_subsys *ss, int id)
+> +{
 
-* Luck, Tony <tony.luck@intel.com> wrote:
+	rcu_lockdep_assert(rcu_read_lock_held(), ...);
 
-> The following changes since commit 07961ac7c0ee8b546658717034fe692fd12eefa9:
-> 
->   Linux 3.9-rc5 (2013-03-31 15:12:43 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-cmci_rediscover
-> 
-> for you to fetch changes up to 7a0c819d28f5c91955854e048766d6afef7c8a3d:
-> 
->   x86/mce: Rework cmci_rediscover() to play well with CPU hotplug (2013-04-02 14:04:01 -0700)
-> 
-> ----------------------------------------------------------------
-> Clean up cmci_rediscover code to fix problems found by Dave Jones
-> 
-> ----------------------------------------------------------------
-> Srivatsa S. Bhat (1):
->       x86/mce: Rework cmci_rediscover() to play well with CPU hotplug
-> 
->  arch/x86/include/asm/mce.h             |  4 ++--
->  arch/x86/kernel/cpu/mcheck/mce.c       |  2 +-
->  arch/x86/kernel/cpu/mcheck/mce_intel.c | 25 +++++--------------------
->  3 files changed, 8 insertions(+), 23 deletions(-)
+> +	return idr_find(&ss->root->cgroup_idr, id);
 
-Pulled, thanks Tony!
+Thanks.
 
-	Ingo
+-- 
+tejun
