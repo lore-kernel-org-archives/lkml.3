@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934858Ab3DHGLp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 02:11:45 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:63733 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761287Ab3DHGLn (ORCPT
+	id S934893Ab3DHGPA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 02:15:00 -0400
+Received: from mx1.unsolicited.net ([173.255.193.191]:35540 "EHLO
+	mx1.unsolicited.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934870Ab3DHGO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 02:11:43 -0400
-Message-ID: <51625F9A.1050308@gmail.com>
-Date: Mon, 08 Apr 2013 08:11:38 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Mon, 8 Apr 2013 02:14:59 -0400
+Message-ID: <20130408071454.452245lnz2ydnxwe@vinovium.com>
+Date: Mon, 08 Apr 2013 07:14:54 +0100
+From: David R <david@unsolicited.net>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org
+Subject: Re: AMD Vi error and lost networking with r8169
+References: <51616695.7080305@unsolicited.net>
+ <20130407215303.GA28778@electric-eye.fr.zoreil.com>
+In-Reply-To: <20130407215303.GA28778@electric-eye.fr.zoreil.com>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Dom Cobley <popcornmix@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rabeeh Khoury <rabeeh@solid-run.com>, Daniel Mack <zonque@gmail.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [v5] clk: add si5351 i2c common clock driver
-References: <1365139415-17815-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130407225046.GA16326@roeck-us.net> <51620604.4070204@gmail.com> <20130408001725.GA16648@roeck-us.net>
-In-Reply-To: <20130408001725.GA16648@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+ charset=UTF-8;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2013 02:17 AM, Guenter Roeck wrote:
-> On Mon, Apr 08, 2013 at 01:49:24AM +0200, Sebastian Hesselbarth wrote:
->> On 04/08/2013 12:50 AM, Guenter Roeck wrote:
->>> On Fri, Apr 05, 2013 at 05:23:35AM -0000, Sebastian Hesselbarth wrote:
->>>> This patch adds a common clock driver for Silicon Labs Si5351a/b/c
->>>> i2c programmable clock generators. Currently, the driver supports
->>>> DT kernels only and VXCO feature of si5351b is not implemented. DT
->>>> bindings selectively allow to overwrite stored Si5351 configuration
->>>> which is very helpful for clock generators with empty eeprom
->>>> configuration. Corresponding device tree binding documentation is
->>>> also added.
->>>>
->>>> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
->>>> Tested-by: Daniel Mack<zonque@gmail.com>
->>>>
->>> [ ... ]
->>>
->>>> +static inline void _si5351_msynth_set_pll_master(
->>>> +	struct si5351_driver_data *drvdata, unsigned char num, int is_master)
->>>> +{
->>>> +	unsigned long flags;
->>>> +
->>>> +	if (num>   8 ||
->>>> +	    (drvdata->variant == SI5351_VARIANT_A3&&   num>   3))
->>>> +		return;
->>>> +
->>>> +	flags = __clk_get_flags(drvdata->msynth[num].hw.clk);
->>>> +	if (is_master)
->>>> +		flags |= CLK_SET_RATE_PARENT;
->>>> +	else
->>>> +		flags&= ~CLK_SET_RATE_PARENT;
->>>> +	__clk_set_flags(drvdata->msynth[num].hw.clk, flags);
->>>> +}
->>>> +
->>> Unless I am missing something, neither __clk_get_flags() nor the new
->>> __clk_set_flags is exported.
->>>
->>> Did you try to build and load the driver as module ?
+Sure. Will apply this evening. It may take several days before I can  
+report back due to the intermittent nature of the thing.
+
+Thanks
+David
+
+
+Quoting Francois Romieu <romieu@fr.zoreil.com>:
+
+> David R <david@unsolicited.net> :
+>> I'm been seeing some problems with my new ish AMD motherboard/processor
+>> combo and networking (r8169). I see the following page fault :-
 >>
->> Well, good catch. I didn't try to build v5 as a module, but I guess it
->> will fail. But I consider this as something that has to be addressed in
->> clk framework itself, not in this patch. There will be other
->> clk-providers built as module in the future for sure.
->>
-> Sure, but you provided the patch to make __clk_set_flags global. To avoid
-> build failures, I would suggest to either submit a patch to export the
-> missing functions, or to remove the ability to build the driver as module.
+>> Apr  7 12:25:14 david kernel: [156421.436545] AMD-Vi: Event logged
+>> [IO_PAGE_FAULT device=02:00.0 domain=0x0015 address=0x0000000000003000
+>> flags=0x0050]
+>
+> Can you give the hack below a try ?
+>
+> diff --git a/drivers/net/ethernet/realtek/r8169.c  
+> b/drivers/net/ethernet/realtek/r8169.c
+> index 28fb50a..ed8625d 100644
+> --- a/drivers/net/ethernet/realtek/r8169.c
+> +++ b/drivers/net/ethernet/realtek/r8169.c
+> @@ -4125,6 +4125,8 @@ static void rtl_init_rxcfg(struct rtl8169_private *tp)
+>  	case RTL_GIGA_MAC_VER_23:
+>  	case RTL_GIGA_MAC_VER_24:
+>  	case RTL_GIGA_MAC_VER_34:
+> +	case RTL_GIGA_MAC_VER_35:
+> +	case RTL_GIGA_MAC_VER_36:
+>  		RTL_W32(RxConfig, RX128_INT_EN | RX_MULTI_EN | RX_DMA_BURST);
+>  		break;
+>  	default:
+>
 
-Actually, I knew that __clk_set_flags patch will not be accepted before 
-posting it ;)
 
-> On a side note, do you happen to know anyone working on drivers for Si5319 or
-> Si5368 ?
-
-No.
-
-> Thanks,
-> Guenter
 
