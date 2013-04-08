@@ -1,78 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936298Ab3DHVgx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 17:36:53 -0400
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:32878 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934661Ab3DHVgw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 17:36:52 -0400
-Date: Mon, 8 Apr 2013 14:36:46 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Li Zefan <lizefan@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 1/8] cgroup: implement cgroup_is_ancestor()
-Message-ID: <20130408213646.GB17159@mtj.dyndns.org>
-References: <51627DA9.7020507@huawei.com>
- <51627DBB.5050005@huawei.com>
- <20130408144750.GK17178@dhcp22.suse.cz>
- <20130408180335.GA22512@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130408180335.GA22512@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S936278Ab3DHVlq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 17:41:46 -0400
+Received: from mga11.intel.com ([192.55.52.93]:30265 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761587Ab3DHVlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 17:41:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,433,1363158000"; 
+   d="scan'208";a="319346117"
+From: David Cohen <david.a.cohen@intel.com>
+To: rusty@rustcorp.com.au, dhowells@redhat.com
+Cc: linux-kernel@vger.kernel.org, David Cohen <david.a.cohen@intel.com>
+Subject: [PATCH] MODSIGN: do not send garbage to stderr when enabling modules signature
+Date: Mon,  8 Apr 2013 14:43:56 -0700
+Message-Id: <1365457436-5753-1-git-send-email-david.a.cohen@intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 08:03:44PM +0200, Michal Hocko wrote:
-> __mem_cgroup_same_or_subtree relies on css_is_ancestor if hierarchy is
-> enabled for ages. This, however, is not correct because use_hierarchy
-> doesn't need to be true all the way up the cgroup hierarchy. Consider
-> the following example:
-> root (use_hierarchy=0)
->  \
->   A (use_hierarchy=0)
->    \
->     B (use_hierarchy=1)
->      \
->       C (use_hierarchy=1)
-> 
-> __mem_cgroup_same_or_subtree(A, C) would return true even though C is
-> not from the same hierarchy subtree. The bug shouldn't be critical but
-> at least dump_tasks might print unrelated tasks (via
-> task_in_mem_cgroup).
+openssl may send garbage to stderr when generating X.509 key pair for
+modules signature regardless there was an error or not. It makes more
+difficult to create scripts based on kernel error/warning messages.
+This patch makes sure openssl logs go to default stdout.
 
-Huh?  Isn't that avoided by the !root_memcg->use_hierarchy test?
+Signed-off-by: David Cohen <david.a.cohen@intel.com>
+---
+ kernel/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> @@ -1470,9 +1470,12 @@ bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
->  {
->  	if (root_memcg == memcg)
->  		return true;
-> -	if (!root_memcg->use_hierarchy || !memcg)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^
-> +	if (!memcg)
->  		return false;
-> -	return css_is_ancestor(&memcg->css, &root_memcg->css);
-> +	while ((memcg = parent_mem_cgroup(memcg)))
-> +		if (memcg == root_memcg)
-> +			return true;
-> +	return false;
->  }
->  
->  static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-> -- 
-> 1.7.10.4
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
-
+diff --git a/kernel/Makefile b/kernel/Makefile
+index bbde5f1..5a51e6c 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -175,7 +175,7 @@ signing_key.priv signing_key.x509: x509.genkey
+ 	openssl req -new -nodes -utf8 -$(CONFIG_MODULE_SIG_HASH) -days 36500 \
+ 		-batch -x509 -config x509.genkey \
+ 		-outform DER -out signing_key.x509 \
+-		-keyout signing_key.priv
++		-keyout signing_key.priv 2>&1
+ 	@echo "###"
+ 	@echo "### Key pair generated."
+ 	@echo "###"
 -- 
-tejun
+1.7.10.4
+
