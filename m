@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936439Ab3DHV3Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 17:29:25 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58525 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936268Ab3DHV3W (ORCPT
+	id S936388Ab3DHV3E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 17:29:04 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:38748 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936275Ab3DHV1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 17:29:22 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Fabian Vogt" <fabian@ritter-vogt.de>
-Subject: Re: [RFC PATCH arm: initial TI-Nspire support]
-Date: Mon, 8 Apr 2013 23:29:07 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Daniel Tang" <dt.tangr@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, "Lionel Debroux" <lionel_debroux@yahoo.fr>,
-        linux-kernel@vger.kernel.org,
-        "Linus Walleij" <linus.walleij@linaro.org>
-References: <6FE4B33E-A503-4A75-AEED-831CB2C06D83@gmail.com> <201304082138.15875.arnd@arndb.de> <op.wu8ng3wyu7prd4@fabians-laptop.fritz.box>
-In-Reply-To: <op.wu8ng3wyu7prd4@fabians-laptop.fritz.box>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304082329.08105.arnd@arndb.de>
-X-Provags-ID: V02:K0:foZQsuR69ACFvvBSkMeWJepUoLUJkgnA6idBGHTl7oo
- gUOxfNKHFfWIyWxaMUNAhIKVDjYjlGO3W8y0xTQYqK5SLhnste
- kBU5T8ONTs171Njyjkf92PoKW1t1rJ/+LcuVTk6Vva0I35i7L4
- ociWavib7ACqsqaQuIFoPI34NPhU7DK2yoKAXCBjSpIN2ieFme
- CvsuGM+jaWgknHaRzYJOXm0WnahH9zDFl4rDQYU8iIBaecu2jC
- SDGabbjbv9A5k4yrrq9YukuQZE14c6nmdTdMdhdmXREnLn5q+7
- ZNsQ1wjrR/qI7cZeg+1+kgk7QbfGN7aEnGz5ZXrNQz4cOfKGjF
- nW6wbzUOumab0cmjYIlo=
+	Mon, 8 Apr 2013 17:27:39 -0400
+X-IronPort-AV: E=Sophos;i="4.87,433,1363158000"; 
+   d="scan'208";a="36684215"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: [PATCHv4 05/11] ARM: OMAP2+: Divorce from local timer API
+Date: Mon,  8 Apr 2013 14:27:27 -0700
+Message-Id: <1365456453-16297-6-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.2
+In-Reply-To: <1365456453-16297-1-git-send-email-sboyd@codeaurora.org>
+References: <1365456453-16297-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 April 2013, Fabian Vogt wrote:
-> Yes, I've heard that before, but than it would work/not work independently
-> of NO_HZ. Can printk's be executet within console_lock() ..  
-> console_unlock() blocks?
+Now that the TWD doesn't rely on the local timer API, OMAP can
+stop selecting it in Kconfig and relying on the config option to
+decide if it should call smp_twd functions.
 
-I think it's legal to call printk in that case, but the message will
-not be printed until you reach the console_unlock()
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/mach-omap2/Kconfig | 1 -
+ arch/arm/mach-omap2/timer.c | 7 -------
+ 2 files changed, 8 deletions(-)
 
-> If not, it could be fb_notifier_call_chain, too, but that wouldn't be  
-> likely at all.
-> I also tried spinlock/mutex debugging and soft lockup detection,
-> but neither of them outputs anything.
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index 8111cd9..1b731e3 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -88,7 +88,6 @@ config ARCH_OMAP4
+ 	select CACHE_L2X0
+ 	select CPU_V7
+ 	select HAVE_SMP
+-	select LOCAL_TIMERS if SMP
+ 	select OMAP_INTERCONNECT
+ 	select PL310_ERRATA_588369
+ 	select PL310_ERRATA_727915
+diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+index 2bdd4cf..c00a8f8 100644
+--- a/arch/arm/mach-omap2/timer.c
++++ b/arch/arm/mach-omap2/timer.c
+@@ -587,7 +587,6 @@ OMAP_SYS_GP_TIMER_INIT(3_am33xx, 1, OMAP4_MPU_SOURCE, "ti,timer-alwon",
+ #ifdef CONFIG_ARCH_OMAP4
+ OMAP_SYS_32K_TIMER_INIT(4, 1, OMAP4_32K_SOURCE, "ti,timer-alwon",
+ 			2, OMAP4_MPU_SOURCE);
+-#ifdef CONFIG_LOCAL_TIMERS
+ static DEFINE_TWD_LOCAL_TIMER(twd_local_timer, OMAP44XX_LOCAL_TWD_BASE, 29);
+ void __init omap4_local_timer_init(void)
+ {
+@@ -606,12 +605,6 @@ void __init omap4_local_timer_init(void)
+ 			pr_err("twd_local_timer_register failed %d\n", err);
+ 	}
+ }
+-#else /* CONFIG_LOCAL_TIMERS */
+-void __init omap4_local_timer_init(void)
+-{
+-	omap4_sync32k_timer_init();
+-}
+-#endif /* CONFIG_LOCAL_TIMERS */
+ #endif /* CONFIG_ARCH_OMAP4 */
+ 
+ #ifdef CONFIG_SOC_OMAP5
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-Unfortunately, lockdep does not help with console_lock, since that
-is a weird semaphore variant, not a standard mutex or spinlock.
-
-	Arnd
