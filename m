@@ -1,85 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934437Ab3DHHXI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 03:23:08 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:34202 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934379Ab3DHHXF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 03:23:05 -0400
-X-AuditID: cbfee690-b7f656d0000007e3-f1-51627053eac3
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Mike Turquette'" <mturquette@linaro.org>,
-        "'Tushar Behera'" <tushar.behera@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
-Cc: patches@linaro.org, "'Thomas Abraham'" <thomas.abraham@linaro.org>
-References: <1364890840-20052-1-git-send-email-tushar.behera@linaro.org>
- <20130404213331.8665.7028@quantum>
-In-reply-to: <20130404213331.8665.7028@quantum>
-Subject: RE: [PATCH] clk: exynos5250: Fix divider values for sclk_mmc{0,1,2,3}
-Date: Mon, 08 Apr 2013 16:22:58 +0900
-Message-id: <2c9001ce3429$e5989a50$b0c9cef0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4xfBK2adeO+0X8ThGuiyDuue8YPQCpjHSg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t8zA93ggqRAgxm9/BaXd81hs5hxfh+T
-	xdMJF9ksphz+wmJxbMYSRov2v3vZHNg87lzbw+bxeZNcAFMUl01Kak5mWWqRvl0CV8az/weY
-	C6axV0w48ZGlgfEZaxcjJ4eEgInEhZ4tTBC2mMSFe+vZuhi5OIQEljFKHGg+wgZTtGfSYVaI
-	xCJGiZOTbrNAOH8ZJf5e+ARWxSagIXH4/TN2kISIwFxGiS9rp7CAJJgFXCSa7jxmB7GFBHIl
-	3vz9CraPU0BfYteUjWB3CAv4SSxdfoUZxGYRUJV4eeECWA2vgK3E785trBC2oMSPyfeAZnIA
-	zVSXmDIlF2K8vMTmNW+ZQcISQOFHf3VBwiICRhI3bx5nhSgRkdj34h0jyGkSApfYJTq+vWaC
-	WCUg8W3yIRaIXlmJTQeYIR6WlDi44gbLBEaJWUgWz0JYPAvJ4llINixgZFnFKJpakFxQnJRe
-	ZKJXnJhbXJqXrpecn7uJERKVE3Yw3jtgfYgxGWj7RGYp0eR8YFTnlcQbGpsZWZiamBobmVua
-	kSasJM6r3mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoHRN+7rPOcvZnuc6+dFra2NN9nv
-	W/d2s/m7lexmShOXM2Uyn5zobfh5ycLO3eu/TA5o/Ddr/XpZrd8CKhUdwUdvZc68IjKNYfMe
-	iQ9hH10us17Pi7JhfqTByf1C7lvvnoLGLnP5v4ZfSvVW1u43UT+qmr/ddke/m3Gaw6n89jU3
-	+bj/mnanWcYpsRRnJBpqMRcVJwIAWIiFj+ACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jAd3ggqRAg+OLuSwu75rDZjHj/D4m
-	i6cTLrJZTDn8hcXi2IwljBbtf/eyObB53Lm2h83j8ya5AKaoBkabjNTElNQihdS85PyUzLx0
-	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
-	LWAaI3R9Q4LgeowM0EDCOsaMZ/8PMBdMY6+YcOIjSwPjM9YuRk4OCQETiT2TDkPZYhIX7q1n
-	62Lk4hASWMQocXLSbRYI5y+jxN8Ln9hAqtgENCQOv3/GDpIQEZjLKPFl7RQWkASzgItE053H
-	7CC2kECuxJu/X5lAbE4BfYldUzaCrRAW8JNYuvwKM4jNIqAq8fLCBbAaXgFbid+d21ghbEGJ
-	H5PvAc3kAJqpLjFlSi7EeHmJzWveMoOEJYDCj/7qgoRFBIwkbt48zgpRIiKx78U7xgmMQrOQ
-	DJqFMGgWkkGzkHQsYGRZxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREc88+kdzCuarA4xCjA
-	wajEw3vga2KgEGtiWXFl7iFGCQ5mJRHeRXlJgUK8KYmVValF+fFFpTmpxYcYk4HenMgsJZqc
-	D0xHeSXxhsYmZkaWRmYWRibm5qQJK4nzHmy1DhQSSE8sSc1OTS1ILYLZwsTBKdXAOO+H7d4L
-	Z04xFd/3dExe1/+5f2WStniky6X0JKPn045sVd8be6N+LRsn3/M3WrqRmiWfXZb8ralgDhHP
-	ezaTddbhd0dDZZOMk3j5JTWZ3kS3uP2vOPTDrvMVS90sMQdO1gWtdkdf5c8Q/7h1YvTT45/f
-	cX+W9XtmNj3SfWZbLrNjxWPx1NV9SizFGYmGWsxFxYkA8UOwfT0DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S934461Ab3DHHYV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 03:24:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54541 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751936Ab3DHHYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 03:24:20 -0400
+Message-ID: <51626D3D.4000907@redhat.com>
+Date: Mon, 08 Apr 2013 15:09:49 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/4] x86, kdump: Set crashkernel_low automatically
+References: <1365113821-22749-1-git-send-email-yinghai@kernel.org> <1365113821-22749-2-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1365113821-22749-2-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Turquette wrote:
+On 04/05/2013 06:16 AM, Yinghai Lu wrote:
+> Chao said that kdump does does work well on his system on 3.8
+> without extra parameter, even iommu does not work with kdump.
+> And now have to append crashkernel_low=Y in first kernel to make
+> kdump work.
 > 
-> Quoting Tushar Behera (2013-04-02 01:20:40)
-> > In legacy setup, sclk_mmc{0,1,2,3} used PRE_RATIO bit-field (8-bit wide)
-> > instead of RATIO bit-field (4-bit wide) for dividing clock rate.
-> >
-> > With current common clock setup, we are using RATIO bit-field which
-> > is creating FIFO read errors while accessing eMMC. Changing over to
-> > use PRE_RATIO bit-field fixes this issue.
-> >
-> > dwmmc_exynos 12200000.dwmmc0: data FIFO error (status=00008020)
-> > mmcblk0: error -5 transferring data, sector 1, nr 7, cmd response 0x900,
-> card status 0x0
-> > end_request: I/O error, dev mmcblk0, sector 1
-> >
-> > Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> > CC: Thomas Abraham <thomas.abraham@linaro.org>
-> 
-> I guess this will be applied through the samsung tree, so:
-> 
-> Acked-by: Mike Turquette <mturquette@linaro.org>
-> 
-Thanks, applied.
+> We have now modified crashkernel=X to allocate memory beyong 4G (if
+> available) and do not allocate low range for crashkernel if the user
+> does not specify that with crashkernel_low=Y.  This causes regression
+> if iommu is not enabled.  Without iommu, swiotlb needs to be setup in
+> first 4G and there is no low memory available to second kernel.
 
-- Kukjin
+Is it possible to reuse the 1st kernel swiotlb region in 2nd capture
+kernel if it's available?
+
+> 
+> Set crashkernel_low automatically if the user does not specify that.
+> 
+> For system that does support IOMMU with kdump properly, user could
+> specify crashkernel_low=0 to save that 72M low ram.
+
+How about make swiotlb size tunable in 1st kernel as well such as adding
+a swiotlb_size= to cmdline, if it's set in 1st kernel crashkernel
+reserving code can take it automaticlly.
+
+This will benefit to user who use low-mem machines.
+
+> 
+> -v3: add swiotlb_size() according to Konrad.
+> -v4: add comments what 8M is for according to hpa.
+>      also update more crashkernel_low= in kernel-parameters.txt
+> -v5: update changelog according to Vivek.
+> -v6: Change description about swiotlb referring according to HATAYAMA.
+> 
+> Reported-by: WANG Chao <chaowang@redhat.com>
+> Tested-by: WANG Chao <chaowang@redhat.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> ---
+>  Documentation/kernel-parameters.txt |   14 +++++++++++---
+>  arch/x86/kernel/setup.c             |   20 +++++++++++++++++---
+>  include/linux/swiotlb.h             |    1 +
+>  lib/swiotlb.c                       |   19 +++++++++++++++----
+>  4 files changed, 44 insertions(+), 10 deletions(-)
+> 
+> Index: linux-2.6/arch/x86/kernel/setup.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/setup.c
+> +++ linux-2.6/arch/x86/kernel/setup.c
+> @@ -519,19 +519,33 @@ static void __init reserve_crashkernel_l
+>  	unsigned long long low_base = 0, low_size = 0;
+>  	unsigned long total_low_mem;
+>  	unsigned long long base;
+> +	bool auto_set = false;
+>  	int ret;
+>  
+>  	total_low_mem = memblock_mem_size(1UL<<(32-PAGE_SHIFT));
+>  	ret = parse_crashkernel_low(boot_command_line, total_low_mem,
+>  						&low_size, &base);
+> -	if (ret != 0 || low_size <= 0)
+> -		return;
+> +	if (ret != 0) {
+> +		/*
+> +		 * two parts from lib/swiotlb.c:
+> +		 *	swiotlb size: user specified with swiotlb= or default.
+> +		 *	swiotlb overflow buffer: now is hardcoded to 32k,
+> +		 *		round to 8M to cover more others.
+> +		 */
+> +		low_size = swiotlb_size_or_default() + (8UL<<20);
+> +		auto_set = true;
+> +	} else {
+> +		/* passed with crashkernel_low=0 ? */
+> +		if (!low_size)
+> +			return;
+> +	}
+>  
+>  	low_base = memblock_find_in_range(low_size, (1ULL<<32),
+>  					low_size, alignment);
+>  
+>  	if (!low_base) {
+> -		pr_info("crashkernel low reservation failed - No suitable area found.\n");
+> +		if (!auto_set)
+> +			pr_info("crashkernel low reservation failed - No suitable area found.\n");
+>  
+>  		return;
+>  	}
+> Index: linux-2.6/include/linux/swiotlb.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/swiotlb.h
+> +++ linux-2.6/include/linux/swiotlb.h
+> @@ -25,6 +25,7 @@ extern int swiotlb_force;
+>  extern void swiotlb_init(int verbose);
+>  int swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
+>  extern unsigned long swiotlb_nr_tbl(void);
+> +unsigned long swiotlb_size_or_default(void);
+>  extern int swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs);
+>  
+>  /*
+> Index: linux-2.6/lib/swiotlb.c
+> ===================================================================
+> --- linux-2.6.orig/lib/swiotlb.c
+> +++ linux-2.6/lib/swiotlb.c
+> @@ -105,9 +105,9 @@ setup_io_tlb_npages(char *str)
+>  	if (!strcmp(str, "force"))
+>  		swiotlb_force = 1;
+>  
+> -	return 1;
+> +	return 0;
+>  }
+> -__setup("swiotlb=", setup_io_tlb_npages);
+> +early_param("swiotlb", setup_io_tlb_npages);
+>  /* make io_tlb_overflow tunable too? */
+>  
+>  unsigned long swiotlb_nr_tbl(void)
+> @@ -115,6 +115,18 @@ unsigned long swiotlb_nr_tbl(void)
+>  	return io_tlb_nslabs;
+>  }
+>  EXPORT_SYMBOL_GPL(swiotlb_nr_tbl);
+> +
+> +/* default to 64MB */
+> +#define IO_TLB_DEFAULT_SIZE (64UL<<20)
+> +unsigned long swiotlb_size_or_default(void)
+> +{
+> +	unsigned long size;
+> +
+> +	size = io_tlb_nslabs << IO_TLB_SHIFT;
+> +
+> +	return size ? size : (IO_TLB_DEFAULT_SIZE);
+> +}
+> +
+>  /* Note that this doesn't work with highmem page */
+>  static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
+>  				      volatile void *address)
+> @@ -188,8 +200,7 @@ int __init swiotlb_init_with_tbl(char *t
+>  void  __init
+>  swiotlb_init(int verbose)
+>  {
+> -	/* default to 64MB */
+> -	size_t default_size = 64UL<<20;
+> +	size_t default_size = IO_TLB_DEFAULT_SIZE;
+>  	unsigned char *vstart;
+>  	unsigned long bytes;
+>  
+> Index: linux-2.6/Documentation/kernel-parameters.txt
+> ===================================================================
+> --- linux-2.6.orig/Documentation/kernel-parameters.txt
+> +++ linux-2.6/Documentation/kernel-parameters.txt
+> @@ -596,9 +596,6 @@ bytes respectively. Such letter suffixes
+>  			is selected automatically. Check
+>  			Documentation/kdump/kdump.txt for further details.
+>  
+> -	crashkernel_low=size[KMG]
+> -			[KNL, x86] parts under 4G.
+> -
+>  	crashkernel=range1:size1[,range2:size2,...][@offset]
+>  			[KNL] Same as above, but depends on the memory
+>  			in the running system. The syntax of range is
+> @@ -606,6 +603,17 @@ bytes respectively. Such letter suffixes
+>  			a memory unit (amount[KMG]). See also
+>  			Documentation/kdump/kdump.txt for an example.
+>  
+> +	crashkernel_low=size[KMG]
+> +			[KNL, x86_64] range under 4G. When crashkernel= is
+> +			passed, kernel allocate physical memory region
+> +			above 4G, that cause second kernel crash on system
+> +			that require some amount of low memory, e.g. swiotlb
+> +			requires at least 64M+32K low memory.  Kernel would
+> +			try to allocate 72M below 4G automatically.
+> +			This one let user to specify own low range under 4G
+> +			for second kernel instead.
+> +			0: to disable low allocation.
+> +
+>  	cs89x0_dma=	[HW,NET]
+>  			Format: <dma>
+>  
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
+-- 
+Thanks
+Dave
+
 
