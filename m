@@ -1,85 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935718Ab3DHMWp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 08:22:45 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:52654 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935351Ab3DHMWo (ORCPT
+	id S935739Ab3DHMXK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 08:23:10 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:59940 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935127Ab3DHMXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 08:22:44 -0400
-From: Prabhakar lad <prabhakar.csengg@gmail.com>
-To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        LMML <linux-media@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v3 3/3] davinic: vpss: trivial cleanup
-Date: Mon,  8 Apr 2013 17:49:13 +0530
-Message-Id: <1365423553-12619-4-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1365423553-12619-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1365423553-12619-1-git-send-email-prabhakar.csengg@gmail.com>
+	Mon, 8 Apr 2013 08:23:08 -0400
+X-IronPort-AV: E=Sophos;i="4.87,431,1363129200"; 
+   d="scan'208";a="12279883"
+Date: Mon, 8 Apr 2013 14:23:06 +0200
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: linux-kernel@vger.kernel.org
+Subject: Hardware locality (hwloc) v1.7 released
+Message-ID: <20130408122306.GC6563@type.bordeaux.inria.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+The Hardware Locality (hwloc) team is pleased to announce the release
+of v1.7:
 
-this patch removes unnecessary header file inclusions and
-fixes the typo's.
+   http://www.open-mpi.org/projects/hwloc/
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/media/platform/davinci/vpss.c |   11 +++--------
- 1 files changed, 3 insertions(+), 8 deletions(-)
+v1.7 is a major new release series.  The v1.6 series focused on the core
+rework to ease the addition of new discovery components. As expected,
+v1.7 now adds many new discovery components for GPUs, Xeon Phi, BlueGene/Q,
+and NetBSD.
 
-diff --git a/drivers/media/platform/davinci/vpss.c b/drivers/media/platform/davinci/vpss.c
-index d36429d..8a2f01e 100644
---- a/drivers/media/platform/davinci/vpss.c
-+++ b/drivers/media/platform/davinci/vpss.c
-@@ -17,13 +17,8 @@
-  *
-  * common vpss system module platform driver for all video drivers.
-  */
--#include <linux/kernel.h>
--#include <linux/sched.h>
--#include <linux/init.h>
- #include <linux/module.h>
- #include <linux/platform_device.h>
--#include <linux/spinlock.h>
--#include <linux/compiler.h>
- #include <linux/io.h>
- #include <linux/pm_runtime.h>
- 
-@@ -101,7 +96,7 @@ enum vpss_platform_type {
- 
- /*
-  * vpss operations. Depends on platform. Not all functions are available
-- * on all platforms. The api, first check if a functio is available before
-+ * on all platforms. The api, first check if a function is available before
-  * invoking it. In the probe, the function ptrs are initialized based on
-  * vpss name. vpss name can be "dm355_vpss", "dm644x_vpss" etc.
-  */
-@@ -116,7 +111,7 @@ struct vpss_hw_ops {
- 	void (*set_sync_pol)(struct vpss_sync_pol);
- 	/* set the PG_FRAME_SIZE register*/
- 	void (*set_pg_frame_size)(struct vpss_pg_frame_size);
--	/* check and clear interrupt if occured */
-+	/* check and clear interrupt if occurred */
- 	int (*dma_complete_interrupt)(void);
- };
- 
-@@ -235,7 +230,7 @@ EXPORT_SYMBOL(vpss_clear_wbl_overflow);
- 
- /*
-  *  dm355_enable_clock - Enable VPSS Clock
-- *  @clock_sel: CLock to be enabled/disabled
-+ *  @clock_sel: Clock to be enabled/disabled
-  *  @en: enable/disable flag
-  *
-  *  This is called to enable or disable a vpss clock
--- 
-1.7.4.1
+There are also a couple changes in the API and in command-line tools,
+many documentation improvements, the ability to build external plugins,
+and more.
 
+* New operating system backends
+  + Add BlueGene/Q compute node kernel (CNK) support. See the FAQ in the
+    documentation for details. Thanks to Jeff Hammond, Christopher Samuel
+    and Erik Schnetter for their help.
+  + Add NetBSD support, thanks to Aleksej Saushev.
+* New I/O device discovery
+  + Add co-processor OS devices such as "mic0" for Intel Xeon Phi (MIC)
+    on Linux. Thanks to Jerome Vienne for helping.
+  + Add co-processor OS devices such as "cuda0" for NVIDIA CUDA-capable GPUs.
+  + Add co-processor OS devices such as "opencl0d0" for OpenCL GPU devices
+    on the AMD OpenCL implementation.
+  + Add GPU OS devices such as ":0.0" for NVIDIA X11 displays.
+  + Add GPU OS devices such as "nvml0" for NVIDIA GPUs.
+    Thanks to Marwan Abdellah and Stefan Eilemann for helping.
+  These new OS devices have some string info attributes such as CoProcType,
+  GPUModel, etc. to better identify them.
+  See the I/O Devices and Attributes documentation sections for details.
+* New components
+  + Add the "opencl", "cuda", "nvml" and "gl" components for I/O device
+    discovery.
+  + "nvml" also improves the discovery of NVIDIA GPU PCIe link speed.
+  All of these new components may be built as plugins. They may also be
+  disabled entirely by passing --disable-opencl/cuda/nvml/gl to configure.
+  See the I/O Devices, Components and Plugins, and FAQ documentation
+  sections for details.
+* API
+  + Add hwloc_topology_get_flags().
+  + Add hwloc/plugins.h for building external plugins.
+    See the Adding new discovery components and plugins section.
+* Interoperability
+  + Add hwloc/opencl.h, hwloc/nvml.h, hwloc/gl.h and hwloc/intel-mic.h
+    to retrieve the locality of OS devices that correspond to AMD OpenCL
+    GPU devices or indexes, to NVML devices or indexes, to NVIDIA X11
+    displays, or to Intel Xeon Phi (MIC) device indexes.
+  + Add new helpers in hwloc/cuda.h and hwloc/cudart.h to convert
+    between CUDA devices or indexes and hwloc OS devices.
+  + Add hwloc_ibv_get_device_osdev() and clarify the requirements
+    of the OpenFabrics Verbs helpers in hwloc/openfabrics-verbs.h.
+* Tools
+  + hwloc-info is not only a synonym of lstopo -s anymore, it also
+    dumps information about objects given on the command-line.
+* Documentation
+  + Add a section "Existing components and plugins".
+  + Add a list of common OS devices in section "Software devices".
+  + Add a new FAQ entry "Why is lstopo slow?" about lstopo slowness
+    issues because of GPUs.
+  + Clarify the documentation of inline helpers in hwloc/myriexpress.h
+    and hwloc/openfabrics-verbs.h.
+* Misc
+  + Improve cache detection on AIX.
+  + The HWLOC_COMPONENTS variable now excludes the components whose
+    names are prefixed with '-'.
+  + lstopo --ignore PU now works when displaying the topology in
+    graphical and textual mode (not when exporting to XML).
+  + Make sure I/O options always appear in lstopo usage, not only when
+    using pciutils/libpci.
+  + Remove some unneeded Linux specific includes from some interoperability
+    headers.
+  + Fix some inconsistencies in hwloc-distrib and hwloc-assembler-remote
+    manpages. Thanks to Guy Streeter for the report.
+  + Fix a memory leak on AIX when getting memory binding.
+  + Fix many small memory leaks on Linux. 
+  + The `libpci' component is now called `pci' but the old name is still
+    accepted in the HWLOC_COMPONENTS variable for backward compatibility.
