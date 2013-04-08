@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936626Ab3DHKXy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:23:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42638 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935431Ab3DHJvR (ORCPT
+	id S936674Ab3DHKYw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:24:52 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44914 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935425Ab3DHKYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:51:17 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 011/102] IPoIB: Fix send lockup due to missed TX completion
-Date: Mon,  8 Apr 2013 10:49:26 +0100
-Message-Id: <1365414657-29191-12-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
-References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Mon, 8 Apr 2013 06:24:50 -0400
+Date: Mon, 8 Apr 2013 11:24:47 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] regulator: ab8500: Get rid of is_enabled from struct
+ ab8500_regulator_info
+Message-ID: <20130408102447.GE9243@opensource.wolfsonmicro.com>
+References: <1365347548.9931.1.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="//IivP0gvsAy3Can"
+Content-Disposition: inline
+In-Reply-To: <1365347548.9931.1.camel@phoenix>
+X-Cookie: Your love life will be... interesting.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.10 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--//IivP0gvsAy3Can
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
+On Sun, Apr 07, 2013 at 11:12:28PM +0800, Axel Lin wrote:
 
-commit 1ee9e2aa7b31427303466776f455d43e5e3c9275 upstream.
+> The intention of this patch is to simplify the code.
 
-Commit f0dc117abdfa ("IPoIB: Fix TX queue lockup with mixed UD/CM
-traffic") attempts to solve an issue where unprocessed UD send
-completions can deadlock the netdev.
+Applied all, thanks.
 
-The patch doesn't fully resolve the issue because if more than half
-the tx_outstanding's were UD and all of the destinations are RC
-reachable, arming the CQ doesn't solve the issue.
+--//IivP0gvsAy3Can
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-This patch uses the IB_CQ_REPORT_MISSED_EVENTS on the
-ib_req_notify_cq().  If the rc is above 0, the UD send cq completion
-callback is called directly to re-arm the send completion timer.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-This issue is seen in very large parallel filesystem deployments
-and the patch has been shown to correct the issue.
+iQIcBAEBAgAGBQJRYprjAAoJELSic+t+oim9KeQQAJtaTS0uRaKOZYm3L9DL2db/
+IlUkZH6mDcjPRqOSWaf3vFIlzrWM3q/HwLUUMrJ6ld7hQz1b7MkhIbLbljujNkol
+eVf2g6hgvhf7wZ7SHA6vEnk1PdWcIk3RxmOtpDUDwc46H6BkOn5hYI080ZqoYi46
+B5EkO+q+ovienjSmJzcgluyeaKwKEj5egKpLwzRzX/hheH1WQmSaXMTLYAe0mSLZ
+EvbC0kwKw6lpvvBia0MuJEPaIpzJ6N/ZxXIgIUrEIQzQeGpDU+1KUZRGlKbDIAsk
+CSQmI//gKWsVP0hhE/UtscyT7tm+0JF6OBWhP/+cIZFLup51PAOznr/7PAyghZNg
+cMAKoNd7zkwb4U83Up6UxOaLV9joADNKxplnIQWoJXFnfbVl4/D9LTGkuIKa1BBP
+3yJaZXCzFVJUWbQoOvMuE3hRYjfoW9F5qRppXfqjPysNsKHZ9d3WPhEAC6RAHhEi
+YjVaQd7Ij+OSHYy2OpHtf2gKVyPFBUUup08iC07cn9xPYz3DVoka6be0D7oqD1Io
+tlaVfpz5NxfgF6QICGncJLJeioQdCDTsS5pnwNfl4M41mrvEnnLhI7+9+JD053vg
+/LuiukSgbjflp5elGIXBaP2kjPCHq+C+oyhY6gdO8celFy7zQ2MXxOs5pxSA2D75
+nFRjPh6vrToRaFlmemTQ
+=msLI
+-----END PGP SIGNATURE-----
 
-Reviewed-by: Dean Luick <dean.luick@intel.com>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/infiniband/ulp/ipoib/ipoib_cm.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/infiniband/ulp/ipoib/ipoib_cm.c b/drivers/infiniband/ulp/ipoib/ipoib_cm.c
-index 014504d..3767853 100644
---- a/drivers/infiniband/ulp/ipoib/ipoib_cm.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_cm.c
-@@ -755,9 +755,13 @@ void ipoib_cm_send(struct net_device *dev, struct sk_buff *skb, struct ipoib_cm_
- 		if (++priv->tx_outstanding == ipoib_sendq_size) {
- 			ipoib_dbg(priv, "TX ring 0x%x full, stopping kernel net queue\n",
- 				  tx->qp->qp_num);
--			if (ib_req_notify_cq(priv->send_cq, IB_CQ_NEXT_COMP))
--				ipoib_warn(priv, "request notify on send CQ failed\n");
- 			netif_stop_queue(dev);
-+			rc = ib_req_notify_cq(priv->send_cq,
-+				IB_CQ_NEXT_COMP | IB_CQ_REPORT_MISSED_EVENTS);
-+			if (rc < 0)
-+				ipoib_warn(priv, "request notify on send CQ failed\n");
-+			else if (rc)
-+				ipoib_send_comp_handler(priv->send_cq, dev);
- 		}
- 	}
- }
--- 
-1.8.1.2
-
+--//IivP0gvsAy3Can--
