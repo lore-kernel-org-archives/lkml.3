@@ -1,101 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965264Ab3DHOu0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 10:50:26 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:55841 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965236Ab3DHOuU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 10:50:20 -0400
+	id S965282Ab3DHOuj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 10:50:39 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37047 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965236Ab3DHOug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 10:50:36 -0400
+Date: Mon, 8 Apr 2013 16:50:03 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>
+Cc: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V3] iommu/amd: Add logic to decode AMD IOMMU event flag
+Message-ID: <20130408145003.GC4723@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>,
+	"iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+	"joro@8bytes.org" <joro@8bytes.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1364947610-3327-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <02D2024799561B48A732D1A51CB969E81959AF3E@sausexdag04.amd.com>
 MIME-Version: 1.0
-In-Reply-To: <1365431470.2733.16.camel@fedora>
-References: <alpine.LFD.2.02.1304031433350.21884@ionos>
-	<1364998282-21437-1-git-send-email-vgupta@synopsys.com>
-	<20130404152808.GB15261@ab42.lan>
-	<515E54BD.2090300@synopsys.com>
-	<51602459.3040105@synopsys.com>
-	<CA+55aFw=-oJxujka-emxyRcY54MSe3qEjZ6xgzoE-roe3EFk5g@mail.gmail.com>
-	<51624591.4010303@synopsys.com>
-	<CA+55aFyFWjpSVQM6M266tKrG_ZXJzZ-nYejpmXYQXbrr42mGPQ@mail.gmail.com>
-	<1365428274.2609.160.camel@laptop>
-	<1365431470.2733.16.camel@fedora>
-Date: Mon, 8 Apr 2013 07:50:19 -0700
-X-Google-Sender-Auth: uTmlnV_LID7vUkHGIs8AY-P2oqw
-Message-ID: <CA+55aFx88-t_pm5hbxbrrhqm3_=+JQussO=zD1kT+05UVCAFCA@mail.gmail.com>
-Subject: Re: [PATCH] [PATCH] Gaurantee spinlocks implicit barrier for !PREEMPT_COUNT
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Steven Rostedt <srostedt@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <02D2024799561B48A732D1A51CB969E81959AF3E@sausexdag04.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 8, 2013 at 7:31 AM, Steven Rostedt <srostedt@redhat.com> wrote:
->
-> It requires gcc reordering the code to where a preempt can happen inside
-> preempt_disable. And also put in a position where the preempt_disable
-> code it gets added matters.
->
-> Then if gcc does this, we need a page fault to occur with a get_user()
-> operation, which in practice seldom happens as most get user operations
-> are done on freshly modified memory.
->
-> And then, it would require the page fault to cause a schedule. This is
-> the most likely of the things needed to occur, but itself is not a
-> problem.
->
-> Then, the schedule would have to cause the data that is being protect by
-> the preempt_disable() to be corrupted. Either by scheduling in another
-> process that monkeys with the data. Or if it protects per-cpu data,
-> scheduling to another CPU (for the SMP case only).
->
-> If any of the above does not occur, then you wont see a bug.
+On Mon, Apr 08, 2013 at 02:33:32PM +0000, Suthikulpanit, Suravee wrote:
+> Joerg,
+> 
+> Do you have any more feedback about this patch?
+> 
+> Thanks,
+> 
+> Suravee
+> ________________________________________
+> From: suravee.suthikulpanit@amd.com [suravee.suthikulpanit@amd.com]
+> Sent: Tuesday, April 02, 2013 7:06 PM
+> To: iommu@lists.linux-foundation.org; joro@8bytes.org
+> Cc: linux-kernel@vger.kernel.org; Suthikulpanit, Suravee
+> Subject: [PATCH V3] iommu/amd: Add logic to decode AMD IOMMU event flag
+> 
+> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+> 
+> Add logic to decode AMD IOMMU event flag based on information from AMD IOMMU specification.
+> This should simplify debugging IOMMU errors.  Also, dump DTE information in additional cases.
+> 
+> This is an example:
+> AMD-Vi: Event logged [IO_PAGE_FAULT device=51:00.0 domain=0x0000 address=0x0000000000000000 flags=0x0fff]
+> AMD-Vi: Flags details: Guest NX=1 User Intr Present Write No-Perm Rsrv-Bit Translation
+> AMD-Vi: Type of error: (0x7)
+> AMD-Vi: (Note: Please refer to AMD IOMMU specification for details.)
 
-Right. The gcc reordering is also hard to actually notice if it does
-happen, so even testing the fix for this looks nontrivial.
+Independent from Joerg's feedback on this, I have only one question:
+you're not seriously considering on dumping this "Note:..." line above
+on *every* IO-PF, right?
 
-Something like the appended (whitespace-damaged and TOTALLY UNTESTED)
-might be sufficient, but..
+I very positively assume that people who stare at that output should, as
+a first prerequisite, know where to find those fields' descriptions. :-)
 
-Comments?
+Thanks.
 
-                  Linus
+-- 
+Regards/Gruss,
+    Boris.
 
----
-    diff --git a/include/linux/preempt.h b/include/linux/preempt.h
-    index 5a710b9c578e..465df1c13386 100644
-    --- a/include/linux/preempt.h
-    +++ b/include/linux/preempt.h
-    @@ -93,14 +93,17 @@ do { \
-
-     #else /* !CONFIG_PREEMPT_COUNT */
-
-    -#define preempt_disable() do { } while (0)
-    -#define sched_preempt_enable_no_resched() do { } while (0)
-    -#define preempt_enable_no_resched() do { } while (0)
-    -#define preempt_enable() do { } while (0)
-    -
-    -#define preempt_disable_notrace() do { } while (0)
-    -#define preempt_enable_no_resched_notrace() do { } while (0)
-    -#define preempt_enable_notrace() do { } while (0)
-    +/* This is only a barrier to other asms. Notably get_user/put_user */
-    +#define asm_barrier() asm volatile("")
-    +
-    +#define preempt_disable() asm_barrier()
-    +#define sched_preempt_enable_no_resched() asm_barrier()
-    +#define preempt_enable_no_resched() asm_barrier()
-    +#define preempt_enable() asm_barrier()
-    +
-    +#define preempt_disable_notrace() asm_barrier()
-    +#define preempt_enable_no_resched_notrace() asm_barrier()
-    +#define preempt_enable_notrace() asm_barrier()
-
-     #endif /* CONFIG_PREEMPT_COUNT */
+Sent from a fat crate under my desk. Formatting is fine.
+--
