@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936482Ab3DHKTH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:19:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42707 "EHLO
+	id S936508Ab3DHKTy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:19:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42703 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935529Ab3DHJvf (ORCPT
+	with ESMTP id S935523Ab3DHJve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:51:35 -0400
+	Mon, 8 Apr 2013 05:51:34 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josh Boyer <jwboyer@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+Cc: Jan Beulich <jbeulich@suse.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 023/102] HID: usbhid: quirk for Realtek Multi-card reader
-Date: Mon,  8 Apr 2013 10:49:38 +0100
-Message-Id: <1365414657-29191-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 025/102] xen-blkback: fix dispatch_rw_block_io() error path
+Date: Mon,  8 Apr 2013 10:49:40 +0100
+Message-Id: <1365414657-29191-26-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
@@ -27,49 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Jan Beulich <JBeulich@suse.com>
 
-commit 3d464d9b71ef2f2b40a4bc9dcf06794fd1be9d12 upstream.
+commit 0e5e098ac22dae38f957e951b70d3cf73beff0f7 upstream.
 
-This device needs to be added to the quirks list with HID_QUIRK_NO_INIT_REPORTS,
-otherwise it causes 10 seconds timeout during report initialization.
+Commit 7708992 ("xen/blkback: Seperate the bio allocation and the bio
+submission") consolidated the pendcnt updates to just a single write,
+neglecting the fact that the error path relied on it getting set to 1
+up front (such that the decrement in __end_block_io_op() would actually
+drop the count to zero, triggering the necessary cleanup actions).
 
-This fixes Red Hat bugzilla https://bugzilla.redhat.com/show_bug.cgi?id=806587
+Also remove a misleading and a stale (after said commit) comment.
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/hid/hid-ids.h           | 3 +++
- drivers/hid/usbhid/hid-quirks.c | 1 +
- 2 files changed, 4 insertions(+)
+ drivers/block/xen-blkback/blkback.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index c04eec3..b57671c 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -656,6 +656,9 @@
- #define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008		0x3008
- #define USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN	0x3001
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index c85d91a..4fd1dea 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -743,13 +743,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+ 		bio->bi_end_io  = end_block_io_op;
+ 	}
  
-+#define USB_VENDOR_ID_REALTEK		0x0bda
-+#define USB_DEVICE_ID_REALTEK_READER	0x0152
-+
- #define USB_VENDOR_ID_ROCCAT		0x1e7d
- #define USB_DEVICE_ID_ROCCAT_ARVO	0x30d4
- #define USB_DEVICE_ID_ROCCAT_ISKU	0x319c
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 1a4bc41..a73bb7a 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -79,6 +79,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_PRODIGE, USB_DEVICE_ID_PRODIGE_CORDLESS, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_REALTEK, USB_DEVICE_ID_REALTEK_READER, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_SENNHEISER, USB_DEVICE_ID_SENNHEISER_BTD500USB, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SUN, USB_DEVICE_ID_RARITAN_KVM_DONGLE, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_SYMBOL, USB_DEVICE_ID_SYMBOL_SCANNER_1, HID_QUIRK_NOGET },
+-	/*
+-	 * We set it one so that the last submit_bio does not have to call
+-	 * atomic_inc.
+-	 */
+ 	atomic_set(&pending_req->pendcnt, nbio);
+-
+-	/* Get a reference count for the disk queue and start sending I/O */
+ 	blk_start_plug(&plug);
+ 
+ 	for (i = 0; i < nbio; i++)
+@@ -777,6 +771,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+  fail_put_bio:
+ 	for (i = 0; i < nbio; i++)
+ 		bio_put(biolist[i]);
++	atomic_set(&pending_req->pendcnt, 1);
+ 	__end_block_io_op(pending_req, -EINVAL);
+ 	msleep(1); /* back off a bit */
+ 	return -EIO;
 -- 
 1.8.1.2
 
