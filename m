@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934940Ab3DHGdY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 02:33:24 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:18959 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934923Ab3DHGdW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 02:33:22 -0400
-Message-ID: <5162648B.9070802@huawei.com>
-Date: Mon, 8 Apr 2013 14:32:43 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S934957Ab3DHGdf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 02:33:35 -0400
+Received: from ozlabs.org ([203.10.76.45]:46497 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934944Ab3DHGdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 02:33:33 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: "linux-kernel\@vger.kernel.org \>\> \"linux-kernel\@vger.kernel.org\"" 
+	<linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: module: strncpy issue, using strlcpy instead of strncpy
+In-Reply-To: <51615AB0.9060502@asianux.com>
+References: <51615AB0.9060502@asianux.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 08 Apr 2013 15:00:44 +0930
+Message-ID: <87r4ila8sb.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: [PATCH 0/12][V2] memcg: make memcg's life cycle the same as cgroup
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes since v1:
+Chen Gang <gang.chen@asianux.com> writes:
+>   ownername and namebuf are all NUL terminated string.
+>
+>   need always let them ended by '\0'.
+>
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  kernel/module.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/kernel/module.c b/kernel/module.c
+> index 3c2c72d..597efd8 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -1283,7 +1283,7 @@ static const struct kernel_symbol *resolve_symbol(struct module *mod,
+>  
+>  getname:
+>  	/* We must make copy under the lock if we failed to get ref. */
+> -	strncpy(ownername, module_name(owner), MODULE_NAME_LEN);
+> +	strlcpy(ownername, module_name(owner), MODULE_NAME_LEN);
 
-- wrote better changelog and added acked-by and reviewed-by tags
-- revised some comments as suggested by Michal
-- added a wmb() in kmem_cgroup_css_offline(), pointed out by Michal
-- fixed a bug which causes a css_put() never be called
+This should just be strcpy().
 
+>  unlock:
+>  	mutex_unlock(&module_mutex);
+>  	return sym;
+> @@ -3464,7 +3464,7 @@ const char *module_address_lookup(unsigned long addr,
+>  	}
+>  	/* Make a copy in here where it's safe */
+>  	if (ret) {
+> -		strncpy(namebuf, ret, KSYM_NAME_LEN - 1);
+> +		strlcpy(namebuf, ret, KSYM_NAME_LEN);
 
-Now memcg has its own refcnt, so when a cgroup is destroyed, the memcg can
-still be alive. This patchset converts memcg to always use css_get/put, so
-memcg will have the same life cycle as its corresponding cgroup.
+This isn't a bug, because the caller (kallsyms_lookup) puts a NUL in
+ret[KSYM_NAME_LEN].
 
-The historical reason that memcg didn't use css_get in some cases, is that
-cgroup couldn't be removed if there're still css refs. The situation has
-changed so that rmdir a cgroup will succeed regardless css refs, but won't
-be freed until css refs goes down to 0.
+However, kallsyms_lookup also calls kallsyms_expand_symbol, which
+doesn't stop at KSYM_NAME_LEN, so if a name was longer than that we'd
+have a real bug.
 
-Since the introduction of kmemcg, the memcg refcnt handling grows even more
-complicated. This patchset greately simplifies memcg's life cycle management.
+Would you like to take a look at that, too?
 
-Also, after those changes, we can convert memcg to use cgroup->id, and then
-we can kill css_id.
-
-This patchset is based on linux-next but with "memcg: debugging facility to access dangling memcgs."
-excluded.
-
-The first 4 patches are bug fixes that should go into 3.9, and the rest are
-for 3.10. The extra patch 13/12 is for the dangling memcg debugging patch.
-
-You'll see 2 small conflicts when you apply that debugging patch on top
-of this patchset. Just move memcg_dangling_add() to mem_cgroup_css_offline()
-and move memcg_dangling_free() to mem_cggroup_css_free().
-
-Li Zefan (10):
-      memcg: take reference before releasing rcu_read_lock
-      memcg: avoid accessing memcg after releasing reference
-      memcg: use css_get() in sock_update_memcg()
-      memcg: don't use mem_cgroup_get() when creating a kmemcg cache
-      memcg: use css_get/put when charging/uncharging kmem
-      memcg: use css_get/put for swap memcg
-      cgroup: make sure parent won't be destroyed before its children
-      memcg: don't need to get a reference to the parent
-      memcg: kill memcg refcnt
-      memcg: don't need to free memcg via RCU or workqueue
-
-Michal Hocko (2):
-      Revert "memcg: avoid dangling reference count in creation failure."
-      memcg, kmem: fix reference count handling on the error path
-
----
- kernel/cgroup.c |  10 +++
- mm/memcontrol.c | 267 ++++++++++++++++++++++++++++------------------------------------------
- 2 files changed, 116 insertions(+), 161 deletions(-)
+Thanks,
+Rusty.
