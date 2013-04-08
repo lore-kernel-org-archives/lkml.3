@@ -1,64 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936456Ab3DHWRn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 18:17:43 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:42148 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934846Ab3DHWRl (ORCPT
+	id S935536Ab3DHWSv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 18:18:51 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:35668 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934642Ab3DHWSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 18:17:41 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX187aUk8Rbg5d7XFfxB7oEqV
-Date: Mon, 8 Apr 2013 15:17:32 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] omap2+: Remove useless Makefile line
-Message-ID: <20130408221732.GD10155@atomide.com>
-References: <1365156749.1830.60.camel@x61.thuisdomein>
+	Mon, 8 Apr 2013 18:18:50 -0400
+Message-ID: <5163424A.4000106@gmail.com>
+Date: Mon, 08 Apr 2013 18:18:50 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365156749.1830.60.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] mm/page_alloc: convert zone_pcp_update() to use on_each_cpu()
+ instead of stop_machine()
+References: <1365194030-28939-1-git-send-email-cody@linux.vnet.ibm.com> <1365194030-28939-3-git-send-email-cody@linux.vnet.ibm.com> <5161931A.8060501@gmail.com> <5162FF18.8010802@linux.vnet.ibm.com> <516319FF.6030104@gmail.com> <51631F4D.7050504@linux.vnet.ibm.com>
+In-Reply-To: <51631F4D.7050504@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Bolle <pebolle@tiscali.nl> [130405 03:17]:
-> Commit f41caddbe73f52a42f529d668ce47b4d693fd2c0 ("omap2+: Use Kconfig
-> symbol in Makefile instead of obj-y") reorganized this Makefile. But,
-> for some reason, it also added references to CONFIG_MACH_ENCORE and
-> board-omap3encore.o. But there's no Kconfig symbol MACH_ENCORE and
-> there's no file board-omap3encore.c. This line can safely be removed.
+(4/8/13 3:49 PM), Cody P Schafer wrote:
+> On 04/08/2013 12:26 PM, KOSAKI Motohiro wrote:
+>> (4/8/13 1:32 PM), Cody P Schafer wrote:
+>>> On 04/07/2013 08:39 AM, KOSAKI Motohiro wrote:
+>>>> (4/5/13 4:33 PM), Cody P Schafer wrote:
+>>>>> No off-cpu users of the percpu pagesets exist.
+>>>>>
+>>>>> zone_pcp_update()'s goal is to adjust the ->high and ->mark members of a
+>>>>> percpu pageset based on a zone's ->managed_pages. We don't need to drain
+>>>>> the entire percpu pageset just to modify these fields. Avoid calling
+>>>>> setup_pageset() (and the draining required to call it) and instead just
+>>>>> set the fields' values.
+>>>>>
+>>>>> This does change the behavior of zone_pcp_update() as the percpu
+>>>>> pagesets will not be drained when zone_pcp_update() is called (they will
+>>>>> end up being shrunk, not completely drained, later when a 0-order page
+>>>>> is freed in free_hot_cold_page()).
+>>>>>
+>>>>> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+>>>>
+>>>> NAK.
+>>>>
+>>>> 1) zone_pcp_update() is only used from memory hotplug and it require page drain.
+>>>
+>>> I'm looking at this code because I'm currently working on a patchset
+>>> which adds another interface which modifies zone sizes, so "only used
+>>> from memory hotplug" is a temporary thing (unless I discover that
+>>> zone_pcp_update() is not intended to do what I want it to do).
+>>
+>> maybe yes, maybe no. I don't know temporary or not. However the fact is,
+>> you must not break anywhere. You need to look all caller always.
+> 
+> Right, which is why I want to understand memory hotplug's actual 
+> requirements.
+> 
+>>>> 2) stop_machin is used for avoiding race. just removing it is insane.
+>>>
+>>> What race? Is there a cross cpu access to ->high & ->batch that makes
+>>> using on_each_cpu() instead of stop_machine() inappropriate? It is
+>>> absolutely not just being removed.
+>>
+>> OK, I missed that. however your code is still wrong.
+>> However you can't call free_pcppages_bulk() from interrupt context and
+>> then you can't use on_each_cpu() anyway.
+> 
+> Given drain_pages() implementation, I find that hard to believe (It uses 
+> on_each_cpu_mask() and eventually calls free_pcppages_bulk()).
+> 
+> Can you provide a reference backing up your statement?
 
-Thanks applying into omap-for-v3.10/board.
+Grr. I missed again. OK you are right. go ahead.
 
-Tony
- 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
->  arch/arm/mach-omap2/Makefile | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
-> index b068b7f..3d0697c 100644
-> --- a/arch/arm/mach-omap2/Makefile
-> +++ b/arch/arm/mach-omap2/Makefile
-> @@ -229,7 +229,6 @@ obj-$(CONFIG_MACH_DEVKIT8000)     	+= board-devkit8000.o
->  obj-$(CONFIG_MACH_OMAP_LDP)		+= board-ldp.o
->  obj-$(CONFIG_MACH_OMAP3530_LV_SOM)      += board-omap3logic.o
->  obj-$(CONFIG_MACH_OMAP3_TORPEDO)        += board-omap3logic.o
-> -obj-$(CONFIG_MACH_ENCORE)		+= board-omap3encore.o
->  obj-$(CONFIG_MACH_OVERO)		+= board-overo.o
->  obj-$(CONFIG_MACH_OMAP3EVM)		+= board-omap3evm.o
->  obj-$(CONFIG_MACH_OMAP3_PANDORA)	+= board-omap3pandora.o
-> -- 
-> 1.7.11.7
-> 
-> 
-> 
+
+
+> If this turns out to be an issue, schedule_on_each_cpu() could be an 
+> alternative.
+
+no way. schedule_on_each_cpu() is more problematic and it should be removed
+in the future.
+schedule_on_each_cpu() can only be used when caller task don't have any lock.
+otherwise it may make deadlock.
+
+
+
+
+
+
+
