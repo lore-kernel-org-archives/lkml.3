@@ -1,93 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936401Ab3DHXRx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 19:17:53 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:56854 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935512Ab3DHXRv (ORCPT
+	id S936479Ab3DHXUg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 19:20:36 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:48953 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935446Ab3DHXUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 19:17:51 -0400
-X-AuditID: cbfee691-b7f5f6d000002fda-1b-5163501d4da7
-Message-id: <51635022.7000204@samsung.com>
-Date: Tue, 09 Apr 2013 08:17:54 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [GIT PULL] extcon for 3.10
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMIsWRmVeSWpSXmKPExsWyRsSkWFc2IDnQ4MpnXYvrX56zWjQvXs9m
-	cbbpDbvF5V1z2CxuN65gc2D12D93DbtH35ZVjB6fN8kFMEdx2aSk5mSWpRbp2yVwZTTMOMta
-	sJir4tb5bpYGxgMcXYycHBICJhLzm/YyQ9hiEhfurWfrYuTiEBJYyijx9csLRpii5StWQSWm
-	M0pMbGxgh3BeMEqc7bvOClLFK6AlsfnaTSYQm0VAVaLtfS8biM0GFN//4gaYLSoQJrFy+hUW
-	iHpBiR+T74HZIgIaEi+P3gKzmQXmMErs/ge2WVhAWeLBiU1sEHEdif2t06BseYnNa94ygxwh
-	IdDPLnF11gF2iMUCEt8mHwIaxAGUkJXYdADqNUmJgytusExgFJmFZPUsJGNnIRm7gJF5FaNo
-	akFyQXFSepGpXnFibnFpXrpecn7uJkZghJz+92ziDsb7B6wPMSYDrZzILCWanA+MsLySeENj
-	MyMLUxNTYyNzSzPShJXEedVbrAOFBNITS1KzU1MLUovii0pzUosPMTJxcEo1MLZpMcbtC4tN
-	l9Bf5hJ46f8jvtcCrAdUWX/lh3fc91i3TPlHt9uGQ6aNtw+lrEg3DZk7r7h1QdzbH0/X18mX
-	z5opWbi1WCfe0r352RtWE961kp9qGvbYXKx5yXNoYcsEF8WGiENCvqc+Pryc9ryoPTXu1I0v
-	uzYqrdzgls/uvfr8fs753N4MAUosxRmJhlrMRcWJANeJi+KmAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAIsWRmVeSWpSXmKPExsVy+t9jQV3ZgORAg86l6hbXvzxntWhevJ7N
-	4mzTG3aLy7vmsFncblzB5sDqsX/uGnaPvi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3
-	VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqppFCWmFMKFApILC5W0rfDNCE0xE3X
-	AqYxQtc3JAiux8gADSSsYcxomHGWtWAxV8Wt890sDYwHOLoYOTkkBEwklq9YxQZhi0lcuLce
-	yObiEBKYzigxsbGBHcJ5wShxtu86K0gVr4CWxOZrN5lAbBYBVYm2971g3WxA8f0vboDZogJh
-	EiunX2GBqBeU+DH5HpgtIqAh8fLoLTCbWWAOo8Tuf4wgtrCAssSDE5vYIOI6Evtbp0HZ8hKb
-	17xlnsDINwvJqFlIymYhKVvAyLyKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzj+nknvYFzV
-	YHGIUYCDUYmH98KTpEAh1sSy4srcQ4wSHMxKIrzdhsmBQrwpiZVVqUX58UWlOanFhxiTgT6d
-	yCwlmpwPTA15JfGGxiZmRpZG5oYWRsbmpAkrifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cBY
-	Lznn4gIPoegcI+a+d3tiWbQzFRca+FxqXDiJJTq4wVq4uElx3rtzgVN7mQ497rk8fb8G46P7
-	2X7ZVqWvLzTp3lo681vOxc+nSq+c83ppzmXyKPpwi7nzQuNGY17NstWhu25Nu7lDlzXN+er+
-	c/d95iyyl7yj2JOb+2UiX8VCG45J/yM23VimxFKckWioxVxUnAgA15g8HwMDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 8 Apr 2013 19:20:34 -0400
+Message-ID: <516350BE.2000106@wwwdotorg.org>
+Date: Mon, 08 Apr 2013 17:20:30 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Doug Anderson <dianders@chromium.org>, Nathan Zimmer <nzimmer@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Woodhouse <dwmw2@infradead.org>, stable@vger.kernel.org,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: hangs on boot in 9984d7394618df9
+References: <20130405173623.GE4068@ZenIV.linux.org.uk> <515F3A71.9080008@sgi.com> <20130405210042.GH4068@ZenIV.linux.org.uk> <5162E36F.5020305@sgi.com> <20130408155847.GS4068@ZenIV.linux.org.uk> <51632DF8.2080402@sgi.com> <20130408212327.GU4068@ZenIV.linux.org.uk> <20130408214834.GV4068@ZenIV.linux.org.uk> <516341ED.5060803@wwwdotorg.org> <CAD=FV=WodJER2g45u5pEw0edf+K4uYJjyt0w4ZfX9q=o1a7pYw@mail.gmail.com> <20130408230658.GY4068@ZenIV.linux.org.uk>
+In-Reply-To: <20130408230658.GY4068@ZenIV.linux.org.uk>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On 04/08/2013 05:06 PM, Al Viro wrote:
+> On Mon, Apr 08, 2013 at 03:45:31PM -0700, Doug Anderson wrote:
+>> Hi,
+>>
+>> On Mon, Apr 8, 2013 at 3:17 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>>>> Anyway, I've just pushed a splitup of that commit (carved in 3 pieces)
+>>>> into vfs.git#pipe-splitup; could you check which part triggers that
+>>>> hang?  Should propagate in a few...
+>>>
+>>> It looks like "pipe: unify ->release() and ->open()" introduces the
+>>> problem. Note that I had to add a prototype for fifo_open() before the
+>>> structs that reference it for that commit to compile.
+>>
+>> It sounds like Stephen has provided you the info you needed so not
+>> doing any extra testing now, but I figured I'd chime in that I hit
+>> problems this morning with linux-next and it appears to be the same
+>> thing.  I did a revert of 9984d7394618df9 and (plus a revert of a
+>> handful of patches to the same file) and problems are resolved.  The
+>> failure case is really weird in that everything works well booting to
+>> a simple /bin/bash but fails when you do more complex tasks.
+>>
+>> Anyway: If you need some extra testing feel free to CC me.
+> 
+> Folks, see if vfs.git#experimental works for you; the PITA had apparently
+> been caused by change of open() semantics for /proc/<pid>/fd/<some_pipe> -
+> it started to behave like a FIFO, i.e. wait for peer to show up.  Normally
+> that's not a problem, but if you have closed e.g. the write end of a pipe
+> and try to open /proc/<pid>/fd/<read_end_of_pipe>, you'll get open() waiting
+> for writers to appear.  Which isn't what we used to do here (open succeeded
+> immediately) and apparently that was enough to trip drakut.
+> 
+> Branch head should be at 574179469f7370aadb9cbac1ceca7c3723c17bee.
 
-This is extcon pull request for v3.10.
-Please pull extcon with following updates.
+That branch works.
 
-The following changes since commit 07961ac7c0ee8b546658717034fe692fd12eefa9:
-
-  Linux 3.9-rc5 (2013-03-31 15:12:43 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-for-3.10
-
-for you to fetch changes up to 3ad9e86d54ed2770aa693a90a0872cbe7ffc6831:
-
-  extcon: max8997: Fix return value (2013-04-09 07:53:46 +0900)
-
-----------------------------------------------------------------
-This is small fixes for extcon driver.
-
-MAX77693 extcon driver
-- Add 'static' keryword to internal data structure
-- Fix return value using 'ret' instead of hardcoding
-
-MAX8997 extcon driver
-- Use dev_err() instead of pr_err()
-- Fix return value using 'ret' instead of hardcoding
-
-----------------------------------------------------------------
-Jingoo Han (1):
-      extcon: max8997: use dev_err() instead of pr_err()
-
-Sachin Kamat (3):
-      extcon: max77693: Staticize default_init_data
-      extcon: max77693: Fix return value
-      extcon: max8997: Fix return value
-
- drivers/extcon/extcon-max77693.c | 10 +++++-----
- drivers/extcon/extcon-max8997.c  | 12 ++++++------
- 2 files changed, 11 insertions(+), 11 deletions(-)
+Thanks!
