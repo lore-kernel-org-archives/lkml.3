@@ -1,119 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934732Ab3DHDC7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 23:02:59 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:40563 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760459Ab3DHDC7 (ORCPT
+	id S934762Ab3DHDFH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 23:05:07 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:42939 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934720Ab3DHDFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 23:02:59 -0400
-X-Spam-Score: -100.7
-Message-ID: <51623344.4040905@asianux.com>
-Date: Mon, 08 Apr 2013 11:02:28 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org >> linux-kernel@vger.kernel.org" 
-	<linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: module: strncpy issue, using strlcpy instead
- of strncpy
-References: <51615AB0.9060502@asianux.com> <CAMuHMdU+K9Kqe1JS+PCcuyf_3V1yMDe_M1r63SyEyp4ppfkpfg@mail.gmail.com> <51622FEF.2070801@asianux.com>
-In-Reply-To: <51622FEF.2070801@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sun, 7 Apr 2013 23:05:05 -0400
+Date: Mon, 8 Apr 2013 13:04:55 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Guenter Roeck <linux@roeck-us.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Make do_sysinfo() static
+Message-Id: <20130408130455.5337ef8d9a93f9285de1a396@canb.auug.org.au>
+In-Reply-To: <20130408020011.GQ4068@ZenIV.linux.org.uk>
+References: <20130408115325.1e4b35359271383b9c459ef9@canb.auug.org.au>
+	<20130408020011.GQ4068@ZenIV.linux.org.uk>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__8_Apr_2013_13_04_55_+1000_mUmBL+=7ZE729zJ7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月08日 10:48, Chen Gang wrote:
-> On 2013年04月07日 22:28, Geert Uytterhoeven wrote:
->> On Sun, Apr 7, 2013 at 1:38 PM, Chen Gang <gang.chen@asianux.com> wrote:
->>>>   ownername and namebuf are all NUL terminated string.
->>>>
->>>>   need always let them ended by '\0'.
->>>>
->>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>>> ---
->>>>  kernel/module.c |    4 ++--
->>>>  1 files changed, 2 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/kernel/module.c b/kernel/module.c
->>>> index 3c2c72d..597efd8 100644
->>>> --- a/kernel/module.c
->>>> +++ b/kernel/module.c
->>>> @@ -3464,7 +3464,7 @@ const char *module_address_lookup(unsigned long addr,
->>>>         }
->>>>         /* Make a copy in here where it's safe */
->>>>         if (ret) {
->>>> -               strncpy(namebuf, ret, KSYM_NAME_LEN - 1);
->>>> +               strlcpy(namebuf, ret, KSYM_NAME_LEN);
->>>>                 ret = namebuf;
->>>>         }
->>>>         preempt_enable();
->> Is this buffer ever copied to userspace?
-> 
-> 
+--Signature=_Mon__8_Apr_2013_13_04_55_+1000_mUmBL+=7ZE729zJ7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-  the key words is:
-    if it knows the length of namebuf, it may need initialized namebuf.
-    if it can not know the length of namebuf
-      it can not initialize namebuf.
-      (in our case, it only know, the namebuf length >= KSYM_NAME_LEN)
+Hi Al,
 
-  so, it need not initialize it.
+On Mon, 8 Apr 2013 03:00:11 +0100 Al Viro <viro@ZenIV.linux.org.uk> wrote:
+>
+> On Mon, Apr 08, 2013 at 11:53:25AM +1000, Stephen Rothwell wrote:
+> > The only use outside of kernel/timer.c was in kernel/compat.c, so move
+> > compat_sys_sysinfo() next to sys_sysinfo() in kernel/timer.c.
+>=20
+> Please, switch it to COMPAT_SYSCALL_DEFINE, while you are at it.
 
-  :-)
+I would prefer someone do that as a separate patch as this is a "no
+logical change" patch.
 
-  thanks.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-gchen.
+--Signature=_Mon__8_Apr_2013_13_04_55_+1000_mUmBL+=7ZE729zJ7
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> at lease now:
->   I think, it is not, the reason is:
->     it is only a tool function for kallsyms using.
->     it has no duty to let namebuf initialized.
-> 
->   please reference the related comments in include/linux/module.h
-> 
-> 493 /* For kallsyms to ask for address resolution.  namebuf should be at
-> 494  * least KSYM_NAME_LEN long: a pointer to namebuf is returned if
-> 495  * found, otherwise NULL. */
-> 496 const char *module_address_lookup(unsigned long addr,
-> 497                             unsigned long *symbolsize,
-> 498                             unsigned long *offset,
-> 499                             char **modname,
-> 500                             char *namebuf);
-> 
-> 
-> originally:
->   it will not cause issue (the upper caller has noticed it).
->   but we really need let it '\0' ended within module_address_lookup.
->     (so, maybe for subject: "strncpy issue" need be deleted)
-> 
-> 
-> in the future:
->   since it is an extern function, it can be used by others.
->   since it is a tool function, it can not be used directly by user mode.
->   according to the api definition:
->     if it is necessary to initialize (such as return to user mode)
->       the caller should perform it.
->     if it is not necessary to initialize (not return to user mode)
->       still prefer the caller to initialize it.
->       but should understand if the caller will not initialize it.
->         (if caller does not initialize it, it should not cause issue)
-> 
-> 
->   thanks.
-> 
->   :-)
-> 
-> 
+iQIcBAEBCAAGBQJRYjPXAAoJEECxmPOUX5FExvgQAKlq0iMm/i7e+TwOhe/vsEa8
+ZZq3k0hTLch7cV/NLFI9tNGUH6jFzHGG1XNC74aJt8vb2kbKB4A2c2+ChegqNaFg
+H0NuTFw29N7lgCgRHY2raLD4cQc7cCBjJXXTEIcZonDHPcSp32ph+wy0uzCcaX5D
+OK3y0YEsDxT4m8MW4aPH4TSx3QBY0Dc8IZUugw2GkY03cYPN2LMFjqbHagtNMtdq
+Pi4K1dWqkkawQ5KuwySxn6okC+vpXSwjZJObo5QgqqoIBv5uc/Ppmo3Il0fK5Cqb
+eEa5SC74W/8cBiZv4yzs9rKblELirWd8rqPFov+1v9YiR+VQsufP7FyvThuhaan+
+OvfdHu43hhBZBtKvO9+vGCzpMlbCP79r5Db7iyWk8ZVSFsuX2Ypq5IRMJTA+9gsR
+Pw0Gre/7Lvm8QHamerDEU3COsMiEtru6qwh1WlHWtXwywFbDrxJEMwJc2q9uk/hD
+LYvtqLm2bYvCKmXeBVW/PVOn7KP2CQjslHXacJatoBN+jiWaW3YJaXgpAdnmCsTO
+zFrqK8q3glwl0y+9VkSrB2528r3QoXGaK3D806GyKStG9KAOxPtre05YZBPxIpnj
+ozmPdsTGZN36QFi3KhWL47lDSKyWZ4HtLKLvXVXQZofW0EsSVc06cic1KMHsqCPm
+KIXzQ+ngWJ3GwZgT3HM0
+=9qhM
+-----END PGP SIGNATURE-----
 
-
--- 
-Chen Gang
-
-Asianux Corporation
+--Signature=_Mon__8_Apr_2013_13_04_55_+1000_mUmBL+=7ZE729zJ7--
