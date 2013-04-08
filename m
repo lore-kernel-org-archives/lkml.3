@@ -1,116 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965136Ab3DHKQi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:16:38 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:9939 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935617Ab3DHKQe (ORCPT
+	id S935596Ab3DHJvm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:51:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42722 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935522Ab3DHJvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 06:16:34 -0400
-X-Spam-Score: -100.7
-Message-ID: <516298E0.9000905@asianux.com>
-Date: Mon, 08 Apr 2013 18:16:00 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: module: strncpy issue, using strlcpy instead
- of strncpy
-References: <51615AB0.9060502@asianux.com> <87r4ila8sb.fsf@rustcorp.com.au>
-In-Reply-To: <87r4ila8sb.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 8 Apr 2013 05:51:37 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Ming Lei <tom.leiming@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 029/102] USB: serial: fix hang when opening port
+Date: Mon,  8 Apr 2013 10:49:44 +0100
+Message-Id: <1365414657-29191-30-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
+References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月08日 13:30, Rusty Russell wrote:
-> Chen Gang <gang.chen@asianux.com> writes:
->> >   ownername and namebuf are all NUL terminated string.
->> >
->> >   need always let them ended by '\0'.
->> >
->> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> > ---
->> >  kernel/module.c |    4 ++--
->> >  1 files changed, 2 insertions(+), 2 deletions(-)
->> >
->> > diff --git a/kernel/module.c b/kernel/module.c
->> > index 3c2c72d..597efd8 100644
->> > --- a/kernel/module.c
->> > +++ b/kernel/module.c
->> > @@ -1283,7 +1283,7 @@ static const struct kernel_symbol *resolve_symbol(struct module *mod,
->> >  
->> >  getname:
->> >  	/* We must make copy under the lock if we failed to get ref. */
->> > -	strncpy(ownername, module_name(owner), MODULE_NAME_LEN);
->> > +	strlcpy(ownername, module_name(owner), MODULE_NAME_LEN);
-> This should just be strcpy().
-> 
+3.5.7.10 -stable review patch.  If anyone has any objections, please let me know.
 
-  for me, either strcpy or strlcpy are ok.
-    strcpy is quicker than strlcpy (in our case, it seems not quite important).
-    strlcpy is more clearer to readers (they do not care about the buffer length again).
+------------------
 
-  since you prefer strcpy, I need respect your (the original maintainer's) willing.
-  so I need change to strcpy.
+From: Ming Lei <tom.leiming@gmail.com>
 
-  :-)
+commit eba0e3c3a0ba7b96f01cbe997680f6a4401a0bfc upstream.
 
+Johan's 'fix use-after-free in TIOCMIWAIT' patchset[1] introduces
+one bug which can cause kernel hang when opening port.
 
->> >  unlock:
->> >  	mutex_unlock(&module_mutex);
->> >  	return sym;
->> > @@ -3464,7 +3464,7 @@ const char *module_address_lookup(unsigned long addr,
->> >  	}
->> >  	/* Make a copy in here where it's safe */
->> >  	if (ret) {
->> > -		strncpy(namebuf, ret, KSYM_NAME_LEN - 1);
->> > +		strlcpy(namebuf, ret, KSYM_NAME_LEN);
-> This isn't a bug, because the caller (kallsyms_lookup) puts a NUL in
-> ret[KSYM_NAME_LEN].
-> 
+This patch initialized the 'port->delta_msr_wait' waitqueue head
+to fix the bug which is introduced in 3.9-rc4.
 
-  originally, it is really not a bug (so subject need delete "strncpy issue").
-  now, I still prefer to set tail '\0' in function module_address_lookup.
-  future, if it is used by others, it is necessary to set tail '\0' in this function.
+[1], http://marc.info/?l=linux-usb&m=136368139627876&w=2
 
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+Acked-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/usb/serial/usb-serial.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-
-and for this patch, is it suitable to send patch v2 ?
-
-
-
-
-> However, kallsyms_lookup also calls kallsyms_expand_symbol, which
-> doesn't stop at KSYM_NAME_LEN, so if a name was longer than that we'd
-> have a real bug.
-> 
-> Would you like to take a look at that, too?
-> 
-
-  it looks like a bug.  for me, I prefer to give length check for it.
-
-  but I am sorry, now, I can not be sure whether it is really a bug.
-
-    I have to need additional time resources to make sure about it.
-      I am not quite familiar with kernel (especially kernel of kernel).
-      I even do not know about kallsyms_names (it seems not a normal variable)
-      I have to spend time resources to process other things within company.
-
-  so I think I should make sure whether it is a bug, before 2013-4-20, is it ok ?
-
-  welcome any suggestions or completions.
-
-
-> Thanks,
-> Rusty.
-> 
-> 
-
-
+diff --git a/drivers/usb/serial/usb-serial.c b/drivers/usb/serial/usb-serial.c
+index 2418551..fb09885 100644
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -899,6 +899,7 @@ static int usb_serial_probe(struct usb_interface *interface,
+ 		port->port.ops = &serial_port_ops;
+ 		port->serial = serial;
+ 		spin_lock_init(&port->lock);
++		init_waitqueue_head(&port->delta_msr_wait);
+ 		/* Keep this for private driver use for the moment but
+ 		   should probably go away */
+ 		INIT_WORK(&port->work, usb_serial_port_work);
 -- 
-Chen Gang
+1.8.1.2
 
-Asianux Corporation
