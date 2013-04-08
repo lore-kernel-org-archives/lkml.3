@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935010Ab3DHLFg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 07:05:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50873 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760137Ab3DHLFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 07:05:34 -0400
-Date: Mon, 8 Apr 2013 13:05:32 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Bin Wang <wbin00@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] scripts/package/Makefile: compare objtree with
- srctree instead of test KBUILD_OUTPUT
-Message-ID: <20130408110532.GA3291@sepie.suse.cz>
-References: <1361761524-9495-1-git-send-email-wbin00@gmail.com>
- <CAD_32VUREUgiBt2ScK31ig-p8282g7VZta+Q6Fq0pkEaDGxm+A@mail.gmail.com>
+	id S934598Ab3DHLNy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 07:13:54 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57106 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762577Ab3DHLNx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 07:13:53 -0400
+Date: Mon, 8 Apr 2013 13:13:28 +0200
+From: Jens Axboe <axboe@kernel.dk>
+To: Tejun Heo <tj@kernel.org>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, robin.randhawa@arm.com, Steve.Bannister@arm.com,
+        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
+        arvind.chauhan@arm.com, davem@davemloft.net, airlied@redhat.com,
+        tglx@linutronix.de, peterz@infradead.org, mingo@redhat.com,
+        rostedt@goodmis.org, linux-rt-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V4 3/4] block: queue work on unbound wq
+Message-ID: <20130408111328.GA12244@kernel.dk>
+References: <cover.1364740180.git.viresh.kumar@linaro.org>
+ <91239cde99aaba2715f63db1f88241d9f4a36e13.1364740180.git.viresh.kumar@linaro.org>
+ <20130331181931.GA7533@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAD_32VUREUgiBt2ScK31ig-p8282g7VZta+Q6Fq0pkEaDGxm+A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130331181931.GA7533@htj.dyndns.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 14, 2013 at 09:30:32AM +0800, Bin Wang wrote:
-> Hi, Michal
+On Sun, Mar 31 2013, Tejun Heo wrote:
+> Hello, Viresh.
 > 
-> Is there any comments on this?
-
-Sorry, I missed this one. I applied it to kbuild.git#misc now.
-
-Michal
+> On Sun, Mar 31, 2013 at 08:01:46PM +0530, Viresh Kumar wrote:
+> > Block layer uses workqueues for multiple purposes. There is no real dependency
+> > of scheduling these on the cpu which scheduled them.
+> > 
+> > On a idle system, it is observed that and idle cpu wakes up many times just to
+> > service this work. It would be better if we can schedule it on a cpu which the
+> > scheduler believes to be the most appropriate one.
+> > 
+> > This patch replaces normal workqueues with UNBOUND versions.
 > 
-> 2013/2/25 Bin Wang <wbin00@gmail.com>:
-> > KBUILD_OUTPUT is always empty here, so it is useless to test it. But
-> > while use O=.., objtree and srctree will be different. I compare them
-> > instead.
-> >
-> > Signed-off-by: Bin Wang <wbin00@gmail.com>
-> > ---
-> >  scripts/package/Makefile | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/scripts/package/Makefile b/scripts/package/Makefile
-> > index 87bf080..d7b3285 100644
-> > --- a/scripts/package/Makefile
-> > +++ b/scripts/package/Makefile
-> > @@ -36,7 +36,7 @@ $(objtree)/kernel.spec: $(MKSPEC) $(srctree)/Makefile
-> >         $(CONFIG_SHELL) $(MKSPEC) > $@
-> >
-> >  rpm-pkg rpm: $(objtree)/kernel.spec FORCE
-> > -       @if test -n "$(KBUILD_OUTPUT)"; then \
-> > +       @if test "$(objtree)" != "$(srctree)"; then \
-> >                 echo "Building source + binary RPM is not possible outside the"; \
-> >                 echo "kernel source tree. Don't set KBUILD_OUTPUT, or use the"; \
-> >                 echo "binrpm-pkg target instead."; \
-> > --
-> > 1.8.1.4
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Hmm.... so, we really don't want to unconditionally convert workqueues
+> to unbound.  Especially not kblockd.  On configurations with multiple
+> high iops devices with IRQ routing, having request completion runinng
+> on the same CPU has significant performance advantages.  We can't
+> simply switch it to an unbound wokrqueue because it saves power on
+> small arm configuration.
+
+I had the same complaint, when it was posted originally...
+
+> Plus, I'd much prefer to be clearly marking the workqueues which would
+> contribute to powersaving when converted to unbound at least until we
+> can come up with a no-compromise solution which doesn't need to trade
+> off between cache locality and powersaving.
+> 
+> So, let's please introduce a new flag to mark these workqueues, say,
+> WQ_UNBOUND_FOR_POWER_SAVE or whatever (please come up with a better
+> name) and provide a compile time switch with boot time override.
+
+And lets please have it off by default. The specialized configs / setups
+can turn it on, but we should default to better performance.
+
+-- 
+Jens Axboe
+
