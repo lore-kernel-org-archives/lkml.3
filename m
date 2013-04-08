@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935407Ab3DHWuW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 18:50:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42107 "EHLO mail.zytor.com"
+	id S936127Ab3DHWvI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 18:51:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42127 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759595Ab3DHWuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 18:50:21 -0400
-Message-ID: <516348F6.1080902@zytor.com>
-Date: Mon, 08 Apr 2013 15:47:18 -0700
+	id S1762821Ab3DHWvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 18:51:06 -0400
+Message-ID: <51634935.9010905@zytor.com>
+Date: Mon, 08 Apr 2013 15:48:21 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
@@ -47,9 +47,7 @@ On 04/08/2013 03:43 PM, Kees Cook wrote:
 > Signed-off-by: Kees Cook <keescook@chromium.org>
 > Cc: Eric Northup <digitaleric@google.com>
 
-This isn't quite what this patch does, though, right?  There is still a
-writable IDT mapping at all times, which is different from a true
-readonly IDT, no?
+Also, tglx: does this interfere with your per-cpu IDT efforts?
 
 	-hpa
 
