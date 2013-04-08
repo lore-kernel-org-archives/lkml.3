@@ -1,88 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964943Ab3DHKAt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:00:49 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:40915 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964931Ab3DHKAq (ORCPT
+	id S935923Ab3DHKA7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:00:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54490 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934889Ab3DHKA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 06:00:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <1365409058-32643-1-git-send-email-amit.daniel@samsung.com>
-References: <1365409058-32643-1-git-send-email-amit.daniel@samsung.com>
-Date: Mon, 8 Apr 2013 15:30:45 +0530
-Message-ID: <CAKohpo==g5AvKdNpi49P6t8TP4i-2pDtNZ30iRyip+mXF8uKEQ@mail.gmail.com>
-Subject: Re: [PATCH V6 0/4] cpufreq: exynos5440: support for cpufreq driver
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>, cpufreq@vger.kernel.org,
-        Inderpal Singh <inderpal.singh@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 8 Apr 2013 06:00:57 -0400
+Message-ID: <1365415249.2609.145.camel@laptop>
+Subject: Re: [RFC PATCH] sched: wake-affine throttle
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Date: Mon, 08 Apr 2013 12:00:49 +0200
+In-Reply-To: <514FDF76.2060806@linux.vnet.ibm.com>
+References: <514FDF76.2060806@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 April 2013 13:47, Amit Daniel Kachhap <amit.daniel@samsung.com> wrote:
-> Submitting the V6 version of exynos5440 cpufreq driver. This patchset addresses
-> all the coding and design concerns raised especially by Viresh.
->
-> Changes in V6:
-> * Used cpufreq post-change notifier call back in case of failure as pointed by
->   Viresh.
-> * Called cpufreq_frequency_table_cpuinfo before calling
->   cpufreq_frequency_table_get_attr as pointed by Viresh.
-> * Used modified API cpufreq_notify_transition.
->
-> Changes in V5:
-> * Removed the unnecessary DT look up entry from mach-exynos5-dt.c.
-> * Fixed all coding and comments issue raised by Viresh.
->
-> Changes in V4:
-> * Added dev_err logs instead of pr_err.
-> * Used the devm_ioremap_resource API.
-> * Implemented several coding guidelines and minor error comments from Sylwester,
->   Russell and Viresh.
->
-> Changes in V3:
-> * Converted the driver to probe based as suggested by Viresh. This is also
->   beneficial for multiplatform kernel.
-> * Other coding guidelines related changes.
-> * Moved the DT node outside cpu0 node as the driver is now a platform
->   driver.
->
-> Changes in V2:
-> * Added OPP library support to parse DT parameters.
-> * Removed a hack to handle interrupts in bootup.
-> * Implemented other review comments from Viresh and Inder.
->
-> All these patches are dependent on Thomas Abraham common clock patches.
-> (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg15860.html)
-> This whole patch series is based on Rafael tree.
-> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git bleeding-edge
->
-> Amit Daniel Kachhap (4):
->   cpufreq: exynos: Add cpufreq driver for exynos5440
->   cpufreq: exynos: Remove error return even if no soc is found
->   arm: exynos: Enable OPP library support for exynos5440
->   arm: dts: Add cpufreq controller node for Exynos5440 SoC
->
->  .../bindings/cpufreq/cpufreq-exynos5440.txt        |   28 ++
->  arch/arm/boot/dts/exynos5440.dtsi                  |   12 +
->  arch/arm/mach-exynos/Kconfig                       |    2 +
->  drivers/cpufreq/Kconfig.arm                        |    9 +
->  drivers/cpufreq/Makefile                           |    1 +
->  drivers/cpufreq/exynos-cpufreq.c                   |    2 +-
->  drivers/cpufreq/exynos5440-cpufreq.c               |  479 ++++++++++++++++++++
->  7 files changed, 532 insertions(+), 1 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/cpufreq/cpufreq-exynos5440.txt
->  create mode 100644 drivers/cpufreq/exynos5440-cpufreq.c
+On Mon, 2013-03-25 at 13:24 +0800, Michael Wang wrote:
+>         if (affine_sd) {
+> -               if (cpu != prev_cpu && wake_affine(affine_sd, p,
+> sync))
+> +               if (cpu != prev_cpu && wake_affine(affine_sd, p,
+> sync)) {
+> +                       /*
+> +                        * wake_affine() stuff try to pull wakee to
+> the cpu
+> +                        * around waker, this will benefit us if the
+> data
+> +                        * cached on waker cpu is hot for wakee, or
+> the extreme
+> +                        * ping-pong case.
+> +                        *
+> +                        * However, do such blindly work too
+> frequently will
+> +                        * cause regression to some workload, thus,
+> each time
+> +                        * when wake_affine() succeed, throttle it for
+> a while.
+> +                        */
+> +                       wake_affine_throttle(p);
+>                         prev_cpu = cpu;
+> +               }
 
-With the resent of 1/4,
+How about only throttling when wake_affine() starts returning false? At
+that point its lost its benefit.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Also, why not place this inside wake_affine() like you did the throttled
+test.
+
