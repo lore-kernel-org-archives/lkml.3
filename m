@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935671Ab3DHSdc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 14:33:32 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:59507 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935562Ab3DHSda (ORCPT
+	id S935451Ab3DHShJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 14:37:09 -0400
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:55855 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934738Ab3DHShH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 14:33:30 -0400
-Date: Mon, 8 Apr 2013 11:33:25 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [GIT PULL] extcon fixes for 3.9-rc6
-Message-ID: <20130408183325.GA22633@kroah.com>
-References: <51622526.8000302@samsung.com>
- <20130408023621.GA5894@kroah.com>
- <51623EEA.80401@samsung.com>
+	Mon, 8 Apr 2013 14:37:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51623EEA.80401@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51626D3D.4000907@redhat.com>
+References: <1365113821-22749-1-git-send-email-yinghai@kernel.org>
+	<1365113821-22749-2-git-send-email-yinghai@kernel.org>
+	<51626D3D.4000907@redhat.com>
+Date: Mon, 8 Apr 2013 11:37:06 -0700
+X-Google-Sender-Auth: 0bB0aOBOeRbJDonrQzvl8xczMHk
+Message-ID: <CAE9FiQUsMGmF2PXMD2W+f7oYBJVudccxoWnisLEsDxXzGgoi0g@mail.gmail.com>
+Subject: Re: [PATCH v3 1/4] x86, kdump: Set crashkernel_low automatically
+From: Yinghai Lu <yinghai@kernel.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 12:52:10PM +0900, Chanwoo Choi wrote:
-> On 04/08/2013 11:36 AM, Greg KH wrote:
-> > On Mon, Apr 08, 2013 at 11:02:14AM +0900, Chanwoo Choi wrote:
-> >> Hi Greg,
-> >>
-> >> This is extcon fixes for 3.9-rc6
-> >> Please pull extcon with following updates.
-> >>
-> >> Best Regards and thanks,
-> >> Chanwoo Choi
-> >>
-> >> The following changes since commit 07961ac7c0ee8b546658717034fe692fd12eefa9:
-> >>
-> >>   Linux 3.9-rc5 (2013-03-31 15:12:43 -0700)
-> >>
-> >> are available in the git repository at:
-> >>
-> >>   git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-3.9-rc6
-> >>
-> >> for you to fetch changes up to 2fbeb4347e02078828510e5fe43ab4bea21b20d1:
-> >>
-> >>   extcon: max8997: Fix return value (2013-04-08 09:13:18 +0900)
-> >>
-> >> ----------------------------------------------------------------
-> >> This is small fixes for extcon driver.
-> >>
-> >> MAX77693 extcon driver
-> >> - Add 'static' keryword to internal data structure
-> >> - Fix return value using 'ret' instead of hardcoding
-> >>
-> >> MAX8997 extcon driver
-> >> - Use dev_err() instead of pr_err()
-> >> - Fix return value using 'ret' instead of hardcoding
-> > None of these should go into 3.9-final, they are all trivial cleanups.
-> > Only major bug fixes or regressions should be sent right now for 3.9,
-> > sorry.
-> >
-> > I will be glad to pull these into my -next branch for 3.10 if you want.
-> >
-> > greg k-h
-> >
-> OK, I agree completely with your opinion. Thanks.
+On Mon, Apr 8, 2013 at 12:09 AM, Dave Young <dyoung@redhat.com> wrote:
+>> We have now modified crashkernel=X to allocate memory beyong 4G (if
+>> available) and do not allocate low range for crashkernel if the user
+>> does not specify that with crashkernel_low=Y.  This causes regression
+>> if iommu is not enabled.  Without iommu, swiotlb needs to be setup in
+>> first 4G and there is no low memory available to second kernel.
+>
+> Is it possible to reuse the 1st kernel swiotlb region in 2nd capture
+> kernel if it's available?
 
-Ok, please resend them, along with any other patches you want to see in
-3.10, very soon, so I can get them merged into my tree.
+If the first kernel is using intel iommu, and swiotlb is freed after intel
+iommus is enabled in first kernel.
 
-thanks.
+>
+>>
+>> Set crashkernel_low automatically if the user does not specify that.
+>>
+>> For system that does support IOMMU with kdump properly, user could
+>> specify crashkernel_low=0 to save that 72M low ram.
+>
+> How about make swiotlb size tunable in 1st kernel as well such as adding
+> a swiotlb_size= to cmdline, if it's set in 1st kernel crashkernel
+> reserving code can take it automaticlly.
+>
+can not understand this.
 
-greg k-h
+Thanks
+
+Yinghai
