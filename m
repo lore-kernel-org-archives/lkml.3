@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935647Ab3DHTAP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 15:00:15 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:51578 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935135Ab3DHTAN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 15:00:13 -0400
+	id S935018Ab3DHTD5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 15:03:57 -0400
+Received: from mout.gmx.net ([212.227.17.22]:52244 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761152Ab3DHTDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 15:03:55 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1/n18psDBTng3PvTxq59FG8hPTPdDkaZhnT2V5uw2
+	bLs7PP5LJViv+R
+Message-ID: <51631497.4070103@gmx.de>
+Date: Mon, 08 Apr 2013 21:03:51 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130405 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <201304081733.15727.chunkeey@googlemail.com>
-References: <CAJ-Vmo=LVSzdEo6DhfOVT_0JHCTMmdPU1zGfMuBmhmr8QuDmJQ@mail.gmail.com>
-	<CAJ-VmomQaYFMR0G1DM+dno6qB+AdXUom8=kWPzJoOjuzQj81bw@mail.gmail.com>
-	<CAFSJ42Zd3s8xKwt4X3LNcupCTntDULxNntMuD-_Xh6_csiGA4A@mail.gmail.com>
-	<201304081733.15727.chunkeey@googlemail.com>
-Date: Mon, 8 Apr 2013 12:00:12 -0700
-X-Google-Sender-Auth: zSuLHJu3QAf0yBdkuWJvFvvEpXk
-Message-ID: <CAJ-VmomS_=1=QLZrfdD4vhu9Qy0w2JNQxEFrkt_OKjWetrWY4w@mail.gmail.com>
-Subject: Re: Version number policy!
-From: Adrian Chadd <adrian@freebsd.org>
-To: Christian Lamparter <chunkeey@googlemail.com>
-Cc: Eugene Krasnikov <k.eugene.e@gmail.com>, Kalle Valo <kvalo@adurom.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        ath9k_htc_fw <ath9k_htc_fw@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: netdev@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: 3.9-rc6 (only) one particular tap device putted into forwarding state
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 April 2013 08:33, Christian Lamparter <chunkeey@googlemail.com> wrote:
-> On Monday, April 08, 2013 11:10:30 AM Eugene Krasnikov wrote:
->> It’s a good idea to pack bitmap into the tail/header of the firmware
->> binary to get capabilities even before fw loading. The plan is to add
->> 8 bytes for caps and also add time stamp. Let me play around with that
->> and provide fw and driver patch for review.
->
-> Hm, come to think of it. Kalle, do you think ath9k_htc could use
-> some bits of the fw header format, parser or the complete infrastructure
-> from ath6kl? This could be great for Adrian, because he could
-> just point people to it and they could moved it into the code
-> into /drivers/net/wireless/ath/fw.c.
+I realized these new syslog messages at a 32 bit stable Gentoo, which have
+4 configured TAP devices attached to a bridge :
 
-Just remember that we (ath9k_htc and carl9170) aren't constrained by
-the same kinds of issues that closed firmware is. So version checks
-aren't that bad, because that way over time we don't end up needing to
-maintain lots of special cases for firmware options.
+2013-04-08T19:55:20.048+02:00 n22 kernel: br0: port 4(tap3) entered forwarding state
+2013-04-08T19:55:20.048+02:00 n22 kernel: br0: port 4(tap3) entered forwarding state
+2013-04-08T19:55:20.316+02:00 n22 kernel: br0: port 4(tap3) entered disabled state
 
-I still like the idea of firmware options for build time options that
-people may wish to use - eg, say we want to support a version of
-ath9k-htc firmware that does offloaded TX rate control, versus not.
-But, maintaining multiple builds of the same firmware is IMHO going to
-be a path towards madness to maintain.
-
-The maintainability is why I'm hoping (!) to keep the number of
-options low and just do "clean slate" moves whenever we shift to the
-next major firmware version.
+This happened one time only and only for one device (for tap3, and all 4 devices are identical configured)
+for one boot attempt till now - no configuration were changed.
 
 
-Adrian
+-- 
+MfG/Sincerely
+Toralf FÃ¶rster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
