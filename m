@@ -1,42 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965154Ab3DHPeM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 11:34:12 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:54487 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S965019Ab3DHPeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 11:34:09 -0400
-Message-ID: <5162E36F.5020305@sgi.com>
-Date: Mon, 8 Apr 2013 10:34:07 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S965188Ab3DHPeT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 11:34:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5544 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965019Ab3DHPeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 11:34:17 -0400
+Date: Mon, 8 Apr 2013 17:32:23 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Borislav Petkov <bp@alien8.de>, Stefan Bader <stefan.bader@canonical.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: x86/mm/pageattr: Code without effect?
+Message-ID: <20130408153223.GA14121@redhat.com>
+References: <515E92CE.2000509@canonical.com>
+ <20130405142104.GB29290@pd.tnic>
+ <20130406145804.GJ3423@redhat.com>
+ <20130408145331.GA3303@dm>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Woodhouse <dwmw2@infradead.org>, <stable@vger.kernel.org>
-Subject: Re: [PATCH resend] fs/proc: Move kfree outside pde_unload_lock
-References: <515D9F8A.2060505@sgi.com> <1365090819-25448-1-git-send-email-nzimmer@sgi.com> <20130404161140.GR21522@ZenIV.linux.org.uk> <515DB465.1060004@sgi.com> <20130404204459.GU21522@ZenIV.linux.org.uk> <515F0456.9040803@sgi.com> <20130405173623.GE4068@ZenIV.linux.org.uk> <515F3A71.9080008@sgi.com> <20130405210042.GH4068@ZenIV.linux.org.uk>
-In-Reply-To: <20130405210042.GH4068@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.162.233.145]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130408145331.GA3303@dm>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2013 04:00 PM, Al Viro wrote:
-> On Fri, Apr 05, 2013 at 03:56:17PM -0500, Nathan Zimmer wrote:
->
->> That didn't produce anything.  I'll run some bisections over the
->> weekend and see what I can sort out.
-> *Ugh*
->
-> I'd try to build with DEBUG_KMEMLEAK and slapped printks on the entry
-> and exit from close_pdeo().  If that doesn't show anything interesting,
-> it's probably unrelated to procfs...
-My bisection pointed me to this commit:  e41efbf13c15
-At this point I am assuming my issue is unrelated to procfs.
+On Mon, Apr 08, 2013 at 03:53:31PM +0100, Andy Whitcroft wrote:
+> On Sat, Apr 06, 2013 at 04:58:04PM +0200, Andrea Arcangeli wrote:
+> 
+> > You're right, so this location clearly didn't trigger the problem so I
+> > didn't notice the noop here. I only exercised the fix in the other
+> > locations of the file that had the same problem.
+> > 
+> > It was a noop, so it really couldn't hurt but the below change should
+> > activate the fix there too. On the same lines, there was a superfluous
+> > initialization of new_prot too which I cleaned up.
+> 
+> Although the new code is essentially noop, the other part of the change
+> in try_preserve_large_page() moves the canon_pgprot() up above the
+> static_protections() incantation which replaces its value, thus we lose
+> the effect of that on the protection bits.  I suspect this only affects
+> older CPUs (?) but I do think there is a negative semantic change here:
+> 
+> +       new_prot = canon_pgprot(new_prot);
+> [...]
+>         new_prot = static_protections(req_prot, address, pfn);
+> [...]
+> -               new_pte = pfn_pte(pte_pfn(old_pte), canon_pgprot(new_prot));
+> +               new_pte = pfn_pte(pte_pfn(old_pte), new_prot);
 
+Agreed, canon_pgprot is only for old cpus so it went unnoticed. The
+patch I posted yesterday will fix that too.
 
+static_protections only clear bits. canon_pgprot only clear bits
+too. So the order won't matter. And unless we want to enforce
+canon_pgprot to always run after static_protections for whatever
+reason it should be fine now. If you want to enforce canon_pgprot to
+always run last let me know.
+
+Thanks,
+Andrea
