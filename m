@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935687Ab3DHJv5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:51:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42794 "EHLO
+	id S935631Ab3DHJvr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:51:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42753 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935670Ab3DHJvy (ORCPT
+	with ESMTP id S935594Ab3DHJvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:51:54 -0400
+	Mon, 8 Apr 2013 05:51:45 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 044/102] USB: mos7840: fix broken TIOCMIWAIT
-Date: Mon,  8 Apr 2013 10:49:59 +0100
-Message-Id: <1365414657-29191-45-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 036/102] USB: ark3116: fix use-after-free in TIOCMIWAIT
+Date: Mon,  8 Apr 2013 10:49:51 +0100
+Message-Id: <1365414657-29191-37-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
@@ -30,44 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit e670c6af12517d08a403487b1122eecf506021cf upstream.
+commit 5018860321dc7a9e50a75d5f319bc981298fb5b7 upstream.
 
-Make sure waiting processes are woken on modem-status changes.
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
 
-Currently processes are only woken on termios changes regardless of
-whether the modem status has changed.
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/mos7840.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ark3116.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
-index 1b5ea51..be5f09b 100644
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -442,6 +442,9 @@ static void mos7840_handle_new_msr(struct moschip_port *port, __u8 new_msr)
- 			icount->rng++;
- 			smp_wmb();
- 		}
+diff --git a/drivers/usb/serial/ark3116.c b/drivers/usb/serial/ark3116.c
+index f8ce97d..15bd068 100644
+--- a/drivers/usb/serial/ark3116.c
++++ b/drivers/usb/serial/ark3116.c
+@@ -68,7 +68,6 @@ static int is_irda(struct usb_serial *serial)
+ }
+ 
+ struct ark3116_private {
+-	wait_queue_head_t       delta_msr_wait;
+ 	struct async_icount	icount;
+ 	int			irda;	/* 1 for irda device */
+ 
+@@ -148,7 +147,6 @@ static int ark3116_attach(struct usb_serial *serial)
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
+-	init_waitqueue_head(&priv->delta_msr_wait);
+ 	mutex_init(&priv->hw_lock);
+ 	spin_lock_init(&priv->status_lock);
+ 
+@@ -461,10 +459,14 @@ static int ark3116_ioctl(struct tty_struct *tty,
+ 	case TIOCMIWAIT:
+ 		for (;;) {
+ 			struct async_icount prev = priv->icount;
+-			interruptible_sleep_on(&priv->delta_msr_wait);
++			interruptible_sleep_on(&port->delta_msr_wait);
+ 			/* see if a signal did it */
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
 +
-+		mos7840_port->delta_msr_cond = 1;
-+		wake_up_interruptible(&mos7840_port->delta_msr_wait);
++			if (port->serial->disconnected)
++				return -EIO;
++
+ 			if ((prev.rng == priv->icount.rng) &&
+ 			    (prev.dsr == priv->icount.dsr) &&
+ 			    (prev.dcd == priv->icount.dcd) &&
+@@ -585,7 +587,7 @@ static void ark3116_update_msr(struct usb_serial_port *port, __u8 msr)
+ 			priv->icount.dcd++;
+ 		if (msr & UART_MSR_TERI)
+ 			priv->icount.rng++;
+-		wake_up_interruptible(&priv->delta_msr_wait);
++		wake_up_interruptible(&port->delta_msr_wait);
  	}
  }
  
-@@ -2096,8 +2099,6 @@ static void mos7840_change_port_settings(struct tty_struct *tty,
- 			mos7840_port->read_urb_busy = false;
- 		}
- 	}
--	wake_up(&mos7840_port->delta_msr_wait);
--	mos7840_port->delta_msr_cond = 1;
- 	dbg("mos7840_change_port_settings mos7840_port->shadowLCR is End %x",
- 	    mos7840_port->shadowLCR);
- }
 -- 
 1.8.1.2
 
