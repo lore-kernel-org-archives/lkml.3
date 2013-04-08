@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933990Ab3DHHMP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 03:12:15 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55153 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932092Ab3DHHMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 03:12:14 -0400
-Message-ID: <51626D88.8020809@ti.com>
-Date: Mon, 8 Apr 2013 09:11:04 +0200
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.4
+	id S934216Ab3DHHNh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 03:13:37 -0400
+Received: from nasmtp02.atmel.com ([204.2.163.16]:5191 "EHLO
+	nasmtp02.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934055Ab3DHHNg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 03:13:36 -0400
+X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Apr 2013 03:13:35 EDT
+Message-ID: <51626C87.6090800@atmel.com>
+Date: Mon, 8 Apr 2013 15:06:47 +0800
+From: Josh Wu <josh.wu@atmel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
-CC: Tony Lindgren <tony@atomide.com>, Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Peter Meerwald <pmeerw@pmeerw.net>
-Subject: Re: [RFC v2] dmaengine: omap-dma: Start DMA without delay for cyclic
- channels
-References: <1364987862-14597-1-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1364987862-14597-1-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+To: Josh Wu <josh.wu@atmel.com>, <akpm@linux-foundation.org>
+CC: <egtvedt@samfundet.no>, <linux-kernel@vger.kernel.org>,
+        <hskinnemoen@gmail.com>, <linux-mtd@lists.infradead.org>,
+        <dedekind1@gmail.com>, <fengguang.wu@intel.com>
+Subject: Re: [PATCH v2] avr32: fix build error in atstk1006_defconfig
+References: <1364797597-22005-1-git-send-email-josh.wu@atmel.com>
+In-Reply-To: <1364797597-22005-1-git-send-email-josh.wu@atmel.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell,
+Hi, Andrew
 
-On 04/03/2013 01:17 PM, Peter Ujfalusi wrote:
-> cyclic DMA is only used by audio which needs DMA to be started without a
-> delay.
-> If the DMA for audio is started using the tasklet we experience random
-> channel switch (to be more precise: channel shift).
-> 
-> Reported-by: Peter Meerwald <pmeerw@pmeerw.net>
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Could you merge it for avr32? Thanks in advance.
+
+Best Regards,
+Josh Wu
+
+On 4/1/2013 2:26 PM, Josh Wu wrote:
+> fixed the following compile error when use avr32 atstk1006_defconfig:
+>    drivers/mtd/nand/atmel_nand.c: In function 'pmecc_err_location':
+>    drivers/mtd/nand/atmel_nand.c:639: error: implicit declaration of function 'writel_relaxed'
+>
+> which was introduced by commit:
+>    1c7b874d33b463f7150b1ab4617f000af9b327fd
+>    mtd: at91: atmel_nand: add Programmable Multibit ECC controller support
+> The PMECC for nand flash code uses writel_relaxed(). But in avr32, there is no
+> macro "writel_relaxed" defined.
+>
+> This patch add writex_relaxed macro definitions.
+>
+> Signed-off-by: Josh Wu <josh.wu@atmel.com>
+> Acked-by: Havard Skinnemoen <havard@skinnemoen.net>
+> Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 > ---
-> Hi Russell,
-> 
-> Instead of removing the tasklet we can identify the DMA channel used by audio
-> based on the cyclic flag of the channel.
-> I think this can be used as a short term solution to fix the audio channel shift
-> issue and later when we have the dynamic DMA channel allocation we can adjust
-> the code.
-
-Could you, please look at this patch?
-
-Thank you,
-Péter
-
-> Regards,
-> Peter
-> 
->  drivers/dma/omap-dma.c | 20 ++++++++++++++------
->  1 file changed, 14 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
-> index 2ea3d7e..ec3fc4f 100644
-> --- a/drivers/dma/omap-dma.c
-> +++ b/drivers/dma/omap-dma.c
-> @@ -282,12 +282,20 @@ static void omap_dma_issue_pending(struct dma_chan *chan)
->  
->  	spin_lock_irqsave(&c->vc.lock, flags);
->  	if (vchan_issue_pending(&c->vc) && !c->desc) {
-> -		struct omap_dmadev *d = to_omap_dma_dev(chan->device);
-> -		spin_lock(&d->lock);
-> -		if (list_empty(&c->node))
-> -			list_add_tail(&c->node, &d->pending);
-> -		spin_unlock(&d->lock);
-> -		tasklet_schedule(&d->task);
-> +		/*
-> +		 * c->cyclic is used only by audio and in this case the DMA need
-> +		 * to be started without delay.
-> +		 */
-> +		if (!c->cyclic) {
-> +			struct omap_dmadev *d = to_omap_dma_dev(chan->device);
-> +			spin_lock(&d->lock);
-> +			if (list_empty(&c->node))
-> +				list_add_tail(&c->node, &d->pending);
-> +			spin_unlock(&d->lock);
-> +			tasklet_schedule(&d->task);
-> +		} else {
-> +			omap_dma_start_desc(c);
-> +		}
->  	}
->  	spin_unlock_irqrestore(&c->vc.lock, flags);
->  }
-> 
+> change since v1:
+>   refined the commit message and wrap it into 80 characters.
+>
+>   arch/avr32/include/asm/io.h |    4 ++++
+>   1 file changed, 4 insertions(+)
+>
+> diff --git a/arch/avr32/include/asm/io.h b/arch/avr32/include/asm/io.h
+> index cf60d0a..fc6483f 100644
+> --- a/arch/avr32/include/asm/io.h
+> +++ b/arch/avr32/include/asm/io.h
+> @@ -165,6 +165,10 @@ BUILDIO_IOPORT(l, u32)
+>   #define readw_be			__raw_readw
+>   #define readl_be			__raw_readl
+>   
+> +#define writeb_relaxed			writeb
+> +#define writew_relaxed			writew
+> +#define writel_relaxed			writel
+> +
+>   #define writeb_be			__raw_writeb
+>   #define writew_be			__raw_writew
+>   #define writel_be			__raw_writel
 
