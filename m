@@ -1,209 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936847Ab3DHK65 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:58:57 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:52889 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935303Ab3DHK6y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 06:58:54 -0400
-Message-ID: <5162A2EB.7030105@hitachi.com>
-Date: Mon, 08 Apr 2013 19:58:51 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S935218Ab3DHLAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 07:00:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37675 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935116Ab3DHLAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 07:00:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,429,1363158000"; 
+   d="scan'208";a="314619826"
+Date: Mon, 8 Apr 2013 14:04:19 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        ben-linux@fluff.org, Jean Delvare <khali@linux-fr.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Christian Ruppert <christian.ruppert@abilis.com>
+Subject: Re: [PATCH 1/7] i2c-designware: move to managed functions (devm_*)
+Message-ID: <20130408110419.GY21804@intel.com>
+References: <1363867800-23861-1-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-To: Oskar Andero <oskar.andero@sonymobile.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        davem@davemloft.net, anil.s.keshavamurthy@intel.com, ananth@in.ibm.com,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, radovan.lekanovic@sonymobile.com,
-        bjorn.davidsson@sonymobile.com,
-        Toby Collett <toby.collett@sonymobile.com>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH v3 1/4] kprobes: delay blacklist symbol lookup until
- we actually need it
-References: <1365168400-17954-1-git-send-email-oskar.andero@sonymobile.com> <1365168400-17954-2-git-send-email-oskar.andero@sonymobile.com>
-In-Reply-To: <1365168400-17954-2-git-send-email-oskar.andero@sonymobile.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363867800-23861-1-git-send-email-mika.westerberg@linux.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/04/05 22:26), Oskar Andero wrote:
-> From: Toby Collett <toby.collett@sonymobile.com>
+Hi Wolfram,
+
+Any comments on this series? Could you consider merging these for 3.10?
+
+Thanks.
+
+On Thu, Mar 21, 2013 at 02:09:54PM +0200, Mika Westerberg wrote:
+> From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 > 
-> The symbol lookup can take a long time and kprobes is
-> initialised very early in boot, so delay symbol lookup
-> until the blacklist is first used.
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thanks!
-
+> This makes the error handling much more simpler than open-coding everything
+> and in addition makes the probe function smaller and tidier.
 > 
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: David S. Miller <davem@davemloft.net>
-> Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
-> Signed-off-by: Toby Collett <toby.collett@sonymobile.com>
-> Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
+> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 > ---
->  kernel/kprobes.c | 100 ++++++++++++++++++++++++++++++++++---------------------
->  1 file changed, 62 insertions(+), 38 deletions(-)
+>  drivers/i2c/busses/i2c-designware-platdrv.c |   73 ++++++++-------------------
+>  1 file changed, 20 insertions(+), 53 deletions(-)
 > 
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index e35be53..c8c2281 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -68,6 +68,7 @@
->  #endif
->  
->  static int kprobes_initialized;
-> +static bool kprobe_blacklist_initialized;
->  static struct hlist_head kprobe_table[KPROBE_TABLE_SIZE];
->  static struct hlist_head kretprobe_inst_table[KPROBE_TABLE_SIZE];
->  
-> @@ -102,6 +103,62 @@ static struct kprobe_blackpoint kprobe_blacklist[] = {
->  	{NULL}    /* Terminator */
->  };
->  
-> +/* it can take some time ( > 100ms ) to initialise the
-> + * blacklist so we delay this until we actually need it
-> + */
-> +static void init_kprobe_blacklist(void)
-> +{
-> +	int i;
-> +	unsigned long offset = 0, size = 0;
-> +	char *modname, namebuf[128];
-> +	const char *symbol_name;
-> +	void *addr;
-> +	struct kprobe_blackpoint *kb;
-> +
-> +	mutex_lock(&kprobe_mutex);
-> +	if (kprobe_blacklist_initialized)
-> +		goto out;
-> +
-> +	/*
-> +	 * Lookup and populate the kprobe_blacklist.
-> +	 *
-> +	 * Unlike the kretprobe blacklist, we'll need to determine
-> +	 * the range of addresses that belong to the said functions,
-> +	 * since a kprobe need not necessarily be at the beginning
-> +	 * of a function.
-> +	 */
-> +	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
-> +		kprobe_lookup_name(kb->name, addr);
-> +		if (!addr)
-> +			continue;
-> +
-> +		kb->start_addr = (unsigned long)addr;
-> +		symbol_name = kallsyms_lookup(kb->start_addr,
-> +				&size, &offset, &modname, namebuf);
-> +		if (!symbol_name)
-> +			kb->range = 0;
-> +		else
-> +			kb->range = size;
-> +	}
-> +
-> +	if (kretprobe_blacklist_size) {
-> +		/* lookup the function address from its name */
-> +		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
-> +			kprobe_lookup_name(kretprobe_blacklist[i].name,
-> +					   kretprobe_blacklist[i].addr);
-> +			if (!kretprobe_blacklist[i].addr)
-> +				printk("kretprobe: lookup failed: %s\n",
-> +				       kretprobe_blacklist[i].name);
-> +		}
-> +	}
-> +
-> +	smp_wmb();
-> +	kprobe_blacklist_initialized = true;
-> +
-> +out:
-> +	mutex_unlock(&kprobe_mutex);
-> +}
-> +
->  #ifdef __ARCH_WANT_KPROBES_INSN_SLOT
->  /*
->   * kprobe->ainsn.insn points to the copy of the instruction to be
-> @@ -1331,6 +1388,9 @@ static int __kprobes in_kprobes_functions(unsigned long addr)
->  	if (addr >= (unsigned long)__kprobes_text_start &&
->  	    addr < (unsigned long)__kprobes_text_end)
->  		return -EINVAL;
-> +
-> +	if (unlikely(!kprobe_blacklist_initialized))
-> +		init_kprobe_blacklist();
->  	/*
->  	 * If there exists a kprobe_blacklist, verify and
->  	 * fail any probe registration in the prohibited area
-> @@ -1816,6 +1876,8 @@ int __kprobes register_kretprobe(struct kretprobe *rp)
->  	void *addr;
->  
->  	if (kretprobe_blacklist_size) {
-> +		if (unlikely(!kprobe_blacklist_initialized))
-> +			init_kprobe_blacklist();
->  		addr = kprobe_addr(&rp->kp);
->  		if (IS_ERR(addr))
->  			return PTR_ERR(addr);
-> @@ -2065,11 +2127,6 @@ static struct notifier_block kprobe_module_nb = {
->  static int __init init_kprobes(void)
+> diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
+> index 0ceb6e1..c19c4ce 100644
+> --- a/drivers/i2c/busses/i2c-designware-platdrv.c
+> +++ b/drivers/i2c/busses/i2c-designware-platdrv.c
+> @@ -92,7 +92,7 @@ static int dw_i2c_probe(struct platform_device *pdev)
 >  {
->  	int i, err = 0;
-> -	unsigned long offset = 0, size = 0;
-> -	char *modname, namebuf[128];
-> -	const char *symbol_name;
-> -	void *addr;
-> -	struct kprobe_blackpoint *kb;
+>  	struct dw_i2c_dev *dev;
+>  	struct i2c_adapter *adap;
+> -	struct resource *mem, *ioarea;
+> +	struct resource *mem;
+>  	int irq, r;
 >  
->  	/* FIXME allocate the probe table, currently defined statically */
->  	/* initialize all list heads */
-> @@ -2079,39 +2136,6 @@ static int __init init_kprobes(void)
->  		raw_spin_lock_init(&(kretprobe_table_locks[i].lock));
+>  	/* NOTE: driver uses the static register mapping */
+> @@ -108,32 +108,27 @@ static int dw_i2c_probe(struct platform_device *pdev)
+>  		return irq; /* -ENXIO */
 >  	}
 >  
-> -	/*
-> -	 * Lookup and populate the kprobe_blacklist.
-> -	 *
-> -	 * Unlike the kretprobe blacklist, we'll need to determine
-> -	 * the range of addresses that belong to the said functions,
-> -	 * since a kprobe need not necessarily be at the beginning
-> -	 * of a function.
-> -	 */
-> -	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
-> -		kprobe_lookup_name(kb->name, addr);
-> -		if (!addr)
-> -			continue;
-> -
-> -		kb->start_addr = (unsigned long)addr;
-> -		symbol_name = kallsyms_lookup(kb->start_addr,
-> -				&size, &offset, &modname, namebuf);
-> -		if (!symbol_name)
-> -			kb->range = 0;
-> -		else
-> -			kb->range = size;
+> -	ioarea = request_mem_region(mem->start, resource_size(mem),
+> -			pdev->name);
+> -	if (!ioarea) {
+> -		dev_err(&pdev->dev, "I2C region already claimed\n");
+> -		return -EBUSY;
+> -	}
+> +	dev = devm_kzalloc(&pdev->dev, sizeof(struct dw_i2c_dev), GFP_KERNEL);
+> +	if (!dev)
+> +		return -ENOMEM;
+>  
+> -	dev = kzalloc(sizeof(struct dw_i2c_dev), GFP_KERNEL);
+> -	if (!dev) {
+> -		r = -ENOMEM;
+> -		goto err_release_region;
+> +	dev->base = devm_ioremap_resource(&pdev->dev, mem);
+> +	if (IS_ERR(dev->base)) {
+> +		dev_err(&pdev->dev, "I2C region already claimed\n");
+> +		return PTR_ERR(dev->base);
+>  	}
+>  
+>  	init_completion(&dev->cmd_complete);
+>  	mutex_init(&dev->lock);
+> -	dev->dev = get_device(&pdev->dev);
+> +	dev->dev = &pdev->dev;
+>  	dev->irq = irq;
+>  	platform_set_drvdata(pdev, dev);
+>  
+> -	dev->clk = clk_get(&pdev->dev, NULL);
+> +	dev->clk = devm_clk_get(&pdev->dev, NULL);
+>  	dev->get_clk_rate_khz = i2c_dw_get_clk_rate_khz;
+>  
+> -	if (IS_ERR(dev->clk)) {
+> -		r = -ENODEV;
+> -		goto err_free_mem;
+> -	}
+> +	if (IS_ERR(dev->clk))
+> +		return PTR_ERR(dev->clk);
+>  	clk_prepare_enable(dev->clk);
+>  
+>  	dev->functionality =
+> @@ -146,13 +141,6 @@ static int dw_i2c_probe(struct platform_device *pdev)
+>  	dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
+>  		DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_FAST;
+>  
+> -	dev->base = ioremap(mem->start, resource_size(mem));
+> -	if (dev->base == NULL) {
+> -		dev_err(&pdev->dev, "failure mapping io resources\n");
+> -		r = -EBUSY;
+> -		goto err_unuse_clocks;
 > -	}
 > -
-> -	if (kretprobe_blacklist_size) {
-> -		/* lookup the function address from its name */
-> -		for (i = 0; kretprobe_blacklist[i].name != NULL; i++) {
-> -			kprobe_lookup_name(kretprobe_blacklist[i].name,
-> -					   kretprobe_blacklist[i].addr);
-> -			if (!kretprobe_blacklist[i].addr)
-> -				printk("kretprobe: lookup failed: %s\n",
-> -				       kretprobe_blacklist[i].name);
-> -		}
-> -	}
+>  	/* Try first if we can configure the device from ACPI */
+>  	r = dw_i2c_acpi_configure(pdev);
+>  	if (r) {
+> @@ -164,13 +152,14 @@ static int dw_i2c_probe(struct platform_device *pdev)
+>  	}
+>  	r = i2c_dw_init(dev);
+>  	if (r)
+> -		goto err_iounmap;
+> +		return r;
+>  
+>  	i2c_dw_disable_int(dev);
+> -	r = request_irq(dev->irq, i2c_dw_isr, IRQF_SHARED, pdev->name, dev);
+> +	r = devm_request_irq(&pdev->dev, dev->irq, i2c_dw_isr, IRQF_SHARED,
+> +			pdev->name, dev);
+>  	if (r) {
+>  		dev_err(&pdev->dev, "failure requesting irq %i\n", dev->irq);
+> -		goto err_iounmap;
+> +		return r;
+>  	}
+>  
+>  	adap = &dev->adapter;
+> @@ -187,57 +176,35 @@ static int dw_i2c_probe(struct platform_device *pdev)
+>  	r = i2c_add_numbered_adapter(adap);
+>  	if (r) {
+>  		dev_err(&pdev->dev, "failure adding adapter\n");
+> -		goto err_free_irq;
+> +		return r;
+>  	}
+>  	of_i2c_register_devices(adap);
+>  	acpi_i2c_register_devices(adap);
+>  
+> +	/* Increase reference counter */
+> +	get_device(&pdev->dev);
+> +
+>  	pm_runtime_set_active(&pdev->dev);
+>  	pm_runtime_enable(&pdev->dev);
+>  	pm_runtime_put(&pdev->dev);
+>  
+>  	return 0;
 > -
->  #if defined(CONFIG_OPTPROBES)
->  #if defined(__ARCH_WANT_KPROBES_INSN_SLOT)
->  	/* Init kprobe_optinsn_slots */
-> 
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+> -err_free_irq:
+> -	free_irq(dev->irq, dev);
+> -err_iounmap:
+> -	iounmap(dev->base);
+> -err_unuse_clocks:
+> -	clk_disable_unprepare(dev->clk);
+> -	clk_put(dev->clk);
+> -	dev->clk = NULL;
+> -err_free_mem:
+> -	put_device(&pdev->dev);
+> -	kfree(dev);
+> -err_release_region:
+> -	release_mem_region(mem->start, resource_size(mem));
+> -
+> -	return r;
+>  }
+>  
+>  static int dw_i2c_remove(struct platform_device *pdev)
+>  {
+>  	struct dw_i2c_dev *dev = platform_get_drvdata(pdev);
+> -	struct resource *mem;
+>  
+>  	pm_runtime_get_sync(&pdev->dev);
+>  
+>  	i2c_del_adapter(&dev->adapter);
+>  	put_device(&pdev->dev);
+>  
+> -	clk_disable_unprepare(dev->clk);
+> -	clk_put(dev->clk);
+> -	dev->clk = NULL;
+> -
+>  	i2c_dw_disable(dev);
+> -	free_irq(dev->irq, dev);
+> -	kfree(dev);
+>  
+>  	pm_runtime_put(&pdev->dev);
+>  	pm_runtime_disable(&pdev->dev);
+>  
+> -	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	release_mem_region(mem->start, resource_size(mem));
+>  	return 0;
+>  }
+>  
+> -- 
+> 1.7.10.4
