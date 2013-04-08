@@ -1,65 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936357Ab3DHKLU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:11:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42833 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935713Ab3DHJwD (ORCPT
+	id S936338Ab3DHKLS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:11:18 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:53667 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935736Ab3DHKLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:52:03 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Josef Bacik <jbacik@fusionio.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 052/102] Btrfs: use set_nlink if our i_nlink is 0
-Date: Mon,  8 Apr 2013 10:50:07 +0100
-Message-Id: <1365414657-29191-53-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
-References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Mon, 8 Apr 2013 06:11:14 -0400
+From: Gabriel <g2p.code@gmail.com>
+To: Kent Overstreet <koverstreet@google.com>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Gabriel <g2p.code+bcache@gmail.com>
+Subject: [PATCH] bcache: Take data offset from the bdev superblock.
+Date: Mon,  8 Apr 2013 12:11:06 +0200
+Message-Id: <1365415866-16344-1-git-send-email-g2p.code+bcache@gmail.com>
+X-Mailer: git-send-email 1.8.2.rc3.7.g35aca0e
+In-Reply-To: <51629766.6030805@gmail.com>
+References: <51629766.6030805@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.10 -stable review patch.  If anyone has any objections, please let me know.
+Add a new superblock version, and consolidate related defines.
 
-------------------
-
-From: Josef Bacik <jbacik@fusionio.com>
-
-commit 9bf7a4890518186238d2579be16ecc5190a707c0 upstream.
-
-We need to inc the nlink of deleted entries when running replay so we can do the
-unlink on the fs_root and get everything cleaned up and then have the orphan
-cleanup do the right thing.  The problem is inc_nlink complains about this, even
-thought it still does the right thing.  So use set_nlink() if our i_nlink is 0
-to keep users from seeing the warnings during log replay.  Thanks,
-
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-[ luis: adjust context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Gabriel de Perthuis <g2p.code+bcache@gmail.com>
 ---
- fs/btrfs/tree-log.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/md/bcache/bcache.h  | 23 ++++++++++++++++++-----
+ drivers/md/bcache/request.c |  2 +-
+ drivers/md/bcache/super.c   | 21 ++++++++++++++++-----
+ 3 files changed, 35 insertions(+), 11 deletions(-)
 
-diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
-index 8abeae4..aad8644 100644
---- a/fs/btrfs/tree-log.c
-+++ b/fs/btrfs/tree-log.c
-@@ -1132,7 +1132,10 @@ static noinline int link_to_fixup_dir(struct btrfs_trans_handle *trans,
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index f057235..8a110e6 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -223,11 +223,17 @@ struct bkey {
+ #define BKEY_PADDED(key)					\
+ 	union { struct bkey key; uint64_t key ## _pad[BKEY_PAD]; }
  
- 	btrfs_release_path(path);
- 	if (ret == 0) {
--		btrfs_inc_nlink(inode);
-+		if (!inode->i_nlink)
-+			set_nlink(inode, 1);
-+		else
-+			btrfs_inc_nlink(inode);
- 		btrfs_update_inode(trans, root, inode);
- 	} else if (ret == -EEXIST) {
- 		ret = 0;
+-/* Version 1: Backing device
++/* Version 0: Cache device
++ * Version 1: Backing device
+  * Version 2: Seed pointer into btree node checksum
+- * Version 3: New UUID format
++ * Version 3: Cache device with new UUID format
++ * Version 4: Backing device with data offset
+  */
+-#define BCACHE_SB_VERSION	3
++#define BCACHE_SB_VERSION_CDEV			0
++#define BCACHE_SB_VERSION_BDEV			1
++#define BCACHE_SB_VERSION_CDEV_WITH_UUID	3
++#define BCACHE_SB_VERSION_BDEV_WITH_OFFSET	4
++#define BCACHE_SB_MAX_VERSION			4
+ 
+ #define SB_SECTOR		8
+ #define SB_SIZE			4096
+@@ -236,13 +242,12 @@ struct bkey {
+ /* SB_JOURNAL_BUCKETS must be divisible by BITS_PER_LONG */
+ #define MAX_CACHES_PER_SET	8
+ 
+-#define BDEV_DATA_START		16	/* sectors */
++#define BDEV_DATA_START_DEFAULT	16	/* sectors */
+ 
+ struct cache_sb {
+ 	uint64_t		csum;
+ 	uint64_t		offset;	/* sector where this sb was written */
+ 	uint64_t		version;
+-#define CACHE_BACKING_DEV	1
+ 
+ 	uint8_t			magic[16];
+ 
+@@ -485,6 +490,7 @@ struct cached_dev {
+ 	 * where it's at.
+ 	 */
+ 	sector_t		last_read;
++	sector_t		data_start_sector;
+ 
+ 	/* Number of writeback bios in flight */
+ 	atomic_t		in_flight;
+@@ -861,6 +867,13 @@ static inline bool key_merging_disabled(struct cache_set *c)
+ #endif
+ }
+ 
++
++static inline bool SB_IS_BDEV(const struct cache_sb *sb) {
++	return sb->version == BCACHE_SB_VERSION_BDEV
++		|| sb->version == BCACHE_SB_VERSION_BDEV_WITH_OFFSET;
++}
++
++
+ struct bbio {
+ 	unsigned		submit_time_us;
+ 	union {
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 83731dc..9f74aff 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -1220,7 +1220,7 @@ static void cached_dev_make_request(struct request_queue *q, struct bio *bio)
+ 	part_stat_unlock();
+ 
+ 	bio->bi_bdev = dc->bdev;
+-	bio->bi_sector += BDEV_DATA_START;
++	bio->bi_sector += dc->data_start_sector;
+ 
+ 	if (cached_dev_get(dc)) {
+ 		s = search_alloc(bio, d);
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 5fa3cd2..a409bb5 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -148,7 +148,7 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
+ 		goto err;
+ 
+ 	err = "Unsupported superblock version";
+-	if (sb->version > BCACHE_SB_VERSION)
++	if (sb->version > BCACHE_SB_MAX_VERSION)
+ 		goto err;
+ 
+ 	err = "Bad block/bucket size";
+@@ -168,7 +168,7 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
+ 	if (get_capacity(bdev->bd_disk) < sb->bucket_size * sb->nbuckets)
+ 		goto err;
+ 
+-	if (sb->version == CACHE_BACKING_DEV)
++	if (SB_IS_BDEV(sb))
+ 		goto out;
+ 
+ 	err = "Bad UUID";
+@@ -286,7 +286,7 @@ void bcache_write_super(struct cache_set *c)
+ 	for_each_cache(ca, c, i) {
+ 		struct bio *bio = &ca->sb_bio;
+ 
+-		ca->sb.version		= BCACHE_SB_VERSION;
++		ca->sb.version		= BCACHE_SB_VERSION_CDEV_WITH_UUID;
+ 		ca->sb.seq		= c->sb.seq;
+ 		ca->sb.last_mount	= c->sb.last_mount;
+ 
+@@ -1047,9 +1047,20 @@ static const char *register_bdev(struct cache_sb *sb, struct page *sb_page,
+ 	dc->bdev = bdev;
+ 	dc->bdev->bd_holder = dc;
+ 
++	err = "bad start sector";
++	if (sb->version == BCACHE_SB_VERSION_BDEV) {
++		dc->data_start_sector = BDEV_DATA_START_DEFAULT;
++	} else {
++		if (sb->keys < 1)
++			goto err;
++		dc->data_start_sector = sb->d[0];
++		if (dc->data_start_sector < BDEV_DATA_START_DEFAULT)
++			goto err;
++	}
++
+ 	g = dc->disk.disk;
+ 
+-	set_capacity(g, dc->bdev->bd_part->nr_sects - 16);
++	set_capacity(g, dc->bdev->bd_part->nr_sects - dc->data_start_sector);
+ 
+ 	bch_cached_dev_request_init(dc);
+ 
+@@ -1802,7 +1813,7 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 	if (err)
+ 		goto err_close;
+ 
+-	if (sb->version == CACHE_BACKING_DEV) {
++	if (SB_IS_BDEV(sb)) {
+ 		struct cached_dev *dc = kzalloc(sizeof(*dc), GFP_KERNEL);
+ 
+ 		err = register_bdev(sb, sb_page, bdev, dc);
 -- 
-1.8.1.2
+1.8.2.rc3.7.g35aca0e
 
