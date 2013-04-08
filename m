@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934769Ab3DHISY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 04:18:24 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:59842 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934734Ab3DHISU (ORCPT
+	id S934816Ab3DHITI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 04:19:08 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:53535 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934558Ab3DHITE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 04:18:20 -0400
-From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-To: linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>, cpufreq@vger.kernel.org,
-        Inderpal Singh <inderpal.singh@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [PATCH V6 4/4] arm: dts: Add cpufreq controller node for Exynos5440 SoC
-Date: Mon,  8 Apr 2013 13:47:38 +0530
-Message-Id: <1365409058-32643-5-git-send-email-amit.daniel@samsung.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1365409058-32643-1-git-send-email-amit.daniel@samsung.com>
-References: <1365409058-32643-1-git-send-email-amit.daniel@samsung.com>
+	Mon, 8 Apr 2013 04:19:04 -0400
+Date: Mon, 8 Apr 2013 16:18:31 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: jkosina@suse.cz
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
+        alex.williamson@redhat.com, joerg.roedel@amd.com
+Subject: [PATCH][TRIVIAL] iommu: Include linux/err.h
+Message-ID: <20130408081831.GA22583@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>, jkosina@suse.cz,
+	linux-kernel@vger.kernel.org, trivial@kernel.org,
+	alex.williamson@redhat.com, joerg.roedel@amd.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add cpufreq controller device node for Exynos5440 SoC for passing
-parameters like controller base address, interrupt and cpufreq
-table. This node is added outside cpu0 as this driver is now a platform
-driver and a new device structure is needed.
+The linux/iommu.h header uses ERR_PTR defined
+in linux/err.h but doesn't include it.
 
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Wang YanQing <udknight@gmail.com>
 ---
- arch/arm/boot/dts/exynos5440.dtsi |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+ I send this twice to joerg.roedel@amd.com more than one
+ month, but it had been ignored, I don't why.
 
-diff --git a/arch/arm/boot/dts/exynos5440.dtsi b/arch/arm/boot/dts/exynos5440.dtsi
-index 9a99755..94074ea 100644
---- a/arch/arm/boot/dts/exynos5440.dtsi
-+++ b/arch/arm/boot/dts/exynos5440.dtsi
-@@ -63,6 +63,18 @@
+ include/linux/iommu.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index f3b99e1..f4a49a6 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -20,6 +20,7 @@
+ #define __LINUX_IOMMU_H
  
- 	};
+ #include <linux/errno.h>
++#include <linux/err.h>
+ #include <linux/types.h>
  
-+	cpufreq@160000 {
-+		compatible = "samsung,exynos5440-cpufreq";
-+		reg = <0x160000 0x1000>;
-+		interrupts = <0 57 0>;
-+		operating-points = <
-+				/* KHz	  uV */
-+				1200000 1025000
-+				1000000 975000
-+				800000  925000
-+		>;
-+	};
-+
- 	serial@B0000 {
- 		compatible = "samsung,exynos4210-uart";
- 		reg = <0xB0000 0x1000>;
+ #define IOMMU_READ	(1)
 -- 
-1.7.1
-
+1.7.11.1.116.g8228a23
