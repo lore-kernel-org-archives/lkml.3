@@ -1,68 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934957Ab3DHGdf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 02:33:35 -0400
-Received: from ozlabs.org ([203.10.76.45]:46497 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934944Ab3DHGdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 02:33:33 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: "linux-kernel\@vger.kernel.org \>\> \"linux-kernel\@vger.kernel.org\"" 
-	<linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: module: strncpy issue, using strlcpy instead of strncpy
-In-Reply-To: <51615AB0.9060502@asianux.com>
-References: <51615AB0.9060502@asianux.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 08 Apr 2013 15:00:44 +0930
-Message-ID: <87r4ila8sb.fsf@rustcorp.com.au>
+	id S934975Ab3DHGdm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 02:33:42 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:3465 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932829Ab3DHGdj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 02:33:39 -0400
+Message-ID: <5162649F.40108@huawei.com>
+Date: Mon, 8 Apr 2013 14:33:03 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: [PATCH 01/12] memcg: take reference before releasing rcu_read_lock
+References: <5162648B.9070802@huawei.com>
+In-Reply-To: <5162648B.9070802@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chen Gang <gang.chen@asianux.com> writes:
->   ownername and namebuf are all NUL terminated string.
->
->   need always let them ended by '\0'.
->
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  kernel/module.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 3c2c72d..597efd8 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -1283,7 +1283,7 @@ static const struct kernel_symbol *resolve_symbol(struct module *mod,
->  
->  getname:
->  	/* We must make copy under the lock if we failed to get ref. */
-> -	strncpy(ownername, module_name(owner), MODULE_NAME_LEN);
-> +	strlcpy(ownername, module_name(owner), MODULE_NAME_LEN);
+The memcg is not referenced, so it can be destroyed at anytime right
+after we exit rcu read section, so it's not safe to access it.
 
-This should just be strcpy().
+To fix this, we call css_tryget() to get a reference while we're still
+in rcu read section.
 
->  unlock:
->  	mutex_unlock(&module_mutex);
->  	return sym;
-> @@ -3464,7 +3464,7 @@ const char *module_address_lookup(unsigned long addr,
->  	}
->  	/* Make a copy in here where it's safe */
->  	if (ret) {
-> -		strncpy(namebuf, ret, KSYM_NAME_LEN - 1);
-> +		strlcpy(namebuf, ret, KSYM_NAME_LEN);
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Acked-by: Glauber Costa <glommer@parallels.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c | 63 ++++++++++++++++++++++++++++++---------------------------
+ 1 file changed, 33 insertions(+), 30 deletions(-)
 
-This isn't a bug, because the caller (kallsyms_lookup) puts a NUL in
-ret[KSYM_NAME_LEN].
-
-However, kallsyms_lookup also calls kallsyms_expand_symbol, which
-doesn't stop at KSYM_NAME_LEN, so if a name was longer than that we'd
-have a real bug.
-
-Would you like to take a look at that, too?
-
-Thanks,
-Rusty.
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index d280016..e054ac0 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3460,7 +3460,6 @@ static void memcg_create_cache_work_func(struct work_struct *w)
+ 
+ /*
+  * Enqueue the creation of a per-memcg kmem_cache.
+- * Called with rcu_read_lock.
+  */
+ static void __memcg_create_cache_enqueue(struct mem_cgroup *memcg,
+ 					 struct kmem_cache *cachep)
+@@ -3468,12 +3467,8 @@ static void __memcg_create_cache_enqueue(struct mem_cgroup *memcg,
+ 	struct create_work *cw;
+ 
+ 	cw = kmalloc(sizeof(struct create_work), GFP_NOWAIT);
+-	if (cw == NULL)
+-		return;
+-
+-	/* The corresponding put will be done in the workqueue. */
+-	if (!css_tryget(&memcg->css)) {
+-		kfree(cw);
++	if (cw == NULL) {
++		css_put(&memcg->css);
+ 		return;
+ 	}
+ 
+@@ -3529,10 +3524,9 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
+ 
+ 	rcu_read_lock();
+ 	memcg = mem_cgroup_from_task(rcu_dereference(current->mm->owner));
+-	rcu_read_unlock();
+ 
+ 	if (!memcg_can_account_kmem(memcg))
+-		return cachep;
++		goto out;
+ 
+ 	idx = memcg_cache_id(memcg);
+ 
+@@ -3541,29 +3535,38 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
+ 	 * code updating memcg_caches will issue a write barrier to match this.
+ 	 */
+ 	read_barrier_depends();
+-	if (unlikely(cachep->memcg_params->memcg_caches[idx] == NULL)) {
+-		/*
+-		 * If we are in a safe context (can wait, and not in interrupt
+-		 * context), we could be be predictable and return right away.
+-		 * This would guarantee that the allocation being performed
+-		 * already belongs in the new cache.
+-		 *
+-		 * However, there are some clashes that can arrive from locking.
+-		 * For instance, because we acquire the slab_mutex while doing
+-		 * kmem_cache_dup, this means no further allocation could happen
+-		 * with the slab_mutex held.
+-		 *
+-		 * Also, because cache creation issue get_online_cpus(), this
+-		 * creates a lock chain: memcg_slab_mutex -> cpu_hotplug_mutex,
+-		 * that ends up reversed during cpu hotplug. (cpuset allocates
+-		 * a bunch of GFP_KERNEL memory during cpuup). Due to all that,
+-		 * better to defer everything.
+-		 */
+-		memcg_create_cache_enqueue(memcg, cachep);
+-		return cachep;
++	if (likely(cachep->memcg_params->memcg_caches[idx])) {
++		cachep = cachep->memcg_params->memcg_caches[idx];
++		goto out;
+ 	}
+ 
+-	return cachep->memcg_params->memcg_caches[idx];
++	/* The corresponding put will be done in the workqueue. */
++	if (!css_tryget(&memcg->css))
++		goto out;
++	rcu_read_unlock();
++
++	/*
++	 * If we are in a safe context (can wait, and not in interrupt
++	 * context), we could be be predictable and return right away.
++	 * This would guarantee that the allocation being performed
++	 * already belongs in the new cache.
++	 *
++	 * However, there are some clashes that can arrive from locking.
++	 * For instance, because we acquire the slab_mutex while doing
++	 * kmem_cache_dup, this means no further allocation could happen
++	 * with the slab_mutex held.
++	 *
++	 * Also, because cache creation issue get_online_cpus(), this
++	 * creates a lock chain: memcg_slab_mutex -> cpu_hotplug_mutex,
++	 * that ends up reversed during cpu hotplug. (cpuset allocates
++	 * a bunch of GFP_KERNEL memory during cpuup). Due to all that,
++	 * better to defer everything.
++	 */
++	memcg_create_cache_enqueue(memcg, cachep);
++	return cachep;
++out:
++	rcu_read_unlock();
++	return cachep;
+ }
+ EXPORT_SYMBOL(__memcg_kmem_get_cache);
+ 
+-- 
+1.8.0.2
