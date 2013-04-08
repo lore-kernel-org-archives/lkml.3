@@ -1,85 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934734Ab3DHQ1z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 12:27:55 -0400
-Received: from f51.mail.ru ([217.69.128.71]:56845 "EHLO f51.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759492Ab3DHQ1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 12:27:54 -0400
-X-Greylist: delayed 42117 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Apr 2013 12:27:53 EDT
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?U2FtdWVsIE9ydGl6?= <sameo@linux.intel.com>
-Cc: =?UTF-8?B?U3RlcGhlbiBSb3Rod2VsbA==?= <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: =?UTF-8?B?UmVbMl06IGxpbnV4LW5leHQ6IGJ1aWxkIGZhaWx1cmUgYWZ0ZXIgbWVyZ2Ug?=
- =?UTF-8?B?b2YgdGhlIG1mZCB0cmVl?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [188.134.40.128]
-Date: Mon, 08 Apr 2013 20:27:49 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1365438469.322553103@f51.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Spam: Not detected
-X-Mras: Ok
-In-Reply-To: <20130408092243.GK24058@zurbaran>
-References: <20130408142124.ac540429a889cdc9800e529a@canb.auug.org.au>
- <1365396351.542317232@f36.mail.ru>
- <20130408092243.GK24058@zurbaran>
+	id S934845Ab3DHQ2P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 12:28:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38466 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934715Ab3DHQ2N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 12:28:13 -0400
+Date: Mon, 8 Apr 2013 09:27:21 -0700
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-e277a49385743dfa69a7adbb1ff19732d83d258c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, bp@suse.de
+In-Reply-To: <1365436666-9837-3-git-send-email-bp@alien8.de>
+References: <1365436666-9837-3-git-send-email-bp@alien8.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpu] x86: Fold-in trivial check_config function
+Git-Commit-ID: e277a49385743dfa69a7adbb1ff19732d83d258c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 08 Apr 2013 09:27:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r38GRtJS028616
 
-> > > After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
-> > > failed like this:
-> > > 
-> > > drivers/regulator/anatop-regulator.c: In function 'anatop_regulator_probe':
-> > > drivers/regulator/anatop-regulator.c:134:2: error: implicit declaration of function 'of_get_parent' [-Werror=implicit-function-declaration]
-> > > 
-> > > Caused by commit 5ab3a89a741f ("mfd: syscon: Add non-DT support").
-> > > 
-> > > I have used the mfd tree from next-20130405 for today.
-> > 
-> > This means that we do not have empty declarations for the
-> > of_xx functions in linux/of.h for !CONFIG_OF.
-> > OK to declare these functions or any other opinions?
-> Ok with me, but you'd need to get Grant and Rob's ACK.
+Commit-ID:  e277a49385743dfa69a7adbb1ff19732d83d258c
+Gitweb:     http://git.kernel.org/tip/e277a49385743dfa69a7adbb1ff19732d83d258c
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Mon, 8 Apr 2013 17:57:44 +0200
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Mon, 8 Apr 2013 09:07:17 -0700
 
-I've revised my initial opinion and write ‚Äã‚Äãa quick patch for fix this issue.
+x86: Fold-in trivial check_config function
 
->From a884d309d2978cbc44c52b650d669e56fef664e2 Mon Sep 17 00:00:00 2001
-From: Alexander Shiyan <shc_work@mail.ru>
-Date: Mon, 8 Apr 2013 19:13:10 +0400
-Subject: [PATCH] regulator: anatop: Make select dependency from
- HAVE_IMX_ANATOP symbol
+Fold it into its single call site. No functionality change.
 
-This patch make selection of anatop-regulator from HAVE_IMX_ANATOP
-kernel symbol. This fixes build kernel with syscon driver but without
-oftree support.
-
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1365436666-9837-3-git-send-email-bp@alien8.de
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- drivers/regulator/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/cpu/bugs.c | 27 +++++++++++----------------
+ 1 file changed, 11 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index a5d97ea..078932d 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -133,7 +133,7 @@ config REGULATOR_FAN53555
+diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
+index efa24c0..0344534 100644
+--- a/arch/x86/kernel/cpu/bugs.c
++++ b/arch/x86/kernel/cpu/bugs.c
+@@ -63,21 +63,6 @@ static void __init check_fpu(void)
+ 	}
+ }
  
- config REGULATOR_ANATOP
- 	tristate "Freescale i.MX on-chip ANATOP LDO regulators"
--	depends on MFD_SYSCON
-+	depends on HAVE_IMX_ANATOP
- 	help
- 	  Say y here to support Freescale i.MX on-chip ANATOP LDOs
- 	  regulators. It is recommended that this option be
--- 
-1.8.1.5
-
----
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-/*
+- * Check whether we are able to run this kernel safely on SMP.
+- *
+- * - i386 is no longer supported.
+- * - In order to run on anything without a TSC, we need to be
+- *   compiled for a i486.
+- */
+-
+-static void __init check_config(void)
+-{
+-	if (boot_cpu_data.x86 < 4)
+-		panic("Kernel requires i486+ for 'invlpg' and other features");
+-}
+-
+-
+ void __init check_bugs(void)
+ {
+ 	identify_boot_cpu();
+@@ -85,7 +70,17 @@ void __init check_bugs(void)
+ 	pr_info("CPU: ");
+ 	print_cpu_info(&boot_cpu_data);
+ #endif
+-	check_config();
++
++	/*
++	 * Check whether we are able to run this kernel safely on SMP.
++	 *
++	 * - i386 is no longer supported.
++	 * - In order to run on anything without a TSC, we need to be
++	 *   compiled for a i486.
++	 */
++	if (boot_cpu_data.x86 < 4)
++		panic("Kernel requires i486+ for 'invlpg' and other features");
++
+ 	init_utsname()->machine[1] =
+ 		'0' + (boot_cpu_data.x86 > 6 ? 6 : boot_cpu_data.x86);
+ 	alternative_instructions();
