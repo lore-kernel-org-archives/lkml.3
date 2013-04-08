@@ -1,78 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965249Ab3DHOuS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 10:50:18 -0400
-Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:6254
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965236Ab3DHOuQ (ORCPT
+	id S965264Ab3DHOu0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 10:50:26 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:55841 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965236Ab3DHOuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 10:50:16 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Mon, 8 Apr 2013 22:50:21 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Hector Palacios <hector.palacios@digi.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "marex@denx.de" <marex@denx.de>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>
-Subject: Re: [PATCH RFC] ARM: dts: mxs: leave card detect out of common mmc
- pins config
-Message-ID: <20130408145019.GD5044@S2101-09.ap.freescale.net>
-References: <1365415940-11609-1-git-send-email-hector.palacios@digi.com>
- <20130408124810.GC5044@S2101-09.ap.freescale.net>
- <5162CCED.4070707@digi.com>
+	Mon, 8 Apr 2013 10:50:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <5162CCED.4070707@digi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+In-Reply-To: <1365431470.2733.16.camel@fedora>
+References: <alpine.LFD.2.02.1304031433350.21884@ionos>
+	<1364998282-21437-1-git-send-email-vgupta@synopsys.com>
+	<20130404152808.GB15261@ab42.lan>
+	<515E54BD.2090300@synopsys.com>
+	<51602459.3040105@synopsys.com>
+	<CA+55aFw=-oJxujka-emxyRcY54MSe3qEjZ6xgzoE-roe3EFk5g@mail.gmail.com>
+	<51624591.4010303@synopsys.com>
+	<CA+55aFyFWjpSVQM6M266tKrG_ZXJzZ-nYejpmXYQXbrr42mGPQ@mail.gmail.com>
+	<1365428274.2609.160.camel@laptop>
+	<1365431470.2733.16.camel@fedora>
+Date: Mon, 8 Apr 2013 07:50:19 -0700
+X-Google-Sender-Auth: uTmlnV_LID7vUkHGIs8AY-P2oqw
+Message-ID: <CA+55aFx88-t_pm5hbxbrrhqm3_=+JQussO=zD1kT+05UVCAFCA@mail.gmail.com>
+Subject: Re: [PATCH] [PATCH] Gaurantee spinlocks implicit barrier for !PREEMPT_COUNT
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Steven Rostedt <srostedt@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 03:58:05PM +0200, Hector Palacios wrote:
-> On 04/08/2013 02:48 PM, Shawn Guo wrote:
-> >On Mon, Apr 08, 2013 at 12:12:20PM +0200, Hector Palacios wrote:
-> >>MicroSD card sockets don't usually have card detect line. This pin
-> >>is actually not needed for the MMC to work and it is more of a
-> >>platform design decission to have it.
-> >>The card detect pin already has a configuration entry of its own:
-> >>'mmc0_cd_cfg' so we complete the iomux configuration here and let
-> >>platforms to include it or not depending on whether the card detect
-> >>line is routed to the SD socket.
-> >>
-> >Sounds sensible.
-> >
-> >>Signed-off-by: Hector Palacios <hector.palacios@digi.com>
-> >>---
-> >>
-> >>Hello,
-> >>
-> >>All imx28 based platforms except 'bluegiga,apx4devkit' and
-> >>'schulercontrol,imx28-sps1', use 'mmc0_cd_cfg' in their mmc configuration
-> >>so please check whether this patch would break these platforms.
-> >>
-> >I just tested the patch on imx28-evk and card-detection still works.  So
-> >patches applied, thanks.
-> 
-> The EVK and most platforms will work because they are using
-> 'mmc0_cd_cfg' so actually this patch does not change anything on
-> them.
-> Platforms 'bluegiga,apx4devkit' and 'schulercontrol,imx28-sps1'
-> however are not referencing 'mmc0_cd_cfg' so after applying this
-> patch they will have unconfigured CD line and they may break.
+On Mon, Apr 8, 2013 at 7:31 AM, Steven Rostedt <srostedt@redhat.com> wrote:
+>
+> It requires gcc reordering the code to where a preempt can happen inside
+> preempt_disable. And also put in a position where the preempt_disable
+> code it gets added matters.
+>
+> Then if gcc does this, we need a page fault to occur with a get_user()
+> operation, which in practice seldom happens as most get user operations
+> are done on freshly modified memory.
+>
+> And then, it would require the page fault to cause a schedule. This is
+> the most likely of the things needed to occur, but itself is not a
+> problem.
+>
+> Then, the schedule would have to cause the data that is being protect by
+> the preempt_disable() to be corrupted. Either by scheduling in another
+> process that monkeys with the data. Or if it protects per-cpu data,
+> scheduling to another CPU (for the SMP case only).
+>
+> If any of the above does not occur, then you wont see a bug.
 
-Ah, yes.  I thought that any board that has CD support has to reference
-'mmc0_cd_cfg'.  That's not necessarily true.
+Right. The gcc reordering is also hard to actually notice if it does
+happen, so even testing the fix for this looks nontrivial.
 
-> The driver will call get_cd() upon probing, which returns the status of the CD line.
-> Please check these two platforms before applying.
+Something like the appended (whitespace-damaged and TOTALLY UNTESTED)
+might be sufficient, but..
 
-Ok, let's wait for people owning the boards to confirm.
+Comments?
 
-Shawn
+                  Linus
 
+---
+    diff --git a/include/linux/preempt.h b/include/linux/preempt.h
+    index 5a710b9c578e..465df1c13386 100644
+    --- a/include/linux/preempt.h
+    +++ b/include/linux/preempt.h
+    @@ -93,14 +93,17 @@ do { \
+
+     #else /* !CONFIG_PREEMPT_COUNT */
+
+    -#define preempt_disable() do { } while (0)
+    -#define sched_preempt_enable_no_resched() do { } while (0)
+    -#define preempt_enable_no_resched() do { } while (0)
+    -#define preempt_enable() do { } while (0)
+    -
+    -#define preempt_disable_notrace() do { } while (0)
+    -#define preempt_enable_no_resched_notrace() do { } while (0)
+    -#define preempt_enable_notrace() do { } while (0)
+    +/* This is only a barrier to other asms. Notably get_user/put_user */
+    +#define asm_barrier() asm volatile("")
+    +
+    +#define preempt_disable() asm_barrier()
+    +#define sched_preempt_enable_no_resched() asm_barrier()
+    +#define preempt_enable_no_resched() asm_barrier()
+    +#define preempt_enable() asm_barrier()
+    +
+    +#define preempt_disable_notrace() asm_barrier()
+    +#define preempt_enable_no_resched_notrace() asm_barrier()
+    +#define preempt_enable_notrace() asm_barrier()
+
+     #endif /* CONFIG_PREEMPT_COUNT */
