@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936170Ab3DHKDC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:03:02 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:57386 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936149Ab3DHKC6 (ORCPT
+	id S936180Ab3DHKD1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:03:27 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33923 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936149Ab3DHKDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 06:02:58 -0400
-Date: Mon, 8 Apr 2013 12:01:57 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 035/102] USB: serial: add modem-status-change wait queue
-Message-ID: <20130408100157.GD25605@localhost>
-References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
- <1365414657-29191-36-git-send-email-luis.henriques@canonical.com>
+	Mon, 8 Apr 2013 06:03:25 -0400
+Message-ID: <516295E7.70200@linutronix.de>
+Date: Mon, 08 Apr 2013 12:03:19 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365414657-29191-36-git-send-email-luis.henriques@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+Subject: Re: [PATCH 2/3] kernel/SRCU: provide a static initializer
+References: <1363702606-31586-1-git-send-email-bigeasy@linutronix.de> <1363702606-31586-2-git-send-email-bigeasy@linutronix.de> <515E7B79.2020707@cn.fujitsu.com>
+In-Reply-To: <515E7B79.2020707@cn.fujitsu.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 10:49:50AM +0100, Luis Henriques wrote:
-> 3.5.7.10 -stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Johan Hovold <jhovold@gmail.com>
-> 
-> commit e5b33dc9d16053c2ae4c2c669cf008829530364b upstream.
-> 
-> Add modem-status-change wait queue to struct usb_serial_port that
-> subdrivers can use to implement TIOCMIWAIT.
-> 
-> Currently subdrivers use a private wait queue which may have been
-> released when waking up after device disconnected.
-> 
-> Note that we're adding a new wait queue rather than reusing the tty-port
-> one as we do not want to get woken up at hangup (yet).
+On 04/05/2013 09:21 AM, Lai Jiangshan wrote:
+> Hi, Sebastian
 
-This one should be followed by eba0e3c3a0ba7b96f0 (USB: serial: fix hang
-when opening port) which adds the missing queue initialisation. It
-appears the next patch in your series starts using the wait queue
-directly.
+Hi Lai,
 
-Thanks,
-Johan
-
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-> ---
->  include/linux/usb/serial.h | 2 ++
->  1 file changed, 2 insertions(+)
+> I don't want to expose __SRCU_STRUCT_INIT(),
+> due to it has strong coupling with the percpu array.
 > 
-> diff --git a/include/linux/usb/serial.h b/include/linux/usb/serial.h
-> index 86c0b45..0b61f01 100644
-> --- a/include/linux/usb/serial.h
-> +++ b/include/linux/usb/serial.h
-> @@ -66,6 +66,7 @@
->   *	port.
->   * @flags: usb serial port flags
->   * @write_wait: a wait_queue_head_t used by the port.
-> + * @delta_msr_wait: modem-status-change wait queue
->   * @work: work queue entry for the line discipline waking up.
->   * @throttled: nonzero if the read urb is inactive to throttle the device
->   * @throttle_req: nonzero if the tty wants to throttle us
-> @@ -112,6 +113,7 @@ struct usb_serial_port {
->  
->  	unsigned long		flags;
->  	wait_queue_head_t	write_wait;
-> +	wait_queue_head_t	delta_msr_wait;
->  	struct work_struct	work;
->  	char			throttled;
->  	char			throttle_req;
+> I hope other structure which uses SRCU should use init_srcu_struct().
+
+I need a static initialization for this kind. Patch #3 shows one
+example I have another one pending for crypto.
+Do you have any idea how I could get it done without this? Do you want
+to move/merge header files?
+
+> 
+> Thanks,
+> Lai
+
+Sebastian
