@@ -1,34 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935380Ab3DHLBU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 07:01:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50738 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935282Ab3DHLBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 07:01:18 -0400
-Message-ID: <5162A37C.4090409@suse.cz>
-Date: Mon, 08 Apr 2013 13:01:16 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S935623Ab3DHLCD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 07:02:03 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:60234 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935282Ab3DHLCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 07:02:00 -0400
+Date: Mon, 8 Apr 2013 07:01:12 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Excessive stall times on ext4 in 3.9-rc2
+Message-ID: <20130408110112.GA8332@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	"Frank Ch. Eigler" <fche@redhat.com>, Mel Gorman <mgorman@suse.de>,
+	linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+	Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>
+References: <20130402142717.GH32241@suse.de>
+ <20130402150651.GB31577@thunk.org>
+ <20130402151436.GC31577@thunk.org>
+ <20130402181940.GA4936@thunk.org>
+ <y0mwqsehuj9.fsf@fche.csb>
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Rob Landley <rob@landley.net>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] doc: change example to existing Makefile fragment
-References: <1364206584.1390.268.camel@x61.thuisdomein>  <1364258406.15703.70@driftwood> <51629F0F.6070501@suse.cz> <1365418285.1830.90.camel@x61.thuisdomein>
-In-Reply-To: <1365418285.1830.90.camel@x61.thuisdomein>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <y0mwqsehuj9.fsf@fche.csb>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8.4.2013 12:51, Paul Bolle wrote:
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> Acked-by: Rob Landley <rob@landley.net>
-> ---
-> v2: added Rob's ACK and send to Michal e.a., for the kbuild tree.
+On Sun, Apr 07, 2013 at 05:59:06PM -0400, Frank Ch. Eigler wrote:
+> > semantic error: while resolving probe point: identifier 'kprobe' at /tmp/stapdjN4_l:18:7
+> >         source: probe kprobe.function("get_request_wait")
+> >                       ^
+> > Pass 2: analysis failed.  [man error::pass2]
+> > Unexpected exit of STAP script at ./watch-dstate.pl line 296.
+> > I have no clue what to do next.  Can you give me a hint?
 
-Thanks, applied to kbuild.git#misc.
+Is there any reason why the error message couldn't be simplified, to
+something as "kernel symbol not found"?  I wasn't sure if the problem
+was that there was some incompatibility between a recent change with
+kprobe and systemtap, or parse failure in the systemtap script, etc.
 
-Michal
+> Systemtap could endavour to list roughly-matching functions that do
+> exist, if you think that's be helpful.
+
+If the goal is ease of use, I suspect the more important thing that
+systemtap could do is to make its error messages more easily
+understandable, instead of pointing the user to read a man page where
+the user then has to figure out which one of a number of failure
+scenarios were caused by a particularly opaque error message.  (The
+man page doesn't even say that "semantic error while resolving probe
+point" means that a kernel function doesn't exist -- especially
+complaining about the kprobe identifier points the user in the wrong
+direction.)
+
+							- Ted
