@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965188Ab3DHPeT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 11:34:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5544 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965019Ab3DHPeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 11:34:17 -0400
-Date: Mon, 8 Apr 2013 17:32:23 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Borislav Petkov <bp@alien8.de>, Stefan Bader <stefan.bader@canonical.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: x86/mm/pageattr: Code without effect?
-Message-ID: <20130408153223.GA14121@redhat.com>
-References: <515E92CE.2000509@canonical.com>
- <20130405142104.GB29290@pd.tnic>
- <20130406145804.GJ3423@redhat.com>
- <20130408145331.GA3303@dm>
+	id S936435Ab3DHPe0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 11:34:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37909 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936306Ab3DHPeY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 11:34:24 -0400
+Date: Mon, 8 Apr 2013 08:34:12 -0700
+From: tip-bot for Viresh Kumar <tipbot@zytor.com>
+Message-ID: <tip-28b4a521f618d9722bc780ea38b44718ce0fe283@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        viresh.kumar@linaro.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        viresh.kumar@linaro.org, tglx@linutronix.de
+In-Reply-To: <cd8084746ac932106d6fa6be388b8f2d6aa9617c.1365159023.git.viresh.kumar@linaro.org>
+References: <cd8084746ac932106d6fa6be388b8f2d6aa9617c.1365159023.git.viresh.kumar@linaro.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Fix typo inside comment
+Git-Commit-ID: 28b4a521f618d9722bc780ea38b44718ce0fe283
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130408145331.GA3303@dm>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 08 Apr 2013 08:34:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 03:53:31PM +0100, Andy Whitcroft wrote:
-> On Sat, Apr 06, 2013 at 04:58:04PM +0200, Andrea Arcangeli wrote:
-> 
-> > You're right, so this location clearly didn't trigger the problem so I
-> > didn't notice the noop here. I only exercised the fix in the other
-> > locations of the file that had the same problem.
-> > 
-> > It was a noop, so it really couldn't hurt but the below change should
-> > activate the fix there too. On the same lines, there was a superfluous
-> > initialization of new_prot too which I cleaned up.
-> 
-> Although the new code is essentially noop, the other part of the change
-> in try_preserve_large_page() moves the canon_pgprot() up above the
-> static_protections() incantation which replaces its value, thus we lose
-> the effect of that on the protection bits.  I suspect this only affects
-> older CPUs (?) but I do think there is a negative semantic change here:
-> 
-> +       new_prot = canon_pgprot(new_prot);
-> [...]
->         new_prot = static_protections(req_prot, address, pfn);
-> [...]
-> -               new_pte = pfn_pte(pte_pfn(old_pte), canon_pgprot(new_prot));
-> +               new_pte = pfn_pte(pte_pfn(old_pte), new_prot);
+Commit-ID:  28b4a521f618d9722bc780ea38b44718ce0fe283
+Gitweb:     http://git.kernel.org/tip/28b4a521f618d9722bc780ea38b44718ce0fe283
+Author:     Viresh Kumar <viresh.kumar@linaro.org>
+AuthorDate: Fri, 5 Apr 2013 16:26:46 +0530
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 8 Apr 2013 13:55:39 +0200
 
-Agreed, canon_pgprot is only for old cpus so it went unnoticed. The
-patch I posted yesterday will fix that too.
+sched: Fix typo inside comment
 
-static_protections only clear bits. canon_pgprot only clear bits
-too. So the order won't matter. And unless we want to enforce
-canon_pgprot to always run after static_protections for whatever
-reason it should be fine now. If you want to enforce canon_pgprot to
-always run last let me know.
+Fix typo:
 
-Thanks,
-Andrea
+ sched_domains_nume_distance ->
+ sched_domains_numa_distance
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org
+Cc: patches@linaro.org
+Cc: robin.randhawa@arm.com
+Cc: Steve.Bannister@arm.com
+Cc: Liviu.Dudau@arm.com
+Cc: charles.garcia-tobin@arm.com
+Cc: arvind.chauhan@arm.com
+Cc: peterz@infradead.org
+Link: http://lkml.kernel.org/r/cd8084746ac932106d6fa6be388b8f2d6aa9617c.1365159023.git.viresh.kumar@linaro.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 849deb9..f5e1aa5 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6252,7 +6252,7 @@ static void sched_init_numa(void)
+ 	 * 'level' contains the number of unique distances, excluding the
+ 	 * identity distance node_distance(i,i).
+ 	 *
+-	 * The sched_domains_nume_distance[] array includes the actual distance
++	 * The sched_domains_numa_distance[] array includes the actual distance
+ 	 * numbers.
+ 	 */
+ 
