@@ -1,45 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965118Ab3DHPdU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 11:33:20 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51685 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964942Ab3DHPdQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 11:33:16 -0400
-From: Christian Lamparter <chunkeey@googlemail.com>
-To: Eugene Krasnikov <k.eugene.e@gmail.com>
-Subject: Re: Version number policy!
-Date: Mon, 8 Apr 2013 17:33:15 +0200
-User-Agent: KMail/1.13.7 (Linux/3.9.0-rc5-wl-wl+; KDE/4.8.4; x86_64; ; )
-Cc: Adrian Chadd <adrian@freebsd.org>, Kalle Valo <kvalo@adurom.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "linux-bluetooth" <linux-bluetooth@vger.kernel.org>,
-        "linux-wireless" <linux-wireless@vger.kernel.org>,
-        "ath9k_htc_fw" <ath9k_htc_fw@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <CAJ-Vmo=LVSzdEo6DhfOVT_0JHCTMmdPU1zGfMuBmhmr8QuDmJQ@mail.gmail.com> <CAJ-VmomQaYFMR0G1DM+dno6qB+AdXUom8=kWPzJoOjuzQj81bw@mail.gmail.com> <CAFSJ42Zd3s8xKwt4X3LNcupCTntDULxNntMuD-_Xh6_csiGA4A@mail.gmail.com>
-In-Reply-To: <CAFSJ42Zd3s8xKwt4X3LNcupCTntDULxNntMuD-_Xh6_csiGA4A@mail.gmail.com>
+	id S965154Ab3DHPeM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 11:34:12 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:54487 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S965019Ab3DHPeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 11:34:09 -0400
+Message-ID: <5162E36F.5020305@sgi.com>
+Date: Mon, 8 Apr 2013 10:34:07 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1252"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201304081733.15727.chunkeey@googlemail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Woodhouse <dwmw2@infradead.org>, <stable@vger.kernel.org>
+Subject: Re: [PATCH resend] fs/proc: Move kfree outside pde_unload_lock
+References: <515D9F8A.2060505@sgi.com> <1365090819-25448-1-git-send-email-nzimmer@sgi.com> <20130404161140.GR21522@ZenIV.linux.org.uk> <515DB465.1060004@sgi.com> <20130404204459.GU21522@ZenIV.linux.org.uk> <515F0456.9040803@sgi.com> <20130405173623.GE4068@ZenIV.linux.org.uk> <515F3A71.9080008@sgi.com> <20130405210042.GH4068@ZenIV.linux.org.uk>
+In-Reply-To: <20130405210042.GH4068@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.162.233.145]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 08, 2013 11:10:30 AM Eugene Krasnikov wrote:
-> It’s a good idea to pack bitmap into the tail/header of the firmware
-> binary to get capabilities even before fw loading. The plan is to add
-> 8 bytes for caps and also add time stamp. Let me play around with that
-> and provide fw and driver patch for review.
+On 04/05/2013 04:00 PM, Al Viro wrote:
+> On Fri, Apr 05, 2013 at 03:56:17PM -0500, Nathan Zimmer wrote:
+>
+>> That didn't produce anything.  I'll run some bisections over the
+>> weekend and see what I can sort out.
+> *Ugh*
+>
+> I'd try to build with DEBUG_KMEMLEAK and slapped printks on the entry
+> and exit from close_pdeo().  If that doesn't show anything interesting,
+> it's probably unrelated to procfs...
+My bisection pointed me to this commit:  e41efbf13c15
+At this point I am assuming my issue is unrelated to procfs.
 
-Hm, come to think of it. Kalle, do you think ath9k_htc could use
-some bits of the fw header format, parser or the complete infrastructure
-from ath6kl? This could be great for Adrian, because he could
-just point people to it and they could moved it into the code
-into /drivers/net/wireless/ath/fw.c.
 
-Regards,
-	Christian
