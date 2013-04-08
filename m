@@ -1,216 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934461Ab3DHHYV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 03:24:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54541 "EHLO mx1.redhat.com"
+	id S1757636Ab3DHHY1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 03:24:27 -0400
+Received: from ozlabs.org ([203.10.76.45]:33361 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751936Ab3DHHYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 03:24:20 -0400
-Message-ID: <51626D3D.4000907@redhat.com>
-Date: Mon, 08 Apr 2013 15:09:49 +0800
-From: Dave Young <dyoung@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S934440Ab3DHHYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 03:24:25 -0400
+Date: Mon, 8 Apr 2013 17:24:22 +1000
+From: Michael Ellerman <michael@ellerman.id.au>
+To: acme@infradead.org
+Cc: peterz@infradead.org, jolsa@redhat.com, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, rob@landley.net
+Subject: Re: [RFC/PATCH] perf: Expand definition of sysfs format attribute
+Message-ID: <20130408072422.GA4476@concordia>
+References: <1362370865-4437-1-git-send-email-michael@ellerman.id.au>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/4] x86, kdump: Set crashkernel_low automatically
-References: <1365113821-22749-1-git-send-email-yinghai@kernel.org> <1365113821-22749-2-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1365113821-22749-2-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1362370865-4437-1-git-send-email-michael@ellerman.id.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2013 06:16 AM, Yinghai Lu wrote:
-> Chao said that kdump does does work well on his system on 3.8
-> without extra parameter, even iommu does not work with kdump.
-> And now have to append crashkernel_low=Y in first kernel to make
-> kdump work.
+On Mon, Mar 04, 2013 at 03:21:05PM +1100, Michael Ellerman wrote:
+> Make it explicit that the format attributes may define overlapping bit
+> ranges. Unfortunately this was left unspecified originally, and all the
+> examples show non-overlapping ranges. I don't believe this is an ABI
+> change, as we are defining something that was previously undefined, but
+> others may disagree.
 > 
-> We have now modified crashkernel=X to allocate memory beyong 4G (if
-> available) and do not allocate low range for crashkernel if the user
-> does not specify that with crashkernel_low=Y.  This causes regression
-> if iommu is not enabled.  Without iommu, swiotlb needs to be setup in
-> first 4G and there is no low memory available to second kernel.
-
-Is it possible to reuse the 1st kernel swiotlb region in 2nd capture
-kernel if it's available?
-
+> The POWER8 PMU would like to define overlapping ranges, as bit ranges in
+> the event code have different meanings for certain events. It will also
+> allow us to define an overarching "event" field, that encompasses all
+> others.
 > 
-> Set crashkernel_low automatically if the user does not specify that.
-> 
-> For system that does support IOMMU with kdump properly, user could
-> specify crashkernel_low=0 to save that 72M low ram.
+> As far as I can see perf is comfortable with this change, however I am
+> not sure if there are any other users of the interface.
 
-How about make swiotlb size tunable in 1st kernel as well such as adding
-a swiotlb_size= to cmdline, if it's set in 1st kernel crashkernel
-reserving code can take it automaticlly.
+Any comments on this one?
 
-This will benefit to user who use low-mem machines.
-
-> 
-> -v3: add swiotlb_size() according to Konrad.
-> -v4: add comments what 8M is for according to hpa.
->      also update more crashkernel_low= in kernel-parameters.txt
-> -v5: update changelog according to Vivek.
-> -v6: Change description about swiotlb referring according to HATAYAMA.
-> 
-> Reported-by: WANG Chao <chaowang@redhat.com>
-> Tested-by: WANG Chao <chaowang@redhat.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> ---
->  Documentation/kernel-parameters.txt |   14 +++++++++++---
->  arch/x86/kernel/setup.c             |   20 +++++++++++++++++---
->  include/linux/swiotlb.h             |    1 +
->  lib/swiotlb.c                       |   19 +++++++++++++++----
->  4 files changed, 44 insertions(+), 10 deletions(-)
-> 
-> Index: linux-2.6/arch/x86/kernel/setup.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/setup.c
-> +++ linux-2.6/arch/x86/kernel/setup.c
-> @@ -519,19 +519,33 @@ static void __init reserve_crashkernel_l
->  	unsigned long long low_base = 0, low_size = 0;
->  	unsigned long total_low_mem;
->  	unsigned long long base;
-> +	bool auto_set = false;
->  	int ret;
->  
->  	total_low_mem = memblock_mem_size(1UL<<(32-PAGE_SHIFT));
->  	ret = parse_crashkernel_low(boot_command_line, total_low_mem,
->  						&low_size, &base);
-> -	if (ret != 0 || low_size <= 0)
-> -		return;
-> +	if (ret != 0) {
-> +		/*
-> +		 * two parts from lib/swiotlb.c:
-> +		 *	swiotlb size: user specified with swiotlb= or default.
-> +		 *	swiotlb overflow buffer: now is hardcoded to 32k,
-> +		 *		round to 8M to cover more others.
-> +		 */
-> +		low_size = swiotlb_size_or_default() + (8UL<<20);
-> +		auto_set = true;
-> +	} else {
-> +		/* passed with crashkernel_low=0 ? */
-> +		if (!low_size)
-> +			return;
-> +	}
->  
->  	low_base = memblock_find_in_range(low_size, (1ULL<<32),
->  					low_size, alignment);
->  
->  	if (!low_base) {
-> -		pr_info("crashkernel low reservation failed - No suitable area found.\n");
-> +		if (!auto_set)
-> +			pr_info("crashkernel low reservation failed - No suitable area found.\n");
->  
->  		return;
->  	}
-> Index: linux-2.6/include/linux/swiotlb.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/swiotlb.h
-> +++ linux-2.6/include/linux/swiotlb.h
-> @@ -25,6 +25,7 @@ extern int swiotlb_force;
->  extern void swiotlb_init(int verbose);
->  int swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
->  extern unsigned long swiotlb_nr_tbl(void);
-> +unsigned long swiotlb_size_or_default(void);
->  extern int swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs);
->  
->  /*
-> Index: linux-2.6/lib/swiotlb.c
-> ===================================================================
-> --- linux-2.6.orig/lib/swiotlb.c
-> +++ linux-2.6/lib/swiotlb.c
-> @@ -105,9 +105,9 @@ setup_io_tlb_npages(char *str)
->  	if (!strcmp(str, "force"))
->  		swiotlb_force = 1;
->  
-> -	return 1;
-> +	return 0;
->  }
-> -__setup("swiotlb=", setup_io_tlb_npages);
-> +early_param("swiotlb", setup_io_tlb_npages);
->  /* make io_tlb_overflow tunable too? */
->  
->  unsigned long swiotlb_nr_tbl(void)
-> @@ -115,6 +115,18 @@ unsigned long swiotlb_nr_tbl(void)
->  	return io_tlb_nslabs;
->  }
->  EXPORT_SYMBOL_GPL(swiotlb_nr_tbl);
-> +
-> +/* default to 64MB */
-> +#define IO_TLB_DEFAULT_SIZE (64UL<<20)
-> +unsigned long swiotlb_size_or_default(void)
-> +{
-> +	unsigned long size;
-> +
-> +	size = io_tlb_nslabs << IO_TLB_SHIFT;
-> +
-> +	return size ? size : (IO_TLB_DEFAULT_SIZE);
-> +}
-> +
->  /* Note that this doesn't work with highmem page */
->  static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
->  				      volatile void *address)
-> @@ -188,8 +200,7 @@ int __init swiotlb_init_with_tbl(char *t
->  void  __init
->  swiotlb_init(int verbose)
->  {
-> -	/* default to 64MB */
-> -	size_t default_size = 64UL<<20;
-> +	size_t default_size = IO_TLB_DEFAULT_SIZE;
->  	unsigned char *vstart;
->  	unsigned long bytes;
->  
-> Index: linux-2.6/Documentation/kernel-parameters.txt
-> ===================================================================
-> --- linux-2.6.orig/Documentation/kernel-parameters.txt
-> +++ linux-2.6/Documentation/kernel-parameters.txt
-> @@ -596,9 +596,6 @@ bytes respectively. Such letter suffixes
->  			is selected automatically. Check
->  			Documentation/kdump/kdump.txt for further details.
->  
-> -	crashkernel_low=size[KMG]
-> -			[KNL, x86] parts under 4G.
-> -
->  	crashkernel=range1:size1[,range2:size2,...][@offset]
->  			[KNL] Same as above, but depends on the memory
->  			in the running system. The syntax of range is
-> @@ -606,6 +603,17 @@ bytes respectively. Such letter suffixes
->  			a memory unit (amount[KMG]). See also
->  			Documentation/kdump/kdump.txt for an example.
->  
-> +	crashkernel_low=size[KMG]
-> +			[KNL, x86_64] range under 4G. When crashkernel= is
-> +			passed, kernel allocate physical memory region
-> +			above 4G, that cause second kernel crash on system
-> +			that require some amount of low memory, e.g. swiotlb
-> +			requires at least 64M+32K low memory.  Kernel would
-> +			try to allocate 72M below 4G automatically.
-> +			This one let user to specify own low range under 4G
-> +			for second kernel instead.
-> +			0: to disable low allocation.
-> +
->  	cs89x0_dma=	[HW,NET]
->  			Format: <dma>
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
--- 
-Thanks
-Dave
-
-
+cheers
