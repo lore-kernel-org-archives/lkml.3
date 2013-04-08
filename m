@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964855Ab3DHS1I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 14:27:08 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44670 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935556Ab3DHS1F (ORCPT
+	id S935655Ab3DHS1d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 14:27:33 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57922 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934855Ab3DHS1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 14:27:05 -0400
-Message-ID: <51630BF4.6000605@wwwdotorg.org>
-Date: Mon, 08 Apr 2013 12:27:00 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 8 Apr 2013 14:27:32 -0400
+Message-ID: <51630C01.6010601@ti.com>
+Date: Mon, 8 Apr 2013 14:27:13 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Jay Agarwal <jagarwal@nvidia.com>
-CC: linux@arm.linux.org.uk, thierry.reding@avionic-design.de,
-        ldewangan@nvidia.com, bhelgaas@google.com, olof@lixom.net,
-        hdoyu@nvidia.com, pgaikwad@nvidia.com, mturquette@linaro.org,
-        pdeschrijver@nvidia.com, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, jtukkinen@nvidia.com, kthota@nvidia.com
-Subject: Re: [PATCH 2/3] ARM: dts: tegra: Correct PCIe entry
-References: <1365435688-4179-1-git-send-email-jagarwal@nvidia.com> <1365435688-4179-2-git-send-email-jagarwal@nvidia.com>
-In-Reply-To: <1365435688-4179-2-git-send-email-jagarwal@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: "edubezval@gmail.com" <edubezval@gmail.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Tyrel Datwyler <turtle.on.the.radio@gmail.com>,
+        <eduardo.valentin@ti.com>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Staging: omap-thermal: remove trailing whitespace from
+ omap-bandgap.c
+References: <1365385640-10443-1-git-send-email-turtle.on.the.radio@gmail.com> <20130408172233.GA26206@kroah.com> <CAC-25o9wUGRAjaO1jEbRB9AdwT7sgGcH2M2oyh4-rSyoCiSm7Q@mail.gmail.com>
+In-Reply-To: <CAC-25o9wUGRAjaO1jEbRB9AdwT7sgGcH2M2oyh4-rSyoCiSm7Q@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2013 09:41 AM, Jay Agarwal wrote:
-> Signed-off-by: Jay Agarwal <jagarwal@nvidia.com>
+Tyrel,
 
-Your s-o-b line should be below the patch description, not above it.
-Please see Documentation/SubmittingPatches.
 
-I also don't see a --- line between the patch description and diffstat.
-How are you generating these patch emails? Please see our internal wiki,
-or other git documentation.
+On 08-04-2013 14:24, edubezval@gmail.com wrote:
+> Fixing to right email address.
+>
+> On Mon, Apr 8, 2013 at 1:22 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> On Sun, Apr 07, 2013 at 06:47:20PM -0700, Tyrel Datwyler wrote:
+>>> This patch removes trailing whitespace from a blank line in omap-bandgap.c as
+>>> detected by the checkpatch.pl tool.
+>>>
+>>> Signed-off-by: Tyrel Datwyler <turtle.on.the.radio@gmail.com>
 
-> diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+Thanks for your patch. But as mentioned by Greg, this file does not 
+exist anymore, it has been renamed. Check latest linux-next.
 
-> -		clock-names = "pex", "afi", "pcie_xclk", "pll_e", "cml";
-> +		clock-names = "pex", "afi", "pcie_xclk", "pll_e", "cml0";
+Besides, the issue you are fixing has been already removed. Also check 
+latest linux-next and you will see the driver under:
+drivers/staging/ti-soc-thermal/ti-bandgap.c
 
-Can you please explain more about this change?
+Thanks, please keep sending your patches and copy my email address so I 
+will give you a quick response.
 
-I see the Tegra clock driver provides both a "cml0" and a "cml1" clock.
-Are both of those used for PCIe?
+>>> ---
+>>>   drivers/staging/omap-thermal/omap-bandgap.c | 2 +-
+>>
+>> This file no longer is in my tree, are you sure you made this against
+>> the proper branch?  Please always make staging patches against the
+>> linux-next tree.
+>>
+>> thanks,
+>>
+>> greg k-h
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+>
 
-If so, then why doesn't the driver and this DT change include both cml0
-and cml1?
-
-If not, then please note that the clock-names property doesn't have to
-match the name of the clock at the clock provider. This property names
-the clock inputs to the HW module. Hence, if the PCIe module only uses a
-single CML clock, it can quite legitimately name its clock input just
-"cml" rather than "cml0". In this case, you wouldn't need to make this
-change to the DT.
