@@ -1,131 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935698Ab3DHTH4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 15:07:56 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:63739 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762951Ab3DHTHy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 15:07:54 -0400
-Date: Mon, 8 Apr 2013 15:07:38 -0400
-From: Andrew Shewmaker <agshew@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        simon.jeons@gmail.com, ric.masonn@gmail.com
-Subject: [PATCH v8 3/3] mm: reinititalise user and admin reserves if memory
- is added or removed
-Message-ID: <20130408190738.GC2321@localhost.localdomain>
+	id S935695Ab3DHTLR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 15:11:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23846 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762951Ab3DHTLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 15:11:16 -0400
+Date: Mon, 8 Apr 2013 15:11:05 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, bsingharora@gmail.com,
+        Kay Sievers <kay.sievers@vrfy.org>, lpoetter@redhat.com,
+        linux-kernel@vger.kernel.org, dhaval.giani@gmail.com,
+        workman-devel@redhat.com
+Subject: Re: [Workman-devel] cgroup: status-quo and userland efforts
+Message-ID: <20130408191105.GG28292@redhat.com>
+References: <20130406012159.GA17159@mtj.dyndns.org>
+ <20130408175925.GE28292@redhat.com>
+ <20130408181607.GI3021@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130408181607.GI3021@htj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch alters the admin and user reserves of the previous patches 
-in this series when memory is added or removed.
+On Mon, Apr 08, 2013 at 11:16:07AM -0700, Tejun Heo wrote:
+> Hey, Vivek.
+> 
+> On Mon, Apr 08, 2013 at 01:59:26PM -0400, Vivek Goyal wrote:
+> > But using the library admin application should be able to query the
+> > full "paritition" hierarchy and their weigths and calculate % system
+> > resources. I think one problem there is cpu controller where % resoruce
+> > of a cgroup depends on tasks entities which are peer to group. But that's
+> > a kernel issue and not user space thing.
+> 
+> Yeah, we're gonna have to implement a different operation mode.
+> 
+> > So I am not sure what are potential problems with proposed model of
+> > configuration in workman. All the consumer managers still follow what
+> > libarary has told them to do.
+> 
+> Sure, if we assume everyone follows the rules and behaves nicely.
+> It's more about the general approach.  Allowing / encouraging sharing
+> or distributing control of cgroup hierarchy without forcing structure
+> and rigid control over it is likely to lead to confusion and
+> fragility.
+> 
+> > >  or maybe some other program just happened to choose the
+> > >   same name.
+> > 
+> > Two programs ideally would have their own sub hiearchy. And if not one
+> > of the programs should get the conflict when trying to create cgroup and
+> > should back-off or fail or give warning...
+> 
+> And who's responsible for deleting it?
 
-If memory is added and the reserves have been eliminated or increased above
-the default max, then we'll trust the admin.
+I think "consumer" manager should delete its own cgroup directories when
+associated consumer[s] stop running.
 
-If memory is removed and there isn't enough free memory, then we
-need to reset the reserves.
+And partitions created by workman will just remain there until and unless
+user wanted to delete these explicitly.
 
-Otherwise keep the reserve set by the admin.
+>  What if the program crashes?
 
-The reserve reset code is the same as the reserve initialization code.
+I am not sure about this. I guess when applications comes back after crash,
+it can go through all the children cgroups and reclaim empty cgroups.
 
-Does this sound reasonable to other people? I figured that hot removal
-with too large of memory in the reserves was the most important case 
-to get right.
+> 
+> > > Who owns config knobs in that directory?
+> > 
+> > IIUC, workman was looking at two types of cgroups. Once called
+> > "partitions" which will be created by library at startup time and
+> > library manages the configuration (something like cgconfig.conf).
+> > 
+> > And individual managers create their own children groups for various
+> > services under that partition and control the config knobs for those
+> > services.
+> > 
+> > 			user-defined-partition
+> > 			     /    |    \
+> >                            virt1  virt2 virt3  
+> > 
+> > So user should be able to define a partition and control the configuration
+> > using workman lib. And if multiple virtual machines are being run in
+> > the partition, then they create their own cgroups and libvirt controls
+> > the properties of virt1, virt2, virt3 cgroups. I thought that was the
+> > the understanding when we dicussed ownership of config knobs las time.
+> > But things might have changed since last time. Workman folks should
+> > be able to shed light on this.
+> 
+> I just read the introduction doc and haven't delved into the API or
+> code so I could be off but why should there be multiple managers?
+> What's the benefit of that?
 
-I tested hot addition and removal by triggering it via sysfs. The reserves 
-shrunk when they were set high and memory was removed. They were reset 
-higher when memory was added again.
+A centralized authority does not know about all the managed objects.
+Only respective manager knows about what objects it is managing and
+what are the controllable attributes of that object.
 
----
- mm/mmap.c | 63 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 63 insertions(+)
+systemd is managing services and libvirt is managing virtual machines,
+containers etc. Some people view associated resource group as just one
+additional attribute of the managed service. These managers already
+maintain multiple attributes of a service and can store one additional
+attribute easily.
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 8fb9d99..321348b 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -33,6 +33,8 @@
- #include <linux/uprobes.h>
- #include <linux/rbtree_augmented.h>
- #include <linux/sched/sysctl.h>
-+#include <linux/notifier.h>
-+#include <linux/memory.h>
- 
- #include <asm/uaccess.h>
- #include <asm/cacheflush.h>
-@@ -3111,3 +3113,64 @@ int __meminit init_admin_reserve(void)
- 	return 0;
- }
- module_init(init_admin_reserve)
-+
-+/*
-+ * Reinititalise user and admin reserves if memory is added or removed.
-+ *
-+ * If memory is added and the reserves have been eliminated or increased above
-+ * the default max, then we'll trust the admin. 
-+ *
-+ * If memory is removed and there isn't enough free memory, then we 
-+ * need to reset the reserves.
-+ *
-+ * Otherwise keep the reserve set by the admin.
-+ */
-+static int reserve_mem_notifier(struct notifier_block *nb,
-+			     unsigned long action, void *data)
-+{
-+	unsigned long tmp, free_kbytes;
-+
-+	switch (action) {
-+	case MEM_ONLINE:
-+		tmp = sysctl_user_reserve_kbytes;
-+		if (0 < tmp && tmp < (1UL << 17))
-+			init_user_reserve();
-+
-+		tmp = sysctl_admin_reserve_kbytes;
-+		if (0 < tmp && tmp < (1UL << 13))
-+			init_admin_reserve();
-+
-+		break;
-+	case MEM_OFFLINE:
-+		free_kbytes = global_page_state(NR_FREE_PAGES) << (PAGE_SHIFT - 10);
-+
-+		if (sysctl_user_reserve_kbytes > free_kbytes) {
-+			init_user_reserve();
-+			pr_info("vm.user_reserve_kbytes reset to %lu\n",
-+				sysctl_user_reserve_kbytes);
-+		}
-+
-+		if (sysctl_admin_reserve_kbytes > free_kbytes) {
-+			init_admin_reserve();
-+			pr_info("vm.admin_reserve_kbytes reset to %lu\n",
-+				sysctl_admin_reserve_kbytes);
-+		}
-+		break;
-+	default:
-+		break;
-+	}
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block reserve_mem_nb = {
-+	.notifier_call = reserve_mem_notifier,
-+};
-+
-+int __meminit init_reserve_notifier(void)
-+{
-+	if (register_memory_notifier(&reserve_mem_nb))
-+		printk("Failed registering memory add/remove notifier for admin reserve");
-+
-+	return 0;
-+}
-+module_init(init_reserve_notifier)
--- 
-1.8.0.1
+>  Wouldn't it make more sense to just have
+> a central arbitrator that everyone talks to?
 
+May be. Just that in the past folks have not liked the idea of talking
+to central authority to figure out resource group of an object they are
+managing.
+
+>  What's the benefit of
+> distributing the responsiblities here?  It's not like we can put them
+> in different security domains.
+
+To me it makes sense in a way, as these resources associated with the
+service is just one another property and there does not seem to be
+anything special about this property that it should be managed using
+a single centralized authority.
+
+For example, one might want to say that maximum IO bandwidth for 
+virtual machine virt1 on disk sda should be 10MB/s. Now libvirt
+should be able to save it in virtual machine specific configuration
+easily and whenever virtual machine is started, create a children
+cgroup, set the limits as specified.
+
+If a central authority keeps track of all this, I am not sure how 
+would it look like and might get messy.
+
+[..]
+> > > I think the only logical thing to do is creating a centralized
+> > > userland authority which takes full ownership of the cgroup filesystem
+> > > interface, gives it a sane structure,
+> > 
+> > Right now systemd seems to be giving initial structure. I guess we will
+> > require some changes where systemd itself runs in a cgroup and that
+> > allows one to create peer groups. Something like.
+> > 				
+> > 				root
+> > 				/  \
+> > 			   systemd other-groups
+> 
+> No, we need a single structured hierarchy which everyone uses
+> *including* systemd.
+
+That would make sense. systemd had this conflict with cgconfig
+too. Problem is that systemd starts first and sets up everything. Now
+if there is a service which sets up cgroups, after systemd startup,
+it is already late.
+
+Thanks
+Vivek
