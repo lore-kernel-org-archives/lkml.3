@@ -1,181 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936099Ab3DHUgS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 16:36:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40902 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936030Ab3DHUgQ (ORCPT
+	id S936049Ab3DHUhR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 16:37:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49714 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936032Ab3DHUhO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 16:36:16 -0400
-Date: Mon, 8 Apr 2013 13:35:43 -0700
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-af695cd931edab7f202fb616d69d4b746c5d6912@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rusty@rustcorp.com.au, torvalds@linux-foundation.org,
-        peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, dhowells@redhat.com, tglx@linutronix.de,
-        magnus.damm@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, rusty@rustcorp.com.au,
-        peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, dhowells@redhat.com, tglx@linutronix.de,
-        magnus.damm@gmail.com
-In-Reply-To: <20130321215234.822656036@linutronix.de>
-References: <20130321215234.822656036@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] mn10300: Use generic idle loop
-Git-Commit-ID: af695cd931edab7f202fb616d69d4b746c5d6912
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 08 Apr 2013 13:35:48 -0700 (PDT)
+	Mon, 8 Apr 2013 16:37:14 -0400
+Date: Mon, 8 Apr 2013 13:37:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrew Shewmaker <agshew@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        simon.jeons@gmail.com, ric.masonn@gmail.com
+Subject: Re: [PATCH v8 3/3] mm: reinititalise user and admin reserves if
+ memory is added or removed
+Message-Id: <20130408133712.bd327017dec19a2c14e22662@linux-foundation.org>
+In-Reply-To: <20130408190738.GC2321@localhost.localdomain>
+References: <20130408190738.GC2321@localhost.localdomain>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  af695cd931edab7f202fb616d69d4b746c5d6912
-Gitweb:     http://git.kernel.org/tip/af695cd931edab7f202fb616d69d4b746c5d6912
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Thu, 21 Mar 2013 22:49:53 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 8 Apr 2013 17:39:27 +0200
+On Mon, 8 Apr 2013 15:07:38 -0400 Andrew Shewmaker <agshew@gmail.com> wrote:
 
-mn10300: Use generic idle loop
+> This patch alters the admin and user reserves of the previous patches 
+> in this series when memory is added or removed.
+> 
+> If memory is added and the reserves have been eliminated or increased above
+> the default max, then we'll trust the admin.
+> 
+> If memory is removed and there isn't enough free memory, then we
+> need to reset the reserves.
+> 
+> Otherwise keep the reserve set by the admin.
+> 
+> The reserve reset code is the same as the reserve initialization code.
+> 
+> Does this sound reasonable to other people? I figured that hot removal
+> with too large of memory in the reserves was the most important case 
+> to get right.
 
-default_idle() boils down to safe_halt() and the other option is idle
-polling. Use the core functionality.
+Seems reasonable to me.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Reviewed-by: Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Magnus Damm <magnus.damm@gmail.com>
-Cc: David Howells <dhowells@redhat.com>
-Link: http://lkml.kernel.org/r/20130321215234.822656036@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+I don't understand the magic numbers 1<<13 and 1<<17.  How could I? 
+Please add comments explaining how and why these were chosen.
+
+Your patch adds 400 bytes of unusable code to the
+CONFIG_MEMORY_HOTPLUG=n kernel.  We have a fix for that in the CPU
+hotplug case: register_hotcpu_notifier().  Memory hotplug has its own
+hotplug_memory_notifier() but a) it's broken and b) it just doesn't
+work!  With my gcc-4.4.4, the unused functions are still included in
+the .o file.
+
+So I did this:
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: include/linux/memory.h: implement register_hotmemory_notifier()
+
+When CONFIG_MEMORY_HOTPLUG=n, we don't want the memory-hotplug notifier
+handlers to be included in the .o files, for space reasons.
+
+The existing hotplug_memory_notifier() tries to handle this but testing
+with gcc-4.4.4 shows that it doesn't work - the hotplug functions are
+still present in the .o files.
+
+So implement a new register_hotmemory_notifier() which is a copy of
+register_hotcpu_notifier(), and which actually works as desired. 
+hotplug_memory_notifier() and register_memory_notifier() callsites should
+be converted to use this new register_hotmemory_notifier().
+
+While we're there, let's repair the existing hotplug_memory_notifier(): it
+simply stomps on the register_memory_notifier() return value, so
+well-behaved code cannot check for errors.  Apparently non of the existing
+callers were well-behaved :(
+
+Cc: Andrew Shewmaker <agshew@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- arch/mn10300/Kconfig          |  1 +
- arch/mn10300/kernel/process.c | 70 ++++---------------------------------------
- arch/mn10300/kernel/smp.c     |  2 +-
- 3 files changed, 8 insertions(+), 65 deletions(-)
 
-diff --git a/arch/mn10300/Kconfig b/arch/mn10300/Kconfig
-index 428da17..ae7158b6 100644
---- a/arch/mn10300/Kconfig
-+++ b/arch/mn10300/Kconfig
-@@ -13,6 +13,7 @@ config MN10300
- 	select MODULES_USE_ELF_RELA
- 	select OLD_SIGSUSPEND3
- 	select OLD_SIGACTION
-+	select GENERIC_IDLE_LOOP
+ include/linux/memory.h   |   15 ++++++++++++---
+ include/linux/notifier.h |    5 ++++-
+ 2 files changed, 16 insertions(+), 4 deletions(-)
+
+diff -puN include/linux/memory.h~include-linux-memoryh-implement-register_hotmemory_notifier include/linux/memory.h
+--- a/include/linux/memory.h~include-linux-memoryh-implement-register_hotmemory_notifier
++++ a/include/linux/memory.h
+@@ -18,6 +18,7 @@
+ #include <linux/node.h>
+ #include <linux/compiler.h>
+ #include <linux/mutex.h>
++#include <linux/notifier.h>
  
- config AM33_2
- 	def_bool n
-diff --git a/arch/mn10300/kernel/process.c b/arch/mn10300/kernel/process.c
-index 84f4e97..2da39fb 100644
---- a/arch/mn10300/kernel/process.c
-+++ b/arch/mn10300/kernel/process.c
-@@ -50,77 +50,19 @@ unsigned long thread_saved_pc(struct task_struct *tsk)
- void (*pm_power_off)(void);
- EXPORT_SYMBOL(pm_power_off);
+ #define MIN_MEMORY_BLOCK_SIZE     (1UL << SECTION_SIZE_BITS)
  
--#if !defined(CONFIG_SMP) || defined(CONFIG_HOTPLUG_CPU)
--/*
-- * we use this if we don't have any better idle routine
-- */
--static void default_idle(void)
--{
--	local_irq_disable();
--	if (!need_resched())
--		safe_halt();
--	else
--		local_irq_enable();
+@@ -127,13 +128,21 @@ enum mem_add_context { BOOT, HOTPLUG };
+ #endif /* CONFIG_MEMORY_HOTPLUG_SPARSE */
+ 
+ #ifdef CONFIG_MEMORY_HOTPLUG
+-#define hotplug_memory_notifier(fn, pri) {			\
++#define hotplug_memory_notifier(fn, pri) ({			\
+ 	static __meminitdata struct notifier_block fn##_mem_nb =\
+ 		{ .notifier_call = fn, .priority = pri };	\
+ 	register_memory_notifier(&fn##_mem_nb);			\
 -}
--
--#else /* !CONFIG_SMP || CONFIG_HOTPLUG_CPU  */
- /*
-  * On SMP it's slightly faster (but much more power-consuming!)
-  * to poll the ->work.need_resched flag instead of waiting for the
-  * cross-CPU IPI to arrive. Use this option with caution.
-+ *
-+ * tglx: No idea why this depends on HOTPLUG_CPU !?!
-  */
--static inline void poll_idle(void)
--{
--	int oldval;
--
--	local_irq_enable();
--
--	/*
--	 * Deal with another CPU just having chosen a thread to
--	 * run here:
--	 */
--	oldval = test_and_clear_thread_flag(TIF_NEED_RESCHED);
--
--	if (!oldval) {
--		set_thread_flag(TIF_POLLING_NRFLAG);
--		while (!need_resched())
--			cpu_relax();
--		clear_thread_flag(TIF_POLLING_NRFLAG);
--	} else {
--		set_need_resched();
--	}
--}
--#endif /* !CONFIG_SMP || CONFIG_HOTPLUG_CPU */
--
--/*
-- * the idle thread
-- * - there's no useful work to be done, so just try to conserve power and have
-- *   a low exit latency (ie sit in a loop waiting for somebody to say that
-- *   they'd like to reschedule)
-- */
--void cpu_idle(void)
-+#if !defined(CONFIG_SMP) || defined(CONFIG_HOTPLUG_CPU)
-+void arch_cpu_idle(void)
- {
--	/* endless idle loop with no priority at all */
--	for (;;) {
--		rcu_idle_enter();
--		while (!need_resched()) {
--			void (*idle)(void);
--
--			smp_rmb();
--			if (!idle) {
--#if defined(CONFIG_SMP) && !defined(CONFIG_HOTPLUG_CPU)
--				idle = poll_idle;
--#else  /* CONFIG_SMP && !CONFIG_HOTPLUG_CPU */
--				idle = default_idle;
--#endif /* CONFIG_SMP && !CONFIG_HOTPLUG_CPU */
--			}
--			idle();
--		}
--		rcu_idle_exit();
--
--		schedule_preempt_disabled();
--	}
-+	safe_halt();
- }
-+#endif
- 
- void release_segments(struct mm_struct *mm)
- {
-diff --git a/arch/mn10300/kernel/smp.c b/arch/mn10300/kernel/smp.c
-index eaef5ad..a17f9c9 100644
---- a/arch/mn10300/kernel/smp.c
-+++ b/arch/mn10300/kernel/smp.c
-@@ -675,7 +675,7 @@ int __init start_secondary(void *unused)
- #ifdef CONFIG_GENERIC_CLOCKEVENTS
- 	init_clockevents();
++})
++#define register_hotmemory_notifier(nb)		register_memory_notifier(nb)
++#define unregister_hotmemory_notifier(nb) 	unregister_memory_notifier(nb)
+ #else
+-#define hotplug_memory_notifier(fn, pri) do { } while (0)
++static inline int hotplug_memory_notifier(notifier_fn_t fn, int priority)
++{
++	return 0;
++}
++/* These aren't inline functions due to a GCC bug. */
++#define register_hotmemory_notifier(nb)    ({ (void)(nb); 0; })
++#define unregister_hotmemory_notifier(nb)  ({ (void)(nb); })
  #endif
--	cpu_idle();
-+	cpu_startup_entry(CPUHP_ONLINE);
- 	return 0;
- }
  
+ /*
+diff -puN include/linux/notifier.h~include-linux-memoryh-implement-register_hotmemory_notifier include/linux/notifier.h
+--- a/include/linux/notifier.h~include-linux-memoryh-implement-register_hotmemory_notifier
++++ a/include/linux/notifier.h
+@@ -47,8 +47,11 @@
+  * runtime initialization.
+  */
+ 
++typedef	int (*notifier_fn_t)(struct notifier_block *nb,
++			unsigned long action, void *data);
++
+ struct notifier_block {
+-	int (*notifier_call)(struct notifier_block *, unsigned long, void *);
++	notifier_fn_t notifier_call;
+ 	struct notifier_block __rcu *next;
+ 	int priority;
+ };
+_
+
+
+And then I changed your patch thusly:
+
+--- a/mm/mmap.c~mm-reinititalise-user-and-admin-reserves-if-memory-is-added-or-removed-fix
++++ a/mm/mmap.c
+@@ -3198,7 +3198,7 @@ static struct notifier_block reserve_mem
+ 
+ int __meminit init_reserve_notifier(void)
+ {
+-	if (register_memory_notifier(&reserve_mem_nb))
++	if (register_hotmemory_notifier(&reserve_mem_nb))
+ 		printk("Failed registering memory add/remove notifier for admin reserve");
+ 
+ 	return 0;
+_
+
+and voila, no more bloat.
