@@ -1,95 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935015Ab3DHRXD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 13:23:03 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:24204 "EHLO
+	id S934717Ab3DHRWs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 13:22:48 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:24116 "EHLO
 	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762545Ab3DHRXA (ORCPT
+	with ESMTP id S934068Ab3DHRWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 13:23:00 -0400
+	Mon, 8 Apr 2013 13:22:47 -0400
 From: Toshi Kani <toshi.kani@hp.com>
 To: akpm@linux-foundation.org
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, linuxram@us.ibm.com,
         guz.fnst@cn.fujitsu.com, tmac@hp.com, isimatu.yasuaki@jp.fujitsu.com,
         wency@cn.fujitsu.com, tangchen@cn.fujitsu.com, jiang.liu@huawei.com,
         Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v2 1/3] resource: Add __adjust_resource() for internal use
-Date: Mon,  8 Apr 2013 11:09:54 -0600
-Message-Id: <1365440996-30981-2-git-send-email-toshi.kani@hp.com>
+Subject: [PATCH v2 0/3] Support memory hot-delete to boot memory
+Date: Mon,  8 Apr 2013 11:09:53 -0600
+Message-Id: <1365440996-30981-1-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1365440996-30981-1-git-send-email-toshi.kani@hp.com>
-References: <1365440996-30981-1-git-send-email-toshi.kani@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added __adjust_resource(), which is called by adjust_resource()
-internally after the resource_lock is held.  There is no interface
-change to adjust_resource().  This change allows other functions
-to call __adjust_resource() internally while the resource_lock is
-held.
+Memory hot-delete to a memory range present at boot causes an
+error message in __release_region(), such as:
 
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+ Trying to free nonexistent resource <0000000070000000-0000000077ffffff>
+
+Hot-delete operation still continues since __release_region() is 
+a void function, but the target memory range is not freed from
+iomem_resource as the result.  This also leads a failure in a 
+subsequent hot-add operation to the same memory range since the
+address range is still in-use in iomem_resource.
+
+This problem happens because the granularity of memory resource ranges
+may be different between boot and hot-delete.  During bootup,
+iomem_resource is set up from the boot descriptor table, such as EFI
+Memory Table and e820.  Each resource entry usually covers the whole
+contiguous memory range.  Hot-delete request, on the other hand, may
+target to a particular range of memory resource, and its size can be
+much smaller than the whole contiguous memory.  Since the existing
+release interfaces like __release_region() require a requested region
+to be exactly matched to a resource entry, they do not allow a partial
+resource to be released.
+
+This patchset introduces release_mem_region_adjustable() for memory
+hot-delete operations, which allows releasing a partial memory range
+and adjusts remaining resource accordingly.  This patchset makes no
+changes to the existing interfaces since their restriction is still
+valid for I/O resources.
+
 ---
- kernel/resource.c |   35 ++++++++++++++++++++++-------------
- 1 file changed, 22 insertions(+), 13 deletions(-)
+v2: Updated release_mem_region_adjustable() per code reviews from
+Yasuaki Ishimatsu, Ram Pai and Gu Zheng. 
 
-diff --git a/kernel/resource.c b/kernel/resource.c
-index 73f35d4..ae246f9 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -706,24 +706,13 @@ void insert_resource_expand_to_fit(struct resource *root, struct resource *new)
- 	write_unlock(&resource_lock);
- }
- 
--/**
-- * adjust_resource - modify a resource's start and size
-- * @res: resource to modify
-- * @start: new start value
-- * @size: new size
-- *
-- * Given an existing resource, change its start and size to match the
-- * arguments.  Returns 0 on success, -EBUSY if it can't fit.
-- * Existing children of the resource are assumed to be immutable.
-- */
--int adjust_resource(struct resource *res, resource_size_t start, resource_size_t size)
-+static int __adjust_resource(struct resource *res, resource_size_t start,
-+				resource_size_t size)
- {
- 	struct resource *tmp, *parent = res->parent;
- 	resource_size_t end = start + size - 1;
- 	int result = -EBUSY;
- 
--	write_lock(&resource_lock);
--
- 	if (!parent)
- 		goto skip;
- 
-@@ -751,6 +740,26 @@ skip:
- 	result = 0;
- 
-  out:
-+	return result;
-+}
-+
-+/**
-+ * adjust_resource - modify a resource's start and size
-+ * @res: resource to modify
-+ * @start: new start value
-+ * @size: new size
-+ *
-+ * Given an existing resource, change its start and size to match the
-+ * arguments.  Returns 0 on success, -EBUSY if it can't fit.
-+ * Existing children of the resource are assumed to be immutable.
-+ */
-+int adjust_resource(struct resource *res, resource_size_t start,
-+			resource_size_t size)
-+{
-+	int result;
-+
-+	write_lock(&resource_lock);
-+	result = __adjust_resource(res, start, size);
- 	write_unlock(&resource_lock);
- 	return result;
- }
+---
+Toshi Kani (3):
+ resource: Add __adjust_resource() for internal use
+ resource: Add release_mem_region_adjustable()
+ mm: Change __remove_pages() to call release_mem_region_adjustable()
+
+---
+ include/linux/ioport.h |   2 +
+ kernel/resource.c      | 128 ++++++++++++++++++++++++++++++++++++++++++++-----
+ mm/memory_hotplug.c    |  11 ++++-
+ 3 files changed, 126 insertions(+), 15 deletions(-)
