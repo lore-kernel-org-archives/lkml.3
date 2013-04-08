@@ -1,100 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936231Ab3DHXqZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 19:46:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53227 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757254Ab3DHXqY (ORCPT
+	id S936602Ab3DHXqe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 19:46:34 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:52705 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760469Ab3DHXq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 19:46:24 -0400
-Date: Mon, 8 Apr 2013 16:46:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-audit@redhat.com,
-        Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH] [BZ905179] audit: omit check for uid and gid validity
- in audit rules and data
-Message-Id: <20130408164622.284f48c65341396aa8dbd220@linux-foundation.org>
-In-Reply-To: <1363807097-13073-1-git-send-email-rgb@redhat.com>
-References: <1363807097-13073-1-git-send-email-rgb@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Apr 2013 19:46:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130408230658.GY4068@ZenIV.linux.org.uk>
+References: <20130405173623.GE4068@ZenIV.linux.org.uk>
+	<515F3A71.9080008@sgi.com>
+	<20130405210042.GH4068@ZenIV.linux.org.uk>
+	<5162E36F.5020305@sgi.com>
+	<20130408155847.GS4068@ZenIV.linux.org.uk>
+	<51632DF8.2080402@sgi.com>
+	<20130408212327.GU4068@ZenIV.linux.org.uk>
+	<20130408214834.GV4068@ZenIV.linux.org.uk>
+	<516341ED.5060803@wwwdotorg.org>
+	<CAD=FV=WodJER2g45u5pEw0edf+K4uYJjyt0w4ZfX9q=o1a7pYw@mail.gmail.com>
+	<20130408230658.GY4068@ZenIV.linux.org.uk>
+Date: Mon, 8 Apr 2013 16:46:27 -0700
+X-Google-Sender-Auth: WuaguyiS7VykMZqCfCZNOXvob5U
+Message-ID: <CAD=FV=VrOh+3ucJ_4DfzpbMsOOWLK7rPue1e23=oV9tH-wUVPQ@mail.gmail.com>
+Subject: Re: hangs on boot in 9984d7394618df9
+From: Doug Anderson <dianders@chromium.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Nathan Zimmer <nzimmer@sgi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Woodhouse <dwmw2@infradead.org>, stable@vger.kernel.org,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Mar 2013 15:18:17 -0400 Richard Guy Briggs <rgb@redhat.com> wrote:
+Al,
 
-> audit rule additions containing "-F auid!=4294967295" were failing with EINVAL.
-> 
-> UID_INVALID (and GID_INVALID) is actually a valid uid (gid) for setting and
-> testing against audit rules.  Remove the check for invalid uid and gid when
-> parsing rules and data for logging.
-> 
-> Revert part of ca57ec0f00c3f139c41bf6b0a5b9bcc95bbb2ad7 (2012-09-11) to fix
-> this.
+On Mon, Apr 8, 2013 at 4:06 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> Folks, see if vfs.git#experimental works for you; the PITA had apparently
+> been caused by change of open() semantics for /proc/<pid>/fd/<some_pipe> -
+> it started to behave like a FIFO, i.e. wait for peer to show up.  Normally
+> that's not a problem, but if you have closed e.g. the write end of a pipe
+> and try to open /proc/<pid>/fd/<read_end_of_pipe>, you'll get open() waiting
+> for writers to appear.  Which isn't what we used to do here (open succeeded
+> immediately) and apparently that was enough to trip drakut.
+>
+> Branch head should be at 574179469f7370aadb9cbac1ceca7c3723c17bee.
 
-Eric, can you please take a look?
+That branch booted fine for me and didn't show any problems.
 
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> ---
->  kernel/auditfilter.c |   12 ------------
->  1 files changed, 0 insertions(+), 12 deletions(-)
-> 
-> diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-> index f9fc54b..457ee39 100644
-> --- a/kernel/auditfilter.c
-> +++ b/kernel/auditfilter.c
-> @@ -360,10 +360,7 @@ static struct audit_entry *audit_rule_to_entry(struct audit_rule *rule)
->  			/* bit ops not implemented for uid comparisons */
->  			if (f->op == Audit_bitmask || f->op == Audit_bittest)
->  				goto exit_free;
-> -
->  			f->uid = make_kuid(current_user_ns(), f->val);
-> -			if (!uid_valid(f->uid))
-> -				goto exit_free;
+I wasn't easily able to merge onto linux-next and test there though.
+I tried applying these the 4 top commits of your branch to
+"next-20130408" and it didn't solve my problems.  A full merge of your
+branch to linux-next showed conflicts and I didn't dig.
 
-It concerns me that map_id_down() can return -1 on error and that this
-change causes the kernel to no longer notice that error?
-
-
->  			break;
->  		case AUDIT_GID:
->  		case AUDIT_EGID:
-> @@ -372,10 +369,7 @@ static struct audit_entry *audit_rule_to_entry(struct audit_rule *rule)
->  			/* bit ops not implemented for gid comparisons */
->  			if (f->op == Audit_bitmask || f->op == Audit_bittest)
->  				goto exit_free;
-> -
->  			f->gid = make_kgid(current_user_ns(), f->val);
-> -			if (!gid_valid(f->gid))
-> -				goto exit_free;
->  			break;
->  		case AUDIT_PID:
->  		case AUDIT_PERS:
-> @@ -469,10 +463,7 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
->  			/* bit ops not implemented for uid comparisons */
->  			if (f->op == Audit_bitmask || f->op == Audit_bittest)
->  				goto exit_free;
-> -
->  			f->uid = make_kuid(current_user_ns(), f->val);
-> -			if (!uid_valid(f->uid))
-> -				goto exit_free;
->  			break;
->  		case AUDIT_GID:
->  		case AUDIT_EGID:
-> @@ -482,10 +473,7 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
->  			/* bit ops not implemented for gid comparisons */
->  			if (f->op == Audit_bitmask || f->op == Audit_bittest)
->  				goto exit_free;
-> -
->  			f->gid = make_kgid(current_user_ns(), f->val);
-> -			if (!gid_valid(f->gid))
-> -				goto exit_free;
->  			break;
->  		case AUDIT_PID:
->  		case AUDIT_PERS:
-
+-Doug
