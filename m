@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935113Ab3DHRKh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 13:10:37 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54378 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762634Ab3DHRKg (ORCPT
+	id S934676Ab3DHROm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 13:14:42 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:64355 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934432Ab3DHROk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 13:10:36 -0400
-Date: Mon, 8 Apr 2013 18:09:56 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Peter Meerwald <pmeerw@pmeerw.net>
-Subject: Re: [RFC v2] dmaengine: omap-dma: Start DMA without delay for
-	cyclic channels
-Message-ID: <20130408170956.GX30923@n2100.arm.linux.org.uk>
-References: <1364987862-14597-1-git-send-email-peter.ujfalusi@ti.com> <51626D88.8020809@ti.com>
+	Mon, 8 Apr 2013 13:14:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg KH <greg@kroah.com>
+Subject: Re: [PATCH V5 0/6] USB: EHCI multiplatform for 3.10
+Date: Mon, 8 Apr 2013 19:14:30 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-usb@vger.kernel.org, Manjunath Goudar <manjunath.goudar@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <1364919844-1726-1-git-send-email-arnd@arndb.de> <20130408164209.GA13694@kroah.com>
+In-Reply-To: <20130408164209.GA13694@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51626D88.8020809@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304081914.30266.arnd@arndb.de>
+X-Provags-ID: V02:K0:YnxLctz8hyr4gmIOW2FuAUEhYzW1l/959HoQAbTQZen
+ D80ulGRrvamMFdE1sGf9E9MAPbEbidqwFPSOgcbErRaoHpQ9yf
+ 2vCc41bEhfKHaX8I+uXSGtIu23cgEEgk2iIGnclAfcL1iAA8iO
+ oX4CsZCTRYIlqcwHlzf0WlIoZpHxx9j79Nr6A77DVXJQznwe50
+ 9V+pjJst3gFkI3RX1lJaANSPtTN15V0TbZ3RLAeQeAgPD6Iqe1
+ lQ7JMA+RD8f/5zidLFlBs3p2o6j9q6gYnCf2ESmx9crWeYF1Jn
+ jkCEguQcwct9xSrmAzremmOMVDBB1UzqvIIT9E/d48mdVds+9m
+ ibnPp69d47SrLT2ghkUg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 09:11:04AM +0200, Peter Ujfalusi wrote:
-> Russell,
-> 
-> On 04/03/2013 01:17 PM, Peter Ujfalusi wrote:
-> > cyclic DMA is only used by audio which needs DMA to be started without a
-> > delay.
-> > If the DMA for audio is started using the tasklet we experience random
-> > channel switch (to be more precise: channel shift).
+On Monday 08 April 2013, Greg KH wrote:
+> On Tue, Apr 02, 2013 at 06:23:58PM +0200, Arnd Bergmann wrote:
+> > Hi Greg,
 > > 
-> > Reported-by: Peter Meerwald <pmeerw@pmeerw.net>
-> > Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> > ---
-> > Hi Russell,
+> > Here are the EHCI patches that I think are good for inclusion in 3.10,
+> > I hope you are willing to include them after the debacle over these
+> > patches in 3.9.
 > > 
-> > Instead of removing the tasklet we can identify the DMA channel used by audio
-> > based on the cyclic flag of the channel.
-> > I think this can be used as a short term solution to fix the audio channel shift
-> > issue and later when we have the dynamic DMA channel allocation we can adjust
-> > the code.
+> > The patches are all logically independent but sorted by priority,
+> > so decide for yourself how many you want to take, starting at the
+> > first one. The first six patches all have an Ack from Alan Stern
+> > and from the respective ARM platform maintainers.
 > 
-> Could you, please look at this patch?
+> I don't see an ACK for the 6th patch from Alan, any reason for that?
+> 
+> I've applied the first 5 for now, if you want the 6th one applied,
+> please resend.
 
-Now that I'm back from a short 4 day break, then yes, and the answer is
-that it's fine.  Who's handling the patch?
+Thanks a lot!
+
+I had mentioned the fact that the last one is missing the ack in my
+email, maybe not prominently enough when I wrote:
+
+> > * The final patch is from me and still waiting for an Ack from Alan
+> >   Stern, so please wait for his feedback before applying that one.
+
+It would be nice to get that in, but it's not as important for 3.10 since
+the only conflict between backends I expect is between Exynos and SPEAr.
+SPEAr is not widely used for all I can tell, and whether Exynos actually
+makes the multiplatform conversion is still an open question, since there
+are a number of missing patches and we are about to close the window for
+arm-soc patches as well. In 3.11, things will look quite different.
+
+	Arnd
