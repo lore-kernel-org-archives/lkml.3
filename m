@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936335Ab3DHVf5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 17:35:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50663 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935997Ab3DHVf4 (ORCPT
+	id S936298Ab3DHVgx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 17:36:53 -0400
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:32878 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934661Ab3DHVgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 17:35:56 -0400
-Date: Mon, 8 Apr 2013 14:35:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Guenter Roeck <linux@roeck-us.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Convert compat_sys_sysinfo to COMPAT_SYSCALL_DEFINE
-Message-Id: <20130408143554.3d23a6d96bd880d46c201e8a@linux-foundation.org>
-In-Reply-To: <20130408145616.fc074f04c4c813fd2eac96a1@canb.auug.org.au>
-References: <20130408115325.1e4b35359271383b9c459ef9@canb.auug.org.au>
-	<20130408144341.7738da3c31074f7098898029@canb.auug.org.au>
-	<20130408145616.fc074f04c4c813fd2eac96a1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Apr 2013 17:36:52 -0400
+Date: Mon, 8 Apr 2013 14:36:46 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Li Zefan <lizefan@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 1/8] cgroup: implement cgroup_is_ancestor()
+Message-ID: <20130408213646.GB17159@mtj.dyndns.org>
+References: <51627DA9.7020507@huawei.com>
+ <51627DBB.5050005@huawei.com>
+ <20130408144750.GK17178@dhcp22.suse.cz>
+ <20130408180335.GA22512@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130408180335.GA22512@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Apr 2013 14:56:16 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Mon, Apr 08, 2013 at 08:03:44PM +0200, Michal Hocko wrote:
+> __mem_cgroup_same_or_subtree relies on css_is_ancestor if hierarchy is
+> enabled for ages. This, however, is not correct because use_hierarchy
+> doesn't need to be true all the way up the cgroup hierarchy. Consider
+> the following example:
+> root (use_hierarchy=0)
+>  \
+>   A (use_hierarchy=0)
+>    \
+>     B (use_hierarchy=1)
+>      \
+>       C (use_hierarchy=1)
+> 
+> __mem_cgroup_same_or_subtree(A, C) would return true even though C is
+> not from the same hierarchy subtree. The bug shouldn't be critical but
+> at least dump_tasks might print unrelated tasks (via
+> task_in_mem_cgroup).
 
-> --- a/kernel/timer.c
-> +++ b/kernel/timer.c
-> @@ -1661,8 +1661,7 @@ struct compat_sysinfo {
->  	char _f[20-2*sizeof(u32)-sizeof(int)];
->  };
+Huh?  Isn't that avoided by the !root_memcg->use_hierarchy test?
+
+> @@ -1470,9 +1470,12 @@ bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+>  {
+>  	if (root_memcg == memcg)
+>  		return true;
+> -	if (!root_memcg->use_hierarchy || !memcg)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> +	if (!memcg)
+>  		return false;
+> -	return css_is_ancestor(&memcg->css, &root_memcg->css);
+> +	while ((memcg = parent_mem_cgroup(memcg)))
+> +		if (memcg == root_memcg)
+> +			return true;
+> +	return false;
+>  }
 >  
-> -asmlinkage long
-> -compat_sys_sysinfo(struct compat_sysinfo __user *info)
-> +COMPAT_SYSCALL_DEFINE1(sysinfo, struct compat_sysinfo __user *, info)
+>  static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> -- 
+> 1.7.10.4
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
 
-wtflol.
-
-akpm3:/usr/src/25> grep SYSCALL kernel/timer.c 
-SYSCALL_DEFINE1(alarm, unsigned int, seconds)
-SYSCALL_DEFINE0(getpid)
-SYSCALL_DEFINE0(getppid)
-SYSCALL_DEFINE0(getuid)
-SYSCALL_DEFINE0(geteuid)
-SYSCALL_DEFINE0(getgid)
-SYSCALL_DEFINE0(getegid)
-SYSCALL_DEFINE0(gettid)
-SYSCALL_DEFINE1(sysinfo, struct sysinfo __user *, info)
-COMPAT_SYSCALL_DEFINE1(sysinfo, struct compat_sysinfo __user *, info)
-
-Only one of those should be in kernel/timer.c.  Who wrote this thing?
+-- 
+tejun
