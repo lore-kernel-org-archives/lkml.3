@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935783Ab3DHTfP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 15:35:15 -0400
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:62235 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935741Ab3DHTfN (ORCPT
+	id S935808Ab3DHTf1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 15:35:27 -0400
+Received: from carbon.coolservecorp.net ([184.82.167.18]:45513 "EHLO
+	carbon.coolservecorp.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935741Ab3DHTfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 15:35:13 -0400
-Message-ID: <1365449711.1830.130.camel@x61.thuisdomein>
-Subject: [PATCH] powerpc: remove "config MPC10X_OPENPIC"
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Date: Mon, 08 Apr 2013 21:35:11 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Mon, 8 Apr 2013 15:35:24 -0400
+Message-ID: <51631BAF.40408@grapecom.com>
+Date: Mon, 08 Apr 2013 22:34:07 +0300
+From: Elijah Ragozin <illia.ragozin@grapecom.com>
+Organization: Grapecom
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Andrew Lunn <andrew@lunn.ch>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND v2 1/1] ARM Feroceon: fix kexec by setting outer_cache.inv_all
+References: <51631B12.2010908@grapecom.com>
+In-Reply-To: <51631B12.2010908@grapecom.com>
+X-Forwarded-Message-Id: <51631B12.2010908@grapecom.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Apr 2013 19:35:11.0642 (UTC) FILETIME=[2F7477A0:01CE3490]
-X-RcptDomain: vger.kernel.org
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - carbon.coolservecorp.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - grapecom.com
+X-Get-Message-Sender-Via: carbon.coolservecorp.net: authenticated_id: illia.ragozin+grapecom.com/only user confirmed/virtual account not confirmed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The last users of Kconfig symbol MPC10X_OPENPIC were removed in v2.6.27.
-Its Kconfig entry can be removed now.
+On Feroceon the L2 cache becomes non-coherent with the CPU
+when the L1 caches are disabled. Thus the L2 needs to be invalidated
+after both L1 caches are disabled.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+On kexec before the starting the code for relocation the kernel,
+the L1 caches are disabled in cpu_froc_fin (cpu_v7_proc_fin for Feroceon),
+but after L2 cache is never invalidated, because inv_all is not set
+in cache-feroceon-l2.c.
+So kernel relocation and decompression may has (and usually has) errors.
+Setting the function enables L2 invalidation and fixes the issue.
+
+Signed-off-by: Illia Ragozin <illia.ragozin@grapecom.com>
 ---
-Untested.
+  arch/arm/mm/cache-feroceon-l2.c | 1 +
+  1 file changed, 1 insertion(+)
 
- arch/powerpc/platforms/embedded6xx/Kconfig | 5 -----
- 1 file changed, 5 deletions(-)
-
-diff --git a/arch/powerpc/platforms/embedded6xx/Kconfig b/arch/powerpc/platforms/embedded6xx/Kconfig
-index 5a8f50a9..302ba43 100644
---- a/arch/powerpc/platforms/embedded6xx/Kconfig
-+++ b/arch/powerpc/platforms/embedded6xx/Kconfig
-@@ -9,7 +9,6 @@ config LINKSTATION
- 	select FSL_SOC
- 	select PPC_UDBG_16550 if SERIAL_8250
- 	select DEFAULT_UIMAGE
--	select MPC10X_OPENPIC
- 	select MPC10X_BRIDGE
- 	help
- 	  Select LINKSTATION if configuring for one of PPC- (MPC8241)
-@@ -24,7 +23,6 @@ config STORCENTER
- 	select MPIC
- 	select FSL_SOC
- 	select PPC_UDBG_16550 if SERIAL_8250
--	select MPC10X_OPENPIC
- 	select MPC10X_BRIDGE
- 	help
- 	  Select STORCENTER if configuring for the iomega StorCenter
-@@ -84,9 +82,6 @@ config MV64X60
- 	select PPC_INDIRECT_PCI
- 	select CHECK_CACHE_COHERENCY
- 
--config MPC10X_OPENPIC
--	bool
--
- config GAMECUBE_COMMON
- 	bool
- 
+diff --git a/arch/arm/mm/cache-feroceon-l2.c
+b/arch/arm/mm/cache-feroceon-l2.c
+index e0b0e7a..09f8851 100644
+--- a/arch/arm/mm/cache-feroceon-l2.c
++++ b/arch/arm/mm/cache-feroceon-l2.c
+@@ -342,6 +342,7 @@ void __init feroceon_l2_init(int __l2_wt_override)
+  	outer_cache.inv_range = feroceon_l2_inv_range;
+  	outer_cache.clean_range = feroceon_l2_clean_range;
+  	outer_cache.flush_range = feroceon_l2_flush_range;
++	outer_cache.inv_all = l2_inv_all;
+  
+  	enable_l2();
+  
 -- 
-1.7.11.7
+1.8.1.4
 
