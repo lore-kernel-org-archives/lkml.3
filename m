@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935791Ab3DHJwS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:52:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42871 "EHLO
+	id S935909Ab3DHJwm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:52:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43000 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935754Ab3DHJwN (ORCPT
+	with ESMTP id S935853Ab3DHJwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:52:13 -0400
+	Mon, 8 Apr 2013 05:52:39 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Yuchung Cheng <ycheng@google.com>,
-        Van Jacobson <vanj@google.com>, Neal Cardwell <ncardwell@google.com>,
-        Nandita Dukkipati <nanditad@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Johannes Berg <johannes.berg@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 060/102] tcp: preserve ACK clocking in TSO
-Date: Mon,  8 Apr 2013 10:50:15 +0100
-Message-Id: <1365414657-29191-61-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 083/102] mac80211: always synchronize_net() during station removal
+Date: Mon,  8 Apr 2013 10:50:38 +0100
+Message-Id: <1365414657-29191-84-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
@@ -30,90 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit f4541d60a449afd40448b06496dcd510f505928e upstream.
+commit 27a737ff7cb062fb9cbceba9b44d60aa74862bfa upstream.
 
-A long standing problem with TSO is the fact that tcp_tso_should_defer()
-rearms the deferred timer, while it should not.
+If there are keys left during station removal, then a
+synchronize_net() will be done (for each key, I have a
+patch to address this for 3.10), otherwise it won't be
+done at all which causes issues because the station
+could be used for TX while it's being removed from the
+driver -- that might confuse the driver.
 
-Current code leads to following bad bursty behavior :
+Fix this by always doing synchronize_net() if no key
+was present any more.
 
-20:11:24.484333 IP A > B: . 297161:316921(19760) ack 1 win 119
-20:11:24.484337 IP B > A: . ack 263721 win 1117
-20:11:24.485086 IP B > A: . ack 265241 win 1117
-20:11:24.485925 IP B > A: . ack 266761 win 1117
-20:11:24.486759 IP B > A: . ack 268281 win 1117
-20:11:24.487594 IP B > A: . ack 269801 win 1117
-20:11:24.488430 IP B > A: . ack 271321 win 1117
-20:11:24.489267 IP B > A: . ack 272841 win 1117
-20:11:24.490104 IP B > A: . ack 274361 win 1117
-20:11:24.490939 IP B > A: . ack 275881 win 1117
-20:11:24.491775 IP B > A: . ack 277401 win 1117
-20:11:24.491784 IP A > B: . 316921:332881(15960) ack 1 win 119
-20:11:24.492620 IP B > A: . ack 278921 win 1117
-20:11:24.493448 IP B > A: . ack 280441 win 1117
-20:11:24.494286 IP B > A: . ack 281961 win 1117
-20:11:24.495122 IP B > A: . ack 283481 win 1117
-20:11:24.495958 IP B > A: . ack 285001 win 1117
-20:11:24.496791 IP B > A: . ack 286521 win 1117
-20:11:24.497628 IP B > A: . ack 288041 win 1117
-20:11:24.498459 IP B > A: . ack 289561 win 1117
-20:11:24.499296 IP B > A: . ack 291081 win 1117
-20:11:24.500133 IP B > A: . ack 292601 win 1117
-20:11:24.500970 IP B > A: . ack 294121 win 1117
-20:11:24.501388 IP B > A: . ack 295641 win 1117
-20:11:24.501398 IP A > B: . 332881:351881(19000) ack 1 win 119
-
-While the expected behavior is more like :
-
-20:19:49.259620 IP A > B: . 197601:202161(4560) ack 1 win 119
-20:19:49.260446 IP B > A: . ack 154281 win 1212
-20:19:49.261282 IP B > A: . ack 155801 win 1212
-20:19:49.262125 IP B > A: . ack 157321 win 1212
-20:19:49.262136 IP A > B: . 202161:206721(4560) ack 1 win 119
-20:19:49.262958 IP B > A: . ack 158841 win 1212
-20:19:49.263795 IP B > A: . ack 160361 win 1212
-20:19:49.264628 IP B > A: . ack 161881 win 1212
-20:19:49.264637 IP A > B: . 206721:211281(4560) ack 1 win 119
-20:19:49.265465 IP B > A: . ack 163401 win 1212
-20:19:49.265886 IP B > A: . ack 164921 win 1212
-20:19:49.266722 IP B > A: . ack 166441 win 1212
-20:19:49.266732 IP A > B: . 211281:215841(4560) ack 1 win 119
-20:19:49.267559 IP B > A: . ack 167961 win 1212
-20:19:49.268394 IP B > A: . ack 169481 win 1212
-20:19:49.269232 IP B > A: . ack 171001 win 1212
-20:19:49.269241 IP A > B: . 215841:221161(5320) ack 1 win 119
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Van Jacobson <vanj@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Nandita Dukkipati <nanditad@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/tcp_output.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ net/mac80211/sta_info.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 1195760..e0cd660 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1604,8 +1604,11 @@ static bool tcp_tso_should_defer(struct sock *sk, struct sk_buff *skb)
- 			goto send_now;
- 	}
+diff --git a/net/mac80211/sta_info.c b/net/mac80211/sta_info.c
+index fec8eab..91eb0c5 100644
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -664,6 +664,7 @@ int __must_check __sta_info_destroy(struct sta_info *sta)
+ 	struct ieee80211_sub_if_data *sdata;
+ 	int ret, i, ac;
+ 	struct tid_ampdu_tx *tid_tx;
++	bool have_key = false;
  
--	/* Ok, it looks like it is advisable to defer.  */
--	tp->tso_deferred = 1 | (jiffies << 1);
-+	/* Ok, it looks like it is advisable to defer.
-+	 * Do not rearm the timer if already set to not break TCP ACK clocking.
-+	 */
-+	if (!tp->tso_deferred)
-+		tp->tso_deferred = 1 | (jiffies << 1);
+ 	might_sleep();
  
- 	return true;
+@@ -691,12 +692,19 @@ int __must_check __sta_info_destroy(struct sta_info *sta)
+ 	list_del_rcu(&sta->list);
  
+ 	mutex_lock(&local->key_mtx);
+-	for (i = 0; i < NUM_DEFAULT_KEYS; i++)
++	for (i = 0; i < NUM_DEFAULT_KEYS; i++) {
+ 		__ieee80211_key_free(key_mtx_dereference(local, sta->gtk[i]));
+-	if (sta->ptk)
++		have_key = true;
++	}
++	if (sta->ptk) {
+ 		__ieee80211_key_free(key_mtx_dereference(local, sta->ptk));
++		have_key = true;
++	}
+ 	mutex_unlock(&local->key_mtx);
+ 
++	if (!have_key)
++		synchronize_net();
++
+ 	sta->dead = true;
+ 
+ 	local->num_sta--;
 -- 
 1.8.1.2
 
