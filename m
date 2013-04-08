@@ -1,164 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934934Ab3DHQaE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 12:30:04 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:56472 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934885Ab3DHQaA (ORCPT
+	id S934994Ab3DHQal (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 12:30:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38535 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934597Ab3DHQah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 12:30:00 -0400
-Message-ID: <5162EEDB.2050102@gmail.com>
-Date: Mon, 08 Apr 2013 18:22:51 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 8 Apr 2013 12:30:37 -0400
+Date: Mon, 8 Apr 2013 09:29:44 -0700
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-042c16f14161fb569fd1a60b908c5196109052da@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, bp@suse.de
+In-Reply-To: <1365436666-9837-5-git-send-email-bp@alien8.de>
+References: <1365436666-9837-5-git-send-email-bp@alien8.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpu] x86, CPU, AMD: Drop useless label
+Git-Commit-ID: 042c16f14161fb569fd1a60b908c5196109052da
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 1/2 v 2][RFC] fsfreeze: add new internal __sb_start_write_wait
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 08 Apr 2013 09:29:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a new internal function __sb_start_write_wait. It must be called
-when we want wait for freeze events. We can wait in killable or
-uninterruptible state. The old __sb_start_write now it's used only
-when we don't want to wait. In addition, a new wrapper sb_start_write_killable
-is added.
+Commit-ID:  042c16f14161fb569fd1a60b908c5196109052da
+Gitweb:     http://git.kernel.org/tip/042c16f14161fb569fd1a60b908c5196109052da
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Mon, 8 Apr 2013 17:57:46 +0200
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Mon, 8 Apr 2013 09:07:18 -0700
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+x86, CPU, AMD: Drop useless label
+
+All we want to do is return from this function so stop jumping around
+like a flea for no good reason.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1365436666-9837-5-git-send-email-bp@alien8.de
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- fs/super.c         |   47 ++++++++++++++++++++++++++++++++++++++++-------
- include/linux/fs.h |   23 ++++++++++++++++++-----
- 2 files changed, 58 insertions(+), 12 deletions(-)
+ arch/x86/kernel/cpu/amd.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index 7465d43..cb0149b 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -1190,15 +1190,11 @@ static void acquire_freeze_lock(struct super_block *sb, int level, bool trylock,
-  * This is an internal function, please use sb_start_{write,pagefault,intwrite}
-  * instead.
-  */
--int __sb_start_write(struct super_block *sb, int level, bool wait)
-+int __sb_start_write(struct super_block *sb, int level)
- {
- retry:
--	if (unlikely(sb->s_writers.frozen >= level)) {
--		if (!wait)
--			return 0;
--		wait_event(sb->s_writers.wait_unfrozen,
--			   sb->s_writers.frozen < level);
--	}
-+	if (unlikely(sb->s_writers.frozen >= level))
-+		return 0;
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index cea02d7..5013a48 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -192,11 +192,11 @@ static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
+ 	/* Athlon 660/661 is valid. */
+ 	if ((c->x86_model == 6) && ((c->x86_mask == 0) ||
+ 	    (c->x86_mask == 1)))
+-		goto valid_k7;
++		return;
  
- #ifdef CONFIG_LOCKDEP
- 	acquire_freeze_lock(sb, level, !wait, _RET_IP_);
-@@ -1217,6 +1213,43 @@ retry:
- }
- EXPORT_SYMBOL(__sb_start_write);
+ 	/* Duron 670 is valid */
+ 	if ((c->x86_model == 7) && (c->x86_mask == 0))
+-		goto valid_k7;
++		return;
  
-+/*
-+ * This is an internal function, please use sb_start_{write,pagefault,intwrite}
-+ * instead. It returns zero if no error occured, the error code otherwise.
-+ */
-+int __sb_start_write_wait(struct super_block *sb, int level, bool wait_killable)
-+{
-+	int ret = 0;
-+
-+retry:
-+	if (unlikely(sb->s_writers.frozen >= level)) {
-+		if (wait_killable)
-+			ret = wait_event_killable(sb->s_writers.wait_unfrozen,
-+						sb->s_writers.frozen < level);
-+			if (ret)
-+				return -EINTR;
-+		else
-+			wait_event(sb->s_writers.wait_unfrozen,
-+						sb->s_writers.frozen < level);
-+	}
-+
-+#ifdef CONFIG_LOCKDEP
-+	acquire_freeze_lock(sb, level, !wait, _RET_IP_);
-+#endif
-+	percpu_counter_inc(&sb->s_writers.counter[level-1]);
-+	/*
-+	 * Make sure counter is updated before we check for frozen.
-+	 * freeze_super() first sets frozen and then checks the counter.
-+	 */
-+	smp_mb();
-+	if (unlikely(sb->s_writers.frozen >= level)) {
-+		__sb_end_write(sb, level);
-+		goto retry;
-+	}
-+	return ret;
-+}
-+EXPORT_SYMBOL(__sb_start_write_wait);
-+
- /**
-  * sb_wait_write - wait until all writers to given file system finish
-  * @sb: the super for which we wait
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 2c28271..6428dbd 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1333,7 +1333,8 @@ extern struct timespec current_fs_time(struct super_block *sb);
-  */
+ 	/*
+ 	 * Athlon 662, Duron 671, and Athlon >model 7 have capability
+@@ -209,7 +209,7 @@ static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
+ 	    ((c->x86_model == 7) && (c->x86_mask >= 1)) ||
+ 	     (c->x86_model > 7))
+ 		if (cpu_has_mp)
+-			goto valid_k7;
++			return;
  
- void __sb_end_write(struct super_block *sb, int level);
--int __sb_start_write(struct super_block *sb, int level, bool wait);
-+int __sb_start_write(struct super_block *sb, int level);
-+int __sb_start_write_wait(struct super_block *sb, int level, bool wait_killable);
+ 	/* If we get here, not a certified SMP capable AMD system. */
  
- /**
-  * sb_end_write - drop write access to a superblock
-@@ -1392,12 +1393,24 @@ static inline void sb_end_intwrite(struct super_block *sb)
-  */
- static inline void sb_start_write(struct super_block *sb)
- {
--	__sb_start_write(sb, SB_FREEZE_WRITE, true);
-+	__sb_start_write_wait(sb, SB_FREEZE_WRITE, false);
-+}
-+
-+/**
-+ * sb_start_write_killable - get write access to a superblock
-+ * @sb: the super we write to
-+ *
-+ * Same semantic of sb_start_write, but we are going to wait in a killable
-+ * state instead of waiting in uninterruptible state.
-+ */
-+static inline int __must_check sb_start_write_killable(struct super_block *sb)
-+{
-+	return __sb_start_write_wait(sb, SB_FREEZE_WRITE, true);
+@@ -220,9 +220,6 @@ static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
+ 	WARN_ONCE(1, "WARNING: This combination of AMD"
+ 		" processors is not suitable for SMP.\n");
+ 	add_taint(TAINT_UNSAFE_SMP, LOCKDEP_NOW_UNRELIABLE);
+-
+-valid_k7:
+-	;
  }
  
- static inline int sb_start_write_trylock(struct super_block *sb)
- {
--	return __sb_start_write(sb, SB_FREEZE_WRITE, false);
-+	return __sb_start_write(sb, SB_FREEZE_WRITE);
- }
- 
- /**
-@@ -1421,7 +1434,7 @@ static inline int sb_start_write_trylock(struct super_block *sb)
-  */
- static inline void sb_start_pagefault(struct super_block *sb)
- {
--	__sb_start_write(sb, SB_FREEZE_PAGEFAULT, true);
-+	__sb_start_write_wait(sb, SB_FREEZE_PAGEFAULT, false);
- }
- 
- /*
-@@ -1439,7 +1452,7 @@ static inline void sb_start_pagefault(struct super_block *sb)
-  */
- static inline void sb_start_intwrite(struct super_block *sb)
- {
--	__sb_start_write(sb, SB_FREEZE_FS, true);
-+	__sb_start_write_wait(sb, SB_FREEZE_FS, false);
- }
- 
- 
--- 
-1.7.3.4
+ static void __cpuinit init_amd_k7(struct cpuinfo_x86 *c)
