@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935412Ab3DHJvN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:51:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42595 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935377Ab3DHJvJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:51:09 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mark Rutland <mark.rutland@arm.com>, linux-arm-kernel@lists.infradead.org,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 001/102] clockevents: Don't allow dummy broadcast timers
-Date: Mon,  8 Apr 2013 10:49:16 +0100
-Message-Id: <1365414657-29191-2-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
-References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S935420Ab3DHK0V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:26:21 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45591 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S936643Ab3DHK0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 06:26:19 -0400
+Message-ID: <51629B3D.4080905@ti.com>
+Date: Mon, 8 Apr 2013 15:56:05 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Prabhakar lad <prabhakar.csengg@gmail.com>
+CC: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] media: davinci: vpss: enable vpss clocks
+References: <1364903044-13752-1-git-send-email-prabhakar.csengg@gmail.com> <1364903044-13752-2-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1364903044-13752-2-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.10 -stable review patch.  If anyone has any objections, please let me know.
+On 4/2/2013 5:14 PM, Prabhakar lad wrote:
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> 
+> By default the VPSS clocks were enabled in capture driver
+> for davinci family which creates duplicates for dm355/dm365/dm644x.
+> This patch adds support to enable the VPSS clocks in VPSS driver,
+> which avoids duplication of code and also adding clock aliases.
+> 
+> This patch uses PM runtime API to enable/disable instead common clock
+> framework. con_ids for master and slave clocks of vpss is added in pm_domain
 
-------------------
+Common clock framework in not (yet) used on DaVinci, so this is misleading.
 
-From: Mark Rutland <mark.rutland@arm.com>
+> diff --git a/arch/arm/mach-davinci/pm_domain.c b/arch/arm/mach-davinci/pm_domain.c
+> index c90250e..445b10b 100644
+> --- a/arch/arm/mach-davinci/pm_domain.c
+> +++ b/arch/arm/mach-davinci/pm_domain.c
+> @@ -53,7 +53,7 @@ static struct dev_pm_domain davinci_pm_domain = {
+>  
+>  static struct pm_clk_notifier_block platform_bus_notifier = {
+>  	.pm_domain = &davinci_pm_domain,
+> -	.con_ids = { "fck", NULL, },
+> +	.con_ids = { "fck", "master", "slave", NULL, },
 
-commit a7dc19b8652c862d5b7c4d2339bd3c428bd29c4a upstream.
+NULL is sentinel so you can drop the ',' after that. Apart from that,
+for the mach-davinci parts:
 
-Currently tick_check_broadcast_device doesn't reject clock_event_devices
-with CLOCK_EVT_FEAT_DUMMY, and may select them in preference to real
-hardware if they have a higher rating value. In this situation, the
-dummy timer is responsible for broadcasting to itself, and the core
-clockevents code may attempt to call non-existent callbacks for
-programming the dummy, eventually leading to a panic.
+Acked-by: Sekhar Nori <nsekhar@ti.com>
 
-This patch makes tick_check_broadcast_device always reject dummy timers,
-preventing this problem.
-
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- kernel/time/tick-broadcast.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index f113755..a13987a 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -66,7 +66,8 @@ static void tick_broadcast_start_periodic(struct clock_event_device *bc)
-  */
- int tick_check_broadcast_device(struct clock_event_device *dev)
- {
--	if ((tick_broadcast_device.evtdev &&
-+	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
-+	    (tick_broadcast_device.evtdev &&
- 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
- 	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
- 		return 0;
--- 
-1.8.1.2
-
+Thanks,
+Sekhar
