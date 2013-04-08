@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965126Ab3DHOnf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 10:43:35 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:47592 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759462Ab3DHOnd (ORCPT
+	id S965170Ab3DHOox (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 10:44:53 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:13121 "EHLO
+	mail.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S965147Ab3DHOov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 10:43:33 -0400
+	Mon, 8 Apr 2013 10:44:51 -0400
+X-Greylist: delayed 524 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Apr 2013 10:44:51 EDT
+Message-ID: <5162D5D5.9080906@itdev.co.uk>
+Date: Mon, 08 Apr 2013 15:36:05 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-X-Originating-IP: [93.172.123.88]
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 8 Apr 2013 17:43:12 +0300
-Message-ID: <CAK=WgbZu8u=5pEq_W2FpYr_fP+zBhHc94pg4xWZ_0h75_1JE0w@mail.gmail.com>
-Subject: [GIT PULL] an hwspinlock fix for 3.9
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Li Fei <fei.li@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
+Subject: Re: Atmel updates to atmel_mxt_ts touch controller driver
+References: <1361555907-19840-1-git-send-email-nick.dyer@itdev.co.uk> <20130329164841.GA2230@polaris.bitmath.org>
+In-Reply-To: <20130329164841.GA2230@polaris.bitmath.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit f6161aa153581da4a3867a2d1a7caf4be19b6ec9:
+Henrik Rydberg wrote:
+>> Most of my focus in working on these changes has been to support Atmel's
+>> customers, who tend not to be using the mainline kernel. Unfortunately this 
+>> has generated somewhat of a backlog in getting these improvements into
+>> mainline. My current focus is to get these improvements upstream and I have
+>> time allocated to make any alterations as necessary. Since the scope of this
+>> patchset is so large any upstream delta tends to cause a big rebasing effort.
+>> I would suggest that I merge any useful improvements from the other patchsets
+>> to make a combined patchset.
+> 
+> Are you planning to submit a version for 3.9? If you do, please
+> consider sending a smaller set.
 
-  Linux 3.9-rc2 (2013-03-10 16:54:19 -0700)
+My goal is to try and get our changes into 3.10, we still have a couple of
+bugs to shake out (unfortunately in the bootloading code, which is at the
+front of the series), I will post an updated series once I have resolved that.
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/ohad/hwspinlock.git
-tags/hwspinlock-3.9-fix
-
-for you to fetch changes up to c10b90d85a5126d25c89cbaa50dc9fdd1c4d001a:
-
-  hwspinlock: fix __hwspin_lock_request error path (2013-04-05 17:45:11 +0300)
-
-----------------------------------------------------------------
-An hwspinlock fix from Li Fei, taking care of a faulty error path.
-
-----------------------------------------------------------------
-Li Fei (1):
-      hwspinlock: fix __hwspin_lock_request error path
-
- drivers/hwspinlock/hwspinlock_core.c | 2 ++
- 1 file changed, 2 insertions(+)
+You can see the WIP here:
+https://github.com/ndyer/linux/commits/for-next
