@@ -1,99 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934759Ab3DHR5o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 13:57:44 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:38363 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759861Ab3DHR5m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 13:57:42 -0400
-Date: Mon, 8 Apr 2013 10:57:34 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mingo@redhat.com, x86@kernel.org,
-        rth@twiddle.net, linux@arm.linux.org.uk, msalter@redhat.com,
-        starvik@axis.com, dhowells@redhat.com, tony.luck@intel.com,
-        benh@kernel.crashing.org, takata@linux-m32r.org, geert@linux-m68k.org,
-        james.hogan@imgtec.com, monstr@monstr.eu, ralf@linux-mips.org,
-        jonas@southpole.se, rkuo@codeaurora.org, schwidefsky@de.ibm.com,
-        liqin.chen@sunplusct.com, davem@davemloft.net, lethal@linux-sh.org,
-        vgupta@synopsys.com, chris@zankel.net, cmetcalf@tilera.com,
-        ysato@users.sourceforge.jp, gxt@mprc.pku.edu.cn, jdike@addtoit.com
-Subject: Re: [PATCH 1/7] x86: don't show trace beyond show_stack(NULL, NULL)
-Message-ID: <20130408175734.GH3021@htj.dyndns.org>
-References: <1365016497-32033-1-git-send-email-tj@kernel.org>
- <1365016497-32033-2-git-send-email-tj@kernel.org>
- <20130408160811.GA20612@gmail.com>
+	id S935144Ab3DHR6M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 13:58:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43715 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759861Ab3DHR6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 13:58:11 -0400
+Date: Mon, 8 Apr 2013 19:58:09 +0200
+From: Jan Kara <jack@suse.cz>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 2/2 v2][RFC] fsfreeze: replace sb_start_write with
+ sb_start_write_killable
+Message-ID: <20130408175809.GB25878@quack.suse.cz>
+References: <5162EF4C.10707@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130408160811.GA20612@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5162EF4C.10707@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo.
+On Mon 08-04-13 18:24:44, Marco Stornelli wrote:
+> Replace sb_start_write with sb_start_write_killable where it's
+> possible to manage a SIGKILL.
+  This still doesn't seem to be based on the freezing changes that are in
+linux-next, right? sb_start_write() calls have moved significantly there.
 
-On Mon, Apr 08, 2013 at 06:08:11PM +0200, Ingo Molnar wrote:
-> >  void show_stack(struct task_struct *task, unsigned long *sp)
-> >  {
-> > -	show_stack_log_lvl(task, NULL, sp, 0, "");
-> > +	unsigned long bp = 0;
-> > +	unsigned long stack;
-> > +
-> > +	/*
-> > +	 * Stack frames below this one aren't interesting.  Don't show them
-> > +	 * if we're printing for %current.
-> > +	 */
-> > +	if (!sp && (!task || task == current)) {
-> > +		sp = &stack;
-> > +		bp = stack_frame(current, NULL);
-> > +	}
-> > +
-> > +	show_stack_log_lvl(task, NULL, sp, bp, "");
+								Honza
+
 > 
-> Hm, show_regs() has a similar problem AFAICS.
-
-Doesn't seem so.  show_regs() have pt_regs which gets passed to
-dump_trace() and then used to determine the frame being dumped.
-e.g. BUG() takes pt_regs from the faulting frame and thus doesn't show
-anything beyond it.
-
- kernel BUG at /work/os/work/kernel/workqueue.c:4841!
- invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
- Modules linked in:
- CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.9.0-rc1-work+ #7
- Hardware name: empty empty/S3992, BIOS 080011  10/26/2007
- task: ffff88007c85e040 ti: ffff88007c860000 task.ti: ffff88007c860000
- RIP: 0010:[<ffffffff8234a07e>]  [<ffffffff8234a07e>] init_workqueues+0x4/0x6
- RSP: 0000:ffff88007c861ec8  EFLAGS: 00010246
- RAX: ffff88007c861fd8 RBX: ffffffff824466a8 RCX: 0000000000000001
- RDX: 0000000000000046 RSI: 0000000000000001 RDI: ffffffff8234a07a
- RBP: ffff88007c861ec8 R08: 0000000000000000 R09: 0000000000000000
- R10: 0000000000000001 R11: 0000000000000000 R12: ffffffff8234a07a
- R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
- FS:  0000000000000000(0000) GS:ffff88007dc00000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- CR2: ffff88015f7ff000 CR3: 00000000021f1000 CR4: 00000000000007f0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Stack:
-  ffff88007c861ef8 ffffffff81000312 ffffffff824466a8 ffff88007c85e650
-  0000000000000003 0000000000000000 ffff88007c861f38 ffffffff82335e5d
-  ffff88007c862080 ffffffff8223d8c0 ffff88007c862080 ffffffff81c47760
- Call Trace:
-  [<ffffffff81000312>] do_one_initcall+0x122/0x170
-  [<ffffffff82335e5d>] kernel_init_freeable+0x9b/0x1c8
-  [<ffffffff81c47760>] ? rest_init+0x140/0x140
-  [<ffffffff81c4776e>] kernel_init+0xe/0xf0
-  [<ffffffff81c6be9c>] ret_from_fork+0x7c/0xb0
-  [<ffffffff81c47760>] ? rest_init+0x140/0x140
-  ...
-
-
-Thanks.
-
+> Signed-of-by: Marco Stornelli <marco.stornelli@gmail.com>
+> ---
+>  fs/btrfs/file.c   |    4 +++-
+>  fs/cifs/file.c    |    4 +++-
+>  fs/fuse/file.c    |    4 +++-
+>  fs/ntfs/file.c    |    4 +++-
+>  fs/ocfs2/file.c   |    4 +++-
+>  fs/open.c         |    8 ++++++--
+>  fs/splice.c       |    4 +++-
+>  fs/xfs/xfs_file.c |    4 +++-
+>  mm/filemap.c      |    4 +++-
+>  mm/filemap_xip.c  |    4 +++-
+>  10 files changed, 33 insertions(+), 11 deletions(-)
+> 
+> diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+> index ade03e6..a7cae1b 100644
+> --- a/fs/btrfs/file.c
+> +++ b/fs/btrfs/file.c
+> @@ -1514,7 +1514,9 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
+>  	size_t count, ocount;
+>  	bool sync = (file->f_flags & O_DSYNC) || IS_SYNC(file->f_mapping->host);
+>  
+> -	sb_start_write(inode->i_sb);
+> +	err = sb_start_write_killable(inode->i_sb);
+> +	if (err)
+> +		return err;
+>  
+>  	mutex_lock(&inode->i_mutex);
+>  
+> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+> index 7a0dd99..d4c812b 100644
+> --- a/fs/cifs/file.c
+> +++ b/fs/cifs/file.c
+> @@ -2520,7 +2520,9 @@ cifs_writev(struct kiocb *iocb, const struct iovec *iov,
+>  
+>  	BUG_ON(iocb->ki_pos != pos);
+>  
+> -	sb_start_write(inode->i_sb);
+> +	rc = sb_start_write_killable(inode->i_sb);
+> +	if (rc)
+> +		return rc;
+>  
+>  	/*
+>  	 * We need to hold the sem to be sure nobody modifies lock list
+> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> index 34b80ba..55eabac 100644
+> --- a/fs/fuse/file.c
+> +++ b/fs/fuse/file.c
+> @@ -971,7 +971,9 @@ static ssize_t fuse_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+>  		return err;
+>  
+>  	count = ocount;
+> -	sb_start_write(inode->i_sb);
+> +	err = sb_start_write_killable(inode->i_sb);
+> +	if (err)
+> +		return err;
+>  	mutex_lock(&inode->i_mutex);
+>  
+>  	/* We can write back this queue in page reclaim */
+> diff --git a/fs/ntfs/file.c b/fs/ntfs/file.c
+> index 5b2d4f0..dba2cd4 100644
+> --- a/fs/ntfs/file.c
+> +++ b/fs/ntfs/file.c
+> @@ -2129,7 +2129,9 @@ static ssize_t ntfs_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+>  
+>  	BUG_ON(iocb->ki_pos != pos);
+>  
+> -	sb_start_write(inode->i_sb);
+> +	ret = sb_start_write_killable(inode->i_sb);
+> +	if (ret)
+> +		return ret;
+>  	mutex_lock(&inode->i_mutex);
+>  	ret = ntfs_file_aio_write_nolock(iocb, iov, nr_segs, &iocb->ki_pos);
+>  	mutex_unlock(&inode->i_mutex);
+> diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+> index 6474cb4..77024ef 100644
+> --- a/fs/ocfs2/file.c
+> +++ b/fs/ocfs2/file.c
+> @@ -2248,7 +2248,9 @@ static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
+>  	if (iocb->ki_left == 0)
+>  		return 0;
+>  
+> -	sb_start_write(inode->i_sb);
+> +	ret = sb_start_write_killable(inode->i_sb);
+> +	if (ret)
+> +		return ret;
+>  
+>  	appending = file->f_flags & O_APPEND ? 1 : 0;
+>  	direct_io = file->f_flags & O_DIRECT ? 1 : 0;
+> diff --git a/fs/open.c b/fs/open.c
+> index 6835446..ab86208 100644
+> --- a/fs/open.c
+> +++ b/fs/open.c
+> @@ -182,7 +182,9 @@ static long do_sys_ftruncate(unsigned int fd, loff_t length, int small)
+>  	if (IS_APPEND(inode))
+>  		goto out_putf;
+>  
+> -	sb_start_write(inode->i_sb);
+> +	error = sb_start_write_killable(inode->i_sb);
+> +	if (error)
+> +		return error;
+>  	error = locks_verify_truncate(inode, f.file, length);
+>  	if (!error)
+>  		error = security_path_truncate(&f.file->f_path);
+> @@ -293,7 +295,9 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+>  	if (!file->f_op->fallocate)
+>  		return -EOPNOTSUPP;
+>  
+> -	sb_start_write(inode->i_sb);
+> +	ret = sb_start_write_killable(inode->i_sb);
+> +	if (ret)
+> +		return ret;
+>  	ret = file->f_op->fallocate(file, mode, offset, len);
+>  	sb_end_write(inode->i_sb);
+>  	return ret;
+> diff --git a/fs/splice.c b/fs/splice.c
+> index 29e394e..9931f09 100644
+> --- a/fs/splice.c
+> +++ b/fs/splice.c
+> @@ -1000,7 +1000,9 @@ generic_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
+>  	};
+>  	ssize_t ret;
+>  
+> -	sb_start_write(inode->i_sb);
+> +	ret = sb_start_write_killable(inode->i_sb);
+> +	if (ret)
+> +		return ret;
+>  
+>  	pipe_lock(pipe);
+>  
+> diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+> index f03bf1a..8054601 100644
+> --- a/fs/xfs/xfs_file.c
+> +++ b/fs/xfs/xfs_file.c
+> @@ -775,7 +775,9 @@ xfs_file_aio_write(
+>  	if (ocount == 0)
+>  		return 0;
+>  
+> -	sb_start_write(inode->i_sb);
+> +	ret = sb_start_write_killable(inode->i_sb);
+> +	if (ret)
+> +		return ret;
+>  
+>  	if (XFS_FORCED_SHUTDOWN(ip->i_mount)) {
+>  		ret = -EIO;
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index e1979fd..6820e47 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -2528,7 +2528,9 @@ ssize_t generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+>  
+>  	BUG_ON(iocb->ki_pos != pos);
+>  
+> -	sb_start_write(inode->i_sb);
+> +	ret = sb_start_write_killable(inode->i_sb);
+> +	if (ret)
+> +		return ret;
+>  	mutex_lock(&inode->i_mutex);
+>  	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
+>  	mutex_unlock(&inode->i_mutex);
+> diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
+> index a912da6..acef625 100644
+> --- a/mm/filemap_xip.c
+> +++ b/mm/filemap_xip.c
+> @@ -404,7 +404,9 @@ xip_file_write(struct file *filp, const char __user *buf, size_t len,
+>  	loff_t pos;
+>  	ssize_t ret;
+>  
+> -	sb_start_write(inode->i_sb);
+> +	ret = sb_start_write_killable(inode->i_sb);
+> +	if (ret)
+> +		return ret;
+>  
+>  	mutex_lock(&inode->i_mutex);
+>  
+> -- 
+> 1.7.3.4
 -- 
-tejun
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
