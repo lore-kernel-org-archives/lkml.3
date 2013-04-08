@@ -1,59 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935420Ab3DHK0V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:26:21 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45591 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936643Ab3DHK0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 06:26:19 -0400
-Message-ID: <51629B3D.4080905@ti.com>
-Date: Mon, 8 Apr 2013 15:56:05 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Prabhakar lad <prabhakar.csengg@gmail.com>
-CC: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LMML <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] media: davinci: vpss: enable vpss clocks
-References: <1364903044-13752-1-git-send-email-prabhakar.csengg@gmail.com> <1364903044-13752-2-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1364903044-13752-2-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S965149Ab3DHK0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:26:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42607 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935394Ab3DHJvL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 05:51:11 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 005/102] ath9k: limit tx path hang check to normal data queues
+Date: Mon,  8 Apr 2013 10:49:20 +0100
+Message-Id: <1365414657-29191-6-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
+References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/2/2013 5:14 PM, Prabhakar lad wrote:
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> 
-> By default the VPSS clocks were enabled in capture driver
-> for davinci family which creates duplicates for dm355/dm365/dm644x.
-> This patch adds support to enable the VPSS clocks in VPSS driver,
-> which avoids duplication of code and also adding clock aliases.
-> 
-> This patch uses PM runtime API to enable/disable instead common clock
-> framework. con_ids for master and slave clocks of vpss is added in pm_domain
+3.5.7.10 -stable review patch.  If anyone has any objections, please let me know.
 
-Common clock framework in not (yet) used on DaVinci, so this is misleading.
+------------------
 
-> diff --git a/arch/arm/mach-davinci/pm_domain.c b/arch/arm/mach-davinci/pm_domain.c
-> index c90250e..445b10b 100644
-> --- a/arch/arm/mach-davinci/pm_domain.c
-> +++ b/arch/arm/mach-davinci/pm_domain.c
-> @@ -53,7 +53,7 @@ static struct dev_pm_domain davinci_pm_domain = {
->  
->  static struct pm_clk_notifier_block platform_bus_notifier = {
->  	.pm_domain = &davinci_pm_domain,
-> -	.con_ids = { "fck", NULL, },
-> +	.con_ids = { "fck", "master", "slave", NULL, },
+From: Felix Fietkau <nbd@openwrt.org>
 
-NULL is sentinel so you can drop the ',' after that. Apart from that,
-for the mach-davinci parts:
+commit 01d4ab96d2e7fceaad204e5a8710ce34e229b8c5 upstream.
 
-Acked-by: Sekhar Nori <nsekhar@ti.com>
+The beacon and multicast-buffer queues are managed by the beacon
+tasklet, and the generic tx path hang check does not help in any way
+here. Running it on those queues anyway can introduce some race
+conditions leading to unnecessary chip resets.
 
-Thanks,
-Sekhar
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[ luis: backported to 3.5:
+  - file rename link.c -> xmit.c
+  - adjust context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/net/wireless/ath/ath9k/xmit.c | 26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
+index 12a42f2..894ed0e 100644
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -2258,21 +2258,21 @@ static void ath_tx_complete_poll_work(struct work_struct *work)
+ 	sc->tx_complete_poll_work_seen++;
+ #endif
+ 
+-	for (i = 0; i < ATH9K_NUM_TX_QUEUES; i++)
+-		if (ATH_TXQ_SETUP(sc, i)) {
+-			txq = &sc->tx.txq[i];
+-			ath_txq_lock(sc, txq);
+-			if (txq->axq_depth) {
+-				if (txq->axq_tx_inprogress) {
+-					needreset = true;
+-					ath_txq_unlock(sc, txq);
+-					break;
+-				} else {
+-					txq->axq_tx_inprogress = true;
+-				}
++	for (i = 0; i < IEEE80211_NUM_ACS; i++) {
++		txq = sc->tx.txq_map[i];
++
++		ath_txq_lock(sc, txq);
++		if (txq->axq_depth) {
++			if (txq->axq_tx_inprogress) {
++				needreset = true;
++				ath_txq_unlock(sc, txq);
++				break;
++			} else {
++				txq->axq_tx_inprogress = true;
+ 			}
+-			ath_txq_unlock_complete(sc, txq);
+ 		}
++		ath_txq_unlock_complete(sc, txq);
++	}
+ 
+ 	if (needreset) {
+ 		ath_dbg(ath9k_hw_common(sc->sc_ah), RESET,
+-- 
+1.8.1.2
+
