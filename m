@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934216Ab3DHHNh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 03:13:37 -0400
-Received: from nasmtp02.atmel.com ([204.2.163.16]:5191 "EHLO
-	nasmtp02.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934055Ab3DHHNg (ORCPT
+	id S934330Ab3DHHSE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 03:18:04 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:39787 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934301Ab3DHHSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 03:13:36 -0400
-X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Apr 2013 03:13:35 EDT
-Message-ID: <51626C87.6090800@atmel.com>
-Date: Mon, 8 Apr 2013 15:06:47 +0800
-From: Josh Wu <josh.wu@atmel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Mon, 8 Apr 2013 03:18:03 -0400
+Message-ID: <51626F50.6090204@parallels.com>
+Date: Mon, 8 Apr 2013 11:18:40 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Josh Wu <josh.wu@atmel.com>, <akpm@linux-foundation.org>
-CC: <egtvedt@samfundet.no>, <linux-kernel@vger.kernel.org>,
-        <hskinnemoen@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <dedekind1@gmail.com>, <fengguang.wu@intel.com>
-Subject: Re: [PATCH v2] avr32: fix build error in atstk1006_defconfig
-References: <1364797597-22005-1-git-send-email-josh.wu@atmel.com>
-In-Reply-To: <1364797597-22005-1-git-send-email-josh.wu@atmel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Li Zefan <lizefan@huawei.com>
+CC: Michal Hocko <mhocko@suse.cz>, <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC][PATCH 0/7] memcg: make memcg's life cycle the same as cgroup
+References: <515BF233.6070308@huawei.com> <516131D7.8030004@huawei.com>
+In-Reply-To: <516131D7.8030004@huawei.com>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Andrew
+On 04/07/2013 12:44 PM, Li Zefan wrote:
+> Hi,
+> 
+> I'm rebasing this patchset against latest linux-next, and it conflicts with
+> "[PATCH v2] memcg: debugging facility to access dangling memcgs." slightly.
+> 
+> That is a debugging patch and will never be pushed into mainline, so should I
+> still base this patchset on that debugging patch?
+> 
+It will conflict as well with my shrinking patches: I will still keep
+the memcgs in the dangling list, but that will have nothing to do with
+debugging. So I will split that patch in a list management part, which
+will be used, and a debugging part (with the file + the debugging
+information).
 
-Could you merge it for avr32? Thanks in advance.
+I will be happy to rebase it ontop of your series.
 
-Best Regards,
-Josh Wu
+> Also that patch needs update (and can be simplified) after this patchset:
+> - move memcg_dangling_add() to mem_cgroup_css_offline()
+> - remove memcg->memcg_name, and use cgroup_path() in mem_cgroup_dangling_read()?
+> 
 
-On 4/1/2013 2:26 PM, Josh Wu wrote:
-> fixed the following compile error when use avr32 atstk1006_defconfig:
->    drivers/mtd/nand/atmel_nand.c: In function 'pmecc_err_location':
->    drivers/mtd/nand/atmel_nand.c:639: error: implicit declaration of function 'writel_relaxed'
->
-> which was introduced by commit:
->    1c7b874d33b463f7150b1ab4617f000af9b327fd
->    mtd: at91: atmel_nand: add Programmable Multibit ECC controller support
-> The PMECC for nand flash code uses writel_relaxed(). But in avr32, there is no
-> macro "writel_relaxed" defined.
->
-> This patch add writex_relaxed macro definitions.
->
-> Signed-off-by: Josh Wu <josh.wu@atmel.com>
-> Acked-by: Havard Skinnemoen <havard@skinnemoen.net>
-> Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-> ---
-> change since v1:
->   refined the commit message and wrap it into 80 characters.
->
->   arch/avr32/include/asm/io.h |    4 ++++
->   1 file changed, 4 insertions(+)
->
-> diff --git a/arch/avr32/include/asm/io.h b/arch/avr32/include/asm/io.h
-> index cf60d0a..fc6483f 100644
-> --- a/arch/avr32/include/asm/io.h
-> +++ b/arch/avr32/include/asm/io.h
-> @@ -165,6 +165,10 @@ BUILDIO_IOPORT(l, u32)
->   #define readw_be			__raw_readw
->   #define readl_be			__raw_readl
->   
-> +#define writeb_relaxed			writeb
-> +#define writew_relaxed			writew
-> +#define writel_relaxed			writel
-> +
->   #define writeb_be			__raw_writeb
->   #define writew_be			__raw_writew
->   #define writel_be			__raw_writel
+Don't worry about it. If this is just this one patch conflicting, I
+would avise Andrew to remove it, and I will provide another (maybe two,
+already splitted up) version.
 
