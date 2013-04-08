@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936487Ab3DHObJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 10:31:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:57715 "EHLO mga09.intel.com"
+	id S936522Ab3DHObr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 10:31:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35962 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936250Ab3DHObG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 10:31:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,432,1363158000"; 
-   d="scan'208";a="314728059"
-Date: Mon, 8 Apr 2013 16:31:03 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/15] arizona updates for v3.10
-Message-ID: <20130408143103.GB21256@zurbaran>
-References: <20130401172748.GG18636@opensource.wolfsonmicro.com>
- <20130403180423.GA6985@opensource.wolfsonmicro.com>
- <20130408092556.GL24058@zurbaran>
- <20130408093842.GA23639@zurbaran>
- <20130408100409.GB9243@opensource.wolfsonmicro.com>
- <20130408101951.GD9243@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130408101951.GD9243@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S936162Ab3DHObq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 10:31:46 -0400
+Subject: Re: [PATCH] [PATCH] Gaurantee spinlocks implicit barrier for
+ !PREEMPT_COUNT
+From: Steven Rostedt <srostedt@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <1365428274.2609.160.camel@laptop>
+References: <alpine.LFD.2.02.1304031433350.21884@ionos>
+	 <1364998282-21437-1-git-send-email-vgupta@synopsys.com>
+	 <20130404152808.GB15261@ab42.lan> <515E54BD.2090300@synopsys.com>
+	 <51602459.3040105@synopsys.com>
+	 <CA+55aFw=-oJxujka-emxyRcY54MSe3qEjZ6xgzoE-roe3EFk5g@mail.gmail.com>
+	 <51624591.4010303@synopsys.com>
+	 <CA+55aFyFWjpSVQM6M266tKrG_ZXJzZ-nYejpmXYQXbrr42mGPQ@mail.gmail.com>
+	 <1365428274.2609.160.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat
+Date: Mon, 08 Apr 2013 10:31:10 -0400
+Message-ID: <1365431470.2733.16.camel@fedora>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Mon, 2013-04-08 at 15:37 +0200, Peter Zijlstra wrote:
 
-On Mon, Apr 08, 2013 at 11:19:51AM +0100, Mark Brown wrote:
-> On Mon, Apr 08, 2013 at 11:04:10AM +0100, Mark Brown wrote:
-> 
-> > patch series...  I'm just re-tagging and re-pushing but were you testing
-> > both serieses together?
-> 
-> OK, the mirrors seem to have the rebase now.  New pull request:
-> 
-> The following changes since commit 31880c37c11e28cb81c70757e38392b42e695dc6:
-> 
->   Linux 3.9-rc6 (2013-04-07 20:49:54 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git tags/mfd-arizona-3.10
-> 
-> for you to fetch changes up to 031eb8d52ecbe417cf778fba2d49bee90a078648:
-> 
->   mfd: wm5102: Don't wait for boot when boot sequencer is disabled (2013-04-08 11:12:04 +0100)
-> 
-> ----------------------------------------------------------------
-> mfd: arizona: Updates for v3.10
-> 
-> This is really a few separate topics which I can split out if required:
-> 
->  - WM5102 updates to improve robustness
->  - Improved support for interoperation with edge triggered interrupt
->    controllers
->  - Support for some unusual clocking configurations
->  - A couple small single patch updates and fixes
-Thanks, all 19 patches applied now. Everything builds fine on my side.
-The culprit for the missing arizona_of_get_core_pdata was "mfd: Add device
-tree bindings for Arizona class devices", not the above branch.
+> That said, I can't remember ever having seen a BUG like this, even
+> though !PREEMPT is (or at least was) the most popular distro setting.
 
-Cheers,
-Samuel.
+It requires gcc reordering the code to where a preempt can happen inside
+preempt_disable. And also put in a position where the preempt_disable
+code it gets added matters.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Then if gcc does this, we need a page fault to occur with a get_user()
+operation, which in practice seldom happens as most get user operations
+are done on freshly modified memory.
+
+And then, it would require the page fault to cause a schedule. This is
+the most likely of the things needed to occur, but itself is not a
+problem.
+
+Then, the schedule would have to cause the data that is being protect by
+the preempt_disable() to be corrupted. Either by scheduling in another
+process that monkeys with the data. Or if it protects per-cpu data,
+scheduling to another CPU (for the SMP case only).
+
+If any of the above does not occur, then you wont see a bug. This is
+highly unlikely to happen, but that's no excuse to not fix it. But it
+probably explains why we never saw a bug report. Heck, it may have
+happened, but it would be hard to reproduce, and just forgotten about.
+
+-- Steve
+
+
+
