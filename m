@@ -1,93 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935697Ab3DHMsH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 08:48:07 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:21686
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935075Ab3DHMsF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 08:48:05 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Mon, 8 Apr 2013 20:48:12 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Hector Palacios <hector.palacios@digi.com>
-CC: <linux-kernel@vger.kernel.org>, <maxime.ripard@free-electrons.com>,
-        <marex@denx.de>, <fabio.estevam@freescale.com>
-Subject: Re: [PATCH RFC] ARM: dts: mxs: leave card detect out of common mmc
- pins config
-Message-ID: <20130408124810.GC5044@S2101-09.ap.freescale.net>
-References: <1365415940-11609-1-git-send-email-hector.palacios@digi.com>
+	id S935958Ab3DHMtL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 08:49:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35360 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935075Ab3DHMtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 08:49:09 -0400
+Date: Mon, 8 Apr 2013 08:48:58 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Dave Young <dyoung@redhat.com>
+Cc: linux-watchdog@vger.kernel.org, kexec@lists.infradead.org, wim@iguana.be,
+        LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com
+Subject: Re: [RFC PATCH] watchdog: Add hook for kicking in kdump path
+Message-ID: <20130408124858.GC79013@redhat.com>
+References: <1365192994-94850-1-git-send-email-dzickus@redhat.com>
+ <516259D2.7000805@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365415940-11609-1-git-send-email-hector.palacios@digi.com>
+In-Reply-To: <516259D2.7000805@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 12:12:20PM +0200, Hector Palacios wrote:
-> MicroSD card sockets don't usually have card detect line. This pin
-> is actually not needed for the MMC to work and it is more of a
-> platform design decission to have it.
-> The card detect pin already has a configuration entry of its own:
-> 'mmc0_cd_cfg' so we complete the iomux configuration here and let
-> platforms to include it or not depending on whether the card detect
-> line is routed to the SD socket.
+On Mon, Apr 08, 2013 at 01:46:58PM +0800, Dave Young wrote:
+> On 04/06/2013 04:16 AM, Don Zickus wrote:
+> > A common problem with kdump is that during the boot up of the
+> > second kernel, the hardware watchdog times out and reboots the
+> > machine before a vmcore can be captured.
+> > 
+> > Instead of tellling customers to disable their hardware watchdog
+> > timers, I hacked up a hook to put in the kdump path that provides
+> > one last kick before jumping into the second kernel.
+> > 
+> > The assumption is the watchdog timeout is at least 10-30 seconds
+> > long, enough to get the second kernel to userspace to kick the watchdog
+> > again, if needed.
 > 
-Sounds sensible.
+> For kdump kernel some devices need to reset, this might increase the
+> boot time, it's not so reliable for the 10-30s for us to kicking the
+> watchdog.
+> 
+> Could we have another option to disable/stop the watchdog while panic
+> happens? Ie. add a kernel cmdline panic_stop_wd=<0|1> for 1st kernel, if
+> it's set to 1, then just stop the watchdog or we can kick the watchdog
+> like what you do in this patch. Of course stopping watchdog should be
+> lockless as well..
 
-> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
-> ---
-> 
-> Hello,
-> 
-> All imx28 based platforms except 'bluegiga,apx4devkit' and 
-> 'schulercontrol,imx28-sps1', use 'mmc0_cd_cfg' in their mmc configuration
-> so please check whether this patch would break these platforms.
-> 
-I just tested the patch on imx28-evk and card-detection still works.  So
-patches applied, thanks.
+Hmm, I can look into that.  But I am not sure all watchdogs have the
+ability to stop once started.  I was also worried about the case where
+kdump hangs for some reason.  Having the watchdog there to 'reboot' would
+be a nice safety net.
 
-Shawn
+Perhaps adjusting the watchdog 'timeout' to something like 3 minutes would
+be easier?
 
->  arch/arm/boot/dts/imx28.dtsi | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+I'll wait on feedback from the watchdog community to help point me in a
+good direction.
+
+Cheers,
+Don
+
 > 
-> diff --git a/arch/arm/boot/dts/imx28.dtsi b/arch/arm/boot/dts/imx28.dtsi
-> index 9b18e81..4222e4e 100644
-> --- a/arch/arm/boot/dts/imx28.dtsi
-> +++ b/arch/arm/boot/dts/imx28.dtsi
-> @@ -449,7 +449,6 @@
->  						0x2060 /* MX28_PAD_SSP0_DATA6__SSP0_D6 */
->  						0x2070 /* MX28_PAD_SSP0_DATA7__SSP0_D7 */
->  						0x2080 /* MX28_PAD_SSP0_CMD__SSP0_CMD */
-> -						0x2090 /* MX28_PAD_SSP0_DETECT__SSP0_CARD_DETECT */
->  						0x20a0 /* MX28_PAD_SSP0_SCK__SSP0_SCK */
->  					>;
->  					fsl,drive-strength = <1>;
-> @@ -465,7 +464,6 @@
->  						0x2020 /* MX28_PAD_SSP0_DATA2__SSP0_D2 */
->  						0x2030 /* MX28_PAD_SSP0_DATA3__SSP0_D3 */
->  						0x2080 /* MX28_PAD_SSP0_CMD__SSP0_CMD */
-> -						0x2090 /* MX28_PAD_SSP0_DETECT__SSP0_CARD_DETECT */
->  						0x20a0 /* MX28_PAD_SSP0_SCK__SSP0_SCK */
->  					>;
->  					fsl,drive-strength = <1>;
-> @@ -477,6 +475,8 @@
->  					fsl,pinmux-ids = <
->  						0x2090 /* MX28_PAD_SSP0_DETECT__SSP0_CARD_DETECT */
->  					>;
-> +					fsl,drive-strength = <1>;
-> +					fsl,voltage = <1>;
->  					fsl,pull-up = <0>;
->  				};
->  
+> > 
+> > Of course kdump is usually executed on a panic path, so grabbing the
+> > watchdog mutexes to communicate with the hardware won't work.  For now,
+> > I do everything locklessly.
+> > 
+> > I can attempt a 'mutex_trylock' but not sure what to do in the failure
+> > case?  spin up to a second?
+> > 
+> > This patch is more of a proof of concept right now.  Hopefully feedback
+> > will help solve this problem better.
+> > 
+> > I have tested this with a machine using iTCO_wdt and the 'watchdog' app.
+> > The extra kicked happened as expected.
+> > 
+> > Signed-off-by: Don Zickus <dzickus@redhat.com>
+> > ---
+> >  drivers/watchdog/watchdog_dev.c |   35 +++++++++++++++++++++++++++++++++++
+> >  include/linux/watchdog.h        |    7 +++++++
+> >  kernel/kexec.c                  |    6 ++++++
+> >  3 files changed, 48 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
+> > index 08b48bb..6393572 100644
+> > --- a/drivers/watchdog/watchdog_dev.c
+> > +++ b/drivers/watchdog/watchdog_dev.c
+> > @@ -84,6 +84,41 @@ out_ping:
+> >  }
+> >  
+> >  /*
+> > + *	watchdog_kick_for_kdump: kick the watchdog in the kdump path
+> > + *
+> > + * 	The kdump path needs time to reboot the kernel back into
+> > + * 	userspace.  This window is big enough the hardware watchdog
+> > + * 	may come in and reboot the box.  This hook gives the watchdog
+> > + * 	one final kick to get kdump over the hump.
+> > + *
+> > + * 	We don't know what devices are open, so just use the legacy
+> > + * 	interface for now.  We have to do this locklessly as we can
+> > + * 	not wait.
+> > + */
+> > +
+> > +void watchdog_kick_for_kdump(void)
+> > +{
+> > +	struct watchdog_device *wddev = old_wdd;
+> > +
+> > +	/* FIXME - Perhaps use a mutex_trylock? */
+> > +
+> > +	if (!wddev)
+> > +		return;
+> > +
+> > +	if (test_bit(WDOG_UNREGISTERED, &wddev->status))
+> > +		return;
+> > +
+> > +	if (!watchdog_active(wddev))
+> > +		return;
+> > +
+> > +	if (wddev->ops->ping)
+> > +		wddev->ops->ping(wddev);  /* ping the watchdog */
+> > +	else
+> > +		wddev->ops->start(wddev); /* restart watchdog */
+> > +}
+> > +EXPORT_SYMBOL_GPL(watchdog_kick_for_kdump);
+> > +
+> > +/*
+> >   *	watchdog_start: wrapper to start the watchdog.
+> >   *	@wddev: the watchdog device to start
+> >   *
+> > diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
+> > index 2a3038e..5dff975 100644
+> > --- a/include/linux/watchdog.h
+> > +++ b/include/linux/watchdog.h
+> > @@ -142,4 +142,11 @@ extern int watchdog_init_timeout(struct watchdog_device *wdd,
+> >  extern int watchdog_register_device(struct watchdog_device *);
+> >  extern void watchdog_unregister_device(struct watchdog_device *);
+> >  
+> > +#ifdef CONFIG_WATCHDOG_CORE
+> > +/* drivers/watchdog/watchdog_dev.c */
+> > +extern void watchdog_kick_for_kdump(void);
+> > +#else
+> > +static inline void watchdog_kick_for_kdump(void) { };
+> > +#endif
+> > +
+> >  #endif  /* ifndef _LINUX_WATCHDOG_H */
+> > diff --git a/kernel/kexec.c b/kernel/kexec.c
+> > index bddd3d7..ced7ccd 100644
+> > --- a/kernel/kexec.c
+> > +++ b/kernel/kexec.c
+> > @@ -32,6 +32,7 @@
+> >  #include <linux/vmalloc.h>
+> >  #include <linux/swap.h>
+> >  #include <linux/syscore_ops.h>
+> > +#include <linux/watchdog.h>
+> >  
+> >  #include <asm/page.h>
+> >  #include <asm/uaccess.h>
+> > @@ -1094,6 +1095,11 @@ void crash_kexec(struct pt_regs *regs)
+> >  		if (kexec_crash_image) {
+> >  			struct pt_regs fixed_regs;
+> >  
+> > +			/*
+> > +			 * Give panic path a chance to do its post processing
+> > +			 */
+> > +			watchdog_kick_for_kdump();
+> > +
+> >  			crash_setup_regs(&fixed_regs, regs);
+> >  			crash_save_vmcoreinfo();
+> >  			machine_crash_shutdown(&fixed_regs);
+> > 
+> 
+> 
 > -- 
-> 1.8.2
+> Thanks
+> Dave
 > 
-
+> 
