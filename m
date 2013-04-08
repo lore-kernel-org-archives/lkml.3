@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964987Ab3DHPa6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 11:30:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37847 "EHLO
+	id S965024Ab3DHPbE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 11:31:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37850 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964888Ab3DHPa4 (ORCPT
+	with ESMTP id S964888Ab3DHPbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 11:30:56 -0400
-Date: Mon, 8 Apr 2013 08:30:37 -0700
-From: tip-bot for Chen Gang <tipbot@zytor.com>
-Message-ID: <tip-67012ab1d2ce871afea4ee55408f233f97d09d07@git.kernel.org>
+	Mon, 8 Apr 2013 11:31:00 -0400
+Date: Mon, 8 Apr 2013 08:28:13 -0700
+From: tip-bot for libin <tipbot@zytor.com>
+Message-ID: <tip-fd9b86d37a600488dbd80fe60cca46b822bff1cd@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fweisbec@gmail.com, gang.chen@asianux.com, tglx@linutronix.de
+        huawei.libin@huawei.com, peterz@infradead.org, tglx@linutronix.de,
+        jiang.liu@huawei.com, guohanjun@huawei.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, gang.chen@asianux.com, tglx@linutronix.de
-In-Reply-To: <51624254.30301@asianux.com>
-References: <51624254.30301@asianux.com>
+        huawei.libin@huawei.com, peterz@infradead.org, tglx@linutronix.de,
+        jiang.liu@huawei.com, guohanjun@huawei.com
+In-Reply-To: <51626610.2040607@huawei.com>
+References: <51626610.2040607@huawei.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf: Fix strncpy() use, use strlcpy()
-  instead of strncpy()
-Git-Commit-ID: 67012ab1d2ce871afea4ee55408f233f97d09d07
+Subject: [tip:sched/urgent] sched/debug: Fix sd->
+ *_idx limit range avoiding overflow
+Git-Commit-ID: fd9b86d37a600488dbd80fe60cca46b822bff1cd
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,50 +30,47 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 08 Apr 2013 08:30:42 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 08 Apr 2013 08:28:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  67012ab1d2ce871afea4ee55408f233f97d09d07
-Gitweb:     http://git.kernel.org/tip/67012ab1d2ce871afea4ee55408f233f97d09d07
-Author:     Chen Gang <gang.chen@asianux.com>
-AuthorDate: Mon, 8 Apr 2013 12:06:44 +0800
+Commit-ID:  fd9b86d37a600488dbd80fe60cca46b822bff1cd
+Gitweb:     http://git.kernel.org/tip/fd9b86d37a600488dbd80fe60cca46b822bff1cd
+Author:     libin <huawei.libin@huawei.com>
+AuthorDate: Mon, 8 Apr 2013 14:39:12 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 8 Apr 2013 13:26:56 +0200
+CommitDate: Mon, 8 Apr 2013 13:23:03 +0200
 
-perf: Fix strncpy() use, use strlcpy() instead of strncpy()
+sched/debug: Fix sd->*_idx limit range avoiding overflow
 
-For NUL terminated string we always need to set '\0' at the end.
+Commit 201c373e8e ("sched/debug: Limit sd->*_idx range on
+sysctl") was an incomplete bug fix.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
-Cc: rostedt@goodmis.org
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/r/51624254.30301@asianux.com
+This patch fixes sd->*_idx limit range to [0 ~ CPU_LOAD_IDX_MAX-1]
+avoiding array overflow caused by setting sd->*_idx to CPU_LOAD_IDX_MAX
+on sysctl.
+
+Signed-off-by: Libin <huawei.libin@huawei.com>
+Cc: <jiang.liu@huawei.com>
+Cc: <guohanjun@huawei.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/51626610.2040607@huawei.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/trace/trace.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 4f1dade..3f5046a 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -132,7 +132,7 @@ static char *default_bootup_tracer;
- 
- static int __init set_cmdline_ftrace(char *str)
- {
--	strncpy(bootup_tracer_buf, str, MAX_TRACER_SIZE);
-+	strlcpy(bootup_tracer_buf, str, MAX_TRACER_SIZE);
- 	default_bootup_tracer = bootup_tracer_buf;
- 	/* We are using ftrace early, expand it */
- 	ring_buffer_expanded = 1;
-@@ -162,7 +162,7 @@ static char *trace_boot_options __initdata;
- 
- static int __init set_trace_boot_options(char *str)
- {
--	strncpy(trace_boot_options_buf, str, MAX_TRACER_SIZE);
-+	strlcpy(trace_boot_options_buf, str, MAX_TRACER_SIZE);
- 	trace_boot_options = trace_boot_options_buf;
- 	return 0;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 306943f..fa07792 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4933,7 +4933,7 @@ static void sd_free_ctl_entry(struct ctl_table **tablep)
  }
+ 
+ static int min_load_idx = 0;
+-static int max_load_idx = CPU_LOAD_IDX_MAX;
++static int max_load_idx = CPU_LOAD_IDX_MAX-1;
+ 
+ static void
+ set_table_entry(struct ctl_table *entry,
