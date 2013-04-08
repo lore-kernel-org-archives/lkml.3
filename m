@@ -1,69 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935627Ab3DHMUs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 08:20:48 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:41832 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935606Ab3DHMUr (ORCPT
+	id S935680Ab3DHMVH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 08:21:07 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:61891 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935633Ab3DHMVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 08:20:47 -0400
-MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <1365194030-28939-4-git-send-email-cody@linux.vnet.ibm.com>
-References: <1365194030-28939-1-git-send-email-cody@linux.vnet.ibm.com>
-	<1365194030-28939-4-git-send-email-cody@linux.vnet.ibm.com>
-Date: Mon, 8 Apr 2013 15:20:44 +0300
-Message-ID: <CAOtvUMdT0-oQMTsHAjFqL6K8vrLeCcXG2hX-sShxu6GGRBPxJw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] mm: when handling percpu_pagelist_fraction, use
- on_each_cpu() to set percpu pageset fields.
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 8 Apr 2013 08:21:00 -0400
+From: Prabhakar lad <prabhakar.csengg@gmail.com>
+To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        LMML <linux-media@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Sekhar Nori <nsekhar@ti.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Subject: [PATCH v3 2/3] media: davinci: vpbe: venc: move the enabling of vpss clocks to driver
+Date: Mon,  8 Apr 2013 17:49:12 +0530
+Message-Id: <1365423553-12619-3-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1365423553-12619-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1365423553-12619-1-git-send-email-prabhakar.csengg@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 5, 2013 at 11:33 PM, Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
-> In free_hot_cold_page(), we rely on pcp->batch remaining stable.
-> Updating it without being on the cpu owning the percpu pageset
-> potentially destroys this stability.
->
-> Change for_each_cpu() to on_each_cpu() to fix.
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-Are you referring to this? -
+The vpss clocks were enabled by calling a exported function from a driver
+in a machine code. calling driver code from platform code is incorrect way.
 
-1329         if (pcp->count >= pcp->high) {
-1330                 free_pcppages_bulk(zone, pcp->batch, pcp);
-1331                 pcp->count -= pcp->batch;
-1332         }
+This patch fixes this issue and calls the function from driver code itself.
 
-I'm probably missing the obvious but won't it be simpler to do this in
- free_hot_cold_page() -
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ drivers/media/platform/davinci/vpbe_venc.c |   25 +++++++++++++++++++++++++
+ 1 files changed, 25 insertions(+), 0 deletions(-)
 
-1329         if (pcp->count >= pcp->high) {
-1330                  unsigned int batch = ACCESS_ONCE(pcp->batch);
-1331                 free_pcppages_bulk(zone, batch, pcp);
-1332                 pcp->count -= batch;
-1333         }
+diff --git a/drivers/media/platform/davinci/vpbe_venc.c b/drivers/media/platform/davinci/vpbe_venc.c
+index f15f211..91d0272 100644
+--- a/drivers/media/platform/davinci/vpbe_venc.c
++++ b/drivers/media/platform/davinci/vpbe_venc.c
+@@ -202,6 +202,25 @@ static void venc_enabledigitaloutput(struct v4l2_subdev *sd, int benable)
+ 	}
+ }
+ 
++static void
++venc_enable_vpss_clock(int venc_type,
++		       enum vpbe_enc_timings_type type,
++		       unsigned int pclock)
++{
++	if (venc_type == VPBE_VERSION_1)
++		return;
++
++	if (venc_type == VPBE_VERSION_2 && (type == VPBE_ENC_STD ||
++	    (type == VPBE_ENC_DV_TIMINGS && pclock <= 27000000))) {
++		vpss_enable_clock(VPSS_VENC_CLOCK_SEL, 1);
++		vpss_enable_clock(VPSS_VPBE_CLOCK, 1);
++		return;
++	}
++
++	if (venc_type == VPBE_VERSION_3 && type == VPBE_ENC_STD)
++		vpss_enable_clock(VPSS_VENC_CLOCK_SEL, 0);
++}
++
+ #define VDAC_CONFIG_SD_V3	0x0E21A6B6
+ #define VDAC_CONFIG_SD_V2	0x081141CF
+ /*
+@@ -220,6 +239,7 @@ static int venc_set_ntsc(struct v4l2_subdev *sd)
+ 	if (pdata->setup_clock(VPBE_ENC_STD, V4L2_STD_525_60) < 0)
+ 		return -EINVAL;
+ 
++	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_STD, V4L2_STD_525_60);
+ 	venc_enabledigitaloutput(sd, 0);
+ 
+ 	if (venc->venc_type == VPBE_VERSION_3) {
+@@ -265,6 +285,7 @@ static int venc_set_pal(struct v4l2_subdev *sd)
+ 	if (venc->pdata->setup_clock(VPBE_ENC_STD, V4L2_STD_625_50) < 0)
+ 		return -EINVAL;
+ 
++	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_STD, V4L2_STD_625_50);
+ 	venc_enabledigitaloutput(sd, 0);
+ 
+ 	if (venc->venc_type == VPBE_VERSION_3) {
+@@ -319,6 +340,7 @@ static int venc_set_480p59_94(struct v4l2_subdev *sd)
+ 	if (pdata->setup_clock(VPBE_ENC_DV_TIMINGS, 27000000) < 0)
+ 		return -EINVAL;
+ 
++	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_DV_TIMINGS, 27000000);
+ 	venc_enabledigitaloutput(sd, 0);
+ 
+ 	if (venc->venc_type == VPBE_VERSION_2)
+@@ -366,6 +388,7 @@ static int venc_set_576p50(struct v4l2_subdev *sd)
+ 	if (pdata->setup_clock(VPBE_ENC_DV_TIMINGS, 27000000) < 0)
+ 		return -EINVAL;
+ 
++	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_DV_TIMINGS, 27000000);
+ 	venc_enabledigitaloutput(sd, 0);
+ 
+ 	if (venc->venc_type == VPBE_VERSION_2)
+@@ -406,6 +429,7 @@ static int venc_set_720p60_internal(struct v4l2_subdev *sd)
+ 	if (pdata->setup_clock(VPBE_ENC_DV_TIMINGS, 74250000) < 0)
+ 		return -EINVAL;
+ 
++	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_DV_TIMINGS, 74250000);
+ 	venc_enabledigitaloutput(sd, 0);
+ 
+ 	venc_write(sd, VENC_OSDCLK0, 0);
+@@ -434,6 +458,7 @@ static int venc_set_1080i30_internal(struct v4l2_subdev *sd)
+ 	if (pdata->setup_clock(VPBE_ENC_DV_TIMINGS, 74250000) < 0)
+ 		return -EINVAL;
+ 
++	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_DV_TIMINGS, 74250000);
+ 	venc_enabledigitaloutput(sd, 0);
+ 
+ 	venc_write(sd, VENC_OSDCLK0, 0);
+-- 
+1.7.4.1
 
-Now the batch value used is stable and you don't have to IPI every CPU
-in the system just to change a config knob...
-
-Thanks,
-Gilad
-
-
-
---
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"If you take a class in large-scale robotics, can you end up in a situation
-where the homework eats your dog?"
- -- Jean-Baptiste Queru
