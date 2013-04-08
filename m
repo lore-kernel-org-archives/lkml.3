@@ -1,92 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936429Ab3DHKQb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:16:31 -0400
-Received: from mga11.intel.com ([192.55.52.93]:64269 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935617Ab3DHKQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 06:16:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,429,1363158000"; 
-   d="scan'208";a="315823422"
-Date: Mon, 8 Apr 2013 12:16:25 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Andrey Smirnov <andrew.smirnov@gmail.com>
-Cc: mchehab@redhat.com, hverkuil@xs4all.nl, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 1/9] mfd: Add commands abstraction layer for SI476X MFD
-Message-ID: <20130408101624.GR24058@zurbaran>
-References: <1364352446-28572-1-git-send-email-andrew.smirnov@gmail.com>
- <1364352446-28572-2-git-send-email-andrew.smirnov@gmail.com>
+	id S965136Ab3DHKQi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:16:38 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:9939 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935617Ab3DHKQe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 06:16:34 -0400
+X-Spam-Score: -100.7
+Message-ID: <516298E0.9000905@asianux.com>
+Date: Mon, 08 Apr 2013 18:16:00 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364352446-28572-2-git-send-email-andrew.smirnov@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: module: strncpy issue, using strlcpy instead
+ of strncpy
+References: <51615AB0.9060502@asianux.com> <87r4ila8sb.fsf@rustcorp.com.au>
+In-Reply-To: <87r4ila8sb.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrey,
-
-On Tue, Mar 26, 2013 at 07:47:18PM -0700, Andrey Smirnov wrote:
-> From: Andrey Smirnov <andreysm@charmander.(none)>
+On 2013年04月08日 13:30, Rusty Russell wrote:
+> Chen Gang <gang.chen@asianux.com> writes:
+>> >   ownername and namebuf are all NUL terminated string.
+>> >
+>> >   need always let them ended by '\0'.
+>> >
+>> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> > ---
+>> >  kernel/module.c |    4 ++--
+>> >  1 files changed, 2 insertions(+), 2 deletions(-)
+>> >
+>> > diff --git a/kernel/module.c b/kernel/module.c
+>> > index 3c2c72d..597efd8 100644
+>> > --- a/kernel/module.c
+>> > +++ b/kernel/module.c
+>> > @@ -1283,7 +1283,7 @@ static const struct kernel_symbol *resolve_symbol(struct module *mod,
+>> >  
+>> >  getname:
+>> >  	/* We must make copy under the lock if we failed to get ref. */
+>> > -	strncpy(ownername, module_name(owner), MODULE_NAME_LEN);
+>> > +	strlcpy(ownername, module_name(owner), MODULE_NAME_LEN);
+> This should just be strcpy().
 > 
-> This patch adds all the functions used for exchanging commands with
-> the chip.
+
+  for me, either strcpy or strlcpy are ok.
+    strcpy is quicker than strlcpy (in our case, it seems not quite important).
+    strlcpy is more clearer to readers (they do not care about the buffer length again).
+
+  since you prefer strcpy, I need respect your (the original maintainer's) willing.
+  so I need change to strcpy.
+
+  :-)
+
+
+>> >  unlock:
+>> >  	mutex_unlock(&module_mutex);
+>> >  	return sym;
+>> > @@ -3464,7 +3464,7 @@ const char *module_address_lookup(unsigned long addr,
+>> >  	}
+>> >  	/* Make a copy in here where it's safe */
+>> >  	if (ret) {
+>> > -		strncpy(namebuf, ret, KSYM_NAME_LEN - 1);
+>> > +		strlcpy(namebuf, ret, KSYM_NAME_LEN);
+> This isn't a bug, because the caller (kallsyms_lookup) puts a NUL in
+> ret[KSYM_NAME_LEN].
 > 
-> Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
-> Signed-off-by: Andrey Smirnov <andrew.smirnov@gmail.com>
-> ---
->  drivers/mfd/si476x-cmd.c | 1554 ++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 1554 insertions(+)
->  create mode 100644 drivers/mfd/si476x-cmd.c
-The patchset looks good to me, and I was willing to merge it but:
+
+  originally, it is really not a bug (so subject need delete "strncpy issue").
+  now, I still prefer to set tail '\0' in function module_address_lookup.
+  future, if it is used by others, it is necessary to set tail '\0' in this function.
 
 
-> diff --git a/drivers/mfd/si476x-cmd.c b/drivers/mfd/si476x-cmd.c
-> new file mode 100644
-> index 0000000..71ac2e8
-> --- /dev/null
-> +++ b/drivers/mfd/si476x-cmd.c
-> @@ -0,0 +1,1554 @@
-> +/*
-> + * drivers/mfd/si476x-cmd.c -- Subroutines implementing command
-> + * protocol of si476x series of chips
-> + *
-> + * Copyright (C) 2012 Innovative Converged Devices(ICD)
-> + * Copyright (C) 2013 Andrey Smirnov
-> + *
-> + * Author: Andrey Smirnov <andrew.smirnov@gmail.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; version 2 of the License.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + * General Public License for more details.
-> + *
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/completion.h>
-> +#include <linux/delay.h>
-> +#include <linux/atomic.h>
-> +#include <linux/i2c.h>
-> +#include <linux/device.h>
-> +#include <linux/gpio.h>
-> +#include <linux/videodev2.h>
-> +
-> +#include <media/si476x.h>
-This file doesn't exist yet, which breaks bisectability.
-I'm fine with you including it with the first patch. I will prepare a branch
-with the mfd patches from your serie for Mauro to pull from.
 
-Cheers,
-Samuel.
+and for this patch, is it suitable to send patch v2 ?
+
+
+
+
+> However, kallsyms_lookup also calls kallsyms_expand_symbol, which
+> doesn't stop at KSYM_NAME_LEN, so if a name was longer than that we'd
+> have a real bug.
+> 
+> Would you like to take a look at that, too?
+> 
+
+  it looks like a bug.  for me, I prefer to give length check for it.
+
+  but I am sorry, now, I can not be sure whether it is really a bug.
+
+    I have to need additional time resources to make sure about it.
+      I am not quite familiar with kernel (especially kernel of kernel).
+      I even do not know about kallsyms_names (it seems not a normal variable)
+      I have to spend time resources to process other things within company.
+
+  so I think I should make sure whether it is a bug, before 2013-4-20, is it ok ?
+
+  welcome any suggestions or completions.
+
+
+> Thanks,
+> Rusty.
+> 
+> 
+
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Chen Gang
+
+Asianux Corporation
