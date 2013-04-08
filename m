@@ -1,128 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935404Ab3DHQzb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 12:55:31 -0400
-Received: from mga03.intel.com ([143.182.124.21]:46628 "EHLO mga03.intel.com"
+	id S935413Ab3DHQ4j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 12:56:39 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:41331 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760109Ab3DHQz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 12:55:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,432,1363158000"; 
-   d="scan'208";a="283204858"
-Message-ID: <38514.10.7.197.74.1365440092.squirrel@linux.intel.com>
-In-Reply-To: <alpine.LNX.2.00.1303271608500.23442@pobox.suse.cz>
-References: <1363886546-6517-1-git-send-email-daniel.leung@linux.intel.com>
-    <51507136.4020308@linux.intel.com>
-    <alpine.LNX.2.00.1303271608500.23442@pobox.suse.cz>
-Date: Mon, 8 Apr 2013 09:54:52 -0700 (PDT)
-Subject: Re: [PATCH] HID: hid-sensor-hub: do not process feature reports in 
-     raw_event
-From: "Daniel Leung" <daniel.leung@linux.intel.com>
-To: "Jiri Kosina" <jkosina@suse.cz>
-Cc: "Srinivas Pandruvada" <srinivas.pandruvada@linux.intel.com>,
-        daniel.leung@linux.intel.com, srinivas.pandruvada@intel.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.8-5.el4.centos.8
+	id S1760109Ab3DHQ4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 12:56:37 -0400
+Date: Mon, 8 Apr 2013 10:56:26 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Andrew Murray'" <andrew.murray@arm.com>,
+        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
+        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
+        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
+        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>
+Subject: Re: [PATCH 6/6] ARM: dts: Add pcie controller node for Samsung
+ EXYNOS5440 SoC
+Message-ID: <20130408165626.GA30824@obsidianresearch.com>
+References: <00c001ce277b$92b26ab0$b8174010$%han@samsung.com>
+ <00c501ce277c$30e49dc0$92add940$%han@samsung.com>
+ <000001ce3438$b136e1e0$13a4a5a0$%han@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000001ce3438$b136e1e0$13a4a5a0$%han@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, 25 Mar 2013, Srinivas Pandruvada wrote:
->
->> Daniel,
->>
->> I am looking at 3.9.rc1.
->> The only place I see the raw_event callback is called from
->> hid/hid_input_report(). hid_input_report is called with type
->> HID_INPUT_REPORT
->> in all cases, except hid_ctrl(), where it can be different depending on
->> xx.report->type. But here, the return value is not checked.
->>
->> Do you know the call chain for HID_FETURE_REPORT, where this is creating
->> problem?
->
-> This was exactly what I was wondering about when I have seen the initial
-> patch a few weeks ago.
->
-> Daniel, could you please elaborate? Is there a out-of-tree driver for Acer
-> Iconia W700?
+On Mon, Apr 08, 2013 at 06:08:53PM +0900, Jingoo Han wrote:
 
-Sorry for the late reply. I was out of town and was having difficulties
-accessing the mail server.
+> I have a question.  Now, I am reviewing the Tegra PCIe, Marvell PCIe
+> patchset.  However, in the case of Exynos PCIe, 'downstream I/O' and
+> 'non-prefetchable memory' are different between PCIe0 and PCIe1.
+> These regions are not shared.
+> 
+> PCIe0:
+> 	ranges = <0x00000800 0 0x40000000 0x40000000 0 0x00200000   /* configuration space */
+> 		  0x81000000 0 0	  0x40200000 0 0x00004000   /* downstream I/O */
+> 		  0x82000000 0 0	  0x40204000 0 0x10000000>; /* non-prefetchable memory */
+> 
+> PCIe1:
+> 	ranges = <0x00000800 0 0x40000000 0x40000000 0 0x00200000   /* configuration space */
+> 		  0x81000000 0 0	  0x40200000 0 0x00004000   /* downstream I/O */
+> 		  0x82000000 0 0	  0x40204000 0 0x10000000>; /* non-prefetchable memory */
+> 
+> PCIe0 uses 0x40000000~0x5fffffff, PCI1 uses 0x60000000~0x7fffffff.
+> 
+> How can I handle this? :)
 
-For the call path, here is what I got (using WARN_ON()):
+You need to dig into where this range restriction comes from, and how
+it interacts with the PCI-E root bridge's window registers. Is there
+another set of registers that control this? Is it hardwired into the
+silicon? Do the root port window registers control this? 
 
-<4>[  150.943775] ------------[ cut here ]------------
-<4>[  150.943861] WARNING: at
-../../../../../../../../../../home/dleung/android/ia/private/jb-mr1-internal/kernel/intel/drivers/hid/hid-sensor-hub.c:418
-sensor_hub_raw_event+0x2d0/0x3b0 [hid_sensor_hub]()
-<4>[  150.944028] Hardware name: ICONIA W700
-<7>[  150.944071] Modules linked in: hid_sensor_als hid_sensor_gyro_3d
-hid_sensor_accel_3d uvcvideo videobuf2_vmalloc videobuf2_memops
-videobuf2_core btusb bluetooth hid_multitouch ath9k ath9k_common ath9k_hw
-ath snd_hda_codec_hdmi snd_hda_codec_realtek ip6table_raw snd_hda_intel
-iptable_raw snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_timer snd
-soundcore hid_sensor_trigger hid_sensor_iio_common hid_sensor_hub
-industrialio_triggered_buffer kfifo_buf industrialio coretemp
-<7>[  150.944132] Pid: 0, comm: swapper/1 Not tainted
-3.8.0-aia1-00043-gd7fd780-dirty #2
-<7>[  150.944136] Call Trace:
-<7>[  150.944141]  <IRQ>  [<ffffffff8105b5bf>] warn_slowpath_common+0x7f/0xc0
-<7>[  150.944163]  [<ffffffff8105b61a>] warn_slowpath_null+0x1a/0x20
-<7>[  150.944173]  [<ffffffffa00315e0>] sensor_hub_raw_event+0x2d0/0x3b0
-[hid_sensor_hub]
-<7>[  150.944184]  [<ffffffff819021e7>] ?
-_raw_spin_unlock_irqrestore+0x57/0x70
-<7>[  150.944195]  [<ffffffff816ccce3>] hid_input_report+0x283/0x2d0
-<7>[  150.944203]  [<ffffffff816d9faf>] hid_ctrl+0x9f/0x180
-<7>[  150.944212]  [<ffffffff815b2087>] usb_hcd_giveback_urb+0x77/0x110
-<7>[  150.944222]  [<ffffffff8160073f>] xhci_irq+0x60f/0x1530
-<7>[  150.944230]  [<ffffffff810df0fe>] ? handle_edge_irq+0x1e/0x130
-<7>[  150.944239]  [<ffffffff810af04f>] ? __lock_acquire.isra.31+0x28f/0xa70
-<7>[  150.944247]  [<ffffffff81601671>] xhci_msi_irq+0x11/0x20
-<7>[  150.944258]  [<ffffffff810dc395>] handle_irq_event_percpu+0x55/0x210
-<7>[  150.944267]  [<ffffffff810dc598>] handle_irq_event+0x48/0x70
-<7>[  150.944273]  [<ffffffff810df157>] handle_edge_irq+0x77/0x130
-<7>[  150.944283]  [<ffffffff81004180>] handle_irq+0x60/0x150
-<7>[  150.944293]  [<ffffffff81906406>] ?
-atomic_notifier_call_chain+0x16/0x20
-<7>[  150.944302]  [<ffffffff8190c38a>] do_IRQ+0x5a/0xe0
-<7>[  150.944309]  [<ffffffff8190266f>] common_interrupt+0x6f/0x6f
-<7>[  150.944313]  <EOI>  [<ffffffff816a97f5>] ? cpuidle_wrap_enter+0x55/0xa0
-<7>[  150.944327]  [<ffffffff816a97f1>] ? cpuidle_wrap_enter+0x51/0xa0
-<7>[  150.944334]  [<ffffffff816a9850>] cpuidle_enter_tk+0x10/0x20
-<7>[  150.944341]  [<ffffffff816a940f>] cpuidle_idle_call+0xaf/0x2b0
-<7>[  150.944350]  [<ffffffff8100b3aa>] cpu_idle+0xda/0x130
-<7>[  150.944360]  [<ffffffff818f081d>] start_secondary+0x266/0x268
-<4>[  150.944365] ---[ end trace 32319d39ebee5616 ]---
+I'm looking at functions like exynos_pcie_prog_viewport_mem_outbound
+and wondering if the driver already controls this window.. But it
+looks like there may be some restrictions.
+
+Marvell also has unshared regions, but the driver arranges for those
+ranges to be setup dynamically based on writes to the bridge's window
+registers from the Linux PCI core, so the region is always in sync
+with what the Linux PCI core is trying to do.
+
+The desired perfect outcome is to have a single logical 'shared'
+region for memory and I/O - give that region to the PCI core via
+struct resources, then the PCI core tells the driver and HW what
+portion of that region belongs to each root port via a write to the
+root port bridge's window registers. The net result is still
+non-overlapping regions, but the allocation of space between port 0
+and port 1 is performed at run time.
+
+I don't really know enough about your hardware to give you better
+advice, sorry. The general guidance to try and follow the PCI-E spec
+for a root complex is good, but if the HW can't do it, or it would
+make the driver too complex, then one PCI domain per port will always
+work (this is similar to your original driver, but with domains).
+
+The main advantage to following the PCI-E specs and allowing for
+dynamic allocation of address space is that it lets you reserve less
+address space for PCI-E, and this in turn gives you more low mem
+address space to use for DRAM.
+
+> The following is right?
+ 
+> +       pcie-controller {
+> 		.....
+> +               ranges = <0x82000000 0 0x40000000 0x40000000 0 0x00200000   /* port 0 registers */
+> +                         0x82000000 0 0x60000000 0x60000000 0 0x00200000   /* port 1 registers */
+> +                         0x81000000 0 0          0x40200000 0 0x00004000   /* port 0 downstream I/O */
+> +                         0x81000000 0 0          0x60200000 0 0x00004000   /* port 1 downstream I/O */
+> +                         0x82000000 0 0x40204000 0x40204000 0 0x10000000>; /* port 0 non-prefetchable memory */
+> +                         0x82000000 0 0x40204000 0x60204000 0 0x10000000>; /* port 1 non-prefetchable memory */
 
 
-You can see that it went through hid_ctrl().
+> +
+> +               pci@1,0 {
+> +                       device_type = "pci";
+> +                       assigned-addresses = <0x82000800 0 0x40000000 0 0x00200000
+> +                                                 0x81000800 0 0x40200000 0 0x00004000
+> +                                                 0x81000800 0 0x40204000 0 0x10000000>;
 
->From what I can gather using usbmon, the sensor hub sends the feature
-report correctly. However, the in-kernel struct is not updated when the
-report comes in. Therefore, the report from sensor_hub_report() is always
-zero-filled. When calling sensor_hub_set_feature(), those zeros are being
-sent back to the device. The feature report contains fields for power
-state and reporting state. If they are set to zero, the firmware does not
-know what to do as zero means undefined state. Both power and reporting
-states have to be set for sensor to report values. Given the zero-filled
-report, and we can only deal with one field in sensor_hub_set_feature(),
-setting power state to non-zero also sends zero (i.e. undefined state) to
-the reporting state field, and vice versa.
+Would be:
 
-The sensor hub on Acer Iconia W700 is using drivers/hid/hid-sensor-hub.c.
-I also played with Sony Vaio Duo 11 a while back (before having this
-patch), and was having trouble turning on gyroscope. I suspect it is
-caused by the same issue. The sensor hub on Acer is from STMicro, while
-the one in Vaio Duo is from Freescale.
+                       ranges = <0x81000800 0 0x40200000  0x81000800 0 0x40200000  0 0x00004000
+                                 0x81000800 0 0x40204000  0x81000800 0 0x40204000  0 0x10000000>;
+                       assigned-addresses = <0x82000800 0 0x40000000  0 0x00200000>;
 
-
-
-Thanks,
-Daniel
+Jason
