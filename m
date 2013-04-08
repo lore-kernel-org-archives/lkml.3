@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935727Ab3DHJwF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:52:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42804 "EHLO
+	id S936318Ab3DHKKs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:10:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42838 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935684Ab3DHJv5 (ORCPT
+	with ESMTP id S935723Ab3DHJwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:51:57 -0400
+	Mon, 8 Apr 2013 05:52:04 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 046/102] USB: oti6858: fix use-after-free in TIOCMIWAIT
-Date: Mon,  8 Apr 2013 10:50:01 +0100
-Message-Id: <1365414657-29191-47-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 053/102] Bluetooth: Fix not closing SCO sockets in the BT_CONNECT2 state
+Date: Mon,  8 Apr 2013 10:50:08 +0100
+Message-Id: <1365414657-29191-54-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
@@ -28,70 +28,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
 
-commit 8edfdab37157d2683e51b8be5d3d5697f66a9f7b upstream.
+commit eb20ff9c91ddcb2d55c1849a87d3db85af5e88a9 upstream.
 
-Use the port wait queue and make sure to check the serial disconnected
-flag before accessing private port data after waking up.
+With deferred setup for SCO, it is possible that userspace closes the
+socket when it is in the BT_CONNECT2 state, after the Connect Request is
+received but before the Accept Synchonous Connection is sent.
 
-This is is needed as the private port data (including the wait queue
-itself) can be gone when waking up after a disconnect.
+If this happens the following crash was observed, when the connection is
+terminated:
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.5; adjust context ]
+[  +0.000003] hci_sync_conn_complete_evt: hci0 status 0x10
+[  +0.000005] sco_connect_cfm: hcon ffff88003d1bd800 bdaddr 40:98:4e:32:d7:39 status 16
+[  +0.000003] sco_conn_del: hcon ffff88003d1bd800 conn ffff88003cc8e300, err 110
+[  +0.000015] BUG: unable to handle kernel NULL pointer dereference at 0000000000000199
+[  +0.000906] IP: [<ffffffff810620dd>] __lock_acquire+0xed/0xe82
+[  +0.000000] PGD 3d21f067 PUD 3d291067 PMD 0
+[  +0.000000] Oops: 0002 [#1] SMP
+[  +0.000000] Modules linked in: rfcomm bnep btusb bluetooth
+[  +0.000000] CPU 0
+[  +0.000000] Pid: 1481, comm: kworker/u:2H Not tainted 3.9.0-rc1-25019-gad82cdd #1 Bochs Bochs
+[  +0.000000] RIP: 0010:[<ffffffff810620dd>]  [<ffffffff810620dd>] __lock_acquire+0xed/0xe82
+[  +0.000000] RSP: 0018:ffff88003c3c19d8  EFLAGS: 00010002
+[  +0.000000] RAX: 0000000000000001 RBX: 0000000000000246 RCX: 0000000000000000
+[  +0.000000] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff88003d1be868
+[  +0.000000] RBP: ffff88003c3c1a98 R08: 0000000000000002 R09: 0000000000000000
+[  +0.000000] R10: ffff88003d1be868 R11: ffff88003e20b000 R12: 0000000000000002
+[  +0.000000] R13: ffff88003aaa8000 R14: 000000000000006e R15: ffff88003d1be850
+[  +0.000000] FS:  0000000000000000(0000) GS:ffff88003e200000(0000) knlGS:0000000000000000
+[  +0.000000] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  +0.000000] CR2: 0000000000000199 CR3: 000000003c1cb000 CR4: 00000000000006b0
+[  +0.000000] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  +0.000000] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  +0.000000] Process kworker/u:2H (pid: 1481, threadinfo ffff88003c3c0000, task ffff88003aaa8000)
+[  +0.000000] Stack:
+[  +0.000000]  ffffffff81b16342 0000000000000000 0000000000000000 ffff88003d1be868
+[  +0.000000]  ffffffff00000000 00018c0c7863e367 000000003c3c1a28 ffffffff8101efbd
+[  +0.000000]  0000000000000000 ffff88003e3d2400 ffff88003c3c1a38 ffffffff81007c7a
+[  +0.000000] Call Trace:
+[  +0.000000]  [<ffffffff8101efbd>] ? kvm_clock_read+0x34/0x3b
+[  +0.000000]  [<ffffffff81007c7a>] ? paravirt_sched_clock+0x9/0xd
+[  +0.000000]  [<ffffffff81007fd4>] ? sched_clock+0x9/0xb
+[  +0.000000]  [<ffffffff8104fd7a>] ? sched_clock_local+0x12/0x75
+[  +0.000000]  [<ffffffff810632d1>] lock_acquire+0x93/0xb1
+[  +0.000000]  [<ffffffffa0022339>] ? spin_lock+0x9/0xb [bluetooth]
+[  +0.000000]  [<ffffffff8105f3d8>] ? lock_release_holdtime.part.22+0x4e/0x55
+[  +0.000000]  [<ffffffff814f6038>] _raw_spin_lock+0x40/0x74
+[  +0.000000]  [<ffffffffa0022339>] ? spin_lock+0x9/0xb [bluetooth]
+[  +0.000000]  [<ffffffff814f6936>] ? _raw_spin_unlock+0x23/0x36
+[  +0.000000]  [<ffffffffa0022339>] spin_lock+0x9/0xb [bluetooth]
+[  +0.000000]  [<ffffffffa00230cc>] sco_conn_del+0x76/0xbb [bluetooth]
+[  +0.000000]  [<ffffffffa002391d>] sco_connect_cfm+0x2da/0x2e9 [bluetooth]
+[  +0.000000]  [<ffffffffa000862a>] hci_proto_connect_cfm+0x38/0x65 [bluetooth]
+[  +0.000000]  [<ffffffffa0008d30>] hci_sync_conn_complete_evt.isra.79+0x11a/0x13e [bluetooth]
+[  +0.000000]  [<ffffffffa000cd96>] hci_event_packet+0x153b/0x239d [bluetooth]
+[  +0.000000]  [<ffffffff814f68ff>] ? _raw_spin_unlock_irqrestore+0x48/0x5c
+[  +0.000000]  [<ffffffffa00025f6>] hci_rx_work+0xf3/0x2e3 [bluetooth]
+[  +0.000000]  [<ffffffff8103efed>] process_one_work+0x1dc/0x30b
+[  +0.000000]  [<ffffffff8103ef83>] ? process_one_work+0x172/0x30b
+[  +0.000000]  [<ffffffff8103e07f>] ? spin_lock_irq+0x9/0xb
+[  +0.000000]  [<ffffffff8103fc8d>] worker_thread+0x123/0x1d2
+[  +0.000000]  [<ffffffff8103fb6a>] ? manage_workers+0x240/0x240
+[  +0.000000]  [<ffffffff81044211>] kthread+0x9d/0xa5
+[  +0.000000]  [<ffffffff81044174>] ? __kthread_parkme+0x60/0x60
+[  +0.000000]  [<ffffffff814f75bc>] ret_from_fork+0x7c/0xb0
+[  +0.000000]  [<ffffffff81044174>] ? __kthread_parkme+0x60/0x60
+[  +0.000000] Code: d7 44 89 8d 50 ff ff ff 4c 89 95 58 ff ff ff e8 44 fc ff ff 44 8b 8d 50 ff ff ff 48 85 c0 4c 8b 95 58 ff ff ff 0f 84 7a 04 00 00 <f0> ff 80 98 01 00 00 83 3d 25 41 a7 00 00 45 8b b5 e8 05 00 00
+[  +0.000000] RIP  [<ffffffff810620dd>] __lock_acquire+0xed/0xe82
+[  +0.000000]  RSP <ffff88003c3c19d8>
+[  +0.000000] CR2: 0000000000000199
+[  +0.000000] ---[ end trace e73cd3b52352dd34 ]---
+
+Signed-off-by: Vinicius Costa Gomes <vinicius.gomes@openbossa.org>
+Tested-by: Frederic Dalleau <frederic.dalleau@intel.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/oti6858.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ net/bluetooth/sco.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/serial/oti6858.c b/drivers/usb/serial/oti6858.c
-index 5976b65..d9c40b1 100644
---- a/drivers/usb/serial/oti6858.c
-+++ b/drivers/usb/serial/oti6858.c
-@@ -191,7 +191,6 @@ struct oti6858_private {
- 	u8 setup_done;
- 	struct delayed_work delayed_setup_work;
+diff --git a/net/bluetooth/sco.c b/net/bluetooth/sco.c
+index cbdd313..87b8ee9 100644
+--- a/net/bluetooth/sco.c
++++ b/net/bluetooth/sco.c
+@@ -378,6 +378,7 @@ static void __sco_sock_close(struct sock *sk)
+ 			sco_chan_del(sk, ECONNRESET);
+ 		break;
  
--	wait_queue_head_t intr_wait;
- 	struct usb_serial_port *port;   /* USB port with which associated */
- };
- 
-@@ -345,7 +344,6 @@ static int oti6858_startup(struct usb_serial *serial)
- 			break;
- 
- 		spin_lock_init(&priv->lock);
--		init_waitqueue_head(&priv->intr_wait);
- /*		INIT_WORK(&priv->setup_work, setup_line, serial->port[i]); */
- /*		INIT_WORK(&priv->write_work, send_data, serial->port[i]); */
- 		priv->port = port;
-@@ -672,11 +670,15 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 
- 	while (1) {
--		wait_event_interruptible(priv->intr_wait,
-+		wait_event_interruptible(port->delta_msr_wait,
-+					port->serial->disconnected ||
- 					priv->status.pin_state != prev);
- 		if (signal_pending(current))
- 			return -ERESTARTSYS;
- 
-+		if (port->serial->disconnected)
-+			return -EIO;
-+
- 		spin_lock_irqsave(&priv->lock, flags);
- 		status = priv->status.pin_state & PIN_MASK;
- 		spin_unlock_irqrestore(&priv->lock, flags);
-@@ -783,7 +785,7 @@ static void oti6858_read_int_callback(struct urb *urb)
- 
- 		if (!priv->transient) {
- 			if (xs->pin_state != priv->status.pin_state)
--				wake_up_interruptible(&priv->intr_wait);
-+				wake_up_interruptible(&port->delta_msr_wait);
- 			memcpy(&priv->status, xs, OTI6858_CTRL_PKT_SIZE);
- 		}
- 
++	case BT_CONNECT2:
+ 	case BT_CONNECT:
+ 	case BT_DISCONN:
+ 		sco_chan_del(sk, ECONNRESET);
 -- 
 1.8.1.2
 
