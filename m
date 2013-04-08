@@ -1,39 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935913Ab3DHUDx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 16:03:53 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:60319 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935872Ab3DHUDw (ORCPT
+	id S935909Ab3DHUFU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 16:05:20 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:53617 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935880Ab3DHUFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 16:03:52 -0400
-Message-ID: <1365451422.3249.6.camel@thor.lan>
-Subject: Re: [PATCH] tty: Fix race condition if flushing tty flip buffers
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ilya Zykov <linux@izyk.ru>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Date: Mon, 08 Apr 2013 16:03:42 -0400
-In-Reply-To: <20130408184804.GA4066@kroah.com>
-References: <5149AFD0.8020604@izyk.ru>
-	 <1363800043-21449-1-git-send-email-peter@hurleysoftware.com>
-	 <20130408184804.GA4066@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
+	Mon, 8 Apr 2013 16:05:19 -0400
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Arnd Bergmann" <arnd@arndb.de>
+Cc: "Daniel Tang" <dt.tangr@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, "Lionel Debroux" <lionel_debroux@yahoo.fr>,
+        linux-kernel@vger.kernel.org,
+        "Linus Walleij" <linus.walleij@linaro.org>
+Subject: Re: [RFC PATCH arm: initial TI-Nspire support]
+References: <6FE4B33E-A503-4A75-AEED-831CB2C06D83@gmail.com>
+ <896CB251-17FC-4327-BA4E-A8FD9ED1BEC7@gmail.com>
+ <op.wu8k5pwqu7prd4@fabians-laptop.fritz.box>
+ <201304082138.15875.arnd@arndb.de>
+Date: Mon, 08 Apr 2013 22:06:29 +0200
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+From: "Fabian Vogt" <fabian@ritter-vogt.de>
+Message-ID: <op.wu8ng3wyu7prd4@fabians-laptop.fritz.box>
+In-Reply-To: <201304082138.15875.arnd@arndb.de>
+User-Agent: Opera Mail/12.14 (Linux)
+X-Provags-ID: V02:K0:mVj3wgs5GPXV+2BA0GGCkI3t//BctU2yWcuIuIrB8Vb
+ 2jrhs1zgZoM+3fHXVGGIv/8MrHKFrCyQefJ6+tM0IkD9+zn5Qz
+ E4qV5tCNUwnryb4/IvVSjKPWghAFOS3xmsTEOsJShmj/hmgPzK
+ skcAVmNPA0ztX9alEz4TWnXpNJiR0yoxu1FviYdzD+RGWGVnp9
+ FhhInNyzpUsgp0Jjk5vCqmjWoZmmKjGkx4P0nrp+mTwrYcl/qa
+ JactqrkykiaX/5XBEp8X8OKFYDLZKD8xtSxEPgxyXEW4ly0YId
+ 0E9ugox6J3eu7MqmzXLu3Zkm5LPzJy5RrmxDOUex7WoN4MM/hu
+ 8I+nGxTW+z6q65H0tQhek3SKDwhtFB2GOw03/mOwsyX3bhLzpx
+ dCnkYGVTb/XHg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-08 at 11:48 -0700, Greg Kroah-Hartman wrote:
-> What tree is this against?  Does it need your other larger set of ldisc
-> patches, or can it be applied without it?
-
-This patch should apply cleanly against your tty-next tree without
-dependencies on unapplied patchsets. I have not respun v3 of 'lockless
-n_tty receive path' yet (mostly because I'm busy testing a lockless tty
-buffer and currently writing a mostly-lockless echo).
-
-
+> On Monday 08 April 2013, Fabian Vogt wrote:
+>> The latest kernel it seems to get stuck at
+>> console_lock() in do_register_framebuffer (drivers/video/fbmem.c:1655)
+>> if the LCD-controller is enabled. (Early printk and serial console works
+>> fine)
+>> CONFIG_NO_HZ is not activated, it works completely.
+>> Could this be a kernel bug or is this an issue with our timer
+>> configuration?
+>
+> This usually happens when the console driver or anything it uses
+> calls a function that does a printk(), which means you get a recursive
+> call into the console code and try to get the same lock again.
+Yes, I've heard that before, but than it would work/not work independently
+of NO_HZ. Can printk's be executet within console_lock() ..  
+console_unlock() blocks?
+If not, it could be fb_notifier_call_chain, too, but that wouldn't be  
+likely at all.
+I also tried spinlock/mutex debugging and soft lockup detection,
+but neither of them outputs anything.
