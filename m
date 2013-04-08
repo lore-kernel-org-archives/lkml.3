@@ -1,158 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935487Ab3DHMCu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 08:02:50 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:22020 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935112Ab3DHMCq (ORCPT
+	id S935514Ab3DHMDW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 08:03:22 -0400
+Received: from 3.mo5.mail-out.ovh.net ([46.105.40.108]:35614 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S935473Ab3DHMDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 08:02:46 -0400
-X-AuditID: cbfee68e-b7f946d000001e37-54-5162b1e5ee28
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'amit daniel kachhap'" <amit.daniel@samsung.com>,
-        "'Rafael J. Wysocki'" <rjw@sisk.pl>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        cpufreq@vger.kernel.org,
-        "'Inderpal Singh'" <inderpal.singh@linaro.org>,
-        "'Viresh Kumar'" <viresh.kumar@linaro.org>,
-        "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>,
-        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
-References: <1364457923-8499-1-git-send-email-amit.daniel@samsung.com>
- <2949363.nNl2A6XIoS@vostro.rjw.lan>
- <CADGdYn7ZRCSymU7k3Sn4mbS6B=dxy1N+vhQuyiFnhOQLLzrTbw@mail.gmail.com>
-In-reply-to: <CADGdYn7ZRCSymU7k3Sn4mbS6B=dxy1N+vhQuyiFnhOQLLzrTbw@mail.gmail.com>
-Subject: RE: [PATCH V5 0/4] cpufreq: exynos5440: support for cpufreq driver
-Date: Mon, 08 Apr 2013 21:02:44 +0900
-Message-id: <2d0501ce3450$fac4e9c0$f04ebd40$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac40NDMQV/zqw310SRaxOAfowhiquQAGuSLQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsVy+t8zQ92nG5MCDaa18lg0XA2xeNr0g91i
-	xeQP7BabHl9jtbi8aw6bxefeI4wWM87vY7K4fZnXon9hL5PF4TftrBbHZixhtNj41cOBx6Ol
-	uYfN4861PWwem5fUe/RtWcXo8WhxC6PH501yAWxRXDYpqTmZZalF+nYJXBmHus8zFuyUqrjy
-	sZ+1gbFDpIuRk0NCwERiw6Hl7BC2mMSFe+vZQGwhgWWMEo1PvGBqeq7sBqrhAopPZ5S4svQL
-	G4Tzl1Fi3bm7LCBVbAIaEoffPwObJCIQJfH0znQWkCJmgUnMEq8eLWWE6NjMKLFr4QxmkCpO
-	gWCJl5u+M3UxcnAIC3hLPJ2dAxJmEVCV+LR7OxOIzStgK3Hq7y0oW1Dix+R7YMuYBbQk1u88
-	zgRhy0tsXvOWGWSMhIC6xKO/uhA3GEk8m3uNEaJERGLfi3eMECUzOSRuikFsEpD4NvkQC0RY
-	VmLTAWaIfyUlDq64wTKBUWIWkr2zkOydhWTvLCQLFjCyrGIUTS1ILihOSi8y0itOzC0uzUvX
-	S87P3cQIife+HYw3D1gfYkwGWj+RWUo0OR+YLvJK4g2NzYwsTE1MjY3MLc1IE1YS51VrsQ4U
-	EkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwBirqm5x2ad4k2brti0H800m2yh0zbp3K+Lqp5cf
-	Ao7o3HrG+Ne7hYtFRElGeqvXBc5/17y9L6sc2xaiMKtdoMl2lkmPWduVU6sZ06cEVp5+flup
-	Ikv8YKT95UlCyQILLwlFrdQtONlqGPaOffWNOZXd/VGM22/zq/6Z8ZdJbdYE9xw7kYWXLJVY
-	ijMSDbWYi4oTAVSxXH4NAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFKsWRmVeSWpSXmKPExsVy+t9jQd2nG5MCDdacYLVouBpi8bTpB7vF
-	iskf2C02Pb7GanF51xw2i8+9RxgtZpzfx2Rx+zKvRf/CXiaLw2/aWS2OzVjCaLHxq4cDj0dL
-	cw+bx51re9g8Ni+p9+jbsorR49HiFkaPz5vkAtiiGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od
-	403NDAx1DS0tzJUU8hJzU22VXHwCdN0yc4AuVFIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHr
-	GxIE12NkgAYS1jFmHOo+z1iwU6riysd+1gbGDpEuRk4OCQETiZ4ru9khbDGJC/fWs3UxcnEI
-	CUxnlLiy9AuU85dRYt25uywgVWwCGhKH3z8D6xARiJJ4emc6C0gRs8AkZolXj5YyQnRsZpTY
-	tXAGM0gVp0CwxMtN35m6GDk4hAW8JZ7OzgEJswioSnzavZ0JxOYVsJU49fcWlC0o8WPyPbBl
-	zAJaEut3HmeCsOUlNq95ywwyRkJAXeLRX12IG4wkns29xghRIiKx78U7xgmMQrOQTJqFZNIs
-	JJNmIWlZwMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4pTyT2sG4ssHiEKMAB6MSD6/k
-	j8RAIdbEsuLK3EOMEhzMSiK8hxcnBQrxpiRWVqUW5ccXleakFh9iTAZ6dCKzlGhyPjDd5ZXE
-	GxqbmBlZGplZGJmYm5MmrCTOe6DVOlBIID2xJDU7NbUgtQhmCxMHp1QD48SdGqWaz5lO7l3k
-	3VR2Zp/xzW+77+U/rXRK36MhMv3lqhbb1yeeb1td+sy/o/jxhSeFj8zuPFkeIfdkbXzFiR1K
-	dT+qBASz95y2WKHxw67m+GfTc+Hv3G7/naxitMb9G9+GT2/2CM6Lv3JsyqKJhwUP5/S7y/p4
-	hmyeP1eO8WjQ/e+3qkx7t51QYinOSDTUYi4qTgQAi/c19m0DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 8 Apr 2013 08:03:20 -0400
+Date: Mon, 8 Apr 2013 13:52:38 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Douglas Gilbert <dgilbert@interlog.com>
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [GIT PULL] at91: DT changes for 3.10 #2
+Message-ID: <20130408115238.GY20693@game.jcrosoft.org>
+References: <1364569179-24773-1-git-send-email-nicolas.ferre@atmel.com>
+ <20130402184947.GA8015@quad.lixom.net>
+ <515BDE2C.9030904@atmel.com>
+ <515D49D4.5020208@atmel.com>
+ <CAOesGMiDEER3++J80KtU3UDLWNADaJhGS7upArFm2RzM4Z_P=w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMiDEER3++J80KtU3UDLWNADaJhGS7upArFm2RzM4Z_P=w@mail.gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 12684106877266340655
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiuddrleelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiuddrleelucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-amit daniel kachhap wrote:
-> 
-> On Fri, Apr 5, 2013 at 6:08 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Thursday, March 28, 2013 01:35:18 PM Amit Daniel Kachhap wrote:
-> >> Submitting the V5 version of exynos5440 cpufreq driver. This patchset
-> addresses
-> >> all the coding and design concerns raised especially by Viresh.
-> >>
-> >> Changes in V5:
-> >> * Removed the unnecessary DT look up entry from mach-exynos5-dt.c.
-> >> * Fixed all coding and comments issue raised by Viresh.
-> >>
-> >> Changes in V4:
-> >> * Added dev_err logs instead of pr_err.
-> >> * Used the devm_ioremap_resource API.
-> >> * Implemented several coding guidelines and minor error comments from
-> Sylwester,
-> >>   Russell and Viresh.
-> >>
-> >> Changes in V3:
-> >> * Converted the driver to probe based as suggested by Viresh. This is
-> also
-> >>   beneficial for multiplatform kernel.
-> >> * Other coding guidelines related changes.
-> >> * Moved the DT node outside cpu0 node as the driver is now a platform
-> >>   driver.
-> >>
-> >> Changes in V2:
-> >> * Added OPP library support to parse DT parameters.
-> >> * Removed a hack to handle interrupts in bootup.
-> >> * Implemented other review comments from Viresh and Inder.
-> >>
-> >> All these patches are dependent on Thomas Abraham common clock patches.
-> >> (http://www.mail-archive.com/linux-samsung-
-> soc@vger.kernel.org/msg15860.html)
-> >> This whole patch series is based on 3.9-rc4.
-> >>
-> >> Amit Daniel Kachhap (4):
-> >>   cpufreq: exynos: Add cpufreq driver for exynos5440
-> >>   cpufreq: exynos: Remove error return even if no soc is found
-> >>   arm: exynos: Enable OPP library support for exynos5440
-> >>   arm: dts: Add cpufreq controller node for Exynos5440 SoC
-> >>
-> >>  .../bindings/cpufreq/cpufreq-exynos5440.txt        |   28 ++
-> >>  arch/arm/boot/dts/exynos5440.dtsi                  |   12 +
-> >>  arch/arm/mach-exynos/Kconfig                       |    2 +
-> >>  drivers/cpufreq/Kconfig.arm                        |    9 +
-> >>  drivers/cpufreq/Makefile                           |    1 +
-> >>  drivers/cpufreq/exynos-cpufreq.c                   |    2 +-
-> >>  drivers/cpufreq/exynos5440-cpufreq.c               |  474
-> ++++++++++++++++++++
-> >>  7 files changed, 527 insertions(+), 1 deletions(-)
-> >>  create mode 100644 Documentation/devicetree/bindings/cpufreq/cpufreq-
-> exynos5440.txt
-> >>  create mode 100644 drivers/cpufreq/exynos5440-cpufreq.c
+On 10:19 Thu 04 Apr     , Olof Johansson wrote:
+> On Thu, Apr 4, 2013 at 2:37 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
+> > On 04/03/2013 09:45 AM, Nicolas Ferre :
+> >> On 04/02/2013 08:49 PM, Olof Johansson :
+> >>> On Fri, Mar 29, 2013 at 03:59:39PM +0100, Nicolas Ferre wrote:
+> >>>> Arnd, Olof,
+> >>>>
+> >>>> Here is a pull-request for AT91 that is dedicated to Device Tree
+> >>>> modifications. It is stacked on the material that you already have
+> >>>> for 3.10 in your arm-soc/at91/dt branch.
+> >>>> Following our discussion with Arnd, I added the non-urgent patches that I
+> >>>> already proposed too late for 3.9. I also included the moving of macb node
+> >>>> and kept the original patch.
+> >>>>
+> >>>> Thanks, best regards,
+> >>>>
+> >>>> The following changes since commit 6901d947be5ba1245a0f63271355b95f9056a362:
+> >>>>
+> >>>>   ARM: at91/at91sam9x5cm: add 1-wire chip on CM board (2013-03-21 16:07:15 +0100)
+> >>>>
+> >>>> are available in the git repository at:
+> >>>>
+> >>>>   git://github.com/at91linux/linux-at91.git tags/at91-dt
+> >>>>
+> >>>> for you to fetch changes up to cc2e191b0ccc5a987fdb29261ab9c264c608924d:
+> >>>>
+> >>>>   ARM: at91/dt: fix macb node declaration (2013-03-29 10:02:04 +0100)
+> >>>>
+> >>>> ----------------------------------------------------------------
+> >>>> One macb DT node move for 9x5 family: 9g15 doesn't
+> >>>> have an Ethernet interface.
+> >>>> Little fixes mainly related to at91sam9x5 DT and the
+> >>>> RTC addition.
+> >>>> Addition of the Acme Systems Aria G25 board.
+> >>>>
+> >>>> ----------------------------------------------------------------
+> >>>> Douglas Gilbert (1):
+> >>>>       ARM: at91: add Acme Systems Aria G25 board
+> >>>
+> >>> Hi,
+> >>>
+> >>> I just replied to the above patch -- please prefix the dts files with the
+> >>> platform so it's easier to navigate the directory.
 > >
-> > Is this for me or the Samsung tree?
+> > I do not want to spark a debate here, but moving to directories per
+> > "mach" earlier would have made things easier. If I recall well,
+> > Jean-Christophe has proposed it a long time ago...
+> 
+> Yeah, we're at a size where it's starting to be warranted (powerpc
+> does so already). It does cut down on the cross-exposure and review
+> though and puts everyone in their own little sandbox, so there's some
+> benefit in keeping it flat.
+> 
+> I think that benefit is losing its appeal though. But let's hold off
+> for another couple of releases with the churn of moving things out in
+> subdirectories.
+> 
+> >> Yes, I have to make sure that everybody agree on our side...
 > >
-> > If it's for me, I need ACKs from the Samsung tree maintainers.  Also,
-> please
-> > address the Viresh's comments.
-> >
-> > Thanks,
-> > Rafael
-> >
-> Hi Rafael,
+> > The difficult point with this prefix... well it is difficult to tell...
+> > our product will never be called "at91" again!
 > 
-> I submitted the V6 version with all comments from Viresh addressed.
+> That's a marketing issue, not a technical kernel one. If we create
+> subdirectory it makes sense to name it 'atmel' instead of 'at91'
+> though, I'm sure.
 > 
-> Hi Kukjin Kim,
+> > So, yes, our Linux identity is still "at91" and we are pretty attached
+> > to it but our newer products are named "sam" + "core" + "product family"
+> > which results in our newer family: "sama5d3" (note the at91 is missing)...
+> > => anyway, we think that the at91 prefix is still vivid in Linux
+> > community and we consider it as a good choice for now.
+> > So, I may rename the newly introduced "sama5d3*.dts[i]" files with
+> > "at91-sama5d3*.dts[i]" (while .c/.h files will remain the same).
 > 
-> Any suggestion on how this patch should be merged. In my opinion it
-> should go via Rafael's tree as this patch uses some fixes present in
-> Rafael's tree like modified cpufreq_notify_transition API.
+> Sounds reasonable, or stick to the same format as you already have
+> with at91sam9 families. When we move to subdirectories it might make
+> sense to stick them under 'atmel' instead of 'at91' though and drop
+> the prefix.
+I've a rfc for this as I do no lihe idea of prefix
+
+and it make the grep search mo complex
+
+I send a patch to clean the '\\' stuff in this Makefile
+
+can you take
+
+I send the dir split on the top of this
 > 
-Yes, I agree. The v6 series including resending 1/4 patch looks good to me.
-But the patch V6 4/4 would be sent to upstream via samsung tree to avoid
-useless merge conflicts and I think, it's possible.
-
-So Rafael, please take 1/4 ~ 3/4 patches in your tree with my ack.
-
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-
-If any problems, please let me know.
-
-Thanks.
-
-- Kukjin
-
+> 
+> 
+> -Olof
