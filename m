@@ -1,112 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935831Ab3DHMZd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 08:25:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32018 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935339Ab3DHMZ3 (ORCPT
+	id S935800Ab3DHM1y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 08:27:54 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:55667 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935294Ab3DHM1x convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 08:25:29 -0400
-X-Authority-Analysis: v=2.0 cv=Pu4Rnnw3 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ZzSxI7jMevMA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=mVTtbqeYs4EA:10 a=NufY4J3AAAAA:8 a=_Qi0VWlZnBCzdlCWK7sA:9 a=QEXdDO2ut3YA:10 a=re9sYKne76oA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1365423926.25498.3.camel@gandalf.local.home>
-Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
- unfreeze_partials() code.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>, Pekka Enberg <penberg@kernel.org>
-Date: Mon, 08 Apr 2013 08:25:26 -0400
-In-Reply-To: <0000013db20bb0bd-221640a3-e8f8-4140-a3d7-d8e129632ffe-000000@email.amazonses.com>
-References: <1364010673.6345.156.camel@gandalf.local.home>
-	 <0000013da1f93be3-c3d42ae8-ff34-4c63-8094-77a83291ea19-000000@email.amazonses.com>
-	 <1364227073.6345.182.camel@gandalf.local.home>
-	 <1364228039.6345.183.camel@gandalf.local.home>
-	 <0000013da2ace21a-9e87fe8a-75c2-4b7c-b5e1-37ad196ce012-000000@email.amazonses.com>
-	 <1364234613.6345.184.camel@gandalf.local.home>
-	 <0000013da2ce20f8-0e3a64ef-67ed-4ab4-9f20-b77980c876c3-000000@email.amazonses.com>
-	 <1364236355.6345.185.camel@gandalf.local.home>
-	 <20130327025957.GA17125@lge.com>
-	 <1364355032.6345.200.camel@gandalf.local.home>
-	 <20130327061351.GB17125@lge.com>
-	 <0000013db20bb0bd-221640a3-e8f8-4140-a3d7-d8e129632ffe-000000@email.amazonses.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Apr 2013 08:27:53 -0400
+From: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
+To: Stefan Hajnoczi <stefanha@gmail.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "Huangweidong (C)" <weidong.huang@huawei.com>,
+        Zanghongyong <zanghongyong@huawei.com>,
+        Luonengjun <luonengjun@huawei.com>,
+        Zhanghuanzhong <zhanghuanzhong@huawei.com>
+Subject: reply: reply: [Qemu-devel] qemu crashed when starting vm(kvm) with
+ vnc connect
+Thread-Topic: reply: reply: [Qemu-devel] qemu crashed when starting vm(kvm)
+ with vnc connect
+Thread-Index: AQHONFRixqFJYdYKykydYbRqNI0DKw==
+Date: Mon, 8 Apr 2013 12:27:06 +0000
+Message-ID: <D3E216785288A145B7BC975F83A2ED103FE16749@szxeml556-mbx.china.huawei.com>
+References: <D3E216785288A145B7BC975F83A2ED103FE154C1@szxeml556-mbx.china.huawei.com>
+ <20130405063456.GA27569@stefanha-thinkpad.redhat.com>
+ <D3E216785288A145B7BC975F83A2ED103FE16528@szxeml556-mbx.china.huawei.com>
+ <20130408105052.GC12076@stefanha-thinkpad.redhat.com>
+In-Reply-To: <20130408105052.GC12076@stefanha-thinkpad.redhat.com>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.135.68.97]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the late reply, but I just got back from vacation.
+On Sun, Apr 07, 2013 at 04:58:07AM +0000, Zhanghaoyu (A) wrote:
+> >>> I start a kvm VM with vnc(using the zrle protocol) connect, sometimes qemu program crashed during starting period, received signal SIGABRT.
+> >>> Trying about 20 times, this crash may be reproduced.
+> >>> I guess the cause memory corruption or double free.
+> >>
+> >> Which version of QEMU are you running?
+> >> 
+> >> Please try qemu.git/master.
+> >> 
+> >> Stefan
+> >
+> >I used the QEMU download from qemu.git (http://git.qemu.org/git/qemu.git).
+>
+> Great, thanks!  Can you please post a backtrace?
+> 
+> The easiest way is:
+> 
+>  $ ulimit -c unlimited
+>  $ qemu-system-x86_64 -enable-kvm -m 1024 ...
+>  ...crash...
+>  $ gdb -c qemu-system-x86_64.core
+>  (gdb) bt
+> 
+> Depending on how your system is configured the core file might have a different filename but there should be a file name *core* the current working directory
+after the crash.
+> 
+> The backtrace will make it possible to find out where the crash occurred.
+> 
+> Thanks,
+> Stefan
 
-On Thu, 2013-03-28 at 17:29 +0000, Christoph Lameter wrote:
-> Two patches against slub to enable deconfiguring cpu_partial support.
-> 
-> First one is a bug fix (Pekka please pick up this one or use Joonsoo's
-> earlier one).
-> 
-> 
-> Subject: slub: Fix object counts in acquire_slab
-> 
-> It seems that we were overallocating objects from the slab queues
-> since get_partial_node() assumed that page->inuse was undisturbed by
-> acquire_slab(). Save the # of objects in page->lru.next in acquire_slab()
-> and pass it to get_partial_node() that way.
-> 
-> I have a vague memory that Joonsoo also ran into this issue awhile back.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> Index: linux/mm/slub.c
-> ===================================================================
-> --- linux.orig/mm/slub.c	2013-03-28 12:14:26.958358688 -0500
-> +++ linux/mm/slub.c	2013-03-28 12:16:57.240785613 -0500
-> @@ -1498,6 +1498,7 @@ static inline void *acquire_slab(struct
->  	void *freelist;
->  	unsigned long counters;
->  	struct page new;
-> +	unsigned long objects;
-> 
->  	/*
->  	 * Zap the freelist and set the frozen bit.
-> @@ -1507,6 +1508,7 @@ static inline void *acquire_slab(struct
->  	freelist = page->freelist;
->  	counters = page->counters;
->  	new.counters = counters;
-> +	objects = page->objects;
->  	if (mode) {
->  		new.inuse = page->objects;
->  		new.freelist = NULL;
-> @@ -1524,6 +1526,7 @@ static inline void *acquire_slab(struct
->  		return NULL;
-> 
->  	remove_partial(n, page);
-> +	page->lru.next = (void *)objects;
->  	WARN_ON(!freelist);
->  	return freelist;
->  }
-> @@ -1565,7 +1568,7 @@ static void *get_partial_node(struct kme
->  			c->page = page;
->  			stat(s, ALLOC_FROM_PARTIAL);
->  			object = t;
-> -			available =  page->objects - page->inuse;
-> +			available =  page->objects - (unsigned long)page->lru.next;
+backtrace from core file is shown as below:
 
-Ug, this is a really nasty hack. To avoid the curses you will get by the
-one that takes over this code when you retire, I suggest just have
-"objects" passed back as a reference parameter. I only see
-acquire_slab() used here. Why not just pass in a pointer and have that
-assigned objects instead of using a error prone use of lru.next?
+Program received signal SIGABRT, Aborted.
+0x00007f32eda3dd95 in raise () from /lib64/libc.so.6
+(gdb) bt
+#0  0x00007f32eda3dd95 in raise () from /lib64/libc.so.6
+#1  0x00007f32eda3f2ab in abort () from /lib64/libc.so.6
+#2  0x00007f32eda77ece in __libc_message () from /lib64/libc.so.6
+#3  0x00007f32eda7dc06 in malloc_printerr () from /lib64/libc.so.6
+#4  0x00007f32eda7ecda in _int_free () from /lib64/libc.so.6
+#5  0x00007f32efd3452c in free_and_trace (mem=0x7f3290000cd0) at vl.c:2880
+#6  0x00007f32efd251a1 in buffer_free (buffer=0x7f32f0c82890) at ui/vnc.c:505
+#7  0x00007f32efd20c56 in vnc_zrle_clear (vs=0x7f32f0c762d0)
+    at ui/vnc-enc-zrle.c:364
+#8  0x00007f32efd26d07 in vnc_disconnect_finish (vs=0x7f32f0c762d0)
+    at ui/vnc.c:1050
+#9  0x00007f32efd275c5 in vnc_client_read (opaque=0x7f32f0c762d0)
+    at ui/vnc.c:1349
+#10 0x00007f32efcb397c in qemu_iohandler_poll (readfds=0x7f32f074d020,
+    writefds=0x7f32f074d0a0, xfds=0x7f32f074d120, ret=1) at iohandler.c:124
+#11 0x00007f32efcb46e8 in main_loop_wait (nonblocking=0) at main-loop.c:417
+#12 0x00007f32efd31159 in main_loop () at vl.c:2133
+#13 0x00007f32efd38070 in main (argc=46, argv=0x7fff7f5df178,
+    envp=0x7fff7f5df2f0) at vl.c:4481
 
--- Steve
-
->  		} else {
->  			available = put_cpu_partial(s, page, 0);
->  			stat(s, CPU_PARTIAL_NODE);
-
-
+Zhang Haoyu
