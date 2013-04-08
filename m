@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936240Ab3DHKGG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:06:06 -0400
-Received: from www.linutronix.de ([62.245.132.108]:33971 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964907Ab3DHKGD (ORCPT
+	id S936183Ab3DHKFf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:05:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42924 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935754Ab3DHJwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 06:06:03 -0400
-Message-ID: <51629686.7030708@linutronix.de>
-Date: Mon, 08 Apr 2013 12:05:58 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-Subject: Re: [PATCH 1/3] kernel/srcu: merge common code into a macro
-References: <1363702606-31586-1-git-send-email-bigeasy@linutronix.de> <515E7B77.7010807@cn.fujitsu.com>
-In-Reply-To: <515E7B77.7010807@cn.fujitsu.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 8 Apr 2013 05:52:25 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mugunthan V N <mugunthanvnm@ti.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 070/102] drivers: net: ethernet: cpsw: use netif_wake_queue() while restarting tx queue
+Date: Mon,  8 Apr 2013 10:50:25 +0100
+Message-Id: <1365414657-29191-71-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
+References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2013 09:21 AM, Lai Jiangshan wrote:
-> Hi, Sebastian
+3.5.7.10 -stable review patch.  If anyone has any objections, please let me know.
 
-Hi Lai,
+------------------
 
-> The patch hurts readability.
-> The original code are simple enough, merging them as one macro
-> gives us no benefit.
+From: Mugunthan V N <mugunthanvnm@ti.com>
 
-Except when you need to adjust the macro and you have to touch both of
-them instead just one. But I don't have strong feelings for that one.
+commit b56d6b3fca6d1214dbc9c5655f26e5d4ec04afc8 upstream.
 
-> Thanks
-> Lai.
+To restart tx queue use netif_wake_queue() intead of netif_start_queue()
+so that net schedule will restart transmission immediately which will
+increase network performance while doing huge data transfers.
 
-Sebastian
+Reported-by: Dan Franke <dan.franke@schneider-electric.com>
+Suggested-by: Sriramakrishnan A G <srk@ti.com>
+Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: adjust context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/net/ethernet/ti/cpsw.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
+index 6685bbb..310e353 100644
+--- a/drivers/net/ethernet/ti/cpsw.c
++++ b/drivers/net/ethernet/ti/cpsw.c
+@@ -249,7 +249,7 @@ void cpsw_tx_handler(void *token, int len, int status)
+ 	struct cpsw_priv	*priv = netdev_priv(ndev);
+ 
+ 	if (unlikely(netif_queue_stopped(ndev)))
+-		netif_start_queue(ndev);
++		netif_wake_queue(ndev);
+ 	priv->stats.tx_packets++;
+ 	priv->stats.tx_bytes += len;
+ 	dev_kfree_skb_any(skb);
+-- 
+1.8.1.2
+
