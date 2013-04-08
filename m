@@ -1,46 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936180Ab3DHVM5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 17:12:57 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53067 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935958Ab3DHVM4 (ORCPT
+	id S936163Ab3DHVRB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 17:17:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6307 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757938Ab3DHVRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 17:12:56 -0400
-Date: Mon, 08 Apr 2013 17:12:54 -0400 (EDT)
-Message-Id: <20130408.171254.1610343775047047438.davem@davemloft.net>
-To: mark.d.rustad@intel.com
-Cc: michael.riesch@omicron.at, netdev@vger.kernel.org,
-        gregkh@linuxfoundation.org, jbenc@redhat.com, tytso@mit.edu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtnetlink: Call nlmsg_parse() with correct header
- length
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CD31A507-C3E1-4499-9F06-2F83B3FBFE61@intel.com>
-References: <e04bc546-fcf6-41d2-a585-5fddff388e06@mary.at.omicron.at>
-	<CD31A507-C3E1-4499-9F06-2F83B3FBFE61@intel.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 8 Apr 2013 17:17:00 -0400
+X-Authority-Analysis: v=2.0 cv=C51rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=yW1noe_gaAEA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=GG96gKI6ZmgA:10 a=VwQbUJbxAAAA:8 a=kcbKClAOYQChjYnbyocA:9 a=QEXdDO2ut3YA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1365455818.25498.30.camel@gandalf.local.home>
+Subject: Re: [PATCH] sched: Fix 32bit race in sched_clock_remote()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: tglx <tglx@linutronix.de>, mingo@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 08 Apr 2013 17:16:58 -0400
+In-Reply-To: <1365179800.2609.135.camel@laptop>
+References: <1365179800.2609.135.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Mon, 08 Apr 2013 14:12:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Rustad, Mark D" <mark.d.rustad@intel.com>
-Date: Mon, 8 Apr 2013 18:13:36 +0000
-
-> On Apr 8, 2013, at 8:45 AM, Michael Riesch <michael.riesch@omicron.at> wrote:
+On Fri, 2013-04-05 at 18:36 +0200, Peter Zijlstra wrote:
+> Thomas spotted a nasty 32bit race in sched_clock_remote() after way too
+> many hours of debugging weirdness.
 > 
->> 
->> Signed-off-by: Michael Riesch <michael.riesch@omicron.at>
- ...
-> I found that fcoemon has also been triggering these messages for
-> some time. I found the same problem and arrived at exactly the same
-> solution. I would have already sent it, but it is still in
-> validation. As far as I am concerned:
+> What happens is that sched_clock_remote() does regular machine word
+> reads of sched_clock_data::clock; this appears safe since we use
+> cmpxchg64() to update the variable and any half-read value would
+> trigger a retry.
 > 
-> Acked-by: Mark Rustad <mark.d.rustad@intel.com>
+> Except we don't validate the new value 'val' in the same way! Thus we
+> can propagate non-atomic read errors into the clock value.
+> 
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Debugged-by: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  kernel/sched/clock.c | 19 +++++++++++++++++--
+>  1 file changed, 17 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/sched/clock.c b/kernel/sched/clock.c
+> index c685e31..7042ef7 100644
+> --- a/kernel/sched/clock.c
+> +++ b/kernel/sched/clock.c
+> @@ -170,6 +170,21 @@ static u64 sched_clock_local(struct sched_clock_data *scd)
+>  	return clock;
+>  }
+>  
+> +#ifndef CONFIG_64BIT
 
-Looks good to me too, applied and queued up for -stable, thanks!
+We need to add a Kconfig:
+
+config 32BIT
+	depends on BROKEN
+
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
+> +/*
+> + * 32bit machines can't atomically read a u64 except using cmpxchg64()
+> + */
+> +static inline u64 scd_read_clock(struct sched_clock_data *scd)
+> +{
+> +	return cmpxchg64(&scd->clock, 0, 0);
+> +}
+> +#else
+> +static inline u64 scd_read_clock(struct sched_clock_data *scd)
+> +{
+> +	return scd->clock;
+> +}
+> +#endif
+> +
+>  static u64 sched_clock_remote(struct sched_clock_data *scd)
+>  {
+>  	struct sched_clock_data *my_scd = this_scd();
+> @@ -178,8 +193,8 @@ static u64 sched_clock_remote(struct sched_clock_data *scd)
+>  
+>  	sched_clock_local(my_scd);
+>  again:
+> -	this_clock = my_scd->clock;
+> -	remote_clock = scd->clock;
+> +	this_clock = scd_clock_read(my_scd);
+> +	remote_clock = scd_clock_read(scd);
+>  
+>  	/*
+>  	 * Use the opportunity that we have both locks
+> 
+
+
