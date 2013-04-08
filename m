@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934432Ab3DHRWh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 13:22:37 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:59303 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559Ab3DHRWg (ORCPT
+	id S934868Ab3DHRWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 13:22:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52172 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934224Ab3DHRWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 13:22:36 -0400
-Date: Mon, 8 Apr 2013 10:22:33 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tyrel Datwyler <turtle.on.the.radio@gmail.com>
-Cc: eduardo.falentin@ti.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: omap-thermal: remove trailing whitespace from
- omap-bandgap.c
-Message-ID: <20130408172233.GA26206@kroah.com>
-References: <1365385640-10443-1-git-send-email-turtle.on.the.radio@gmail.com>
+	Mon, 8 Apr 2013 13:22:47 -0400
+Message-ID: <5162FCE0.6090900@infradead.org>
+Date: Mon, 08 Apr 2013 10:22:40 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365385640-10443-1-git-send-email-turtle.on.the.radio@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Masanari Iida <standby24x7@gmail.com>
+CC: linux-kernel@vger.kernel.org, trivial@kernel.org, joe@perches.com
+Subject: Re: [PATCH/v2] [trivial]treewide: Fix typo in printks
+References: <1365440810-25964-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1365440810-25964-1-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 07, 2013 at 06:47:20PM -0700, Tyrel Datwyler wrote:
-> This patch removes trailing whitespace from a blank line in omap-bandgap.c as
-> detected by the checkpatch.pl tool.
+On 04/08/13 10:06, Masanari Iida wrote:
+> Correct spelling typos in printk and comments.
 > 
-> Signed-off-by: Tyrel Datwyler <turtle.on.the.radio@gmail.com>
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
+
+Thanks.
+
+
+> 
 > ---
->  drivers/staging/omap-thermal/omap-bandgap.c | 2 +-
+>  drivers/media/pci/saa7164/saa7164-core.c | 2 +-
+>  drivers/rtc/Kconfig                      | 4 ++--
+>  drivers/rtc/rtc-max8997.c                | 2 +-
+>  drivers/usb/misc/iowarrior.c             | 4 ++--
+>  drivers/usb/misc/uss720.c                | 2 +-
+>  drivers/video/amifb.c                    | 2 +-
+>  drivers/video/auo_k190x.c                | 2 +-
+>  drivers/video/goldfishfb.c               | 2 +-
+>  drivers/video/s1d13xxxfb.c               | 2 +-
+>  drivers/video/ssd1307fb.c                | 4 ++--
+>  fs/nfs/objlayout/objio_osd.c             | 2 +-
+>  fs/nfs/objlayout/objlayout.h             | 2 +-
+>  sound/soc/codecs/wm8974.c                | 2 +-
+>  tools/perf/tests/attr.c                  | 2 +-
+>  tools/perf/tests/parse-events.c          | 2 +-
+>  15 files changed, 18 insertions(+), 18 deletions(-)
 
-This file no longer is in my tree, are you sure you made this against
-the proper branch?  Please always make staging patches against the
-linux-next tree.
 
-thanks,
 
-greg k-h
+-- 
+~Randy
