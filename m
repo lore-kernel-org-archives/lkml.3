@@ -1,104 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935739Ab3DHMXK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 08:23:10 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:59940 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935127Ab3DHMXI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 08:23:08 -0400
-X-IronPort-AV: E=Sophos;i="4.87,431,1363129200"; 
-   d="scan'208";a="12279883"
-Date: Mon, 8 Apr 2013 14:23:06 +0200
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: linux-kernel@vger.kernel.org
-Subject: Hardware locality (hwloc) v1.7 released
-Message-ID: <20130408122306.GC6563@type.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	linux-kernel@vger.kernel.org
+	id S935762Ab3DHMYx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 08:24:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28036 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935664Ab3DHMYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 08:24:52 -0400
+Date: Mon, 8 Apr 2013 08:24:42 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH cgroup/for-3.10] devcg: remove broken_hierarchy tag
+Message-ID: <20130408122442.GD24899@redhat.com>
+References: <20130407172818.GD12038@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+In-Reply-To: <20130407172818.GD12038@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Hardware Locality (hwloc) team is pleased to announce the release
-of v1.7:
+On Sun, Apr 07, 2013 at 10:28:18AM -0700, Tejun Heo wrote:
+> From f913fbedbdfc08eeff742c4b3077e267d8fc867f Mon Sep 17 00:00:00 2001
+> From: Tejun Heo <tj@kernel.org>
+> Date: Sun, 7 Apr 2013 10:25:39 -0700
+> 
+> bd2953ebbb ("devcg: propagate local changes down the hierarchy")
+> implemented proper hierarchy support.  Remove the broken tag.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Aristeu Rozanski <aris@redhat.com>
+> ---
+> Applying to cgroup/for-3.10.
 
-   http://www.open-mpi.org/projects/hwloc/
+looks good, thanks Tejun
 
-v1.7 is a major new release series.  The v1.6 series focused on the core
-rework to ease the addition of new discovery components. As expected,
-v1.7 now adds many new discovery components for GPUs, Xeon Phi, BlueGene/Q,
-and NetBSD.
+Acked-by: Aristeu Rozanski <aris@redhat.com>
 
-There are also a couple changes in the API and in command-line tools,
-many documentation improvements, the ability to build external plugins,
-and more.
+-- 
+Aristeu
 
-* New operating system backends
-  + Add BlueGene/Q compute node kernel (CNK) support. See the FAQ in the
-    documentation for details. Thanks to Jeff Hammond, Christopher Samuel
-    and Erik Schnetter for their help.
-  + Add NetBSD support, thanks to Aleksej Saushev.
-* New I/O device discovery
-  + Add co-processor OS devices such as "mic0" for Intel Xeon Phi (MIC)
-    on Linux. Thanks to Jerome Vienne for helping.
-  + Add co-processor OS devices such as "cuda0" for NVIDIA CUDA-capable GPUs.
-  + Add co-processor OS devices such as "opencl0d0" for OpenCL GPU devices
-    on the AMD OpenCL implementation.
-  + Add GPU OS devices such as ":0.0" for NVIDIA X11 displays.
-  + Add GPU OS devices such as "nvml0" for NVIDIA GPUs.
-    Thanks to Marwan Abdellah and Stefan Eilemann for helping.
-  These new OS devices have some string info attributes such as CoProcType,
-  GPUModel, etc. to better identify them.
-  See the I/O Devices and Attributes documentation sections for details.
-* New components
-  + Add the "opencl", "cuda", "nvml" and "gl" components for I/O device
-    discovery.
-  + "nvml" also improves the discovery of NVIDIA GPU PCIe link speed.
-  All of these new components may be built as plugins. They may also be
-  disabled entirely by passing --disable-opencl/cuda/nvml/gl to configure.
-  See the I/O Devices, Components and Plugins, and FAQ documentation
-  sections for details.
-* API
-  + Add hwloc_topology_get_flags().
-  + Add hwloc/plugins.h for building external plugins.
-    See the Adding new discovery components and plugins section.
-* Interoperability
-  + Add hwloc/opencl.h, hwloc/nvml.h, hwloc/gl.h and hwloc/intel-mic.h
-    to retrieve the locality of OS devices that correspond to AMD OpenCL
-    GPU devices or indexes, to NVML devices or indexes, to NVIDIA X11
-    displays, or to Intel Xeon Phi (MIC) device indexes.
-  + Add new helpers in hwloc/cuda.h and hwloc/cudart.h to convert
-    between CUDA devices or indexes and hwloc OS devices.
-  + Add hwloc_ibv_get_device_osdev() and clarify the requirements
-    of the OpenFabrics Verbs helpers in hwloc/openfabrics-verbs.h.
-* Tools
-  + hwloc-info is not only a synonym of lstopo -s anymore, it also
-    dumps information about objects given on the command-line.
-* Documentation
-  + Add a section "Existing components and plugins".
-  + Add a list of common OS devices in section "Software devices".
-  + Add a new FAQ entry "Why is lstopo slow?" about lstopo slowness
-    issues because of GPUs.
-  + Clarify the documentation of inline helpers in hwloc/myriexpress.h
-    and hwloc/openfabrics-verbs.h.
-* Misc
-  + Improve cache detection on AIX.
-  + The HWLOC_COMPONENTS variable now excludes the components whose
-    names are prefixed with '-'.
-  + lstopo --ignore PU now works when displaying the topology in
-    graphical and textual mode (not when exporting to XML).
-  + Make sure I/O options always appear in lstopo usage, not only when
-    using pciutils/libpci.
-  + Remove some unneeded Linux specific includes from some interoperability
-    headers.
-  + Fix some inconsistencies in hwloc-distrib and hwloc-assembler-remote
-    manpages. Thanks to Guy Streeter for the report.
-  + Fix a memory leak on AIX when getting memory binding.
-  + Fix many small memory leaks on Linux. 
-  + The `libpci' component is now called `pci' but the old name is still
-    accepted in the HWLOC_COMPONENTS variable for backward compatibility.
