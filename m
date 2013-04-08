@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936002Ab3DHUT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 16:19:28 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:34465 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935945Ab3DHUT0 (ORCPT
+	id S936027Ab3DHUUI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 16:20:08 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:38307 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935951Ab3DHUUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 16:19:26 -0400
-Message-ID: <5163264B.3050707@linaro.org>
-Date: Mon, 08 Apr 2013 13:19:23 -0700
+	Mon, 8 Apr 2013 16:20:06 -0400
+Message-ID: <51632673.8030603@linaro.org>
+Date: Mon, 08 Apr 2013 13:20:03 -0700
 From: John Stultz <john.stultz@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] hrtimer, add expiry time overflow check in hrtimer_interrupt
-References: <1365425235-26191-1-git-send-email-prarit@redhat.com>
-In-Reply-To: <1365425235-26191-1-git-send-email-prarit@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: David Engraf <david.engraf@sysgo.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ktime_add_ns() may overflow on 32bit architectures
+References: <51485A43.4020600@sysgo.com>
+In-Reply-To: <51485A43.4020600@sysgo.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2013 05:47 AM, Prarit Bhargava wrote:
-> 2nd submit: I did quite a bit of testing with this patch and I don't see any
-> ill effects.  I've tested across several large and small x86 systems, and a
-> ppc system for good measure.
+On 03/19/2013 05:29 AM, David Engraf wrote:
+> Hello,
 >
-> P.
+> I've triggered an overflow when using ktime_add_ns() on a 32bit 
+> architecture not supporting CONFIG_KTIME_SCALAR.
 >
-> ----8<---
-> `
-> The settimeofday01 test in the LTP testsuite effectively does
+> When passing a very high value for u64 nsec, e.g. 7881299347898368000 
+> the do_div() function converts this value to seconds (7881299347) 
+> which is still to high to pass to the ktime_set() function as long. 
+> The result in my case is a negative value.
 >
->          gettimeofday(current time);
->          settimeofday(Jan 1, 1970 + 100 seconds);
->          settimeofday(current time);
+> The problem on my system occurs in the tick-sched.c, 
+> tick_nohz_stop_sched_tick() when time_delta is set to 
+> timekeeping_max_deferment(). The check for time_delta < KTIME_MAX is 
+> valid, thus ktime_add_ns() is called with a too large value resulting 
+> in a negative expire value. This leads to an endless loop in the 
+> ticker code:
 >
-> This test causes a stack trace to be displayed on the console during the
-> setting of timeofday to Jan 1, 1970 + 100 seconds:
+> time_delta: 7881299347898368000
+> expires = ktime_add_ns(last_update, time_delta)
+> expires: negative value
 >
-> [  131.066751] ------------[ cut here ]------------
-> [  131.096448] WARNING: at kernel/time/clockevents.c:209 clockevents_program_event+0x135/0x140()
-> [  131.104935] Hardware name: Dinar
-> [  131.108150] Modules linked in: sg nfsv3 nfs_acl nfsv4 auth_rpcgss nfs dns_resolver fscache lockd sunrpc nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables iptable_filter ip_tables kvm_amd kvm sp5100_tco bnx2 i2c_piix4 crc32c_intel k10temp fam15h_power ghash_clmulni_intel amd64_edac_mod pcspkr serio_raw edac_mce_amd edac_core microcode xfs libcrc32c sr_mod sd_mod cdrom ata_generic crc_t10dif pata_acpi radeon i2c_algo_bit drm_kms_helper ttm drm ahci pata_atiixp libahci libata usb_storage i2c_core dm_mirror dm_region_hash dm_log dm_mod
-> [  131.176784] Pid: 0, comm: swapper/28 Not tainted 3.8.0+ #6
-> [  131.182248] Call Trace:
-> [  131.184684]  <IRQ>  [<ffffffff810612af>] warn_slowpath_common+0x7f/0xc0
-> [  131.191312]  [<ffffffff8106130a>] warn_slowpath_null+0x1a/0x20
-> [  131.197131]  [<ffffffff810b9fd5>] clockevents_program_event+0x135/0x140
-> [  131.203721]  [<ffffffff810bb584>] tick_program_event+0x24/0x30
-> [  131.209534]  [<ffffffff81089ab1>] hrtimer_interrupt+0x131/0x230
-> [  131.215437]  [<ffffffff814b9600>] ? cpufreq_p4_target+0x130/0x130
-> [  131.221509]  [<ffffffff81619119>] smp_apic_timer_interrupt+0x69/0x99
-> [  131.227839]  [<ffffffff8161805d>] apic_timer_interrupt+0x6d/0x80
-> [  131.233816]  <EOI>  [<ffffffff81099745>] ? sched_clock_cpu+0xc5/0x120
-> [  131.240267]  [<ffffffff814b9ff0>] ? cpuidle_wrap_enter+0x50/0xa0
-> [  131.246252]  [<ffffffff814b9fe9>] ? cpuidle_wrap_enter+0x49/0xa0
-> [  131.252238]  [<ffffffff814ba050>] cpuidle_enter_tk+0x10/0x20
-> [  131.257877]  [<ffffffff814b9c89>] cpuidle_idle_call+0xa9/0x260
-> [  131.263692]  [<ffffffff8101c42f>] cpu_idle+0xaf/0x120
-> [  131.268727]  [<ffffffff815f8971>] start_secondary+0x255/0x257
-> [  131.274449] ---[ end trace 1151a50552231615 ]---
->
-> When we change the system time to a low value like this, the value of
-> timekeeper->offs_real will be a negative value.
->
-> It seems that the WARN occurs because an hrtimer has been started in the time
-> between the releasing of the timekeeper lock and the IPI call (via a call to
-> on_each_cpu) in clock_was_set() in the do_settimeofday() code.  The end result
-> is that a REALTIME_CLOCK timer has been added with softexpires = expires =
-> KTIME_MAX.  The hrtimer_interrupt() fires/is called and the loop at
-> kernel/hrtimer.c:1289 is executed.  In this loop the code subtracts the
-> clock base's offset (which was set to timekeeper->offs_real in
-> do_settimeofday()) from the current hrtimer_cpu_base->expiry value (which
-> was KTIME_MAX):
->
-> 	KTIME_MAX - (a negative value) = overflow
->
-> A simple check for an overflow can resolve this problem.  Using KTIME_MAX
-> instead of the overflow value will result in the hrtimer function being run,
-> and the reprogramming of the timer after that.
->
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: John Stultz <john.stultz@linaro.org>
+> This error doesn't occurs on 64bit or architectures supporting 
+> CONFIG_KTIME_SCALAR (e.g. ARM, x86-32).
 
-Prarit: Should this be tagged for -stable?
+Sorry, this fell through the cracks. I see Andrew caught it, but I've 
+queued for 3.10 in my tree as well.
+
+This should be tagged for -stable as well, no?
 
 thanks
 -john
