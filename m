@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936270Ab3DHKOq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:14:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42774 "EHLO
+	id S936383Ab3DHKPN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:15:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42758 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935636Ab3DHJvu (ORCPT
+	with ESMTP id S935617Ab3DHJvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:51:50 -0400
+	Mon, 8 Apr 2013 05:51:46 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 040/102] USB: ftdi_sio: fix use-after-free in TIOCMIWAIT
-Date: Mon,  8 Apr 2013 10:49:55 +0100
-Message-Id: <1365414657-29191-41-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 037/102] USB: ch341: fix use-after-free in TIOCMIWAIT
+Date: Mon,  8 Apr 2013 10:49:52 +0100
+Message-Id: <1365414657-29191-38-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
@@ -30,7 +30,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 71ccb9b01981fabae27d3c98260ea4613207618e upstream.
+commit fa1e11d5231c001c80a479160b5832933c5d35fb upstream.
 
 Use the port wait queue and make sure to check the serial disconnected
 flag before accessing private port data after waking up.
@@ -38,92 +38,67 @@ flag before accessing private port data after waking up.
 This is is needed as the private port data (including the wait queue
 itself) can be gone when waking up after a disconnect.
 
-When switching to tty ports, some lifetime assumptions were changed.
-Specifically, close can now be called before the final tty reference is
-dropped as part of hangup at device disconnect. Even with the ftdi
-private-data refcounting this means that the port private data can be
-freed while a process is sleeping on modem-status changes and thus
-cannot be relied on to detect disconnects when woken up.
-
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/ftdi_sio.c | 19 ++++++++-----------
- 1 file changed, 8 insertions(+), 11 deletions(-)
+ drivers/usb/serial/ch341.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index cddca7f..a93f958 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -74,9 +74,7 @@ struct ftdi_private {
- 	int flags;		/* some ASYNC_xxxx flags are supported */
- 	unsigned long last_dtr_rts;	/* saved modem control outputs */
- 	struct async_icount	icount;
--	wait_queue_head_t delta_msr_wait; /* Used for TIOCMIWAIT */
- 	char prev_status;        /* Used for TIOCMIWAIT */
--	bool dev_gone;        /* Used to abort TIOCMIWAIT */
- 	char transmit_empty;	/* If transmitter is empty or not */
- 	struct usb_serial_port *port;
- 	__u16 interface;	/* FT2232C, FT2232H or FT4232H port interface
-@@ -1695,10 +1693,8 @@ static int ftdi_sio_port_probe(struct usb_serial_port *port)
- 	kref_init(&priv->kref);
- 	mutex_init(&priv->cfg_lock);
- 	memset(&priv->icount, 0x00, sizeof(priv->icount));
+diff --git a/drivers/usb/serial/ch341.c b/drivers/usb/serial/ch341.c
+index cabd1b1..93c835e 100644
+--- a/drivers/usb/serial/ch341.c
++++ b/drivers/usb/serial/ch341.c
+@@ -82,7 +82,6 @@ MODULE_DEVICE_TABLE(usb, id_table);
+ 
+ struct ch341_private {
+ 	spinlock_t lock; /* access lock */
+-	wait_queue_head_t delta_msr_wait; /* wait queue for modem status */
+ 	unsigned baud_rate; /* set baud rate */
+ 	u8 line_control; /* set line control value RTS/DTR */
+ 	u8 line_status; /* active status of modem control inputs */
+@@ -253,7 +252,6 @@ static int ch341_attach(struct usb_serial *serial)
+ 		return -ENOMEM;
+ 
+ 	spin_lock_init(&priv->lock);
 -	init_waitqueue_head(&priv->delta_msr_wait);
+ 	priv->baud_rate = DEFAULT_BAUD_RATE;
+ 	priv->line_control = CH341_BIT_RTS | CH341_BIT_DTR;
  
- 	priv->flags = ASYNC_LOW_LATENCY;
--	priv->dev_gone = false;
- 
- 	if (quirk && quirk->port_probe)
- 		quirk->port_probe(priv);
-@@ -1845,8 +1841,7 @@ static int ftdi_sio_port_remove(struct usb_serial_port *port)
- {
- 	struct ftdi_private *priv = usb_get_serial_port_data(port);
- 
--	priv->dev_gone = true;
--	wake_up_interruptible_all(&priv->delta_msr_wait);
+@@ -289,7 +287,7 @@ static void ch341_dtr_rts(struct usb_serial_port *port, int on)
+ 		priv->line_control &= ~(CH341_BIT_RTS | CH341_BIT_DTR);
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 	ch341_set_handshake(port->serial->dev, priv->line_control);
+-	wake_up_interruptible(&priv->delta_msr_wait);
 +	wake_up_interruptible(&port->delta_msr_wait);
+ }
  
- 	remove_sysfs_attrs(port);
+ static void ch341_close(struct usb_serial_port *port)
+@@ -482,7 +480,7 @@ static void ch341_read_int_callback(struct urb *urb)
+ 			tty_kref_put(tty);
+ 		}
  
-@@ -1995,7 +1990,7 @@ static int ftdi_process_packet(struct tty_struct *tty,
- 		if (diff_status & FTDI_RS0_RLSD)
- 			priv->icount.dcd++;
- 
--		wake_up_interruptible_all(&priv->delta_msr_wait);
+-		wake_up_interruptible(&priv->delta_msr_wait);
 +		wake_up_interruptible(&port->delta_msr_wait);
- 		priv->prev_status = status;
  	}
  
-@@ -2394,11 +2389,15 @@ static int ftdi_ioctl(struct tty_struct *tty,
- 	 */
- 	case TIOCMIWAIT:
- 		cprev = priv->icount;
--		while (!priv->dev_gone) {
--			interruptible_sleep_on(&priv->delta_msr_wait);
-+		for (;;) {
-+			interruptible_sleep_on(&port->delta_msr_wait);
- 			/* see if a signal did it */
- 			if (signal_pending(current))
- 				return -ERESTARTSYS;
+ exit:
+@@ -508,11 +506,14 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 
+ 	while (!multi_change) {
+-		interruptible_sleep_on(&priv->delta_msr_wait);
++		interruptible_sleep_on(&port->delta_msr_wait);
+ 		/* see if a signal did it */
+ 		if (signal_pending(current))
+ 			return -ERESTARTSYS;
+ 
++		if (port->serial->disconnected)
++			return -EIO;
 +
-+			if (port->serial->disconnected)
-+				return -EIO;
-+
- 			cnow = priv->icount;
- 			if (((arg & TIOCM_RNG) && (cnow.rng != cprev.rng)) ||
- 			    ((arg & TIOCM_DSR) && (cnow.dsr != cprev.dsr)) ||
-@@ -2408,8 +2407,6 @@ static int ftdi_ioctl(struct tty_struct *tty,
- 			}
- 			cprev = cnow;
- 		}
--		return -EIO;
--		break;
- 	case TIOCSERGETLSR:
- 		return get_lsr_info(port, (struct serial_struct __user *)arg);
- 		break;
+ 		spin_lock_irqsave(&priv->lock, flags);
+ 		status = priv->line_status;
+ 		multi_change = priv->multi_status_change;
 -- 
 1.8.1.2
 
