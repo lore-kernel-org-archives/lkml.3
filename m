@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935763Ab3DHThg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 15:37:36 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:47919 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935713Ab3DHThf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 15:37:35 -0400
-Message-ID: <51631C70.8010404@linux.vnet.ibm.com>
-Date: Mon, 08 Apr 2013 12:37:20 -0700
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S935780Ab3DHTiV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 15:38:21 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:62175 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935727Ab3DHTiU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 15:38:20 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Fabian Vogt" <fabian@ritter-vogt.de>
+Subject: Re: [RFC PATCH arm: initial TI-Nspire support]
+Date: Mon, 8 Apr 2013 21:38:15 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Daniel Tang" <dt.tangr@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, "Lionel Debroux" <lionel_debroux@yahoo.fr>,
+        linux-kernel@vger.kernel.org,
+        "Linus Walleij" <linus.walleij@linaro.org>
+References: <6FE4B33E-A503-4A75-AEED-831CB2C06D83@gmail.com> <896CB251-17FC-4327-BA4E-A8FD9ED1BEC7@gmail.com> <op.wu8k5pwqu7prd4@fabians-laptop.fritz.box>
+In-Reply-To: <op.wu8k5pwqu7prd4@fabians-laptop.fritz.box>
 MIME-Version: 1.0
-To: Simon Jeons <simon.jeons@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] mm: fixup changers of per cpu pageset's ->high and
- ->batch
-References: <1365194030-28939-1-git-send-email-cody@linux.vnet.ibm.com> <5160CC94.6040909@gmail.com>
-In-Reply-To: <5160CC94.6040909@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040819-7182-0000-0000-000006247C0C
+Message-Id: <201304082138.15875.arnd@arndb.de>
+X-Provags-ID: V02:K0:LX2YPSqb6p6FXbXAL/CIr+qC9TngM0l9rOZlOvTtfkA
+ b4Pmlok17E59eQDOTsdNcOqC+ptudRWbGv3toK+v9mVHCAH0ls
+ YMuZ3093GVPjaCgZOW400vgWX5KEHXADn97gT9lSPcBFVul7sr
+ RPLPVpD1X0kl0KOVSeesDXUkpYjjxDhZUWZ21vP4masUFw14AP
+ WR6RfdBYQAntMtKMQczGMUQ/6WsMZqcsuoV6kud4D2Emprt2TC
+ R8hgVOpXdSXXDoSleWFT/uZi4VIkYutJSBK+hFgCL36rKhF9Rj
+ Q7S7ST7yAWzeaw7Z59ViL9jS5HA5Lsxu6xo6Ex152/ZG5pZhgC
+ QCsUhazVRe0fskScYHjQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/06/2013 06:32 PM, Simon Jeons wrote:
-> Hi Cody,
-> On 04/06/2013 04:33 AM, Cody P Schafer wrote:
->> In one case while modifying the ->high and ->batch fields of per cpu
->> pagesets
->> we're unneededly using stop_machine() (patches 1 & 2), and in another
->> we don't have any
->> syncronization at all (patch 3).
->
-> Do you mean stop_machine() is used for syncronization between each
-> online cpu?
->
+On Monday 08 April 2013, Fabian Vogt wrote:
+> The latest kernel it seems to get stuck at
+> console_lock() in register_framebuffer (drivers/video/fbmem.c:1655)
+> if the LCD-controller is enabled. (Early printk and serial console works  
+> fine)
+> CONFIG_NO_HZ is not activated, it works completely.
+> Could this be a kernel bug or is this an issue with our timer  
+> configuration?
 
-I mean that it looks like synchronization between cpus is unneeded 
-because of how per cpu pagesets are used, so stop_machine() (which does 
-provide syncro between all cpus) is unnecessarily "strong".
+This usually happens when the console driver or anything it uses
+calls a function that does a printk(), which means you get a recursive
+call into the console code and try to get the same lock again.
 
+	Arnd
