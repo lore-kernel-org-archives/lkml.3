@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935262Ab3DHQmd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 12:42:33 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:56545 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935072Ab3DHQmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 12:42:31 -0400
-Message-ID: <5162F375.6050500@sgi.com>
-Date: Mon, 8 Apr 2013 11:42:29 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S935269Ab3DHQnK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 12:43:10 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60609 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761995Ab3DHQnJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 12:43:09 -0400
+Message-ID: <5162F390.5050701@wwwdotorg.org>
+Date: Mon, 08 Apr 2013 10:42:56 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Woodhouse <dwmw2@infradead.org>, <stable@vger.kernel.org>
-Subject: Re: [PATCH resend] fs/proc: Move kfree outside pde_unload_lock
-References: <515D9F8A.2060505@sgi.com> <1365090819-25448-1-git-send-email-nzimmer@sgi.com> <20130404161140.GR21522@ZenIV.linux.org.uk> <515DB465.1060004@sgi.com> <20130404204459.GU21522@ZenIV.linux.org.uk> <515F0456.9040803@sgi.com> <20130405173623.GE4068@ZenIV.linux.org.uk> <515F3A71.9080008@sgi.com> <20130405210042.GH4068@ZenIV.linux.org.uk> <5162E36F.5020305@sgi.com> <20130408155847.GS4068@ZenIV.linux.org.uk>
-In-Reply-To: <20130408155847.GS4068@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: Re: [PATCH] regmap: don't corrupt work buffer in _regmap_raw_write()
+References: <1363820522-25954-1-git-send-email-swarren@wwwdotorg.org> <20130321190939.GI15926@opensource.wolfsonmicro.com> <1365416662.1830.86.camel@x61.thuisdomein> <20130408120059.GF9243@opensource.wolfsonmicro.com>
+In-Reply-To: <20130408120059.GF9243@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.162.233.145]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2013 10:58 AM, Al Viro wrote:
-> On Mon, Apr 08, 2013 at 10:34:07AM -0500, Nathan Zimmer wrote:
->> On 04/05/2013 04:00 PM, Al Viro wrote:
->>> On Fri, Apr 05, 2013 at 03:56:17PM -0500, Nathan Zimmer wrote:
->>>
->>>> That didn't produce anything.  I'll run some bisections over the
->>>> weekend and see what I can sort out.
->>> *Ugh*
->>>
->>> I'd try to build with DEBUG_KMEMLEAK and slapped printks on the entry
->>> and exit from close_pdeo().  If that doesn't show anything interesting,
->>> it's probably unrelated to procfs...
->> My bisection pointed me to this commit:  e41efbf13c15
->> At this point I am assuming my issue is unrelated to procfs.
-> Huh?  That commit simply moves three functions and one struct from one file to
-> another...
-Yea, I was hoping it made more sense to you then it did do me.
-I have some lab time later.  I'll verify that is the problem commit.
+On 04/08/2013 06:01 AM, Mark Brown wrote:
+> On Mon, Apr 08, 2013 at 12:24:22PM +0200, Paul Bolle wrote:
+> 
+>> 0) This patch ended up as mainline commit 
+>> bc8ce4afd7ee7e1421c935d24b1f879f82afdd4e, which is part of
+>> v3.9-rc6.
+> 
+> Numbering your paragraphs and using full commit IDs like this
+> doesn't help with legibility...
+> 
+>> 2) The following (draft) patch silences this warning. I'm a bit 
+>> uncertain what the regmap_parse_*() functions are meant to do. So
+>> I'd like to first ask whether something along these lines is
+>> acceptable.
+> 
+> Nope, this breaks v3.9 - in that version they both modify in place
+> and return the parsed value.  In v3.10 it already does what you
+> have because the in place and return value versions have been
+> split.
+> 
+> We need to either revert the commit from v3.9 on the basis that
+> nobody noticed the issue until some other work so it can't be that
+> bad or come up with a more invasive fix, at this point in the cycle
+> I'm more inclined to do the latter.
+
+I assume you mean "former" not "latter" above?
+
+Revert might well be simplest and just fine. The issue this patch
+fixes ended up getting accidentally "fixed" by the side-effects of
+calling .parse_val() before commit 8a819ff "regmap: core: Split out in
+place value parsing", and that commit only appears in 3.10, so we
+should be able to revert this patch without issue in 3.9.
