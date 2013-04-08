@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964977Ab3DHUwN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 16:52:13 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:56770 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752181Ab3DHUwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 16:52:11 -0400
-Message-ID: <51632DF8.2080402@sgi.com>
-Date: Mon, 8 Apr 2013 15:52:08 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Woodhouse <dwmw2@infradead.org>, <stable@vger.kernel.org>
-Subject: Re: [PATCH resend] fs/proc: Move kfree outside pde_unload_lock
-References: <515D9F8A.2060505@sgi.com> <1365090819-25448-1-git-send-email-nzimmer@sgi.com> <20130404161140.GR21522@ZenIV.linux.org.uk> <515DB465.1060004@sgi.com> <20130404204459.GU21522@ZenIV.linux.org.uk> <515F0456.9040803@sgi.com> <20130405173623.GE4068@ZenIV.linux.org.uk> <515F3A71.9080008@sgi.com> <20130405210042.GH4068@ZenIV.linux.org.uk> <5162E36F.5020305@sgi.com> <20130408155847.GS4068@ZenIV.linux.org.uk>
-In-Reply-To: <20130408155847.GS4068@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S965022Ab3DHUz4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 16:55:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49970 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965003Ab3DHUzz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 16:55:55 -0400
+Date: Mon, 8 Apr 2013 13:55:53 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Lin Feng <linfeng@cn.fujitsu.com>, Christoph Lameter <cl@linux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, will.deacon@arm.com,
+        Arnd Bergmann <arnd@arndb.de>, tony@atomide.com,
+        Ben Hutchings <ben@decadent.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Linux MM <linux-mm@kvack.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [PATCH 0/2] mm: vmemmap: add vmemmap_verify check for hot-add
+ node/memory case
+Message-Id: <20130408135553.2f60518d923b6920bdf1931f@linux-foundation.org>
+In-Reply-To: <CAE9FiQVaByGOTjLVthRkEze_ekXm5LAKgKdHzrD+q1iYmjgZFQ@mail.gmail.com>
+References: <1365415000-10389-1-git-send-email-linfeng@cn.fujitsu.com>
+	<CAE9FiQVaByGOTjLVthRkEze_ekXm5LAKgKdHzrD+q1iYmjgZFQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.162.233.145]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2013 10:58 AM, Al Viro wrote:
-> On Mon, Apr 08, 2013 at 10:34:07AM -0500, Nathan Zimmer wrote:
->> On 04/05/2013 04:00 PM, Al Viro wrote:
->>> On Fri, Apr 05, 2013 at 03:56:17PM -0500, Nathan Zimmer wrote:
->>>
->>>> That didn't produce anything.  I'll run some bisections over the
->>>> weekend and see what I can sort out.
->>> *Ugh*
->>>
->>> I'd try to build with DEBUG_KMEMLEAK and slapped printks on the entry
->>> and exit from close_pdeo().  If that doesn't show anything interesting,
->>> it's probably unrelated to procfs...
->> My bisection pointed me to this commit:  e41efbf13c15
->> At this point I am assuming my issue is unrelated to procfs.
-> Huh?  That commit simply moves three functions and one struct from one file to
-> another...
+On Mon, 8 Apr 2013 11:40:11 -0700 Yinghai Lu <yinghai@kernel.org> wrote:
 
-Further digging seems to indicate 9984d7394618df9, the one right after 
-the commit I previously identified.
-Not sure what I did wrong with my bisect to put it off by one.
+> On Mon, Apr 8, 2013 at 2:56 AM, Lin Feng <linfeng@cn.fujitsu.com> wrote:
+> > In hot add node(memory) case, vmemmap pages are always allocated from other
+> > node,
+> 
+> that is broken, and should be fixed.
+> vmemmap should be on local node even for hot add node.
+> 
 
+That would be nice.
+
+I don't see much value in the added warnings, really.  Because there's
+nothing the user can *do* about them, apart from a) stop using NUMA, b)
+stop using memory hotplug, c) become a kernel MM developer or d) switch
+to Windows.
 
