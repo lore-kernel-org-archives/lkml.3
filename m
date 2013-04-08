@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935182Ab3DHJyS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:54:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43086 "EHLO
+	id S935968Ab3DHJwx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:52:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43045 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935988Ab3DHJw7 (ORCPT
+	with ESMTP id S935950Ab3DHJwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:52:59 -0400
+	Mon, 8 Apr 2013 05:52:50 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+Cc: Kees Cook <keescook@chromium.org>, Matt Carlson <mcarlson@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 100/102] UBIFS: make space fixup work in the remount case
-Date: Mon,  8 Apr 2013 10:50:55 +0100
-Message-Id: <1365414657-29191-101-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 091/102] tg3: fix length overflow in VPD firmware parsing
+Date: Mon,  8 Apr 2013 10:50:46 +0100
+Message-Id: <1365414657-29191-92-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
@@ -27,68 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 67e753ca41782913d805ff4a8a2b0f60b26b7915 upstream.
+commit 715230a44310a8cf66fbfb5a46f9a62a9b2de424 upstream.
 
-The UBIFS space fixup is a useful feature which allows to fixup the "broken"
-flash space at the time of the first mount. The "broken" space is usually the
-result of using a "dumb" industrial flasher which is not able to skip empty
-NAND pages and just writes all 0xFFs to the empty space, which has grave
-side-effects for UBIFS when UBIFS trise to write useful data to those empty
-pages.
+Commit 184b89044fb6e2a74611dafa69b1dce0d98612c6 ("tg3: Use VPD fw version
+when present") introduced VPD parsing that contained a potential length
+overflow.
 
-The fix-up feature works roughly like this:
-1. mkfs.ubifs sets the fixup flag in UBIFS superblock when creating the image
-   (see -F option)
-2. when the file-system is mounted for the first time, UBIFS notices the fixup
-   flag and re-writes the entire media atomically, which may take really a lot
-   of time.
-3. UBIFS clears the fixup flag in the superblock.
+Limit the hardware's reported firmware string length (max 255 bytes) to
+stay inside the driver's firmware string length (32 bytes). On overflow,
+truncate the formatted firmware string instead of potentially overwriting
+portions of the tg3 struct.
 
-This works fine when the file system is mounted R/W for the very first time.
-But it did not really work in the case when we first mount the file-system R/O,
-and then re-mount R/W. The reason was that we started the fixup procedure too
-late, which we cannot really do because we have to fixup the space before it
-starts being used.
+http://cansecwest.com/slides/2013/PrivateCore%20CSW%202013.pdf
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reported-by: Mark Jackson <mpfj-list@mimc.co.uk>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: Oded Horovitz <oded@privatecore.com>
+Reported-by: Brad Spengler <spender@grsecurity.net>
+Cc: Matt Carlson <mcarlson@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ubifs/super.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
-index 5862dd9..202c0e4 100644
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -1579,6 +1579,12 @@ static int ubifs_remount_rw(struct ubifs_info *c)
- 	c->remounting_rw = 1;
- 	c->ro_mount = 0;
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index ca3be73..c2450f4 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -13617,8 +13617,11 @@ static void __devinit tg3_read_vpd(struct tg3 *tp)
+ 		if (j + len > block_end)
+ 			goto partno;
  
-+	if (c->space_fixup) {
-+		err = ubifs_fixup_free_space(c);
-+		if (err)
-+			return err;
-+	}
-+
- 	err = check_free_space(c);
- 	if (err)
- 		goto out;
-@@ -1695,12 +1701,6 @@ static int ubifs_remount_rw(struct ubifs_info *c)
- 		err = dbg_check_space_info(c);
+-		memcpy(tp->fw_ver, &vpd_data[j], len);
+-		strncat(tp->fw_ver, " bc ", vpdlen - len - 1);
++		if (len >= sizeof(tp->fw_ver))
++			len = sizeof(tp->fw_ver) - 1;
++		memset(tp->fw_ver, 0, sizeof(tp->fw_ver));
++		snprintf(tp->fw_ver, sizeof(tp->fw_ver), "%.*s bc ", len,
++			 &vpd_data[j]);
  	}
  
--	if (c->space_fixup) {
--		err = ubifs_fixup_free_space(c);
--		if (err)
--			goto out;
--	}
--
- 	mutex_unlock(&c->umount_mutex);
- 	return err;
- 
+ partno:
 -- 
 1.8.1.2
 
