@@ -1,102 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936320Ab3DHV1m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 17:27:42 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:38740 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760401Ab3DHV1g (ORCPT
+	id S936294Ab3DHV1l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 17:27:41 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:41237 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760498Ab3DHV1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Apr 2013 17:27:36 -0400
 X-IronPort-AV: E=Sophos;i="4.87,433,1363158000"; 
-   d="scan'208";a="36684211"
+   d="scan'208";a="36848511"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         Mark Rutland <mark.rutland@arm.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Barry Song <baohua.song@csr.com>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Tony Lindgren <tony@atomide.com>, John Stultz <john.stultz@linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCHv4 00/11] Remove ARM local timer API
-Date: Mon,  8 Apr 2013 14:27:22 -0700
-Message-Id: <1365456453-16297-1-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCHv4 01/11] clockevents: Prefer CPU local devices over global devices
+Date: Mon,  8 Apr 2013 14:27:23 -0700
+Message-Id: <1365456453-16297-2-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.2
+In-Reply-To: <1365456453-16297-1-git-send-email-sboyd@codeaurora.org>
+References: <1365456453-16297-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In light of Mark Rutland's recent work on divorcing the ARM architected
-timers from the ARM local timer API and introducing a generic arch hook for
-broadcast it seems that we should remove the local timer API entirely.
-Doing so will reduce the architecture dependencies of our timer drivers,
-reduce code in ARM core, and simplify timer drivers because they no longer
-go through an architecture layer that is essentially a hotplug notifier.
+On an SMP system with only one global clockevent and a dummy
+clockevent per CPU we run into problems. We want the dummy
+clockevents to be registered as the per CPU tick devices, but
+we can only achieve that if we register the dummy clockevents
+before the global clockevent or if we artificially inflate the
+rating of the dummy clockevents to be higher than the rating
+of the global clockevent. Failure to do so leads to boot
+hangs when the dummy timers are registered on all other CPUs
+besides the CPU that accepted the global clockevent as its tick
+device and there is no broadcast timer to poke the dummy
+devices.
 
-Previous attempts have been made[1] unsuccessfully. I'm hoping this can
-be accepted now so that we can clean up the timer drivers that are
-used in both UP and SMP situations. Right now these drivers have to ignore
-the timer setup callback on the boot CPU to avoid registering clockevents
-twice. This is not very symmetric and causes convuluted code that does
-the same thing in two places.
+If we're registering multiple clockevents and one clockevent is
+global and the other is local to a particular CPU we should
+choose to use the local clockevent regardless of the rating of
+the device. This way, if the clockevent is a dummy it will take
+the tick device duty as long as there isn't a higher rated tick
+device and any global clockevent will be bumped out into
+broadcast mode, fixing the problem described above.
 
-Patches based on v3.9-rc5. I'm still looking for Acks/Tested-by
-on EXYNOS and PRIMA2.
+Reported-by: Mark Rutland <mark.rutland@arm.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ kernel/time/tick-common.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-[1] http://article.gmane.org/gmane.linux.ports.arm.kernel/145705
-
-Note: A hotplug notifier is used by both x86 for the apb_timer (see 
-apbt_cpuhp_notify) and by metag (see arch_timer_cpu_notify in
-metag_generic.c) so this is not new.
-
-Changes since v3:
- * New patch to fix SMP with dummy timers registered after a global timer
- * Push this_cpu_ptr lower to avoid preemptible false positive warnings
- * Collected acks/tested-bys
-
-Changes since v2:
- * Bug fixes in smp_twd from Tony Lindgren's testing
- * Move smp_twd to use late_time_init hook
- * Collected Acks
-
-Changes since v1:
- * Picked up Mark's generic dummy timer driver
- * Split out omap changes into new patch
-
-Mark Rutland (1):
-  clocksource: add generic dummy timer driver
-
-Stephen Boyd (10):
-  clockevents: Prefer CPU local devices over global devices
-  ARM: smp: Remove duplicate dummy timer implementation
-  ARM: smp_twd: Divorce smp_twd from local timer API
-  ARM: OMAP2+: Divorce from local timer API
-  ARM: EXYNOS4: Divorce mct from local timer API
-  ARM: PRIMA2: Divorce timer-marco from local timer API
-  ARM: msm: Divorce msm_timer from local timer API
-  clocksource: time-armada-370-xp: Fix sparse warning
-  clocksource: time-armada-370-xp: Divorce from local timer API
-  ARM: smp: Remove local timer API
-
- arch/arm/Kconfig                         |  12 +--
- arch/arm/include/asm/localtimer.h        |  34 ---------
- arch/arm/kernel/smp.c                    |  87 ---------------------
- arch/arm/kernel/smp_twd.c                |  64 +++++++++++-----
- arch/arm/mach-exynos/mct.c               |  60 ++++++++++-----
- arch/arm/mach-msm/timer.c                | 127 +++++++++++++++++--------------
- arch/arm/mach-omap2/Kconfig              |   1 -
- arch/arm/mach-omap2/timer.c              |   7 --
- arch/arm/mach-prima2/timer-marco.c       | 100 +++++++++++++-----------
- drivers/clocksource/Makefile             |   1 +
- drivers/clocksource/dummy_timer.c        |  69 +++++++++++++++++
- drivers/clocksource/time-armada-370-xp.c |  92 +++++++++++-----------
- include/linux/time-armada-370-xp.h       |   4 +-
- kernel/time/tick-common.c                |   5 +-
- 14 files changed, 327 insertions(+), 336 deletions(-)
- delete mode 100644 arch/arm/include/asm/localtimer.h
- create mode 100644 drivers/clocksource/dummy_timer.c
-
+diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+index b1600a6..9ea59b9 100644
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -251,9 +251,10 @@ static int tick_check_new_device(struct clock_event_device *newdev)
+ 		    !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
+ 			goto out_bc;
+ 		/*
+-		 * Check the rating
++		 * Check the rating, but prefer CPU local devices
+ 		 */
+-		if (curdev->rating >= newdev->rating)
++		if (curdev->rating >= newdev->rating &&
++		    cpumask_equal(curdev->cpumask, newdev->cpumask))
+ 			goto out_bc;
+ 	}
+ 
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
