@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934717Ab3DHRWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 13:22:48 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:24116 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934068Ab3DHRWr (ORCPT
+	id S934588Ab3DHRZw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 13:25:52 -0400
+Received: from mail-da0-f53.google.com ([209.85.210.53]:55399 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752517Ab3DHRZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 13:22:47 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, linuxram@us.ibm.com,
-        guz.fnst@cn.fujitsu.com, tmac@hp.com, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, tangchen@cn.fujitsu.com, jiang.liu@huawei.com,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v2 0/3] Support memory hot-delete to boot memory
-Date: Mon,  8 Apr 2013 11:09:53 -0600
-Message-Id: <1365440996-30981-1-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.8.1.4
+	Mon, 8 Apr 2013 13:25:51 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, linux-kernel@vger.kernel.org, inki.dae@samsung.com,
+        jy0922.shim@samsung.com, sw0312.kim@samsung.com,
+        kyungmin.park@samsung.com, dri-devel@lists.freedesktop.org
+Cc: joe@perches.com, Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] drm:exynos: Fix messages in exynos_drm_gsc.c
+Date: Tue,  9 Apr 2013 02:25:43 +0900
+Message-Id: <1365441943-26534-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.8.2.451.gbfd70c5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory hot-delete to a memory range present at boot causes an
-error message in __release_region(), such as:
+It is better to remove "occured" from messages.
 
- Trying to free nonexistent resource <0000000070000000-0000000077ffffff>
-
-Hot-delete operation still continues since __release_region() is 
-a void function, but the target memory range is not freed from
-iomem_resource as the result.  This also leads a failure in a 
-subsequent hot-add operation to the same memory range since the
-address range is still in-use in iomem_resource.
-
-This problem happens because the granularity of memory resource ranges
-may be different between boot and hot-delete.  During bootup,
-iomem_resource is set up from the boot descriptor table, such as EFI
-Memory Table and e820.  Each resource entry usually covers the whole
-contiguous memory range.  Hot-delete request, on the other hand, may
-target to a particular range of memory resource, and its size can be
-much smaller than the whole contiguous memory.  Since the existing
-release interfaces like __release_region() require a requested region
-to be exactly matched to a resource entry, they do not allow a partial
-resource to be released.
-
-This patchset introduces release_mem_region_adjustable() for memory
-hot-delete operations, which allows releasing a partial memory range
-and adjusts remaining resource accordingly.  This patchset makes no
-changes to the existing interfaces since their restriction is still
-valid for I/O resources.
-
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 ---
-v2: Updated release_mem_region_adjustable() per code reviews from
-Yasuaki Ishimatsu, Ram Pai and Gu Zheng. 
+ drivers/gpu/drm/exynos/exynos_drm_gsc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
----
-Toshi Kani (3):
- resource: Add __adjust_resource() for internal use
- resource: Add release_mem_region_adjustable()
- mm: Change __remove_pages() to call release_mem_region_adjustable()
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_gsc.c b/drivers/gpu/drm/exynos/exynos_drm_gsc.c
+index 7841c3b..898b307 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_gsc.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_gsc.c
+@@ -1314,13 +1314,13 @@ static irqreturn_t gsc_irq_handler(int irq, void *dev_id)
+ 
+ 	status = gsc_read(GSC_IRQ);
+ 	if (status & GSC_IRQ_STATUS_OR_IRQ) {
+-		dev_err(ippdrv->dev, "occured overflow at %d, status 0x%x.\n",
++		dev_err(ippdrv->dev, "overflow at %d, status 0x%x.\n",
+ 			ctx->id, status);
+ 		return IRQ_NONE;
+ 	}
+ 
+ 	if (status & GSC_IRQ_STATUS_OR_FRM_DONE) {
+-		dev_dbg(ippdrv->dev, "occured frame done at %d, status 0x%x.\n",
++		dev_dbg(ippdrv->dev, "frame done at %d, status 0x%x.\n",
+ 			ctx->id, status);
+ 
+ 		buf_id[EXYNOS_DRM_OPS_SRC] = gsc_get_src_buf_index(ctx);
+-- 
+1.8.2.451.gbfd70c5
 
----
- include/linux/ioport.h |   2 +
- kernel/resource.c      | 128 ++++++++++++++++++++++++++++++++++++++++++++-----
- mm/memory_hotplug.c    |  11 ++++-
- 3 files changed, 126 insertions(+), 15 deletions(-)
