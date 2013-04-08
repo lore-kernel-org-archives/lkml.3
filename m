@@ -1,108 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935573Ab3DHMc4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 08:32:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20821 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935248Ab3DHMcz (ORCPT
+	id S935892Ab3DHMge (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 08:36:34 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:56361 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935874Ab3DHMgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 08:32:55 -0400
-X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ZzSxI7jMevMA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=mVTtbqeYs4EA:10 a=NufY4J3AAAAA:8 a=u6kJjMrMb9LjD8ngRswA:9 a=QEXdDO2ut3YA:10 a=re9sYKne76oA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1365424372.25498.6.camel@gandalf.local.home>
-Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
- unfreeze_partials() code.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
+	Mon, 8 Apr 2013 08:36:32 -0400
+Message-ID: <5162B92E.6020703@linux.vnet.ibm.com>
+Date: Mon, 08 Apr 2013 18:03:50 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Sam Ravnborg <sam@ravnborg.org>
+CC: "David S. Miller" <davem@davemloft.net>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>, Pekka Enberg <penberg@kernel.org>
-Date: Mon, 08 Apr 2013 08:32:52 -0400
-In-Reply-To: <20130402004217.GA16699@lge.com>
-References: <0000013da2ce20f8-0e3a64ef-67ed-4ab4-9f20-b77980c876c3-000000@email.amazonses.com>
-	 <1364236355.6345.185.camel@gandalf.local.home>
-	 <20130327025957.GA17125@lge.com>
-	 <1364355032.6345.200.camel@gandalf.local.home>
-	 <20130327061351.GB17125@lge.com>
-	 <alpine.DEB.2.02.1303281227520.16200@gentwo.org>
-	 <0000013db20ca149-0064fbb8-2f81-4323-9095-a38f6abb79c5-000000@email.amazonses.com>
-	 <CAP=VYLr4i=39ywFCrmG-XuvUFmmXpyj6dYgG44JJoUJhpN6uuQ@mail.gmail.com>
-	 <alpine.DEB.2.02.1304011025550.12690@gentwo.org>
-	 <0000013dc63b3a87-6ce88b75-d011-407e-8dde-da73c3a7f5fd-000000@email.amazonses.com>
-	 <20130402004217.GA16699@lge.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
+        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH] sparc: Use generic idle loop
+References: <20130321214930.752934102@linutronix.de> <20130329161905.GC6201@merkur.ravnborg.org> <20130329202926.GA9484@merkur.ravnborg.org> <51592EF1.4090302@linux.vnet.ibm.com> <20130401090620.GA24861@merkur.ravnborg.org>
+In-Reply-To: <20130401090620.GA24861@merkur.ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040812-5140-0000-0000-000002FF485A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-02 at 09:42 +0900, Joonsoo Kim wrote:
+Hi Sam,
 
-> > 
-> > Signed-off-by: Christoph Lameter <cl@linux.com>
-> > 
-> > Index: linux/mm/slub.c
-> > ===================================================================
-> > --- linux.orig/mm/slub.c	2013-03-28 12:14:26.958358688 -0500
-> > +++ linux/mm/slub.c	2013-04-01 10:23:24.677584499 -0500
-> > @@ -1498,6 +1498,7 @@ static inline void *acquire_slab(struct
-> >  	void *freelist;
-> >  	unsigned long counters;
-> >  	struct page new;
-> > +	unsigned long objects;
-> > 
-> >  	/*
-> >  	 * Zap the freelist and set the frozen bit.
-> > @@ -1507,6 +1508,7 @@ static inline void *acquire_slab(struct
-> >  	freelist = page->freelist;
-> >  	counters = page->counters;
-> >  	new.counters = counters;
-> > +	objects = page->inuse;
-> >  	if (mode) {
-> >  		new.inuse = page->objects;
-> >  		new.freelist = NULL;
-> > @@ -1524,6 +1526,7 @@ static inline void *acquire_slab(struct
-> >  		return NULL;
-> > 
-> >  	remove_partial(n, page);
-> > +	page->lru.next = (void *)objects;
-> >  	WARN_ON(!freelist);
-> >  	return freelist;
-> >  }
+On 04/01/2013 02:36 PM, Sam Ravnborg wrote:
+> Hi Srivatsa,
 > 
-> Good. I like your method which use lru.next in order to hand over
-> number of objects.
-
-I hate it ;-)
-
-It just seems to be something that's not very robust and can cause hours
-of debugging in the future. I mean, there's not even a comment
-explaining what is happening. The lru is a union with other slub
-partials structs that is not very obvious. If something is out of order,
-it can easily break, and there's nothing here that points to why.
-
-Just pass the damn objects pointer by reference and use that. It's easy
-to understand, read and is robust.
-
--- Steve
-
+> thanks for the feedback!
 > 
-> > @@ -1565,7 +1568,7 @@ static void *get_partial_node(struct kme
-> >  			c->page = page;
-> >  			stat(s, ALLOC_FROM_PARTIAL);
-> >  			object = t;
-> > -			available =  page->objects - page->inuse;
-> > +			available =  page->objects - (unsigned long)page->lru.next;
-> >  		} else {
-> >  			available = put_cpu_partial(s, page, 0);
-> >  			stat(s, CPU_PARTIAL_NODE);
+> @davem - I need you to look at this again. I am not sure about the changes
+> I do in sparc64_yield().
+> 
+>>> +/* the idle loop on a Sparc... ;) */
+>>> +void arch_cpu_idle(void)
+>>>  {
+>>> +	if (sparc_idle)
+>>> +		(*sparc_idle)();
+>>> +	else
+>>> +		cpu_relax();
+>>>  }
+>>
+>> You need to enable interrupts when coming out in the 'else' case,
+>> because we enter with interrupts disabled and expect to come out
+>> of arch_cpu_idle() with interrupts enabled. (Otherwise you'll hit
+>> that WARN_ON() in the generic code). Thomas has handled a similar
+>> case in the mips patch.
+> 
+> Something like this should do it then:
+> 
+> /* Idle loop support */
+> void arch_cpu_idle(void)
+> {
+>         if (sparc_idle)
+>                 (*sparc_idle)();
+>         else
+>                 local_irq_enable();
+> }
+> 
+> I dropped cpu_relax() as this is a simple barrier() which is
+> part of the generic code (using rmb()).
 > 
 
+Yep, that sounds good.
+
+[...] 
+>> (Same is the case with the need_resched and
+>> the cpu_is_offline check).
+> There are some comments about race-conditions in the commit where they were added.
+> I think the out-most pair can be dropped as this is done in generic code but
+> that the inner ones needs to stay.
+> 
+> I simplified arch_cpu_idle() - former sparc64_yield() based on your comments.
+> - dropped TIF_POLLING_NRFLAG handling
+> - dropped smp_mb__after_clear_bit() - this is done in generic code using rmb()
+> - dropped the out-most while (!need_resched() && !cpu_is_offline(cpu))
+> - always enable irq on exit (but I am not sure if this is correct)
+> 
+> But I need davem to have a look at this - as I am fooling around in
+> code that I do not know much about..
+> So this is *NOT* to be applied.
+> 
+> 	Sam
+>
+[...]
+>  /* XXX cli/sti -> local_irq_xxx here, check this works once SMP is fixed. */
+> diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
+> index cdb80b2..cecb0d6 100644
+> --- a/arch/sparc/kernel/process_64.c
+> +++ b/arch/sparc/kernel/process_64.c
+> @@ -52,17 +52,12 @@
+> 
+>  #include "kstack.h"
+> 
+> -static void sparc64_yield(int cpu)
+> +/* Idle loop support on sparc64. */
+> +void arch_cpu_idle(void)
+>  {
+>  	if (tlb_type != hypervisor) {
+>  		touch_nmi_watchdog();
+> -		return;
+> -	}
+> -
+> -	clear_thread_flag(TIF_POLLING_NRFLAG);
+> -	smp_mb__after_clear_bit();
+> -
+> -	while (!need_resched() && !cpu_is_offline(cpu)) {
+> +	} else {
+>  		unsigned long pstate;
+> 
+>  		/* Disable interrupts. */
+> @@ -73,7 +68,7 @@ static void sparc64_yield(int cpu)
+>  			: "=&r" (pstate)
+>  			: "i" (PSTATE_IE));
+> 
+> -		if (!need_resched() && !cpu_is_offline(cpu))
+> +		if (!need_resched() && !cpu_is_offline(smp_processor_id()))
+>  			sun4v_cpu_yield();
+> 
+>  		/* Re-enable interrupts. */
+> @@ -84,36 +79,16 @@ static void sparc64_yield(int cpu)
+>  			: "=&r" (pstate)
+>  			: "i" (PSTATE_IE));
+>  	}
+> -
+> -	set_thread_flag(TIF_POLLING_NRFLAG);
+> +	local_irq_enable();
+>  }
+
+Nitpick: you can probably move the local_irq_enable() to the
+'if' block, since the else block already has assembly code to enable
+the interrupts. But anyway its up to you.
+
+This version of your code looks fine to me.
+
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+
+Regards,
+Srivatsa S. Bhat
 
