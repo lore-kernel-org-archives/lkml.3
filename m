@@ -1,144 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934983Ab3DHIWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 04:22:48 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:46428 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934313Ab3DHIWp (ORCPT
+	id S935001Ab3DHIXk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 04:23:40 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:54959 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934339Ab3DHIXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 04:22:45 -0400
-Message-ID: <51627DEB.4090104@huawei.com>
-Date: Mon, 8 Apr 2013 16:20:59 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Mon, 8 Apr 2013 04:23:38 -0400
+Date: Mon, 8 Apr 2013 10:23:20 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: "Philip, Avinash" <avinashphilip@ti.com>
+Cc: "Nori, Sekhar" <nsekhar@ti.com>, "jacmet@sunsite.dk" <jacmet@sunsite.dk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "Manjunathappa, Prakash" <prakash.pm@ti.com>
+Subject: Re: [PATCH 0/2] Update device tree binding document for pwm-tiehrpwm
+ & pwm-tiecap
+Message-ID: <20130408082320.GB21392@avionic-0098.mockup.avionic-design.de>
+References: <1364195093-1357-1-git-send-email-avinashphilip@ti.com>
+ <518397C60809E147AF5323E0420B992E3EAA8DDE@DBDE01.ent.ti.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Tejun Heo <tj@kernel.org>, Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: [PATCH 2/8] cgroup: implement cgroup_from_id()
-References: <51627DA9.7020507@huawei.com>
-In-Reply-To: <51627DA9.7020507@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wq9mPyueHGvFACwf"
+Content-Disposition: inline
+In-Reply-To: <518397C60809E147AF5323E0420B992E3EAA8DDE@DBDE01.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:fmiJFwym3vgVpLjrslXiH9g58cQuBtpGrAsMBP6CHQX
+ tmbktWGVMOI4SlpDbE6olngQKq9+XogbsG4DkqIwqGIoXdWbWj
+ qrSa0uqol2JmnfgwT0cCzxlcvrUqXBmy/dEAVV7b0rN8ArQI2U
+ Z8aW2jzTqZmmI/eYpNfSR4qtBQ0hdHJbeAwSeIkjLv0WLz172t
+ KjJ+9nG8n+DVnb7XGEXKvUs0VnJ5sHkX6KkktfoeBz5Q2hVYBX
+ Jj8hDhUdUXszrmz9POe9Jlhy12Nfb1sDKMtNCZM5jk3/V+tlRw
+ 9G+b66nHZw5KQYzb76T816MgHkGlG6XLwszA7xuY3yhM78ADK3
+ TdFEporNhr8UBykHxhmZ4yWW0ByuWWDJE9WvRYq6POxBmP3p6Y
+ HeGYQwT7hwELgNaS5gooU91jllxqO3Z1g8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will be used as a replacement for css_lookup().
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- include/linux/cgroup.h |  1 +
- kernel/cgroup.c        | 31 +++++++++++++++++++++++++------
- 2 files changed, 26 insertions(+), 6 deletions(-)
+--wq9mPyueHGvFACwf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 96072e4..6ae8ae1 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -732,6 +732,7 @@ unsigned short css_depth(struct cgroup_subsys_state *css);
- struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id);
- 
- bool cgroup_is_ancestor(struct cgroup *child, struct cgroup *root);
-+struct cgroup *cgroup_from_id(struct cgroup_subsys *ss, int id);
- 
- #else /* !CONFIG_CGROUPS */
- 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index e87872c..5ae1e87 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -139,7 +139,7 @@ struct cgroupfs_root {
- 	unsigned long flags;
- 
- 	/* IDs for cgroups in this hierarchy */
--	struct ida cgroup_ida;
-+	struct idr cgroup_idr;
- 
- 	/* The path to use for release notifications. */
- 	char release_agent_path[PATH_MAX];
-@@ -908,7 +908,7 @@ static void cgroup_free_fn(struct work_struct *work)
- 
- 	simple_xattrs_free(&cgrp->xattrs);
- 
--	ida_simple_remove(&cgrp->root->cgroup_ida, cgrp->id);
-+	idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
- 	kfree(rcu_dereference_raw(cgrp->name));
- 	kfree(cgrp);
- }
-@@ -1512,7 +1512,8 @@ static struct cgroupfs_root *cgroup_root_from_opts(struct cgroup_sb_opts *opts)
- 
- 	root->subsys_mask = opts->subsys_mask;
- 	root->flags = opts->flags;
--	ida_init(&root->cgroup_ida);
-+	idr_init(&root->cgroup_idr);
-+
- 	if (opts->release_agent)
- 		strcpy(root->release_agent_path, opts->release_agent);
- 	if (opts->name)
-@@ -1531,7 +1532,7 @@ static void cgroup_drop_root(struct cgroupfs_root *root)
- 	spin_lock(&hierarchy_id_lock);
- 	ida_remove(&hierarchy_ida, root->hierarchy_id);
- 	spin_unlock(&hierarchy_id_lock);
--	ida_destroy(&root->cgroup_ida);
-+	idr_destroy(&root->cgroup_idr);
- 	kfree(root);
- }
- 
-@@ -1645,6 +1646,11 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 		mutex_lock(&cgroup_mutex);
- 		mutex_lock(&cgroup_root_mutex);
- 
-+		root_cgrp->id = idr_alloc(&root->cgroup_idr, root_cgrp,
-+					  0, 0, GFP_KERNEL);
-+		if (root_cgrp->id < 0)
-+			goto unlock_drop;
-+
- 		/* Check for name clashes with existing mounts */
- 		ret = -EBUSY;
- 		if (strlen(root->name))
-@@ -4104,7 +4110,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 		goto err_free_cgrp;
- 	rcu_assign_pointer(cgrp->name, name);
- 
--	cgrp->id = ida_simple_get(&root->cgroup_ida, 1, 0, GFP_KERNEL);
-+	cgrp->id = idr_alloc(&root->cgroup_idr, cgrp, 1, 0, GFP_KERNEL);
- 	if (cgrp->id < 0)
- 		goto err_free_name;
- 
-@@ -4215,7 +4221,7 @@ err_free_all:
- 	/* Release the reference count that we took on the superblock */
- 	deactivate_super(sb);
- err_free_id:
--	ida_simple_remove(&root->cgroup_ida, cgrp->id);
-+	idr_remove(&root->cgroup_idr, cgrp->id);
- err_free_name:
- 	kfree(rcu_dereference_raw(cgrp->name));
- err_free_cgrp:
-@@ -5320,6 +5326,19 @@ bool cgroup_is_ancestor(struct cgroup *child, struct cgroup *root)
- 	return (child == root);
- }
- 
-+/**
-+ * cgroup_from_id - lookup cgroup by id
-+ * @ss: cgroup subsys to be looked into.
-+ * @id: the id
-+ *
-+ * Returns pointer to cgroup if there is valid one with id.
-+ * NULL if not. Should be called under rcu_read_lock()
-+ */
-+struct cgroup *cgroup_from_id(struct cgroup_subsys *ss, int id)
-+{
-+	return idr_find(&ss->root->cgroup_idr, id);
-+}
-+
- #ifdef CONFIG_CGROUP_DEBUG
- static struct cgroup_subsys_state *debug_css_alloc(struct cgroup *cont)
- {
--- 
-1.8.0.2
+On Mon, Apr 08, 2013 at 05:56:39AM +0000, Philip, Avinash wrote:
+> Thierry,
+>=20
+> On Mon, Mar 25, 2013 at 12:34:51, Philip, Avinash wrote:
+> > Update device tree document of pwm-tiehrpwm & pwm-tiecap in order to re=
+flect the
+> > usage of similar modules in both da850 and am33xx platforms.
+>=20
+> Can you accept both documentation update patches with Peter Korsgaard's A=
+ck.
+
+Thanks for the reminder. Both patches applied.
+
+Thierry
+
+--wq9mPyueHGvFACwf
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRYn54AAoJEN0jrNd/PrOhIh0QAJOHYAIa0Kb/TwaCMPupzJ0W
+ImAEMBoaFU5hmpH2VDUKxWX1R/HfFDrDWnku3pXnDr5YeOYAOeXmPn66XVOK8wTS
+AiNbBigeGjGNGDMdX01gFcrGKmxgbcmmpw672Hm6I4metob5vKdmKKy5b3OLBBPY
+LvX1pVFS9Lipnyq+5qpaXbxgHQ1QUDwSDd6g13YYOxDQ5cM5t/dAp0C2i01/uJQ/
+rFzL7Lru/IfWhE0TFC0fwscYCbk00xa67q/oJblNvm1maJGqqYPZ6P/ZHsqi0LfL
+PlwEXPiAhXNbPbGFLm//BOuwZnbNKDgOzssIbjy9HBtE0FzE6GvIjDsvL4Y0QwdR
+l4JfRlntjDy2IUbtXj3VdZigKtfWe4CQe7bL1o/7+Fs9SN5tSL8pTxpdRpAmwGke
+mJGktErKHwcJ2RkFk9aFyHFzSZ20eFhKnF0jHtmUjGlYOUkROfYnTTpsPHZrbZb9
+SXKxKPQqqElleZVtuHw054W4S/FKk5lacSMPP/n6KuArCVQboz370bGuXCaENDPr
+poKCKQEFvZu6gR7nG3lYE0mIEmatL0jnjV2SsCmh/+ctBdgx6hlReaAF57qDU5eI
+Yer66W5julM/J/5jdLHlfYvsdQzUoumDGwk1b50iIte9mnzhzKAaH6i7+RWwPaH2
+hN6ASagd3v1L8qBBxXwx
+=t9sC
+-----END PGP SIGNATURE-----
+
+--wq9mPyueHGvFACwf--
