@@ -1,92 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934721Ab3DHCv6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 22:51:58 -0400
-Received: from mail.lemote.com ([222.92.8.138]:44167 "EHLO mail.lemote.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934661Ab3DHCv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 22:51:57 -0400
-Message-ID: <6c971a50f7639f17b1c419b6a885409b.squirrel@mail.lemote.com>
-In-Reply-To: <2582863.XOOaeZz0rz@vostro.rjw.lan>
-References: <1365300854-3133-1-git-send-email-chenhc@lemote.com>
-    <3513307.9cks2gqsZt@vostro.rjw.lan> <20130407152932.GA18032@kroah.com>
-    <2582863.XOOaeZz0rz@vostro.rjw.lan>
-Date: Mon, 8 Apr 2013 10:51:45 +0800
-Subject: Re: [PATCH] PM/reboot: call syscore_shutdown() after
- disable_nonboot_cpus()
-From: chenhc@lemote.com
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Greg KH" <gregkh@linuxfoundation.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Fuxin Zhang" <zhangfx@lemote.com>,
-        stable@vger.kernel.org
-User-Agent: SquirrelMail/1.4.22
+	id S934732Ab3DHDC7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 23:02:59 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:40563 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760459Ab3DHDC7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 23:02:59 -0400
+X-Spam-Score: -100.7
+Message-ID: <51623344.4040905@asianux.com>
+Date: Mon, 08 Apr 2013 11:02:28 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain;charset=gb2312
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org >> linux-kernel@vger.kernel.org" 
+	<linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: module: strncpy issue, using strlcpy instead
+ of strncpy
+References: <51615AB0.9060502@asianux.com> <CAMuHMdU+K9Kqe1JS+PCcuyf_3V1yMDe_M1r63SyEyp4ppfkpfg@mail.gmail.com> <51622FEF.2070801@asianux.com>
+In-Reply-To: <51622FEF.2070801@asianux.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sunday, April 07, 2013 08:29:32 AM Greg KH wrote:
->> On Sun, Apr 07, 2013 at 10:46:00AM +0200, Rafael J. Wysocki wrote:
->> > On Sunday, April 07, 2013 10:14:14 AM Huacai Chen wrote:
->> > > As commit 40dc166c (PM / Core: Introduce struct syscore_ops for core
->> > > subsystems PM) say, syscore_ops operations should be carried with
->> one
->> > > CPU on-line and interrupts disabled. However, after commit f96972f2d
->> > > (kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()),
->> > > syscore_shutdown() is called before disable_nonboot_cpus(), so break
->> > > the rules. We have a MIPS machine with a 8259A PIC, and there is an
->> > > external timer (HPET) linked at 8259A. Since 8259A has been shutdown
->> > > too early (by syscore_shutdown()), disable_nonboot_cpus() runs
->> without
->> > > timer interrupt, so it hangs and reboot fails. This patch call
->> > > syscore_shutdown() a little later (after disable_nonboot_cpus()) to
->> > > avoid reboot failure, this is the same way as poweroff does.
->> > >
->> > > BTW, add disable_nonboot_cpus() in kernel_halt() for consistency.
->> > >
->> > > Signed-off-by: Huacai Chen <chenhc@lemote.com>
->> > > Cc: <stable@vger.kernel.org>
->> >
->> > While I agree with the changes, I'm not sure if I'm the right
->> maintainer,
->> > as this isn't really PM code.
->> >
->> > Andrew, should I take this?
->>
->> Andrew is on vacation for a few weeks, so you might need to take this
->> through your tree.
->
-> OK
->
-> But, it looks like we should actually disable interrupts on the remaining
-> CPU after we've called disable_nonboot_cpus() so that the
-> syscore_shutdown()
-> assumptions are satisfied which the patch doesn't do.
->
-> Chen (I apologize if that's not the right part of your full name to use
-> here),
-> do you think that's not necessary and if so, then for what reason?
+On 2013年04月08日 10:48, Chen Gang wrote:
+> On 2013年04月07日 22:28, Geert Uytterhoeven wrote:
+>> On Sun, Apr 7, 2013 at 1:38 PM, Chen Gang <gang.chen@asianux.com> wrote:
+>>>>   ownername and namebuf are all NUL terminated string.
+>>>>
+>>>>   need always let them ended by '\0'.
+>>>>
+>>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>>>> ---
+>>>>  kernel/module.c |    4 ++--
+>>>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>>>
+>>>> diff --git a/kernel/module.c b/kernel/module.c
+>>>> index 3c2c72d..597efd8 100644
+>>>> --- a/kernel/module.c
+>>>> +++ b/kernel/module.c
+>>>> @@ -3464,7 +3464,7 @@ const char *module_address_lookup(unsigned long addr,
+>>>>         }
+>>>>         /* Make a copy in here where it's safe */
+>>>>         if (ret) {
+>>>> -               strncpy(namebuf, ret, KSYM_NAME_LEN - 1);
+>>>> +               strlcpy(namebuf, ret, KSYM_NAME_LEN);
+>>>>                 ret = namebuf;
+>>>>         }
+>>>>         preempt_enable();
+>> Is this buffer ever copied to userspace?
+> 
+> 
 
-Reboot and poweroff are both OK after I move syscore_shutdown(), I also don't
-know whether we should disable interrupts. Since you are the author of
-commit 40dc166c (PM / Core: Introduce struct syscore_ops for core subsystems
- PM), please tell me why syscore_shutdown() need interrupt disabled? (I just
-know that syscore_shutdown() will cause disable_nonboot_cpus() hang)
+  the key words is:
+    if it knows the length of namebuf, it may need initialized namebuf.
+    if it can not know the length of namebuf
+      it can not initialize namebuf.
+      (in our case, it only know, the namebuf length >= KSYM_NAME_LEN)
 
-BTW, Chen is my last name and you needn't worry about this.
+  so, it need not initialize it.
 
->
-> Rafael
->
->
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
->
+  :-)
+
+  thanks.
+
+gchen.
 
 
+> at lease now:
+>   I think, it is not, the reason is:
+>     it is only a tool function for kallsyms using.
+>     it has no duty to let namebuf initialized.
+> 
+>   please reference the related comments in include/linux/module.h
+> 
+> 493 /* For kallsyms to ask for address resolution.  namebuf should be at
+> 494  * least KSYM_NAME_LEN long: a pointer to namebuf is returned if
+> 495  * found, otherwise NULL. */
+> 496 const char *module_address_lookup(unsigned long addr,
+> 497                             unsigned long *symbolsize,
+> 498                             unsigned long *offset,
+> 499                             char **modname,
+> 500                             char *namebuf);
+> 
+> 
+> originally:
+>   it will not cause issue (the upper caller has noticed it).
+>   but we really need let it '\0' ended within module_address_lookup.
+>     (so, maybe for subject: "strncpy issue" need be deleted)
+> 
+> 
+> in the future:
+>   since it is an extern function, it can be used by others.
+>   since it is a tool function, it can not be used directly by user mode.
+>   according to the api definition:
+>     if it is necessary to initialize (such as return to user mode)
+>       the caller should perform it.
+>     if it is not necessary to initialize (not return to user mode)
+>       still prefer the caller to initialize it.
+>       but should understand if the caller will not initialize it.
+>         (if caller does not initialize it, it should not cause issue)
+> 
+> 
+>   thanks.
+> 
+>   :-)
+> 
+> 
+
+
+-- 
+Chen Gang
+
+Asianux Corporation
