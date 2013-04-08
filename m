@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965240Ab3DHVqr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 17:46:47 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:30324 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965175Ab3DHVqp (ORCPT
+	id S936394Ab3DHVrm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 17:47:42 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54679 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935090Ab3DHVrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 17:46:45 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+CA/EK7VcfIfkpBoYOXHDK
-Date: Mon, 8 Apr 2013 14:46:42 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] omap2+: Remove useless Makefile line
-Message-ID: <20130408214640.GB10155@atomide.com>
-References: <1365156992.1830.63.camel@x61.thuisdomein>
+	Mon, 8 Apr 2013 17:47:41 -0400
+Date: Mon, 8 Apr 2013 22:47:19 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Kevin Hilman <khilman@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [patch 08/34] arm: Use generic idle loop
+Message-ID: <20130408214719.GN17995@n2100.arm.linux.org.uk>
+References: <20130321214930.752934102@linutronix.de> <20130321215233.826238797@linutronix.de> <87zjxv9lga.fsf@linaro.org> <alpine.LFD.2.02.1303251230440.22263@ionos> <20130325114808.GQ4977@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1303251501520.22263@ionos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365156992.1830.63.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.02.1303251501520.22263@ionos>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Bolle <pebolle@tiscali.nl> [130405 03:21]:
-> Merge commit 952414505f55afe5cd6dc004765076aa22b3ed7e ("Merge branch
-> 'next/cleanup' of git://git.linaro.org/people/arnd/arm-soc") added
-> references to CONFIG_MACH_PCM049 and board-omap4pcm049.o to this
-> Makefile. But there's no Kconfig symbol MACH_PCM049 and there's no file
-> board-omap4pcm049.c. This line can safely be removed.
+On Mon, Mar 25, 2013 at 03:02:39PM +0100, Thomas Gleixner wrote:
+> On Mon, 25 Mar 2013, Russell King - ARM Linux wrote:
 > 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Note that MACH_PCM049 was removed from mach-types in v3.5.
+> > On Mon, Mar 25, 2013 at 12:31:20PM +0100, Thomas Gleixner wrote:
+> > > On Fri, 22 Mar 2013, Kevin Hilman wrote:
+> > > 
+> > > > Hi Thomas,
+> > > > 
+> > > > Thomas Gleixner <tglx@linutronix.de> writes:
+> > > > 
+> > > > > Use the generic idle loop and replace enable/disable_hlt with the
+> > > > > respective core functions.
+> > > > >
+> > > > > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > > > > Cc: Russell King <linux@arm.linux.org.uk>
+> > > > 
+> > > > I gave patches 1-5 + this a quick spin on ARM (specifially some OMAP3 and
+> > > > OMAP4 platforms, with and without CPUidle enabled.)
+> > > > 
+> > > > The OMAP stuff needed a couple minor compile fixes (below), but
+> > > > otherwise it passes the quick "seems to work" test.
+> > > 
+> > > Yeah, that's needed for the other arch/arm conversions as well.
+> > 
+> > So, the only patch I got was this one, which is useless to test on its
+> > own...
 > 
->  arch/arm/mach-omap2/Makefile | 2 --
->  1 file changed, 2 deletions(-)
+> I'm testing V2 now and will post an git URL with a testing branch
+> later tonight.
 
-Thanks applying into omap-for-v3.10/board.
+So, how can I review these changes when all there is is a git URL, and
+I *do* not want to pull them into my tree without first looking at the
+patches, possibly reviewing them and *replying* with the patch inline?
 
-Tony
- 
-> diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
-> index 3d0697c..62bb352 100644
-> --- a/arch/arm/mach-omap2/Makefile
-> +++ b/arch/arm/mach-omap2/Makefile
-> @@ -254,8 +254,6 @@ obj-$(CONFIG_MACH_TOUCHBOOK)		+= board-omap3touchbook.o
->  obj-$(CONFIG_MACH_OMAP_4430SDP)		+= board-4430sdp.o
->  obj-$(CONFIG_MACH_OMAP4_PANDA)		+= board-omap4panda.o
->  
-> -obj-$(CONFIG_MACH_PCM049)		+= board-omap4pcm049.o
-> -
->  obj-$(CONFIG_MACH_OMAP3517EVM)		+= board-am3517evm.o
->  
->  obj-$(CONFIG_MACH_CRANEBOARD)		+= board-am3517crane.o
-> -- 
-> 1.7.11.7
-> 
+I see you've now added this stuff to -tip.  I guess ARM doesn't matter
+to you at all.  I guess having ARM people review the core changes doesn't
+matter either.
+
+Well, I guess if it's broken, we'll just have to fix it up after the
+merge window.
+
+One rule for x86, a different one for ARM.  Let x86 maintainers moan
+about ARM people, but don't let ARM people moan about x86 maintainers.
+Yes, sure, right, I get it.
+
+So, explicitly, my concern is this replacement of enable_hlt()/disable_hlt()
+with this cpu_idle_poll_ctrl(), and whether this interface is still
+counted - so that it's possible to call disable_hlt() to _permanently_
+disable any hlt-based idle loop.
+
+If that's not possible with your revised interface, you have just broken
+some ARM platforms.  I can only guess... because you never copied your
+entire patch set to me nor to the ARM lists.
