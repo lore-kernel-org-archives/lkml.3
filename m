@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936416Ab3DHXcR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 19:32:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19607 "EHLO mx1.redhat.com"
+	id S1761639Ab3DHXme (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 19:42:34 -0400
+Received: from mga11.intel.com ([192.55.52.93]:17403 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761908Ab3DHXcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 19:32:16 -0400
-Message-ID: <51635371.7070104@redhat.com>
-Date: Tue, 09 Apr 2013 01:32:01 +0200
-From: Lennart Poettering <lpoetter@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        jpoimboe@redhat.com, dhaval.giani@gmail.com, workman-devel@redhat.com
-Subject: Re: cgroup: status-quo and userland efforts
-References: <20130406012159.GA17159@mtj.dyndns.org> <5162CA21.4060108@parallels.com>
-In-Reply-To: <5162CA21.4060108@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1760469Ab3DHXmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 19:42:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,434,1363158000"; 
+   d="scan'208";a="316268312"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 0/3 V6] Support NFC Device on MEI CL Bus
+Date: Tue,  9 Apr 2013 02:41:32 +0300
+Message-Id: <1365464495-17642-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heya,
+v5 -> v6
+ 1. include/linux/uapi/mei/nfc.h - provides API also for pure
+    user space implementation as found under Android.
+ 2. Removed INTEL_MEI_BUS_NFC Kconfig option. 
+    The NFC info client is disconnected as soon as we
+    get the FW info and the regular client is connected only when
+    mei_cl_enable_device() is explicitly called from an nfc driver.
+    The mei cl bus now doesn't connect NFC  exclusively.
+ 3. Added pn544 to the possibly detected NFC chipsets.
 
-On 08.04.2013 15:46, Glauber Costa wrote:
-> On 04/06/2013 05:21 AM, Tejun Heo wrote:
->> Hello, guys.
->>
-> Hello Tejun, how are you?
->
->>   Status-quo
->>   ==========
->>
-> tl;did read;
->
-> This is mostly sensible. There is still one problem that we hadn't yet
-> had the bandwidth to tackle that should be added to your official TODO list.
->
-> The cpu cgroup needs a real-time timeslice to accept real time tasks. It
-> defaults to 0, meaning that a newly created cpu cgroup cannot accept
-> tasks (rt tasks) without the user having to manually configure it.
-> As far as I know, this problem hasn't yet been fixed.
->
-> The fix of course, is as trivial as setting a new value instead of 0 as
-> a default. The complication lies in determining which value should that be.
->
-> There are many things that we should ask from a controller to implement
-> in order to be able to handle fully joint hierarchies. One of them,
-> IMHO, is that if you drop a task into a newly created cgroup it should
-> run without the user having to do anything for it.
+Depends on: 
+	mei: bus: Add device enabling and disabling API
 
-The other big thing we want from the systemd side is saner notifications 
-when cgroups run empty. i.e. currently we don't get these at all in 
-containers (since the agent can be only installed once, for the host). 
-And the way we get this is awful, via kernel-spawned processes. I am 
-looking for a way how I can establish a watch on a certain subtree (not 
-just one directory) and get simple notifications in a race-free whenever 
-a cgroup runs empty.
+Samuel Ortiz (3):
+  mei: nfc: Initial nfc implementation
+  mei: nfc: Add NFC device to the MEI bus
+  mei: nfc: Implement MEI bus ops
 
-Lennart
+ drivers/misc/mei/Makefile     |   1 +
+ drivers/misc/mei/client.c     |   3 +
+ drivers/misc/mei/init.c       |   2 +
+ drivers/misc/mei/mei_dev.h    |  10 +
+ drivers/misc/mei/nfc.c        | 493 ++++++++++++++++++++++++++++++++++++++++++
+ include/uapi/linux/Kbuild     |   1 +
+ include/uapi/linux/mei/Kbuild |   2 +
+ include/uapi/linux/mei/nfc.h  | 135 ++++++++++++
+ 8 files changed, 647 insertions(+)
+ create mode 100644 drivers/misc/mei/nfc.c
+ create mode 100644 include/uapi/linux/mei/Kbuild
+ create mode 100644 include/uapi/linux/mei/nfc.h
+
+-- 
+1.8.1.2
+
