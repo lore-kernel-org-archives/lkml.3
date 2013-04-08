@@ -1,127 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935829Ab3DHTlw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 15:41:52 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:54410 "EHLO hydra.sisk.pl"
+	id S935813Ab3DHTn7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 15:43:59 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:39131 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935796Ab3DHTlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 15:41:50 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: "'amit daniel kachhap'" <amit.daniel@samsung.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        cpufreq@vger.kernel.org,
-        "'Inderpal Singh'" <inderpal.singh@linaro.org>,
-        "'Viresh Kumar'" <viresh.kumar@linaro.org>,
-        "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>,
-        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH V5 0/4] cpufreq: exynos5440: support for cpufreq driver
-Date: Mon, 08 Apr 2013 21:49:33 +0200
-Message-ID: <1403255.89Vcuzrghk@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <2d0501ce3450$fac4e9c0$f04ebd40$%kim@samsung.com>
-References: <1364457923-8499-1-git-send-email-amit.daniel@samsung.com> <CADGdYn7ZRCSymU7k3Sn4mbS6B=dxy1N+vhQuyiFnhOQLLzrTbw@mail.gmail.com> <2d0501ce3450$fac4e9c0$f04ebd40$%kim@samsung.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1763317Ab3DHTn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 15:43:57 -0400
+Message-ID: <1365450229.3847.56.camel@falcor1.watson.ibm.com>
+Subject: Re: [RFC 2/2] initramfs with digital signature protection
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 08 Apr 2013 15:43:49 -0400
+In-Reply-To: <20130405135000.GB6299@redhat.com>
+References: <cover.1360067333.git.dmitry.kasatkin@intel.com>
+	 <cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com>
+	 <20130205181926.GA13942@srcf.ucam.org> <20130205183436.GC12853@redhat.com>
+	 <CALLzPKavbsZgHoJrk5iQ0F1fO21SaeEHmCVCh1G1UKCKB3WZZQ@mail.gmail.com>
+	 <20130405135000.GB6299@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040819-7182-0000-0000-00000624802B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 08, 2013 09:02:44 PM Kukjin Kim wrote:
-> amit daniel kachhap wrote:
-> > 
-> > On Fri, Apr 5, 2013 at 6:08 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > On Thursday, March 28, 2013 01:35:18 PM Amit Daniel Kachhap wrote:
-> > >> Submitting the V5 version of exynos5440 cpufreq driver. This patchset
-> > addresses
-> > >> all the coding and design concerns raised especially by Viresh.
-> > >>
-> > >> Changes in V5:
-> > >> * Removed the unnecessary DT look up entry from mach-exynos5-dt.c.
-> > >> * Fixed all coding and comments issue raised by Viresh.
-> > >>
-> > >> Changes in V4:
-> > >> * Added dev_err logs instead of pr_err.
-> > >> * Used the devm_ioremap_resource API.
-> > >> * Implemented several coding guidelines and minor error comments from
-> > Sylwester,
-> > >>   Russell and Viresh.
-> > >>
-> > >> Changes in V3:
-> > >> * Converted the driver to probe based as suggested by Viresh. This is
-> > also
-> > >>   beneficial for multiplatform kernel.
-> > >> * Other coding guidelines related changes.
-> > >> * Moved the DT node outside cpu0 node as the driver is now a platform
-> > >>   driver.
-> > >>
-> > >> Changes in V2:
-> > >> * Added OPP library support to parse DT parameters.
-> > >> * Removed a hack to handle interrupts in bootup.
-> > >> * Implemented other review comments from Viresh and Inder.
-> > >>
-> > >> All these patches are dependent on Thomas Abraham common clock patches.
-> > >> (http://www.mail-archive.com/linux-samsung-
-> > soc@vger.kernel.org/msg15860.html)
-> > >> This whole patch series is based on 3.9-rc4.
-> > >>
-> > >> Amit Daniel Kachhap (4):
-> > >>   cpufreq: exynos: Add cpufreq driver for exynos5440
-> > >>   cpufreq: exynos: Remove error return even if no soc is found
-> > >>   arm: exynos: Enable OPP library support for exynos5440
-> > >>   arm: dts: Add cpufreq controller node for Exynos5440 SoC
-> > >>
-> > >>  .../bindings/cpufreq/cpufreq-exynos5440.txt        |   28 ++
-> > >>  arch/arm/boot/dts/exynos5440.dtsi                  |   12 +
-> > >>  arch/arm/mach-exynos/Kconfig                       |    2 +
-> > >>  drivers/cpufreq/Kconfig.arm                        |    9 +
-> > >>  drivers/cpufreq/Makefile                           |    1 +
-> > >>  drivers/cpufreq/exynos-cpufreq.c                   |    2 +-
-> > >>  drivers/cpufreq/exynos5440-cpufreq.c               |  474
-> > ++++++++++++++++++++
-> > >>  7 files changed, 527 insertions(+), 1 deletions(-)
-> > >>  create mode 100644 Documentation/devicetree/bindings/cpufreq/cpufreq-
-> > exynos5440.txt
-> > >>  create mode 100644 drivers/cpufreq/exynos5440-cpufreq.c
-> > >
-> > > Is this for me or the Samsung tree?
-> > >
-> > > If it's for me, I need ACKs from the Samsung tree maintainers.  Also,
-> > please
-> > > address the Viresh's comments.
-> > >
-> > > Thanks,
-> > > Rafael
-> > >
-> > Hi Rafael,
-> > 
-> > I submitted the V6 version with all comments from Viresh addressed.
-> > 
-> > Hi Kukjin Kim,
-> > 
-> > Any suggestion on how this patch should be merged. In my opinion it
-> > should go via Rafael's tree as this patch uses some fixes present in
-> > Rafael's tree like modified cpufreq_notify_transition API.
-> > 
-> Yes, I agree. The v6 series including resending 1/4 patch looks good to me.
-> But the patch V6 4/4 would be sent to upstream via samsung tree to avoid
-> useless merge conflicts and I think, it's possible.
+On Fri, 2013-04-05 at 09:50 -0400, Vivek Goyal wrote:
+> On Tue, Feb 05, 2013 at 11:55:09PM +0200, Kasatkin, Dmitry wrote:
 > 
-> So Rafael, please take 1/4 ~ 3/4 patches in your tree with my ack.
+> [..]
+> > > Also I am assuming that from signed initramfs, keys will be loaded in
+> > > appropriate keyrings and then keyring will be locked so that any
+> > > tools from unsigned initramfs can not load additional keys.
+> > >
+> > 
+> > Exactly like that.
 > 
-> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> Dmitry,
 > 
-> If any problems, please let me know.
+> [ Following up on this thread after a very long time ]
+> 
+> I was thinking about this point that keys can be loaded from signed
+> initramfs. But how is it better than embedding the keys in kernel the
+> way we do for module signing and lock down ima keyring before control
+> is passed to initramfs.
+> 
+> Reason being, that anyway a user can not put its own keys in signed
+> initramfs. Signed initramfs will be shipped by distribution. So then
+> it does not matter whether distribution's keys are embedded in the
+> kernel or are loaded from signed initramfs.
 
-I will, thank you!
+Although both the early initramfs and the kernel are signed, building
+the keys into the kernel implies a static set of predefined public keys,
+while the initramfs could load, in addition to the distro keys, keys
+from the UEFI databases.  (Refer to James Bottomley's post on efivarfs.)
+If distro's would sign such an early initramfs, it would allow users to
+add their own keys in a safe and secure manner, without requiring them
+to rebuild the kernel.
 
-Rafael
+Mimi
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
