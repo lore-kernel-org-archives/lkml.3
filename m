@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936007Ab3DHJxD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:53:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43068 "EHLO
+	id S936030Ab3DHJxT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:53:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43101 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935977Ab3DHJwz (ORCPT
+	with ESMTP id S936001Ab3DHJxC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:52:55 -0400
+	Mon, 8 Apr 2013 05:53:02 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
+Cc: Jan Stancek <jstancek@redhat.com>, Hugh Dickins <hughd@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 096/102] loop: prevent bdev freeing while device in use
-Date: Mon,  8 Apr 2013 10:50:51 +0100
-Message-Id: <1365414657-29191-97-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 102/102] mm: prevent mmap_cache race in find_vma()
+Date: Mon,  8 Apr 2013 10:50:57 +0100
+Message-Id: <1365414657-29191-103-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
@@ -29,103 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
+From: Jan Stancek <jstancek@redhat.com>
 
-commit c1681bf8a7b1b98edee8b862a42c19c4e53205fd upstream.
+commit b6a9b7f6b1f21735a7456d534dc0e68e61359d2c upstream.
 
-struct block_device lifecycle is defined by its inode (see fs/block_dev.c) -
-block_device allocated first time we access /dev/loopXX and deallocated on
-bdev_destroy_inode. When we create the device "losetup /dev/loopXX afile"
-we want that block_device stay alive until we destroy the loop device
-with "losetup -d".
+find_vma() can be called by multiple threads with read lock
+held on mm->mmap_sem and any of them can update mm->mmap_cache.
+Prevent compiler from re-fetching mm->mmap_cache, because other
+readers could update it in the meantime:
 
-But because we do not hold /dev/loopXX inode its counter goes 0, and
-inode/bdev can be destroyed at any moment. Usually it happens at memory
-pressure or when user drops inode cache (like in the test below). When later in
-loop_clr_fd() we want to use bdev we have use-after-free error with following
-stack:
+               thread 1                             thread 2
+                                        |
+  find_vma()                            |  find_vma()
+    struct vm_area_struct *vma = NULL;  |
+    vma = mm->mmap_cache;               |
+    if (!(vma && vma->vm_end > addr     |
+        && vma->vm_start <= addr)) {    |
+                                        |    mm->mmap_cache = vma;
+    return vma;                         |
+     ^^ compiler may optimize this      |
+        local variable out and re-read  |
+        mm->mmap_cache                  |
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000280
-  bd_set_size+0x10/0xa0
-  loop_clr_fd+0x1f8/0x420 [loop]
-  lo_ioctl+0x200/0x7e0 [loop]
-  lo_compat_ioctl+0x47/0xe0 [loop]
-  compat_blkdev_ioctl+0x341/0x1290
-  do_filp_open+0x42/0xa0
-  compat_sys_ioctl+0xc1/0xf20
-  do_sys_open+0x16e/0x1d0
-  sysenter_dispatch+0x7/0x1a
+This issue can be reproduced with gcc-4.8.0-1 on s390x by running
+mallocstress testcase from LTP, which triggers:
 
-To prevent use-after-free we need to grab the device in loop_set_fd()
-and put it later in loop_clr_fd().
+  kernel BUG at mm/rmap.c:1088!
+    Call Trace:
+     ([<000003d100c57000>] 0x3d100c57000)
+      [<000000000023a1c0>] do_wp_page+0x2fc/0xa88
+      [<000000000023baae>] handle_pte_fault+0x41a/0xac8
+      [<000000000023d832>] handle_mm_fault+0x17a/0x268
+      [<000000000060507a>] do_protection_exception+0x1e2/0x394
+      [<0000000000603a04>] pgm_check_handler+0x138/0x13c
+      [<000003fffcf1f07a>] 0x3fffcf1f07a
+    Last Breaking-Event-Address:
+      [<000000000024755e>] page_add_new_anon_rmap+0xc2/0x168
 
-The issue is reprodusible on current Linus head and v3.3. Here is the test:
+Thanks to Jakub Jelinek for his insight on gcc and helping to
+track this down.
 
-  dd if=/dev/zero of=loop.file bs=1M count=1
-  while [ true ]; do
-    losetup /dev/loop0 loop.file
-    echo 2 > /proc/sys/vm/drop_caches
-    losetup -d /dev/loop0
-  done
-
-[ Doing bdgrab/bput in loop_set_fd/loop_clr_fd is safe, because every
-  time we call loop_set_fd() we check that loop_device->lo_state is
-  Lo_unbound and set it to Lo_bound If somebody will try to set_fd again
-  it will get EBUSY.  And if we try to loop_clr_fd() on unbound loop
-  device we'll get ENXIO.
-
-  loop_set_fd/loop_clr_fd (and any other loop ioctl) is called under
-  loop_device->lo_ctl_mutex. ]
-
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Jan Stancek <jstancek@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/loop.c | 9 ++++++++-
- fs/block_dev.c       | 1 +
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ mm/mmap.c  | 2 +-
+ mm/nommu.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index a77d9a5..c5e0f73 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -908,6 +908,11 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
- 		lo->lo_flags |= LO_FLAGS_PARTSCAN;
- 	if (lo->lo_flags & LO_FLAGS_PARTSCAN)
- 		ioctl_by_bdev(bdev, BLKRRPART, 0);
-+
-+	/* Grab the block_device to prevent its destruction after we
-+	 * put /dev/loopXX inode. Later in loop_clr_fd() we bdput(bdev).
-+	 */
-+	bdgrab(bdev);
- 	return 0;
+diff --git a/mm/mmap.c b/mm/mmap.c
+index fa1f274..5603d88 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1610,7 +1610,7 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
  
- out_clr:
-@@ -1004,8 +1009,10 @@ static int loop_clr_fd(struct loop_device *lo)
- 	memset(lo->lo_encrypt_key, 0, LO_KEY_SIZE);
- 	memset(lo->lo_crypt_name, 0, LO_NAME_SIZE);
- 	memset(lo->lo_file_name, 0, LO_NAME_SIZE);
--	if (bdev)
-+	if (bdev) {
-+		bdput(bdev);
- 		invalidate_bdev(bdev);
-+	}
- 	set_capacity(lo->lo_disk, 0);
- 	loop_sysfs_exit(lo);
- 	if (bdev) {
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 77e86b3..1244094 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -604,6 +604,7 @@ struct block_device *bdgrab(struct block_device *bdev)
- 	ihold(bdev->bd_inode);
- 	return bdev;
- }
-+EXPORT_SYMBOL(bdgrab);
+ 	/* Check the cache first. */
+ 	/* (Cache hit rate is typically around 35%.) */
+-	vma = mm->mmap_cache;
++	vma = ACCESS_ONCE(mm->mmap_cache);
+ 	if (!(vma && vma->vm_end > addr && vma->vm_start <= addr)) {
+ 		struct rb_node *rb_node;
  
- long nr_blockdev_pages(void)
- {
+diff --git a/mm/nommu.c b/mm/nommu.c
+index d4b0c10..a60db99 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -807,7 +807,7 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
+ 	struct vm_area_struct *vma;
+ 
+ 	/* check the cache first */
+-	vma = mm->mmap_cache;
++	vma = ACCESS_ONCE(mm->mmap_cache);
+ 	if (vma && vma->vm_start <= addr && vma->vm_end > addr)
+ 		return vma;
+ 
 -- 
 1.8.1.2
 
