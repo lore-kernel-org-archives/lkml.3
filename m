@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965061Ab3DHOil (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 10:38:41 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:63395 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964984Ab3DHOik (ORCPT
+	id S965081Ab3DHOi4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 10:38:56 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:47900 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964984Ab3DHOiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 10:38:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130408124223.GA10093@gmail.com>
-References: <1365087258-7169-1-git-send-email-Waiman.Long@hp.com>
-	<1365087258-7169-2-git-send-email-Waiman.Long@hp.com>
-	<20130408124223.GA10093@gmail.com>
-Date: Mon, 8 Apr 2013 07:38:39 -0700
-X-Google-Sender-Auth: 3dKkyZjTcVBLW1fQXWJo0td4u1M
-Message-ID: <CA+55aFztAtpiGK9e_Ed=Kk4jAWNTahv9OEb0+fgp52Api1s7Mw@mail.gmail.com>
-Subject: Re: [PATCH RFC 1/3] mutex: Make more scalable by doing less atomic operations
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 8 Apr 2013 10:38:54 -0400
+Message-ID: <1365431196.2186.3.camel@misato.fc.hp.com>
+Subject: Re: [UPDATE][PATCH 2/3] resource: Add
+ release_mem_region_adjustable()
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxram@us.ibm.com,
+        guz.fnst@cn.fujitsu.com, tmac@hp.com, wency@cn.fujitsu.com,
+        tangchen@cn.fujitsu.com, jiang.liu@huawei.com
+Date: Mon, 08 Apr 2013 08:26:36 -0600
+In-Reply-To: <516224E4.5010409@jp.fujitsu.com>
+References: <1365031405-25206-1-git-send-email-toshi.kani@hp.com>
+	 <516224E4.5010409@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 8, 2013 at 5:42 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> AFAICS the main performance trade-off is the following: when the owner CPU unlocks
-> the mutex, we'll poll it via a read first, which turns the cacheline into
-> shared-read MESI state. Then we notice that its content signals 'lock is
-> available', and we attempt the trylock again.
->
-> This increases lock latency in the few-contended-tasks case slightly - and we'd
-> like to know by precisely how much, not just for a generic '10-100 users' case
-> which does not tell much about the contention level.
+On Mon, 2013-04-08 at 11:01 +0900, Yasuaki Ishimatsu wrote:
+> Hi Toshi,
+> 
+> 2013/04/04 8:23, Toshi Kani wrote:
+> > Added release_mem_region_adjustable(), which releases a requested
+> > region from a currently busy memory resource.  This interface
+> > adjusts the matched memory resource accordingly if the requested
+> > region does not match exactly but still fits into.
+> > 
+> > This new interface is intended for memory hot-delete.  During
+> > bootup, memory resources are inserted from the boot descriptor
+> > table, such as EFI Memory Table and e820.  Each memory resource
+> > entry usually covers the whole contigous memory range.  Memory
+> > hot-delete request, on the other hand, may target to a particular
+> > range of memory resource, and its size can be much smaller than
+> > the whole contiguous memory.  Since the existing release interfaces
+> > like __release_region() require a requested region to be exactly
+> > matched to a resource entry, they do not allow a partial resource
+> > to be released.
+> > 
+> > There is no change to the existing interfaces since their restriction
+> > is valid for I/O resources.
+> > 
+> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> 
+> Reviewed-by : Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-We had this problem for *some* lock where we used a "read + cmpxchg"
-in the hotpath and it caused us problems due to two cacheline state
-transitions (first to shared, then to exclusive). It was faster to
-just assume it was unlocked and try to do an immediate cmpxchg.
+Great!  Thanks Yasuaki!
 
-But iirc it is a non-issue for this case, because this is only about
-the contended slow path.
+> One nitpick below.
+> 
 
-I forget where we saw the case where we should *not* read the initial
-value, though. Anybody remember?
+(snip)
 
-That said, the MUTEX_SHOULD_XCHG_COUNT macro should die. Why shouldn't
-all architectures just consider negative counts to be locked? It
-doesn't matter that some might only ever see -1.
+> > +/**
+> > + * release_mem_region_adjustable - release a previously reserved memory region
+> > + * @parent: parent resource descriptor
+> > + * @start: resource start address
+> > + * @size: resource region size
+> > + *
+> > + * The requested region is released from a currently busy memory resource.
+> > + * It adjusts the matched busy memory resource accordingly if the requested
+> > + * region does not match exactly but still fits into.  Existing children of
+> > + * the busy memory resource must be immutable in this request.
+> > + *
+> > + * Note, when the busy memory resource gets split into two entries, the code
+> > + * assumes that all children remain in the lower address entry for simplicity.
+> > + * Enhance this logic when necessary.
+> > + */
+> > +int release_mem_region_adjustable(struct resource *parent,
+> > +			resource_size_t start, resource_size_t size)
+> > +{
+> > +	struct resource **p;
+> > +	struct resource *res, *new;
+> > +	resource_size_t end;
+> > +	int ret = -EINVAL;
+> > +
+> 
+> > +	end = start + size - 1;
+> > +	if ((start < parent->start) || (end > parent->end))
+> > +		return -EINVAL;
+> 
+> "ret" is initialized to -EINVAL. So how about use it?
 
-            Linus
+Sounds good.  I will make the change.
+
+Thanks again,
+-Toshi
+
