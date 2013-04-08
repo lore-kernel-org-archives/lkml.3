@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935488Ab3DHQ7V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 12:59:21 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:56906 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S934895Ab3DHQ7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 12:59:18 -0400
-Date: Mon, 8 Apr 2013 11:59:16 -0500
-From: Robin Holt <holt@sgi.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Robin Holt <holt@sgi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Russ Anderson <rja@sgi.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] Do not force shutdown/reboot to boot cpu.
-Message-ID: <20130408165916.GA3672@sgi.com>
-References: <20130403193743.GB29151@sgi.com>
- <20130408155701.GB19974@gmail.com>
- <5162EC1A.4050204@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5162EC1A.4050204@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S935517Ab3DHQ7q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 12:59:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5860 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933171Ab3DHQ7p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 12:59:45 -0400
+X-Authority-Analysis: v=2.0 cv=Pu4Rnnw3 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=D9b57V0fl24A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=CRDVpRx9FpoA:10 a=KKAkSRfTAAAA:8 a=3uuZYXega-OhO66uHTgA:9 a=QEXdDO2ut3YA:10 a=WwgC8nHKvroA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1365440381.25498.22.camel@gandalf.local.home>
+Subject: Re: [PATCH V4 1/4] workqueue: Add system wide
+ system_freezable_unbound_wq
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>, Tejun Heo <tj@kernel.org>,
+        axboe@kernel.dk, Robin Randhawa <robin.randhawa@arm.com>,
+        linux-rt-users@vger.kernel.org, Patch Tracking <patches@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, linux-kernel@vger.kernel.org,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Steve Bannister <Steve.Bannister@arm.com>, airlied@redhat.com,
+        Arvind Chauhan <arvind.chauhan@arm.com>, mingo@redhat.com,
+        davem@davemloft.net,
+        Charles Garcia-Tobin <charles.garcia-tobin@arm.com>
+Date: Mon, 08 Apr 2013 12:59:41 -0400
+In-Reply-To: <CAKohponXTYSdmk71DNYsYtwU9GEYwnGcj-_wjLEZfxvEhzPWWQ@mail.gmail.com>
+References: <cover.1364740180.git.viresh.kumar@linaro.org>
+	 <147bfb5aa81790f94df75858bf20570cbacc9dca.1364740180.git.viresh.kumar@linaro.org>
+	 <CAP245DV-4d4hRGCnKUtyVV1ycHuYF4dKwh568kvHfKHdJR3xpw@mail.gmail.com>
+	 <CAKohponXTYSdmk71DNYsYtwU9GEYwnGcj-_wjLEZfxvEhzPWWQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 09:11:06AM -0700, H. Peter Anvin wrote:
-> On 04/08/2013 08:57 AM, Ingo Molnar wrote:
-> > 
-> > I think the original commit:
-> > 
-> >   f96972f2dc63 kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()
-> > 
-> > actually regressed your 1024 CPU systems, and should possibly be reverted or fixed 
-> > in some other fashion - such as by migrating to the primary CPU (on architectures 
-> > that require that), instead of hotplug offlining every secondary CPU on every 
-> > architecture!
-> > 
-> > Alternatively, disable_nonboot_cpus() could perhaps be improved to down CPUs in 
-> > parallel: issue the CPU-down requests to every CPU, then wait for them to complete 
-> > - instead of the loop over every CPU?
-> > 
-> > This would be the conceptual counter part to parallel boot up of CPUs - something 
-> > SGI might be interested in as well?
-> > 
+On Mon, 2013-04-01 at 10:55 +0530, Viresh Kumar wrote:
+> On 1 April 2013 10:50, Amit Kucheria <amit.kucheria@linaro.org> wrote:
+> > On Sun, Mar 31, 2013 at 8:01 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> >> This patch adds system wide system_freezable_unbound_wq which will be used by
+> >> code that currently uses system_freezable_wq and can be moved to unbound
+> >> workqueues.
+> >
+> > _Why_ do i need this change?
 > 
-> Migrating to the boot processor and then calling stop_machine() to
-> defang any other processors should be sufficient, no?
-> 
-> I don't know if there is any reason to deschedule all tasks?
+> Block layer uses system_freezable_wq for some work and to migrate them to a
+> UNBOUND wq it was required. Sorry if it is yet not clear.
 
-My reading of the original commit indicated that some architecture's
-firmware needs the boot cpu to be the one initiating reboot.
+Looks like Amit was left off the patch 0, and missed the power savings
+explanation that you did there. Perhaps you should have included that in
+each patch change log.
 
-If that is correct, then I can not see why a stop_machine() implementation
-will not work.
+-- Steve
 
-Since this is in generic kernel code, how can I proceed?
 
-Robin
