@@ -1,76 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965024Ab3DHPbE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 11:31:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37850 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964888Ab3DHPbA (ORCPT
+	id S965054Ab3DHPbT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 11:31:19 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:61142 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964888Ab3DHPbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 11:31:00 -0400
-Date: Mon, 8 Apr 2013 08:28:13 -0700
-From: tip-bot for libin <tipbot@zytor.com>
-Message-ID: <tip-fd9b86d37a600488dbd80fe60cca46b822bff1cd@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        huawei.libin@huawei.com, peterz@infradead.org, tglx@linutronix.de,
-        jiang.liu@huawei.com, guohanjun@huawei.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        huawei.libin@huawei.com, peterz@infradead.org, tglx@linutronix.de,
-        jiang.liu@huawei.com, guohanjun@huawei.com
-In-Reply-To: <51626610.2040607@huawei.com>
-References: <51626610.2040607@huawei.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched/debug: Fix sd->
- *_idx limit range avoiding overflow
-Git-Commit-ID: fd9b86d37a600488dbd80fe60cca46b822bff1cd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 8 Apr 2013 11:31:16 -0400
+Date: Mon, 8 Apr 2013 08:31:07 -0700
+From: Tejun Heo <tj@kernel.org>
+To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mingo@redhat.com, x86@kernel.org
+Cc: rth@twiddle.net, linux@arm.linux.org.uk, msalter@redhat.com,
+        starvik@axis.com, dhowells@redhat.com, tony.luck@intel.com,
+        benh@kernel.crashing.org, takata@linux-m32r.org, geert@linux-m68k.org,
+        james.hogan@imgtec.com, monstr@monstr.eu, ralf@linux-mips.org,
+        jonas@southpole.se, rkuo@codeaurora.org, schwidefsky@de.ibm.com,
+        liqin.chen@sunplusct.com, davem@davemloft.net, lethal@linux-sh.org,
+        vgupta@synopsys.com, chris@zankel.net, cmetcalf@tilera.com,
+        ysato@users.sourceforge.jp, gxt@mprc.pku.edu.cn, jdike@addtoit.com
+Subject: Re: [PATCHSET v2] arch: unify task dump debug info
+Message-ID: <20130408153107.GA3021@htj.dyndns.org>
+References: <1365016497-32033-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 08 Apr 2013 08:28:18 -0700 (PDT)
+In-Reply-To: <1365016497-32033-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fd9b86d37a600488dbd80fe60cca46b822bff1cd
-Gitweb:     http://git.kernel.org/tip/fd9b86d37a600488dbd80fe60cca46b822bff1cd
-Author:     libin <huawei.libin@huawei.com>
-AuthorDate: Mon, 8 Apr 2013 14:39:12 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 8 Apr 2013 13:23:03 +0200
+On Wed, Apr 03, 2013 at 12:14:50PM -0700, Tejun Heo wrote:
+> Andrew, I think it's about ready and nobody seems to be against the
+> proposed changes.  Can you please take these into -mm?
 
-sched/debug: Fix sd->*_idx limit range avoiding overflow
+Andrew, ping?
 
-Commit 201c373e8e ("sched/debug: Limit sd->*_idx range on
-sysctl") was an incomplete bug fix.
-
-This patch fixes sd->*_idx limit range to [0 ~ CPU_LOAD_IDX_MAX-1]
-avoiding array overflow caused by setting sd->*_idx to CPU_LOAD_IDX_MAX
-on sysctl.
-
-Signed-off-by: Libin <huawei.libin@huawei.com>
-Cc: <jiang.liu@huawei.com>
-Cc: <guohanjun@huawei.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/51626610.2040607@huawei.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 306943f..fa07792 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4933,7 +4933,7 @@ static void sd_free_ctl_entry(struct ctl_table **tablep)
- }
- 
- static int min_load_idx = 0;
--static int max_load_idx = CPU_LOAD_IDX_MAX;
-+static int max_load_idx = CPU_LOAD_IDX_MAX-1;
- 
- static void
- set_table_entry(struct ctl_table *entry,
+-- 
+tejun
