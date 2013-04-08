@@ -1,92 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934602Ab3DHH5Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 03:57:16 -0400
-Received: from smtp-out-079.synserver.de ([212.40.185.79]:1147 "EHLO
-	smtp-out-079.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934587Ab3DHH5N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 03:57:13 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 7532
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] staging: cptm1217: Use dev_pm_ops
-Date: Mon,  8 Apr 2013 09:56:07 +0200
-Message-Id: <1365407767-16095-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
+	id S934625Ab3DHH6N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 03:58:13 -0400
+Received: from mx5.zte.com.cn ([63.217.80.70]:55303 "EHLO zte.com.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752526Ab3DHH6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 03:58:13 -0400
+To: linux-kernel@vger.kernel.org
+Cc: Zhang Yi <zhang.yi20@zte.com.cn>, Ma Chenggong <ma.chenggong@zte.com.cn>,
+        Liu Dong <liu.dong3@zte.com.cn>, Cui Yunfeng <cui.yunfeng@zte.com.cn>,
+        Lu Zhongjun <lu.zhongjun@zte.com.cn>,
+        Jiang Biao <jiang.biao2@zte.com.cn>
+Subject: [PATCH] futex: bugfix for robust futex deadlock when waking only one thread
+ in handle_futex_death
+MIME-Version: 1.0
+X-Mailer: Lotus Notes Release 6.5 September 26, 2003
+Message-ID: <OFC7A3D444.3EF36F3E-ON48257B47.002BA6AB-48257B47.002BC310@zte.com.cn>
+From: jiang.biao2@zte.com.cn
+Date: Mon, 8 Apr 2013 15:57:38 +0800
+X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
+ 2013-04-08 15:57:45,
+	Serialize complete at 2013-04-08 15:57:45
+Content-Type: text/plain; charset="GB2312"
+X-MAIL: mse02.zte.com.cn r387vigX031582
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r387wFTO023706
 
-Use dev_pm_ops instead of the deprecated legacy suspend/resume callbacks.
+From: Zhang Yi <zhang.yi20@zte.com.cn>
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/staging/cptm1217/clearpad_tm1217.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+The function handle_futex_death just wakes one thread, which may be not 
+enough 
+when the owner process is dead. Think about this scene£º
+1. A robust futex is shared for two processes, each process has multi 
+threads 
+try to get the lock. 
+2. One of the threads gets the lock, and the others are waiting and sorted 
+in 
+order of priority.
+3. The process to which the lock owner thread belongs is dying£¬and 
+handle_futex_death is called to wake the first waiter 
+4. When the first waiter belongs to the same process£¬it has no chance to 
+return 
+to the userspace to get the lock and will not call handle_futex_death any 
+more£¬
+and then the rest threads of the other process will never be waked, and 
+will block 
+forever.
 
-diff --git a/drivers/staging/cptm1217/clearpad_tm1217.c b/drivers/staging/cptm1217/clearpad_tm1217.c
-index 31fb5d3..e96eee3 100644
---- a/drivers/staging/cptm1217/clearpad_tm1217.c
-+++ b/drivers/staging/cptm1217/clearpad_tm1217.c
-@@ -557,12 +557,15 @@ fail:
- 
+This patch wakes all the waiters when lock owner is in group-exit, letting 
+all 
+the waiters return to userspace and try to get the lock again.
+
+Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
+Tested-by: Ma Chenggong <ma.chenggong@zte.com.cn>
+Reviewed-by: Liu Dong <liu.dong3@zte.com.cn>
+Reviewed-by: Cui Yunfeng <cui.yunfeng@zte.com.cn>
+Reviewed-by: Lu Zhongjun <lu.zhongjun@zte.com.cn>
+Reviewed-by: Jiang Biao <jiang.biao2@zte.com.cn>
+
+--- orig/linux-3.9-rc5/kernel/futex.c   2013-03-31 22:12:43.000000000 
++0000
++++ new/linux-3.9-rc5/kernel/futex.c    2013-04-03 12:33:27.735392000 
++0000
+@@ -2545,8 +2545,10 @@ retry:
+                 * Wake robust non-PI futexes here. The wakeup of
+                 * PI futexes happens in exit_pi_state():
+                 */
+-               if (!pi && (uval & FUTEX_WAITERS))
+-                       futex_wake(uaddr, 1, 1, FUTEX_BITSET_MATCH_ANY);
++               if (!pi && (uval & FUTEX_WAITERS)){
++                       int wake_nr = signal_group_exit(current->signal) ? 
+INT_MAX : 1;
++                       futex_wake(uaddr, 1, wake_nr, 
+FUTEX_BITSET_MATCH_ANY);
++               }
+        }
+        return 0;
  }
- 
-+#ifdef CONFIG_PM_SLEEP
-+
- /*
-  * cp_tm1217 suspend
-  *
-  */
--static int cp_tm1217_suspend(struct i2c_client *client, pm_message_t mesg)
-+static int cp_tm1217_suspend(struct device *dev)
- {
-+	struct i2c_client *client = to_i2c_client(dev);
- 	struct cp_tm1217_device *ts = i2c_get_clientdata(client);
- 	u8 req[2];
- 	int retval;
-@@ -583,8 +586,9 @@ static int cp_tm1217_suspend(struct i2c_client *client, pm_message_t mesg)
-  * cp_tm1217_resume
-  *
-  */
--static int cp_tm1217_resume(struct i2c_client *client)
-+static int cp_tm1217_resume(struct device *dev)
- {
-+	struct i2c_client *client = to_i2c_client(dev);
- 	struct cp_tm1217_device *ts = i2c_get_clientdata(client);
- 	u8 req[2];
- 	int retval;
-@@ -618,6 +622,11 @@ static int cp_tm1217_resume(struct i2c_client *client)
- 	return 0;
- }
- 
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(cp_tm1217_pm_ops, cp_tm1217_suspend,
-+	cp_tm1217_resume);
-+
- /*
-  * cp_tm1217_remove
-  *
-@@ -647,12 +656,11 @@ static struct i2c_driver cp_tm1217_driver = {
- 	.driver = {
- 		.owner	= THIS_MODULE,
- 		.name	= CPTM1217_DRIVER_NAME,
-+		.pm	= &cp_tm1217_pm_ops,
- 	},
- 	.id_table	= cp_tm1217_idtable,
- 	.probe		= cp_tm1217_probe,
- 	.remove		= cp_tm1217_remove,
--	.suspend    = cp_tm1217_suspend,
--	.resume     = cp_tm1217_resume,
- };
- 
- module_i2c_driver(cp_tm1217_driver);
--- 
-1.8.0
-
+--------------------------------------------------------
+ZTE Information Security Notice: The information contained in this mail (and any attachment transmitted herewith) is privileged and confidential and is intended for the exclusive use of the addressee(s).  If you are not an intended recipient, any disclosure, reproduction, distribution or other dissemination or use of the information contained is strictly prohibited.  If you have received this mail in error, please delete it and notify us immediately.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
