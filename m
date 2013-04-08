@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935706Ab3DHTM1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 15:12:27 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:35111 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761020Ab3DHTM0 (ORCPT
+	id S935677Ab3DHTNm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 15:13:42 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:50458 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935227Ab3DHTNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 15:12:26 -0400
-Date: Mon, 8 Apr 2013 22:12:07 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: "edubezval@gmail.com" <edubezval@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Tyrel Datwyler <turtle.on.the.radio@gmail.com>
-Subject: Re: [PATCH] Staging: omap-thermal: remove trailing whitespace from
- omap-bandgap.c
-Message-ID: <20130408191207.GH23861@mwanda>
-References: <1365385640-10443-1-git-send-email-turtle.on.the.radio@gmail.com>
- <20130408172233.GA26206@kroah.com>
- <CAC-25o9wUGRAjaO1jEbRB9AdwT7sgGcH2M2oyh4-rSyoCiSm7Q@mail.gmail.com>
- <51630C01.6010601@ti.com>
+	Mon, 8 Apr 2013 15:13:40 -0400
+Message-ID: <5163159A.20800@gmail.com>
+Date: Mon, 08 Apr 2013 15:08:10 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51630C01.6010601@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] mm: fixup changers of per cpu pageset's ->high and
+ ->batch
+References: <1365194030-28939-1-git-send-email-cody@linux.vnet.ibm.com> <51618F5A.3060005@gmail.com> <5162FB82.5020607@linux.vnet.ibm.com>
+In-Reply-To: <5162FB82.5020607@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 02:27:13PM -0400, Eduardo Valentin wrote:
-> Thanks, please keep sending your patches and copy my email address
-> so I will give you a quick response.
+(4/8/13 1:16 PM), Cody P Schafer wrote:
+> On 04/07/2013 08:23 AM, KOSAKI Motohiro wrote:
+>> (4/5/13 4:33 PM), Cody P Schafer wrote:
+>>> In one case while modifying the ->high and ->batch fields of per cpu pagesets
+>>> we're unneededly using stop_machine() (patches 1 & 2), and in another we don't have any
+>>> syncronization at all (patch 3).
+>>>
+>>> This patchset fixes both of them.
+>>>
+>>> Note that it results in a change to the behavior of zone_pcp_update(), which is
+>>> used by memory_hotplug. I _think_ that I've diserned (and preserved) the
+>>> essential behavior (changing ->high and ->batch), and only eliminated unneeded
+>>> actions (draining the per cpu pages), but this may not be the case.
+>>
+>> at least, memory hotplug need to drain.
+> 
+> Could you explain why the drain is required here? From what I can tell,
+> after the stop_machine() completes, the per cpu page sets could be
+> repopulated at any point, making the combination of draining and
+> modifying ->batch & ->high uneeded.
 
-Please, send a patch adding yourself to the MAINTAINERS file so the
-get_maintainer.pl script does the right thing automatically.
-
-After that you will be an official kernel maintainer with all the
-honor and dignity that goes along with it.  :)
-
-regards,
-dan carpenter
+Then, memory hotplug again and again try to drain. Moreover hotplug prevent repopulation
+by using MIGRATE_ISOLATE.
+pcp never be page count == 0 and it prevent memory hot remove.
 
