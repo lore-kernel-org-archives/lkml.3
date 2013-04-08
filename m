@@ -1,165 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935256Ab3DHRhM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 13:37:12 -0400
-Received: from mail-da0-f54.google.com ([209.85.210.54]:39225 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934766Ab3DHRhJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 13:37:09 -0400
-Content-Type: text/plain; charset="utf-8"
+	id S935034Ab3DHRjs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 13:39:48 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:37765 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762474Ab3DHRjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 13:39:47 -0400
+Message-ID: <516300C7.7000008@linux.vnet.ibm.com>
+Date: Mon, 08 Apr 2013 10:39:19 -0700
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <CABJ1b_T30trVjXps-rSbYTNo1DcPeT8WsZ+M18B9wTJPBnL-gA@mail.gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Dom Cobley <popcornmix@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rabeeh Khoury <rabeeh@solid-run.com>, Daniel Mack <zonque@gmail.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1365139415-17815-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130407225046.GA16326@roeck-us.net> <51620604.4070204@gmail.com>
- <20130408001725.GA16648@roeck-us.net> <51625F9A.1050308@gmail.com>
- <20130408145407.GA12243@roeck-us.net>
- <CABJ1b_T30trVjXps-rSbYTNo1DcPeT8WsZ+M18B9wTJPBnL-gA@mail.gmail.com>
-Message-ID: <20130408173628.14359.70620@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [v5] clk: add si5351 i2c common clock driver
-Date: Mon, 08 Apr 2013 10:36:28 -0700
+To: Simon Jeons <simon.jeons@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] mm/page_alloc: factor out setting of pcp->high and
+ pcp->batch.
+References: <1365194030-28939-1-git-send-email-cody@linux.vnet.ibm.com> <1365194030-28939-2-git-send-email-cody@linux.vnet.ibm.com> <5160CDD8.3050908@gmail.com>
+In-Reply-To: <5160CDD8.3050908@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040817-7182-0000-0000-0000062409AC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Sebastian Hesselbarth (2013-04-08 08:38:44)
-> On Mon, Apr 8, 2013 at 4:54 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> > On Mon, Apr 08, 2013 at 08:11:38AM +0200, Sebastian Hesselbarth wrote:
-> >> On 04/08/2013 02:17 AM, Guenter Roeck wrote:
-> >> >On Mon, Apr 08, 2013 at 01:49:24AM +0200, Sebastian Hesselbarth wrote:
-> >> >>On 04/08/2013 12:50 AM, Guenter Roeck wrote:
-> >> >>>On Fri, Apr 05, 2013 at 05:23:35AM -0000, Sebastian Hesselbarth wrote:
-> >> >>>>This patch adds a common clock driver for Silicon Labs Si5351a/b/c
-> >> >>>>i2c programmable clock generators. Currently, the driver supports
-> >> >>>>DT kernels only and VXCO feature of si5351b is not implemented. DT
-> >> >>>>bindings selectively allow to overwrite stored Si5351 configuration
-> >> >>>>which is very helpful for clock generators with empty eeprom
-> >> >>>>configuration. Corresponding device tree binding documentation is
-> >> >>>>also added.
-> >> >>>>
-> >> >>>>Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
-> >> >>>>Tested-by: Daniel Mack<zonque@gmail.com>
-> >> >>>>
-> >> >>>[ ... ]
-> >> >>>
-> >> >>>>+static inline void _si5351_msynth_set_pll_master(
-> >> >>>>+ struct si5351_driver_data *drvdata, unsigned char num, int is_master)
-> >> >>>>+{
-> >> >>>>+ unsigned long flags;
-> >> >>>>+
-> >> >>>>+ if (num>   8 ||
-> >> >>>>+     (drvdata->variant == SI5351_VARIANT_A3&&   num>   3))
-> >> >>>>+         return;
-> >> >>>>+
-> >> >>>>+ flags = __clk_get_flags(drvdata->msynth[num].hw.clk);
-> >> >>>>+ if (is_master)
-> >> >>>>+         flags |= CLK_SET_RATE_PARENT;
-> >> >>>>+ else
-> >> >>>>+         flags&= ~CLK_SET_RATE_PARENT;
-> >> >>>>+ __clk_set_flags(drvdata->msynth[num].hw.clk, flags);
-> >> >>>>+}
-> >> >>>>+
-> >> >>>Unless I am missing something, neither __clk_get_flags() nor the new
-> >> >>>__clk_set_flags is exported.
-> >> >>>
-> >> >>>Did you try to build and load the driver as module ?
-> >> >>
-> >> >>Well, good catch. I didn't try to build v5 as a module, but I guess it
-> >> >>will fail. But I consider this as something that has to be addressed in
-> >> >>clk framework itself, not in this patch. There will be other
-> >> >>clk-providers built as module in the future for sure.
-> >> >>
-> >> >Sure, but you provided the patch to make __clk_set_flags global. To avoid
-> >> >build failures, I would suggest to either submit a patch to export the
-> >> >missing functions, or to remove the ability to build the driver as module.
-> >>
-> >> Actually, I knew that __clk_set_flags patch will not be accepted
-> >> before posting it ;)
-> >>
-> > Ah, but part of that is to get you to think about it again, and to defend it if
-> > it is really needed. After all, "it can be abused" applies to pretty much every
-> > API.
-> 
-> Guenter,
-> 
-> I already thought about it a lot and I consider clk api broken in a way here.
-> 
-> > Key question is if you _really_ need run-time flag modifications, or if you can
-> > live with initialization-time settings. If you really need it, you'll have to
-> > explain the reasons.
-> 
-> The question is not if _I_ really need run-time flags but why the api allows to
-> perform run-time modifications of the clock hierarchy without allowing different
-> flags? There is clk_set_parent() so I guess clk api knows about run-time changes
-> already, but you cannot have different flags per parent. And with
-> __clk_set_flags()
-> rejected, you are not allowed to change the flags.
-> 
-> I understand that some flags are permanent and required at registration, but
-> CLK_SET_PARENT_RATE is not. It is not limited by hardware but limited by api.
-> One way would be a more generic clk-mux with per parent flags, but for
-> the current
-> implementation, I cannot see how clk-mux can be exploited here.
-> 
+On 04/06/2013 06:37 PM, Simon Jeons wrote:
+> Hi Cody,
+> On 04/06/2013 04:33 AM, Cody P Schafer wrote:
+>> Creates pageset_set_batch() for use in setup_pageset().
+>> pageset_set_batch() imitates the functionality of
+>> setup_pagelist_highmark(), but uses the boot time
+>> (percpu_pagelist_fraction == 0) calculations for determining ->high
+>
+> Why need adjust pcp->high, pcp->batch during system running? What's the
+> requirement?
+>
 
-There are a couple of ways to get past this issue.  One is removal of
-some of the flags.  I have never liked CLK_SET_RATE_PARENT, since I
-think the ability to propagate a rate-change request up to the parent
-should be enabled for all clocks.  This is in the interest of the driver
-author who does not care to know intimate details of the clock
-hierarchy.
+There is currently a sysctl (which I patch later in this series) which 
+allows adjusting the ->high mark (and, indirectly, ->batch). 
+Additionally, memory hotplug changes ->high and ->batch due to the zone 
+size changing (essentially, zone->managed_pages and zone->present_pages 
+have changed) , meaning that zone_batchsize(), which is used at boot to 
+set ->batch and (indirectly) ->high has a different output.
 
-When I developed the rate-change propagation code I was likely too hasty
-in defining a per-clock flag for that behavior.  It might have been
-enough to simply compare the &best_parent_rate value from .round_rate
-and compare it against clk->parent->rate.  This means that no flag is
-necessary.
+Note that in addition to the 2 users of this functionality mentioned 
+here, I'm currently working on anther resizer of zones (runtime NUMA 
+reconfiguration).
 
-This assumes that the .round_rate implementation has enough knowledge to
-know whether or not to propagate the rate-change request up to the
-parent.  This may not not true for the common divider type.
-
-I'll make some tests on removing this flag (and potentially other flags)
-to see how painful it is.
-
-Regards,
-Mike
-
-> I can live with it, because then dynamic muxing of clock hierarchy
-> within clk-si5351
-> is just not supported or will break function. Currently, there is no
-> support for dynamic
-> muxing, so everything is fine.
-> 
-> >> >On a side note, do you happen to know anyone working on drivers for Si5319 or
-> >> >Si5368 ?
-> >>
-> >> No.
-> >
-> > Too bad ... I may have to write that code myself then.
-> 
-> Well, if clk-si5351 will ever get in mainline kernel, feel free to use
-> it as a template ;)
-> 
-> Sebastian
