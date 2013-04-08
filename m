@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935219Ab3DHLs6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 07:48:58 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:51861 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935157Ab3DHLs4 (ORCPT
+	id S935253Ab3DHLtD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 07:49:03 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35178 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935157Ab3DHLs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 07:48:56 -0400
-Date: Mon, 8 Apr 2013 13:48:51 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH 1/7] sched: Update rq clock on nohz CPU before migrating
- tasks
-Message-ID: <20130408114851.GA3928@gmail.com>
-References: <1365266760-24725-1-git-send-email-fweisbec@gmail.com>
- <1365266760-24725-2-git-send-email-fweisbec@gmail.com>
+	Mon, 8 Apr 2013 07:48:59 -0400
+Message-ID: <5162AE9E.9030404@ti.com>
+Date: Mon, 8 Apr 2013 17:18:46 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365266760-24725-2-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] media: davinci: vpss: enable vpss clocks
+References: <1364903044-13752-1-git-send-email-prabhakar.csengg@gmail.com> <1364903044-13752-2-git-send-email-prabhakar.csengg@gmail.com> <51629B3D.4080905@ti.com> <CA+V-a8swx0LB0eK0bZwcuFhVCW2UB8Bvm3ebwMQifo=-TB6ASA@mail.gmail.com>
+In-Reply-To: <CA+V-a8swx0LB0eK0bZwcuFhVCW2UB8Bvm3ebwMQifo=-TB6ASA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> @@ -1115,6 +1116,12 @@ static inline void dec_nr_running(struct rq *rq)
->  
->  extern void update_rq_clock(struct rq *rq);
->  
-> +static inline void update_nohz_rq_clock(struct rq *rq)
-> +{
-> +	if (tick_nohz_extended_cpu(cpu_of(rq)))
-> +		update_rq_clock(rq);
-> +}
+On 4/8/2013 5:08 PM, Prabhakar Lad wrote:
+> Sekhar,
+> 
+> On Mon, Apr 8, 2013 at 3:56 PM, Sekhar Nori <nsekhar@ti.com> wrote:
+>> On 4/2/2013 5:14 PM, Prabhakar lad wrote:
+>>> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>>
+>>> By default the VPSS clocks were enabled in capture driver
+>>> for davinci family which creates duplicates for dm355/dm365/dm644x.
+>>> This patch adds support to enable the VPSS clocks in VPSS driver,
+>>> which avoids duplication of code and also adding clock aliases.
+>>>
+>>> This patch uses PM runtime API to enable/disable instead common clock
+>>> framework. con_ids for master and slave clocks of vpss is added in pm_domain
+>>
+>> Common clock framework in not (yet) used on DaVinci, so this is misleading.
+>>
+> OK, I'll make it 'This patch uses PM runtime API to enable/disable
+> clock, instead
+> of Davinci specific clock framework. con_ids for master and slave
 
-A minor comment: instead of implicitly knowing that full nohz CPUs mean a stale 
-rq_clock, how about adding this information to the rq-> itself?
-
-Something like introducing rq->clock_valid, initializing it to 1, and setting it 
-to 0 when a CPU stops the tick.
-
-(This would also allow the debug detection of sched_clock() use of stale values.)
-
-We already have a similar flag: rq->skip_clock_update. I'd suggest to introduce a 
-'struct sched_clock' helper structure and add the flags and scheduler clock fields 
-as:
-
-   rq->clock                 ->       rq->clock.cpu
-   rq->clock_task            ->       rq->clock.task
-   rq->clock_valid           ->       rq->clock.valid
-   rq->clock_skip_uipdate    ->       rq->clock.skip_update
-   rq->hrtick_timer          ->       rq->clock.hrtick_timer
-
-   rq->prev_irq_time         ->       rq->clock.prev_irq_time
-   rq->prev_steal_time       ->       rq->clock.prev_steal_time
-   rq->prev_steal_time_rq    ->       rq->clock.prev_steal_time_rq
+may be just call it "DaVinci clock framework"
 
 Thanks,
-
-	ngo
+Sekhar
