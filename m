@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935211Ab3DHQdd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 12:33:33 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:19760 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757691Ab3DHQdc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 12:33:32 -0400
+	id S935229Ab3DHQdu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 12:33:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39731 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1763333Ab3DHQds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 12:33:48 -0400
+Date: Mon, 8 Apr 2013 18:33:44 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 1/8] cgroup: implement cgroup_is_ancestor()
+Message-ID: <20130408163344.GP17178@dhcp22.suse.cz>
+References: <51627DA9.7020507@huawei.com>
+ <51627DBB.5050005@huawei.com>
+ <20130408144750.GK17178@dhcp22.suse.cz>
+ <20130408155726.GG3021@htj.dyndns.org>
 MIME-Version: 1.0
-Message-ID: <f3c8ef05-a880-47db-86dd-156038fc7d0f@default>
-Date: Mon, 8 Apr 2013 09:32:38 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hugh Dickins <hughd@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Shaohua Li <shli@kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Bob Liu <bob.liu@oracle.com>, Shuah Khan <shuah@gonehiking.org>
-Subject: zsmalloc defrag (Was: [PATCH] mm: remove compressed copy from zram
- in-memory)
-References: <<1365400862-9041-1-git-send-email-minchan@kernel.org>>
-In-Reply-To: <<1365400862-9041-1-git-send-email-minchan@kernel.org>>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6668.5000 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Disposition: inline
+In-Reply-To: <20130408155726.GG3021@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Minchan Kim [mailto:minchan@kernel.org]
-> Sent: Monday, April 08, 2013 12:01 AM
-> Subject: [PATCH] mm: remove compressed copy from zram in-memory
+On Mon 08-04-13 08:57:26, Tejun Heo wrote:
+> Hello,
+> 
+> On Mon, Apr 08, 2013 at 04:47:50PM +0200, Michal Hocko wrote:
+> > On Mon 08-04-13 16:20:11, Li Zefan wrote:
+> > [...]
+> > > @@ -5299,6 +5300,26 @@ struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id)
+> > >  	return css ? css : ERR_PTR(-ENOENT);
+> > >  }
+> > >  
+> > > +/**
+> > > + * cgroup_is_ancestor - test "root" cgroup is an ancestor of "child"
+> > > + * @child: the cgroup to be tested.
+> > > + * @root: the cgroup supposed to be an ancestor of the child.
+> > > + *
+> > > + * Returns true if "root" is an ancestor of "child" in its hierarchy.
+> > > + */
+> > > +bool cgroup_is_ancestor(struct cgroup *child, struct cgroup *root)
+> > > +{
+> > > +	int depth = child->depth;
+> > 
+> > Is this functionality helpful for other controllers but memcg?
+> > css_is_ancestor is currently used only by memcg code AFAICS and we can
+> > get the same functionality easily by using something like:
+> 
+> It's a basic hierarchy operation. 
 
-(patch removed)
+Which nobody seem to need ATM so it could be added later when an user
+emerges.
 
-> Fragment ratio is almost same but memory consumption and compile time
-> is better. I am working to add defragment function of zsmalloc.
+> I'd prefer it to be in cgroup and in general let's try to avoid
+> memcg-specific infrastructure. 
 
-Hi Minchan --
+Now that I am thinking about that some more css_is_ancestor is even not
+correct. Consider this for example
+root
+ \
+  A (use_hierarchy = 0)
+   \
+    B (use_hierarchy = 1)
+     \
+      C
 
-I would be very interested in your design thoughts on
-how you plan to add defragmentation for zsmalloc.  In
-particular, I am wondering if your design will also
-handle the requirements for zcache (especially for
-cleancache pages) and perhaps also for ramster.
+__mem_cgroup_same_or_subtree(A, C) would happily return true even though
+this is not correct because A is not a part of the same hierarchy.
+So it seems that memcg will need a special treatment here anyway because
+cgroup core doesn't know about use_hierarchy thingy which is still with
+us...
+I will post a patch.
 
-In https://lkml.org/lkml/2013/3/27/501 I suggested it
-would be good to work together on a common design, but
-you didn't reply.  Are you thinking that zsmalloc
-improvements should focus only on zram, in which case
-we may -- and possibly should -- end up with a different
-allocator for frontswap-based/cleancache-based compression
-in zcache (and possibly zswap)?
+> It doesn't seem to end well.
+> 
+> Thanks.
+> 
+> -- 
+> tejun
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-I'm just trying to determine if I should proceed separately
-with my design (with Bob Liu, who expressed interest) or if
-it would be beneficial to work together.
-
-Thanks,
-Dan
+-- 
+Michal Hocko
+SUSE Labs
