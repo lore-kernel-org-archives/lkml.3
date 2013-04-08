@@ -1,89 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934687Ab3DHBkr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 21:40:47 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36260 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934658Ab3DHBkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 21:40:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,427,1363158000"; 
-   d="scan'208";a="315534919"
-Subject: [PATCH 2/5 V2] mmc: core: call pm_runtime_put_noidle in
- pm_runtime_get_sync failed case
-From: Li Fei <fei.li@intel.com>
-To: cjb@laptop.org, ohad@wizery.com
-Cc: ulf.hansson@linaro.org, johan.rudholm@stericsson.com,
-        subhashj@codeaurora.org, rafael.j.wysocki@intel.com,
-        thierry.reding@avionic-design.de, sachin.kamat@linaro.org,
-        linux-mmc@vger.kernel.org, rjw@sisk.pl, linux-kernel@vger.kernel.org,
-        chuansheng.liu@intel.com, fei.li@intel.com
-In-Reply-To: <1362037455.6212.8.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-References: <1362037031.6212.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-	 <1362037455.6212.8.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 08 Apr 2013 09:36:39 +0800
-Message-ID: <1365384999.31128.6.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S934696Ab3DHBrh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 21:47:37 -0400
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:47352 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934638Ab3DHBrg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Apr 2013 21:47:36 -0400
+From: Tyrel Datwyler <turtle.on.the.radio@gmail.com>
+To: gregkh@linuxfoundation.org, eduardo.falentin@ti.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Tyrel Datwyler <turtle.on.the.radio@gmail.com>
+Subject: [PATCH] Staging: omap-thermal: remove trailing whitespace from omap-bandgap.c
+Date: Sun,  7 Apr 2013 18:47:20 -0700
+Message-Id: <1365385640-10443-1-git-send-email-turtle.on.the.radio@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch removes trailing whitespace from a blank line in omap-bandgap.c as
+detected by the checkpatch.pl tool.
 
-Even in failed case of pm_runtime_get_sync, the usage_count
-is incremented. In order to keep the usage_count with correct
-value and runtime power management to behave correctly, call
-pm_runtime_put_noidle in such case.
-
-Signed-off-by Liu Chuansheng <chuansheng.liu@intel.com>
-Signed-off-by: Li Fei <fei.li@intel.com>
+Signed-off-by: Tyrel Datwyler <turtle.on.the.radio@gmail.com>
 ---
- drivers/mmc/core/sdio.c     |    4 +++-
- drivers/mmc/core/sdio_bus.c |    3 +--
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/staging/omap-thermal/omap-bandgap.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-index aa0719a..6889a82 100644
---- a/drivers/mmc/core/sdio.c
-+++ b/drivers/mmc/core/sdio.c
-@@ -861,8 +861,10 @@ static void mmc_sdio_detect(struct mmc_host *host)
- 	/* Make sure card is powered before detecting it */
- 	if (host->caps & MMC_CAP_POWER_OFF_CARD) {
- 		err = pm_runtime_get_sync(&host->card->dev);
--		if (err < 0)
-+		if (err < 0) {
-+			pm_runtime_put_noidle(&host->card->dev);
- 			goto out;
-+		}
- 	}
- 
- 	mmc_claim_host(host);
-diff --git a/drivers/mmc/core/sdio_bus.c b/drivers/mmc/core/sdio_bus.c
-index 5e57048..7bfefb5 100644
---- a/drivers/mmc/core/sdio_bus.c
-+++ b/drivers/mmc/core/sdio_bus.c
-@@ -137,7 +137,7 @@ static int sdio_bus_probe(struct device *dev)
- 	if (func->card->host->caps & MMC_CAP_POWER_OFF_CARD) {
- 		ret = pm_runtime_get_sync(dev);
- 		if (ret < 0)
--			goto out;
-+			goto disable_runtimepm;
- 	}
- 
- 	/* Set the default block size so the driver is sure it's something
-@@ -157,7 +157,6 @@ static int sdio_bus_probe(struct device *dev)
- disable_runtimepm:
- 	if (func->card->host->caps & MMC_CAP_POWER_OFF_CARD)
- 		pm_runtime_put_noidle(dev);
--out:
- 	return ret;
- }
+diff --git a/drivers/staging/omap-thermal/omap-bandgap.c b/drivers/staging/omap-thermal/omap-bandgap.c
+index dcc1448..e507d17 100644
+--- a/drivers/staging/omap-thermal/omap-bandgap.c
++++ b/drivers/staging/omap-thermal/omap-bandgap.c
+@@ -823,7 +823,7 @@ static struct omap_bandgap *omap_bandgap_build(struct platform_device *pdev)
+ 			bg_ptr->base = chunk;
+ 		if (IS_ERR(chunk))
+ 			return ERR_CAST(chunk);
+-		
++
+ 		i++;
+ 	} while (res);
  
 -- 
-1.7.4.1
-
-
-
+1.8.1.4
 
