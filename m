@@ -1,117 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934821Ab3DHGBI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 02:01:08 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:51436 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761102Ab3DHGBG (ORCPT
+	id S934807Ab3DHGIr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 02:08:47 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:34196 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753646Ab3DHGIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 02:01:06 -0400
-X-AuditID: 9c93016f-b7c18ae000002f5f-d0-51625d203174
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Shaohua Li <shli@kernel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>
-Subject: [PATCH] mm: remove compressed copy from zram in-memory
-Date: Mon,  8 Apr 2013 15:01:02 +0900
-Message-Id: <1365400862-9041-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.8.2
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 8 Apr 2013 02:08:45 -0400
+Message-ID: <1365401315.2673.11.camel@slavad-ubuntu>
+Subject: Re: [PATCH 2/2] hfsplus: add printk to log allocation failure in
+ hfs_find_init()
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
+Reply-To: slava@dubeyko.com
+To: Joe Perches <joe@perches.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Hin-Tak Leung <htl10@users.sourceforge.net>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Christoph Hellwig <hch@lst.de>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Date: Mon, 08 Apr 2013 10:08:35 +0400
+In-Reply-To: <1365372019.8922.17.camel@joe-AO722>
+References: <0199BA74-9971-4928-A133-DB1FC562DC43@dubeyko.com>
+	 <1365369695-8340-1-git-send-email-khoroshilov@ispras.ru>
+	 <1365369695-8340-2-git-send-email-khoroshilov@ispras.ru>
+	 <1365372019.8922.17.camel@joe-AO722>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 109.188.124.66 authed with slava@dubeyko.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Swap subsystem does lazy swap slot free with expecting the page
-would be swapped out again so we can avoid unnecessary write.
+On Sun, 2013-04-07 at 15:00 -0700, Joe Perches wrote:
+> On Mon, 2013-04-08 at 01:21 +0400, Alexey Khoroshilov wrote:
+> > Add printk to log allocation failure in hfs_find_init(),
+> > "so that there is a sign in dmesg when the error condition is triggered".
+> > (per Hin-Tak Leung request)
+> 
+> Not needed.  There already is a generic dump_stack
+> on all allocation failures without __GFP_NOWARN.
+> 
 
-But the problem in in-memory swap(ex, zram) is that it consumes
-memory space until vm_swap_full(ie, used half of all of swap device)
-condition meet. It could be bad if we use multiple swap device,
-small in-memory swap and big storage swap or in-memory swap alone.
+I agree too.
 
-This patch makes swap subsystem free swap slot as soon as swap-read
-is completed and make the swapcache page dirty so the page should
-be written out the swap device to reclaim it.
-It means we never lose it.
+Moreover, Hin-Tak asks about dprint() but not printk(). The dprint()
+messages can be useful for debugging purposes and will be disabled for
+usual kernel build.
 
-I tested this patch with kernel compile workload.
+I think that adding dprint() messages in hfs_find_init() is not
+necessary. But adding dprint() for __hfsplus_ext_write_extent() and
+other places can be useful, from my point of view. And such messages can
+be useful as for HFS+ as for HFS drivers.
 
-1. before
+With the best regards,
+Vyacheslav Dubeyko.
 
-compile time : 9882.42
-zram max wasted space by fragmentation: 13471881 byte
-memory space consumed by zram: 174227456 byte
-the number of slot free notify: 206684
+> > diff --git a/fs/hfsplus/bfind.c b/fs/hfsplus/bfind.c
+> []
+> > @@ -18,8 +18,10 @@ int hfs_find_init(struct hfs_btree *tree, struct hfs_find_data *fd)
+> 
+> > +	if (!ptr) {
+> > +		printk(KERN_ERR "hfs: allocation failed in hfs_find_init()\n");
+> >  		return -ENOMEM;
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-2. after
-
-compile time : 9653.90
-zram max wasted space by fragmentation: 11805932 byte
-memory space consumed by zram: 154001408 byte
-the number of slot free notify: 426972
-
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Nitin Gupta <ngupta@vflare.org>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: Shaohua Li <shli@kernel.org>
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
-Fragment ratio is almost same but memory consumption and compile time
-is better. I am working to add defragment function of zsmalloc.
-
- mm/page_io.c | 23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
-
-diff --git a/mm/page_io.c b/mm/page_io.c
-index 78eee32..644900a 100644
---- a/mm/page_io.c
-+++ b/mm/page_io.c
-@@ -20,6 +20,7 @@
- #include <linux/buffer_head.h>
- #include <linux/writeback.h>
- #include <linux/frontswap.h>
-+#include <linux/blkdev.h>
- #include <asm/pgtable.h>
- 
- static struct bio *get_swap_bio(gfp_t gfp_flags,
-@@ -81,8 +82,30 @@ void end_swap_bio_read(struct bio *bio, int err)
- 				iminor(bio->bi_bdev->bd_inode),
- 				(unsigned long long)bio->bi_sector);
- 	} else {
-+		/*
-+		 * There is no reason to keep both uncompressed data and
-+		 * compressed data in memory.
-+		 */
-+		struct swap_info_struct *sis;
-+
- 		SetPageUptodate(page);
-+		sis = page_swap_info(page);
-+		if (sis->flags & SWP_BLKDEV) {
-+			struct gendisk *disk = sis->bdev->bd_disk;
-+			if (disk->fops->swap_slot_free_notify) {
-+				swp_entry_t entry;
-+				unsigned long offset;
-+
-+				entry.val = page_private(page);
-+				offset = swp_offset(entry);
-+
-+				SetPageDirty(page);
-+				disk->fops->swap_slot_free_notify(sis->bdev,
-+						offset);
-+			}
-+		}
- 	}
-+
- 	unlock_page(page);
- 	bio_put(bio);
- }
--- 
-1.8.2
 
