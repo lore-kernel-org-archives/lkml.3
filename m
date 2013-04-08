@@ -1,103 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936377Ab3DHVam (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 17:30:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50395 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936268Ab3DHVai (ORCPT
+	id S965218Ab3DHVek (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 17:34:40 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:40296 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936109Ab3DHVei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 17:30:38 -0400
-Date: Mon, 8 Apr 2013 14:30:37 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Chanho Min <chanho.min@lge.com>
-Cc: Nadia Yvette Chambers <nyc@holomorphy.com>, Jiri Kosina <jkosina@suse.cz>,
-        Guennadi Liakhovetski <lg@denx.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bitmap: speedup in bitmap_find_free_region when order
- is 0
-Message-Id: <20130408143037.5fe18306172315fc040329de@linux-foundation.org>
-In-Reply-To: <1365387828-24326-1-git-send-email-chanho.min@lge.com>
-References: <1365387828-24326-1-git-send-email-chanho.min@lge.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Apr 2013 17:34:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <1256775981.281402.1364864751771.JavaMail.root@redhat.com>
+References: <20130222181856.GA2419@hansolo.jdub.homelinux.org>
+	<CAGXu5j+ntBM5ZwO9Xqa3sWaEW3nSpR8wsL7poTJ6wZOp5x0Lhw@mail.gmail.com>
+	<1361998001.2110.22.camel@localhost>
+	<20130227221954.GJ2071@hansolo.jdub.homelinux.org>
+	<CAGXu5j+aADfSpBcz9=LVtREQQiW4d3Jd8t7nQKbih7oUhvQghg@mail.gmail.com>
+	<20130322145448.f44f9d10a36620c1c11535b7@linux-foundation.org>
+	<20130322221444.GJ15821@hansolo.jdub.homelinux.org>
+	<CAGXu5jL=Lg6OeWyhKBWHowwMeOpFipMOXmBosYHY53MfVMo8fA@mail.gmail.com>
+	<1256775981.281402.1364864751771.JavaMail.root@redhat.com>
+Date: Mon, 8 Apr 2013 14:34:38 -0700
+X-Google-Sender-Auth: DwBVaE9IHaXoTA2s3mTccDt6OZ4
+Message-ID: <CAGXu5jLU40Vzx+bNyPSArBt_yYNO9sPJ3yLj7z3Yq=pH22W1Gw@mail.gmail.com>
+Subject: Re: [PATCH] kmsg: Honor dmesg_restrict sysctl on /dev/kmsg
+From: Kees Cook <keescook@chromium.org>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Eric Paris <eparis@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christian Kujau <lists@nerdbynature.de>,
+        "# 3.4.x" <stable@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  8 Apr 2013 11:23:48 +0900 Chanho Min <chanho.min@lge.com> wrote:
+On Mon, Apr 1, 2013 at 6:05 PM, Josh Boyer <jwboyer@redhat.com> wrote:
+> ----- Original Message -----
+>> From: "Kees Cook" <keescook@chromium.org>
+>> To: "Josh Boyer" <jwboyer@redhat.com>
+>> Cc: "Andrew Morton" <akpm@linux-foundation.org>, "Eric Paris" <eparis@redhat.com>, "Linus Torvalds"
+>> <torvalds@linux-foundation.org>, "Christian Kujau" <lists@nerdbynature.de>, "# 3.4.x" <stable@vger.kernel.org>,
+>> "LKML" <linux-kernel@vger.kernel.org>
+>> Sent: Monday, April 1, 2013 7:51:57 PM
+>> Subject: Re: [PATCH] kmsg: Honor dmesg_restrict sysctl on /dev/kmsg
+>>
+>> On Fri, Mar 22, 2013 at 3:14 PM, Josh Boyer <jwboyer@redhat.com> wrote:
+>> > On Fri, Mar 22, 2013 at 02:54:48PM -0700, Andrew Morton wrote:
+>> >>
+>> >> poke.  Nothing got applied.  I'll drop
+>> >> kmsg-honor-dmesg_restrict-sysctl-on-dev-kmsg.patch, see if that has any
+>> >> effect ;)
+>> >
+>> > Oh dear.
+>> >
+>> > Eric, were you going to cleanup your suggestion and send it out?
+>>
+>> Ping? What state is this in?
+>
+> If Eric doesn't send a patch tomorrow, I will.  Fedora is carrying my
+> original patch, but I'd rather get this fixed everywhere.
 
-> If bitmap_find_free_region() is called with order=0, We can reduce
-> for-loops to find 1 free bit. First, It scans bitmap array by the
-> increment of long type, then find 1 free bit within 1 long type value.
+Pinging again here. Any news on this?
 
-That seems sensible.  I assume-without-checking that single-bit is a
-common case?
+-Kees
 
-> In 32 bits system and 1024 bits size, in the worst case, We need 1024
-> for-loops to find 1 free bit. But, If This is applied, it takes
-> 64 for-loops. Instead, if free bit is in the first index of the bitmaps,
-> It will be needed additional 1 for-loop. But from second index, It
-> will be speed up significantly.
-> 
-> --- a/lib/bitmap.c
-> +++ b/lib/bitmap.c
-> @@ -1099,6 +1099,37 @@ done:
->  }
->  
->  /**
-> + * bitmap_find_free_one - find a mem region
-> + *	@bitmap: array of unsigned longs corresponding to the bitmap
-> + *	@bits: number of bits in the bitmap
-> + *
-> + * Find one of free (zero) bits in a @bitmap of @bits bits and
-> + * allocate them (set them to one).
-> + *
-> + * Return the bit offset in bitmap of the allocated region,
-> + * or -errno on failure.
-> + */
-> +static int __bitmap_find_free_one(unsigned long *bitmap, int bits)
-> +{
-> +	int pos, i;
-> +	unsigned long mask = (unsigned long)(~((unsigned long) 0));
-
-That seems unnecessarily complicated.  "unsigned long mask = -1;" works :)
-
-> +	int nlongs_reg = BITS_TO_LONGS(bits);
-> +
-> +	for (i = 0 ; i < nlongs_reg ; i++) {
-> +		if ((bitmap[i] & mask) != mask) {
-
-But here we could just do "if (bitmap[i] != -1)".  Or ~0UL.
-
-> +			for (pos = 0 ; pos < BITS_PER_LONG ; pos++) {
-> +				if (!__reg_op(&bitmap[i], pos, 0,
-> +					REG_OP_ISFREE))
-> +					continue;
-> +				__reg_op(&bitmap[i], pos, 0, REG_OP_ALLOC);
-> +				return pos;
-> +			}
-> +		}
-> +	}
-> +	return -ENOMEM;
-> +}
-
-afacit the code is buggy - if `bits' is not an exact multiple of
-BITS_PER_LONG, this search will wander off the end of the specified
-region?
-
-> +/**
->   * bitmap_find_free_region - find a contiguous aligned mem region
->   *	@bitmap: array of unsigned longs corresponding to the bitmap
->   *	@bits: number of bits in the bitmap
-> @@ -1116,6 +1147,9 @@ int bitmap_find_free_region(unsigned long *bitmap, int bits, int order)
->  {
->  	int pos, end;		/* scans bitmap by regions of size order */
->  
-> +	if (order == 0)
-> +		return __bitmap_find_free_one(bitmap, bits);
-> +
->  	for (pos = 0 ; (end = pos + (1 << order)) <= bits; pos = end) {
->  		if (!__reg_op(bitmap, pos, order, REG_OP_ISFREE))
->  			continue;
-
+--
+Kees Cook
+Chrome OS Security
