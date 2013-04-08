@@ -1,116 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934650Ab3DHBfy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Apr 2013 21:35:54 -0400
-Received: from outbound-mail02.westnet.com.au ([203.10.1.243]:53290 "EHLO
-	outbound-mail02.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934610Ab3DHBfv (ORCPT
+	id S934673Ab3DHBg1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Apr 2013 21:36:27 -0400
+Received: from mga03.intel.com ([143.182.124.21]:32174 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934610Ab3DHBgZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Apr 2013 21:35:51 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAKgdYlGVhxBY/2dsb2JhbAANRMRggRmDEwEBAQMBAQIkUgULCxgJJQ8CFy8GDQEFAgEBiAqqEpJAjyMHg0EDlDWMNYhtgUg
-X-IronPort-AV: E=Sophos;i="4.87,427,1363104000"; 
-   d="scan'208";a="333310277"
-X-WN-REMOTEIP: 149.135.16.88
-X-WN-ENVELOPESENDER: gerg@uclinux.org
-X-WN-MID: 333310277
-X-WN-SMTPAUTHID: gregungerer
-Message-ID: <51621E92.10400@uclinux.org>
-Date: Mon, 08 Apr 2013 11:34:10 +1000
-From: Greg Ungerer <gerg@uclinux.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Sun, 7 Apr 2013 21:36:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,427,1363158000"; 
+   d="scan'208";a="282686093"
+From: "Li, Fei" <fei.li@intel.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: Chris Ball <cjb@laptop.org>,
+        "ulf.hansson@linaro.org" <ulf.hansson@linaro.org>,
+        "johan.rudholm@stericsson.com" <johan.rudholm@stericsson.com>,
+        "subhashj@codeaurora.org" <subhashj@codeaurora.org>,
+        Philip Rakity <prakity@marvell.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "sachin.kamat@linaro.org" <sachin.kamat@linaro.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Subject: RE: [PATCH 2/5] mmc: core: call pm_runtime_put_sync in
+ pm_runtime_get_sync failed case
+Thread-Topic: [PATCH 2/5] mmc: core: call pm_runtime_put_sync in
+ pm_runtime_get_sync failed case
+Thread-Index: AQHOFYekJxSWLSJpJUKxgdJjzRyxApjKRyCAgAGABSA=
+Date: Mon, 8 Apr 2013 01:36:20 +0000
+Message-ID: <BEC9F67575FA1E429CA7CF5AE9BE363442B485@SHSMSX102.ccr.corp.intel.com>
+References: <1362037031.6212.3.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+ <1362037455.6212.8.camel@fli24-HP-Compaq-8100-Elite-CMT-PC>
+ <CAK=Wgbb1_CgHpftEFmuqSKcCSjsjvyNCWEYNzQwC4vQKteaerQ@mail.gmail.com>
+In-Reply-To: <CAK=Wgbb1_CgHpftEFmuqSKcCSjsjvyNCWEYNzQwC4vQKteaerQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, linux-mm@kvack.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org
-Subject: Re: [PATCH v4, part3 24/41] mm/m68k: prepare for removing num_physpages
- and simplify mem_init()
-References: <1365258760-30821-1-git-send-email-jiang.liu@huawei.com> <1365258760-30821-25-git-send-email-jiang.liu@huawei.com>
-In-Reply-To: <1365258760-30821-25-git-send-email-jiang.liu@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/13 00:32, Jiang Liu wrote:
-> Prepare for removing num_physpages and simplify mem_init().
 > 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Greg Ungerer <gerg@uclinux.org>
-
-Acked-by: Greg Ungerer <gerg@uclinux.org
-
-
-> Cc: linux-m68k@lists.linux-m68k.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/m68k/mm/init.c |   31 ++-----------------------------
->  1 file changed, 2 insertions(+), 29 deletions(-)
+> Hi Li,
 > 
-> diff --git a/arch/m68k/mm/init.c b/arch/m68k/mm/init.c
-> index 2485a8c..0723141 100644
-> --- a/arch/m68k/mm/init.c
-> +++ b/arch/m68k/mm/init.c
-> @@ -149,33 +149,11 @@ void __init print_memmap(void)
->  void __init mem_init(void)
->  {
->  	pg_data_t *pgdat;
-> -	int codepages = 0;
-> -	int datapages = 0;
-> -	int initpages = 0;
->  	int i;
->  
->  	/* this will put all memory onto the freelists */
-> -	num_physpages = 0;
-> -	for_each_online_pgdat(pgdat) {
-> -		num_physpages += pgdat->node_present_pages;
-> -
-> +	for_each_online_pgdat(pgdat)
->  		free_all_bootmem_node(pgdat);
-> -		for (i = 0; i < pgdat->node_spanned_pages; i++) {
-> -			struct page *page = pgdat->node_mem_map + i;
-> -			char *addr = page_to_virt(page);
-> -
-> -			if (!PageReserved(page))
-> -				continue;
-> -			if (addr >= _text &&
-> -			    addr < _etext)
-> -				codepages++;
-> -			else if (addr >= __init_begin &&
-> -				 addr < __init_end)
-> -				initpages++;
-> -			else
-> -				datapages++;
-> -		}
-> -	}
->  
->  #if defined(CONFIG_MMU) && !defined(CONFIG_SUN3) && !defined(CONFIG_COLDFIRE)
->  	/* insert pointer tables allocated so far into the tablelist */
-> @@ -190,12 +168,7 @@ void __init mem_init(void)
->  		init_pointer_table((unsigned long)zero_pgtable);
->  #endif
->  
-> -	pr_info("Memory: %luk/%luk available (%dk kernel code, %dk data, %dk init)\n",
-> -	       nr_free_pages() << (PAGE_SHIFT-10),
-> -	       totalram_pages << (PAGE_SHIFT-10),
-> -	       codepages << (PAGE_SHIFT-10),
-> -	       datapages << (PAGE_SHIFT-10),
-> -	       initpages << (PAGE_SHIFT-10));
-> +	mem_init_print_info(NULL);
->  	print_memmap();
->  }
->  
+> On Thu, Feb 28, 2013 at 9:44 AM, Li Fei <fei.li@intel.com> wrote:
+> > Even in failed case of pm_runtime_get_sync, the usage_count
+> > is incremented. In order to keep the usage_count with correct
+> > value and runtime power management to behave correctly, call
+> > pm_runtime_put(_sync) in such case.
 > 
+> As with the remoteproc case, it is probably better to call the
+> put_noidle variant here. This way you are sure not to erroneously
+> invoke any underlying pm handler where your only intention is to fix
+> usage_count.
 
+Thanks for your check and feedback, and will update it in V2 soon.
+
+Regards,
+Fei
+> 
+> Thanks,
+> Ohad.
