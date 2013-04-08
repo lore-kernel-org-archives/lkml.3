@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935674Ab3DHSts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 14:49:48 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:63182 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935284Ab3DHStq (ORCPT
+	id S935680Ab3DHSt7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 14:49:59 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:48282 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935303Ab3DHSt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 14:49:46 -0400
+	Mon, 8 Apr 2013 14:49:56 -0400
+Date: Mon, 8 Apr 2013 11:49:51 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, bsingharora@gmail.com,
+        Kay Sievers <kay.sievers@vrfy.org>, lpoetter@redhat.com,
+        linux-kernel@vger.kernel.org, dhaval.giani@gmail.com,
+        workman-devel@redhat.com
+Subject: Re: [Workman-devel] cgroup: status-quo and userland efforts
+Message-ID: <20130408184951.GK3021@htj.dyndns.org>
+References: <20130406012159.GA17159@mtj.dyndns.org>
+ <20130408175925.GE28292@redhat.com>
+ <20130408181607.GI3021@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <5160C244.6080807@gmail.com>
-References: <20130325134247.GB1393@localhost.localdomain> <515CF884.8010103@gmail.com>
- <CAF-E8XFQFm9GrBnkax+TiByUPHxp=Ukp1LcuAWjYL0OeLE1Saw@mail.gmail.com> <5160C244.6080807@gmail.com>
-From: Andrew Shewmaker <agshew@gmail.com>
-Date: Mon, 8 Apr 2013 12:49:25 -0600
-Message-ID: <CAF-E8XHnTTUPm1s5RF2wEC-sjt3wYDhLgj__UQRz-b6AyC++vQ@mail.gmail.com>
-Subject: Re: [PATCH v7 2/2] mm: replace hardcoded 3% with admin_reserve_pages knob
-To: Simon Jeons <simon.jeons@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        ric.masonn@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130408181607.GI3021@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 6, 2013 at 6:48 PM, Simon Jeons <simon.jeons@gmail.com> wrote:
-> Hi Andrew,
->
-> On 04/05/2013 11:02 PM, Andrew Shewmaker wrote:
->>
->> On Wed, Apr 3, 2013 at 9:50 PM, Simon Jeons <simon.jeons@gmail.com> wrote:
->>>>
->>>> FAQ
->>>>
->> ...
->>>>
->>>>    * How do you calculate a minimum useful reserve?
->>>>
->>>>      A user or the admin needs enough memory to login and perform
->>>>      recovery operations, which includes, at a minimum:
->>>>
->>>>      sshd or login + bash (or some other shell) + top (or ps, kill,
->>>> etc.)
->>>>
->>>>      For overcommit 'guess', we can sum resident set sizes (RSS).
->>>>      On x86_64 this is about 8MB.
->>>>
->>>>      For overcommit 'never', we can take the max of their virtual sizes
->>>> (VSZ)
->>>>      and add the sum of their RSS.
->>>>      On x86_64 this is about 128MB.
->>>
->>>
->>> 1.Why has this different between guess and never?
->>
->> The default, overcommit 'guess' mode, only needs a reserve for
->> what the recovery programs will typically use. Overcommit 'never'
->> mode will only successfully launch an app when it can fulfill all of
->> its requested memory allocations--even if the app only uses a
->> fraction of what it asks for.
->
->
-> VSZ has already cover RSS, is it? why account RSS again?
+On Mon, Apr 08, 2013 at 11:16:07AM -0700, Tejun Heo wrote:
+> > Given the fact that library has view of full system resoruces (both
+> > persistent view and active view), shouldn't we just be able to extend
+> > the API to meet additional configuration or resource needs.
+> 
+> Maybe, I don't know.  It just looks like a weird approach to me.
+> Wouldn't it make more sense to implement it as a dbus service that
+> everyone talks to?  That's how our base system is structured these
+> days.  Why should this be any different?
 
-Right. Technically, I could leave out the RSS of the process that
-I'm taking the VSZ of. Leaving it in makes the estimate 2-4 MB
-larger, but it is just an estimate.
+To expand a bit, the base system being composed that way makes a lot
+of sense.  It becomes clear who's responsible for what and there's a
+reliable way to recover when things go awry on the clients' sides.
+Also, it pretty much *forces* you to design an interface which fits
+the problem domain properly rather than exposing all the control knobs
+there are without thinking how they'd be actually useful.  The
+language binding issue is much easier too - it's already solved.
 
-Choosing a good minimum is difficult because the behavior with
-and without swap is different. With swap, only about 8MB reserves
-are needed whether overcommit is disabled or not. Without swap,
-I was always able to recover when I set the reserves to over 230MB
-each. However, I was often able to recover with much less.
+It seems like the only logical thing to do, well, at least to me.
+Am I missing something?
 
-128MB seemed to me like a decent compromise between swap
-and noswap modes, but it isn't totally safe for the case when
-both swap and memory overcommit are disabled. In that case,
-I think that an admin will have to tune the reserves for their specific
-situation.
+Thanks.
 
---
-Andrew Shewmaker
+-- 
+tejun
