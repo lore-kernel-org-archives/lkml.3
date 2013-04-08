@@ -1,135 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936703Ab3DHP5H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 11:57:07 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:50593 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761509Ab3DHP5F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 11:57:05 -0400
-Date: Mon, 8 Apr 2013 17:57:01 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Robin Holt <holt@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Russ Anderson <rja@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] Do not force shutdown/reboot to boot cpu.
-Message-ID: <20130408155701.GB19974@gmail.com>
-References: <20130403193743.GB29151@sgi.com>
+	id S936725Ab3DHP5S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 11:57:18 -0400
+Received: from www.sr71.net ([198.145.64.142]:41396 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761509Ab3DHP5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 11:57:16 -0400
+Message-ID: <5162E8DC.4080204@sr71.net>
+Date: Mon, 08 Apr 2013 08:57:16 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130403193743.GB29151@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: Re: sched/cputime: sig->prev_stime underflow
+References: <515DBB00.20208@sr71.net> <CAFTL4hxnNyWbn47PxPZDibzgOcqtw8v+t3EEzn+AM_pzFM=YeQ@mail.gmail.com>
+In-Reply-To: <CAFTL4hxnNyWbn47PxPZDibzgOcqtw8v+t3EEzn+AM_pzFM=YeQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/04/2013 04:41 PM, Frederic Weisbecker wrote:
+> Does this patch fix the issue for you?
+> https://lkml.org/lkml/2013/4/4/112
 
-* Robin Holt <holt@sgi.com> wrote:
+Nope, that doesn't seem to make a difference.  I'm still seeing the
+underflow.  I'm pretty sure it's already gone to hell by the time it
+gets in to the loop that's patched there.
 
-> We noticed that recently, reboot of a 1024 cpu machine takes approx 16
-> minutes of just stopping the cpus.  The slowdown was tracked to commit
-> f96972f which went into v3.7 and then to the stable trees.
-> 
-> x86 does not need to be running the boot cpu to pull reset and I don't
-> think it is really needed for shutdown either.
-> 
-> I decided to go the "simple" way and make this a config option that is
-> selected by the x86 arch.  I don't know which other arch's would also
-> benefit, if any.
-> 
-> Signed-off-by: Robin Holt <holt@sgi.com>
-> To: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Russ Anderson <rja@sgi.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: <stable@vger.kernel.org>
-> 
-> ---
->  arch/x86/Kconfig        | 3 +++
->  kernel/Kconfig.shutdown | 3 +++
->  kernel/sys.c            | 4 ++++
->  3 files changed, 10 insertions(+)
->  create mode 100644 kernel/Kconfig.shutdown
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 70c0f3d..9611942 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -120,6 +120,7 @@ config X86
->  	select OLD_SIGSUSPEND3 if X86_32 || IA32_EMULATION
->  	select OLD_SIGACTION if X86_32
->  	select COMPAT_OLD_SIGACTION if IA32_EMULATION
-> +	select ARCH_SHUTDOWN_TO_ANY_CPU
->  
->  config INSTRUCTION_DECODER
->  	def_bool y
-> @@ -839,6 +840,8 @@ config SCHED_MC
->  	  making when dealing with multi-core CPU chips at a cost of slightly
->  	  increased overhead in some places. If unsure say N here.
->  
-> +source "kernel/Kconfig.shutdown"
-> +
->  source "kernel/Kconfig.preempt"
->  
->  config X86_UP_APIC
-> diff --git a/kernel/Kconfig.shutdown b/kernel/Kconfig.shutdown
-> new file mode 100644
-> index 0000000..d79fc04
-> --- /dev/null
-> +++ b/kernel/Kconfig.shutdown
-> @@ -0,0 +1,3 @@
-> +
-> +config ARCH_SHUTDOWN_TO_ANY_CPU
-> +	bool
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index 39c9c4a..c0b8880 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -369,7 +369,9 @@ EXPORT_SYMBOL(unregister_reboot_notifier);
->  void kernel_restart(char *cmd)
->  {
->  	kernel_restart_prepare(cmd);
-> +#ifndef CONFIG_ARCH_SHUTDOWN_TO_ANY_CPU
->  	disable_nonboot_cpus();
-> +#endif
->  	if (!cmd)
->  		printk(KERN_EMERG "Restarting system.\n");
->  	else
-> @@ -413,7 +415,9 @@ void kernel_power_off(void)
->  	kernel_shutdown_prepare(SYSTEM_POWER_OFF);
->  	if (pm_power_off_prepare)
->  		pm_power_off_prepare();
-> +#ifndef CONFIG_ARCH_SHUTDOWN_TO_ANY_CPU
->  	disable_nonboot_cpus();
-> +#endif
->  	syscore_shutdown();
->  	printk(KERN_EMERG "Power down.\n");
->  	kmsg_dump(KMSG_DUMP_POWEROFF);
 
-Hm, the 'fix' is a pretty ugly workaround that does not fix much IMHO.
-
-I think the original commit:
-
-  f96972f2dc63 kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()
-
-actually regressed your 1024 CPU systems, and should possibly be reverted or fixed 
-in some other fashion - such as by migrating to the primary CPU (on architectures 
-that require that), instead of hotplug offlining every secondary CPU on every 
-architecture!
-
-Alternatively, disable_nonboot_cpus() could perhaps be improved to down CPUs in 
-parallel: issue the CPU-down requests to every CPU, then wait for them to complete 
-- instead of the loop over every CPU?
-
-This would be the conceptual counter part to parallel boot up of CPUs - something 
-SGI might be interested in as well?
-
-Thanks,
-
-	Ingo
