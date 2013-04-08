@@ -1,187 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964946Ab3DHUuF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 16:50:05 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:57654 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964861Ab3DHUuD (ORCPT
+	id S964958Ab3DHUu4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 16:50:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41150 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964861Ab3DHUuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 16:50:03 -0400
-Date: Mon, 8 Apr 2013 13:49:56 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Gabriel <g2p.code@gmail.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gabriel <g2p.code+bcache@gmail.com>
-Subject: Re: [PATCH] bcache: Take data offset from the bdev superblock.
-Message-ID: <20130408204956.GH15749@google.com>
-References: <51629766.6030805@gmail.com>
- <1365415866-16344-1-git-send-email-g2p.code+bcache@gmail.com>
+	Mon, 8 Apr 2013 16:50:54 -0400
+Date: Mon, 8 Apr 2013 13:47:44 -0700
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-7d1a941731fabf27e5fb6edbebb79fe856edb4e5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        rusty@rustcorp.com.au, torvalds@linux-foundation.org,
+        peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, magnus.damm@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, rusty@rustcorp.com.au,
+        peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, magnus.damm@gmail.com
+In-Reply-To: <20130321215235.486594473@linutronix.de>
+References: <20130321215235.486594473@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:smp/hotplug] x86: Use generic idle loop
+Git-Commit-ID: 7d1a941731fabf27e5fb6edbebb79fe856edb4e5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1365415866-16344-1-git-send-email-g2p.code+bcache@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 08 Apr 2013 13:47:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 12:11:06PM +0200, Gabriel wrote:
-> Add a new superblock version, and consolidate related defines.
+Commit-ID:  7d1a941731fabf27e5fb6edbebb79fe856edb4e5
+Gitweb:     http://git.kernel.org/tip/7d1a941731fabf27e5fb6edbebb79fe856edb4e5
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Thu, 21 Mar 2013 22:50:03 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 8 Apr 2013 17:39:29 +0200
 
-So, I think BDEV_WITH_OFFSET looks ok, but what's the use case for it? I
-was going to add it way back but we decided not to implement the hack we
-thought we needed it for - if you or someone is going to use it I'll go
-ahead and apply it.
+x86: Use generic idle loop
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Magnus Damm <magnus.damm@gmail.com>
+Link: http://lkml.kernel.org/r/20130321215235.486594473@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: x86@kernel.org
+---
+ arch/x86/Kconfig          |   1 +
+ arch/x86/kernel/process.c | 105 ++++++++++++----------------------------------
+ arch/x86/kernel/smpboot.c |   2 +-
+ arch/x86/xen/smp.c        |   2 +-
+ 4 files changed, 30 insertions(+), 80 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 70c0f3d..422a72b 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -97,6 +97,7 @@ config X86
+ 	select GENERIC_IOMAP
+ 	select DCACHE_WORD_ACCESS
+ 	select GENERIC_SMP_IDLE_THREAD
++	select GENERIC_IDLE_LOOP
+ 	select ARCH_WANT_IPC_PARSE_VERSION if X86_32
+ 	select HAVE_ARCH_SECCOMP_FILTER
+ 	select BUILDTIME_EXTABLE_SORT
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 14ae100..6833bff 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -301,13 +301,7 @@ void exit_idle(void)
+ }
+ #endif
  
-As for BCACHE_SB_VERSION_CDEV_WITH_UUID, can you explain why you added
-that? I suspect it's needed but I can't remember why I didn't add it
-when I added the new UUID format (or perhaps I just forgot)
-
-> 
-> Signed-off-by: Gabriel de Perthuis <g2p.code+bcache@gmail.com>
-> ---
->  drivers/md/bcache/bcache.h  | 23 ++++++++++++++++++-----
->  drivers/md/bcache/request.c |  2 +-
->  drivers/md/bcache/super.c   | 21 ++++++++++++++++-----
->  3 files changed, 35 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-> index f057235..8a110e6 100644
-> --- a/drivers/md/bcache/bcache.h
-> +++ b/drivers/md/bcache/bcache.h
-> @@ -223,11 +223,17 @@ struct bkey {
->  #define BKEY_PADDED(key)					\
->  	union { struct bkey key; uint64_t key ## _pad[BKEY_PAD]; }
->  
-> -/* Version 1: Backing device
-> +/* Version 0: Cache device
-> + * Version 1: Backing device
->   * Version 2: Seed pointer into btree node checksum
-> - * Version 3: New UUID format
-> + * Version 3: Cache device with new UUID format
-> + * Version 4: Backing device with data offset
->   */
-> -#define BCACHE_SB_VERSION	3
-> +#define BCACHE_SB_VERSION_CDEV			0
-> +#define BCACHE_SB_VERSION_BDEV			1
-> +#define BCACHE_SB_VERSION_CDEV_WITH_UUID	3
-> +#define BCACHE_SB_VERSION_BDEV_WITH_OFFSET	4
-> +#define BCACHE_SB_MAX_VERSION			4
->  
->  #define SB_SECTOR		8
->  #define SB_SIZE			4096
-> @@ -236,13 +242,12 @@ struct bkey {
->  /* SB_JOURNAL_BUCKETS must be divisible by BITS_PER_LONG */
->  #define MAX_CACHES_PER_SET	8
->  
-> -#define BDEV_DATA_START		16	/* sectors */
-> +#define BDEV_DATA_START_DEFAULT	16	/* sectors */
->  
->  struct cache_sb {
->  	uint64_t		csum;
->  	uint64_t		offset;	/* sector where this sb was written */
->  	uint64_t		version;
-> -#define CACHE_BACKING_DEV	1
->  
->  	uint8_t			magic[16];
->  
-> @@ -485,6 +490,7 @@ struct cached_dev {
->  	 * where it's at.
->  	 */
->  	sector_t		last_read;
-> +	sector_t		data_start_sector;
->  
->  	/* Number of writeback bios in flight */
->  	atomic_t		in_flight;
-> @@ -861,6 +867,13 @@ static inline bool key_merging_disabled(struct cache_set *c)
->  #endif
->  }
->  
-> +
-> +static inline bool SB_IS_BDEV(const struct cache_sb *sb) {
-> +	return sb->version == BCACHE_SB_VERSION_BDEV
-> +		|| sb->version == BCACHE_SB_VERSION_BDEV_WITH_OFFSET;
-> +}
-> +
-> +
->  struct bbio {
->  	unsigned		submit_time_us;
->  	union {
-> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-> index 83731dc..9f74aff 100644
-> --- a/drivers/md/bcache/request.c
-> +++ b/drivers/md/bcache/request.c
-> @@ -1220,7 +1220,7 @@ static void cached_dev_make_request(struct request_queue *q, struct bio *bio)
->  	part_stat_unlock();
->  
->  	bio->bi_bdev = dc->bdev;
-> -	bio->bi_sector += BDEV_DATA_START;
-> +	bio->bi_sector += dc->data_start_sector;
->  
->  	if (cached_dev_get(dc)) {
->  		s = search_alloc(bio, d);
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index 5fa3cd2..a409bb5 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -148,7 +148,7 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
->  		goto err;
->  
->  	err = "Unsupported superblock version";
-> -	if (sb->version > BCACHE_SB_VERSION)
-> +	if (sb->version > BCACHE_SB_MAX_VERSION)
->  		goto err;
->  
->  	err = "Bad block/bucket size";
-> @@ -168,7 +168,7 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
->  	if (get_capacity(bdev->bd_disk) < sb->bucket_size * sb->nbuckets)
->  		goto err;
->  
-> -	if (sb->version == CACHE_BACKING_DEV)
-> +	if (SB_IS_BDEV(sb))
->  		goto out;
->  
->  	err = "Bad UUID";
-> @@ -286,7 +286,7 @@ void bcache_write_super(struct cache_set *c)
->  	for_each_cache(ca, c, i) {
->  		struct bio *bio = &ca->sb_bio;
->  
-> -		ca->sb.version		= BCACHE_SB_VERSION;
-> +		ca->sb.version		= BCACHE_SB_VERSION_CDEV_WITH_UUID;
->  		ca->sb.seq		= c->sb.seq;
->  		ca->sb.last_mount	= c->sb.last_mount;
->  
-> @@ -1047,9 +1047,20 @@ static const char *register_bdev(struct cache_sb *sb, struct page *sb_page,
->  	dc->bdev = bdev;
->  	dc->bdev->bd_holder = dc;
->  
-> +	err = "bad start sector";
-> +	if (sb->version == BCACHE_SB_VERSION_BDEV) {
-> +		dc->data_start_sector = BDEV_DATA_START_DEFAULT;
-> +	} else {
-> +		if (sb->keys < 1)
-> +			goto err;
-> +		dc->data_start_sector = sb->d[0];
-> +		if (dc->data_start_sector < BDEV_DATA_START_DEFAULT)
-> +			goto err;
-> +	}
-> +
->  	g = dc->disk.disk;
->  
-> -	set_capacity(g, dc->bdev->bd_part->nr_sects - 16);
-> +	set_capacity(g, dc->bdev->bd_part->nr_sects - dc->data_start_sector);
->  
->  	bch_cached_dev_request_init(dc);
->  
-> @@ -1802,7 +1813,7 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
->  	if (err)
->  		goto err_close;
->  
-> -	if (sb->version == CACHE_BACKING_DEV) {
-> +	if (SB_IS_BDEV(sb)) {
->  		struct cached_dev *dc = kzalloc(sizeof(*dc), GFP_KERNEL);
->  
->  		err = register_bdev(sb, sb_page, bdev, dc);
-> -- 
-> 1.8.2.rc3.7.g35aca0e
-> 
+-/*
+- * The idle thread. There's no useful work to be
+- * done, so just try to conserve power and have a
+- * low exit latency (ie sit in a loop waiting for
+- * somebody to say that they'd like to reschedule)
+- */
+-void cpu_idle(void)
++void arch_cpu_idle_prepare(void)
+ {
+ 	/*
+ 	 * If we're the non-boot CPU, nothing set the stack canary up
+@@ -317,71 +311,40 @@ void cpu_idle(void)
+ 	 * canaries already on the stack wont ever trigger).
+ 	 */
+ 	boot_init_stack_canary();
+-	current_thread_info()->status |= TS_POLLING;
+-
+-	while (1) {
+-		tick_nohz_idle_enter();
+-
+-		while (!need_resched()) {
+-			rmb();
+-
+-			if (cpu_is_offline(smp_processor_id()))
+-				play_dead();
+-
+-			/*
+-			 * Idle routines should keep interrupts disabled
+-			 * from here on, until they go to idle.
+-			 * Otherwise, idle callbacks can misfire.
+-			 */
+-			local_touch_nmi();
+-			local_irq_disable();
+-
+-			enter_idle();
+-
+-			/* Don't trace irqs off for idle */
+-			stop_critical_timings();
+-
+-			/* enter_idle() needs rcu for notifiers */
+-			rcu_idle_enter();
++}
+ 
+-			if (cpuidle_idle_call())
+-				x86_idle();
++void arch_cpu_idle_enter(void)
++{
++	local_touch_nmi();
++	enter_idle();
++}
+ 
+-			rcu_idle_exit();
+-			start_critical_timings();
++void arch_cpu_idle_exit(void)
++{
++	__exit_idle();
++}
+ 
+-			/* In many cases the interrupt that ended idle
+-			   has already called exit_idle. But some idle
+-			   loops can be woken up without interrupt. */
+-			__exit_idle();
+-		}
++void arch_cpu_idle_dead(void)
++{
++	play_dead();
++}
+ 
+-		tick_nohz_idle_exit();
+-		preempt_enable_no_resched();
+-		schedule();
+-		preempt_disable();
+-	}
++/*
++ * Called from the generic idle code.
++ */
++void arch_cpu_idle(void)
++{
++	if (cpuidle_idle_call())
++		x86_idle();
+ }
+ 
+ /*
+- * We use this if we don't have any better
+- * idle routine..
++ * We use this if we don't have any better idle routine..
+  */
+ void default_idle(void)
+ {
+ 	trace_cpu_idle_rcuidle(1, smp_processor_id());
+-	current_thread_info()->status &= ~TS_POLLING;
+-	/*
+-	 * TS_POLLING-cleared state must be visible before we
+-	 * test NEED_RESCHED:
+-	 */
+-	smp_mb();
+-
+-	if (!need_resched())
+-		safe_halt();	/* enables interrupts racelessly */
+-	else
+-		local_irq_enable();
+-	current_thread_info()->status |= TS_POLLING;
++	safe_halt();
+ 	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
+ }
+ #ifdef CONFIG_APM_MODULE
+@@ -411,20 +374,6 @@ void stop_this_cpu(void *dummy)
+ 		halt();
+ }
+ 
+-/*
+- * On SMP it's slightly faster (but much more power-consuming!)
+- * to poll the ->work.need_resched flag instead of waiting for the
+- * cross-CPU IPI to arrive. Use this option with caution.
+- */
+-static void poll_idle(void)
+-{
+-	trace_cpu_idle_rcuidle(0, smp_processor_id());
+-	local_irq_enable();
+-	while (!need_resched())
+-		cpu_relax();
+-	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
+-}
+-
+ bool amd_e400_c1e_detected;
+ EXPORT_SYMBOL(amd_e400_c1e_detected);
+ 
+@@ -489,10 +438,10 @@ static void amd_e400_idle(void)
+ void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
+ {
+ #ifdef CONFIG_SMP
+-	if (x86_idle == poll_idle && smp_num_siblings > 1)
++	if (boot_option_idle_override == IDLE_POLL && smp_num_siblings > 1)
+ 		pr_warn_once("WARNING: polling idle and HT enabled, performance may degrade\n");
+ #endif
+-	if (x86_idle)
++	if (x86_idle || boot_option_idle_override == IDLE_POLL)
+ 		return;
+ 
+ 	if (cpu_has_amd_erratum(amd_erratum_400)) {
+@@ -517,8 +466,8 @@ static int __init idle_setup(char *str)
+ 
+ 	if (!strcmp(str, "poll")) {
+ 		pr_info("using polling idle threads\n");
+-		x86_idle = poll_idle;
+ 		boot_option_idle_override = IDLE_POLL;
++		cpu_idle_poll_ctrl(true);
+ 	} else if (!strcmp(str, "halt")) {
+ 		/*
+ 		 * When the boot option of idle=halt is added, halt is
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 9f190a2..9c73b51 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -284,7 +284,7 @@ notrace static void __cpuinit start_secondary(void *unused)
+ 	x86_cpuinit.setup_percpu_clockev();
+ 
+ 	wmb();
+-	cpu_idle();
++	cpu_startup_entry(CPUHP_ONLINE);
+ }
+ 
+ void __init smp_store_boot_cpu_info(void)
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 09ea61d..73642e9 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -95,7 +95,7 @@ static void __cpuinit cpu_bringup(void)
+ static void __cpuinit cpu_bringup_and_idle(void)
+ {
+ 	cpu_bringup();
+-	cpu_idle();
++	cpu_startup_entry(CPUHP_ONLINE);
+ }
+ 
+ static int xen_smp_intr_init(unsigned int cpu)
