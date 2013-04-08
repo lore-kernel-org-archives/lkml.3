@@ -1,86 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934543Ab3DHHyM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 03:54:12 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42610 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934446Ab3DHHyL (ORCPT
+	id S934559Ab3DHHy6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 03:54:58 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:65373 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760508Ab3DHHyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 03:54:11 -0400
-Date: Mon, 8 Apr 2013 17:54:02 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michael Wolf <mjw@linux.vnet.ibm.com>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        LKML <linux-kernel@vger.kernel.org>, paulus@samba.org
-Subject: [git pull] Please pull another powerpc fix
-Message-Id: <20130408175402.8d12d92737b1722865db45d3@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__8_Apr_2013_17_54_02_+1000_+0rYtDrClgJo7Zpq"
+	Mon, 8 Apr 2013 03:54:55 -0400
+Date: Mon, 8 Apr 2013 08:54:50 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] regulator: ab8500-ext: Get rid of is_enabled from
+ struct ab8500_ext_regulator_info
+Message-ID: <20130408075450.GE3084@gmail.com>
+References: <1365347548.9931.1.camel@phoenix>
+ <1365347619.9931.3.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1365347619.9931.3.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__8_Apr_2013_17_54_02_+1000_+0rYtDrClgJo7Zpq
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 07 Apr 2013, Axel Lin wrote:
 
-The following changes since commit 875b7679abbb232b584f2eec59fa6e45690dd6c4:
+> The intention of this patch is to simplify the code.
+> 
+> Maintain the is_enabled flag is not trivial, it not only needs to set/clear the
+> flag in disable()/enable() but also needs to set the flag in is_enable() to get
+> initial status. The only benefit of keeping is_enabled flag is just save a
+> register read when set_mode(). Remove is_enabled flag makes the code simpler.
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-  Merge git://git.kernel.org/pub/scm/virt/kvm/kvm (2013-04-07 13:01:25 -070=
-0)
+Looks fine:
 
-are available in the git repository at:
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
+> ---
+>  drivers/regulator/ab8500-ext.c |   14 +++-----------
+>  1 file changed, 3 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
+> index 57d43a1..5e604a2 100644
+> --- a/drivers/regulator/ab8500-ext.c
+> +++ b/drivers/regulator/ab8500-ext.c
+> @@ -29,7 +29,6 @@
+>   * @desc: regulator description
+>   * @rdev: regulator device
+>   * @cfg: regulator configuration (extension of regulator FW configuration)
+> - * @is_enabled: status of regulator (on/off)
+>   * @update_bank: bank to control on/off
+>   * @update_reg: register to control on/off
+>   * @update_mask: mask to enable/disable and set mode of regulator
+> @@ -46,7 +45,6 @@ struct ab8500_ext_regulator_info {
+>  	struct regulator_desc desc;
+>  	struct regulator_dev *rdev;
+>  	struct ab8500_ext_regulator_cfg *cfg;
+> -	bool is_enabled;
+>  	u8 update_bank;
+>  	u8 update_reg;
+>  	u8 update_mask;
+> @@ -78,8 +76,6 @@ static int enable(struct ab8500_ext_regulator_info *info, u8 *regval)
+>  		return ret;
+>  	}
+>  
+> -	info->is_enabled = true;
+> -
+>  	return ret;
+>  }
+>  
+> @@ -125,8 +121,6 @@ static int disable(struct ab8500_ext_regulator_info *info, u8 *regval)
+>  		return ret;
+>  	}
+>  
+> -	info->is_enabled = false;
+> -
+>  	return ret;
+>  }
+>  
+> @@ -177,11 +171,9 @@ static int ab8500_ext_regulator_is_enabled(struct regulator_dev *rdev)
+>  
+>  	if (((regval & info->update_mask) == info->update_val_lp) ||
+>  	    ((regval & info->update_mask) == info->update_val_hp))
+> -		info->is_enabled = true;
+> +		return 1;
+>  	else
+> -		info->is_enabled = false;
+> -
+> -	return info->is_enabled;
+> +		return 0;
+>  }
+>  
+>  static int ab8500_ext_regulator_set_mode(struct regulator_dev *rdev,
+> @@ -207,7 +199,7 @@ static int ab8500_ext_regulator_set_mode(struct regulator_dev *rdev,
+>  		return -EINVAL;
+>  	}
+>  
+> -	if (info->is_enabled) {
+> +	if (ab8500_ext_regulator_is_enabled(rdev)) {
+>  		u8 regval;
+>  
+>  		ret = enable(info, &regval);
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sfr/next-fixes.git tags/for=
--linus
-
-for you to fetch changes up to 9fb2640159f9d4f5a2a9d60e490482d4cbecafdb:
-
-  powerpc: pSeries_lpar_hpte_remove fails from Adjunct partition being perf=
-ormed before the ANDCOND test (2013-04-08 15:19:09 +1000)
-
-----------------------------------------------------------------
-A single BUG_ON fix for a condition that could happen for machines with
-certain hardware installed.
-
-----------------------------------------------------------------
-Michael Wolf (1):
-      powerpc: pSeries_lpar_hpte_remove fails from Adjunct partition being =
-performed before the ANDCOND test
-
- arch/powerpc/platforms/pseries/lpar.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__8_Apr_2013_17_54_02_+1000_+0rYtDrClgJo7Zpq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRYneaAAoJEECxmPOUX5FEjO8P/2GyzHtxbP+NaV77KyrTYMs3
-sWs2fgPCB0Wuz06XhGy5FZEamii+nf9cSDQX82rC2L5AcMbFr5wBfs04/6wy2ViA
-EzZ6LdN/o+FRs7HG0DTQdPtNtisAYNIp97BPZk926Tsp/pOUNgQLMR5L6Pwk37qP
-cDc4VnerwG8u6KjqupsInKe8ZDsj3mAPMdOQ2qImEIQ8fs9AxCJJgXaZR2fSZ7Ux
-fMOjqjw5lywdVw2wSUelgLFIQATITlWBGEpHtQPO327z+wEeq4yP7mRPferrMhfi
-Cmy0WeeFC/lbMvm/P0RhQPkwsm/BA87lSzkuh9siEdXjpXiYDeVZ4phgR4kxM04E
-zj2dy0ceT3huC2avj271X9tlLDXG72XnNQmu/kWi4vqtfiCnRBaYnXdzmCpdO+8s
-mRkwlbjUu+6VuesFZNkqRd8m83rUrKXhqGhyTYlXRx9SWAq3PCt5YfiUCTpbx6Om
-QrgyTcIJeiKpKplgbWc/0ic86hHMmFJwIXGCHXSmZVrIA/whqX32LzqtgWbdSod5
-3ONs0TtfSG5BvVmhvPHogeeA4AYSuy+zLPW/7zYNLbDQNBw0jJU5PB8izkiyPHSq
-yz4xVKmsGcDJDC9HIBdlix/IB5cdpWYGlwKNsLSFDhginlirliW6u1+ZUaOyQExP
-LSbSGhFcGgPfZqsuwdVz
-=WGP/
------END PGP SIGNATURE-----
-
---Signature=_Mon__8_Apr_2013_17_54_02_+1000_+0rYtDrClgJo7Zpq--
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
