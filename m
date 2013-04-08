@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936537Ab3DHKUj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:20:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42690 "EHLO
+	id S935497Ab3DHJv1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:51:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42642 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935504Ab3DHJva (ORCPT
+	with ESMTP id S935436Ab3DHJvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:51:30 -0400
+	Mon, 8 Apr 2013 05:51:18 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 021/102] xen/blkback: correctly respond to unknown, non-native requests
-Date: Mon,  8 Apr 2013 10:49:36 +0100
-Message-Id: <1365414657-29191-22-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 013/102] Nest rename_lock inside vfsmount_lock
+Date: Mon,  8 Apr 2013 10:49:28 +0100
+Message-Id: <1365414657-29191-14-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
@@ -28,183 +27,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 0e367ae46503cfe7791460c8ba8434a5d60b2bd5 upstream.
+commit 7ea600b5314529f9d1b9d6d3c41cb26fce6a7a4a upstream.
 
-If the frontend is using a non-native protocol (e.g., a 64-bit
-frontend with a 32-bit backend) and it sent an unrecognized request,
-the request was not translated and the response would have the
-incorrect ID.  This may cause the frontend driver to behave
-incorrectly or crash.
+... lest we get livelocks between path_is_under() and d_path() and friends.
 
-Since the ID field in the request is always in the same place,
-regardless of the request type we can get the correct ID and make a
-valid response (which will report BLKIF_RSP_EOPNOTSUPP).
+The thing is, wrt fairness lglocks are more similar to rwsems than to rwlocks;
+it is possible to have thread B spin on attempt to take lock shared while thread
+A is already holding it shared, if B is on lower-numbered CPU than A and there's
+a thread C spinning on attempt to take the same lock exclusive.
 
-This bug affected 64-bit SLES 11 guests when using a 32-bit backend.
-This guest does a BLKIF_OP_RESERVED_1 (BLKIF_OP_PACKET in the SLES
-source) and would crash in blkif_int() as the ID in the response would
-be invalid.
+As the result, we need consistent ordering between vfsmount_lock (lglock) and
+rename_lock (seq_lock), even though everything that takes both is going to take
+vfsmount_lock only shared.
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Spotted-by: Brad Spengler <spender@grsecurity.net>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/block/xen-blkback/blkback.c | 31 +++++++++++++++++++++++++++----
- drivers/block/xen-blkback/common.h  | 25 +++++++++++++++++++++++++
- include/xen/interface/io/blkif.h    | 10 ++++++++++
- 3 files changed, 62 insertions(+), 4 deletions(-)
+ fs/dcache.c | 16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index c6decb9..c85d91a 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -422,6 +422,16 @@ static int dispatch_discard_io(struct xen_blkif *blkif,
- 	return err;
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 1845c46..458ec45 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2579,7 +2579,6 @@ static int prepend_path(const struct path *path,
+ 	bool slash = false;
+ 	int error = 0;
+ 
+-	br_read_lock(&vfsmount_lock);
+ 	while (dentry != root->dentry || vfsmnt != root->mnt) {
+ 		struct dentry * parent;
+ 
+@@ -2609,8 +2608,6 @@ static int prepend_path(const struct path *path,
+ 	if (!error && !slash)
+ 		error = prepend(buffer, buflen, "/", 1);
+ 
+-out:
+-	br_read_unlock(&vfsmount_lock);
+ 	return error;
+ 
+ global_root:
+@@ -2627,7 +2624,7 @@ global_root:
+ 		error = prepend(buffer, buflen, "/", 1);
+ 	if (!error)
+ 		error = real_mount(vfsmnt)->mnt_ns ? 1 : 2;
+-	goto out;
++	return error;
  }
  
-+static int dispatch_other_io(struct xen_blkif *blkif,
-+			     struct blkif_request *req,
-+			     struct pending_req *pending_req)
-+{
-+	free_req(pending_req);
-+	make_response(blkif, req->u.other.id, req->operation,
-+		      BLKIF_RSP_EOPNOTSUPP);
-+	return -EIO;
-+}
-+
- static void xen_blk_drain_io(struct xen_blkif *blkif)
- {
- 	atomic_set(&blkif->drain, 1);
-@@ -543,17 +553,30 @@ __do_block_io_op(struct xen_blkif *blkif)
+ /**
+@@ -2654,9 +2651,11 @@ char *__d_path(const struct path *path,
+ 	int error;
  
- 		/* Apply all sanity checks to /private copy/ of request. */
- 		barrier();
--		if (unlikely(req.operation == BLKIF_OP_DISCARD)) {
-+
-+		switch (req.operation) {
-+		case BLKIF_OP_READ:
-+		case BLKIF_OP_WRITE:
-+		case BLKIF_OP_WRITE_BARRIER:
-+		case BLKIF_OP_FLUSH_DISKCACHE:
-+			if (dispatch_rw_block_io(blkif, &req, pending_req))
-+				goto done;
-+			break;
-+		case BLKIF_OP_DISCARD:
- 			free_req(pending_req);
- 			if (dispatch_discard_io(blkif, &req))
--				break;
--		} else if (dispatch_rw_block_io(blkif, &req, pending_req))
-+				goto done;
-+			break;
-+		default:
-+			if (dispatch_other_io(blkif, &req, pending_req))
-+				goto done;
- 			break;
-+		}
+ 	prepend(&res, &buflen, "\0", 1);
++	br_read_lock(&vfsmount_lock);
+ 	write_seqlock(&rename_lock);
+ 	error = prepend_path(path, root, &res, &buflen);
+ 	write_sequnlock(&rename_lock);
++	br_read_unlock(&vfsmount_lock);
  
- 		/* Yield point for this unbounded loop. */
- 		cond_resched();
+ 	if (error < 0)
+ 		return ERR_PTR(error);
+@@ -2673,9 +2672,11 @@ char *d_absolute_path(const struct path *path,
+ 	int error;
+ 
+ 	prepend(&res, &buflen, "\0", 1);
++	br_read_lock(&vfsmount_lock);
+ 	write_seqlock(&rename_lock);
+ 	error = prepend_path(path, &root, &res, &buflen);
+ 	write_sequnlock(&rename_lock);
++	br_read_unlock(&vfsmount_lock);
+ 
+ 	if (error > 1)
+ 		error = -EINVAL;
+@@ -2739,11 +2740,13 @@ char *d_path(const struct path *path, char *buf, int buflen)
+ 		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
+ 
+ 	get_fs_root(current->fs, &root);
++	br_read_lock(&vfsmount_lock);
+ 	write_seqlock(&rename_lock);
+ 	error = path_with_deleted(path, &root, &res, &buflen);
++	write_sequnlock(&rename_lock);
++	br_read_unlock(&vfsmount_lock);
+ 	if (error < 0)
+ 		res = ERR_PTR(error);
+-	write_sequnlock(&rename_lock);
+ 	path_put(&root);
+ 	return res;
+ }
+@@ -2898,6 +2901,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, buf, unsigned long, size)
+ 	get_fs_root_and_pwd(current->fs, &root, &pwd);
+ 
+ 	error = -ENOENT;
++	br_read_lock(&vfsmount_lock);
+ 	write_seqlock(&rename_lock);
+ 	if (!d_unlinked(pwd.dentry)) {
+ 		unsigned long len;
+@@ -2907,6 +2911,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, buf, unsigned long, size)
+ 		prepend(&cwd, &buflen, "\0", 1);
+ 		error = prepend_path(&pwd, &root, &cwd, &buflen);
+ 		write_sequnlock(&rename_lock);
++		br_read_unlock(&vfsmount_lock);
+ 
+ 		if (error < 0)
+ 			goto out;
+@@ -2927,6 +2932,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, buf, unsigned long, size)
+ 		}
+ 	} else {
+ 		write_sequnlock(&rename_lock);
++		br_read_unlock(&vfsmount_lock);
  	}
--
-+done:
- 	return more_to_do;
- }
  
-diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
-index 9ad3b5e..fc2a486 100644
---- a/drivers/block/xen-blkback/common.h
-+++ b/drivers/block/xen-blkback/common.h
-@@ -76,11 +76,18 @@ struct blkif_x86_32_request_discard {
- 	uint64_t       nr_sectors;
- } __attribute__((__packed__));
- 
-+struct blkif_x86_32_request_other {
-+	uint8_t        _pad1;
-+	blkif_vdev_t   _pad2;
-+	uint64_t       id;           /* private guest value, echoed in resp  */
-+} __attribute__((__packed__));
-+
- struct blkif_x86_32_request {
- 	uint8_t        operation;    /* BLKIF_OP_???                         */
- 	union {
- 		struct blkif_x86_32_request_rw rw;
- 		struct blkif_x86_32_request_discard discard;
-+		struct blkif_x86_32_request_other other;
- 	} u;
- } __attribute__((__packed__));
- 
-@@ -112,11 +119,19 @@ struct blkif_x86_64_request_discard {
- 	uint64_t       nr_sectors;
- } __attribute__((__packed__));
- 
-+struct blkif_x86_64_request_other {
-+	uint8_t        _pad1;
-+	blkif_vdev_t   _pad2;
-+	uint32_t       _pad3;        /* offsetof(blkif_..,u.discard.id)==8   */
-+	uint64_t       id;           /* private guest value, echoed in resp  */
-+} __attribute__((__packed__));
-+
- struct blkif_x86_64_request {
- 	uint8_t        operation;    /* BLKIF_OP_???                         */
- 	union {
- 		struct blkif_x86_64_request_rw rw;
- 		struct blkif_x86_64_request_discard discard;
-+		struct blkif_x86_64_request_other other;
- 	} u;
- } __attribute__((__packed__));
- 
-@@ -262,6 +277,11 @@ static inline void blkif_get_x86_32_req(struct blkif_request *dst,
- 		dst->u.discard.nr_sectors = src->u.discard.nr_sectors;
- 		break;
- 	default:
-+		/*
-+		 * Don't know how to translate this op. Only get the
-+		 * ID so failure can be reported to the frontend.
-+		 */
-+		dst->u.other.id = src->u.other.id;
- 		break;
- 	}
- }
-@@ -293,6 +313,11 @@ static inline void blkif_get_x86_64_req(struct blkif_request *dst,
- 		dst->u.discard.nr_sectors = src->u.discard.nr_sectors;
- 		break;
- 	default:
-+		/*
-+		 * Don't know how to translate this op. Only get the
-+		 * ID so failure can be reported to the frontend.
-+		 */
-+		dst->u.other.id = src->u.other.id;
- 		break;
- 	}
- }
-diff --git a/include/xen/interface/io/blkif.h b/include/xen/interface/io/blkif.h
-index ee338bf..2af8fdb 100644
---- a/include/xen/interface/io/blkif.h
-+++ b/include/xen/interface/io/blkif.h
-@@ -138,11 +138,21 @@ struct blkif_request_discard {
- 	uint8_t        _pad3;
- } __attribute__((__packed__));
- 
-+struct blkif_request_other {
-+	uint8_t      _pad1;
-+	blkif_vdev_t _pad2;        /* only for read/write requests         */
-+#ifdef CONFIG_X86_64
-+	uint32_t     _pad3;        /* offsetof(blkif_req..,u.other.id)==8*/
-+#endif
-+	uint64_t     id;           /* private guest value, echoed in resp  */
-+} __attribute__((__packed__));
-+
- struct blkif_request {
- 	uint8_t        operation;    /* BLKIF_OP_???                         */
- 	union {
- 		struct blkif_request_rw rw;
- 		struct blkif_request_discard discard;
-+		struct blkif_request_other other;
- 	} u;
- } __attribute__((__packed__));
- 
+ out:
 -- 
 1.8.1.2
 
