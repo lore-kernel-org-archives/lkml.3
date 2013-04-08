@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935121Ab3DHJVP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:21:15 -0400
-Received: from mga03.intel.com ([143.182.124.21]:1119 "EHLO mga03.intel.com"
+	id S935147Ab3DHJWr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:22:47 -0400
+Received: from mga11.intel.com ([192.55.52.93]:55270 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934384Ab3DHJVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:21:14 -0400
+	id S934484Ab3DHJWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 05:22:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,429,1363158000"; 
-   d="scan'208";a="224423313"
-Date: Mon, 8 Apr 2013 11:21:07 +0200
+   d="scan'208";a="318944578"
+Date: Mon, 8 Apr 2013 11:22:43 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] mfd: adp5520: Use module_i2c_driver()
-Message-ID: <20130408092107.GJ24058@zurbaran>
-References: <1363347628-15344-1-git-send-email-sachin.kamat@linaro.org>
- <CAK9yfHyw+rfgpBW+JiGE4bgv3s5t3nmGxoeqzE-ystq_b+mf8A@mail.gmail.com>
- <544AC56F16B56944AEC3BD4E3D591771602C593BF8@LIMKCMBX1.ad.analog.com>
- <CAK9yfHzcRED3jiVRfkMpEPzKmYyS7dw+Lx+vOekG4o4nbc_KUw@mail.gmail.com>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the mfd tree
+Message-ID: <20130408092243.GK24058@zurbaran>
+References: <20130408142124.ac540429a889cdc9800e529a@canb.auug.org.au>
+ <1365396351.542317232@f36.mail.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAK9yfHzcRED3jiVRfkMpEPzKmYyS7dw+Lx+vOekG4o4nbc_KUw@mail.gmail.com>
+In-Reply-To: <1365396351.542317232@f36.mail.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 02:05:37PM +0530, Sachin Kamat wrote:
-> On 27 March 2013 14:50, Hennerich, Michael <Michael.Hennerich@analog.com> wrote:
-> >
-> > ________________________________________
-> > Von: Sachin Kamat [sachin.kamat@linaro.org]
-> > Gesendet: Mittwoch, 27. März 2013 09:59
-> > An: device-drivers-devel@blackfin.uclinux.org; LKML
-> > Cc: Hennerich, Michael; sameo@linux.intel.com; sachin.kamat@linaro.org
-> > Betreff: Re: [PATCH 1/1] mfd: adp5520: Use module_i2c_driver()
-> >
-> > On 15 March 2013 17:10, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> >> module_i2c_driver() removes some boilerplate and makes the code
-> >> simple.
-> >>
-> >> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> >
-> > Acked-by: Michael Hennerich <michael.hennerich@analog.com>
-> >
+Hi Alexander,
+
+On Mon, Apr 08, 2013 at 08:45:51AM +0400, Alexander Shiyan wrote:
+> Hello.
 > 
-> Ping Samuel.
-Patch applied to mfd-next, thanks.
+> > After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
+> > failed like this:
+> > 
+> > drivers/regulator/anatop-regulator.c: In function 'anatop_regulator_probe':
+> > drivers/regulator/anatop-regulator.c:134:2: error: implicit declaration of function 'of_get_parent' [-Werror=implicit-function-declaration]
+> > 
+> > Caused by commit 5ab3a89a741f ("mfd: syscon: Add non-DT support").
+> > 
+> > I have used the mfd tree from next-20130405 for today.
+> 
+> This means that we do not have empty declarations for the
+> of_xx functions in linux/of.h for !CONFIG_OF.
+> OK to declare these functions or any other opinions?
+Ok with me, but you'd need to get Grant and Rob's ACK.
 
 Cheers,
 Samuel.
