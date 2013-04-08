@@ -1,101 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935104Ab3DHRJT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 13:09:19 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:61771 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760109Ab3DHRJR (ORCPT
+	id S935356Ab3DHRKk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 13:10:40 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:25280 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934756Ab3DHRKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 13:09:17 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18HPAIOGsC+OudfIPvUg+RD
-Date: Mon, 8 Apr 2013 10:09:14 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Benoit Cousson <b-cousson@ti.com>
-Cc: Roger Quadros <rogerq@ti.com>, balbi@ti.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 00/21] ARM: OMAP2+: Adapt to ehci-omap changes for
- 3.10
-Message-ID: <20130408170914.GO10155@atomide.com>
-References: <1363794300-31526-1-git-send-email-rogerq@ti.com>
- <515E8B99.8080803@ti.com>
- <515E9FB1.2040803@ti.com>
- <20130405154259.GZ10155@atomide.com>
- <5162B2D3.6070007@ti.com>
+	Mon, 8 Apr 2013 13:10:37 -0400
+Date: Mon, 8 Apr 2013 19:10:35 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH] sparc: Use generic idle loop
+Message-ID: <20130408171035.GA27264@merkur.ravnborg.org>
+References: <20130321214930.752934102@linutronix.de> <20130329161905.GC6201@merkur.ravnborg.org> <20130329202926.GA9484@merkur.ravnborg.org> <51592EF1.4090302@linux.vnet.ibm.com> <20130401090620.GA24861@merkur.ravnborg.org> <5162B92E.6020703@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5162B2D3.6070007@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5162B92E.6020703@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Benoit Cousson <b-cousson@ti.com> [130408 05:11]:
-> Hi Tony,
-> 
-> On 04/05/2013 05:43 PM, Tony Lindgren wrote:
-> > * Benoit Cousson <b-cousson@ti.com> [130405 03:00]:
-> >> On 04/05/2013 10:30 AM, Benoit Cousson wrote:
-> >>
-> >> ...
-> >>
-> >>>>   ARM: dts: OMAP4: Add HS USB Host IP nodes
-> >>>>   ARM: dts: OMAP3: Add HS USB Host IP nodes
-> >>>>   ARM: dts: omap3-beagle: Add USB Host support
-> >>>
-> >>> These 3 DTS patches are good to me, but I cannot applied them on top of
-> >>> the already existing patches I queued for 3.10.
-> >>>
-> >>> git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
-> >>> for_3.10/dts
-> >>>
-> >>> Could you rebase these 3 ones only, and I will applied them.
-> >>
-> >> Mmm, in fact, I've just seen the pull request from Tony :-(
-> >>
-> >>
-> >> Tony,
-> >>
-> >> Don't you want to remove these DTS patches from the pull-request?
+> > @@ -52,17 +52,12 @@
 > > 
-> > Oops sorry :( Looks like I applied them mistakenly as I saved all
-> > the patches into a mbox, then applied it. Anyways, too late to start
-> > messing with it now.
-> >  
-> >> Otherwise, I will have to rebase the whole DTS series on top of yours.
-> >> That being said, if the branch is not supposed to be rebased, it is doable.
+> >  #include "kstack.h"
 > > 
-> > I pulled in your for_3.10/dts for testing, and to me it looks like
-> > it's just overlapping additions. So that should be OK to resolve while
-> > pulling it in.
+> > -static void sparc64_yield(int cpu)
+> > +/* Idle loop support on sparc64. */
+> > +void arch_cpu_idle(void)
+> >  {
+> >  	if (tlb_type != hypervisor) {
+> >  		touch_nmi_watchdog();
+> > -		return;
+> > -	}
+> > -
+> > -	clear_thread_flag(TIF_POLLING_NRFLAG);
+> > -	smp_mb__after_clear_bit();
+> > -
+> > -	while (!need_resched() && !cpu_is_offline(cpu)) {
+> > +	} else {
+> >  		unsigned long pstate;
 > > 
-> > It seems there's no need to add omap-for-v3.10/usb as a dependency for
-> > your for_3.10/dts unless the conflict gets non-trivial with some
-> > additional patches.
+> >  		/* Disable interrupts. */
+> > @@ -73,7 +68,7 @@ static void sparc64_yield(int cpu)
+> >  			: "=&r" (pstate)
+> >  			: "i" (PSTATE_IE));
+> > 
+> > -		if (!need_resched() && !cpu_is_offline(cpu))
+> > +		if (!need_resched() && !cpu_is_offline(smp_processor_id()))
+> >  			sun4v_cpu_yield();
+> > 
+> >  		/* Re-enable interrupts. */
+> > @@ -84,36 +79,16 @@ static void sparc64_yield(int cpu)
+> >  			: "=&r" (pstate)
+> >  			: "i" (PSTATE_IE));
+> >  	}
+> > -
+> > -	set_thread_flag(TIF_POLLING_NRFLAG);
+> > +	local_irq_enable();
+> >  }
 > 
-> The branch was not complete, with the latest additions, we do have
-> conflict due to the addition of several new nodes at the same place.
+> Nitpick: you can probably move the local_irq_enable() to the
+> 'if' block, since the else block already has assembly code to enable
+> the interrupts. But anyway its up to you.
 
-OK
- 
-> The resolution is not that hard since it is addition of node only, but
-> the rebase on to of omap-for-v3.10/usb will avoid the issue.
-> 
-> I have a new pre-merged branch available. for_3.10/dts_merged is based
-> on omap-for-v3.10/usb and Paul's omap-devel-b-for-3.10 branch to get the
-> AM33xx hwmod.
-> Paul's branch is just needed to avoid AM33xx regression introduced by
-> Santosh hwmod changes present in my branch.
-> 
-> Just let me know which one you will prefer to pull.
+I think not.
+local_irq_disable writes 0 to the PIL register,
+whereas the above code set the IE (Interrupt enable) bit to 0.
 
-If the merge conflicts are non-trivial, then let's do the pre-merged
-branch. That will be easier to test also in this case for am33xx.
+So the implementations differs - and I think there is a good
+reason for being so.
 
-Regards,
+But this is the part where I refer to that I am fooling around
+in code that I do not understand.
+I re-checked the SPARC V9 manual - but I did not within a few minutes
+reading understand what is the difference between the twoo.
 
-Tony
+	Sam
