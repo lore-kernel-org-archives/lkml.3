@@ -1,46 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936103Ab3DHU6P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 16:58:15 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:41537 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935624Ab3DHU6H (ORCPT
+	id S936140Ab3DHVA2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 17:00:28 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52806 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935536Ab3DHVA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 16:58:07 -0400
+	Mon, 8 Apr 2013 17:00:26 -0400
+Date: Mon, 8 Apr 2013 14:00:20 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Re: [PATCH -next 1/3] bcache: Add missing #include <linux/prefetch.h>
+Message-ID: <20130408210020.GI15749@google.com>
+References: <1364406990-20541-1-git-send-email-geert@linux-m68k.org>
+ <20130327182150.GB25906@google.com>
+ <51533A2E.2000501@infradead.org>
+ <20130327195050.GB22232@google.com>
+ <alpine.DEB.2.02.1304071415220.3441@chino.kir.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <1365449252-9pc7knd5-mutt-n-horiguchi@ah.jp.nec.com>
-References: <1365014138-19589-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1365014138-19589-4-git-send-email-n-horiguchi@ah.jp.nec.com>
- <515F1F1F.6060900@gmail.com> <1365449252-9pc7knd5-mutt-n-horiguchi@ah.jp.nec.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Mon, 8 Apr 2013 16:57:44 -0400
-Message-ID: <CAHGf_=ruv9itn7fhcL=Ar7z_6wQ5Ga_4kj7Ui3EfDUe_cV7D0w@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] hugetlbfs: add swap entry check in follow_hugetlb_page()
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1304071415220.3441@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -               if (absent ||
-> +               /*
-> +                * is_swap_pte test covers both is_hugetlb_entry_hwpoisoned
-> +                * and hugepages under migration in which case
-> +                * hugetlb_fault waits for the migration and bails out
-> +                * properly for HWPosined pages.
-> +                */
-> +               if (absent || is_swap_pte(huge_ptep_get(pte)) ||
->                     ((flags & FOLL_WRITE) && !pte_write(huge_ptep_get(pte)))) {
->                         int ret;
+On Sun, Apr 07, 2013 at 02:15:49PM -0700, David Rientjes wrote:
+> On Wed, 27 Mar 2013, Kent Overstreet wrote:
+> 
+> > Nope - looks like __WARN() doesn't exist if CONFIG_BUG=n, whoops.
+> > 
+> > Adding this to the queue:
+> > 
+> > commit 796c213186b850b3e6e8d5fd5799b0fd74721ea3
+> > Author: Kent Overstreet <koverstreet@google.com>
+> > Date:   Wed Mar 27 12:47:45 2013 -0700
+> > 
+> >     bcache: Use WARN_ONCE() instead of __WARN()
+> >     
+> >     Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> > 
+> > diff --git a/drivers/md/bcache/bset.c b/drivers/md/bcache/bset.c
+> > index d4f2164..cb4578a 100644
+> > --- a/drivers/md/bcache/bset.c
+> > +++ b/drivers/md/bcache/bset.c
+> > @@ -883,7 +883,7 @@ struct bkey *bch_btree_iter_next(struct btree_iter *iter)
+> >  		iter->data->k = bkey_next(iter->data->k);
+> >  
+> >  		if (iter->data->k > iter->data->end) {
+> > -			__WARN();
+> > +			WARN_ONCE(1, "bset was corrupt!\n");
+> >  			iter->data->k = iter->data->end;
+> >  		}
+> >  
+> 
+> This problem still persists in linux-next as of today, how is this fix 
+> being pushed?
 
-Your comment describe what the code is. However we want the comment describe
-why. In migration case, calling hugetlb_fault() is natural. but in
-hwpoison case, it is
-needed more explanation. Why can't we call is_hugetlb_hwpoisoned() directly?
+Sorry for the delay, I've been moving all last week - I just sent Jens a
+pull request with the latest bcache fixes, though.
