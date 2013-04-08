@@ -1,218 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935701Ab3DHLC4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 07:02:56 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:52615 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935118Ab3DHLCx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 07:02:53 -0400
-Message-ID: <5162A3DA.9010205@hitachi.com>
-Date: Mon, 08 Apr 2013 20:02:50 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S934675Ab3DHLFX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 07:05:23 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:41020 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757022Ab3DHLFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 07:05:21 -0400
+X-IronPort-AV: E=Sophos;i="4.87,429,1363132800"; 
+   d="scan'208";a="18053266"
+Date: Mon, 8 Apr 2013 12:05:17 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH 0/4 v6] arm: introduce psci_smp_ops and use them on Xen
+In-Reply-To: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1304081102500.5353@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Oskar Andero <oskar.andero@sonymobile.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        davem@davemloft.net, anil.s.keshavamurthy@intel.com, ananth@in.ibm.com,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, radovan.lekanovic@sonymobile.com,
-        bjorn.davidsson@sonymobile.com,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH v3 2/4] kprobes: split blacklist into common and arch
-References: <1365168400-17954-1-git-send-email-oskar.andero@sonymobile.com> <1365168400-17954-3-git-send-email-oskar.andero@sonymobile.com>
-In-Reply-To: <1365168400-17954-3-git-send-email-oskar.andero@sonymobile.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/04/05 22:26), Oskar Andero wrote:
-> Some blackpoints are only valid for specific architectures. To let each
-> architecture specify its own blackpoints the list has been split in two
-> lists: common and arch. The common list is kept in kernel/kprobes.c and
-> the arch list is kept in the arch/ directory.
+Arnd, Olof,
+do you have any thoughts on this series?
+Would you be happy to carry it in the arm-soc tree?
 
-Looks good for me:)
+The last patch, "xen/arm: introduce xen_early_init, use PSCI on xen" has
+a (small) dependency on this series:
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+http://marc.info/?l=linux-kernel&m=136430893610688&w=2
 
-Thank you!
+would you be OK with taking that one too, or should that go through the
+Xen tree?
 
+Cheers,
+
+Stefano
+
+On Fri, 5 Apr 2013, Stefano Stabellini wrote:
+> Hi all,
+> this is the sixth version of the patch series to move virt_smp_ops out of
+> mach-virt and make it a generic set of reusable PSCI based smp_ops.
+> psci_smp_ops are preferred over the platform smp_ops.
+> I added a patch to introduce smp_init to this series.
+> In the last patch I am using smp_init to switch to psci_smp_ops if Xen
+> is detected on the platform.
 > 
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: linux-arch@vger.kernel.org
-> Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
-> ---
->  kernel/kprobes.c | 88 +++++++++++++++++++++++++++++++++++++-------------------
->  1 file changed, 59 insertions(+), 29 deletions(-)
 > 
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index c8c2281..2458ae1 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -68,7 +68,6 @@
->  #endif
->  
->  static int kprobes_initialized;
-> -static bool kprobe_blacklist_initialized;
->  static struct hlist_head kprobe_table[KPROBE_TABLE_SIZE];
->  static struct hlist_head kretprobe_inst_table[KPROBE_TABLE_SIZE];
->  
-> @@ -94,31 +93,64 @@ static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
->   *
->   * For such cases, we now have a blacklist
->   */
-> -static struct kprobe_blackpoint kprobe_blacklist[] = {
-> -	{"preempt_schedule",},
-> -	{"native_get_debugreg",},
-> -	{"irq_entries_start",},
-> -	{"common_interrupt",},
-> -	{"mcount",},	/* mcount can be called from everywhere */
-> -	{NULL}    /* Terminator */
-> +static const char * const common_kprobes_blacksyms[] = {
-> +	"preempt_schedule",
-> +	"native_get_debugreg",
-> +	"irq_entries_start",
-> +	"common_interrupt",
-> +	"mcount",       /* mcount can be called from everywhere */
->  };
-> +static const size_t common_kprobes_blacksyms_size =
-> +			ARRAY_SIZE(common_kprobes_blacksyms);
-> +
-> +/*
-> + * These weak symbols can be overridden from the arch/ directory for
-> + * architecure specific blackpoints.
-> + */
-> +const char * const __weak arch_kprobes_blacksyms[] = {};
-> +const size_t __weak arch_kprobes_blacksyms_size;
-> +
-> +static struct kprobe_blackpoint *kprobe_blacklist;
-> +static size_t kprobe_blacklist_size;
-> +
-> +static void init_kprobe_blacklist_entry(struct kprobe_blackpoint *kb,
-> +					const char * const name)
-> +{
-> +	const char *symbol_name;
-> +	char *modname, namebuf[128];
-> +	void *addr;
-> +	unsigned long offset = 0, size = 0;
-> +
-> +	kb->name = name;
-> +	kprobe_lookup_name(kb->name, addr);
-> +	if (!addr)
-> +		return;
-> +
-> +	kb->start_addr = (unsigned long)addr;
-> +	symbol_name = kallsyms_lookup(kb->start_addr,
-> +			&size, &offset, &modname, namebuf);
-> +	if (!symbol_name)
-> +		kb->range = 0;
-> +	else
-> +		kb->range = size;
-> +}
->  
->  /* it can take some time ( > 100ms ) to initialise the
->   * blacklist so we delay this until we actually need it
->   */
->  static void init_kprobe_blacklist(void)
->  {
-> -	int i;
-> -	unsigned long offset = 0, size = 0;
-> -	char *modname, namebuf[128];
-> -	const char *symbol_name;
-> -	void *addr;
-> +	int i, j = 0;
->  	struct kprobe_blackpoint *kb;
->  
->  	mutex_lock(&kprobe_mutex);
-> -	if (kprobe_blacklist_initialized)
-> +	if (kprobe_blacklist)
->  		goto out;
->  
-> +	kprobe_blacklist_size = common_kprobes_blacksyms_size +
-> +				arch_kprobes_blacksyms_size;
-> +	kb = kzalloc(sizeof(*kb) * kprobe_blacklist_size, GFP_KERNEL);
-> +
->  	/*
->  	 * Lookup and populate the kprobe_blacklist.
->  	 *
-> @@ -127,18 +159,14 @@ static void init_kprobe_blacklist(void)
->  	 * since a kprobe need not necessarily be at the beginning
->  	 * of a function.
->  	 */
-> -	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
-> -		kprobe_lookup_name(kb->name, addr);
-> -		if (!addr)
-> -			continue;
-> +	for (i = 0; i < common_kprobes_blacksyms_size; i++, j++) {
-> +		init_kprobe_blacklist_entry(&kb[j],
-> +					    common_kprobes_blacksyms[i]);
-> +	}
->  
-> -		kb->start_addr = (unsigned long)addr;
-> -		symbol_name = kallsyms_lookup(kb->start_addr,
-> -				&size, &offset, &modname, namebuf);
-> -		if (!symbol_name)
-> -			kb->range = 0;
-> -		else
-> -			kb->range = size;
-> +	for (i = 0; i < arch_kprobes_blacksyms_size; i++, j++) {
-> +		init_kprobe_blacklist_entry(&kb[j],
-> +					    arch_kprobes_blacksyms[i]);
->  	}
->  
->  	if (kretprobe_blacklist_size) {
-> @@ -153,7 +181,7 @@ static void init_kprobe_blacklist(void)
->  	}
->  
->  	smp_wmb();
-> -	kprobe_blacklist_initialized = true;
-> +	kprobe_blacklist = kb;
->  
->  out:
->  	mutex_unlock(&kprobe_mutex);
-> @@ -1384,18 +1412,20 @@ out:
->  static int __kprobes in_kprobes_functions(unsigned long addr)
->  {
->  	struct kprobe_blackpoint *kb;
-> +	int i;
->  
->  	if (addr >= (unsigned long)__kprobes_text_start &&
->  	    addr < (unsigned long)__kprobes_text_end)
->  		return -EINVAL;
->  
-> -	if (unlikely(!kprobe_blacklist_initialized))
-> +	if (unlikely(!kprobe_blacklist))
->  		init_kprobe_blacklist();
->  	/*
->  	 * If there exists a kprobe_blacklist, verify and
->  	 * fail any probe registration in the prohibited area
->  	 */
-> -	for (kb = kprobe_blacklist; kb->name != NULL; kb++) {
-> +	for (i = 0; i < kprobe_blacklist_size; i++) {
-> +		kb = &kprobe_blacklist[i];
->  		if (kb->start_addr) {
->  			if (addr >= kb->start_addr &&
->  			    addr < (kb->start_addr + kb->range))
-> @@ -1876,7 +1906,7 @@ int __kprobes register_kretprobe(struct kretprobe *rp)
->  	void *addr;
->  
->  	if (kretprobe_blacklist_size) {
-> -		if (unlikely(!kprobe_blacklist_initialized))
-> +		if (unlikely(!kprobe_blacklist))
->  			init_kprobe_blacklist();
->  		addr = kprobe_addr(&rp->kp);
->  		if (IS_ERR(addr))
+> Jon Medhurst (1):
+>       ARM: Enable selection of SMP operations at boot time
 > 
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+> Stefano Stabellini (3):
+>       arm: introduce psci_smp_ops
+>       arm: prefer psci_smp_ops over mdesc->smp
+>       xen/arm: introduce xen_early_init, use PSCI on xen
+> 
+>  arch/arm/Kconfig                      |    1 +
+>  arch/arm/include/asm/mach/arch.h      |    3 +
+>  arch/arm/include/asm/psci.h           |   29 ++++++++++++++
+>  arch/arm/include/asm/xen/hypervisor.h |    6 +++
+>  arch/arm/kernel/Makefile              |    5 ++-
+>  arch/arm/kernel/psci.c                |    7 +--
+>  arch/arm/kernel/psci_smp.c            |   67 +++++++++++++++++++++++++++++++++
+>  arch/arm/kernel/setup.c               |   12 +++++-
+>  arch/arm/mach-virt/Makefile           |    1 -
+>  arch/arm/mach-virt/platsmp.c          |   58 ----------------------------
+>  arch/arm/mach-virt/virt.c             |    3 -
+>  arch/arm/xen/enlighten.c              |   36 ++++++++++++++----
+>  12 files changed, 152 insertions(+), 76 deletions(-)
+> 
+>     
+> git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 3.9-rc3-smp-6
+> 
+> 
+> Cheers,
+> 
+> Stefano
+> 
