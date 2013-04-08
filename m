@@ -1,126 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935210Ab3DHJ1U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:27:20 -0400
-Received: from mail-da0-f50.google.com ([209.85.210.50]:45822 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934802Ab3DHJ1P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:27:15 -0400
-From: Prabhakar lad <prabhakar.csengg@gmail.com>
-To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v8 2/2] ARM: davinci: dm355 EVM: add support for VPBE display
-Date: Mon,  8 Apr 2013 14:56:55 +0530
-Message-Id: <1365413215-3632-3-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1365413215-3632-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1365413215-3632-1-git-send-email-prabhakar.csengg@gmail.com>
+	id S935220Ab3DHJ1n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:27:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8670 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935175Ab3DHJ1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 05:27:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,429,1363158000"; 
+   d="scan'208";a="314580133"
+Date: Mon, 8 Apr 2013 11:27:04 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] mfd: Add device tree bindings for Arizona class devices
+Message-ID: <20130408092704.GM24058@zurbaran>
+References: <1364938728-7732-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364938728-7732-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Hi Mark,
 
-add support for V4L2 video display to DM355 EVM.
-Support for SD modes is provided, along with Composite
-output
+On Tue, Apr 02, 2013 at 10:38:48PM +0100, Mark Brown wrote:
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  Documentation/devicetree/bindings/mfd/arizona.txt |   62 ++++++++++++++++++++
+>  drivers/mfd/arizona-core.c                        |   64 +++++++++++++++++++++
+>  drivers/mfd/arizona-i2c.c                         |   10 +++-
+>  drivers/mfd/arizona-spi.c                         |   10 +++-
+>  drivers/mfd/arizona.h                             |   12 ++++
+>  5 files changed, 154 insertions(+), 4 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/arizona.txt
+Applied as well, thanks.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Acked-by: Sekhar Nori <nsekhar@ti.com>
----
- arch/arm/mach-davinci/board-dm355-evm.c |   69 ++++++++++++++++++++++++++++++-
- 1 files changed, 68 insertions(+), 1 deletions(-)
+Cheers,
+Samuel.
 
-diff --git a/arch/arm/mach-davinci/board-dm355-evm.c b/arch/arm/mach-davinci/board-dm355-evm.c
-index 37d12cc..1043506 100644
---- a/arch/arm/mach-davinci/board-dm355-evm.c
-+++ b/arch/arm/mach-davinci/board-dm355-evm.c
-@@ -242,6 +242,73 @@ static struct vpfe_config vpfe_cfg = {
- 	.ccdc = "DM355 CCDC",
- };
- 
-+/* venc standards timings */
-+static struct vpbe_enc_mode_info dm355evm_enc_preset_timing[] = {
-+	{
-+		.name		= "ntsc",
-+		.timings_type	= VPBE_ENC_STD,
-+		.std_id		= V4L2_STD_525_60,
-+		.interlaced	= 1,
-+		.xres		= 720,
-+		.yres		= 480,
-+		.aspect		= {11, 10},
-+		.fps		= {30000, 1001},
-+		.left_margin	= 0x79,
-+		.upper_margin	= 0x10,
-+	},
-+	{
-+		.name		= "pal",
-+		.timings_type	= VPBE_ENC_STD,
-+		.std_id		= V4L2_STD_625_50,
-+		.interlaced	= 1,
-+		.xres		= 720,
-+		.yres		= 576,
-+		.aspect		= {54, 59},
-+		.fps		= {25, 1},
-+		.left_margin	= 0x7E,
-+		.upper_margin	= 0x16
-+	},
-+};
-+
-+#define VENC_STD_ALL	(V4L2_STD_NTSC | V4L2_STD_PAL)
-+
-+/*
-+ * The outputs available from VPBE + ecnoders. Keep the
-+ * the order same as that of encoders. First those from venc followed by that
-+ * from encoders. Index in the output refers to index on a particular encoder.
-+ * Driver uses this index to pass it to encoder when it supports more than
-+ * one output. Application uses index of the array to set an output.
-+ */
-+static struct vpbe_output dm355evm_vpbe_outputs[] = {
-+	{
-+		.output		= {
-+			.index		= 0,
-+			.name		= "Composite",
-+			.type		= V4L2_OUTPUT_TYPE_ANALOG,
-+			.std		= VENC_STD_ALL,
-+			.capabilities	= V4L2_OUT_CAP_STD,
-+		},
-+		.subdev_name	= DM355_VPBE_VENC_SUBDEV_NAME,
-+		.default_mode	= "ntsc",
-+		.num_modes	= ARRAY_SIZE(dm355evm_enc_preset_timing),
-+		.modes		= dm355evm_enc_preset_timing,
-+		.if_params	= V4L2_MBUS_FMT_FIXED,
-+	},
-+};
-+
-+static struct vpbe_config dm355evm_display_cfg = {
-+	.module_name	= "dm355-vpbe-display",
-+	.i2c_adapter_id	= 1,
-+	.osd		= {
-+		.module_name	= DM355_VPBE_OSD_SUBDEV_NAME,
-+	},
-+	.venc		= {
-+		.module_name	= DM355_VPBE_VENC_SUBDEV_NAME,
-+	},
-+	.num_outputs	= ARRAY_SIZE(dm355evm_vpbe_outputs),
-+	.outputs	= dm355evm_vpbe_outputs,
-+};
-+
- static struct platform_device *davinci_evm_devices[] __initdata = {
- 	&dm355evm_dm9000,
- 	&davinci_nand_device,
-@@ -342,7 +409,7 @@ static __init void dm355_evm_init(void)
- 	davinci_setup_mmc(0, &dm355evm_mmc_config);
- 	davinci_setup_mmc(1, &dm355evm_mmc_config);
- 
--	dm355_init_video(&vpfe_cfg, NULL);
-+	dm355_init_video(&vpfe_cfg, &dm355evm_display_cfg);
- 
- 	dm355_init_spi0(BIT(0), dm355_evm_spi_info,
- 			ARRAY_SIZE(dm355_evm_spi_info));
 -- 
-1.7.4.1
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
