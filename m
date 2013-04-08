@@ -1,204 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936108Ab3DHOHy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 10:07:54 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:5508 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935913Ab3DHOHw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 10:07:52 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(zzbb2dI98dI9371I1432I4015Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1155h)
-X-WSS-ID: 0MKXWKR-02-2L7-02
-X-M-MSG: 
-Message-ID: <5162CF2E.9030304@amd.com>
-Date: Mon, 8 Apr 2013 09:07:42 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S936106Ab3DHOOI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 10:14:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32901 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935778Ab3DHOOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 10:14:06 -0400
+Date: Mon, 8 Apr 2013 16:14:00 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 07/12] memcg: use css_get/put when charging/uncharging
+ kmem
+Message-ID: <20130408141400.GF17178@dhcp22.suse.cz>
+References: <5162648B.9070802@huawei.com>
+ <516264FB.7030306@huawei.com>
 MIME-Version: 1.0
-To: <suravee.suthikulpanit@amd.com>
-CC: <iommu@lists.linux-foundation.org>, <joro@8bytes.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] iommu/amd: Add workaround to propery clearing IOMMU status
- register
-References: <1365031144-2543-1-git-send-email-suravee.suthikulpanit@amd.com>
-In-Reply-To: <1365031144-2543-1-git-send-email-suravee.suthikulpanit@amd.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <516264FB.7030306@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joerg,
+On Mon 08-04-13 14:34:35, Li Zefan wrote:
+> Use css_get/put instead of mem_cgroup_get/put.
+> 
+> We can't do a simple replacement, because here mem_cgroup_put()
+> is called during mem_cgroup_css_free(), while mem_cgroup_css_free()
+> won't be called until css refcnt goes down to 0.
+> 
+> Instead we increment css refcnt in mem_cgroup_css_offline(), and
+> then check if there's still kmem charges. If not, css refcnt will
+> be decremented immediately, otherwise the refcnt won't be decremented
+> when kmem charges goes down to 0.
+> 
+> v2:
+> - added wmb() in kmem_cgroup_css_offline(), pointed out by Michal
+> - revised comments as suggested by Michal
+> - fixed to check if kmem is activated in kmem_cgroup_css_offline()
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-Do you have any feedback about this patch?
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Thanks,
-
-Suravee
-
-On 4/3/2013 6:19 PM, suravee.suthikulpanit@amd.com wrote:
-> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
->
-> The IOMMU interrupt handling in bottom half must clear the PPR log interrupt
-> and event log interrupt bits to re-enable the interrupt. This is done by
-> writing 1 to the memory mapped register to clear the bit. Due to hardware bug,
-> if the driver tries to clear this bit while the IOMMU hardware also setting
-> this bit, the conflict will result with the bit being set. If the interrupt
-> handling code does not make sure to clear this bit, subsequent changes in the
-> event/PPR logs will no longer generating interrupts, and would result if
-> buffer overflow. After clearing the bits, the driver must read back
-> the register to verify.
->
-> In the current interrupt handling scheme, there are as many threads as
-> the number of IOMMUs. Each thread is created and assigned to an IOMMU at
-> the time of registering interrupt handlers (request_threaded_irq).
-> When an IOMMU HW generates an interrupt, the irq handler (top half) wakes up
-> the corresponding thread to process event and PPR logs of all IOMMUs
-> starting from the 1st IOMMU.
->
-> In the system with multiple IOMMU,this handling scheme complicates the
-> synchronization of the IOMMU data structures and status registers as
-> there could be multiple threads competing for the same IOMMU while
-> the other IOMMU could be left unhandled.
->
-> In order to simplify the implementation of the workaround, this patch is
-> proposing a different interrupt handling scheme by having each thread only
-> managing interrupts of the corresponding IOMMU. This can be achieved by passing
-> the struct amd_iommu when registering the interrupt handlers. This structure is
-> unique for each IOMMU and can be used by the bottom half thread to identify
-> the IOMMU to be handled instead of calling for_each_iommu.  Besides this also
-> eliminate the needs to lock the IOMMU for processing event and PPR logs.
->
-> Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Thanks!
 > ---
->   drivers/iommu/amd_iommu.c      |   59 ++++++++++++++++++++--------------------
->   drivers/iommu/amd_iommu_init.c |    2 +-
->   2 files changed, 31 insertions(+), 30 deletions(-)
->
-> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-> index e5db3e5..3548d63 100644
-> --- a/drivers/iommu/amd_iommu.c
-> +++ b/drivers/iommu/amd_iommu.c
-> @@ -803,12 +803,6 @@ retry:
->   static void iommu_poll_events(struct amd_iommu *iommu)
->   {
->   	u32 head, tail;
-> -	unsigned long flags;
+>  mm/memcontrol.c | 66 +++++++++++++++++++++++++++++++++++----------------------
+>  1 file changed, 41 insertions(+), 25 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index c308ea0..7be796c 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3003,8 +3003,16 @@ static void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
+>  	if (res_counter_uncharge(&memcg->kmem, size))
+>  		return;
+>  
+> +	/*
+> +	 * Releases a reference taken in kmem_cgroup_css_offline in case
+> +	 * this last uncharge is racing with the offlining code or it is
+> +	 * outliving the memcg existence.
+> +	 *
+> +	 * The memory barrier imposed by test&clear is paired with the
+> +	 * explicit one in kmem_cgroup_css_offline.
+> +	 */
+>  	if (memcg_kmem_test_and_clear_dead(memcg))
+> -		mem_cgroup_put(memcg);
+> +		css_put(&memcg->css);
+>  }
+>  
+>  void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep)
+> @@ -5090,14 +5098,6 @@ static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
+>  		 * starts accounting before all call sites are patched
+>  		 */
+>  		memcg_kmem_set_active(memcg);
 > -
-> -	/* enable event interrupts again */
-> -	writel(MMIO_STATUS_EVT_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
-> -
-> -	spin_lock_irqsave(&iommu->lock, flags);
->   
->   	head = readl(iommu->mmio_base + MMIO_EVT_HEAD_OFFSET);
->   	tail = readl(iommu->mmio_base + MMIO_EVT_TAIL_OFFSET);
-> @@ -819,8 +813,6 @@ static void iommu_poll_events(struct amd_iommu *iommu)
->   	}
->   
->   	writel(head, iommu->mmio_base + MMIO_EVT_HEAD_OFFSET);
-> -
-> -	spin_unlock_irqrestore(&iommu->lock, flags);
->   }
->   
->   static void iommu_handle_ppr_entry(struct amd_iommu *iommu, u64 *raw)
-> @@ -845,17 +837,11 @@ static void iommu_handle_ppr_entry(struct amd_iommu *iommu, u64 *raw)
->   
->   static void iommu_poll_ppr_log(struct amd_iommu *iommu)
->   {
-> -	unsigned long flags;
->   	u32 head, tail;
->   
->   	if (iommu->ppr_log == NULL)
->   		return;
->   
-> -	/* enable ppr interrupts again */
-> -	writel(MMIO_STATUS_PPR_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
-> -
-> -	spin_lock_irqsave(&iommu->lock, flags);
-> -
->   	head = readl(iommu->mmio_base + MMIO_PPR_HEAD_OFFSET);
->   	tail = readl(iommu->mmio_base + MMIO_PPR_TAIL_OFFSET);
->   
-> @@ -891,34 +877,49 @@ static void iommu_poll_ppr_log(struct amd_iommu *iommu)
->   		head = (head + PPR_ENTRY_SIZE) % PPR_LOG_SIZE;
->   		writel(head, iommu->mmio_base + MMIO_PPR_HEAD_OFFSET);
->   
 > -		/*
-> -		 * Release iommu->lock because ppr-handling might need to
-> -		 * re-acquire it
+> -		 * kmem charges can outlive the cgroup. In the case of slab
+> -		 * pages, for instance, a page contain objects from various
+> -		 * processes, so it is unfeasible to migrate them away. We
+> -		 * need to reference count the memcg because of that.
 > -		 */
-> -		spin_unlock_irqrestore(&iommu->lock, flags);
-> -
->   		/* Handle PPR entry */
->   		iommu_handle_ppr_entry(iommu, entry);
->   
-> -		spin_lock_irqsave(&iommu->lock, flags);
-> -
->   		/* Refresh ring-buffer information */
->   		head = readl(iommu->mmio_base + MMIO_PPR_HEAD_OFFSET);
->   		tail = readl(iommu->mmio_base + MMIO_PPR_TAIL_OFFSET);
->   	}
-> -
-> -	spin_unlock_irqrestore(&iommu->lock, flags);
->   }
->   
->   irqreturn_t amd_iommu_int_thread(int irq, void *data)
->   {
-> -	struct amd_iommu *iommu;
-> +	struct amd_iommu *iommu = (struct amd_iommu *) data;
-> +	u32 status = readl(iommu->mmio_base + MMIO_STATUS_OFFSET);
->   
-> -	for_each_iommu(iommu) {
-> -		iommu_poll_events(iommu);
-> -		iommu_poll_ppr_log(iommu);
-> -	}
-> +	while (status & (MMIO_STATUS_EVT_INT_MASK | MMIO_STATUS_PPR_INT_MASK)) {
-> +		if (status & MMIO_STATUS_EVT_INT_MASK) {
-> +			pr_devel("AMD-Vi: Processing IOMMU Event Log\n");
-> +			iommu_poll_events(iommu);
-> +		}
->   
-> +		if (status & MMIO_STATUS_PPR_INT_MASK) {
-> +			pr_devel("AMD-Vi: Processing IOMMU PPR Log\n");
-> +			iommu_poll_ppr_log(iommu);
-> +		}
+> -		mem_cgroup_get(memcg);
+>  	} else
+>  		ret = res_counter_set_limit(&memcg->kmem, val);
+>  out:
+> @@ -5130,12 +5130,10 @@ static int memcg_propagate_kmem(struct mem_cgroup *memcg)
+>  		goto out;
+>  
+>  	/*
+> -	 * destroy(), called if we fail, will issue static_key_slow_inc() and
+> -	 * mem_cgroup_put() if kmem is enabled. We have to either call them
+> -	 * unconditionally, or clear the KMEM_ACTIVE flag. I personally find
+> -	 * this more consistent, since it always leads to the same destroy path
+> +	 * __mem_cgroup_free() will issue static_key_slow_dec() because this
+> +	 * memcg is active already. If the later initialization fails then the
+> +	 * cgroup core triggers the cleanup so we do not have to do it here.
+>  	 */
+> -	mem_cgroup_get(memcg);
+>  	static_key_slow_inc(&memcg_kmem_enabled_key);
+>  
+>  	mutex_lock(&set_limit_mutex);
+> @@ -5818,23 +5816,39 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+>  	return mem_cgroup_sockets_init(memcg, ss);
+>  };
+>  
+> -static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
+> +static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
+>  {
+> -	mem_cgroup_sockets_destroy(memcg);
+> +	if (!memcg_kmem_is_active(memcg))
+> +		return;
+>  
+> +	/*
+> +	 * kmem charges can outlive the cgroup. In the case of slab
+> +	 * pages, for instance, a page contain objects from various
+> +	 * processes. As we prevent from taking a reference for every
+> +	 * such allocation we have to be careful when doing uncharge
+> +	 * (see memcg_uncharge_kmem) and here during offlining.
+> +	 *
+> +	 * The idea is that that only the _last_ uncharge which sees
+> +	 * the dead memcg will drop the last reference. An additional
+> +	 * reference is taken here before the group is marked dead
+> +	 * which is then paired with css_put during uncharge resp. here.
+> +	 *
+> +	 * Although this might sound strange as this path is called when
+> +	 * the reference has already dropped down to 0 and shouldn't be
+> +	 * incremented anymore (css_tryget would fail) we do not have
+> +	 * other options because of the kmem allocations lifetime.
+> +	 */
+> +	css_get(&memcg->css);
 > +
-> +		/* Enable EVT and PPR interrupts again */
-> +		writel((MMIO_STATUS_EVT_INT_MASK | MMIO_STATUS_PPR_INT_MASK),
-> +			iommu->mmio_base + MMIO_STATUS_OFFSET);
+> +	/* see comment in memcg_uncharge_kmem() */
+> +	wmb();
+>  	memcg_kmem_mark_dead(memcg);
+>  
+>  	if (res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0)
+>  		return;
+>  
+> -	/*
+> -	 * Charges already down to 0, undo mem_cgroup_get() done in the charge
+> -	 * path here, being careful not to race with memcg_uncharge_kmem: it is
+> -	 * possible that the charges went down to 0 between mark_dead and the
+> -	 * res_counter read, so in that case, we don't need the put
+> -	 */
+>  	if (memcg_kmem_test_and_clear_dead(memcg))
+> -		mem_cgroup_put(memcg);
+> +		css_put(&memcg->css);
+>  }
+>  #else
+>  static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+> @@ -5842,7 +5856,7 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+>  	return 0;
+>  }
+>  
+> -static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
+> +static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
+>  {
+>  }
+>  #endif
+> @@ -6268,6 +6282,8 @@ static void mem_cgroup_css_offline(struct cgroup *cont)
+>  {
+>  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+>  
+> +	kmem_cgroup_css_offline(memcg);
 > +
-> +		/*
-> +		 * Hardware bug: When re-enabling interrupt (by writing 1
-> +		 * to clear the bit), the hardware might also try to set
-> +		 * the interrupt bit in the event status register.
-> +		 * In this scenario, the bit will be set, and disable
-> +		 * subsequent interrupts.
-> +		 *
-> +		 * Workaround: The IOMMU driver should read back the
-> +		 * status register and check if the interrupt bits are cleared.
-> +		 * If not, driver will need to go through the interrupt handler
-> +		 * again and re-clear the bits
-> +		 */
-> +		status = readl(iommu->mmio_base + MMIO_STATUS_OFFSET);
-> +	}
->   	return IRQ_HANDLED;
->   }
->   
-> diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-> index e3c2d74..e4120bb 100644
-> --- a/drivers/iommu/amd_iommu_init.c
-> +++ b/drivers/iommu/amd_iommu_init.c
-> @@ -1275,7 +1275,7 @@ static int iommu_setup_msi(struct amd_iommu *iommu)
->   				 amd_iommu_int_handler,
->   				 amd_iommu_int_thread,
->   				 0, "AMD-Vi",
-> -				 iommu->dev);
-> +				 iommu);
->   
->   	if (r) {
->   		pci_disable_msi(iommu->dev);
+>  	mem_cgroup_invalidate_reclaim_iterators(memcg);
+>  	mem_cgroup_reparent_charges(memcg);
+>  	mem_cgroup_destroy_all_caches(memcg);
+> @@ -6277,7 +6293,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
+>  {
+>  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+>  
+> -	kmem_cgroup_destroy(memcg);
+> +	mem_cgroup_sockets_destroy(memcg);
+>  
+>  	mem_cgroup_put(memcg);
+>  }
+> -- 
+> 1.8.0.2
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-
+-- 
+Michal Hocko
+SUSE Labs
