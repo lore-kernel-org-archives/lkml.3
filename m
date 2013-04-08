@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936550Ab3DHKUk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:20:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42691 "EHLO
+	id S936537Ab3DHKUj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:20:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42690 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935505Ab3DHJva (ORCPT
+	with ESMTP id S935504Ab3DHJva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Apr 2013 05:51:30 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linuxfoundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 019/102] nohz: Make tick_nohz_irq_exit() irq safe
-Date: Mon,  8 Apr 2013 10:49:34 +0100
-Message-Id: <1365414657-29191-20-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 021/102] xen/blkback: correctly respond to unknown, non-native requests
+Date: Mon,  8 Apr 2013 10:49:36 +0100
+Message-Id: <1365414657-29191-22-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
@@ -30,68 +28,183 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-commit e5ab012c3271990e8457055c25cafddc1ae8aa6b upstream.
+commit 0e367ae46503cfe7791460c8ba8434a5d60b2bd5 upstream.
 
-As it stands, irq_exit() may or may not be called with
-irqs disabled, depending on __ARCH_IRQ_EXIT_IRQS_DISABLED
-that the arch can define.
+If the frontend is using a non-native protocol (e.g., a 64-bit
+frontend with a 32-bit backend) and it sent an unrecognized request,
+the request was not translated and the response would have the
+incorrect ID.  This may cause the frontend driver to behave
+incorrectly or crash.
 
-It makes tick_nohz_irq_exit() unsafe. For example two
-interrupts can race in tick_nohz_stop_sched_tick(): the inner
-most one computes the expiring time on top of the timer list,
-then it's interrupted right before reprogramming the
-clock. The new interrupt enqueues a new timer list timer,
-it reprogram the clock to take it into account and it exits.
-The CPUs resumes the inner most interrupt and performs the clock
-reprogramming without considering the new timer list timer.
+Since the ID field in the request is always in the same place,
+regardless of the request type we can get the correct ID and make a
+valid response (which will report BLKIF_RSP_EOPNOTSUPP).
 
-This regression has been introduced by:
-     280f06774afedf849f0b34248ed6aff57d0f6908
-     ("nohz: Separate out irq exit and idle loop dyntick logic")
+This bug affected 64-bit SLES 11 guests when using a 32-bit backend.
+This guest does a BLKIF_OP_RESERVED_1 (BLKIF_OP_PACKET in the SLES
+source) and would crash in blkif_int() as the ID in the response would
+be invalid.
 
-Let's fix it right now with the appropriate protections.
-
-A saner long term solution will be to remove
-__ARCH_IRQ_EXIT_IRQS_DISABLED and mandate that irq_exit() is called
-with interrupts disabled.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linuxfoundation.org>
-Cc: <stable@vger.kernel.org> #v3.2+
-Link: http://lkml.kernel.org/r/1361373336-11337-1-git-send-email-fweisbec@gmail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-[ luis: backported to 3.5 ]
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/time/tick-sched.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/block/xen-blkback/blkback.c | 31 +++++++++++++++++++++++++++----
+ drivers/block/xen-blkback/common.h  | 25 +++++++++++++++++++++++++
+ include/xen/interface/io/blkif.h    | 10 ++++++++++
+ 3 files changed, 62 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 4a08472..cc1825f 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -500,12 +500,17 @@ void tick_nohz_idle_enter(void)
-  */
- void tick_nohz_irq_exit(void)
- {
-+	unsigned long flags;
- 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
- 
- 	if (!ts->inidle)
- 		return;
- 
-+	local_irq_save(flags);
-+
- 	tick_nohz_stop_sched_tick(ts);
-+
-+	local_irq_restore(flags);
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index c6decb9..c85d91a 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -422,6 +422,16 @@ static int dispatch_discard_io(struct xen_blkif *blkif,
+ 	return err;
  }
  
- /**
++static int dispatch_other_io(struct xen_blkif *blkif,
++			     struct blkif_request *req,
++			     struct pending_req *pending_req)
++{
++	free_req(pending_req);
++	make_response(blkif, req->u.other.id, req->operation,
++		      BLKIF_RSP_EOPNOTSUPP);
++	return -EIO;
++}
++
+ static void xen_blk_drain_io(struct xen_blkif *blkif)
+ {
+ 	atomic_set(&blkif->drain, 1);
+@@ -543,17 +553,30 @@ __do_block_io_op(struct xen_blkif *blkif)
+ 
+ 		/* Apply all sanity checks to /private copy/ of request. */
+ 		barrier();
+-		if (unlikely(req.operation == BLKIF_OP_DISCARD)) {
++
++		switch (req.operation) {
++		case BLKIF_OP_READ:
++		case BLKIF_OP_WRITE:
++		case BLKIF_OP_WRITE_BARRIER:
++		case BLKIF_OP_FLUSH_DISKCACHE:
++			if (dispatch_rw_block_io(blkif, &req, pending_req))
++				goto done;
++			break;
++		case BLKIF_OP_DISCARD:
+ 			free_req(pending_req);
+ 			if (dispatch_discard_io(blkif, &req))
+-				break;
+-		} else if (dispatch_rw_block_io(blkif, &req, pending_req))
++				goto done;
++			break;
++		default:
++			if (dispatch_other_io(blkif, &req, pending_req))
++				goto done;
+ 			break;
++		}
+ 
+ 		/* Yield point for this unbounded loop. */
+ 		cond_resched();
+ 	}
+-
++done:
+ 	return more_to_do;
+ }
+ 
+diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
+index 9ad3b5e..fc2a486 100644
+--- a/drivers/block/xen-blkback/common.h
++++ b/drivers/block/xen-blkback/common.h
+@@ -76,11 +76,18 @@ struct blkif_x86_32_request_discard {
+ 	uint64_t       nr_sectors;
+ } __attribute__((__packed__));
+ 
++struct blkif_x86_32_request_other {
++	uint8_t        _pad1;
++	blkif_vdev_t   _pad2;
++	uint64_t       id;           /* private guest value, echoed in resp  */
++} __attribute__((__packed__));
++
+ struct blkif_x86_32_request {
+ 	uint8_t        operation;    /* BLKIF_OP_???                         */
+ 	union {
+ 		struct blkif_x86_32_request_rw rw;
+ 		struct blkif_x86_32_request_discard discard;
++		struct blkif_x86_32_request_other other;
+ 	} u;
+ } __attribute__((__packed__));
+ 
+@@ -112,11 +119,19 @@ struct blkif_x86_64_request_discard {
+ 	uint64_t       nr_sectors;
+ } __attribute__((__packed__));
+ 
++struct blkif_x86_64_request_other {
++	uint8_t        _pad1;
++	blkif_vdev_t   _pad2;
++	uint32_t       _pad3;        /* offsetof(blkif_..,u.discard.id)==8   */
++	uint64_t       id;           /* private guest value, echoed in resp  */
++} __attribute__((__packed__));
++
+ struct blkif_x86_64_request {
+ 	uint8_t        operation;    /* BLKIF_OP_???                         */
+ 	union {
+ 		struct blkif_x86_64_request_rw rw;
+ 		struct blkif_x86_64_request_discard discard;
++		struct blkif_x86_64_request_other other;
+ 	} u;
+ } __attribute__((__packed__));
+ 
+@@ -262,6 +277,11 @@ static inline void blkif_get_x86_32_req(struct blkif_request *dst,
+ 		dst->u.discard.nr_sectors = src->u.discard.nr_sectors;
+ 		break;
+ 	default:
++		/*
++		 * Don't know how to translate this op. Only get the
++		 * ID so failure can be reported to the frontend.
++		 */
++		dst->u.other.id = src->u.other.id;
+ 		break;
+ 	}
+ }
+@@ -293,6 +313,11 @@ static inline void blkif_get_x86_64_req(struct blkif_request *dst,
+ 		dst->u.discard.nr_sectors = src->u.discard.nr_sectors;
+ 		break;
+ 	default:
++		/*
++		 * Don't know how to translate this op. Only get the
++		 * ID so failure can be reported to the frontend.
++		 */
++		dst->u.other.id = src->u.other.id;
+ 		break;
+ 	}
+ }
+diff --git a/include/xen/interface/io/blkif.h b/include/xen/interface/io/blkif.h
+index ee338bf..2af8fdb 100644
+--- a/include/xen/interface/io/blkif.h
++++ b/include/xen/interface/io/blkif.h
+@@ -138,11 +138,21 @@ struct blkif_request_discard {
+ 	uint8_t        _pad3;
+ } __attribute__((__packed__));
+ 
++struct blkif_request_other {
++	uint8_t      _pad1;
++	blkif_vdev_t _pad2;        /* only for read/write requests         */
++#ifdef CONFIG_X86_64
++	uint32_t     _pad3;        /* offsetof(blkif_req..,u.other.id)==8*/
++#endif
++	uint64_t     id;           /* private guest value, echoed in resp  */
++} __attribute__((__packed__));
++
+ struct blkif_request {
+ 	uint8_t        operation;    /* BLKIF_OP_???                         */
+ 	union {
+ 		struct blkif_request_rw rw;
+ 		struct blkif_request_discard discard;
++		struct blkif_request_other other;
+ 	} u;
+ } __attribute__((__packed__));
+ 
 -- 
 1.8.1.2
 
