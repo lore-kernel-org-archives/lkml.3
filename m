@@ -1,111 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934584Ab3DHH4k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 03:56:40 -0400
-Received: from mail1.bemta12.messagelabs.com ([216.82.251.2]:41654 "EHLO
-	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934313Ab3DHH4g (ORCPT
+	id S934602Ab3DHH5Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 03:57:16 -0400
+Received: from smtp-out-079.synserver.de ([212.40.185.79]:1147 "EHLO
+	smtp-out-079.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934587Ab3DHH5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 03:56:36 -0400
-X-Greylist: delayed 395 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Apr 2013 03:56:36 EDT
-X-Env-Sender: Hector.Palacios@digi.com
-X-Msg-Ref: server-12.tower-29.messagelabs.com!1365407398!23986163!1
-X-Originating-IP: [66.77.174.14]
-X-StarScan-Received: 
-X-StarScan-Version: 6.8.6.1; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <51627669.1070900@digi.com>
-Date: Mon, 8 Apr 2013 09:48:57 +0200
-From: Hector Palacios <hector.palacios@digi.com>
-Organization: Digi International
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "wim@iguana.be" <wim@iguana.be>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] watchdog: core: don't try to stop device if not running
-References: <515EF748.6060504@digi.com> <20130405183450.GA29835@roeck-us.net>
-In-Reply-To: <20130405183450.GA29835@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 8 Apr 2013 03:57:13 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 7532
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] staging: cptm1217: Use dev_pm_ops
+Date: Mon,  8 Apr 2013 09:56:07 +0200
+Message-Id: <1365407767-16095-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2013 08:34 PM, Guenter Roeck wrote:
-> On Fri, Apr 05, 2013 at 06:09:44PM +0200, Hector Palacios wrote:
->> A watchdog device may be stopped from userspace using WDIOC_SETOPTIONS
->> ioctl and flag WDIOS_DISABLECARD. If the device is closed after this
->> operation, watchdog_release() is called and status bits checked for
->> stopping it. Besides, if the device has not been unregistered a critical
->> message "watchdog did not stop!" is printed, although the ioctl may have
->> successfully stopped it already.
->>
->> Without the patch a user application sample code like this will successfully
->> stop the watchdog, but the kernel will output the message
->> "watchdog did not stop!":
->>
->> 	wd_fd = open("/dev/watchdog", O_RDWR);
->>
->> 	flags = WDIOS_DISABLECARD;
->> 	ioctl(wd_fd, WDIOC_SETOPTIONS, &flags);
->>
->> 	close(wd_fd);
->>
->> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
->
-> How about the following patch instead ?
->
-> diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
-> index 08b48bb..9775e8d 100644
-> --- a/drivers/watchdog/watchdog_dev.c
-> +++ b/drivers/watchdog/watchdog_dev.c
-> @@ -469,7 +469,9 @@ static int watchdog_release(struct inode *inode, struct file *file)
->   	 * or if WDIOF_MAGICCLOSE is not set. If nowayout was set then
->   	 * watchdog_stop will fail.
->   	 */
-> -	if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
-> +	if (!test_bit(WDOG_ACTIVE, &wdd->status))
-> +		err = 0;
-> +	else if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
->   	    !(wdd->info->options & WDIOF_MAGICCLOSE))
->   		err = watchdog_stop(wdd);
->
-> Much less invasive and the result is the same.
+Use dev_pm_ops instead of the deprecated legacy suspend/resume callbacks.
 
-I like the simplicity but it is kind of inverted logic to initially define err = 
--EBUSY only to turn it to zero later, so I'm rebuilding your approach like this:
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/staging/cptm1217/clearpad_tm1217.c | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
-index ef8edec..a4163cd 100644
---- a/drivers/watchdog/watchdog_dev.c
-+++ b/drivers/watchdog/watchdog_dev.c
-@@ -463,16 +463,19 @@ out:
-  static int watchdog_release(struct inode *inode, struct file *file)
-  {
-         struct watchdog_device *wdd = file->private_data;
--       int err = -EBUSY;
-+       int err = 0;
-
-         /*
-          * We only stop the watchdog if we received the magic character
-          * or if WDIOF_MAGICCLOSE is not set. If nowayout was set then
-          * watchdog_stop will fail.
-          */
--       if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
--           !(wdd->info->options & WDIOF_MAGICCLOSE))
-+       if (test_bit(WDOG_ACTIVE, &wdd->status))
-+               err = -EBUSY;
-+       else if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
-+           !(wdd->info->options & WDIOF_MAGICCLOSE)) {
-                 err = watchdog_stop(wdd);
-+       }
-
-         /* If the watchdog was not stopped, send a keepalive ping */
-
-
-which makes the code more readable.
-Thanks,
+diff --git a/drivers/staging/cptm1217/clearpad_tm1217.c b/drivers/staging/cptm1217/clearpad_tm1217.c
+index 31fb5d3..e96eee3 100644
+--- a/drivers/staging/cptm1217/clearpad_tm1217.c
++++ b/drivers/staging/cptm1217/clearpad_tm1217.c
+@@ -557,12 +557,15 @@ fail:
+ 
+ }
+ 
++#ifdef CONFIG_PM_SLEEP
++
+ /*
+  * cp_tm1217 suspend
+  *
+  */
+-static int cp_tm1217_suspend(struct i2c_client *client, pm_message_t mesg)
++static int cp_tm1217_suspend(struct device *dev)
+ {
++	struct i2c_client *client = to_i2c_client(dev);
+ 	struct cp_tm1217_device *ts = i2c_get_clientdata(client);
+ 	u8 req[2];
+ 	int retval;
+@@ -583,8 +586,9 @@ static int cp_tm1217_suspend(struct i2c_client *client, pm_message_t mesg)
+  * cp_tm1217_resume
+  *
+  */
+-static int cp_tm1217_resume(struct i2c_client *client)
++static int cp_tm1217_resume(struct device *dev)
+ {
++	struct i2c_client *client = to_i2c_client(dev);
+ 	struct cp_tm1217_device *ts = i2c_get_clientdata(client);
+ 	u8 req[2];
+ 	int retval;
+@@ -618,6 +622,11 @@ static int cp_tm1217_resume(struct i2c_client *client)
+ 	return 0;
+ }
+ 
++#endif
++
++static SIMPLE_DEV_PM_OPS(cp_tm1217_pm_ops, cp_tm1217_suspend,
++	cp_tm1217_resume);
++
+ /*
+  * cp_tm1217_remove
+  *
+@@ -647,12 +656,11 @@ static struct i2c_driver cp_tm1217_driver = {
+ 	.driver = {
+ 		.owner	= THIS_MODULE,
+ 		.name	= CPTM1217_DRIVER_NAME,
++		.pm	= &cp_tm1217_pm_ops,
+ 	},
+ 	.id_table	= cp_tm1217_idtable,
+ 	.probe		= cp_tm1217_probe,
+ 	.remove		= cp_tm1217_remove,
+-	.suspend    = cp_tm1217_suspend,
+-	.resume     = cp_tm1217_resume,
+ };
+ 
+ module_i2c_driver(cp_tm1217_driver);
 -- 
-Héctor Palacios
+1.8.0
+
