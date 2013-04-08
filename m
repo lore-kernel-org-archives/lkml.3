@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965122Ab3DHV1o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 17:27:44 -0400
+	id S965047Ab3DHV1n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 17:27:43 -0400
 Received: from wolverine02.qualcomm.com ([199.106.114.251]:41245 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936265Ab3DHV1i (ORCPT
+	with ESMTP id S936221Ab3DHV1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 17:27:38 -0400
+	Mon, 8 Apr 2013 17:27:37 -0400
 X-IronPort-AV: E=Sophos;i="4.87,433,1363158000"; 
-   d="scan'208";a="36848521"
+   d="scan'208";a="36848518"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: [PATCHv4 09/11] clocksource: time-armada-370-xp: Fix sparse warning
-Date: Mon,  8 Apr 2013 14:27:31 -0700
-Message-Id: <1365456453-16297-10-git-send-email-sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCHv4 06/11] ARM: EXYNOS4: Divorce mct from local timer API
+Date: Mon,  8 Apr 2013 14:27:28 -0700
+Message-Id: <1365456453-16297-7-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.2
 In-Reply-To: <1365456453-16297-1-git-send-email-sboyd@codeaurora.org>
 References: <1365456453-16297-1-git-send-email-sboyd@codeaurora.org>
@@ -22,50 +23,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/clocksource/time-armada-370-xp.c:217:13: warning: symbol
-'armada_370_xp_timer_init' was not declared. Should it be static?
+Separate the mct local timers from the local timer API. This will
+allow us to remove ARM local timer support in the near future and
+gets us closer to moving this driver to drivers/clocksource.
 
-Also remove the __init marking in the prototype as it's
-unnecessary along with the init.h include.
-
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/clocksource/time-armada-370-xp.c | 3 ++-
- include/linux/time-armada-370-xp.h       | 4 +---
- 2 files changed, 3 insertions(+), 4 deletions(-)
+ arch/arm/mach-exynos/mct.c | 60 +++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 43 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/clocksource/time-armada-370-xp.c b/drivers/clocksource/time-armada-370-xp.c
-index 47a6730..efe4aef 100644
---- a/drivers/clocksource/time-armada-370-xp.c
-+++ b/drivers/clocksource/time-armada-370-xp.c
-@@ -27,10 +27,11 @@
- #include <linux/of_address.h>
- #include <linux/irq.h>
- #include <linux/module.h>
-+#include <linux/percpu.h>
-+#include <linux/time-armada-370-xp.h>
+diff --git a/arch/arm/mach-exynos/mct.c b/arch/arm/mach-exynos/mct.c
+index c9d6650..a3ec5b6 100644
+--- a/arch/arm/mach-exynos/mct.c
++++ b/arch/arm/mach-exynos/mct.c
+@@ -16,13 +16,13 @@
+ #include <linux/err.h>
+ #include <linux/clk.h>
+ #include <linux/clockchips.h>
++#include <linux/cpu.h>
+ #include <linux/platform_device.h>
+ #include <linux/delay.h>
+ #include <linux/percpu.h>
+ #include <linux/of.h>
  
- #include <asm/sched_clock.h>
- #include <asm/localtimer.h>
--#include <linux/percpu.h>
- /*
-  * Timer block registers.
-  */
-diff --git a/include/linux/time-armada-370-xp.h b/include/linux/time-armada-370-xp.h
-index dfdfdc0..6fb0856 100644
---- a/include/linux/time-armada-370-xp.h
-+++ b/include/linux/time-armada-370-xp.h
-@@ -11,8 +11,6 @@
- #ifndef __TIME_ARMADA_370_XPPRCMU_H
- #define __TIME_ARMADA_370_XPPRCMU_H
+ #include <asm/arch_timer.h>
+-#include <asm/localtimer.h>
  
--#include <linux/init.h>
+ #include <plat/cpu.h>
+ 
+@@ -42,7 +42,7 @@ static unsigned long clk_rate;
+ static unsigned int mct_int_type;
+ 
+ struct mct_clock_event_device {
+-	struct clock_event_device *evt;
++	struct clock_event_device evt;
+ 	void __iomem *base;
+ 	char name[10];
+ };
+@@ -264,8 +264,6 @@ static void exynos4_clockevent_init(void)
+ 		setup_irq(EXYNOS4_IRQ_MCT_G0, &mct_comp_event_irq);
+ }
+ 
+-#ifdef CONFIG_LOCAL_TIMERS
 -
--void __init armada_370_xp_timer_init(void);
-+void armada_370_xp_timer_init(void);
+ static DEFINE_PER_CPU(struct mct_clock_event_device, percpu_mct_tick);
  
- #endif
+ /* Clock event handling */
+@@ -338,7 +336,7 @@ static inline void exynos4_tick_set_mode(enum clock_event_mode mode,
+ 
+ static int exynos4_mct_tick_clear(struct mct_clock_event_device *mevt)
+ {
+-	struct clock_event_device *evt = mevt->evt;
++	struct clock_event_device *evt = &mevt->evt;
+ 
+ 	/*
+ 	 * This is for supporting oneshot mode.
+@@ -360,7 +358,7 @@ static int exynos4_mct_tick_clear(struct mct_clock_event_device *mevt)
+ static irqreturn_t exynos4_mct_tick_isr(int irq, void *dev_id)
+ {
+ 	struct mct_clock_event_device *mevt = dev_id;
+-	struct clock_event_device *evt = mevt->evt;
++	struct clock_event_device *evt = &mevt->evt;
+ 
+ 	exynos4_mct_tick_clear(mevt);
+ 
+@@ -387,8 +385,7 @@ static int __cpuinit exynos4_local_timer_setup(struct clock_event_device *evt)
+ 	unsigned int cpu = smp_processor_id();
+ 	int mct_lx_irq;
+ 
+-	mevt = this_cpu_ptr(&percpu_mct_tick);
+-	mevt->evt = evt;
++	mevt = container_of(evt, struct mct_clock_event_device, evt);
+ 
+ 	mevt->base = EXYNOS4_MCT_L_BASE(cpu);
+ 	sprintf(mevt->name, "mct_tick%d", cpu);
+@@ -426,7 +423,7 @@ static int __cpuinit exynos4_local_timer_setup(struct clock_event_device *evt)
+ 	return 0;
+ }
+ 
+-static void exynos4_local_timer_stop(struct clock_event_device *evt)
++static void __cpuinit exynos4_local_timer_stop(struct clock_event_device *evt)
+ {
+ 	unsigned int cpu = smp_processor_id();
+ 	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
+@@ -439,22 +436,43 @@ static void exynos4_local_timer_stop(struct clock_event_device *evt)
+ 		disable_percpu_irq(EXYNOS_IRQ_MCT_LOCALTIMER);
+ }
+ 
+-static struct local_timer_ops exynos4_mct_tick_ops __cpuinitdata = {
+-	.setup	= exynos4_local_timer_setup,
+-	.stop	= exynos4_local_timer_stop,
++static int __cpuinit exynos4_mct_cpu_notify(struct notifier_block *self,
++					   unsigned long action, void *hcpu)
++{
++	struct mct_clock_event_device *mevt;
++
++	/*
++	 * Dereference cpu pointer in each case to avoid spurious
++	 * preemptible warnings
++	 */
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_STARTING:
++		mevt = this_cpu_ptr(&percpu_mct_tick);
++		exynos4_local_timer_setup(&mevt->evt);
++		break;
++	case CPU_DYING:
++		mevt = this_cpu_ptr(&percpu_mct_tick);
++		exynos4_local_timer_stop(&mevt->evt);
++		break;
++	}
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block exynos4_mct_cpu_nb __cpuinitdata = {
++	.notifier_call = exynos4_mct_cpu_notify,
+ };
+-#endif /* CONFIG_LOCAL_TIMERS */
+ 
+ static void __init exynos4_timer_resources(void)
+ {
++	int err;
++	struct mct_clock_event_device *mevt = this_cpu_ptr(&percpu_mct_tick);
+ 	struct clk *mct_clk;
+ 	mct_clk = clk_get(NULL, "xtal");
+ 
+ 	clk_rate = clk_get_rate(mct_clk);
+ 
+-#ifdef CONFIG_LOCAL_TIMERS
+ 	if (mct_int_type == MCT_INT_PPI) {
+-		int err;
+ 
+ 		err = request_percpu_irq(EXYNOS_IRQ_MCT_LOCALTIMER,
+ 					 exynos4_mct_tick_isr, "MCT",
+@@ -463,8 +481,16 @@ static void __init exynos4_timer_resources(void)
+ 		     EXYNOS_IRQ_MCT_LOCALTIMER, err);
+ 	}
+ 
+-	local_timer_register(&exynos4_mct_tick_ops);
+-#endif /* CONFIG_LOCAL_TIMERS */
++	err = register_cpu_notifier(&exynos4_mct_cpu_nb);
++	if (err)
++		goto out_irq;
++
++	/* Immediately configure the timer on the boot CPU */
++	exynos4_local_timer_setup(&mevt->evt);
++	return;
++
++out_irq:
++	free_percpu_irq(EXYNOS_IRQ_MCT_LOCALTIMER, &percpu_mct_tick);
+ }
+ 
+ void __init exynos4_timer_init(void)
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
