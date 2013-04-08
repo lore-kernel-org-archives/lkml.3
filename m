@@ -1,123 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936099Ab3DHJ5z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:57:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43019 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935920Ab3DHJwo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:52:44 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 087/102] can: sja1000: fix define conflict on SH
-Date: Mon,  8 Apr 2013 10:50:42 +0100
-Message-Id: <1365414657-29191-88-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
-References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S936111Ab3DHJ6B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:58:01 -0400
+Received: from mga01.intel.com ([192.55.52.88]:63091 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S936102Ab3DHJ55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 05:57:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,429,1363158000"; 
+   d="scan'208";a="318960172"
+Date: Mon, 8 Apr 2013 11:57:54 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] mfd: wm8994: silence bogus warning in
+ wm8994_device_init()
+Message-ID: <20130408095754.GQ24058@zurbaran>
+References: <000001ce0e3b$f1d99170$d58cb450$%han@samsung.com>
+ <20130219121801.GB23508@opensource.wolfsonmicro.com>
+ <007101ce0f15$7a726410$6f572c30$%han@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <007101ce0f15$7a726410$6f572c30$%han@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.10 -stable review patch.  If anyone has any objections, please let me know.
+Hi Jingoo,
 
-------------------
+On Wed, Feb 20, 2013 at 11:53:36AM +0900, Jingoo Han wrote:
+> 'patch_regs' cannot be used uninitialized in wm8994_device_init(),
+> because 'patch_regs' was already guarded by 'regmap_patch'.
+> Thus, that's a bogus warning.
+> 
+> Without this patch, the build warning happens as below:
+> 
+> drivers/mfd/wm8994-core.c: In function 'wm8994_i2c_probe':
+> drivers/mfd/wm8994-core.c:595:7: warning: 'patch_regs' may be used uninitialized in this function [-Wuninitialized]
+> drivers/mfd/wm8994-core.c:408:14: note: 'patch_regs' was declared here
+> 
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/mfd/wm8994-core.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+Applied, thanks.
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+Cheers,
+Samuel.
 
-commit f901b6bc404b67d96eca739857c097e022727b71 upstream.
-
-Thias patch fixes a define conflict between the SH architecture and the sja1000
-driver:
-
-    drivers/net/can/sja1000/sja1000.h:59:0: warning:
-        "REG_SR" redefined [enabled by default]
-    arch/sh/include/asm/ptrace_32.h:25:0: note:
-         this is the location of the previous definition
-
-A SJA1000_ prefix is added to the offending sja1000 define only, to make a
-minimal patch suited for stable. A later patch will add a SJA1000_ prefix to
-all defines in sja1000.h.
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/net/can/sja1000/plx_pci.c | 4 ++--
- drivers/net/can/sja1000/sja1000.c | 6 +++---
- drivers/net/can/sja1000/sja1000.h | 2 +-
- 3 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/net/can/sja1000/plx_pci.c b/drivers/net/can/sja1000/plx_pci.c
-index 8bc9598..8099275 100644
---- a/drivers/net/can/sja1000/plx_pci.c
-+++ b/drivers/net/can/sja1000/plx_pci.c
-@@ -329,7 +329,7 @@ static inline int plx_pci_check_sja1000(const struct sja1000_priv *priv)
- 	 */
- 	if ((priv->read_reg(priv, REG_CR) & REG_CR_BASICCAN_INITIAL_MASK) ==
- 	    REG_CR_BASICCAN_INITIAL &&
--	    (priv->read_reg(priv, REG_SR) == REG_SR_BASICCAN_INITIAL) &&
-+	    (priv->read_reg(priv, SJA1000_REG_SR) == REG_SR_BASICCAN_INITIAL) &&
- 	    (priv->read_reg(priv, REG_IR) == REG_IR_BASICCAN_INITIAL))
- 		flag = 1;
- 
-@@ -341,7 +341,7 @@ static inline int plx_pci_check_sja1000(const struct sja1000_priv *priv)
- 	 * See states on p. 23 of the Datasheet.
- 	 */
- 	if (priv->read_reg(priv, REG_MOD) == REG_MOD_PELICAN_INITIAL &&
--	    priv->read_reg(priv, REG_SR) == REG_SR_PELICAN_INITIAL &&
-+	    priv->read_reg(priv, SJA1000_REG_SR) == REG_SR_PELICAN_INITIAL &&
- 	    priv->read_reg(priv, REG_IR) == REG_IR_PELICAN_INITIAL)
- 		return flag;
- 
-diff --git a/drivers/net/can/sja1000/sja1000.c b/drivers/net/can/sja1000/sja1000.c
-index 5e10472..c2309ec 100644
---- a/drivers/net/can/sja1000/sja1000.c
-+++ b/drivers/net/can/sja1000/sja1000.c
-@@ -91,7 +91,7 @@ static void sja1000_write_cmdreg(struct sja1000_priv *priv, u8 val)
- 	 */
- 	spin_lock_irqsave(&priv->cmdreg_lock, flags);
- 	priv->write_reg(priv, REG_CMR, val);
--	priv->read_reg(priv, REG_SR);
-+	priv->read_reg(priv, SJA1000_REG_SR);
- 	spin_unlock_irqrestore(&priv->cmdreg_lock, flags);
- }
- 
-@@ -496,7 +496,7 @@ irqreturn_t sja1000_interrupt(int irq, void *dev_id)
- 
- 	while ((isrc = priv->read_reg(priv, REG_IR)) && (n < SJA1000_MAX_IRQ)) {
- 		n++;
--		status = priv->read_reg(priv, REG_SR);
-+		status = priv->read_reg(priv, SJA1000_REG_SR);
- 		/* check for absent controller due to hw unplug */
- 		if (status == 0xFF && sja1000_is_absent(priv))
- 			return IRQ_NONE;
-@@ -515,7 +515,7 @@ irqreturn_t sja1000_interrupt(int irq, void *dev_id)
- 			/* receive interrupt */
- 			while (status & SR_RBS) {
- 				sja1000_rx(dev);
--				status = priv->read_reg(priv, REG_SR);
-+				status = priv->read_reg(priv, SJA1000_REG_SR);
- 				/* check for absent controller */
- 				if (status == 0xFF && sja1000_is_absent(priv))
- 					return IRQ_NONE;
-diff --git a/drivers/net/can/sja1000/sja1000.h b/drivers/net/can/sja1000/sja1000.h
-index 23fff06..2a79543 100644
---- a/drivers/net/can/sja1000/sja1000.h
-+++ b/drivers/net/can/sja1000/sja1000.h
-@@ -56,7 +56,7 @@
- /* SJA1000 registers - manual section 6.4 (Pelican Mode) */
- #define REG_MOD		0x00
- #define REG_CMR		0x01
--#define REG_SR		0x02
-+#define SJA1000_REG_SR		0x02
- #define REG_IR		0x03
- #define REG_IER		0x04
- #define REG_ALC		0x0B
 -- 
-1.8.1.2
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
