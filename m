@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935834Ab3DHTqi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 15:46:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49021 "EHLO mx1.redhat.com"
+	id S935831Ab3DHTtr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 15:49:47 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:59338 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935748Ab3DHTqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 15:46:37 -0400
-Date: Mon, 8 Apr 2013 15:46:31 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, bsingharora@gmail.com,
-        Kay Sievers <kay.sievers@vrfy.org>, lpoetter@redhat.com,
-        linux-kernel@vger.kernel.org, dhaval.giani@gmail.com,
-        workman-devel@redhat.com
-Subject: Re: [Workman-devel] cgroup: status-quo and userland efforts
-Message-ID: <20130408194630.GH28292@redhat.com>
-References: <20130406012159.GA17159@mtj.dyndns.org>
- <20130408175925.GE28292@redhat.com>
- <20130408181607.GI3021@htj.dyndns.org>
- <20130408191105.GG28292@redhat.com>
- <20130408192024.GL3021@htj.dyndns.org>
+	id S935727Ab3DHTtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 15:49:46 -0400
+Message-ID: <51631F4D.7050504@linux.vnet.ibm.com>
+Date: Mon, 08 Apr 2013 12:49:33 -0700
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130408192024.GL3021@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] mm/page_alloc: convert zone_pcp_update() to use on_each_cpu()
+ instead of stop_machine()
+References: <1365194030-28939-1-git-send-email-cody@linux.vnet.ibm.com> <1365194030-28939-3-git-send-email-cody@linux.vnet.ibm.com> <5161931A.8060501@gmail.com> <5162FF18.8010802@linux.vnet.ibm.com> <516319FF.6030104@gmail.com>
+In-Reply-To: <516319FF.6030104@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040819-5806-0000-0000-000020A4D26A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 12:20:24PM -0700, Tejun Heo wrote:
+On 04/08/2013 12:26 PM, KOSAKI Motohiro wrote:
+> (4/8/13 1:32 PM), Cody P Schafer wrote:
+>> On 04/07/2013 08:39 AM, KOSAKI Motohiro wrote:
+>>> (4/5/13 4:33 PM), Cody P Schafer wrote:
+>>>> No off-cpu users of the percpu pagesets exist.
+>>>>
+>>>> zone_pcp_update()'s goal is to adjust the ->high and ->mark members of a
+>>>> percpu pageset based on a zone's ->managed_pages. We don't need to drain
+>>>> the entire percpu pageset just to modify these fields. Avoid calling
+>>>> setup_pageset() (and the draining required to call it) and instead just
+>>>> set the fields' values.
+>>>>
+>>>> This does change the behavior of zone_pcp_update() as the percpu
+>>>> pagesets will not be drained when zone_pcp_update() is called (they will
+>>>> end up being shrunk, not completely drained, later when a 0-order page
+>>>> is freed in free_hot_cold_page()).
+>>>>
+>>>> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+>>>
+>>> NAK.
+>>>
+>>> 1) zone_pcp_update() is only used from memory hotplug and it require page drain.
+>>
+>> I'm looking at this code because I'm currently working on a patchset
+>> which adds another interface which modifies zone sizes, so "only used
+>> from memory hotplug" is a temporary thing (unless I discover that
+>> zone_pcp_update() is not intended to do what I want it to do).
+>
+> maybe yes, maybe no. I don't know temporary or not. However the fact is,
+> you must not break anywhere. You need to look all caller always.
 
-[..]
-> > For example, one might want to say that maximum IO bandwidth for 
-> > virtual machine virt1 on disk sda should be 10MB/s. Now libvirt
-> > should be able to save it in virtual machine specific configuration
-> > easily and whenever virtual machine is started, create a children
-> > cgroup, set the limits as specified.
-> 
-> Yes, sure, libvirt can *request* whatever it seems appropriate to the
-> central authority, which will decide whether it'll be able to honor
-> the request and grant it if possible and allowed by policies in
-> effect.
+Right, which is why I want to understand memory hotplug's actual 
+requirements.
 
-10MB/s is an absolute limit. So I guess there is nothing to be requested
-from an central authority here in terms of resources.
+>>> 2) stop_machin is used for avoiding race. just removing it is insane.
+>>
+>> What race? Is there a cross cpu access to ->high & ->batch that makes
+>> using on_each_cpu() instead of stop_machine() inappropriate? It is
+>> absolutely not just being removed.
+>
+> OK, I missed that. however your code is still wrong.
+> However you can't call free_pcppages_bulk() from interrupt context and
+> then you can't use on_each_cpu() anyway.
 
-Even in the case of IO weight or cpu shares, there is nothing to be asked
-from central authority. Well, there is. Creation of new croups changes
-effective %share of peer groups. More below.
+Given drain_pages() implementation, I find that hard to believe (It uses 
+on_each_cpu_mask() and eventually calls free_pcppages_bulk()).
 
-Where it makes sense though is if one says give a particular service
-25% cpu. Then suddenly all the peer and parent entities become important.
-IIUC, initial draft of workman does not address this issue.
+Can you provide a reference backing up your statement?
 
-It would be good to think more about it. How a user can ensure minimum
-resources to a partition/service. Because in that case at every level
-somebody needs to keep track how much of resources have been committed
-as minimum requirements and more consumers can't be allowed at same level.
-(This sounds like cpu RT time division among various cgroups).
+If this turns out to be an issue, schedule_on_each_cpu() could be an 
+alternative.
 
-Thanks
-Vivek
