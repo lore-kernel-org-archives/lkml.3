@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935708Ab3DHJwB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:52:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42809 "EHLO
+	id S965036Ab3DHKMg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:12:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42819 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935670Ab3DHJv6 (ORCPT
+	with ESMTP id S935697Ab3DHJwA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:51:58 -0400
+	Mon, 8 Apr 2013 05:52:00 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Johan Hovold <jhovold@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 047/102] USB: pl2303: fix use-after-free in TIOCMIWAIT
-Date: Mon,  8 Apr 2013 10:50:02 +0100
-Message-Id: <1365414657-29191-48-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 049/102] USB: spcp8x5: fix use-after-free in TIOCMIWAIT
+Date: Mon,  8 Apr 2013 10:50:04 +0100
+Message-Id: <1365414657-29191-50-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
@@ -30,7 +30,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 40509ca982c00c4b70fc00be887509feca0bff15 upstream.
+commit dbcea7615d8d7d58f6ff49d2c5568113f70effe9 upstream.
 
 Use the port wait queue and make sure to check the serial disconnected
 flag before accessing private port data after waking up.
@@ -43,35 +43,45 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 [ luis: backported to 3.5; adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/pl2303.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/usb/serial/spcp8x5.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
-index 13b8dd6..6fe8d0e 100644
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -137,7 +137,6 @@ enum pl2303_type {
- 
- struct pl2303_private {
- 	spinlock_t lock;
--	wait_queue_head_t delta_msr_wait;
- 	u8 line_control;
- 	u8 line_status;
- 	enum pl2303_type type;
-@@ -193,7 +192,6 @@ static int pl2303_startup(struct usb_serial *serial)
- 		if (!priv)
+diff --git a/drivers/usb/serial/spcp8x5.c b/drivers/usb/serial/spcp8x5.c
+index cad6089..66a4871 100644
+--- a/drivers/usb/serial/spcp8x5.c
++++ b/drivers/usb/serial/spcp8x5.c
+@@ -154,7 +154,6 @@ enum spcp8x5_type {
+ struct spcp8x5_private {
+ 	spinlock_t 	lock;
+ 	enum spcp8x5_type	type;
+-	wait_queue_head_t	delta_msr_wait;
+ 	u8 			line_control;
+ 	u8 			line_status;
+ };
+@@ -188,7 +187,6 @@ static int spcp8x5_startup(struct usb_serial *serial)
  			goto cleanup;
+ 
  		spin_lock_init(&priv->lock);
 -		init_waitqueue_head(&priv->delta_msr_wait);
  		priv->type = type;
- 		usb_set_serial_port_data(serial->port[i], priv);
+ 		usb_set_serial_port_data(serial->port[i] , priv);
  	}
-@@ -582,11 +580,14 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
+@@ -491,7 +489,7 @@ static void spcp8x5_process_read_urb(struct urb *urb)
+ 	priv->line_status &= ~UART_STATE_TRANSIENT_MASK;
  	spin_unlock_irqrestore(&priv->lock, flags);
+ 	/* wake up the wait for termios */
+-	wake_up_interruptible(&priv->delta_msr_wait);
++	wake_up_interruptible(&port->delta_msr_wait);
+ 
+ 	if (!urb->actual_length)
+ 		return;
+@@ -541,12 +539,15 @@ static int spcp8x5_wait_modem_info(struct usb_serial_port *port,
  
  	while (1) {
+ 		/* wake up in bulk read */
 -		interruptible_sleep_on(&priv->delta_msr_wait);
 +		interruptible_sleep_on(&port->delta_msr_wait);
+ 
  		/* see if a signal did it */
  		if (signal_pending(current))
  			return -ERESTARTSYS;
@@ -82,24 +92,6 @@ index 13b8dd6..6fe8d0e 100644
  		spin_lock_irqsave(&priv->lock, flags);
  		status = priv->line_status;
  		spin_unlock_irqrestore(&priv->lock, flags);
-@@ -705,7 +706,7 @@ static void pl2303_update_line_status(struct usb_serial_port *port,
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 	if (priv->line_status & UART_BREAK_ERROR)
- 		usb_serial_handle_break(port);
--	wake_up_interruptible(&priv->delta_msr_wait);
-+	wake_up_interruptible(&port->delta_msr_wait);
- 
- 	tty = tty_port_tty_get(&port->port);
- 	if (!tty)
-@@ -770,7 +771,7 @@ static void pl2303_process_read_urb(struct urb *urb)
- 	line_status = priv->line_status;
- 	priv->line_status &= ~UART_STATE_TRANSIENT_MASK;
- 	spin_unlock_irqrestore(&priv->lock, flags);
--	wake_up_interruptible(&priv->delta_msr_wait);
-+	wake_up_interruptible(&port->delta_msr_wait);
- 
- 	if (!urb->actual_length)
- 		return;
 -- 
 1.8.1.2
 
