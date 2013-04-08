@@ -1,120 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935680Ab3DHMVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 08:21:07 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:61891 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935633Ab3DHMVA (ORCPT
+	id S935660Ab3DHMVE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 08:21:04 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53007 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935638Ab3DHMVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Apr 2013 08:21:00 -0400
-From: Prabhakar lad <prabhakar.csengg@gmail.com>
-To: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        LMML <linux-media@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v3 2/3] media: davinci: vpbe: venc: move the enabling of vpss clocks to driver
-Date: Mon,  8 Apr 2013 17:49:12 +0530
-Message-Id: <1365423553-12619-3-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1365423553-12619-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1365423553-12619-1-git-send-email-prabhakar.csengg@gmail.com>
+Date: Mon, 8 Apr 2013 13:20:57 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Girish KS <girishks2000@gmail.com>
+Cc: spi-devel-general@lists.sourceforge.net,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH V3 4/5] spi: s3c64xx: Added provision for dedicated cs pin
+Message-ID: <20130408122056.GG9243@opensource.wolfsonmicro.com>
+References: <1363157014-9615-1-git-send-email-ks.giri@samsung.com>
+ <1363157014-9615-5-git-send-email-ks.giri@samsung.com>
+ <20130401125744.GG18636@opensource.wolfsonmicro.com>
+ <CAKrE-Kd+YAFmteDdh3odtV+YU1=OjoMuQV9usF4NmUse+TXhTg@mail.gmail.com>
+ <20130408101530.GC9243@opensource.wolfsonmicro.com>
+ <CAKrE-KevVramLc1n_9kcfHVb=RKT_kexQ8iUP-5+BL3wxpMPbQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EemXnrF2ob+xzFeB"
+Content-Disposition: inline
+In-Reply-To: <CAKrE-KevVramLc1n_9kcfHVb=RKT_kexQ8iUP-5+BL3wxpMPbQ@mail.gmail.com>
+X-Cookie: Your love life will be... interesting.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-The vpss clocks were enabled by calling a exported function from a driver
-in a machine code. calling driver code from platform code is incorrect way.
+--EemXnrF2ob+xzFeB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch fixes this issue and calls the function from driver code itself.
+On Mon, Apr 08, 2013 at 05:15:26PM +0530, Girish KS wrote:
+> On Mon, Apr 8, 2013 at 3:45 PM, Mark Brown
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/media/platform/davinci/vpbe_venc.c |   25 +++++++++++++++++++++++++
- 1 files changed, 25 insertions(+), 0 deletions(-)
+> > Two options here, one is to just assume nobody will use GPIO 0 and the
+> > other is to set the number appopriately during probe so that only probe
+> > needs to worry about the issue.
+>=20
+> In the second option if the gpio number is set in the probe, then we
+> are overwriting the
+> actual gpio number assigned in the platform data.
+> If I move the cs_gpio from the platform data to controller private
+> data then the dependency
+> on other platforms can be removed, but still the check (true or false)
+> before setting the gpio
+> line will remain. If agreed upon this i can go ahead and post the patch
 
-diff --git a/drivers/media/platform/davinci/vpbe_venc.c b/drivers/media/platform/davinci/vpbe_venc.c
-index f15f211..91d0272 100644
---- a/drivers/media/platform/davinci/vpbe_venc.c
-+++ b/drivers/media/platform/davinci/vpbe_venc.c
-@@ -202,6 +202,25 @@ static void venc_enabledigitaloutput(struct v4l2_subdev *sd, int benable)
- 	}
- }
- 
-+static void
-+venc_enable_vpss_clock(int venc_type,
-+		       enum vpbe_enc_timings_type type,
-+		       unsigned int pclock)
-+{
-+	if (venc_type == VPBE_VERSION_1)
-+		return;
-+
-+	if (venc_type == VPBE_VERSION_2 && (type == VPBE_ENC_STD ||
-+	    (type == VPBE_ENC_DV_TIMINGS && pclock <= 27000000))) {
-+		vpss_enable_clock(VPSS_VENC_CLOCK_SEL, 1);
-+		vpss_enable_clock(VPSS_VPBE_CLOCK, 1);
-+		return;
-+	}
-+
-+	if (venc_type == VPBE_VERSION_3 && type == VPBE_ENC_STD)
-+		vpss_enable_clock(VPSS_VENC_CLOCK_SEL, 0);
-+}
-+
- #define VDAC_CONFIG_SD_V3	0x0E21A6B6
- #define VDAC_CONFIG_SD_V2	0x081141CF
- /*
-@@ -220,6 +239,7 @@ static int venc_set_ntsc(struct v4l2_subdev *sd)
- 	if (pdata->setup_clock(VPBE_ENC_STD, V4L2_STD_525_60) < 0)
- 		return -EINVAL;
- 
-+	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_STD, V4L2_STD_525_60);
- 	venc_enabledigitaloutput(sd, 0);
- 
- 	if (venc->venc_type == VPBE_VERSION_3) {
-@@ -265,6 +285,7 @@ static int venc_set_pal(struct v4l2_subdev *sd)
- 	if (venc->pdata->setup_clock(VPBE_ENC_STD, V4L2_STD_625_50) < 0)
- 		return -EINVAL;
- 
-+	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_STD, V4L2_STD_625_50);
- 	venc_enabledigitaloutput(sd, 0);
- 
- 	if (venc->venc_type == VPBE_VERSION_3) {
-@@ -319,6 +340,7 @@ static int venc_set_480p59_94(struct v4l2_subdev *sd)
- 	if (pdata->setup_clock(VPBE_ENC_DV_TIMINGS, 27000000) < 0)
- 		return -EINVAL;
- 
-+	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_DV_TIMINGS, 27000000);
- 	venc_enabledigitaloutput(sd, 0);
- 
- 	if (venc->venc_type == VPBE_VERSION_2)
-@@ -366,6 +388,7 @@ static int venc_set_576p50(struct v4l2_subdev *sd)
- 	if (pdata->setup_clock(VPBE_ENC_DV_TIMINGS, 27000000) < 0)
- 		return -EINVAL;
- 
-+	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_DV_TIMINGS, 27000000);
- 	venc_enabledigitaloutput(sd, 0);
- 
- 	if (venc->venc_type == VPBE_VERSION_2)
-@@ -406,6 +429,7 @@ static int venc_set_720p60_internal(struct v4l2_subdev *sd)
- 	if (pdata->setup_clock(VPBE_ENC_DV_TIMINGS, 74250000) < 0)
- 		return -EINVAL;
- 
-+	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_DV_TIMINGS, 74250000);
- 	venc_enabledigitaloutput(sd, 0);
- 
- 	venc_write(sd, VENC_OSDCLK0, 0);
-@@ -434,6 +458,7 @@ static int venc_set_1080i30_internal(struct v4l2_subdev *sd)
- 	if (pdata->setup_clock(VPBE_ENC_DV_TIMINGS, 74250000) < 0)
- 		return -EINVAL;
- 
-+	venc_enable_vpss_clock(venc->venc_type, VPBE_ENC_DV_TIMINGS, 74250000);
- 	venc_enabledigitaloutput(sd, 0);
- 
- 	venc_write(sd, VENC_OSDCLK0, 0);
--- 
-1.7.4.1
+I think logic in probe should be fine, it just felt really cumbersome
+having this on every single use but doing it once on probe ought to be
+OK.
 
+--EemXnrF2ob+xzFeB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRYrYaAAoJELSic+t+oim9FXEP/267JPgYOyCReHGdw06v0VBN
+WhBbRkU3HlKrWBrs1tD9owmL9q9BtDqTxpIXwUOpLpBqHqQW/r3V6bI8/xjNMH7U
+3OwysjbAJWnsuN4bp1M/0exT15gc9gcNn+9k1YSRJMR2c5PPryBROrBk7H4Dyqzy
+vBZlPabRp7Dk7rzwU1krRAR74BfhQ9xT3K4O9uASSyPzXu385vVBdPUzJ85XE0If
+FKtgQecE4DZ+P/hTA/CSmhv11iAEaOaDt3VEJn0XNYHfmpFX2+oOpzd9OwFO0iyY
+OsXVJ/ul3G9f+bNckapBa6yDth8T9R5OLttkddXv0+AQvbnCiV+GPHDhFDjXyheH
+6FW2flw5W02YQZWXAaA0JznypL6EgANlH3itJMWu1sfkFBWpO7st/BSJEV835XW1
+eVqb5YI8zwCZs2a7987sY8hhxm+SrqVbiFADkC7bf64PPTIroTbPdATqSRR2O9J1
+C6aplsBzoeTxCnjLgggZWSnfX1LqX0AaAA0FfcCud6ZDj6nZAaaYn2FzKZ66YTQ7
+TAOMM0DImOsZ0TQ2jEwkQ458tCC0p8VK7oSQwnfIMQVZBEKURayjgYWY1obSk4Rb
+ZCY7J/Rnf02lB9gelxA/jkKw5lHYNC79KmqJn7WcdbY/K0mEjpdxNWVv/UziZlAm
+JCsRjBJ7XUfgFmRkLA+d
+=GnQU
+-----END PGP SIGNATURE-----
+
+--EemXnrF2ob+xzFeB--
