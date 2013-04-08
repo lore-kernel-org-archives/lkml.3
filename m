@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935583Ab3DHTRB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 15:17:01 -0400
-Received: from mail-qe0-f45.google.com ([209.85.128.45]:33219 "EHLO
-	mail-qe0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763113Ab3DHTQ7 (ORCPT
+	id S935621Ab3DHTUb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 15:20:31 -0400
+Received: from mail-da0-f54.google.com ([209.85.210.54]:54867 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763113Ab3DHTU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 15:16:59 -0400
-Message-ID: <516317A9.7040208@gmail.com>
-Date: Mon, 08 Apr 2013 15:16:57 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Mon, 8 Apr 2013 15:20:29 -0400
+Date: Mon, 8 Apr 2013 12:20:24 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, bsingharora@gmail.com,
+        Kay Sievers <kay.sievers@vrfy.org>, lpoetter@redhat.com,
+        linux-kernel@vger.kernel.org, dhaval.giani@gmail.com,
+        workman-devel@redhat.com
+Subject: Re: [Workman-devel] cgroup: status-quo and userland efforts
+Message-ID: <20130408192024.GL3021@htj.dyndns.org>
+References: <20130406012159.GA17159@mtj.dyndns.org>
+ <20130408175925.GE28292@redhat.com>
+ <20130408181607.GI3021@htj.dyndns.org>
+ <20130408191105.GG28292@redhat.com>
 MIME-Version: 1.0
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-CC: Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, kosaki.motohiro@gmail.com
-Subject: Re: [PATCH 3/3] mm: when handling percpu_pagelist_fraction, use on_each_cpu()
- to set percpu pageset fields.
-References: <1365194030-28939-1-git-send-email-cody@linux.vnet.ibm.com> <1365194030-28939-4-git-send-email-cody@linux.vnet.ibm.com> <CAOtvUMdT0-oQMTsHAjFqL6K8vrLeCcXG2hX-sShxu6GGRBPxJw@mail.gmail.com>
-In-Reply-To: <CAOtvUMdT0-oQMTsHAjFqL6K8vrLeCcXG2hX-sShxu6GGRBPxJw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130408191105.GG28292@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(4/8/13 8:20 AM), Gilad Ben-Yossef wrote:
-> On Fri, Apr 5, 2013 at 11:33 PM, Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
->> In free_hot_cold_page(), we rely on pcp->batch remaining stable.
->> Updating it without being on the cpu owning the percpu pageset
->> potentially destroys this stability.
->>
->> Change for_each_cpu() to on_each_cpu() to fix.
-> 
-> Are you referring to this? -
-> 
-> 1329         if (pcp->count >= pcp->high) {
-> 1330                 free_pcppages_bulk(zone, pcp->batch, pcp);
-> 1331                 pcp->count -= pcp->batch;
-> 1332         }
-> 
-> I'm probably missing the obvious but won't it be simpler to do this in
->  free_hot_cold_page() -
-> 
-> 1329         if (pcp->count >= pcp->high) {
-> 1330                  unsigned int batch = ACCESS_ONCE(pcp->batch);
-> 1331                 free_pcppages_bulk(zone, batch, pcp);
-> 1332                 pcp->count -= batch;
-> 1333         }
-> 
-> Now the batch value used is stable and you don't have to IPI every CPU
-> in the system just to change a config knob...
+Hey,
 
-OK, right. Your approach is much better.
+On Mon, Apr 08, 2013 at 03:11:05PM -0400, Vivek Goyal wrote:
+> >  What if the program crashes?
+> 
+> I am not sure about this. I guess when applications comes back after crash,
+> it can go through all the children cgroups and reclaim empty cgroups.
 
+Fragile, right?  What are you arguing here?
 
+> >  Wouldn't it make more sense to just have
+> > a central arbitrator that everyone talks to?
+> 
+> May be. Just that in the past folks have not liked the idea of talking
+> to central authority to figure out resource group of an object they are
+> managing.
+
+What we've been doing seems tragically broken to me, so I'm not sure
+"people didn't use to do it that way" is a good point.
+
+> >  What's the benefit of
+> > distributing the responsiblities here?  It's not like we can put them
+> > in different security domains.
+> 
+> To me it makes sense in a way, as these resources associated with the
+> service is just one another property and there does not seem to be
+> anything special about this property that it should be managed using
+> a single centralized authority.
+> 
+> For example, one might want to say that maximum IO bandwidth for 
+> virtual machine virt1 on disk sda should be 10MB/s. Now libvirt
+> should be able to save it in virtual machine specific configuration
+> easily and whenever virtual machine is started, create a children
+> cgroup, set the limits as specified.
+
+Yes, sure, libvirt can *request* whatever it seems appropriate to the
+central authority, which will decide whether it'll be able to honor
+the request and grant it if possible and allowed by policies in
+effect.
+
+> That would make sense. systemd had this conflict with cgconfig
+> too. Problem is that systemd starts first and sets up everything. Now
+> if there is a service which sets up cgroups, after systemd startup,
+> it is already late.
+
+Come on, that's not a difficult or fundamental problem.  Whatever the
+central authority may be, systemd can use it to setup the initial
+hierarchy or set up bare-bone hierarchy in compatible manner.  This
+isn't that different from udev.
+
+Thanks.
+
+-- 
+tejun
