@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965132Ab3DHPHq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 11:07:46 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:43237 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965063Ab3DHPHm (ORCPT
+	id S936178Ab3DHPJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 11:09:16 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:46966 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761819Ab3DHPJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 11:07:42 -0400
+	Mon, 8 Apr 2013 11:09:14 -0400
+Date: Mon, 8 Apr 2013 17:09:09 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH RFC 1/3] mutex: Make more scalable by doing less atomic
+ operations
+Message-ID: <20130408150909.GA10885@gmail.com>
+References: <1365087258-7169-1-git-send-email-Waiman.Long@hp.com>
+ <1365087258-7169-2-git-send-email-Waiman.Long@hp.com>
+ <20130408124223.GA10093@gmail.com>
+ <CA+55aFztAtpiGK9e_Ed=Kk4jAWNTahv9OEb0+fgp52Api1s7Mw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1365433142.2733.18.camel@fedora>
-References: <alpine.LFD.2.02.1304031433350.21884@ionos>
-	<1364998282-21437-1-git-send-email-vgupta@synopsys.com>
-	<20130404152808.GB15261@ab42.lan>
-	<515E54BD.2090300@synopsys.com>
-	<51602459.3040105@synopsys.com>
-	<CA+55aFw=-oJxujka-emxyRcY54MSe3qEjZ6xgzoE-roe3EFk5g@mail.gmail.com>
-	<51624591.4010303@synopsys.com>
-	<CA+55aFyFWjpSVQM6M266tKrG_ZXJzZ-nYejpmXYQXbrr42mGPQ@mail.gmail.com>
-	<1365428274.2609.160.camel@laptop>
-	<1365431470.2733.16.camel@fedora>
-	<CA+55aFx88-t_pm5hbxbrrhqm3_=+JQussO=zD1kT+05UVCAFCA@mail.gmail.com>
-	<1365433142.2733.18.camel@fedora>
-Date: Mon, 8 Apr 2013 08:07:41 -0700
-X-Google-Sender-Auth: XbFHBJ1agVDlnefW_uOy7jJHbiQ
-Message-ID: <CA+55aFyea-YdNP-=fyV2JMoN2cyv9Vpp3-e4p86V+7OSBQAV5Q@mail.gmail.com>
-Subject: Re: [PATCH] [PATCH] Gaurantee spinlocks implicit barrier for !PREEMPT_COUNT
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Steven Rostedt <srostedt@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFztAtpiGK9e_Ed=Kk4jAWNTahv9OEb0+fgp52Api1s7Mw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 8, 2013 at 7:59 AM, Steven Rostedt <srostedt@redhat.com> wrote:
->>     +/* This is only a barrier to other asms. Notably get_user/put_user */
->
-> Probably should add in the comment:
->
->         " or anything else that can cause a hidden schedule. "
->
 
-Fair enough. And I just remembered why I thought UP was special - we
-need to do the same thing about spinlocks, for the same reasons.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-So that "asm_barrier()" should probably be in <linux/compiler.h> along
-with the "normal" barrier() definition.
+> On Mon, Apr 8, 2013 at 5:42 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > AFAICS the main performance trade-off is the following: when the owner CPU unlocks
+> > the mutex, we'll poll it via a read first, which turns the cacheline into
+> > shared-read MESI state. Then we notice that its content signals 'lock is
+> > available', and we attempt the trylock again.
+> >
+> > This increases lock latency in the few-contended-tasks case slightly - and we'd
+> > like to know by precisely how much, not just for a generic '10-100 users' case
+> > which does not tell much about the contention level.
+> 
+> We had this problem for *some* lock where we used a "read + cmpxchg" in the 
+> hotpath and it caused us problems due to two cacheline state transitions (first 
+> to shared, then to exclusive). It was faster to just assume it was unlocked and 
+> try to do an immediate cmpxchg.
+> 
+> But iirc it is a non-issue for this case, because this is only about the 
+> contended slow path.
+> 
+> I forget where we saw the case where we should *not* read the initial value, 
+> though. Anybody remember?
 
-*AND* somebody should re-check the gcc documentation on "volatile
-asm". I'm pretty sure it used to say "not moved significantly,
-including against each other" or something like that, but the gcc asm
-docs have changed over time.
+I had this vague recollection too - and some digging suggests that it might have 
+been this discussion on lkml about 3 years ago:
 
-I'd hate to have to add a memory clobber to the get_user/put_user
-asms, because that would *really* hurt. But maybe we could add some
-other clobber ("cc" or similar) to make sure they can't be re-ordered
-if the "volatile" isn't sufficient to make sure asms don't get
-re-ordered wrt each other.
+  [RFC][PATCH 6/8] mm: handle_speculative_fault()
 
-                Linus
+These numbers PeterZ ran:
+
+  http://lkml.indiana.edu/hypermail/linux/kernel/1001.1/00170.html
+
+Appear to show such an effect, on a smaller NUMA system.
+
+( But I'm quite sure it came up somewhere else as well, just cannot place it.
+  Probabilistic biological search indices are annoying.)
+
+Thanks,
+
+	Ingo
