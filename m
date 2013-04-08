@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935564Ab3DHSXQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 14:23:16 -0400
-Received: from mail-da0-f51.google.com ([209.85.210.51]:37868 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935406Ab3DHSXO (ORCPT
+	id S935587Ab3DHSXm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 14:23:42 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:42688 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935409Ab3DHSXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 14:23:14 -0400
-Date: Mon, 8 Apr 2013 11:23:11 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Florian Fainelli <florian@openwrt.org>
-Cc: stern@rowland.harvard.edu, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        linux-usb@vger.kernel.org, balbi@ti.com
-Subject: Re: [PATCH 0/5 v3] USB: Kconfig cleanups
-Message-ID: <20130408182311.GA12889@kroah.com>
-References: <1365091048-16229-1-git-send-email-florian@openwrt.org>
- <20130408163242.GA2184@kroah.com>
- <5163098E.7000604@openwrt.org>
+	Mon, 8 Apr 2013 14:23:40 -0400
+Message-ID: <51630B26.1000102@samsung.com>
+Date: Tue, 09 Apr 2013 03:23:34 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5163098E.7000604@openwrt.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Doug Anderson <dianders@chromium.org>
+CC: Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Leela Krishna Amudala <l.krishna@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        Rahul Sharma <rahul.sharma@samsung.com>
+Subject: Re: [PATCH] ARM: dts: fix bad merge of display timing node to exynos5250-smdk5250.dts
+References: <1365439879-3398-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1365439879-3398-1-git-send-email-dianders@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 08:16:46PM +0200, Florian Fainelli wrote:
-> Le 08/04/2013 18:32, Greg KH a écrit :
-> >On Thu, Apr 04, 2013 at 05:57:23PM +0200, Florian Fainelli wrote:
-> >>
-> >>These 5 patches contain my Kconfig cleanup on which I based the removal
-> >>of the USB_ARCH_HAS_* patches. They have been suggested by Alan Stern
-> >>as part of an earlier conversations.
-> >>
-> >>Let me know what you think about it so I can post subsequent work based
-> >>on it.
-> >
-> >This series doesn't apply to my tree at the moment.  Can you refresh it
-> >based on linux-next and resend it, with Alan's acks added?
-> 
-> Sure, it was based on usb-next, I will refresh that, thanks!
+On 04/09/13 01:51, Doug Anderson wrote:
+> The display timing node was added:
+>    7ed2077 ARM: dts: Add display timing node to exynos5250-smdk5250.dts
+> ...and looks OK there.  ...but it looks like we lost a "};" in the
+> merge and it no longer compiles.  Fix it.
+>
+> Signed-off-by: Doug Anderson<dianders@chromium.org>
+> ---
+>   arch/arm/boot/dts/exynos5250-smdk5250.dts | 1 +
+>   1 file changed, 1 insertion(+)
+>
+> diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+> index 4be14df..26d856b 100644
+> --- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
+> +++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
+> @@ -239,6 +239,7 @@
+>   			vback-porch =<4>;
+>   			vfront-porch =<4>;
+>   			vsync-len =<4>;
+> +		};
+>   	};
+>
+>   	fixed-rate-clocks {
 
-usb-next is best, sorry, I didn't realize that.  That's what I need to
-apply it to, but it didn't work due to changes in the gadget tree.
+Thanks for your pointing out. But it should be fixed with re-sorting out 
+the branch.
 
-thanks,
+If any problems, please let me know.
 
-greg k-h
+- Kukjin
