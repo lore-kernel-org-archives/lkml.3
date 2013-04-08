@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934979Ab3DHGkd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 02:40:33 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:53833 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934862Ab3DHGkb (ORCPT
+	id S1752181Ab3DHGzt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 02:55:49 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:50233 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab3DHGzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 02:40:31 -0400
-Message-ID: <51626610.2040607@huawei.com>
-Date: Mon, 8 Apr 2013 14:39:12 +0800
-From: libin <huawei.libin@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Mon, 8 Apr 2013 02:55:48 -0400
+Date: Mon, 8 Apr 2013 08:55:42 +0200
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] AVR32: fix building warnings caused by redifinitions
+ of HZ
+Message-ID: <20130408065542.GA28741@samfundet.no>
+References: <1365266616-8424-1-git-send-email-jiang.liu@huawei.com>
+ <20130407075526.GA28026@samfundet.no>
+ <516190CD.8040800@gmail.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <jiang.liu@huawei.com>,
-        <guohanjun@huawei.com>
-Subject: [PATCH resend] sched: Fix sd->*_idx limit range avoiding overflow
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.57]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <516190CD.8040800@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 201c373e8e ("sched/debug: Limit sd->*_idx range on sysctl")
-was an incomplete bug fix. This patch fixs sd->*_idx limit range to
-[0 ~ CPU_LOAD_IDX_MAX - 1] avioding array overflow caused by setting
-sd->*_idx to CPU_LOAD_IDX_MAX on sysctl.
+Around Sun 07 Apr 2013 23:29:17 +0800 or thereabout, Jiang Liu wrote:
+> On 04/07/2013 03:55 PM, Hans-Christian Egtvedt wrote:
+>> Around Sun 07 Apr 2013 00:43:36 +0800 or thereabout, Jiang Liu wrote:
+>>> Fix building warnings caused by redifinitions of HZ:
 
-Signed-off-by: Libin <huawei.libin@huawei.com>
----
- kernel/sched/core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+<snipp warning>
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 7f12624..ba89ada 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4999,7 +4999,7 @@ static void sd_free_ctl_entry(struct ctl_table **tablep)
- }
+>> Thanks for fixing.
+>> 
+>>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>>> Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+>>> Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+>>> Cc: linux-kernel@vger.kernel.org
+>> 
+>> Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+>> 
+>>> ---
+>>>  arch/avr32/include/uapi/asm/param.h |    6 +++++-
+>>>  1 file changed, 5 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/arch/avr32/include/uapi/asm/param.h b/arch/avr32/include/uapi/asm/param.h
+>>> index d28aa5e..abda103 100644
+>>> --- a/arch/avr32/include/uapi/asm/param.h
+>>> +++ b/arch/avr32/include/uapi/asm/param.h
+>>> @@ -2,7 +2,11 @@
+>>>  #define _UAPI__ASM_AVR32_PARAM_H
+>>>  
+>>>  
+>>> -#ifndef HZ
+>>> +#ifndef __KERNEL__
+>>> +   /*
+>>> +    * Technically, this is wrong, but some old apps still refer to it.
+>>> +    * The proper way to get the HZ value is via sysconf(_SC_CLK_TCK).
+>>> +    */
+>> 
+>> With this comment, are there AVR32 drivers/users that should be fixed? Or is
+>> it parts of the tree in general?
+> Hi Hans,
+> 	It's copied from arch/ia64/include/uapi/asm/param.h, I feel it should be
+> the same for AVR32 too.
 
- static int min_load_idx = 0;
--static int max_load_idx = CPU_LOAD_IDX_MAX;
-+static int max_load_idx = CPU_LOAD_IDX_MAX - 1;
+Most likely yes, the original param.h header file was added by David Howells
+from RedHat, and has never been touched since.
 
- static void
- set_table_entry(struct ctl_table *entry,
--- 1.6.0.2
+Again, thanks for fixing.
 
+-- 
+mvh
+Hans-Christian Egtvedt
