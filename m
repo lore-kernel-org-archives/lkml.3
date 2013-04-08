@@ -1,197 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936106Ab3DHOOI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 10:14:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32901 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935778Ab3DHOOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 10:14:06 -0400
-Date: Mon, 8 Apr 2013 16:14:00 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 07/12] memcg: use css_get/put when charging/uncharging
- kmem
-Message-ID: <20130408141400.GF17178@dhcp22.suse.cz>
-References: <5162648B.9070802@huawei.com>
- <516264FB.7030306@huawei.com>
+	id S936153Ab3DHOPo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 10:15:44 -0400
+Received: from mail1.bemta8.messagelabs.com ([216.82.243.198]:59775 "EHLO
+	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935972Ab3DHOPm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 10:15:42 -0400
+X-Env-Sender: Hector.Palacios@digi.com
+X-Msg-Ref: server-8.tower-46.messagelabs.com!1365430540!24417245!7
+X-Originating-IP: [66.77.174.14]
+X-StarScan-Received: 
+X-StarScan-Version: 6.8.6.1; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <5162D0DA.6050505@digi.com>
+Date: Mon, 8 Apr 2013 16:14:50 +0200
+From: Hector Palacios <hector.palacios@digi.com>
+Organization: Digi International
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <516264FB.7030306@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Guenter Roeck <linux@roeck-us.net>
+CC: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "wim@iguana.be" <wim@iguana.be>
+Subject: Re: [PATCH v2] watchdog: core: don't try to stop device if not running
+References: <1365412258-10785-1-git-send-email-hector.palacios@digi.com> <20130408134118.GA18644@roeck-us.net>
+In-Reply-To: <20130408134118.GA18644@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 08-04-13 14:34:35, Li Zefan wrote:
-> Use css_get/put instead of mem_cgroup_get/put.
-> 
-> We can't do a simple replacement, because here mem_cgroup_put()
-> is called during mem_cgroup_css_free(), while mem_cgroup_css_free()
-> won't be called until css refcnt goes down to 0.
-> 
-> Instead we increment css refcnt in mem_cgroup_css_offline(), and
-> then check if there's still kmem charges. If not, css refcnt will
-> be decremented immediately, otherwise the refcnt won't be decremented
-> when kmem charges goes down to 0.
-> 
-> v2:
-> - added wmb() in kmem_cgroup_css_offline(), pointed out by Michal
-> - revised comments as suggested by Michal
-> - fixed to check if kmem is activated in kmem_cgroup_css_offline()
-> 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
+On 04/08/2013 03:41 PM, Guenter Roeck wrote:
+> On Mon, Apr 08, 2013 at 11:10:58AM +0200, Hector Palacios wrote:
+>> A watchdog device may be stopped from userspace using WDIOC_SETOPTIONS
+>> ioctl and flag WDIOS_DISABLECARD. If the device is closed after this
+>> operation, watchdog_release() is called and status bits checked for
+>> stopping it. Besides, if the device has not been unregistered a critical
+>> message "watchdog did not stop!" is printed, although the ioctl may have
+>> successfully stopped it already.
+>>
+>> Without the patch a user application sample code like this will successfully
+>> stop the watchdog, but the kernel will output the message
+>> "watchdog did not stop!":
+>>
+>> 	wd_fd = open("/dev/watchdog", O_RDWR);
+>>
+>> 	flags = WDIOS_DISABLECARD;
+>> 	ioctl(wd_fd, WDIOC_SETOPTIONS, &flags);
+>>
+>> 	close(wd_fd);
+>>
+>> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
+>> ---
+>>
+>> Changes from v1:
+>> - Make it less intrusive with 'if/else if' clauses
+>> - Change the logic of 'err' variable for better readability of code
+>> - Remove one-liner if brackets that broke coding sytle
+>>
+>>   drivers/watchdog/watchdog_dev.c | 8 +++++---
+>>   1 file changed, 5 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
+>> index ef8edec..8e0f1b8 100644
+>> --- a/drivers/watchdog/watchdog_dev.c
+>> +++ b/drivers/watchdog/watchdog_dev.c
+>> @@ -463,15 +463,17 @@ out:
+>>   static int watchdog_release(struct inode *inode, struct file *file)
+>>   {
+>>   	struct watchdog_device *wdd = file->private_data;
+>> -	int err = -EBUSY;
+>> +	int err = 0;
+>>
+>>   	/*
+>>   	 * We only stop the watchdog if we received the magic character
+>>   	 * or if WDIOF_MAGICCLOSE is not set. If nowayout was set then
+>>   	 * watchdog_stop will fail.
+>>   	 */
+>> -	if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
+>> -	    !(wdd->info->options & WDIOF_MAGICCLOSE))
+>> +	if (test_bit(WDOG_ACTIVE, &wdd->status))
+>> +		err = -EBUSY;
+>> +	else if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
+>> +		 !(wdd->info->options & WDIOF_MAGICCLOSE))
+>>   		err = watchdog_stop(wdd);
+>>
+> Looking at it again, it is now broken and fails with EBUSY if WDOG_ACTIVE is
+> set, and it tries to stop the watchdog if it is already stopped.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-Thanks!
-> ---
->  mm/memcontrol.c | 66 +++++++++++++++++++++++++++++++++++----------------------
->  1 file changed, 41 insertions(+), 25 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index c308ea0..7be796c 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3003,8 +3003,16 @@ static void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
->  	if (res_counter_uncharge(&memcg->kmem, size))
->  		return;
->  
-> +	/*
-> +	 * Releases a reference taken in kmem_cgroup_css_offline in case
-> +	 * this last uncharge is racing with the offlining code or it is
-> +	 * outliving the memcg existence.
-> +	 *
-> +	 * The memory barrier imposed by test&clear is paired with the
-> +	 * explicit one in kmem_cgroup_css_offline.
-> +	 */
->  	if (memcg_kmem_test_and_clear_dead(memcg))
-> -		mem_cgroup_put(memcg);
-> +		css_put(&memcg->css);
->  }
->  
->  void memcg_cache_list_add(struct mem_cgroup *memcg, struct kmem_cache *cachep)
-> @@ -5090,14 +5098,6 @@ static int memcg_update_kmem_limit(struct cgroup *cont, u64 val)
->  		 * starts accounting before all call sites are patched
->  		 */
->  		memcg_kmem_set_active(memcg);
-> -
-> -		/*
-> -		 * kmem charges can outlive the cgroup. In the case of slab
-> -		 * pages, for instance, a page contain objects from various
-> -		 * processes, so it is unfeasible to migrate them away. We
-> -		 * need to reference count the memcg because of that.
-> -		 */
-> -		mem_cgroup_get(memcg);
->  	} else
->  		ret = res_counter_set_limit(&memcg->kmem, val);
->  out:
-> @@ -5130,12 +5130,10 @@ static int memcg_propagate_kmem(struct mem_cgroup *memcg)
->  		goto out;
->  
->  	/*
-> -	 * destroy(), called if we fail, will issue static_key_slow_inc() and
-> -	 * mem_cgroup_put() if kmem is enabled. We have to either call them
-> -	 * unconditionally, or clear the KMEM_ACTIVE flag. I personally find
-> -	 * this more consistent, since it always leads to the same destroy path
-> +	 * __mem_cgroup_free() will issue static_key_slow_dec() because this
-> +	 * memcg is active already. If the later initialization fails then the
-> +	 * cgroup core triggers the cleanup so we do not have to do it here.
->  	 */
-> -	mem_cgroup_get(memcg);
->  	static_key_slow_inc(&memcg_kmem_enabled_key);
->  
->  	mutex_lock(&set_limit_mutex);
-> @@ -5818,23 +5816,39 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
->  	return mem_cgroup_sockets_init(memcg, ss);
->  };
->  
-> -static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
-> +static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
->  {
-> -	mem_cgroup_sockets_destroy(memcg);
-> +	if (!memcg_kmem_is_active(memcg))
-> +		return;
->  
-> +	/*
-> +	 * kmem charges can outlive the cgroup. In the case of slab
-> +	 * pages, for instance, a page contain objects from various
-> +	 * processes. As we prevent from taking a reference for every
-> +	 * such allocation we have to be careful when doing uncharge
-> +	 * (see memcg_uncharge_kmem) and here during offlining.
-> +	 *
-> +	 * The idea is that that only the _last_ uncharge which sees
-> +	 * the dead memcg will drop the last reference. An additional
-> +	 * reference is taken here before the group is marked dead
-> +	 * which is then paired with css_put during uncharge resp. here.
-> +	 *
-> +	 * Although this might sound strange as this path is called when
-> +	 * the reference has already dropped down to 0 and shouldn't be
-> +	 * incremented anymore (css_tryget would fail) we do not have
-> +	 * other options because of the kmem allocations lifetime.
-> +	 */
-> +	css_get(&memcg->css);
-> +
-> +	/* see comment in memcg_uncharge_kmem() */
-> +	wmb();
->  	memcg_kmem_mark_dead(memcg);
->  
->  	if (res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0)
->  		return;
->  
-> -	/*
-> -	 * Charges already down to 0, undo mem_cgroup_get() done in the charge
-> -	 * path here, being careful not to race with memcg_uncharge_kmem: it is
-> -	 * possible that the charges went down to 0 between mark_dead and the
-> -	 * res_counter read, so in that case, we don't need the put
-> -	 */
->  	if (memcg_kmem_test_and_clear_dead(memcg))
-> -		mem_cgroup_put(memcg);
-> +		css_put(&memcg->css);
->  }
->  #else
->  static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
-> @@ -5842,7 +5856,7 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
->  	return 0;
->  }
->  
-> -static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
-> +static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
->  {
->  }
->  #endif
-> @@ -6268,6 +6282,8 @@ static void mem_cgroup_css_offline(struct cgroup *cont)
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
->  
-> +	kmem_cgroup_css_offline(memcg);
-> +
->  	mem_cgroup_invalidate_reclaim_iterators(memcg);
->  	mem_cgroup_reparent_charges(memcg);
->  	mem_cgroup_destroy_all_caches(memcg);
-> @@ -6277,7 +6293,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
->  
-> -	kmem_cgroup_destroy(memcg);
-> +	mem_cgroup_sockets_destroy(memcg);
->  
->  	mem_cgroup_put(memcg);
->  }
-> -- 
-> 1.8.0.2
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+You are right, good catch! So your patch version wins.
+Thank you
 -- 
-Michal Hocko
-SUSE Labs
+Héctor Palacios
