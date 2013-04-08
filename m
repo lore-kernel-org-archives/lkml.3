@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965046Ab3DHOhM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 10:37:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34407 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964984Ab3DHOhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 10:37:07 -0400
-Date: Mon, 8 Apr 2013 16:37:04 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 0/8] memcg, cgroup: kill css_id
-Message-ID: <20130408143704.GJ17178@dhcp22.suse.cz>
-References: <51627DA9.7020507@huawei.com>
+	id S965061Ab3DHOil (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 10:38:41 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:63395 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964984Ab3DHOik (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 10:38:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51627DA9.7020507@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130408124223.GA10093@gmail.com>
+References: <1365087258-7169-1-git-send-email-Waiman.Long@hp.com>
+	<1365087258-7169-2-git-send-email-Waiman.Long@hp.com>
+	<20130408124223.GA10093@gmail.com>
+Date: Mon, 8 Apr 2013 07:38:39 -0700
+X-Google-Sender-Auth: 3dKkyZjTcVBLW1fQXWJo0td4u1M
+Message-ID: <CA+55aFztAtpiGK9e_Ed=Kk4jAWNTahv9OEb0+fgp52Api1s7Mw@mail.gmail.com>
+Subject: Re: [PATCH RFC 1/3] mutex: Make more scalable by doing less atomic operations
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 08-04-13 16:19:53, Li Zefan wrote:
-[...]
->  include/linux/cgroup.h |  44 ++-------
->  kernel/cgroup.c        | 302 +++++++++-----------------------------------------------------
->  mm/memcontrol.c        |  53 ++++++-----
->  3 files changed, 77 insertions(+), 322 deletions(-)
+On Mon, Apr 8, 2013 at 5:42 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> AFAICS the main performance trade-off is the following: when the owner CPU unlocks
+> the mutex, we'll poll it via a read first, which turns the cacheline into
+> shared-read MESI state. Then we notice that its content signals 'lock is
+> available', and we attempt the trylock again.
+>
+> This increases lock latency in the few-contended-tasks case slightly - and we'd
+> like to know by precisely how much, not just for a generic '10-100 users' case
+> which does not tell much about the contention level.
 
-Nice and thanks a lot Li!
+We had this problem for *some* lock where we used a "read + cmpxchg"
+in the hotpath and it caused us problems due to two cacheline state
+transitions (first to shared, then to exclusive). It was faster to
+just assume it was unlocked and try to do an immediate cmpxchg.
 
--- 
-Michal Hocko
-SUSE Labs
+But iirc it is a non-issue for this case, because this is only about
+the contended slow path.
+
+I forget where we saw the case where we should *not* read the initial
+value, though. Anybody remember?
+
+That said, the MUTEX_SHOULD_XCHG_COUNT macro should die. Why shouldn't
+all architectures just consider negative counts to be locked? It
+doesn't matter that some might only ever see -1.
+
+            Linus
