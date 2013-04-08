@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965007Ab3DHKI1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:08:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42876 "EHLO
+	id S936268Ab3DHKIt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:08:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42869 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935082Ab3DHJwN (ORCPT
+	with ESMTP id S935761Ab3DHJwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:52:13 -0400
+	Mon, 8 Apr 2013 05:52:12 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yuchung Cheng <ycheng@google.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Mirko Lindner <mlindner@marvell.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 061/102] tcp: undo spurious timeout after SACK reneging
-Date: Mon,  8 Apr 2013 10:50:16 +0100
-Message-Id: <1365414657-29191-62-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 059/102] sky2: Threshold for Pause Packet is set wrong
+Date: Mon,  8 Apr 2013 10:50:14 +0100
+Message-Id: <1365414657-29191-60-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
 References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
@@ -27,42 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yuchung Cheng <ycheng@google.com>
+From: Mirko Lindner <mlindner@marvell.com>
 
-commit 7ebe183c6d444ef5587d803b64a1f4734b18c564 upstream.
+commit 74f9f42c1c1650e74fb464f76644c9041f996851 upstream.
 
-On SACK reneging the sender immediately retransmits and forces a
-timeout but disables Eifel (undo). If the (buggy) receiver does not
-drop any packet this can trigger a false slow-start retransmit storm
-driven by the ACKs of the original packets. This can be detected with
-undo and TCP timestamps.
+The sky2 driver sets the Rx Upper Threshold for Pause Packet generation to a
+wrong value which leads to only 2kB of RAM remaining space. This can lead to
+Rx overflow errors even with activated flow-control.
 
-Signed-off-by: Yuchung Cheng <ycheng@google.com>
-Acked-by: Neal Cardwell <ncardwell@google.com>
+Fix: We should increase the value to 8192/8
+
+Signed-off-by: Mirko Lindner <mlindner@marvell.com>
+Acked-by: Stephen Hemminger <stephen@networkplumber.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/tcp_input.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ drivers/net/ethernet/marvell/sky2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 410b7c4..e75e4fb 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -2267,11 +2267,8 @@ void tcp_enter_loss(struct sock *sk, int how)
- 	if (tcp_is_reno(tp))
- 		tcp_reset_reno_sack(tp);
+diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
+index 05c2cac..af158e8 100644
+--- a/drivers/net/ethernet/marvell/sky2.c
++++ b/drivers/net/ethernet/marvell/sky2.c
+@@ -1066,7 +1066,7 @@ static void sky2_ramset(struct sky2_hw *hw, u16 q, u32 start, u32 space)
+ 		sky2_write32(hw, RB_ADDR(q, RB_RX_UTHP), tp);
+ 		sky2_write32(hw, RB_ADDR(q, RB_RX_LTHP), space/2);
  
--	if (!how) {
--		/* Push undo marker, if it was plain RTO and nothing
--		 * was retransmitted. */
--		tp->undo_marker = tp->snd_una;
--	} else {
-+	tp->undo_marker = tp->snd_una;
-+	if (how) {
- 		tp->sacked_out = 0;
- 		tp->fackets_out = 0;
- 	}
+-		tp = space - 2048/8;
++		tp = space - 8192/8;
+ 		sky2_write32(hw, RB_ADDR(q, RB_RX_UTPP), tp);
+ 		sky2_write32(hw, RB_ADDR(q, RB_RX_LTPP), space/4);
+ 	} else {
 -- 
 1.8.1.2
 
