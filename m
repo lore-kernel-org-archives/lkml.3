@@ -1,96 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936153Ab3DHOPo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 10:15:44 -0400
-Received: from mail1.bemta8.messagelabs.com ([216.82.243.198]:59775 "EHLO
-	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935972Ab3DHOPm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 10:15:42 -0400
-X-Env-Sender: Hector.Palacios@digi.com
-X-Msg-Ref: server-8.tower-46.messagelabs.com!1365430540!24417245!7
-X-Originating-IP: [66.77.174.14]
-X-StarScan-Received: 
-X-StarScan-Version: 6.8.6.1; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <5162D0DA.6050505@digi.com>
-Date: Mon, 8 Apr 2013 16:14:50 +0200
-From: Hector Palacios <hector.palacios@digi.com>
-Organization: Digi International
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S936196Ab3DHOPz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 10:15:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32994 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935411Ab3DHOPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 10:15:43 -0400
+Date: Mon, 8 Apr 2013 16:15:40 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 12/12] memcg: don't need to free memcg via RCU or
+ workqueue
+Message-ID: <20130408141540.GG17178@dhcp22.suse.cz>
+References: <5162648B.9070802@huawei.com>
+ <51626570.8000400@huawei.com>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "wim@iguana.be" <wim@iguana.be>
-Subject: Re: [PATCH v2] watchdog: core: don't try to stop device if not running
-References: <1365412258-10785-1-git-send-email-hector.palacios@digi.com> <20130408134118.GA18644@roeck-us.net>
-In-Reply-To: <20130408134118.GA18644@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51626570.8000400@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2013 03:41 PM, Guenter Roeck wrote:
-> On Mon, Apr 08, 2013 at 11:10:58AM +0200, Hector Palacios wrote:
->> A watchdog device may be stopped from userspace using WDIOC_SETOPTIONS
->> ioctl and flag WDIOS_DISABLECARD. If the device is closed after this
->> operation, watchdog_release() is called and status bits checked for
->> stopping it. Besides, if the device has not been unregistered a critical
->> message "watchdog did not stop!" is printed, although the ioctl may have
->> successfully stopped it already.
->>
->> Without the patch a user application sample code like this will successfully
->> stop the watchdog, but the kernel will output the message
->> "watchdog did not stop!":
->>
->> 	wd_fd = open("/dev/watchdog", O_RDWR);
->>
->> 	flags = WDIOS_DISABLECARD;
->> 	ioctl(wd_fd, WDIOC_SETOPTIONS, &flags);
->>
->> 	close(wd_fd);
->>
->> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
->> ---
->>
->> Changes from v1:
->> - Make it less intrusive with 'if/else if' clauses
->> - Change the logic of 'err' variable for better readability of code
->> - Remove one-liner if brackets that broke coding sytle
->>
->>   drivers/watchdog/watchdog_dev.c | 8 +++++---
->>   1 file changed, 5 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
->> index ef8edec..8e0f1b8 100644
->> --- a/drivers/watchdog/watchdog_dev.c
->> +++ b/drivers/watchdog/watchdog_dev.c
->> @@ -463,15 +463,17 @@ out:
->>   static int watchdog_release(struct inode *inode, struct file *file)
->>   {
->>   	struct watchdog_device *wdd = file->private_data;
->> -	int err = -EBUSY;
->> +	int err = 0;
->>
->>   	/*
->>   	 * We only stop the watchdog if we received the magic character
->>   	 * or if WDIOF_MAGICCLOSE is not set. If nowayout was set then
->>   	 * watchdog_stop will fail.
->>   	 */
->> -	if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
->> -	    !(wdd->info->options & WDIOF_MAGICCLOSE))
->> +	if (test_bit(WDOG_ACTIVE, &wdd->status))
->> +		err = -EBUSY;
->> +	else if (test_and_clear_bit(WDOG_ALLOW_RELEASE, &wdd->status) ||
->> +		 !(wdd->info->options & WDIOF_MAGICCLOSE))
->>   		err = watchdog_stop(wdd);
->>
-> Looking at it again, it is now broken and fails with EBUSY if WDOG_ACTIVE is
-> set, and it tries to stop the watchdog if it is already stopped.
+On Mon 08-04-13 14:36:32, Li Zefan wrote:
+> Now memcg has the same life cycle with its corresponding cgroup, and
+> a cgroup is freed via RCU and then mem_cgroup_css_free() is called
+> in a work function, so we can simply call __mem_cgroup_free() in
+> mem_cgroup_css_free().
+> 
+> This actually reverts 59927fb984de1703c67bc640c3e522d8b5276c73
+> ("memcg: free mem_cgroup by RCU to fix oops").
+> 
+> Cc: Hugh Dickins <hughd@google.com>
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-You are right, good catch! So your patch version wins.
-Thank you
+OK, makes sense after the previous changes.
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  mm/memcontrol.c | 51 +++++----------------------------------------------
+>  1 file changed, 5 insertions(+), 46 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index a6d44bc..5aa6e91 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -261,28 +261,10 @@ struct mem_cgroup {
+>  	 */
+>  	struct res_counter res;
+>  
+> -	union {
+> -		/*
+> -		 * the counter to account for mem+swap usage.
+> -		 */
+> -		struct res_counter memsw;
+> -
+> -		/*
+> -		 * rcu_freeing is used only when freeing struct mem_cgroup,
+> -		 * so put it into a union to avoid wasting more memory.
+> -		 * It must be disjoint from the css field.  It could be
+> -		 * in a union with the res field, but res plays a much
+> -		 * larger part in mem_cgroup life than memsw, and might
+> -		 * be of interest, even at time of free, when debugging.
+> -		 * So share rcu_head with the less interesting memsw.
+> -		 */
+> -		struct rcu_head rcu_freeing;
+> -		/*
+> -		 * We also need some space for a worker in deferred freeing.
+> -		 * By the time we call it, rcu_freeing is no longer in use.
+> -		 */
+> -		struct work_struct work_freeing;
+> -	};
+> +	/*
+> +	 * the counter to account for mem+swap usage.
+> +	 */
+> +	struct res_counter memsw;
+>  
+>  	/*
+>  	 * the counter to account for kernel memory usage.
+> @@ -6097,29 +6079,6 @@ static void __mem_cgroup_free(struct mem_cgroup *memcg)
+>  		vfree(memcg);
+>  }
+>  
+> -
+> -/*
+> - * Helpers for freeing a kmalloc()ed/vzalloc()ed mem_cgroup by RCU,
+> - * but in process context.  The work_freeing structure is overlaid
+> - * on the rcu_freeing structure, which itself is overlaid on memsw.
+> - */
+> -static void free_work(struct work_struct *work)
+> -{
+> -	struct mem_cgroup *memcg;
+> -
+> -	memcg = container_of(work, struct mem_cgroup, work_freeing);
+> -	__mem_cgroup_free(memcg);
+> -}
+> -
+> -static void free_rcu(struct rcu_head *rcu_head)
+> -{
+> -	struct mem_cgroup *memcg;
+> -
+> -	memcg = container_of(rcu_head, struct mem_cgroup, rcu_freeing);
+> -	INIT_WORK(&memcg->work_freeing, free_work);
+> -	schedule_work(&memcg->work_freeing);
+> -}
+> -
+>  /*
+>   * Returns the parent mem_cgroup in memcgroup hierarchy with hierarchy enabled.
+>   */
+> @@ -6269,7 +6228,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
+>  
+>  	mem_cgroup_sockets_destroy(memcg);
+>  
+> -	call_rcu(&memcg->rcu_freeing, free_rcu);
+> +	__mem_cgroup_free(memcg);
+>  }
+>  
+>  #ifdef CONFIG_MMU
+> -- 
+> 1.8.0.2
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 -- 
-Héctor Palacios
+Michal Hocko
+SUSE Labs
