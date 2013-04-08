@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934767Ab3DHJKe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:10:34 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:57401 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934539Ab3DHJKb convert rfc822-to-8bit (ORCPT
+	id S1762730Ab3DHJLw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:11:52 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:55786 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681Ab3DHJLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:10:31 -0400
+	Mon, 8 Apr 2013 05:11:51 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "Manjunathappa, Prakash" <prakash.pm@ti.com>,
+        "jacmet@sunsite.dk" <jacmet@sunsite.dk>
+Subject: RE: [PATCH v3 3/3] ARM: davinci: da850: add EHRPWM & ECAP DT node
+Thread-Topic: [PATCH v3 3/3] ARM: davinci: da850: add EHRPWM & ECAP DT node
+Thread-Index: AQHOKS19PuoEahWsUk2VKlRRhE1ixJjCSvgAgAnS9HA=
+Date: Mon, 8 Apr 2013 09:09:59 +0000
+Deferred-Delivery: Mon, 8 Apr 2013 09:09:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3EAA91B6@DBDE01.ent.ti.com>
+References: <1364197789-16783-1-git-send-email-avinashphilip@ti.com>
+ <1364197789-16783-4-git-send-email-avinashphilip@ti.com>
+ <515A97DE.1080403@ti.com>
+In-Reply-To: <515A97DE.1080403@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CAJ-VmomQaYFMR0G1DM+dno6qB+AdXUom8=kWPzJoOjuzQj81bw@mail.gmail.com>
-References: <CAJ-Vmo=LVSzdEo6DhfOVT_0JHCTMmdPU1zGfMuBmhmr8QuDmJQ@mail.gmail.com>
-	<CAB=NE6V3sApMSGWkKbaFaJC4+VpLxgYF-xyNRKxiA-YDCwhGkQ@mail.gmail.com>
-	<201304051903.11215.chunkeey@googlemail.com>
-	<CAFSJ42bqquh+xekt8+V3wbG3MOUVFELTxR3mNPfS0Jn9J7OURQ@mail.gmail.com>
-	<8762008auk.fsf@purkki.adurom.net>
-	<CAJ-VmomQaYFMR0G1DM+dno6qB+AdXUom8=kWPzJoOjuzQj81bw@mail.gmail.com>
-Date: Mon, 8 Apr 2013 11:10:30 +0200
-Message-ID: <CAFSJ42Zd3s8xKwt4X3LNcupCTntDULxNntMuD-_Xh6_csiGA4A@mail.gmail.com>
-Subject: Re: Version number policy!
-From: Eugene Krasnikov <k.eugene.e@gmail.com>
-To: Adrian Chadd <adrian@freebsd.org>
-Cc: Kalle Valo <kvalo@adurom.com>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        ath9k_htc_fw <ath9k_htc_fw@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r389BpAb024127
 
-Thanx Christian for a valuable input.
+On Tue, Apr 02, 2013 at 14:03:34, Nori, Sekhar wrote:
+> On 3/25/2013 1:19 PM, Philip Avinash wrote:
+> > Add da850 EHRPWM & ECAP DT node.
+> > Also adds OF_DEV_AUXDATA for EHRPWM & ECAP driver to use EHRPWM & ECAP
+> > clock.
+> 
+> This looks fine to me but I will wait for the bindings to get accepted
+> before taking this one.
 
-It’s a good idea to pack bitmap into the tail/header of the firmware
-binary to get capabilities even before fw loading. The plan is to add
-8 bytes for caps and also add time stamp. Let me play around with that
-and provide fw and driver patch for review.
+Sekhar,
 
-2013/4/6 Adrian Chadd <adrian@freebsd.org>:
-> On 5 April 2013 22:52, Kalle Valo <kvalo@adurom.com> wrote:
->> Eugene Krasnikov <k.eugene.e@gmail.com> writes:
->>
->>> Good point regarding timestamp.
->>>
->>> When it comes to feature bitmap do you have an example of such a
->>> bitmap from carl9170? Why not to rely always on major version?
->>
->> I'm with Christian here. In ath6kl we switched to firmware advertising
->> feature capabilities and I have never looked back, it's so much easier.
->> You don't need to do any mapping between firmware versions and features,
->> you just deal one feature at a time.
->
-> Ok. Well, we've got plenty of time to finalise this before things get
-> established. There's still plenty of tidying up to do before we start
-> pushing in new features.
->
-> Thanks for all your feedback so far!
->
->
->
-> Adrian
+Binding document got accepted in PWM tree [1].
+Can you accept this patch?
 
+1. https://gitorious.org/linux-pwm
 
+Thanks
+Avinash
 
--- 
-Best regards,
-Eugene
+> 
+> Thanks,
+> Sekhar
+> 
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
