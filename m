@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935162Ab3DHJ0D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 05:26:03 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53457 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934484Ab3DHJ0A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:26:00 -0400
-Date: Mon, 8 Apr 2013 11:25:58 +0200
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [BUG] increased us/sys-load due to tty-layer in 2.6.38+ ?!
-Message-ID: <20130408092558.GD25003@pengutronix.de>
+	id S935169Ab3DHJ01 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 05:26:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30145 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934484Ab3DHJ00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 05:26:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,429,1363158000"; 
+   d="scan'208";a="314579500"
+Date: Mon, 8 Apr 2013 11:25:56 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 0/15] arizona updates for v3.10
+Message-ID: <20130408092556.GL24058@zurbaran>
+References: <20130401172748.GG18636@opensource.wolfsonmicro.com>
+ <20130403180423.GA6985@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 11:18:16 up 289 days, 29 min, 89 users,  load average: 0.22, 0.76,
- 0.98
+In-Reply-To: <20130403180423.GA6985@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi Mark,
 
-I noticed a problem with the tty subsystem on ARM. Starting with 2.6.38+ load
-on the serial connection causes a 10-15% increase in system/userspace load.
-This doesn't change up to v3.9-rc4.
+On Wed, Apr 03, 2013 at 07:04:23PM +0100, Mark Brown wrote:
+> On Mon, Apr 01, 2013 at 06:27:48PM +0100, Mark Brown wrote:
+> 
+> > mfd: arizona: Updates for v3.10
+> > 
+> > This is really a few separate topics which I can split out if required:
+> > 
+> >  - WM5102 updates to improve robustness
+> >  - Improved support for interoperation with edge triggered interrupt
+> >    controllers
+> >  - Support for some unusual clocking configurations
+> >  - A couple small single patch updates and fixes
+> > 
+> 
+> A few more updates for this which I'll post just now, I've updated the
+> tag and branch:
+> 
+> The following changes since commit 07961ac7c0ee8b546658717034fe692fd12eefa9:
+> 
+>   Linux 3.9-rc5 (2013-03-31 15:12:43 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git tags/mfd-arizona-3.10
+Thanks, I pulled this one into mfd-next now.
 
-The following setup was used:
-
-  telnet && screen microcom -p /dev/ttyUSB0
-        |                           +--------+
-        |-------------->------------|----+   |
-    +-------+<---------<------------|----+   |
-    |       |       +------+        |        |
-    |  UUT  |<-USB->| FTDI |<-UART->|        |
-    |       |       +------+        |   PC   |
-    +-------+                       +--------+
-        ^
-        |
-  telnet && top -d1
-
-The unit under test (UUT) is connected via USB->FTDI->UART to a PC. On the PC
-a "while true; do find /; done" produces some random output.
-I connect to the UUT via telnet and then open a serial connection to the PC
-in a screen session, seeing the output produced on the PC. Then screen gets
-detached. So, basically, what I'm trying to do is producing load only on the
-USB->FTDI->UART connection and not on the UUT itself.
-Then another telnet connection is opened, to monitor the UUT with "top -d1".
-As UUT an imx27, kirkwood and an AT91 were used.
-
-To find the "offending" code, I bisected v2.6.38..v3.0 which gave the following
-top output (non-scientifically, I know. But the switch in load distribution is
-obvious nevertheless):
-
-2.6.38           Cpu(s):  3.8%us,  1.9%sy,  0.0%ni, 94.3%id
-2.6.38+          Cpu(s):  1.9%us,  3.8%sy,  0.0%ni, 94.3%id
-last good commit Cpu(s):  1.9%us,  2.8%sy,  0.0%ni, 95.3%id
-first bad commit Cpu(s):  4.8%us, 14.5%sy,  0.0%ni, 80.6%id
-2.6.39-rc4       Cpu(s): 10.5%us,  8.9%sy,  0.0%ni, 79.8%id
-3.0              Cpu(s): 15.9%us, 19.6%sy,  0.0%ni, 62.3%id
-
-This resulted in
-        f23eb2b2b28547fc70df82dd5049eb39bec5ba12
-        tty: stop using "delayed_work" in the tty layer
-
-as possible cause. Reverting this commit by hand in v3.8 showed a load distribution
-similar to 2.6.38.
-What I haven't done, is measure if the load is really increasing or if top only
-tells me so. Maybe the algorithm to calculate this somehow produces different
-results because of the switch from schedule_delayed_work to schedule_work?
-So, is this a bug, a feature, a symptom,...?
-
-Regards,
-Steffen
+Cheers,
+Samuel.
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Intel Open Source Technology Centre
+http://oss.intel.com/
