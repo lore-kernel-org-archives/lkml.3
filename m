@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936187Ab3DHKhJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:37:09 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:49350 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934908Ab3DHKhH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 06:37:07 -0400
+	id S936539Ab3DHKi7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:38:59 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:54047 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934557Ab3DHKi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 06:38:57 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: "'Viresh Kumar'" <viresh.kumar@linaro.org>, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, "'Ben Dooks'" <ben-linux@fluff.org>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 07/18] cpufreq: s3c24xx: move cpufreq driver to drivers/cpufreq
+Date: Mon, 08 Apr 2013 12:46:38 +0200
+Message-ID: <2166815.0SZ6SYhSDN@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <2ccd01ce3439$911b51b0$b351f510$%kim@samsung.com>
+References: <cover.1365079581.git.viresh.kumar@linaro.org> <1769336.FkfMpuXqqb@vostro.rjw.lan> <2ccd01ce3439$911b51b0$b351f510$%kim@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <20130403215412.GG3411@htj.dyndns.org>
-References: <cover.1364740180.git.viresh.kumar@linaro.org>
-	<91239cde99aaba2715f63db1f88241d9f4a36e13.1364740180.git.viresh.kumar@linaro.org>
-	<20130331181931.GA7533@htj.dyndns.org>
-	<CAKohpo=nWsUh5y7y_tacGez7uN76QbRFRVPSQcKQMGM1nUBWtw@mail.gmail.com>
-	<20130403215412.GG3411@htj.dyndns.org>
-Date: Mon, 8 Apr 2013 16:07:05 +0530
-Message-ID: <CAP245DXTz-EhQqXycUkm5R3O=vpHQ5ZUrddJ40COpnO35oCqwg@mail.gmail.com>
-Subject: Re: [PATCH V4 3/4] block: queue work on unbound wq
-From: Amit Kucheria <amit.kucheria@linaro.org>
-To: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, Jens Axboe <axboe@kernel.dk>,
-        Robin Randhawa <robin.randhawa@arm.com>,
-        linux-rt-users@vger.kernel.org, Patch Tracking <patches@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        airlied@redhat.com, mingo@redhat.com, davem@davemloft.net,
-        Charles Garcia-Tobin <charles.garcia-tobin@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 4, 2013 at 3:24 AM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Viresh.
->
-> Sorry about the delay.  Lost this one somehow.
->
-> On Mon, Apr 01, 2013 at 12:01:05PM +0530, Viresh Kumar wrote:
->> Just wanted to make this clear before writing it:
->>
->> You want me to do something like (With better names):
->>
->> int wq_unbound_for_power_save_enabled = 0;
->>
->> #ifdef CONFIG_WQ_UNBOUND_FOR_POWER_SAVE
->> #define WQ_UNBOUND_FOR_POWER_SAVE   wq_unbound_for_power_save_enabled
->> #else
->> #define WQ_UNBOUND_FOR_POWER_SAVE 0
->>
->> And provide a call to enable/disable wq_unbound_for_power_save_enabled ??
->
-> Not a call, probably a module_param() so that it can be switched
-> on/off during boot.  You can make the param writable so that it can be
-> flipped run-time but updating existing workqueues would be non-trivial
-> and I don't think it's gonna be worthwhile.
->
-> Thanks!
+On Monday, April 08, 2013 06:15:09 PM Kukjin Kim wrote:
+> Rafael J. Wysocki wrote:
+> > 
+> > On Friday, April 05, 2013 12:36:34 PM Viresh Kumar wrote:
+> > > On 5 April 2013 12:18, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> > > > Basically, this moving looks good to me, but should be re-worked based
+> > on
+> > > > for-next of samsung tree because this touches too many samsung stuff
+> > so this
+> > > > should be sent to upstream via samsung tree.
+> > >
+> > > Hmm... Its already applied in Rafael's tree. But it doesn't mean that
+> > > it can't be
+> > > moved to your tree if there is a issue.
+> > 
+> > Well, I'm dropping it.  Please merge via the Samsung tree.
+> > 
+> OK, I will.
+> 
+> I got patch file from Viresh, and there is a sign from Rafael,
+> but it should be ack. So Rafael, let me use your ack on this patch when
+> I apply. If any problems, please let me know.
 
-Does it make sense to collect this sort of power optimisation under a
-CONFIG_PM sub-item, say, CONFIG_PM_OPTIMISATIONS?
+Since it was signed-off by me before, you can assume it's been ACKed as well.
 
-For people tuning for power, it could be single place to go enable
-stuff and for people looking for performance regressions it would be a
-single place to make sure nothing is enabled.
+Thanks,
+Rafael
 
-/Amit
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
