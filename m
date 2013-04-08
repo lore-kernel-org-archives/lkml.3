@@ -1,116 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936438Ab3DHOaD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 10:30:03 -0400
-Received: from mail.lemote.com ([222.92.8.138]:52229 "EHLO mail.lemote.com"
+	id S936462Ab3DHOaZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 10:30:25 -0400
+Received: from mga09.intel.com ([134.134.136.24]:31762 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935372Ab3DHOaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 10:30:00 -0400
-Message-ID: <3557860596dc88c320d7a477a268052f.squirrel@mail.lemote.com>
-In-Reply-To: <11388244.eyJZJtFod3@vostro.rjw.lan>
-References: <1365300854-3133-1-git-send-email-chenhc@lemote.com>
-    <2582863.XOOaeZz0rz@vostro.rjw.lan>
-    <6c971a50f7639f17b1c419b6a885409b.squirrel@mail.lemote.com>
-    <11388244.eyJZJtFod3@vostro.rjw.lan>
-Date: Mon, 8 Apr 2013 22:29:46 +0800
-Subject: Re: [PATCH] PM/reboot: call syscore_shutdown() after
- disable_nonboot_cpus()
-From: chenhc@lemote.com
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Greg KH" <gregkh@linuxfoundation.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Fuxin Zhang" <zhangfx@lemote.com>,
-        stable@vger.kernel.org
-User-Agent: SquirrelMail/1.4.22
+	id S936441Ab3DHOaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 10:30:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,432,1363158000"; 
+   d="scan'208";a="314727387"
+Date: Mon, 8 Apr 2013 16:30:08 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] mfd: Add device tree bindings for Arizona class devices
+Message-ID: <20130408143008.GA21256@zurbaran>
+References: <1364938728-7732-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=gb2312
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364938728-7732-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Monday, April 08, 2013 10:51:45 AM chenhc@lemote.com wrote:
->> > On Sunday, April 07, 2013 08:29:32 AM Greg KH wrote:
->> >> On Sun, Apr 07, 2013 at 10:46:00AM +0200, Rafael J. Wysocki wrote:
->> >> > On Sunday, April 07, 2013 10:14:14 AM Huacai Chen wrote:
->> >> > > As commit 40dc166c (PM / Core: Introduce struct syscore_ops for
->> core
->> >> > > subsystems PM) say, syscore_ops operations should be carried with
->> >> one
->> >> > > CPU on-line and interrupts disabled. However, after commit
->> f96972f2d
->> >> > > (kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()),
->> >> > > syscore_shutdown() is called before disable_nonboot_cpus(), so
->> break
->> >> > > the rules. We have a MIPS machine with a 8259A PIC, and there is
->> an
->> >> > > external timer (HPET) linked at 8259A. Since 8259A has been
->> shutdown
->> >> > > too early (by syscore_shutdown()), disable_nonboot_cpus() runs
->> >> without
->> >> > > timer interrupt, so it hangs and reboot fails. This patch call
->> >> > > syscore_shutdown() a little later (after disable_nonboot_cpus())
->> to
->> >> > > avoid reboot failure, this is the same way as poweroff does.
->> >> > >
->> >> > > BTW, add disable_nonboot_cpus() in kernel_halt() for consistency.
->> >> > >
->> >> > > Signed-off-by: Huacai Chen <chenhc@lemote.com>
->> >> > > Cc: <stable@vger.kernel.org>
->> >> >
->> >> > While I agree with the changes, I'm not sure if I'm the right
->> >> maintainer,
->> >> > as this isn't really PM code.
->> >> >
->> >> > Andrew, should I take this?
->> >>
->> >> Andrew is on vacation for a few weeks, so you might need to take this
->> >> through your tree.
->> >
->> > OK
->> >
->> > But, it looks like we should actually disable interrupts on the
->> remaining
->> > CPU after we've called disable_nonboot_cpus() so that the
->> > syscore_shutdown()
->> > assumptions are satisfied which the patch doesn't do.
->> >
->> > Chen (I apologize if that's not the right part of your full name to
->> use
->> > here),
->> > do you think that's not necessary and if so, then for what reason?
->>
->> Reboot and poweroff are both OK after I move syscore_shutdown(), I also
->> don't
->> know whether we should disable interrupts. Since you are the author of
->> commit 40dc166c (PM / Core: Introduce struct syscore_ops for core
->> subsystems
->>  PM), please tell me why syscore_shutdown() need interrupt disabled?
->
-> Well, the syscore_ callbacks generally do things that may go wrong when an
-> interrupt comes in while they are being done.  At least that's what
-> happens
-> for the suspend/resume syscore_ callbacks, but I'm not really sure about
-> the
-> shutdown ones.
->
-> I suppose we can leave it as is for the time being.  At least I'm not
-> aware of
-> any problems related to that.
-OK, linux-3.0, 3.2 and 3.4 -stable branch also need this patch because they
-also have merged the commit f96972f2d (kernel/sys.c: call
-disable_nonboot_cpus() in kernel_restart())
+Hi Mark,
 
->
-> Thanks,
-> Rafael
->
->
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
->
+On Tue, Apr 02, 2013 at 10:38:48PM +0100, Mark Brown wrote:
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  Documentation/devicetree/bindings/mfd/arizona.txt |   62 ++++++++++++++++++++
+>  drivers/mfd/arizona-core.c                        |   64 +++++++++++++++++++++
+>  drivers/mfd/arizona-i2c.c                         |   10 +++-
+>  drivers/mfd/arizona-spi.c                         |   10 +++-
+>  drivers/mfd/arizona.h                             |   12 ++++
+>  5 files changed, 154 insertions(+), 4 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/arizona.txt
+This is the one that caused the build failure around missing
+arizona_of_get_core_pdata() with !CONFIG_OF, so I'm leaving this one out for
+now.
 
+Cheers,
+Samuel.
 
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
