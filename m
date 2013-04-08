@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935049Ab3DHRSO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 13:18:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:38822 "EHLO mga09.intel.com"
+	id S935105Ab3DHRSf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 13:18:35 -0400
+Received: from mga09.intel.com ([134.134.136.24]:50355 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934888Ab3DHRSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 13:18:03 -0400
+	id S934717Ab3DHRSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 13:18:02 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,432,1363158000"; 
-   d="scan'208";a="291854092"
+   d="scan'208";a="291854089"
 From: Kevin Strasser <kevin.strasser@linux.intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: Michael Brunner <michael.brunner@kontron.com>,
@@ -20,95 +20,100 @@ Cc: Michael Brunner <michael.brunner@kontron.com>,
         Darren Hart <dvhart@linux.intel.com>, Michael Brunner <mibru@gmx.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kevin Strasser <kevin.strasser@linux.intel.com>
-Subject: [PATCH 4/4] watchdog: Kontron PLD watchdog timer
-Date: Mon,  8 Apr 2013 10:15:21 -0700
-Message-Id: <1365441321-21952-4-git-send-email-kevin.strasser@linux.intel.com>
+Subject: [PATCH 1/4] mfd: Kontron PLD mfd driver
+Date: Mon,  8 Apr 2013 10:15:18 -0700
+Message-Id: <1365441321-21952-1-git-send-email-kevin.strasser@linux.intel.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1365441321-21952-1-git-send-email-kevin.strasser@linux.intel.com>
-References: <1365441321-21952-1-git-send-email-kevin.strasser@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michael Brunner <michael.brunner@kontron.com>
 
-Add watchdog timer support for the on-board PLD found on some Kontron
-embedded modules.
+Add core MFD driver for the on-board PLD found on some Kontron embedded
+modules. The PLD device may provide functions like watchdog, GPIO, UART
+and I2C bus.
+
+The following modules are supported:
+	* COMe-bIP#
+	* COMe-bPC2 (ETXexpress-PC)
+	* COMe-bSC# (ETXexpress-SC T#)
+	* COMe-cCT6
+	* COMe-cDC2 (microETXexpress-DC)
+	* COMe-cPC2 (microETXexpress-PC)
+	* COMe-mCT10
+	* COMe-mSP1 (nanoETXexpress-SP)
+	* COMe-mTT10 (nanoETXexpress-TT)
+	* ETX-OH
 
 Signed-off-by: Michael Brunner <michael.brunner@kontron.com>
 Signed-off-by: Kevin Strasser <kevin.strasser@linux.intel.com>
 ---
- drivers/watchdog/Kconfig           |   20 +
- drivers/watchdog/Makefile          |    2 +
- drivers/watchdog/kempld_now1_wdt.c |  602 +++++++++++++++++++++++++++
- drivers/watchdog/kempld_wdt.c      |  796 ++++++++++++++++++++++++++++++++++++
- drivers/watchdog/kempld_wdt.h      |   75 ++++
- 5 files changed, 1495 insertions(+)
- create mode 100644 drivers/watchdog/kempld_now1_wdt.c
- create mode 100644 drivers/watchdog/kempld_wdt.c
- create mode 100644 drivers/watchdog/kempld_wdt.h
+ drivers/mfd/Kconfig        |   23 +
+ drivers/mfd/Makefile       |    1 +
+ drivers/mfd/kempld-core.c  | 1088 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/kempld.h |  152 +++++++
+ 4 files changed, 1264 insertions(+)
+ create mode 100644 drivers/mfd/kempld-core.c
+ create mode 100644 include/linux/mfd/kempld.h
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 9fcc70c..9ac71ca 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -687,6 +687,26 @@ config HP_WATCHDOG
- 	  To compile this driver as a module, choose M here: the module will be
- 	  called hpwdt.
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index c346941..2491843 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -912,6 +912,29 @@ config MFD_TIMBERDALE
+ 	The timberdale FPGA can be found on the Intel Atom development board
+ 	for in-vehicle infontainment, called Russellville.
  
-+config KEMPLD_WDT
-+	tristate "Kontron COM watchdog"
-+	depends on MFD_KEMPLD
++config MFD_KEMPLD
++	tristate "Support for Kontron module PLD device"
++	select MFD_CORE
 +	help
-+	  Support for the PLD watchdog on some Kontron ETX and COMexpress
-+	  (ETXexpress) modules
++	  This is the core driver for the PLD device found on some Kontron
++	  ETX and COMexpress (ETXexpress) modules. The PLD device may provide
++	  functions like watchdog, GPIO, UART and I2C bus.
 +
-+	  This driver can also be built as a module. If so, the module will be
-+	  called kempld_wdt.
++	  The following modules are supported:
++		* COMe-bIP#
++		* COMe-bPC2 (ETXexpress-PC)
++		* COMe-bSC# (ETXexpress-SC T#)
++		* COMe-cCT6
++		* COMe-cDC2 (microETXexpress-DC)
++		* COMe-cPC2 (microETXexpress-PC)
++		* COMe-mCT10
++		* COMe-mSP1 (nanoETXexpress-SP)
++		* COMe-mTT10 (nanoETXexpress-TT)
++		* ETX-OH
 +
-+config KEMPLD_NOW1_WDT
-+	tristate "Kontron COMe-mSP1 (nanoETXexpress-SP) watchdog"
-+	depends on MFD_KEMPLD
-+	help
-+	  Support for the PLD watchdog on the Kontron COMe-mSP1
-+	  (nanoETXexpress-SP) module.
++	  This driver can also be built as a module. If so, the module
++	  will be called kempld-core.
 +
-+	  This driver can also be built as a module. If so, the module will
-+	  be called kempld_now1_wdt.
-+
- config HPWDT_NMI_DECODING
- 	bool "NMI decoding support for the HP ProLiant iLO2+ Hardware Watchdog Timer"
- 	depends on HP_WATCHDOG
-diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-index a300b94..a029930 100644
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@ -90,6 +90,8 @@ endif
- obj-$(CONFIG_IT8712F_WDT) += it8712f_wdt.o
- obj-$(CONFIG_IT87_WDT) += it87_wdt.o
- obj-$(CONFIG_HP_WATCHDOG) += hpwdt.o
-+obj-$(CONFIG_KEMPLD_WDT) += kempld_wdt.o
-+obj-$(COnFIG_KEMPLD_NOW1_WDT) += kempld_now1_wdt.o
- obj-$(CONFIG_SC1200_WDT) += sc1200wdt.o
- obj-$(CONFIG_SCx200_WDT) += scx200_wdt.o
- obj-$(CONFIG_PC87413_WDT) += pc87413_wdt.o
-diff --git a/drivers/watchdog/kempld_now1_wdt.c b/drivers/watchdog/kempld_now1_wdt.c
+ config LPC_SCH
+ 	tristate "Intel SCH LPC"
+ 	depends on PCI && GENERIC_HARDIRQS
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index b90409c..cb1cb16 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -123,6 +123,7 @@ obj-$(CONFIG_MFD_DB8500_PRCMU)	+= db8500-prcmu.o
+ obj-$(CONFIG_AB8500_CORE)	+= ab8500-core.o ab8500-sysctrl.o
+ obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
+ obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
++obj-$(CONFIG_MFD_KEMPLD)    += kempld-core.o
+ obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
+ obj-$(CONFIG_LPC_ICH)		+= lpc_ich.o
+ obj-$(CONFIG_MFD_RDC321X)	+= rdc321x-southbridge.o
+diff --git a/drivers/mfd/kempld-core.c b/drivers/mfd/kempld-core.c
 new file mode 100644
-index 0000000..19b7272
+index 0000000..778e26b
 --- /dev/null
-+++ b/drivers/watchdog/kempld_now1_wdt.c
-@@ -0,0 +1,602 @@
++++ b/drivers/mfd/kempld-core.c
+@@ -0,0 +1,1088 @@
 +/*
-+ *  kempld_now1_wdt.c - Kontron PLD watchdog driver for COMe-mSP1
++ *  kempld-core.c - Kontron PLD MFD core driver
 + *
-+ *  Copyright (c) 2011-2012 Kontron Europe GmbH
++ *  Copyright (c) 2010-2013 Kontron Europe GmbH
 + *  Author: Michael Brunner <michael.brunner@kontron.com>
-+ *
-+ *  Note: The watchdog of the COMe-mSP1 (nanoETXexpress-SP) has one stage and
-+ *        only supports predefined watchdog timeout values.
-+ *
-+ *        The supported timeouts are:
-+ *              1 s, 5 s, 10 s, 30 s, 1 min, 5 min, 10 min, 15 min
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License 2 as published
@@ -124,1392 +129,1082 @@ index 0000000..19b7272
 + *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 + */
 +
++#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/types.h>
-+#include <linux/miscdevice.h>
-+#include <linux/watchdog.h>
-+#include <linux/fs.h>
-+#include <linux/ioport.h>
 +#include <linux/init.h>
-+#include <linux/uaccess.h>
-+#include <linux/slab.h>
-+#include <linux/delay.h>
++#include <linux/list.h>
++#include <linux/device.h>
 +#include <linux/platform_device.h>
++#include <linux/dmi.h>
++#include <linux/slab.h>
++#include <linux/io.h>
++#include <linux/sched.h>
++#include <linux/mfd/core.h>
 +#include <linux/mfd/kempld.h>
 +
-+#include "kempld_wdt.h"
++#define KEMPLD_MAINTAIN_EFT_COMPATIBILITY	1
 +
-+#define WATCHDOG_TIMEOUT 30
-+static int timeout = WATCHDOG_TIMEOUT;
-+module_param(timeout, int, 0);
-+MODULE_PARM_DESC(timeout,
-+		 "Watchdog timeout in seconds. (1, 5, 10, 30, 60, 300, 600, "
-+		 "900, default=" __MODULE_STRING(WATCHDOG_TIMEOUT) ")");
++static int kempld_platform_device_register(const struct dmi_system_id *id);
++static int kempld_get_mutex_set_index_generic(struct kempld_device_data *pld,
++					u8 index, unsigned int timeout);
++static void kempld_release_mutex_generic(struct kempld_device_data *pld);
 +
-+static bool nowayout = WATCHDOG_NOWAYOUT;
-+module_param(nowayout, bool, 0);
-+MODULE_PARM_DESC(nowayout,
-+		 "Watchdog cannot be stopped once started (default="
-+		 __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
++static int kempld_get_info(struct kempld_device_data *pld);
++static int kempld_get_info_NOW1(struct kempld_device_data *pld);
++static int kempld_get_info_generic(struct kempld_device_data *pld);
++static int kempld_get_features(struct kempld_device_data *pld);
++static int kempld_register_cells_generic(struct kempld_device_data *pld);
++static int kempld_register_cells_NOW1(struct kempld_device_data *pld);
 +
-+/* nanoETXexpress-SP watchdog register definitions */
-+#define KEMPLD_WDT_NOW1					0xA2
-+#define		KEMPLD_WDT_NOW1_KICK_MASK		0x80
-+#define		KEMPLD_WDT_NOW1_ENABLE_MASK		0x40
-+#define		KEMPLD_WDT_NOW1_TIMEOUT_MASK		0x1f
-+#define			KEMPLD_WDT_NOW1_TIMEOUT_1SEC	0x00
-+#define			KEMPLD_WDT_NOW1_TIMEOUT_5SEC	0x01
-+#define			KEMPLD_WDT_NOW1_TIMEOUT_10SEC	0x02
-+#define			KEMPLD_WDT_NOW1_TIMEOUT_30SEC	0x03
-+#define			KEMPLD_WDT_NOW1_TIMEOUT_1MIN	0x10
-+#define			KEMPLD_WDT_NOW1_TIMEOUT_5MIN	0x11
-+#define			KEMPLD_WDT_NOW1_TIMEOUT_10MIN	0x12
-+#define			KEMPLD_WDT_NOW1_TIMEOUT_15MIN	0x13
++#define MAX_IDENT_LEN 4
++static char force_ident[MAX_IDENT_LEN + 1] = "";
++module_param_string(force_ident, force_ident, sizeof(force_ident), 0);
++MODULE_PARM_DESC(force_ident, "Force detection of specific product");
 +
-+/* delay in us necessary due to clock domain sync */
-+#define		KEMPLD_WDT_NOW1_SYNC_DELAY		31
++/* this option is only here for debugging and should never be needed in
++ * production environments */
++static bool force_unlock;
++module_param(force_unlock, bool, 0);
++MODULE_PARM_DESC(force_unlock, "Force breaking the semaphore on driver load");
 +
-+static struct kempld_watchdog_data *kempld_now1_wdt;
++/* this is the default CPLD configuration unless something else is defined */
++static const struct kempld_platform_data kempld_platform_data_generic = {
++	.pld_clock		= 33333333,
++	.ioport			= 0xa80,
++	.force_index_write	= 0,
++	.get_mutex_set_index	= kempld_get_mutex_set_index_generic,
++	.release_mutex		= kempld_release_mutex_generic,
++	.get_info		= kempld_get_info_generic,
++	.register_cells		= kempld_register_cells_generic,
++};
 +
-+static int kempld_now1_wdt_read_supported;
-+static int kempld_now1_wdt_reg_cache;
++/* the COMe-mSP1 (nanoETXexpress-SP) has an earlier version of the CPLD that
++ * works a bit different */
++static const struct kempld_platform_data kempld_platform_data_NOW1 = {
++	.pld_clock		= 33333333,
++	.ioport			= 0xa80,
++	.force_index_write	= 1,
++	.get_mutex_set_index	= NULL,
++	.release_mutex		= NULL,
++	.get_info		= kempld_get_info_NOW1,
++	.register_cells		= kempld_register_cells_NOW1,
++};
 +
-+static int kempld_now1_wdt_start(struct kempld_watchdog_data *wdt)
++static const struct dmi_system_id kempld_boardids[] = {
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "CCR2",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "COMe-bIP2"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "CCR6",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "COMe-bIP6"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "CHR2",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "ETXexpress-SC T2"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "CHR2",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "ETXe-SC T2"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "CHR2",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "COMe-bSC2"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "CHR6",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "ETXexpress-SC T6"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "CHR6",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "ETXe-SC T6"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "CHR6",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "COMe-bSC6"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "CNTG",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "ETXexpress-PC"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "CNTG",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "COMe-bPC2"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "CNTX",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "PXT"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "FRI2",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BIOS_VERSION, "FRI2"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "FRI2",
++		.matches = {
++			DMI_MATCH(DMI_PRODUCT_NAME, "Fish River Island II"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "MBR1",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "ETX-OH"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "NOW1",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "nanoETXexpress-SP"),
++		},
++		.driver_data = (void *)&kempld_platform_data_NOW1,
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "NOW1",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "COMe-mSP1"),
++		},
++		.driver_data = (void *)&kempld_platform_data_NOW1,
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "NTC1",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "nanoETXexpress-TT"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "NTC1",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "nETXe-TT"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "NTC1",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "COMe-mTT"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "NUP1",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "COMe-mCT"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "UNP1",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "microETXexpress-DC"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "UNP1",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "COMe-cDC2"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "UNTG",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "microETXexpress-PC"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "UNTG",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "COMe-cPC2"),
++		},
++	},
++	{
++		.callback = kempld_platform_device_register,
++		.ident = "UUP6",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Kontron"),
++			DMI_MATCH(DMI_BOARD_NAME, "COMe-cCT6"),
++		},
++	},
++	{}
++};
++
++static struct kempld_platform_data kempld_platform_data;
++
++static struct mfd_cell kempld_cell_i2c = {
++	.name = "kempld-i2c",
++};
++
++static struct mfd_cell kempld_cell_wdt = {
++	.name = "kempld-wdt",
++};
++
++static struct mfd_cell kempld_cell_NOW1_wdt = {
++	.name = "kempld_now1-wdt",
++};
++
++static struct mfd_cell kempld_cell_gpio = {
++	.name = "kempld-gpio",
++};
++
++static struct mfd_cell kempld_cell_uart = {
++	.name = "kempld-uart",
++};
++
++static struct mfd_cell kempld_cell_NOW1_gpio = {
++	.name = "kempld_now1-gpio",
++};
++
++static struct platform_device *kempld_pdev;
++
++/**
++ * kempld_read8 - read 8 bit register
++ * @pld: kempld_device_data structure describing the PLD
++ * @index: register index on the chip
++ *
++ * This function reads an 8 bit register of the PLD and returns its value.
++ *
++ * In order for this function to work correctly, kempld_try_get_mutex_set_index
++ * or kempld_get_mutex_set_index has to be called before calling the function
++ * to acquire the mutex. Afterwards the mutex has to be released with
++ * kempld_release_mutex.
++ */
++u8 kempld_read8(struct kempld_device_data *pld, u8 index)
 +{
-+	struct kempld_device_data *pld = wdt->pld;
-+	int wdt_reg;
++	kempld_set_index(pld, index);
 +
-+	kempld_get_mutex_set_index(pld, KEMPLD_WDT_NOW1);
-+	udelay(KEMPLD_WDT_NOW1_SYNC_DELAY);
-+	if (kempld_now1_wdt_read_supported)
-+		wdt_reg = kempld_read8(pld, KEMPLD_WDT_NOW1);
-+	else
-+		wdt_reg = kempld_now1_wdt_reg_cache;
-+	wdt_reg |= KEMPLD_WDT_NOW1_ENABLE_MASK;
-+	udelay(KEMPLD_WDT_NOW1_SYNC_DELAY);
-+	kempld_write8(pld, KEMPLD_WDT_NOW1, wdt_reg);
-+	kempld_now1_wdt_reg_cache = wdt_reg;
-+	kempld_release_mutex(pld);
-+
-+	if (kempld_now1_wdt_read_supported) {
-+		/* read out the register again to check if everything worked */
-+		kempld_get_mutex_set_index(pld, KEMPLD_WDT_NOW1);
-+		udelay(KEMPLD_WDT_NOW1_SYNC_DELAY);
-+		wdt_reg = kempld_read8(pld, KEMPLD_WDT_NOW1);
-+		kempld_release_mutex(pld);
-+
-+		/* check if the watchdog was disabled */
-+		if (!(wdt_reg & KEMPLD_WDT_NOW1_ENABLE_MASK))
-+			return -EACCES;
-+	}
-+
-+	return 0;
++	return ioread8(pld->io_data);
 +}
++EXPORT_SYMBOL(kempld_read8);
 +
-+static int kempld_now1_wdt_stop(struct kempld_watchdog_data *wdt)
++/**
++ * kempld_write8 - write 8 bit register
++ * @pld: kempld_device_data structure describing the PLD
++ * @index: register index on the chip
++ * @data: new register value
++ *
++ * This function writes an 8 bit register of the PLD.
++ *
++ * In order for this function to work correctly, kempld_try_get_mutex_set_index
++ * or kempld_get_mutex_set_index has to be called before calling the function
++ * to acquire the mutex. Afterwards the mutex has to be released with
++ * kempld_release_mutex.
++ */
++void kempld_write8(struct kempld_device_data *pld, u8 index, u8 data)
 +{
-+	struct kempld_device_data *pld = wdt->pld;
-+	int wdt_reg;
++	kempld_set_index(pld, index);
 +
-+	kempld_get_mutex_set_index(pld, KEMPLD_WDT_NOW1);
-+	if (kempld_now1_wdt_read_supported) {
-+		udelay(KEMPLD_WDT_NOW1_SYNC_DELAY);
-+		wdt_reg = kempld_read8(pld, KEMPLD_WDT_NOW1);
++	iowrite8(data, pld->io_data);
++}
++EXPORT_SYMBOL(kempld_write8);
++
++/**
++ * kempld_read16 - read 16 bit register
++ * @pld: kempld_device_data structure describing the PLD
++ * @index: register index on the chip
++ *
++ * This function reads a 16 bit register of the PLD and returns its value.
++ *
++ * In order for this function to work correctly, kempld_try_get_mutex_set_index
++ * or kempld_get_mutex_set_index has to be called before calling the function
++ * to acquire the mutex. Afterwards the mutex has to be released with
++ * kempld_release_mutex.
++ */
++u16 kempld_read16(struct kempld_device_data *pld, u8 index)
++{
++	BUG_ON(index+1 < index);
++
++	return kempld_read8(pld, index) | kempld_read8(pld, index+1) << 8;
++}
++EXPORT_SYMBOL(kempld_read16);
++
++/**
++ * kempld_write16 - write 16 bit register
++ * @pld: kempld_device_data structure describing the PLD
++ * @index: register index on the chip
++ * @data: new register value
++ *
++ * This function writes a 16 bit register of the PLD.
++ *
++ * In order for this function to work correctly, kempld_try_get_mutex_set_index
++ * or kempld_get_mutex_set_index has to be called before calling the function
++ * to acquire the mutex. Afterwards the mutex has to be released with
++ * kempld_release_mutex.
++ */
++void kempld_write16(struct kempld_device_data *pld, u8 index, u16 data)
++{
++	BUG_ON(index+1 < index);
++
++	kempld_write8(pld, index, (u8)data);
++	kempld_write8(pld, index+1, (u8)(data>>8));
++}
++EXPORT_SYMBOL(kempld_write16);
++
++/**
++ * kempld_read32 - read 32 bit register
++ * @pld: kempld_device_data structure describing the PLD
++ * @index: register index on the chip
++ *
++ * This function reads a 32 bit register of the PLD and returns its value.
++ *
++ * In order for this function to work correctly, kempld_try_get_mutex_set_index
++ * or kempld_get_mutex_set_index has to be called before calling the function
++ * to acquire the mutex. Afterwards the mutex has to be released with
++ * kempld_release_mutex.
++ */
++u32 kempld_read32(struct kempld_device_data *pld, u8 index)
++{
++	BUG_ON(index+3 < index);
++
++	return kempld_read16(pld, index) | kempld_read16(pld, index+2) << 16;
++}
++EXPORT_SYMBOL(kempld_read32);
++
++/**
++ * kempld_write32 - write 32 bit register
++ * @pld: kempld_device_data structure describing the PLD
++ * @index: register index on the chip
++ * @data: new register value
++ *
++ * This function writes a 32 bit register of the PLD.
++ *
++ * In order for this function to work correctly, kempld_try_get_mutex_set_index
++ * or kempld_get_mutex_set_index has to be called before calling the function
++ * to acquire the mutex. Afterwards the mutex has to be released with
++ * kempld_release_mutex.
++ */
++void kempld_write32(struct kempld_device_data *pld, u8 index, u32 data)
++{
++	BUG_ON(index+3 < index);
++
++	kempld_write16(pld, index, (u16)data);
++	kempld_write16(pld, index+2, (u16)(data>>16));
++}
++EXPORT_SYMBOL(kempld_write32);
++
++/**
++ * kempld_set_index - change the current register index of the PLD
++ * @pld: kempld_device_data structure describing the PLD
++ * @index: register index on the chip
++ *
++ * This function changes the register index of the PLD.
++ *
++ * If the PLD mutex has been acquired the whole time and the desired index is
++ * already set there might be no actual hardware access done in this function.
++ *
++ * In order for this function to work correctly, kempld_try_get_mutex_set_index
++ * or kempld_get_mutex_set_index has to be called before calling the function
++ * to acquire the mutex. Afterwards the mutex has to be released with
++ * kempld_release_mutex.
++ */
++void kempld_set_index(struct kempld_device_data *pld, u8 index)
++{
++	struct kempld_platform_data *pdata = pld->dev->platform_data;
++
++	BUG_ON(pld->have_mutex == 0);
++
++	if (pld->last_index != index || pdata->force_index_write) {
++		iowrite8(index, pld->io_index);
++		pld->last_index = index;
++	}
++}
++EXPORT_SYMBOL(kempld_set_index);
++
++static int kempld_get_mutex_set_index_generic(struct kempld_device_data *pld,
++					u8 index, unsigned int timeout)
++{
++	struct kempld_platform_data *pdata = pld->dev->platform_data;
++	int data;
++
++	if (!pld->have_mutex) {
++		unsigned long loop_timeout = jiffies + (HZ*timeout)/1000;
++
++		while ((((data = ioread8(pld->io_index)) & KEMPLD_MUTEX_KEY)
++				== KEMPLD_MUTEX_KEY)) {
++			if (timeout != KEMPLD_MUTEX_NOTIMEOUT)
++				if (!time_before(jiffies, loop_timeout))
++					return -ETIMEDOUT;
++
++			/* we will have to wait until mutex is free */
++			spin_unlock_irqrestore(&pld->lock, pld->lock_flags);
++
++			/* give other tasks a chance to release the mutex */
++			schedule_timeout_interruptible(0);
++
++			spin_lock_irqsave(&pld->lock, pld->lock_flags);
++		}
 +	} else
-+		wdt_reg = kempld_now1_wdt_reg_cache;
-+	wdt_reg &= ~KEMPLD_WDT_NOW1_ENABLE_MASK;
-+	udelay(KEMPLD_WDT_NOW1_SYNC_DELAY);
-+	kempld_write8(pld, KEMPLD_WDT_NOW1, wdt_reg);
-+	kempld_now1_wdt_reg_cache = wdt_reg;
-+	kempld_release_mutex(pld);
++		data = ioread8(pld->io_index);
 +
-+	if (kempld_now1_wdt_read_supported) {
-+		/* read out the register again to check if everything worked */
-+		kempld_get_mutex_set_index(pld, KEMPLD_WDT_NOW1);
-+		udelay(KEMPLD_WDT_NOW1_SYNC_DELAY);
-+		wdt_reg = kempld_read8(pld, KEMPLD_WDT_NOW1);
-+		kempld_release_mutex(pld);
-+
-+		/* check if the watchdog was disabled */
-+		if (wdt_reg & KEMPLD_WDT_NOW1_ENABLE_MASK)
-+			return -EACCES;
++	if (KEMPLD_MAINTAIN_EFT_COMPATIBILITY
++		 || ((pld->last_index != (data & ~KEMPLD_MUTEX_KEY))
++		 || pdata->force_index_write)) {
++		iowrite8(index, pld->io_index);
++		pld->last_index = index;
 +	}
 +
 +	return 0;
 +}
 +
-+static int kempld_now1_wdt_keepalive(struct kempld_watchdog_data *wdt)
++/**
++ * kempld_get_mutex_set_index - acquire the PLD mutex and set register index
++ * @pld: kempld_device_data structure describing the PLD
++ * @index: register index on the chip
++ *
++ * This function acquires a PLD spinlock and the PLD mutex, additionally it
++ * also changes the register index. In order to do no unnecessary write cycles
++ * the index provided to this function should be the same that will be used
++ * with the first PLD access that is done afterwards.
++ *
++ * The function will block for at least 10 seconds if the mutex can't be
++ * acquired and issue a warning in that case. In order to not lock the device,
++ * the function assumes that the mutex has been acquired in that case.
++ *
++ * To release the spinlock and mutex kempld_release_mutex can be called.
++ * The spinlock and mutex should only be kept for a few milliseconds, in order
++ * to give other drivers a chance to work with the PLD.
++ */
++inline void kempld_get_mutex_set_index(struct kempld_device_data *pld,
++					u8 index)
 +{
-+	struct kempld_device_data *pld = wdt->pld;
-+	int wdt_reg;
++	struct kempld_platform_data *pdata = pld->dev->platform_data;
 +
-+	kempld_get_mutex_set_index(pld, KEMPLD_WDT_NOW1);
++	spin_lock_irqsave(&pld->lock, pld->lock_flags);
 +
-+	udelay(KEMPLD_WDT_NOW1_SYNC_DELAY);
++	if (pdata->get_mutex_set_index) {
++		/* use a long timeout here as this shouldn't fail */
++		if (pdata->get_mutex_set_index(pld, index, 10000))
++			dev_warn(pld->dev, "semaphore broken!\n");
 +
-+	if (kempld_now1_wdt_read_supported) {
-+		wdt_reg = kempld_read8(pld, KEMPLD_WDT_NOW1);
++		pld->have_mutex = 1;
 +	} else {
-+		wdt_reg = kempld_now1_wdt_reg_cache;
-+		/* write the state again to be sure the trigger register has
-+		 * the right level */
-+		kempld_write8(pld, KEMPLD_WDT_NOW1, wdt_reg);
++		pld->have_mutex = 1;
++		kempld_set_index(pld, index);
++	}
++}
++EXPORT_SYMBOL(kempld_get_mutex_set_index);
++
++/**
++ * kempld_try_get_mutex_set_index - try to acquire the PLD mutex and set
++ *                                   register index
++ * @pld: kempld_device_data structure describing the PLD
++ * @index: register index on the chip
++ * @timeout: timeout value
++ *
++ * This function tries to acquire a PLD spinlock and the PLD mutex,
++ * additionally it also changes the register index. In order to do no
++ * unnecessary write cycles the index provided to this function should be the
++ * same that will be used with the first PLD access that is done afterwards.
++ *
++ * The function will try to get the mutex for the time defined with the timeout
++ * parameter until it returns with -ETIMEDOUT. When the mutex is successfully
++ * acquired the function returns immediately with the return value 0.
++ *
++ * To release the spinlock and mutex kempld_release_mutex can be called.
++ * The spinlock and mutex should only be kept for a few milliseconds, in order
++ * to give other drivers a chance to work with the PLD.
++ */
++inline int kempld_try_get_mutex_set_index(struct kempld_device_data *pld,
++					u8 index, unsigned int timeout)
++{
++	int ret;
++	struct kempld_platform_data *pdata = pld->dev->platform_data;
++
++	spin_lock_irqsave(&pld->lock, pld->lock_flags);
++
++	if (pdata->get_mutex_set_index) {
++		ret = pdata->get_mutex_set_index(pld, index, timeout);
++		if (ret == 0)
++			pld->have_mutex = 1;
++	} else {
++		pld->have_mutex = 1;
++		kempld_set_index(pld, index);
++		ret = 0;
 +	}
 +
-+	if (wdt_reg & KEMPLD_WDT_NOW1_KICK_MASK)
-+		wdt_reg &= ~KEMPLD_WDT_NOW1_KICK_MASK;
-+	else
-+		wdt_reg |= KEMPLD_WDT_NOW1_KICK_MASK;
++	if (ret != 0)
++		spin_unlock_irqrestore(&pld->lock, pld->lock_flags);
 +
-+	udelay(KEMPLD_WDT_NOW1_SYNC_DELAY);
++	return ret;
++}
++EXPORT_SYMBOL(kempld_try_get_mutex_set_index);
 +
-+	kempld_write8(pld, KEMPLD_WDT_NOW1, wdt_reg);
++static void kempld_release_mutex_generic(struct kempld_device_data *pld)
++{
++	iowrite8(pld->last_index | KEMPLD_MUTEX_KEY, pld->io_index);
++}
 +
-+	kempld_now1_wdt_reg_cache = wdt_reg;
++/**
++ * kempld_release_mutex - release PLD mutex
++ * @pld: kempld_device_data structure describing the PLD
++ *
++ * This function releases the spinlock und mutex previously acquired with the
++ * kempld_get_mutex_set_index or kempld_try_get_mutex_set_index functions.
++ */
++inline void kempld_release_mutex(struct kempld_device_data *pld)
++{
++	struct kempld_platform_data *pdata = pld->dev->platform_data;
++
++	BUG_ON(pld->have_mutex == 0);
++
++	if (pdata->release_mutex)
++		pdata->release_mutex(pld);
++
++	pld->have_mutex = 0;
++
++	spin_unlock_irqrestore(&pld->lock, pld->lock_flags);
++}
++EXPORT_SYMBOL(kempld_release_mutex);
++
++/**
++ * kempld_get_info - update device specific information
++ * @pld: kempld_device_data structure describing the PLD
++ *
++ * This function calls the configured board specific kempld_get_info_XXXX
++ * function which is responsible for gathering information about the specific
++ * hardware. The information is then stored within the pld structure.
++ */
++static int kempld_get_info(struct kempld_device_data *pld)
++{
++	struct kempld_platform_data *pdata = pld->dev->platform_data;
++
++	BUG_ON(pdata->get_info == NULL);
++
++	if (pdata->get_info)
++		return pdata->get_info(pld);
++
++	return -EIO;
++}
++
++static int kempld_get_info_NOW1(struct kempld_device_data *pld)
++{
++	kempld_get_mutex_set_index(pld, KEMPLD_VERSION_NOW1);
++
++	pld->info.major = kempld_read8(pld, KEMPLD_VERSION_NOW1);
++	pld->info.minor = 0;
++
++	pld->info.buildnr = kempld_read8(pld, KEMPLD_BUILDNR_NOW1);
++
++	pld->info.number = 0;
++	pld->info.type = 0x0;
++
++	pld->info.spec_major = 0;
++	pld->info.spec_minor = 0;
 +
 +	kempld_release_mutex(pld);
 +
 +	return 0;
 +}
 +
-+
-+static int kempld_now1_wdt_settimeout(struct kempld_watchdog_data *wdt,
-+					int check_only)
++static int kempld_get_info_generic(struct kempld_device_data *pld)
 +{
-+	struct kempld_device_data *pld = wdt->pld;
-+	int wdt_reg;
-+	int ret = 0;
++	u16 data;
 +
-+	kempld_get_mutex_set_index(pld, KEMPLD_WDT_NOW1);
++	kempld_get_mutex_set_index(pld, KEMPLD_VERSION);
 +
-+	if (kempld_now1_wdt_read_supported) {
-+		udelay(KEMPLD_WDT_NOW1_SYNC_DELAY);
-+		wdt_reg = kempld_read8(pld, KEMPLD_WDT_NOW1);
-+	} else
-+		wdt_reg = kempld_now1_wdt_reg_cache;
++	data = kempld_read16(pld, KEMPLD_VERSION);
++	pld->info.minor = KEMPLD_VERSION_GET_MINOR(data);
++	pld->info.major = KEMPLD_VERSION_GET_MAJOR(data);
++	pld->info.number = KEMPLD_VERSION_GET_NUMBER(data);
++	pld->info.type = KEMPLD_VERSION_GET_TYPE(data);
++	pld->info.buildnr = kempld_read16(pld, KEMPLD_BUILDNR);
 +
-+	wdt_reg &= ~KEMPLD_WDT_NOW1_TIMEOUT_MASK;
++	data = kempld_read8(pld, KEMPLD_SPEC);
++	if (data == 0xff) {
++		pld->info.spec_minor = 0;
++		pld->info.spec_major = 1;
++	} else {
++		pld->info.spec_minor = KEMPLD_SPEC_GET_MINOR(data);
++		pld->info.spec_major = KEMPLD_SPEC_GET_MAJOR(data);
++	}
 +
-+	switch (wdt->timeout) {
++	kempld_release_mutex(pld);
++
++	return 0;
++}
++
++/**
++ * kempld_get_features - retrieve features supported by device
++ * @pld: kempld_device_data structure describing the PLD
++ *
++ * This function tries to detect the features supported by the PLD device
++ */
++static int kempld_get_features(struct kempld_device_data *pld)
++{
++	if (pld->info.spec_major > 0) {
++		kempld_get_mutex_set_index(pld, KEMPLD_FEATURE);
++
++		pld->feature_mask = kempld_read16(pld, KEMPLD_FEATURE);
++
++		kempld_release_mutex(pld);
++	} else {
++		/* No way to automatically detect the features, they have to
++		 * be specified during cell registration */
++		pld->feature_mask = 0;
++	}
++
++	return 0;
++}
++
++/*
++ * kempld_register_cells - register cell drivers
++ *
++ * This function registers cell drivers for the detected hardware by calling
++ * the configured kempld_register_cells_XXXX function which is responsible
++ * to detect and register the needed cell drivers.
++ */
++static int kempld_register_cells(struct kempld_device_data *pld)
++{
++	struct kempld_platform_data *pdata = pld->dev->platform_data;
++
++	if (pdata->register_cells)
++		return pdata->register_cells(pld);
++
++	dev_warn(pld->dev, "no subdevices are supported\n");
++
++	return -ENODEV;
++}
++
++static int kempld_register_cells_NOW1(struct kempld_device_data *pld)
++{
++
++	/* The NOW1 has a fixed feature set that cannot be detected */
++
++	pld->feature_mask = KEMPLD_FEATURE_BIT_WATCHDOG
++		| KEMPLD_FEATURE_BIT_GPIO;
++
++	mfd_add_devices(pld->dev, -1, &kempld_cell_NOW1_wdt,
++		1, NULL, 0, NULL);
++	dev_info(pld->dev, "registered watchdog support\n");
++
++	mfd_add_devices(pld->dev, -1, &kempld_cell_NOW1_gpio,
++		1, NULL, 0, NULL);
++	dev_info(pld->dev, "registered GPIO support\n");
++
++	return 0;
++}
++
++static int kempld_register_cells_generic(struct kempld_device_data *pld)
++{
++	if (pld->feature_mask & KEMPLD_FEATURE_BIT_I2C) {
++		mfd_add_devices(pld->dev, -1, &kempld_cell_i2c,
++			1, NULL, 0, NULL);
++		dev_info(pld->dev, "registered I2C support\n");
++	}
++
++	if (pld->feature_mask & KEMPLD_FEATURE_BIT_WATCHDOG) {
++		mfd_add_devices(pld->dev, -1, &kempld_cell_wdt,
++			1, NULL, 0, NULL);
++		dev_info(pld->dev, "registered watchdog support\n");
++	}
++
++	if (pld->feature_mask & KEMPLD_FEATURE_BIT_GPIO) {
++		mfd_add_devices(pld->dev, -1, &kempld_cell_gpio,
++			1, NULL, 0, NULL);
++		dev_info(pld->dev, "registered GPIO support\n");
++	}
++
++	if (pld->feature_mask & KEMPLD_FEATURE_MASK_UART) {
++		mfd_add_devices(pld->dev, -1, &kempld_cell_uart,
++			1, NULL, 0, NULL);
++		dev_info(pld->dev, "registered UART support\n");
++	}
++
++	return 0;
++}
++
++static int kempld_detect_device(struct kempld_device_data *pld)
++{
++	struct kempld_platform_data *pdata = pld->dev->platform_data;
++	int ret;
++	u8 index_reg;
++	int lock_broken = 0;
++	char *typestring;
++
++	spin_lock_irqsave(&pld->lock, pld->lock_flags);
++
++	/* Check for empty IO space */
++	index_reg = ioread8(pld->io_index);
++	if ((index_reg == 0xff) && (ioread8(pld->io_data) == 0xff)) {
++		ret = -ENODEV;
++		spin_unlock_irqrestore(&pld->lock, pld->lock_flags);
++		goto err_empty_io;
++	}
++
++	pld->last_index = index_reg & ~KEMPLD_MUTEX_KEY;
++
++	if ((index_reg & KEMPLD_MUTEX_KEY) == 0x00) {
++		/* lock is currently not acquired by anyone else */
++		/* on some PLD revisions we now already have acquired the
++		 * mutex, so release it before continuing */
++
++		/* We have to set the index first, to be sure to have the
++		 * lock in all HW revisions */
++		iowrite8(pld->last_index, pld->io_index);
++
++		if (pdata->release_mutex)
++			pdata->release_mutex(pld);
++	}
++
++	spin_unlock_irqrestore(&pld->lock, pld->lock_flags);
++
++	/* Now really try to get the mutex, but use a timeout for the case it
++	 * doesn't work */
++	ret = kempld_try_get_mutex_set_index(pld, pld->last_index, 1000);
++	if (ret) {
++		dev_warn(pld->dev,
++			 "timeout while waiting for device semaphore\n");
++		if (force_unlock) {
++			/* We pretend to have aqcuired the lock and go on in
++			 * the hope that it was only a single error */
++			dev_warn(pld->dev,
++				 "force_unlock enabled - ignoring semaphore\n");
++			spin_lock_irqsave(&pld->lock, pld->lock_flags);
++			pld->have_mutex = 1;
++			lock_broken = 1;
++		} else
++			goto err_get_mutex;
++	}
++
++	/* Check if the mutex works as expected */
++	/* This check is left out if the lock has been broken, as it may fail
++	 * if the lock gets released in the meantime by a parallel process */
++	if (pdata->get_mutex_set_index && !lock_broken) {
++		/* pretend to not have the mutex and try to get it, which
++		 * should fail if everything works */
++		pld->have_mutex = 0;
++		if (pdata->get_mutex_set_index(pld, pld->last_index, 0)
++			!= -ETIMEDOUT) {
++			dev_err(pld->dev, "semaphore function check failed\n");
++			ret = -EIO;
++
++			/* release the mutex anyway to be sure everything is
++			 * cleaned up */
++			kempld_release_mutex(pld);
++
++			goto err_check_mutex;
++		}
++		pld->have_mutex = 1;
++	}
++
++	kempld_release_mutex(pld);
++
++	/* from here on it should be save to rely on the device semaphore */
++
++	ret = kempld_get_info(pld);
++	if (ret)
++		goto err_get_info;
++
++	switch (pld->info.type) {
++	case 0:
++		typestring = "release";
++		break;
 +	case 1:
-+		wdt_reg |= KEMPLD_WDT_NOW1_TIMEOUT_1SEC;
++		typestring = "debug";
 +		break;
-+	case 5:
-+		wdt_reg |= KEMPLD_WDT_NOW1_TIMEOUT_5SEC;
-+		break;
-+	case 10:
-+		wdt_reg |= KEMPLD_WDT_NOW1_TIMEOUT_10SEC;
-+		break;
-+	case 30:
-+		wdt_reg |= KEMPLD_WDT_NOW1_TIMEOUT_30SEC;
-+		break;
-+	case 60:
-+		wdt_reg |= KEMPLD_WDT_NOW1_TIMEOUT_1MIN;
-+		break;
-+	case 300:
-+		wdt_reg |= KEMPLD_WDT_NOW1_TIMEOUT_5MIN;
-+		break;
-+	case 600:
-+		wdt_reg |= KEMPLD_WDT_NOW1_TIMEOUT_10MIN;
-+		break;
-+	case 900:
-+		wdt_reg |= KEMPLD_WDT_NOW1_TIMEOUT_15MIN;
++	case 2:
++		typestring = "custom";
 +		break;
 +	default:
-+		ret = -EINVAL;
-+		dev_err(wdt->pld->dev,
-+			"Invalid timeout value given!\n");
++		dev_warn(pld->dev, "PLD type not specified");
++		typestring = "unspecified";
 +	}
 +
-+	if (!check_only) {
-+		if (ret == 0) {
-+			udelay(KEMPLD_WDT_NOW1_SYNC_DELAY);
++	ret = kempld_get_features(pld);
++	if (ret)
++		goto err_get_features;
 +
-+			kempld_write8(pld, KEMPLD_WDT_NOW1, wdt_reg);
-+		}
-+	}
++	dev_info(pld->dev, "found Kontron PLD %d\n", pld->info.number);
++	dev_info(pld->dev, "%s version %d.%d build %d, specification %d.%d\n",
++		 typestring, pld->info.major, pld->info.minor,
++		 pld->info.buildnr, pld->info.spec_major,
++		 pld->info.spec_minor);
 +
-+	kempld_now1_wdt_reg_cache = wdt_reg;
-+
-+	kempld_release_mutex(pld);
-+
-+	return ret;
-+}
-+
-+static int kempld_now1_wdt_gettimeout(struct kempld_watchdog_data *wdt,
-+				 struct kempld_watchdog_stage *stage)
-+{
-+	struct kempld_device_data *pld = wdt->pld;
-+	int wdt_reg;
-+	int timeout;
-+
-+	kempld_get_mutex_set_index(pld, KEMPLD_WDT_NOW1);
-+
-+	if (kempld_now1_wdt_read_supported) {
-+		udelay(KEMPLD_WDT_NOW1_SYNC_DELAY);
-+		wdt_reg = kempld_read8(pld, KEMPLD_WDT_NOW1);
-+		kempld_now1_wdt_reg_cache = wdt_reg;
-+	} else
-+		wdt_reg = kempld_now1_wdt_reg_cache;
-+
-+	kempld_release_mutex(pld);
-+
-+	switch (wdt_reg&KEMPLD_WDT_NOW1_TIMEOUT_MASK) {
-+	case KEMPLD_WDT_NOW1_TIMEOUT_1SEC:
-+		timeout = 1;
-+		break;
-+	case KEMPLD_WDT_NOW1_TIMEOUT_5SEC:
-+		timeout = 5;
-+		break;
-+	case KEMPLD_WDT_NOW1_TIMEOUT_10SEC:
-+		timeout = 10;
-+		break;
-+	case KEMPLD_WDT_NOW1_TIMEOUT_30SEC:
-+		timeout = 30;
-+		break;
-+	case KEMPLD_WDT_NOW1_TIMEOUT_1MIN:
-+		timeout = 60;
-+		break;
-+	case KEMPLD_WDT_NOW1_TIMEOUT_5MIN:
-+		timeout = 300;
-+		break;
-+	case KEMPLD_WDT_NOW1_TIMEOUT_10MIN:
-+		timeout = 600;
-+		break;
-+	case KEMPLD_WDT_NOW1_TIMEOUT_15MIN:
-+		timeout = 900;
-+		break;
-+	default:
-+		timeout = -ERANGE;
-+	}
-+
-+	return timeout;
-+}
-+
-+static ssize_t kempld_now1_wdt_write(struct file *file, const char __user
-+					*data, size_t count, loff_t *ppos)
-+{
-+	struct kempld_watchdog_data *wdt = kempld_now1_wdt;
-+
-+	BUG_ON(wdt == NULL);
-+
-+	if (count) {
-+		kempld_now1_wdt_keepalive(wdt);
-+
-+		if (!nowayout) {
-+			size_t i;
-+
-+			wdt->expect_close = 0;
-+
-+			for (i = 0; i < count; i++) {
-+				char c;
-+				if (get_user(c, data+i))
-+					return -EFAULT;
-+				if (c == 'V')
-+					wdt->expect_close = 42;
-+			}
-+		}
-+	}
-+
-+	return count;
-+}
-+
-+static long kempld_now1_wdt_ioctl(struct file *file, unsigned int cmd,
-+				unsigned long arg)
-+{
-+	void __user *argp = (void __user *)arg;
-+	int __user *p = argp;
-+	struct kempld_watchdog_data *wdt = kempld_now1_wdt;
-+	int options;
-+	int value;
-+	int ret = 0;
-+
-+	BUG_ON(wdt == NULL);
-+
-+	switch (cmd) {
-+	case WDIOC_GETSUPPORT:
-+		if (copy_to_user(argp, &wdt->ident, sizeof(wdt->ident)))
-+			ret = -EFAULT;
-+		break;
-+	case WDIOC_GETSTATUS:
-+	case WDIOC_GETBOOTSTATUS:
-+		ret = put_user(0, p);
-+		break;
-+	case WDIOC_SETOPTIONS:
-+		if (get_user(options, p)) {
-+			ret = -EFAULT;
-+			break;
-+		}
-+		if (options & WDIOS_DISABLECARD)
-+			ret = kempld_now1_wdt_stop(wdt);
-+		if (options & WDIOS_ENABLECARD) {
-+			ret = kempld_now1_wdt_start(wdt);
-+			kempld_now1_wdt_keepalive(wdt);
-+		}
-+		break;
-+	case WDIOC_KEEPALIVE:
-+		kempld_now1_wdt_keepalive(wdt);
-+		break;
-+	case WDIOC_SETTIMEOUT:
-+		if (get_user(value, p)) {
-+			ret = -EFAULT;
-+			break;
-+		}
-+		wdt->timeout = value;
-+		ret = kempld_now1_wdt_settimeout(wdt, 0);
-+		kempld_now1_wdt_keepalive(wdt);
-+		break;
-+	case WDIOC_GETTIMEOUT:
-+		value = kempld_now1_wdt_gettimeout(wdt, wdt->timeout_stage);
-+		if (timeout < 0)
-+			ret = ERANGE;
-+		else
-+			ret = put_user(timeout, p);
-+		break;
-+	default:
-+		ret = -ENOTTY;
-+	}
-+
-+	return ret;
-+}
-+
-+static int kempld_now1_wdt_release(struct inode *inode, struct file *file)
-+{
-+	struct kempld_watchdog_data *wdt = kempld_now1_wdt;
-+
-+	BUG_ON(wdt == NULL);
-+
-+	if (wdt->expect_close)
-+		kempld_now1_wdt_stop(wdt);
-+	else {
-+		dev_warn(wdt->pld->dev,
-+			 "Unexpected close, not stopping watchdog!\n");
-+		kempld_now1_wdt_keepalive(wdt);
-+	}
-+
-+	kempld_now1_wdt->expect_close = 0;
-+
-+	clear_bit(0, &wdt->is_open);
++	ret = kempld_register_cells(pld);
++	if (ret)
++		goto err_register_functions;
 +
 +	return 0;
-+}
 +
-+static int kempld_now1_wdt_open(struct inode *inode, struct file *file)
-+{
-+	int ret;
-+	struct kempld_watchdog_data *wdt = kempld_now1_wdt;
-+	struct kempld_device_data *pld = wdt->pld;
-+	u8 wdt_reg;
-+
-+	BUG_ON(wdt == NULL);
-+
-+	if (test_and_set_bit(0, &wdt->is_open))
-+		return -EBUSY;
-+
-+	if (nowayout)
-+		__module_get(THIS_MODULE);
-+
-+	kempld_get_mutex_set_index(pld, KEMPLD_WDT_NOW1);
-+	if (kempld_now1_wdt_read_supported) {
-+		udelay(KEMPLD_WDT_NOW1_SYNC_DELAY);
-+		wdt_reg = kempld_read8(pld, KEMPLD_WDT_NOW1);
-+	} else {
-+		wdt_reg = kempld_now1_wdt_reg_cache;
-+	}
-+	kempld_now1_wdt_reg_cache = wdt_reg;
-+	kempld_release_mutex(pld);
-+
-+	/* kick the watchdog if it is already enabled, otherwise start it */
-+	if (wdt_reg & KEMPLD_WDT_NOW1_ENABLE_MASK) {
-+		kempld_now1_wdt_keepalive(wdt);
-+	} else {
-+		ret = kempld_now1_wdt_settimeout(wdt, 0);
-+		if (ret)
-+			goto err_enable_wdt;
-+		ret = kempld_now1_wdt_start(wdt);
-+		if (ret)
-+			goto err_enable_wdt;
-+	}
-+
-+	return nonseekable_open(inode, file);
-+
-+err_enable_wdt:
-+	dev_err(wdt->pld->dev, "Failed to enable the watchdog timer!\n");
-+	wdt->expect_close = 1;
-+	kempld_now1_wdt_release(inode, file);
-+
++err_register_functions:
++err_get_features:
++err_get_info:
++err_check_mutex:
++err_get_mutex:
++err_empty_io:
 +	return ret;
 +}
 +
-+static const struct file_operations kempld_now1_wdt_fops = {
-+	.owner		= THIS_MODULE,
-+	.llseek		= no_llseek,
-+	.write		= kempld_now1_wdt_write,
-+	.unlocked_ioctl	= kempld_now1_wdt_ioctl,
-+	.open		= kempld_now1_wdt_open,
-+	.release	= kempld_now1_wdt_release,
-+};
-+
-+static struct miscdevice kempld_now1_wdt_miscdev = {
-+	.minor	= WATCHDOG_MINOR,
-+	.name	= "watchdog",
-+	.fops	= &kempld_now1_wdt_fops,
-+};
-+
-+static int kempld_now1_wdt_probe(struct platform_device *pdev)
++static int kempld_probe(struct platform_device *pdev)
 +{
-+	struct kempld_watchdog_data *wdt;
++	struct kempld_platform_data *pdata = pdev->dev.platform_data;
++	struct resource *ioport;
 +	struct kempld_device_data *pld;
-+	u8 wdt_reg;
 +	int ret;
 +
-+	if (kempld_now1_wdt != NULL) {
-+		dev_err(&pdev->dev,
-+			"unable to support more than one watchdog devices\n");
-+		return -EMFILE;
-+	}
++	dev_dbg(&pdev->dev, "probing for Kontron PLD on %s\n",
++		 pdata->board_id->ident);
 +
-+	wdt = kzalloc(sizeof(struct kempld_watchdog_data), GFP_KERNEL);
-+	if (wdt == NULL) {
++	pld = kzalloc(sizeof(struct kempld_device_data), GFP_KERNEL);
++	if (pld == NULL) {
 +		dev_err(&pdev->dev, "unable to get memory for device data\n");
 +		ret = -ENOMEM;
 +		goto err_alloc_dev_data;
 +	}
 +
-+	wdt->timeout_stage = kzalloc(sizeof(struct kempld_watchdog_stage),
-+					GFP_KERNEL);
-+	if (wdt->timeout_stage == NULL) {
-+		dev_err(&pdev->dev,
-+			"unable to get memory for watchdog stage\n");
++	ioport = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	if (!ioport) {
++		ret = -EINVAL;
++		goto err_get_resource;
++	}
++
++	pld->io_base = ioport_map(ioport->start, ioport->end - ioport->start);
++	if (!pld->io_base) {
 +		ret = -ENOMEM;
-+		goto err_alloc_dev_data;
++		goto err_iomap;
 +	}
 +
-+	wdt->stages = 1;
-+	wdt->stage[0] = wdt->timeout_stage;
++	pld->io_index = pld->io_base;
++	pld->io_data = pld->io_base + 1;
 +
-+	pld = dev_get_drvdata(pdev->dev.parent);
-+	wdt->pld = pld;
++	pld->pld_clock = pdata->pld_clock;
 +
-+	platform_set_drvdata(pdev, wdt);
++	spin_lock_init(&pld->lock);
 +
-+	strncpy(wdt->ident.identity, "nanoETXexpress-SP Watchdog",
-+		sizeof(wdt->ident.identity));
++	pld->dev = &pdev->dev;
 +
-+	/* set default values for the case we start the watchdog or change
-+	 * the configuration */
-+	wdt->timeout = timeout;
++	platform_set_drvdata(pdev, pld);
 +
-+	/* use settimeout to check if the timeout parameter is valid */
-+	ret = kempld_now1_wdt_settimeout(wdt, 1);
++	ret = kempld_detect_device(pld);
 +	if (ret)
-+		goto err_check_timeout;
-+	wdt->ident.firmware_version = (pld->info.major<<8) + pld->info.minor;
-+	if (pld->info.major > 67)
-+		kempld_now1_wdt_read_supported = 1;
-+	else
-+		dev_info(wdt->pld->dev,
-+			 "Watchdog revision does not support read - "
-+			 "unable to get watchdog state!\n");
-+
-+	/* get initial watchdog status */
-+	kempld_get_mutex_set_index(pld, KEMPLD_WDT_NOW1);
-+	if (kempld_now1_wdt_read_supported) {
-+		udelay(KEMPLD_WDT_NOW1_SYNC_DELAY);
-+		wdt_reg = kempld_read8(pld, KEMPLD_WDT_NOW1);
-+	} else {
-+		wdt_reg = 0x0;
-+	}
-+	kempld_now1_wdt_reg_cache = wdt_reg;
-+	kempld_release_mutex(wdt->pld);
-+
-+	/* check if watchdog is enabled */
-+	if (wdt_reg & KEMPLD_WDT_NOW1_ENABLE_MASK)
-+		dev_info(wdt->pld->dev, "Watchdog is already enabled!\n");
-+
-+	wdt->ident.options = WDIOF_KEEPALIVEPING;
-+	wdt->ident.options |= WDIOF_SETTIMEOUT;
-+	if (!nowayout)
-+		wdt->ident.options |= WDIOF_MAGICCLOSE;
-+
-+	kempld_now1_wdt = wdt;
-+
-+	ret = misc_register(&kempld_now1_wdt_miscdev);
-+	if (ret)
-+		goto err_misc_register;
-+
-+	dev_info(wdt->pld->dev, "watchdog initialized\n");
++		goto err_detect_device;
 +
 +	return 0;
 +
-+err_misc_register:
-+	kfree(kempld_now1_wdt);
-+	kempld_now1_wdt = NULL;
-+err_check_timeout:
++err_detect_device:
++	ioport_unmap(pld->io_base);
++err_iomap:
++err_get_resource:
++	kfree(pld);
 +err_alloc_dev_data:
 +	return ret;
 +}
 +
-+static int kempld_now1_wdt_remove(struct platform_device *pdev)
++static int kempld_remove(struct platform_device *pdev)
 +{
-+	struct kempld_watchdog_data *wdt = platform_get_drvdata(pdev);
++	struct kempld_device_data *pld = platform_get_drvdata(pdev);
 +
-+	BUG_ON(wdt != kempld_now1_wdt);
++	if (pld->have_mutex)
++		kempld_release_mutex(pld);
 +
-+	/* stop or at least keepalive the watchdog before we leave */
-+	if (wdt != NULL) {
-+		if (!nowayout)
-+			kempld_now1_wdt_stop(wdt);
-+		else
-+			kempld_now1_wdt_keepalive(wdt);
-+	}
-+
-+	misc_deregister(&kempld_now1_wdt_miscdev);
-+
-+	kfree(wdt);
-+	kempld_now1_wdt = NULL;
++	mfd_remove_devices(&pdev->dev);
 +	platform_set_drvdata(pdev, NULL);
 +
++	ioport_unmap(pld->io_base);
++
++	kfree(pld);
++
 +	return 0;
 +}
 +
-+static struct platform_driver kempld_now1_wdt_driver = {
-+	.driver = {
-+		.name = "kempld_now1-wdt",
-+		.owner = THIS_MODULE,
++static struct platform_driver kempld_driver = {
++	.driver		= {
++		.name	= "kempld",
++		.owner	= THIS_MODULE,
 +	},
-+	.probe = kempld_now1_wdt_probe,
-+	.remove = kempld_now1_wdt_remove,
++	.probe		= kempld_probe,
++	.remove		= kempld_remove,
 +};
 +
-+static int __init kempld_now1_wdt_init(void)
++static int kempld_platform_device_register(const struct dmi_system_id *id)
 +{
-+	return platform_driver_register(&kempld_now1_wdt_driver);
-+}
++	struct platform_device *pdev;
++	static struct resource resource[1];
++	int ret = 0;
 +
-+static void __exit kempld_now1_wdt_exit(void)
-+{
-+	platform_driver_unregister(&kempld_now1_wdt_driver);
-+}
++	/* check if we already registered a kempld platform device,
++	 * there can only be one */
++	if (kempld_pdev != NULL) {
++		ret = -EINVAL;
++		goto err_device_already_registered;
++	}
 +
-+module_init(kempld_now1_wdt_init);
-+module_exit(kempld_now1_wdt_exit);
++	/* use the generic platform data unless something else is specified */
++	if (id->driver_data != NULL)
++		memcpy(&kempld_platform_data, id->driver_data,
++			sizeof(kempld_platform_data));
++	else
++		memcpy(&kempld_platform_data, &kempld_platform_data_generic,
++			sizeof(kempld_platform_data));
 +
-+MODULE_DESCRIPTION("KEM PLD nanoETXexpress-SP Watchdog Driver");
-+MODULE_AUTHOR("Michael Brunner <michael.brunner@kontron.com>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
-diff --git a/drivers/watchdog/kempld_wdt.c b/drivers/watchdog/kempld_wdt.c
-new file mode 100644
-index 0000000..bc150e5
---- /dev/null
-+++ b/drivers/watchdog/kempld_wdt.c
-@@ -0,0 +1,796 @@
-+/*
-+ *  kempld_wdt.c - Kontron PLD watchdog driver
-+ *
-+ *  Copyright (c) 2010-2012 Kontron Europe GmbH
-+ *  Author: Michael Brunner <michael.brunner@kontron.com>
-+ *
-+ *  Note: From the PLD watchdog point of view timeout and pretimeout are
-+ *        defined differently than in the kernel.
-+ *        First the pretimeout stage runs out before the timeout stage gets
-+ *        active. This has to be kept in mind.
-+ *
-+ *  Kernel/API:                     P-----| pretimeout
-+ *                |-----------------------T timeout
-+ *  Watchdog:     |-----------------P       pretimeout_stage
-+ *                                  |-----T timeout_stage
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License 2 as published
-+ *  by the Free Software Foundation.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; see the file COPYING.  If not, write to
-+ *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
 +
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/types.h>
-+#include <linux/miscdevice.h>
-+#include <linux/watchdog.h>
-+#include <linux/fs.h>
-+#include <linux/ioport.h>
-+#include <linux/init.h>
-+#include <linux/uaccess.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/mfd/kempld.h>
++	pdev = platform_device_alloc("kempld", -1);
++	if (!pdev) {
++		ret = -ENOMEM;
++		goto err_device_alloc_failed;
++	}
 +
-+#include "kempld_wdt.h"
++	kempld_platform_data.board_id = id;
 +
-+#define WATCHDOG_DEFAULT_TIMEOUT 20
-+#define WATCHDOG_DEFAULT_PRETIMEOUT 0
-+static int timeout = -1;
-+static int pretimeout = -1;
-+/* The maximum timeout values have to be probed */
-+module_param(timeout, int, 0);
-+MODULE_PARM_DESC(timeout,
-+		 "Watchdog timeout in seconds. (>0, default="
-+		__MODULE_STRING(WATCHDOG_DEFAULT_TIMEOUT) ")");
-+module_param(pretimeout, int, 0);
-+MODULE_PARM_DESC(pretimeout,
-+		 "Watchdog pretimeout in seconds. (>=0, default="
-+		__MODULE_STRING(WATCHDOG_DEFAULT_PRETIMEOUT) ")");
++	ret = platform_device_add_data(pdev, &kempld_platform_data,
++					sizeof(kempld_platform_data));
++	if (ret)
++		goto err_add_data_failed;
 +
-+static bool nowayout = WATCHDOG_NOWAYOUT;
-+module_param(nowayout, bool, 0);
-+MODULE_PARM_DESC(nowayout,
-+		 "Watchdog cannot be stopped once started (default="
-+		 __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
++	resource[0].start = kempld_platform_data.ioport;
++	resource[0].end   = kempld_platform_data.ioport + 1;
++	resource[0].flags = IORESOURCE_IO;
 +
-+static struct kempld_watchdog_data *kempld_wdt;
++	ret = platform_device_add_resources(pdev, resource, 1);
++	if (ret)
++		goto err_device_add_resources;
 +
-+static int kempld_wdt_start(struct kempld_watchdog_data *wdt)
-+{
-+	struct kempld_device_data *pld = wdt->pld;
-+	u8 status;
++	ret = platform_device_add(pdev);
++	if (ret)
++		goto err_device_register_failed;
 +
-+	kempld_get_mutex_set_index(pld, KEMPLD_WDT_CFG);
-+
-+	status = kempld_read8(pld, KEMPLD_WDT_CFG);
-+	status |= KEMPLD_WDT_CFG_ENABLE;
-+	kempld_write8(pld, KEMPLD_WDT_CFG, status);
-+	status = kempld_read8(pld, KEMPLD_WDT_CFG);
-+
-+	kempld_release_mutex(pld);
-+
-+	/* check if the watchdog was enabled */
-+	if (!(status & KEMPLD_WDT_CFG_ENABLE))
-+		return -EACCES;
++	kempld_pdev = pdev;
 +
 +	return 0;
++
++err_device_register_failed:
++err_device_add_resources:
++err_add_data_failed:
++	platform_device_put(pdev);
++err_device_alloc_failed:
++err_device_already_registered:
++	return ret;
 +}
 +
-+static int kempld_wdt_stop(struct kempld_watchdog_data *wdt)
++static int __init kempld_init(void)
 +{
-+	struct kempld_device_data *pld = wdt->pld;
-+	u8 status;
++	int ret;
 +
-+	kempld_get_mutex_set_index(pld, KEMPLD_WDT_CFG);
++	ret = platform_driver_register(&kempld_driver);
++	if (ret)
++		goto err_platform_driver_register;
 +
-+	status = kempld_read8(pld, KEMPLD_WDT_CFG);
-+	status &= ~KEMPLD_WDT_CFG_ENABLE;
-+	kempld_write8(pld, KEMPLD_WDT_CFG, status);
-+	status = kempld_read8(pld, KEMPLD_WDT_CFG);
++	/* check force parameter if a specific implementation should be
++	 * probed */
++	if (force_ident[0]) {
++		int found = 0;
++		const struct dmi_system_id *d;
++		for (d = kempld_boardids; d->matches[0].slot != DMI_NONE; d++)
++			if (strstr(d->ident, force_ident)) {
++				found++;
++				if (d->callback && d->callback(d))
++					break;
++			}
 +
-+	kempld_release_mutex(pld);
++		if (!found)
++			goto err_device_not_found;
 +
-+	/* check if the watchdog was disabled */
-+	if (status & KEMPLD_WDT_CFG_ENABLE)
-+		return -EACCES;
++		return 0;
++	}
 +
-+	return 0;
-+}
-+
-+static int kempld_wdt_keepalive(struct kempld_watchdog_data *wdt)
-+{
-+	struct kempld_device_data *pld = wdt->pld;
-+
-+	kempld_get_mutex_set_index(pld, KEMPLD_WDT_CFG);
-+
-+	kempld_write8(pld, KEMPLD_WDT_KICK, 'K');
-+
-+	kempld_release_mutex(pld);
-+
-+	return 0;
-+}
-+
-+static int kempld_wdt_gettimeout(struct kempld_watchdog_data *wdt,
-+				 struct kempld_watchdog_stage *stage)
-+{
-+	struct kempld_device_data *pld = wdt->pld;
-+	u8 stage_cfg;
-+	int bits;
-+	u64 timeout;
-+	u32 remainder;
-+
-+	if (stage == NULL)
++	/* try to autodetect the board */
++	if (dmi_check_system(kempld_boardids))
 +		return 0;
 +
-+	kempld_get_mutex_set_index(pld, KEMPLD_WDT_STAGE_CFG(stage->num));
-+
-+	stage_cfg = kempld_read8(pld, KEMPLD_WDT_STAGE_CFG(stage->num));
-+	timeout = kempld_read32(pld, KEMPLD_WDT_STAGE_TIMEOUT(stage->num));
-+
-+	kempld_release_mutex(pld);
-+
-+	bits = KEMPLD_WDT_STAGE_CFG_GET_PRESCALER(stage_cfg);
-+	timeout = (timeout & stage->timeout_mask) * KEMPLD_PRESCALER(bits);
-+	remainder = do_div(timeout, pld->pld_clock);
-+
-+	/* Round up the return value if necessary */
-+	if ((timeout > 0) && (remainder >= (pld->pld_clock/2)))
-+		timeout++;
-+
-+	return timeout;
-+}
-+
-+static int kempld_wdt_setstageaction(struct kempld_watchdog_data *wdt,
-+				 struct kempld_watchdog_stage *stage,
-+				 int action)
-+{
-+	struct kempld_device_data *pld = wdt->pld;
-+	u8 stage_cfg;
-+
-+	if (stage == NULL)
-+		return -EINVAL;
-+
-+	kempld_get_mutex_set_index(pld, KEMPLD_WDT_STAGE_CFG(stage->num));
-+
-+	stage_cfg = kempld_read8(pld, KEMPLD_WDT_STAGE_CFG(stage->num));
-+	stage_cfg &= ~KEMPLD_WDT_STAGE_CFG_ACTION_MASK;
-+	stage_cfg |= (action & KEMPLD_WDT_STAGE_CFG_ACTION_MASK);
-+	if (action == KEMPLD_WDT_ACTION_RESET)
-+		stage_cfg |= KEMPLD_WDT_STAGE_CFG_ASSERT;
-+	else
-+		stage_cfg &= ~KEMPLD_WDT_STAGE_CFG_ASSERT;
-+
-+	kempld_write8(pld, KEMPLD_WDT_STAGE_CFG(stage->num), stage_cfg);
-+
-+	kempld_release_mutex(pld);
-+
-+	return 0;
-+}
-+
-+static int kempld_wdt_setstagetimeout(struct kempld_watchdog_data *wdt,
-+				 struct kempld_watchdog_stage *stage,
-+				 int timeout)
-+{
-+	struct kempld_device_data *pld = wdt->pld;
-+	u8 stage_cfg;
-+	u8 prescaler;
-+	u64 stage_timeout64;
-+	u32 stage_timeout;
-+	u32 remainder;
-+
-+	if (stage == NULL)
-+		return -EINVAL;
-+
-+	prescaler = KEMPLD_WDT_PRESCALER_21BIT;
-+
-+	stage_timeout64 = ((u64)timeout*pld->pld_clock);
-+	remainder = do_div(stage_timeout64, KEMPLD_PRESCALER(prescaler));
-+	if (remainder)
-+		stage_timeout64++;
-+	stage_timeout = stage_timeout64 & stage->timeout_mask;
-+
-+	if (stage_timeout64 != (u64)stage_timeout)
-+		return -EINVAL;
-+
-+	kempld_get_mutex_set_index(pld, KEMPLD_WDT_STAGE_CFG(stage->num));
-+
-+	stage_cfg = kempld_read8(pld, KEMPLD_WDT_STAGE_CFG(stage->num));
-+	stage_cfg &= ~KEMPLD_WDT_STAGE_CFG_PRESCALER_MASK;
-+	stage_cfg |= KEMPLD_WDT_STAGE_CFG_SET_PRESCALER(prescaler);
-+	kempld_write8(pld, KEMPLD_WDT_STAGE_CFG(stage->num), stage_cfg);
-+	kempld_write32(pld, KEMPLD_WDT_STAGE_TIMEOUT(stage->num),
-+			stage_timeout);
-+
-+	kempld_release_mutex(pld);
-+
-+	return 0;
-+}
-+
-+static void kempld_wdt_update_timeouts(struct kempld_watchdog_data *wdt)
-+{
-+	int pretimeout_stage;
-+	int timeout_stage;
-+
-+	pretimeout_stage = kempld_wdt_gettimeout(wdt, wdt->pretimeout_stage);
-+	timeout_stage = kempld_wdt_gettimeout(wdt, wdt->timeout_stage);
-+
-+	if (pretimeout_stage)
-+		wdt->pretimeout = timeout_stage;
-+	else
-+		wdt->pretimeout = 0;
-+
-+	wdt->timeout = pretimeout_stage + timeout_stage;
-+
-+	if (wdt->pretimeout < 0) {
-+		wdt->pretimeout = WATCHDOG_DEFAULT_PRETIMEOUT;
-+		dev_err(wdt->pld->dev, "failed to get valid pretimeout value\n"
-+			" -> using driver default\n");
-+	}
-+	if (wdt->timeout < 0) {
-+		wdt->timeout = WATCHDOG_DEFAULT_TIMEOUT;
-+		dev_err(wdt->pld->dev, "failed to get valid timeout value\n"
-+			" -> using driver default\n");
-+	}
-+}
-+
-+static int kempld_wdt_settimeout(struct kempld_watchdog_data *wdt)
-+{
-+	int stage_timeout;
-+	int stage_pretimeout;
-+	int ret;
-+
-+	if ((wdt->timeout <= 0) ||
-+		(wdt->pretimeout < 0) ||
-+		(wdt->pretimeout > wdt->timeout)) {
-+		ret = -EINVAL;
-+		goto err_check_values;
-+	}
-+
-+	if ((wdt->pretimeout == 0) || (wdt->pretimeout_stage == NULL)) {
-+		if (wdt->pretimeout != 0)
-+			dev_warn(wdt->pld->dev,
-+				 "no pretimeout stage available\n"
-+				 " -> only enabling reset\n");
-+		stage_pretimeout = 0;
-+		stage_timeout = wdt->timeout;
-+	} else {
-+		stage_pretimeout = wdt->timeout - wdt->pretimeout;
-+		stage_timeout = wdt->pretimeout;
-+	}
-+
-+	if (stage_pretimeout != 0) {
-+		ret = kempld_wdt_setstageaction(wdt, wdt->pretimeout_stage,
-+						KEMPLD_WDT_ACTION_NMI);
-+	} else if ((stage_pretimeout == 0)
-+			&& (wdt->pretimeout_stage != NULL)) {
-+		ret = kempld_wdt_setstageaction(wdt, wdt->pretimeout_stage,
-+						KEMPLD_WDT_ACTION_NONE);
-+	} else
-+		ret = 0;
-+	if (ret)
-+		goto err_setstage;
-+
-+	if (stage_pretimeout != 0) {
-+		ret = kempld_wdt_setstagetimeout(wdt, wdt->pretimeout_stage,
-+						 stage_pretimeout);
-+		if (ret)
-+			goto err_setstage;
-+	}
-+
-+	ret = kempld_wdt_setstageaction(wdt, wdt->timeout_stage,
-+					KEMPLD_WDT_ACTION_RESET);
-+	if (ret)
-+		goto err_setstage;
-+
-+	ret = kempld_wdt_setstagetimeout(wdt, wdt->timeout_stage,
-+					 stage_timeout);
-+	if (ret)
-+		goto err_setstage;
-+
-+	return 0;
-+err_setstage:
-+err_check_values:
++err_device_not_found:
++	platform_driver_unregister(&kempld_driver);
++	ret = -ENODEV;
++err_platform_driver_register:
 +	return ret;
 +}
 +
-+static ssize_t kempld_wdt_write(struct file *file, const char __user *data,
-+				size_t count, loff_t *ppos)
++static void __exit kempld_exit(void)
 +{
-+	struct kempld_watchdog_data *wdt = kempld_wdt;
-+
-+	BUG_ON(wdt == NULL);
-+
-+	if (count) {
-+		kempld_wdt_keepalive(wdt);
-+
-+		if (!nowayout) {
-+			size_t i;
-+
-+			wdt->expect_close = 0;
-+
-+			for (i = 0; i < count; i++) {
-+				char c;
-+				if (get_user(c, data+i))
-+					return -EFAULT;
-+				if (c == 'V')
-+					wdt->expect_close = 42;
-+			}
-+		}
++	/* unregister device first */
++	if (kempld_pdev) {
++		platform_device_unregister(kempld_pdev);
++		kempld_pdev = NULL;
 +	}
 +
-+	return count;
++	platform_driver_unregister(&kempld_driver);
 +}
 +
-+static long kempld_wdt_ioctl(struct file *file, unsigned int cmd,
-+				unsigned long arg)
-+{
-+	void __user *argp = (void __user *)arg;
-+	int __user *p = argp;
-+	struct kempld_watchdog_data *wdt = kempld_wdt;
-+	int options;
-+	int value;
-+	int ret = 0;
++module_init(kempld_init);
++module_exit(kempld_exit);
 +
-+	BUG_ON(wdt == NULL);
-+
-+	switch (cmd) {
-+	case WDIOC_GETSUPPORT:
-+		if (copy_to_user(argp, &wdt->ident, sizeof(wdt->ident)))
-+			ret = -EFAULT;
-+		break;
-+	case WDIOC_GETSTATUS:
-+	case WDIOC_GETBOOTSTATUS:
-+		ret = put_user(0, p);
-+		break;
-+	case WDIOC_SETOPTIONS:
-+		if (get_user(options, p)) {
-+			ret = -EFAULT;
-+			break;
-+		}
-+		if (options & WDIOS_DISABLECARD)
-+			ret = kempld_wdt_stop(wdt);
-+		if (options & WDIOS_ENABLECARD) {
-+			ret = kempld_wdt_start(wdt);
-+			kempld_wdt_keepalive(wdt);
-+		}
-+		break;
-+	case WDIOC_KEEPALIVE:
-+		kempld_wdt_keepalive(wdt);
-+		break;
-+	case WDIOC_SETTIMEOUT:
-+		if (get_user(value, p)) {
-+			ret = -EFAULT;
-+			break;
-+		}
-+		kempld_wdt_update_timeouts(wdt);
-+		wdt->timeout = value;
-+		ret = kempld_wdt_settimeout(wdt);
-+		kempld_wdt_keepalive(wdt);
-+		break;
-+	case WDIOC_GETTIMEOUT:
-+		value = kempld_wdt_gettimeout(wdt, wdt->timeout_stage);
-+		value += kempld_wdt_gettimeout(wdt, wdt->pretimeout_stage);
-+		if (value < 0)
-+			ret = ERANGE;
-+		else
-+			ret = put_user(value, p);
-+		break;
-+	case WDIOC_SETPRETIMEOUT:
-+		if (get_user(value, p)) {
-+			ret = -EFAULT;
-+			break;
-+		}
-+		kempld_wdt_update_timeouts(wdt);
-+		wdt->pretimeout = value;
-+		ret = kempld_wdt_settimeout(wdt);
-+		kempld_wdt_keepalive(wdt);
-+		break;
-+	case WDIOC_GETPRETIMEOUT:
-+		value = kempld_wdt_gettimeout(wdt, wdt->pretimeout_stage);
-+		if (value)
-+			value = kempld_wdt_gettimeout(wdt, wdt->timeout_stage);
-+		if (value < 0)
-+			ret = ERANGE;
-+		else
-+			ret = put_user(value, p);
-+		break;
-+	default:
-+		ret = -ENOTTY;
-+	}
-+
-+	return ret;
-+}
-+
-+static int kempld_wdt_release(struct inode *inode, struct file *file)
-+{
-+	struct kempld_watchdog_data *wdt = kempld_wdt;
-+
-+	BUG_ON(wdt == NULL);
-+
-+	if (wdt->expect_close)
-+		kempld_wdt_stop(wdt);
-+	else {
-+		dev_warn(wdt->pld->dev,
-+			 "Unexpected close, not stopping watchdog!\n");
-+		kempld_wdt_keepalive(wdt);
-+	}
-+
-+	kempld_wdt->expect_close = 0;
-+
-+	clear_bit(0, &wdt->is_open);
-+
-+	return 0;
-+}
-+
-+static int kempld_wdt_open(struct inode *inode, struct file *file)
-+{
-+	int ret;
-+	struct kempld_watchdog_data *wdt = kempld_wdt;
-+	struct kempld_device_data *pld = wdt->pld;
-+	u8 status;
-+
-+	BUG_ON(wdt == NULL);
-+
-+	if (test_and_set_bit(0, &wdt->is_open))
-+		return -EBUSY;
-+
-+	if (nowayout)
-+		__module_get(THIS_MODULE);
-+
-+	kempld_get_mutex_set_index(pld, KEMPLD_WDT_CFG);
-+	status = kempld_read8(pld, KEMPLD_WDT_CFG);
-+	kempld_release_mutex(pld);
-+
-+	/* kick the watchdog if it is already enabled, otherwise start it */
-+	if (status & KEMPLD_WDT_CFG_ENABLE) {
-+		kempld_wdt_keepalive(wdt);
-+	} else {
-+		ret = kempld_wdt_settimeout(wdt);
-+		if (ret)
-+			goto err_enable_wdt;
-+		ret = kempld_wdt_start(wdt);
-+		if (ret)
-+			goto err_enable_wdt;
-+	}
-+
-+	return nonseekable_open(inode, file);
-+
-+err_enable_wdt:
-+	dev_err(wdt->pld->dev, "Failed to enable the watchdog timer!\n");
-+	wdt->expect_close = 1;
-+	kempld_wdt_release(inode, file);
-+
-+	return ret;
-+}
-+
-+static void kempld_wdt_release_stages(struct kempld_watchdog_data *wdt)
-+{
-+	int stage;
-+
-+	wdt->timeout_stage = NULL;
-+	wdt->pretimeout_stage = NULL;
-+
-+	for (stage = 0; stage < KEMPLD_WDT_MAX_STAGES; stage++) {
-+		kfree(wdt->stage[stage]);
-+		wdt->stage[stage] = NULL;
-+	}
-+}
-+
-+static int kempld_wdt_probe_stages(struct kempld_watchdog_data *wdt)
-+{
-+	struct kempld_device_data *pld = wdt->pld;
-+	int i, ret;
-+	u32 timeout_mask;
-+	struct kempld_watchdog_stage *stage;
-+
-+	wdt->stages = 0;
-+	wdt->timeout_stage = NULL;
-+	wdt->pretimeout_stage = NULL;
-+
-+	for (i = 0; i < KEMPLD_WDT_MAX_STAGES; i++) {
-+		int j;
-+		u8 index, data, data_orig;
-+
-+		index = KEMPLD_WDT_STAGE_TIMEOUT(i);
-+		timeout_mask = ~0;
-+
-+		kempld_get_mutex_set_index(pld, index);
-+
-+		/* Probe each byte individually according to new spec revision.
-+		 * Register content is restored afterwards. */
-+		for (j = 0; j < 4; j++) {
-+			data_orig = kempld_read8(pld, index);
-+			kempld_write8(pld, index, 0x00);
-+			data = kempld_read8(pld, index);
-+			kempld_write8(pld, index, data_orig);
-+			*(((u8 *)&timeout_mask)+j) &= data;
-+			if (data != 0x0)
-+				break;
-+			index++;
-+		}
-+
-+		kempld_release_mutex(pld);
-+
-+		if ((timeout_mask & 0xff) != 0xff) {
-+			stage = kzalloc(sizeof(struct kempld_watchdog_stage),
-+					GFP_KERNEL);
-+			if (stage == NULL) {
-+				ret = -ENOMEM;
-+				goto err_alloc_stages;
-+			}
-+			stage->num = i;
-+			stage->timeout_mask = ~timeout_mask;
-+			wdt->stage[i] = stage;
-+			wdt->stages++;
-+
-+			/* assign available stages to timeout and pretimeout */
-+			if (wdt->timeout_stage == NULL) {
-+				wdt->timeout_stage = stage;
-+			} else if ((wdt->pretimeout_stage == NULL) &&
-+				(pld->feature_mask & KEMPLD_FEATURE_BIT_NMI)) {
-+				wdt->pretimeout_stage = wdt->timeout_stage;
-+				wdt->timeout_stage = stage;
-+			}
-+		} else
-+			wdt->stage[i] = NULL;
-+	}
-+
-+	return 0;
-+
-+err_alloc_stages:
-+	kempld_wdt_release_stages(wdt);
-+
-+	return ret;
-+}
-+
-+static const struct file_operations kempld_wdt_fops = {
-+	.owner		= THIS_MODULE,
-+	.llseek		= no_llseek,
-+	.write		= kempld_wdt_write,
-+	.unlocked_ioctl	= kempld_wdt_ioctl,
-+	.open		= kempld_wdt_open,
-+	.release	= kempld_wdt_release,
-+};
-+
-+static struct miscdevice kempld_wdt_miscdev = {
-+	.minor	= WATCHDOG_MINOR,
-+	.name	= "watchdog",
-+	.fops	= &kempld_wdt_fops,
-+};
-+
-+static int kempld_wdt_probe(struct platform_device *pdev)
-+{
-+	struct kempld_watchdog_data *wdt;
-+	struct kempld_device_data *pld;
-+	u8 status;
-+	int ret;
-+
-+	if (kempld_wdt != NULL) {
-+		dev_err(&pdev->dev,
-+			"unable to support more than one watchdog devices\n");
-+		return -EMFILE;
-+	}
-+
-+	wdt = kzalloc(sizeof(struct kempld_watchdog_data), GFP_KERNEL);
-+	if (wdt == NULL) {
-+		dev_err(&pdev->dev, "unable to get memory for device data\n");
-+		ret = -ENOMEM;
-+		goto err_alloc_dev_data;
-+	}
-+
-+	pld = dev_get_drvdata(pdev->dev.parent);
-+	wdt->pld = pld;
-+
-+	platform_set_drvdata(pdev, wdt);
-+
-+	strncpy(wdt->ident.identity, "KEMPLD Watchdog",
-+		sizeof(wdt->ident.identity));
-+
-+	/* watchdog firmware version is identical to the CPLD version */
-+	wdt->ident.firmware_version = (pld->info.major<<24)
-+		| (pld->info.minor<<16) | pld->info.buildnr;
-+
-+	/* probe how many usable stages we have */
-+	ret = kempld_wdt_probe_stages(wdt);
-+	if (ret)
-+		goto err_probe_stages;
-+
-+	/* get initial watchdog status */
-+	kempld_get_mutex_set_index(pld, KEMPLD_WDT_CFG);
-+	status = kempld_read8(pld, KEMPLD_WDT_CFG);
-+	kempld_release_mutex(wdt->pld);
-+
-+	/* check if the watchdog is already locked and enable the nowayout
-+	 * option in that case */
-+	if (status & (KEMPLD_WDT_CFG_ENABLE_LOCK |
-+			KEMPLD_WDT_CFG_GLOBAL_LOCK)) {
-+		if (!nowayout)
-+			dev_warn(wdt->pld->dev,
-+				 "Forcing nowayout - watchdog lock enabled!\n");
-+		nowayout = 1;
-+	}
-+
-+	/* set default values for the case we start the watchdog or change
-+	 * the configuration */
-+	wdt->timeout = WATCHDOG_DEFAULT_TIMEOUT;
-+	wdt->pretimeout = WATCHDOG_DEFAULT_PRETIMEOUT;
-+
-+	/* check if watchdog is enabled */
-+	if (status & KEMPLD_WDT_CFG_ENABLE) {
-+		/* Get current watchdog settings */
-+		kempld_wdt_update_timeouts(wdt);
-+
-+		dev_info(wdt->pld->dev, "Watchdog is already enabled:\n"
-+			 "%d s timeout and %d s pretimeout!\n",
-+			 wdt->timeout, wdt->pretimeout);
-+	}
-+
-+	/* update the timeout settings if requested by module parameters */
-+	if (timeout > 0)
-+		wdt->timeout = timeout;
-+	if (pretimeout >= 0)
-+		wdt->pretimeout = pretimeout;
-+
-+	dev_info(wdt->pld->dev, "watchdog will be set on (re)start\n"
-+		 "new settings: %d s timeout and %d s pretimeout\n",
-+		 wdt->timeout, wdt->pretimeout);
-+
-+	wdt->ident.options = WDIOF_KEEPALIVEPING;
-+	if ((wdt->timeout_stage) && !(status & KEMPLD_WDT_CFG_GLOBAL_LOCK))
-+		wdt->ident.options |= WDIOF_SETTIMEOUT;
-+	if (wdt->pretimeout_stage)
-+		wdt->ident.options |= WDIOF_PRETIMEOUT;
-+	if (!nowayout)
-+		wdt->ident.options |= WDIOF_MAGICCLOSE;
-+
-+	kempld_wdt = wdt;
-+
-+	ret = misc_register(&kempld_wdt_miscdev);
-+	if (ret)
-+		goto err_misc_register;
-+
-+	dev_info(wdt->pld->dev,
-+		 "%d stage watchdog initialized, pretimeout %ssupported\n",
-+		 wdt->stages, wdt->pretimeout_stage ? "" : "not ");
-+
-+	return 0;
-+
-+err_probe_stages:
-+err_misc_register:
-+	kfree(kempld_wdt);
-+	kempld_wdt = NULL;
-+err_alloc_dev_data:
-+	return ret;
-+}
-+
-+static void kempld_wdt_shutdown(struct platform_device *pdev)
-+{
-+	struct kempld_watchdog_data *wdt = platform_get_drvdata(pdev);
-+
-+	BUG_ON(wdt != kempld_wdt);
-+
-+	/* stop or at least keepalive the watchdog before we leave */
-+	if (wdt != NULL) {
-+		if (!nowayout)
-+			kempld_wdt_stop(wdt);
-+		else
-+			kempld_wdt_keepalive(wdt);
-+	}
-+}
-+
-+static int kempld_wdt_remove(struct platform_device *pdev)
-+{
-+	struct kempld_watchdog_data *wdt = platform_get_drvdata(pdev);
-+
-+	BUG_ON(wdt != kempld_wdt);
-+
-+	/* stop or at least keepalive the watchdog before we leave */
-+	kempld_wdt_shutdown(pdev);
-+
-+	misc_deregister(&kempld_wdt_miscdev);
-+
-+	kempld_wdt_release_stages(wdt);
-+
-+	kfree(wdt);
-+	kempld_wdt = NULL;
-+	platform_set_drvdata(pdev, NULL);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM
-+static int wdt_pm_status_store;
-+
-+/* Disable watchdog if it is active during suspend */
-+static int kempld_wdt_suspend(struct platform_device *pdev,
-+				pm_message_t message)
-+{
-+	struct kempld_watchdog_data *wdt = platform_get_drvdata(pdev);
-+	struct kempld_device_data *pld = dev_get_drvdata(pdev->dev.parent);
-+
-+	kempld_get_mutex_set_index(pld, KEMPLD_WDT_CFG);
-+	wdt_pm_status_store = kempld_read8(pld, KEMPLD_WDT_CFG);
-+	kempld_release_mutex(pld);
-+
-+	kempld_wdt_update_timeouts(wdt);
-+
-+	if (wdt_pm_status_store & KEMPLD_WDT_CFG_ENABLE)
-+		kempld_wdt_shutdown(pdev);
-+
-+	return 0;
-+}
-+
-+/* Enable watchdog and configure it if necessary */
-+static int kempld_wdt_resume(struct platform_device *pdev)
-+{
-+	struct kempld_watchdog_data *wdt = platform_get_drvdata(pdev);
-+	int ret;
-+
-+	/* if watchdog was stopped before suspend be sure it gets disabled
-+	 * again, for the case BIOS has enabled it during resume */
-+	if (wdt_pm_status_store & KEMPLD_WDT_CFG_ENABLE) {
-+		ret = kempld_wdt_settimeout(wdt);
-+		if (ret)
-+			goto err_enable_wdt;
-+		ret = kempld_wdt_start(wdt);
-+		if (ret)
-+			goto err_enable_wdt;
-+
-+		dev_info(wdt->pld->dev, "Resuming watchdog operation:\n"
-+			 "%d s timeout and %d s pretimeout\n", wdt->timeout,
-+			 wdt->pretimeout);
-+	} else
-+		kempld_wdt_shutdown(pdev);
-+
-+	return 0;
-+
-+err_enable_wdt:
-+	dev_err(wdt->pld->dev,
-+		"Failed to reenable the watchdog timer after resume!\n");
-+
-+	return ret;
-+}
-+#else
-+#define kempld_wdt_suspend	NULL
-+#define kempld_wdt_resume	NULL
-+#endif
-+
-+static struct platform_driver kempld_wdt_driver = {
-+	.driver = {
-+		.name = "kempld-wdt",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = kempld_wdt_probe,
-+	.remove = kempld_wdt_remove,
-+	.shutdown = kempld_wdt_shutdown,
-+	.suspend = kempld_wdt_suspend,
-+	.resume = kempld_wdt_resume,
-+};
-+
-+static int __init kempld_wdt_init(void)
-+{
-+	return platform_driver_register(&kempld_wdt_driver);
-+}
-+
-+static void __exit kempld_wdt_exit(void)
-+{
-+	platform_driver_unregister(&kempld_wdt_driver);
-+}
-+
-+module_init(kempld_wdt_init);
-+module_exit(kempld_wdt_exit);
-+
-+MODULE_DESCRIPTION("KEM PLD Watchdog Driver");
++MODULE_DESCRIPTION("KEM PLD Core Driver");
 +MODULE_AUTHOR("Michael Brunner <michael.brunner@kontron.com>");
 +MODULE_LICENSE("GPL");
-+MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
-diff --git a/drivers/watchdog/kempld_wdt.h b/drivers/watchdog/kempld_wdt.h
++MODULE_ALIAS("platform:kempld-core");
+diff --git a/include/linux/mfd/kempld.h b/include/linux/mfd/kempld.h
 new file mode 100644
-index 0000000..80f68f6
+index 0000000..58ebba5
 --- /dev/null
-+++ b/drivers/watchdog/kempld_wdt.h
-@@ -0,0 +1,75 @@
++++ b/include/linux/mfd/kempld.h
+@@ -0,0 +1,152 @@
 +/*
-+ *  kempld_wdt.h - Kontron PLD watchdog driver definitions
++ *  linux/mfd/kempld.h - Kontron PLD driver definitions
 + *
 + *  Copyright (c) 2010-2012 Kontron Europe GmbH
 + *  Author: Michael Brunner <michael.brunner@kontron.com>
@@ -1528,61 +1223,138 @@ index 0000000..80f68f6
 + *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 + */
 +
-+#ifndef _KEMPLD_WDT_H_
-+#define _KEMPLD_WDT_H_
++#ifndef _LINUX_MFD_KEMPLD_H_
++#define _LINUX_MFD_KEMPLD_H_
 +
-+/* watchdog register definitions */
-+#define KEMPLD_WDT_KICK			0x16
-+#define KEMPLD_WDT_CFG			0x17
-+#define		KEMPLD_WDT_CFG_STAGE_TIMEOUT_OCCURED(x)	(1<<x)
-+#define		KEMPLD_WDT_CFG_ENABLE_LOCK		0x8
-+#define		KEMPLD_WDT_CFG_ENABLE			0x10
-+#define		KEMPLD_WDT_CFG_AUTO_RELOAD		0x40
-+#define		KEMPLD_WDT_CFG_GLOBAL_LOCK		0x80
-+#define KEMPLD_WDT_STAGE_CFG(x)		(0x18+x)
-+#define		KEMPLD_WDT_STAGE_CFG_ACTION_MASK	0x7
-+#define		KEMPLD_WDT_STAGE_CFG_GET_ACTION(x)	(x & 0x7)
-+#define		KEMPLD_WDT_STAGE_CFG_ASSERT		(1<<3)
-+#define		KEMPLD_WDT_STAGE_CFG_PRESCALER_MASK	0x30
-+#define		KEMPLD_WDT_STAGE_CFG_GET_PRESCALER(x)	((x & 0x30)>>4)
-+#define		KEMPLD_WDT_STAGE_CFG_SET_PRESCALER(x)	((x & 0x30)<<4)
-+#define KEMPLD_WDT_STAGE_TIMEOUT(x)	(0x1b+x*4)
-+#define KEMPLD_WDT_MAX_STAGES		3
++/* COMe-mSP1 (nanoETXexpress) specific definitions */
++#define KEMPLD_VERSION_NOW1	0x00
++#define KEMPLD_BUILDNR_NOW1	0x02
 +
-+#define	KEMPLD_WDT_ACTION_NONE		0x0
-+#define	KEMPLD_WDT_ACTION_RESET		0x1
-+#define	KEMPLD_WDT_ACTION_NMI		0x2
-+#define	KEMPLD_WDT_ACTION_SMI		0x3
-+#define	KEMPLD_WDT_ACTION_SCI		0x4
-+#define	KEMPLD_WDT_ACTION_DELAY		0x5
++/* generic register definitions */
++#define KEMPLD_MUTEX_KEY	0x80
++#define KEMPLD_VERSION		0x00
++#define		KEMPLD_VERSION_LSB		0x00
++#define		KEMPLD_VERSION_MSB		0x01
++#define		KEMPLD_VERSION_GET_MINOR(x)	(x & 0x1f)
++#define		KEMPLD_VERSION_GET_MAJOR(x)	((x >> 5) & 0x1f)
++#define		KEMPLD_VERSION_GET_NUMBER(x)	((x >> 10) & 0xf)
++#define		KEMPLD_VERSION_GET_TYPE(x)	((x >> 14) & 0x3)
++#define KEMPLD_BUILDNR		0x02
++#define		KEMPLD_BUILDNR_LSB		0x02
++#define		KEMPLD_BUILDNR_MSB		0x03
++#define KEMPLD_FEATURE		0x04
++#define		KEMPLD_FEATURE_LSB		0x04
++#define		KEMPLD_FEATURE_MSB		0x05
++#define		KEMPLD_FEATURE_BIT_I2C		(1 << 0)
++#define		KEMPLD_FEATURE_BIT_WATCHDOG	(1 << 1)
++#define		KEMPLD_FEATURE_BIT_GPIO		(1 << 2)
++#define		KEMPLD_FEATURE_MASK_UART	(7 << 3)
++#define		KEMPLD_FEATURE_BIT_NMI		(1 << 8)
++#define		KEMPLD_FEATURE_BIT_SMI		(1 << 9)
++#define		KEMPLD_FEATURE_BIT_SCI		(1 << 10)
++#define KEMPLD_SPEC		0x06
++#define		KEMPLD_SPEC_GET_MINOR(x)	(x & 0x0f)
++#define		KEMPLD_SPEC_GET_MAJOR(x)	((x >> 4) & 0x0f)
++#define KEMPLD_IRQ_GPIO				0x35
++#define KEMPLD_IRQ_I2C				0x36
++#define KEMPLD_CFG				0x37
++#define		KEMPLD_CFG_GPIO_I2C_MUX		(1<<0)
++#define		KEMPLD_CFG_BIOS_WP		(1<<7)
 +
-+#define	KEMPLD_WDT_PRESCALER_21BIT	0x0
-+#define	KEMPLD_WDT_PRESCALER_17BIT	0x1
-+#define	KEMPLD_WDT_PRESCALER_12BIT	0x2
++#define	KEMPLD_TYPE_RELEASE	0x0
++#define	KEMPLD_TYPE_DEBUG	0x1
++#define	KEMPLD_TYPE_CUSTOM	0x2
 +
-+const int kempld_prescaler_bits[] = { 21, 17, 12 };
-+#define KEMPLD_PRESCALER(x)	(0xffffffff>>(32-kempld_prescaler_bits[x]))
++#define KEMPLD_MUTEX_NOTIMEOUT			((unsigned int)~0)
 +
-+
-+struct kempld_watchdog_stage {
-+	int	num;
-+	u32	timeout_mask;
++/**
++ * struct kempld_info - PLD device information structure
++ * @major:	PLD major revision
++ * @minor:	PLD minor revision
++ * @buildnr:	PLD build number
++ * @number:	PLD board specific index
++ * @type:	PLD type
++ * @spec_major:	PLD FW specification major revision
++ * @spec_minor:	PLD FW specification minor revision
++ */
++struct kempld_info {
++	unsigned int major;
++	unsigned int minor;
++	unsigned int buildnr;
++	unsigned int number;
++	unsigned int type;
++	unsigned int spec_major;
++	unsigned int spec_minor;
 +};
 +
-+struct kempld_watchdog_data {
-+	int				timeout;
-+	int				pretimeout;
-+	unsigned long			is_open;
-+	unsigned long			expect_close;
-+	int				stages;
-+	struct kempld_watchdog_stage	*timeout_stage;
-+	struct kempld_watchdog_stage	*pretimeout_stage;
-+	struct kempld_device_data	*pld;
-+	struct watchdog_info		ident;
-+	struct kempld_watchdog_stage	*stage[KEMPLD_WDT_MAX_STAGES];
++/**
++ * struct kempld_device_data - Internal representation of the PLD device
++ * @io_base:		Pointer to the IO memory
++ * @io_index:		Pointer to the IO index register
++ * @io_data:		Pointer to the IO data register
++ * @pld_clock:		PLD clock frequency
++ * @feature_mask:	PLD feature mask
++ * @lock:		PLD spin-lock
++ * @lock_flags:		PLD spin-lock flags
++ * @have_mutex:		Bool value that indicates if mutex is aquired
++ * @last_index:		Last written index value
++ * @dev:		Pointer to kernel device structure
++ * @info:		KEMPLD info structure
++ */
++struct kempld_device_data {
++	void __iomem		*io_base;
++	void __iomem		*io_index;
++	void __iomem		*io_data;
++	u32			pld_clock;
++	u32			feature_mask;
++	spinlock_t		lock;
++	unsigned long		lock_flags;
++	int			have_mutex;
++	u8			last_index;
++	struct device		*dev;
++	struct kempld_info	info;
 +};
 +
-+#endif /* _KEMPLD_WDT_H_ */
++/**
++ * struct kempld_platform_data - PLD hardware configuration structure
++ * @pld_clock:		 PLD clock frequency
++ * @ioport:		 IO address of the PLD
++ * @force_index_write:	 Force writing the index register on every access
++ * @board_id:		 Board system ID structure
++ * @release_mutex:	 Pointer to PLD specific release_mutex function
++ * @get_mutex_set_index: Pointer to PLD specific get_mutex_set_index function
++ * @get_info:		 Pointer to PLD specific get_info function
++ * @register_cells:	 Pointer to PLD specific register_cells function
++ *
++ * This structure configures the PLD settings for a specific hardware platform.
++ */
++struct kempld_platform_data {
++	u32				pld_clock;
++	u32				ioport;
++	int				force_index_write;
++	const struct dmi_system_id	*board_id;
++	void (*release_mutex)(struct kempld_device_data *);
++	int (*get_mutex_set_index)(struct kempld_device_data *, u8,
++					unsigned int);
++	int (*get_info)(struct kempld_device_data *);
++	int (*register_cells)(struct kempld_device_data *);
++};
++
++extern void kempld_set_index(struct kempld_device_data *pld, u8 index);
++extern void kempld_get_mutex_set_index(struct kempld_device_data *pld,
++					u8 index);
++extern int kempld_try_get_mutex_set_index(struct kempld_device_data *pld,
++					u8 index, unsigned int timeout);
++extern void kempld_release_mutex(struct kempld_device_data *pld);
++
++extern u8 kempld_read8(struct kempld_device_data *pld, u8 index);
++extern void kempld_write8(struct kempld_device_data *pld, u8 index, u8 data);
++extern u16 kempld_read16(struct kempld_device_data *pld, u8 index);
++extern void kempld_write16(struct kempld_device_data *pld, u8 index, u16 data);
++extern u32 kempld_read32(struct kempld_device_data *pld, u8 index);
++extern void kempld_write32(struct kempld_device_data *pld, u8 index, u32 data);
++
++#endif /* _LINUX_MFD_KEMPLD_H_ */
 -- 
 1.7.9.5
 
