@@ -1,119 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935413Ab3DHQ4j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 12:56:39 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:41331 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760109Ab3DHQ4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 12:56:37 -0400
-Date: Mon, 8 Apr 2013 10:56:26 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Andrew Murray'" <andrew.murray@arm.com>,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
-        "'Surendranath Gurivireddy Balla'" <suren.reddy@samsung.com>,
-        "'Siva Reddy Kallam'" <siva.kallam@samsung.com>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>
-Subject: Re: [PATCH 6/6] ARM: dts: Add pcie controller node for Samsung
- EXYNOS5440 SoC
-Message-ID: <20130408165626.GA30824@obsidianresearch.com>
-References: <00c001ce277b$92b26ab0$b8174010$%han@samsung.com>
- <00c501ce277c$30e49dc0$92add940$%han@samsung.com>
- <000001ce3438$b136e1e0$13a4a5a0$%han@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000001ce3438$b136e1e0$13a4a5a0$%han@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+	id S935431Ab3DHQ6f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 12:58:35 -0400
+Received: from mail-ia0-f201.google.com ([209.85.210.201]:47483 "EHLO
+	mail-ia0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935026Ab3DHQ6d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 12:58:33 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Olof Johansson <olof@lixom.net>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        linux-samsung-soc@vger.kernel.org,
+        Doug Anderson <dianders@chromium.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Padmavathi Venna <padma.v@samsung.com>,
+        Giridhar Maruthy <giridhar.m@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: dts: Disable the RTC by default on exynos5
+Date: Mon,  8 Apr 2013 09:58:15 -0700
+Message-Id: <1365440295-4460-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 06:08:53PM +0900, Jingoo Han wrote:
+This change makes the rtc on the exynos5250 and 5440 disabled by
+default to match exynos4.
 
-> I have a question.  Now, I am reviewing the Tegra PCIe, Marvell PCIe
-> patchset.  However, in the case of Exynos PCIe, 'downstream I/O' and
-> 'non-prefetchable memory' are different between PCIe0 and PCIe1.
-> These regions are not shared.
-> 
-> PCIe0:
-> 	ranges = <0x00000800 0 0x40000000 0x40000000 0 0x00200000   /* configuration space */
-> 		  0x81000000 0 0	  0x40200000 0 0x00004000   /* downstream I/O */
-> 		  0x82000000 0 0	  0x40204000 0 0x10000000>; /* non-prefetchable memory */
-> 
-> PCIe1:
-> 	ranges = <0x00000800 0 0x40000000 0x40000000 0 0x00200000   /* configuration space */
-> 		  0x81000000 0 0	  0x40200000 0 0x00004000   /* downstream I/O */
-> 		  0x82000000 0 0	  0x40204000 0 0x10000000>; /* non-prefetchable memory */
-> 
-> PCIe0 uses 0x40000000~0x5fffffff, PCI1 uses 0x60000000~0x7fffffff.
-> 
-> How can I handle this? :)
+Ever since the common clock framework came in came in, exynos5250
+boards have dumped lots of warnings in the boot log.  It turns out
+that we don't see those on exynos4 since the rtc is disabled by
+default.  While we need to get to the bottom of the problems with the
+RTC, it still makes sense to have the default state of the RTC on
+exynos boards match.
 
-You need to dig into where this range restriction comes from, and how
-it interacts with the PCI-E root bridge's window registers. Is there
-another set of registers that control this? Is it hardwired into the
-silicon? Do the root port window registers control this? 
+For the record, warnings look like this:
+  ------------[ cut here ]------------
+  WARNING: at /.../drivers/clk/clk.c:771 __clk_enable+0x34/0xb0()
+  Modules linked in:
+  [<80015bfc>] (unwind_backtrace+0x0/0xec) from [<804717f0>] (dump_stack+0x20/0x24)
+  [<804717f0>] (dump_stack+0x20/0x24) from [<80023cd0>] (warn_slowpath_common+0x5c/0x7c)
+  [<80023cd0>] (warn_slowpath_common+0x5c/0x7c) from [<80023d1c>] (warn_slowpath_null+0x2c/0x34)
+  [<80023d1c>] (warn_slowpath_null+0x2c/0x34) from [<8035ddb0>] (__clk_enable+0x34/0xb0)
+  [<8035ddb0>] (__clk_enable+0x34/0xb0) from [<8035de54>] (clk_enable+0x28/0x3c)
+  [<8035de54>] (clk_enable+0x28/0x3c) from [<8031a160>] (s3c_rtc_probe+0xf4/0x434)
+  [<8031a160>] (s3c_rtc_probe+0xf4/0x434) from [<8028e288>] (platform_drv_probe+0x24/0x28)
+  [<8028e288>] (platform_drv_probe+0x24/0x28) from [<8028ce10>] (driver_probe_device+0xbc/0x22c)
+  [<8028ce10>] (driver_probe_device+0xbc/0x22c) from [<8028cff8>] (__driver_attach+0x78/0x9c)
+  [<8028cff8>] (__driver_attach+0x78/0x9c) from [<8028bdfc>] (bus_for_each_dev+0x64/0xac)
+  [<8028bdfc>] (bus_for_each_dev+0x64/0xac) from [<8028c7e0>] (driver_attach+0x28/0x30)
+  [<8028c7e0>] (driver_attach+0x28/0x30) from [<8028c43c>] (bus_add_driver+0xe0/0x234)
+  [<8028c43c>] (bus_add_driver+0xe0/0x234) from [<8028d55c>] (driver_register+0xac/0x13c)
+  [<8028d55c>] (driver_register+0xac/0x13c) from [<8028e4f4>] (platform_driver_register+0x54/0x68)
+  [<8028e4f4>] (platform_driver_register+0x54/0x68) from [<8065c944>] (s3c_rtc_driver_init+0x14/0x1c)
+  [<8065c944>] (s3c_rtc_driver_init+0x14/0x1c) from [<800086d8>] (do_one_initcall+0x60/0x138)
+  [<800086d8>] (do_one_initcall+0x60/0x138) from [<80633a8c>] (kernel_init_freeable+0x108/0x1d0)
+  [<80633a8c>] (kernel_init_freeable+0x108/0x1d0) from [<8046d2f8>] (kernel_init+0x1c/0xf4)
+  [<8046d2f8>] (kernel_init+0x1c/0xf4) from [<8000e358>] (ret_from_fork+0x14/0x20)
+  ---[ end trace 4bcdc801c868d73f ]---
 
-I'm looking at functions like exynos_pcie_prog_viewport_mem_outbound
-and wondering if the driver already controls this window.. But it
-looks like there may be some restrictions.
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ arch/arm/boot/dts/exynos5250.dtsi | 1 +
+ arch/arm/boot/dts/exynos5440.dtsi | 1 +
+ 2 files changed, 2 insertions(+)
 
-Marvell also has unshared regions, but the driver arranges for those
-ranges to be setup dynamically based on writes to the bridge's window
-registers from the Linux PCI core, so the region is always in sync
-with what the Linux PCI core is trying to do.
-
-The desired perfect outcome is to have a single logical 'shared'
-region for memory and I/O - give that region to the PCI core via
-struct resources, then the PCI core tells the driver and HW what
-portion of that region belongs to each root port via a write to the
-root port bridge's window registers. The net result is still
-non-overlapping regions, but the allocation of space between port 0
-and port 1 is performed at run time.
-
-I don't really know enough about your hardware to give you better
-advice, sorry. The general guidance to try and follow the PCI-E spec
-for a root complex is good, but if the HW can't do it, or it would
-make the driver too complex, then one PCI domain per port will always
-work (this is similar to your original driver, but with domains).
-
-The main advantage to following the PCI-E specs and allowing for
-dynamic allocation of address space is that it lets you reserve less
-address space for PCI-E, and this in turn gives you more low mem
-address space to use for DRAM.
-
-> The following is right?
+diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
+index dc55e33..892b724 100644
+--- a/arch/arm/boot/dts/exynos5250.dtsi
++++ b/arch/arm/boot/dts/exynos5250.dtsi
+@@ -183,6 +183,7 @@
+ 		interrupts = <0 43 0>, <0 44 0>;
+ 		clocks = <&clock 337>;
+ 		clock-names = "rtc";
++		status = "disabled";
+ 	};
  
-> +       pcie-controller {
-> 		.....
-> +               ranges = <0x82000000 0 0x40000000 0x40000000 0 0x00200000   /* port 0 registers */
-> +                         0x82000000 0 0x60000000 0x60000000 0 0x00200000   /* port 1 registers */
-> +                         0x81000000 0 0          0x40200000 0 0x00004000   /* port 0 downstream I/O */
-> +                         0x81000000 0 0          0x60200000 0 0x00004000   /* port 1 downstream I/O */
-> +                         0x82000000 0 0x40204000 0x40204000 0 0x10000000>; /* port 0 non-prefetchable memory */
-> +                         0x82000000 0 0x40204000 0x60204000 0 0x10000000>; /* port 1 non-prefetchable memory */
+ 	tmu@10060000 {
+diff --git a/arch/arm/boot/dts/exynos5440.dtsi b/arch/arm/boot/dts/exynos5440.dtsi
+index 25c6134..a8ceef4 100644
+--- a/arch/arm/boot/dts/exynos5440.dtsi
++++ b/arch/arm/boot/dts/exynos5440.dtsi
+@@ -181,5 +181,6 @@
+ 		interrupts = <0 17 0>, <0 16 0>;
+ 		clocks = <&clock 21>;
+ 		clock-names = "rtc";
++		status = "disabled";
+ 	};
+ };
+-- 
+1.8.1.3
 
-
-> +
-> +               pci@1,0 {
-> +                       device_type = "pci";
-> +                       assigned-addresses = <0x82000800 0 0x40000000 0 0x00200000
-> +                                                 0x81000800 0 0x40200000 0 0x00004000
-> +                                                 0x81000800 0 0x40204000 0 0x10000000>;
-
-Would be:
-
-                       ranges = <0x81000800 0 0x40200000  0x81000800 0 0x40200000  0 0x00004000
-                                 0x81000800 0 0x40204000  0x81000800 0 0x40204000  0 0x10000000>;
-                       assigned-addresses = <0x82000800 0 0x40000000  0 0x00200000>;
-
-Jason
