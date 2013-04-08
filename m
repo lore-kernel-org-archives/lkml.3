@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965123Ab3DHKQK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 06:16:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42748 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935602Ab3DHJvo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 05:51:44 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 035/102] USB: serial: add modem-status-change wait queue
-Date: Mon,  8 Apr 2013 10:49:50 +0100
-Message-Id: <1365414657-29191-36-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
-References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	id S936429Ab3DHKQb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 06:16:31 -0400
+Received: from mga11.intel.com ([192.55.52.93]:64269 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935617Ab3DHKQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 06:16:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,429,1363158000"; 
+   d="scan'208";a="315823422"
+Date: Mon, 8 Apr 2013 12:16:25 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Andrey Smirnov <andrew.smirnov@gmail.com>
+Cc: mchehab@redhat.com, hverkuil@xs4all.nl, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 1/9] mfd: Add commands abstraction layer for SI476X MFD
+Message-ID: <20130408101624.GR24058@zurbaran>
+References: <1364352446-28572-1-git-send-email-andrew.smirnov@gmail.com>
+ <1364352446-28572-2-git-send-email-andrew.smirnov@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1364352446-28572-2-git-send-email-andrew.smirnov@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.10 -stable review patch.  If anyone has any objections, please let me know.
+Hi Andrey,
 
-------------------
+On Tue, Mar 26, 2013 at 07:47:18PM -0700, Andrey Smirnov wrote:
+> From: Andrey Smirnov <andreysm@charmander.(none)>
+> 
+> This patch adds all the functions used for exchanging commands with
+> the chip.
+> 
+> Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+> Signed-off-by: Andrey Smirnov <andrew.smirnov@gmail.com>
+> ---
+>  drivers/mfd/si476x-cmd.c | 1554 ++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 1554 insertions(+)
+>  create mode 100644 drivers/mfd/si476x-cmd.c
+The patchset looks good to me, and I was willing to merge it but:
 
-From: Johan Hovold <jhovold@gmail.com>
 
-commit e5b33dc9d16053c2ae4c2c669cf008829530364b upstream.
+> diff --git a/drivers/mfd/si476x-cmd.c b/drivers/mfd/si476x-cmd.c
+> new file mode 100644
+> index 0000000..71ac2e8
+> --- /dev/null
+> +++ b/drivers/mfd/si476x-cmd.c
+> @@ -0,0 +1,1554 @@
+> +/*
+> + * drivers/mfd/si476x-cmd.c -- Subroutines implementing command
+> + * protocol of si476x series of chips
+> + *
+> + * Copyright (C) 2012 Innovative Converged Devices(ICD)
+> + * Copyright (C) 2013 Andrey Smirnov
+> + *
+> + * Author: Andrey Smirnov <andrew.smirnov@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; version 2 of the License.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + * General Public License for more details.
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/completion.h>
+> +#include <linux/delay.h>
+> +#include <linux/atomic.h>
+> +#include <linux/i2c.h>
+> +#include <linux/device.h>
+> +#include <linux/gpio.h>
+> +#include <linux/videodev2.h>
+> +
+> +#include <media/si476x.h>
+This file doesn't exist yet, which breaks bisectability.
+I'm fine with you including it with the first patch. I will prepare a branch
+with the mfd patches from your serie for Mauro to pull from.
 
-Add modem-status-change wait queue to struct usb_serial_port that
-subdrivers can use to implement TIOCMIWAIT.
+Cheers,
+Samuel.
 
-Currently subdrivers use a private wait queue which may have been
-released when waking up after device disconnected.
-
-Note that we're adding a new wait queue rather than reusing the tty-port
-one as we do not want to get woken up at hangup (yet).
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- include/linux/usb/serial.h | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/include/linux/usb/serial.h b/include/linux/usb/serial.h
-index 86c0b45..0b61f01 100644
---- a/include/linux/usb/serial.h
-+++ b/include/linux/usb/serial.h
-@@ -66,6 +66,7 @@
-  *	port.
-  * @flags: usb serial port flags
-  * @write_wait: a wait_queue_head_t used by the port.
-+ * @delta_msr_wait: modem-status-change wait queue
-  * @work: work queue entry for the line discipline waking up.
-  * @throttled: nonzero if the read urb is inactive to throttle the device
-  * @throttle_req: nonzero if the tty wants to throttle us
-@@ -112,6 +113,7 @@ struct usb_serial_port {
- 
- 	unsigned long		flags;
- 	wait_queue_head_t	write_wait;
-+	wait_queue_head_t	delta_msr_wait;
- 	struct work_struct	work;
- 	char			throttled;
- 	char			throttle_req;
 -- 
-1.8.1.2
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
