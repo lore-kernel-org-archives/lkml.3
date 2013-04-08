@@ -1,109 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935119Ab3DHIgm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 04:36:42 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:55759 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934694Ab3DHIgk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 04:36:40 -0400
+	id S935134Ab3DHIgv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 04:36:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43863 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934694Ab3DHIgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 04:36:48 -0400
+Date: Mon, 8 Apr 2013 09:36:45 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Excessive stall times on ext4 in 3.9-rc2
+Message-ID: <20130408083645.GC2623@suse.de>
+References: <20130402142717.GH32241@suse.de>
+ <20130402150651.GB31577@thunk.org>
+ <20130402151436.GC31577@thunk.org>
+ <20130402181940.GA4936@thunk.org>
+ <y0mwqsehuj9.fsf@fche.csb>
 MIME-Version: 1.0
-In-Reply-To: <2949363.nNl2A6XIoS@vostro.rjw.lan>
-References: <1364457923-8499-1-git-send-email-amit.daniel@samsung.com>
-	<2949363.nNl2A6XIoS@vostro.rjw.lan>
-Date: Mon, 8 Apr 2013 14:06:38 +0530
-X-Google-Sender-Auth: QxBXebhXEFOiQ69ymv-PLDyTDJE
-Message-ID: <CADGdYn7ZRCSymU7k3Sn4mbS6B=dxy1N+vhQuyiFnhOQLLzrTbw@mail.gmail.com>
-Subject: Re: [PATCH V5 0/4] cpufreq: exynos5440: support for cpufreq driver
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Thomas Abraham <thomas.abraham@linaro.org>, cpufreq@vger.kernel.org,
-        Inderpal Singh <inderpal.singh@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <y0mwqsehuj9.fsf@fche.csb>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 5, 2013 at 6:08 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, March 28, 2013 01:35:18 PM Amit Daniel Kachhap wrote:
->> Submitting the V5 version of exynos5440 cpufreq driver. This patchset addresses
->> all the coding and design concerns raised especially by Viresh.
->>
->> Changes in V5:
->> * Removed the unnecessary DT look up entry from mach-exynos5-dt.c.
->> * Fixed all coding and comments issue raised by Viresh.
->>
->> Changes in V4:
->> * Added dev_err logs instead of pr_err.
->> * Used the devm_ioremap_resource API.
->> * Implemented several coding guidelines and minor error comments from Sylwester,
->>   Russell and Viresh.
->>
->> Changes in V3:
->> * Converted the driver to probe based as suggested by Viresh. This is also
->>   beneficial for multiplatform kernel.
->> * Other coding guidelines related changes.
->> * Moved the DT node outside cpu0 node as the driver is now a platform
->>   driver.
->>
->> Changes in V2:
->> * Added OPP library support to parse DT parameters.
->> * Removed a hack to handle interrupts in bootup.
->> * Implemented other review comments from Viresh and Inder.
->>
->> All these patches are dependent on Thomas Abraham common clock patches.
->> (http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg15860.html)
->> This whole patch series is based on 3.9-rc4.
->>
->> Amit Daniel Kachhap (4):
->>   cpufreq: exynos: Add cpufreq driver for exynos5440
->>   cpufreq: exynos: Remove error return even if no soc is found
->>   arm: exynos: Enable OPP library support for exynos5440
->>   arm: dts: Add cpufreq controller node for Exynos5440 SoC
->>
->>  .../bindings/cpufreq/cpufreq-exynos5440.txt        |   28 ++
->>  arch/arm/boot/dts/exynos5440.dtsi                  |   12 +
->>  arch/arm/mach-exynos/Kconfig                       |    2 +
->>  drivers/cpufreq/Kconfig.arm                        |    9 +
->>  drivers/cpufreq/Makefile                           |    1 +
->>  drivers/cpufreq/exynos-cpufreq.c                   |    2 +-
->>  drivers/cpufreq/exynos5440-cpufreq.c               |  474 ++++++++++++++++++++
->>  7 files changed, 527 insertions(+), 1 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/cpufreq/cpufreq-exynos5440.txt
->>  create mode 100644 drivers/cpufreq/exynos5440-cpufreq.c
->
-> Is this for me or the Samsung tree?
->
-> If it's for me, I need ACKs from the Samsung tree maintainers.  Also, please
-> address the Viresh's comments.
->
-> Thanks,
-> Rafael
->
-Hi Rafael,
+On Sun, Apr 07, 2013 at 05:59:06PM -0400, Frank Ch. Eigler wrote:
+> 
+> Hi -
+> 
+> 
+> tytso wrote:
+> 
+> > So I tried to reproduce the problem, and so I installed systemtap
+> > (bleeding edge, since otherwise it won't work with development
+> > kernel), and then rebuilt a kernel with all of the necessary CONFIG
+> > options enabled:
+> >
+> > 	CONFIG_DEBUG_INFO, CONFIG_KPROBES, CONFIG_RELAY, CONFIG_DEBUG_FS,
+> > 	CONFIG_MODULES, CONFIG_MODULE_UNLOAD
+> > [...]
+> 
+> That sounds about right.
+> 
+> 
+> > I then pulled down mmtests, and tried running watch-dstate.pl, which
+> > is what I assume you were using [...]
+> 
+> I just took a look at the mmtests, particularly the stap-fix.sh stuff.
+> The heroics therein are really not called for.  git kernel developers
+> should use git systemtap, as has always been the case.  All
+> compatibility hacks in stap-fix.sh have already been merged, in many
+> cases for months.
+> 
 
-I submitted the V6 version with all comments from Viresh addressed.
+At one point in the past this used to be the case but then systemtap had to
+be compiled as part of automated tests across different kernel versions. It
+could have been worked around in various ways or even installed manually
+when machines were deployed but stap-fix.sh generally took less time to
+keep working.
 
-Hi Kukjin Kim,
+> 
+> > [...]
+> > semantic error: while resolving probe point: identifier 'kprobe' at /tmp/stapdjN4_l:18:7
+> >         source: probe kprobe.function("get_request_wait")
+> >                       ^
+> > Pass 2: analysis failed.  [man error::pass2]
+> > Unexpected exit of STAP script at ./watch-dstate.pl line 296.
+> > I have no clue what to do next.  Can you give me a hint?
+> 
+> You should see the error::pass2 man page, which refers to
+> error::reporting, which refers to involving stap folks and running
+> stap-report to gather needed info.
+> 
+> But in this case, that's unnecessary: the problem is most likely that
+> the get_request_wait function does not actually exist any longer, since
+> 
+> commit a06e05e6afab70b4b23c0a7975aaeae24b195cd6
+> Author: Tejun Heo <tj@kernel.org>
+> Date:   Mon Jun 4 20:40:55 2012 -0700
+> 
+>     block: refactor get_request[_wait]()
+> 
 
-Any suggestion on how this patch should be merged. In my opinion it
-should go via Rafael's tree as this patch uses some fixes present in
-Rafael's tree like modified cpufreq_notify_transition API.
+Yes, this was indeed the problem. The next version of watch-dstate.pl
+treated get_request_wait() as a function that may or may not exist. It
+uses /proc/kallsyms to figure it out.
 
-Thanks,
-Amit Daniel
->
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Thanks.
+
+-- 
+Mel Gorman
+SUSE Labs
