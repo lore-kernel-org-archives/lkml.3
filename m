@@ -1,171 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934850Ab3DHIw2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 04:52:28 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:33001 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934653Ab3DHIwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 04:52:25 -0400
-From: Gabriel <g2p.code+bcache@gmail.com>
-To: Kent Overstreet <koverstreet@google.com>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Gabriel <g2p.code+bcache@gmail.com>
-Subject: [PATCH] bcache: Take data offset from the bdev superblock.
-Date: Mon,  8 Apr 2013 10:51:51 +0200
-Message-Id: <1365411111-29262-1-git-send-email-g2p.code+bcache@gmail.com>
-X-Mailer: git-send-email 1.8.2.rc3.7.g35aca0e
-In-Reply-To: <516284B1.7060307@gmail.com>
-References: <516284B1.7060307@gmail.com>
+	id S934868Ab3DHIyv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 04:54:51 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:21453 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934458Ab3DHIyu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 04:54:50 -0400
+From: Yijing Wang <wangyijing@huawei.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [Resend with Ack][PATCH] mm: remove CONFIG_HOTPLUG ifdefs
+Date: Mon, 8 Apr 2013 16:53:22 +0800
+Message-ID: <1365411202-8612-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new superblock version, and consolidate related defines.
+CONFIG_HOTPLUG is going away as an option, cleanup CONFIG_HOTPLUG
+ifdefs in mm files.
 
-Signed-off-by: Gabriel de Perthuis <g2p.code+bcache@gmail.com>
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Bill Pemberton <wfp5p@virginia.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/md/bcache/bcache.h  | 23 ++++++++++++++++++-----
- drivers/md/bcache/request.c |  2 +-
- drivers/md/bcache/super.c   | 21 ++++++++++++++++-----
- 3 files changed, 35 insertions(+), 11 deletions(-)
+ include/linux/vmstat.h |    7 +------
+ mm/vmstat.c            |    2 --
+ 2 files changed, 1 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index f057235..8a110e6 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -223,11 +223,17 @@ struct bkey {
- #define BKEY_PADDED(key)					\
- 	union { struct bkey key; uint64_t key ## _pad[BKEY_PAD]; }
- 
--/* Version 1: Backing device
-+/* Version 0: Cache device
-+ * Version 1: Backing device
-  * Version 2: Seed pointer into btree node checksum
-- * Version 3: New UUID format
-+ * Version 3: Cache device with new UUID format
-+ * Version 4: Backing device with data offset
-  */
--#define BCACHE_SB_VERSION	3
-+#define BCACHE_SB_VERSION_CDEV			0
-+#define BCACHE_SB_VERSION_BDEV			1
-+#define BCACHE_SB_VERSION_CDEV_WITH_UUID	3
-+#define BCACHE_SB_VERSION_BDEV_WITH_OFFSET	4
-+#define BCACHE_SB_MAX_VERSION			4
- 
- #define SB_SECTOR		8
- #define SB_SIZE			4096
-@@ -236,13 +242,12 @@ struct bkey {
- /* SB_JOURNAL_BUCKETS must be divisible by BITS_PER_LONG */
- #define MAX_CACHES_PER_SET	8
- 
--#define BDEV_DATA_START		16	/* sectors */
-+#define BDEV_DATA_START_DEFAULT	16	/* sectors */
- 
- struct cache_sb {
- 	uint64_t		csum;
- 	uint64_t		offset;	/* sector where this sb was written */
- 	uint64_t		version;
--#define CACHE_BACKING_DEV	1
- 
- 	uint8_t			magic[16];
- 
-@@ -485,6 +490,7 @@ struct cached_dev {
- 	 * where it's at.
- 	 */
- 	sector_t		last_read;
-+	sector_t		data_start_sector;
- 
- 	/* Number of writeback bios in flight */
- 	atomic_t		in_flight;
-@@ -861,6 +867,13 @@ static inline bool key_merging_disabled(struct cache_set *c)
- #endif
+diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+index 5fd71a7..c586679 100644
+--- a/include/linux/vmstat.h
++++ b/include/linux/vmstat.h
+@@ -48,13 +48,8 @@ static inline void count_vm_events(enum vm_event_item item, long delta)
  }
  
+ extern void all_vm_events(unsigned long *);
+-#ifdef CONFIG_HOTPLUG
 +
-+static inline bool SB_IS_BDEV(const struct cache_sb *sb) {
-+	return sb->version == BCACHE_SB_VERSION_BDEV
-+		|| sb->version == BCACHE_SB_VERSION_BDEV_WITH_OFFSET;
-+}
-+
-+
- struct bbio {
- 	unsigned		submit_time_us;
- 	union {
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 83731dc..9f74aff 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -1220,7 +1220,7 @@ static void cached_dev_make_request(struct request_queue *q, struct bio *bio)
- 	part_stat_unlock();
+ extern void vm_events_fold_cpu(int cpu);
+-#else
+-static inline void vm_events_fold_cpu(int cpu)
+-{
+-}
+-#endif
  
- 	bio->bi_bdev = dc->bdev;
--	bio->bi_sector += BDEV_DATA_START;
-+	bio->bi_sector += dc->data_start_sector;
+ #else
  
- 	if (cached_dev_get(dc)) {
- 		s = search_alloc(bio, d);
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 5fa3cd2..a409bb5 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -148,7 +148,7 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
- 		goto err;
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index e1d8ed1..c823776 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -52,7 +52,6 @@ void all_vm_events(unsigned long *ret)
+ }
+ EXPORT_SYMBOL_GPL(all_vm_events);
  
- 	err = "Unsupported superblock version";
--	if (sb->version > BCACHE_SB_VERSION)
-+	if (sb->version > BCACHE_SB_MAX_VERSION)
- 		goto err;
+-#ifdef CONFIG_HOTPLUG
+ /*
+  * Fold the foreign cpu events into our own.
+  *
+@@ -69,7 +68,6 @@ void vm_events_fold_cpu(int cpu)
+ 		fold_state->event[i] = 0;
+ 	}
+ }
+-#endif /* CONFIG_HOTPLUG */
  
- 	err = "Bad block/bucket size";
-@@ -168,7 +168,7 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
- 	if (get_capacity(bdev->bd_disk) < sb->bucket_size * sb->nbuckets)
- 		goto err;
+ #endif /* CONFIG_VM_EVENT_COUNTERS */
  
--	if (sb->version == CACHE_BACKING_DEV)
-+	if (SB_IS_BDEV(sb))
- 		goto out;
- 
- 	err = "Bad UUID";
-@@ -286,7 +286,7 @@ void bcache_write_super(struct cache_set *c)
- 	for_each_cache(ca, c, i) {
- 		struct bio *bio = &ca->sb_bio;
- 
--		ca->sb.version		= BCACHE_SB_VERSION;
-+		ca->sb.version		= BCACHE_SB_VERSION_CDEV_WITH_UUID;
- 		ca->sb.seq		= c->sb.seq;
- 		ca->sb.last_mount	= c->sb.last_mount;
- 
-@@ -1047,9 +1047,20 @@ static const char *register_bdev(struct cache_sb *sb, struct page *sb_page,
- 	dc->bdev = bdev;
- 	dc->bdev->bd_holder = dc;
- 
-+	err = "bad start sector";
-+	if (sb->version == BCACHE_SB_VERSION_BDEV) {
-+		dc->data_start_sector = BDEV_DATA_START_DEFAULT;
-+	} else {
-+		if (sb->keys < 1)
-+			goto err;
-+		dc->data_start_sector = sb->d[0];
-+		if (dc->data_start_sector < BDEV_DATA_START_DEFAULT)
-+			goto err;
-+	}
-+
- 	g = dc->disk.disk;
- 
--	set_capacity(g, dc->bdev->bd_part->nr_sects - 16);
-+	set_capacity(g, dc->bdev->bd_part->nr_sects - dc->data_start_sector);
- 
- 	bch_cached_dev_request_init(dc);
- 
-@@ -1802,7 +1813,7 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- 	if (err)
- 		goto err_close;
- 
--	if (sb->version == CACHE_BACKING_DEV) {
-+	if (SB_IS_BDEV(sb)) {
- 		struct cached_dev *dc = kzalloc(sizeof(*dc), GFP_KERNEL);
- 
- 		err = register_bdev(sb, sb_page, bdev, dc);
 -- 
-1.8.2.rc3.7.g35aca0e
+1.7.1
+
 
