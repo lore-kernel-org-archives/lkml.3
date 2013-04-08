@@ -1,50 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756273Ab3DHEp6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 00:45:58 -0400
-Received: from f36.mail.ru ([217.69.128.193]:37056 "EHLO f36.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751034Ab3DHEp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 00:45:57 -0400
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?U3RlcGhlbiBSb3Rod2VsbA==?= <sfr@canb.auug.org.au>
-Cc: =?UTF-8?B?U2FtdWVsIE9ydGl6?= <sameo@linux.intel.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: =?UTF-8?B?UmU6IGxpbnV4LW5leHQ6IGJ1aWxkIGZhaWx1cmUgYWZ0ZXIgbWVyZ2Ugb2Yg?=
- =?UTF-8?B?dGhlIG1mZCB0cmVl?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [188.134.40.128]
-Date: Mon, 08 Apr 2013 08:45:51 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1365396351.542317232@f36.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Spam: Not detected
-X-Mras: Ok
-In-Reply-To: <20130408142124.ac540429a889cdc9800e529a@canb.auug.org.au>
-References: <20130408142124.ac540429a889cdc9800e529a@canb.auug.org.au>
+	id S932221Ab3DHEsY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 00:48:24 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:52378 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255Ab3DHEsX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 00:48:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <51624591.4010303@synopsys.com>
+References: <alpine.LFD.2.02.1304031433350.21884@ionos>
+	<1364998282-21437-1-git-send-email-vgupta@synopsys.com>
+	<20130404152808.GB15261@ab42.lan>
+	<515E54BD.2090300@synopsys.com>
+	<51602459.3040105@synopsys.com>
+	<CA+55aFw=-oJxujka-emxyRcY54MSe3qEjZ6xgzoE-roe3EFk5g@mail.gmail.com>
+	<51624591.4010303@synopsys.com>
+Date: Sun, 7 Apr 2013 21:48:21 -0700
+X-Google-Sender-Auth: A6nRfOfHRGRdoXAznQ2tWIQDB20
+Message-ID: <CA+55aFyFWjpSVQM6M266tKrG_ZXJzZ-nYejpmXYQXbrr42mGPQ@mail.gmail.com>
+Subject: Re: [PATCH] [PATCH] Gaurantee spinlocks implicit barrier for !PREEMPT_COUNT
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r384juew022868
 
-Hello.
+On Sun, Apr 7, 2013 at 9:20 PM, Vineet Gupta <Vineet.Gupta1@synopsys.com> wrote:
+>
+> Christian had already proposed that change - only I was reluctant to take it - as
+> local_irq_* is used heavily in a configuration of ARC700 linux where (!SMP) cpu
+> doesn't support load-locked/store-conditional instructions - hence atomic R-M-W
+> sequences need those routines. Adding a mem clobber would lead to pathetic
+> generated code hence the reason it was likely removed by me at some point in time.
 
-> After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> drivers/regulator/anatop-regulator.c: In function 'anatop_regulator_probe':
-> drivers/regulator/anatop-regulator.c:134:2: error: implicit declaration of function 'of_get_parent' [-Werror=implicit-function-declaration]
-> 
-> Caused by commit 5ab3a89a741f ("mfd: syscon: Add non-DT support").
-> 
-> I have used the mfd tree from next-20130405 for today.
+Umm. The irq instructions absolutely *HAVE* to have the barriers. And
+yes, the R-M-W instructions (if they are protected by them) obviously
+need to have the load and the store inside the spinlocked region.
 
-This means that we do not have empty declarations for the
-of_xx functions in linux/of.h for !CONFIG_OF.
-OK to declare these functions or any other opinions?
+> Also I'd thought that given that barriers are already present in PREEMPT_COUNT
+> variant of preempt_* macros we might as well add them to !PREEMPT_COUNT ones.
 
----
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+That's absolutely insane. It's insane for two reasons:
+
+ - it's not SUFFICIENT. Any user of irq-safety needs the loads and
+stores to stay inside the irq-safe region, and the preempt macros have
+absolutely nothing to do with that.
+
+ - it's POINTLESS and WRONG. If you run on UP, and have preemption
+disabled, then there is no reason for a barrier in the preempt code,
+since moving code around them doesn't matter - nothing is ever going
+to preempt that.
+
+The thing is, the irq disable/enable sequence absolutely has to have a
+memory barrier in it, because if the compiler moves a load outside of
+the irq-protected region, then that is a bug. Now, if you want to play
+games with your atomics and do them with handcoded asm, go right
+ahead, but that really isn't an argument for getting everything else
+wrong.
+
+That said, thinking about barriers and preemption made me realize that
+we do have a potential issue between: (a) non-preemption UP kernel
+(with no barriers in the preempt_enable/disable()) and (b)
+architectures that use inline asm without a memory clobber for
+get_user/put_user(). That includes x86.
+
+The reason is that I could imagine code like
+
+    if (get_user(val, addr))
+        return -EFAULT;
+    preempt_disable();
+    ... do something percpu ..
+    preempt_enable();
+
+and it turns out that for non-preempt UP, we don't tell the compiler
+anywhere that it can't move the get_user past the preempt_disable. But
+the get_user() can cause a preemption point because of a page fault,
+obviously.
+
+I suspect that the best way to fix this ends up relying on the gcc
+"asm volatile" rules, and make the rule be that:
+ - preempt_disable/enable have to generate an asm volatile() string
+(preferably just a ASM comment saying "preempt disable/enable")
+ - get_user/put_user doesn't need to add a memory clobber, but needs
+to be done with an asm volatile too.
+
+Then the gcc "no reordering of volatile asms" should make the above be
+ok, without having to add an actual compiler memory barrier.
+
+Ingo? Peter? I'm not sure anybody really uses UP+no-preempt on x86,
+but it does seem to be a bug.. Comments?
+
+But the irq disable/enable sequences definitely need the memory
+clobber. Because caching memory that could be changed by an interrupt
+in registers is not good.
+
+                    Linus
