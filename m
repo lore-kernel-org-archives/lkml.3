@@ -1,78 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936231Ab3DIOMI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 10:12:08 -0400
-Received: from mga09.intel.com ([134.134.136.24]:22959 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761568Ab3DIOMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 10:12:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,439,1363158000"; 
-   d="scan'208";a="292363063"
-From: Jani Nikula <jani.nikula@intel.com>
-To: Josh Boyer <jwboyer@redhat.com>, gregkh@linuxfoundation.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.8.y] drm/i915: add quirk to invert brightness on eMachines e725
-In-Reply-To: <20130409123833.GC32476@hansolo.jdub.homelinux.org>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-References: <20130409123833.GC32476@hansolo.jdub.homelinux.org>
-User-Agent: Notmuch/0.15.2+76~g76bbe24 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Tue, 09 Apr 2013 17:12:18 +0300
-Message-ID: <87y5crpzct.fsf@intel.com>
+	id S936242Ab3DIOMz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 10:12:55 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:48508 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932875Ab3DIOMw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 10:12:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20130409125509.GH15412@verge.net.au>
+References: <cover.1365079581.git.viresh.kumar@linaro.org>
+	<3167220d1e262ff22078993a5beec55e82dfd951.1365079581.git.viresh.kumar@linaro.org>
+	<20130409125509.GH15412@verge.net.au>
+Date: Tue, 9 Apr 2013 19:42:51 +0530
+Message-ID: <CAKohpomqfVqiw1PJxBRRA8=A6hV_63AW4nRpM8TfZPA5bypcKQ@mail.gmail.com>
+Subject: Re: [PATCH 14/18] cpufreq: sh: move cpufreq driver to drivers/cpufreq
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Simon Horman <horms@verge.net.au>
+Cc: rjw@sisk.pl, robin.randhawa@arm.com, Steve.Bannister@arm.com,
+        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
+        arvind.chauhan@arm.com, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 09 Apr 2013, Josh Boyer <jwboyer@redhat.com> wrote:
-> Upstream commit 01e3a8feb40e54b962a20fa7eb595c5efef5e109
-
-This patch seems to be the above commit and
-
-commit 1ffff60320879830e469e26062c18f75236822ba
-Author: Jani Nikula <jani.nikula@intel.com>
-Date:   Tue Jan 22 12:50:34 2013 +0200
-
-    drm/i915: add quirk to invert brightness on eMachines G725
-
-squashed together. There's a separate bug for that too:
-https://bugs.freedesktop.org/show_bug.cgi?id=59628
-
-I think both are okay for stable, but by the stable rules you should
-probably split this up, with the appropriate upstream references in
-both. Or do whatever the stable team tells you to do. ;)
-
-BR,
-Jani.
-
+On 9 April 2013 18:25, Simon Horman <horms@verge.net.au> wrote:
+> On Thu, Apr 04, 2013 at 06:24:22PM +0530, Viresh Kumar wrote:
+>> This patch moves cpufreq driver of SUPERH architecture to drivers/cpufreq.
 >
-> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=31522#c35
-> [Note: There are more than one broken setups in the bug. This fixes one.]
-> Reported-by: Martins <andrissr@inbox.lv>
-> Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> ---
->  drivers/gpu/drm/i915/intel_display.c | 6 ++++++
->  1 file changed, 6 insertions(+)
+> Why?
 >
-> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> index e6e4df7..6292677 100644
-> --- a/drivers/gpu/drm/i915/intel_display.c
-> +++ b/drivers/gpu/drm/i915/intel_display.c
-> @@ -8899,6 +8899,12 @@ static struct intel_quirk intel_quirks[] = {
->  	/* Acer Aspire 5734Z must invert backlight brightness */
->  	{ 0x2a42, 0x1025, 0x0459, quirk_invert_brightness },
->  
-> +	/* Acer/eMachines G725 */
-> +	{ 0x2a42, 0x1025, 0x0210, quirk_invert_brightness },
-> +
-> +	/* Acer/eMachines e725 */
-> +	{ 0x2a42, 0x1025, 0x0212, quirk_invert_brightness },
-> +
->  	/* Acer Aspire 4736Z */
->  	{ 0x2a42, 0x1025, 0x0260, quirk_invert_brightness },
->  };
-> -- 
-> 1.8.1.4
+> I am missing the cover email where I assume the explanation lies.
+
+Hi Simon,
+
+The idea was to keep all cpufreq drivers at a common and most suitable
+place, so that future consolidation work can be done easily and efficiently.
+
+So, functionally this patch shouldn't change anything.
