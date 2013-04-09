@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230Ab3DIEMF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 00:12:05 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56144 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762735Ab3DIEMC (ORCPT
+	id S1755153Ab3DIETB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 00:19:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58022 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751767Ab3DIETA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 00:12:02 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <516394FE.7090603@jp.fujitsu.com>
-Date: Tue, 09 Apr 2013 13:11:42 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Li Zefan <lizefan@huawei.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 7/8] memcg: don't use css_id any more
-References: <51627DA9.7020507@huawei.com> <51627E74.5020300@huawei.com>
-In-Reply-To: <51627E74.5020300@huawei.com>
-Content-Type: text/plain; charset=GB2312
+	Tue, 9 Apr 2013 00:19:00 -0400
+Date: Mon, 8 Apr 2013 21:18:59 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: Chanho Min <chanho.min@lge.com>,
+        Nadia Yvette Chambers <nyc@holomorphy.com>,
+        Jiri Kosina <jkosina@suse.cz>, Guennadi Liakhovetski <lg@denx.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] bitmap: speedup in bitmap_find_free_region when
+ order is 0
+Message-Id: <20130408211859.b5549325.akpm@linux-foundation.org>
+In-Reply-To: <1365477500.2012.5.camel@joe-AO722>
+References: <1365475486-14371-1-git-send-email-chanho.min@lge.com>
+	<20130408201001.f4c74887.akpm@linux-foundation.org>
+	<1365477500.2012.5.camel@joe-AO722>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/04/08 17:23), Li Zefan wrote:
-> Now memcg uses cgroup->id instead of css_id. Update some comments and
-> set mem_cgroup_subsys->use_id to 0.
+On Mon, 08 Apr 2013 20:18:20 -0700 Joe Perches <joe@perches.com> wrote:
+
+> On Mon, 2013-04-08 at 20:10 -0700, Andrew Morton wrote:
+> > > --- a/lib/bitmap.c
+> []
+> > > +	for (i = 0 ; i < nlongs_reg ; i++) {
+> > 
+> > No space before the semicolon, please.  checkpatch should warn about
+> > this but it seems to be broken.
 > 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> There's no specific CodingStyle violation here
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Let's fix CodingStyle then?  Nobody puts spaces before semis - perish
+the thought!  (I count 4,254,057 versus 8,416 in .c)
 
+> Adding --strict does bleat though.
 
+And let's make it default please.
 
+> # check for whitespace before a non-naked semicolon
+> 		if ($line =~ /^\+.*\S\s+;/) {
+> 			CHK("SPACING",
+> 			    "space prohibited before semicolon\n" . $herecurr);
+> 		}
+> 
