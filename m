@@ -1,117 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761186Ab3DIRGF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 13:06:05 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:62257 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759228Ab3DIRGD (ORCPT
+	id S933501Ab3DIRG3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 13:06:29 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:47592 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759886Ab3DIRG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 13:06:03 -0400
+	Tue, 9 Apr 2013 13:06:27 -0400
+Message-ID: <51644A98.1070904@gmail.com>
+Date: Tue, 09 Apr 2013 19:06:32 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Tue, 9 Apr 2013 19:06:01 +0200
-Message-ID: <CA+icZUU82LMNjvJg6W2RKuo1VoC21VsFPJ4qg9Meou_oSKCGyA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 9 [ BROKEN vfs-next: fs/pipe.c ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: multipart/mixed; boundary=047d7bfd0c2e6f7a7004d9f09160
+To: Josef Ahmad <josef.ahmad@intel.com>
+CC: Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH] spi-gpio: init CS before spi_bitbang_setup()
+References: <1365525613-27198-1-git-send-email-josef.ahmad@intel.com>
+In-Reply-To: <1365525613-27198-1-git-send-email-josef.ahmad@intel.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7bfd0c2e6f7a7004d9f09160
-Content-Type: text/plain; charset=UTF-8
+Cc: Mark
 
-On Tue, Apr 9, 2013 at 11:30 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> Changes since 20130408:
->
-> The vfs tree still had its build failure so I used the version from
-> next-20130405.
->
+On 09.04.2013 18:40, Josef Ahmad wrote:
+> spi_bitbang_setup() deasserts the chip select line to initialise
+> the device. The chip select GPIO line is obtained from
+> spi_gpio->cs_gpios[] private data.
+> Currently, devices that are not registered under devicetree
+> environment will call into spi_bitbang_setup() with stale
+> cs_gpios[].
+> 
+> This patch ensures spi_gpio->cs_gpios[] is always initialised prior
+> to calling spi_bitbang_setup().
+> 
+> Reviewed-by: Daniel Mack <zonque@gmail.com>
+> Signed-off-by: Josef Ahmad <josef.ahmad@intel.com>
+> ---
+>  drivers/spi/spi-gpio.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/spi/spi-gpio.c b/drivers/spi/spi-gpio.c
+> index c7cf0b7..0fa345c 100644
+> --- a/drivers/spi/spi-gpio.c
+> +++ b/drivers/spi/spi-gpio.c
+> @@ -265,9 +265,9 @@ static int spi_gpio_setup(struct spi_device *spi)
+>  		}
+>  	}
+>  	if (!status) {
+> -		status = spi_bitbang_setup(spi);
+>  		/* in case it was initialized from static board data */
+>  		spi_gpio->cs_gpios[spi->chip_select] = cs;
+> +		status = spi_bitbang_setup(spi);
+>  	}
+>  
+>  	if (status) {
+> 
 
-With the attached patch including a follow-up I was able to boot
-today's Linux-Next.
-
-I have reverted "Revert "pipe: fold file_operations instances in one"
-from linux-next and applied the fixed correct one from vfs-next.
-
-
-- Sedat -
-
---047d7bfd0c2e6f7a7004d9f09160
-Content-Type: application/octet-stream; 
-	name="3.9.0-rc6-next20130409-2-iniza-small.patch"
-Content-Disposition: attachment; 
-	filename="3.9.0-rc6-next20130409-2-iniza-small.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hfbbiufc1
-
-QWwgVmlybyAoMSk6CiAgICAgIHBpcGU6IGZvbGQgZmlsZV9vcGVyYXRpb25zIGluc3RhbmNlcyBp
-biBvbmUKClNlZGF0IERpbGVrICg4KToKICAgICAga2J1aWxkOiBkZWItcGtnOiBUcnkgdG8gZGV0
-ZXJtaW5lIGRpc3RyaWJ1dGlvbgogICAgICBrYnVpbGQ6IGRlYi1wa2c6IEJ1bXAgeWVhciBpbiBk
-ZWJpYW4vY29weXJpZ2h0IGZpbGUKICAgICAga2J1aWxkOiBkZWItcGtnOiBVcGRhdGUgZ2l0IHJl
-cG9zaXRvcnkgVVJMIGluIGRlYmlhbi9jb3B5cmlnaHQgZmlsZQogICAgICBNZXJnZSB0YWcgJ25l
-eHQtMjAxMzA0MDknIG9mIGdpdDovL2dpdC5rZXJuZWwub3JnLy4uLi9uZXh0L2xpbnV4LW5leHQg
-aW50byBMaW51eC1OZXh0LXYyMDEzMDQwOQogICAgICBNZXJnZSBicmFuY2ggJ2RlYi1wa2ctZml4
-ZXMnIGludG8gMy45LjAtcmM2LW5leHQyMDEzMDQwOS0xLWluaXphLXNtYWxsCiAgICAgIFJldmVy
-dCAicGlwZTogZm9sZCBmaWxlX29wZXJhdGlvbnMgaW5zdGFuY2VzIGluIG9uZSIKICAgICAgTWVy
-Z2UgYnJhbmNoICd2ZnMtVEVNUCcgaW50byB2ZnMtbmV4dC1maXhlcwogICAgICBNZXJnZSBicmFu
-Y2ggJ3Zmcy1uZXh0LWZpeGVzJyBpbnRvIDMuOS4wLXJjNi1uZXh0MjAxMzA0MDktMi1pbml6YS1z
-bWFsbAoKIGZzL3BpcGUuYyAgICAgICAgICAgICAgICB8ICA3ICsrKystLS0KIGxvY2FsdmVyc2lv
-bi1uZXh0ICAgICAgICB8ICAxIC0KIHNjcmlwdHMvcGFja2FnZS9idWlsZGRlYiB8IDE5ICsrKysr
-KysrKysrKysrKystLS0KIDMgZmlsZXMgY2hhbmdlZCwgMjAgaW5zZXJ0aW9ucygrKSwgNyBkZWxl
-dGlvbnMoLSkKCmRpZmYgLS1naXQgYS9mcy9waXBlLmMgYi9mcy9waXBlLmMKaW5kZXggYjQ5OWYz
-Yi4uZDJjNDVlMSAxMDA2NDQKLS0tIGEvZnMvcGlwZS5jCisrKyBiL2ZzL3BpcGUuYwpAQCAtMTAx
-Myw2ICsxMDEzLDcgQEAgc3RhdGljIHZvaWQgd2FrZV91cF9wYXJ0bmVyKHN0cnVjdCBwaXBlX2lu
-b2RlX2luZm8gKnBpcGUpCiBzdGF0aWMgaW50IGZpZm9fb3BlbihzdHJ1Y3QgaW5vZGUgKmlub2Rl
-LCBzdHJ1Y3QgZmlsZSAqZmlscCkKIHsKIAlzdHJ1Y3QgcGlwZV9pbm9kZV9pbmZvICpwaXBlOwor
-CWJvb2wgaXNfcGlwZSA9IGlub2RlLT5pX3NiLT5zX21hZ2ljID09IFBJUEVGU19NQUdJQzsKIAlp
-bnQga2lsbCA9IDA7CiAJaW50IHJldDsKIApAQCAtMTA1OSw3ICsxMDYwLDcgQEAgc3RhdGljIGlu
-dCBmaWZvX29wZW4oc3RydWN0IGlub2RlICppbm9kZSwgc3RydWN0IGZpbGUgKmZpbHApCiAJCWlm
-IChwaXBlLT5yZWFkZXJzKysgPT0gMCkKIAkJCXdha2VfdXBfcGFydG5lcihwaXBlKTsKIAotCQlp
-ZiAoIXBpcGUtPndyaXRlcnMpIHsKKwkJaWYgKCFpc19waXBlICYmICFwaXBlLT53cml0ZXJzKSB7
-CiAJCQlpZiAoKGZpbHAtPmZfZmxhZ3MgJiBPX05PTkJMT0NLKSkgewogCQkJCS8qIHN1cHByZXNz
-IFBPTExIVVAgdW50aWwgd2UgaGF2ZQogCQkJCSAqIHNlZW4gYSB3cml0ZXIgKi8KQEAgLTEwNzgs
-MTQgKzEwNzksMTQgQEAgc3RhdGljIGludCBmaWZvX29wZW4oc3RydWN0IGlub2RlICppbm9kZSwg
-c3RydWN0IGZpbGUgKmZpbHApCiAJICogIGVycm5vPUVOWElPIHdoZW4gdGhlcmUgaXMgbm8gcHJv
-Y2VzcyByZWFkaW5nIHRoZSBGSUZPLgogCSAqLwogCQlyZXQgPSAtRU5YSU87Ci0JCWlmICgoZmls
-cC0+Zl9mbGFncyAmIE9fTk9OQkxPQ0spICYmICFwaXBlLT5yZWFkZXJzKQorCQlpZiAoIWlzX3Bp
-cGUgJiYgKGZpbHAtPmZfZmxhZ3MgJiBPX05PTkJMT0NLKSAmJiAhcGlwZS0+cmVhZGVycykKIAkJ
-CWdvdG8gZXJyOwogCiAJCXBpcGUtPndfY291bnRlcisrOwogCQlpZiAoIXBpcGUtPndyaXRlcnMr
-KykKIAkJCXdha2VfdXBfcGFydG5lcihwaXBlKTsKIAotCQlpZiAoIXBpcGUtPnJlYWRlcnMpIHsK
-KwkJaWYgKCFpc19waXBlICYmICFwaXBlLT5yZWFkZXJzKSB7CiAJCQlpZiAod2FpdF9mb3JfcGFy
-dG5lcihwaXBlLCAmcGlwZS0+cl9jb3VudGVyKSkKIAkJCQlnb3RvIGVycl93cjsKIAkJfQpkaWZm
-IC0tZ2l0IGEvbG9jYWx2ZXJzaW9uLW5leHQgYi9sb2NhbHZlcnNpb24tbmV4dApkZWxldGVkIGZp
-bGUgbW9kZSAxMDA2NDQKaW5kZXggMDI0YzExNS4uMDAwMDAwMAotLS0gYS9sb2NhbHZlcnNpb24t
-bmV4dAorKysgL2Rldi9udWxsCkBAIC0xICswLDAgQEAKLS1uZXh0LTIwMTMwNDA5CmRpZmYgLS1n
-aXQgYS9zY3JpcHRzL3BhY2thZ2UvYnVpbGRkZWIgYi9zY3JpcHRzL3BhY2thZ2UvYnVpbGRkZWIK
-aW5kZXggYWNiODY1MC4uN2Q3YzlkOCAxMDA2NDQKLS0tIGEvc2NyaXB0cy9wYWNrYWdlL2J1aWxk
-ZGViCisrKyBiL3NjcmlwdHMvcGFja2FnZS9idWlsZGRlYgpAQCAtMTcyLDkgKzE3MiwyMiBAQCBl
-bHNlCiBmaQogbWFpbnRhaW5lcj0iJG5hbWUgPCRlbWFpbD4iCiAKKyMgVHJ5IHRvIGRldGVybWlu
-ZSBkaXN0cmlidXRpb24KK2lmIFsgLWUgJCh3aGljaCBsc2JfcmVsZWFzZSkgXTsgdGhlbgorICAg
-ICAgIGNvZGVuYW1lPSQobHNiX3JlbGVhc2UgLS1jb2RlbmFtZSAtLXNob3J0KQorICAgICAgIGlm
-IFsgIiRjb2RlbmFtZSIgIT0gIiIgXTsgdGhlbgorCQlkaXN0cmlidXRpb249JGNvZGVuYW1lCisg
-ICAgICAgZWxzZQorCQlkaXN0cmlidXRpb249IlVOUkVMRUFTRUQiCisJCWVjaG8gIldBUk5JTkc6
-IFRoZSBkaXN0cmlidXRpb24gY291bGQgTk9UIGJlIGRldGVybWluZWQhIgorICAgICAgIGZpCitl
-bHNlCisgICAgICAgZWNobyAiSElOVDogSW5zdGFsbCBsc2JfcmVsZWFzZSBiaW5hcnksIHRoaXMg
-aGVscHMgdG8gaWRlbnRpZnkgeW91ciBkaXN0cmlidXRpb24hIgorZmkKKwogIyBHZW5lcmF0ZSBh
-IHNpbXBsZSBjaGFuZ2Vsb2cgdGVtcGxhdGUKIGNhdCA8PEVPRiA+IGRlYmlhbi9jaGFuZ2Vsb2cK
-LWxpbnV4LXVwc3RyZWFtICgkcGFja2FnZXZlcnNpb24pIHVuc3RhYmxlOyB1cmdlbmN5PWxvdwor
-bGludXgtdXBzdHJlYW0gKCRwYWNrYWdldmVyc2lvbikgJGRpc3RyaWJ1dGlvbjsgdXJnZW5jeT1s
-b3cKIAogICAqIEN1c3RvbSBidWlsdCBMaW51eCBrZXJuZWwuCiAKQEAgLTE4OCwxMCArMjAxLDEw
-IEBAIFRoaXMgaXMgYSBwYWNrYWNrZWQgdXBzdHJlYW0gdmVyc2lvbiBvZiB0aGUgTGludXgga2Vy
-bmVsLgogVGhlIHNvdXJjZXMgbWF5IGJlIGZvdW5kIGF0IG1vc3QgTGludXggZnRwIHNpdGVzLCBp
-bmNsdWRpbmc6CiBmdHA6Ly9mdHAua2VybmVsLm9yZy9wdWIvbGludXgva2VybmVsCiAKLUNvcHly
-aWdodDogMTk5MSAtIDIwMDkgTGludXMgVG9ydmFsZHMgYW5kIG90aGVycy4KK0NvcHlyaWdodDog
-MTk5MSAtIDIwMTMgTGludXMgVG9ydmFsZHMgYW5kIG90aGVycy4KIAogVGhlIGdpdCByZXBvc2l0
-b3J5IGZvciBtYWlubGluZSBrZXJuZWwgZGV2ZWxvcG1lbnQgaXMgYXQ6Ci1naXQ6Ly9naXQua2Vy
-bmVsLm9yZy9wdWIvc2NtL2xpbnV4L2tlcm5lbC9naXQvdG9ydmFsZHMvbGludXgtMi42LmdpdAor
-Z2l0Oi8vZ2l0Lmtlcm5lbC5vcmcvcHViL3NjbS9saW51eC9rZXJuZWwvZ2l0L3RvcnZhbGRzL2xp
-bnV4LmdpdAogCiAgICAgVGhpcyBwcm9ncmFtIGlzIGZyZWUgc29mdHdhcmU7IHlvdSBjYW4gcmVk
-aXN0cmlidXRlIGl0IGFuZC9vciBtb2RpZnkKICAgICBpdCB1bmRlciB0aGUgdGVybXMgb2YgdGhl
-IEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlIGFzIHB1Ymxpc2hlZCBieQo=
---047d7bfd0c2e6f7a7004d9f09160--
