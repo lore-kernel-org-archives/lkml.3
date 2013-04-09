@@ -1,99 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935102Ab3DIPOf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 11:14:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23315 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761809Ab3DIPOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 11:14:33 -0400
-Date: Tue, 9 Apr 2013 11:14:23 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Dave Young <dyoung@redhat.com>, linux-watchdog@vger.kernel.org,
-        kexec@lists.infradead.org, wim@iguana.be,
-        LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com
-Subject: Re: [RFC PATCH] watchdog: Add hook for kicking in kdump path
-Message-ID: <20130409151423.GM79013@redhat.com>
-References: <1365192994-94850-1-git-send-email-dzickus@redhat.com>
- <516259D2.7000805@redhat.com>
- <20130408124858.GC79013@redhat.com>
- <20130408151509.GA20919@roeck-us.net>
- <20130409144431.GL79013@redhat.com>
- <20130409145228.GA1111@roeck-us.net>
+	id S936205Ab3DIPOl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 11:14:41 -0400
+Received: from mail1.bemta12.messagelabs.com ([216.82.251.15]:20542 "EHLO
+	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935378Ab3DIPOi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 11:14:38 -0400
+X-Env-Sender: Hector.Palacios@digi.com
+X-Msg-Ref: server-7.tower-29.messagelabs.com!1365520475!22790711!1
+X-Originating-IP: [66.77.174.14]
+X-StarScan-Received: 
+X-StarScan-Version: 6.8.6.1; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <51643053.7030302@digi.com>
+Date: Tue, 9 Apr 2013 17:14:27 +0200
+From: Hector Palacios <hector.palacios@digi.com>
+Organization: Digi International
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130409145228.GA1111@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+CC: <linux-mmc@vger.kernel.org>, <kernel@pengutronix.de>, <cjb@laptop.org>,
+        <aletes.xgr@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marek Vasut <marex@denx.de>, Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH v2 2/2] mmc: mxs-mmc: add non-removable property
+References: <1365166070-9370-1-git-send-email-mkl@pengutronix.de> <1365166070-9370-3-git-send-email-mkl@pengutronix.de>
+In-Reply-To: <1365166070-9370-3-git-send-email-mkl@pengutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 07:52:28AM -0700, Guenter Roeck wrote:
-> On Tue, Apr 09, 2013 at 10:44:31AM -0400, Don Zickus wrote:
-> > On Mon, Apr 08, 2013 at 08:15:09AM -0700, Guenter Roeck wrote:
-> > > On Mon, Apr 08, 2013 at 08:48:58AM -0400, Don Zickus wrote:
-> > > > On Mon, Apr 08, 2013 at 01:46:58PM +0800, Dave Young wrote:
-> > > > > On 04/06/2013 04:16 AM, Don Zickus wrote:
-> > > > > > A common problem with kdump is that during the boot up of the
-> > > > > > second kernel, the hardware watchdog times out and reboots the
-> > > > > > machine before a vmcore can be captured.
-> > > > > > 
-> > > > > > Instead of tellling customers to disable their hardware watchdog
-> > > > > > timers, I hacked up a hook to put in the kdump path that provides
-> > > > > > one last kick before jumping into the second kernel.
-> > > > > > 
-> > > > > > The assumption is the watchdog timeout is at least 10-30 seconds
-> > > > > > long, enough to get the second kernel to userspace to kick the watchdog
-> > > > > > again, if needed.
-> > > > > 
-> > > > > For kdump kernel some devices need to reset, this might increase the
-> > > > > boot time, it's not so reliable for the 10-30s for us to kicking the
-> > > > > watchdog.
-> > > > > 
-> > > > > Could we have another option to disable/stop the watchdog while panic
-> > > > > happens? Ie. add a kernel cmdline panic_stop_wd=<0|1> for 1st kernel, if
-> > > > > it's set to 1, then just stop the watchdog or we can kick the watchdog
-> > > > > like what you do in this patch. Of course stopping watchdog should be
-> > > > > lockless as well..
-> > > > 
-> > > > Hmm, I can look into that.  But I am not sure all watchdogs have the
-> > > > ability to stop once started.  I was also worried about the case where
-> > > 
-> > > Correct.
-> > > 
-> > > > kdump hangs for some reason.  Having the watchdog there to 'reboot' would
-> > > > be a nice safety net.
-> > > > 
-> > > Absolutely agree. After all, the reason for the kdump is most likely that
-> > > something went really wrong, meaning there is some likelyhood for the hang
-> > > to occur. Turning off the watchdog in this condition does not seem to be
-> > > a good idea.
-> > > 
-> > > > Perhaps adjusting the watchdog 'timeout' to something like 3 minutes would
-> > > > be easier?
-> > > > 
-> > > Not all watchdogs support such large timeouts, unfortunately. Maybe it would
-> > > make sense to implement infrastructure support for a softdog on top of the
-> > > hardware watchdog. Several drivers implement that outside the infrastructure
-> > > already.
-> > 
-> > Hi Guenter,
-> > 
-> > I am not familar with a softdog.  Can you give me an example of how it
-> > works?
-> > 
-> Just look for the use of mod_timer in the watchdog directory.
+Dear Marc Kleine-Budde,
 
-So looking at the mod_timer logic in various drivers, it seems regardless
-if the /dev/watchdog device is opened or not, if it is running, it will
-automagically kick the watchdog.
+On 04/05/2013 02:47 PM, Marc Kleine-Budde wrote:
+> Some boards have non removable cards like eMMC. Handle such case.
+>
+> Acked-by: Shawn Guo <shawn.guo@linaro.org>
+> Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+> ---
+> changes since v1:
+> - fix removeable typo
+>
+>   drivers/mmc/host/mxs-mmc.c | 10 +++++++---
+>   1 file changed, 7 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
+> index 0cdf1f6..c231881 100644
+> --- a/drivers/mmc/host/mxs-mmc.c
+> +++ b/drivers/mmc/host/mxs-mmc.c
+> @@ -73,6 +73,7 @@ struct mxs_mmc_host {
+>   	int				wp_gpio;
+>   	bool				wp_inverted;
+>   	bool				cd_inverted;
+> +	bool				non_removable;
+>   };
+>
+>   static int mxs_mmc_get_ro(struct mmc_host *mmc)
+> @@ -96,8 +97,9 @@ static int mxs_mmc_get_cd(struct mmc_host *mmc)
+>   	struct mxs_mmc_host *host = mmc_priv(mmc);
+>   	struct mxs_ssp *ssp = &host->ssp;
+>
+> -	return !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
+> -		 BM_SSP_STATUS_CARD_DETECT)) ^ host->cd_inverted;
+> +	return host->non_removable ||
+> +		!(readl(ssp->base + HW_SSP_STATUS(ssp)) &
+> +		  BM_SSP_STATUS_CARD_DETECT) ^ host->cd_inverted;
+>   }
+>
+>   static void mxs_mmc_reset(struct mxs_mmc_host *host)
+> @@ -687,8 +689,10 @@ static int mxs_mmc_probe(struct platform_device *pdev)
+>   		mmc->caps |= MMC_CAP_4_BIT_DATA;
+>   	else if (bus_width == 8)
+>   		mmc->caps |= MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA;
+> +	host->non_removable = of_property_read_bool(np, "non-removable");
+> +	if (host->non_removable)
+> +		mmc->caps |= MMC_CAP_NONREMOVABLE;
+>   	host->wp_gpio = of_get_named_gpio_flags(np, "wp-gpios", 0, &flags);
+> -
+>   	if (flags & OF_GPIO_ACTIVE_LOW)
+>   		host->wp_inverted = 1;
+>
+>
 
-This seems that we can avoid pulling in userspace pieces for this.  Just
-load the driver and the hardware starts getting kicked.
+It looks like Alexander and I were looking at the same in different threads:
+   http://comments.gmane.org/gmane.linux.kernel.mmc/19964
+   http://comments.gmane.org/gmane.linux.kernel/1471409
 
-Is that true?  And if so, do all drivers detect if the hardware is already
-running during their init?  Or is it based on the first device open?
+The following completes your 2/2 patch with broken-cd support as well (in both cases 
+system must assume card is always present):
 
-Cheers,
-Don
+diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
+index 206fe49..7a60097 100644
+--- a/drivers/mmc/host/mxs-mmc.c
++++ b/drivers/mmc/host/mxs-mmc.c
+@@ -72,6 +72,8 @@ struct mxs_mmc_host {
+         int                             sdio_irq_en;
+         int                             wp_gpio;
+         bool                            wp_inverted;
++       bool                            broken_cd;
++       bool                            non_removable;
+  };
+
+  static int mxs_mmc_get_ro(struct mmc_host *mmc)
+@@ -95,7 +97,8 @@ static int mxs_mmc_get_cd(struct mmc_host *mmc)
+         struct mxs_mmc_host *host = mmc_priv(mmc);
+         struct mxs_ssp *ssp = &host->ssp;
+
+-       return !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
++       return host->non_removable || host->broken_cd ||
++              !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
+                  BM_SSP_STATUS_CARD_DETECT);
+  }
+
+@@ -686,8 +689,11 @@ static int mxs_mmc_probe(struct platform_device *pdev)
+                 mmc->caps |= MMC_CAP_4_BIT_DATA;
+         else if (bus_width == 8)
+                 mmc->caps |= MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA;
++       host->broken_cd = of_property_read_bool(np, "broken-cd");
++       host->non_removable = of_property_read_bool(np, "non-removable");
++       if (host->non_removable)
++               mmc->caps |= MMC_CAP_NONREMOVABLE;
+         host->wp_gpio = of_get_named_gpio_flags(np, "wp-gpios", 0, &flags);
+-
+         if (flags & OF_GPIO_ACTIVE_LOW)
+                 host->wp_inverted = 1;
+
+
+Regards,
+-- 
+Héctor Palacios
+
