@@ -1,168 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936115Ab3DIJJE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 05:09:04 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37608 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935153Ab3DIJI7 (ORCPT
+	id S936157Ab3DIJJO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 05:09:14 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49274 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935153Ab3DIJJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 05:08:59 -0400
-Date: Tue, 9 Apr 2013 10:08:43 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: Re: [PATCH 1/4] Documentation: Add memory mapped ARM architected
- timer binding
-Message-ID: <20130409090843.GS23725@e106331-lin.cambridge.arm.com>
-References: <1365474623-29181-1-git-send-email-sboyd@codeaurora.org>
- <1365474623-29181-2-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365474623-29181-2-git-send-email-sboyd@codeaurora.org>
-Thread-Topic: [PATCH 1/4] Documentation: Add memory mapped ARM architected
- timer binding
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 9 Apr 2013 05:09:10 -0400
+Date: Tue, 9 Apr 2013 19:09:00 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build warning after merge of the final tree (probably
+ arm-soc tree related)
+Message-Id: <20130409190900.97dcf3a70a9c0ad727b8bc4b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__9_Apr_2013_19_09_00_+1000_l/BO6Y7/aCnWW/n8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+--Signature=_Tue__9_Apr_2013_19_09_00_+1000_l/BO6Y7/aCnWW/n8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Apr 09, 2013 at 03:30:20AM +0100, Stephen Boyd wrote:
-> Add a binding for the arm architected timer hardware's memory
-> mapped interface. The mmio timer hardware is made up of one base
-> frame and a collection of up to 8 timer frames, where each of the
-> 8 timer frames can have either one or two views. A frame
-> typically maps to a privilege level (user/kernel, hypervisor,
-> secure). The first view has full access to the registers within a
-> frame, while the second view can be restricted to particular
-> registers within a frame. Each frame must support a physical
-> timer. It's optional for a frame to support a virtual timer.
-> 
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Marc Zyngier <Marc.Zyngier@arm.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  .../devicetree/bindings/arm/arch_timer.txt         | 62 ++++++++++++++++++++--
->  1 file changed, 59 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
-> index 20746e5..69ef711 100644
-> --- a/Documentation/devicetree/bindings/arm/arch_timer.txt
-> +++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
-> @@ -1,10 +1,14 @@
->  * ARM architected timer
->  
-> -ARM cores may have a per-core architected timer, which provides per-cpu timers.
-> +ARM cores may have a per-core architected timer, which provides per-cpu timers,
-> +or a memory mapped architected timer, which provides up to 8 frames with a
-> +physical and optional virtual timer per frame.
->  
-> -The timer is attached to a GIC to deliver its per-processor interrupts.
-> +The per-core architected timer is attached to a GIC to deliver its
-> +per-processor interrupts via PPIs. The memory mapped timer is attached to a GIC
-> +to deliver its interrupts via SPIs.
->  
-> -** Timer node properties:
-> +** CP15 Timer node properties:
->  
->  - compatible : Should at least contain one of
->  	"arm,armv7-timer"
-> @@ -26,3 +30,55 @@ Example:
->  			     <1 10 0xf08>;
->  		clock-frequency = <100000000>;
->  	};
-> +
-> +** Memory mapped timer node properties
-> +
-> +- compatible : Should at least contain "arm,armv7-timer-mem".
-> +
-> +- #address-cells : Must be 1.
+Hi all,
 
-What about LPAE systems?
+After merging the final tree, today's linux-next build (arm defconfig)
+produced these warnings:
 
-How about something like the following:
+arch/arm/mach-cns3xxx/Kconfig:2:warning: choice value used outside its choi=
+ce group
+arch/arm/mach-bcm2835/Kconfig:2:warning: choice value used outside its choi=
+ce group
+arch/arm/Kconfig:287:error: recursive dependency detected!
+arch/arm/Kconfig:287:	choice <choice> contains symbol ARCH_CNS3XXX
+arch/arm/Kconfig:366:	symbol ARCH_CNS3XXX depends on ARCH_MULTI_V6
+arch/arm/Kconfig:933:	symbol ARCH_MULTI_V6 depends on ARCH_MULTIPLATFORM
+arch/arm/Kconfig:292:	symbol ARCH_MULTIPLATFORM is part of choice <choice>
 
-#address-cells : If the ranges property is empty, the same value as the
-                 parent node's #address-cells property. Otherwise, a
-		 value such that the ranges property specifies a
-		 mapping to the parent node's address space.            
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> +
-> +- #size-cells : Must be 1.
-> +
-> +- ranges : Indicates parent and child bus address space are the same.
-> +
+--Signature=_Tue__9_Apr_2013_19_09_00_+1000_l/BO6Y7/aCnWW/n8
+Content-Type: application/pgp-signature
 
-Similarly, what if someone wants to write a more complex mapping for some
-reason?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-We should be able to handle it if we use the standard accessors.
+iQIcBAEBCAAGBQJRY9qsAAoJEECxmPOUX5FEkrwP/RO3tTONZRnbZAnM6oqNn+wv
+h0KTfqQgBMMpt0FkhdeJZ3oZS50dcHrR5dNik2aJPIlznz5K7LGtktDqwh612sdV
+0yWhLEq7US4TpPDB4aQhm61NN+KYBq2b2Zga6FQHpVy3quJPDJogiY+/9bTXSzW3
++Kp/XHmCcdSJk4kvVdUnlllXB18HjZcwGEQpXD9MjmhzfMtSWXqUL5vMKaEDwlMt
+lr7EbdCk0ShXHDZsHsm/cbGWL0Lci36U9AMZCMKHTI4PyUB+lau+xLIjN0yWlorg
+rOub2Hf7hp2FI0UBtWF06M+slzDCkA+FUin2SdEuC3+mEWievnyFNp9mBf421AQr
+Hf7+cA+kEMY7qXdST9a8tEbTl5e7lothpo6QF7KU0KjIPsYKT3Uq9kMIG+ZU2aV+
+ltyDFwBoSQyIk33aZIgDJCfaEjktILcQZk2p4pvvcdy1tUKVzb8FYOoq1QuyuPbm
+JnFc1/tEimVg4vQ8yC2ruTED2d0GKbDdN17sufi8/Zk1vCN/nfRc/JMC6Ud5cuTo
+DW0/FNP5/VENhRxQb9jeayRVKHFS981/s6Bc/SD9aTYBl9cqFr257pARRxRkp0BF
+gkR5VkpBEZbLRDfMrfgADFZvV1E5i7YqwxtiVzcPx/0GwNGHxjsf4DUITghcdKF2
+Zk0mZjyz6RTKFQmMRiTf
+=TFWG
+-----END PGP SIGNATURE-----
 
-> +- clock-frequency : The frequency of the main counter, in Hz. Optional.
-> +
-> +- reg : The control frame base address.
-> +
-> +Frame:
-> +
-> +- frame-id: Encoded as follows:
-> +		bits[3:0]  frame number: 0 to 7.
-> +		bits[10:8] frame usage:
-> +			0 - user/kernel
-> +			1 - hyp
-> +			2 - secure
-> +
-
-Could we not just have a disabled status property for those frames claimed by a
-higher level (either secure firmware or hypervisor)? Or have I missed something
-here?
-
-Then we'd just have a frame-number property, which is easier for humans to read
-and understand.
-
-> +- interrupts : Interrupt list for physical and virtual timers in that order.
-> +  The virtual timer interrupt is optional.
-> +
-> +- reg : The first and second view base addresses in that order. The second view
-> +  base address is optional.
-> +
-> +Example:
-> +
-> +	timer@f0000000 {
-> +		compatible = "arm,armv7-timer-mem";
-> +		#address-cells = <1>;
-> +		#size-cells = <1>;
-> +		ranges;
-> +		reg = <0xf0000000 0x1000>;
-> +		clock-frequency = <50000000>;
-> +		frame0@f0001000 {
-> +			frame-id = <0x0>
-> +			interrupts = <0 13 0x8>,
-> +				     <0 14 0x8>;
-> +			reg = <0xf0001000 0x1000>,
-> +			      <0xf0002000 0x1000>;
-> +		};
-> +		frame1@f0003000 {
-> +			frame-id = <0x11>
-> +			interrupts = <0 15 0x8>;
-> +			reg = <0xf0003000 0x1000>;
-> +		};
-> +	};
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
-> 
-
-Mark.
+--Signature=_Tue__9_Apr_2013_19_09_00_+1000_l/BO6Y7/aCnWW/n8--
