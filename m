@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934433Ab3DILSF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 07:18:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50235 "EHLO mx2.suse.de"
+	id S935679Ab3DILUb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 07:20:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50268 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1763315Ab3DILSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 07:18:01 -0400
+	id S932892Ab3DILSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 07:18:04 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
@@ -14,197 +14,200 @@ Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
         Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 0/10] Reduce system disruption due to kswapd V2
-Date: Tue,  9 Apr 2013 12:06:55 +0100
-Message-Id: <1365505625-9460-1-git-send-email-mgorman@suse.de>
+Subject: [PATCH 03/10] mm: vmscan: Flatten kswapd priority loop
+Date: Tue,  9 Apr 2013 12:06:58 +0100
+Message-Id: <1365505625-9460-4-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1365505625-9460-1-git-send-email-mgorman@suse.de>
+References: <1365505625-9460-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Posting V2 of this series got delayed due to trying to pin down an unrelated
-regression in 3.9-rc where interactive performance is shot to hell. That
-problem still has not been identified as it's resisting attempts to be
-reproducible by a script for the purposes of bisection.
+kswapd stops raising the scanning priority when at least SWAP_CLUSTER_MAX
+pages have been reclaimed or the pgdat is considered balanced. It then
+rechecks if it needs to restart at DEF_PRIORITY and whether high-order
+reclaim needs to be reset. This is not wrong per-se but it is confusing
+to follow and forcing kswapd to stay at DEF_PRIORITY may require several
+restarts before it has scanned enough pages to meet the high watermark even
+at 100% efficiency. This patch irons out the logic a bit by controlling
+when priority is raised and removing the "goto loop_again".
 
-For those that looked at V1, the most important difference in this version
-is how patch 2 preserves the proportional scanning of anon/file LRUs.
+This patch has kswapd raise the scanning priority until it is scanning
+enough pages that it could meet the high watermark in one shrink of the
+LRU lists if it is able to reclaim at 100% efficiency. It will not raise
+the scanning prioirty higher unless it is failing to reclaim any pages.
 
-The series is against 3.9-rc6.
+To avoid infinite looping for high-order allocation requests kswapd will
+not reclaim for high-order allocations when it has reclaimed at least
+twice the number of pages as the allocation request.
 
-Changelog since V1
-o Rename ZONE_DIRTY to ZONE_TAIL_LRU_DIRTY			(andi)
-o Reformat comment in shrink_page_list				(andi)
-o Clarify some comments						(dhillf)
-o Rework how the proportional scanning is preserved
-o Add PageReclaim check before kswapd starts writeback
-o Reset sc.nr_reclaimed on every full zone scan
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/vmscan.c | 85 +++++++++++++++++++++++++++++--------------------------------
+ 1 file changed, 40 insertions(+), 45 deletions(-)
 
-Kswapd and page reclaim behaviour has been screwy in one way or the other
-for a long time. Very broadly speaking it worked in the far past because
-machines were limited in memory so it did not have that many pages to scan
-and it stalled congestion_wait() frequently to prevent it going completely
-nuts. In recent times it has behaved very unsatisfactorily with some of
-the problems compounded by the removal of stall logic and the introduction
-of transparent hugepage support with high-order reclaims.
-
-There are many variations of bugs that are rooted in this area. One example
-is reports of a large copy operations or backup causing the machine to
-grind to a halt or applications pushed to swap. Sometimes in low memory
-situations a large percentage of memory suddenly gets reclaimed. In other
-cases an application starts and kswapd hits 100% CPU usage for prolonged
-periods of time and so on. There is now talk of introducing features like
-an extra free kbytes tunable to work around aspects of the problem instead
-of trying to deal with it. It's compounded by the problem that it can be
-very workload and machine specific.
-
-This series aims at addressing some of the worst of these problems without
-attempting to fundmentally alter how page reclaim works.
-
-Patches 1-2 limits the number of pages kswapd reclaims while still obeying
-	the anon/file proportion of the LRUs it should be scanning.
-
-Patches 3-4 control how and when kswapd raises its scanning priority and
-	deletes the scanning restart logic which is tricky to follow.
-
-Patch 5 notes that it is too easy for kswapd to reach priority 0 when
-	scanning and then reclaim the world. Down with that sort of thing.
-
-Patch 6 notes that kswapd starts writeback based on scanning priority which
-	is not necessarily related to dirty pages. It will have kswapd
-	writeback pages if a number of unqueued dirty pages have been
-	recently encountered at the tail of the LRU.
-
-Patch 7 notes that sometimes kswapd should stall waiting on IO to complete
-	to reduce LRU churn and the likelihood that it'll reclaim young
-	clean pages or push applications to swap. It will cause kswapd
-	to block on IO if it detects that pages being reclaimed under
-	writeback are recycling through the LRU before the IO completes.
-
-Patch 8 shrinks slab just once per priority scanned or if a zone is otherwise
-	unreclaimable to avoid hammering slab when kswapd has to skip a
-	large number of pages.
-
-Patches 9-10 are cosmetic but balance_pgdat() might be easier to follow.
-
-This was tested using memcached+memcachetest while some background IO
-was in progress as implemented by the parallel IO tests implement in MM
-Tests. memcachetest benchmarks how many operations/second memcached can
-service and it is run multiple times. It starts with no background IO and
-then re-runs the test with larger amounts of IO in the background to roughly
-simulate a large copy in progress.  The expectation is that the IO should
-have little or no impact on memcachetest which is running entirely in memory.
-
-                                         3.9.0-rc6                   3.9.0-rc6
-                                           vanilla           lessdisrupt-v2r11
-Ops memcachetest-0M             11106.00 (  0.00%)          10997.00 ( -0.98%)
-Ops memcachetest-749M           10960.00 (  0.00%)          11032.00 (  0.66%)
-Ops memcachetest-2498M           2588.00 (  0.00%)          10948.00 (323.03%)
-Ops memcachetest-4246M           2401.00 (  0.00%)          10960.00 (356.48%)
-Ops io-duration-0M                  0.00 (  0.00%)              0.00 (  0.00%)
-Ops io-duration-749M               15.00 (  0.00%)              8.00 ( 46.67%)
-Ops io-duration-2498M             112.00 (  0.00%)             25.00 ( 77.68%)
-Ops io-duration-4246M             170.00 (  0.00%)             45.00 ( 73.53%)
-Ops swaptotal-0M                    0.00 (  0.00%)              0.00 (  0.00%)
-Ops swaptotal-749M             161678.00 (  0.00%)             16.00 ( 99.99%)
-Ops swaptotal-2498M            471903.00 (  0.00%)            192.00 ( 99.96%)
-Ops swaptotal-4246M            444010.00 (  0.00%)           1323.00 ( 99.70%)
-Ops swapin-0M                       0.00 (  0.00%)              0.00 (  0.00%)
-Ops swapin-749M                   789.00 (  0.00%)              0.00 (  0.00%)
-Ops swapin-2498M               196496.00 (  0.00%)            192.00 ( 99.90%)
-Ops swapin-4246M               168269.00 (  0.00%)            154.00 ( 99.91%)
-Ops minorfaults-0M            1596126.00 (  0.00%)        1521332.00 (  4.69%)
-Ops minorfaults-749M          1766556.00 (  0.00%)        1596350.00 (  9.63%)
-Ops minorfaults-2498M         1661445.00 (  0.00%)        1598762.00 (  3.77%)
-Ops minorfaults-4246M         1628375.00 (  0.00%)        1597624.00 (  1.89%)
-Ops majorfaults-0M                  9.00 (  0.00%)              0.00 (  0.00%)
-Ops majorfaults-749M              154.00 (  0.00%)            101.00 ( 34.42%)
-Ops majorfaults-2498M           27214.00 (  0.00%)            165.00 ( 99.39%)
-Ops majorfaults-4246M           23229.00 (  0.00%)            114.00 ( 99.51%)
-
-Note how the vanilla kernels performance collapses when there is enough IO
-taking place in the background. This drop in performance is part of users
-complain of when they start backups. Note how the swapin and major fault
-figures indicate that processes were being pushed to swap prematurely. With
-the series applied, there is no noticable performance drop and while there
-is still some swap activity, it's tiny.
-
-                             3.9.0-rc6   3.9.0-rc6
-                               vanilla lessdisrupt-v2r11
-Page Ins                       9094288      346092
-Page Outs                     62897388    47599884
-Swap Ins                       2243749       19389
-Swap Outs                      3953966      142258
-Direct pages scanned                 0     2262897
-Kswapd pages scanned          55530838    75725437
-Kswapd pages reclaimed         6682620     1814689
-Direct pages reclaimed               0     2187167
-Kswapd efficiency                  12%          2%
-Kswapd velocity              10537.501   14377.501
-Direct efficiency                 100%         96%
-Direct velocity                  0.000     429.642
-Percentage direct scans             0%          2%
-Page writes by reclaim        10835163    72419297
-Page writes file               6881197    72277039
-Page writes anon               3953966      142258
-Page reclaim immediate           11463        8199
-Page rescued immediate               0           0
-Slabs scanned                    38144       30592
-Direct inode steals                  0           0
-Kswapd inode steals              11383         791
-Kswapd skipped wait                  0           0
-THP fault alloc                     10         111
-THP collapse alloc                2782        1779
-THP splits                          10          27
-THP fault fallback                   0           5
-THP collapse fail                    0          21
-Compaction stalls                    0          89
-Compaction success                   0          53
-Compaction failures                  0          36
-Page migrate success                 0       37062
-Page migrate failure                 0           0
-Compaction pages isolated            0       83481
-Compaction migrate scanned           0       80830
-Compaction free scanned              0     2660824
-Compaction cost                      0          40
-NUMA PTE updates                     0           0
-NUMA hint faults                     0           0
-NUMA hint local faults               0           0
-NUMA pages migrated                  0           0
-AutoNUMA cost                        0           0
-
-Note that while there is no noticeable performance drop and swap activity is
-massively reduced there are processes that direct reclaim as a consequence
-of the series due to kswapd not reclaiming the world. ftrace was not enabled
-for this particular test to avoid disruption but on a similar test with
-ftrace I found that the vast bulk of the direct reclaims were in the dd
-processes. The top direct reclaimers were;
-
-     11 ps-13204
-     12 top-13198
-     15 memcachetest-11712
-     20 gzip-3126
-     67 tclsh-3124
-     80 memcachetest-12924
-    191 flush-8:0-292
-    338 tee-3125
-   2184 dd-12135
-  10751 dd-13124
-
-While processes did stall, it was mostly the "correct" processes that
-stalled.
-
-There is also still a risk that kswapd not reclaiming the world may mean
-that it stays awake balancing zones, does not stall on the appropriate
-events and continually scans pages it cannot reclaim consuming CPU. This
-will be visible as continued high CPU usage but in my own tests I only
-saw a single spike lasting less than a second and I did not observe any
-problems related to reclaim while running the series on my desktop.
-
- include/linux/mmzone.h |  17 ++
- mm/vmscan.c            | 449 ++++++++++++++++++++++++++++++-------------------
- 2 files changed, 293 insertions(+), 173 deletions(-)
-
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 0742c45..78268ca 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2633,8 +2633,12 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+ /*
+  * kswapd shrinks the zone by the number of pages required to reach
+  * the high watermark.
++ *
++ * Returns true if kswapd scanned at least the requested number of pages to
++ * reclaim. This is used to determine if the scanning priority needs to be
++ * raised.
+  */
+-static void kswapd_shrink_zone(struct zone *zone,
++static bool kswapd_shrink_zone(struct zone *zone,
+ 			       struct scan_control *sc,
+ 			       unsigned long lru_pages)
+ {
+@@ -2654,6 +2658,8 @@ static void kswapd_shrink_zone(struct zone *zone,
+ 
+ 	if (nr_slab == 0 && !zone_reclaimable(zone))
+ 		zone->all_unreclaimable = 1;
++
++	return sc->nr_scanned >= sc->nr_to_reclaim;
+ }
+ 
+ /*
+@@ -2680,26 +2686,25 @@ static void kswapd_shrink_zone(struct zone *zone,
+ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 							int *classzone_idx)
+ {
+-	bool pgdat_is_balanced = false;
+ 	int i;
+ 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+ 	unsigned long nr_soft_reclaimed;
+ 	unsigned long nr_soft_scanned;
+ 	struct scan_control sc = {
+ 		.gfp_mask = GFP_KERNEL,
++		.priority = DEF_PRIORITY,
+ 		.may_unmap = 1,
+ 		.may_swap = 1,
++		.may_writepage = !laptop_mode,
+ 		.order = order,
+ 		.target_mem_cgroup = NULL,
+ 	};
+-loop_again:
+-	sc.priority = DEF_PRIORITY;
+-	sc.nr_reclaimed = 0;
+-	sc.may_writepage = !laptop_mode;
+ 	count_vm_event(PAGEOUTRUN);
+ 
+ 	do {
+ 		unsigned long lru_pages = 0;
++		unsigned long nr_reclaimed = sc.nr_reclaimed = 0;
++		bool raise_priority = true;
+ 
+ 		/*
+ 		 * Scan in the highmem->dma direction for the highest
+@@ -2741,10 +2746,8 @@ loop_again:
+ 			}
+ 		}
+ 
+-		if (i < 0) {
+-			pgdat_is_balanced = true;
++		if (i < 0)
+ 			goto out;
+-		}
+ 
+ 		for (i = 0; i <= end_zone; i++) {
+ 			struct zone *zone = pgdat->node_zones + i;
+@@ -2811,8 +2814,16 @@ loop_again:
+ 
+ 			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
+ 			    !zone_balanced(zone, testorder,
+-					   balance_gap, end_zone))
+-				kswapd_shrink_zone(zone, &sc, lru_pages);
++					   balance_gap, end_zone)) {
++				/*
++				 * There should be no need to raise the
++				 * scanning priority if enough pages are
++				 * already being scanned that high
++				 * watermark would be met at 100% efficiency.
++				 */
++				if (kswapd_shrink_zone(zone, &sc, lru_pages))
++					raise_priority = false;
++			}
+ 
+ 			/*
+ 			 * If we're getting trouble reclaiming, start doing
+@@ -2847,46 +2858,29 @@ loop_again:
+ 				pfmemalloc_watermark_ok(pgdat))
+ 			wake_up(&pgdat->pfmemalloc_wait);
+ 
+-		if (pgdat_balanced(pgdat, order, *classzone_idx)) {
+-			pgdat_is_balanced = true;
+-			break;		/* kswapd: all done */
+-		}
+-
+ 		/*
+-		 * We do this so kswapd doesn't build up large priorities for
+-		 * example when it is freeing in parallel with allocators. It
+-		 * matches the direct reclaim path behaviour in terms of impact
+-		 * on zone->*_priority.
++		 * Fragmentation may mean that the system cannot be rebalanced
++		 * for high-order allocations in all zones. If twice the
++		 * allocation size has been reclaimed and the zones are still
++		 * not balanced then recheck the watermarks at order-0 to
++		 * prevent kswapd reclaiming excessively. Assume that a
++		 * process requested a high-order can direct reclaim/compact.
+ 		 */
+-		if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
+-			break;
+-	} while (--sc.priority >= 0);
+-
+-out:
+-	if (!pgdat_is_balanced) {
+-		cond_resched();
++		if (order && sc.nr_reclaimed >= 2UL << order)
++			order = sc.order = 0;
+ 
+-		try_to_freeze();
++		/* Check if kswapd should be suspending */
++		if (try_to_freeze() || kthread_should_stop())
++			break;
+ 
+ 		/*
+-		 * Fragmentation may mean that the system cannot be
+-		 * rebalanced for high-order allocations in all zones.
+-		 * At this point, if nr_reclaimed < SWAP_CLUSTER_MAX,
+-		 * it means the zones have been fully scanned and are still
+-		 * not balanced. For high-order allocations, there is
+-		 * little point trying all over again as kswapd may
+-		 * infinite loop.
+-		 *
+-		 * Instead, recheck all watermarks at order-0 as they
+-		 * are the most important. If watermarks are ok, kswapd will go
+-		 * back to sleep. High-order users can still perform direct
+-		 * reclaim if they wish.
++		 * Raise priority if scanning rate is too low or there was no
++		 * progress in reclaiming pages
+ 		 */
+-		if (sc.nr_reclaimed < SWAP_CLUSTER_MAX)
+-			order = sc.order = 0;
+-
+-		goto loop_again;
+-	}
++		if (raise_priority || sc.nr_reclaimed - nr_reclaimed == 0)
++			sc.priority--;
++	} while (sc.priority >= 0 &&
++		 !pgdat_balanced(pgdat, order, *classzone_idx));
+ 
+ 	/*
+ 	 * If kswapd was reclaiming at a higher order, it has the option of
+@@ -2915,6 +2909,7 @@ out:
+ 			compact_pgdat(pgdat, order);
+ 	}
+ 
++out:
+ 	/*
+ 	 * Return the order we were reclaiming at so prepare_kswapd_sleep()
+ 	 * makes a decision on the order we were last reclaiming at. However,
 -- 
 1.8.1.4
 
