@@ -1,137 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935959Ab3DITi6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 15:38:58 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:57909 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934841Ab3DITi4 (ORCPT
+	id S936020Ab3DITkY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 15:40:24 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:36987 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934655Ab3DITkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 15:38:56 -0400
-Date: Tue, 9 Apr 2013 12:38:51 -0700
-From: Tejun Heo <tj@kernel.org>
-To: "Daniel P. Berrange" <berrange@redhat.com>
-Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, bsingharora@gmail.com, dhaval.giani@gmail.com,
-        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe@redhat.com,
-        lpoetter@redhat.com, workman-devel@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: cgroup: status-quo and userland efforts
-Message-ID: <20130409193851.GJ6186@mtj.dyndns.org>
-References: <20130406012159.GA17159@mtj.dyndns.org>
- <20130409095024.GI25576@redhat.com>
+	Tue, 9 Apr 2013 15:40:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130409095024.GI25576@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1365534355.16420.160.camel@bling.home>
+References: <1365534355.16420.160.camel@bling.home>
+Date: Tue, 9 Apr 2013 21:40:21 +0200
+Message-ID: <CAFLxGvzqFUHDnCimZg1BLfSPxAP=TQcvMfHHyU185k4K+J32KA@mail.gmail.com>
+Subject: Re: [GIT PULL] vfio fix for 3.9-rc7
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Daniel.
+On Tue, Apr 9, 2013 at 9:05 PM, Alex Williamson
+<alex.williamson@redhat.com> wrote:
+> Hi Linus,
+>
+> Here's one small fix for vfio that I'd like to get in for 3.9;
+> tightening the range checking around a vfio ioctl.  Thanks!
+>
+> Alex
+>
+> The following changes since commit 25e9789ddd9d14a8971f4a421d04f282719ab733:
+>
+>   vfio: include <linux/slab.h> for kmalloc (2013-03-15 12:58:20 -0600)
+>
+> are available in the git repository at:
+>
+>   git://github.com/awilliam/linux-vfio.git tags/vfio-v3.9-rc7
+>
+> for you to fetch changes up to 904c680c7bf016a8619a045850937427f8d7368c:
+>
+>   vfio-pci: Fix possible integer overflow (2013-03-26 11:33:16 -0600)
 
-On Tue, Apr 09, 2013 at 10:50:25AM +0100, Daniel P. Berrange wrote:
-> The PaxControlGroups document is the key piece to making distributed
-> management work. This document does need updating, since some of what
-> it describes doesn't really work, but its goal is sound IMHO.
+Is this commit queued for -stable?
+I don't see a stable tag in the commit message.
 
-I think we should add a comment to the doc saying "this is how to keep
-things from falling apart completely but in no way is a long term
-solution."
-
-> The Workman library is presuming that apps will follow the PaxControlGroups
-> guidelines for use of cgroups, and from there aims to provide system
-> administrators with a "single world view" and tools to then configure
-> this. It does not, however, attempt to force itself underneath the
-> apps like systemd / libvirt, since there is no need todo that. It
-> just aggregates information from system/libvirt/etc so that admin has
-> the complete picture of what the cgroups are being used for.
-
-I suppose that can be useful for now but pretty strongly disagree it
-would be acceptable as long term solution.
-
-> I don't see that creating a "single authority" magically solves any
-> of the problems you describe. For example, such an authority can't
-> know whether it should delete a cgroup just because an application
-> exits. It is quite possible an application would want the cgroup to
-> continue to exist, so that it is still there when it restarts.
-
-Sure, then make it request the persistency explicitly.  The debate is
-not whether trusting each individual player can show similar result.
-Sure, that's in the realm of possibility.  If you push it as far as
-"everyone" should and would behave properly even on edge cases, I
-would have to add "theoretical" there tho.  The debate is which is the
-better way to achieve the desired goals and up until now I don't see
-any pros for the distributed approach other than "this is what we've
-been doing till now".
-
-> Ultimately it is the end admin or top level management tool that has
-> the whole picture. The Workman library / cli is aiming to provide
-> admins / apps with the complete picture of everything that is using
-> resources on the system, so they can adjust policies dynamically.
-
-Again, I don't know.  It can be useful for now I suppose.  I just
-can't see it being the long term solution.
-
-> You seem to be implying that 'distributed == anything goes', which is
-> certainly not what I consider to be the case. Indeed the main point
-> of having the PaxControlGroups guidelines is explicitly because we do
-> *not* want an "anything goes" approach.
-
-Yeah, by asking cooperations from individual players without any way
-to monitor or police them.
-
-> We ultimately do need the ability to delegate hierarchy creation to
-> unprivileged users / programs, in order to allow containerized OS to
-> have the ability to use cgroups. Requiring any applications inside a
-> container to talk to a cgroups "authority" existing on the host OS is
-> not a satisfactory architecture. We need to allow for a container to
-> be self-contained in its usage of cgroups.
-
-I'm not sure about this one.  Yeah, we might need delegation there at
-least for now.  That said, it's not gonna be completely consistent.
-Root cgroup is special for several controllers and we even have
-controllers which propagate config changes down the hierarchy.  It
-just isn't built for proper delegation.
-
-> I don't think that requiring a single userspace authority is
-> satisfactory. We need to be able to delegate this to containers,
-> without them needing to talk to some authority back in the
-> host OS, so that they remain 100% isolated from processes in
-> the host OS.
-
-It's unlikely to work that well.  I think a good mental image to have
-for cgroup is that of sysctl rather than a generic file system.  You
-can't go delegate sysctl control knobs to containers or !root users.
-You need an extra layer of control to do that.  It's true that such
-policing could happen in the kernel, but something in the kernel being
-exposed to untrusted entities has a lot of implications as the kernel
-now becomes heavily involved in *policy* decisions as to what can be
-allowed and what can't be and the kernel has a lot less latitude in
-making those decisions compared to userland base system.
-
-There are also security implications.  memcg control knobs directly
-regulate the operation of memory reclaim and writeback.  I wouldn't be
-surprised if there are pretty easy ways to make them go bonkers while
-staying inside the limits from the parent.  Again, think of sysctl.
-You don't wanna hand these out to untrusted entities.
-
-> We need to make the distribute approach work in order to support
-> containers, which requiring them to have a back-channel open to
-> the host userspace. If we can do that, then we've solved the problem
-> of delegated to unprivileged users in non-container environments too.
-> IMHO with a sufficiently specified PaxControlGroups the distributed
-> approach is just fine. If applications are badly behaved and don't
-> follow the rules, then so be it, file bugs against those apps. Both
-> libvirt & systemd are committed to following rules for co-operating
-> in usage of cgroups & Workman can provide a "single unified view"
-> for the administrator without requiring a single authority too.
-
-Well, you guys can try I guess.  Maybe I'm wrong and workman turns out
-to be awesome.  I'll be happy to switch my position then, but for now,
-the kernel isn't moving towards that direction.
-
-Thanks.
-
--- 
-tejun
+Thanks,
+//richard
