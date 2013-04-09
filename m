@@ -1,50 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765493Ab3DIOUs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 10:20:48 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:52741 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765085Ab3DIOUr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 10:20:47 -0400
+	id S933501Ab3DIOUz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 10:20:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55169 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760602Ab3DIOUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 10:20:52 -0400
+Date: Tue, 9 Apr 2013 16:16:15 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Anton Arapov <anton@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Josh Stone <jistone@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
+Subject: Re: [PATCH v1 2/9] uretprobes: Reserve the first slot in xol_vma
+	for trampoline
+Message-ID: <20130409141615.GB20577@redhat.com>
+References: <1365004839-21982-1-git-send-email-anton@redhat.com> <1365004839-21982-3-git-send-email-anton@redhat.com> <20130407114441.GB2186@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <51641ED3.1090603@samsung.com>
-References: <1365500744-14839-1-git-send-email-gautam.vivek@samsung.com>
-	<5163E8EB.1050803@samsung.com>
-	<CAFp+6iE-ZYSNHZBntTcX8fESLB2FXOr6idM8_Q3Rd7T3s_c4Dw@mail.gmail.com>
-	<CAFp+6iGS-4iv-PKTKP4OhwVvTsDoPnc-9N-6AAr5x=Bz9r=vTw@mail.gmail.com>
-	<51641ED3.1090603@samsung.com>
-Date: Tue, 9 Apr 2013 19:50:45 +0530
-Message-ID: <CAFp+6iH1+dtfijt2Hf6k7jT8irgS63_32oUpPaOZ=CPNa88tUA@mail.gmail.com>
-Subject: Re: [PATCH RFC] rtc: rtc-s3c: use clk_prepare_enable and clk_disable_unprepare
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        a.zummo@towertech.it, kgene.kim@samsung.com, dianders@chromium.org,
-        Thomas Abraham <thomas.ab@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130407114441.GB2186@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 9, 2013 at 7:29 PM, Sylwester Nawrocki
-<s.nawrocki@samsung.com> wrote:
-> On 04/09/2013 03:34 PM, Vivek Gautam wrote:
->>> Aah !! actually missed a similar patch from Thomas Abraham :(
->>> > doing the same as suggested by you.
->>> > Its available at:
->>> > http://patchwork.ozlabs.org/patch/188687/
->> There's a change required in the above mentioned patch, so possibly
->> Thomas can go ahead and post the next version
->> of that.
+On 04/07, Srikar Dronamraju wrote:
 >
-> Why not make that change yourself if you need it ? That patch is
-> really old, maybe Thomas is busy with other things now.
+> * Anton Arapov <anton@redhat.com> [2013-04-03 18:00:32]:
+>
+> > Allocate trampoline page, as the very first one in uprobed
+> > task xol area, and fill it with breakpoint opcode.
+> >
+> > Also introduce get_trampoline_vaddr() helper, to wrap the
+> > trampoline address extraction from area->vaddr. That removes
+> > confusion and eases the debug experience in case ->vaddr
+> > notion will be changed.
+> >
+> > v1 changes:
+> > * rework get_trampoline_vaddr() helper.
+> > * init xol_area->slot_count.
+> >
+> > Signed-off-by: Anton Arapov <anton@redhat.com>
+>
+> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-Sure, will post a patch fixing this. :-)
+Thanks!
 
+> > +static unsigned long get_trampoline_vaddr(void)
+> > +{
+> > +	struct xol_area *area;
+> > +	unsigned long trampoline_vaddr = -1;
+> > +
+> > +	area = current->mm->uprobes_state.xol_area;
+> > +	smp_read_barrier_depends();
+>
+> check: do we need this barrier?
 
--- 
-Thanks & Regards
-Vivek
+In theory yes. For example, we do not want the false positive in
+handle_swbp() which does
+
+	if (bp_vaddr == get_trampoline_vaddr())
+		handler_uretprobe();
+
+In theory we can race with another thread which initializes area
+(in particular area->vaddr) and then sets uprobes_state.xol_area = area
+in xol_add_vma().
+
+If we see ->xol_area != NULL we must ensure that we read the correct
+value of area->vaddr, so we need a barrier.
+
+In short. Please note get_xol_area()->smp_read_barrier_depends(),
+get_trampoline_vaddr() needs it for the same reason.
+
+Oleg.
+
