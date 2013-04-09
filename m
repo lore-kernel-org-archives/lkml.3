@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964849Ab3DIOwt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 10:52:49 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:48945 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936814Ab3DIOwq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 10:52:46 -0400
+	id S936814Ab3DIOye (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 10:54:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6411 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761866Ab3DIOyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 10:54:33 -0400
+Date: Tue, 9 Apr 2013 16:50:54 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] uprobes/tracing: generalize struct
+	uprobe_trace_entry_head
+Message-ID: <20130409145054.GA22913@redhat.com>
+References: <20130329181548.GA20700@redhat.com> <1365436535.25498.12.camel@gandalf.local.home>
 MIME-Version: 1.0
-In-Reply-To: <CAKohponv-AKZzM98Ujeek4oXQx+8ba+sMgMbM9eV8PgQR38kZw@mail.gmail.com>
-References: <cover.1352196505.git.viresh.kumar@linaro.org>
-	<d12b25130db5a8b645929eb93d1cf4ddc2d68826.1352196505.git.viresh.kumar@linaro.org>
-	<1354024039.6276.72.camel@gandalf.local.home>
-	<CAKohponv-AKZzM98Ujeek4oXQx+8ba+sMgMbM9eV8PgQR38kZw@mail.gmail.com>
-Date: Tue, 9 Apr 2013 20:22:45 +0530
-Message-ID: <CAKohpo=St0z0L9ei248s3KL_DqZtewQ50o7d=BTdwLFcpM+x3w@mail.gmail.com>
-Subject: Re: [PATCH V2 Resend 4/4] timer: Migrate running timer
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de, Steven Rostedt <rostedt@goodmis.org>
-Cc: pjt@google.com, paul.mckenney@linaro.org, tj@kernel.org, mingo@redhat.com,
-        peterz@infradead.org, Arvind.Chauhan@arm.com,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org, john stultz <johnstul@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365436535.25498.12.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Steven replied to a personal Ping!!, including everybody again]
-
-On 9 April 2013 19:25, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, 2013-04-09 at 14:05 +0530, Viresh Kumar wrote:
->> Ping!!
->>
+On 04/08, Steven Rostedt wrote:
 >
-> Remind me again. What problem are you trying to solve?
-
-I was trying to migrate a running timer which arms itself, so that we don't
-keep a cpu busy just for servicing this timer.
-
->> On 20 March 2013 20:43, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> >
->> > Hi Steven/Thomas,
->> >
->> > I came back to this patch after completing some other stuff and posting
->> > wq part of this patchset separately.
->> >
->> > I got your point and understand how this would fail.
->> >
->> > @Thomas: I need your opinion first. Do you like this concept of migrating
->> > running timer or not? Or you see some basic problem with this concept?
+> On Fri, 2013-03-29 at 19:15 +0100, Oleg Nesterov wrote:
+> >
+> > @@ -491,20 +502,19 @@ static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
+> >  	struct uprobe_trace_entry_head *entry;
+> >  	struct ring_buffer_event *event;
+> >  	struct ring_buffer *buffer;
+> > -	u8 *data;
+> > +	void *data;
+> >  	int size, i;
+> >  	struct ftrace_event_call *call = &tu->call;
+> >
+> > -	size = sizeof(*entry) + tu->size;
+> > -
+> > +	size = SIZEOF_TRACE_ENTRY(1) + tu->size;
 >
-> I'll let Thomas answer this, but to me, this sounds really racy.
-
-Sure.
-
->> > If no (i.e. i can go ahead with another version), then i have some solution to
->> > fix earlier problems reported by Steven:
->> >
->> > The problem lies with del_timer_sync() which just checks
->> > base->running_timer != timer to check if timer is currently running or not.
->> >
->> > What if we add another variable in struct timer_list, that will store if we are
->> > running timer callback or not. And so, before we call callback in timer core,
->> > we will set this variable and will reset it after finishing callback.
->> >
->> > del_timer_sync() will have something like:
->> >
->> > if (base->running_timer != timer)
->> >     remove timer and return;
+> That '1' is confusing. When I first looked at this code, I thought it
+> was a bug as it should have been '0' (thinking of arrays). And then I
+> realized that you want the entry *after* the element.
 >
-> For example, this didn't fix the issue. You removed the timer when it
-> was still running, because base->running_timer did not equal timer.
+> Instead of '1' and I assume '2' for ret probes, how about defining an
+> enum:
+>
+> enum {
+> 	UPROBE_NORM	= 1,
+> 	UPROBE_RET	= 2,
+> };
+>
+> and then you can have;
+>
+> 	size = SIZEOF_TRACE_ENTRY(UPROBE_NORM);
+>
+> and later:
+>
+> 	size = SIZEOF_TRACE_ENTRY(UPROBE_RET);
+>
+> Same goes for DATAOF_TRACE_ENTRY().
+>
+> This would make it a lot easier to understand and review, and much less
+> bug prone when we have to deal with two different types of
+> uprobe_trace_entry_head's.
 
-You are correct and i was stupid. I wanted to write this instead:
+OK, will do.
 
-del_timer_sync() will have something like:
+Or. Instead of enum we can use "bool is_return". So, instead of
 
-if (base->running_timer != timer)
-    if (timer->running_callback)
-        go back to its loop...
-    else
-        remove timer and return;
+	if (is_ret_probe(tu))
+		size = SIZEOF_TRACE_ENTRY(UPROBE_ENTRY_RETPROBE);
+	else
+		size = SIZEOF_TRACE_ENTRY(UPROBE_ENTRY_NORMAL);
 
-i.e. if we aren't running on our base cpu, just check if our callback is
-executing somewhere else due to migration.
+we can do
+
+	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
+
+What do you like more?
+
+Oleg.
+
