@@ -1,76 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934726Ab3DIRCS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 13:02:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46900 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754997Ab3DIRCQ (ORCPT
+	id S935041Ab3DIRCt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 13:02:49 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:54290 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754997Ab3DIRCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 13:02:16 -0400
-Date: Tue, 9 Apr 2013 18:02:14 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Andreas Larsson <andreas@gaisler.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net,
-        Mingkai Hu <Mingkai.hu@freescale.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>, linux-kernel@vger.kernel.org,
-        software@gaisler.com
-Subject: Re: [PATCH v3 5/7] spi: spi-fsl-spi: Add support for setting a
- maximum number of bits per word
-Message-ID: <20130409170213.GV9243@opensource.wolfsonmicro.com>
-References: <1360943547-2186-1-git-send-email-andreas@gaisler.com>
- <1360943547-2186-6-git-send-email-andreas@gaisler.com>
- <20130409165738.GU9243@opensource.wolfsonmicro.com>
+	Tue, 9 Apr 2013 13:02:48 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UEYxRAcbr7cS1UOX"
-Content-Disposition: inline
-In-Reply-To: <20130409165738.GU9243@opensource.wolfsonmicro.com>
-X-Cookie: Your love life will be... interesting.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51642BD5.4030803@ti.com>
+References: <1365465287-24530-1-git-send-email-abrestic@chromium.org>
+	<51642BD5.4030803@ti.com>
+Date: Tue, 9 Apr 2013 10:02:47 -0700
+Message-ID: <CAL1qeaGW=m+DNbGhEzTJBDt1NNpPrVcBzzWzhk447hf2tyb2fw@mail.gmail.com>
+Subject: Re: [PATCH] thermal: fix frequency table lookup bugs
+From: Andrew Bresticker <abrestic@google.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: Andrew Bresticker <abrestic@chromium.org>, Zhang Rui <rui.zhang@intel.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Eduardo,
 
---UEYxRAcbr7cS1UOX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Tue, Apr 9, 2013 at 7:55 AM, Eduardo Valentin
+<eduardo.valentin@ti.com> wrote:
+> Hi Andrew,
+>
+>
+> On 08-04-2013 19:54, Andrew Bresticker wrote:
+>>
+>> The loops which are used to perform lookups in CPU frequency tables in
+>> cpu_cooling and the Exynos thermal driver do not update the loop counter
+>> if they encounter an invalid table entry, leading to an infinite loop in
+>> that case.
+>>
+>> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+>> ---
+>>   drivers/thermal/cpu_cooling.c    | 19 ++++++++++---------
+>>   drivers/thermal/exynos_thermal.c |  8 ++++----
+>>   2 files changed, 14 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+>> index 836828e..e6db441 100644
+>> --- a/drivers/thermal/cpu_cooling.c
+>> +++ b/drivers/thermal/cpu_cooling.c
+>> @@ -124,14 +124,14 @@ static int is_cpufreq_valid(int cpu)
+>>   static unsigned int get_cpu_frequency(unsigned int cpu, unsigned long
+>> level)
+>>   {
+>>         int ret = 0, i = 0;
+>> -       unsigned long level_index;
+>> +       unsigned long level_index = 0;
+>>         bool descend = false;
+>>         struct cpufreq_frequency_table *table =
+>>                                         cpufreq_frequency_get_table(cpu);
+>>         if (!table)
+>>                 return ret;
+>>
+>> -       while (table[i].frequency != CPUFREQ_TABLE_END) {
+>> +       for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+>>                 if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+>>                         continue;
+>
+> Wouldn't be easier to just increase the index i before doing a continue?
 
-On Tue, Apr 09, 2013 at 05:57:38PM +0100, Mark Brown wrote:
-> On Fri, Feb 15, 2013 at 04:52:25PM +0100, Andreas Larsson wrote:
-> > Acked-by: Anton Vorontsov <anton@enomsg.org>
-> > Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+I think this is cleaner.  The code is iterating through an array -- it
+should be a for loop.
 
-> I'll apply this on account of it being part of the series and review
-> having been very slow but...
+>
+>
+>>
+>> @@ -143,24 +143,25 @@ static unsigned int get_cpu_frequency(unsigned int
+>> cpu, unsigned long level)
+>>                 }
+>>
+>>                 /*return if level matched and table in descending order*/
+>> -               if (descend && i == level)
+>> +               if (descend && level_index == level)
+>>                         return table[i].frequency;
+>
+>
+> What this has to do with the patch description?
 
-...actually it turns out Grant already applied this anyway and I missed
-it somehow - sorry for the noise!
+I'm using level_index as the counter of valid frequencies, where as i
+is the index into the array.  If there are invalid entries, they are
+not necessarily equal.  The point of this function is to find the
+level-th *valid* frequency in the table.
 
---UEYxRAcbr7cS1UOX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> Besides why would you be comparing level against 0 all the time (you have
+> initialized level_index to 0 at this point).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Huh? level_index is clearly incremented below...
 
-iQIcBAEBAgAGBQJRZEmIAAoJELSic+t+oim9rWYP/i8V+6tgC3Sw8ekPPhf9eKmU
-C1K/2kFQtaI0GSLBONAx+FrOZxiapeUUxow5CHxZF/noccUQZmvafcOOKygqVs6j
-sCZWRHeK5aIv6ZJjraIdiYc5pmhsoGwMQVxXZEuMFhKljhOHw7lSGk413QsKetBc
-QQBzfHMIOjetXD0YMvRuGjYxkKTm60eigYcp401GLtnNkZ2Uf1q5k40ash0WBH8R
-+U6Nv1lYTci7iXsR59SAuIDjx/bFTtBiWiONEVz6ri82BkR25b+cgqHCVYCyCBsS
-HyQQqaX0oCEKkm66dGmPoKH/nXm3P/OLa7jg5KCbse0eWkUMkOe6L2753H6MIi27
-RMwPZqTgfGn31vSXjvg8oKyWfPEBqsbcC+cXIQCe2Rl6esSiKHSKP0uBmVV66Hyt
-42XyARaTnJ0bVETRKBTy+epMFuLXIwUNKc1rT2Ln7du6O3agIv9qKq8TLPWLdHfo
-AY7NqD3KLzrbWJLkha2An8TtcnnLrwPlwPEzG13nC/SqvSmvsJM/n72F9vtayBOA
-j1Pbb6/6Jdu0j5WDP7E/OdNwdxzvT8PKuyx1xFvZyOgUhZqThk6iwst5hW4knwJ/
-uFqASPdAZ5vSFsftFSIDHxquyBNeuVl8H1/1ftsn+gWeXz/wgXSwyoEnBGyZZit7
-lpfz3hz4ALfIPZ6BoK+z
-=Z+O9
------END PGP SIGNATURE-----
+>
+>> -               i++;
+>> +               level_index++;
+>
+>
+> level_index wont be updated in case of INVALID entry.
 
---UEYxRAcbr7cS1UOX--
+That's the point.
+
+>
+>
+>>         }
+>>         i--;
+>> +       level_index--;
+>>
+>> -       if (level > i || descend)
+>> +       if (level > level_index || descend)
+>>                 return ret;
+>> -       level_index = i - level;
+>> +       level = level_index - level;
+>>
+>>         /*Scan the table in reverse order and match the level*/
+>> -       while (i >= 0) {
+>> +       for (; i >= 0; i--) {
+>>                 if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+>>                         continue;
+>>                 /*return if level matched*/
+>> -               if (i == level_index)
+>> +               if (level_index == level)
+>>                         return table[i].frequency;
+>> -               i--;
+>> +               level_index--;
+>>         }
+>
+>
+> I believe you do more than what you have described in your intention under
+> you patch description
+
+I disagree.  I'm fixing the loop so that it properly handles invalid
+entries and thus the infinite loop problem I mention in the commit
+message.
+
+> Can you please split your patch into smaller changes?
+
+I don't think there is a need for separate patches to cpu_cooling.c.
+
+>
+>>         return ret;
+>>   }
+>> diff --git a/drivers/thermal/exynos_thermal.c
+>> b/drivers/thermal/exynos_thermal.c
+>> index d5e6267..524b2a0 100644
+>> --- a/drivers/thermal/exynos_thermal.c
+>> +++ b/drivers/thermal/exynos_thermal.c
+>> @@ -237,7 +237,7 @@ static int exynos_get_crit_temp(struct
+>> thermal_zone_device *thermal,
+>>
+>>   static int exynos_get_frequency_level(unsigned int cpu, unsigned int
+>> freq)
+>>   {
+>> -       int i = 0, ret = -EINVAL;
+>> +       int i, level = 0, ret = -EINVAL;
+>>         struct cpufreq_frequency_table *table = NULL;
+>>   #ifdef CONFIG_CPU_FREQ
+>>         table = cpufreq_frequency_get_table(cpu);
+>> @@ -245,12 +245,12 @@ static int exynos_get_frequency_level(unsigned int
+>> cpu, unsigned int freq)
+>>         if (!table)
+>>                 return ret;
+>>
+>> -       while (table[i].frequency != CPUFREQ_TABLE_END) {
+>> +       for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+>>                 if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+>>                         continue;
+>>                 if (table[i].frequency == freq)
+>> -                       return i;
+>> -               i++;
+>> +                       return level;
+>> +               level++;
+>
+>
+> Can you please send a separate patch on this driver instead?
+
+Sure.
+
+>
+>
+>
+>>         }
+>>         return ret;
+>>   }
+>>
+>
+
+Thanks,
+Andrew
