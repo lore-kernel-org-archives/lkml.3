@@ -1,98 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936930Ab3DIIPu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 04:15:50 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:52725 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935136Ab3DIIPs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 04:15:48 -0400
-X-Auth-Info: oyzEmSplH+tTWRnnwBw2YOXqPCyP/9aO5tZ9aTq/6aE=
-From: Marek Vasut <marex@denx.de>
-To: Hector Palacios <hector.palacios@digi.com>
-Subject: Re: [PATCH RFC] ARM: dts: mxs: leave card detect out of common mmc pins config
-Date: Tue, 9 Apr 2013 10:15:43 +0200
-User-Agent: KMail/1.13.7 (Linux/3.8-trunk-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Shawn Guo <shawn.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
-        linux-mmc@vger.kernel.org
-References: <1365415940-11609-1-git-send-email-hector.palacios@digi.com> <201304081828.27127.marex@denx.de> <5163C0B4.60501@digi.com>
-In-Reply-To: <5163C0B4.60501@digi.com>
+	id S936970Ab3DIIQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 04:16:56 -0400
+Received: from mga01.intel.com ([192.55.52.88]:58339 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935028Ab3DIIQy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 04:16:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,437,1363158000"; 
+   d="scan'208";a="319576360"
+Date: Tue, 9 Apr 2013 10:16:48 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] clk: add LP8788 clock driver
+Message-ID: <20130409081648.GJ24058@zurbaran>
+References: <A874F61F95741C4A9BA573A70FE3998F82E4AB29@DQHE02.ent.ti.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304091015.43472.marex@denx.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F82E4AB29@DQHE02.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Hector Palacios,
+Hi Milo,
 
-> Dear Marek Vasut,
+On Thu, Apr 04, 2013 at 01:34:37AM +0000, Kim, Milo wrote:
+> Patch v2.
+>   (a) Remove unnecessary 'is_enabled()' operation code.
+>   (b) Add CLK_IGNORE_UNUSED flag.
+>   (c) Add clock device detection code : lp8788_is_clk_device_ready()
+>       If the device is not ready, return as -ENODEV on loading the driver.
 > 
-> On 04/08/2013 06:28 PM, Marek Vasut wrote:
-> > Dear Shawn Guo,
-> > 
-> >> On Mon, Apr 08, 2013 at 03:58:05PM +0200, Hector Palacios wrote:
-> >>> On 04/08/2013 02:48 PM, Shawn Guo wrote:
-> >>>> On Mon, Apr 08, 2013 at 12:12:20PM +0200, Hector Palacios wrote:
-> >>>>> MicroSD card sockets don't usually have card detect line. This pin
-> >>>>> is actually not needed for the MMC to work and it is more of a
-> >>>>> platform design decission to have it.
-> >>>>> The card detect pin already has a configuration entry of its own:
-> >>>>> 'mmc0_cd_cfg' so we complete the iomux configuration here and let
-> >>>>> platforms to include it or not depending on whether the card detect
-> >>>>> line is routed to the SD socket.
-> >>>> 
-> >>>> Sounds sensible.
-> >>>> 
-> >>>>> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
-> >>>>> ---
-> >>>>> 
-> >>>>> Hello,
-> >>>>> 
-> >>>>> All imx28 based platforms except 'bluegiga,apx4devkit' and
-> >>>>> 'schulercontrol,imx28-sps1', use 'mmc0_cd_cfg' in their mmc
-> >>>>> configuration so please check whether this patch would break these
-> >>>>> platforms.
-> >>>> 
-> >>>> I just tested the patch on imx28-evk and card-detection still works. 
-> >>>> So patches applied, thanks.
-> >>> 
-> >>> The EVK and most platforms will work because they are using
-> >>> 'mmc0_cd_cfg' so actually this patch does not change anything on
-> >>> them.
-> >>> Platforms 'bluegiga,apx4devkit' and 'schulercontrol,imx28-sps1'
-> >>> however are not referencing 'mmc0_cd_cfg' so after applying this
-> >>> patch they will have unconfigured CD line and they may break.
-> >> 
-> >> Ah, yes.  I thought that any board that has CD support has to reference
-> >> 'mmc0_cd_cfg'.  That's not necessarily true.
-> >> 
-> >>> The driver will call get_cd() upon probing, which returns the status of
-> >>> the CD line. Please check these two platforms before applying.
-> >> 
-> >> Ok, let's wait for people owning the boards to confirm.
-> > 
-> > Maybe you want to use MMC_CAP_NEEDS_POLL as was noted by someone before
-> > on the olinuxino -- the slot is there, it's just the CD line that's
-> > missing.
+> Patch v1.
+>   Initial patch
 > 
-> I'm not sure of what you mean. The mxs-mmc.c driver already sets the
-> MMC_CAP_NEEDS_POLL flag by default in the probe() function. My platform
-> does not even route the CD line because the microSD socket does not have
-> it.
-> So what I have done is modify the driver to parse the property
-> 'non-removable' from the device tree in order to set the
-> MMC_CAP_NONREMOVABLE flag:
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> ---
+>  drivers/clk/Kconfig        |    7 ++
+>  drivers/clk/Makefile       |    1 +
+>  drivers/clk/clk-lp8788.c   |  160 ++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/mfd/lp8788.c       |    2 +
+>  include/linux/mfd/lp8788.h |    1 +
+>  5 files changed, 171 insertions(+)
+>  create mode 100644 drivers/clk/clk-lp8788.c
+For the MFD part:
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
 
-Yes, I get it. I have two remarks still:
-1) The card is removable (you can pull it out from olinuxino's slot)
-2) Why is the NEEDS_POLL set by default ?
-3) Does the NEEDS_POLL not solve the issue with missing CD line?
+Cheers,
+Samuel.
 
-Best regards,
-Marek Vasut
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
