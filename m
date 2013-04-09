@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934854Ab3DIIvL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 04:51:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51664 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932230Ab3DIIvI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 04:51:08 -0400
-Date: Tue, 9 Apr 2013 09:51:01 +0100
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Bing Zhao <bzhao@marvell.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [PATCH 054/102] mwifiex: cancel cmd timer and free curr_cmd in
- shutdown process
-Message-ID: <20130409085101.GA3131@hercules>
-References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
- <1365414657-29191-55-git-send-email-luis.henriques@canonical.com>
- <477F20668A386D41ADCC57781B1F70430D9DE9605C@SC-VEXCH1.marvell.com>
+	id S935160Ab3DIIyX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 04:54:23 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46896 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935034Ab3DIIyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 04:54:20 -0400
+Message-ID: <5163D72B.5040205@ti.com>
+Date: Tue, 9 Apr 2013 10:54:03 +0200
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <477F20668A386D41ADCC57781B1F70430D9DE9605C@SC-VEXCH1.marvell.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <rnayak@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Keerthy <j-keerthy@ti.com>,
+        Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH] ARM: OMAP4: HWMOD: make 'ocp2scp_usb_phy_phy_48m" as
+ the main clock
+References: <1365496101-7829-1-git-send-email-kishon@ti.com>
+In-Reply-To: <1365496101-7829-1-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bing,
+Hi Kishon,
 
-On Mon, Apr 08, 2013 at 11:03:32AM -0700, Bing Zhao wrote:
-> Hi Luis,
+On 04/09/2013 10:28 AM, Kishon Vijay Abraham I wrote:
+> commit 92702d (ARM: OMAP4: PM: fix PM regression introduced by recent
+> clock cleanup) makes the 'ocp2scp_usb_phy_phy_48m' as optional
+> functional clock causing regression in MUSB. But this 48MHz clock is a
+> mandatory clock for usb phy attached to ocp2scp and hence made as the main
+> clock for ocp2scp.
+
+It is a fix for 3.9-rcX?
+
+Regards,
+Benoit
+
 > 
-> > 3.5.7.10 -stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Bing Zhao <bzhao@marvell.com>
-> > 
-> > commit 084c7189acb3f969c855536166042e27f5dd703f upstream.
-> > 
-> > curr_cmd points to the command that is in processing or waiting
-> > for its command response from firmware. If the function shutdown
-> > happens to occur at this time we should cancel the cmd timer and
-> > put the command back to free queue.
-> > 
-> > Tested-by: Marco Cesarano <marco@marvell.com>
-> > Signed-off-by: Bing Zhao <bzhao@marvell.com>
-> > Signed-off-by: John W. Linville <linville@tuxdriver.com>
-> > Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> Cc: Keerthy <j-keerthy@ti.com>
+> Cc: Benoît Cousson <b-cousson@ti.com>
+> Cc: Paul Walmsley <paul@pwsan.com>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+>  arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    8 +-------
+>  1 file changed, 1 insertion(+), 7 deletions(-)
 > 
-> This patch is intended for kernel 3.8+.
-> Please drop it from linux-3.5.7.10 stable.
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> index 9e05765..c1fb090 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> @@ -2714,16 +2714,12 @@ static struct omap_ocp2scp_dev ocp2scp_dev_attr[] = {
+>  	{ }
+>  };
+>  
+> -static struct omap_hwmod_opt_clk ocp2scp_usb_phy_opt_clks[] = {
+> -	{ .role = "48mhz", .clk = "ocp2scp_usb_phy_phy_48m" },
+> -};
+> -
+>  /* ocp2scp_usb_phy */
+>  static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwmod = {
+>  	.name		= "ocp2scp_usb_phy",
+>  	.class		= &omap44xx_ocp2scp_hwmod_class,
+>  	.clkdm_name	= "l3_init_clkdm",
+> -	.main_clk	= "func_48m_fclk",
+> +	.main_clk	= "ocp2scp_usb_phy_phy_48m",
+>  	.prcm = {
+>  		.omap4 = {
+>  			.clkctrl_offs = OMAP4_CM_L3INIT_USBPHYOCP2SCP_CLKCTRL_OFFSET,
+> @@ -2732,8 +2728,6 @@ static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwmod = {
+>  		},
+>  	},
+>  	.dev_attr	= ocp2scp_dev_attr,
+> -	.opt_clks	= ocp2scp_usb_phy_opt_clks,
+> -	.opt_clks_cnt	= ARRAY_SIZE(ocp2scp_usb_phy_opt_clks),
+>  };
+>  
+>  /*
+> 
 
-Sorry, I didn't noticed that.  I'll drop it from 3.5.  Thanks.
-
-Cheers,
---
-Luis
