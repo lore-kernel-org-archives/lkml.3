@@ -1,76 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935899Ab3DIMPZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 08:15:25 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:57885 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935726Ab3DIMPT (ORCPT
+	id S935999Ab3DIMRW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 08:17:22 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:54735 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759088Ab3DIMRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 08:15:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <m2ip48d62f.fsf@igel.home>
-References: <CA+V-a8vYsBLVH-3Bm35Sv9K9ZMTcMB4_P_V3kBjyuEKDozPi5w@mail.gmail.com>
- <1363949290.3528.37.camel@linaro1.home> <m2ip48d62f.fsf@igel.home>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Tue, 9 Apr 2013 17:44:47 +0530
-Message-ID: <CA+V-a8srtwdf1H2JQwbkyMFhXopPEA90RM8Hy+UunM6Mm7-d1w@mail.gmail.com>
-Subject: Re: [BUG] mod/file2alias: build error in devicetable-offsets.c [was:
- asm/types.h Header file wont get generated while building uImage ?]
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 9 Apr 2013 08:17:21 -0400
+Message-ID: <1365509835.3801.3.camel@phoenix>
+Subject: [PATCH 2/2] regulator: ab8500: Don't update lp_mode_req flag in
+ set_mode() error paths
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Tue, 09 Apr 2013 20:17:15 +0800
+In-Reply-To: <1365509706.3801.1.camel@phoenix>
+References: <1365509706.3801.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andreas
+Currently, set invalid mode setting for shared mode regulators may change
+sm->lp_mode_req flag. This patch ensures we don't set lp_mode_req flag to wrong
+status if set_mode() fails.
 
-On Sun, Mar 31, 2013 at 1:16 AM, Andreas Schwab <schwab@linux-m68k.org> wrote:
-> "Jon Medhurst (Tixy)" <tixy@linaro.org> writes:
->
->> For builds which succeed I see this order:
->>
->>   WRAP    arch/arm/include/generated/asm/types.h
->>   [...]
->>   GEN     include/generated/asm-offsets.h
->>
->> and for those which fail:
->>
->>   CC      scripts/mod/devicetable-offsets.s
->>   In file included from include/linux/types.h:5:0,
->>                    from include/linux/mod_devicetable.h:11,
->>                    from scripts/mod/devicetable-offsets.c:2:
->>   include/uapi/linux/types.h:4:23: fatal error: asm/types.h: No such file or directory
->>   [...]
->>   WRAP    arch/arm/include/generated/asm/types.h
->
-> Does that help?
->
-> diff --git a/Makefile b/Makefile
-> index a5f3203..2a484db 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -512,7 +512,8 @@ ifeq ($(KBUILD_EXTMOD),)
->  # Carefully list dependencies so we do not try to build scripts twice
->  # in parallel
->  PHONY += scripts
-> -scripts: scripts_basic include/config/auto.conf include/config/tristate.conf
-> +scripts: scripts_basic include/config/auto.conf include/config/tristate.conf \
-> +        asm-generic
->         $(Q)$(MAKE) $(build)=$(@)
->
->  # Objects we will link into vmlinux / subdirs we need to visit
->
-Whats the status of it ?
+This patch includes some clean up, and these changes makes this patch looks like
+code refactor. The clean up is mainly to avoid adding ugly code to handle
+failure paths. 
 
-Regards,
---Prabhakar
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/ab8500.c |   98 +++++++++++++++++++-------------------------
+ 1 file changed, 43 insertions(+), 55 deletions(-)
 
-> Andreas.
->
-> --
-> Andreas Schwab, schwab@linux-m68k.org
-> GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-> "And now for something completely different."
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index 1866dbf..88ab408 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -348,11 +348,8 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
+ 				     unsigned int mode)
+ {
+ 	int ret = 0;
+-	u8 bank;
+-	u8 reg;
+-	u8 mask;
+-	u8 val;
+-	bool dmr = false; /* Dedicated mode register */
++	u8 bank, reg, mask, val;
++	bool lp_mode_req = false;
+ 	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+ 
+ 	if (info == NULL) {
+@@ -360,66 +357,54 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
+ 		return -EINVAL;
+ 	}
+ 
+-	if (info->shared_mode) {
+-		/*
+-		 * Special case where mode is shared between two regulators.
+-		 */
+-		struct ab8500_shared_mode *sm = info->shared_mode;
+-		mutex_lock(&shared_mode_mutex);
+-
+-		if (mode == REGULATOR_MODE_IDLE) {
+-			sm->lp_mode_req = true; /* Low power mode requested */
+-			if (!((sm->shared_regulator)->
+-			      shared_mode->lp_mode_req)) {
+-				mutex_unlock(&shared_mode_mutex);
+-				return 0; /* Other regulator prevent LP mode */
+-			}
+-		} else {
+-			sm->lp_mode_req = false;
+-		}
+-	}
+-
+ 	if (info->mode_mask) {
+-		/* Dedicated register for handling mode */
+-
+-		dmr = true;
+-
+-		switch (mode) {
+-		case REGULATOR_MODE_NORMAL:
+-			val = info->mode_val_normal;
+-			break;
+-		case REGULATOR_MODE_IDLE:
+-			val = info->mode_val_idle;
+-			break;
+-		default:
+-			ret = -EINVAL;
+-			goto out_unlock;
+-		}
+-
+ 		bank = info->mode_bank;
+ 		reg = info->mode_reg;
+ 		mask = info->mode_mask;
+ 	} else {
+-		/* Mode register same as enable register */
++		bank = info->update_bank;
++		reg = info->update_reg;
++		mask = info->update_mask;
++	}
++
++	if (info->shared_mode)
++		mutex_lock(&shared_mode_mutex);
+ 
+-		switch (mode) {
+-		case REGULATOR_MODE_NORMAL:
++	switch (mode) {
++	case REGULATOR_MODE_NORMAL:
++		if (info->shared_mode)
++			lp_mode_req = false;
++
++		if (info->mode_mask)
++			val = info->mode_val_normal;
++		else
+ 			val = info->update_val_normal;
+-			break;
+-		case REGULATOR_MODE_IDLE:
+-			val = info->update_val_idle;
+-			break;
+-		default:
+-			ret = -EINVAL;
+-			goto out_unlock;
++		break;
++	case REGULATOR_MODE_IDLE:
++		if (info->shared_mode) {
++			struct ab8500_regulator_info *shared_regulator;
++
++			shared_regulator = info->shared_mode->shared_regulator;
++			if (!shared_regulator->shared_mode->lp_mode_req) {
++				/* Other regulator prevent LP mode */
++				info->shared_mode->lp_mode_req = true;
++				goto out_unlock;
++			}
++
++			lp_mode_req = true;
+ 		}
+ 
+-		bank = info->update_bank;
+-		reg = info->update_reg;
+-		mask = info->update_mask;
++		if (info->mode_mask)
++			val = info->mode_val_idle;
++		else
++			val = info->update_val_idle;
++		break;
++	default:
++		ret = -EINVAL;
++		goto out_unlock;
+ 	}
+ 
+-	if (dmr || ab8500_regulator_is_enabled(rdev)) {
++	if (info->mode_mask || ab8500_regulator_is_enabled(rdev)) {
+ 		ret = abx500_mask_and_set_register_interruptible(info->dev,
+ 			bank, reg, mask, val);
+ 		if (ret < 0) {
+@@ -435,9 +420,12 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
+ 			mask, val);
+ 	}
+ 
+-	if (!dmr)
++	if (!info->mode_mask)
+ 		info->update_val = val;
+ 
++	if (info->shared_mode)
++		info->shared_mode->lp_mode_req = lp_mode_req;
++
+ out_unlock:
+ 	if (info->shared_mode)
+ 		mutex_unlock(&shared_mode_mutex);
+-- 
+1.7.10.4
+
+
+
