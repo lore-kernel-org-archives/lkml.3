@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935141Ab3DIX2r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 19:28:47 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:38820 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760406Ab3DIX2p (ORCPT
+	id S936649Ab3DIX2s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 19:28:48 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:53691 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763199Ab3DIX2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 19:28:45 -0400
+	Tue, 9 Apr 2013 19:28:46 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
@@ -15,67 +15,67 @@ Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
         Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH v2 00/10] mm: fixup changers of per cpu pageset's ->high and ->batch
-Date: Tue,  9 Apr 2013 16:28:09 -0700
-Message-Id: <1365550099-6795-1-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [PATCH v2 01/10] mm/page_alloc: factor out setting of pcp->high and pcp->batch.
+Date: Tue,  9 Apr 2013 16:28:10 -0700
+Message-Id: <1365550099-6795-2-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2
+In-Reply-To: <1365550099-6795-1-git-send-email-cody@linux.vnet.ibm.com>
+References: <1365550099-6795-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040923-2398-0000-0000-0000131C8AEB
+x-cbid: 13040923-5518-0000-0000-00000D5F2A82
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Problems" with the current code:
- 1. there is a lack of synchronization in setting ->high and ->batch in percpu_pagelist_fraction_sysctl_handler()
- 2. stop_machine() in zone_pcp_update() is unnecissary.
- 3. zone_pcp_update() does not consider the case where percpu_pagelist_fraction is non-zero
+Creates pageset_set_batch() for use in setup_pageset().
+pageset_set_batch() imitates the functionality of
+setup_pagelist_highmark(), but uses the boot time
+(percpu_pagelist_fraction == 0) calculations for determining ->high
+based on ->batch.
 
-To fix:
- 1. add memory barriers, a safe ->batch value, and an update side mutex when updating ->high and ->batch
- 2. avoid draining pages in zone_pcp_update(), rely upon the memory barriers added to fix #1
- 3. factor out quite a few functions, and then call the appropriate one.
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+---
+ mm/page_alloc.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
-Note that it results in a change to the behavior of zone_pcp_update(), which is
-used by memory_hotplug. I'm rather certain that I've diserned (and preserved)
-the essential behavior (changing ->high and ->batch), and only eliminated
-unneeded actions (draining the per cpu pages), but this may not be the case.
-
-Further note that the draining of pages that previously took place in
-zone_pcp_update() occured after repeated draining when attempting to offline a
-page, and after the offline has "succeeded". It appears that the draining was
-added to zone_pcp_update() to avoid refactoring setup_pageset() into 2
-funtions.
-
---
-Changes since v1:
-
- - instead of using on_each_cpu(), use memory barriers (Gilad) and an update side mutex.
- - add "Problem" #3 above, and fix.
- - rename function to match naming style of similar function
- - move unrelated comment
-
-Cody P Schafer (10):
-  mm/page_alloc: factor out setting of pcp->high and pcp->batch.
-  mm/page_alloc: prevent concurrent updaters of pcp ->batch and ->high
-  mm/page_alloc: insert memory barriers to allow async update of pcp
-    batch and high
-  mm/page_alloc: convert zone_pcp_update() to rely on memory barriers
-    instead of stop_machine()
-  mm/page_alloc: when handling percpu_pagelist_fraction, don't unneedly
-    recalulate high
-  mm/page_alloc: factor setup_pageset() into pageset_init() and
-    pageset_set_batch()
-  mm/page_alloc: relocate comment to be directly above code it refers
-    to.
-  mm/page_alloc: factor zone_pageset_init() out of setup_zone_pageset()
-  mm/page_alloc: in zone_pcp_update(), uze zone_pageset_init()
-  mm/page_alloc: rename setup_pagelist_highmark() to match naming of
-    pageset_set_batch()
-
- mm/page_alloc.c | 124 +++++++++++++++++++++++++++++++++-----------------------
- 1 file changed, 73 insertions(+), 51 deletions(-)
-
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 8fcced7..5877cf0 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4004,6 +4004,14 @@ static int __meminit zone_batchsize(struct zone *zone)
+ #endif
+ }
+ 
++/* a companion to setup_pagelist_highmark() */
++static void pageset_set_batch(struct per_cpu_pageset *p, unsigned long batch)
++{
++	struct per_cpu_pages *pcp = &p->pcp;
++	pcp->high = 6 * batch;
++	pcp->batch = max(1UL, 1 * batch);
++}
++
+ static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
+ {
+ 	struct per_cpu_pages *pcp;
+@@ -4013,8 +4021,7 @@ static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
+ 
+ 	pcp = &p->pcp;
+ 	pcp->count = 0;
+-	pcp->high = 6 * batch;
+-	pcp->batch = max(1UL, 1 * batch);
++	pageset_set_batch(p, batch);
+ 	for (migratetype = 0; migratetype < MIGRATE_PCPTYPES; migratetype++)
+ 		INIT_LIST_HEAD(&pcp->lists[migratetype]);
+ }
+@@ -4023,7 +4030,6 @@ static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
+  * setup_pagelist_highmark() sets the high water mark for hot per_cpu_pagelist
+  * to the value high for the pageset p.
+  */
+-
+ static void setup_pagelist_highmark(struct per_cpu_pageset *p,
+ 				unsigned long high)
+ {
 -- 
 1.8.2
 
