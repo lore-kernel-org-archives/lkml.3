@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934838Ab3DIXt6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 19:49:58 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:42741 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753977Ab3DIXt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 19:49:57 -0400
-Date: Wed, 10 Apr 2013 00:49:55 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [git pull] drm nouveau fix
-In-Reply-To: <alpine.DEB.2.00.1304090802170.18231@skynet.skynet.ie>
-Message-ID: <alpine.DEB.2.00.1304100049270.15182@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1304090802170.18231@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S934960Ab3DIXwL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 19:52:11 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47622 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759219Ab3DIXwJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 19:52:09 -0400
+Date: Tue, 9 Apr 2013 16:52:06 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Platform Driver <platform-driver-x86@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Joe Perches <joe@perches.com>, Zhang Rui <rui.zhang@intel.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH v4 1/1] Introduce Intel RAPL cooling device driver
+Message-ID: <20130409235206.GA6649@kroah.com>
+References: <1365551209-14392-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1365551209-14392-2-git-send-email-jacob.jun.pan@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365551209-14392-2-git-send-email-jacob.jun.pan@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 09, 2013 at 04:46:49PM -0700, Jacob Pan wrote:
+> + *
+> + *  You should have received a copy of the GNU General Public License
+> + *  along with this program; if not, write to the Free Software
+> + *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110,
+> + *  USA
 
-> Hi Linus,
-> 
-> just a spare semicolon in nouveau that caused some issues.
+I'm getting real tired of reminding Intel developers that they don't
+want to be responsible for tracking the office movements of the FSF for
+the next 40+ years.
 
-Okay an mgag200 fix I missed is also in there now.
+Arjan, can you please get the "default" Intel GPL header that you all
+use changed so I don't have to make this request for every single new
+file that is submitted by Intel developers?
 
-The following changes since commit f011a08c804d50eeff4abf2d308cdce492f015aa:
+thanks,
 
-  Merge tag 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/sfr/next-fixes (2013-04-08 16:10:43 -0700)
-
-are available in the git repository at:
-
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to 1812a3db0874be1d1524086da9e84397b800f546:
-
-  drm/mgag200: Index 24 in extended CRTC registers is 24 in hex, not decimal. (2013-04-10 09:48:24 +1000)
-
-----------------------------------------------------------------
-Calvin Owens (1):
-      drm/nouveau: fix unconditional return waiting on memory
-
-Christopher Harvey (1):
-      drm/mgag200: Index 24 in extended CRTC registers is 24 in hex, not decimal.
-
-Dave Airlie (1):
-      Merge branch 'drm-nouveau-fixes-3.9' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
-
- drivers/gpu/drm/mgag200/mgag200_mode.c | 13 +++----------
- drivers/gpu/drm/nouveau/nv50_display.c |  2 +-
- 2 files changed, 4 insertions(+), 11 deletions(-)
+greg k-h
