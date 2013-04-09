@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935399Ab3DISdY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 14:33:24 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48977 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933071Ab3DISdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 14:33:23 -0400
-Message-ID: <51645EEA.4070907@ti.com>
-Date: Tue, 9 Apr 2013 14:33:14 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S935271Ab3DISea (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 14:34:30 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:59240 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934655Ab3DISe2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 14:34:28 -0400
+Date: Tue, 9 Apr 2013 14:34:25 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Dave Martin <dave.martin@linaro.org>
+cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v4 2/2] arm: prefer PSCI for SMP bringup
+In-Reply-To: <20130409122133.GA2233@linaro.org>
+Message-ID: <alpine.LFD.2.03.1304091421370.1171@syhkavp.arg>
+References: <1364575371-8926-2-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.LFD.2.03.1303291320580.1372@syhkavp.arg> <alpine.DEB.2.02.1303291735080.4430@kaball.uk.xensource.com> <alpine.LFD.2.03.1303291349150.1372@syhkavp.arg> <5155EC28.8050608@gmail.com>
+ <alpine.DEB.2.02.1304011541010.5078@kaball.uk.xensource.com> <alpine.LFD.2.03.1304011412030.1171@syhkavp.arg> <alpine.DEB.2.02.1304021522230.5078@kaball.uk.xensource.com> <alpine.LFD.2.03.1304021202520.1171@syhkavp.arg> <20130409122133.GA2233@linaro.org>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Andrew Bresticker <abrestic@google.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Zhang Rui <rui.zhang@intel.com>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] thermal: fix frequency table lookup bugs
-References: <1365465287-24530-1-git-send-email-abrestic@chromium.org> <51642BD5.4030803@ti.com> <CAL1qeaGW=m+DNbGhEzTJBDt1NNpPrVcBzzWzhk447hf2tyb2fw@mail.gmail.com> <51644E22.1050305@ti.com> <CAL1qeaEbakXL1wpURSGDJ=_FojoJ7DO4CJtj+pwPh32fufwjDQ@mail.gmail.com>
-In-Reply-To: <CAL1qeaEbakXL1wpURSGDJ=_FojoJ7DO4CJtj+pwPh32fufwjDQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09-04-2013 14:27, Andrew Bresticker wrote:
->> You do two things in this change on cpu_cooling.c: (1) fix the case where
->> the loop is kept running indefinitely. (2) Reserve a specific role for each
->> index in this function.
->
-> So the issue is that the changes are not independent.  With just the
-> fix for the infinite loop, get_cpu_frequency() is still completely
-> broken because it is not interpreting the level correctly and will
-> return the wrong frequency (and thus not throttling correctly, which
-> is bad).  Perhaps the commit should be more general, like "fix
-> handling of invalid frequency table entries"?  What do you think?
+On Tue, 9 Apr 2013, Dave Martin wrote:
 
-It fits better. I am OK if we improve the commit title and description, 
-providing better explanation of what is the issue (you have done 
-already) and how what needed to be done to fix it.
+> On Tue, Apr 02, 2013 at 12:11:25PM -0400, Nicolas Pitre wrote:
+> > I'm concerned about mixing big.LITTLE and Xen as well.  I don't think 
+> > this is going to make an easy match.  KVM might have an easier fit here.
+> > 
+> > But, in any case, even if the MCPM layer gets involved, if Xen is there 
+> > then PSCI will end up being the ultimate interface anyway.
+> 
+> Note that big.LITTLE != MCPM.  Virtualisation hosts might be large multi-
+> cluster systems, but the CPUs might be all of the same type.  MCPM or
+> similar would me needed for the multi-cluster power management even
+> though there is no big.LITTLE mix of CPUs.
 
->
-> Thanks,
-> Andrew
->
->
+Absolutely!  But in this case, there is no need for Xen to learn about 
+the computing capacity differences between different CPU sets.
 
+What I wanted to emphasize is the fact that, if Xen decides to expose a 
+b.L topology to guests, then those guests must be b.L aware to make good 
+scheduling decisions, etc.  Initially I suspect that guests will be 
+confined to the same sets of CPUs to simplify things.  Or it could even 
+migrate a guest between little and big CPUs like the switcher does.  
+But a single guest probably won't span different CPU classes 
+simultaneously initially.  And therefore it is unlikely that MCPM will 
+be active inside a Xen guest for quite a while.
+
+> > But let's cross that bridge when we get to it.  For now this is still a 
+> > non existing problem.
+> 
+> That's a big open question.  Either the host or hypervisor needs to be
+> very clever about scheduling guests, or you need to bind each guest virtual
+> CPU to a specific class of physical CPUs -- so, for example you provide
+> a guest with an explicit mix of bigs and littles.
+> 
+> All we can say about that for now is that it's a potential research area...
+
+Absolutely.
+
+
+Nicolas
