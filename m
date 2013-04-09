@@ -1,598 +1,348 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934464Ab3DILGQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 07:06:16 -0400
-Received: from mga01.intel.com ([192.55.52.88]:36390 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755153Ab3DILGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 07:06:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,438,1363158000"; 
-   d="scan'208";a="316520591"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-acpi@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2 1/5] dma: acpi-dma: introduce ACPI DMA helpers
-Date: Tue,  9 Apr 2013 14:05:43 +0300
-Message-Id: <1365505547-10552-2-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
-In-Reply-To: <1365505547-10552-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1365505547-10552-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1760339Ab3DILOb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 07:14:31 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:60650 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757801Ab3DILO3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 07:14:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <6FE4B33E-A503-4A75-AEED-831CB2C06D83@gmail.com>
+References: <6FE4B33E-A503-4A75-AEED-831CB2C06D83@gmail.com>
+Date: Tue, 9 Apr 2013 13:14:28 +0200
+Message-ID: <CACRpkdbuAvRzVdzKL51k5d7vVpGNUHh_f_ZAxP4m3zFdBOV=xw@mail.gmail.com>
+Subject: Re: [RFC PATCH arm: initial TI-Nspire support]
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Daniel Tang <dt.tangr@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        fabian@ritter-vogt.de, Lionel Debroux <lionel_debroux@yahoo.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a new generic API to get a DMA channel for a slave device (commit
-9a6cecc8 "dmaengine: add helper function to request a slave DMA channel"). In
-similar fashion to the DT case (commit aa3da644 "of: Add generic device tree
-DMA helpers") we introduce helpers to the DMAC drivers which are enumerated by
-ACPI.
+On Thu, Apr 4, 2013 at 11:01 AM, Daniel Tang <dt.tangr@gmail.com> wrote:
 
-The proposed extension provides the following API calls:
-	acpi_dma_controller_register(), devm_acpi_dma_controller_register()
-	acpi_dma_controller_free(), devm_acpi_dma_controller_free()
-	acpi_dma_simple_xlate()
-	acpi_dma_request_slave_chan_by_index()
-	acpi_dma_request_slave_chan_by_name()
+(I suspect I duplicate a lot of Arnd's comments, I haven't really checked.
+If we contradict each other, point it out so we can discuss.)
 
-The first two should be used, for example, at probe() and remove() of the
-corresponding DMAC driver. At the register stage the DMAC driver supplies a
-custom xlate() function to translate a struct dma_spec into struct dma_chan.
+> +config ARCH_NSPIRE
+> +       bool "TI-NSPIRE based"
+> +       depends on MMU
+> +       select CPU_ARM926T
+> +       select HAVE_MACH_CLKDEV
+> +       select CLKDEV_LOOKUP
 
-Accordingly to the ACPI Fixed DMA resource specification the only two pieces of
-information the slave device has are the channel id and the request line (slave
-id). Those two are represented by struct dma_spec. The
-acpi_dma_request_slave_chan_by_index() provides access to the specifix FixedDMA
-resource by its index. Whereas dma_request_slave_channel() takes a string
-parameter to identify the DMA resources required by the slave device. To make a
-slave device driver work with both DeviceTree and ACPI enumeration a simple
-convention is established: "tx" corresponds to the index 0 and "rx" to the
-index 1. In case of robust configuration the slave device driver unfortunately
-needs to call acpi_dma_request_slave_chan_by_index() directly.
+For a new platform you should be selecting COMMON_CLK
+and implement your clock drivers under drivers/clk/*.
 
-Additionally the patch provides "managed" version of the register/free pair
-i.e. devm_acpi_dma_controller_register() and devm_acpi_dma_controller_free().
-Usually, the driver uses only devm_acpi_dma_controller_register().
+> +       select ARM_AMBA
+> +       select USB_ARCH_HAS_EHCI
+> +       select ARCH_WANT_OPTIONAL_GPIOLIB
+> +       select GENERIC_ALLOCATOR
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- Documentation/acpi/enumeration.txt |  77 ++++++++++
- drivers/dma/Kconfig                |   4 +
- drivers/dma/Makefile               |   1 +
- drivers/dma/acpi-dma.c             | 279 +++++++++++++++++++++++++++++++++++++
- include/linux/acpi_dma.h           | 116 +++++++++++++++
- 5 files changed, 477 insertions(+)
- create mode 100644 drivers/dma/acpi-dma.c
- create mode 100644 include/linux/acpi_dma.h
+I wonder what that is used for ... will be fun to see :-)
 
-diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
-index 94a6561..2874c90 100644
---- a/Documentation/acpi/enumeration.txt
-+++ b/Documentation/acpi/enumeration.txt
-@@ -66,6 +66,83 @@ the ACPI device explicitly to acpi_platform_device_ids list defined in
- drivers/acpi/acpi_platform.c. This limitation is only for the platform
- devices, SPI and I2C devices are created automatically as described below.
- 
-+DMA support
-+~~~~~~~~~~~
-+DMA controllers enumerated via ACPI should be registered in the system to
-+provide generic access to their resources. For example, a driver that would
-+like to be accessible to slave devices via generic API call
-+dma_request_slave_channel() must register itself at the end of the probe
-+function like this:
-+
-+	err = devm_acpi_dma_controller_register(dev, xlate_func, dw);
-+	/* Handle the error if it's not a case of !CONFIG_ACPI */
-+
-+and implement custom xlate function if needed (usually acpi_dma_simple_xlate()
-+is enough) which converts the FixedDMA resource provided by struct
-+acpi_dma_spec into the corresponding DMA channel. A piece of code for that case
-+could look like:
-+
-+	#ifdef CONFIG_ACPI
-+	struct filter_args {
-+		/* Provide necessary information for the filter_func */
-+		...
-+	};
-+
-+	static bool filter_func(struct dma_chan *chan, void *param)
-+	{
-+		/* Choose the proper channel */
-+		...
-+	}
-+
-+	static struct dma_chan *xlate_func(struct acpi_dma_spec *dma_spec,
-+			struct acpi_dma *adma)
-+	{
-+		dma_cap_mask_t cap;
-+		struct filter_args args;
-+
-+		/* Prepare arguments for filter_func */
-+		...
-+		return dma_request_channel(cap, filter_func, &args);
-+	}
-+	#else
-+	static struct dma_chan *xlate_func(struct acpi_dma_spec *dma_spec,
-+			struct acpi_dma *adma)
-+	{
-+		return NULL;
-+	}
-+	#endif
-+
-+dma_request_slave_channel() will call xlate_func() for each registered DMA
-+controller. In the xlate function the proper channel must be chosen based on
-+information in struct acpi_dma_spec and the properties of the controller
-+provided by struct acpi_dma.
-+
-+Clients must call dma_request_slave_channel() with the string parameter that
-+corresponds to a specific FixedDMA resource. By default "tx" means the first
-+entry of the FixedDMA resource array, "rx" means the second entry. The table
-+below shows a layout:
-+
-+	Device (I2C0)
-+	{
-+		...
-+		Method (_CRS, 0, NotSerialized)
-+		{
-+			Name (DBUF, ResourceTemplate ()
-+			{
-+				FixedDMA (0x0018, 0x0004, Width32bit, _Y48)
-+				FixedDMA (0x0019, 0x0005, Width32bit, )
-+			})
-+		...
-+		}
-+	}
-+
-+So, the FixedDMA with request line 0x0018 is "tx" and next one is "rx" in
-+this example.
-+
-+In robust cases the client unfortunately needs to call
-+acpi_dma_request_slave_chan_by_index() directly and therefore choose the
-+specific FixedDMA resource by its index.
-+
- SPI serial bus support
- ~~~~~~~~~~~~~~~~~~~~~~
- Slave devices behind SPI bus have SpiSerialBus resource attached to them.
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index aeaea32..2ad5ed9 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -328,6 +328,10 @@ config DMA_ENGINE
- config DMA_VIRTUAL_CHANNELS
- 	tristate
- 
-+config DMA_ACPI
-+	def_bool y
-+	depends on ACPI
-+
- config DMA_OF
- 	def_bool y
- 	depends on OF
-diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
-index 488e3ff..268e626 100644
---- a/drivers/dma/Makefile
-+++ b/drivers/dma/Makefile
-@@ -3,6 +3,7 @@ ccflags-$(CONFIG_DMADEVICES_VDEBUG) += -DVERBOSE_DEBUG
- 
- obj-$(CONFIG_DMA_ENGINE) += dmaengine.o
- obj-$(CONFIG_DMA_VIRTUAL_CHANNELS) += virt-dma.o
-+obj-$(CONFIG_DMA_ACPI) += acpi-dma.o
- obj-$(CONFIG_DMA_OF) += of-dma.o
- 
- obj-$(CONFIG_NET_DMA) += iovlock.o
-diff --git a/drivers/dma/acpi-dma.c b/drivers/dma/acpi-dma.c
-new file mode 100644
-index 0000000..ba6fc62
---- /dev/null
-+++ b/drivers/dma/acpi-dma.c
-@@ -0,0 +1,279 @@
-+/*
-+ * ACPI helpers for DMA request / controller
-+ *
-+ * Based on of-dma.c
-+ *
-+ * Copyright (C) 2013, Intel Corporation
-+ * Author: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/module.h>
-+#include <linux/list.h>
-+#include <linux/mutex.h>
-+#include <linux/slab.h>
-+#include <linux/acpi.h>
-+#include <linux/acpi_dma.h>
-+
-+static LIST_HEAD(acpi_dma_list);
-+static DEFINE_MUTEX(acpi_dma_lock);
-+
-+/**
-+ * acpi_dma_controller_register - Register a DMA controller to ACPI DMA helpers
-+ * @dev:		struct device of DMA controller
-+ * @acpi_dma_xlate:	translation function which converts a dma specifier
-+ *			into a dma_chan structure
-+ * @data		pointer to controller specific data to be used by
-+ *			translation function
-+ *
-+ * Returns 0 on success or appropriate errno value on error.
-+ *
-+ * Allocated memory should be freed with appropriate acpi_dma_controller_free()
-+ * call.
-+ */
-+int acpi_dma_controller_register(struct device *dev,
-+		struct dma_chan *(*acpi_dma_xlate)
-+		(struct acpi_dma_spec *, struct acpi_dma *),
-+		void *data)
-+{
-+	struct acpi_device *adev;
-+	struct acpi_dma	*adma;
-+
-+	if (!dev || !acpi_dma_xlate)
-+		return -EINVAL;
-+
-+	/* Check if the device was enumerated by ACPI */
-+	if (!ACPI_HANDLE(dev))
-+		return -EINVAL;
-+
-+	if (acpi_bus_get_device(ACPI_HANDLE(dev), &adev))
-+		return -EINVAL;
-+
-+	adma = kzalloc(sizeof(*adma), GFP_KERNEL);
-+	if (!adma)
-+		return -ENOMEM;
-+
-+	adma->dev = dev;
-+	adma->acpi_dma_xlate = acpi_dma_xlate;
-+	adma->data = data;
-+
-+	/* Now queue acpi_dma controller structure in list */
-+	mutex_lock(&acpi_dma_lock);
-+	list_add_tail(&adma->dma_controllers, &acpi_dma_list);
-+	mutex_unlock(&acpi_dma_lock);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(acpi_dma_controller_register);
-+
-+/**
-+ * acpi_dma_controller_free - Remove a DMA controller from ACPI DMA helpers list
-+ * @dev:	struct device of DMA controller
-+ *
-+ * Memory allocated by acpi_dma_controller_register() is freed here.
-+ */
-+int acpi_dma_controller_free(struct device *dev)
-+{
-+	struct acpi_dma *adma;
-+
-+	if (!dev)
-+		return -EINVAL;
-+
-+	mutex_lock(&acpi_dma_lock);
-+
-+	list_for_each_entry(adma, &acpi_dma_list, dma_controllers)
-+		if (adma->dev == dev) {
-+			list_del(&adma->dma_controllers);
-+			mutex_unlock(&acpi_dma_lock);
-+			kfree(adma);
-+			return 0;
-+		}
-+
-+	mutex_unlock(&acpi_dma_lock);
-+	return -ENODEV;
-+}
-+EXPORT_SYMBOL_GPL(acpi_dma_controller_free);
-+
-+static void devm_acpi_dma_release(struct device *dev, void *res)
-+{
-+	acpi_dma_controller_free(dev);
-+}
-+
-+/**
-+ * devm_acpi_dma_controller_register - resource managed acpi_dma_controller_register()
-+ * @dev:		device that is registering this DMA controller
-+ * @acpi_dma_xlate:	translation function
-+ * @data		pointer to controller specific data
-+ *
-+ * Managed acpi_dma_controller_register(). DMA controller registered by this
-+ * function are automatically freed on driver detach. See
-+ * acpi_dma_controller_register() for more information.
-+ */
-+int devm_acpi_dma_controller_register(struct device *dev,
-+		struct dma_chan *(*acpi_dma_xlate)
-+		(struct acpi_dma_spec *, struct acpi_dma *),
-+		void *data)
-+{
-+	void *res;
-+	int ret;
-+
-+	res = devres_alloc(devm_acpi_dma_release, 0, GFP_KERNEL);
-+	if (!res)
-+		return -ENOMEM;
-+
-+	ret = acpi_dma_controller_register(dev, acpi_dma_xlate, data);
-+	if (ret) {
-+		devres_free(res);
-+		return ret;
-+	}
-+	devres_add(dev, res);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(devm_acpi_dma_controller_register);
-+
-+/**
-+ * devm_acpi_dma_controller_free - resource managed acpi_dma_controller_free()
-+ *
-+ * Unregister a DMA controller registered with
-+ * devm_acpi_dma_controller_register(). Normally this function will not need to
-+ * be called and the resource management code will ensure that the resource is
-+ * freed.
-+ */
-+void devm_acpi_dma_controller_free(struct device *dev)
-+{
-+	WARN_ON(devres_destroy(dev, devm_acpi_dma_release, NULL, NULL));
-+}
-+EXPORT_SYMBOL_GPL(devm_acpi_dma_controller_free);
-+
-+struct acpi_dma_parser_data {
-+	struct acpi_dma_spec dma_spec;
-+	size_t index;
-+	size_t n;
-+};
-+
-+/**
-+ * acpi_dma_parse_fixed_dma - Parse FixedDMA ACPI resources to a DMA specifier
-+ * @res:	struct acpi_resource to get FixedDMA resources from
-+ * @data:	pointer to a helper struct acpi_dma_parser_data
-+ */
-+static int acpi_dma_parse_fixed_dma(struct acpi_resource *res, void *data)
-+{
-+	struct acpi_dma_parser_data *pdata = data;
-+
-+	if (res->type == ACPI_RESOURCE_TYPE_FIXED_DMA) {
-+		struct acpi_resource_fixed_dma *dma = &res->data.fixed_dma;
-+
-+		if (pdata->n++ == pdata->index) {
-+			pdata->dma_spec.chan_id = dma->channels;
-+			pdata->dma_spec.slave_id = dma->request_lines;
-+		}
-+	}
-+
-+	/* Tell the ACPI core to skip this resource */
-+	return 1;
-+}
-+
-+/**
-+ * acpi_dma_request_slave_chan_by_index - Get the DMA slave channel
-+ * @dev:	struct device to get DMA request from
-+ * @index:	index of FixedDMA descriptor for @dev
-+ *
-+ * Returns pointer to appropriate dma channel on success or NULL on error.
-+ */
-+struct dma_chan *acpi_dma_request_slave_chan_by_index(struct device *dev,
-+		size_t index)
-+{
-+	struct acpi_dma_parser_data pdata;
-+	struct acpi_dma_spec *dma_spec = &pdata.dma_spec;
-+	struct list_head resource_list;
-+	struct acpi_device *adev;
-+	struct acpi_dma *adma;
-+	struct dma_chan *chan = NULL;
-+
-+	/* Check if the device was enumerated by ACPI */
-+	if (!dev || !ACPI_HANDLE(dev))
-+		return NULL;
-+
-+	if (acpi_bus_get_device(ACPI_HANDLE(dev), &adev))
-+		return NULL;
-+
-+	memset(&pdata, 0, sizeof(pdata));
-+	pdata.index = index;
-+
-+	/* Initial values for the request line and channel */
-+	dma_spec->chan_id = -1;
-+	dma_spec->slave_id = -1;
-+
-+	INIT_LIST_HEAD(&resource_list);
-+	acpi_dev_get_resources(adev, &resource_list,
-+			acpi_dma_parse_fixed_dma, &pdata);
-+	acpi_dev_free_resource_list(&resource_list);
-+
-+	if (dma_spec->slave_id < 0 || dma_spec->chan_id < 0)
-+		return NULL;
-+
-+	mutex_lock(&acpi_dma_lock);
-+
-+	list_for_each_entry(adma, &acpi_dma_list, dma_controllers) {
-+		dma_spec->dev = adma->dev;
-+		chan = adma->acpi_dma_xlate(dma_spec, adma);
-+		if (chan)
-+			break;
-+	}
-+
-+	mutex_unlock(&acpi_dma_lock);
-+	return chan;
-+}
-+EXPORT_SYMBOL_GPL(acpi_dma_request_slave_chan_by_index);
-+
-+/**
-+ * acpi_dma_request_slave_chan_by_name - Get the DMA slave channel
-+ * @dev:	struct device to get DMA request from
-+ * @name:	represents corresponding FixedDMA descriptor for @dev
-+ *
-+ * In order to support both Device Tree and ACPI in a single driver we
-+ * translate the names "tx" and "rx" here based on the most common case where
-+ * the first FixedDMA descriptor is TX and second is RX.
-+ *
-+ * Returns pointer to appropriate dma channel on success or NULL on error.
-+ */
-+struct dma_chan *acpi_dma_request_slave_chan_by_name(struct device *dev,
-+		const char *name)
-+{
-+	size_t index;
-+
-+	if (!strcmp(name, "tx"))
-+		index = 0;
-+	else if (!strcmp(name, "rx"))
-+		index = 1;
-+	else
-+		return NULL;
-+
-+	return acpi_dma_request_slave_chan_by_index(dev, index);
-+}
-+EXPORT_SYMBOL_GPL(acpi_dma_request_slave_chan_by_name);
-+
-+/**
-+ * acpi_dma_simple_xlate - Simple ACPI DMA engine translation helper
-+ * @dma_spec: pointer to ACPI DMA specifier
-+ * @adma: pointer to ACPI DMA controller data
-+ *
-+ * A simple translation function for ACPI based devices. Passes &struct
-+ * dma_spec to the DMA controller driver provided filter function. Returns
-+ * pointer to the channel if found or %NULL otherwise.
-+ */
-+struct dma_chan *acpi_dma_simple_xlate(struct acpi_dma_spec *dma_spec,
-+		struct acpi_dma *adma)
-+{
-+	struct acpi_dma_filter_info *info = adma->data;
-+
-+	if (!info || !info->filter_fn)
-+		return NULL;
-+
-+	return dma_request_channel(info->dma_cap, info->filter_fn, dma_spec);
-+}
-+EXPORT_SYMBOL_GPL(acpi_dma_simple_xlate);
-diff --git a/include/linux/acpi_dma.h b/include/linux/acpi_dma.h
-new file mode 100644
-index 0000000..d09deab
---- /dev/null
-+++ b/include/linux/acpi_dma.h
-@@ -0,0 +1,116 @@
-+/*
-+ * ACPI helpers for DMA request / controller
-+ *
-+ * Based on of_dma.h
-+ *
-+ * Copyright (C) 2013, Intel Corporation
-+ * Author: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#ifndef __LINUX_ACPI_DMA_H
-+#define __LINUX_ACPI_DMA_H
-+
-+#include <linux/list.h>
-+#include <linux/device.h>
-+#include <linux/dmaengine.h>
-+
-+/**
-+ * struct acpi_dma_spec - slave device DMA resources
-+ * @chan_id:	channel unique id
-+ * @slave_id:	request line unique id
-+ * @dev:	struct device of the DMA controller to be used in the filter
-+ *		function
-+ */
-+struct acpi_dma_spec {
-+	int		chan_id;
-+	int		slave_id;
-+	struct device	*dev;
-+};
-+
-+/**
-+ * struct acpi_dma - representation of the registered DMAC
-+ * @dma_controllers:	linked list node
-+ * @dev:		struct device of this controller
-+ * @acpi_dma_xlate:	callback function to find a suitable channel
-+ * @data:		private data used by a callback function
-+ */
-+struct acpi_dma {
-+	struct list_head	dma_controllers;
-+	struct device		*dev;
-+	struct dma_chan		*(*acpi_dma_xlate)
-+				(struct acpi_dma_spec *, struct acpi_dma *);
-+	void			*data;
-+};
-+
-+/* Used with acpi_dma_simple_xlate() */
-+struct acpi_dma_filter_info {
-+	dma_cap_mask_t	dma_cap;
-+	dma_filter_fn	filter_fn;
-+};
-+
-+#ifdef CONFIG_DMA_ACPI
-+
-+int acpi_dma_controller_register(struct device *dev,
-+		struct dma_chan *(*acpi_dma_xlate)
-+		(struct acpi_dma_spec *, struct acpi_dma *),
-+		void *data);
-+int acpi_dma_controller_free(struct device *dev);
-+int devm_acpi_dma_controller_register(struct device *dev,
-+		struct dma_chan *(*acpi_dma_xlate)
-+		(struct acpi_dma_spec *, struct acpi_dma *),
-+		void *data);
-+void devm_acpi_dma_controller_free(struct device *dev);
-+
-+struct dma_chan *acpi_dma_request_slave_chan_by_index(struct device *dev,
-+						      size_t index);
-+struct dma_chan *acpi_dma_request_slave_chan_by_name(struct device *dev,
-+						     const char *name);
-+
-+struct dma_chan *acpi_dma_simple_xlate(struct acpi_dma_spec *dma_spec,
-+				       struct acpi_dma *adma);
-+#else
-+
-+static inline int acpi_dma_controller_register(struct device *dev,
-+		struct dma_chan *(*acpi_dma_xlate)
-+		(struct acpi_dma_spec *, struct acpi_dma *),
-+		void *data)
-+{
-+	return -ENODEV;
-+}
-+static inline int acpi_dma_controller_free(struct device *dev)
-+{
-+	return -ENODEV;
-+}
-+static inline int devm_acpi_dma_controller_register(struct device *dev,
-+		struct dma_chan *(*acpi_dma_xlate)
-+		(struct acpi_dma_spec *, struct acpi_dma *),
-+		void *data)
-+{
-+	return -ENODEV;
-+}
-+static inline void devm_acpi_dma_controller_free(struct device *dev)
-+{
-+}
-+
-+static inline struct dma_chan *acpi_dma_request_slave_chan_by_index(
-+		struct device *dev, size_t index)
-+{
-+	return NULL;
-+}
-+static inline struct dma_chan *acpi_dma_request_slave_chan_by_name(
-+		struct device *dev, const char *name)
-+{
-+	return NULL;
-+}
-+
-+#define acpi_dma_simple_xlate	NULL
-+
-+#endif
-+
-+#define acpi_dma_request_slave_channel	acpi_dma_request_slave_chan_by_index
-+
-+#endif /* __LINUX_ACPI_DMA_H */
--- 
-1.8.2.rc0.22.gb3600c3
+> +       select ARCH_HAS_CPUFREQ
+> +       select CPU_FREQ_TABLE
+> +       help
+> +         This enables support for systems using the TI-NSPIRE CPU
 
+This does not select GENERIC_CLOCKEVENTS and SPARSE_IRQ
+which is not a good sign.
+
+> +choice
+> +       prompt "Early printk and boot message serial interface"
+> +       help
+> +         Early printk output interface
+> +       depends on EARLY_PRINTK
+> +       default NSPIRE_EARLYPRINTK_CX
+> +
+> +config NSPIRE_EARLYPRINTK_CLASSIC
+> +       bool "Classic"
+> +
+> +config NSPIRE_EARLYPRINTK_CX
+> +       bool "CX model"
+> +endchoice
+
+This kind of stuf should go into
+arch/arm/Kconfig.debug these days, along with implementation
+of debug macro in arch/arm/debug/foo.S
+
+> diff --git a/arch/arm/mach-nspire/classic.c b/arch/arm/mach-nspire/classic.c
+(...)
+
+> +union reg_clk_speed {
+> +       unsigned long raw;
+> +       struct {
+> +               unsigned long __padding0:1;
+> +               unsigned long base_cpu_ratio:7;
+> +               unsigned long is_base_27mhz:1;
+> +               unsigned long __padding1:3;
+> +               unsigned long cpu_ahb_ratio:3;
+> +               unsigned long __padding2:1;
+> +               unsigned long base_val:5;
+> +       } val;
+> +};
+
+Usually to try to fit a struct over a register range is not such a good
+idea in Linux.
+
+Instead define abstract representations of what you want to do
+(remove everything named "padding" above, use proper data types instead
+of these unsigned longs and that complex union) then use offsets to
+registers and remap the base offset in memory.
+
+It makes for simpler debugging and ability to properly use read|write[lwb]
+macros.
+
+> +static unsigned long classic_clocks_to_io(struct nspire_clk_speeds *clks)
+> +{
+> +       union reg_clk_speed reg;
+> +
+> +       BUG_ON(clks->div.base_cpu < 2);
+> +       BUG_ON(clks->div.cpu_ahb < 1);
+> +
+> +       reg.raw = 0;
+> +       reg.val.base_cpu_ratio = clks->div.base_cpu / 2;
+> +       reg.val.cpu_ahb_ratio = clks->div.cpu_ahb - 1;
+> +       reg.val.is_base_27mhz = (clks->base <= 27000000);
+> +       reg.val.base_val = (300 - (clks->base / 1000000)) / 6;
+> +
+> +       return reg.raw;
+> +}
+
+And that avoid having to create special helper functions like this.
+
+In integer divisions consider using DIV_ROUND_CLOSEST()
+from <linux/kernel.h> where applicable.
+
+> +/* Interrupt handling */
+
+The interrupt controller driver shall be placed in drivers/irqchips
+these days.
+
+> +static inline int check_interrupt(void __iomem *base, struct pt_regs *regs)
+> +{
+> +       if (readl(base + 0x0)) {
+
+Arrow antipattern, turn it around.
+
+if (!readl(base))
+   return 0;
+
+Then de-indent the rest of the code.
+
+> +               int irqnr = readl(base + 0x24);
+> +               unsigned prev_priority;
+> +               handle_IRQ(irqnr, regs);
+> +
+> +               /* Reset priorities */
+> +               prev_priority = readl(IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x28));
+> +               writel(prev_priority, IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x2c));
+> +               return 1;
+> +       }
+> +       return 0;
+> +}
+
+I don't understand this, put in  some explanation of what this function
+does please.
+
+> +asmlinkage void __exception_irq_entry
+> +       nspire_classic_handle_irq(struct pt_regs *regs)
+> +{
+> +       int serviced;
+> +
+> +       do {
+> +               void __iomem *reg_base = IOMEM(NSPIRE_INTERRUPT_VIRT_BASE);
+
+Instead of casting this in every IRQ entry define a static local
+in the irq driver file to point to the base.
+
+Avoids time in the IRQ handler, so it obviously the right thing to do.
+
+Please also use a dynamic remapping ioremap* insteaf of
+this static IOMEM() thing.
+
+> +               serviced = 0;
+> +
+> +               /* IRQ */
+> +               serviced += check_interrupt(reg_base, regs);
+> +               /* FIQ */
+> +               serviced += check_interrupt(reg_base + 0x100, regs);
+
+Should you now handle FIQs first at all times?
+
+> +       } while (serviced > 0);
+> +}
+> +
+> +static void classic_irq_ack(struct irq_data *d)
+> +{
+> +       readl(IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x28));
+> +}
+
+As stated use an ioremap:ed base static local.
+
+(...)
+> +void __init nspire_classic_init_irq(void)
+> +{
+> +       /* No stickies */
+> +       writel(0, IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x204));
+
+0x204???
+
+Use
+
+#define FOO_REGISTER 0x204
+
+to define understandable names for all of this so we can read the code.
+
+Usually this means the comments are no longer needed because the
+code becomes self-evident.
+
+> +
+> +       /* Disable all interrupts */
+> +       writel(~0, IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0xc));
+> +       writel(~0, IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x10c));
+> +
+> +       /* Set all priorities to 0 */
+> +       memset_io(IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x300), 0, 0x7f);
+> +
+> +       /* Accept interrupts of all priorities */
+> +       writel(0xf, IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x2c));
+> +       writel(0xf, IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x12c));
+> +
+> +       /* Clear existing interrupts */
+> +       readl(IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x28));
+> +       readl(IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x128));
+
+Dito, everywhere.
+
+In the end looking like this:
+
+readl(base + NSPIRE_IRQ_FOO); or something.
+
+No IOMEM, etc.
+
+(...)
+> +/* Timer */
+
+Hm, looks like you just forgot to select GENERIC_CLOCKEVENTS?
+
+Strange if it works anyway :-/
+
+We are comtemplating putting these things into drivers/timer,
+nothing decided yet.
+
+> +static int classic_timer_set_event(unsigned long delta,
+> +                               struct clock_event_device *dev)
+> +{
+> +       unsigned long flags;
+> +
+> +       local_irq_save(flags);
+> +       writel(delta, NSPIRE_APB_VIRTIO(NSPIRE_APB_TIMER2));
+> +       writel(1, NSPIRE_APB_VIRTIO(NSPIRE_APB_TIMER2 + 0x8));
+> +       writel(0, NSPIRE_APB_VIRTIO(NSPIRE_APB_TIMER2 + 0x18));
+
+Remove magic numbers, define register names.
+
+Remap a base, get rid of NSPIRE_APB_VIRTIO().
+
+> +       local_irq_restore(flags);
+> +
+> +       return 0;
+> +}
+> +static void classic_timer_set_mode(enum clock_event_mode mode,
+> +                                struct clock_event_device *evt)
+> +{
+> +       evt->mode = mode;
+> +}
+> +
+> +static struct clock_event_device nspire_clkevt = {
+> +       .name           = "clockevent",
+> +       .features       = CLOCK_EVT_FEAT_ONESHOT,
+> +       .shift          = 32,
+> +       .rating         = 400,
+> +       .set_next_event = classic_timer_set_event,
+> +       .set_mode       = classic_timer_set_mode,
+> +       .cpumask                = cpu_all_mask,
+> +};
+> +
+> +static irqreturn_t classic_timer_interrupt(int irq, void *dev_id)
+> +{
+> +       struct clock_event_device *c = dev_id;
+> +
+> +       /* Acknowledge */
+> +       writel((1<<0), NSPIRE_APB_VIRTIO(NSPIRE_APB_MISC + 0x20));
+
+writel((1<<0) isn't very helpful.
+
+#include <linux/bitops.h>
+
+#define NSPIRE_TIMER_ACK_REG 0x20
+#define NSPIRE_TIMER_ACK BIT(0)
+
+writel(NSPIRE_TIMER_ACK, base +  NSPIRE_TIMER_ACK_REG);
+
+Then follow a lot of platform data and devices. These have to be moved
+over to the device tree instead and deleted.
+
+(...)
+> +++ b/arch/arm/mach-nspire/touchpad.c
+> @@ -0,0 +1,30 @@
+> +/*
+> + *     linux/arch/arm/mach-nspire/touchpad.c
+> + *
+> + *     Copyright (C) 2012 Fabian Vogt <fabian@ritter-vogt.de>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2, as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#include <linux/i2c.h>
+> +
+> +#include "touchpad.h"
+> +
+> +#if defined(CONFIG_MOUSE_SYNAPTICS_I2C) || \
+> +       defined(CONFIG_MOUSE_SYNAPTICS_I2C_MODULE)
+> +static struct i2c_board_info synaptics_i2c = {
+> +       I2C_BOARD_INFO("synaptics_i2c", 0x20),
+> +       .irq    = 0,
+> +};
+> +
+> +void __init nspire_touchpad_init()
+> +{
+> +       i2c_register_board_info(0, &synaptics_i2c, 1);
+> +}
+
+
+Not only should this be done from devicetree, but exactly which
+synaptics driver are you using with this?
+
+I don't think there is one in the kernel tree yet.
+
+> diff --git a/arch/arm/tools/mach-types b/arch/arm/tools/mach-types
+> index 831e1fd..e76c16b 100644
+> --- a/arch/arm/tools/mach-types
+> +++ b/arch/arm/tools/mach-types
+> @@ -1204,3 +1204,6 @@ baileys                   MACH_BAILEYS            BAILEYS                 4169
+>  familybox              MACH_FAMILYBOX          FAMILYBOX               4170
+>  ensemble_mx35          MACH_ENSEMBLE_MX35      ENSEMBLE_MX35           4171
+>  sc_sps_1               MACH_SC_SPS_1           SC_SPS_1                4172
+> +nspireclp              MACH_NSPIRECLP          NSPIRECLP               4441
+> +nspiretp               MACH_NSPIRETP           NSPIRETP                4442
+> +nspirecx               MACH_NSPIRECX           NSPIRECX                4443
+
+We don't patch this file, Russell updates it from the machine registry on
+his webpage.
+
+And with device tree it goes irrelevant.
+
+Yours,
+Linus Walleij
