@@ -1,91 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936251Ab3DIPMZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 11:12:25 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:38993
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935378Ab3DIPMV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 11:12:21 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -6
-X-BigFish: VPS-6(z551bizbb2dI98dI9371I1458K1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1155h)
-X-WSS-ID: 0MKZU89-02-2NQ-02
-X-M-MSG: 
-Message-ID: <51642FCD.8080606@amd.com>
-Date: Tue, 9 Apr 2013 10:12:13 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S935102Ab3DIPOf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 11:14:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23315 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761809Ab3DIPOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 11:14:33 -0400
+Date: Tue, 9 Apr 2013 11:14:23 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Dave Young <dyoung@redhat.com>, linux-watchdog@vger.kernel.org,
+        kexec@lists.infradead.org, wim@iguana.be,
+        LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com
+Subject: Re: [RFC PATCH] watchdog: Add hook for kicking in kdump path
+Message-ID: <20130409151423.GM79013@redhat.com>
+References: <1365192994-94850-1-git-send-email-dzickus@redhat.com>
+ <516259D2.7000805@redhat.com>
+ <20130408124858.GC79013@redhat.com>
+ <20130408151509.GA20919@roeck-us.net>
+ <20130409144431.GL79013@redhat.com>
+ <20130409145228.GA1111@roeck-us.net>
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V3] iommu/amd: Add logic to decode AMD IOMMU event flag
-References: <1364947610-3327-1-git-send-email-suravee.suthikulpanit@amd.com> <20130409094132.GD6858@8bytes.org>
-In-Reply-To: <20130409094132.GD6858@8bytes.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130409145228.GA1111@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/9/2013 4:41 AM, Joerg Roedel wrote:
-> On Tue, Apr 02, 2013 at 07:06:50PM -0500, Suthikulpanit, Suravee wrote:
->> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
->>
->> Add logic to decode AMD IOMMU event flag based on information from AMD IOMMU specification.
->> This should simplify debugging IOMMU errors.  Also, dump DTE information in additional cases.
->>
->> This is an example:
->> AMD-Vi: Event logged [IO_PAGE_FAULT device=51:00.0 domain=0x0000 address=0x0000000000000000 flags=0x0fff]
->> AMD-Vi: Flags details: Guest NX=1 User Intr Present Write No-Perm Rsrv-Bit Translation
->> AMD-Vi: Type of error: (0x7)
->> AMD-Vi: (Note: Please refer to AMD IOMMU specification for details.)
->> AMD-Vi: DTE[0]: 6000003fa75e2403
->> AMD-Vi: DTE[1]: 0000000000000014
->> AMD-Vi: DTE[2]: 2000003fa5e09011
->> AMD-Vi: DTE[3]: 0000000000000000
-> This example should look like this instead:
->
-> AMD-Vi: Event logged [IO_PAGE_FAULT device=51:00.0 domain=0x0000 address=0x0 flags: G NX US I P Wr Rsvd Tr]
->
-> by default. When the user passes amd_iommu=verbose on the cmd-line then
-> you can print additional information like "type of error" or the dump
-> the DTE.
->
->
-> 	Joerg
-Joerg,
+On Tue, Apr 09, 2013 at 07:52:28AM -0700, Guenter Roeck wrote:
+> On Tue, Apr 09, 2013 at 10:44:31AM -0400, Don Zickus wrote:
+> > On Mon, Apr 08, 2013 at 08:15:09AM -0700, Guenter Roeck wrote:
+> > > On Mon, Apr 08, 2013 at 08:48:58AM -0400, Don Zickus wrote:
+> > > > On Mon, Apr 08, 2013 at 01:46:58PM +0800, Dave Young wrote:
+> > > > > On 04/06/2013 04:16 AM, Don Zickus wrote:
+> > > > > > A common problem with kdump is that during the boot up of the
+> > > > > > second kernel, the hardware watchdog times out and reboots the
+> > > > > > machine before a vmcore can be captured.
+> > > > > > 
+> > > > > > Instead of tellling customers to disable their hardware watchdog
+> > > > > > timers, I hacked up a hook to put in the kdump path that provides
+> > > > > > one last kick before jumping into the second kernel.
+> > > > > > 
+> > > > > > The assumption is the watchdog timeout is at least 10-30 seconds
+> > > > > > long, enough to get the second kernel to userspace to kick the watchdog
+> > > > > > again, if needed.
+> > > > > 
+> > > > > For kdump kernel some devices need to reset, this might increase the
+> > > > > boot time, it's not so reliable for the 10-30s for us to kicking the
+> > > > > watchdog.
+> > > > > 
+> > > > > Could we have another option to disable/stop the watchdog while panic
+> > > > > happens? Ie. add a kernel cmdline panic_stop_wd=<0|1> for 1st kernel, if
+> > > > > it's set to 1, then just stop the watchdog or we can kick the watchdog
+> > > > > like what you do in this patch. Of course stopping watchdog should be
+> > > > > lockless as well..
+> > > > 
+> > > > Hmm, I can look into that.  But I am not sure all watchdogs have the
+> > > > ability to stop once started.  I was also worried about the case where
+> > > 
+> > > Correct.
+> > > 
+> > > > kdump hangs for some reason.  Having the watchdog there to 'reboot' would
+> > > > be a nice safety net.
+> > > > 
+> > > Absolutely agree. After all, the reason for the kdump is most likely that
+> > > something went really wrong, meaning there is some likelyhood for the hang
+> > > to occur. Turning off the watchdog in this condition does not seem to be
+> > > a good idea.
+> > > 
+> > > > Perhaps adjusting the watchdog 'timeout' to something like 3 minutes would
+> > > > be easier?
+> > > > 
+> > > Not all watchdogs support such large timeouts, unfortunately. Maybe it would
+> > > make sense to implement infrastructure support for a softdog on top of the
+> > > hardware watchdog. Several drivers implement that outside the infrastructure
+> > > already.
+> > 
+> > Hi Guenter,
+> > 
+> > I am not familar with a softdog.  Can you give me an example of how it
+> > works?
+> > 
+> Just look for the use of mod_timer in the watchdog directory.
 
-- I can fit DTE dump all in one line (to reduce the number of lines). 
-But it is necessary for debugging certain events.
-- The "type of error" is also part of the flag translation for certain 
-event.  It will only print if it is necessary.
-- I can remove the "Note: ... " per Boris's request.
-- I can shorten the flag details even more.
+So looking at the mod_timer logic in various drivers, it seems regardless
+if the /dev/watchdog device is opened or not, if it is running, it will
+automagically kick the watchdog.
 
-Here are some new examples:
-[  156.177883] AMD-Vi: Event logged [IO_PAGE_FAULT device=51:00.0 
-domain=0x0000 address=0x0000000000000000]
-[  156.177895] AMD-Vi: Flags: Gst NX Usr Int P W N-Perm Rsrv Trnslt
-[  156.177898] AMD-Vi: Type of error: (0x7)
-[  156.177899] AMD-Vi: DTE[0 .. 3]: 6000007fa764f403 0000000000000014 
-2000003fabb41811 0000000000000000
+This seems that we can avoid pulling in userspace pieces for this.  Just
+load the driver and the hardware starts getting kicked.
 
-[  197.353900] AMD-Vi: Event logged [PAGE_TAB_HARDWARE_ERROR 
-device=51:00.0 domain=0x0000 address=0x0000000000000000]
-[  197.353917] AMD-Vi: Flags: Gst NX Usr Int P W N-Perm Rsrv Trnslt
+Is that true?  And if so, do all drivers detect if the hardware is already
+running during their init?  Or is it based on the first device open?
 
-These messages are not "high volumn".  What I am trying to achieve is 
-for users to be able to just send the errors to developers once they are 
-encountered without having to tell them to go back and reboot with the 
-"amd_iommu=verbose". In facts, they often difficult to reproduce from my 
-experience.  This should reduce the amount of communications and efforts 
-required to debug the issue.
-
-If you are ok with this, I will send out V4 in the next email.
-
-Thank you,
-
-Suravee
-
+Cheers,
+Don
