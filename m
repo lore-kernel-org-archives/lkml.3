@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933469Ab3DIOPM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 10:15:12 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:33697 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760703Ab3DIOPK (ORCPT
+	id S1765493Ab3DIOUs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 10:20:48 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:52741 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765085Ab3DIOUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 10:15:10 -0400
-Message-ID: <51642262.10902@windriver.com>
-Date: Tue, 9 Apr 2013 09:14:58 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 9 Apr 2013 10:20:47 -0400
 MIME-Version: 1.0
-To: <sedat.dilek@gmail.com>
-CC: <kgdb-bugreport@lists.sourceforge.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: kdb: kgdb: CONFIG_DEBUG_RODATA setting?
-References: <CA+icZUUkEgv+e1q3v1kW5WhJdT1egZKc5o96zF2omcT0YtVE3w@mail.gmail.com>
-In-Reply-To: <CA+icZUUkEgv+e1q3v1kW5WhJdT1egZKc5o96zF2omcT0YtVE3w@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51641ED3.1090603@samsung.com>
+References: <1365500744-14839-1-git-send-email-gautam.vivek@samsung.com>
+	<5163E8EB.1050803@samsung.com>
+	<CAFp+6iE-ZYSNHZBntTcX8fESLB2FXOr6idM8_Q3Rd7T3s_c4Dw@mail.gmail.com>
+	<CAFp+6iGS-4iv-PKTKP4OhwVvTsDoPnc-9N-6AAr5x=Bz9r=vTw@mail.gmail.com>
+	<51641ED3.1090603@samsung.com>
+Date: Tue, 9 Apr 2013 19:50:45 +0530
+Message-ID: <CAFp+6iH1+dtfijt2Hf6k7jT8irgS63_32oUpPaOZ=CPNa88tUA@mail.gmail.com>
+Subject: Re: [PATCH RFC] rtc: rtc-s3c: use clk_prepare_enable and clk_disable_unprepare
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        a.zummo@towertech.it, kgene.kim@samsung.com, dianders@chromium.org,
+        Thomas Abraham <thomas.ab@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2013 08:06 AM, Sedat Dilek wrote:
+On Tue, Apr 9, 2013 at 7:29 PM, Sylwester Nawrocki
+<s.nawrocki@samsung.com> wrote:
+> On 04/09/2013 03:34 PM, Vivek Gautam wrote:
+>>> Aah !! actually missed a similar patch from Thomas Abraham :(
+>>> > doing the same as suggested by you.
+>>> > Its available at:
+>>> > http://patchwork.ozlabs.org/patch/188687/
+>> There's a change required in the above mentioned patch, so possibly
+>> Thomas can go ahead and post the next version
+>> of that.
+>
+> Why not make that change yourself if you need it ? That patch is
+> really old, maybe Thomas is busy with other things now.
 
->  config DEBUG_RODATA
->  	bool "Write protect kernel read-only data structures"
-> -	default y
->  	depends on DEBUG_KERNEL
-> +	default n if KGDB
-> +	default y
->  	---help---
->  	  Mark the kernel read-only data as write-protected in the pagetables,
->  	  in order to catch accidental (and incorrect) writes to such const
+Sure, will post a patch fixing this. :-)
 
 
-This is wrong and should not be merged.
-
-A) You should not change these defaults in this manner
-
-B) You have pointed out that the documentation is currently
-   incorrect. The CONFIG_DEBUG_RODATA constraints were removed some time
-   ago, per commit 3751d3e85cf693e10e2c47c03c8caa65e171099b (x86,kgdb:
-   Fix DEBUG_RODATA limitation using text_poke())
-
-Jason.
-
+-- 
+Thanks & Regards
+Vivek
