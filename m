@@ -1,113 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936104Ab3DITxG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 15:53:06 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:37864 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936044Ab3DITxE (ORCPT
+	id S936192Ab3DITy1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 15:54:27 -0400
+Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:28482 "EHLO
+	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936172Ab3DITy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 15:53:04 -0400
-Date: Tue, 9 Apr 2013 20:52:58 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 2/2 v2] mfd: db8500-prcmu: Support platform dependant device
- selection
-Message-ID: <20130409195258.GH25316@gmail.com>
-References: <1365071941-23475-1-git-send-email-lee.jones@linaro.org>
- <1365071941-23475-2-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365071941-23475-2-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 9 Apr 2013 15:54:26 -0400
+Message-ID: <1365536528.32127.56.camel@misato.fc.hp.com>
+Subject: Re: [UPDATE][PATCH v2 2/3] resource: Add
+ release_mem_region_adjustable()
+From: Toshi Kani <toshi.kani@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ram Pai <linuxram@us.ibm.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>,
+        "Makphaibulchoke, Thavatchai" <thavatchai.makpahibulchoke@hp.com>,
+        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
+        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+        "tangchen@cn.fujitsu.com" <tangchen@cn.fujitsu.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>
+Date: Tue, 09 Apr 2013 13:42:08 -0600
+In-Reply-To: <20130409125141.bfe6e26142e5bb2ff229ed29@linux-foundation.org>
+References: <1365457655-7453-1-git-send-email-toshi.kani@hp.com>
+	 <20130409054825.GB7251@ram.oc3035372033.ibm.com>
+	 <1365534150.32127.55.camel@misato.fc.hp.com>
+	 <20130409125141.bfe6e26142e5bb2ff229ed29@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The main aim for this cycle is to have the u8540 booting to a
-console. However, the u8540 doesn't support all of the u8500
-platform devices yet. After this stage is complete we can then
-fill in the inadequacies, such as specific clock support at a
-later date. To achieve this we're placing devices supported by
-all platforms into a common device structure and the remaining
-ones into a platform specific one.
+On Tue, 2013-04-09 at 12:51 -0700, Andrew Morton wrote:
+> On Tue, 09 Apr 2013 13:02:30 -0600 Toshi Kani <toshi.kani@hp.com> wrote:
+> 
+> > > > +		/* look for the next resource if it does not fit into */
+> > > > +		if (res->start > start || res->end < end) {
+> > > > +			p = &res->sibling;
+> > > > +			continue;
+> > > > +		}
+> > > 
+> > > What if the resource overlaps. In other words, the res->start > start 
+> > > but res->end > end  ? 
+> > > 
+> > > Also do you handle the case where the range <start,end> spans
+> > > across multiple adjacent resources?
+> > 
+> > Good questions!  The two cases above are handled as error cases
+> > (-EINVAL) by design.  A requested region must either match exactly or
+> > fit into a single resource entry.  There are basically two design
+> > choices in release -- restrictive or non-restrictive.  Restrictive only
+> > releases under certain conditions, and non-restrictive releases under
+> > any conditions.  Since the existing release interfaces,
+> > __release_region() and __release_resource(), are restrictive, I intend
+> > to follow the same policy and made this new interface restrictive as
+> > well.  This new interface handles the common scenarios of memory
+> > hot-plug operations well.  I think your example cases are non-typical
+> > scenarios for memory hot-plug, and I am not sure if they happen under
+> > normal cases at this point.  Hence, they are handled as error cases for
+> > now.  We can always enhance this interface when we find them necessary
+> > to support as this interface is dedicated for memory hot-plug.  In other
+> > words, we should make such enhancement after we understand their
+> > scenarios well.  Does it make sense?
+> 
+> Can you please update the comment to describe the above?  Because if
+> one reviewer was wondering then later readers will also wonder.
 
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mfd/db8500-prcmu.c |   32 ++++++++++++++++++++++++--------
- 1 file changed, 24 insertions(+), 8 deletions(-)
+Yes, I will update the comment and send an updated patch again.
 
-diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-index 25dda8d..319b8ab 100644
---- a/drivers/mfd/db8500-prcmu.c
-+++ b/drivers/mfd/db8500-prcmu.c
-@@ -24,6 +24,7 @@
- #include <linux/jiffies.h>
- #include <linux/bitops.h>
- #include <linux/fs.h>
-+#include <linux/of.h>
- #include <linux/platform_device.h>
- #include <linux/uaccess.h>
- #include <linux/mfd/core.h>
-@@ -3067,6 +3068,15 @@ static struct db8500_thsens_platform_data db8500_thsens_data = {
- 	.num_trips = 4,
- };
- 
-+static struct mfd_cell common_prcmu_devs[] = {
-+	{
-+		.name = "ux500_wdt",
-+		.platform_data = &db8500_wdt_pdata,
-+		.pdata_size = sizeof(db8500_wdt_pdata),
-+		.id = -1,
-+	},
-+};
-+
- static struct mfd_cell db8500_prcmu_devs[] = {
- 	{
- 		.name = "db8500-prcmu-regulators",
-@@ -3081,12 +3091,6 @@ static struct mfd_cell db8500_prcmu_devs[] = {
- 		.pdata_size = sizeof(db8500_cpufreq_table),
- 	},
- 	{
--		.name = "ux500_wdt",
--		.platform_data = &db8500_wdt_pdata,
--		.pdata_size = sizeof(db8500_wdt_pdata),
--		.id = -1,
--	},
--	{
- 		.name = "db8500-thermal",
- 		.num_resources = ARRAY_SIZE(db8500_thsens_resources),
- 		.resources = db8500_thsens_resources,
-@@ -3175,13 +3179,25 @@ static int db8500_prcmu_probe(struct platform_device *pdev)
- 
- 	db8500_prcmu_update_cpufreq();
- 
--	err = mfd_add_devices(&pdev->dev, 0, db8500_prcmu_devs,
--			      ARRAY_SIZE(db8500_prcmu_devs), NULL, 0, db8500_irq_domain);
-+	err = mfd_add_devices(&pdev->dev, 0, common_prcmu_devs,
-+			      ARRAY_SIZE(common_prcmu_devs), NULL, 0, db8500_irq_domain);
- 	if (err) {
- 		pr_err("prcmu: Failed to add subdevices\n");
- 		return err;
- 	}
- 
-+	/* TODO: Remove restriction when clk definitions are available. */
-+	if (!of_machine_is_compatible("st-ericsson,u8540")) {
-+		err = mfd_add_devices(&pdev->dev, 0, db8500_prcmu_devs,
-+				      ARRAY_SIZE(db8500_prcmu_devs), NULL, 0,
-+				      db8500_irq_domain);
-+		if (err) {
-+			mfd_remove_devices(&pdev->dev);
-+			pr_err("prcmu: Failed to add subdevices\n");
-+			goto no_irq_return;
-+		}
-+	}
-+
- 	err = db8500_prcmu_register_ab8500(&pdev->dev, pdata->ab_platdata,
- 					   pdata->ab_irq);
- 	if (err) {
--- 
-1.7.10.4
+Thanks,
+-Toshi
+
+
