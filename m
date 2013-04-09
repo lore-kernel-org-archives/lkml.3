@@ -1,88 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936665Ab3DIBXT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 21:23:19 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:42024 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936057Ab3DIBXQ (ORCPT
+	id S936671Ab3DIB1W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 21:27:22 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64803 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936006Ab3DIB1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 21:23:16 -0400
-X-Spam-Score: -100.7
-Message-ID: <51636D60.8060809@asianux.com>
-Date: Tue, 09 Apr 2013 09:22:40 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 8 Apr 2013 21:27:21 -0400
+X-AuditID: 9c930179-b7b2aae000000518-07-51636e78d2c1
+Date: Tue, 9 Apr 2013 10:27:19 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Shaohua Li <shli@kernel.org>, Bob Liu <bob.liu@oracle.com>,
+        Shuah Khan <shuah@gonehiking.org>
+Subject: Re: zsmalloc defrag (Was: [PATCH] mm: remove compressed copy from
+ zram in-memory)
+Message-ID: <20130409012719.GB3467@blaptop>
+References: <1365400862-9041-1-git-send-email-minchan@kernel.org>
+ <f3c8ef05-a880-47db-86dd-156038fc7d0f@default>
 MIME-Version: 1.0
-To: drbd-dev@lists.linbit.com, drbd-user@lists.linbit.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/block/drbd: remove erroneous semicolon
-References: <5152980D.8090903@asianux.com> <515BE19F.2080709@asianux.com> <20130408204510.GB13761@soda.linbit>
-In-Reply-To: <20130408204510.GB13761@soda.linbit>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <f3c8ef05-a880-47db-86dd-156038fc7d0f@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月09日 04:45, Lars Ellenberg wrote:
-> On Wed, Apr 03, 2013 at 04:00:31PM +0800, Chen Gang wrote:
->> > Hello maintainers:
->> > 
->> >   when you have time, please help to check this patch whether is OK.
->> > 
->> >   thanks.
-> Thanks.
+Hi Dan,
+
+On Mon, Apr 08, 2013 at 09:32:38AM -0700, Dan Magenheimer wrote:
+> > From: Minchan Kim [mailto:minchan@kernel.org]
+> > Sent: Monday, April 08, 2013 12:01 AM
+> > Subject: [PATCH] mm: remove compressed copy from zram in-memory
 > 
-> It has already been queued in:
-> http://git.kernel.dk/?p=linux-block.git;a=commit;h=0b6ef4164f50698eee536903d69d086add1a7889
+> (patch removed)
 > 
-
-  ok thanks.
-
-  it seems I am a little earlier than the link's patch.
-    I found it on Wed 27 Mar 2013 14:56
-    link's patch found it on Wed 27 Mar 2013 21:08
-
-  ;-)
-
-
-  but that's all right, it doesn't matter.
-
-  thanks.
-
-  :-)
-
-gchen.
-
-
->> > On 2013年03月27日 14:56, Chen Gang wrote:
->>> > > 
->>> > >   need remove it, or always return -EBUSY.
->>> > >   it is found by compiler with 'EXTRA_CFLAG=-W'.
->>> > > 
->>> > > Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>> > > ---
->>> > >  drivers/block/drbd/drbd_actlog.c |    2 +-
->>> > >  1 files changed, 1 insertions(+), 1 deletions(-)
->>> > > 
->>> > > diff --git a/drivers/block/drbd/drbd_actlog.c b/drivers/block/drbd/drbd_actlog.c
->>> > > index 6afe173..6608076 100644
->>> > > --- a/drivers/block/drbd/drbd_actlog.c
->>> > > +++ b/drivers/block/drbd/drbd_actlog.c
->>> > > @@ -389,7 +389,7 @@ int drbd_al_begin_io_nonblock(struct drbd_conf *mdev, struct drbd_interval *i)
->>> > >  		if (unlikely(tmp != NULL)) {
->>> > >  			struct bm_extent  *bm_ext = lc_entry(tmp, struct bm_extent, lce);
->>> > >  			if (test_bit(BME_NO_WRITES, &bm_ext->flags)) {
->>> > > -				if (!test_and_set_bit(BME_PRIORITY, &bm_ext->flags));
->>> > > +				if (!test_and_set_bit(BME_PRIORITY, &bm_ext->flags))
->>> > >  					return -EBUSY;
->>> > >  				return -EWOULDBLOCK;
->>> > >  			}
->>> > > 
+> > Fragment ratio is almost same but memory consumption and compile time
+> > is better. I am working to add defragment function of zsmalloc.
 > 
+> Hi Minchan --
+> 
+> I would be very interested in your design thoughts on
+> how you plan to add defragmentation for zsmalloc.  In
 
+What I can say now about is only just a word "Compaction".
+As you know, zsmalloc has a transparent handle so we can do whatever
+under user. Of course, there is a tradeoff between performance 
+and memory efficiency. I'm biased to latter for embedded usecase.
+
+And I might post it because as you know well, zsmalloc
+
+> particular, I am wondering if your design will also
+> handle the requirements for zcache (especially for
+> cleancache pages) and perhaps also for ramster.
+
+I don't know requirements for cleancache pages but compaction is
+general as you know well so I expect you can get a benefit from it
+if you are concern on memory efficiency but not sure it's valuable
+to compact cleancache pages for getting more slot in RAM.
+Sometime, just discarding would be much better, IMHO.
+
+> 
+> In https://lkml.org/lkml/2013/3/27/501 I suggested it
+> would be good to work together on a common design, but
+> you didn't reply.  Are you thinking that zsmalloc
+
+I saw the thread but explicit agreement is really matter?
+I believe everybody want it although they didn't reply. :)
+
+You can make the design/post it or prototyping/post it.
+If there are some conflit with something in my brain,
+I will be happy to feedback. :)
+
+Anyway, I think my above statement "COMPACTION" would be enough to
+express my current thought to avoid duplicated work and you can catch up.
+
+I will get around to it after LSF/MM.
+
+> improvements should focus only on zram, in which case
+
+Just focusing zsmalloc.
+
+> we may -- and possibly should -- end up with a different
+> allocator for frontswap-based/cleancache-based compression
+> in zcache (and possibly zswap)?
+
+> 
+> I'm just trying to determine if I should proceed separately
+> with my design (with Bob Liu, who expressed interest) or if
+> it would be beneficial to work together.
+
+Just posting and if it affects zsmalloc/zram/zswap and goes the way
+I don't want, I will involve the discussion because our product uses
+zram heavily and consider zswap, too.
+
+I really appreciate your enthusiastic collaboration model to find
+optimal solution!
+
+> 
+> Thanks,
+> Dan
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Chen Gang
-
-Asianux Corporation
+Kind regards,
+Minchan Kim
