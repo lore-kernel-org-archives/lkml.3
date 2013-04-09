@@ -1,99 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936039Ab3DIVSm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 17:18:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25374 "EHLO mx1.redhat.com"
+	id S936132Ab3DIV1f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 17:27:35 -0400
+Received: from mga11.intel.com ([192.55.52.93]:3795 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935210Ab3DIVSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 17:18:41 -0400
-Date: Tue, 9 Apr 2013 17:18:25 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Vivek Goyal <vgoyal@redhat.com>
-cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Mike Snitzer <snitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
-        dm-devel@redhat.com, Andi Kleen <andi@firstfloor.org>,
-        dm-crypt@saout.de, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Christian Schmidt <schmidt@digadd.de>
-Subject: Re: dm-crypt parallelization patches
-In-Reply-To: <20130409210735.GR6320@redhat.com>
-Message-ID: <Pine.LNX.4.64.1304091710150.24735@file.rdu.redhat.com>
-References: <20130328194443.GG14088@htj.dyndns.org> <20130328203808.GC15969@redhat.com>
- <20130328204522.GA25501@mtj.dyndns.org> <Pine.LNX.4.64.1304091242350.10025@file.rdu.redhat.com>
- <20130409175753.GA6186@mtj.dyndns.org> <Pine.LNX.4.64.1304091402150.10025@file.rdu.redhat.com>
- <20130409181031.GC6186@mtj.dyndns.org> <Pine.LNX.4.64.1304091450410.26327@file.rdu.redhat.com>
- <20130409195259.GL6186@mtj.dyndns.org> <Pine.LNX.4.64.1304091624110.19672@file.rdu.redhat.com>
- <20130409210735.GR6320@redhat.com>
+	id S934470Ab3DIV1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 17:27:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,441,1363158000"; 
+   d="scan'208";a="316839201"
+Message-ID: <5164884C.70909@intel.com>
+Date: Tue, 09 Apr 2013 14:29:48 -0700
+From: David Cohen <david.a.cohen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130315 Icedove/17.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        "Gross, Mark" <mark.gross@intel.com>
+Subject: Re: [PATCH] MODSIGN: do not send garbage to stderr when enabling
+ modules signature
+References: <1365457436-5753-1-git-send-email-david.a.cohen@intel.com> <87mwt88jt2.fsf@rustcorp.com.au>
+In-Reply-To: <87mwt88jt2.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/08/2013 08:27 PM, Rusty Russell wrote:
+> David Cohen <david.a.cohen@intel.com> writes:
+>> openssl may send garbage to stderr when generating X.509 key pair for
+>> modules signature regardless there was an error or not. It makes more
+>> difficult to create scripts based on kernel error/warning messages.
+>> This patch makes sure openssl logs go to default stdout.
+>>
+>> Signed-off-by: David Cohen <david.a.cohen@intel.com>
+> Can you please give an example of the "garbage" in your commit message,
+> or is it binary?
+
+I can write to commit message, it's not binary. I'll send a new patch.
+
+The problem is openssl writes its logs to stderr.
+Here's the example I'm going to write to commit message. I captured only 
+stderr in this case:
+
+crypto/anubis.c:581: warning: ‘inter’ is used uninitialized in this function
+Generating a 4096 bit RSA private key
+.........
+drivers/gpu/drm/i915/i915_gem_gtt.c: In function ‘gen6_ggtt_insert_entries’:
+drivers/gpu/drm/i915/i915_gem_gtt.c:440: warning: ‘addr’ may be used 
+uninitialized in this function
+.net/mac80211/tx.c: In function ‘ieee80211_subif_start_xmit’:
+net/mac80211/tx.c:1780: warning: ‘chanctx_conf’ may be used 
+uninitialized in this function
+..drivers/isdn/hardware/mISDN/hfcpci.c: In function ‘hfcpci_softirq’:
+.....drivers/isdn/hardware/mISDN/hfcpci.c:2298: warning: ignoring return 
+value of ‘driver_for_each_device’, declared with attribute 
+warn_unused_result
+net/unix/af_unix.c: In function ‘unix_bind’:
+net/unix/af_unix.c:892: warning: ‘path.dentry’ may be used uninitialized 
+in this function
+net/unix/af_unix.c:892: warning: ‘path.mnt’ may be used uninitialized in 
+this function
+...++
+In file included from drivers/message/i2o/config-osm.c:39:
+drivers/message/i2o/i2o_config.c: In function ‘i2o_cfg_passthru’:
+drivers/message/i2o/i2o_config.c:888: warning: cast to pointer from 
+integer of different size
+drivers/message/i2o/i2o_config.c:943: warning: cast to pointer from 
+integer of different size
+drivers/net/ethernet/amd/nmclan_cs.c: In function ‘nmclan_config’:
+drivers/net/ethernet/amd/nmclan_cs.c:625: warning: 
+‘pcmcia_request_exclusive_irq’ is deprecated (declared at 
+include/pcmcia/ds.h:201)
+drivers/net/ethernet/mellanox/mlx4/mcg.c: In function ‘find_entry’:
+.........................................................................................................................................................................................++
+writing new private key to 'signing_key.priv'
+-----
+drivers/net/ethernet/mellanox/mlx4/mcg.c:601: warning: ‘hash’ may be 
+used uninitialized in this function
 
 
-On Tue, 9 Apr 2013, Vivek Goyal wrote:
+The problem happens when we use high N value on make -jN. All warnings 
+get mixed with dots and other outputs from openssl when printed during 
+key pair generation.
 
-> On Tue, Apr 09, 2013 at 04:32:28PM -0400, Mikulas Patocka wrote:
-> 
-> [..]
-> > Generally, we shouldn't associate bios with "current" task in device 
-> > mapper targets. For example suppose that we have two stacked dm-crypt 
-> > targets:
-> >
-> > In the "current" process pointer in lower dm-crypt target's request 
-> > function always points to the workqueue of the upper dm-crypt target that 
-> > submits the bios. So if we associate the bio with "current" in the lower 
-> > target, we are associating it with a preallocated workqueue and we already 
-> > lost the information who submitted it.
-> > 
-> > You should associate a bio with a task when you create the bio and "md" 
-> > and "dm" midlayers should just forward this association to lower layer 
-> > bios.
-> 
-> bio_associate_current() return -EBUSY if bio has already been associated
-> with an io context.
-> 
-> So in a stack if every driver calls bio_associate_current(), upon bio
-> submission, it will automatically amke sure bio gets associated with
-> submitter task in top level device and calls by lower level device
-> will be ignored.
+Br, David
 
-The stacking drivers do not pass the same bio to each other.
 
-The stacking driver receives a bio, allocates zero or more new bios and 
-sends these new bios to the lower layer. So you need to propagate 
-ownership from the received bio to newly allocated bios, you don't want to 
-associate newly allocated bio with "current" process.
+>
+> Thanks,
+> Rusty,.
+>
+>> ---
+>>   kernel/Makefile |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/kernel/Makefile b/kernel/Makefile
+>> index bbde5f1..5a51e6c 100644
+>> --- a/kernel/Makefile
+>> +++ b/kernel/Makefile
+>> @@ -175,7 +175,7 @@ signing_key.priv signing_key.x509: x509.genkey
+>>   	openssl req -new -nodes -utf8 -$(CONFIG_MODULE_SIG_HASH) -days 36500 \
+>>   		-batch -x509 -config x509.genkey \
+>>   		-outform DER -out signing_key.x509 \
+>> -		-keyout signing_key.priv
+>> +		-keyout signing_key.priv 2>&1
+>>   	@echo "###"
+>>   	@echo "### Key pair generated."
+>>   	@echo "###"
+>> -- 
+>> 1.7.10.4
 
-> Lower level devices I think just need to make sure this context
-> info is propogated to cloned bios.
-> 
-> 
-> [..]
-> > +#ifdef CONFIG_BLK_CGROUP
-> > +	tio->clone.bi_ioc = ci->bio->bi_ioc;
-> > +	tio->clone.bi_css = ci->bio->bi_css;
-> 
-> You also need to take references to ioc and css objects. I guess a helper
-> function will be better. May be something like.
-
-The lifetime of the "tio" structure is shorter than the lifetime of 
-"ci->bio". So we don't need to increment reference.
-
-We only need to increment reference if we copy ownership to a new bio that 
-has could have longer lifetime than the original bio. But this situation 
-is very rare - in most stacking drivers the newly allocated bio has 
-shorter lifetime than the original one.
-
-> bio_associate_bio_context(bio1, bio2)
-> 
-> And this initialize bio2's context with bio1's context.
-
-Yes, that would be ok.
-
-> Thanks
-> Vivek
-
-Mikulas
