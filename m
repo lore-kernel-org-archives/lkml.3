@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761615Ab3DIDas (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 23:30:48 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:51090 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100Ab3DIDar (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 23:30:47 -0400
-Message-ID: <51638B2B.4010305@huawei.com>
-Date: Tue, 9 Apr 2013 11:29:47 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S934344Ab3DIDcA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 23:32:00 -0400
+Received: from ozlabs.org ([203.10.76.45]:33784 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762581Ab3DIDb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 23:31:59 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: David Cohen <david.a.cohen@intel.com>, dhowells@redhat.com
+Cc: linux-kernel@vger.kernel.org, David Cohen <david.a.cohen@intel.com>
+Subject: Re: [PATCH] MODSIGN: do not send garbage to stderr when enabling modules signature
+In-Reply-To: <1365457436-5753-1-git-send-email-david.a.cohen@intel.com>
+References: <1365457436-5753-1-git-send-email-david.a.cohen@intel.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Tue, 09 Apr 2013 12:57:53 +0930
+Message-ID: <87mwt88jt2.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [PATCH 1/8] cgroup: implement cgroup_is_ancestor()
-References: <51627DA9.7020507@huawei.com> <51627DBB.5050005@huawei.com> <51638947.9060303@jp.fujitsu.com>
-In-Reply-To: <51638947.9060303@jp.fujitsu.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/4/9 11:21, Kamezawa Hiroyuki wrote:
-> (2013/04/08 17:20), Li Zefan wrote:
->> This will be used as a replacement for css_is_ancestor().
->>
->> Signed-off-by: Li Zefan <lizefan@huawei.com>
-> 
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> Hmm....but do we need "depth" ?
-> 
+David Cohen <david.a.cohen@intel.com> writes:
+> openssl may send garbage to stderr when generating X.509 key pair for
+> modules signature regardless there was an error or not. It makes more
+> difficult to create scripts based on kernel error/warning messages.
+> This patch makes sure openssl logs go to default stdout.
+>
+> Signed-off-by: David Cohen <david.a.cohen@intel.com>
 
-which was removed in Tejun's
-"[PATCHSET] perf, cgroup: implement hierarchy support for perf_event controller"
+Can you please give an example of the "garbage" in your commit message,
+or is it binary?
 
+Thanks,
+Rusty,.
+
+> ---
+>  kernel/Makefile |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/kernel/Makefile b/kernel/Makefile
+> index bbde5f1..5a51e6c 100644
+> --- a/kernel/Makefile
+> +++ b/kernel/Makefile
+> @@ -175,7 +175,7 @@ signing_key.priv signing_key.x509: x509.genkey
+>  	openssl req -new -nodes -utf8 -$(CONFIG_MODULE_SIG_HASH) -days 36500 \
+>  		-batch -x509 -config x509.genkey \
+>  		-outform DER -out signing_key.x509 \
+> -		-keyout signing_key.priv
+> +		-keyout signing_key.priv 2>&1
+>  	@echo "###"
+>  	@echo "### Key pair generated."
+>  	@echo "###"
+> -- 
+> 1.7.10.4
