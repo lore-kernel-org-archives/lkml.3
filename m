@@ -1,18 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935549Ab3DISoH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 14:44:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50915 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934733Ab3DISoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 14:44:05 -0400
-Message-ID: <51646054.3090509@zytor.com>
-Date: Tue, 09 Apr 2013 11:39:16 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S934733Ab3DISqK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 14:46:10 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:59506 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751809Ab3DISqI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 14:46:08 -0400
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: "kernel-hardening@lists.openwall.com" 
+In-Reply-To: <51646054.3090509@zytor.com>
+References: <20130408224328.GA17641@www.outflux.net>
+	<51634935.9010905@zytor.com>
+	<alpine.LFD.2.02.1304091122490.21884@ionos>
+	<CAGXu5jKo=11RrsvctcZjP6dusAj659O_GsaA2J2qFq-6mOeRwQ@mail.gmail.com>
+	<51645D6F.7070705@zytor.com>
+	<CAGXu5jKkHKw8efdPOmt-Zi99m+uMKVGKpc_DC72_ztwxnRbRRQ@mail.gmail.com>
+	<51646054.3090509@zytor.com>
+Date: Tue, 9 Apr 2013 11:46:08 -0700
+X-Google-Sender-Auth: qnsqrjx5_AWY_L3B6A-OJ-k_phY
+Message-ID: <CAGXu5jJNG4o+_-kk=A2AfSRwyQE0pgaQh7YpSjnD_fB-s7U+wA@mail.gmail.com>
+Subject: Re: [kernel-hardening] Re: [PATCH] x86: make IDT read-only
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "kernel-hardening@lists.openwall.com" 
 	<kernel-hardening@lists.openwall.com>,
         Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         "x86@kernel.org" <x86@kernel.org>,
@@ -30,35 +40,36 @@ CC: "kernel-hardening@lists.openwall.com"
         Dan Rosenberg <drosenberg@vsecurity.com>,
         Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
         Eric Northup <digitaleric@google.com>
-Subject: Re: [kernel-hardening] Re: [PATCH] x86: make IDT read-only
-References: <20130408224328.GA17641@www.outflux.net> <51634935.9010905@zytor.com> <alpine.LFD.2.02.1304091122490.21884@ionos> <CAGXu5jKo=11RrsvctcZjP6dusAj659O_GsaA2J2qFq-6mOeRwQ@mail.gmail.com> <51645D6F.7070705@zytor.com> <CAGXu5jKkHKw8efdPOmt-Zi99m+uMKVGKpc_DC72_ztwxnRbRRQ@mail.gmail.com>
-In-Reply-To: <CAGXu5jKkHKw8efdPOmt-Zi99m+uMKVGKpc_DC72_ztwxnRbRRQ@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2013 11:31 AM, Kees Cook wrote:
->>> ...
->>> 0xffff880001e00000-0xffff88001fe00000         480M     RW         PSE GLB NX pmd
+On Tue, Apr 9, 2013 at 11:39 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/09/2013 11:31 AM, Kees Cook wrote:
+>>>> ...
+>>>> 0xffff880001e00000-0xffff88001fe00000         480M     RW         PSE GLB NX pmd
+>>>>
 >>>
+>>> That is the 1:1 memory map area...
 >>
->> That is the 1:1 memory map area...
-> 
-> Meaning what?
-> 
-> -Kees
-> 
+>> Meaning what?
+>>
+>> -Kees
+>>
+>
+> That's the area in which we just map 1:1 to memory.  Anything allocated
+> with e.g. kmalloc() ends up with those addresses.
 
-That's the area in which we just map 1:1 to memory.  Anything allocated
-with e.g. kmalloc() ends up with those addresses.
+Ah-ha! Yes, I see now when comparing the debug/kernel_page_tables
+reports. It's just the High Kernel Mapping that we care about.
+Addresses outside that range are less of a leak. Excellent, then GDT
+may not be a problem. Whew.
 
-	-hpa
+Does the v2 IDT patch look okay, BTW?
 
+-Kees
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+--
+Kees Cook
+Chrome OS Security
