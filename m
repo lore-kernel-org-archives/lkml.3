@@ -1,72 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935189Ab3DIGuy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 02:50:54 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:42735 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762735Ab3DIGux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 02:50:53 -0400
-Message-ID: <5163BAA8.7040502@ti.com>
-Date: Tue, 9 Apr 2013 12:22:24 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S935669Ab3DIGwt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 02:52:49 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43885 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934554Ab3DIGws (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 02:52:48 -0400
+X-AuditID: 9c930197-b7b50ae00000018c-c8-5163babd9aaa
+Date: Tue, 9 Apr 2013 15:53:25 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/10] mm: vmscan: Have kswapd shrink slab only once per
+ priority
+Message-ID: <20130409065325.GA4411@lge.com>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-9-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, Felipe Balbi <balbi@ti.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Peter Meerwald <pmeerw@pmeerw.net>
-Subject: Re: [RFC v2] dmaengine: omap-dma: Start DMA without delay for cyclic
- channels
-References: <1364987862-14597-1-git-send-email-peter.ujfalusi@ti.com> <51626D88.8020809@ti.com> <20130408170956.GX30923@n2100.arm.linux.org.uk> <20130408171519.GP10155@atomide.com>
-In-Reply-To: <20130408171519.GP10155@atomide.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363525456-10448-9-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 April 2013 10:45 PM, Tony Lindgren wrote:
-> * Russell King - ARM Linux <linux@arm.linux.org.uk> [130408 10:15]:
->> On Mon, Apr 08, 2013 at 09:11:04AM +0200, Peter Ujfalusi wrote:
->>> Russell,
->>>
->>> On 04/03/2013 01:17 PM, Peter Ujfalusi wrote:
->>>> cyclic DMA is only used by audio which needs DMA to be started without a
->>>> delay.
->>>> If the DMA for audio is started using the tasklet we experience random
->>>> channel switch (to be more precise: channel shift).
->>>>
->>>> Reported-by: Peter Meerwald <pmeerw@pmeerw.net>
->>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->>>> ---
->>>> Hi Russell,
->>>>
->>>> Instead of removing the tasklet we can identify the DMA channel used by audio
->>>> based on the cyclic flag of the channel.
->>>> I think this can be used as a short term solution to fix the audio channel shift
->>>> issue and later when we have the dynamic DMA channel allocation we can adjust
->>>> the code.
->>>
->>> Could you, please look at this patch?
->>
->> Now that I'm back from a short 4 day break, then yes, and the answer is
->> that it's fine.  Who's handling the patch?
+Hello, Mel.
+Sorry for too late question.
+
+On Sun, Mar 17, 2013 at 01:04:14PM +0000, Mel Gorman wrote:
+> If kswaps fails to make progress but continues to shrink slab then it'll
+> either discard all of slab or consume CPU uselessly scanning shrinkers.
+> This patch causes kswapd to only call the shrinkers once per priority.
 > 
-> I suggest Peter resend the patch with also Grant + Linus W cc:d so
-> they can queue it unless there are other related patches pending
-> somewhere else.
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/vmscan.c | 28 +++++++++++++++++++++-------
+>  1 file changed, 21 insertions(+), 7 deletions(-)
 > 
-Am curious on your suggestion. DMA engine patches are going via Vinod
-Koul's tree so I think the $subject patch should follow the same
-tree, No ?
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 7d5a932..84375b2 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2661,9 +2661,10 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+>   */
+>  static bool kswapd_shrink_zone(struct zone *zone,
+>  			       struct scan_control *sc,
+> -			       unsigned long lru_pages)
+> +			       unsigned long lru_pages,
+> +			       bool shrinking_slab)
+>  {
+> -	unsigned long nr_slab;
+> +	unsigned long nr_slab = 0;
+>  	struct reclaim_state *reclaim_state = current->reclaim_state;
+>  	struct shrink_control shrink = {
+>  		.gfp_mask = sc->gfp_mask,
+> @@ -2673,9 +2674,15 @@ static bool kswapd_shrink_zone(struct zone *zone,
+>  	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
+>  	shrink_zone(zone, sc);
+>  
+> -	reclaim_state->reclaimed_slab = 0;
+> -	nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
+> -	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+> +	/*
+> +	 * Slabs are shrunk for each zone once per priority or if the zone
+> +	 * being balanced is otherwise unreclaimable
+> +	 */
+> +	if (shrinking_slab || !zone_reclaimable(zone)) {
+> +		reclaim_state->reclaimed_slab = 0;
+> +		nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
+> +		sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+> +	}
+>  
+>  	if (nr_slab == 0 && !zone_reclaimable(zone))
+>  		zone->all_unreclaimable = 1;
 
-Peter, if you plan to re-send, feel free to add my ack.
+Why shrink_slab() is called here?
+I think that outside of zone loop is better place to run shrink_slab(),
+because shrink_slab() is not directly related to a specific zone.
 
+And this is a question not related to this patch.
+Why nr_slab is used here to decide zone->all_unreclaimable?
+nr_slab is not directly related whether a specific zone is reclaimable
+or not, and, moreover, nr_slab is not directly related to number of
+reclaimed pages. It just say some objects in the system are freed.
 
-Regards,
-Santosh
+This question comes from my ignorance, so please enlighten me.
 
+Thanks.
+
+> @@ -2713,6 +2720,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>  	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+>  	unsigned long nr_soft_reclaimed;
+>  	unsigned long nr_soft_scanned;
+> +	bool shrinking_slab = true;
+>  	struct scan_control sc = {
+>  		.gfp_mask = GFP_KERNEL,
+>  		.priority = DEF_PRIORITY,
+> @@ -2861,7 +2869,8 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>  				 * already being scanned that that high
+>  				 * watermark would be met at 100% efficiency.
+>  				 */
+> -				if (kswapd_shrink_zone(zone, &sc, lru_pages))
+> +				if (kswapd_shrink_zone(zone, &sc,
+> +						lru_pages, shrinking_slab))
+>  					raise_priority = false;
+>  
+>  				nr_to_reclaim += sc.nr_to_reclaim;
+> @@ -2900,6 +2909,9 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>  				pfmemalloc_watermark_ok(pgdat))
+>  			wake_up(&pgdat->pfmemalloc_wait);
+>  
+> +		/* Only shrink slab once per priority */
+> +		shrinking_slab = false;
+> +
+>  		/*
+>  		 * Fragmentation may mean that the system cannot be rebalanced
+>  		 * for high-order allocations in all zones. If twice the
+> @@ -2925,8 +2937,10 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>  		 * Raise priority if scanning rate is too low or there was no
+>  		 * progress in reclaiming pages
+>  		 */
+> -		if (raise_priority || !this_reclaimed)
+> +		if (raise_priority || !this_reclaimed) {
+>  			sc.priority--;
+> +			shrinking_slab = true;
+> +		}
+>  	} while (sc.priority >= 1 &&
+>  		 !pgdat_balanced(pgdat, order, *classzone_idx));
+>  
+> -- 
+> 1.8.1.4
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
