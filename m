@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936469Ab3DIBFD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 21:05:03 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:40385 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934986Ab3DIBFA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 21:05:00 -0400
+	id S936546Ab3DIBHL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 21:07:11 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:16059 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S936057Ab3DIBHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 21:07:09 -0400
+X-IronPort-AV: E=Sophos;i="4.87,435,1363104000"; 
+   d="scan'208";a="7017572"
+Message-ID: <51636A64.5050002@cn.fujitsu.com>
+Date: Tue, 09 Apr 2013 09:09:56 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <1365467115.25498.35.camel@gandalf.local.home>
-References: <1365227126-15355-1-git-send-email-linkinjeon@gmail.com>
-	<1365467115.25498.35.camel@gandalf.local.home>
-Date: Tue, 9 Apr 2013 10:04:58 +0900
-Message-ID: <CAKYAXd-xpJW=W8UHA=3+Jm-x5y81e__QsLJ0pw4H80SuS+SYSg@mail.gmail.com>
-Subject: Re: [PATCH v3 0/7] f2fs: add tracepoints support in f2fs filesystem
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: jaegeuk.kim@samsung.com, linux-f2fs-devel@lists.sourceforge.net,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+Subject: Re: [PATCH 2/3] kernel/SRCU: provide a static initializer
+References: <1363702606-31586-1-git-send-email-bigeasy@linutronix.de> <1363702606-31586-2-git-send-email-bigeasy@linutronix.de> <515E7B79.2020707@cn.fujitsu.com> <516295E7.70200@linutronix.de>
+In-Reply-To: <516295E7.70200@linutronix.de>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/09 09:05:49,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/09 09:05:59,
+	Serialize complete at 2013/04/09 09:05:59
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/9, Steven Rostedt <rostedt@goodmis.org>:
-> On Sat, 2013-04-06 at 14:45 +0900, Namjae Jeon wrote:
->> From: Namjae Jeon <namjae.jeon@samsung.com>
+On 04/08/2013 06:03 PM, Sebastian Andrzej Siewior wrote:
+> On 04/05/2013 09:21 AM, Lai Jiangshan wrote:
+>> Hi, Sebastian
+> 
+> Hi Lai,
+> 
+>> I don't want to expose __SRCU_STRUCT_INIT(),
+>> due to it has strong coupling with the percpu array.
 >>
->> Add tracepoints in f2fs filesystem for tracing the filesystem
->> operations for information/debugging purpose if needed. All the
->> tracepoints are clubbed with respect to functionalities.
->>
->> Change Log:
->> v3: Introduced TRACE_EVENT_CONDITION() macro for checking the
->> condition page->mapping inside the trace point function call as
->> per Steve's review comment for the patch
->>
->> v2: Added DECLARE_EVENT_CLASS() macro for combining the similar
->> type of trace function calls which has same type of arguments.
->>
->> v1: Introduced the tracepoint functions in f2fs filesystem.
->>
->> Namjae Jeon (7):
->>   f2fs: add tracepoints for sync & Inode operations
->>   f2fs: add tracepoints for truncate operation
->>   f2fs: add tracepoint for tracing the page i/o operations
->>   f2fs: add tracepoints for GC threads
->>   f2fs: add tracepoints to debug the block allocation & fallocate
->>   f2fs: add tracepoints for write page operations
->>   f2fs: add tracepoints to debug checkpoint request
->>
->
-Hi. Steve.
-> I have nothing more to add about the tracepoint processing. Looks good.
-> Now if the tracepoints give you sufficient data? That's up to the
-> maintainers to decide.
-Until now, yes. but I will continously try to update trace point more
-if finding additional  needed points after.
-Thanks for review and your ack.
+>> I hope other structure which uses SRCU should use init_srcu_struct().
+> 
+> I need a static initialization for this kind. Patch #3 shows one
+> example I have another one pending for crypto.
 
->
-> Acked-by: Steven Rostedt <rostedt@goodmis.org>
->
-> -- Steve
->
->
->
+If the percpu array can be defined in __SRCU_STRUCT_INIT(),
+I'm happy to expose it. but it is not currently.
+
+Why crypto can't use boot time initialization?
+
+> Do you have any idea how I could get it done without this? Do you want
+> to move/merge header files?
+
+if crypto has to use static initialization, I will find out some way
+or use your patch.
+
+Thanks,
+Lai
+
+> 
+>>
+>> Thanks,
+>> Lai
+> 
+> Sebastian
+> 
+
