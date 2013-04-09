@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937638Ab3DIK2G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 06:28:06 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:56328 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935614Ab3DIK2E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 06:28:04 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 4/5] dmaengine: ste_dma40: Do not configure channels during an channel allocation
-Date: Tue, 9 Apr 2013 12:28:01 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>
-References: <1365434591-21569-1-git-send-email-lee.jones@linaro.org> <1365434591-21569-4-git-send-email-lee.jones@linaro.org> <20130409071154.GH3084@gmail.com>
-In-Reply-To: <20130409071154.GH3084@gmail.com>
+	id S937648Ab3DIK2p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 06:28:45 -0400
+Received: from mga03.intel.com ([143.182.124.21]:36244 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935614Ab3DIK2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 06:28:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,438,1363158000"; 
+   d="scan'208";a="224976759"
+Date: Tue, 9 Apr 2013 12:28:41 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Jean-Nicolas Graux <jean-nicolas.graux@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 1/3] mfd: support stmpe1801 18 bits enhanced port expander
+Message-ID: <20130409102841.GV24058@zurbaran>
+References: <1365496521-16880-1-git-send-email-jean-nicolas.graux@stericsson.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304091228.01896.arnd@arndb.de>
-X-Provags-ID: V02:K0:0vaD0ZXMYrhDaSnK+UysdNtjm7I1ZTF8DbURNOu1Ej0
- KjB6ol+pH2TuRJ/17jymjPTewK3XPa2BYpG0NyHe0yvoMcwkal
- fOn5ar/8Rt4ybS6pI1EEcDtZGAuYLjOdB/tURrTmVJBTftSMJw
- Iwmw/Yv36bX8HosDo47PWubI/ONBUM6Hid2rtJ0V79kQKhYmfY
- 7lkSNwCblxJx5Xn13yQ/SenGTiSSYfyUOqUafv7Yx0ufCD+GFC
- GWO6L9Oz66ajb/bI9nidIEsWho/82rhQH1ZJGR1cIJUvR3B+/M
- KtJbNUlUnQmOO8rLmrDLw5j1x/G0pjdMbqfUHUW4nmCrdqaqJt
- 02EqkZLTOXCd/FxGC9cY=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365496521-16880-1-git-send-email-jean-nicolas.graux@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 April 2013, Lee Jones wrote:
-> According to the DMA documentation allocating a channel and configuring
-> it are two separate actions. By removing the configuration code from the
-> channel allocation path we lighten the burden on the information required to
-> successfully allocate a channel.
-> 
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <djbw@fb.com>
-> Cc: Per Forlin <per.forlin@stericsson.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Hi Jean-Nicolas,
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+On Tue, Apr 09, 2013 at 10:35:19AM +0200, Jean-Nicolas Graux wrote:
+> Provides support for 1801 variant of stmpe gpio port expanders.
+> This chip has 18 gpios configurable as GPI, GPO, keypad matrix,
+> special key or dedicated key function.
+> 
+> Note that special/dedicated key function is not supported yet.
+> 
+> Signed-off-by: Jean-Nicolas Graux <jean-nicolas.graux@stericsson.com>
+> ---
+>  drivers/mfd/Kconfig       |    1 +
+>  drivers/mfd/stmpe-i2c.c   |    1 +
+>  drivers/mfd/stmpe.c       |   97 ++++++++++++++++++++++++++++++++++++++++++++-
+>  drivers/mfd/stmpe.h       |   49 +++++++++++++++++++++++
+>  include/linux/mfd/stmpe.h |    3 ++
+>  5 files changed, 150 insertions(+), 1 deletion(-)
+Patch applied now, unless Lee or Linus object to it.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
