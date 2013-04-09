@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936799Ab3DIDEA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 23:04:00 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:47792 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934190Ab3DIDD7 (ORCPT
+	id S936817Ab3DIDFV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 23:05:21 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:46872 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934190Ab3DIDFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 23:03:59 -0400
+	Mon, 8 Apr 2013 23:05:19 -0400
+Date: Mon, 8 Apr 2013 23:05:11 -0400 (EDT)
+From: CAI Qian <caiqian@redhat.com>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Eric Whitney <enwlinux@gmail.com>, Dmitry Monakhov <dmonakhov@openvz.org>,
+        Christian Kujau <lists@nerdbynature.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>, Steve Best <sbest@redhat.com>,
+        linux-ext4@vger.kernel.org
+Message-ID: <683906006.1314495.1365476711254.JavaMail.root@redhat.com>
+In-Reply-To: <20130403144114.GB13668@thunk.org>
+References: <alpine.DEB.2.10.1304012249440.5874@trent.utfs.org> <alpine.DEB.2.10.1304021611020.13746@trent.utfs.org> <87li90q9mx.fsf@openvz.org> <87hajoq6s2.fsf@openvz.org> <20130403102204.GA15383@gmail.com> <20130403122058.GB7741@thunk.org> <20130403143406.GA3006@wallace> <20130403144114.GB13668@thunk.org>
+Subject: Re: [PATCH] ext4: fix a big-endian bug when an extent is zeroed out
 MIME-Version: 1.0
-In-Reply-To: <1363165944-7480-1-git-send-email-sachin.kamat@linaro.org>
-References: <1363165944-7480-1-git-send-email-sachin.kamat@linaro.org>
-Date: Tue, 9 Apr 2013 08:33:59 +0530
-Message-ID: <CAK9yfHzvJ+5voHuJLCNb55yB0x5R8LS=FqoCu9tn5bSXZ_BNsQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] irqchip: exynos-combiner: Fix checkpatch warnings
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, sachin.kamat@linaro.org, patches@linaro.org,
-        chanho61.park@samsung.com, kgene.kim@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.11]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF19 (Linux)/8.0.3_GA_5664)
+Thread-Topic: ext4: fix a big-endian bug when an extent is zeroed out
+Thread-Index: E9BfUowB6h1l8Qe/ldfC7BbFCvUSFA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kukjin,
+Hello Ted,
 
-On 13 March 2013 14:42, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> Fixes the following warnings:
-> WARNING: line over 80 characters
-> WARNING: Prefer pr_warn(... to pr_warning(...
->
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> ---
->  drivers/irqchip/exynos-combiner.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/irqchip/exynos-combiner.c b/drivers/irqchip/exynos-combiner.c
-> index e8501db..66b1bf5 100644
-> --- a/drivers/irqchip/exynos-combiner.c
-> +++ b/drivers/irqchip/exynos-combiner.c
-> @@ -229,13 +229,15 @@ void __init combiner_init(void __iomem *combiner_base,
->         irq_base = irq_alloc_descs(COMBINER_IRQ(0, 0), 1, nr_irq, 0);
->         if (IS_ERR_VALUE(irq_base)) {
->                 irq_base = COMBINER_IRQ(0, 0);
-> -               pr_warning("%s: irq desc alloc failed. Continuing with %d as linux irq base\n", __func__, irq_base);
-> +               pr_warn("%s: irq desc alloc failed. "
-> +                       "Continuing with %d as linux irq base\n",
-> +                       __func__, irq_base);
->         }
->
->         combiner_irq_domain = irq_domain_add_legacy(np, nr_irq, irq_base, 0,
->                                 &combiner_irq_domain_ops, &combiner_data);
->         if (WARN_ON(!combiner_irq_domain)) {
-> -               pr_warning("%s: irq domain init failed\n", __func__);
-> +               pr_warn("%s: irq domain init failed\n", __func__);
->                 return;
->         }
->
-> --
-> 1.7.4.1
->
-
-ChanHo said you would be picking this patch. Please check.
-
--- 
-With warm regards,
-Sachin
+----- Original Message -----
+> From: "Theodore Ts'o" <tytso@mit.edu>
+> To: "Eric Whitney" <enwlinux@gmail.com>
+> Cc: "Dmitry Monakhov" <dmonakhov@openvz.org>, "Christian Kujau" <lists@nerdbynature.de>, "CAI Qian"
+> <caiqian@redhat.com>, "LKML" <linux-kernel@vger.kernel.org>, "linux-s390" <linux-s390@vger.kernel.org>, "Steve Best"
+> <sbest@redhat.com>, linux-ext4@vger.kernel.org
+> Sent: Wednesday, April 3, 2013 10:41:14 PM
+> Subject: Re: [PATCH] ext4: fix a big-endian bug when an extent is zeroed out
+> 
+> On Wed, Apr 03, 2013 at 10:34:06AM -0400, Eric Whitney wrote:
+> > 
+> > The TI OMAP4 processor on my Pandaboard test system is little endian.
+> 
+> Ah... so basically, we need to find a test platform which allows us to
+> boot arbitrary kernels and allows us to have root access (which means
+> it's unlikely we'll be able to do this via remote access) and which
+> doesn't have exotic power requirements (which as far as I know rules
+> out pSeries and zSeries systems....)
+> 
+> It would also be nice if we could run tests in finite time, which
+> probably rules out the Hercules emulator (it runs at one-tenth zSeries
+> processor speeds, which doesn't win speed competitions by default, and
+> I suspect their storage speeds are even worse).
+> 
+> Anyone else have any suggestions?  Or anyone willing to help us run
+> ext4 regression tests on the ext4 dev tree, so we can find these
+> problems before we merge into mainline?
+I can help run xfstests for ext4 dev tree on x64, Power7, Z10 and
+KVM platforms with back-storage like SAN/multipath, iSCSI and FCoE.
+I plan to run this weekly and setup a wiki page to update the testing
+status by every Friday.
+CAI Qian
+> 
+> Thanks,
+> 
+> 						- Ted
+> 
