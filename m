@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936183Ab3DIUL2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 16:11:28 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:61087 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933036Ab3DIUL1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 16:11:27 -0400
-Message-ID: <516475EB.7030508@linaro.org>
-Date: Tue, 09 Apr 2013 13:11:23 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: David Rientjes <rientjes@google.com>, John Stultz <johnstul@us.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] fs, proc: truncate /proc/pid/comm writes to first TASK_COMM_LEN
- bytes
-References: <alpine.DEB.2.02.1304081854440.22640@chino.kir.corp.google.com> <20130409130306.4e24a5dd1773c99eaf356db8@linux-foundation.org>
-In-Reply-To: <20130409130306.4e24a5dd1773c99eaf356db8@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S964848Ab3DIUNg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 16:13:36 -0400
+Received: from 8bytes.org ([85.214.48.195]:36416 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935712Ab3DIUNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 16:13:33 -0400
+From: Joerg Roedel <joro@8bytes.org>
+To: iommu@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
+Subject: [PATCH 3/9] iommu/amd: Properly initialize irq-table lock
+Date: Tue,  9 Apr 2013 22:12:58 +0200
+Message-Id: <1365538384-12426-4-git-send-email-joro@8bytes.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1365538384-12426-1-git-send-email-joro@8bytes.org>
+References: <1365538384-12426-1-git-send-email-joro@8bytes.org>
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Apr  9 22:13:32 2013
+X-DSPAM-Confidence: 0.9994
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5164766c23672117617274
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2013 01:03 PM, Andrew Morton wrote:
->> cc: John Stultz <johnstul@us.ibm.com>
-> I don't know if that address still works.
+Fixes a lockdep warning.
 
-No, that email is no longer active. Thanks for noticing this.
+Cc: stable@vger.kernel.org # >= v3.7
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+---
+ drivers/iommu/amd_iommu.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-
-> From: David Rientjes <rientjes@google.com>
-> Subject: fs, proc: truncate /proc/pid/comm writes to first TASK_COMM_LEN bytes
->
-> Currently, a write to a procfs file will return the number of bytes
-> successfully written.  If the actual string is longer than this, the
-> remainder of the string will not be be written and userspace will complete
-> the operation by issuing additional write()s.
->
-> Hence
->
-> 	$ echo -n "abcdefghijklmnopqrs" > /proc/self/comm
->
-> results in
->
-> 	$ cat /proc/$$/comm
-> 	pqrs
->
-> since the final four bytes were written with a second write() since
-> TASK_COMM_LEN == 16.  This is obviously an undesired result and not
-> equivalent to prctl(PR_SET_NAME).  The implementation should not need to
-> know the definition of TASK_COMM_LEN.
-
-That's embarrassing, thanks for catching it!
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index 72fa570..33900b5 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -3927,6 +3927,9 @@ static struct irq_remap_table *get_irq_table(u16 devid, bool ioapic)
+ 	if (!table)
+ 		goto out;
+ 
++	/* Initialize table spin-lock */
++	spin_lock_init(&table->lock);
++
+ 	if (ioapic)
+ 		/* Keep the first 32 indexes free for IOAPIC interrupts */
+ 		table->min_index = 32;
+-- 
+1.7.9.5
 
 
-> This patch truncates the string to the first TASK_COMM_LEN bytes and
-> returns the bytes written as the length of the string written so the
-> second write() is suppressed.
->
-> 	$ cat /proc/$$/comm
-> 	abcdefghijklmno
->
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-
-Acked-by: John Stultz <john.stultz@linaro.org>
