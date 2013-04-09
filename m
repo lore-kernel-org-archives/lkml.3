@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935812Ab3DITfI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 15:35:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42652 "EHLO mx1.redhat.com"
+	id S935994Ab3DITfS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 15:35:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62576 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1765118Ab3DITfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 15:35:06 -0400
-Date: Tue, 9 Apr 2013 21:32:26 +0200
+	id S935868Ab3DITfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 15:35:11 -0400
+Date: Tue, 9 Apr 2013 21:32:32 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -14,9 +14,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/7] uprobes/tracing: Generalize struct
-	uprobe_trace_entry_head
-Message-ID: <20130409193226.GA27227@redhat.com>
+Subject: [PATCH v2 3/7] uprobes/tracing: Introduce is_ret_probe() and
+	uretprobe_dispatcher()
+Message-ID: <20130409193232.GA27237@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,190 +26,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct uprobe_trace_entry_head has a single member for reporting,
-"unsigned long ip". If we want to support uretprobes we need to
-create another struct which has "func" and "ret_ip" and duplicate
-a lot of functions, like trace_kprobe.c does.
-
-To avoid this copy-and-paste horror we turn ->ip into ->vaddr[]
-and add couple of trivial helpers to calculate sizeof/data. This
-uglifies the code a bit, but this allows us to avoid a lot more
-complications later, when we add the support for ret-probes.
+Create the new functions we need to support uretprobes, and change
+alloc_trace_uprobe() to initialize consumer.ret_handler if the new
+"is_ret" argument is true. Curently this argument is always false,
+so the new code is never called and is_ret_probe(tu) is false too.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Tested-by: Anton Arapov <anton@redhat.com>
 ---
- kernel/trace/trace.h        |    5 ---
- kernel/trace/trace_uprobe.c |   62 +++++++++++++++++++++++++------------------
- 2 files changed, 36 insertions(+), 31 deletions(-)
+ kernel/trace/trace_uprobe.c |   42 ++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 40 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 57d7e53..6ca57cf 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -103,11 +103,6 @@ struct kretprobe_trace_entry_head {
- 	unsigned long		ret_ip;
- };
- 
--struct uprobe_trace_entry_head {
--	struct trace_entry	ent;
--	unsigned long		ip;
--};
--
- /*
-  * trace_flag_type is an enumeration that holds different
-  * states when a trace occurs. These are:
 diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 43d258d..49b4003 100644
+index 0c0f0a7..72aa45e 100644
 --- a/kernel/trace/trace_uprobe.c
 +++ b/kernel/trace/trace_uprobe.c
-@@ -28,6 +28,18 @@
+@@ -76,6 +76,8 @@ static DEFINE_MUTEX(uprobe_lock);
+ static LIST_HEAD(uprobe_list);
  
- #define UPROBE_EVENT_SYSTEM	"uprobes"
+ static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs);
++static int uretprobe_dispatcher(struct uprobe_consumer *con,
++				unsigned long func, struct pt_regs *regs);
  
-+struct uprobe_trace_entry_head {
-+	struct trace_entry	ent;
-+	unsigned long		vaddr[];
-+};
-+
-+#define SIZEOF_TRACE_ENTRY(is_return)			\
-+	(sizeof(struct uprobe_trace_entry_head) +	\
-+	 sizeof(unsigned long) * (is_return ? 2 : 1))
-+
-+#define DATAOF_TRACE_ENTRY(entry, is_return)		\
-+	((void*)(entry) + SIZEOF_TRACE_ENTRY(is_return))
-+
- struct trace_uprobe_filter {
- 	rwlock_t		rwlock;
- 	int			nr_systemwide;
-@@ -491,20 +503,19 @@ static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
- 	struct uprobe_trace_entry_head *entry;
- 	struct ring_buffer_event *event;
- 	struct ring_buffer *buffer;
--	u8 *data;
-+	void *data;
- 	int size, i;
- 	struct ftrace_event_call *call = &tu->call;
- 
--	size = sizeof(*entry) + tu->size;
--
-+	size = SIZEOF_TRACE_ENTRY(false) + tu->size;
- 	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
- 						  size, 0, 0);
- 	if (!event)
- 		return 0;
- 
- 	entry = ring_buffer_event_data(event);
--	entry->ip = instruction_pointer(regs);
--	data = (u8 *)&entry[1];
-+	entry->vaddr[0] = instruction_pointer(regs);
-+	data = DATAOF_TRACE_ENTRY(entry, false);
- 	for (i = 0; i < tu->nr_args; i++)
- 		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
- 
-@@ -518,22 +529,22 @@ static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
- static enum print_line_t
- print_uprobe_event(struct trace_iterator *iter, int flags, struct trace_event *event)
+ static inline void init_trace_uprobe_filter(struct trace_uprobe_filter *filter)
  {
--	struct uprobe_trace_entry_head *field;
-+	struct uprobe_trace_entry_head *entry;
- 	struct trace_seq *s = &iter->seq;
+@@ -89,11 +91,16 @@ static inline bool uprobe_filter_is_empty(struct trace_uprobe_filter *filter)
+ 	return !filter->nr_systemwide && list_empty(&filter->perf_events);
+ }
+ 
++static inline bool is_ret_probe(struct trace_uprobe *tu)
++{
++	return tu->consumer.ret_handler != NULL;
++}
++
+ /*
+  * Allocate new trace_uprobe and initialize it (including uprobes).
+  */
+ static struct trace_uprobe *
+-alloc_trace_uprobe(const char *group, const char *event, int nargs)
++alloc_trace_uprobe(const char *group, const char *event, int nargs, bool is_ret)
+ {
  	struct trace_uprobe *tu;
- 	u8 *data;
- 	int i;
  
--	field = (struct uprobe_trace_entry_head *)iter->ent;
-+	entry = (struct uprobe_trace_entry_head *)iter->ent;
- 	tu = container_of(event, struct trace_uprobe, call.event);
+@@ -118,6 +125,8 @@ alloc_trace_uprobe(const char *group, const char *event, int nargs)
  
--	if (!trace_seq_printf(s, "%s: (0x%lx)", tu->call.name, field->ip))
-+	if (!trace_seq_printf(s, "%s: (0x%lx)", tu->call.name, entry->vaddr[0]))
- 		goto partial;
+ 	INIT_LIST_HEAD(&tu->list);
+ 	tu->consumer.handler = uprobe_dispatcher;
++	if (is_ret)
++		tu->consumer.ret_handler = uretprobe_dispatcher;
+ 	init_trace_uprobe_filter(&tu->filter);
+ 	return tu;
  
--	data = (u8 *)&field[1];
-+	data = DATAOF_TRACE_ENTRY(entry, false);
- 	for (i = 0; i < tu->nr_args; i++) {
- 		if (!tu->args[i].type->print(s, tu->args[i].name,
--					     data + tu->args[i].offset, field))
-+					     data + tu->args[i].offset, entry))
- 			goto partial;
+@@ -315,7 +324,7 @@ static int create_trace_uprobe(int argc, char **argv)
+ 		kfree(tail);
  	}
  
-@@ -585,16 +596,17 @@ static void probe_event_disable(struct trace_uprobe *tu, int flag)
- 
- static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
- {
--	int ret, i;
-+	int ret, i, size;
- 	struct uprobe_trace_entry_head field;
--	struct trace_uprobe *tu = (struct trace_uprobe *)event_call->data;
-+	struct trace_uprobe *tu = event_call->data;
- 
--	DEFINE_FIELD(unsigned long, ip, FIELD_STRING_IP, 0);
-+	DEFINE_FIELD(unsigned long, vaddr[0], FIELD_STRING_IP, 0);
-+	size = SIZEOF_TRACE_ENTRY(false);
- 	/* Set argument names as fields */
- 	for (i = 0; i < tu->nr_args; i++) {
- 		ret = trace_define_field(event_call, tu->args[i].type->fmttype,
- 					 tu->args[i].name,
--					 sizeof(field) + tu->args[i].offset,
-+					 size + tu->args[i].offset,
- 					 tu->args[i].type->size,
- 					 tu->args[i].type->is_signed,
- 					 FILTER_OTHER);
-@@ -748,33 +760,31 @@ static int uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
- 	struct ftrace_event_call *call = &tu->call;
- 	struct uprobe_trace_entry_head *entry;
- 	struct hlist_head *head;
--	u8 *data;
--	int size, __size, i;
--	int rctx;
-+	unsigned long ip;
-+	void *data;
-+	int size, rctx, i;
- 
- 	if (!uprobe_perf_filter(&tu->consumer, 0, current->mm))
- 		return UPROBE_HANDLER_REMOVE;
- 
--	__size = sizeof(*entry) + tu->size;
--	size = ALIGN(__size + sizeof(u32), sizeof(u64));
--	size -= sizeof(u32);
-+	size = SIZEOF_TRACE_ENTRY(false);
-+	size = ALIGN(size + tu->size + sizeof(u32), sizeof(u64)) - sizeof(u32);
- 	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE, "profile buffer not large enough"))
- 		return 0;
- 
- 	preempt_disable();
--
- 	entry = perf_trace_buf_prepare(size, call->event.type, regs, &rctx);
- 	if (!entry)
- 		goto out;
- 
--	entry->ip = instruction_pointer(regs);
--	data = (u8 *)&entry[1];
-+	ip = instruction_pointer(regs);
-+	entry->vaddr[0] = ip;
-+	data = DATAOF_TRACE_ENTRY(entry, false);
- 	for (i = 0; i < tu->nr_args; i++)
- 		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
- 
- 	head = this_cpu_ptr(call->perf_events);
--	perf_trace_buf_submit(entry, size, rctx, entry->ip, 1, regs, head, NULL);
--
-+	perf_trace_buf_submit(entry, size, rctx, ip, 1, regs, head, NULL);
-  out:
- 	preempt_enable();
+-	tu = alloc_trace_uprobe(group, event, argc);
++	tu = alloc_trace_uprobe(group, event, argc, false);
+ 	if (IS_ERR(tu)) {
+ 		pr_info("Failed to allocate trace_uprobe.(%d)\n", (int)PTR_ERR(tu));
+ 		ret = PTR_ERR(tu);
+@@ -530,6 +539,12 @@ static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
  	return 0;
-@@ -784,7 +794,7 @@ static int uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
- static
- int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type, void *data)
- {
--	struct trace_uprobe *tu = (struct trace_uprobe *)event->data;
-+	struct trace_uprobe *tu = event->data;
+ }
  
- 	switch (type) {
- 	case TRACE_REG_REGISTER:
++static void uretprobe_trace_func(struct trace_uprobe *tu, unsigned long func,
++				struct pt_regs *regs)
++{
++	uprobe_trace_print(tu, func, regs);
++}
++
+ /* Event entry printers */
+ static enum print_line_t
+ print_uprobe_event(struct trace_iterator *iter, int flags, struct trace_event *event)
+@@ -800,6 +815,12 @@ static int uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
+ 	uprobe_perf_print(tu, 0, regs);
+ 	return 0;
+ }
++
++static void uretprobe_perf_func(struct trace_uprobe *tu, unsigned long func,
++				struct pt_regs *regs)
++{
++	uprobe_perf_print(tu, func, regs);
++}
+ #endif	/* CONFIG_PERF_EVENTS */
+ 
+ static
+@@ -854,6 +875,23 @@ static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
+ 	return ret;
+ }
+ 
++static int uretprobe_dispatcher(struct uprobe_consumer *con,
++				unsigned long func, struct pt_regs *regs)
++{
++	struct trace_uprobe *tu;
++
++	tu = container_of(con, struct trace_uprobe, consumer);
++
++	if (tu->flags & TP_FLAG_TRACE)
++		uretprobe_trace_func(tu, func, regs);
++
++#ifdef CONFIG_PERF_EVENTS
++	if (tu->flags & TP_FLAG_PROFILE)
++		uretprobe_perf_func(tu, func, regs);
++#endif
++	return 0;
++}
++
+ static struct trace_event_functions uprobe_funcs = {
+ 	.trace		= print_uprobe_event
+ };
 -- 
 1.5.5.1
 
