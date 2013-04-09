@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935832Ab3DIS7p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 14:59:45 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63116 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935472Ab3DIS7n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 14:59:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 3/8] dmaengine: ste_dma40: Actually write the runtime configuration to registers
-Date: Tue, 9 Apr 2013 20:59:37 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com
-References: <1365532783-27425-1-git-send-email-lee.jones@linaro.org> <1365532783-27425-3-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1365532783-27425-3-git-send-email-lee.jones@linaro.org>
+	id S935513Ab3DITCN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 15:02:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51106 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759834Ab3DITCL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 15:02:11 -0400
+Message-ID: <51646503.2010200@zytor.com>
+Date: Tue, 09 Apr 2013 11:59:15 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Eric Northup <digitaleric@google.com>
+CC: Kees Cook <keescook@chromium.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Alex Shi <alex.shi@intel.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Subject: Re: [kernel-hardening] Re: [PATCH] x86: make IDT read-only
+References: <20130408224328.GA17641@www.outflux.net> <51634935.9010905@zytor.com> <alpine.LFD.2.02.1304091122490.21884@ionos> <CAGXu5jKo=11RrsvctcZjP6dusAj659O_GsaA2J2qFq-6mOeRwQ@mail.gmail.com> <51645D6F.7070705@zytor.com> <CAGXu5jKkHKw8efdPOmt-Zi99m+uMKVGKpc_DC72_ztwxnRbRRQ@mail.gmail.com> <51646054.3090509@zytor.com> <CAGXu5jJNG4o+_-kk=A2AfSRwyQE0pgaQh7YpSjnD_fB-s7U+wA@mail.gmail.com> <CAG7+5M3==rndLLak9cZBKKdgQMmJMpSP_jpQd8HOVGp6LhUAgw@mail.gmail.com>
+In-Reply-To: <CAG7+5M3==rndLLak9cZBKKdgQMmJMpSP_jpQd8HOVGp6LhUAgw@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304092059.37739.arnd@arndb.de>
-X-Provags-ID: V02:K0:t4K2mBRkaiXkq9S5tfYCwtQ7J6aCxZkYTEULyk4qB4M
- sg57iaOKP/Wyo6+fosdvXqnDm3C0LtcAI8NAw2iVT2C4hHnMoA
- k5IwPVD/EZ5m2GHQnGapKa2yAVf1z9YU9JyVBB9sV5kxfO1zam
- QrDjAPl4WNi1YvrtvvaESX9cX8lcpo91TU9zN2LUUCHZQjpWOs
- cS5ewQ3dkPCYIfaaQw8aKBSLBqwdB/czoW4b+stQN87Ht7Sy+Z
- Yq52h3Tz6mvu+66K/R99ryh7i8KOPRzhWOM827puhJmpDVD1iA
- Xkc66Ou7VA+VRl9ZUh1EtFW2BTIBq0yGB7ogutn6LFUoZG6M/n
- bMgwG9j7X2xjl88kqnJI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 April 2013, Lee Jones wrote:
-> Someone has spent a fair amount of effort writing a runtime configuration
-> changing algorithm for DMA clients. However, the config appears to never
-> actually make it to hardware. In order for the configuration to take hold
-> we need to issue a d40_config_write(), as this is the routine which writes
-> it into the hardware's registers.
+On 04/09/2013 11:54 AM, Eric Northup wrote:
 > 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> The GDT is a problem if the address returned by 'sgdt' is
+> kernel-writable - it doesn't necessarily reveal the random offset, but
+> I'm pretty sure that writing to the GDT could cause privilege
+> escalation.
+> 
 
-So this makes the runtime_addr selection work I suppose, but the
-runtime_direction still isn't used anywhere, correct?
+That is a pretty safe assumption...
 
-	Arnd
+	-hpa
+
+
