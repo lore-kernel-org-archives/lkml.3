@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935772Ab3DIJEt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 05:04:49 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:62148 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934875Ab3DIJEs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 05:04:48 -0400
-Message-ID: <5163D9B2.9060603@prisktech.co.nz>
-Date: Tue, 09 Apr 2013 21:04:50 +1200
-From: Tony Prisk <linux@prisktech.co.nz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S935844Ab3DIJFI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 05:05:08 -0400
+Received: from mga03.intel.com ([143.182.124.21]:4482 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935462Ab3DIJFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 05:05:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,437,1363158000"; 
+   d="scan'208";a="283563957"
+Date: Tue, 9 Apr 2013 11:05:01 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Fabio Baltieri <fabio.baltieri@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH] mfd: ab8500-core: Add of_compatilbe property for
+ ab8500-usb
+Message-ID: <20130409090501.GF23447@zurbaran>
+References: <1365497841-4640-1-git-send-email-fabio.baltieri@linaro.org>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sachin Kamat <sachin.kamat@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the gpio-lw
- tree
-References: <20130409174747.873a9c9cad1cd6a4dbe4014f@canb.auug.org.au>
-In-Reply-To: <20130409174747.873a9c9cad1cd6a4dbe4014f@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365497841-4640-1-git-send-email-fabio.baltieri@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/13 19:47, Stephen Rothwell wrote:
-> Hi all,
->
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> drivers/gpio/gpio-vt8500.c between commit 808c513ee64b ("gpio/vt8500:
-> Convert to devm_ioremap_resource()") from the gpio-lw tree and commit
-> dc1010860b03 ("gpio: vt8500: Remove arch-vt8500 gpio driver") from the
-> arm-soc tree.
->
-> The latter removed the file, so I did that and can carry the fix as
-> necessary (no action is required).
->
-That's the correct solution
+Hi Fabio,
 
-Regards
-Tony P
+On Tue, Apr 09, 2013 at 10:57:21AM +0200, Fabio Baltieri wrote:
+> Add of_comptabile string to the ab8500-usb cell to allow the driver to
+> grab properties from device-tree when available.
+> 
+> Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+> ---
+> 
+> Hi Samuel,
+> 
+> this oneline allows the driver to grab regulators and other attributes
+> from device tree.
+> 
+> This is actually generated on top of -next, so it should apply cleanly on
+> your current mfd-next tree.  If it doesn't, I'll rebase on your updated
+> tree when available.
+It applies cleanly, I just pushed it now.
 
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
