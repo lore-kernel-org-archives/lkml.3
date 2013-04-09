@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936557Ab3DIVtP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 17:49:15 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:52814 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936539Ab3DIVtK (ORCPT
+	id S936565Ab3DIVtd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 17:49:33 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:54165 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936517Ab3DIVtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 17:49:10 -0400
+	Tue, 9 Apr 2013 17:49:03 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v2 03/15] mm: Introduce and initialize zone memory regions
+Subject: [RFC PATCH v2 01/15] mm: Introduce memory regions data-structure to
+ capture region boundaries within nodes
 To: akpm@linux-foundation.org, mgorman@suse.de, matthew.garrett@nebula.com,
         dave@sr71.net, rientjes@google.com, riel@redhat.com,
         arjan@linux.intel.com, srinivas.pandruvada@linux.intel.com,
@@ -20,176 +21,95 @@ Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com, amit.kachhap@linaro.org,
         santosh.shilimkar@ti.com, srivatsa.bhat@linux.vnet.ibm.com,
         linux-pm@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Date: Wed, 10 Apr 2013 03:16:23 +0530
-Message-ID: <20130409214620.4500.24164.stgit@srivatsabhat.in.ibm.com>
+Date: Wed, 10 Apr 2013 03:15:45 +0530
+Message-ID: <20130409214543.4500.19495.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130409214443.4500.44168.stgit@srivatsabhat.in.ibm.com>
 References: <20130409214443.4500.44168.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040921-6102-0000-0000-000003497D1A
+x-cbid: 13040921-9264-0000-0000-0000037C3E61
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory region boundaries don't necessarily fit on zone boundaries. So we need
-to maintain a zone-level mapping of the absolute memory region boundaries.
+The memory within a node can be divided into regions of memory that can be
+independently power-managed. That is, chunks of memory can be transitioned
+(manually or automatically) to low-power states based on the frequency of
+references to that region. For example, if a memory chunk is not referenced
+for a given threshold amount of time, the hardware (memory controller) can
+decide to put that piece of memory into a content-preserving low-power state.
+And of course, on the next reference to that chunk of memory, it will be
+transitioned back to full-power for read/write operations.
 
-"Node Memory Regions" will be used to capture the absolute region boundaries.
-Add "Zone Memory Regions" to track the subsets of the absolute memory regions
-that fall within the zone boundaries.
+So, the Linux MM can take advantage of this feature by managing the available
+memory with an eye towards power-savings - ie., by keeping the memory
+allocations/references consolidated to a minimum no. of such power-manageable
+memory regions. In order to do so, the first step is to teach the MM about
+the boundaries of these regions - and to capture that info, we introduce a new
+data-structure called "Memory Regions".
 
-Eg:
+[Also, the concept of memory regions could potentially be extended to work
+with different classes of memory like PCM (Phase Change Memory) etc and
+hence, it is not limited to just power management alone].
 
-	|<----------------------Node---------------------->|
-	 __________________________________________________
-	|      Node mem reg 0 	 |      Node mem reg 1     |  (Absolute region
-	|________________________|_________________________|   boundaries)
+We already sub-divide a node's memory into zones, based on some well-known
+constraints. So the question is, where do we fit in memory regions in this
+hierarchy. Instead of artificially trying to fit it into the hierarchy one
+way or the other, we choose to simply capture the region boundaries in a
+parallel data-structure, since most likely the region boundaries won't
+naturally fit inside the zone boundaries or vice-versa.
 
-	 __________________________________________________
-	|    ZONE_DMA   |	    ZONE_NORMAL		   |
-	|               |                                  |
-	|<--- ZMR 0 --->|<-ZMR0->|<-------- ZMR 1 -------->|
-	|_______________|________|_________________________|
+But of course, memory regions are sub-divisions *within* a node, so it makes
+sense to keep the data-structures in the node's struct pglist_data. (Thus
+this placement makes memory regions parallel to zones in that node).
 
-
-In the above figure,
-
-ZONE_DMA will have only 1 zone memory region (say, Zone mem reg 0) which is a
-subset of Node mem reg 0 (ie., the portion of Node mem reg 0 that intersects
-with ZONE_DMA).
-
-ZONE_NORMAL will have 2 zone memory regions (say, Zone mem reg 0 and
-Zone mem reg 1) which are subsets of Node mem reg 0 and Node mem reg 1
-respectively, that intersect with ZONE_NORMAL's range.
-
-Most of the MM algorithms (like page allocation etc) work within a zone,
-hence such a zone-level mapping of the absolute region boundaries will be
-very useful in influencing the MM decisions at those places.
+Once we capture the region boundaries in the memory regions data-structure,
+we can influence MM decisions at various places, such as page allocation,
+reclamation etc, in order to perform power-aware memory management.
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- include/linux/mmzone.h |   11 +++++++++
- mm/page_alloc.c        |   62 +++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 72 insertions(+), 1 deletion(-)
+ include/linux/mmzone.h |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
 diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index e6df08f..46a6b63 100644
+index c74092e..e6df08f 100644
 --- a/include/linux/mmzone.h
 +++ b/include/linux/mmzone.h
-@@ -36,6 +36,7 @@
+@@ -35,6 +35,8 @@
+  */
  #define PAGE_ALLOC_COSTLY_ORDER 3
  
- #define MAX_NR_NODE_REGIONS	256
-+#define MAX_NR_ZONE_REGIONS	MAX_NR_NODE_REGIONS
- 
++#define MAX_NR_NODE_REGIONS	256
++
  enum {
  	MIGRATE_UNMOVABLE,
-@@ -312,6 +313,13 @@ enum zone_type {
+ 	MIGRATE_RECLAIMABLE,
+@@ -685,6 +687,14 @@ struct node_active_region {
+ extern struct page *mem_map;
+ #endif
  
- #ifndef __GENERATING_BOUNDS_H
- 
-+struct zone_mem_region {
++struct node_mem_region {
 +	unsigned long start_pfn;
 +	unsigned long end_pfn;
 +	unsigned long present_pages;
 +	unsigned long spanned_pages;
++	struct pglist_data *pgdat;
 +};
 +
- struct zone {
- 	/* Fields commonly accessed by the page allocator */
- 
-@@ -369,6 +377,9 @@ struct zone {
- #endif
- 	struct free_area	free_area[MAX_ORDER];
- 
-+	struct zone_mem_region	zone_regions[MAX_NR_ZONE_REGIONS];
-+	int 			nr_zone_regions;
-+
- #ifndef CONFIG_SPARSEMEM
- 	/*
- 	 * Flags for a pageblock_nr_pages block. See pageblock-flags.h.
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 9760e89..d4abba6 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4708,6 +4708,66 @@ static void __meminit init_node_memory_regions(struct pglist_data *pgdat)
- 	pgdat->nr_node_regions = idx;
- }
- 
-+static void __meminit init_zone_memory_regions(struct pglist_data *pgdat)
-+{
-+	unsigned long start_pfn, end_pfn, absent;
-+	unsigned long z_start_pfn, z_end_pfn;
-+	int i, j, idx, nid = pgdat->node_id;
-+	struct node_mem_region *node_region;
-+	struct zone_mem_region *zone_region;
-+	struct zone *z;
-+
-+	for (i = 0, j = 0; i < pgdat->nr_zones; i++) {
-+		z = &pgdat->node_zones[i];
-+		z_start_pfn = z->zone_start_pfn;
-+		z_end_pfn = z->zone_start_pfn + z->spanned_pages;
-+		idx = 0;
-+
-+		for ( ; j < pgdat->nr_node_regions; j++) {
-+			node_region = &pgdat->node_regions[j];
-+
-+			/*
-+			 * Skip node memory regions that don't intersect with
-+			 * this zone.
-+			 */
-+			if (node_region->end_pfn <= z_start_pfn)
-+				continue; /* Move to next higher node region */
-+
-+			if (node_region->start_pfn >= z_end_pfn)
-+				break; /* Move to next higher zone */
-+
-+			start_pfn = max(z_start_pfn, node_region->start_pfn);
-+			end_pfn = min(z_end_pfn, node_region->end_pfn);
-+
-+			zone_region = &z->zone_regions[idx];
-+			zone_region->start_pfn = start_pfn;
-+			zone_region->end_pfn = end_pfn;
-+			zone_region->spanned_pages = end_pfn - start_pfn;
-+
-+			absent = __absent_pages_in_range(nid, start_pfn,
-+						         end_pfn);
-+			zone_region->present_pages =
-+					zone_region->spanned_pages - absent;
-+
-+			idx++;
-+		}
-+
-+		z->nr_zone_regions = idx;
-+
-+		/*
-+		 * Revisit the last visited node memory region, in case it
-+		 * spans multiple zones.
-+		 */
-+		j--;
-+	}
-+}
-+
-+static void __meminit init_memory_regions(struct pglist_data *pgdat)
-+{
-+	init_node_memory_regions(pgdat);
-+	init_zone_memory_regions(pgdat);
-+}
-+
- void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
- 		unsigned long node_start_pfn, unsigned long *zholes_size)
- {
-@@ -4729,7 +4789,7 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
- #endif
- 
- 	free_area_init_core(pgdat, zones_size, zholes_size);
--	init_node_memory_regions(pgdat);
-+	init_memory_regions(pgdat);
- }
- 
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ /*
+  * The pg_data_t structure is used in machines with CONFIG_DISCONTIGMEM
+  * (mostly NUMA machines?) to denote a higher-level memory zone than the
+@@ -701,6 +711,8 @@ typedef struct pglist_data {
+ 	struct zone node_zones[MAX_NR_ZONES];
+ 	struct zonelist node_zonelists[MAX_ZONELISTS];
+ 	int nr_zones;
++	struct node_mem_region node_regions[MAX_NR_NODE_REGIONS];
++	int nr_node_regions;
+ #ifdef CONFIG_FLAT_NODE_MEM_MAP	/* means !SPARSEMEM */
+ 	struct page *node_mem_map;
+ #ifdef CONFIG_MEMCG
 
