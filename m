@@ -1,77 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936412Ab3DIUio (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 16:38:44 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:47633 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936180Ab3DIUim convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 16:38:42 -0400
+	id S936338Ab3DIUkQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 16:40:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31925 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S936059Ab3DIUkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 16:40:15 -0400
+From: Steve Grubb <sgrubb@redhat.com>
+To: linux-audit@redhat.com
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] [BZ905179] audit: omit check for uid and gid validity in audit rules and data
+Date: Tue, 09 Apr 2013 16:39:46 -0400
+Message-ID: <1790080.52kjZ1ec4G@x2>
+Organization: Red Hat
+User-Agent: KMail/4.10.2 (Linux/3.8.5-201.fc18.x86_64; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <87ip3w59gr.fsf@xmission.com>
+References: <1363807097-13073-1-git-send-email-rgb@redhat.com> <20130408164622.284f48c65341396aa8dbd220@linux-foundation.org> <87ip3w59gr.fsf@xmission.com>
 MIME-Version: 1.0
-Message-ID: <3cc0fdea-7064-4b95-bbee-30c6448f0487@default>
-Date: Tue, 9 Apr 2013 13:37:47 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Shaohua Li <shli@kernel.org>, Bob Liu <bob.liu@oracle.com>,
-        Shuah Khan <shuah@gonehiking.org>
-Subject: RE: zsmalloc defrag (Was: [PATCH] mm: remove compressed copy from
- zram in-memory)
-References: <1365400862-9041-1-git-send-email-minchan@kernel.org>
- <f3c8ef05-a880-47db-86dd-156038fc7d0f@default>
- <20130409012719.GB3467@blaptop> <20130409013606.GC3467@blaptop>
-In-Reply-To: <20130409013606.GC3467@blaptop>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6668.5000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Minchan Kim [mailto:minchan@kernel.org]
-> Subject: Re: zsmalloc defrag (Was: [PATCH] mm: remove compressed copy from zram in-memory)
+On Tuesday, April 09, 2013 02:39:32 AM Eric W. Biederman wrote:
+> Andrew Morton <akpm@linux-foundation.org> writes:
+> > On Wed, 20 Mar 2013 15:18:17 -0400 Richard Guy Briggs <rgb@redhat.com> 
+wrote:
+> >> audit rule additions containing "-F auid!=4294967295" were failing with
+> >> EINVAL.
+> >> 
+> >> UID_INVALID (and GID_INVALID) is actually a valid uid (gid) for setting
+> >> and
+> >> testing against audit rules.  Remove the check for invalid uid and gid
+> >> when
+> >> parsing rules and data for logging.
 > 
-> On Tue, Apr 09, 2013 at 10:27:19AM +0900, Minchan Kim wrote:
-> > Hi Dan,
-> >
-> > On Mon, Apr 08, 2013 at 09:32:38AM -0700, Dan Magenheimer wrote:
-> > > > From: Minchan Kim [mailto:minchan@kernel.org]
-> > > > Sent: Monday, April 08, 2013 12:01 AM
-> > > > Subject: [PATCH] mm: remove compressed copy from zram in-memory
-> > >
-> > > (patch removed)
-> > >
-> > > > Fragment ratio is almost same but memory consumption and compile time
-> > > > is better. I am working to add defragment function of zsmalloc.
-> > >
-> > > Hi Minchan --
-> > >
-> > > I would be very interested in your design thoughts on
-> > > how you plan to add defragmentation for zsmalloc.  In
-> >
-> > What I can say now about is only just a word "Compaction".
-> > As you know, zsmalloc has a transparent handle so we can do whatever
-> > under user. Of course, there is a tradeoff between performance
-> > and memory efficiency. I'm biased to latter for embedded usecase.
-> >
-> > And I might post it because as you know well, zsmalloc
-> 
-> Incomplete sentense,
-> 
-> I might not post it until promoting zsmalloc because as you know well,
-> zsmalloc/zram's all new stuffs are blocked into staging tree.
-> Even if we could add it into staging, as you know well, staging is where
-> every mm guys ignore so we end up needing another round to promote it. sigh.
-> 
-> I hope it gets better after LSF/MM.
+> In general testing against invalid uid appears completely bogus, and
+> should always return true.  As it is and essentially always has been
+> incorrect to explicitly set any kernel uid to that value.
 
-If zsmalloc is moving in the direction of supporting only zram,
-why should it be promoted into mm, or even lib?  Why not promote
-zram into drivers and put zsmalloc.c in the same directory?
+This is the unset value that daemons would have. When a real person logs in, 
+pam_loginuid writes the loginuid that was authenticated to. So, any time the 
+value is -1, we are dealing with a daemon or system process. When it comes to 
+auditing, people usually make an exception so that daemon and normal system 
+activity is not recorded. So, you would make a rule something like
+
+-a always,exit -S open -F exit=-EPERM -F auid>=500 -F auid!=-1
+
+
+> The only case where this appears to make the least little bit of sense
+> is if the goal of the test is to test to see if an audit logloginuid
+> has been set at all.  In which case depending on a test against
+> 4294967295 is bogus because you are depending on an intimate internal
+> kernel implementation detail.
+
+Its been this way and documented since at least 9 years ago. The audit system 
+has been broken for all intents and purposes since the 3.7 kernel was 
+released.
+
+Thanks,
+-Steve
+
+
+> Certainly removing the gid_valid tests is completely gratitious in this
+> case.
+> 
+> >> Revert part of ca57ec0f00c3f139c41bf6b0a5b9bcc95bbb2ad7 (2012-09-11) to
+> >> fix
+> >> this.
+> > 
+> > Eric, can you please take a look?
+> > 
+> >> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> >> ---
+> >> 
+> >>  kernel/auditfilter.c |   12 ------------
+> >>  1 files changed, 0 insertions(+), 12 deletions(-)
+> >> 
+> >> diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+> >> index f9fc54b..457ee39 100644
+> >> --- a/kernel/auditfilter.c
+> >> +++ b/kernel/auditfilter.c
+> >> @@ -360,10 +360,7 @@ static struct audit_entry
+> >> *audit_rule_to_entry(struct audit_rule *rule)>> 
+> >>  			/* bit ops not implemented for uid comparisons */
+> >>  			if (f->op == Audit_bitmask || f->op == Audit_bittest)
+> >>  			
+> >>  				goto exit_free;
+> >> 
+> >> -
+> >> 
+> >>  			f->uid = make_kuid(current_user_ns(), f->val);
+> >> 
+> >> -			if (!uid_valid(f->uid))
+> >> -				goto exit_free;
+> > 
+> > It concerns me that map_id_down() can return -1 on error and that this
+> > change causes the kernel to no longer notice that error?
+> 
+> Me too.  Where we only communicate with audit in the initial user
+> namespace right now it isn't absolutely broken but it certainly isn't a
+> habit I want to get into.
+> 
+> How about something like my untested patch below that add an explicit
+> operation to test if loginuid has been set?
+> 
+> Eric
+> 
+> From: "Eric W. Biederman" <ebiederm@xmission.com>
+> Date: Tue, 9 Apr 2013 02:22:10 -0700
+> Subject: [PATCH] audit: Make testing for a valid loginuid explicit.
+> 
+> audit rule additions containing "-F auid!=4294967295" were failing
+> with EINVAL.
+> 
+> Apparently some userland audit rule sets want to know if loginuid uid
+> has been set and are using a test for auid != 4294967295 to determine
+> that.
+> 
+> In practice that is a horrible way to ask if a value has been set,
+> because it relies on subtle implementation details and will break
+> every time the uid implementation in the kernel changes.
+> 
+> So add a clean way to test if the audit loginuid has been set, and
+> silently convert the old idiom to the cleaner and more comprehensible
+> new idiom.
+> 
+> Reported-By: Richard Guy Briggs <rgb@redhat.com> wrote:
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> ---
+>  include/linux/audit.h      |    5 +++++
+>  include/uapi/linux/audit.h |    1 +
+>  kernel/auditfilter.c       |   29 +++++++++++++++++++++++++++++
+>  kernel/auditsc.c           |    5 ++++-
+>  4 files changed, 39 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/audit.h b/include/linux/audit.h
+> index a9fefe2..8a1ddde 100644
+> --- a/include/linux/audit.h
+> +++ b/include/linux/audit.h
+> @@ -390,6 +390,11 @@ static inline void audit_ptrace(struct task_struct *t)
+>  #define audit_signals 0
+>  #endif /* CONFIG_AUDITSYSCALL */
+> 
+> +static inline bool audit_loginuid_set(struct task_struct *tsk)
+> +{
+> +	return uid_valid(audit_get_loginuid(tsk));
+> +}
+> +
+>  #ifdef CONFIG_AUDIT
+>  /* These are defined in audit.c */
+>  				/* Public API */
+> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+> index 9f096f1..9554a19 100644
+> --- a/include/uapi/linux/audit.h
+> +++ b/include/uapi/linux/audit.h
+> @@ -246,6 +246,7 @@
+>  #define AUDIT_OBJ_TYPE	21
+>  #define AUDIT_OBJ_LEV_LOW	22
+>  #define AUDIT_OBJ_LEV_HIGH	23
+> +#define AUDIT_LOGINUID_SET	24
+> 
+>  				/* These are ONLY useful when checking
+>  				 * at syscall exit time (AUDIT_AT_EXIT). */
+> diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+> index 540f986..6381d17 100644
+> --- a/kernel/auditfilter.c
+> +++ b/kernel/auditfilter.c
+> @@ -349,6 +349,12 @@ static struct audit_entry *audit_rule_to_entry(struct
+> audit_rule *rule) if (f->op == Audit_bad)
+>  			goto exit_free;
+> 
+> +		/* Support legacy tests for a valid loginuid */
+> +		if ((f->type == AUDIT_LOGINUID) && (f->val == 4294967295)) {
+> +			f->type = AUDIT_LOGINUID_SET;
+> +			f->val = 0;
+> +		}
+> +
+>  		switch(f->type) {
+>  		default:
+>  			goto exit_free;
+> @@ -377,6 +383,12 @@ static struct audit_entry *audit_rule_to_entry(struct
+> audit_rule *rule) if (!gid_valid(f->gid))
+>  				goto exit_free;
+>  			break;
+> +		case AUDIT_LOGINUID_SET:
+> +			if ((f->op != Audit_not_equal) && (f->op != Audit_equal))
+> +				goto exit_free;
+> +			if ((f->val != 0) && (f->val != 1))
+> +				goto exit_free;
+> +			break;
+>  		case AUDIT_PID:
+>  		case AUDIT_PERS:
+>  		case AUDIT_MSGTYPE:
+> @@ -459,6 +471,13 @@ static struct audit_entry *audit_data_to_entry(struct
+> audit_rule_data *data, f->gid = INVALID_GID;
+>  		f->lsm_str = NULL;
+>  		f->lsm_rule = NULL;
+> +
+> +		/* Support legacy tests for a valid loginuid */
+> +		if ((f->type == AUDIT_LOGINUID) && (f->val == 4294967295)) {
+> +			f->type = AUDIT_LOGINUID_SET;
+> +			f->val = 0;
+> +		}
+> +
+>  		switch(f->type) {
+>  		case AUDIT_UID:
+>  		case AUDIT_EUID:
+> @@ -487,6 +506,12 @@ static struct audit_entry *audit_data_to_entry(struct
+> audit_rule_data *data, if (!gid_valid(f->gid))
+>  				goto exit_free;
+>  			break;
+> +		case AUDIT_LOGINUID_SET:
+> +			if ((f->op != Audit_not_equal) && (f->op != Audit_equal))
+> +				goto exit_free;
+> +			if ((f->val != 0) && (f->val != 1))
+> +				goto exit_free;
+> +			break;
+>  		case AUDIT_PID:
+>  		case AUDIT_PERS:
+>  		case AUDIT_MSGTYPE:
+> @@ -1380,6 +1405,10 @@ static int audit_filter_user_rules(struct audit_krule
+> *rule, result = audit_uid_comparator(audit_get_loginuid(current),
+>  						  f->op, f->uid);
+>  			break;
+> +		case AUDIT_LOGINUID_SET:
+> +			result = audit_comparator(audit_loginuid_set(current),
+> +						  f->op, f->val);
+> +			break;
+>  		case AUDIT_SUBJ_USER:
+>  		case AUDIT_SUBJ_ROLE:
+>  		case AUDIT_SUBJ_TYPE:
+> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+> index 3a11d34..27d0a50 100644
+> --- a/kernel/auditsc.c
+> +++ b/kernel/auditsc.c
+> @@ -750,6 +750,9 @@ static int audit_filter_rules(struct task_struct *tsk,
+>  			if (ctx)
+>  				result = audit_uid_comparator(tsk->loginuid, f->op, f-
+>uid);
+>  			break;
+> +		case AUDIT_LOGINUID_SET:
+> +			result = audit_comparator(audit_loginuid_set(tsk), f->op, f-
+>val);
+> +			break;
+>  		case AUDIT_SUBJ_USER:
+>  		case AUDIT_SUBJ_ROLE:
+>  		case AUDIT_SUBJ_TYPE:
+> @@ -2317,7 +2320,7 @@ int audit_set_loginuid(kuid_t loginuid)
+>  	unsigned int sessionid;
+> 
+>  #ifdef CONFIG_AUDIT_LOGINUID_IMMUTABLE
+> -	if (uid_valid(task->loginuid))
+> +	if (audit_loginuid_set(task))
+>  		return -EPERM;
+>  #else /* CONFIG_AUDIT_LOGINUID_IMMUTABLE */
+>  	if (!capable(CAP_AUDIT_CONTROL))
