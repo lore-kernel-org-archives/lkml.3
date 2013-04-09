@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936340Ab3DIUiB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 16:38:01 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:64816 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935899Ab3DIUh7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 16:37:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 3/8] dmaengine: ste_dma40: Actually write the runtime configuration to registers
-Date: Tue, 9 Apr 2013 22:37:49 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com
-References: <1365532783-27425-1-git-send-email-lee.jones@linaro.org> <1365532783-27425-3-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1365532783-27425-3-git-send-email-lee.jones@linaro.org>
+	id S936370Ab3DIUiM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 16:38:12 -0400
+Received: from www.sr71.net ([198.145.64.142]:55999 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935899Ab3DIUiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 16:38:08 -0400
+Message-ID: <51647C30.3050109@sr71.net>
+Date: Tue, 09 Apr 2013 13:38:08 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Borislav Petkov <bp@alien8.de>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        dhillf@gmail.com, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] kthread: Prevent unpark race which puts threads on the
+ wrong cpu
+References: <515F457E.5050505@sr71.net> <515FCAC6.8090806@linux.vnet.ibm.com> <alpine.LFD.2.02.1304061019000.21884@ionos> <alpine.LFD.2.02.1304071119100.21884@ionos> <20130407095025.GA31307@pd.tnic> <alpine.LFD.2.02.1304081122040.21884@ionos> <20130408115553.GA4395@pd.tnic> <alpine.LFD.2.02.1304081415570.21884@ionos> <alpine.LFD.2.02.1304091635430.21884@ionos> <516439DF.3050901@sr71.net> <alpine.LFD.2.02.1304092036431.21884@ionos> <alpine.LFD.2.02.1304092126150.21884@ionos>
+In-Reply-To: <alpine.LFD.2.02.1304092126150.21884@ionos>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304092237.50057.arnd@arndb.de>
-X-Provags-ID: V02:K0:OU5Udga6eMHkFgBdoA2DOM5LCzaTntqqkT6SSpKdp4i
- PEM/dW4f3AReGPLgfJZnxadu5aNecMIceP0weu4V2GYsl3fQuR
- 142Uh/ZUXf+QUrp6jI+8PDmiCGPo1WiisCx1fT8Zszd+gTt9An
- 1gYnW0nzzyayhZ2J6rx/VtiN/AmX7yqsYEuhysr5DSBZRizVn7
- D6BReuw/fPvkrnEjuTn9majkZdjl0QZdE9949msnd53Gt+BDW6
- Fb0VAAHmicPgtjuRgJx0O/2YfsjLPfNJRISNiT3FJTwOcE6rJf
- vPQEM2nPRQsdzyEleheaq1pv1IIO2cbn/J5hPGaMRvLMfpw3lZ
- 0vWIGPceK5FPppuf35Uw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 April 2013, Lee Jones wrote:
-> Someone has spent a fair amount of effort writing a runtime configuration
-> changing algorithm for DMA clients. However, the config appears to never
-> actually make it to hardware. In order for the configuration to take hold
-> we need to issue a d40_config_write(), as this is the routine which writes
-> it into the hardware's registers.
+On 04/09/2013 12:30 PM, Thomas Gleixner wrote:
+> On Tue, 9 Apr 2013, Thomas Gleixner wrote:
+> Thought more about it and found, that the stupid binding only works
+> when the task is really descheduled. So there is a small window left,
+> which could lead to this. Revised patch below.
 > 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Anyway a trace for that issue would be appreciated nevertheless.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Here you go:
+
+	http://sr71.net/~dave/linux/bigbox.1365539189.txt.gz
+
+It oopsed in exit.c:
+
+https://picasaweb.google.com/lh/photo/7v_Xua9I29Rar3bBdNlLu9MTjNZETYmyPJy0liipFm0?feat=directlink
+
+
