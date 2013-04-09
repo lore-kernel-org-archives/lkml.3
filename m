@@ -1,53 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936039Ab3DIWSg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 18:18:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3973 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943Ab3DIWSe (ORCPT
+	id S936316Ab3DIWTJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 18:19:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40418 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305Ab3DIWTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 18:18:34 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wom5GMh1gUkA:10 a=k2A8Ma-yc6IA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=YQ5KiaJzOPkA:10 a=bfjJp28KGIxAsVVd2O8A:9 a=CjuIK1q_8ugA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Date: Tue, 9 Apr 2013 18:18:30 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        daniel.vetter@ffwll.ch, x86@kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        robclark@gmail.com, tglx@linutronix.de, mingo@elte.hu,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] mutex: add support for reservation style locks, v2
-Message-ID: <20130409221830.GA20739@home.goodmis.org>
-References: <20130228102452.15191.22673.stgit@patser>
- <20130228102502.15191.14146.stgit@patser>
- <1364900432.18374.24.camel@laptop>
- <515AF1C1.7080508@canonical.com>
- <1364921954.20640.22.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364921954.20640.22.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 9 Apr 2013 18:19:08 -0400
+Date: Tue, 9 Apr 2013 15:19:06 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrew Shewmaker <agshew@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        simon.jeons@gmail.com, ric.masonn@gmail.com
+Subject: Re: [PATCH v8 3/3] mm: reinititalise user and admin reserves if
+ memory is added or removed
+Message-Id: <20130409151906.2ee55116ca9e3abd80a90e3e@linux-foundation.org>
+In-Reply-To: <20130408210039.GA3396@localhost.localdomain>
+References: <20130408190738.GC2321@localhost.localdomain>
+	<20130408133712.bd327017dec19a2c14e22662@linux-foundation.org>
+	<20130408210039.GA3396@localhost.localdomain>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 06:59:14PM +0200, Peter Zijlstra wrote:
-> 
-> So how about we call the thing something like:
-> 
->   struct ww_mutex; /* wound/wait */
+On Mon, 8 Apr 2013 17:00:40 -0400 Andrew Shewmaker <agshew@gmail.com> wrote:
 
-Reading this I can't help but think of Elmer Fudd saying "Round Robin"
-as "Wound Wobin"
+> Should I add the memory notifier code to mm/nommu.c too?
+> I'm guessing that if a system doesn't have an mmu that it also 
+> won't be hotplugging memory.
 
--- Steve
-
-> 
->   int mutex_wound_lock(struct ww_mutex *); /* returns -EDEADLK */
->   int mutex_wait_lock(struct ww_mutex *);  /* does not fail */
-> 
+I doubt if we need to worry about memory hotplug on nommu machines,
+so just do the minimum which is required to get nommu to compile
+and link.  That's probably "nothing".
