@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965065Ab3DIIHJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 04:07:09 -0400
-Received: from mga03.intel.com ([143.182.124.21]:64510 "EHLO mga03.intel.com"
+	id S936914Ab3DIIKf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 04:10:35 -0400
+Received: from mga09.intel.com ([134.134.136.24]:47369 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964889Ab3DIIHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 04:07:02 -0400
+	id S935136Ab3DIIKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 04:10:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,437,1363158000"; 
-   d="scan'208";a="283541348"
-Date: Tue, 9 Apr 2013 10:06:53 +0200
+   d="scan'208";a="292212989"
+Date: Tue, 9 Apr 2013 10:10:28 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Fabio Porcedda <fabio.porcedda@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-ide@vger.kernel.org,
-        lm-sensors@lm-sensors.org, linux-input@vger.kernel.org,
-        linux-fbdev@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 08/10] drivers: mfd: use module_platform_driver_probe()
-Message-ID: <20130409080653.GG24058@zurbaran>
-References: <1363266691-15757-1-git-send-email-fabio.porcedda@gmail.com>
- <1363266691-15757-10-git-send-email-fabio.porcedda@gmail.com>
+To: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Axel Lin <axel.lin@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        David Dajun Chen <dchen@diasemi.com>
+Subject: Re: [patch v1] mfd: da9055 change irq state to default
+Message-ID: <20130409081028.GH24058@zurbaran>
+References: <1363597958.4228.7.camel@dhruva>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1363266691-15757-10-git-send-email-fabio.porcedda@gmail.com>
+In-Reply-To: <1363597958.4228.7.camel@dhruva>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fabio,
+Hi Ashish,
 
-On Thu, Mar 14, 2013 at 02:11:29PM +0100, Fabio Porcedda wrote:
-> This patch converts the drivers to use the
-> module_platform_driver_probe() macro which makes the code smaller and
-> a bit simpler.
+On Mon, Mar 18, 2013 at 02:42:38PM +0530, Ashish Jangam wrote:
+> This patch changes the irq state from high to the now default low.
+> Because the default PMIC irq state of DA9055 got changed from high to low.
+> This change should not affect any of the existing users since all of them
+> use active low state.
 > 
-> Signed-off-by: Fabio Porcedda <fabio.porcedda@gmail.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: linux-arm-kernel@lists.infradead.org
+> This patch has been tested on smdkv6410.
+> 
+> Signed-off-by: Ashish <ashish.jangam@kpitcummins.com>
+> 
 > ---
->  drivers/mfd/davinci_voicecodec.c | 12 +-----------
->  drivers/mfd/htc-pasic3.c         | 13 +------------
->  2 files changed, 2 insertions(+), 23 deletions(-)
-Jingoo Han sent a larger patchset to convert many MFD drivers to
-module_platform_driver_probe(), including htc-pasic3 and davinci_voicecodec.
-
-See my mfd-next tree for more details.
+>  drivers/mfd/da9055-core.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+Applied, thanks.
 
 Cheers,
 Samuel.
