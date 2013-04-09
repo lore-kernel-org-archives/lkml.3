@@ -1,100 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762678Ab3DIFYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 01:24:20 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:34810 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab3DIFYS (ORCPT
+	id S933641Ab3DIFhB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 01:37:01 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:62409 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762821Ab3DIFg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 01:24:18 -0400
+	Tue, 9 Apr 2013 01:36:59 -0400
+Message-ID: <5163A8F4.7060807@gmail.com>
+Date: Tue, 09 Apr 2013 13:36:52 +0800
+From: Ric Mason <ric.masonn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <237c01ce2f8c$92eb8ac0$b8c2a040$%kim@samsung.com>
-References: <1364297642-2746-1-git-send-email-amit.daniel@samsung.com>
-	<237c01ce2f8c$92eb8ac0$b8c2a040$%kim@samsung.com>
-Date: Tue, 9 Apr 2013 10:54:17 +0530
-X-Google-Sender-Auth: yWux2DbRPilqsX0aCZNq7Zpr5nw
-Message-ID: <CADGdYn7_DP-8q8ERAFLQ74YUm0V+DST5+1ntH900Tka5K0n6fQ@mail.gmail.com>
-Subject: Re: [PATCH 0/9] thermal: exynos: Add thermal driver for exynos5440
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-pm@vger.kernel.org, Thomas Abraham <thomas.abraham@linaro.org>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Minchan Kim <minchan@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Shaohua Li <shli@kernel.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>
+Subject: Re: [PATCH] mm: remove compressed copy from zram in-memory
+References: <1365400862-9041-1-git-send-email-minchan@kernel.org> <20130408141710.1a1f76a0054bba49a42c76ca@linux-foundation.org> <20130409010231.GA3467@blaptop>
+In-Reply-To: <20130409010231.GA3467@blaptop>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rui,
+Hi Minchan,
+On 04/09/2013 09:02 AM, Minchan Kim wrote:
+> Hi Andrew,
+>
+> On Mon, Apr 08, 2013 at 02:17:10PM -0700, Andrew Morton wrote:
+>> On Mon,  8 Apr 2013 15:01:02 +0900 Minchan Kim <minchan@kernel.org> wrote:
+>>
+>>> Swap subsystem does lazy swap slot free with expecting the page
+>>> would be swapped out again so we can avoid unnecessary write.
+>> Is that correct?  How can it save a write?
+> Correct.
+>
+> The add_to_swap makes the page dirty and we must pageout only if the page is
+> dirty. If a anon page is already charged into swapcache, we skip writeout
+> the page in shrink_page_list, then just remove the page from swapcache and
+> free it by __remove_mapping.
+>
+> I did received same question multiple time so it would be good idea to
+> write down it in vmscan.c somewhere.
+>
+>>> But the problem in in-memory swap(ex, zram) is that it consumes
+>>> memory space until vm_swap_full(ie, used half of all of swap device)
+>>> condition meet. It could be bad if we use multiple swap device,
+>>> small in-memory swap and big storage swap or in-memory swap alone.
+>>>
+>>> This patch makes swap subsystem free swap slot as soon as swap-read
+>>> is completed and make the swapcache page dirty so the page should
+>>> be written out the swap device to reclaim it.
+>>> It means we never lose it.
+>> >From my reading of the patch, that isn't how it works?  It changed
+>> end_swap_bio_read() to call zram_slot_free_notify(), which appears to
+>> free the underlying compressed page.  I have a feeling I'm hopelessly
+>> confused.
+> You understand right totally.
+> Selecting swap slot in my description was totally miss.
+> Need to rewrite the description.
 
-On Tue, Apr 2, 2013 at 3:56 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> Amit Daniel Kachhap wrote:
->>
->> This patchset adds TMU(Thermal management Unit) driver support for
->> exynos5440 platform. There are 3 instances of the TMU controllers so
->> necessary cleanup is done to handle multiple thermal zone.
->>
->> Patch 1 [thermal: exynos: Adapt to temperature emulation core thermal]
->> is a re-post of the earlier posted patch,
->> https://patchwork.kernel.org/patch/2123131/.
->>
->
-> Looks OK to me on whole series, there is my ack only on 1st patch though.
->
-> So if you want to add my ack, feel free:
->
-> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
->
-> Thanks.
->
-> - Kukjin
+free the swap slot and free compress page is the same, isn't it?
 
-Any comment on this patchset? I know this patch series involves quite
-lot of changes but these are important for this merge window. Also
-they are now acked by Samsung platform maintainer.
+>
+>>> --- a/mm/page_io.c
+>>> +++ b/mm/page_io.c
+>>> @@ -20,6 +20,7 @@
+>>>   #include <linux/buffer_head.h>
+>>>   #include <linux/writeback.h>
+>>>   #include <linux/frontswap.h>
+>>> +#include <linux/blkdev.h>
+>>>   #include <asm/pgtable.h>
+>>>   
+>>>   static struct bio *get_swap_bio(gfp_t gfp_flags,
+>>> @@ -81,8 +82,30 @@ void end_swap_bio_read(struct bio *bio, int err)
+>>>   				iminor(bio->bi_bdev->bd_inode),
+>>>   				(unsigned long long)bio->bi_sector);
+>>>   	} else {
+>>> +		/*
+>>> +		 * There is no reason to keep both uncompressed data and
+>>> +		 * compressed data in memory.
+>>> +		 */
+>>> +		struct swap_info_struct *sis;
+>>> +
+>>>   		SetPageUptodate(page);
+>>> +		sis = page_swap_info(page);
+>>> +		if (sis->flags & SWP_BLKDEV) {
+>>> +			struct gendisk *disk = sis->bdev->bd_disk;
+>>> +			if (disk->fops->swap_slot_free_notify) {
+>>> +				swp_entry_t entry;
+>>> +				unsigned long offset;
+>>> +
+>>> +				entry.val = page_private(page);
+>>> +				offset = swp_offset(entry);
+>>> +
+>>> +				SetPageDirty(page);
+>>> +				disk->fops->swap_slot_free_notify(sis->bdev,
+>>> +						offset);
+>>> +			}
+>>> +		}
+>>>   	}
+>>> +
+>>>   	unlock_page(page);
+>>>   	bio_put(bio);
+>> The new code is wasted space if CONFIG_BLOCK=n, yes?
+> CONFIG_SWAP is already dependent on CONFIG_BLOCK.
+>
+>> Also, what's up with the SWP_BLKDEV test?  zram doesn't support
+>> SWP_FILE?  Why on earth not?
+>>
+>> Putting swap_slot_free_notify() into block_device_operations seems
+>> rather wrong.  It precludes zram-over-swapfiles for all time and means
+>> that other subsystems cannot get notifications for swap slot freeing
+>> for swapfile-backed swap.
+> Zram is just pseudo-block device so anyone can format it with any FSes
+> and swapon a file. In such case, he can't get a benefit from
+> swap_slot_free_notify. But I think it's not a severe problem because
+> there is no reason to use a file-swap on zram. If anyone want to use it,
+> I'd like to know the reason. If it's reasonable, we have to rethink a
+> wheel and it's another story, IMHO.
+>
+>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Regards,
-Amit Daniel
->
->> All these patches are based on thermal maintainers git tree,
->> git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git next.
->>
->> Amit Daniel Kachhap (9):
->>   thermal: exynos: Adapt to temperature emulation core thermal
->>     framework
->>   thermal: exynos: Add support for instance based register/unregister
->>   thermal: exynos: Moving into samsung directory for easy maintenance.
->>   thermal: exynos: Bifurcate exynos thermal common and tmu controller
->>     code
->>   thermal: exynos: Make the zone handling dependent on trip count
->>   thermal: exynos: small cleanups to prepare for adding exynos5440
->>     driver
->>   thermal: exynos: Add support for exynos5440 TMU sensor.
->>   thermal: exynos: Parse the platform data from the device tree.
->>   ARM: dts: Add device tree node for exynos5440 TMU controller
->>
->>  .../bindings/thermal/exynos5440-thermal.txt        |   93 ++
->>  Documentation/thermal/exynos_thermal_emulation     |    8 +-
->>  arch/arm/boot/dts/exynos5440.dtsi                  |   43 +
->>  drivers/thermal/Kconfig                            |   22 +-
->>  drivers/thermal/Makefile                           |    2 +-
->>  drivers/thermal/exynos_thermal.c                   | 1112
-> --------------------
->>  drivers/thermal/samsung/Kconfig                    |   32 +
->>  drivers/thermal/samsung/Makefile                   |    6 +
->>  drivers/thermal/samsung/exynos4210_thermal.c       |  658 ++++++++++++
->>  drivers/thermal/samsung/exynos5440_thermal.c       |  712 +++++++++++++
->>  drivers/thermal/samsung/exynos_common.c            |  515 +++++++++
->>  drivers/thermal/samsung/exynos_common.h            |   74 ++
->>  include/linux/platform_data/exynos_thermal.h       |   37 +-
->>  13 files changed, 2163 insertions(+), 1151 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/thermal/exynos5440-
->> thermal.txt
->>  delete mode 100644 drivers/thermal/exynos_thermal.c
->>  create mode 100644 drivers/thermal/samsung/Kconfig
->>  create mode 100644 drivers/thermal/samsung/Makefile
->>  create mode 100644 drivers/thermal/samsung/exynos4210_thermal.c
->>  create mode 100644 drivers/thermal/samsung/exynos5440_thermal.c
->>  create mode 100644 drivers/thermal/samsung/exynos_common.c
->>  create mode 100644 drivers/thermal/samsung/exynos_common.h
->
