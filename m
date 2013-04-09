@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936652Ab3DIJXD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 05:23:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7164 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965023Ab3DIJO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 05:14:57 -0400
-From: Lukas Czerner <lczerner@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>,
-        reiserfs-devel@vger.kernel.org
-Subject: [PATCH v3 09/18] reiserfs: use ->invalidatepage() length argument
-Date: Tue,  9 Apr 2013 11:14:18 +0200
-Message-Id: <1365498867-27782-10-git-send-email-lczerner@redhat.com>
-In-Reply-To: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
-References: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
+	id S936699Ab3DIJX2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 05:23:28 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44299 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936673Ab3DIJXX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 05:23:23 -0400
+Date: Tue, 9 Apr 2013 11:23:15 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Alex Shi <alex.shi@intel.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        kernel-hardening@lists.openwall.com,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
+        Eric Northup <digitaleric@google.com>
+Subject: Re: [PATCH] x86: make IDT read-only
+In-Reply-To: <51634935.9010905@zytor.com>
+Message-ID: <alpine.LFD.2.02.1304091122490.21884@ionos>
+References: <20130408224328.GA17641@www.outflux.net> <51634935.9010905@zytor.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-->invalidatepage() aop now accepts range to invalidate so we can make
-use of it in reiserfs_invalidatepage()
+On Mon, 8 Apr 2013, H. Peter Anvin wrote:
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Cc: reiserfs-devel@vger.kernel.org
----
- fs/reiserfs/inode.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+> On 04/08/2013 03:43 PM, Kees Cook wrote:
+> > This makes the IDT unconditionally read-only. This primarily removes
+> > the IDT from being a target for arbitrary memory write attacks. It has
+> > an added benefit of also not leaking (via the "sidt" instruction) the
+> > kernel base offset, if it has been relocated.
+> > 
+> > Signed-off-by: Kees Cook <keescook@chromium.org>
+> > Cc: Eric Northup <digitaleric@google.com>
+> 
+> Also, tglx: does this interfere with your per-cpu IDT efforts?
 
-diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
-index 808e02e..e963164 100644
---- a/fs/reiserfs/inode.c
-+++ b/fs/reiserfs/inode.c
-@@ -2975,11 +2975,13 @@ static void reiserfs_invalidatepage(struct page *page, unsigned int offset,
- 	struct buffer_head *head, *bh, *next;
- 	struct inode *inode = page->mapping->host;
- 	unsigned int curr_off = 0;
-+	unsigned int stop = offset + length;
-+	int partial_page = (offset || length < PAGE_CACHE_SIZE);
- 	int ret = 1;
- 
- 	BUG_ON(!PageLocked(page));
- 
--	if (offset == 0)
-+	if (!partial_page)
- 		ClearPageChecked(page);
- 
- 	if (!page_has_buffers(page))
-@@ -2991,6 +2993,9 @@ static void reiserfs_invalidatepage(struct page *page, unsigned int offset,
- 		unsigned int next_off = curr_off + bh->b_size;
- 		next = bh->b_this_page;
- 
-+		if (next_off > stop)
-+			goto out;
-+
- 		/*
- 		 * is this block fully invalidated?
- 		 */
-@@ -3009,7 +3014,7 @@ static void reiserfs_invalidatepage(struct page *page, unsigned int offset,
- 	 * The get_block cached value has been unconditionally invalidated,
- 	 * so real IO is not possible anymore.
- 	 */
--	if (!offset && ret) {
-+	if (!partial_page && ret) {
- 		ret = try_to_release_page(page, 0);
- 		/* maybe should BUG_ON(!ret); - neilb */
- 	}
--- 
-1.7.7.6
+I don't think so. And it's on the backburner at the moment.
 
+Thanks,
+
+	tglx
