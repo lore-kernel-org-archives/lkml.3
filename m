@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936276Ab3DIUQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 16:16:29 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:41543 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S936073Ab3DIUQH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 16:16:07 -0400
-Message-ID: <51647703.6060804@semaphore.gr>
-Date: Tue, 09 Apr 2013 23:16:03 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Alasdair Kergon <agk@redhat.com>
-CC: dm-devel@redhat.com, Neil Brown <neilb@suse.de>,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH linux-next] dm-raid: Fix compiler warning
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	id S936203Ab3DIUPe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 16:15:34 -0400
+Received: from 8bytes.org ([85.214.48.195]:36418 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S936045Ab3DIUNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 16:13:33 -0400
+From: Joerg Roedel <joro@8bytes.org>
+To: iommu@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
+Subject: [PATCH 4/9] iommu/amd: Move add_special_device() to __init
+Date: Tue,  9 Apr 2013 22:12:59 +0200
+Message-Id: <1365538384-12426-5-git-send-email-joro@8bytes.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1365538384-12426-1-git-send-email-joro@8bytes.org>
+References: <1365538384-12426-1-git-send-email-joro@8bytes.org>
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Apr  9 22:13:32 2013
+X-DSPAM-Confidence: 0.9995
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5164766c23671079213024
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following compiler warning of uninitialized variable
+The function is only called by other __init functions, so it
+can be moved to __init too.
 
-drivers/md/dm-raid.c: In function ‘raid_ctr’:
-drivers/md/dm-raid.c:427:160: warning: ‘rebuilds_per_group’ may be used
-uninitialized in this function [-Wmaybe-uninitialized]
-drivers/md/dm-raid.c:383:11: note: ‘rebuilds_per_group’ was declared
-here
-
-Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
 ---
- drivers/md/dm-raid.c | 2 +-
+ drivers/iommu/amd_iommu_init.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/md/dm-raid.c b/drivers/md/dm-raid.c
-index 1d3fe1a..8041de8 100644
---- a/drivers/md/dm-raid.c
-+++ b/drivers/md/dm-raid.c
-@@ -380,7 +380,7 @@ static int validate_region_size(struct raid_set *rs, unsigned long region_size)
- static int validate_raid_redundancy(struct raid_set *rs)
- {
- 	unsigned i, rebuild_cnt = 0;
--	unsigned rebuilds_per_group, copies, d;
-+	unsigned copies, d, rebuilds_per_group = 0;
- 	unsigned group_size, last_group_start;
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index e3c2d74..6dc8d8d 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -703,7 +703,7 @@ static void __init set_dev_entry_from_acpi(struct amd_iommu *iommu,
+ 	set_iommu_for_device(iommu, devid);
+ }
  
- 	for (i = 0; i < rs->md.raid_disks; i++)
+-static int add_special_device(u8 type, u8 id, u16 devid)
++static int __init add_special_device(u8 type, u8 id, u16 devid, bool cmd_line)
+ {
+ 	struct devid_map *entry;
+ 	struct list_head *list;
 -- 
-1.8.1.4
+1.7.9.5
+
 
