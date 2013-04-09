@@ -1,157 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935570Ab3DIIlw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 04:41:52 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:50531 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762938Ab3DIIlt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 04:41:49 -0400
-Message-ID: <5163D440.7080105@gmail.com>
-Date: Tue, 09 Apr 2013 16:41:36 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S936080Ab3DIInv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 04:43:51 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46324 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935524Ab3DIInt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 04:43:49 -0400
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "Manjunathappa, Prakash" <prakash.pm@ti.com>,
+        "jacmet@sunsite.dk" <jacmet@sunsite.dk>
+Subject: RE: [PATCH v3 3/3] ARM: davinci: da850: add EHRPWM & ECAP DT node
+Thread-Topic: [PATCH v3 3/3] ARM: davinci: da850: add EHRPWM & ECAP DT node
+Thread-Index: AQHOKS19PuoEahWsUk2VKlRRhE1ixJjCSvgAgAnS9HD//+hBgIABcNbQ
+Date: Tue, 9 Apr 2013 08:42:27 +0000
+Deferred-Delivery: Tue, 9 Apr 2013 08:42:00 +0000
+Message-ID: <518397C60809E147AF5323E0420B992E3EAA9DA3@DBDE01.ent.ti.com>
+References: <1364197789-16783-1-git-send-email-avinashphilip@ti.com>
+ <1364197789-16783-4-git-send-email-avinashphilip@ti.com>
+ <515A97DE.1080403@ti.com>
+ <518397C60809E147AF5323E0420B992E3EAA91B6@DBDE01.ent.ti.com>
+ <5162C1A5.5060808@ti.com>
+In-Reply-To: <5162C1A5.5060808@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.25]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 08/10] mm: vmscan: Have kswapd shrink slab only once per
- priority
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-9-git-send-email-mgorman@suse.de> <20130409065325.GA4411@lge.com>
-In-Reply-To: <20130409065325.GA4411@lge.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r398hol8001868
 
-Hi Joonsoo,
-On 04/09/2013 02:53 PM, Joonsoo Kim wrote:
-> Hello, Mel.
-> Sorry for too late question.
->
-> On Sun, Mar 17, 2013 at 01:04:14PM +0000, Mel Gorman wrote:
->> If kswaps fails to make progress but continues to shrink slab then it'll
->> either discard all of slab or consume CPU uselessly scanning shrinkers.
->> This patch causes kswapd to only call the shrinkers once per priority.
->>
->> Signed-off-by: Mel Gorman <mgorman@suse.de>
->> ---
->>   mm/vmscan.c | 28 +++++++++++++++++++++-------
->>   1 file changed, 21 insertions(+), 7 deletions(-)
->>
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->> index 7d5a932..84375b2 100644
->> --- a/mm/vmscan.c
->> +++ b/mm/vmscan.c
->> @@ -2661,9 +2661,10 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
->>    */
->>   static bool kswapd_shrink_zone(struct zone *zone,
->>   			       struct scan_control *sc,
->> -			       unsigned long lru_pages)
->> +			       unsigned long lru_pages,
->> +			       bool shrinking_slab)
->>   {
->> -	unsigned long nr_slab;
->> +	unsigned long nr_slab = 0;
->>   	struct reclaim_state *reclaim_state = current->reclaim_state;
->>   	struct shrink_control shrink = {
->>   		.gfp_mask = sc->gfp_mask,
->> @@ -2673,9 +2674,15 @@ static bool kswapd_shrink_zone(struct zone *zone,
->>   	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
->>   	shrink_zone(zone, sc);
->>   
->> -	reclaim_state->reclaimed_slab = 0;
->> -	nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
->> -	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
->> +	/*
->> +	 * Slabs are shrunk for each zone once per priority or if the zone
->> +	 * being balanced is otherwise unreclaimable
->> +	 */
->> +	if (shrinking_slab || !zone_reclaimable(zone)) {
->> +		reclaim_state->reclaimed_slab = 0;
->> +		nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
->> +		sc->nr_reclaimed += reclaim_state->reclaimed_slab;
->> +	}
->>   
->>   	if (nr_slab == 0 && !zone_reclaimable(zone))
->>   		zone->all_unreclaimable = 1;
-> Why shrink_slab() is called here?
-> I think that outside of zone loop is better place to run shrink_slab(),
-> because shrink_slab() is not directly related to a specific zone.
+On Mon, Apr 08, 2013 at 18:39:57, Nori, Sekhar wrote:
+> 
+> On 4/8/2013 2:39 PM, Philip, Avinash wrote:
+> > On Tue, Apr 02, 2013 at 14:03:34, Nori, Sekhar wrote:
+> >> On 3/25/2013 1:19 PM, Philip Avinash wrote:
+> >>> Add da850 EHRPWM & ECAP DT node.
+> >>> Also adds OF_DEV_AUXDATA for EHRPWM & ECAP driver to use EHRPWM & ECAP
+> >>> clock.
+> >>
+> >> This looks fine to me but I will wait for the bindings to get accepted
+> >> before taking this one.
+> > 
+> > Sekhar,
+> > 
+> > Binding document got accepted in PWM tree [1].
+> > Can you accept this patch?
+> 
+> Can you also add the pinmux definitions and resend just this patch?
+> Sorry I did not notice those were missing earlier.
 
-True.
+According to latest schematics, ECAP instance 2 being used for PWM backlight
+control. Should I add pin-mux only for ECAP2 or for all PWM instances?
 
->
-> And this is a question not related to this patch.
-> Why nr_slab is used here to decide zone->all_unreclaimable?
-> nr_slab is not directly related whether a specific zone is reclaimable
-> or not, and, moreover, nr_slab is not directly related to number of
-> reclaimed pages. It just say some objects in the system are freed.
->
-> This question comes from my ignorance, so please enlighten me.
+Thanks
+Avinash
 
-Good question, I also want to know. ;-)
+> 
+> Thanks,
+> Sekhar
+> 
 
->
-> Thanks.
->
->> @@ -2713,6 +2720,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->>   	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
->>   	unsigned long nr_soft_reclaimed;
->>   	unsigned long nr_soft_scanned;
->> +	bool shrinking_slab = true;
->>   	struct scan_control sc = {
->>   		.gfp_mask = GFP_KERNEL,
->>   		.priority = DEF_PRIORITY,
->> @@ -2861,7 +2869,8 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->>   				 * already being scanned that that high
->>   				 * watermark would be met at 100% efficiency.
->>   				 */
->> -				if (kswapd_shrink_zone(zone, &sc, lru_pages))
->> +				if (kswapd_shrink_zone(zone, &sc,
->> +						lru_pages, shrinking_slab))
->>   					raise_priority = false;
->>   
->>   				nr_to_reclaim += sc.nr_to_reclaim;
->> @@ -2900,6 +2909,9 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->>   				pfmemalloc_watermark_ok(pgdat))
->>   			wake_up(&pgdat->pfmemalloc_wait);
->>   
->> +		/* Only shrink slab once per priority */
->> +		shrinking_slab = false;
->> +
->>   		/*
->>   		 * Fragmentation may mean that the system cannot be rebalanced
->>   		 * for high-order allocations in all zones. If twice the
->> @@ -2925,8 +2937,10 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->>   		 * Raise priority if scanning rate is too low or there was no
->>   		 * progress in reclaiming pages
->>   		 */
->> -		if (raise_priority || !this_reclaimed)
->> +		if (raise_priority || !this_reclaimed) {
->>   			sc.priority--;
->> +			shrinking_slab = true;
->> +		}
->>   	} while (sc.priority >= 1 &&
->>   		 !pgdat_balanced(pgdat, order, *classzone_idx));
->>   
->> -- 
->> 1.8.1.4
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
