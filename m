@@ -1,78 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934808Ab3DIFvG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 01:51:06 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:49284 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932160Ab3DIFvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 01:51:04 -0400
-Message-ID: <5163AC2B.7060804@ispras.ru>
-Date: Tue, 09 Apr 2013 09:50:35 +0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S934905Ab3DIFzT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 01:55:19 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44171 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752605Ab3DIFzS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 01:55:18 -0400
+X-AuditID: 9c930197-b7b50ae00000018c-c6-5163ad4395b1
+Date: Tue, 9 Apr 2013 14:55:14 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/3] mm, vmscan: count accidental reclaimed pages failed
+ to put into lru
+Message-ID: <20130409055514.GC6836@blaptop>
+References: <1365470478-645-1-git-send-email-iamjoonsoo.kim@lge.com>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Jiri Slaby <jirislaby@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] tty: mxser: forever loops on error
-References: <20130409051838.GB1516@longonot.mountain>
-In-Reply-To: <20130409051838.GB1516@longonot.mountain>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1365470478-645-1-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+Hello Joonsoo,
 
-Thank you for the patch.
+On Tue, Apr 09, 2013 at 10:21:16AM +0900, Joonsoo Kim wrote:
+> In shrink_(in)active_list(), we can fail to put into lru, and these pages
+> are reclaimed accidentally. Currently, these pages are not counted
+> for sc->nr_reclaimed, but with this information, we can stop to reclaim
+> earlier, so can reduce overhead of reclaim.
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-We are also trying to fix the issue:
-https://lkml.org/lkml/2013/2/19/29
-https://lkml.org/lkml/2013/4/8/55
+Nice catch!
 
-and the fix is finally in Greg's tty git tree since yesterday:
-    git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git
-(tty-linus branch).
+But this patch handles very corner case and makes reclaim function's name
+rather stupid so I'd like to see text size change after we apply this patch.
+Other nipicks below.
 
-Best regards,
-Alexey
-
-
-On 04/09/2013 09:18 AM, Dan Carpenter wrote:
-> There were a couple signedness bugs decrementing "i" which would lead to
-> a forever loops.
->
-> I've made a couple other variables signed as well because they are all
-> related array offsets and it would be weird if they weren't the same
-> type.
->
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
->
-> diff --git a/drivers/tty/mxser.c b/drivers/tty/mxser.c
-> index d996038..a095859 100644
-> --- a/drivers/tty/mxser.c
-> +++ b/drivers/tty/mxser.c
-> @@ -2556,9 +2556,9 @@ static int mxser_probe(struct pci_dev *pdev,
->  {
->  #ifdef CONFIG_PCI
->  	struct mxser_board *brd;
-> -	unsigned int i, j;
->  	unsigned long ioaddress;
->  	struct device *tty_dev;
-> +	int i, j;
->  	int retval = -EINVAL;
+> 
+> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+> index 0f615eb..5d60ae0 100644
+> --- a/include/linux/gfp.h
+> +++ b/include/linux/gfp.h
+> @@ -365,7 +365,7 @@ void *alloc_pages_exact_nid(int nid, size_t size, gfp_t gfp_mask);
+>  extern void __free_pages(struct page *page, unsigned int order);
+>  extern void free_pages(unsigned long addr, unsigned int order);
+>  extern void free_hot_cold_page(struct page *page, int cold);
+> -extern void free_hot_cold_page_list(struct list_head *list, int cold);
+> +extern unsigned long free_hot_cold_page_list(struct list_head *list, int cold);
 >  
->  	for (i = 0; i < MXSER_BOARDS; i++)
-> @@ -2700,7 +2700,7 @@ static int __init mxser_module_init(void)
+>  extern void __free_memcg_kmem_pages(struct page *page, unsigned int order);
+>  extern void free_memcg_kmem_pages(unsigned long addr, unsigned int order);
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 8fcced7..a5f3952 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1360,14 +1360,18 @@ out:
+>  /*
+>   * Free a list of 0-order pages
+>   */
+> -void free_hot_cold_page_list(struct list_head *list, int cold)
+> +unsigned long free_hot_cold_page_list(struct list_head *list, int cold)
 >  {
->  	struct mxser_board *brd;
->  	struct device *tty_dev;
-> -	unsigned int b, i, m;
-> +	int b, i, m;
->  	int retval;
->  
->  	mxvar_sdriver = alloc_tty_driver(MXSER_PORTS + 1);
->
+> +	unsigned long nr_reclaimed = 0;
 
+How about nr_free or nr_freed for consistent with function title?
+
+>  	struct page *page, *next;
+>  
+>  	list_for_each_entry_safe(page, next, list, lru) {
+>  		trace_mm_page_free_batched(page, cold);
+>  		free_hot_cold_page(page, cold);
+> +		nr_reclaimed++;
+>  	}
+> +
+> +	return nr_reclaimed;
+>  }
+>  
+>  /*
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 88c5fed..eff2927 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -915,7 +915,6 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  		 */
+>  		__clear_page_locked(page);
+>  free_it:
+> -		nr_reclaimed++;
+>  
+>  		/*
+>  		 * Is there need to periodically free_page_list? It would
+> @@ -954,7 +953,7 @@ keep:
+>  	if (nr_dirty && nr_dirty == nr_congested && global_reclaim(sc))
+>  		zone_set_flag(zone, ZONE_CONGESTED);
+>  
+> -	free_hot_cold_page_list(&free_pages, 1);
+> +	nr_reclaimed += free_hot_cold_page_list(&free_pages, 1);
+
+Nice cleanup.
+
+>  
+>  	list_splice(&ret_pages, page_list);
+>  	count_vm_events(PGACTIVATE, pgactivate);
+> @@ -1321,7 +1320,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+>  	if (nr_taken == 0)
+>  		return 0;
+>  
+> -	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
+> +	nr_reclaimed += shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
+>  					&nr_dirty, &nr_writeback, false);
+
+Do you have any reason to change?
+To me, '=' is more clear to initialize the variable.
+When I see above, I have to look through above lines to catch where code
+used the nr_reclaimed.
+
+>  
+>  	spin_lock_irq(&zone->lru_lock);
+> @@ -1343,7 +1342,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+>  
+>  	spin_unlock_irq(&zone->lru_lock);
+>  
+> -	free_hot_cold_page_list(&page_list, 1);
+> +	nr_reclaimed += free_hot_cold_page_list(&page_list, 1);
+
+How about considering vmstat, too?
+It could be minor but you are considering freed page as
+reclaim context. (ie, sc->nr_reclaimed) so it would be more appropriate.
+
+>  
+>  	/*
+>  	 * If reclaim is isolating dirty pages under writeback, it implies
+> @@ -1438,7 +1437,7 @@ static void move_active_pages_to_lru(struct lruvec *lruvec,
+>  		__count_vm_events(PGDEACTIVATE, pgmoved);
+>  }
+>  
+> -static void shrink_active_list(unsigned long nr_to_scan,
+> +static unsigned long shrink_active_list(unsigned long nr_to_scan,
+>  			       struct lruvec *lruvec,
+>  			       struct scan_control *sc,
+>  			       enum lru_list lru)
+> @@ -1534,7 +1533,7 @@ static void shrink_active_list(unsigned long nr_to_scan,
+>  	__mod_zone_page_state(zone, NR_ISOLATED_ANON + file, -nr_taken);
+>  	spin_unlock_irq(&zone->lru_lock);
+>  
+> -	free_hot_cold_page_list(&l_hold, 1);
+> +	return free_hot_cold_page_list(&l_hold, 1);
+
+It would be better to add comment about return value.
+Otherwise, people could confuse with the number of pages moved from
+active to inactive.
+
+>  }
+>  
+>  #ifdef CONFIG_SWAP
+> @@ -1617,7 +1616,8 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
+>  {
+>  	if (is_active_lru(lru)) {
+>  		if (inactive_list_is_low(lruvec, lru))
+> -			shrink_active_list(nr_to_scan, lruvec, sc, lru);
+> +			return shrink_active_list(nr_to_scan, lruvec, sc, lru);
+> +
+
+Unnecessary change.
+
+>  		return 0;
+>  	}
+>  
+> @@ -1861,8 +1861,8 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+>  	 * rebalance the anon lru active/inactive ratio.
+>  	 */
+>  	if (inactive_anon_is_low(lruvec))
+> -		shrink_active_list(SWAP_CLUSTER_MAX, lruvec,
+> -				   sc, LRU_ACTIVE_ANON);
+> +		sc->nr_reclaimed += shrink_active_list(SWAP_CLUSTER_MAX,
+> +					lruvec, sc, LRU_ACTIVE_ANON);
+>  
+>  	throttle_vm_writeout(sc->gfp_mask);
+>  }
+> @@ -2470,23 +2470,27 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
+>  }
+>  #endif
+>  
+> -static void age_active_anon(struct zone *zone, struct scan_control *sc)
+
+Comment about return value.
+or rename but I have no idea. Sorry.
+
+> +static unsigned long age_active_anon(struct zone *zone,
+> +					struct scan_control *sc)
+>  {
+> +	unsigned long nr_reclaimed = 0;
+>  	struct mem_cgroup *memcg;
+>  
+>  	if (!total_swap_pages)
+> -		return;
+> +		return 0;
+>  
+>  	memcg = mem_cgroup_iter(NULL, NULL, NULL);
+>  	do {
+>  		struct lruvec *lruvec = mem_cgroup_zone_lruvec(zone, memcg);
+>  
+>  		if (inactive_anon_is_low(lruvec))
+> -			shrink_active_list(SWAP_CLUSTER_MAX, lruvec,
+> -					   sc, LRU_ACTIVE_ANON);
+> +			nr_reclaimed += shrink_active_list(SWAP_CLUSTER_MAX,
+> +					lruvec, sc, LRU_ACTIVE_ANON);
+>  
+>  		memcg = mem_cgroup_iter(NULL, memcg, NULL);
+>  	} while (memcg);
+> +
+> +	return nr_reclaimed;
+>  }
+>  
+>  static bool zone_balanced(struct zone *zone, int order,
+> @@ -2666,7 +2670,7 @@ loop_again:
+>  			 * Do some background aging of the anon list, to give
+>  			 * pages a chance to be referenced before reclaiming.
+>  			 */
+> -			age_active_anon(zone, &sc);
+> +			sc.nr_reclaimed += age_active_anon(zone, &sc);
+>  
+>  			/*
+>  			 * If the number of buffer_heads in the machine
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
