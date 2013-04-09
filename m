@@ -1,159 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936063Ab3DIOcp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 10:32:45 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:51696 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756026Ab3DIOco (ORCPT
+	id S936107Ab3DIOdg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 10:33:36 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53124 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761535Ab3DIOde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 10:32:44 -0400
+	Tue, 9 Apr 2013 10:33:34 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
+CC: Tony Lindgren <tony@atomide.com>, Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Peter Meerwald <pmeerw@pmeerw.net>, <patches@linaro.org>,
+        <stable@vger.kernel.org.#.v3.7+>
+Subject: [PATCH] dmaengine: omap-dma: Start DMA without delay for cyclic channels
+Date: Tue, 9 Apr 2013 16:33:06 +0200
+Message-ID: <1365517986-9401-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.8.1.5
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyea-YdNP-=fyV2JMoN2cyv9Vpp3-e4p86V+7OSBQAV5Q@mail.gmail.com>
-References: <alpine.LFD.2.02.1304031433350.21884@ionos>
-	<1364998282-21437-1-git-send-email-vgupta@synopsys.com>
-	<20130404152808.GB15261@ab42.lan>
-	<515E54BD.2090300@synopsys.com>
-	<51602459.3040105@synopsys.com>
-	<CA+55aFw=-oJxujka-emxyRcY54MSe3qEjZ6xgzoE-roe3EFk5g@mail.gmail.com>
-	<51624591.4010303@synopsys.com>
-	<CA+55aFyFWjpSVQM6M266tKrG_ZXJzZ-nYejpmXYQXbrr42mGPQ@mail.gmail.com>
-	<1365428274.2609.160.camel@laptop>
-	<1365431470.2733.16.camel@fedora>
-	<CA+55aFx88-t_pm5hbxbrrhqm3_=+JQussO=zD1kT+05UVCAFCA@mail.gmail.com>
-	<1365433142.2733.18.camel@fedora>
-	<CA+55aFyea-YdNP-=fyV2JMoN2cyv9Vpp3-e4p86V+7OSBQAV5Q@mail.gmail.com>
-Date: Tue, 9 Apr 2013 07:32:42 -0700
-X-Google-Sender-Auth: Qor1Ys8A5ifZH5F5BYdnKAMk_oY
-Message-ID: <CA+55aFysegA0nYxu4DYugz6R+wP6c1oDOemHpMT7av645S+cVg@mail.gmail.com>
-Subject: Re: [PATCH] [PATCH] Gaurantee spinlocks implicit barrier for !PREEMPT_COUNT
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Steven Rostedt <srostedt@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=089e0158b26821f7a204d9ee6d58
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e0158b26821f7a204d9ee6d58
-Content-Type: text/plain; charset=UTF-8
+cyclic DMA is only used by audio which needs DMA to be started without a
+delay.
+If the DMA for audio is started using the tasklet we experience random
+channel switch (to be more precise: channel shift).
 
-On Mon, Apr 8, 2013 at 8:07 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Apr 8, 2013 at 7:59 AM, Steven Rostedt <srostedt@redhat.com> wrote:
->>>     +/* This is only a barrier to other asms. Notably get_user/put_user */
->>
->> Probably should add in the comment:
->>
->>         " or anything else that can cause a hidden schedule. "
->>
->
-> Fair enough. And I just remembered why I thought UP was special - we
-> need to do the same thing about spinlocks, for the same reasons.
->
-> So that "asm_barrier()" should probably be in <linux/compiler.h> along
-> with the "normal" barrier() definition.
->
+Reported-by: Peter Meerwald <pmeerw@pmeerw.net>
+CC: stable@vger.kernel.org  # v3.7+
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+---
+Hi Vinod,
 
-I'm a moron.
+Would it be possible to send this patch for 3.9. The channel shift (or switch)
+issue in audio has been noticed recently and it turns out that it has been
+present since 3.7 kernel.
+It would be great if 3.9 kernel could work correctly out of box...
 
-Yes, "asm_barrier()" is a valid barrier for asms. But without the
-"memory" clobber, it doesn't actually end up being a barrier to any
-normal C loads and stores from memory, so it doesn't actually help.
+Changes since RFCv2:
+- added Acked-by from Santosh and Russell
 
-So I suspect we need to just make UP spinlocks and preemption
-enable/disable be full compiler barriers after all.
+Thank you,
+Peter
 
-Something like the attached (still untested, although it seems to at
-least compile) patch. Comments?
+ drivers/dma/omap-dma.c | 20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
-                    Linus
+diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
+index 2ea3d7e..ec3fc4f 100644
+--- a/drivers/dma/omap-dma.c
++++ b/drivers/dma/omap-dma.c
+@@ -282,12 +282,20 @@ static void omap_dma_issue_pending(struct dma_chan *chan)
+ 
+ 	spin_lock_irqsave(&c->vc.lock, flags);
+ 	if (vchan_issue_pending(&c->vc) && !c->desc) {
+-		struct omap_dmadev *d = to_omap_dma_dev(chan->device);
+-		spin_lock(&d->lock);
+-		if (list_empty(&c->node))
+-			list_add_tail(&c->node, &d->pending);
+-		spin_unlock(&d->lock);
+-		tasklet_schedule(&d->task);
++		/*
++		 * c->cyclic is used only by audio and in this case the DMA need
++		 * to be started without delay.
++		 */
++		if (!c->cyclic) {
++			struct omap_dmadev *d = to_omap_dma_dev(chan->device);
++			spin_lock(&d->lock);
++			if (list_empty(&c->node))
++				list_add_tail(&c->node, &d->pending);
++			spin_unlock(&d->lock);
++			tasklet_schedule(&d->task);
++		} else {
++			omap_dma_start_desc(c);
++		}
+ 	}
+ 	spin_unlock_irqrestore(&c->vc.lock, flags);
+ }
+-- 
+1.8.1.5
 
---089e0158b26821f7a204d9ee6d58
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hfb64qjy0
-
-IGluY2x1ZGUvbGludXgvcHJlZW1wdC5oICAgICB8IDIyICsrKysrKysrKysrKysrLS0tLS0tLS0K
-IGluY2x1ZGUvbGludXgvc3BpbmxvY2tfdXAuaCB8IDI5ICsrKysrKysrKysrKysrKysrKy0tLS0t
-LS0tLS0tCiAyIGZpbGVzIGNoYW5nZWQsIDMyIGluc2VydGlvbnMoKyksIDE5IGRlbGV0aW9ucygt
-KQoKZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvcHJlZW1wdC5oIGIvaW5jbHVkZS9saW51eC9w
-cmVlbXB0LmgKaW5kZXggNWE3MTBiOWM1NzhlLi44N2EwM2M3NDZmMTcgMTAwNjQ0Ci0tLSBhL2lu
-Y2x1ZGUvbGludXgvcHJlZW1wdC5oCisrKyBiL2luY2x1ZGUvbGludXgvcHJlZW1wdC5oCkBAIC05
-MywxNCArOTMsMjAgQEAgZG8geyBcCiAKICNlbHNlIC8qICFDT05GSUdfUFJFRU1QVF9DT1VOVCAq
-LwogCi0jZGVmaW5lIHByZWVtcHRfZGlzYWJsZSgpCQlkbyB7IH0gd2hpbGUgKDApCi0jZGVmaW5l
-IHNjaGVkX3ByZWVtcHRfZW5hYmxlX25vX3Jlc2NoZWQoKQlkbyB7IH0gd2hpbGUgKDApCi0jZGVm
-aW5lIHByZWVtcHRfZW5hYmxlX25vX3Jlc2NoZWQoKQlkbyB7IH0gd2hpbGUgKDApCi0jZGVmaW5l
-IHByZWVtcHRfZW5hYmxlKCkJCWRvIHsgfSB3aGlsZSAoMCkKLQotI2RlZmluZSBwcmVlbXB0X2Rp
-c2FibGVfbm90cmFjZSgpCQlkbyB7IH0gd2hpbGUgKDApCi0jZGVmaW5lIHByZWVtcHRfZW5hYmxl
-X25vX3Jlc2NoZWRfbm90cmFjZSgpCWRvIHsgfSB3aGlsZSAoMCkKLSNkZWZpbmUgcHJlZW1wdF9l
-bmFibGVfbm90cmFjZSgpCQlkbyB7IH0gd2hpbGUgKDApCisvKgorICogRXZlbiBpZiB3ZSBkb24n
-dCBoYXZlIGFueSBwcmVlbXB0aW9uLCB3ZSBuZWVkIHByZWVtcHQgZGlzYWJsZS9lbmFibGUKKyAq
-IHRvIGJlIGJhcnJpZXJzLCBzbyB0aGF0IHdlIGRvbid0IGhhdmUgdGhpbmdzIGxpa2UgZ2V0X3Vz
-ZXIvcHV0X3VzZXIKKyAqIHRoYXQgY2FuIGNhdXNlIGZhdWx0cyBhbmQgc2NoZWR1bGluZyBtaWdy
-YXRlIGludG8gb3VyIHByZWVtcHQtcHJvdGVjdGVkCisgKiByZWdpb24uCisgKi8KKyNkZWZpbmUg
-cHJlZW1wdF9kaXNhYmxlKCkJCWJhcnJpZXIoKQorI2RlZmluZSBzY2hlZF9wcmVlbXB0X2VuYWJs
-ZV9ub19yZXNjaGVkKCkJYmFycmllcigpCisjZGVmaW5lIHByZWVtcHRfZW5hYmxlX25vX3Jlc2No
-ZWQoKQliYXJyaWVyKCkKKyNkZWZpbmUgcHJlZW1wdF9lbmFibGUoKQkJYmFycmllcigpCisKKyNk
-ZWZpbmUgcHJlZW1wdF9kaXNhYmxlX25vdHJhY2UoKQkJYmFycmllcigpCisjZGVmaW5lIHByZWVt
-cHRfZW5hYmxlX25vX3Jlc2NoZWRfbm90cmFjZSgpCWJhcnJpZXIoKQorI2RlZmluZSBwcmVlbXB0
-X2VuYWJsZV9ub3RyYWNlKCkJCWJhcnJpZXIoKQogCiAjZW5kaWYgLyogQ09ORklHX1BSRUVNUFRf
-Q09VTlQgKi8KIApkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9zcGlubG9ja191cC5oIGIvaW5j
-bHVkZS9saW51eC9zcGlubG9ja191cC5oCmluZGV4IGEyNmUyZmI2MDRlNi4uZTIzNjljMTY3ZGJk
-IDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L3NwaW5sb2NrX3VwLmgKKysrIGIvaW5jbHVkZS9s
-aW51eC9zcGlubG9ja191cC5oCkBAIC0xNiw3ICsxNiwxMCBAQAogICogSW4gdGhlIGRlYnVnIGNh
-c2UsIDEgbWVhbnMgdW5sb2NrZWQsIDAgbWVhbnMgbG9ja2VkLiAodGhlIHZhbHVlcwogICogYXJl
-IGludmVydGVkLCB0byBjYXRjaCBpbml0aWFsaXphdGlvbiBidWdzKQogICoKLSAqIE5vIGF0b21p
-Y2l0eSBhbnl3aGVyZSwgd2UgYXJlIG9uIFVQLgorICogTm8gYXRvbWljaXR5IGFueXdoZXJlLCB3
-ZSBhcmUgb24gVVAuIEhvd2V2ZXIsIHdlIHN0aWxsIG5lZWQKKyAqIHRoZSBjb21waWxlciBiYXJy
-aWVycywgYmVjYXVzZSB3ZSBkbyBub3Qgd2FudCB0aGUgY29tcGlsZXIgdG8KKyAqIG1vdmUgcG90
-ZW50aWFsbHkgZmF1bHRpbmcgaW5zdHJ1Y3Rpb25zIChub3RhYmx5IHVzZXIgYWNjZXNzZXMpCisg
-KiBpbnRvIHRoZSBsb2NrZWQgc2VxdWVuY2UsIHJlc3VsdGluZyBpbiBub24tYXRvbWljIGV4ZWN1
-dGlvbi4KICAqLwogCiAjaWZkZWYgQ09ORklHX0RFQlVHX1NQSU5MT0NLCkBAIC0yNSw2ICsyOCw3
-IEBACiBzdGF0aWMgaW5saW5lIHZvaWQgYXJjaF9zcGluX2xvY2soYXJjaF9zcGlubG9ja190ICps
-b2NrKQogewogCWxvY2stPnNsb2NrID0gMDsKKwliYXJyaWVyKCk7CiB9CiAKIHN0YXRpYyBpbmxp
-bmUgdm9pZApAQCAtMzIsNiArMzYsNyBAQCBhcmNoX3NwaW5fbG9ja19mbGFncyhhcmNoX3NwaW5s
-b2NrX3QgKmxvY2ssIHVuc2lnbmVkIGxvbmcgZmxhZ3MpCiB7CiAJbG9jYWxfaXJxX3NhdmUoZmxh
-Z3MpOwogCWxvY2stPnNsb2NrID0gMDsKKwliYXJyaWVyKCk7CiB9CiAKIHN0YXRpYyBpbmxpbmUg
-aW50IGFyY2hfc3Bpbl90cnlsb2NrKGFyY2hfc3BpbmxvY2tfdCAqbG9jaykKQEAgLTM5LDMyICs0
-NCwzNCBAQCBzdGF0aWMgaW5saW5lIGludCBhcmNoX3NwaW5fdHJ5bG9jayhhcmNoX3NwaW5sb2Nr
-X3QgKmxvY2spCiAJY2hhciBvbGR2YWwgPSBsb2NrLT5zbG9jazsKIAogCWxvY2stPnNsb2NrID0g
-MDsKKwliYXJyaWVyKCk7CiAKIAlyZXR1cm4gb2xkdmFsID4gMDsKIH0KIAogc3RhdGljIGlubGlu
-ZSB2b2lkIGFyY2hfc3Bpbl91bmxvY2soYXJjaF9zcGlubG9ja190ICpsb2NrKQogeworCWJhcnJp
-ZXIoKTsKIAlsb2NrLT5zbG9jayA9IDE7CiB9CiAKIC8qCiAgKiBSZWFkLXdyaXRlIHNwaW5sb2Nr
-cy4gTm8gZGVidWcgdmVyc2lvbi4KICAqLwotI2RlZmluZSBhcmNoX3JlYWRfbG9jayhsb2NrKQkJ
-ZG8geyAodm9pZCkobG9jayk7IH0gd2hpbGUgKDApCi0jZGVmaW5lIGFyY2hfd3JpdGVfbG9jayhs
-b2NrKQkJZG8geyAodm9pZCkobG9jayk7IH0gd2hpbGUgKDApCi0jZGVmaW5lIGFyY2hfcmVhZF90
-cnlsb2NrKGxvY2spCSh7ICh2b2lkKShsb2NrKTsgMTsgfSkKLSNkZWZpbmUgYXJjaF93cml0ZV90
-cnlsb2NrKGxvY2spCSh7ICh2b2lkKShsb2NrKTsgMTsgfSkKLSNkZWZpbmUgYXJjaF9yZWFkX3Vu
-bG9jayhsb2NrKQkJZG8geyAodm9pZCkobG9jayk7IH0gd2hpbGUgKDApCi0jZGVmaW5lIGFyY2hf
-d3JpdGVfdW5sb2NrKGxvY2spCWRvIHsgKHZvaWQpKGxvY2spOyB9IHdoaWxlICgwKQorI2RlZmlu
-ZSBhcmNoX3JlYWRfbG9jayhsb2NrKQkJZG8geyBiYXJyaWVyKCk7ICh2b2lkKShsb2NrKTsgfSB3
-aGlsZSAoMCkKKyNkZWZpbmUgYXJjaF93cml0ZV9sb2NrKGxvY2spCQlkbyB7IGJhcnJpZXIoKTsg
-KHZvaWQpKGxvY2spOyB9IHdoaWxlICgwKQorI2RlZmluZSBhcmNoX3JlYWRfdHJ5bG9jayhsb2Nr
-KQkoeyBiYXJyaWVyKCk7ICh2b2lkKShsb2NrKTsgMTsgfSkKKyNkZWZpbmUgYXJjaF93cml0ZV90
-cnlsb2NrKGxvY2spCSh7IGJhcnJpZXIoKTsgKHZvaWQpKGxvY2spOyAxOyB9KQorI2RlZmluZSBh
-cmNoX3JlYWRfdW5sb2NrKGxvY2spCQlkbyB7IGJhcnJpZXIoKTsgKHZvaWQpKGxvY2spOyB9IHdo
-aWxlICgwKQorI2RlZmluZSBhcmNoX3dyaXRlX3VubG9jayhsb2NrKQlkbyB7IGJhcnJpZXIoKTsg
-KHZvaWQpKGxvY2spOyB9IHdoaWxlICgwKQogCiAjZWxzZSAvKiBERUJVR19TUElOTE9DSyAqLwog
-I2RlZmluZSBhcmNoX3NwaW5faXNfbG9ja2VkKGxvY2spCSgodm9pZCkobG9jayksIDApCiAvKiBm
-b3Igc2NoZWQuYyBhbmQga2VybmVsX2xvY2suYzogKi8KLSMgZGVmaW5lIGFyY2hfc3Bpbl9sb2Nr
-KGxvY2spCQlkbyB7ICh2b2lkKShsb2NrKTsgfSB3aGlsZSAoMCkKLSMgZGVmaW5lIGFyY2hfc3Bp
-bl9sb2NrX2ZsYWdzKGxvY2ssIGZsYWdzKQlkbyB7ICh2b2lkKShsb2NrKTsgfSB3aGlsZSAoMCkK
-LSMgZGVmaW5lIGFyY2hfc3Bpbl91bmxvY2sobG9jaykJZG8geyAodm9pZCkobG9jayk7IH0gd2hp
-bGUgKDApCi0jIGRlZmluZSBhcmNoX3NwaW5fdHJ5bG9jayhsb2NrKQkoeyAodm9pZCkobG9jayk7
-IDE7IH0pCisjIGRlZmluZSBhcmNoX3NwaW5fbG9jayhsb2NrKQkJZG8geyBiYXJyaWVyKCk7ICh2
-b2lkKShsb2NrKTsgfSB3aGlsZSAoMCkKKyMgZGVmaW5lIGFyY2hfc3Bpbl9sb2NrX2ZsYWdzKGxv
-Y2ssIGZsYWdzKQlkbyB7IGJhcnJpZXIoKTsgKHZvaWQpKGxvY2spOyB9IHdoaWxlICgwKQorIyBk
-ZWZpbmUgYXJjaF9zcGluX3VubG9jayhsb2NrKQlkbyB7IGJhcnJpZXIoKTsgKHZvaWQpKGxvY2sp
-OyB9IHdoaWxlICgwKQorIyBkZWZpbmUgYXJjaF9zcGluX3RyeWxvY2sobG9jaykJKHsgYmFycmll
-cigpOyAodm9pZCkobG9jayk7IDE7IH0pCiAjZW5kaWYgLyogREVCVUdfU1BJTkxPQ0sgKi8KIAog
-I2RlZmluZSBhcmNoX3NwaW5faXNfY29udGVuZGVkKGxvY2spCSgoKHZvaWQpKGxvY2spLCAwKSkK
---089e0158b26821f7a204d9ee6d58--
