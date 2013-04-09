@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936150Ab3DITfx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 15:35:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19709 "EHLO mx1.redhat.com"
+	id S936175Ab3DITgH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 15:36:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1541 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1765118Ab3DITfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 15:35:51 -0400
-Date: Tue, 9 Apr 2013 21:32:35 +0200
+	id S1765118Ab3DITgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 15:36:04 -0400
+Date: Tue, 9 Apr 2013 21:32:44 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -14,9 +14,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/7] uprobes/tracing: Make uprobe_{trace,perf}_print()
-	uretprobe-friendly
-Message-ID: <20130409193235.GA27244@redhat.com>
+Subject: [PATCH v2 7/7] uprobes/tracing: Change create_trace_uprobe() to
+	support uretprobes
+Message-ID: <20130409193244.GA27257@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,98 +26,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change uprobe_trace_print() and uprobe_perf_print() to check
-is_ret_probe() and fill ring_buffer_event accordingly.
-
-Also change uprobe_trace_func() and uprobe_perf_func() to not
-_print() if is_ret_probe() is true. Note that we keep ->handler()
-nontrivial even for uretprobe, we need this for filtering and for
-other potential extensions.
+Finally change create_trace_uprobe() to check if argv[0][0] == 'r'
+and pass the correct "is_ret" to alloc_trace_uprobe().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Tested-by: Anton Arapov <anton@redhat.com>
 ---
- kernel/trace/trace_uprobe.c |   34 +++++++++++++++++++++++++---------
- 1 files changed, 25 insertions(+), 9 deletions(-)
+ kernel/trace/trace_uprobe.c |   11 +++++++----
+ 1 files changed, 7 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 72aa45e..0ed99a2 100644
+index 8c9f489..2d08bea 100644
 --- a/kernel/trace/trace_uprobe.c
 +++ b/kernel/trace/trace_uprobe.c
-@@ -516,15 +516,22 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
- 	int size, i;
- 	struct ftrace_event_call *call = &tu->call;
+@@ -201,7 +201,7 @@ end:
  
--	size = SIZEOF_TRACE_ENTRY(false) + tu->size;
-+	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
- 	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
--						  size, 0, 0);
-+						  size + tu->size, 0, 0);
- 	if (!event)
- 		return;
+ /*
+  * Argument syntax:
+- *  - Add uprobe: p[:[GRP/]EVENT] PATH:SYMBOL[+offs] [FETCHARGS]
++ *  - Add uprobe: p|r[:[GRP/]EVENT] PATH:SYMBOL [FETCHARGS]
+  *
+  *  - Remove uprobe: -:[GRP/]EVENT
+  */
+@@ -213,20 +213,23 @@ static int create_trace_uprobe(int argc, char **argv)
+ 	char buf[MAX_EVENT_NAME_LEN];
+ 	struct path path;
+ 	unsigned long offset;
+-	bool is_delete;
++	bool is_delete, is_return;
+ 	int i, ret;
  
- 	entry = ring_buffer_event_data(event);
--	entry->vaddr[0] = instruction_pointer(regs);
--	data = DATAOF_TRACE_ENTRY(entry, false);
-+	if (is_ret_probe(tu)) {
-+		entry->vaddr[0] = func;
-+		entry->vaddr[1] = instruction_pointer(regs);
-+		data = DATAOF_TRACE_ENTRY(entry, true);
-+	} else {
-+		entry->vaddr[0] = instruction_pointer(regs);
-+		data = DATAOF_TRACE_ENTRY(entry, false);
-+	}
-+
- 	for (i = 0; i < tu->nr_args; i++)
- 		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
+ 	inode = NULL;
+ 	ret = 0;
+ 	is_delete = false;
++	is_return = false;
+ 	event = NULL;
+ 	group = NULL;
  
-@@ -535,7 +542,8 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
- /* uprobe handler */
- static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
- {
--	uprobe_trace_print(tu, 0, regs);
-+	if (!is_ret_probe(tu))
-+		uprobe_trace_print(tu, 0, regs);
- 	return 0;
- }
+ 	/* argc must be >= 1 */
+ 	if (argv[0][0] == '-')
+ 		is_delete = true;
++	else if (argv[0][0] == 'r')
++		is_return = true;
+ 	else if (argv[0][0] != 'p') {
+-		pr_info("Probe definition must be started with 'p' or '-'.\n");
++		pr_info("Probe definition must be started with 'p', 'r' or '-'.\n");
+ 		return -EINVAL;
+ 	}
  
-@@ -784,7 +792,7 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
- 	void *data;
- 	int size, rctx, i;
+@@ -324,7 +327,7 @@ static int create_trace_uprobe(int argc, char **argv)
+ 		kfree(tail);
+ 	}
  
--	size = SIZEOF_TRACE_ENTRY(false);
-+	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
- 	size = ALIGN(size + tu->size + sizeof(u32), sizeof(u64)) - sizeof(u32);
- 	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE, "profile buffer not large enough"))
- 		return;
-@@ -795,8 +803,15 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
- 		goto out;
- 
- 	ip = instruction_pointer(regs);
--	entry->vaddr[0] = ip;
--	data = DATAOF_TRACE_ENTRY(entry, false);
-+	if (is_ret_probe(tu)) {
-+		entry->vaddr[0] = func;
-+		entry->vaddr[1] = ip;
-+		data = DATAOF_TRACE_ENTRY(entry, true);
-+	} else {
-+		entry->vaddr[0] = ip;
-+		data = DATAOF_TRACE_ENTRY(entry, false);
-+	}
-+
- 	for (i = 0; i < tu->nr_args; i++)
- 		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
- 
-@@ -812,7 +827,8 @@ static int uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
- 	if (!uprobe_perf_filter(&tu->consumer, 0, current->mm))
- 		return UPROBE_HANDLER_REMOVE;
- 
--	uprobe_perf_print(tu, 0, regs);
-+	if (!is_ret_probe(tu))
-+		uprobe_perf_print(tu, 0, regs);
- 	return 0;
- }
- 
+-	tu = alloc_trace_uprobe(group, event, argc, false);
++	tu = alloc_trace_uprobe(group, event, argc, is_return);
+ 	if (IS_ERR(tu)) {
+ 		pr_info("Failed to allocate trace_uprobe.(%d)\n", (int)PTR_ERR(tu));
+ 		ret = PTR_ERR(tu);
 -- 
 1.5.5.1
 
