@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935059Ab3DIM6j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 08:58:39 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:48295
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759172Ab3DIM6i (ORCPT
+	id S935474Ab3DINAw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 09:00:52 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:53442 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759207Ab3DINAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 08:58:38 -0400
-Date: Tue, 9 Apr 2013 14:58:17 +0200
-From: Jens Axboe <axboe@kernel.dk>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: rob@landley.net, linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH] Documentation: cfq-iosched: update documentation help
- for cfq tunnables
-Message-ID: <20130409125817.GC12244@kernel.dk>
-References: <1364698505-22236-1-git-send-email-linkinjeon@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364698505-22236-1-git-send-email-linkinjeon@gmail.com>
+	Tue, 9 Apr 2013 09:00:51 -0400
+From: Andrei Epure <epure.andrei@gmail.com>
+To: mingo@redhat.com, peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
+        Andrei Epure <epure.andrei@gmail.com>
+Subject: [PATCH] include:linux: task_struct personality comment
+Date: Tue,  9 Apr 2013 16:02:12 +0300
+Message-Id: <1365512532-18730-1-git-send-email-epure.andrei@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 31 2013, Namjae Jeon wrote:
-> From: Namjae Jeon <namjae.jeon@samsung.com>
-> 
-> Add the documentation text for latency, target_latency & group_idle
-> tunnable parameters in the block/cfq-iosched.txt.
-> Also fix few typo(spelling) mistakes.
+Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
+---
+ include/linux/sched.h |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Thanks, merged with various fixups to the language. You can see the end-result
-here:
-
-http://git.kernel.dk/?p=linux-block.git;a=commit;h=fdc6fdc52e4630f5020281ce5450be7cc1887de2
-
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d35d2b6..8621bb0 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1274,8 +1274,10 @@ struct task_struct {
+ 	int exit_code, exit_signal;
+ 	int pdeath_signal;  /*  The signal sent when the parent dies  */
+ 	unsigned int jobctl;	/* JOBCTL_*, siglock protected */
+-	/* ??? */
++
++	/* used with exec_domain for compatibility with other UNIX-like OSs */
+ 	unsigned int personality;
++
+ 	unsigned did_exec:1;
+ 	unsigned in_execve:1;	/* Tell the LSMs that the process is doing an
+ 				 * execve */
 -- 
-Jens Axboe
+1.7.9.5
 
