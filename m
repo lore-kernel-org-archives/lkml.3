@@ -1,140 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965115Ab3DIMha (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 08:37:30 -0400
-Received: from smtp-out-158.synserver.de ([212.40.185.158]:1042 "EHLO
-	smtp-out-158.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763878Ab3DIMh0 (ORCPT
+	id S965165Ab3DIMiG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 08:38:06 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:60005 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936935Ab3DIMgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 08:37:26 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 3444
-Message-ID: <51640B48.5060506@metafoo.de>
-Date: Tue, 09 Apr 2013 14:36:24 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Dan Williams <djbw@fb.com>,
-        Jon Hunter <jon-hunter@ti.com>, Padmavathi Venna <padma.v@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] dma: of: Add generic xlate function for matching
- by channel id
-References: <1364217412-31905-1-git-send-email-lars@metafoo.de> <20130329214951.GA10326@intel.com> <5156A49E.5030901@metafoo.de> <20130409112816.GH31193@intel.com>
-In-Reply-To: <20130409112816.GH31193@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Apr 2013 08:36:44 -0400
+From: Pavel Shilovsky <piastry@etersoft.ru>
+To: linux-kernel@vger.kernel.org
+Cc: linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, wine-devel@winehq.org
+Subject: [PATCH v5 6/7] NFSD: Pass share reservations flags to VFS
+Date: Tue,  9 Apr 2013 16:40:26 +0400
+Message-Id: <1365511227-17626-7-git-send-email-piastry@etersoft.ru>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1365511227-17626-1-git-send-email-piastry@etersoft.ru>
+References: <1365511227-17626-1-git-send-email-piastry@etersoft.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2013 01:28 PM, Vinod Koul wrote:
-> On Sat, Mar 30, 2013 at 09:38:54AM +0100, Lars-Peter Clausen wrote:
->> On 03/29/2013 10:49 PM, Vinod Koul wrote:
->>> On Mon, Mar 25, 2013 at 02:16:51PM +0100, Lars-Peter Clausen wrote:
->>>> This patch adds a new generic of dma xlate callback function which will match a
->>>> channel by its id.
->>> how will the client know which "id" to request? 
->>
->> The devicetree tells it, or what exactly do you mean?
-> Is this global id? Anrd, what does the id mean in DT?
+that maps them into O_DENY flags and make them visible for
+applications that use O_DENYMAND opens.
 
-It's more or less a device specific cookie. And in this case we are using a
-1 to 1 mapping to the channel number.
+Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+---
+ fs/locks.c          |  1 +
+ fs/nfsd/nfs4state.c | 46 +++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 46 insertions(+), 1 deletion(-)
 
-- Lars
-
->>
->> - Lars
->>
->>>
->>>>
->>>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
->>>> ---
->>>>  drivers/dma/of-dma.c   | 47 +++++++++++++++++++++++++++++++++++++++++++++++
->>>>  include/linux/of_dma.h |  4 ++++
->>>>  2 files changed, 51 insertions(+)
->>>>
->>>> diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
->>>> index 00db454..7cad4d7 100644
->>>> --- a/drivers/dma/of-dma.c
->>>> +++ b/drivers/dma/of-dma.c
->>>> @@ -269,3 +269,50 @@ struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
->>>>  			&dma_spec->args[0]);
->>>>  }
->>>>  EXPORT_SYMBOL_GPL(of_dma_simple_xlate);
->>>> +
->>>> +struct of_dma_filter_by_chan_id_args {
->>>> +	struct dma_device *dev;
->>>> +	unsigned int chan_id;
->>>> +};
->>>> +
->>>> +static bool of_dma_filter_by_chan_id(struct dma_chan *chan, void *params)
->>>> +{
->>>> +	struct of_dma_filter_by_chan_id_args *args = params;
->>>> +
->>>> +	return chan->device == args->dev && chan->chan_id == args->chan_id;
->>>> +}
->>>> +
->>>> +/**
->>>> + * of_dma_xlate_by_chan_id - Translate dt property to DMA channel by channel id
->>>> + * @dma_spec:	pointer to DMA specifier as found in the device tree
->>>> + * @of_dma:	pointer to DMA controller data
->>>> + *
->>>> + * This function can be used as the of xlate callback for DMA driver which want
->>>> + * to match the channel based on the channel id. When using this xlate function
->>>> + * the #dma-cells propety of the DMA controller dt node needs to be set to 1.
->>>> + * The data parameter of of_dma_controller_register must be a pointer to the
->>>> + * dma_device struct the function should match uppon.
->>>> + *
->>>> + * Returns pointer to appropriate dma channel on success or NULL on error.
->>>> + */
->>>> +struct dma_chan *of_dma_xlate_by_chan_id(struct of_phandle_args *dma_spec,
->>>> +					 struct of_dma *ofdma)
->>>> +{
->>>> +	struct of_dma_filter_by_chan_id_args args;
->>>> +	dma_cap_mask_t cap;
->>>> +
->>>> +	args.dev = ofdma->of_dma_data;
->>>> +	if (!args.dev)
->>>> +		return NULL;
->>>> +
->>>> +	if (dma_spec->args_count != 1)
->>>> +		return NULL;
->>>> +
->>>> +	dma_cap_zero(cap);
->>>> +	dma_cap_set(DMA_SLAVE, cap);
->>>> +
->>>> +	args.chan_id = dma_spec->args[0];
->>>> +
->>>> +	return dma_request_channel(cap, of_dma_filter_by_chan_id, &args);
->>>> +}
->>>> +EXPORT_SYMBOL_GPL(of_dma_xlate_by_chan_id);
->>>> diff --git a/include/linux/of_dma.h b/include/linux/of_dma.h
->>>> index ce6a8ab..46732d3 100644
->>>> --- a/include/linux/of_dma.h
->>>> +++ b/include/linux/of_dma.h
->>>> @@ -43,6 +43,8 @@ extern struct dma_chan *of_dma_request_slave_channel(struct device_node *np,
->>>>  						     const char *name);
->>>>  extern struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_spec,
->>>>  		struct of_dma *ofdma);
->>>> +extern struct dma_chan *of_dma_xlate_by_chan_id(struct of_phandle_args *dma_spec,
->>>> +		struct of_dma *ofdma);
->>>>  #else
->>>>  static inline int of_dma_controller_register(struct device_node *np,
->>>>  		struct dma_chan *(*of_dma_xlate)
->>>> @@ -69,6 +71,8 @@ static inline struct dma_chan *of_dma_simple_xlate(struct of_phandle_args *dma_s
->>>>  	return NULL;
->>>>  }
->>>>  
->>>> +#define of_dma_xlate_by_chan_id NULL
->>>> +
->>>>  #endif
->>>>  
->>>>  #endif /* __LINUX_OF_DMA_H */
->>>> -- 
->>>> 1.8.0
->>>>
->>
+diff --git a/fs/locks.c b/fs/locks.c
+index 52c9ea1..1402a43 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -866,6 +866,7 @@ deny_lock_file(struct file *filp)
+ 	locks_free_lock(lock);
+ 	return error;
+ }
++EXPORT_SYMBOL(deny_lock_file);
+ 
+ static int __posix_lock_file(struct inode *inode, struct file_lock *request, struct file_lock *conflock)
+ {
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index a8309c6..eb40c4f 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -476,6 +476,19 @@ test_deny(u32 access, struct nfs4_ol_stateid *stp)
+ 	return test_bit(access, &stp->st_deny_bmap);
+ }
+ 
++static int nfs4_deny_to_odeny(u32 access)
++{
++	switch (access & NFS4_SHARE_DENY_BOTH) {
++	case NFS4_SHARE_DENY_READ:
++		return O_DENYREAD;
++	case NFS4_SHARE_DENY_WRITE:
++		return O_DENYWRITE;
++	case NFS4_SHARE_DENY_BOTH:
++		return O_DENYREAD | O_DENYWRITE;
++	}
++	return 0;
++}
++
+ static int nfs4_access_to_omode(u32 access)
+ {
+ 	switch (access & NFS4_SHARE_ACCESS_BOTH) {
+@@ -2795,6 +2808,21 @@ nfsd4_truncate(struct svc_rqst *rqstp, struct svc_fh *fh,
+ }
+ 
+ static __be32
++nfs4_vfs_set_deny(struct nfs4_file *fp, unsigned long share_access,
++		  unsigned long deny_access)
++{
++	int oflag, rc;
++	__be32 status = nfs_ok;
++
++	oflag = nfs4_access_to_omode(share_access);
++	fp->fi_fds[oflag]->f_flags |= nfs4_deny_to_odeny(deny_access);
++	rc = deny_lock_file(fp->fi_fds[oflag]);
++	if (rc)
++		status = nfserrno(rc);
++	return status;
++}
++
++static __be32
+ nfs4_upgrade_open(struct svc_rqst *rqstp, struct nfs4_file *fp, struct svc_fh *cur_fh, struct nfs4_ol_stateid *stp, struct nfsd4_open *open)
+ {
+ 	u32 op_share_access = open->op_share_access;
+@@ -2815,6 +2843,14 @@ nfs4_upgrade_open(struct svc_rqst *rqstp, struct nfs4_file *fp, struct svc_fh *c
+ 		}
+ 		return status;
+ 	}
++	status = nfs4_vfs_set_deny(fp, op_share_access, open->op_share_deny);
++	if (status) {
++		if (new_access) {
++			int oflag = nfs4_access_to_omode(op_share_access);
++			nfs4_file_put_access(fp, oflag);
++		}
++		return status;
++	}
+ 	/* remember the open */
+ 	set_access(op_share_access, stp);
+ 	set_deny(open->op_share_deny, stp);
+@@ -3048,7 +3084,7 @@ nfsd4_process_open2(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nf
+ 
+ 	/*
+ 	 * OPEN the file, or upgrade an existing OPEN.
+-	 * If truncate fails, the OPEN fails.
++	 * If truncate or setting deny fails, the OPEN fails.
+ 	 */
+ 	if (stp) {
+ 		/* Stateid was found, this is an OPEN upgrade */
+@@ -3062,6 +3098,10 @@ nfsd4_process_open2(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nf
+ 		status = nfsd4_truncate(rqstp, current_fh, open);
+ 		if (status)
+ 			goto out;
++		status = nfs4_vfs_set_deny(fp, open->op_share_access,
++					   open->op_share_deny);
++		if (status)
++			goto out;
+ 		stp = open->op_stp;
+ 		open->op_stp = NULL;
+ 		init_open_stateid(stp, fp, open);
+@@ -3760,6 +3800,10 @@ nfsd4_open_downgrade(struct svc_rqst *rqstp,
+ 	}
+ 	nfs4_stateid_downgrade(stp, od->od_share_access);
+ 
++	status = nfs4_vfs_set_deny(stp->st_file, od->od_share_access,
++				   od->od_share_deny);
++	if (status)
++		goto out;
+ 	reset_union_bmap_deny(od->od_share_deny, stp);
+ 
+ 	update_stateid(&stp->st_stid.sc_stateid);
+-- 
+1.8.1.5
 
