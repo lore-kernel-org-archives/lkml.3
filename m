@@ -1,56 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935868Ab3DILXb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 07:23:31 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:38939 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935341Ab3DILXa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 07:23:30 -0400
+	id S935944Ab3DILY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 07:24:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50742 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755153Ab3DILYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 07:24:55 -0400
+Date: Tue, 9 Apr 2013 12:13:59 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/10] mm: vmscan: Have kswapd shrink slab only once per
+ priority
+Message-ID: <20130409111358.GB2002@suse.de>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-9-git-send-email-mgorman@suse.de>
+ <20130409065325.GA4411@lge.com>
 MIME-Version: 1.0
-In-Reply-To: <201304072323.42173.arnd@arndb.de>
-References: <6FE4B33E-A503-4A75-AEED-831CB2C06D83@gmail.com>
-	<4B3FD561-84FC-40CD-B747-13851692D673@gmail.com>
-	<521DFDFC-7E9E-47EA-ACDA-C91BBDC8454E@gmail.com>
-	<201304072323.42173.arnd@arndb.de>
-Date: Tue, 9 Apr 2013 13:23:27 +0200
-Message-ID: <CACRpkda9Nue-8Esp3cJ6u2-MJ2ZL8hH-2BnrhHwWv4GZP2VR5w@mail.gmail.com>
-Subject: Re: [RFC PATCH arm: initial TI-Nspire support]
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>
-Cc: Daniel Tang <dt.tangr@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        fabian@ritter-vogt.de, Lionel Debroux <lionel_debroux@yahoo.fr>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130409065325.GA4411@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 7, 2013 at 11:23 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Sunday 07 April 2013, Daniel Tang wrote:
->> Here's an updated patch that enables support for the LCD.
->>
->> I looked into drivers/video/of_display_timing.c but it doesn't have the fields to describe the
->> PL11x specific options needed in struct clcd_panel. At the moment, it is implemented by
->> hardcoding the values in the kernel and using the device tree to select the correct
->> configuration.
->>
->> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
->
-> I think you should for now keep the clcd stuff in a separate file,
-> since it will be replaced with DT logic eventually. For now, the
-> auxdata method is ok, but Linus Walleij might already have thought
-> about how pl111 should get all its data from the device tree.
+On Tue, Apr 09, 2013 at 03:53:25PM +0900, Joonsoo Kim wrote:
+> Hello, Mel.
+> Sorry for too late question.
+> 
 
-So last thing I heard there was *someone* at ARM working on
-device tree support for the PL110/PL111, so I just don't know who
-this was.
+No need to apologise at all.
 
-But I bet Pawel knows, because it will be needed for all
-ARM reference designs.
+> On Sun, Mar 17, 2013 at 01:04:14PM +0000, Mel Gorman wrote:
+> > If kswaps fails to make progress but continues to shrink slab then it'll
+> > either discard all of slab or consume CPU uselessly scanning shrinkers.
+> > This patch causes kswapd to only call the shrinkers once per priority.
+> > 
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > ---
+> >  mm/vmscan.c | 28 +++++++++++++++++++++-------
+> >  1 file changed, 21 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 7d5a932..84375b2 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -2661,9 +2661,10 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+> >   */
+> >  static bool kswapd_shrink_zone(struct zone *zone,
+> >  			       struct scan_control *sc,
+> > -			       unsigned long lru_pages)
+> > +			       unsigned long lru_pages,
+> > +			       bool shrinking_slab)
+> >  {
+> > -	unsigned long nr_slab;
+> > +	unsigned long nr_slab = 0;
+> >  	struct reclaim_state *reclaim_state = current->reclaim_state;
+> >  	struct shrink_control shrink = {
+> >  		.gfp_mask = sc->gfp_mask,
+> > @@ -2673,9 +2674,15 @@ static bool kswapd_shrink_zone(struct zone *zone,
+> >  	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
+> >  	shrink_zone(zone, sc);
+> >  
+> > -	reclaim_state->reclaimed_slab = 0;
+> > -	nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
+> > -	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+> > +	/*
+> > +	 * Slabs are shrunk for each zone once per priority or if the zone
+> > +	 * being balanced is otherwise unreclaimable
+> > +	 */
+> > +	if (shrinking_slab || !zone_reclaimable(zone)) {
+> > +		reclaim_state->reclaimed_slab = 0;
+> > +		nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
+> > +		sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+> > +	}
+> >  
+> >  	if (nr_slab == 0 && !zone_reclaimable(zone))
+> >  		zone->all_unreclaimable = 1;
+> 
+> Why shrink_slab() is called here?
 
-Yours,
-Linus Walleij
+Preserves existing behaviour.
+
+> I think that outside of zone loop is better place to run shrink_slab(),
+> because shrink_slab() is not directly related to a specific zone.
+> 
+
+This is true and has been the case for a long time. The slab shrinkers
+are not zone aware and it is complicated by the fact that slab usage can
+indirectly pin memory on other zones. Consider for example a slab object
+that is an inode entry that is allocated from the Normal zone on a
+32-bit machine. Reclaiming may free memory from the Highmem zone.
+
+It's less obvious a problem on 64-bit machines but freeing slab objects
+from a zone like DMA32 can indirectly free memory from the Normal zone or
+even another node entirely.
+
+> And this is a question not related to this patch.
+> Why nr_slab is used here to decide zone->all_unreclaimable?
+
+Slab is not directly associated with a slab but as reclaiming slab can
+free memory from unpredictable zones we do not consider a zone to be
+fully unreclaimable until we cannot shrink slab any more.
+
+You may be thinking that this is extremely heavy handed and you're
+right, it is.
+
+> nr_slab is not directly related whether a specific zone is reclaimable
+> or not, and, moreover, nr_slab is not directly related to number of
+> reclaimed pages. It just say some objects in the system are freed.
+> 
+
+All true, it's the indirect relation between slab objects and the memory
+that is freed when slab objects are reclaimed that has to be taken into
+account.
+
+> This question comes from my ignorance, so please enlighten me.
+> 
+
+I hope this clarifies matters.
+
+-- 
+Mel Gorman
+SUSE Labs
