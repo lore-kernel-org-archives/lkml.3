@@ -1,131 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935944Ab3DILY4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 07:24:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50742 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755153Ab3DILYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 07:24:55 -0400
-Date: Tue, 9 Apr 2013 12:13:59 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 08/10] mm: vmscan: Have kswapd shrink slab only once per
- priority
-Message-ID: <20130409111358.GB2002@suse.de>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-9-git-send-email-mgorman@suse.de>
- <20130409065325.GA4411@lge.com>
+	id S935989Ab3DIL0R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 07:26:17 -0400
+Received: from drsnuggles.stderr.nl ([94.142.244.14]:53101 "EHLO
+	drsnuggles.stderr.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932926Ab3DIL0P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 07:26:15 -0400
+X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Apr 2013 07:26:15 EDT
+Date: Tue, 9 Apr 2013 13:26:03 +0200
+From: Matthijs Kooijman <matthijs@stdin.nl>
+To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
+Cc: Paul Zimmerman <Paul.Zimmerman@synopsys.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] checkpatch: Check block comments outside of net
+Message-ID: <20130409112603.GH13691@login.drsnuggles.stderr.nl>
+Mail-Followup-To: Matthijs Kooijman <matthijs@stdin.nl>,
+	Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>,
+	Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+	linux-kernel@vger.kernel.org
+References: <20130409111958.GG13691@login.drsnuggles.stderr.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130409065325.GA4411@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130409111958.GG13691@login.drsnuggles.stderr.nl>
+X-PGP-Fingerprint: 7F6A 9F44 2820 18E2 18DE  24AA CF49 D0E6 8A2F AFBC
+X-PGP-Key: http://www.stderr.nl/static/files/gpg_pubkey.asc
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-Score: -2.6 (--)
+X-Spam-Report: Spamchecked on "mail.drsnuggles.stderr.nl"
+	pts  rule name              description
+	---- ---------------------- -------------------------------------------
+	-2.6 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 03:53:25PM +0900, Joonsoo Kim wrote:
-> Hello, Mel.
-> Sorry for too late question.
-> 
+There was some code checking block comments in net/ and drivers/net/,
+but nothing for regular comments.
 
-No need to apologise at all.
+The end of a block comment is the same as inside net, so that check can
+just be generalized.
 
-> On Sun, Mar 17, 2013 at 01:04:14PM +0000, Mel Gorman wrote:
-> > If kswaps fails to make progress but continues to shrink slab then it'll
-> > either discard all of slab or consume CPU uselessly scanning shrinkers.
-> > This patch causes kswapd to only call the shrinkers once per priority.
-> > 
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > ---
-> >  mm/vmscan.c | 28 +++++++++++++++++++++-------
-> >  1 file changed, 21 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 7d5a932..84375b2 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -2661,9 +2661,10 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
-> >   */
-> >  static bool kswapd_shrink_zone(struct zone *zone,
-> >  			       struct scan_control *sc,
-> > -			       unsigned long lru_pages)
-> > +			       unsigned long lru_pages,
-> > +			       bool shrinking_slab)
-> >  {
-> > -	unsigned long nr_slab;
-> > +	unsigned long nr_slab = 0;
-> >  	struct reclaim_state *reclaim_state = current->reclaim_state;
-> >  	struct shrink_control shrink = {
-> >  		.gfp_mask = sc->gfp_mask,
-> > @@ -2673,9 +2674,15 @@ static bool kswapd_shrink_zone(struct zone *zone,
-> >  	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
-> >  	shrink_zone(zone, sc);
-> >  
-> > -	reclaim_state->reclaimed_slab = 0;
-> > -	nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
-> > -	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
-> > +	/*
-> > +	 * Slabs are shrunk for each zone once per priority or if the zone
-> > +	 * being balanced is otherwise unreclaimable
-> > +	 */
-> > +	if (shrinking_slab || !zone_reclaimable(zone)) {
-> > +		reclaim_state->reclaimed_slab = 0;
-> > +		nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
-> > +		sc->nr_reclaimed += reclaim_state->reclaimed_slab;
-> > +	}
-> >  
-> >  	if (nr_slab == 0 && !zone_reclaimable(zone))
-> >  		zone->all_unreclaimable = 1;
-> 
-> Why shrink_slab() is called here?
+The start of block comment must not have any comment after the leading
+/*, which requires a new check.
 
-Preserves existing behaviour.
+Tested with:
 
-> I think that outside of zone loop is better place to run shrink_slab(),
-> because shrink_slab() is not directly related to a specific zone.
-> 
+$ cat test.c
+/* foo */
 
-This is true and has been the case for a long time. The slab shrinkers
-are not zone aware and it is complicated by the fact that slab usage can
-indirectly pin memory on other zones. Consider for example a slab object
-that is an inode entry that is allocated from the Normal zone on a
-32-bit machine. Reclaiming may free memory from the Highmem zone.
+/*
+ * foo
+ */
 
-It's less obvious a problem on 64-bit machines but freeing slab objects
-from a zone like DMA32 can indirectly free memory from the Normal zone or
-even another node entirely.
+/* foo
+ */
 
-> And this is a question not related to this patch.
-> Why nr_slab is used here to decide zone->all_unreclaimable?
+/* foo
+ * bar */
 
-Slab is not directly associated with a slab but as reclaiming slab can
-free memory from unpredictable zones we do not consider a zone to be
-fully unreclaimable until we cannot shrink slab any more.
+/**
+ * foo
+ * bar
+ */
 
-You may be thinking that this is extremely heavy handed and you're
-right, it is.
+/****************************
+ * some long block comment
+ ****************************/
 
-> nr_slab is not directly related whether a specific zone is reclaimable
-> or not, and, moreover, nr_slab is not directly related to number of
-> reclaimed pages. It just say some objects in the system are freed.
-> 
+struct foo {
+        int bar;        /* another test */
+};
 
-All true, it's the indirect relation between slab objects and the memory
-that is freed when slab objects are reclaimed that has to be taken into
-account.
+$ ./scripts/checkpatch.pl -f test.c
+WARNING: block comments put the leading /* on a separate line
++
++/* foo
 
-> This question comes from my ignorance, so please enlighten me.
-> 
+WARNING: block comments put the leading /* on a separate line
++
++/* foo
 
-I hope this clarifies matters.
+WARNING: block comments put the trailing */ on a separate line
++ * bar */
 
+WARNING: block comments put the leading /* on a separate line
++
++/**
+
+WARNING: block comments put the leading /* on a separate line
++
++/****************************
+
+total: 0 errors, 5 warnings, 25 lines checked
+Signed-off-by: Matthijs Kooijman <matthijs@stdin.nl>
+---
+ scripts/checkpatch.pl | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
+
+Note that this patch rejects /** comments, since those are not mentioned
+in Codingstyle. They are used in practice though (around 1000 occurences
+in kernel/ alone), so perhaps they should be allowed and documented?
+
+Also, the new check only fires when the previous line is empty, just
+like the start of block comment check for net/. However, I couldn't find
+any documentation on why this restriction is needed?
+
+v2 makes a change to the error message and adds a comment I forgot to
+commit when creating this patch.
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index b28cc38..458cdbf 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1884,13 +1884,21 @@ sub process {
+ 			     "networking block comments don't use an empty /* line, use /* Comment...\n" . $hereprev);
+ 		}
+ 
+-		if ($realfile =~ m@^(drivers/net/|net/)@ &&
+-		    $rawline !~ m@^\+[ \t]*\*/[ \t]*$@ &&	#trailing */
++		if ($realfile !~ m@^(drivers/net/|net/)@ &&
++		    $rawline !~ m@^\+.*/\*.*\*/[ \t]*$@ &&	#inline /*...*/
++		    $rawline !~ /^\+[ \t]*\/\*[ \t]*$/ &&	#blank /*
++		    $rawline =~ /^\+[ \t]*\/\*.+$/ &&		#non blank /*
++		    $prevrawline =~ /^\+[ \t]*$/) {
++			WARN("BLOCK_COMMENT_STYLE",
++			     "block comments put the leading /* on a separate line\n" . $hereprev);
++		}
++
++		if ($rawline !~ m@^\+[ \t]*\*/[ \t]*$@ &&	#trailing */
+ 		    $rawline !~ m@^\+.*/\*.*\*/[ \t]*$@ &&	#inline /*...*/
+ 		    $rawline !~ m@^\+.*\*{2,}/[ \t]*$@ &&	#trailing **/
+ 		    $rawline =~ m@^\+[ \t]*.+\*\/[ \t]*$@) {	#non blank */
+-			WARN("NETWORKING_BLOCK_COMMENT_STYLE",
+-			     "networking block comments put the trailing */ on a separate line\n" . $herecurr);
++			WARN("BLOCK_COMMENT_STYLE",
++			     "block comments put the trailing */ on a separate line\n" . $herecurr);
+ 		}
+ 
+ # check for spaces at the beginning of a line.
 -- 
-Mel Gorman
-SUSE Labs
+1.8.0
+
