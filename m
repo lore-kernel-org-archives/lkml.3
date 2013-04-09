@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936760Ab3DIMbX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 08:31:23 -0400
-Received: from zmc.proxad.net ([212.27.53.206]:50360 "EHLO zmc.proxad.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935978Ab3DIM3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 08:29:53 -0400
-From: Florian Fainelli <florian@openwrt.org>
-To: stern@rowland.harvard.edu
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, balbi@ti.com,
-        Florian Fainelli <florian@openwrt.org>
-Subject: [PATCH 0/5 v4] USB: Kconfig cleanups
-Date: Tue,  9 Apr 2013 14:29:24 +0200
-Message-Id: <1365510569-8110-1-git-send-email-florian@openwrt.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1365091048-16229-1-git-send-email-florian@openwrt.org>
-References: <1365091048-16229-1-git-send-email-florian@openwrt.org>
+	id S964831Ab3DIMcW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 08:32:22 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:43591 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755153Ab3DIMcU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 08:32:20 -0400
+Message-ID: <51640A16.1060002@cogentembedded.com>
+Date: Tue, 09 Apr 2013 16:31:18 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Vivek Gautam <gautam.vivek@samsung.com>
+CC: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        stern@rowland.harvard.edu, kgene.kim@samsung.com,
+        Manjunath Goudar <manjunath.goudar@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH] usb: ehci-s5p: fix: Fix null pointer dereferencing
+References: <1365499312-14232-1-git-send-email-gautam.vivek@samsung.com>
+In-Reply-To: <1365499312-14232-1-git-send-email-gautam.vivek@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These 5 patches contain my Kconfig cleanup on which I based the removal
-of the USB_ARCH_HAS_* patches. They have been suggested by Alan Stern
-as part of an earlier conversations.
+Hello.
 
-Let me know what you think about it so I can post subsequent work based
-on it.
+On 09-04-2013 13:21, Vivek Gautam wrote:
 
-Florian Fainelli (5):
-  USB: regroup all depends on USB within an if USB block
-  USB: remove USB_EHCI_BIG_ENDIAN_{DESC,MMIO} depends on architecture
-    symbol
-  USB: enclose EHCI HCD drivers within an if USB_EHCI_HCD block
-  USB: enclose all depends on USB_OHCI_HCD within an if USB_OHCI_HCD
-    block
-  USB: enclose USB_XHCI_HCD related symbols within a if USB_XHCI_HCD
-    block
+> 7edb3da makes ehci-s5p as a separate driver. But,
 
- arch/arm/Kconfig                    |    2 +
- arch/mips/Kconfig                   |    3 +
- arch/powerpc/platforms/44x/Kconfig  |    2 +
- arch/powerpc/platforms/512x/Kconfig |    2 +
- arch/sparc/Kconfig                  |    2 +
- drivers/usb/Kconfig                 |   23 +++--
- drivers/usb/atm/Kconfig             |    2 +-
- drivers/usb/class/Kconfig           |    6 +-
- drivers/usb/core/Kconfig            |    6 --
- drivers/usb/host/Kconfig            |  169 +++++++++++++++++------------------
- drivers/usb/image/Kconfig           |    4 +-
- drivers/usb/misc/Kconfig            |   21 -----
- drivers/usb/misc/sisusbvga/Kconfig  |    2 +-
- drivers/usb/mon/Kconfig             |    1 -
- drivers/usb/musb/Kconfig            |    2 +-
- drivers/usb/renesas_usbhs/Kconfig   |    2 +-
- drivers/usb/serial/Kconfig          |    2 +-
- drivers/usb/storage/Kconfig         |    7 +-
- drivers/usb/wusbcore/Kconfig        |    2 -
- 19 files changed, 116 insertions(+), 144 deletions(-)
+    Please also provide the summary line of that commit in parens.
 
--- 
-1.7.10.4
+> it raised an issue with its driver data.
+> Now that 's5p_ehci_hcd' doesn't maintain pointer to 'usb_hcd'
+> and s5p_ehci is nothing but a pointer to hcd->priv;
+> add hcd to the driver data rather than s5p_ehci.
+
+> This fixes issues with null pointer dereferencing in
+> s5p_ehci_shutdown(), s5p_ehci_suspend(), s5p_ehci_resume().
+
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> CC: Manjunath Goudar <manjunath.goudar@linaro.org>
+> CC: Arnd Bergmann <arnd@arndb.de>
+> CC: Jingoo Han <jg1.han@samsung.com>
+
+WBR, Sergei
+
 
