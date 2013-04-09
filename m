@@ -1,59 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937506Ab3DIKOk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 06:14:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48368 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936412Ab3DIKOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 06:14:39 -0400
-Date: Tue, 9 Apr 2013 12:14:37 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Simon Jeons <simon.jeons@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Hedi Berriche <hedi@sgi.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: page_alloc: Avoid marking zones full prematurely
- after zone_reclaim()
-Message-ID: <20130409101437.GE29860@dhcp22.suse.cz>
-References: <20130320181957.GA1878@suse.de>
- <514A7163.5070700@gmail.com>
- <20130321081902.GD6094@dhcp22.suse.cz>
- <515E6FC4.5000202@gmail.com>
- <5163E7EA.1040608@gmail.com>
+	id S937521Ab3DIKQp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 06:16:45 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:40196 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935573Ab3DIKQn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 06:16:43 -0400
+Message-ID: <5163EA7B.6090109@ti.com>
+Date: Tue, 9 Apr 2013 13:16:27 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5163E7EA.1040608@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, <b-cousson@ti.com>,
+        <linux@arm.linux.org.uk>, <rnayak@ti.com>, <balbi@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-usb@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, Paul Walmsley <paul@pwsan.com>,
+        "Menon, Nishanth" <nm@ti.com>
+Subject: Re: [RFC][PATCH 1/2] ARM: OMAP4: clock: Add device tree support for
+ AUXCLKs
+References: <1363703220-4777-1-git-send-email-rogerq@ti.com> <1363703220-4777-2-git-send-email-rogerq@ti.com> <20130403234242.GE10155@atomide.com> <515D2D30.3000306@ti.com> <20130404164137.GH10155@atomide.com> <515F1035.8090500@ti.com>
+In-Reply-To: <515F1035.8090500@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-04-13 18:05:30, Simon Jeons wrote:
-[...]
-> >I try this in v3.9-rc5:
-> >dd if=/dev/sda of=/dev/null bs=1MB
-> >14813+0 records in
-> >14812+0 records out
-> >14812000000 bytes (15 GB) copied, 105.988 s, 140 MB/s
-> >
-> >free -m -s 1
-> >
-> >                   total       used       free     shared buffers
-> >cached
-> >Mem:          7912       1181       6731          0 663        239
-> >-/+ buffers/cache:        277       7634
-> >Swap:         8011          0       8011
-> >
-> >It seems that almost 15GB copied before I stop dd, but the used
-> >pages which I monitor during dd always around 1200MB. Weird, why?
-> >
+On 04/05/2013 08:56 PM, Grygorii Strashko wrote:
+> On 04/04/2013 07:41 PM, Tony Lindgren wrote:
+>> * Roger Quadros <rogerq@ti.com> [130404 00:39]:
+>>> On 04/04/2013 02:42 AM, Tony Lindgren wrote:
+>>>>> --- a/arch/arm/mach-omap2/cclock44xx_data.c
+>>>>> +++ b/arch/arm/mach-omap2/cclock44xx_data.c
+>>>>> @@ -27,6 +27,7 @@
+>>>>>   #include <linux/clk-private.h>
+>>>>>   #include <linux/clkdev.h>
+>>>>>   #include <linux/io.h>
+>>>>> +#include <linux/of.h>
+>>>>>     #include "soc.h"
+>>>>>   #include "iomap.h"
+>>>>> @@ -1663,6 +1664,40 @@ static struct omap_clk omap44xx_clks[] = {
+>>>>>       CLK(NULL,    "cpufreq_ck",    &dpll_mpu_ck,    CK_443X),
+>>>>>   };
+>>>>>   +static struct clk *scrm_clks[] = {
+>>>>> +    &auxclk0_ck,
+>>>>> +    &auxclk1_ck,
+>>>>> +    &auxclk2_ck,
+>>>>> +    &auxclk3_ck,
+>>>>> +    &auxclk4_ck,
+>>>>> +    &auxclk5_ck,
+>>>>> +};
+>>>> Hmm I don't like the idea of specifying the auxclk both in the
+>>>> cclock44xx_data.c and in DT..
+>>> Right, but till we have all clocks moved to DT we only need this
+>>> approach for general purpose clocks that are not mapped to devices
+>>> by hwmod.
+>> For v3.10, let's just make sure that USB works with DT as then
+>> after v3.10 we can make omap4 DT only and get rid of estimated
+>> 7K lines of code and data. I guess this is the last piece missing
+>> for that, or are we also missing something else?
+>>
+>> Can't you set up a clock alias for your device so it can find the
+>> auxclk when requesting it with the dev entry?
+>>
+>> For the DT clock driver if needed for v3.10, how about just do a
+>> minimal drivers/clock/omap/ that uses the standard binding?
+>> Then that driver can just do clk_get() from cclock44xx_data.c
+>> for now? And then later on we'll just move all the clocks to a
+>> combination of DT + /lib/firmware.
+>>
+> Hi Roger, Rajendra, All
 > 
-> Sorry for waste your time, but the test result is weird, is it?
+> Sorry that disturbing you.
 
-I am not sure which values you have been watching but you have to
-realize that you are reading a _partition_ not a file and those pages
-go into buffers rather than the page chache.
--- 
-Michal Hocko
-SUSE Labs
+Hi Grygorri,
+
+Nothing to disturb at all ;).
+
+> 
+> I'm supporting Android OMAP4 kernels (K3.0/K3.4) and like to clarify few
+> points regarding this approach (having into account possible future migrations
+> on newer Kernels and OMAP5).
+> If I understand everything right, this patch series allows to create clock binding
+> in DT using following syntax: clocks = <&aux_clks 3>
+
+Actually in v2 of the patch this would be clocks = <&clks 3>
+
+>  - does it means that in worst case there will be ~200 clock IDs defined?
+
+I'm afraid so yes. But when I wrote this I was only thinking of generic clocks, i.e. AUXCLKS.
+So when we start talking of all clocks we might need to reconsider the approach.
+
+>  - does it means that clock nodes binding using phandles (human-friendly notation)
+> isn't going to be supported?
+> for example:
+>     clocks = <&sys_clkin_ck>
+>     clocks = <&dss_sys_clk &dss_tv_clk &dss_dss_clk>)
+
+This would depend if we define the clock nodes within DT or not. From what Tony
+mentioned (i.e. inefficiency) it seems that the clock nodes won't be defined
+in the device tree. Then we are left with using an index.
+> 
+> I was horrified to think about the problems of this approach support
+> (in case if there would be more then ~30 IDs) - just miss with on digit
+> and weeks of debugging would be guaranteed.
+> 
+> Please, say me that i'm wrong.
+
+It is still not written in stone so if you have a better idea we could
+go that route.
+
+cheers,
+-roger
+
+> And why clock DT data can't be auto-generated like all other OMAP data
+> to close this questions?
+> 
+> Thanks.
+> 
+>>> e.g. auxclk are required to be specified in DT nodes for USB PHY.
+>>> Without this we can't get USB host working on Panda.
+>> OK. So if the USB PHY has a dev entry, can't you just set up a
+>> clock alias in struct omap_clk omap44xx_clks[] for it?
+>>  
+>>> As Rajendra points out, it seems moving entire clock data to DT is not
+>>> going to happen soon. So this is the simplistic way things can work.
+>> Right but seems like we can get started there without moving
+>> them all at once.
+>>
+>> Regards,
+>>
+>> Tony
+>> -- 
+>> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
