@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936820Ab3DIHIx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 03:08:53 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:46045 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935060Ab3DIHIt (ORCPT
+	id S964836Ab3DIHJK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 03:09:10 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:6966 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936785Ab3DIHIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 03:08:49 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AggUABq+Y1F5LPOF/2dsb2JhbABRgwaCeLlehRoEAYEQF3SCHwEBBTocIxAIAxgJJQ8FJQMhE4gTrXOQLxWNcIEdB4NBA5ZzkQ6BVYFIKg
-Date: Tue, 9 Apr 2013 17:08:32 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Phillip Susi <psusi@ubuntu.com>, CAI Qian <caiqian@redhat.com>,
-        xfs@oss.sgi.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Loopback device hung [was Re: xfs deadlock on 3.9-rc5 running
- xfstests case #78]
-Message-ID: <20130409070832.GI17758@dastard>
-References: <20130402073035.GD3670@kernel.dk>
- <14055702.547701.1364891947331.JavaMail.root@redhat.com>
- <20130402090047.GF3670@kernel.dk>
- <985125161.581860.1364895066584.JavaMail.root@redhat.com>
- <20130402094834.GA4667@kernel.dk>
- <20130403114142.GP4667@kernel.dk>
- <515C4D9D.10103@ubuntu.com>
- <515DE2FE.1080201@ubuntu.com>
- <20130409065519.GH17758@dastard>
- <20130409070139.GS12244@kernel.dk>
+	Tue, 9 Apr 2013 03:08:51 -0400
+Message-ID: <5163BE4C.5040301@huawei.com>
+Date: Tue, 9 Apr 2013 15:07:56 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130409070139.GS12244@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: <mingo@redhat.com>, <a.p.zijlstra@chello.nl>, <paulus@samba.org>,
+        <acme@ghostprotocols.net>, <eranian@google.com>,
+        <namhyung.kim@lge.com>, <mhocko@suse.cz>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <cgroups@vger.kernel.org>,
+        <containers@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET] perf, cgroup: implement hierarchy support for perf_event
+ controller
+References: <1365474213-13354-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1365474213-13354-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 09:01:39AM +0200, Jens Axboe wrote:
-> On Tue, Apr 09 2013, Dave Chinner wrote:
-> > On Thu, Apr 04, 2013 at 04:30:54PM -0400, Phillip Susi wrote:
-> > > > I have not tested it yet, but I am pretty sure it won't work.  It
-> > > > looks like the patch changes the BLKRRPART path to go ahead and remove
-> > > > existing partitions when GENHD_FL_NO_PARTSCAN is set.  loop doesn't
-> > > > issue the BLKRRPART ioctl when !LO_FLAGS_PARTSCAN so this won't help.
-> > > >  I think loop needs to set GENHD_FL_NO_PARTSCAN and then issue the
-> > > > ioctl regardless of the LO_FLAGS_PARTSCAN flag to get the partitions
-> > > > to be removed.  I will try to test tonight.
-> > > 
-> > > After testing, my initial thoughts appeared to have been correct.  I had
-> > > to modify the patch as follows.  To test, simply do:
-> > > 
-> > > truncate -s 10m img
-> > > losetup /dev/loop0 img
-> > > parted /dev/loop0
-> > > mklabel msdos
-> > > mkpart primary ext2 1m 2m
-> > > quit
-> > > ls /dev/loop0*
-> > > 
-> > > Note the /dev/loop0p1 node.  Run losetup -d /dev/loop0 and see if it is
-> > > still there.
-> > 
-> > Jens, can we get one of these fixes merged quickly? xfstests is
-> > unusable on any kernel more recent than 3.9-rc4 because of these
-> > problems....
+On 2013/4/9 10:23, Tejun Heo wrote:
+> perf_event cgroup controller is one of the remaining few with broken
+> hierarchy support.  It turns out it's pretty easy to implement - the
+> only thing necessary is making perf_cgroup_match() return %true also
+> when the cgroup of the current task is a descendant of the event's
+> cgroup.  This patchset implements cgroup_is_descendant() and uses it
+> to implement hierarchy support in perf_event controller.
 > 
-> Yep, did the revert yesterday and it's going out today.
+> This patchset contains the following three patches.
+> 
+>  0001-cgroup-make-sure-parent-won-t-be-destroyed-before-it.patch
+>  0002-cgroup-implement-cgroup_is_descendant.patch
+>  0003-perf-make-perf_event-cgroup-hierarchical.patch
+> 
+> The patches are also available in the following git branch, which is
+> based on top of cgroup/for-3.10.  It's currently based on top of
+> cgroup/for-3.10 as the first patch causes non-trivial conflict with it
+> otherwise, which is not difficult to resolve but still nice to avoid
+> anyway.
+> 
+> Li, Michal, I picked the first two patches from Li's memcg patchset.
+> Can we push the first two through cgroup/for-3.10 and put the rest in
+> -mm?
+> 
 
-Great, I didn't see an update in the latest -rc, so I wanted to make
-sure it hadn't fallen through he cracks....
+Sure. Andrew asked me to resend the memcg patchset when we are at 3.10-rc1,
+because 3.9-rc6 is a bit too late and he's too busy.
 
-Cheers,
+> Ingo, how should these be routed?
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
