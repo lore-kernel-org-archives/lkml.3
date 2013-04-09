@@ -1,122 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935949Ab3DITfQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 15:35:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46588 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935893Ab3DITfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 15:35:12 -0400
-Date: Tue, 9 Apr 2013 21:32:29 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/7] uprobes/tracing: Introduce
-	uprobe_{trace,perf}_print() helpers
-Message-ID: <20130409193229.GA27234@redhat.com>
+	id S935959Ab3DITi6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 15:38:58 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:57909 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934841Ab3DITi4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 15:38:56 -0400
+Date: Tue, 9 Apr 2013 12:38:51 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Daniel P. Berrange" <berrange@redhat.com>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, bsingharora@gmail.com, dhaval.giani@gmail.com,
+        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe@redhat.com,
+        lpoetter@redhat.com, workman-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: cgroup: status-quo and userland efforts
+Message-ID: <20130409193851.GJ6186@mtj.dyndns.org>
+References: <20130406012159.GA17159@mtj.dyndns.org>
+ <20130409095024.GI25576@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130409193200.GA26731@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130409095024.GI25576@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extract the output code from uprobe_trace_func() and uprobe_perf_func()
-into the new helpers, they will be used by ->ret_handler() too. We also
-add the unused "unsigned long func" argument in advance, to simplify the
-next changes.
+Hello, Daniel.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Tested-by: Anton Arapov <anton@redhat.com>
----
- kernel/trace/trace_uprobe.c |   29 ++++++++++++++++++++---------
- 1 files changed, 20 insertions(+), 9 deletions(-)
+On Tue, Apr 09, 2013 at 10:50:25AM +0100, Daniel P. Berrange wrote:
+> The PaxControlGroups document is the key piece to making distributed
+> management work. This document does need updating, since some of what
+> it describes doesn't really work, but its goal is sound IMHO.
 
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 49b4003..0c0f0a7 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -497,8 +497,8 @@ static const struct file_operations uprobe_profile_ops = {
- 	.release	= seq_release,
- };
- 
--/* uprobe handler */
--static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
-+static void uprobe_trace_print(struct trace_uprobe *tu,
-+				unsigned long func, struct pt_regs *regs)
- {
- 	struct uprobe_trace_entry_head *entry;
- 	struct ring_buffer_event *event;
-@@ -511,7 +511,7 @@ static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
- 	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
- 						  size, 0, 0);
- 	if (!event)
--		return 0;
-+		return;
- 
- 	entry = ring_buffer_event_data(event);
- 	entry->vaddr[0] = instruction_pointer(regs);
-@@ -521,7 +521,12 @@ static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
- 
- 	if (!filter_current_check_discard(buffer, call, entry, event))
- 		trace_buffer_unlock_commit(buffer, event, 0, 0);
-+}
- 
-+/* uprobe handler */
-+static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
-+{
-+	uprobe_trace_print(tu, 0, regs);
- 	return 0;
- }
- 
-@@ -754,8 +759,8 @@ static bool uprobe_perf_filter(struct uprobe_consumer *uc,
- 	return ret;
- }
- 
--/* uprobe profile handler */
--static int uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
-+static void uprobe_perf_print(struct trace_uprobe *tu,
-+				unsigned long func, struct pt_regs *regs)
- {
- 	struct ftrace_event_call *call = &tu->call;
- 	struct uprobe_trace_entry_head *entry;
-@@ -764,13 +769,10 @@ static int uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
- 	void *data;
- 	int size, rctx, i;
- 
--	if (!uprobe_perf_filter(&tu->consumer, 0, current->mm))
--		return UPROBE_HANDLER_REMOVE;
--
- 	size = SIZEOF_TRACE_ENTRY(false);
- 	size = ALIGN(size + tu->size + sizeof(u32), sizeof(u64)) - sizeof(u32);
- 	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE, "profile buffer not large enough"))
--		return 0;
-+		return;
- 
- 	preempt_disable();
- 	entry = perf_trace_buf_prepare(size, call->event.type, regs, &rctx);
-@@ -787,6 +789,15 @@ static int uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
- 	perf_trace_buf_submit(entry, size, rctx, ip, 1, regs, head, NULL);
-  out:
- 	preempt_enable();
-+}
-+
-+/* uprobe profile handler */
-+static int uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
-+{
-+	if (!uprobe_perf_filter(&tu->consumer, 0, current->mm))
-+		return UPROBE_HANDLER_REMOVE;
-+
-+	uprobe_perf_print(tu, 0, regs);
- 	return 0;
- }
- #endif	/* CONFIG_PERF_EVENTS */
+I think we should add a comment to the doc saying "this is how to keep
+things from falling apart completely but in no way is a long term
+solution."
+
+> The Workman library is presuming that apps will follow the PaxControlGroups
+> guidelines for use of cgroups, and from there aims to provide system
+> administrators with a "single world view" and tools to then configure
+> this. It does not, however, attempt to force itself underneath the
+> apps like systemd / libvirt, since there is no need todo that. It
+> just aggregates information from system/libvirt/etc so that admin has
+> the complete picture of what the cgroups are being used for.
+
+I suppose that can be useful for now but pretty strongly disagree it
+would be acceptable as long term solution.
+
+> I don't see that creating a "single authority" magically solves any
+> of the problems you describe. For example, such an authority can't
+> know whether it should delete a cgroup just because an application
+> exits. It is quite possible an application would want the cgroup to
+> continue to exist, so that it is still there when it restarts.
+
+Sure, then make it request the persistency explicitly.  The debate is
+not whether trusting each individual player can show similar result.
+Sure, that's in the realm of possibility.  If you push it as far as
+"everyone" should and would behave properly even on edge cases, I
+would have to add "theoretical" there tho.  The debate is which is the
+better way to achieve the desired goals and up until now I don't see
+any pros for the distributed approach other than "this is what we've
+been doing till now".
+
+> Ultimately it is the end admin or top level management tool that has
+> the whole picture. The Workman library / cli is aiming to provide
+> admins / apps with the complete picture of everything that is using
+> resources on the system, so they can adjust policies dynamically.
+
+Again, I don't know.  It can be useful for now I suppose.  I just
+can't see it being the long term solution.
+
+> You seem to be implying that 'distributed == anything goes', which is
+> certainly not what I consider to be the case. Indeed the main point
+> of having the PaxControlGroups guidelines is explicitly because we do
+> *not* want an "anything goes" approach.
+
+Yeah, by asking cooperations from individual players without any way
+to monitor or police them.
+
+> We ultimately do need the ability to delegate hierarchy creation to
+> unprivileged users / programs, in order to allow containerized OS to
+> have the ability to use cgroups. Requiring any applications inside a
+> container to talk to a cgroups "authority" existing on the host OS is
+> not a satisfactory architecture. We need to allow for a container to
+> be self-contained in its usage of cgroups.
+
+I'm not sure about this one.  Yeah, we might need delegation there at
+least for now.  That said, it's not gonna be completely consistent.
+Root cgroup is special for several controllers and we even have
+controllers which propagate config changes down the hierarchy.  It
+just isn't built for proper delegation.
+
+> I don't think that requiring a single userspace authority is
+> satisfactory. We need to be able to delegate this to containers,
+> without them needing to talk to some authority back in the
+> host OS, so that they remain 100% isolated from processes in
+> the host OS.
+
+It's unlikely to work that well.  I think a good mental image to have
+for cgroup is that of sysctl rather than a generic file system.  You
+can't go delegate sysctl control knobs to containers or !root users.
+You need an extra layer of control to do that.  It's true that such
+policing could happen in the kernel, but something in the kernel being
+exposed to untrusted entities has a lot of implications as the kernel
+now becomes heavily involved in *policy* decisions as to what can be
+allowed and what can't be and the kernel has a lot less latitude in
+making those decisions compared to userland base system.
+
+There are also security implications.  memcg control knobs directly
+regulate the operation of memory reclaim and writeback.  I wouldn't be
+surprised if there are pretty easy ways to make them go bonkers while
+staying inside the limits from the parent.  Again, think of sysctl.
+You don't wanna hand these out to untrusted entities.
+
+> We need to make the distribute approach work in order to support
+> containers, which requiring them to have a back-channel open to
+> the host userspace. If we can do that, then we've solved the problem
+> of delegated to unprivileged users in non-container environments too.
+> IMHO with a sufficiently specified PaxControlGroups the distributed
+> approach is just fine. If applications are badly behaved and don't
+> follow the rules, then so be it, file bugs against those apps. Both
+> libvirt & systemd are committed to following rules for co-operating
+> in usage of cgroups & Workman can provide a "single unified view"
+> for the administrator without requiring a single authority too.
+
+Well, you guys can try I guess.  Maybe I'm wrong and workman turns out
+to be awesome.  I'll be happy to switch my position then, but for now,
+the kernel isn't moving towards that direction.
+
+Thanks.
+
 -- 
-1.5.5.1
-
+tejun
