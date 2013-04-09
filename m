@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936997Ab3DIHyZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 03:54:25 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:36235 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935065Ab3DIHyY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 03:54:24 -0400
-Message-ID: <5163C95B.8010502@parallels.com>
-Date: Tue, 9 Apr 2013 11:55:07 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S937029Ab3DIHzG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 03:55:06 -0400
+Received: from mga02.intel.com ([134.134.136.20]:60226 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S937013Ab3DIHzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 03:55:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,437,1363158000"; 
+   d="scan'208";a="292206853"
+Date: Tue, 9 Apr 2013 09:54:57 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: balbi@ti.com, b-cousson@ti.com, mark.rutland@arm.com,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 0/6] mfd: omap-usb-host: Device tree support for 3.10
+Message-ID: <20130409075457.GF24058@zurbaran>
+References: <1363083940-20050-1-git-send-email-rogerq@ti.com>
+ <515029FC.3030405@ti.com>
 MIME-Version: 1.0
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Li Zefan <lizefan@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [PATCH 13/12] memcg: don't need memcg->memcg_name
-References: <5162648B.9070802@huawei.com> <51626584.7050405@huawei.com> <5163868B.3020905@jp.fujitsu.com> <5163887D.1040809@huawei.com> <51638F2B.3000800@jp.fujitsu.com>
-In-Reply-To: <51638F2B.3000800@jp.fujitsu.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <515029FC.3030405@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2013 07:46 AM, Kamezawa Hiroyuki wrote:
-> (2013/04/09 12:18), Li Zefan wrote:
->>>> @@ -5188,12 +5154,28 @@ static int mem_cgroup_dangling_read(struct cgroup *cont, struct cftype *cft,
->>>>    					struct seq_file *m)
->>>>    {
->>>>    	struct mem_cgroup *memcg;
->>>> +	char *memcg_name;
->>>> +	int ret;
->>>> +
->>>> +	/*
->>>> +	 * cgroup.c will do page-sized allocations most of the time,
->>>> +	 * so we'll just follow the pattern. Also, __get_free_pages
->>>> +	 * is a better interface than kmalloc for us here, because
->>>> +	 * we'd like this memory to be always billed to the root cgroup,
->>>> +	 * not to the process removing the memcg. While kmalloc would
->>>> +	 * require us to wrap it into memcg_stop/resume_kmem_account,
->>>> +	 * with __get_free_pages we just don't pass the memcg flag.
->>>> +	 */
->>>> +	memcg_name = (char *)__get_free_pages(GFP_KERNEL, 0);
->>>> +	if (!memcg_name)
->>>> +		return -ENOMEM;
->>>>    
->>>>    	mutex_lock(&dangling_memcgs_mutex);
->>>>    
->>>>    	list_for_each_entry(memcg, &dangling_memcgs, dead) {
->>>> -		if (memcg->memcg_name)
->>>> -			seq_printf(m, "%s:\n", memcg->memcg_name);
->>>> +		ret = cgroup_path(memcg->css.cgroup, memcg_name, PAGE_SIZE);
->>>> +		if (!ret)
->>>> +			seq_printf(m, "%s:\n", memcg_name);
->>>>    		else
->>>>    			seq_printf(m, "%p (name lost):\n", memcg);
->>>>    
->>>
->>> I'm sorry for dawm question ...when this error happens ?
->>> We may get ENAMETOOLONG even with PAGE_SIZE(>=4096bytes) buffer ?
->>>
->>
->> It does no harm to check the return value, and we don't have to
->> worry about if cgroup_path() will be changed to return some other
->> errno like ENOMEM in the future.
->>
-> Hmm. but the name is not lost, right ?
-> How about returning error rather than making a mixture of lines in different formats ?
+Hi Roger,
+
+On Mon, Mar 25, 2013 at 12:42:04PM +0200, Roger Quadros wrote:
+> Hi Samuel,
 > 
-I still think it would be preferable to dump as much informative data as
-we can. Even if the name is lost, a lot of info can still be present
-(from the caches, etc).
+> I've rebased this now on top of 3.9-rc4. Please pull this into your
+> next branch when appropriate. Thanks.
+> 
+> The following changes since commit 8bb9660418e05bb1845ac1a2428444d78e322cc7:
+> 
+>   Linux 3.9-rc4 (2013-03-23 16:52:44 -0700)
+> 
+> are available in the git repository at:
+>   git://github.com/rogerq/linux.git usbhost-mfd-next
+> 
+> Roger Quadros (5):
+>       mfd: omap-usb-host: update nports in platform_data
+>       mfd: omap-usb-host: Remove PHY reset handling code
+>       mfd: omap-usb-tll: move configuration code to omap_tll_init()
+>       mfd: omap-usb-tll: Add device tree support and binding information
+>       mfd: omap-usb-host: Add device tree support and binding information
+I had to apply them manually, as patches #2 and #5 do not apply.
+I am pushing #1, #3 and #4, please rebase 2 and 5 on top of mfd-next and
+resend them to me.
 
-The format also should not matter. Nobody will be script-processing this.
+Cheers,
+Samuel.
 
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
