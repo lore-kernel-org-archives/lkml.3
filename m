@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935564Ab3DIO70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 10:59:26 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:45781 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765447Ab3DIO7W (ORCPT
+	id S936182Ab3DIPA3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 11:00:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2387 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760658Ab3DIPA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 10:59:22 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CAKohpok+9dRaENjBfnN9gZF3zvFU9v19xV_eFfcM3Pj6Cv=S2w@mail.gmail.com>
-References: <CA+icZUU_K9PiFMqMsOEk1+c2DX8LrUojZptPiRVarv4dcB2qFA@mail.gmail.com>
-	<31778276.CDMUtaAAnc@vostro.rjw.lan>
-	<CA+icZUXXHb9vmcNuFmYha34SV7xch2S8OcgZ+cLVVnNebs5pNQ@mail.gmail.com>
-	<CAKohpok+9dRaENjBfnN9gZF3zvFU9v19xV_eFfcM3Pj6Cv=S2w@mail.gmail.com>
-Date: Tue, 9 Apr 2013 16:59:20 +0200
-Message-ID: <CA+icZUV219yQ2Bw=81C8e_cfNERjCENNOvokehQ=bzc66-+L2w@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 9 [cpufreq: NULL pointer deref]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 9 Apr 2013 11:00:28 -0400
+X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=7_l8aGtSdH4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=YEqtQkbJdgYA:10 a=40MIqcmNAAAA:8 a=woh94gcO0G0T0jqpc7AA:9 a=QEXdDO2ut3YA:10 a=-tENaG0q7zQA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1365519626.25498.58.camel@gandalf.local.home>
+Subject: Re: [PATCH] kernel: trace: ftrace: strncpy, using strlcpy instead
+ of strncpy
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 09 Apr 2013 11:00:26 -0400
+In-Reply-To: <516243B7.9020405@asianux.com>
+References: <516243B7.9020405@asianux.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 9, 2013 at 4:56 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 9 April 2013 19:34, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> I have seen it on reboots.
->> How to online/offline from sysfs?
->
-> offline a cpu "x" with:
->
-> echo 0 > /sys/devices/system/cpu/cpux/online
->
-> and online with echo 1 > to same location.
+I'll queue this up for my 3.10 queue. I'm going to merge this patch with
+the previous patch you sent that updates trace.c
 
-Eh, yeah I re-remember it now :-).
-I will try with next-20130328 which boots fine here and hope the
-hanging on reboot and in running system is OK.
+Thanks,
 
-next-20130409 is broken due to vfs-next issues (see Linux-Next ML).
-Will try that first...
+-- Steve
 
-- Sedat -
+On Mon, 2013-04-08 at 12:12 +0800, Chen Gang wrote:
+>   for NUL terminated string, need always set '\0' at the end.
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  kernel/trace/ftrace.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index dfd33f0..fa984b7 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -3492,14 +3492,14 @@ static char ftrace_filter_buf[FTRACE_FILTER_SIZE] __initdata;
+>  
+>  static int __init set_ftrace_notrace(char *str)
+>  {
+> -	strncpy(ftrace_notrace_buf, str, FTRACE_FILTER_SIZE);
+> +	strlcpy(ftrace_notrace_buf, str, FTRACE_FILTER_SIZE);
+>  	return 1;
+>  }
+>  __setup("ftrace_notrace=", set_ftrace_notrace);
+>  
+>  static int __init set_ftrace_filter(char *str)
+>  {
+> -	strncpy(ftrace_filter_buf, str, FTRACE_FILTER_SIZE);
+> +	strlcpy(ftrace_filter_buf, str, FTRACE_FILTER_SIZE);
+>  	return 1;
+>  }
+>  __setup("ftrace_filter=", set_ftrace_filter);
+
+
