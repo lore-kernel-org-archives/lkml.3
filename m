@@ -1,80 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935399Ab3DIGBb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 02:01:31 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:51715 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762938Ab3DIGBa (ORCPT
+	id S934949Ab3DIGDH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 02:03:07 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:40174 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752931Ab3DIGDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 02:01:30 -0400
-X-Spam-Score: -100.8
-Message-ID: <5163AE9A.8060505@asianux.com>
-Date: Tue, 09 Apr 2013 14:00:58 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 9 Apr 2013 02:03:04 -0400
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>, Rusty Russell <rusty@rustcorp.com.au>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kernel: kallsyms: parameters checking, for EXPORT_SYMBOL_GPL
- functions
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <5162FE4D.7020308@linux.vnet.ibm.com>
+References: <1365194030-28939-1-git-send-email-cody@linux.vnet.ibm.com>
+	<1365194030-28939-4-git-send-email-cody@linux.vnet.ibm.com>
+	<CAOtvUMdT0-oQMTsHAjFqL6K8vrLeCcXG2hX-sShxu6GGRBPxJw@mail.gmail.com>
+	<5162FE4D.7020308@linux.vnet.ibm.com>
+Date: Tue, 9 Apr 2013 09:03:02 +0300
+Message-ID: <CAOtvUMcUZsfXT1km89mm4Hng=K8hbkhgsJW6tgxufNH4Kwb7sg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] mm: when handling percpu_pagelist_fraction, use
+ on_each_cpu() to set percpu pageset fields.
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 8, 2013 at 8:28 PM, Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
+> On 04/08/2013 05:20 AM, Gilad Ben-Yossef wrote:
+>>
+>> On Fri, Apr 5, 2013 at 11:33 PM, Cody P Schafer <cody@linux.vnet.ibm.com>
+>> wrote:
+>>>
+>>> In free_hot_cold_page(), we rely on pcp->batch remaining stable.
+>>> Updating it without being on the cpu owning the percpu pageset
+>>> potentially destroys this stability.
+>>>
+>>> Change for_each_cpu() to on_each_cpu() to fix.
+>>
+>>
+>> Are you referring to this? -
+>
+>
+> This was the case I noticed.
+>
+>
+>>
+>> 1329         if (pcp->count >= pcp->high) {
+>> 1330                 free_pcppages_bulk(zone, pcp->batch, pcp);
+>> 1331                 pcp->count -= pcp->batch;
+>> 1332         }
+>>
+>> I'm probably missing the obvious but won't it be simpler to do this in
+>>   free_hot_cold_page() -
+>>
+>> 1329         if (pcp->count >= pcp->high) {
+>> 1330                  unsigned int batch = ACCESS_ONCE(pcp->batch);
+>> 1331                 free_pcppages_bulk(zone, batch, pcp);
+>> 1332                 pcp->count -= batch;
+>> 1333         }
+>>
+>
+> Potentially, yes. Note that this was simply the one case I noticed, rather
+> than certainly the only case.
 
-  for EXPORT_SYMBOL_GPL functions, necessary to check their parameters.
+OK, so perhaps the right thing to do is to understand what are (some of) the
+other cases so that we may choose the right solution.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- kernel/kallsyms.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+> I also wonder whether there could be unexpected interactions between ->high
+> and ->batch not changing together atomically. For example, could adjusting
+> this knob cause ->batch to rise enough that it is greater than the previous
+> ->high? If the code above then runs with the previous ->high, ->count
+> wouldn't be correct (checking this inside free_pcppages_bulk() might help on
+> this one issue).
 
-diff --git a/kernel/kallsyms.c b/kernel/kallsyms.c
-index 2169fee..4ba57a9 100644
---- a/kernel/kallsyms.c
-+++ b/kernel/kallsyms.c
-@@ -175,6 +175,9 @@ unsigned long kallsyms_lookup_name(const char *name)
- 	unsigned long i;
- 	unsigned int off;
- 
-+	if (!name || !name[0])
-+		return 0;
-+
- 	for (i = 0, off = 0; i < kallsyms_num_syms; i++) {
- 		off = kallsyms_expand_symbol(off, namebuf);
- 
-@@ -194,6 +197,9 @@ int kallsyms_on_each_symbol(int (*fn)(void *, const char *, struct module *,
- 	unsigned int off;
- 	int ret;
- 
-+	if (!fn)
-+		return -EINVAL;
-+
- 	for (i = 0, off = 0; i < kallsyms_num_syms; i++) {
- 		off = kallsyms_expand_symbol(off, namebuf);
- 		ret = fn(data, namebuf, NULL, kallsyms_addresses[i]);
-@@ -382,6 +388,9 @@ static int __sprint_symbol(char *buffer, unsigned long address,
-  */
- int sprint_symbol(char *buffer, unsigned long address)
- {
-+	if (!buffer)
-+		return 0;
-+
- 	return __sprint_symbol(buffer, address, 0, 1);
- }
- EXPORT_SYMBOL_GPL(sprint_symbol);
-@@ -399,6 +408,9 @@ EXPORT_SYMBOL_GPL(sprint_symbol);
-  */
- int sprint_symbol_no_offset(char *buffer, unsigned long address)
- {
-+	if (!buffer)
-+		return 0;
-+
- 	return __sprint_symbol(buffer, address, 0, 0);
- }
- EXPORT_SYMBOL_GPL(sprint_symbol_no_offset);
+You are right, but that can be treated in  setup_pagelist_highmark()  e.g.:
+
+3993 static void setup_pagelist_highmark(struct per_cpu_pageset *p,
+3994                                 unsigned long high)
+3995 {
+3996         struct per_cpu_pages *pcp;
+                unsigned int batch;
+3997
+3998         pcp = &p->pcp;
+                /* We're about to mess with PCP in an non atomic fashion.
+                   Put an intermediate safe value of batch and make sure it
+                   is visible before any other change */
+                pcp->batch = 1UL;
+                smb_mb();
+
+3999         pcp->high = high;
+
+4000         batch = max(1UL, high/4);
+4001         if ((high/4) > (PAGE_SHIFT * 8))
+4002                 batch = PAGE_SHIFT * 8;
+
+               pcp->batch = batch;
+4003 }
+
+Or we could use an RCU here, but that might be an overkill.
+
+>
+>
+>> Now the batch value used is stable and you don't have to IPI every CPU
+>> in the system just to change a config knob...
+>
+>
+> Is this really considered an issue? I wouldn't have expected someone to
+> adjust the config knob often enough (or even more than once) to cause
+> problems. Of course as a "It'd be nice" thing, I completely agree.
+
+Well, interfering unconditionally with other CPUs either via IPIs or
+scheduling work
+on them is a major headache for people that run work on machines with 4k CPUs,
+especially the HPC or RT or combos from the finance and networking
+users.
+
+If this was the only little knob or trigger that does this, then maybe
+it wont be so bad,
+but the problem is there is a list of these little knobs and items
+that potentially cause
+cross machine interference, and the poor sys admin has to keep them
+all in his or her
+head: "Now, is it ok to pull this knob now, or will it cause an IPI s**t storm?"
+
+We can never get rid of them all, but I'd really prefer to keep them
+down to a minimum
+if at all possible. Here, it looks to me that it is possible and that
+the price is not great -
+that is, the resulting code is not too hairy or none maintainable. At
+least, that is how
+it looks to me.
+
+Thanks,
+Gilad
+
 -- 
-1.7.7.6
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"If you take a class in large-scale robotics, can you end up in a
+situation where the homework eats your dog?"
+ -- Jean-Baptiste Queru
