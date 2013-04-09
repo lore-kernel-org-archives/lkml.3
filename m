@@ -1,49 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936615Ab3DIBXI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 21:23:08 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:38279 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936057Ab3DIBXG (ORCPT
+	id S936665Ab3DIBXT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 21:23:19 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:42024 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936057Ab3DIBXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 21:23:06 -0400
-Date: Tue, 9 Apr 2013 09:22:40 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: jkosina@suse.cz
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: [PATCH][TRIVIAL] tg3: Fix compilation warning
-Message-ID: <20130409012240.GA4684@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>, jkosina@suse.cz,
-	linux-kernel@vger.kernel.org, trivial@kernel.org
+	Mon, 8 Apr 2013 21:23:16 -0400
+X-Spam-Score: -100.7
+Message-ID: <51636D60.8060809@asianux.com>
+Date: Tue, 09 Apr 2013 09:22:40 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: drbd-dev@lists.linbit.com, drbd-user@lists.linbit.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/block/drbd: remove erroneous semicolon
+References: <5152980D.8090903@asianux.com> <515BE19F.2080709@asianux.com> <20130408204510.GB13761@soda.linbit>
+In-Reply-To: <20130408204510.GB13761@soda.linbit>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix the below compilation warning:
-linux/drivers/net/ethernet/broadcom/tg3.c: In function 'tg3_hwclock_to_timestamp':
-linux/drivers/net/ethernet/broadcom/tg3.c:5686: warning: integer constant is too large for 'long' type
+On 2013年04月09日 04:45, Lars Ellenberg wrote:
+> On Wed, Apr 03, 2013 at 04:00:31PM +0800, Chen Gang wrote:
+>> > Hello maintainers:
+>> > 
+>> >   when you have time, please help to check this patch whether is OK.
+>> > 
+>> >   thanks.
+> Thanks.
+> 
+> It has already been queued in:
+> http://git.kernel.dk/?p=linux-block.git;a=commit;h=0b6ef4164f50698eee536903d69d086add1a7889
+> 
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- drivers/net/ethernet/broadcom/tg3.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+  ok thanks.
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.h b/drivers/net/ethernet/broadcom/tg3.h
-index d330e81..6ec480a 100644
---- a/drivers/net/ethernet/broadcom/tg3.h
-+++ b/drivers/net/ethernet/broadcom/tg3.h
-@@ -774,7 +774,7 @@
- #define  SG_DIG_AUTONEG_ERROR		 0x00000001
- #define TG3_TX_TSTAMP_LSB		0x000005c0
- #define TG3_TX_TSTAMP_MSB		0x000005c4
--#define  TG3_TSTAMP_MASK		 0x7fffffffffffffff
-+#define  TG3_TSTAMP_MASK		 0x7fffffffffffffffULL
- /* 0x5c8 --> 0x600 unused */
- #define MAC_TX_MAC_STATE_BASE		0x00000600 /* 16 bytes */
- #define MAC_RX_MAC_STATE_BASE		0x00000610 /* 20 bytes */
+  it seems I am a little earlier than the link's patch.
+    I found it on Wed 27 Mar 2013 14:56
+    link's patch found it on Wed 27 Mar 2013 21:08
+
+  ;-)
+
+
+  but that's all right, it doesn't matter.
+
+  thanks.
+
+  :-)
+
+gchen.
+
+
+>> > On 2013年03月27日 14:56, Chen Gang wrote:
+>>> > > 
+>>> > >   need remove it, or always return -EBUSY.
+>>> > >   it is found by compiler with 'EXTRA_CFLAG=-W'.
+>>> > > 
+>>> > > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>>> > > ---
+>>> > >  drivers/block/drbd/drbd_actlog.c |    2 +-
+>>> > >  1 files changed, 1 insertions(+), 1 deletions(-)
+>>> > > 
+>>> > > diff --git a/drivers/block/drbd/drbd_actlog.c b/drivers/block/drbd/drbd_actlog.c
+>>> > > index 6afe173..6608076 100644
+>>> > > --- a/drivers/block/drbd/drbd_actlog.c
+>>> > > +++ b/drivers/block/drbd/drbd_actlog.c
+>>> > > @@ -389,7 +389,7 @@ int drbd_al_begin_io_nonblock(struct drbd_conf *mdev, struct drbd_interval *i)
+>>> > >  		if (unlikely(tmp != NULL)) {
+>>> > >  			struct bm_extent  *bm_ext = lc_entry(tmp, struct bm_extent, lce);
+>>> > >  			if (test_bit(BME_NO_WRITES, &bm_ext->flags)) {
+>>> > > -				if (!test_and_set_bit(BME_PRIORITY, &bm_ext->flags));
+>>> > > +				if (!test_and_set_bit(BME_PRIORITY, &bm_ext->flags))
+>>> > >  					return -EBUSY;
+>>> > >  				return -EWOULDBLOCK;
+>>> > >  			}
+>>> > > 
+> 
+
+
 -- 
-1.7.12.4.dirty
+Chen Gang
+
+Asianux Corporation
