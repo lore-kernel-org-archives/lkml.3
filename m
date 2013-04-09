@@ -1,113 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936905Ab3DIHaz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 03:30:55 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:59786 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934778Ab3DIHay (ORCPT
+	id S936937Ab3DIHbE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 03:31:04 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:63440 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936923Ab3DIHbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 03:30:54 -0400
-Date: Tue, 9 Apr 2013 09:30:51 +0200
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [BUG] increased us/sys-load due to tty-layer in 2.6.38+ ?!
-Message-ID: <20130409073051.GF25003@pengutronix.de>
-References: <20130408092558.GD25003@pengutronix.de>
- <20130408150611.GB13824@kroah.com>
+	Tue, 9 Apr 2013 03:31:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130408150611.GB13824@kroah.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:22:06 up 289 days, 22:33, 63 users,  load average: 0.11, 0.31,
- 0.44
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20130331181931.GA7533@htj.dyndns.org>
+References: <cover.1364740180.git.viresh.kumar@linaro.org>
+	<91239cde99aaba2715f63db1f88241d9f4a36e13.1364740180.git.viresh.kumar@linaro.org>
+	<20130331181931.GA7533@htj.dyndns.org>
+Date: Tue, 9 Apr 2013 13:00:59 +0530
+Message-ID: <CAKohpomGSkz6_YqDzaTYEsJfVmcg2=TvdgquWqTvd-nmtOmoaQ@mail.gmail.com>
+Subject: Re: [PATCH V4 3/4] block: queue work on unbound wq
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        davem@davemloft.net, airlied@redhat.com, axboe@kernel.dk,
+        tglx@linutronix.de, peterz@infradead.org, mingo@redhat.com,
+        rostedt@goodmis.org, linux-rt-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 08:06:11AM -0700, Greg Kroah-Hartman wrote:
-> On Mon, Apr 08, 2013 at 11:25:58AM +0200, Steffen Trumtrar wrote:
-> > Hi!
-> > 
-> > I noticed a problem with the tty subsystem on ARM. Starting with 2.6.38+ load
-> > on the serial connection causes a 10-15% increase in system/userspace load.
-> > This doesn't change up to v3.9-rc4.
-> > 
-> > The following setup was used:
-> > 
-> >   telnet && screen microcom -p /dev/ttyUSB0
-> >         |                           +--------+
-> >         |-------------->------------|----+   |
-> >     +-------+<---------<------------|----+   |
-> >     |       |       +------+        |        |
-> >     |  UUT  |<-USB->| FTDI |<-UART->|        |
-> >     |       |       +------+        |   PC   |
-> >     +-------+                       +--------+
-> >         ^
-> >         |
-> >   telnet && top -d1
-> > 
-> > The unit under test (UUT) is connected via USB->FTDI->UART to a PC. On the PC
-> > a "while true; do find /; done" produces some random output.
-> > I connect to the UUT via telnet and then open a serial connection to the PC
-> > in a screen session, seeing the output produced on the PC. Then screen gets
-> > detached. So, basically, what I'm trying to do is producing load only on the
-> > USB->FTDI->UART connection and not on the UUT itself.
-> > Then another telnet connection is opened, to monitor the UUT with "top -d1".
-> > As UUT an imx27, kirkwood and an AT91 were used.
-> > 
-> > To find the "offending" code, I bisected v2.6.38..v3.0 which gave the following
-> > top output (non-scientifically, I know. But the switch in load distribution is
-> > obvious nevertheless):
-> > 
-> > 2.6.38           Cpu(s):  3.8%us,  1.9%sy,  0.0%ni, 94.3%id
-> > 2.6.38+          Cpu(s):  1.9%us,  3.8%sy,  0.0%ni, 94.3%id
-> > last good commit Cpu(s):  1.9%us,  2.8%sy,  0.0%ni, 95.3%id
-> > first bad commit Cpu(s):  4.8%us, 14.5%sy,  0.0%ni, 80.6%id
-> > 2.6.39-rc4       Cpu(s): 10.5%us,  8.9%sy,  0.0%ni, 79.8%id
-> > 3.0              Cpu(s): 15.9%us, 19.6%sy,  0.0%ni, 62.3%id
-> > 
-> > This resulted in
-> >         f23eb2b2b28547fc70df82dd5049eb39bec5ba12
-> >         tty: stop using "delayed_work" in the tty layer
-> > 
-> > as possible cause. Reverting this commit by hand in v3.8 showed a load distribution
-> > similar to 2.6.38.
-> > What I haven't done, is measure if the load is really increasing or if top only
-> > tells me so. Maybe the algorithm to calculate this somehow produces different
-> > results because of the switch from schedule_delayed_work to schedule_work?
-> > So, is this a bug, a feature, a symptom,...?
-> 
-> It's a "fake" load (i.e. no extra cpu is being used, just a "busy" wait
-> is happening.)
-> 
-> You should see an increased throughput with that patch applied, have you
-> tested a real workload?
-> 
+On 31 March 2013 23:49, Tejun Heo <tj@kernel.org> wrote:
+> So, let's please introduce a new flag to mark these workqueues, say,
+> WQ_UNBOUND_FOR_POWER_SAVE or whatever (please come up with a better
+> name) and provide a compile time switch with boot time override.
 
-Hi Greg,
+Hi Tejun,
 
-we found this "fake" load via a normal userspace program, that is using
-UART for communication, if that is what you mean by "real workload".
-But the next step would be measuring throughput and the real load.
-Sounds like we will not find anything, but will still have an explanation
-for the load.
+I have written a patch to get this done and want to get that a some review
+before touching other drivers and spamming LKML with other patches :)
 
-Thanks,
-Steffen
+Here it is:
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+From: Viresh Kumar <viresh.kumar@linaro.org>
+Date: Mon, 8 Apr 2013 16:45:40 +0530
+Subject: [PATCH] workqueues: Introduce new flag WQ_POWER_EFFICIENT for power
+ oriented workqueues
+
+Workqueues can be performance or power oriented. For performance we may want to
+keep them running on a single cpu, so that it remains cache hot. For power we
+can give scheduler the liberty to choose target cpu for running work handler.
+
+Later one (Power oriented WQ) can be achieved if the workqueue is allocated with
+WQ_UNBOUND flag. To make this compile time configurable with boot time override
+this patch adds in another flag WQ_POWER_EFFICIENT. This will be converted to
+WQ_UNBOUND (on wq allocation) if CONFIG_WQ_POWER_EFFICIENT is enabled and
+bootargs contain workqueue.power_efficient=1. It is unused otherwise and normal
+behavior of WQ without this flag is expected.
+
+CONFIG option is currently added under kernel/power/Kconfig and is looking for
+relevant Kconfig file.
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ Documentation/kernel-parameters.txt | 15 +++++++++++++++
+ include/linux/workqueue.h           |  3 +++
+ kernel/power/Kconfig                | 18 ++++++++++++++++++
+ kernel/workqueue.c                  | 14 ++++++++++++++
+ 4 files changed, 50 insertions(+)
+
+diff --git a/Documentation/kernel-parameters.txt
+b/Documentation/kernel-parameters.txt
+index 12c42a5..210e5fc 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -3249,6 +3249,21 @@ bytes respectively. Such letter suffixes can
+also be entirely omitted.
+ 			that this also can be controlled per-workqueue for
+ 			workqueues visible under /sys/bus/workqueue/.
+
++	workqueue.power_efficient
++			Workqueues can be performance or power oriented. For
++			performance we may want to keep them running on a single
++			cpu, so that it remains cache hot. For power we can give
++			scheduler the liberty to choose target cpu for running
++			work handler.
++
++			Later one (Power oriented WQ) can be achieved if the
++			workqueue is allocated with WQ_UNBOUND flag. Enabling
++			power_efficient boot param will convert
++			WQ_POWER_EFFICIENT flag to WQ_UNBOUND on wq allocation.
++			This requires CONFIG_WQ_POWER_EFFICIENT to be enabled.
++			WQ_POWER_EFFICIENT is unused if power_efficient is not
++			set in boot params.
++
+ 	x2apic_phys	[X86-64,APIC] Use x2apic physical mode instead of
+ 			default x2apic cluster mode on platforms
+ 			supporting x2apic.
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index 1a53816..168b5be 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -299,6 +299,9 @@ enum {
+ 	WQ_HIGHPRI		= 1 << 4, /* high priority */
+ 	WQ_CPU_INTENSIVE	= 1 << 5, /* cpu instensive workqueue */
+ 	WQ_SYSFS		= 1 << 6, /* visible in sysfs, see wq_sysfs_register() */
++	WQ_POWER_EFFICIENT	= 1 << 7, /* WQ_UNBOUND, for power
++					   * saving, if wq_power_efficient is
++					   * enabled. Unused otherwise. */
+
+ 	__WQ_DRAINING		= 1 << 16, /* internal: workqueue is draining */
+ 	__WQ_ORDERED		= 1 << 17, /* internal: workqueue is ordered */
+diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
+index 5dfdc9e..8d62400 100644
+--- a/kernel/power/Kconfig
++++ b/kernel/power/Kconfig
+@@ -263,6 +263,24 @@ config PM_GENERIC_DOMAINS
+ 	bool
+ 	depends on PM
+
++config WQ_POWER_EFFICIENT
++	bool "Workqueue allocated as UNBOUND for power efficiency"
++	depends on PM
++	help
++	  Workqueues can be performance or power oriented. For performance we
++	  may want to keep them running on a single cpu, so that it remains
++	  cache hot. For power we can give scheduler the liberty to choose
++	  target cpu for running work handler.
++
++	  Later one (Power oriented WQ) can be achieved if the workqueue is
++	  allocated with WQ_UNBOUND flag. Enabling power_efficient boot param
++	  will convert WQ_POWER_EFFICIENT flag to WQ_UNBOUND on wq allocation.
++	  This requires CONFIG_WQ_POWER_EFFICIENT to be enabled.
++	  WQ_POWER_EFFICIENT is unused if power_efficient is not set in boot
++	  params.
++
++	  If in doubt, say N.
++
+ config PM_GENERIC_DOMAINS_SLEEP
+ 	def_bool y
+ 	depends on PM_SLEEP && PM_GENERIC_DOMAINS
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 1228fd7..590e333 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -271,6 +271,11 @@ static cpumask_var_t *wq_numa_possible_cpumask;
+ static bool wq_disable_numa;
+ module_param_named(disable_numa, wq_disable_numa, bool, 0444);
+
++#ifdef CONFIG_WQ_POWER_EFFICIENT
++static bool wq_power_efficient = 0;
++module_param_named(power_efficient, wq_power_efficient, bool, 0444);
++#endif
++
+ static bool wq_numa_enabled;		/* unbound NUMA affinity enabled */
+
+ /* buf for wq_update_unbound_numa_attrs(), protected by CPU hotplug
+exclusion */
+@@ -4085,6 +4090,15 @@ struct workqueue_struct
+*__alloc_workqueue_key(const char *fmt,
+ 	struct workqueue_struct *wq;
+ 	struct pool_workqueue *pwq;
+
++	if (flags & WQ_POWER_EFFICIENT) {
++		flags &= ~WQ_POWER_EFFICIENT;
++
++#ifdef CONFIG_WQ_POWER_EFFICIENT
++		if (wq_power_efficient)
++			flags |= WQ_UNBOUND;
++#endif
++	}
++
+ 	/* allocate wq and format name */
+ 	if (flags & WQ_UNBOUND)
+ 		tbl_size = wq_numa_tbl_len * sizeof(wq->numa_pwq_tbl[0]);
