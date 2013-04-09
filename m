@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936983Ab3DIISh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 04:18:37 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64547 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933440Ab3DIISe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 04:18:34 -0400
-X-IronPort-AV: E=Sophos;i="4.87,438,1363104000"; 
-   d="scan'208";a="7020697"
-Message-ID: <5163CF82.8040806@cn.fujitsu.com>
-Date: Tue, 09 Apr 2013 16:21:22 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S937024Ab3DIIUL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 04:20:11 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:48237 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754240Ab3DIIUK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 04:20:10 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: little cleanup for 3.10 #3
+Date: Tue, 9 Apr 2013 10:20:07 +0200
+Message-ID: <1365495607-30320-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.0
+Organization: atmel
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        yinghai@kernel.org, akpm@linux-foundation.org, wency@cn.fujitsu.com,
-        trenn@suse.de, liwanp@linux.vnet.ibm.com, mgorman@suse.de,
-        walken@google.com, riel@redhat.com, khlebnikov@openvz.org,
-        tj@kernel.org, minchan@kernel.org, m.szyprowski@samsung.com,
-        mina86@mina86.com, laijs@cn.fujitsu.com, linfeng@cn.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com, jiang.liu@huawei.com,
-        guz.fnst@cn.fujitsu.com, x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 00/11] Introduce movablemem_map=acpi boot option.
-References: <1365154801-473-1-git-send-email-tangchen@cn.fujitsu.com> <5163A3BF.3030900@jp.fujitsu.com>
-In-Reply-To: <5163A3BF.3030900@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/09 16:17:21,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/09 16:17:23,
-	Serialize complete at 2013/04/09 16:17:23
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2013 01:14 PM, Yasuaki Ishimatsu wrote:
-> Hi Tang,
-> 
-> The patch works well on my x86_64 box.
-> I confirmed that hotpluggable node is allocated as Movable Zone.
-> So feel free to add:
-> 
-> Tested by: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
-> 
-> Nitpick below.
+Arnd, Olof,
 
-Thanks for testing. Will fix the whitespace error and resend the
-patch-set soon. :)
+Again more trivial cleanup for AT91. It is based on material already sent and
+present in arm-soc/at91/cleanup2.
 
+Thanks, best regards,
+
+The following changes since commit e7619459d47a673af3433208a42f583af920e9db:
+
+  ARM: at91: Fix typo in restart code panic message (2013-03-26 12:21:25 +0100)
+
+are available in the git repository at:
+
+  git://github.com/at91linux/linux-at91.git tags/at91-cleanup
+
+for you to fetch changes up to 3aa630b3e6be83c4e91a68537fe6edf80f8d295e:
+
+  ARM: at91: remove trailing semicolon from macros (2013-04-08 17:47:44 +0200)
+
+----------------------------------------------------------------
+Trivial typos and some macros removal & modification
+
+----------------------------------------------------------------
+Johan Hovold (2):
+      ARM: at91/setup: fix trivial typos
+      ARM: at91: remove trailing semicolon from macros
+
+Nicolas Ferre (1):
+      ARM: at91: remove unused dbgu_readl() macro
+
+ arch/arm/mach-at91/at91_rstc.h                | 2 +-
+ arch/arm/mach-at91/at91_shdwc.h               | 2 +-
+ arch/arm/mach-at91/at91x40_time.c             | 2 +-
+ arch/arm/mach-at91/include/mach/at91_dbgu.h   | 3 ---
+ arch/arm/mach-at91/include/mach/at91_matrix.h | 2 +-
+ arch/arm/mach-at91/include/mach/at91_st.h     | 2 +-
+ arch/arm/mach-at91/setup.c                    | 6 +++---
+ 7 files changed, 8 insertions(+), 11 deletions(-)
+
+-- 
+Nicolas Ferre
