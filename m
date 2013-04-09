@@ -1,80 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936258Ab3DIUPf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 16:15:35 -0400
-Received: from 8bytes.org ([85.214.48.195]:36413 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936063Ab3DIUNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 16:13:33 -0400
-From: Joerg Roedel <joro@8bytes.org>
-To: iommu@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-Subject: [PATCH 1/9] iommu/amd: Remove map_sg_no_iommu()
-Date: Tue,  9 Apr 2013 22:12:56 +0200
-Message-Id: <1365538384-12426-2-git-send-email-joro@8bytes.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1365538384-12426-1-git-send-email-joro@8bytes.org>
-References: <1365538384-12426-1-git-send-email-joro@8bytes.org>
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Apr  9 22:13:32 2013
-X-DSPAM-Confidence: 0.9994
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5164766c23671334119222
+	id S936293Ab3DIUPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 16:15:39 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:37641 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936063Ab3DIUPg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 16:15:36 -0400
+Message-ID: <516476E4.3050206@gmail.com>
+Date: Tue, 09 Apr 2013 15:15:32 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Michal Marek <mmarek@suse.cz>, Grant Likely <glikely@secretlab.ca>,
+        linux-kbuild@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [GIT PULL] dt: run C pre-processor on *.dts, create some standard
+ headers
+References: <1365187610-29422-1-git-send-email-swarren@wwwdotorg.org>
+In-Reply-To: <1365187610-29422-1-git-send-email-swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function was intended as a fall-back if the map_sg
-function is called for a device not mapped by the IOMMU.
-Since the AMD IOMMU driver uses per-device dma_ops this can
-never happen. So this function isn't needed anymore.
+On 04/05/2013 01:46 PM, Stephen Warren wrote:
+> Rob, it might be worth keeping this in a separate branch in linux-next
+> so you can pull it out if it causes any issues. I've been using these
+> patches for quite a while now, but there's always opportunity for
+> surprises on architectures I don't use. I did just fix a bug when
+> building with O= a few days back, hence the V2 that I posted as patches.
+> 
 
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
----
- drivers/iommu/amd_iommu.c |   22 +---------------------
- 1 file changed, 1 insertion(+), 21 deletions(-)
+Pulled into my for-next branch.
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index b287ca3..3b2aff0 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -2839,24 +2839,6 @@ static void unmap_page(struct device *dev, dma_addr_t dma_addr, size_t size,
- }
- 
- /*
-- * This is a special map_sg function which is used if we should map a
-- * device which is not handled by an AMD IOMMU in the system.
-- */
--static int map_sg_no_iommu(struct device *dev, struct scatterlist *sglist,
--			   int nelems, int dir)
--{
--	struct scatterlist *s;
--	int i;
--
--	for_each_sg(sglist, s, nelems, i) {
--		s->dma_address = (dma_addr_t)sg_phys(s);
--		s->dma_length  = s->length;
--	}
--
--	return nelems;
--}
--
--/*
-  * The exported map_sg function for dma_ops (handles scatter-gather
-  * lists).
-  */
-@@ -2875,9 +2857,7 @@ static int map_sg(struct device *dev, struct scatterlist *sglist,
- 	INC_STATS_COUNTER(cnt_map_sg);
- 
- 	domain = get_domain(dev);
--	if (PTR_ERR(domain) == -EINVAL)
--		return map_sg_no_iommu(dev, sglist, nelems, dir);
--	else if (IS_ERR(domain))
-+	if (IS_ERR(domain))
- 		return 0;
- 
- 	dma_mask = *dev->dma_mask;
--- 
-1.7.9.5
+Rob
 
+> ----------------------------------------------------------------
+> 
+> This branch enhances the support for running dtc on device tree files.
+> 
+> A dedicated directory is created for header files that provide constants
+> for device-tree bindings.
+> 
+> The kbuild dependency script processor is enhanced to support processing
+> the dependency outputs from multiple separate commands at once.
+> 
+> The kbuild dtc rule is modified so that the C pre-processor is always
+> applied when compiling any device tree.
+> 
+> Some standard headers are created which define common constants for GPIO,
+> IRQ, and ARM GIC device tree bindings.
+> 
+> ----------------------------------------------------------------
+> 
+> The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
+> 
+>   Linux 3.9-rc1
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git tegra-for-3.10-dtc-cpp-chroot-std-headers
+> 
+> for you to fetch changes up to 4be505d4fc7a07371a2b658469ca1dda99993ca3:
+> 
+>   ARM: dt: create a DT header for the GIC
+> 
+> ----------------------------------------------------------------
+> 
+> Stephen Warren (7):
+>       kbuild: create an "include chroot" for DT bindings
+>       kbuild: fixdep: support concatenated dep files
+>       kbuild: cmd_dtc_cpp: extract deps from both gcc -E and dtc
+>       kbuild: always run gcc -E on *.dts, remove cmd_dtc_cpp
+>       ARM: dt: add header to define GPIO flags
+>       ARM: dt: add header to define IRQ flags
+>       ARM: dt: create a DT header for the GIC
+> 
+>  arch/arm/boot/dts/include/dt-bindings           |    1 +
+>  include/dt-bindings/gpio/gpio.h                 |   15 +++
+>  .../dt-bindings/interrupt-controller/arm-gic.h  |   22 +++++
+>  include/dt-bindings/interrupt-controller/irq.h  |   19 ++++
+>  scripts/Makefile.lib                            |   17 ++--
+>  scripts/basic/fixdep.c                          |   93 ++++++++++++------
+>  6 files changed, 125 insertions(+), 42 deletions(-)
+>  create mode 120000 arch/arm/boot/dts/include/dt-bindings
+>  create mode 100644 include/dt-bindings/gpio/gpio.h
+>  create mode 100644 include/dt-bindings/interrupt-controller/arm-gic.h
+>  create mode 100644 include/dt-bindings/interrupt-controller/irq.h
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
+> 
+> 
 
