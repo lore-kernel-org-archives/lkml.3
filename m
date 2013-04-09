@@ -1,47 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935196Ab3DIGAE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 02:00:04 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:57276 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933440Ab3DIGAC convert rfc822-to-8bit (ORCPT
+	id S935271Ab3DIGBE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 02:01:04 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:48143 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756317Ab3DIGBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 02:00:02 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
-Subject: Re: [RFC PATCH arm: initial TI-Nspire support]
-From: Daniel Tang <dt.tangr@gmail.com>
-In-Reply-To: <op.wu8k5pwqu7prd4@fabians-laptop.fritz.box>
-Date: Tue, 9 Apr 2013 15:59:52 +1000
-Cc: "Arnd Bergmann" <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, "Lionel Debroux" <lionel_debroux@yahoo.fr>,
-        linux-kernel@vger.kernel.org,
-        "Linus Walleij" <linus.walleij@linaro.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <29D8E742-C870-45AE-B102-13A477AE6419@gmail.com>
-References: <6FE4B33E-A503-4A75-AEED-831CB2C06D83@gmail.com> <4B3FD561-84FC-40CD-B747-13851692D673@gmail.com> <521DFDFC-7E9E-47EA-ACDA-C91BBDC8454E@gmail.com> <201304072323.42173.arnd@arndb.de> <896CB251-17FC-4327-BA4E-A8FD9ED1BEC7@gmail.com> <op.wu8k5pwqu7prd4@fabians-laptop.fritz.box>
-To: Fabian Vogt <fabian@ritter-vogt.de>
-X-Mailer: Apple Mail (2.1503)
+	Tue, 9 Apr 2013 02:01:01 -0400
+Message-ID: <5163AE92.7010302@huawei.com>
+Date: Tue, 9 Apr 2013 14:00:50 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: LKML <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        Neil Horman <nhorman@tuxdriver.com>
+Subject: [PATCH 1/2] netprio_cgroup: remove task_struct parameter from sock_update_netprio()
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The callers always pass current to sock_update_netprio().
 
-On 09/04/2013, at 5:16 AM, Fabian Vogt <fabian@ritter-vogt.de> wrote:
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ include/net/netprio_cgroup.h | 4 ++--
+ net/core/scm.c               | 2 +-
+ net/core/sock.c              | 6 +++---
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
-> The latest kernel it seems to get stuck at
-> console_lock() in register_framebuffer (drivers/video/fbmem.c:1655)
-> if the LCD-controller is enabled. (Early printk and serial console works fine)
-> CONFIG_NO_HZ is not activated, it works completely.
-> Could this be a kernel bug or is this an issue with our timer configuration?
-
-Even with the CONFIG_NO_HZ option disabled, I've found that probing of our LCD hardware sometimes still fail with an error of -2.
-
-Depending on how I arrange the device tree or the contents of the boot arguments or, as said, the CONFIG_NO_HZ option, I get different behaviours ranging from: 
- * Getting a -2 error during device probe (possibly due to a clock not being found).
- * LCD hardware is found but boot hangs right after the driver is initialised.
- * LCD hardware is apparently initialised correctly and text appears onscreen but user mode init hangs and I never get to a shell prompt.
-
-This smells of a race condition that occurs before the clcd driver even gets to initialise. Some bug in our timer code? A OF or console bug perhaps? Though, I'm a bit hesitant to blame it on a kernel subsystem bug until it's clear that our code isn't at fault.
-
-Any suggestions?
+diff --git a/include/net/netprio_cgroup.h b/include/net/netprio_cgroup.h
+index 1d04b6f..50ab8c2 100644
+--- a/include/net/netprio_cgroup.h
++++ b/include/net/netprio_cgroup.h
+@@ -29,7 +29,7 @@ struct cgroup_netprio_state {
+ 	struct cgroup_subsys_state css;
+ };
+ 
+-extern void sock_update_netprioidx(struct sock *sk, struct task_struct *task);
++extern void sock_update_netprioidx(struct sock *sk);
+ 
+ #if IS_BUILTIN(CONFIG_NETPRIO_CGROUP)
+ 
+@@ -68,7 +68,7 @@ static inline u32 task_netprioidx(struct task_struct *p)
+ 	return 0;
+ }
+ 
+-#define sock_update_netprioidx(sk, task)
++#define sock_update_netprioidx(sk)
+ 
+ #endif /* CONFIG_NETPRIO_CGROUP */
+ 
+diff --git a/net/core/scm.c b/net/core/scm.c
+index cb8d98c..10153e5 100644
+--- a/net/core/scm.c
++++ b/net/core/scm.c
+@@ -306,7 +306,7 @@ void scm_detach_fds(struct msghdr *msg, struct scm_cookie *scm)
+ 		/* Bump the usage count and install the file. */
+ 		sock = sock_from_file(fp[i], &err);
+ 		if (sock) {
+-			sock_update_netprioidx(sock->sk, current);
++			sock_update_netprioidx(sock->sk);
+ 			sock_update_classid(sock->sk);
+ 		}
+ 		fd_install(new_fd, get_file(fp[i]));
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 0e1d2fe..d4f4cea 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1319,12 +1319,12 @@ EXPORT_SYMBOL(sock_update_classid);
+ #endif
+ 
+ #if IS_ENABLED(CONFIG_NETPRIO_CGROUP)
+-void sock_update_netprioidx(struct sock *sk, struct task_struct *task)
++void sock_update_netprioidx(struct sock *sk)
+ {
+ 	if (in_interrupt())
+ 		return;
+ 
+-	sk->sk_cgrp_prioidx = task_netprioidx(task);
++	sk->sk_cgrp_prioidx = task_netprioidx(current);
+ }
+ EXPORT_SYMBOL_GPL(sock_update_netprioidx);
+ #endif
+@@ -1354,7 +1354,7 @@ struct sock *sk_alloc(struct net *net, int family, gfp_t priority,
+ 		atomic_set(&sk->sk_wmem_alloc, 1);
+ 
+ 		sock_update_classid(sk);
+-		sock_update_netprioidx(sk, current);
++		sock_update_netprioidx(sk);
+ 	}
+ 
+ 	return sk;
+-- 
+1.8.0.2
