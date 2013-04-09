@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936229Ab3DIUdu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 16:33:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51841 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933489Ab3DIUdu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 16:33:50 -0400
-Message-ID: <51647B21.6070402@zytor.com>
-Date: Tue, 09 Apr 2013 13:33:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, WANG Chao <chaowang@redhat.com>,
+	id S936258Ab3DIUgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 16:36:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39654 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935899Ab3DIUgs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 16:36:48 -0400
+Date: Tue, 9 Apr 2013 13:36:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Nikola Pajkovsky <npajkovs@redhat.com>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 3/4] x86, kdump: Change crashkernel_high/low= to crashkernel=;high/low
-References: <1365113821-22749-1-git-send-email-yinghai@kernel.org> <1365113821-22749-5-git-send-email-yinghai@kernel.org> <20130409134544.GA6320@redhat.com> <CAE9FiQUETs0AGjd+72GOz=Pm=9QicM7L46OaiMwhtUFa65TTvA@mail.gmail.com> <5164790E.7@zytor.com> <20130409202948.GQ6320@redhat.com>
-In-Reply-To: <20130409202948.GQ6320@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipc: use list_for_each_entry for list traversing
+Message-Id: <20130409133647.fdb9cd6414ae6da83170fee6@linux-foundation.org>
+In-Reply-To: <m3wqsc3ux0.fsf@redhat.com>
+References: <63a5135b37c9a45abad27eed9f78d69dd4deba76.1365168828.git.npajkovs@redhat.com>
+	<20130408153824.974e9307f83616f90c63e00b@linux-foundation.org>
+	<m3wqsc3ux0.fsf@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2013 01:29 PM, Vivek Goyal wrote:
-> On Tue, Apr 09, 2013 at 01:24:46PM -0700, H. Peter Anvin wrote:
->> On 04/09/2013 01:05 PM, Yinghai Lu wrote:
->>>>
->>>> So crashkernel=X@Y;high is a valid syntax? Looks like we will reserve
->>>> X amount of RAM at base Y and ignore "high" or "low".
->>>
->>> yes, we should reject them.
->>>
->>
->> What if there isn't X amount of RAM available at base Y?
-> 
-> We don't reserve anything.
-> 
-> In this context crashkernel=X@Y,high is invalid syntax and should probably
-> be ignored by parser. The very fact user specified the offset, high or
-> low option does not carry any meaning.
-> 
-> crashkernel=X,high is valid though.
-> 
+On Tue, 09 Apr 2013 11:39:07 +0200 Nikola Pajkovsky <npajkovs@redhat.com> wrote:
 
-Yes, if the offset being invalid is an error, that is the right
-behavior, I would think.
+> Andrew Morton <akpm@linux-foundation.org> writes:
+> 
+> > urgh, that code is sick.  What's it doing poking around in the
+> > list_head internals?
+> 
+> No idea, it there from beginning of first kernel importation into
+> git. Where is history before git?
 
-	-hpa
+The old bitkeeper repo is at
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/old-2.6-bkcvs.git
+and goes back to the 2.4->2.5 split iirc.  But this code predates that
+- my trusty CVS tree goes back to linux-2.4.2-pre2 (November 2000) and
+the list.next hackery is in there.
 
+> >> @@ -253,14 +248,9 @@ static void ss_wakeup(struct list_head *h, int kill)
+> >>  
+> >>  static void expunge_all(struct msg_queue *msq, int res)
+> >>  {
+> >> -	struct list_head *tmp;
+> >> -
+> >> -	tmp = msq->q_receivers.next;
+> >> -	while (tmp != &msq->q_receivers) {
+> >> -		struct msg_receiver *msr;
+> >> +	struct msg_receiver *msr, *t;
+> >>  
+> >> -		msr = list_entry(tmp, struct msg_receiver, r_list);
+> >> -		tmp = tmp->next;
+> >> +	list_for_each_entry_safe(msr, t, &msq->q_receivers, r_list) {
+> >>  		msr->r_msg = NULL;
+> >>  		wake_up_process(msr->r_tsk);
+> >>  		smp_mb();
+> >
+> > I think list_for_each_entry() would suffice here.
+> 
+> I don't know, I found wake_up_sem_queue_do in sem.c and it looks almost same
+> except preempt stuff. I'll be dancing around ipc/
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+wake_up_sem_queue_do() is wrong ;)
+
 
