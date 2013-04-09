@@ -1,78 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935524Ab3DINVx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 09:21:53 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:63681 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758447Ab3DINVv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 09:21:51 -0400
+	id S935499Ab3DINW2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 09:22:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55686 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755740Ab3DINW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 09:22:26 -0400
+Date: Tue, 9 Apr 2013 15:22:25 +0200
+From: Jan Kara <jack@suse.cz>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH v3 02/18] jbd2: change jbd2_journal_invalidatepage to
+ accept length
+Message-ID: <20130409132225.GB13672@quack.suse.cz>
+References: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
+ <1365498867-27782-3-git-send-email-lczerner@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1365499591.30071.3.camel@laptop>
-References: <1365266760-24725-1-git-send-email-fweisbec@gmail.com>
-	<1365266760-24725-3-git-send-email-fweisbec@gmail.com>
-	<1365499591.30071.3.camel@laptop>
-Date: Tue, 9 Apr 2013 15:21:49 +0200
-Message-ID: <CAFTL4hxcQyv_J4ky8wL0rzVemWPpBcjuCV=FeHBvXn5Bht-3OA@mail.gmail.com>
-Subject: Re: [PATCH 2/7] sched: Update rq clock on nohz CPU before setting
- fair group shares
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365498867-27782-3-git-send-email-lczerner@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/9 Peter Zijlstra <peterz@infradead.org>:
-> On Sat, 2013-04-06 at 18:45 +0200, Frederic Weisbecker wrote:
->> Because we may update the execution time (sched_group_set_shares()->
->>         update_cfs_shares()->reweight_entity()->update_curr()) before
->> reweighting the entity after updating the group shares and this
->> requires
->> an uptodate version of the runqueue clock. Let's update it on the
->> target
->> CPU if it runs tickless because scheduler_tick() is not there to
->> maintain
->> it.
->
-> Same as the last comment, we should never rely on the tick to update
-> ->clock except for the work done by the tick itself.
+On Tue 09-04-13 11:14:11, Lukas Czerner wrote:
+> invalidatepage now accepts range to invalidate and there are two file
+> system using jbd2 also implementing punch hole feature which can benefit
+> from this. We need to implement the same thing for jbd2 layer in order to
+> allow those file system take benefit of this functionality.
+> 
+> This commit adds length argument to the jbd2_journal_invalidatepage()
+> and updates all instances in ext4 and ocfs2.
+  Looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-Ok!
-
->
-> Therefore you seem to have found another missing clock update.
-
-Yep, as in the other patches I believe, I'll reiterate that by
-removing that rely-on-tick assumption.
-
-> The problem seems to be that we haven't been able to come up with a
-> sane debug framework for the ->clock updates. But we should have at
-> least one (and preferably no more) update_sched_clock() calls per
-> scheduler entry point.
-
-I'll check if I can factorize some update_rq_clock() calls on some
-upper sched_class callback wrappers. Many of them have that update
-before calling the callbacks already. But there may be a few missing.
-I'll check the other sched entrypoints as well.
-
-Also please check those two patches in my series, it's a draft for an
-rq clock debug framework. For now it's just a brainless stale clock
-check but that's a start:
-
-* http://thread.gmane.org/gmane.linux.kernel/1470769/focus=1470786
-* http://thread.gmane.org/gmane.linux.kernel/1470769/focus=1470750
+								Honza
+> 
+> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+> ---
+>  fs/ext4/inode.c       |    3 ++-
+>  fs/jbd2/transaction.c |   24 +++++++++++++++++-------
+>  fs/ocfs2/aops.c       |    3 ++-
+>  include/linux/jbd2.h  |    2 +-
+>  4 files changed, 22 insertions(+), 10 deletions(-)
+> 
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index f5bf189..69595f5 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -3000,7 +3000,8 @@ static int __ext4_journalled_invalidatepage(struct page *page,
+>  	if (offset == 0)
+>  		ClearPageChecked(page);
+>  
+> -	return jbd2_journal_invalidatepage(journal, page, offset);
+> +	return jbd2_journal_invalidatepage(journal, page, offset,
+> +					   PAGE_CACHE_SIZE - offset);
+>  }
+>  
+>  /* Wrapper for aops... */
+> diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
+> index 325bc01..d334e17 100644
+> --- a/fs/jbd2/transaction.c
+> +++ b/fs/jbd2/transaction.c
+> @@ -2027,18 +2027,23 @@ zap_buffer_unlocked:
+>   * void jbd2_journal_invalidatepage()
+>   * @journal: journal to use for flush...
+>   * @page:    page to flush
+> - * @offset:  length of page to invalidate.
+> + * @offset:  start of the range to invalidate
+> + * @length:  length of the range to invalidate
+>   *
+> - * Reap page buffers containing data after offset in page. Can return -EBUSY
+> - * if buffers are part of the committing transaction and the page is straddling
+> - * i_size. Caller then has to wait for current commit and try again.
+> + * Reap page buffers containing data after in the specified range in page.
+> + * Can return -EBUSY if buffers are part of the committing transaction and
+> + * the page is straddling i_size. Caller then has to wait for current commit
+> + * and try again.
+>   */
+>  int jbd2_journal_invalidatepage(journal_t *journal,
+>  				struct page *page,
+> -				unsigned long offset)
+> +				unsigned int offset,
+> +				unsigned int length)
+>  {
+>  	struct buffer_head *head, *bh, *next;
+> +	unsigned int stop = offset + length;
+>  	unsigned int curr_off = 0;
+> +	int partial_page = (offset || length < PAGE_CACHE_SIZE);
+>  	int may_free = 1;
+>  	int ret = 0;
+>  
+> @@ -2047,6 +2052,8 @@ int jbd2_journal_invalidatepage(journal_t *journal,
+>  	if (!page_has_buffers(page))
+>  		return 0;
+>  
+> +	BUG_ON(stop > PAGE_CACHE_SIZE || stop < length);
+> +
+>  	/* We will potentially be playing with lists other than just the
+>  	 * data lists (especially for journaled data mode), so be
+>  	 * cautious in our locking. */
+> @@ -2056,10 +2063,13 @@ int jbd2_journal_invalidatepage(journal_t *journal,
+>  		unsigned int next_off = curr_off + bh->b_size;
+>  		next = bh->b_this_page;
+>  
+> +		if (next_off > stop)
+> +			return 0;
+> +
+>  		if (offset <= curr_off) {
+>  			/* This block is wholly outside the truncation point */
+>  			lock_buffer(bh);
+> -			ret = journal_unmap_buffer(journal, bh, offset > 0);
+> +			ret = journal_unmap_buffer(journal, bh, partial_page);
+>  			unlock_buffer(bh);
+>  			if (ret < 0)
+>  				return ret;
+> @@ -2070,7 +2080,7 @@ int jbd2_journal_invalidatepage(journal_t *journal,
+>  
+>  	} while (bh != head);
+>  
+> -	if (!offset) {
+> +	if (!partial_page) {
+>  		if (may_free && try_to_free_buffers(page))
+>  			J_ASSERT(!page_has_buffers(page));
+>  	}
+> diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+> index ecb86ca..7c47755 100644
+> --- a/fs/ocfs2/aops.c
+> +++ b/fs/ocfs2/aops.c
+> @@ -608,7 +608,8 @@ static void ocfs2_invalidatepage(struct page *page, unsigned int offset,
+>  {
+>  	journal_t *journal = OCFS2_SB(page->mapping->host->i_sb)->journal->j_journal;
+>  
+> -	jbd2_journal_invalidatepage(journal, page, offset);
+> +	jbd2_journal_invalidatepage(journal, page, offset,
+> +				    PAGE_CACHE_SIZE - offset);
+>  }
+>  
+>  static int ocfs2_releasepage(struct page *page, gfp_t wait)
+> diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
+> index f9fe889..8c34abd 100644
+> --- a/include/linux/jbd2.h
+> +++ b/include/linux/jbd2.h
+> @@ -1090,7 +1090,7 @@ extern int	 jbd2_journal_dirty_metadata (handle_t *, struct buffer_head *);
+>  extern int	 jbd2_journal_forget (handle_t *, struct buffer_head *);
+>  extern void	 journal_sync_buffer (struct buffer_head *);
+>  extern int	 jbd2_journal_invalidatepage(journal_t *,
+> -				struct page *, unsigned long);
+> +				struct page *, unsigned int, unsigned int);
+>  extern int	 jbd2_journal_try_to_free_buffers(journal_t *, struct page *, gfp_t);
+>  extern int	 jbd2_journal_stop(handle_t *);
+>  extern int	 jbd2_journal_flush (journal_t *);
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
