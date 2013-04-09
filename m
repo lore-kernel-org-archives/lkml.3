@@ -1,111 +1,386 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936460Ab3DIVnP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 17:43:15 -0400
-Received: from mga14.intel.com ([143.182.124.37]:21675 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934470Ab3DIVnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 17:43:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,441,1363158000"; 
-   d="scan'208";a="283926215"
-From: "Gross, Mark" <mark.gross@intel.com>
-To: "Cohen, David A" <david.a.cohen@intel.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "dhowells@redhat.com" <dhowells@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] MODSIGN: do not send garbage to stderr when enabling
- modules signature
-Thread-Topic: [PATCH v2] MODSIGN: do not send garbage to stderr when
- enabling modules signature
-Thread-Index: AQHONWpm8yljXCMlhUqsStjUmzwEFJjOazzg
-Date: Tue, 9 Apr 2013 21:43:11 +0000
-Message-ID: <BD75D217E5BAC84080F8EFB2582976377175D258@ORSMSX101.amr.corp.intel.com>
-References: <1365543543-17522-1-git-send-email-david.a.cohen@intel.com>
-In-Reply-To: <1365543543-17522-1-git-send-email-david.a.cohen@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S936465Ab3DIVsr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 17:48:47 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:59022 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934348Ab3DIVso (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 17:48:44 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [RFC PATCH v2 00/15][Sorted-buddy] mm: Memory Power Management
+To: akpm@linux-foundation.org, mgorman@suse.de, matthew.garrett@nebula.com,
+        dave@sr71.net, rientjes@google.com, riel@redhat.com,
+        arjan@linux.intel.com, srinivas.pandruvada@linux.intel.com,
+        maxime.coquelin@stericsson.com, loic.pallardy@stericsson.com,
+        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
+Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com, amit.kachhap@linaro.org,
+        svaidy@linux.vnet.ibm.com, andi@firstfloor.org, wujianguo@huawei.com,
+        kmpark@infradead.org, thomas.abraham@linaro.org,
+        santosh.shilimkar@ti.com, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 10 Apr 2013 03:15:28 +0530
+Message-ID: <20130409214443.4500.44168.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 13040921-5490-0000-0000-0000033F8897
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r39LhSD2007631
 
-> -----Original Message-----
-> From: Cohen, David A
-> Sent: Tuesday, April 09, 2013 2:39 PM
-> To: rusty@rustcorp.com.au; dhowells@redhat.com
-> Cc: linux-kernel@vger.kernel.org; Gross, Mark; Cohen, David A
-> Subject: [PATCH v2] MODSIGN: do not send garbage to stderr when enabling
-> modules signature
-> 
-> openssl may send garbage to stderr when generating X.509 key pair for modules
-> signature regardless there was an error or not. It makes more difficult to create
-> scripts based on kernel error/warning messages.
-> 
-> When compiling kernel with -jN (N > 1), all warning/error messages printed while
-> openssl is generating key pair may get mixed dots and other symbols openssl
-> sends to stderr. This patch makes sure openssl logs go to default stdout.
-> 
-> Example of the garbages:
-> 
-> crypto/anubis.c:581: warning: â€˜interâ€™ is used uninitialized in this function
-> Generating a 4096 bit RSA private key .........
-> drivers/gpu/drm/i915/i915_gem_gtt.c: In function â€˜gen6_ggtt_insert_entriesâ€™:
-> drivers/gpu/drm/i915/i915_gem_gtt.c:440: warning: â€˜addrâ€™ may be used
-> uninitialized in this function
-> .net/mac80211/tx.c: In function â€˜ieee80211_subif_start_xmitâ€™:
-> net/mac80211/tx.c:1780: warning: â€˜chanctx_confâ€™ may be used uninitialized in
-> this function
-> ..drivers/isdn/hardware/mISDN/hfcpci.c: In function â€˜hfcpci_softirqâ€™:
-> .....drivers/isdn/hardware/mISDN/hfcpci.c:2298: warning: ignoring return value
-> of â€˜driver_for_each_deviceâ€™, declared with attribute warn_unused_result
-> net/unix/af_unix.c: In function â€˜unix_bindâ€™:
-> net/unix/af_unix.c:892: warning: â€˜path.dentryâ€™ may be used uninitialized in this
-> function
-> net/unix/af_unix.c:892: warning: â€˜path.mntâ€™ may be used uninitialized in this
-> function ...++ In file included from drivers/message/i2o/config-osm.c:39:
-> drivers/message/i2o/i2o_config.c: In function â€˜i2o_cfg_passthruâ€™:
-> drivers/message/i2o/i2o_config.c:888: warning: cast to pointer from integer of
-> different size
-> drivers/message/i2o/i2o_config.c:943: warning: cast to pointer from integer of
-> different size
-> drivers/net/ethernet/amd/nmclan_cs.c: In function â€˜nmclan_configâ€™:
-> drivers/net/ethernet/amd/nmclan_cs.c:625: warning:
-> â€˜pcmcia_request_exclusive_irqâ€™ is deprecated (declared at
-> include/pcmcia/ds.h:201)
-> drivers/net/ethernet/mellanox/mlx4/mcg.c: In function â€˜find_entryâ€™:
-> .....................................................................................................................
-> ....................................................................++
-> writing new private key to 'signing_key.priv'
-> -----
-> drivers/net/ethernet/mellanox/mlx4/mcg.c:601: warning: â€˜hashâ€™ may be used
-> uninitialized in this function
-> 
-> Signed-off-by: David Cohen <david.a.cohen@intel.com>
-> ---
->  kernel/Makefile |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/Makefile b/kernel/Makefile index bbde5f1..5a51e6c 100644
-> --- a/kernel/Makefile
-> +++ b/kernel/Makefile
-> @@ -175,7 +175,7 @@ signing_key.priv signing_key.x509: x509.genkey
->  	openssl req -new -nodes -utf8 -$(CONFIG_MODULE_SIG_HASH) -days
-> 36500 \
->  		-batch -x509 -config x509.genkey \
->  		-outform DER -out signing_key.x509 \
-> -		-keyout signing_key.priv
-> +		-keyout signing_key.priv 2>&1
->  	@echo "###"
->  	@echo "### Key pair generated."
->  	@echo "###"
-> --
-> 1.7.10.4
-Reviewed-by: mark gross<mark.gross@intel.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+[I know, this cover letter is a little too long, but I wanted to clearly
+explain the overall goals and the high-level design of this patchset in
+detail. I hope this helps more than it annoys, and makes it easier for
+reviewers to relate to the background and the goals of this patchset.]
+
+
+Overview of Memory Power Management and its implications to the Linux MM
+========================================================================
+
+Today, we are increasingly seeing computer systems sporting larger and larger
+amounts of RAM, in order to meet workload demands. However, memory consumes a
+significant amount of power, potentially upto more than a third of total system
+power on server systems. So naturally, memory becomes the next big target for
+power management - on embedded systems and smartphones, and all the way upto
+large server systems.
+
+Power-management capabilities in modern memory hardware:
+-------------------------------------------------------
+
+Modern memory hardware such as DDR3 support a number of power management
+capabilities - for instance, the memory controller can automatically put
+memory DIMMs/banks into content-preserving low-power states, if it detects
+that that *entire* memory DIMM/bank has not been referenced for a threshold
+amount of time, thus reducing the energy consumption of the memory hardware.
+We term these power-manageable chunks of memory as "Memory Regions".
+
+Exporting memory region info of the platform to the OS:
+------------------------------------------------------
+
+The OS needs to know about the granularity at which the hardware can perform
+automatic power-management of the memory banks (i.e., the address boundaries
+of the memory regions). On ARM platforms, the bootloader can be modified to
+pass on this info to the kernel via the device-tree. On x86 platforms, the
+new ACPI 5.0 spec has added support for exporting the power-management
+capabilities of the memory hardware to the OS in a standard way[5].
+
+Estimate of power-savings from power-aware Linux MM:
+---------------------------------------------------
+
+Once the firmware/bootloader exports the required info to the OS, it is upto
+the kernel's MM subsystem to make the best use of these capabilities and manage
+memory power-efficiently. It had been demonstrated on a Samsung Exynos board
+(with 2 GB RAM) that upto 6 percent of total system power can be saved by
+making the Linux kernel MM subsystem power-aware[4]. (More savings can be
+expected on systems with larger amounts of memory, and perhaps improved further
+using better MM designs).
+
+
+Role of the Linux MM in enhancing memory power savings:
+------------------------------------------------------
+
+Often, this simply translates to having the Linux MM understand the granularity
+at which RAM modules can be power-managed, and keeping the memory allocations
+and references consolidated to a minimum no. of these power-manageable
+"memory regions". It is of particular interest to note that most of these memory
+hardware have the intelligence to automatically save power, by putting memory
+banks into (content-preserving) low-power states when not referenced for a
+threshold amount of time. All that the kernel has to do, is avoid wrecking
+the power-savings logic by scattering its allocations and references all over
+the system memory. (The kernel/MM doesn't have to perform the actual power-state
+transitions; its mostly done in the hardware automatically, and this is OK
+because these are *content-preserving* low-power states).
+
+So we can summarize the goals for the Linux MM as:
+
+o Consolidate memory allocations and/or references such that they are not
+spread across the entire memory address space.  Basically the area of memory
+that is not being referenced can reside in low power state.
+
+o Support light-weight targetted memory compaction/reclaim, to evacuate
+lightly-filled memory regions. This helps avoid memory references to
+those regions, thereby allowing them to reside in low power states.
+
+
+Assumptions and goals of this patchset:
+--------------------------------------
+
+In this patchset, we don't handle the part of getting the region boundary info
+from the firmware/bootloader and populating it in the kernel data-structures.
+The aim of this patchset is to propose and brainstorm on a power-aware design
+of the Linux MM which can *use* the region boundary info to influence the MM
+at various places such as page allocation, reclamation/compaction etc, thereby
+contributing to memory power savings. (This patchset is very much an RFC at
+the moment and is not intended for mainline-inclusion yet).
+
+So, in this patchset, we assume a simple model in which each 512MB chunk of
+memory can be independently power-managed, and hard-code this into the patchset.
+As mentioned, the focus of this patchset is not so much on how we get this info
+from the firmware or how exactly we handle a variety of configurations, but
+rather on discussing the power-savings/performance impact of the MM algorithms
+that *act* upon this info in order to save memory power.
+
+That said, its not very far-fetched to try this out with actual region
+boundary info to get the actual power savings numbers. For example, on ARM
+platforms, we can make the bootloader export this info to the OS via device-tree
+and then run this patchset. (This was the method used to get the power-numbers
+in [4]). But even without doing that, we can very well evaluate the
+effectiveness of this patchset in contributing to power-savings, by analyzing
+the free page statistics per-memory-region; and we can observe the performance
+impact by running benchmarks - this is the approach currently used to evaluate
+this patchset.
+
+
+Brief overview of the design/approach used in this patchset:
+-----------------------------------------------------------
+
+This patchset implements the 'Sorted-buddy design' for Memory Power Management,
+in which the buddy (page) allocator is altered to keep the buddy freelists
+region-sorted, which helps influence the page allocation paths to keep the
+allocations consolidated to a minimum no. of memory regions. This patchset also
+includes a light-weight targetted compaction/reclaim algorithm that works
+hand-in-hand with the page-allocator, to evacuate lightly-filled memory regions
+when memory gets fragmented, in order to further enhance memory power savings.
+
+This Sorted-buddy design was developed based on some of the suggestions
+received[1] during the review of the earlier patchset on Memory Power
+Management written by Ankita Garg ('Hierarchy design')[2].
+One of the key aspects of this Sorted-buddy design is that it avoids the
+zone-fragmentation problem that was present in the earlier design[3].
+
+
+
+Design of sorted buddy allocator and light-weight targetted region compaction:
+=============================================================================
+
+Sorted buddy allocator:
+----------------------
+
+In this design, the memory region boundaries are captured in a data structure
+parallel to zones, instead of fitting regions between nodes and zones in the
+hierarchy. Further, the buddy allocator is altered, such that we maintain the
+zones' freelists in region-sorted-order and thus do page allocation in the
+order of increasing memory regions. (The freelists need not be fully
+address-sorted, they just need to be region-sorted).
+
+The idea is to do page allocation in increasing order of memory regions
+(within a zone) and perform region-compaction in the reverse order, as
+illustrated below.
+
+---------------------------- Increasing region number---------------------->
+
+Direction of allocation--->               <---Direction of region-compaction
+
+
+The sorting logic (to maintain freelist pageblocks in region-sorted-order)
+lies in the page-free path and hence the critical page-allocation paths remain
+fast. Also, the sorting logic is optimized to be O(log n).
+
+Advantages of this design:
+--------------------------
+1. No zone-fragmentation (IOW, we don't create more zones than necessary) and
+   hence we avoid its associated problems (like too many zones, extra kswapd
+   activity, question of choosing watermarks etc).
+   [This is an advantage over the 'Hierarchy' design]
+
+2. Performance overhead is expected to be low: Since we retain the simplicity
+   of the algorithm in the page allocation path, page allocation can
+   potentially remain as fast as it would be without memory regions. The
+   overhead is pushed to the page-freeing paths which are not that critical.
+
+
+Light-weight targetted region compaction:
+----------------------------------------
+
+Over time, due to multiple alloc()s and free()s in random order, memory gets
+fragmented, which means the memory allocations will no longer be consolidated
+to a minimum no. of memory regions. In such cases we need a light-weight
+mechanism to opportunistically compact memory to evacuate lightly-filled
+memory regions, thereby enhancing the power-savings.
+
+Noting that CMA (Contiguous Memory Allocator) does targetted compaction to
+achieve its goals, this patchset generalizes the targetted compaction code
+and reuses it to evacuate memory regions. The region evacuation is triggered
+by the page allocator : when it notices the first page allocation in a new
+region, it sets up a worker function to perform compaction and evacuate that
+region in the future, if possible. There are handshakes between the alloc
+and the free paths in the page allocator to help do this smartly, which are
+explained in detail in the patches.
+
+
+This patchset has been hosted in the below git tree. It applies cleanly on
+v3.9-rc5.
+
+git://github.com/srivatsabhat/linux.git mem-power-mgmt-v2
+
+
+Changes in this v2:
+==================
+
+* Fixed a bug in the NUMA case.
+* Added a new optimized O(log n) sorting algorithm to speed up region-sorting
+  of the buddy freelists (patch 9). The efficiency of this new algorithm and
+  its design allows us to support large amounts of RAM quite easily.
+* Added light-weight targetted compaction/reclaim support for memory power
+  management (patches 10-14).
+* Revamped the cover-letter to better explain the idea behind memory power
+  management and this patchset.
+
+
+Experimental Results:
+====================
+
+Test setup:
+----------
+
+x86 dual-socket quad core HT-enabled machine booted with mem=8G
+Memory region size = 512 MB
+
+Functional testing:
+------------------
+
+Ran pagetest, a simple C program that allocates and touches a required number
+of pages.
+
+Below is the statistics from the regions within ZONE_NORMAL, at various sizes
+of allocations from pagetest.
+
+
+	     Present pages   |	Free pages at various allocation sizes   |
+			     |  start	|  512 MB  |  1024 MB | 2048 MB  |
+  Region 0           1	     |      0   |      0   |       0  |       0  |
+  Region 1      131072       |  41537   |  13858   |   13790  |   13334  |
+  Region 2      131072       | 131072   |  26839   |      82  |     122  |
+  Region 3      131072       | 131072   | 131072   |   26624  |       0  |
+  Region 4      131072       | 131072   | 131072   |  131072  |       0  |
+  Region 5      131072       | 131072   | 131072   |  131072  |   26624  |
+  Region 6      131072       | 131072   | 131072   |  131072  |  131072  |
+  Region 7      131072       | 131072   | 131072   |  131072  |  131072  |
+  Region 8      131071       |  72704   |  72704   |   72704  |   72704  |
+
+This shows that page allocation occurs in the order of increasing region
+numbers, as intended in this design.
+
+Performance impact:
+-------------------
+
+Kernbench results didn't show any noticeable performance degradation with
+this patchset as compared to vanilla 3.9-rc5.
+
+
+Todos and ideas for enhancing the design further:
+================================================
+
+1. Add support for making this work with sparsemem, memcg etc.
+
+2. Mel Gorman pointed out that regular compaction algorithm would work
+   against the sorted-buddy allocation strategy, since it creates free space
+   at lower pfns. For now, I have not handled this because regular compaction
+   triggers only when the memory pressure is very high, and hence memory
+   power management is pointless in those situations. Besides, it is
+   immaterial whether memory allocations are consolidated towards lower or
+   higher pfns, because it saves power either way, and hence the regular
+   compaction algorithm doesn't actually work against memory power management.
+
+3. Add more optimizations to the targetted region compaction algorithm in order
+   to enhance its benefits and reduce the overhead, such as:
+   a. Migrate only active pages during region evacuation, because, strictly
+      speaking we only want to avoid _references_ to the region. So inactive
+      pages can be kept around, thus reducing the page-migration overhead.
+   b. Reduce the search-space for region evacuation, by having the
+      page-allocator note down the highest allocated pfn within that region.
+
+4. Have stronger influence over how freepages from different migratetypes
+   are exchanged, so that unmovable and non-reclaimable allocations are
+   contained within least no. of memory regions.
+
+5. Influence the refill of per-cpu pagesets and perhaps even heavily used
+   slab caches, such that they all get their memory from least no. of memory
+   regions. This is to avoid frequent fragmentation of memory regions.
+
+6. Don't perform region evacuation at situations of high memory utilization.
+   Also, never use freepages from MIGRATE_RESERVE for the purpose of
+   region-evacuation.
+
+7. Add more tracing/debug info to enable better evaluation of the
+   effectiveness and benefits of this patchset over vanilla kernel.
+
+8. Add a higher level policy to control the aggressiveness of memory power
+   management.
+
+
+References:
+----------
+
+[1]. Review comments suggesting modifying the buddy allocator to be aware of
+     memory regions:
+     http://article.gmane.org/gmane.linux.power-management.general/24862
+     http://article.gmane.org/gmane.linux.power-management.general/25061
+     http://article.gmane.org/gmane.linux.kernel.mm/64689
+
+[2]. Patch series that implemented the node-region-zone hierarchy design:
+     http://lwn.net/Articles/445045/
+     http://thread.gmane.org/gmane.linux.kernel.mm/63840
+
+     Summary of the discussion on that patchset:
+     http://article.gmane.org/gmane.linux.power-management.general/25061
+
+     Forward-port of that patchset to 3.7-rc3 (minimal x86 config)
+     http://thread.gmane.org/gmane.linux.kernel.mm/89202
+
+[3]. Disadvantages of having memory regions in the hierarchy between nodes and
+     zones:
+     http://article.gmane.org/gmane.linux.kernel.mm/63849
+
+[4]. Estimate of potential power savings on Samsung exynos board
+     http://article.gmane.org/gmane.linux.kernel.mm/65935
+
+[5]. ACPI 5.0 and MPST support
+     http://www.acpi.info/spec.htm
+     Section 5.2.21 Memory Power State Table (MPST)
+
+[6]. v1 of Sorted-buddy memory power management patchset:
+     http://thread.gmane.org/gmane.linux.power-management.general/28498
+
+
+ Srivatsa S. Bhat (15):
+      mm: Introduce memory regions data-structure to capture region boundaries within nodes
+      mm: Initialize node memory regions during boot
+      mm: Introduce and initialize zone memory regions
+      mm: Add helpers to retrieve node region and zone region for a given page
+      mm: Add data-structures to describe memory regions within the zones' freelists
+      mm: Demarcate and maintain pageblocks in region-order in the zones' freelists
+      mm: Add an optimized version of del_from_freelist to keep page allocation fast
+      bitops: Document the difference in indexing between fls() and __fls()
+      mm: A new optimized O(log n) sorting algo to speed up buddy-sorting
+      mm: Add support to accurately track per-memory-region allocation
+      mm: Restructure the compaction part of CMA for wider use
+      mm: Add infrastructure to evacuate memory regions using compaction
+      mm: Implement the worker function for memory region compaction
+      mm: Add alloc-free handshake to trigger memory region compaction
+      mm: Print memory region statistics to understand the buddy allocator behavior
+
+
+  arch/x86/include/asm/bitops.h      |    4 
+ include/asm-generic/bitops/__fls.h |    5 
+ include/linux/compaction.h         |    7 
+ include/linux/gfp.h                |    2 
+ include/linux/migrate.h            |    3 
+ include/linux/mm.h                 |   62 ++++
+ include/linux/mmzone.h             |   78 ++++-
+ include/trace/events/migrate.h     |    3 
+ mm/compaction.c                    |  149 +++++++++
+ mm/internal.h                      |   40 ++
+ mm/page_alloc.c                    |  617 ++++++++++++++++++++++++++++++++----
+ mm/vmstat.c                        |   36 ++
+ 12 files changed, 935 insertions(+), 71 deletions(-)
+
+
+Regards,
+Srivatsa S. Bhat
+IBM Linux Technology Center
+
