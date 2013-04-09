@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763142Ab3DIRIF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 13:08:05 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40285 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753993Ab3DIRID (ORCPT
+	id S935404Ab3DIRJj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 13:09:39 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:60632 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932077Ab3DIRJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 13:08:03 -0400
-Date: Tue, 9 Apr 2013 18:08:00 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Daniel Mack <zonque@gmail.com>
-Cc: Josef Ahmad <josef.ahmad@intel.com>,
-        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi-gpio: init CS before spi_bitbang_setup()
-Message-ID: <20130409170800.GW9243@opensource.wolfsonmicro.com>
-References: <1365525613-27198-1-git-send-email-josef.ahmad@intel.com>
- <51644A98.1070904@gmail.com>
+	Tue, 9 Apr 2013 13:09:35 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/hzbcv1ZPoZ/SOgH"
-Content-Disposition: inline
-In-Reply-To: <51644A98.1070904@gmail.com>
-X-Cookie: Your love life will be... interesting.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51642D21.2060705@ti.com>
+References: <1365465371-24652-1-git-send-email-abrestic@chromium.org>
+	<51642D21.2060705@ti.com>
+Date: Tue, 9 Apr 2013 10:09:34 -0700
+X-Google-Sender-Auth: ga2MjKAUKEhjkSHO69eWDKJqW8s
+Message-ID: <CAL1qeaENU4z9FC4kXmcTGfzKBg3nVmpRNomBYa=HAenDRbPOgA@mail.gmail.com>
+Subject: Re: [PATCH] thermal: step_wise: set throttle target within thermal
+ instance limits
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Eduardo,
 
---/hzbcv1ZPoZ/SOgH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 9, 2013 at 8:00 AM, Eduardo Valentin
+<eduardo.valentin@ti.com> wrote:
+> Hi Andrew,
+>
+>
+> On 08-04-2013 19:56, Andrew Bresticker wrote:
+>>
+>> When selecting a target cooling state in get_target_state(), make sure
+>> that the state is at least as high as the minimum when the temperature
+>> is rising and at least as low as the maximum when the temperature is
+>> falling.  Previously the cooling level would only be incremented or
+>> decremented by one in these cases.
+>>
+>> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+>> ---
+>>   drivers/thermal/step_wise.c | 4 ++++
+>>   1 file changed, 4 insertions(+)
+>>
+>> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
+>> index 0cd5e9f..49992a4 100644
+>> --- a/drivers/thermal/step_wise.c
+>> +++ b/drivers/thermal/step_wise.c
+>> @@ -47,9 +47,13 @@ static unsigned long get_target_state(struct
+>> thermal_instance *instance,
+>>         if (trend == THERMAL_TREND_RAISING) {
+>>                 cur_state = cur_state < instance->upper ?
+>>                             (cur_state + 1) : instance->upper;
+>> +               if (cur_state < instance->lower)
+>> +                       cur_state = instance->lower;
+>>         } else if (trend == THERMAL_TREND_DROPPING) {
+>>                 cur_state = cur_state > instance->lower ?
+>>                             (cur_state - 1) : instance->lower;
+>> +               if (cur_state > instance->upper)
+>> +                       cur_state = instance->upper;
+>>         }
+>
+>
+>
+> In which situations cur_state will be out of the [lower;upper] boundaries? I
+> mean at this point while temperature is rising, and we are rising the
+> cooling level, we should be already above lower (and vice-versa). Can you
+> please describe better the situation you are trying to cover/ that you have
+> identified?
 
-On Tue, Apr 09, 2013 at 07:06:32PM +0200, Daniel Mack wrote:
-> Cc: Mark
->=20
-> On 09.04.2013 18:40, Josef Ahmad wrote:
-> > spi_bitbang_setup() deasserts the chip select line to initialise
-> > the device. The chip select GPIO line is obtained from
+Suppose we hit a trip point which has bounds from 5 to 10, but
+cur_state is 0 because there has previously been no thermal
+throttling.  In that case, we would only go to level 1, even though
+the thermal instance specifies we should be between 5 and 10.  This
+patch would fix it so that we go directly to level 5 instead.
 
-Please resend the patch - git am doesn't know how to strip off quotation
-stuff!
+I will resend this with a more descriptive commit message.
 
---/hzbcv1ZPoZ/SOgH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>
+>>
+>>         return cur_state;
+>>
+>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRZErFAAoJELSic+t+oim97fgP/AzxBXM4qvTxwn3WQOGvYqXw
-7LODDFRZIQjEC5PDUpKDMzgvAWvmtfca90Phrplon0/kp6ahdoQdSp19w8afD6Pt
-JnK4tuYbrgXKo6mQeEIgWMbAw2sUimpxkmyLeP08Ua7JaFn5ros+hr9cBSD19wD3
-AIMOcP1R+dm3ex/Uh/cyBQ8KM/vTIc7mGKhrgA4Ke944Pp7a2aa6paUffxOP9CDG
-Rh7QdwWrVmgdQ1HWCcCSaiL1Je/fDIiqDWc/K1Bzf8zGHDYb2YxsxVDQK3wY4XOA
-xdlK2LSiE8gtL4xbATYrm7Uh04uvO1imMBmzSndWrRYRCe4YzvuB3sOJcxylwMYR
-GVKbEOIyaEMamFYHTn+8aYf3FADacnF6ioQEIuYwf9nZwnUpeeAfvY7NHaUEMeX7
-NW/EoGBov6144gifC8kju/lKSRV56DxsOnELT5VVsZitIjJgI8XHeE6HbYKAccFc
-85jyObDoj2O+qbikDKUrsQnltGcMugkmpY5VDCjuLd0P4vFstWS9MTgJpFD+UrYj
-uVziFPjYvZIRtambxGoSwSUihj2rJ0WgcoEVaRpVnPHNPioT1hgDdh1ZcwQII5Y0
-b3BX72v1c3v9mFcspC0Wzh1Pc6VIwBs5cUkHWAFcSO3RViEBME+W8jexLjgJkauY
-cBAa6ffyaddiEBGagGg4
-=0JRE
------END PGP SIGNATURE-----
-
---/hzbcv1ZPoZ/SOgH--
+Thanks,
+Andrew
