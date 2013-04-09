@@ -1,105 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab3DIFB1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 01:01:27 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:43035 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752726Ab3DIFBZ (ORCPT
+	id S1759732Ab3DIFDF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 01:03:05 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:60646 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713Ab3DIFDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 01:01:25 -0400
-Message-ID: <5163A097.4050101@linux.vnet.ibm.com>
-Date: Tue, 09 Apr 2013 13:01:11 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Tue, 9 Apr 2013 01:03:03 -0400
+Date: Tue, 9 Apr 2013 07:02:50 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Pawel Moll <pawel.moll@arm.com>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Pekka Enberg <penberg@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [RFC] perf: need to expose sched_clock to correlate user
+ samples with kernel samples
+Message-ID: <20130409050250.GA2499@netboy>
+References: <515B0502.8070408@linaro.org>
+ <1365009558.26858.19.camel@hornet>
+ <515C66FE.7030501@linaro.org>
+ <1365010502.26858.32.camel@hornet>
+ <515C6C01.9070905@linaro.org>
+ <1365092963.26858.107.camel@hornet>
+ <1365185813.25942.12.camel@hornet>
+ <20130406110507.GC7572@netboy>
+ <1365443897.24306.12.camel@hornet>
+ <51631510.6080401@linaro.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [RFC PATCH] sched: wake-affine throttle
-References: <514FDF76.2060806@linux.vnet.ibm.com> <1365415249.2609.145.camel@laptop>
-In-Reply-To: <1365415249.2609.145.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040904-8878-0000-0000-000006A091F9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51631510.6080401@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08/2013 06:00 PM, Peter Zijlstra wrote:
-> On Mon, 2013-03-25 at 13:24 +0800, Michael Wang wrote:
->>         if (affine_sd) {
->> -               if (cpu != prev_cpu && wake_affine(affine_sd, p,
->> sync))
->> +               if (cpu != prev_cpu && wake_affine(affine_sd, p,
->> sync)) {
->> +                       /*
->> +                        * wake_affine() stuff try to pull wakee to
->> the cpu
->> +                        * around waker, this will benefit us if the
->> data
->> +                        * cached on waker cpu is hot for wakee, or
->> the extreme
->> +                        * ping-pong case.
->> +                        *
->> +                        * However, do such blindly work too
->> frequently will
->> +                        * cause regression to some workload, thus,
->> each time
->> +                        * when wake_affine() succeed, throttle it for
->> a while.
->> +                        */
->> +                       wake_affine_throttle(p);
->>                         prev_cpu = cpu;
->> +               }
+On Mon, Apr 08, 2013 at 12:05:52PM -0700, John Stultz wrote:
 > 
-> How about only throttling when wake_affine() starts returning false? At
-> that point its lost its benefit.
+> So thinking this through further, I'm worried we may _not_ be able
+> to eventually enable this to be a vdso as I had earlier hoped.
+> Mostly because I'm not sure how the fd -> file -> clock lookup could
+> be done in userland (any ideas?).
 
-Honestly, I used to think this won't work, but the testing results show
-it even better than throttle on succeed...your suggestion is correct, it
-will be applied to the next version.
+How about a new clock operation, clock_install_vdso(), that lets the
+process arrange for one dynamic clock to be reflected in its vdso
+page?
 
-But please allow me to express my concern here:
-
-In summary, I don't think 'return false' is the only point wake-affine
-lost it's benefit.
-
-When wake-affine return true, the only thing guaranteed is the balance,
-but what about the factors like:
-
-1. wakee has no hot data cached on curr_cpu
-2. hot data cached on curr_cpu for wakee is less than those on prev_cpu
-3. wakee has no relationship with waker at all
-...
-
-Those factors was unconsidered when wake_affine() return true, but they
-could be a reason for regression too, isn't it?
-
-Anyway, according to the test results, the benefit of wake-affine
-reserved by 'throttle on failed' is impressive, those factors failed to
-defend them self...
-
-> 
-> Also, why not place this inside wake_affine() like you did the throttled
-> test.
-
-That's right, will correct it :)
-
-Regards,
-Michael Wang
-
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+Thanks,
+Richard
