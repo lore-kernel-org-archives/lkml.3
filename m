@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935335Ab3DIDjK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 23:39:10 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:40525 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934804Ab3DIDjJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 23:39:09 -0400
-Message-ID: <51638D59.6010305@linaro.org>
-Date: Mon, 08 Apr 2013 20:39:05 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: lkml <linux-kernel@vger.kernel.org>, Prarit Bhargava <prarit@redhat.com>,
-        David Engraf <david.engraf@sysgo.com>
-Subject: [GIT PULL] Timekeeping locking changes for 3.10
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S934789Ab3DIDpg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 23:45:36 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:55702 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1761958Ab3DIDpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 23:45:35 -0400
+Message-ID: <1365479133.6865.1.camel@joe-AO722>
+Subject: Re: [PATCH 1/1] irqchip: exynos-combiner: Fix checkpatch warnings
+From: Joe Perches <joe@perches.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, patches@linaro.org,
+        chanho61.park@samsung.com, kgene.kim@samsung.com
+Date: Mon, 08 Apr 2013 20:45:33 -0700
+In-Reply-To: <CAK9yfHwY5Ey28mveHtYcCvcEyiM=W2Gwpw_ybx44JT=cSm2NOw@mail.gmail.com>
+References: <1363165944-7480-1-git-send-email-sachin.kamat@linaro.org>
+	 <CAK9yfHzvJ+5voHuJLCNb55yB0x5R8LS=FqoCu9tn5bSXZ_BNsQ@mail.gmail.com>
+	 <1365476945.2012.2.camel@joe-AO722>
+	 <CAK9yfHwY5Ey28mveHtYcCvcEyiM=W2Gwpw_ybx44JT=cSm2NOw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Thomas,
-     Here's the second chunk of my 3.10 timekeeping changes.
+On Tue, 2013-04-09 at 09:06 +0530, Sachin Kamat wrote:
+> On 9 April 2013 08:39, Joe Perches <joe@perches.com> wrote:
+> > On Tue, 2013-04-09 at 08:33 +0530, Sachin Kamat wrote:
+> >> On 13 March 2013 14:42, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+> >> > Fixes the following warnings:
+> >> > WARNING: line over 80 characters
+> >> > WARNING: Prefer pr_warn(... to pr_warning(...
+> >> > diff --git a/drivers/irqchip/exynos-combiner.c b/drivers/irqchip/exynos-combiner.c
+> > []
+> >> > @@ -229,13 +229,15 @@ void __init combiner_init(void __iomem *combiner_base,
+> > []
+> >> > -               pr_warning("%s: irq desc alloc failed. Continuing with %d as linux irq base\n", __func__, irq_base);
+> >> > +               pr_warn("%s: irq desc alloc failed. "
+> >> > +                       "Continuing with %d as linux irq base\n",
+> >> > +                       __func__, irq_base);
+> >
+> > Please don't split formats.
+> > See Documentation/CodingStyle Chapter 2
+> >
+> >                 pr_warn("%s: irq desc alloc failed. Continuing with %d as linux irq base\n",
+> >                         __func__, irq_base);
+> >
+> >
+> 
+> Thanks for pointing out. If I didn't split it, it would have exceeded
+> the 80 column limit.
 
-This queue includes:
-* NTP locking changes needed for your shadow-timekeeping work
-* Your shadow-timekeeping work
-* hrtimer fixes from David and Prarit (also tagged for stable)
+So?
 
-Let me know if you have any comments or objections!
-thanks
--john
+> Since there were 2 different sentences, I thought
+> grepping should not be a problem if split at sentence boundaries.
 
-
-The following changes since commit 0ed2aef9b3bffe598045b62a31a50d912eee92d8:
-
-   Merge branch 'fortglx/3.10/time' of 
-git://git.linaro.org/people/jstultz/linux into timers/core (2013-04-03 
-12:27:29 +0200)
-
-are available in the git repository at:
+I think it's OK to split at \n but not necessarily
+at a sentence boundary/period.
 
 
-   git://git.linaro.org/people/jstultz/linux.git fortglx/3.10/time
-
-for you to fetch changes up to 51fd36f3fad8447c487137ae26b9d0b3ce77bb25:
-
-   hrtimer: Fix ktime_add_ns() overflow on 32bit architectures 
-(2013-04-08 13:21:20 -0700)
-
-----------------------------------------------------------------
-David Engraf (1):
-       hrtimer: Fix ktime_add_ns() overflow on 32bit architectures
-
-John Stultz (8):
-       ntp: Split out timex validation from do_adjtimex
-       ntp: Move do_adjtimex() and hardpps() functions to timekeeping.c
-       ntp: Move timex validation to timekeeping do_adjtimex call.
-       ntp: Rework do_adjtimex to take timespec and tai arguments
-       timekeeping: Move ADJ_SETOFFSET to top level do_adjtimex()
-       timekeeping: Hold timekeepering locks in do_adjtimex and hardpps
-       timekeeping: Simplify tai updating from do_adjtimex
-       ntp: Remove ntp_lock, using the timekeeping locks to protect ntp 
-state
-
-Prarit Bhargava (1):
-       hrtimer: Add expiry time overflow check in hrtimer_interrupt
-
-Thomas Gleixner (4):
-       timekeeping: Store cycle_last value in timekeeper struct as well
-       timekeeping: Delay update of clock->cycle_last
-       timekeeping: Implement a shadow timekeeper
-       timekeeping: Shorten seq_count region
-
-  include/linux/timekeeper_internal.h |    2 +
-  include/linux/timex.h               |    7 --
-  kernel/hrtimer.c                    |    6 ++
-  kernel/time/ntp.c                   |   99 ++++++++---------------------
-  kernel/time/ntp_internal.h          |   12 ++++
-  kernel/time/timekeeping.c           |  120 
-+++++++++++++++++++++++++++++------
-  6 files changed, 148 insertions(+), 98 deletions(-)
-  create mode 100644 kernel/time/ntp_internal.h
