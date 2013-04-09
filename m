@@ -1,70 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935618Ab3DINCa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 09:02:30 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:48125 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759206Ab3DINC3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 09:02:29 -0400
+	id S935931Ab3DINCe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 09:02:34 -0400
+Received: from mga03.intel.com ([143.182.124.21]:14834 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935797Ab3DINCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 09:02:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,438,1363158000"; 
+   d="scan'208";a="225025556"
+Date: Tue, 9 Apr 2013 15:02:21 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, rogerq@ti.com
+Subject: Re: [PATCH Resend 1/2] mfd: omap-usb-host: Convert to
+ devm_ioremap_resource()
+Message-ID: <20130409130221.GI23447@zurbaran>
+References: <1365504397-29867-1-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <51640A16.1060002@cogentembedded.com>
-References: <1365499312-14232-1-git-send-email-gautam.vivek@samsung.com>
-	<51640A16.1060002@cogentembedded.com>
-Date: Tue, 9 Apr 2013 18:32:27 +0530
-Message-ID: <CAFp+6iE1Ei=B7+XfZghVivwQ5zdbCnuG+F=qdLX3P19Xo9QdYg@mail.gmail.com>
-Subject: Re: [PATCH] usb: ehci-s5p: fix: Fix null pointer dereferencing
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
-        kgene.kim@samsung.com, Manjunath Goudar <manjunath.goudar@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Jingoo Han <jg1.han@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365504397-29867-1-git-send-email-sachin.kamat@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Sachin,
 
+On Tue, Apr 09, 2013 at 04:16:36PM +0530, Sachin Kamat wrote:
+> Use the newly introduced devm_ioremap_resource() instead of
+> devm_request_and_ioremap() which provides more consistent error handling.
+> 
+> devm_ioremap_resource() provides its own error messages; so all explicit
+> error messages can be removed from the failure code paths.
+> 
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> Acked-by: Roger Quadros <rogerq@ti.com>
+> ---
+> Rebased onto latest mfd-next tree.
+> ---
+>  drivers/mfd/omap-usb-host.c |    9 ++++-----
+>  1 file changed, 4 insertions(+), 5 deletions(-)
+Both patches applied now, thanks.
 
-On Tue, Apr 9, 2013 at 6:01 PM, Sergei Shtylyov
-<sergei.shtylyov@cogentembedded.com> wrote:
-> Hello.
->
->
-> On 09-04-2013 13:21, Vivek Gautam wrote:
->
->> 7edb3da makes ehci-s5p as a separate driver. But,
->
->
->    Please also provide the summary line of that commit in parens.
-
-Sure, will add the commit line of that patch.
-
->
->
->> it raised an issue with its driver data.
->> Now that 's5p_ehci_hcd' doesn't maintain pointer to 'usb_hcd'
->> and s5p_ehci is nothing but a pointer to hcd->priv;
->> add hcd to the driver data rather than s5p_ehci.
->
->
->> This fixes issues with null pointer dereferencing in
->> s5p_ehci_shutdown(), s5p_ehci_suspend(), s5p_ehci_resume().
->
->
->> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> CC: Manjunath Goudar <manjunath.goudar@linaro.org>
->> CC: Arnd Bergmann <arnd@arndb.de>
->> CC: Jingoo Han <jg1.han@samsung.com>
->
->
-> WBR, Sergei
-
-
+Cheers,
+Samuel.
 
 -- 
-Thanks & Regards
-Vivek
+Intel Open Source Technology Centre
+http://oss.intel.com/
