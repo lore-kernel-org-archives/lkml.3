@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937648Ab3DIK2p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 06:28:45 -0400
-Received: from mga03.intel.com ([143.182.124.21]:36244 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935614Ab3DIK2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 06:28:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,438,1363158000"; 
-   d="scan'208";a="224976759"
-Date: Tue, 9 Apr 2013 12:28:41 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Jean-Nicolas Graux <jean-nicolas.graux@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 1/3] mfd: support stmpe1801 18 bits enhanced port expander
-Message-ID: <20130409102841.GV24058@zurbaran>
-References: <1365496521-16880-1-git-send-email-jean-nicolas.graux@stericsson.com>
+	id S937656Ab3DIK34 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 06:29:56 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:40619 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760610Ab3DIK3z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 06:29:55 -0400
+Date: Tue, 9 Apr 2013 11:29:49 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com
+Subject: Re: [PATCH 1/2] mfd: db8500-prcmu: Return early if the TCPM cannot
+ be located
+Message-ID: <20130409102949.GC25316@gmail.com>
+References: <1365071941-23475-1-git-send-email-lee.jones@linaro.org>
+ <20130409100510.GP24058@zurbaran>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1365496521-16880-1-git-send-email-jean-nicolas.graux@stericsson.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130409100510.GP24058@zurbaran>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean-Nicolas,
+On Tue, 09 Apr 2013, Samuel Ortiz wrote:
 
-On Tue, Apr 09, 2013 at 10:35:19AM +0200, Jean-Nicolas Graux wrote:
-> Provides support for 1801 variant of stmpe gpio port expanders.
-> This chip has 18 gpios configurable as GPI, GPO, keypad matrix,
-> special key or dedicated key function.
+> Hi Lee,
 > 
-> Note that special/dedicated key function is not supported yet.
-> 
-> Signed-off-by: Jean-Nicolas Graux <jean-nicolas.graux@stericsson.com>
-> ---
->  drivers/mfd/Kconfig       |    1 +
->  drivers/mfd/stmpe-i2c.c   |    1 +
->  drivers/mfd/stmpe.c       |   97 ++++++++++++++++++++++++++++++++++++++++++++-
->  drivers/mfd/stmpe.h       |   49 +++++++++++++++++++++++
->  include/linux/mfd/stmpe.h |    3 ++
->  5 files changed, 150 insertions(+), 1 deletion(-)
-Patch applied now, unless Lee or Linus object to it.
+> On Thu, Apr 04, 2013 at 11:39:00AM +0100, Lee Jones wrote:
+> > Currently we check to see if we obtained the Tightly Coupled Program
+> > Memory (TCPM) base and only execute the code within the check if we
+> > have it. It's more traditional to return early if we don't have it.
+> > This way we can flatten most of the function's code down to a single
+> > tab spacing.
+> > 
+> > Cc: Samuel Ortiz <sameo@linux.intel.com>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  drivers/mfd/db8500-prcmu.c |   40 +++++++++++++++++++++-------------------
+> >  1 file changed, 21 insertions(+), 19 deletions(-)
+> I had to apply this one manually, please check if it was done correctly from
+> my mfd-next tree.
 
-Cheers,
-Samuel.
+Yes, looks good.
+
+I think it was only 'db8500_prcmu_early_init()' and the line numbers
+which confused it.
+
+Kind regards,
+Lee
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
