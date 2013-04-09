@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937083Ab3DIIUx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 04:20:53 -0400
-Received: from mga14.intel.com ([143.182.124.37]:62773 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936058Ab3DIIUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 04:20:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,437,1363158000"; 
-   d="scan'208";a="224937988"
-Date: Tue, 9 Apr 2013 10:20:46 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Fabio Baltieri <fabio.baltieri@linaro.org>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH] mfd: ab8500-core: Ignore masked out interrupts
-Message-ID: <20130409082046.GK24058@zurbaran>
-References: <1363873784-27378-1-git-send-email-fabio.baltieri@linaro.org>
+	id S937096Ab3DIIXI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 04:23:08 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:43043 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936058Ab3DIIXF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 04:23:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363873784-27378-1-git-send-email-fabio.baltieri@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1364310754-3692-3-git-send-email-kgene.kim@samsung.com>
+References: <1364310754-3692-1-git-send-email-kgene.kim@samsung.com>
+	<1364310754-3692-3-git-send-email-kgene.kim@samsung.com>
+Date: Tue, 9 Apr 2013 10:23:03 +0200
+Message-ID: <CACRpkdbEUe1NkOY7wR2FU+0Y=D5Qd=Lu2Zvv=TPBBCbWja0HMQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] pinctrl: exynos5440: add gpio interrupt support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Abraham <thomas.ab@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fabio,
+On Tue, Mar 26, 2013 at 4:12 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
 
-On Thu, Mar 21, 2013 at 02:49:44PM +0100, Fabio Baltieri wrote:
-> AB8500 asserts LATCH bits for masked out interrupts.  This patch
-> explicitly masks those out using the cached mask value to prevent
-> handle_nested_irq() being called for masked IRQ on the same register as
-> unmasked ones.
-> 
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
-> ---
-> 
-> Hello Samuel, Anton,
-> 
-> this is a small fix for the AB8500 irq generation code.  As this depends
-> on Lee's patches already merged in the battery tree, this patch is based
-> on Anton's repository, and should apply cleanly on it and on next.
-As Lee prepared a branch for Anton and me to pull from, this patch applied
-cleanly on top of mfd-next. So I took it and pushed it now.
+> From: Thomas Abraham <thomas.ab@samsung.com>
+>
+> Exynos5440 supports gpio interrupts on gpios 16 to 23. The eight interrupt lines
+> originating from the pin-controller are connected to the gic. Add irq-chip support
+> for these interrupts.
+>
+> Signed-off-by: Thomas Abraham <thomas.ab@samsung.com>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
 
-Cheers,
-Samuel.
+Basically really nice. Patch has been applied, but some comments
+for future reference:
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+> +/* gpiolib gpio_to_irq callback function */
+> +static int exynos5440_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
+> +{
+> +       struct exynos5440_pinctrl_priv_data *priv = dev_get_drvdata(gc->dev);
+> +       unsigned int virq;
+
+I'm a bit annoyed by use of the abbreviation "virq" as if the IRQs were
+"virtual", they are not - this implies that the Linux IRQ numbers are not
+"real" or something.
+
+I use the nomenclature:
+
+irq = Linux IRQ
+hwirq = whatever offset that IRQ has in the hardware IRQ controller.
+
+virq I think is confusing...
+
+> +static irqreturn_t exynos5440_gpio_irq(int irq, void *data)
+> +{
+> +       struct exynos5440_gpio_intr_data *intd = data;
+> +       struct exynos5440_pinctrl_priv_data *d = intd->priv;
+> +       int virq;
+> +
+> +       virq = irq_linear_revmap(d->irq_domain, intd->gpio_int);
+> +       if (!virq)
+> +               return IRQ_NONE;
+> +       generic_handle_irq(virq);
+> +       return IRQ_HANDLED;
+> +}
+
+Same here. Actually, I guess irq_linear_revmap works here,
+but irq_find_mapping(domain, hwirq) is more archaic, could
+you test if that works as well and make a follow-up patch to
+change it?
+
+Yours,
+Linus Walleij
