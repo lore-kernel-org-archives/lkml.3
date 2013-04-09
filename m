@@ -1,253 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936151Ab3DIMZv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 08:25:51 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:16174 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754240Ab3DIMZt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 08:25:49 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee68e-b7f946d000001e37-e6-516408cb19d2
-Content-transfer-encoding: 8BIT
-Message-id: <516408CA.5030009@samsung.com>
-Date: Tue, 09 Apr 2013 21:25:46 +0900
-From: jonghwa3.lee@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, sw0312.kim@samsung.com,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [RFC PATCH 0/2] cpufreq: Introduce LAB cpufreq governor.
-References: <1364804657-16590-1-git-send-email-jonghwa3.lee@samsung.com>
- <CAOh2x=nPJa0GReiN=OHLG=m4Gq51F=4VppdaQL20xi-aUa8x2Q@mail.gmail.com>
- <20130409123719.7399d5ad@amdc308.digital.local>
-In-reply-to: <20130409123719.7399d5ad@amdc308.digital.local>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsWyRsSkSPc0R0qgwYJeaYunTT/YLa5/ec5q
-	cbbpDbvFm4ebGS0u75rDZvG59wijxdojd9ktbjeuYLPoX9jLZDFj8ks2i41fPRy4Pe5c28Pm
-	0bdlFaPHo8UtjB6fN8kFsERx2aSk5mSWpRbp2yVwZUyd18ZUsMGm4n3nA/YGxrm6XYwcHBIC
-	JhL3dll3MXICmWISF+6tZ+ti5OIQEljKKLFncjs7RMJEYtm8lywgtpDAIkaJR40mIDavgKDE
-	j8n3WEDmMAvISxy5lA0SZhZQl5g0bxEzRPlLRokNXeIgJbwCWhJ31+eAhFkEVCVWzVsHVsIm
-	ICfxtukbI0iJqECExK9+DpCwiICOxIWPDcwg1zAL7GCWWLitmxEkISzgKtG3/wojxJkHGSWe
-	f2sBG8QpYCPRvbSJHSQhIfCSXWLfuYPsENsEJL5NPsQC8a+sxKYDzBBvSUocXHGDZQKj2Cwk
-	38xC+GYWkm8WMDKvYhRNLUguKE5KLzLSK07MLS7NS9dLzs/dxAiMxdP/nvXtYLx5wPoQYzLQ
-	xonMUqLJ+cBYziuJNzQ2M7IwNTE1NjK3NCNNWEmcV63FOlBIID2xJDU7NbUgtSi+qDQntfgQ
-	IxMHp1QDY7N4enKS9qRVAZbl79KfcjxOZtI8lqNydMEZfSbNspT71xwKEx44xbzrrd3195hX
-	FIPddqEi1sKSyZnHuiunPf9g1L27PdacqW/2r4L1UYVOPJ7sVpzlqs7PezqW5zEb35x35OTE
-	P+x7fxqV9y07pXxqwmkVuc9LfV89W+bFKcWm8PP9lddflFiKMxINtZiLihMBHswhLtsCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t9jAd3THCmBBv3LBS2eNv1gt7j+5Tmr
-	xdmmN+wWbx5uZrS4vGsOm8Xn3iOMFmuP3GW3uN24gs2if2Evk8WMyS/ZLDZ+9XDg9rhzbQ+b
-	R9+WVYwejxa3MHp83iQXwBLVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQ
-	l5ibaqvk4hOg65aZA3SVkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjFj
-	6rw2poINNhXvOx+wNzDO1e1i5OSQEDCRWDbvJQuELSZx4d56NhBbSGARo8SjRhMQm1dAUOLH
-	5HtANRwczALyEkcuZYOEmQXUJSbNW8QMUf6SUWJDlzhICa+AlsTd9TkgYRYBVYlV89aBlbAJ
-	yEm8bfrGCFIiKhAh8aufAyQsIqAjceFjA1AJF9DEHcwSC7d1M4IkhAVcJfr2X2EESQgJHGSU
-	eP6tBWwQp4CNRPfSJvYJjAKzkFw3C+G6WUiuW8DIvIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/
-	dxMjONafSe9gXNVgcYhRgINRiYf3wpOkQCHWxLLiytxDjBIczEoivC13kgOFeFMSK6tSi/Lj
-	i0pzUosPMSYDfTeRWUo0OR+YhvJK4g2NTcyMLI3MDS2MjM1JE1YS5z3Yah0oJJCeWJKanZpa
-	kFoEs4WJg1OqgTFn8UzDU1ceez0VtN6teC7MPKmMa6rS1aCONUv1JVPb/go2r2je+XPH2t53
-	vz0NOli4DAvaKrzP3r0mfFNaOzlL0aD9irKfY8C8xI+cN6bHex94X8ZXsU1B9InWlvPSZ3wF
-	Pz7L3PbDJDGsfcHeGa0lBiH+W1KbfqaF+n3sXlYtG37indWMFiWW4oxEQy3mouJEAOvgop45	AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S936509Ab3DIM34 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 08:29:56 -0400
+Received: from zmc.proxad.net ([212.27.53.206]:50348 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935571Ab3DIM3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 08:29:53 -0400
+From: Florian Fainelli <florian@openwrt.org>
+To: stern@rowland.harvard.edu
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, gregkh@linuxfoundation.org,
+        linux-usb@vger.kernel.org, balbi@ti.com,
+        Florian Fainelli <florian@openwrt.org>
+Subject: [PATCH 3/5 v4] USB: enclose EHCI HCD drivers within an if USB_EHCI_HCD block
+Date: Tue,  9 Apr 2013 14:29:27 +0200
+Message-Id: <1365510569-8110-4-git-send-email-florian@openwrt.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1365510569-8110-1-git-send-email-florian@openwrt.org>
+References: <1365091048-16229-1-git-send-email-florian@openwrt.org>
+ <1365510569-8110-1-git-send-email-florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, sorry for my late reply.
-I just want to add comment to assist Lukasz's.
-I put my comments below of Lukasz's.
+Thist patch removes the depends on USB_EHCI_HCD that the various USB
+EHCI HCD drivers use and encloses every driver within an if USB_EHCI_HCD
+/ endif block. The EHCI HCD platform and Octeon drivers have been moved
+around to remain enclosed within this block.
 
-On 2013년 04월 09일 19:37, Lukasz Majewski wrote:
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+---
+Changes in v4:
+- added Alan's Acked-by tag
+- refreshed against latest usb-next
 
-> Hi Viresh,
-> 
-> First of all I'd like to apologize for a late response.
-> Please find my comments below. 
-> 
->> On Mon, Apr 1, 2013 at 1:54 PM, Jonghwa Lee
->> <jonghwa3.lee@samsung.com> wrote:
->>> <<Purpose>>
->>>  One of the problem of ondemand is that it considers the most busy
->>> cpu only while doesn't care how many cpu is in busy state at the
->>> moment. This may results in unnecessary power consumption, and it'll
->>> be critical for the system having limited power source.
->>>
->>>  To get the best energy efficiency, LAB governor considers not only
->>> idle time but also the number of idle cpus. It primarily focuses on
->>> supplying adequate performance to users within the limited resource.
->>> It checks the number of idle cpus then controls the maximum
->>> frequency dynamically. And it also applies different frequency
->>> increasing level depends on that information. In simple terms the
->>> less the number of busy cpus, the better performance will be given.
->>>  In addition, stable system's power consumption in the busy state
->>> can be achieved also with using LAB governor. This will help to
->>> manage and estimate power consumption in certain system.
->>
->> Hi Jonghwa,
->>
->> First of all, i should accept that i haven't got to the minute details
->> about your
->> patch until now but have done a broad review of it.
->>
->> There are many things that i am concerned about:
->> - I don't want an additional governor to be added to cpufreq unless
->> there is a very very strong reason for it. See what happened to
->> earlier attempts:
->>
->> https://lkml.org/lkml/2012/2/7/504
->>
->> But it doesn't mean you can't get it in. :)
->>
->> - What the real logic behind your patchset: I haven't got it
->> completely with your
->> mails. So what you said is:
->>
->>   - The lesser the number of busy cpus: you want to run at higher
->> freqs
->>   - The more the number of busy cpus: you want to run at lower freqs
->>
->> But the basic idea i had about this stuff was: The more the number of
->> busy cpus, the more loaded the system is, otherwise scheduler wouldn't
->> have used so many cpus and so there is need to run at higher frequency
->> rather than a lower one. Which would save power in a sense.. Finish
->> work early and let most of the cpus enter idle state as early as
->> possible. But with your solution we would run at lower frequencies
->> and so these cpus will take longer to get into idle state again. This
->> will really kill lot of power.
-> 
-> Our approach is a bit different than cpufreq_ondemand one. Ondemand
-> takes the per CPU idle time, then on that basis calculates per cpu load.
-> The next step is to choose the highest load and then use this value to
-> properly scale frequency.
-> 
-> On the other hand LAB tries to model different behavior:
-> 
-> As a first step we applied Vincent Guittot's "pack small tasks" [*]
-> patch to improve "race to idle" behavior:
-> http://article.gmane.org/gmane.linux.kernel/1371435/match=sched+pack+small+tasks	
-> 
-> Afterwards, we decided to investigate different approach for power
-> governing:
-> 
-> Use the number of sleeping CPUs (not the maximal per-CPU load) to
-> change frequency. We thereof depend on [*] to "pack" as many tasks to
-> CPU as possible and allow other to sleep. 
-> On this basis we can increase (even overclock) frequency (when other
-> CPUs sleep) to improve performance of the only running CPU. 
-> 
-> Contrary, when all cores are heavily loaded, we decided to reduce
-> frequency by around 30%. With this approach user experience recution is
-> still acceptable (with much less power consumption).
-> When system is "idle" - only small background tasks are running, the
-> frequency is reduced to minimum. 
-> 
-> To sum up:
-> 
-> Different approach (number of idle CPUs) is used by us to control
-> ondemand governor. We also heavily depend on [*] patch set.
->
+Changes in v3:
+- move out USB_FSL_MPH_DR_OF from the USB_EHCI_HCD block
+- remove depends on USB_EHCI_HCD for USB_EHCI_BIG_ENDIAN_DESC
 
+ drivers/usb/host/Kconfig |   81 ++++++++++++++++++++++++----------------------
+ 1 file changed, 42 insertions(+), 39 deletions(-)
 
-In additions, it is hard to say just letting high performance to busy system is
-the best way for reducing the power consumption. Yes, as like Viresh said, we
-can save the time of busy working, but that is not always perfect
-solution. If we push all CPUs to keep high performance as much as they can,
-the temperature will increase rapidly. In my test, on-demand governor reached
-the thermal limits frequently, while lab governor didn't. And the high
-temperature also effects the power consumption increasing. I got a rough result
-which has 10% differences in power consumption between 20% temperature differed
-conditions.
-
-    <<Consumed power with maximum frequency at different temperature>>
-
-      Temperature     Power consumption(mWh)         Loss(%)
-         65'C                  53.89                  Base
-         80'C                  59.88                   10
-
-So, to reduce the power consumption, it looks we have to give our cares more to
-avoid the situation where system goes to high temperature. It is more meaningful
-for the mobile environment. In mobile devices, high temperature will also affect
-user's experience badly and can't be decreased easily.
-
-Maybe temperature problem is not the duty of cpufreq governor. However, if we
-just take a look at power consumption gain, we can find the right of the this
-governor either.
-
-    <<Consumed power during the web browsing with foreground movie play>>
-
-        Governor     Power consumption(mWh)       Percentage(%)
-        ondemand            70.28                     100
-          lab               55.14                      78
-
-    ===> There is almost 22% gain for power consumption.
-
-
-              <<Results of various performance test>>
-
-    ## v8 benchmark test (http://v8.googlecode.com)
-        Governor       score          Percentage(%)
-        ondemand       1736.75            100
-          lab          1576.75             91
-
-    ===> 10% performance loss.
-
-    ## Dhrystone
-    	Governor       dhrystone     Percentage(%)
-        ondemand        2362204           100
-          lab           2197802            93
-
-    ===> 7% performance loss.
-
-    ## Egypt GLbenchmark (http://www.glbenchmark.com)
-        Governor       Frames      FPS
-        ondemand        5612      49.65
-          lab           5559      49.19
-
-    ===> Almost no differences.
-
-(Above whole tests were tested on the EXYNOS4412 SoC based board.)
-
-Thanks,
-Jonghwa
-
->>
->> Think about it.
->>
->> - In case you need some sort of support on this use case, why
->> replicate ondemand governor again by creating another governor. I
->> have had some hard time removing the amount of redundancy inside
->> governors and you are again going towards that direction. Modifying
->> ondemand governor for this response would be a better option.
-> 
-> We have only posted the "RFC" so, we are open for suggestions. 
-> 
-> At cpufreq_governor.c file the dbs_check_cpu function is responsible
-> for calculating the maximal load (among CPUs). I think that we could
-> also count the number of sleeping CPUs (as the average of time
-> accumulated data). Then we could pass this data to newly written
-> function (e.g. lab_check_cpu) defined at cpufreq_ondemand.c (and
-> pointed to by gov_check_cpu).
-> 
-> This would require change to dbs_check_cpu function and extending
-> ONDEMAND governor by lab_check_cpu() function.
-> 
->>
->> - You haven't rebased of latest code from linux-next :)
->>
-> 
-> We have posted this "RFC" patch mainly for discussion, and I think it
-> fits its purpose :-).
-> 
-> 
-> 
-
+diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+index 436b682..bc9123c 100644
+--- a/drivers/usb/host/Kconfig
++++ b/drivers/usb/host/Kconfig
+@@ -93,14 +93,19 @@ config USB_EHCI_TT_NEWSCHED
+ 
+ 	  If unsure, say Y.
+ 
++config USB_FSL_MPH_DR_OF
++	tristate
++
++if USB_EHCI_HCD
++
+ config USB_EHCI_PCI
+ 	tristate
+-	depends on USB_EHCI_HCD && PCI
++	depends on PCI
+ 	default y
+ 
+ config USB_EHCI_HCD_PMC_MSP
+ 	tristate "EHCI support for on-chip PMC MSP71xx USB controller"
+-	depends on USB_EHCI_HCD && MSP_HAS_USB
++	depends on MSP_HAS_USB
+ 	default n
+ 	select USB_EHCI_BIG_ENDIAN_DESC
+ 	select USB_EHCI_BIG_ENDIAN_MMIO
+@@ -110,15 +115,13 @@ config USB_EHCI_HCD_PMC_MSP
+ 
+ config USB_EHCI_BIG_ENDIAN_MMIO
+ 	bool
+-	depends on USB_EHCI_HCD
+ 
+ config USB_EHCI_BIG_ENDIAN_DESC
+ 	bool
+-	depends on USB_EHCI_HCD
+ 
+ config XPS_USB_HCD_XILINX
+ 	bool "Use Xilinx usb host EHCI controller core"
+-	depends on USB_EHCI_HCD && (PPC32 || MICROBLAZE)
++	depends on (PPC32 || MICROBLAZE)
+ 	select USB_EHCI_BIG_ENDIAN_DESC
+ 	select USB_EHCI_BIG_ENDIAN_MMIO
+ 	---help---
+@@ -127,12 +130,9 @@ config XPS_USB_HCD_XILINX
+ 		support both high speed and full speed devices, or high speed
+ 		devices only.
+ 
+-config USB_FSL_MPH_DR_OF
+-	tristate
+-
+ config USB_EHCI_FSL
+ 	bool "Support for Freescale PPC on-chip EHCI USB controller"
+-	depends on USB_EHCI_HCD && FSL_SOC
++	depends on FSL_SOC
+ 	select USB_EHCI_ROOT_HUB_TT
+ 	select USB_FSL_MPH_DR_OF if OF
+ 	---help---
+@@ -140,14 +140,14 @@ config USB_EHCI_FSL
+ 
+ config USB_EHCI_MXC
+ 	tristate "Support for Freescale i.MX on-chip EHCI USB controller"
+-	depends on USB_EHCI_HCD && ARCH_MXC
++	depends on ARCH_MXC
+ 	select USB_EHCI_ROOT_HUB_TT
+ 	---help---
+ 	  Variation of ARC USB block used in some Freescale chips.
+ 
+ config USB_EHCI_HCD_OMAP
+ 	tristate "EHCI support for OMAP3 and later chips"
+-	depends on USB_EHCI_HCD && ARCH_OMAP
++	depends on ARCH_OMAP
+ 	select NOP_USB_XCEIV
+ 	default y
+ 	---help---
+@@ -183,7 +183,7 @@ config USB_EHCI_HCD_AT91
+ 
+ config USB_EHCI_MSM
+ 	tristate "Support for Qualcomm QSD/MSM on-chip EHCI USB controller"
+-	depends on USB_EHCI_HCD && ARCH_MSM
++	depends on ARCH_MSM
+ 	select USB_EHCI_ROOT_HUB_TT
+ 	select USB_MSM_OTG
+ 	---help---
+@@ -196,7 +196,7 @@ config USB_EHCI_MSM
+ 
+ config USB_EHCI_TEGRA
+        boolean "NVIDIA Tegra HCD support"
+-       depends on USB_EHCI_HCD && ARCH_TEGRA
++       depends on ARCH_TEGRA
+        select USB_EHCI_ROOT_HUB_TT
+        select USB_PHY
+        help
+@@ -205,7 +205,7 @@ config USB_EHCI_TEGRA
+ 
+ config USB_EHCI_HCD_PPC_OF
+ 	bool "EHCI support for PPC USB controller on OF platform bus"
+-	depends on USB_EHCI_HCD && PPC_OF
++	depends on PPC_OF
+ 	default y
+ 	---help---
+ 	  Enables support for the USB controller present on the PowerPC
+@@ -213,21 +213,21 @@ config USB_EHCI_HCD_PPC_OF
+ 
+ config USB_EHCI_SH
+ 	bool "EHCI support for SuperH USB controller"
+-	depends on USB_EHCI_HCD && SUPERH
++	depends on SUPERH
+ 	---help---
+ 	  Enables support for the on-chip EHCI controller on the SuperH.
+ 	  If you use the PCI EHCI controller, this option is not necessary.
+ 
+ config USB_EHCI_S5P
+        tristate "EHCI support for Samsung S5P/EXYNOS SoC Series"
+-       depends on USB_EHCI_HCD && PLAT_S5P
++       depends on PLAT_S5P
+        help
+ 	Enable support for the Samsung S5Pxxxx and Exynos3/4/5 SOC's
+ 	on-chip EHCI controller.
+ 
+ config USB_EHCI_MV
+ 	bool "EHCI support for Marvell PXA/MMP USB controller"
+-	depends on USB_EHCI_HCD && (ARCH_PXA || ARCH_MMP)
++	depends on (ARCH_PXA || ARCH_MMP)
+ 	select USB_EHCI_ROOT_HUB_TT
+ 	---help---
+ 	  Enables support for Marvell (including PXA and MMP series) on-chip
+@@ -240,13 +240,13 @@ config USB_EHCI_MV
+ 
+ config USB_W90X900_EHCI
+ 	bool "W90X900(W90P910) EHCI support"
+-	depends on USB_EHCI_HCD && ARCH_W90X900
++	depends on ARCH_W90X900
+ 	---help---
+ 		Enables support for the W90X900 USB controller
+ 
+ config USB_CNS3XXX_EHCI
+ 	bool "Cavium CNS3XXX EHCI Module (DEPRECATED)"
+-	depends on USB_EHCI_HCD && ARCH_CNS3XXX
++	depends on ARCH_CNS3XXX
+ 	select USB_EHCI_HCD_PLATFORM
+ 	---help---
+ 	  This option is deprecated now and the driver was removed, use
+@@ -258,7 +258,7 @@ config USB_CNS3XXX_EHCI
+ 
+ config USB_EHCI_ATH79
+ 	bool "EHCI support for AR7XXX/AR9XXX SoCs (DEPRECATED)"
+-	depends on USB_EHCI_HCD && (SOC_AR71XX || SOC_AR724X || SOC_AR913X || SOC_AR933X)
++	depends on (SOC_AR71XX || SOC_AR724X || SOC_AR913X || SOC_AR933X)
+ 	select USB_EHCI_ROOT_HUB_TT
+ 	select USB_EHCI_HCD_PLATFORM
+ 	default y
+@@ -269,6 +269,28 @@ config USB_EHCI_ATH79
+ 	  Enables support for the built-in EHCI controller present
+ 	  on the Atheros AR7XXX/AR9XXX SoCs.
+ 
++config USB_EHCI_HCD_PLATFORM
++	tristate "Generic EHCI driver for a platform device"
++	default n
++	---help---
++	  Adds an EHCI host driver for a generic platform device, which
++	  provides a memory space and an irq.
++
++	  If unsure, say N.
++
++config USB_OCTEON_EHCI
++	bool "Octeon on-chip EHCI support"
++	depends on CPU_CAVIUM_OCTEON
++	default n
++	select USB_EHCI_BIG_ENDIAN_MMIO
++	help
++	  Enable support for the Octeon II SOC's on-chip EHCI
++	  controller.  It is needed for high-speed (480Mbit/sec)
++	  USB 2.0 device support.  All CN6XXX based chips with USB are
++	  supported.
++
++endif # USB_EHCI_HCD
++
+ config USB_OXU210HP_HCD
+ 	tristate "OXU210HP HCD support"
+ 	depends on GENERIC_HARDIRQS
+@@ -450,15 +472,6 @@ config USB_OHCI_HCD_PLATFORM
+ 
+ 	  If unsure, say N.
+ 
+-config USB_EHCI_HCD_PLATFORM
+-	tristate "Generic EHCI driver for a platform device"
+-	depends on USB_EHCI_HCD
+-	default n
+-	---help---
+-	  Adds an EHCI host driver for a generic platform device, which
+-	  provides a memory space and an irq.
+-
+-	  If unsure, say N.
+ 
+ config USB_OHCI_BIG_ENDIAN_DESC
+ 	bool
+@@ -651,16 +664,6 @@ config USB_IMX21_HCD
+          To compile this driver as a module, choose M here: the
+          module will be called "imx21-hcd".
+ 
+-config USB_OCTEON_EHCI
+-	bool "Octeon on-chip EHCI support"
+-	depends on USB_EHCI_HCD && CPU_CAVIUM_OCTEON
+-	default n
+-	select USB_EHCI_BIG_ENDIAN_MMIO
+-	help
+-	  Enable support for the Octeon II SOC's on-chip EHCI
+-	  controller.  It is needed for high-speed (480Mbit/sec)
+-	  USB 2.0 device support.  All CN6XXX based chips with USB are
+-	  supported.
+ 
+ config USB_OCTEON_OHCI
+ 	bool "Octeon on-chip OHCI support"
+-- 
+1.7.10.4
 
