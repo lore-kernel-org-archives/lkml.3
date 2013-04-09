@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935210Ab3DIR6B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 13:58:01 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:32785 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932140Ab3DIR57 (ORCPT
+	id S933797Ab3DISFz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 14:05:55 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:24638 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753721Ab3DISFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 13:57:59 -0400
-Date: Tue, 9 Apr 2013 10:57:53 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
-        dm-devel@redhat.com, Andi Kleen <andi@firstfloor.org>,
-        dm-crypt@saout.de, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Christian Schmidt <schmidt@digadd.de>
-Subject: Re: dm-crypt parallelization patches
-Message-ID: <20130409175753.GA6186@mtj.dyndns.org>
-References: <Pine.LNX.4.64.1303252051520.9745@file.rdu.redhat.com>
- <20130326122713.GC27610@agk-dp.fab.redhat.com>
- <5151FF82.6090405@gmail.com>
- <20130326202837.GA5599@redhat.com>
- <20130328185327.GF14088@htj.dyndns.org>
- <20130328193343.GA15969@redhat.com>
- <20130328194443.GG14088@htj.dyndns.org>
- <20130328203808.GC15969@redhat.com>
- <20130328204522.GA25501@mtj.dyndns.org>
- <Pine.LNX.4.64.1304091242350.10025@file.rdu.redhat.com>
+	Tue, 9 Apr 2013 14:05:53 -0400
+Date: Tue, 9 Apr 2013 11:03:52 -0700
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Shuge <shugelinux@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-ext4@vger.kernel.org, Kevin <kevin@allwinnertech.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Jens Axboe <axboe@kernel.dk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3] mm: Make snapshotting pages for stable writes a
+ per-bio operation
+Message-ID: <20130409180352.GA8907@blackbox.djwong.org>
+References: <20130313194429.GE5313@blackbox.djwong.org>
+ <20130313210216.GA7754@quack.suse.cz>
+ <20130314224243.GI5313@blackbox.djwong.org>
+ <20130315100105.GA4889@quack.suse.cz>
+ <20130315232816.GN5313@blackbox.djwong.org>
+ <20130318174134.GB7852@quack.suse.cz>
+ <20130318230259.GP5313@blackbox.djwong.org>
+ <20130402170143.GA8910@blackbox.djwong.org>
+ <20130403142019.GC5811@suse.de>
+ <20130403144244.GC14667@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1304091242350.10025@file.rdu.redhat.com>
+In-Reply-To: <20130403144244.GC14667@quack.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 01:51:43PM -0400, Mikulas Patocka wrote:
-> The patch dm-crypt-sort-requests.patch sorts write requests submitted by a 
-> single thread. The requests are sorted according to the sector number, 
-> rb-tree is used for efficient sorting.
+On Wed, Apr 03, 2013 at 04:42:44PM +0200, Jan Kara wrote:
+> On Wed 03-04-13 15:20:19, Mel Gorman wrote:
+> > On Tue, Apr 02, 2013 at 10:01:43AM -0700, Darrick J. Wong wrote:
+> > > Hi,
+> > > 
+> > > A couple of weeks have gone by without further comments about this patch.
+> > > 
+> > > Are you interested in the minor cleanups and added comments, or is the v2 patch
+> > > in -next good enough?
+> > > 
+> > > Apparently Mel Gorman's interested in this patchset too.  Mel: Most of stable
+> > > pages part 2 are already in upstream for 3.9... except this piece.  Are you
+> > > interested in having this piece in 3.9 also?  Or is 3.10 good enough for
+> > > everyone?
+> > > 
+> > 
+> > My understanding is that it only affects ARM and DEBUG_VM so there is a
+> > relatively small chance of this generating spurious bug reports.  However,
+> > 3.9 is still far enough away that I see no good reason to delay this patch
+> > until 3.10 either.
+>   No, actually with direct IO, anything that needs stable pages is going to
+> blow up quickly because pages attached to bio needn't be from page cache. So
+> I think it should better make it into 3.9.
 
-Hmmm? Why not just keep the issuing order along with plugging
-boundaries?
+Hmm.  The previous version of this patch has been hanging around in -next for a
+few weeks without problems (afaik).  With just a raw 3.9-rc[56] I haven't been
+able to produce a failed checksum or kernel crash when running with O_DIRECT,
+either with the write-after-checksum reproducer or even a simple dd
+oflag=direct.  But maybe I've gotten lucky on x86?
 
-> So it seems that CFQ has some deficiency that it cannot merge adjacent 
-> requests done by different processes.
+So... Andrew: Would you like to pick up the patch with more descriptive
+comments?  And, is it too late to push it for 3.9?  Jan seems to think we might
+have a bug (though I haven't encountered it).
 
-As I wrote before, please use bio_associate_current().  Currently,
-dm-crypt is completely messing up all the context information that cfq
-depends on to schedule IOs.  Of course, it doesn't perform well.
+I'll resend the patch just in case it got eaten.
 
-Thanks.
-
--- 
-tejun
+--D
+> 
+> 									Honza
+> -- 
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
