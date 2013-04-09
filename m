@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932460Ab3DIRuO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 13:50:14 -0400
-Received: from smtp22.mail.ru ([94.100.176.175]:49160 "EHLO smtp22.mail.ru"
+	id S934965Ab3DIRub (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 13:50:31 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:41389 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751809Ab3DIRuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 13:50:13 -0400
-From: Alexander Shiyan <shc_work@mail.ru>
+	id S933489Ab3DIRua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 13:50:30 -0400
+Date: Tue, 9 Apr 2013 10:50:24 -0700
+From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
-Cc: Dong Aisheng <dong.aisheng@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>, Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH] mfd: syscon: fix warnings when printing resource_size_t
-Date: Tue,  9 Apr 2013 21:50:02 +0400
-Message-Id: <1365529802-17844-1-git-send-email-shc_work@mail.ru>
-X-Mailer: git-send-email 1.8.1.5
-X-Spam: Not detected
-X-Mras: Ok
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        Mathias Krause <minipli@googlemail.com>,
+        Brad Spengler <spender@grsecurity.net>
+Subject: [PATCH] net: pre-clear the returned sockaddr_storage variable
+Message-ID: <20130409175024.GA19308@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gets rid of these warnings when compile module for 64 bit targets:
-  CC      drivers/mfd/syscon.o
-  drivers/mfd/syscon.c: In function 'syscon_probe':
-  drivers/mfd/syscon.c:155:2: warning: format '%x' expects argument of type 'unsigned int', but argument 3 has type 'resource_size_t' [-Wformat]
-  drivers/mfd/syscon.c:155:2: warning: format '%x' expects argument of type 'unsigned int', but argument 4 has type 'resource_size_t' [-Wformat]
+To avoid future stack content leaks in the various protocols, pre-clear
+the returned memory.
 
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Suggested-by: Brad Spengler <spender@grsecurity.net>
 ---
- drivers/mfd/syscon.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/socket.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-index 7905d36..962a6e1 100644
---- a/drivers/mfd/syscon.c
-+++ b/drivers/mfd/syscon.c
-@@ -152,7 +152,7 @@ static int syscon_probe(struct platform_device *pdev)
+diff --git a/net/socket.c b/net/socket.c
+index 88f759a..4d2af0d 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1838,7 +1838,7 @@ SYSCALL_DEFINE6(recvfrom, int, fd, void __user *, ubuf, size_t, size,
+ 	struct socket *sock;
+ 	struct iovec iov;
+ 	struct msghdr msg;
+-	struct sockaddr_storage address;
++	struct sockaddr_storage address = { };
+ 	int err, err2;
+ 	int fput_needed;
  
- 	platform_set_drvdata(pdev, syscon);
+@@ -2185,7 +2185,7 @@ static int __sys_recvmsg(struct socket *sock, struct msghdr __user *msg,
+ 	int err, total_len, len;
  
--	dev_info(dev, "regmap 0x%x-0x%x registered\n", res->start, res->end);
-+	dev_info(dev, "regmap %pR registered\n", res);
+ 	/* kernel mode address */
+-	struct sockaddr_storage addr;
++	struct sockaddr_storage addr = { };
  
- 	return 0;
- }
+ 	/* user mode address pointers */
+ 	struct sockaddr __user *uaddr;
 -- 
-1.8.1.5
+1.7.9.5
 
+
+-- 
+Kees Cook
+Chrome OS Security
