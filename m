@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936456Ab3DIJQF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 05:16:05 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:65323 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935178Ab3DIJQA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 05:16:00 -0400
-Message-ID: <1365498958.1830.157.camel@x61.thuisdomein>
-Subject: [PATCH v2] [media] soc-camera: remove two unused configs
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 09 Apr 2013 11:15:58 +0200
-In-Reply-To: <1365453268.1830.137.camel@x61.thuisdomein>
-References: <1365453268.1830.137.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Apr 2013 09:15:58.0805 (UTC) FILETIME=[D90D3050:01CE3502]
-X-RcptDomain: vger.kernel.org
+	id S965322Ab3DIJRO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 05:17:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47204 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964974Ab3DIJPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 05:15:10 -0400
+From: Lukas Czerner <lczerner@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
+Subject: [PATCH v3 15/18] ext4: remove unused code from ext4_remove_blocks()
+Date: Tue,  9 Apr 2013 11:14:24 +0200
+Message-Id: <1365498867-27782-16-git-send-email-lczerner@redhat.com>
+In-Reply-To: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
+References: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The last users of Kconfig symbols MX3_VIDEO and VIDEO_MX2_HOSTSUPPORT
-were removed in v3.2. Their Kconfig entries can be removed now.
+The "head removal" branch in the condition is never used in any code
+path in ext4 since the function only caller ext4_ext_rm_leaf() will make
+sure that the extent is properly split before removing blocks. Note that
+there is a bug in this branch anyway.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+This commit removes the unused code completely and makes use of
+ext4_error() instead of printk if dubious range is provided.
+
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
 ---
-v1 was called "[...] remove "config MX3_VIDEO"". But it turned out that
-v3.2, through commit 389d12cc7f ("ARM: mxc: Remove setting of consistent
-dma size"), also removed the last user of VIDEO_MX2_HOSTSUPPORT. Still
-tested with "git grep" only.
+ fs/ext4/extents.c |   21 ++++-----------------
+ 1 files changed, 4 insertions(+), 17 deletions(-)
 
- drivers/media/platform/soc_camera/Kconfig | 8 --------
- 1 file changed, 8 deletions(-)
-
-diff --git a/drivers/media/platform/soc_camera/Kconfig b/drivers/media/platform/soc_camera/Kconfig
-index b139b52..ffd0010 100644
---- a/drivers/media/platform/soc_camera/Kconfig
-+++ b/drivers/media/platform/soc_camera/Kconfig
-@@ -27,14 +27,10 @@ config VIDEO_MX1
- 	---help---
- 	  This is a v4l2 driver for the i.MX1/i.MXL CMOS Sensor Interface
- 
--config MX3_VIDEO
--	bool
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 6c5a70a..4adaa8a 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -2435,23 +2435,10 @@ static int ext4_remove_blocks(handle_t *handle, struct inode *inode,
+ 			*partial_cluster = EXT4_B2C(sbi, pblk);
+ 		else
+ 			*partial_cluster = 0;
+-	} else if (from == le32_to_cpu(ex->ee_block)
+-		   && to <= le32_to_cpu(ex->ee_block) + ee_len - 1) {
+-		/* head removal */
+-		ext4_lblk_t num;
+-		ext4_fsblk_t start;
 -
- config VIDEO_MX3
- 	tristate "i.MX3x Camera Sensor Interface driver"
- 	depends on VIDEO_DEV && MX3_IPU && SOC_CAMERA
- 	select VIDEOBUF2_DMA_CONTIG
--	select MX3_VIDEO
- 	---help---
- 	  This is a v4l2 driver for the i.MX3x Camera Sensor Interface
- 
-@@ -66,14 +62,10 @@ config VIDEO_OMAP1
- 	---help---
- 	  This is a v4l2 driver for the TI OMAP1 camera interface
- 
--config VIDEO_MX2_HOSTSUPPORT
--	bool
+-		num = to - from;
+-		start = ext4_ext_pblock(ex);
 -
- config VIDEO_MX2
- 	tristate "i.MX27 Camera Sensor Interface driver"
- 	depends on VIDEO_DEV && SOC_CAMERA && MACH_MX27
- 	select VIDEOBUF2_DMA_CONTIG
--	select VIDEO_MX2_HOSTSUPPORT
- 	---help---
- 	  This is a v4l2 driver for the i.MX27 Camera Sensor Interface
+-		ext_debug("free first %u blocks starting %llu\n", num, start);
+-		ext4_free_blocks(handle, inode, NULL, start, num, flags);
+-
+-	} else {
+-		printk(KERN_INFO "strange request: removal(2) "
+-				"%u-%u from %u:%u\n",
+-				from, to, le32_to_cpu(ex->ee_block), ee_len);
+-	}
++	} else
++		ext4_error(sbi->s_sb, "strange request: removal(2) "
++			   "%u-%u from %u:%u\n",
++			   from, to, le32_to_cpu(ex->ee_block), ee_len);
+ 	return 0;
+ }
  
 -- 
-1.7.11.7
+1.7.7.6
 
