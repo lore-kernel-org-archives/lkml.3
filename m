@@ -1,100 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936585Ab3DIPrp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 11:47:45 -0400
-Received: from f12.mail.ru ([217.69.128.79]:44975 "EHLO f12.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936173Ab3DIPro (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 11:47:44 -0400
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?U2FtdWVsIE9ydGl6?= <sameo@linux.intel.com>
-Cc: =?UTF-8?B?U3RlcGhlbiBSb3Rod2VsbA==?= <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: =?UTF-8?B?UmVbMl06IGxpbnV4LW5leHQ6IGJ1aWxkIGZhaWx1cmUgYWZ0ZXIgbWVyZ2Ug?=
- =?UTF-8?B?b2YgdGhlIG1mZCB0cmVl?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [188.134.40.128]
-Date: Tue, 09 Apr 2013 19:47:40 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1365522460.690965802@f12.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Spam: Not detected
-X-Mras: Ok
-In-Reply-To: <20130409072059.GC23447@zurbaran>
-References: <20130408142124.ac540429a889cdc9800e529a@canb.auug.org.au>
- <1365438469.322553103@f51.mail.ru>
- <20130409072059.GC23447@zurbaran>
+	id S936803Ab3DIPsO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 11:48:14 -0400
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:47614 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936173Ab3DIPsM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 11:48:12 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUXTPe_nT40CG1x9AER+Ctc+zmzFG0YYcpnsXb01_vcWLQ@mail.gmail.com>
+References: <CA+icZUX-RMW=pHzhOumB2_R99BRAf2qGC4n5bzyLqU6pOCMDFw@mail.gmail.com>
+	<20130409235941.11eef57a42cb97efec72f037@canb.auug.org.au>
+	<CA+icZUVk-iLtodZi_46qmk410Ei+tW6RR5kV2fx0N8v6neKTPQ@mail.gmail.com>
+	<20130410002311.8a0b0503bcbda151b9de9469@canb.auug.org.au>
+	<CA+icZUUboWkL8vHvN6+xk=9kz8SXexxgMN-g+xuPB24T1wTSRw@mail.gmail.com>
+	<CA+icZUXTPe_nT40CG1x9AER+Ctc+zmzFG0YYcpnsXb01_vcWLQ@mail.gmail.com>
+Date: Tue, 9 Apr 2013 17:48:10 +0200
+Message-ID: <CA+icZUXQnNr509wtgO3zto6bkDZOA0hc2EBEyGtwNnwJsEjevw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Apr 9
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: multipart/mixed; boundary=047d7bfd0c2e003dcb04d9ef7b30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r39Flje0005207
 
-> On Mon, Apr 08, 2013 at 08:27:49PM +0400, Alexander Shiyan wrote:
-> > > > > After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
-> > > > > failed like this:
-> > > > > 
-> > > > > drivers/regulator/anatop-regulator.c: In function 'anatop_regulator_probe':
-> > > > > drivers/regulator/anatop-regulator.c:134:2: error: implicit declaration of function 'of_get_parent' [-Werror=implicit-function-declaration]
-> > > > > 
-> > > > > Caused by commit 5ab3a89a741f ("mfd: syscon: Add non-DT support").
-> > > > > 
-> > > > > I have used the mfd tree from next-20130405 for today.
-> > > > 
-> > > > This means that we do not have empty declarations for the
-> > > > of_xx functions in linux/of.h for !CONFIG_OF.
-> > > > OK to declare these functions or any other opinions?
-> > > Ok with me, but you'd need to get Grant and Rob's ACK.
-...
-> > Subject: [PATCH] regulator: anatop: Make select dependency from
-> >  HAVE_IMX_ANATOP symbol
-> > 
-> > This patch make selection of anatop-regulator from HAVE_IMX_ANATOP
-> > kernel symbol. This fixes build kernel with syscon driver but without
-> > oftree support.
-...
-> This does look like a band-aid solution to me. Yes, it will fix the crash, but
-> you're restricting this code to a much smaller architecture set. AFAIK
-> linux-next is not tested on that arch, for example.
+--047d7bfd0c2e003dcb04d9ef7b30
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-OK, the second solution:
+On Tue, Apr 9, 2013 at 5:11 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Tue, Apr 9, 2013 at 4:32 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote=
+:
+>> On Tue, Apr 9, 2013 at 4:23 PM, Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>>> Hi Sedat,
+>>>
+>>> On Tue, 9 Apr 2013 16:11:50 +0200 Sedat Dilek <sedat.dilek@gmail.com> w=
+rote:
+>>>>
+>>>> [ CC Al Viro ]
+>>>
+>>> You forgot to do that ...
+>>>
+>>>> Is there a "magic" git-command to revert all commits coming from your
+>>>> latest vfs-merge (commit c1c04d3667608a630ae0821995b465a523e83fb1)?
+>>>>
+>>>> 2013-04-09 11:36 Stephen Rothwell   =E2=94=82 M=E2=94=80=E2=94=90 =E2=
+=94=82 =E2=94=82 =E2=94=82 =E2=94=82 =E2=94=82 =E2=94=82         =E2=94=82 =
+20130405/vfs
+>>>
+>>> You would normally do "git revert -m 1 c1c04d366760". However, that doe=
+s
+>>> not revert cleanly in today's linux-next (due to more patches modifying
+>>> the files involved).
+>>>
+>>
+>> Just wanted to improve my git Know-How.
+>>
+>>>> After reverting all these commits I would like to pull-in latest
+>>>> vfs.git#for-next.
+>>>
+>>> It would probably be easier to wait for tomorrow's linux-next.  Or just
+>>> test Al's tree in its own.
+>>
+>> Doug reported problems on his way "reverting the current vfs stuff"
+>> and Al's new tree was reported as OK.
+>> A lot of merge-conflicts... that's what I see when trying to pull in
+>> Al's tree in today's Linux-Next.
+>> So, I better wait for tommorrow.
+>>
+>> Anyway, a warning in your CHANGELOG is very much appreciated on such
+>> KNOWN ISSUES.
+>>
+>
+> vfs-next does break in KVM, cannot say this is due to vfs-related
+> changes or other stuff.
+> Build-log attached.
 
->From 3296415f29818a430bad12c92dc65cd81e4d133f Mon Sep 17 00:00:00 2001
-From: Alexander Shiyan <shc_work@mail.ru>
-Date: Tue, 9 Apr 2013 19:41:27 +0400
-Subject: [PATCH] of: add stub of_get_parent for non-OF builds
+[ CC AL Viro (forgot again) ]
 
-Fixes build error on x86_64 allmodconfig, introduced by commit
-5ab3a89a741f ("mfd: syscon: Add non-DT support").
+With attached patch vfs-next is OK for me.
+Also known issue (see [1]) :-).
 
-drivers/regulator/anatop-regulator.c: In function 'anatop_regulator_probe':
-drivers/regulator/anatop-regulator.c:134:2: error: implicit declaration of function 'of_get_parent' [-Werror=implicit-function-declaration]
+- Sedat -
 
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
----
- include/linux/of.h | 5 +++++
- 1 file changed, 5 insertions(+)
+[1] https://lkml.org/lkml/2013/4/7/229
 
-diff --git a/include/linux/of.h b/include/linux/of.h
-index a0f1292..9f5923f 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -353,6 +353,11 @@ static inline struct device_node *of_find_node_by_name(struct device_node *from,
- 	return NULL;
- }
- 
-+static inline struct device_node *of_get_parent(const struct device_node *node)
-+{
-+	return NULL;
-+}
-+
- static inline bool of_have_populated_dt(void)
- {
- 	return false;
--- 
-1.8.1.5
+> - Sedat -
+>
+>> Regards,
+>> - Sedat -
+>>
+>>> --
+>>> Cheers,
+>>> Stephen Rothwell                    sfr@canb.auug.org.au
 
----
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--047d7bfd0c2e003dcb04d9ef7b30
+Content-Type: application/octet-stream; 
+	name="0001-vfs-Revert-kvm-changes-in-constify-a-bunch-of-struct.patch"
+Content-Disposition: attachment; 
+	filename="0001-vfs-Revert-kvm-changes-in-constify-a-bunch-of-struct.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hfb8qb2r1
+
+RnJvbSBiMmM5ZTUyNmQ3ZjNhZGY2ZmRlYzVmNjU1YjEyMmU3YTU5MzNmNDJkIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgpE
+YXRlOiBUdWUsIDkgQXByIDIwMTMgMTc6MzY6MjEgKzAyMDAKU3ViamVjdDogW1BBVENIXSB2ZnM6
+IFJldmVydCBrdm0gY2hhbmdlcyBpbiAiY29uc3RpZnkgYSBidW5jaCBvZiBzdHJ1Y3QKIGZpbGVf
+b3BlcmF0aW9ucyBpbnN0YW5jZXMiCgpTZWUgY29tbWl0IDlkZjEwMmJlMzFhZjgyYmYxZWRmYzg4
+ZmM2YjBhNjk0NjQyMjdiNzEgaW4gdmZzLmdpdCNmb3ItbmV4dC4KClNpZ25lZC1vZmYtYnk6IFNl
+ZGF0IERpbGVrIDxzZWRhdC5kaWxla0BnbWFpbC5jb20+Ci0tLQogdmlydC9rdm0va3ZtX21haW4u
+YyB8IDYgKysrLS0tCiAxIGZpbGUgY2hhbmdlZCwgMyBpbnNlcnRpb25zKCspLCAzIGRlbGV0aW9u
+cygtKQoKZGlmZiAtLWdpdCBhL3ZpcnQva3ZtL2t2bV9tYWluLmMgYi92aXJ0L2t2bS9rdm1fbWFp
+bi5jCmluZGV4IDc3YmJiZjEuLmFkYzY4ZmUgMTAwNjQ0Ci0tLSBhL3ZpcnQva3ZtL2t2bV9tYWlu
+LmMKKysrIGIvdmlydC9rdm0va3ZtX21haW4uYwpAQCAtMTg1NCw3ICsxODU0LDcgQEAgc3RhdGlj
+IGludCBrdm1fdmNwdV9yZWxlYXNlKHN0cnVjdCBpbm9kZSAqaW5vZGUsIHN0cnVjdCBmaWxlICpm
+aWxwKQogCXJldHVybiAwOwogfQogCi1zdGF0aWMgY29uc3Qgc3RydWN0IGZpbGVfb3BlcmF0aW9u
+cyBrdm1fdmNwdV9mb3BzID0geworc3RhdGljIHN0cnVjdCBmaWxlX29wZXJhdGlvbnMga3ZtX3Zj
+cHVfZm9wcyA9IHsKIAkucmVsZWFzZSAgICAgICAgPSBrdm1fdmNwdV9yZWxlYXNlLAogCS51bmxv
+Y2tlZF9pb2N0bCA9IGt2bV92Y3B1X2lvY3RsLAogI2lmZGVmIENPTkZJR19DT01QQVQKQEAgLTIz
+NzUsNyArMjM3NSw3IEBAIHN0YXRpYyBpbnQga3ZtX3ZtX21tYXAoc3RydWN0IGZpbGUgKmZpbGUs
+IHN0cnVjdCB2bV9hcmVhX3N0cnVjdCAqdm1hKQogCXJldHVybiAwOwogfQogCi1zdGF0aWMgY29u
+c3Qgc3RydWN0IGZpbGVfb3BlcmF0aW9ucyBrdm1fdm1fZm9wcyA9IHsKK3N0YXRpYyBzdHJ1Y3Qg
+ZmlsZV9vcGVyYXRpb25zIGt2bV92bV9mb3BzID0gewogCS5yZWxlYXNlICAgICAgICA9IGt2bV92
+bV9yZWxlYXNlLAogCS51bmxvY2tlZF9pb2N0bCA9IGt2bV92bV9pb2N0bCwKICNpZmRlZiBDT05G
+SUdfQ09NUEFUCkBAIC0yNDczLDcgKzI0NzMsNyBAQCBvdXQ6CiAJcmV0dXJuIHI7CiB9CiAKLXN0
+YXRpYyBjb25zdCBzdHJ1Y3QgZmlsZV9vcGVyYXRpb25zIGt2bV9jaGFyZGV2X29wcyA9IHsKK3N0
+YXRpYyBzdHJ1Y3QgZmlsZV9vcGVyYXRpb25zIGt2bV9jaGFyZGV2X29wcyA9IHsKIAkudW5sb2Nr
+ZWRfaW9jdGwgPSBrdm1fZGV2X2lvY3RsLAogCS5jb21wYXRfaW9jdGwgICA9IGt2bV9kZXZfaW9j
+dGwsCiAJLmxsc2VlawkJPSBub29wX2xsc2VlaywKLS0gCjEuOC4yCgo=
+--047d7bfd0c2e003dcb04d9ef7b30--
