@@ -1,66 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936360Ab3DIQSe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 12:18:34 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:60723 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761860Ab3DIQSc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 12:18:32 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 9 Apr 2013 09:18:38 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>
-Subject: Re: mfd: Core driver for Winbond chips
-Message-ID: <20130409161838.GB27050@roeck-us.net>
-References: <1362957300-18223-1-git-send-email-linux@roeck-us.net>
- <20130322205258.GE7867@spo001.leaseweb.com>
- <20130323002810.GA26245@roeck-us.net>
- <20130323174914.GA21563@roeck-us.net>
- <20130409093700.GM24058@zurbaran>
- <20130409113639.GA8731@roeck-us.net>
- <20130409114544.GD7867@spo001.leaseweb.com>
+	id S936393Ab3DIQZw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 12:25:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49692 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935728Ab3DIQZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 12:25:50 -0400
+Message-ID: <516440F5.7040904@zytor.com>
+Date: Tue, 09 Apr 2013 09:25:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130409114544.GD7867@spo001.leaseweb.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+CC: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH 0/6] Chainsaw efivars.c
+References: <1365077935-6859-1-git-send-email-matt@console-pimps.org>
+In-Reply-To: <1365077935-6859-1-git-send-email-matt@console-pimps.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 01:45:44PM +0200, Wim Van Sebroeck wrote:
-> Hi Guenter,
+On 04/04/2013 05:18 AM, Matt Fleming wrote:
+> From: Matt Fleming <matt.fleming@intel.com>
 > 
-> > I was waiting for feedback from Wim, who submitted a similar driver, about his
-> > thoughts. Key question is how to reserve access to the shared resource - either
-> > through an exported function in the mfd driver requesting a mutex, or through
-> > request_muxed_region(). I am going back and forth myself on which one is better.
-> > 
-> > Maybe it does not really matter, but using a function has the slight advantage
-> > that it auto-loads and locks the mfd module while one of its client modules
-> > is loaded. If we use request_muxed_region, that is not the case and the client
-> > module must use another means to request and lock the mfd module.
-> > 
-> > Maybe you have an opinion ?
+> drivers/firmware/efivars.c has grown pretty large and is ~2K lines.
 > 
-> This is indeed the main issue that has to be solved. Both options will work.
-> I like the auto-load and lock, but I need to look at the request_muxed_region
-> code again first before I can see what the possible drawbacks are :-).
-> 
-One drawback of using request_muxed_region is that it needs a return value
-from superio_enter. Also, it needs some code in the client driver init function
-to ensure that the mfd driver gets loaded, and possibly a call to __module_get()
-in the client driver probe function to keep the mfd driver loaded.
 
-winbond_superio_enter() would not need a return value and could use
-devm_request_region. We could also consider allocating the hwmon memory space in
-the mfd driver and pass it as resource to the client drivers, which would remove
-a few more lines of code from those.
+Hi Matt,
 
-Overall I am slightly in favor of using an exported function.
+Are you expecting me or Matt G. to take this one?
 
-Guenter
+	-hpa
+
