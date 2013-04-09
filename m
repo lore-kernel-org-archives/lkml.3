@@ -1,100 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935271Ab3DIGBE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 02:01:04 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:48143 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756317Ab3DIGBB (ORCPT
+	id S935399Ab3DIGBb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 02:01:31 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:51715 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762938Ab3DIGBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 02:01:01 -0400
-Message-ID: <5163AE92.7010302@huawei.com>
-Date: Tue, 9 Apr 2013 14:00:50 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Tue, 9 Apr 2013 02:01:30 -0400
+X-Spam-Score: -100.8
+Message-ID: <5163AE9A.8060505@asianux.com>
+Date: Tue, 09 Apr 2013 14:00:58 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: LKML <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        Neil Horman <nhorman@tuxdriver.com>
-Subject: [PATCH 1/2] netprio_cgroup: remove task_struct parameter from sock_update_netprio()
-Content-Type: text/plain; charset="GB2312"
+To: Stephen Boyd <sboyd@codeaurora.org>, Rusty Russell <rusty@rustcorp.com.au>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kernel: kallsyms: parameters checking, for EXPORT_SYMBOL_GPL
+ functions
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The callers always pass current to sock_update_netprio().
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+  for EXPORT_SYMBOL_GPL functions, necessary to check their parameters.
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 ---
- include/net/netprio_cgroup.h | 4 ++--
- net/core/scm.c               | 2 +-
- net/core/sock.c              | 6 +++---
- 3 files changed, 6 insertions(+), 6 deletions(-)
+ kernel/kallsyms.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/include/net/netprio_cgroup.h b/include/net/netprio_cgroup.h
-index 1d04b6f..50ab8c2 100644
---- a/include/net/netprio_cgroup.h
-+++ b/include/net/netprio_cgroup.h
-@@ -29,7 +29,7 @@ struct cgroup_netprio_state {
- 	struct cgroup_subsys_state css;
- };
+diff --git a/kernel/kallsyms.c b/kernel/kallsyms.c
+index 2169fee..4ba57a9 100644
+--- a/kernel/kallsyms.c
++++ b/kernel/kallsyms.c
+@@ -175,6 +175,9 @@ unsigned long kallsyms_lookup_name(const char *name)
+ 	unsigned long i;
+ 	unsigned int off;
  
--extern void sock_update_netprioidx(struct sock *sk, struct task_struct *task);
-+extern void sock_update_netprioidx(struct sock *sk);
++	if (!name || !name[0])
++		return 0;
++
+ 	for (i = 0, off = 0; i < kallsyms_num_syms; i++) {
+ 		off = kallsyms_expand_symbol(off, namebuf);
  
- #if IS_BUILTIN(CONFIG_NETPRIO_CGROUP)
+@@ -194,6 +197,9 @@ int kallsyms_on_each_symbol(int (*fn)(void *, const char *, struct module *,
+ 	unsigned int off;
+ 	int ret;
  
-@@ -68,7 +68,7 @@ static inline u32 task_netprioidx(struct task_struct *p)
- 	return 0;
- }
- 
--#define sock_update_netprioidx(sk, task)
-+#define sock_update_netprioidx(sk)
- 
- #endif /* CONFIG_NETPRIO_CGROUP */
- 
-diff --git a/net/core/scm.c b/net/core/scm.c
-index cb8d98c..10153e5 100644
---- a/net/core/scm.c
-+++ b/net/core/scm.c
-@@ -306,7 +306,7 @@ void scm_detach_fds(struct msghdr *msg, struct scm_cookie *scm)
- 		/* Bump the usage count and install the file. */
- 		sock = sock_from_file(fp[i], &err);
- 		if (sock) {
--			sock_update_netprioidx(sock->sk, current);
-+			sock_update_netprioidx(sock->sk);
- 			sock_update_classid(sock->sk);
- 		}
- 		fd_install(new_fd, get_file(fp[i]));
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 0e1d2fe..d4f4cea 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -1319,12 +1319,12 @@ EXPORT_SYMBOL(sock_update_classid);
- #endif
- 
- #if IS_ENABLED(CONFIG_NETPRIO_CGROUP)
--void sock_update_netprioidx(struct sock *sk, struct task_struct *task)
-+void sock_update_netprioidx(struct sock *sk)
++	if (!fn)
++		return -EINVAL;
++
+ 	for (i = 0, off = 0; i < kallsyms_num_syms; i++) {
+ 		off = kallsyms_expand_symbol(off, namebuf);
+ 		ret = fn(data, namebuf, NULL, kallsyms_addresses[i]);
+@@ -382,6 +388,9 @@ static int __sprint_symbol(char *buffer, unsigned long address,
+  */
+ int sprint_symbol(char *buffer, unsigned long address)
  {
- 	if (in_interrupt())
- 		return;
- 
--	sk->sk_cgrp_prioidx = task_netprioidx(task);
-+	sk->sk_cgrp_prioidx = task_netprioidx(current);
++	if (!buffer)
++		return 0;
++
+ 	return __sprint_symbol(buffer, address, 0, 1);
  }
- EXPORT_SYMBOL_GPL(sock_update_netprioidx);
- #endif
-@@ -1354,7 +1354,7 @@ struct sock *sk_alloc(struct net *net, int family, gfp_t priority,
- 		atomic_set(&sk->sk_wmem_alloc, 1);
- 
- 		sock_update_classid(sk);
--		sock_update_netprioidx(sk, current);
-+		sock_update_netprioidx(sk);
- 	}
- 
- 	return sk;
+ EXPORT_SYMBOL_GPL(sprint_symbol);
+@@ -399,6 +408,9 @@ EXPORT_SYMBOL_GPL(sprint_symbol);
+  */
+ int sprint_symbol_no_offset(char *buffer, unsigned long address)
+ {
++	if (!buffer)
++		return 0;
++
+ 	return __sprint_symbol(buffer, address, 0, 0);
+ }
+ EXPORT_SYMBOL_GPL(sprint_symbol_no_offset);
 -- 
-1.8.0.2
+1.7.7.6
