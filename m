@@ -1,92 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936756Ab3DICYU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 22:24:20 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:35742 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936603Ab3DICXq (ORCPT
+	id S936681Ab3DICa2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 22:30:28 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:52399 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934428Ab3DICa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 22:23:46 -0400
-From: Tejun Heo <tj@kernel.org>
-To: mingo@redhat.com
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, acme@ghostprotocols.net,
-        eranian@google.com, namhyung.kim@lge.com, lizefan@huawei.com,
-        mhocko@suse.cz, kamezawa.hiroyu@jp.fujitsu.com,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/3] perf: make perf_event cgroup hierarchical
-Date: Mon,  8 Apr 2013 19:23:33 -0700
-Message-Id: <1365474213-13354-4-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1365474213-13354-1-git-send-email-tj@kernel.org>
-References: <1365474213-13354-1-git-send-email-tj@kernel.org>
+	Mon, 8 Apr 2013 22:30:26 -0400
+X-IronPort-AV: E=Sophos;i="4.87,434,1363158000"; 
+   d="scan'208";a="36904316"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 0/4] Memory mapped architected timers
+Date: Mon,  8 Apr 2013 19:30:19 -0700
+Message-Id: <1365474623-29181-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf_event is one of a couple remaining cgroup controllers with broken
-hierarchy support.  Converting it to support hierarchy is almost
-trivial.  The only thing necessary is to consider a task belonging to
-a descendant cgroup as a match.  IOW, if the cgroup of the currently
-executing task (@cpuctx->cgrp) equals or is a descendant of the
-event's cgroup (@event->cgrp), then the event should be enabled.
+This patchset adds support for memory mapped architected timers. We
+don't have any other global broadcast timer in our system, so we use the
+mmio timer during low power modes. The first patch is the binding.
+The next two patches lay some groundwork so that the last patch is simpler.
+The final patch adds support for mmio timers.
 
-Implement hierarchy support and remove .broken_hierarchy tag along
-with the incorrect comment on what needs to be done for hierarchy
-support.
+Patches are based on a recent patch from Mark that removes the
+physical count reading (clocksource: arch_timer: use virtual counter,
+message id <1364404312-4427-4-git-send-email-mark.rutland@arm.com>).
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
----
- kernel/events/core.c | 24 ++++++++++++++++--------
- 1 file changed, 16 insertions(+), 8 deletions(-)
+Stephen Boyd (4):
+  Documentation: Add memory mapped ARM architected timer binding
+  ARM: arch_timers: Pass clock event to set_mode callback
+  clocksource: arch_timer: Push the read/write wrappers deeper
+  clocksource: arch_timer: Add support for memory mapped timers
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index b0cd865..310ec19 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -251,7 +251,22 @@ perf_cgroup_match(struct perf_event *event)
- 	struct perf_event_context *ctx = event->ctx;
- 	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
- 
--	return !event->cgrp || event->cgrp == cpuctx->cgrp;
-+	/* @event doesn't care about cgroup */
-+	if (!event->cgrp)
-+		return true;
-+
-+	/* wants specific cgroup scope but @cpuctx isn't associated with any */
-+	if (!cpuctx->cgrp)
-+		return false;
-+
-+	/*
-+	 * Cgroup scoping is recursive.  An event enabled for a cgroup is
-+	 * also enabled for all its descendant cgroups.  If @cpuctx's
-+	 * cgroup is a descendant of @event's (the test covers identity
-+	 * case), it's a match.
-+	 */
-+	return cgroup_is_descendant(cpuctx->cgrp->css.cgroup,
-+				    event->cgrp->css.cgroup);
- }
- 
- static inline bool perf_tryget_cgroup(struct perf_event *event)
-@@ -7509,12 +7524,5 @@ struct cgroup_subsys perf_subsys = {
- 	.css_free	= perf_cgroup_css_free,
- 	.exit		= perf_cgroup_exit,
- 	.attach		= perf_cgroup_attach,
--
--	/*
--	 * perf_event cgroup doesn't handle nesting correctly.
--	 * ctx->nr_cgroups adjustments should be propagated through the
--	 * cgroup hierarchy.  Fix it and remove the following.
--	 */
--	.broken_hierarchy = true,
- };
- #endif /* CONFIG_CGROUP_PERF */
+ .../devicetree/bindings/arm/arch_timer.txt         |  62 ++-
+ arch/arm/include/asm/arch_timer.h                  |   5 +-
+ arch/arm64/include/asm/arch_timer.h                |   4 +-
+ drivers/clocksource/arm_arch_timer.c               | 451 +++++++++++++++++----
+ include/clocksource/arm_arch_timer.h               |   4 +-
+ 5 files changed, 448 insertions(+), 78 deletions(-)
+
 -- 
-1.8.1.4
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
