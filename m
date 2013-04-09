@@ -1,107 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937140Ab3DIQml (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 12:42:41 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:22626 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936277Ab3DIQmj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 12:42:39 -0400
-X-IronPort-AV: E=Sophos;i="4.87,439,1363158000"; 
-   d="scan'208";a="36925542"
-Message-ID: <516444FE.2080200@codeaurora.org>
-Date: Tue, 09 Apr 2013 09:42:38 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S937157Ab3DIQnE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 12:43:04 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:37594 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S936277Ab3DIQnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 12:43:01 -0400
+Date: Tue, 9 Apr 2013 09:39:32 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Kees Cook <keescook@chromium.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Alex Shi <alex.shi@intel.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        kernel-hardening@lists.openwall.com,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
+        Eric Northup <digitaleric@google.com>
+Subject: [PATCH v2] x86: use fixed read-only IDT
+Message-ID: <20130409163932.GA19130@www.outflux.net>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: Re: [PATCH 1/4] Documentation: Add memory mapped ARM architected
- timer binding
-References: <1365474623-29181-1-git-send-email-sboyd@codeaurora.org> <1365474623-29181-2-git-send-email-sboyd@codeaurora.org> <20130409090843.GS23725@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20130409090843.GS23725@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/13 02:08, Mark Rutland wrote:
-> On Tue, Apr 09, 2013 at 03:30:20AM +0100, Stephen Boyd wrote:
->>  
->> -** Timer node properties:
->> +** CP15 Timer node properties:
->>  
->>  - compatible : Should at least contain one of
->>  	"arm,armv7-timer"
->> @@ -26,3 +30,55 @@ Example:
->>  			     <1 10 0xf08>;
->>  		clock-frequency = <100000000>;
->>  	};
->> +
->> +** Memory mapped timer node properties
->> +
->> +- compatible : Should at least contain "arm,armv7-timer-mem".
->> +
->> +- #address-cells : Must be 1.
-> What about LPAE systems?
->
-> How about something like the following:
->
-> #address-cells : If the ranges property is empty, the same value as the
->                  parent node's #address-cells property. Otherwise, a
-> 		 value such that the ranges property specifies a
-> 		 mapping to the parent node's address space.            
+Make a copy of the IDT (as seen via the "sidt" instruction) read-only.
+This primarily removes the IDT from being a target for arbitrary memory
+write attacks, and has the added benefit of also not leaking the kernel
+base offset, if it has been relocated.
 
-Yes that is much better. I wasn't trying to preclude LPAE or 64 bit systems.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Eric Northup <digitaleric@google.com>
+---
+v2:
+ - clarify commit and comments
+---
+ arch/x86/include/asm/fixmap.h |    4 +---
+ arch/x86/kernel/cpu/intel.c   |   18 +-----------------
+ arch/x86/kernel/traps.c       |    8 ++++++++
+ arch/x86/xen/mmu.c            |    4 +---
+ 4 files changed, 11 insertions(+), 23 deletions(-)
 
->> +
->> +- #size-cells : Must be 1.
->> +
->> +- ranges : Indicates parent and child bus address space are the same.
->> +
-> Similarly, what if someone wants to write a more complex mapping for some
-> reason?
->
-> We should be able to handle it if we use the standard accessors.
+diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
+index a09c285..51b9e32 100644
+--- a/arch/x86/include/asm/fixmap.h
++++ b/arch/x86/include/asm/fixmap.h
+@@ -104,9 +104,7 @@ enum fixed_addresses {
+ 	FIX_LI_PCIA,	/* Lithium PCI Bridge A */
+ 	FIX_LI_PCIB,	/* Lithium PCI Bridge B */
+ #endif
+-#ifdef CONFIG_X86_F00F_BUG
+-	FIX_F00F_IDT,	/* Virtual mapping for IDT */
+-#endif
++	FIX_RO_IDT,	/* Virtual mapping for read-only IDT */
+ #ifdef CONFIG_X86_CYCLONE_TIMER
+ 	FIX_CYCLONE_TIMER, /*cyclone timer register*/
+ #endif
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 1905ce9..7170024 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -164,20 +164,6 @@ int __cpuinit ppro_with_ram_bug(void)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_X86_F00F_BUG
+-static void __cpuinit trap_init_f00f_bug(void)
+-{
+-	__set_fixmap(FIX_F00F_IDT, __pa_symbol(idt_table), PAGE_KERNEL_RO);
+-
+-	/*
+-	 * Update the IDT descriptor and reload the IDT so that
+-	 * it uses the read-only mapped virtual address.
+-	 */
+-	idt_descr.address = fix_to_virt(FIX_F00F_IDT);
+-	load_idt(&idt_descr);
+-}
+-#endif
+-
+ static void __cpuinit intel_smp_check(struct cpuinfo_x86 *c)
+ {
+ 	/* calling is from identify_secondary_cpu() ? */
+@@ -206,8 +192,7 @@ static void __cpuinit intel_workarounds(struct cpuinfo_x86 *c)
+ 	/*
+ 	 * All current models of Pentium and Pentium with MMX technology CPUs
+ 	 * have the F0 0F bug, which lets nonprivileged users lock up the
+-	 * system.
+-	 * Note that the workaround only should be initialized once...
++	 * system. Announce that the fault handler will be checking for it.
+ 	 */
+ 	c->f00f_bug = 0;
+ 	if (!paravirt_enabled() && c->x86 == 5) {
+@@ -215,7 +200,6 @@ static void __cpuinit intel_workarounds(struct cpuinfo_x86 *c)
+ 
+ 		c->f00f_bug = 1;
+ 		if (!f00f_workaround_enabled) {
+-			trap_init_f00f_bug();
+ 			printk(KERN_NOTICE "Intel Pentium with F0 0F bug - workaround enabled.\n");
+ 			f00f_workaround_enabled = 1;
+ 		}
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 68bda7a..a2a9b78 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -753,6 +753,14 @@ void __init trap_init(void)
+ #endif
+ 
+ 	/*
++	 * Set the IDT descriptor to a fixed read-only location, so that the
++	 * "sidt" instruction will not leak the location of the kernel, and
++	 * to defend the IDT against arbitrary memory write vulnerabilities.
++	 * It will be reloaded in cpu_init() */
++	__set_fixmap(FIX_RO_IDT, __pa_symbol(idt_table), PAGE_KERNEL_RO);
++	idt_descr.address = fix_to_virt(FIX_RO_IDT);
++
++	/*
+ 	 * Should be a barrier for any external CPU state:
+ 	 */
+ 	cpu_init();
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 6afbb2c..8bc4dec 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2039,9 +2039,7 @@ static void xen_set_fixmap(unsigned idx, phys_addr_t phys, pgprot_t prot)
+ 
+ 	switch (idx) {
+ 	case FIX_BTMAP_END ... FIX_BTMAP_BEGIN:
+-#ifdef CONFIG_X86_F00F_BUG
+-	case FIX_F00F_IDT:
+-#endif
++	case FIX_RO_IDT:
+ #ifdef CONFIG_X86_32
+ 	case FIX_WP_TEST:
+ 	case FIX_VDSO:
+-- 
+1.7.9.5
 
-Maybe I should just leave this part out? They are standard DT properties
-so I could assume DT writers know what to do.
-
->> +- clock-frequency : The frequency of the main counter, in Hz. Optional.
->> +
->> +- reg : The control frame base address.
->> +
->> +Frame:
->> +
->> +- frame-id: Encoded as follows:
->> +		bits[3:0]  frame number: 0 to 7.
->> +		bits[10:8] frame usage:
->> +			0 - user/kernel
->> +			1 - hyp
->> +			2 - secure
->> +
-> Could we not just have a disabled status property for those frames claimed by a
-> higher level (either secure firmware or hypervisor)? Or have I missed something
-> here?
-
-Using disabled status would work. I was also thinking maybe we should
-use a compatible string in each frame's node. Then we could match
-against compatible children like "frame-user", "frame-kernel",
-"frame-hyp", "frame-secure", "frame-user-kernel", etc. It allows us
-flexibility if we should need to add something else in the future.
-
-Also to get the frame number, I was thinking maybe we should expand the
-reg property to have two address cells. Then we could have reg = <0
-0xf0001000 0x1000>.
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Kees Cook
+Chrome OS Security
