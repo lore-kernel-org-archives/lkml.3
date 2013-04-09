@@ -1,99 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936293Ab3DIUPj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 16:15:39 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:37641 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936063Ab3DIUPg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 16:15:36 -0400
-Message-ID: <516476E4.3050206@gmail.com>
-Date: Tue, 09 Apr 2013 15:15:32 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S936305Ab3DIUQA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 16:16:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56602 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935899Ab3DIUP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 16:15:59 -0400
+Date: Tue, 9 Apr 2013 22:13:02 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Anton Arapov <anton@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Josh Stone <jistone@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
+Subject: Re: [PATCH v1 6/9] uretprobes: Return probe exit, invoke handlers
+Message-ID: <20130409201302.GA30570@redhat.com>
+References: <1365004839-21982-1-git-send-email-anton@redhat.com> <1365004839-21982-7-git-send-email-anton@redhat.com> <20130407105308.GA2899@linux.vnet.ibm.com> <20130409140530.GA20577@redhat.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Michal Marek <mmarek@suse.cz>, Grant Likely <glikely@secretlab.ca>,
-        linux-kbuild@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL] dt: run C pre-processor on *.dts, create some standard
- headers
-References: <1365187610-29422-1-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1365187610-29422-1-git-send-email-swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130409140530.GA20577@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/05/2013 01:46 PM, Stephen Warren wrote:
-> Rob, it might be worth keeping this in a separate branch in linux-next
-> so you can pull it out if it causes any issues. I've been using these
-> patches for quite a while now, but there's always opportunity for
-> surprises on architectures I don't use. I did just fix a bug when
-> building with O= a few days back, hence the V2 that I posted as patches.
-> 
+On 04/09, Oleg Nesterov wrote:
+>
+> > Should we a check here before using top most ri.
+> > What if the application had done a longjmp and the trampoline he hit
+> > corresponds to something thats below in the stack?
+> >
+> > Not sure if this what you meant by leaking return instances in your next
+> > patch.
+>
+> Oh yes, this should be documented more explicitly in the changelog of
+> this patch or 7/9 (which tries to document the limitations but should
+> be more clear).
+>
+> Currently we do not support longjmp() and we assume that the probed
+> function should do the regular return. We should certainly try to improve
+> this, but I really think that this should go into the next series.
+>
+> Because this is nontrivial, needs more discussion, and I'm afraid should
+> be per-arch. Even on x86 (which can check the stack) this is not simple,
+> in general we can't know how to check that (to simplify) the first frame
+> is already invalid. Just for example, we could check regs->sp and detect
+> that longjmp() was called but sigaltstack() can easily fool this logic.
+>
+> Or we can change prepare_uretprobe() to alloc the new slot for the
+> trampoline every time (and mark it as "trampoline" for handle_swbp() of
+> course), this way we can easily discard the invalid ret_instance's in
+> handler_uretprobe(). But this doesn't solve all problems and this is
+> not really nice/simple.
+>
+> In short. I think we should document the limitations more clearly, push
+> this functionality, then try to improve things. Do you agree?
 
-Pulled into my for-next branch.
+IOW. Will you agree with v2 below?
 
-Rob
+Changes:
 
-> ----------------------------------------------------------------
-> 
-> This branch enhances the support for running dtc on device tree files.
-> 
-> A dedicated directory is created for header files that provide constants
-> for device-tree bindings.
-> 
-> The kbuild dependency script processor is enhanced to support processing
-> the dependency outputs from multiple separate commands at once.
-> 
-> The kbuild dtc rule is modified so that the C pre-processor is always
-> applied when compiling any device tree.
-> 
-> Some standard headers are created which define common constants for GPIO,
-> IRQ, and ARM GIC device tree bindings.
-> 
-> ----------------------------------------------------------------
-> 
-> The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
-> 
->   Linux 3.9-rc1
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git tegra-for-3.10-dtc-cpp-chroot-std-headers
-> 
-> for you to fetch changes up to 4be505d4fc7a07371a2b658469ca1dda99993ca3:
-> 
->   ARM: dt: create a DT header for the GIC
-> 
-> ----------------------------------------------------------------
-> 
-> Stephen Warren (7):
->       kbuild: create an "include chroot" for DT bindings
->       kbuild: fixdep: support concatenated dep files
->       kbuild: cmd_dtc_cpp: extract deps from both gcc -E and dtc
->       kbuild: always run gcc -E on *.dts, remove cmd_dtc_cpp
->       ARM: dt: add header to define GPIO flags
->       ARM: dt: add header to define IRQ flags
->       ARM: dt: create a DT header for the GIC
-> 
->  arch/arm/boot/dts/include/dt-bindings           |    1 +
->  include/dt-bindings/gpio/gpio.h                 |   15 +++
->  .../dt-bindings/interrupt-controller/arm-gic.h  |   22 +++++
->  include/dt-bindings/interrupt-controller/irq.h  |   19 ++++
->  scripts/Makefile.lib                            |   17 ++--
->  scripts/basic/fixdep.c                          |   93 ++++++++++++------
->  6 files changed, 125 insertions(+), 42 deletions(-)
->  create mode 120000 arch/arm/boot/dts/include/dt-bindings
->  create mode 100644 include/dt-bindings/gpio/gpio.h
->  create mode 100644 include/dt-bindings/interrupt-controller/arm-gic.h
->  create mode 100644 include/dt-bindings/interrupt-controller/irq.h
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
-> 
-> 
+	- s/handler_uretprobe/handle_trampoline/
+
+	- s/handler_uretprobe_chain/handle_uretprobe_chain/
+
+	- add the TODO: comments into the changelog and
+	  handle_trampoline().
+
+
+-------------------------------------------------------------------------------
+[PATCH v2] uretprobes: Return probe exit, invoke handlers
+
+Uretprobe handlers are invoked when the trampoline is hit, on completion
+the trampoline is replaced with the saved return address and the uretprobe
+instance deleted.
+
+TODO: handle_trampoline() assumes that ->return_instances is always valid.
+We should teach it to handle longjmp() which can invalidate the pending
+return_instance's. This is nontrivial, we will try to do this in a separate
+series.
+
+Signed-off-by: Anton Arapov <anton@redhat.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/events/uprobes.c |   65 ++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 64 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index e352e18..b9c4325 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1633,6 +1633,62 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
+ 	up_read(&uprobe->register_rwsem);
+ }
+ 
++static void
++handle_uretprobe_chain(struct return_instance *ri, struct pt_regs *regs)
++{
++	struct uprobe *uprobe = ri->uprobe;
++	struct uprobe_consumer *uc;
++
++	down_read(&uprobe->register_rwsem);
++	for (uc = uprobe->consumers; uc; uc = uc->next) {
++		if (uc->ret_handler)
++			uc->ret_handler(uc, ri->func, regs);
++	}
++	up_read(&uprobe->register_rwsem);
++}
++
++static bool handle_trampoline(struct pt_regs *regs)
++{
++	struct uprobe_task *utask;
++	struct return_instance *ri, *tmp;
++	bool chained;
++
++	utask = current->utask;
++	if (!utask)
++		return false;
++
++	ri = utask->return_instances;
++	if (!ri)
++		return false;
++
++	/*
++	 * TODO: we should throw out return_instance's invalidated by
++	 * longjmp(), currently we assume that the probed function always
++	 * returns.
++	 */
++	instruction_pointer_set(regs, ri->orig_ret_vaddr);
++
++	for (;;) {
++		handle_uretprobe_chain(ri, regs);
++
++		chained = ri->chained;
++		put_uprobe(ri->uprobe);
++
++		tmp = ri;
++		ri = ri->next;
++		kfree(tmp);
++
++		if (!chained)
++			break;
++
++		BUG_ON(!ri);
++	}
++
++	utask->return_instances = ri;
++
++	return true;
++}
++
+ /*
+  * Run handler and ask thread to singlestep.
+  * Ensure all non-fatal signals cannot interrupt thread while it singlesteps.
+@@ -1644,8 +1700,15 @@ static void handle_swbp(struct pt_regs *regs)
+ 	int uninitialized_var(is_swbp);
+ 
+ 	bp_vaddr = uprobe_get_swbp_addr(regs);
+-	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
++	if (bp_vaddr == get_trampoline_vaddr()) {
++		if (handle_trampoline(regs))
++			return;
+ 
++		pr_warn("uprobe: unable to handle uretprobe pid/tgid=%d/%d\n",
++						current->pid, current->tgid);
++	}
++
++	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
+ 	if (!uprobe) {
+ 		if (is_swbp > 0) {
+ 			/* No matching uprobe; signal SIGTRAP. */
+-- 
+1.5.5.1
+
 
