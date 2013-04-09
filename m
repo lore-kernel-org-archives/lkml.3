@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936843Ab3DIHwx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 03:52:53 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:35113 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935258Ab3DIHww (ORCPT
+	id S936991Ab3DIHxK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 03:53:10 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:35052 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754240Ab3DIHxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 03:52:52 -0400
+	Tue, 9 Apr 2013 03:53:08 -0400
+Message-ID: <5163C90E.8040602@parallels.com>
+Date: Tue, 9 Apr 2013 11:53:50 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <1363674681-4015-1-git-send-email-sachin.kamat@linaro.org>
-References: <1363674681-4015-1-git-send-email-sachin.kamat@linaro.org>
-Date: Tue, 9 Apr 2013 09:52:51 +0200
-Message-ID: <CACRpkdbiB6_cqrgLE1bGS4M6=AgHLwKYxVkENVNETqhX3_wxeA@mail.gmail.com>
-Subject: Re: [PATCH 1/5] pinctrl: abx500: Staticize some symbols
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Patch Tracking <patches@linaro.org>,
-        Patrice Chotard <patrice.chotard@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Li Zefan <lizefan@huawei.com>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [PATCH 13/12] memcg: don't need memcg->memcg_name
+References: <5162648B.9070802@huawei.com> <51626584.7050405@huawei.com> <5163868B.3020905@jp.fujitsu.com> <5163887D.1040809@huawei.com>
+In-Reply-To: <5163887D.1040809@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 19, 2013 at 7:31 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+On 04/09/2013 07:18 AM, Li Zefan wrote:
+>>> @@ -5188,12 +5154,28 @@ static int mem_cgroup_dangling_read(struct cgroup *cont, struct cftype *cft,
+>>>   					struct seq_file *m)
+>>>   {
+>>>   	struct mem_cgroup *memcg;
+>>> +	char *memcg_name;
+>>> +	int ret;
+>>> +
+>>> +	/*
+>>> +	 * cgroup.c will do page-sized allocations most of the time,
+>>> +	 * so we'll just follow the pattern. Also, __get_free_pages
+>>> +	 * is a better interface than kmalloc for us here, because
+>>> +	 * we'd like this memory to be always billed to the root cgroup,
+>>> +	 * not to the process removing the memcg. While kmalloc would
+>>> +	 * require us to wrap it into memcg_stop/resume_kmem_account,
+>>> +	 * with __get_free_pages we just don't pass the memcg flag.
+>>> +	 */
+>>> +	memcg_name = (char *)__get_free_pages(GFP_KERNEL, 0);
+>>> +	if (!memcg_name)
+>>> +		return -ENOMEM;
+>>>   
+>>>   	mutex_lock(&dangling_memcgs_mutex);
+>>>   
+>>>   	list_for_each_entry(memcg, &dangling_memcgs, dead) {
+>>> -		if (memcg->memcg_name)
+>>> -			seq_printf(m, "%s:\n", memcg->memcg_name);
+>>> +		ret = cgroup_path(memcg->css.cgroup, memcg_name, PAGE_SIZE);
+>>> +		if (!ret)
+>>> +			seq_printf(m, "%s:\n", memcg_name);
+>>>   		else
+>>>   			seq_printf(m, "%p (name lost):\n", memcg);
+>>>   
+>>
+>> I'm sorry for dawm question ...when this error happens ?
+>> We may get ENAMETOOLONG even with PAGE_SIZE(>=4096bytes) buffer ?
+>>
+> 
+> It does no harm to check the return value, and we don't have to
+> worry about if cgroup_path() will be changed to return some other
+> errno like ENOMEM in the future.
+> 
+I feel more comfortable with the check as well. This is a debugging
+interface after all. People tend to resort to this when things go wrong.
+So at this point the less assumptions we make, the better.
 
-> These symbols are used only in this file. Without this patch
-> we get the following warnings:
-> drivers/pinctrl/pinctrl-abx500.c:520:5: warning:
-> symbol 'abx500_gpio_request' was not declared. Should it be static?
-> drivers/pinctrl/pinctrl-abx500.c:527:6: warning:
-> symbol 'abx500_gpio_free' was not declared. Should it be static?
-> drivers/pinctrl/pinctrl-abx500.c:614:5: warning:
-> symbol 'abx500_gpio_request_enable' was not declared. Should it be static?
-> drivers/pinctrl/pinctrl-abx500.c:714:5: warning:
-> symbol 'abx500_pin_config_get' was not declared. Should it be static?
-> drivers/pinctrl/pinctrl-abx500.c:721:5: warning:
-> symbol 'abx500_pin_config_set' was not declared. Should it be static?
->
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> Cc: Patrice Chotard <patrice.chotard@st.com>
-> ---
-> This series is compile tested against linux-next tree (20130319).
-
-Patch applied with Patrice's ACK, thanks!
-
-Yours,
-Linus Walleij
