@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935347Ab3DISbv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 14:31:51 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:48535 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934736Ab3DISbq (ORCPT
+	id S935274Ab3DIScu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 14:32:50 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:52728 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934538Ab3DIScs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 14:31:46 -0400
+	Tue, 9 Apr 2013 14:32:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCHv2] ARM: Push selects for TWD/SCU into machine entries
+Date: Tue, 9 Apr 2013 20:32:18 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>, linux-arm-msm@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Barry Song <baohua.song@csr.com>,
+        Olof Johansson <olof@lixom.net>
+References: <1362007694-3419-1-git-send-email-sboyd@codeaurora.org> <5151DC41.7090307@codeaurora.org> <5164462E.4010706@codeaurora.org>
+In-Reply-To: <5164462E.4010706@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <51645D6F.7070705@zytor.com>
-References: <20130408224328.GA17641@www.outflux.net>
-	<51634935.9010905@zytor.com>
-	<alpine.LFD.2.02.1304091122490.21884@ionos>
-	<CAGXu5jKo=11RrsvctcZjP6dusAj659O_GsaA2J2qFq-6mOeRwQ@mail.gmail.com>
-	<51645D6F.7070705@zytor.com>
-Date: Tue, 9 Apr 2013 11:31:45 -0700
-X-Google-Sender-Auth: 7Y60r4EKpNmeToyGNC87xDENjPM
-Message-ID: <CAGXu5jKkHKw8efdPOmt-Zi99m+uMKVGKpc_DC72_ztwxnRbRRQ@mail.gmail.com>
-Subject: Re: [kernel-hardening] Re: [PATCH] x86: make IDT read-only
-From: Kees Cook <keescook@chromium.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Alex Shi <alex.shi@intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
-        Eric Northup <digitaleric@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304092032.18885.arnd@arndb.de>
+X-Provags-ID: V02:K0:Cf2YG93n+jqq+vDqGU9wAqaSse3IRUrbEexUugJw2z5
+ h+TtAGMUrHlckSmILxHH+8rRS5J+6RdrDhhcn9m/GGeUc2KKrW
+ 4W6EpZrCzwtE8Zc3PlXdCssKpoCZ+Jt/ZWrweQQiVW5JzLqp1b
+ zyARAVHlA5rBWvlpg5092G5eMRGA/p9GS+tmk/bhDfcBQZeVzu
+ 5qiGkpyhlhUjQtvGiN9a9zQ+u8ebXBJS9B5tOvjBB1MiEO1LrU
+ hXazn43yWwvfZGjERbaW0DOq3zXB25THhh9lO5SJSfoVEVp3p+
+ L3zWhPyP/+F1Qi6tmuG60uOImifZF8dOpB3O3a+3i+KHM4i4qD
+ spghHI/5dqmkPthpG+VQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 9, 2013 at 11:26 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 04/09/2013 11:22 AM, Kees Cook wrote:
->>
->> $ ./sgdt
->> ffff88001fc04000
->> # cat /sys/kernel/debug/kernel_page_tables
->> ...
->> ---[ Low Kernel Mapping ]---
->> ...
->> 0xffff880001e00000-0xffff88001fe00000         480M     RW         PSE GLB NX pmd
->>
->
-> That is the 1:1 memory map area...
+On Tuesday 09 April 2013, Stephen Boyd wrote:
+> >>>
+> >>> Sneaking it in through the fixes branch would make life easier for us,
+> >>> but it doesn't feel right.
+> >> Arnd, can you pick this up into the arm-soc tree now? It would be good
+> >> to get this into next so that conflicts are avoided later on.
+> >>
+> > Arnd?
+> >
+> 
+> Ping?
 
-Meaning what?
 
--Kees
+Sorry for the long delay, you scrolled down from my unread emails twice.
 
---
-Kees Cook
-Chrome OS Security
+Three tips for you to make it more likely to get a fast reaction time:
+
+* Send the original patch to Olof and me, not just the reply to the
+  on-list patch.
+* Use the arm@kernel.org alias to reach us, since that will make the
+  email go into the right folder
+* Use the [GIT PULL] keyword in the subject line, ideally sending a
+  pull request as well, instead of a separate email. While we do apply
+  emails, It's often batch processing to apply everything and then
+  we scan for emails that have PULL in the subject, while others
+  can get lost.
+
+I've applied it to the next/soc branch now.
+
+	Arnd
