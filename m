@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937197Ab3DIJqO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 05:46:14 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:55338 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935338Ab3DIJqM (ORCPT
+	id S937204Ab3DIJrP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 05:47:15 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:45828 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933110Ab3DIJrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 05:46:12 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Alex Shi <alex.shi@intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org,
-        kernel-hardening@lists.openwall.com,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
-        Eric Northup <digitaleric@google.com>
-References: <20130408224328.GA17641@www.outflux.net>
-	<51634935.9010905@zytor.com>
-Date: Tue, 09 Apr 2013 02:45:46 -0700
-In-Reply-To: <51634935.9010905@zytor.com> (H. Peter Anvin's message of "Mon,
-	08 Apr 2013 15:48:21 -0700")
-Message-ID: <877gkc596d.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 9 Apr 2013 05:47:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX197gmfRTVaIewM34i88nfGlKmoa149NlW4=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.7 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"H. Peter Anvin" <hpa@zytor.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] x86: make IDT read-only
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+In-Reply-To: <1365496365-28450-1-git-send-email-Yuantian.Tang@freescale.com>
+References: <1365496365-28450-1-git-send-email-Yuantian.Tang@freescale.com>
+Date: Tue, 9 Apr 2013 15:17:11 +0530
+Message-ID: <CAKohpokVf0hCokDL62WeaUdYEBycf+Kh_cRgWxTR--_12xjEBA@mail.gmail.com>
+Subject: Re: [PATCH v4] cpufreq: powerpc: Add cpufreq driver for Freescale
+ e500mc SoCs
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Yuantian.Tang@freescale.com
+Cc: rjw@sisk.pl, cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Li Yang <leoli@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"H. Peter Anvin" <hpa@zytor.com> writes:
+Mostly good now, V5 should be the final one.
 
-> On 04/08/2013 03:43 PM, Kees Cook wrote:
->> This makes the IDT unconditionally read-only. This primarily removes
->> the IDT from being a target for arbitrary memory write attacks. It has
->> an added benefit of also not leaking (via the "sidt" instruction) the
->> kernel base offset, if it has been relocated.
->> 
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> Cc: Eric Northup <digitaleric@google.com>
->
-> Also, tglx: does this interfere with your per-cpu IDT efforts?
+On 9 April 2013 14:02,  <Yuantian.Tang@freescale.com> wrote:
+> diff --git a/drivers/cpufreq/ppc-corenet-cpufreq.c b/drivers/cpufreq/ppc-corenet-cpufreq.c
 
-Given that we don't change any IDT entries why would anyone want a
-per-cpu IDT?  The cache lines should easily be shared accross all
-processors.
+> +static int corenet_cpufreq_target(struct cpufreq_policy *policy,
+> +               unsigned int target_freq, unsigned int relation)
+> +{
+> +       struct cpufreq_freqs freqs;
+> +       unsigned int new;
+> +       struct clk *parent;
+> +       int ret;
+> +       struct cpu_data *data = per_cpu(cpu_data, policy->cpu);
+> +
+> +       cpufreq_frequency_table_target(policy, data->table,
+> +                       target_freq, relation, &new);
+> +
+> +       if (policy->cur == data->table[new].frequency)
+> +               return 0;
+> +
+> +       freqs.old = policy->cur;
+> +       freqs.new = data->table[new].frequency;
+> +       freqs.cpu = policy->cpu;
 
-Or are there some giant NUMA machines that trigger cache misses when
-accessing the IDT and the penalty for pulling the cache line across
-the NUMA fabric is prohibitive?
+You don't need to set freqs.cpu..
 
-Eric
+> +       mutex_lock(&cpufreq_lock);
+> +       cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+> +
+> +       parent = of_clk_get(data->parent, new);
+> +       ret = clk_set_parent(data->clk, parent);
+> +       if (ret) {
+> +               freqs.new = freqs.old;
+> +               cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+> +               mutex_unlock(&cpufreq_lock);
+> +               return ret;
+> +       }
+> +
+> +       cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+> +       mutex_unlock(&cpufreq_lock);
+
+What about writing it as:
+
++       ret = clk_set_parent(data->clk, parent);
++       if (ret)
++               freqs.new = freqs.old;
++
++       cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
++       mutex_unlock(&cpufreq_lock);
+
+return ret;
+
+> +       return 0;
+> +}
