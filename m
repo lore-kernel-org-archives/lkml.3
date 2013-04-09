@@ -1,127 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936749Ab3DICas (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 22:30:48 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:21442 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934528Ab3DICa0 (ORCPT
+	id S936660Ab3DICmW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 22:42:22 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:5823 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934789Ab3DICmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 22:30:26 -0400
-X-IronPort-AV: E=Sophos;i="4.87,434,1363158000"; 
-   d="scan'208";a="36738603"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: [PATCH 1/4] Documentation: Add memory mapped ARM architected timer binding
-Date: Mon,  8 Apr 2013 19:30:20 -0700
-Message-Id: <1365474623-29181-2-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.2
-In-Reply-To: <1365474623-29181-1-git-send-email-sboyd@codeaurora.org>
-References: <1365474623-29181-1-git-send-email-sboyd@codeaurora.org>
+	Mon, 8 Apr 2013 22:42:21 -0400
+Message-ID: <51637FEE.8070507@huawei.com>
+Date: Tue, 9 Apr 2013 10:41:50 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        WANG Chao <chaowang@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH 3/3] ftrace: Do not call stub functions in control loop
+References: <20130408204937.649895945@goodmis.org>  <20130408210518.551272592@goodmis.org> <51637830.1010309@huawei.com> <1365473805.25498.44.camel@gandalf.local.home>
+In-Reply-To: <1365473805.25498.44.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a binding for the arm architected timer hardware's memory
-mapped interface. The mmio timer hardware is made up of one base
-frame and a collection of up to 8 timer frames, where each of the
-8 timer frames can have either one or two views. A frame
-typically maps to a privilege level (user/kernel, hypervisor,
-secure). The first view has full access to the registers within a
-frame, while the second view can be restricted to particular
-registers within a frame. Each frame must support a physical
-timer. It's optional for a frame to support a virtual timer.
+On 2013/4/9 10:16, Steven Rostedt wrote:
+> On Tue, 2013-04-09 at 10:08 +0800, zhangwei(Jovi) wrote:
+>> On 2013/4/9 4:49, Steven Rostedt wrote:
+>>> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+>>>
+>>> The function tracing control loop used by perf spits out a warning
+>>> if the called function is not a control function. This is because
+>>> the control function references a per cpu allocated data structure
+>>> on struct ftrace_ops that is not allocated for other types of
+>>> functions.
+>>>
+>>> commit 0a016409e42 "ftrace: Optimize the function tracer list loop"
+>>>
+>>> Had an optimization done to all function tracing loops to optimize
+>>> for a single registered ops. Unfortunately, this allows for a slight
+>>> race when tracing starts or ends, where the stub function might be
+>>> called after the current registered ops is removed. In this case we
+>>> get the following dump:
+>>>
+> 
+>> Involve stable? 3.8 kernel user would need this fix.
+> 
+> Why? commit 0a016409e42 "ftrace: Optimize the function tracer list loop"
+> was added for 3.9. 3.8 has:
+> 
+>         op = rcu_dereference_raw(ftrace_control_list);
+>         while (op != &ftrace_list_end) {
+>                 if (!ftrace_function_local_disabled(op) &&
+>                     ftrace_ops_test(op, ip))
+>                         op->func(ip, parent_ip, op, regs);
+> 
+>                 op = rcu_dereference_raw(op->next);
+>         };
+> 
+> The stub function will never get called.
+> 
+> -- Steve
+Hmm, You are right, I misunderstand tag info got by git describe in my local box
 
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Marc Zyngier <Marc.Zyngier@arm.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- .../devicetree/bindings/arm/arch_timer.txt         | 62 ++++++++++++++++++++--
- 1 file changed, 59 insertions(+), 3 deletions(-)
+[root@jovi linux]# git describe 0a016409e42
+trace-3.8-rc4-fix-19-g0a01640
 
-diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
-index 20746e5..69ef711 100644
---- a/Documentation/devicetree/bindings/arm/arch_timer.txt
-+++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
-@@ -1,10 +1,14 @@
- * ARM architected timer
- 
--ARM cores may have a per-core architected timer, which provides per-cpu timers.
-+ARM cores may have a per-core architected timer, which provides per-cpu timers,
-+or a memory mapped architected timer, which provides up to 8 frames with a
-+physical and optional virtual timer per frame.
- 
--The timer is attached to a GIC to deliver its per-processor interrupts.
-+The per-core architected timer is attached to a GIC to deliver its
-+per-processor interrupts via PPIs. The memory mapped timer is attached to a GIC
-+to deliver its interrupts via SPIs.
- 
--** Timer node properties:
-+** CP15 Timer node properties:
- 
- - compatible : Should at least contain one of
- 	"arm,armv7-timer"
-@@ -26,3 +30,55 @@ Example:
- 			     <1 10 0xf08>;
- 		clock-frequency = <100000000>;
- 	};
-+
-+** Memory mapped timer node properties
-+
-+- compatible : Should at least contain "arm,armv7-timer-mem".
-+
-+- #address-cells : Must be 1.
-+
-+- #size-cells : Must be 1.
-+
-+- ranges : Indicates parent and child bus address space are the same.
-+
-+- clock-frequency : The frequency of the main counter, in Hz. Optional.
-+
-+- reg : The control frame base address.
-+
-+Frame:
-+
-+- frame-id: Encoded as follows:
-+		bits[3:0]  frame number: 0 to 7.
-+		bits[10:8] frame usage:
-+			0 - user/kernel
-+			1 - hyp
-+			2 - secure
-+
-+- interrupts : Interrupt list for physical and virtual timers in that order.
-+  The virtual timer interrupt is optional.
-+
-+- reg : The first and second view base addresses in that order. The second view
-+  base address is optional.
-+
-+Example:
-+
-+	timer@f0000000 {
-+		compatible = "arm,armv7-timer-mem";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+		reg = <0xf0000000 0x1000>;
-+		clock-frequency = <50000000>;
-+		frame0@f0001000 {
-+			frame-id = <0x0>
-+			interrupts = <0 13 0x8>,
-+				     <0 14 0x8>;
-+			reg = <0xf0001000 0x1000>,
-+			      <0xf0002000 0x1000>;
-+		};
-+		frame1@f0003000 {
-+			frame-id = <0x11>
-+			interrupts = <0 15 0x8>;
-+			reg = <0xf0003000 0x1000>;
-+		};
-+	};
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> 
+> 
+> 
+> 
+> .
+> 
+
 
