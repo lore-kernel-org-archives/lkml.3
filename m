@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935858Ab3DIS5k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 14:57:40 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:50276 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935623Ab3DIS5i (ORCPT
+	id S1761628Ab3DIS7d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 14:59:33 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:49978 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761262Ab3DIS7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 14:57:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 5/8] dmaengine: ste_dma40: Ensure src and dst registers are configured correctly
-Date: Tue, 9 Apr 2013 20:57:29 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com
-References: <1365532783-27425-1-git-send-email-lee.jones@linaro.org> <1365532783-27425-5-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1365532783-27425-5-git-send-email-lee.jones@linaro.org>
+	Tue, 9 Apr 2013 14:59:32 -0400
+Message-ID: <5164650F.50405@gmail.com>
+Date: Tue, 09 Apr 2013 20:59:27 +0200
+From: Milan Broz <gmazyland@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Mikulas Patocka <mpatocka@redhat.com>
+CC: Milan Broz <gmazyland@gmail.com>, Mike Snitzer <msnitzer@redhat.com>,
+        dm-crypt@saout.de, Christian Schmidt <schmidt@digadd.de>,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        dm-devel@redhat.com, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [dm-crypt] [dm-devel] dm-crypt performance
+References: <Pine.LNX.4.64.1303252051520.9745@file.rdu.redhat.com> <20130326122713.GC27610@agk-dp.fab.redhat.com> <5151FF82.6090405@gmail.com> <Pine.LNX.4.64.1304091352320.10025@file.rdu.redhat.com>
+In-Reply-To: <Pine.LNX.4.64.1304091352320.10025@file.rdu.redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304092057.29684.arnd@arndb.de>
-X-Provags-ID: V02:K0:XgWWOY4b8WQfxjkX1do/Nxr6F8syGktgkTu6BCZ6fiu
- zxSWxZxM0SXmebJHt21/vCBYRtEgg+ev1IcPlodPWVJg1LzbM+
- CkbxQroyTnHipJMZN/xrTKaq0maX6NzWTFGKJbzbW/29cYEpZZ
- RM4zGxpNab4zH8O9xoTbcaVswIQE8NvuLHZIA3FEFPmQL19fnx
- h3dTyl+tEE3B8nHIM7ZmotC/OfXjxNahPAjTx+he8W2BgKUU9U
- X90zg2XsJAFWORxY7SBr9dJxLvNdEW+rCJrRC+SsTr4o8Khmkc
- H86tyJAjG5Uudw0H5WJsDhWODt/D3tK2QpA5QfFUEvHivdJqG/
- qvRYnIyh/DuKhFmb2o3M=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 April 2013, Lee Jones wrote:
-> Confusingly d40_log_cfg() is used to set up the logical channel
-> configuration registers, but d40_phy_cfg() is used to configure
-> physical and logical registers, so it should be called in both
-> cases. It is the function call's final attribute which determines
-> whether it's a physical or logical channel, not whether the
-> function is called or not.
+On 9.4.2013 20:08, Mikulas Patocka wrote:
+> 
+> 
+> On Tue, 26 Mar 2013, Milan Broz wrote:
+> 
+>> - Are we sure we are not inroducing some another side channel in disc
+>> encryption? (Unprivileged user can measure timing here).
+>> (Perhaps stupid reason but please do not prefer performance to security
+>> in encryption. Enough we have timing attacks for AES implementations...)
+> 
+> So use serpent - it is implemented without any data-dependent lookup 
+> tables, so it has no timing attacks.
 
-So how did it ever work? Your description sounds like it was
-broken all along, but I would assume that someone tested the code.
+I wish using something different than AES is just such simple technical issue
+for many people. But e.g. just try it in FIPS mode where AES is the only option:-)
 
-	Arnd
+Anyway, using bio_associate_current() seems to be the right way to try now...
+
+Milan
