@@ -1,348 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760339Ab3DILOb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 07:14:31 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:60650 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757801Ab3DILO3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 07:14:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <6FE4B33E-A503-4A75-AEED-831CB2C06D83@gmail.com>
-References: <6FE4B33E-A503-4A75-AEED-831CB2C06D83@gmail.com>
-Date: Tue, 9 Apr 2013 13:14:28 +0200
-Message-ID: <CACRpkdbuAvRzVdzKL51k5d7vVpGNUHh_f_ZAxP4m3zFdBOV=xw@mail.gmail.com>
-Subject: Re: [RFC PATCH arm: initial TI-Nspire support]
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Daniel Tang <dt.tangr@gmail.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        fabian@ritter-vogt.de, Lionel Debroux <lionel_debroux@yahoo.fr>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S934759Ab3DILSG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 07:18:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50248 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1763878Ab3DILSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 07:18:02 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd reclaims at each priority
+Date: Tue,  9 Apr 2013 12:06:56 +0100
+Message-Id: <1365505625-9460-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1365505625-9460-1-git-send-email-mgorman@suse.de>
+References: <1365505625-9460-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 4, 2013 at 11:01 AM, Daniel Tang <dt.tangr@gmail.com> wrote:
+The number of pages kswapd can reclaim is bound by the number of pages it
+scans which is related to the size of the zone and the scanning priority. In
+many cases the priority remains low because it's reset every SWAP_CLUSTER_MAX
+reclaimed pages but in the event kswapd scans a large number of pages it
+cannot reclaim, it will raise the priority and potentially discard a large
+percentage of the zone as sc->nr_to_reclaim is ULONG_MAX. The user-visible
+effect is a reclaim "spike" where a large percentage of memory is suddenly
+freed. It would be bad enough if this was just unused memory but because
+of how anon/file pages are balanced it is possible that applications get
+pushed to swap unnecessarily.
+
+This patch limits the number of pages kswapd will reclaim to the high
+watermark. Reclaim will still overshoot due to it not being a hard limit as
+shrink_lruvec() will ignore the sc.nr_to_reclaim at DEF_PRIORITY but it
+prevents kswapd reclaiming the world at higher priorities. The number of
+pages it reclaims is not adjusted for high-order allocations as kswapd will
+reclaim excessively if it is to balance zones for high-order allocations.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/vmscan.c | 53 +++++++++++++++++++++++++++++------------------------
+ 1 file changed, 29 insertions(+), 24 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 88c5fed..4835a7a 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2593,6 +2593,32 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+ }
+ 
+ /*
++ * kswapd shrinks the zone by the number of pages required to reach
++ * the high watermark.
++ */
++static void kswapd_shrink_zone(struct zone *zone,
++			       struct scan_control *sc,
++			       unsigned long lru_pages)
++{
++	unsigned long nr_slab;
++	struct reclaim_state *reclaim_state = current->reclaim_state;
++	struct shrink_control shrink = {
++		.gfp_mask = sc->gfp_mask,
++	};
++
++	/* Reclaim above the high watermark. */
++	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
++	shrink_zone(zone, sc);
++
++	reclaim_state->reclaimed_slab = 0;
++	nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
++	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
++
++	if (nr_slab == 0 && !zone_reclaimable(zone))
++		zone->all_unreclaimable = 1;
++}
++
++/*
+  * For kswapd, balance_pgdat() will work across all this node's zones until
+  * they are all at high_wmark_pages(zone).
+  *
+@@ -2619,27 +2645,16 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 	bool pgdat_is_balanced = false;
+ 	int i;
+ 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+-	unsigned long total_scanned;
+-	struct reclaim_state *reclaim_state = current->reclaim_state;
+ 	unsigned long nr_soft_reclaimed;
+ 	unsigned long nr_soft_scanned;
+ 	struct scan_control sc = {
+ 		.gfp_mask = GFP_KERNEL,
+ 		.may_unmap = 1,
+ 		.may_swap = 1,
+-		/*
+-		 * kswapd doesn't want to be bailed out while reclaim. because
+-		 * we want to put equal scanning pressure on each zone.
+-		 */
+-		.nr_to_reclaim = ULONG_MAX,
+ 		.order = order,
+ 		.target_mem_cgroup = NULL,
+ 	};
+-	struct shrink_control shrink = {
+-		.gfp_mask = sc.gfp_mask,
+-	};
+ loop_again:
+-	total_scanned = 0;
+ 	sc.priority = DEF_PRIORITY;
+ 	sc.nr_reclaimed = 0;
+ 	sc.may_writepage = !laptop_mode;
+@@ -2710,7 +2725,7 @@ loop_again:
+ 		 */
+ 		for (i = 0; i <= end_zone; i++) {
+ 			struct zone *zone = pgdat->node_zones + i;
+-			int nr_slab, testorder;
++			int testorder;
+ 			unsigned long balance_gap;
+ 
+ 			if (!populated_zone(zone))
+@@ -2730,7 +2745,6 @@ loop_again:
+ 							order, sc.gfp_mask,
+ 							&nr_soft_scanned);
+ 			sc.nr_reclaimed += nr_soft_reclaimed;
+-			total_scanned += nr_soft_scanned;
+ 
+ 			/*
+ 			 * We put equal pressure on every zone, unless
+@@ -2759,17 +2773,8 @@ loop_again:
+ 
+ 			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
+ 			    !zone_balanced(zone, testorder,
+-					   balance_gap, end_zone)) {
+-				shrink_zone(zone, &sc);
+-
+-				reclaim_state->reclaimed_slab = 0;
+-				nr_slab = shrink_slab(&shrink, sc.nr_scanned, lru_pages);
+-				sc.nr_reclaimed += reclaim_state->reclaimed_slab;
+-				total_scanned += sc.nr_scanned;
+-
+-				if (nr_slab == 0 && !zone_reclaimable(zone))
+-					zone->all_unreclaimable = 1;
+-			}
++					   balance_gap, end_zone))
++				kswapd_shrink_zone(zone, &sc, lru_pages);
+ 
+ 			/*
+ 			 * If we're getting trouble reclaiming, start doing
+-- 
+1.8.1.4
 
-(I suspect I duplicate a lot of Arnd's comments, I haven't really checked.
-If we contradict each other, point it out so we can discuss.)
-
-> +config ARCH_NSPIRE
-> +       bool "TI-NSPIRE based"
-> +       depends on MMU
-> +       select CPU_ARM926T
-> +       select HAVE_MACH_CLKDEV
-> +       select CLKDEV_LOOKUP
-
-For a new platform you should be selecting COMMON_CLK
-and implement your clock drivers under drivers/clk/*.
-
-> +       select ARM_AMBA
-> +       select USB_ARCH_HAS_EHCI
-> +       select ARCH_WANT_OPTIONAL_GPIOLIB
-> +       select GENERIC_ALLOCATOR
-
-I wonder what that is used for ... will be fun to see :-)
-
-> +       select ARCH_HAS_CPUFREQ
-> +       select CPU_FREQ_TABLE
-> +       help
-> +         This enables support for systems using the TI-NSPIRE CPU
-
-This does not select GENERIC_CLOCKEVENTS and SPARSE_IRQ
-which is not a good sign.
-
-> +choice
-> +       prompt "Early printk and boot message serial interface"
-> +       help
-> +         Early printk output interface
-> +       depends on EARLY_PRINTK
-> +       default NSPIRE_EARLYPRINTK_CX
-> +
-> +config NSPIRE_EARLYPRINTK_CLASSIC
-> +       bool "Classic"
-> +
-> +config NSPIRE_EARLYPRINTK_CX
-> +       bool "CX model"
-> +endchoice
-
-This kind of stuf should go into
-arch/arm/Kconfig.debug these days, along with implementation
-of debug macro in arch/arm/debug/foo.S
-
-> diff --git a/arch/arm/mach-nspire/classic.c b/arch/arm/mach-nspire/classic.c
-(...)
-
-> +union reg_clk_speed {
-> +       unsigned long raw;
-> +       struct {
-> +               unsigned long __padding0:1;
-> +               unsigned long base_cpu_ratio:7;
-> +               unsigned long is_base_27mhz:1;
-> +               unsigned long __padding1:3;
-> +               unsigned long cpu_ahb_ratio:3;
-> +               unsigned long __padding2:1;
-> +               unsigned long base_val:5;
-> +       } val;
-> +};
-
-Usually to try to fit a struct over a register range is not such a good
-idea in Linux.
-
-Instead define abstract representations of what you want to do
-(remove everything named "padding" above, use proper data types instead
-of these unsigned longs and that complex union) then use offsets to
-registers and remap the base offset in memory.
-
-It makes for simpler debugging and ability to properly use read|write[lwb]
-macros.
-
-> +static unsigned long classic_clocks_to_io(struct nspire_clk_speeds *clks)
-> +{
-> +       union reg_clk_speed reg;
-> +
-> +       BUG_ON(clks->div.base_cpu < 2);
-> +       BUG_ON(clks->div.cpu_ahb < 1);
-> +
-> +       reg.raw = 0;
-> +       reg.val.base_cpu_ratio = clks->div.base_cpu / 2;
-> +       reg.val.cpu_ahb_ratio = clks->div.cpu_ahb - 1;
-> +       reg.val.is_base_27mhz = (clks->base <= 27000000);
-> +       reg.val.base_val = (300 - (clks->base / 1000000)) / 6;
-> +
-> +       return reg.raw;
-> +}
-
-And that avoid having to create special helper functions like this.
-
-In integer divisions consider using DIV_ROUND_CLOSEST()
-from <linux/kernel.h> where applicable.
-
-> +/* Interrupt handling */
-
-The interrupt controller driver shall be placed in drivers/irqchips
-these days.
-
-> +static inline int check_interrupt(void __iomem *base, struct pt_regs *regs)
-> +{
-> +       if (readl(base + 0x0)) {
-
-Arrow antipattern, turn it around.
-
-if (!readl(base))
-   return 0;
-
-Then de-indent the rest of the code.
-
-> +               int irqnr = readl(base + 0x24);
-> +               unsigned prev_priority;
-> +               handle_IRQ(irqnr, regs);
-> +
-> +               /* Reset priorities */
-> +               prev_priority = readl(IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x28));
-> +               writel(prev_priority, IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x2c));
-> +               return 1;
-> +       }
-> +       return 0;
-> +}
-
-I don't understand this, put in  some explanation of what this function
-does please.
-
-> +asmlinkage void __exception_irq_entry
-> +       nspire_classic_handle_irq(struct pt_regs *regs)
-> +{
-> +       int serviced;
-> +
-> +       do {
-> +               void __iomem *reg_base = IOMEM(NSPIRE_INTERRUPT_VIRT_BASE);
-
-Instead of casting this in every IRQ entry define a static local
-in the irq driver file to point to the base.
-
-Avoids time in the IRQ handler, so it obviously the right thing to do.
-
-Please also use a dynamic remapping ioremap* insteaf of
-this static IOMEM() thing.
-
-> +               serviced = 0;
-> +
-> +               /* IRQ */
-> +               serviced += check_interrupt(reg_base, regs);
-> +               /* FIQ */
-> +               serviced += check_interrupt(reg_base + 0x100, regs);
-
-Should you now handle FIQs first at all times?
-
-> +       } while (serviced > 0);
-> +}
-> +
-> +static void classic_irq_ack(struct irq_data *d)
-> +{
-> +       readl(IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x28));
-> +}
-
-As stated use an ioremap:ed base static local.
-
-(...)
-> +void __init nspire_classic_init_irq(void)
-> +{
-> +       /* No stickies */
-> +       writel(0, IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x204));
-
-0x204???
-
-Use
-
-#define FOO_REGISTER 0x204
-
-to define understandable names for all of this so we can read the code.
-
-Usually this means the comments are no longer needed because the
-code becomes self-evident.
-
-> +
-> +       /* Disable all interrupts */
-> +       writel(~0, IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0xc));
-> +       writel(~0, IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x10c));
-> +
-> +       /* Set all priorities to 0 */
-> +       memset_io(IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x300), 0, 0x7f);
-> +
-> +       /* Accept interrupts of all priorities */
-> +       writel(0xf, IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x2c));
-> +       writel(0xf, IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x12c));
-> +
-> +       /* Clear existing interrupts */
-> +       readl(IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x28));
-> +       readl(IOMEM(NSPIRE_INTERRUPT_VIRT_BASE + 0x128));
-
-Dito, everywhere.
-
-In the end looking like this:
-
-readl(base + NSPIRE_IRQ_FOO); or something.
-
-No IOMEM, etc.
-
-(...)
-> +/* Timer */
-
-Hm, looks like you just forgot to select GENERIC_CLOCKEVENTS?
-
-Strange if it works anyway :-/
-
-We are comtemplating putting these things into drivers/timer,
-nothing decided yet.
-
-> +static int classic_timer_set_event(unsigned long delta,
-> +                               struct clock_event_device *dev)
-> +{
-> +       unsigned long flags;
-> +
-> +       local_irq_save(flags);
-> +       writel(delta, NSPIRE_APB_VIRTIO(NSPIRE_APB_TIMER2));
-> +       writel(1, NSPIRE_APB_VIRTIO(NSPIRE_APB_TIMER2 + 0x8));
-> +       writel(0, NSPIRE_APB_VIRTIO(NSPIRE_APB_TIMER2 + 0x18));
-
-Remove magic numbers, define register names.
-
-Remap a base, get rid of NSPIRE_APB_VIRTIO().
-
-> +       local_irq_restore(flags);
-> +
-> +       return 0;
-> +}
-> +static void classic_timer_set_mode(enum clock_event_mode mode,
-> +                                struct clock_event_device *evt)
-> +{
-> +       evt->mode = mode;
-> +}
-> +
-> +static struct clock_event_device nspire_clkevt = {
-> +       .name           = "clockevent",
-> +       .features       = CLOCK_EVT_FEAT_ONESHOT,
-> +       .shift          = 32,
-> +       .rating         = 400,
-> +       .set_next_event = classic_timer_set_event,
-> +       .set_mode       = classic_timer_set_mode,
-> +       .cpumask                = cpu_all_mask,
-> +};
-> +
-> +static irqreturn_t classic_timer_interrupt(int irq, void *dev_id)
-> +{
-> +       struct clock_event_device *c = dev_id;
-> +
-> +       /* Acknowledge */
-> +       writel((1<<0), NSPIRE_APB_VIRTIO(NSPIRE_APB_MISC + 0x20));
-
-writel((1<<0) isn't very helpful.
-
-#include <linux/bitops.h>
-
-#define NSPIRE_TIMER_ACK_REG 0x20
-#define NSPIRE_TIMER_ACK BIT(0)
-
-writel(NSPIRE_TIMER_ACK, base +  NSPIRE_TIMER_ACK_REG);
-
-Then follow a lot of platform data and devices. These have to be moved
-over to the device tree instead and deleted.
-
-(...)
-> +++ b/arch/arm/mach-nspire/touchpad.c
-> @@ -0,0 +1,30 @@
-> +/*
-> + *     linux/arch/arm/mach-nspire/touchpad.c
-> + *
-> + *     Copyright (C) 2012 Fabian Vogt <fabian@ritter-vogt.de>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2, as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#include <linux/i2c.h>
-> +
-> +#include "touchpad.h"
-> +
-> +#if defined(CONFIG_MOUSE_SYNAPTICS_I2C) || \
-> +       defined(CONFIG_MOUSE_SYNAPTICS_I2C_MODULE)
-> +static struct i2c_board_info synaptics_i2c = {
-> +       I2C_BOARD_INFO("synaptics_i2c", 0x20),
-> +       .irq    = 0,
-> +};
-> +
-> +void __init nspire_touchpad_init()
-> +{
-> +       i2c_register_board_info(0, &synaptics_i2c, 1);
-> +}
-
-
-Not only should this be done from devicetree, but exactly which
-synaptics driver are you using with this?
-
-I don't think there is one in the kernel tree yet.
-
-> diff --git a/arch/arm/tools/mach-types b/arch/arm/tools/mach-types
-> index 831e1fd..e76c16b 100644
-> --- a/arch/arm/tools/mach-types
-> +++ b/arch/arm/tools/mach-types
-> @@ -1204,3 +1204,6 @@ baileys                   MACH_BAILEYS            BAILEYS                 4169
->  familybox              MACH_FAMILYBOX          FAMILYBOX               4170
->  ensemble_mx35          MACH_ENSEMBLE_MX35      ENSEMBLE_MX35           4171
->  sc_sps_1               MACH_SC_SPS_1           SC_SPS_1                4172
-> +nspireclp              MACH_NSPIRECLP          NSPIRECLP               4441
-> +nspiretp               MACH_NSPIRETP           NSPIRETP                4442
-> +nspirecx               MACH_NSPIRECX           NSPIRECX                4443
-
-We don't patch this file, Russell updates it from the machine registry on
-his webpage.
-
-And with device tree it goes irrelevant.
-
-Yours,
-Linus Walleij
