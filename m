@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935536Ab3DITJW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 15:09:22 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:37036 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761628Ab3DITJV (ORCPT
+	id S935782Ab3DITLx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 15:11:53 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:59289 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935459Ab3DITLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 15:09:21 -0400
-Date: Tue, 9 Apr 2013 20:09:16 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com
-Subject: Re: [PATCH 5/8] dmaengine: ste_dma40: Ensure src and dst registers
- are configured correctly
-Message-ID: <20130409190916.GF25316@gmail.com>
-References: <1365532783-27425-1-git-send-email-lee.jones@linaro.org>
- <1365532783-27425-5-git-send-email-lee.jones@linaro.org>
- <201304092057.29684.arnd@arndb.de>
+	Tue, 9 Apr 2013 15:11:51 -0400
+Date: Tue, 9 Apr 2013 12:11:45 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Lennart Poettering <lpoetter@redhat.com>
+Cc: Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        jpoimboe@redhat.com, dhaval.giani@gmail.com, workman-devel@redhat.com
+Subject: Re: cgroup: status-quo and userland efforts
+Message-ID: <20130409191145.GI6186@mtj.dyndns.org>
+References: <20130406012159.GA17159@mtj.dyndns.org>
+ <5162CA21.4060108@parallels.com>
+ <51635371.7070104@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201304092057.29684.arnd@arndb.de>
+In-Reply-To: <51635371.7070104@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 09 Apr 2013, Arnd Bergmann wrote:
+Hello,
 
-> On Tuesday 09 April 2013, Lee Jones wrote:
-> > Confusingly d40_log_cfg() is used to set up the logical channel
-> > configuration registers, but d40_phy_cfg() is used to configure
-> > physical and logical registers, so it should be called in both
-> > cases. It is the function call's final attribute which determines
-> > whether it's a physical or logical channel, not whether the
-> > function is called or not.
-> 
-> So how did it ever work? Your description sounds like it was
-> broken all along, but I would assume that someone tested the code.
+On Tue, Apr 09, 2013 at 01:32:01AM +0200, Lennart Poettering wrote:
+> The other big thing we want from the systemd side is saner
+> notifications when cgroups run empty. i.e. currently we don't get
+> these at all in containers (since the agent can be only installed
+> once, for the host). And the way we get this is awful, via
+> kernel-spawned processes. I am looking for a way how I can establish
+> a watch on a certain subtree (not just one directory) and get simple
+> notifications in a race-free whenever a cgroup runs empty.
 
->From what I can see, not.
+Oh yeah, it's horrifying.  There was something going on a while ago
+but I couldn't get hold of Eric Paris.  We probably should resurrect
+that patch.
 
-My best guess is that the 'test' was to see if the configuration
-changed using the debug print at the end of the function. I don't see
-how else the configuration can be written to hardware.
+As for delegating to namespaces, I'm not exactly sure what to do.  At
+least for now, it could be an acceptable trade-off to delegate the
+subdirectory with some limits on the number of cgroups / depth of
+hierarchy / whatever.  That said, I'm not really fond of the idea.  It
+isn't likely to work seamlessly.  The root cgroup is special anyway
+and I don't really like the idea of putting NS related stuff directly
+into cgroupfs.
+
+Thanks.
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+tejun
