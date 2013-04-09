@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935500Ab3DISnp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 14:43:45 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48942 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761628Ab3DISno (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 14:43:44 -0400
-Date: Tue, 9 Apr 2013 20:43:34 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Hansen <dave@sr71.net>
-cc: Borislav Petkov <bp@alien8.de>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        dhillf@gmail.com, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] kthread: Prevent unpark race which puts threads on the
- wrong cpu
-In-Reply-To: <516439DF.3050901@sr71.net>
-Message-ID: <alpine.LFD.2.02.1304092036431.21884@ionos>
-References: <515F457E.5050505@sr71.net> <515FCAC6.8090806@linux.vnet.ibm.com> <alpine.LFD.2.02.1304061019000.21884@ionos> <alpine.LFD.2.02.1304071119100.21884@ionos> <20130407095025.GA31307@pd.tnic> <alpine.LFD.2.02.1304081122040.21884@ionos>
- <20130408115553.GA4395@pd.tnic> <alpine.LFD.2.02.1304081415570.21884@ionos> <alpine.LFD.2.02.1304091635430.21884@ionos> <516439DF.3050901@sr71.net>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S935549Ab3DISoH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 14:44:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50915 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934733Ab3DISoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 14:44:05 -0400
+Message-ID: <51646054.3090509@zytor.com>
+Date: Tue, 09 Apr 2013 11:39:16 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Kees Cook <keescook@chromium.org>
+CC: "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Alex Shi <alex.shi@intel.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
+        Eric Northup <digitaleric@google.com>
+Subject: Re: [kernel-hardening] Re: [PATCH] x86: make IDT read-only
+References: <20130408224328.GA17641@www.outflux.net> <51634935.9010905@zytor.com> <alpine.LFD.2.02.1304091122490.21884@ionos> <CAGXu5jKo=11RrsvctcZjP6dusAj659O_GsaA2J2qFq-6mOeRwQ@mail.gmail.com> <51645D6F.7070705@zytor.com> <CAGXu5jKkHKw8efdPOmt-Zi99m+uMKVGKpc_DC72_ztwxnRbRRQ@mail.gmail.com>
+In-Reply-To: <CAGXu5jKkHKw8efdPOmt-Zi99m+uMKVGKpc_DC72_ztwxnRbRRQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
-
-On Tue, 9 Apr 2013, Dave Hansen wrote:
-
-> Hey Thomas,
+On 04/09/2013 11:31 AM, Kees Cook wrote:
+>>> ...
+>>> 0xffff880001e00000-0xffff88001fe00000         480M     RW         PSE GLB NX pmd
+>>>
+>>
+>> That is the 1:1 memory map area...
 > 
-> I don't think the patch helped my case.  Looks like the same BUG_ON().
+> Meaning what?
 > 
-> I accidentally booted with possible_cpus=10 instead of 160.  I wasn't
-> able to trigger this in that case, even repeatedly on/offlining them.
-> But, once I booted with possible_cpus=160, it triggered in a jiffy.
+> -Kees
+> 
 
-Darn. We should have merged Paul McKenneys NR_CPUS=0 patch last year
-and we would have avoided the whole shebang.
- 
-> > [  161.551788] smpboot_thread_fn():
-> > [  161.551807] td->cpu: 132
-> > [  161.551808] smp_processor_id(): 121
-> > [  161.551811] comm: migration/%u
-> > [  161.551840] ------------[ cut here ]------------
-> > [  161.551939] kernel BUG at kernel/smpboot.c:149!
+That's the area in which we just map 1:1 to memory.  Anything allocated
+with e.g. kmalloc() ends up with those addresses.
 
-Any chance, that you get a trace for that?
+	-hpa
 
-Thanks,
 
-	tglx
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
