@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935782Ab3DITLx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 15:11:53 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:59289 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935459Ab3DITLv (ORCPT
+	id S935816Ab3DITNE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 15:13:04 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:39815 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935459Ab3DITNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 15:11:51 -0400
-Date: Tue, 9 Apr 2013 12:11:45 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lennart Poettering <lpoetter@redhat.com>
-Cc: Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        jpoimboe@redhat.com, dhaval.giani@gmail.com, workman-devel@redhat.com
-Subject: Re: cgroup: status-quo and userland efforts
-Message-ID: <20130409191145.GI6186@mtj.dyndns.org>
-References: <20130406012159.GA17159@mtj.dyndns.org>
- <5162CA21.4060108@parallels.com>
- <51635371.7070104@redhat.com>
+	Tue, 9 Apr 2013 15:13:02 -0400
+Date: Tue, 9 Apr 2013 20:12:56 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Harvey Harrison <harvey.harrison@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>,
+        arnd@arndb.de, linus.walleij@stericsson.com
+Subject: Re: [PATCH 7/8] dmaengine: ste_dma40: Use the BIT macro to replace
+ ugly '(1 << x)'s
+Message-ID: <20130409191256.GG25316@gmail.com>
+References: <1365532783-27425-1-git-send-email-lee.jones@linaro.org>
+ <1365532783-27425-7-git-send-email-lee.jones@linaro.org>
+ <CAHLZz133b6kydVwh0_Cn2yg-Q_MeUF+Z-7+CMY7TkB7KK2ssAQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <51635371.7070104@redhat.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAHLZz133b6kydVwh0_Cn2yg-Q_MeUF+Z-7+CMY7TkB7KK2ssAQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, 09 Apr 2013, Harvey Harrison wrote:
 
-On Tue, Apr 09, 2013 at 01:32:01AM +0200, Lennart Poettering wrote:
-> The other big thing we want from the systemd side is saner
-> notifications when cgroups run empty. i.e. currently we don't get
-> these at all in containers (since the agent can be only installed
-> once, for the host). And the way we get this is awful, via
-> kernel-spawned processes. I am looking for a way how I can establish
-> a watch on a certain subtree (not just one directory) and get simple
-> notifications in a race-free whenever a cgroup runs empty.
+> On Tue, Apr 9, 2013 at 11:39 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> >
+> > The aim is to make the code that little more readable.
+> >
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> 
+> >
+> >  #define MAX(a, b) (((a) < (b)) ? (b) : (a))
+> 
+> Not part of your patch, but probably a good idea to switch to the
+> generic MAX macro, this
+> one is evaluating its args twice.
 
-Oh yeah, it's horrifying.  There was something going on a while ago
-but I couldn't get hold of Eric Paris.  We probably should resurrect
-that patch.
-
-As for delegating to namespaces, I'm not exactly sure what to do.  At
-least for now, it could be an acceptable trade-off to delegate the
-subdirectory with some limits on the number of cgroups / depth of
-hierarchy / whatever.  That said, I'm not really fond of the idea.  It
-isn't likely to work seamlessly.  The root cgroup is special anyway
-and I don't really like the idea of putting NS related stuff directly
-into cgroupfs.
-
-Thanks.
+Sure, thanks for the heads-up.
 
 -- 
-tejun
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
