@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936574Ab3DIJVo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 05:21:44 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:49880 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761587Ab3DIJVk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 05:21:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: build warning after merge of the final tree (probably arm-soc tree related)
-Date: Tue, 9 Apr 2013 11:21:24 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20130409190900.97dcf3a70a9c0ad727b8bc4b@canb.auug.org.au>
-In-Reply-To: <20130409190900.97dcf3a70a9c0ad727b8bc4b@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304091121.24372.arnd@arndb.de>
-X-Provags-ID: V02:K0:ffc4SjXk9IKJsGto9ZCEiWq0BI4MDzni2LHKHibn1fn
- iY1aiwEhu5kZh7Xe2jpOxCCurQ5TSnKOW4/HUS64ESEN4o+/PF
- bueUL+MYgT/N2U2N/yZD7puerNCMqOT+0I2H3O1/BJoaniycm2
- 6aldchByzdRba+zbUtJFWVsha8neYgxi106w7C+afj4dTVCleU
- HRfelONNPb3A42WIt7sN3LPghkD3d0pYzd/CuhPURPHZYWEHal
- M5sB/hxuwABfK5GGknKKSpcXCXHHm89I8I1wuDlx5y/Da/vgr3
- ZuKzS/BEHMMu4qhCGh1LJ6wt32rqXhAmTH+4lm7A7Q7YZ7YgPB
- kvHNOA9I6ZOPGA5i9jdk=
+	id S936596Ab3DIJWe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 05:22:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34023 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965053Ab3DIJPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 05:15:04 -0400
+From: Lukas Czerner <lczerner@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
+Subject: [PATCH v3 12/18] Revert "ext4: fix fsx truncate failure"
+Date: Tue,  9 Apr 2013 11:14:21 +0200
+Message-Id: <1365498867-27782-13-git-send-email-lczerner@redhat.com>
+In-Reply-To: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
+References: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 April 2013, Stephen Rothwell wrote:
-> After merging the final tree, today's linux-next build (arm defconfig)
-> produced these warnings:
-> 
-> arch/arm/mach-cns3xxx/Kconfig:2:warning: choice value used outside its choice group
-> arch/arm/mach-bcm2835/Kconfig:2:warning: choice value used outside its choice group
-> arch/arm/Kconfig:287:error: recursive dependency detected!
-> arch/arm/Kconfig:287:   choice <choice> contains symbol ARCH_CNS3XXX
-> arch/arm/Kconfig:366:   symbol ARCH_CNS3XXX depends on ARCH_MULTI_V6
-> arch/arm/Kconfig:933:   symbol ARCH_MULTI_V6 depends on ARCH_MULTIPLATFORM
-> arch/arm/Kconfig:292:   symbol ARCH_MULTIPLATFORM is part of choice <choice>
+This reverts commit 189e868fa8fdca702eb9db9d8afc46b5cb9144c9.
 
-Thanks for the notification, I think git rerere picked up a wrong conflict resolution
-again that I did earlier. I'll fix it when I do the next pulls today.
+This commit reintroduces the use of ext4_block_truncate_page() in ext4
+truncate operation instead of ext4_discard_partial_page_buffers().
 
-	Arnd
+The statement in the commit description that the truncate operation only
+zero block unaligned portion of the last page is not exactly right,
+since truncate_pagecache_range() also zeroes and invalidate the unaligned
+portion of the page. Then there is no need to zero and unmap it once more
+and ext4_block_truncate_page() was doing the right job, although we
+still need to update the buffer head containing the last block, which is
+exactly what ext4_block_truncate_page() is doing.
+
+Moreover the problem described in the commit is fixed more properly with
+commit
+
+15291164b22a357cb211b618adfef4fa82fc0de3
+	jbd2: clear BH_Delay & BH_Unwritten in journal_unmap_buffer
+
+This was tested on ppc64 machine with block size of 1024 bytes without
+any problems.
+
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+---
+ fs/ext4/inode.c |   11 ++---------
+ 1 files changed, 2 insertions(+), 9 deletions(-)
+
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 5729d21..d58e13c 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3920,7 +3920,6 @@ void ext4_truncate(struct inode *inode)
+ 	unsigned int credits;
+ 	handle_t *handle;
+ 	struct address_space *mapping = inode->i_mapping;
+-	loff_t page_len;
+ 
+ 	/*
+ 	 * There is a possibility that we're either freeing the inode
+@@ -3964,14 +3963,8 @@ void ext4_truncate(struct inode *inode)
+ 		return;
+ 	}
+ 
+-	if (inode->i_size % PAGE_CACHE_SIZE != 0) {
+-		page_len = PAGE_CACHE_SIZE -
+-			(inode->i_size & (PAGE_CACHE_SIZE - 1));
+-
+-		if (ext4_discard_partial_page_buffers(handle,
+-				mapping, inode->i_size, page_len, 0))
+-			goto out_stop;
+-	}
++	if (inode->i_size & (inode->i_sb->s_blocksize - 1))
++		ext4_block_truncate_page(handle, mapping, inode->i_size);
+ 
+ 	/*
+ 	 * We add the inode to the orphan list, so that if this
+-- 
+1.7.7.6
+
