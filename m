@@ -1,37 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937065Ab3DIJfx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 05:35:53 -0400
-Received: from sauhun.de ([89.238.76.85]:60340 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932892Ab3DIJft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 05:35:49 -0400
-Date: Tue, 9 Apr 2013 11:35:45 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Sergey Gerasimov <Sergey.Gerasimov@astrosoft-development.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] The AT24 driver only uses page size of 1 byte if no
- platform data is provided to the probe function. When this eeprom is
- detected via open firmware tree in powerpc architecture the correct chip
- type is given to the probe function. So the driver can extract the page size
- for optimal performance out of this chip type.
-Message-ID: <20130409093545.GG3624@the-dreams.de>
-References: <1363614733-1179-1-git-send-email-Sergey.Gerasimov@astrosoft-development.com>
+	id S937087Ab3DIJgP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 05:36:15 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:53471 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932892Ab3DIJgN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 05:36:13 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 4/5] dmaengine: ste_dma40: Do not configure channels during an channel allocation
+Date: Tue, 9 Apr 2013 11:36:09 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>
+References: <1365434591-21569-1-git-send-email-lee.jones@linaro.org> <1365434591-21569-4-git-send-email-lee.jones@linaro.org> <20130409071154.GH3084@gmail.com>
+In-Reply-To: <20130409071154.GH3084@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1363614733-1179-1-git-send-email-Sergey.Gerasimov@astrosoft-development.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304091136.09629.arnd@arndb.de>
+X-Provags-ID: V02:K0:5WnAxvUSyFnlxBcSgzNki2hyZy/tN2a40uMKbiRVCpD
+ RX0hqxoIwYWloYbZdMIZsisl/2b6J2tVrGZ6ovYuuxolgoCHK2
+ OTzLdSCLpKpHMfH5d4qLgqPcryDGh88rcvlZs0lznHN3NSyhkz
+ t4NNCMYzlwP0ix+3CeRmXud2z4WS+MTO481NkwOmlW+GE+6/vp
+ N0CX2FRuakzwGuTu3a+iSiNPgIcvAwfyQAQ3Yvsdp2i8ToMHHk
+ fqIuIiI/Y0EGp+XO4mLkUGIwHyrCgfBOoHTeEFNRDoIguvpGVS
+ fX4IagYvUsOgXFilznDaUj9Lk8cqNq92opgXj4hZB9u6SZ1JpU
+ BS+MoXARYQjKFeZaolaQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 18, 2013 at 05:52:13PM +0400, Sergey Gerasimov wrote:
-> Signed-off-by: Sergey Gerasimov <Sergey.Gerasimov@astrosoft-development.com>
+On Tuesday 09 April 2013, Lee Jones wrote:
+> According to the DMA documentation allocating a channel and configuring
+> it are two separate actions. By removing the configuration code from the
+> channel allocation path we lighten the burden on the information required to
+> successfully allocate a channel.
 
-NAK. Page size may differ across vendors, so we can't hardcode values in
-that table. There is a "pagesize" property for devicetree.
+Did you send out the first version again? The text is the same as before.
 
-And please make sure you don't write the whole description in the
-subject.
-
+	Arnd
