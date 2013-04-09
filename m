@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936552Ab3DIKtv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 06:49:51 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61991 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935298Ab3DIKtu (ORCPT
+	id S936687Ab3DIKux (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 06:50:53 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:20347 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934484Ab3DIKuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 06:49:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [GIT PULL] at91: DT changes for 3.10 #3
-Date: Tue, 9 Apr 2013 12:49:38 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        dgilbert@interlog.com
-References: <20130402184947.GA8015@quad.lixom.net> <1365094799-16940-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1365094799-16940-1-git-send-email-nicolas.ferre@atmel.com>
+	Tue, 9 Apr 2013 06:50:52 -0400
+Message-ID: <5163F29D.6080605@oracle.com>
+Date: Tue, 09 Apr 2013 18:51:09 +0800
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: xen-devel@lists.xensource.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Feng Jin <joe.jin@oracle.com>, ben@guthro.net
+Subject: [PATCH] xen: minor fix in apic ipi interface func
+Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304091249.38903.arnd@arndb.de>
-X-Provags-ID: V02:K0:wBqL7yr7dxzxS/gxRGtFN74NmKWdGpFWQ1uIaBaaVkl
- 2mNhVnBbhP1BLkatJgfZXfn0Amm0H/vftYvavdR5zLz7MKeVvr
- rGNBCKtXcBsPCvniQ8zq5mrKq66Qedhb5Uf40Tn+hwxCfJLDP3
- PfXHtkJ5g0QucjWTwyLTRWDclubmyuCpRzhesKOuLfvEiGcvix
- mgGiy10+VCoH7zNQFaCh/A9M0ihPYkCfi3m4AmJusiqnyst5l8
- KULhWky8eGUpugadIqFiKnQQJVEmPPKlc+o2xgcTpF9V35oVQN
- N4s7NNL3ZihXcoIq9mfPmUIKFIo2m+f/KtNzu7YH2Jw7FxOtxo
- FtzFxWmP3jhxdmn/XTGs=
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 04 April 2013, Nicolas Ferre wrote:
-> Here is the refreshed pull-request for AT91 that is dedicated to Device Tree
-> modifications. It is stacked on the material that you already have
-> for 3.10 in your arm-soc/at91/dt branch.
-> Following our discussion with Arnd, I added the non-urgent patches that I
-> already proposed too late for 3.9. I also included the moving of macb node
-> and kept the original patch.
-> 
-> As Olof asked, I renamed the Aria board dts file: at91-ariag25.dts and placed
-> it in the Makefile. I also took the advantage of this delay to stack two more
-> DT related patches.
-> 
+xen_send_IPI_mask_allbutself uses native vector as input other than xen_vector.
 
-Pulled into next/dt, thanks!
+xen_send_IPI_one need to be called to pass xen_vector in xen_send_IPI_mask_allbutself.
 
-	Arnd
+Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+---
+ arch/x86/xen/smp.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 09ea61d..bf27868 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -565,6 +565,10 @@ void xen_send_IPI_mask_allbutself(const struct cpumask *mask,
+ {
+ 	unsigned cpu;
+ 	unsigned int this_cpu = smp_processor_id();
++	int xen_vector = xen_map_vector(vector);
++
++	if (xen_vector < 0)
++		return;
+ 
+ 	if (!(num_online_cpus() > 1))
+ 		return;
+@@ -573,16 +577,13 @@ void xen_send_IPI_mask_allbutself(const struct cpumask *mask,
+ 		if (this_cpu == cpu)
+ 			continue;
+ 
+-		xen_smp_send_call_function_single_ipi(cpu);
++		xen_send_IPI_one(cpu, xen_vector);
+ 	}
+ }
+ 
+ void xen_send_IPI_allbutself(int vector)
+ {
+-	int xen_vector = xen_map_vector(vector);
+-
+-	if (xen_vector >= 0)
+-		xen_send_IPI_mask_allbutself(cpu_online_mask, xen_vector);
++	xen_send_IPI_mask_allbutself(cpu_online_mask, vector);
+ }
+ 
+ static irqreturn_t xen_call_function_interrupt(int irq, void *dev_id)
+-- 
+1.7.3
+
