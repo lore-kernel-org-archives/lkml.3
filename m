@@ -1,168 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936590Ab3DILnQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 07:43:16 -0400
-Received: from mga11.intel.com ([192.55.52.93]:61343 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935438Ab3DILnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 07:43:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,438,1363158000"; 
-   d="scan'208";a="316536222"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-acpi@vger.kernel.org
-Subject: [PATCH v2.1 5/5] ACPI / LPSS: add support of shared clock
-Date: Tue,  9 Apr 2013 14:42:53 +0300
-Message-Id: <1365507773-12395-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
-In-Reply-To: <47108562.YbdrT92xjE@vostro.rjw.lan>
-References: <47108562.YbdrT92xjE@vostro.rjw.lan>
+	id S936691Ab3DILpu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 07:45:50 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:42194 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1762364Ab3DILpt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 07:45:49 -0400
+Date: Tue, 9 Apr 2013 13:45:44 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>
+Subject: Re: mfd: Core driver for Winbond chips
+Message-ID: <20130409114544.GD7867@spo001.leaseweb.com>
+References: <1362957300-18223-1-git-send-email-linux@roeck-us.net> <20130322205258.GE7867@spo001.leaseweb.com> <20130323002810.GA26245@roeck-us.net> <20130323174914.GA21563@roeck-us.net> <20130409093700.GM24058@zurbaran> <20130409113639.GA8731@roeck-us.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130409113639.GA8731@roeck-us.net>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Hi Guenter,
 
-The DMA controller in Lynxpoint is using the LPSS root clock as a functional
-clock to work properly. Proposed patch adds support of the shared clock. It
-also avoids hardcoding the name of the DMA device in clk-lpt.c and the name of
-the root clock in acpi_lpss.c.
+> I was waiting for feedback from Wim, who submitted a similar driver, about his
+> thoughts. Key question is how to reserve access to the shared resource - either
+> through an exported function in the mfd driver requesting a mutex, or through
+> request_muxed_region(). I am going back and forth myself on which one is better.
+> 
+> Maybe it does not really matter, but using a function has the slight advantage
+> that it auto-loads and locks the mfd module while one of its client modules
+> is loaded. If we use request_muxed_region, that is not the case and the client
+> module must use another means to request and lock the mfd module.
+> 
+> Maybe you have an opinion ?
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/acpi_lpss.c               | 26 ++++++++++++++++++++++----
- drivers/clk/x86/clk-lpt.c              | 15 +++++++++++----
- include/linux/platform_data/clk-lpss.h |  5 +++++
- 3 files changed, 38 insertions(+), 8 deletions(-)
+This is indeed the main issue that has to be solved. Both options will work.
+I like the auto-load and lock, but I need to look at the request_muxed_region
+code again first before I can see what the possible drawbacks are :-).
 
-diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-index b1c9542..652fd5c 100644
---- a/drivers/acpi/acpi_lpss.c
-+++ b/drivers/acpi/acpi_lpss.c
-@@ -35,11 +35,16 @@ ACPI_MODULE_NAME("acpi_lpss");
- 
- struct lpss_device_desc {
- 	bool clk_required;
--	const char *clk_parent;
-+	const char *clkdev_name;
- 	bool ltr_required;
- 	unsigned int prv_offset;
- };
- 
-+static struct lpss_device_desc lpss_dma_desc = {
-+	.clk_required = true,
-+	.clkdev_name = "hclk",
-+};
-+
- struct lpss_private_data {
- 	void __iomem *mmio_base;
- 	resource_size_t mmio_size;
-@@ -49,7 +54,6 @@ struct lpss_private_data {
- 
- static struct lpss_device_desc lpt_dev_desc = {
- 	.clk_required = true,
--	.clk_parent = "lpss_clk",
- 	.prv_offset = 0x800,
- 	.ltr_required = true,
- };
-@@ -60,6 +64,9 @@ static struct lpss_device_desc lpt_sdio_dev_desc = {
- };
- 
- static const struct acpi_device_id acpi_lpss_device_ids[] = {
-+	/* Generic LPSS devices */
-+	{ "INTL9C60", (unsigned long)&lpss_dma_desc },
-+
- 	/* Lynxpoint LPSS devices */
- 	{ "INT33C0", (unsigned long)&lpt_dev_desc },
- 	{ "INT33C1", (unsigned long)&lpt_dev_desc },
-@@ -91,16 +98,27 @@ static int register_device_clock(struct acpi_device *adev,
- 				 struct lpss_private_data *pdata)
- {
- 	const struct lpss_device_desc *dev_desc = pdata->dev_desc;
-+	struct lpss_clk_data *clk_data;
- 
- 	if (!lpss_clk_dev)
- 		lpt_register_clock_device();
- 
--	if (!dev_desc->clk_parent || !pdata->mmio_base
-+	clk_data = platform_get_drvdata(lpss_clk_dev);
-+	if (!clk_data)
-+		return -ENODEV;
-+
-+	if (dev_desc->clkdev_name) {
-+		clk_register_clkdev(clk_data->clk, dev_desc->clkdev_name,
-+				    dev_name(&adev->dev));
-+		return 0;
-+	}
-+
-+	if (!pdata->mmio_base
- 	    || pdata->mmio_size < dev_desc->prv_offset + LPSS_CLK_SIZE)
- 		return -ENODATA;
- 
- 	pdata->clk = clk_register_gate(NULL, dev_name(&adev->dev),
--				       dev_desc->clk_parent, 0,
-+				       clk_data->name, 0,
- 				       pdata->mmio_base + dev_desc->prv_offset,
- 				       0, 0, NULL);
- 	if (IS_ERR(pdata->clk))
-diff --git a/drivers/clk/x86/clk-lpt.c b/drivers/clk/x86/clk-lpt.c
-index 5cf4f46..e70fae3f 100644
---- a/drivers/clk/x86/clk-lpt.c
-+++ b/drivers/clk/x86/clk-lpt.c
-@@ -15,22 +15,29 @@
- #include <linux/clk-provider.h>
- #include <linux/err.h>
- #include <linux/module.h>
-+#include <linux/platform_data/clk-lpss.h>
- #include <linux/platform_device.h>
- 
- #define PRV_CLOCK_PARAMS 0x800
- 
- static int lpt_clk_probe(struct platform_device *pdev)
- {
-+	struct lpss_clk_data *drvdata;
- 	struct clk *clk;
- 
-+	drvdata = devm_kmalloc(&pdev->dev, sizeof(*drvdata), GFP_KERNEL);
-+	if (!drvdata)
-+		return -ENOMEM;
-+
- 	/* LPSS free running clock */
--	clk = clk_register_fixed_rate(&pdev->dev, "lpss_clk", NULL, CLK_IS_ROOT,
--				      100000000);
-+	drvdata->name = "lpss_clk";
-+	clk = clk_register_fixed_rate(&pdev->dev, drvdata->name, NULL,
-+				      CLK_IS_ROOT, 100000000);
- 	if (IS_ERR(clk))
- 		return PTR_ERR(clk);
- 
--	/* Shared DMA clock */
--	clk_register_clkdev(clk, "hclk", "INTL9C60.0.auto");
-+	drvdata->clk = clk;
-+	platform_set_drvdata(pdev, drvdata);
- 	return 0;
- }
- 
-diff --git a/include/linux/platform_data/clk-lpss.h b/include/linux/platform_data/clk-lpss.h
-index 528e73c..2390199 100644
---- a/include/linux/platform_data/clk-lpss.h
-+++ b/include/linux/platform_data/clk-lpss.h
-@@ -13,6 +13,11 @@
- #ifndef __CLK_LPSS_H
- #define __CLK_LPSS_H
- 
-+struct lpss_clk_data {
-+	const char *name;
-+	struct clk *clk;
-+};
-+
- extern int lpt_clk_init(void);
- 
- #endif /* __CLK_LPSS_H */
--- 
-1.8.2.rc0.22.gb3600c3
+Kind regards,
+Wim.
 
