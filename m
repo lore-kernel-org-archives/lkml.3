@@ -1,231 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936297Ab3DIUOi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 16:14:38 -0400
-Received: from 8bytes.org ([85.214.48.195]:36414 "EHLO mail.8bytes.org"
+	id S936273Ab3DIUOh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 16:14:37 -0400
+Received: from 8bytes.org ([85.214.48.195]:36429 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936073Ab3DIUNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S936175Ab3DIUNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 9 Apr 2013 16:13:34 -0400
 From: Joerg Roedel <joro@8bytes.org>
 To: iommu@lists.linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-Subject: [PATCH 2/9] iommu/amd: Use AMD specific data structure for irq remapping
-Date: Tue,  9 Apr 2013 22:12:57 +0200
-Message-Id: <1365538384-12426-3-git-send-email-joro@8bytes.org>
+Subject: [PATCH 5/9] iommu/amd: Extend IVRS special device data structure
+Date: Tue,  9 Apr 2013 22:13:00 +0200
+Message-Id: <1365538384-12426-6-git-send-email-joro@8bytes.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365538384-12426-1-git-send-email-joro@8bytes.org>
 References: <1365538384-12426-1-git-send-email-joro@8bytes.org>
 X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Apr  9 22:13:32 2013
+X-DSPAM-Processed: Tue Apr  9 22:13:33 2013
 X-DSPAM-Confidence: 0.9995
 X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5164766c23671615017278
+X-DSPAM-Signature: 5164766d23678395620859
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For compatibility reasons the irq remapping code for the AMD
-IOMMU used the same per-irq data structure as the Intel
-implementation. Now that support for the AMD specific data
-structure is upstream we can use this one instead.
+This patch extends the devid_map data structure to allow
+ioapic and hpet entries in ivrs to be overridden on the
+kernel command line.
 
 Signed-off-by: Joerg Roedel <joro@8bytes.org>
 ---
- drivers/iommu/amd_iommu.c |   54 ++++++++++++++++++++++-----------------------
- 1 file changed, 27 insertions(+), 27 deletions(-)
+ drivers/iommu/amd_iommu_init.c  |   28 +++++++++++++++++++---------
+ drivers/iommu/amd_iommu_types.h |    1 +
+ 2 files changed, 20 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 3b2aff0..72fa570 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -3987,7 +3987,7 @@ static int alloc_irq_index(struct irq_cfg *cfg, u16 devid, int count)
- 			c = 0;
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index 6dc8d8d..3a210f0 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -708,20 +708,30 @@ static int __init add_special_device(u8 type, u8 id, u16 devid, bool cmd_line)
+ 	struct devid_map *entry;
+ 	struct list_head *list;
  
- 		if (c == count)	{
--			struct irq_2_iommu *irte_info;
-+			struct irq_2_irte *irte_info;
- 
- 			for (; c != 0; --c)
- 				table->table[index - c + 1] = IRTE_ALLOCATED;
-@@ -3995,9 +3995,9 @@ static int alloc_irq_index(struct irq_cfg *cfg, u16 devid, int count)
- 			index -= count - 1;
- 
- 			cfg->remapped	      = 1;
--			irte_info             = &cfg->irq_2_iommu;
--			irte_info->sub_handle = devid;
--			irte_info->irte_index = index;
-+			irte_info             = &cfg->irq_2_irte;
-+			irte_info->devid      = devid;
-+			irte_info->index      = index;
- 
- 			goto out;
- 		}
-@@ -4078,7 +4078,7 @@ static int setup_ioapic_entry(int irq, struct IO_APIC_route_entry *entry,
- 			      struct io_apic_irq_attr *attr)
- {
- 	struct irq_remap_table *table;
--	struct irq_2_iommu *irte_info;
-+	struct irq_2_irte *irte_info;
- 	struct irq_cfg *cfg;
- 	union irte irte;
- 	int ioapic_id;
-@@ -4090,7 +4090,7 @@ static int setup_ioapic_entry(int irq, struct IO_APIC_route_entry *entry,
- 	if (!cfg)
+-	if (type != IVHD_SPECIAL_IOAPIC && type != IVHD_SPECIAL_HPET)
++	if (type == IVHD_SPECIAL_IOAPIC)
++		list = &ioapic_map;
++	else if (type == IVHD_SPECIAL_HPET)
++		list = &hpet_map;
++	else
  		return -EINVAL;
  
--	irte_info = &cfg->irq_2_iommu;
-+	irte_info = &cfg->irq_2_irte;
- 	ioapic_id = mpc_ioapic_id(attr->ioapic);
- 	devid     = get_ioapic_devid(ioapic_id);
++	list_for_each_entry(entry, list, list) {
++		if (!(entry->id == id && entry->cmd_line))
++			continue;
++
++		pr_info("AMD-Vi: Command-line override present for %s id %d - ignoring\n",
++			type == IVHD_SPECIAL_IOAPIC ? "IOAPIC" : "HPET", id);
++
++		return 0;
++	}
++
+ 	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
+ 	if (!entry)
+ 		return -ENOMEM;
  
-@@ -4105,8 +4105,8 @@ static int setup_ioapic_entry(int irq, struct IO_APIC_route_entry *entry,
+-	entry->id    = id;
+-	entry->devid = devid;
+-
+-	if (type == IVHD_SPECIAL_IOAPIC)
+-		list = &ioapic_map;
+-	else
+-		list = &hpet_map;
++	entry->id	= id;
++	entry->devid	= devid;
++	entry->cmd_line	= cmd_line;
  
- 	/* Setup IRQ remapping info */
- 	cfg->remapped	      = 1;
--	irte_info->sub_handle = devid;
--	irte_info->irte_index = index;
-+	irte_info->devid      = devid;
-+	irte_info->index      = index;
+ 	list_add_tail(&entry->list, list);
  
- 	/* Setup IRTE for IOMMU */
- 	irte.val		= 0;
-@@ -4140,7 +4140,7 @@ static int setup_ioapic_entry(int irq, struct IO_APIC_route_entry *entry,
- static int set_affinity(struct irq_data *data, const struct cpumask *mask,
- 			bool force)
- {
--	struct irq_2_iommu *irte_info;
-+	struct irq_2_irte *irte_info;
- 	unsigned int dest, irq;
- 	struct irq_cfg *cfg;
- 	union irte irte;
-@@ -4151,12 +4151,12 @@ static int set_affinity(struct irq_data *data, const struct cpumask *mask,
+@@ -929,7 +939,7 @@ static int __init init_iommu_from_acpi(struct amd_iommu *iommu,
+ 				    PCI_FUNC(devid));
  
- 	cfg       = data->chip_data;
- 	irq       = data->irq;
--	irte_info = &cfg->irq_2_iommu;
-+	irte_info = &cfg->irq_2_irte;
- 
- 	if (!cpumask_intersects(mask, cpu_online_mask))
- 		return -EINVAL;
- 
--	if (get_irte(irte_info->sub_handle, irte_info->irte_index, &irte))
-+	if (get_irte(irte_info->devid, irte_info->index, &irte))
- 		return -EBUSY;
- 
- 	if (assign_irq_vector(irq, cfg, mask))
-@@ -4172,7 +4172,7 @@ static int set_affinity(struct irq_data *data, const struct cpumask *mask,
- 	irte.fields.vector      = cfg->vector;
- 	irte.fields.destination = dest;
- 
--	modify_irte(irte_info->sub_handle, irte_info->irte_index, irte);
-+	modify_irte(irte_info->devid, irte_info->index, irte);
- 
- 	if (cfg->move_in_progress)
- 		send_cleanup_vector(cfg);
-@@ -4184,16 +4184,16 @@ static int set_affinity(struct irq_data *data, const struct cpumask *mask,
- 
- static int free_irq(int irq)
- {
--	struct irq_2_iommu *irte_info;
-+	struct irq_2_irte *irte_info;
- 	struct irq_cfg *cfg;
- 
- 	cfg = irq_get_chip_data(irq);
- 	if (!cfg)
- 		return -EINVAL;
- 
--	irte_info = &cfg->irq_2_iommu;
-+	irte_info = &cfg->irq_2_irte;
- 
--	free_irte(irte_info->sub_handle, irte_info->irte_index);
-+	free_irte(irte_info->devid, irte_info->index);
- 
- 	return 0;
- }
-@@ -4202,7 +4202,7 @@ static void compose_msi_msg(struct pci_dev *pdev,
- 			    unsigned int irq, unsigned int dest,
- 			    struct msi_msg *msg, u8 hpet_id)
- {
--	struct irq_2_iommu *irte_info;
-+	struct irq_2_irte *irte_info;
- 	struct irq_cfg *cfg;
- 	union irte irte;
- 
-@@ -4210,7 +4210,7 @@ static void compose_msi_msg(struct pci_dev *pdev,
- 	if (!cfg)
- 		return;
- 
--	irte_info = &cfg->irq_2_iommu;
-+	irte_info = &cfg->irq_2_irte;
- 
- 	irte.val		= 0;
- 	irte.fields.vector	= cfg->vector;
-@@ -4219,11 +4219,11 @@ static void compose_msi_msg(struct pci_dev *pdev,
- 	irte.fields.dm		= apic->irq_dest_mode;
- 	irte.fields.valid	= 1;
- 
--	modify_irte(irte_info->sub_handle, irte_info->irte_index, irte);
-+	modify_irte(irte_info->devid, irte_info->index, irte);
- 
- 	msg->address_hi = MSI_ADDR_BASE_HI;
- 	msg->address_lo = MSI_ADDR_BASE_LO;
--	msg->data       = irte_info->irte_index;
-+	msg->data       = irte_info->index;
- }
- 
- static int msi_alloc_irq(struct pci_dev *pdev, int irq, int nvec)
-@@ -4248,7 +4248,7 @@ static int msi_alloc_irq(struct pci_dev *pdev, int irq, int nvec)
- static int msi_setup_irq(struct pci_dev *pdev, unsigned int irq,
- 			 int index, int offset)
- {
--	struct irq_2_iommu *irte_info;
-+	struct irq_2_irte *irte_info;
- 	struct irq_cfg *cfg;
+ 			set_dev_entry_from_acpi(iommu, devid, e->flags, 0);
+-			ret = add_special_device(type, handle, devid);
++			ret = add_special_device(type, handle, devid, false);
+ 			if (ret)
+ 				return ret;
+ 			break;
+diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
+index e38ab43..f0a85fa 100644
+--- a/drivers/iommu/amd_iommu_types.h
++++ b/drivers/iommu/amd_iommu_types.h
+@@ -591,6 +591,7 @@ struct devid_map {
+ 	struct list_head list;
+ 	u8 id;
  	u16 devid;
++	bool cmd_line;
+ };
  
-@@ -4263,18 +4263,18 @@ static int msi_setup_irq(struct pci_dev *pdev, unsigned int irq,
- 		return 0;
- 
- 	devid		= get_device_id(&pdev->dev);
--	irte_info	= &cfg->irq_2_iommu;
-+	irte_info	= &cfg->irq_2_irte;
- 
- 	cfg->remapped	      = 1;
--	irte_info->sub_handle = devid;
--	irte_info->irte_index = index + offset;
-+	irte_info->devid      = devid;
-+	irte_info->index      = index + offset;
- 
- 	return 0;
- }
- 
- static int setup_hpet_msi(unsigned int irq, unsigned int id)
- {
--	struct irq_2_iommu *irte_info;
-+	struct irq_2_irte *irte_info;
- 	struct irq_cfg *cfg;
- 	int index, devid;
- 
-@@ -4282,7 +4282,7 @@ static int setup_hpet_msi(unsigned int irq, unsigned int id)
- 	if (!cfg)
- 		return -EINVAL;
- 
--	irte_info = &cfg->irq_2_iommu;
-+	irte_info = &cfg->irq_2_irte;
- 	devid     = get_hpet_devid(id);
- 	if (devid < 0)
- 		return devid;
-@@ -4292,8 +4292,8 @@ static int setup_hpet_msi(unsigned int irq, unsigned int id)
- 		return index;
- 
- 	cfg->remapped	      = 1;
--	irte_info->sub_handle = devid;
--	irte_info->irte_index = index;
-+	irte_info->devid      = devid;
-+	irte_info->index      = index;
- 
- 	return 0;
- }
+ /* Map HPET and IOAPIC ids to the devid used by the IOMMU */
 -- 
 1.7.9.5
 
