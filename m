@@ -1,186 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934663Ab3DIEvZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 00:51:25 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:36991 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762769Ab3DIEvX (ORCPT
+	id S1753993Ab3DIFB1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 01:01:27 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:43035 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726Ab3DIFBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 00:51:23 -0400
-Date: Tue, 9 Apr 2013 12:51:13 +0800
-From: Ram Pai <linuxram@us.ibm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 03/27] PCI: pci resource iterator
-Message-ID: <20130409045113.GA7251@ram.oc3035372033.ibm.com>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
- <1363217302-14383-4-git-send-email-yinghai@kernel.org>
- <CAErSpo4VzBZ=fAzPm1yWEs4+09_D1=rysMf6tGgnqpVEKytSzQ@mail.gmail.com>
+	Tue, 9 Apr 2013 01:01:25 -0400
+Message-ID: <5163A097.4050101@linux.vnet.ibm.com>
+Date: Tue, 09 Apr 2013 13:01:11 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo4VzBZ=fAzPm1yWEs4+09_D1=rysMf6tGgnqpVEKytSzQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [RFC PATCH] sched: wake-affine throttle
+References: <514FDF76.2060806@linux.vnet.ibm.com> <1365415249.2609.145.camel@laptop>
+In-Reply-To: <1365415249.2609.145.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040904-5518-0000-0000-00000D553D14
+x-cbid: 13040904-8878-0000-0000-000006A091F9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 04:18:01PM -0600, Bjorn Helgaas wrote:
-> On Wed, Mar 13, 2013 at 5:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> > From: Ram Pai <linuxram@us.ibm.com>
-> >
-> > Currently pci_dev structure holds an array of 17 PCI resources; six base
-> > BARs, one ROM BAR, four BRIDGE BARs, six sriov BARs.  This is wasteful.
-> > A bridge device just needs the 4 bridge resources. A non-bridge device
-> > just needs the six base resources and one ROM resource. The sriov
-> > resources are needed only if the device has SRIOV capability.
-> >
-> > The pci_dev structure needs to be re-organized to avoid unnecessary
-> > bloating.  However too much code outside the pci-bus driver, assumes the
-> > internal details of the pci_dev structure, thus making it hard to
-> > re-organize the datastructure.
-> >
-> > As a first step this patch provides generic methods to access the
-> > resource structure of the pci_dev.
-> >
-> > Finally we can re-organize the resource structure in the pci_dev
-> > structure and correspondingly update the methods.
-> >
-> > -v2: Consolidated iterator interface as per Bjorn's suggestion.
-> > -v3: Add the idx back - Yinghai Lu
-> > -v7: Change to use bitmap for searching - Yinghai Lu
-> > -v8: Fix acpiphp module compiling error that is found by
-> >         Steven Newbury <steve@snewbury.org.uk> - Yinghai Lu
-> >
-> > Signed-off-by: Ram Pai <linuxram@us.ibm.com>
-> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> > ---
-> >  drivers/pci/probe.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/pci.h |   24 ++++++++++++++++++++++++
-> >  2 files changed, 72 insertions(+)
-> >
-> > diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> > index 1df75f7..ac751a6 100644
-> > --- a/drivers/pci/probe.c
-> > +++ b/drivers/pci/probe.c
-> > @@ -123,6 +123,54 @@ int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res)
-> >         return -1;
-> >  }
-> >
-> > +static void __init_res_idx_mask(unsigned long *mask, int flag)
-> > +{
-> > +       bitmap_zero(mask, PCI_NUM_RESOURCES);
-> > +       if (flag & PCI_STD_RES)
-> > +               bitmap_set(mask, PCI_STD_RESOURCES,
-> > +                       PCI_STD_RESOURCE_END - PCI_STD_RESOURCES + 1);
-> > +       if (flag & PCI_ROM_RES)
-> > +               bitmap_set(mask, PCI_ROM_RESOURCE, 1);
-> > +#ifdef CONFIG_PCI_IOV
-> > +       if (flag & PCI_IOV_RES)
-> > +               bitmap_set(mask, PCI_IOV_RESOURCES,
-> > +                       PCI_IOV_RESOURCE_END - PCI_IOV_RESOURCES + 1);
-> > +#endif
-> > +       if (flag & PCI_BRIDGE_RES)
-> > +               bitmap_set(mask, PCI_BRIDGE_RESOURCES,
-> > +                       PCI_BRIDGE_RESOURCE_END - PCI_BRIDGE_RESOURCES + 1);
-> > +}
-> > +
-> > +static DECLARE_BITMAP(res_idx_mask[1 << PCI_RES_BLOCK_NUM], PCI_NUM_RESOURCES);
-> > +static int __init pci_res_idx_mask_init(void)
-> > +{
-> > +       int i;
-> > +
-> > +       for (i = 0; i < (1 << PCI_RES_BLOCK_NUM); i++)
-> > +               __init_res_idx_mask(res_idx_mask[i], i);
-> > +
-> > +       return 0;
-> > +}
-> > +postcore_initcall(pci_res_idx_mask_init);
-> > +
-> > +static inline unsigned long *get_res_idx_mask(int flag)
-> > +{
-> > +       return res_idx_mask[flag & ((1 << PCI_RES_BLOCK_NUM) - 1)];
-> > +}
-> > +
-> > +int pci_next_resource_idx(int i, int flag)
-> > +{
-> > +       i++;
-> > +       if (i < PCI_NUM_RESOURCES)
-> > +               i = find_next_bit(get_res_idx_mask(flag), PCI_NUM_RESOURCES, i);
-> > +
-> > +       if (i < PCI_NUM_RESOURCES)
-> > +               return i;
-> > +
-> > +       return -1;
-> > +}
-> > +EXPORT_SYMBOL(pci_next_resource_idx);
-> > +
-> >  static u64 pci_size(u64 base, u64 maxbase, u64 mask)
-> >  {
-> >         u64 size = mask & maxbase;      /* Find the significant bits */
-> > diff --git a/include/linux/pci.h b/include/linux/pci.h
-> > index aefff8b..127a856 100644
-> > --- a/include/linux/pci.h
-> > +++ b/include/linux/pci.h
-> > @@ -341,6 +341,30 @@ struct pci_dev {
-> >  struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
-> >  int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res);
-> >
-> > +#define PCI_STD_RES            (1<<0)
-> > +#define PCI_ROM_RES            (1<<1)
-> > +#define PCI_IOV_RES            (1<<2)
-> > +#define PCI_BRIDGE_RES         (1<<3)
-> > +#define PCI_RES_BLOCK_NUM      4
-> > +
-> > +#define PCI_ALL_RES            (PCI_STD_RES | PCI_ROM_RES | PCI_BRIDGE_RES | PCI_IOV_RES)
-> > +#define PCI_NOSTD_RES          (PCI_ALL_RES & ~PCI_STD_RES)
-> > +#define PCI_NOIOV_RES          (PCI_ALL_RES & ~PCI_IOV_RES)
-> > +#define PCI_NOROM_RES          (PCI_ALL_RES & ~PCI_ROM_RES)
-> > +#define PCI_NOBRIDGE_RES       (PCI_ALL_RES & ~PCI_BRIDGE_RES)
-> > +#define PCI_STD_ROM_RES                (PCI_STD_RES | PCI_ROM_RES)
-> > +#define PCI_STD_IOV_RES                (PCI_STD_RES | PCI_IOV_RES)
-> > +#define PCI_STD_ROM_IOV_RES    (PCI_STD_RES | PCI_ROM_RES | PCI_IOV_RES)
-> > +
-> > +int pci_next_resource_idx(int i, int flag);
-> > +
-> > +#define for_each_pci_resource(dev, res, i, flag)       \
-> > +       for (i = pci_next_resource_idx(-1, flag),       \
-> > +               res = pci_dev_resource_n(dev, i);       \
-> > +            res;                                       \
-> > +            i = pci_next_resource_idx(i, flag),        \
-> > +               res = pci_dev_resource_n(dev, i))
-> > +
-> >  static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
-> >  {
-> >  #ifdef CONFIG_PCI_IOV
+On 04/08/2013 06:00 PM, Peter Zijlstra wrote:
+> On Mon, 2013-03-25 at 13:24 +0800, Michael Wang wrote:
+>>         if (affine_sd) {
+>> -               if (cpu != prev_cpu && wake_affine(affine_sd, p,
+>> sync))
+>> +               if (cpu != prev_cpu && wake_affine(affine_sd, p,
+>> sync)) {
+>> +                       /*
+>> +                        * wake_affine() stuff try to pull wakee to
+>> the cpu
+>> +                        * around waker, this will benefit us if the
+>> data
+>> +                        * cached on waker cpu is hot for wakee, or
+>> the extreme
+>> +                        * ping-pong case.
+>> +                        *
+>> +                        * However, do such blindly work too
+>> frequently will
+>> +                        * cause regression to some workload, thus,
+>> each time
+>> +                        * when wake_affine() succeed, throttle it for
+>> a while.
+>> +                        */
+>> +                       wake_affine_throttle(p);
+>>                         prev_cpu = cpu;
+>> +               }
 > 
-> I think this turned out to be a disaster, with all the bitmaps and
-> helper functions.  Filtering in the bodies of the
-> for_each_pci_resource() users has *got* to be better.  That probably
-> requires a wrapper struct around the struct resource.  Or possibly
-> having a wrapper struct with a "type" or "flags" field would make
-> filtering in for_each_pci_resources() itself cleaner to implement.
+> How about only throttling when wake_affine() starts returning false? At
+> that point its lost its benefit.
 
-I agree. There are two cleanups needed.
+Honestly, I used to think this won't work, but the testing results show
+it even better than throttle on succeed...your suggestion is correct, it
+will be applied to the next version.
 
-a) pci drivers should not assume the internal organization of the
-	resources in the struct pci_dev.
+But please allow me to express my concern here:
 
-b) The type of a resource has to be determined based on some
-   information internal to the resource; possibly a flag, 
-   instead of the relative position of the resource in some array.
+In summary, I don't think 'return false' is the only point wake-affine
+lost it's benefit.
 
-My original patch was aimed at (a); to make the organization of the
-resources transparent to the drivers, and then move to (b) where the
-type of the resource would be determined based on some flag, instead
-of its relative location. Unfortuately the current newer version has got 
-morphed significantly, that I think is not clean enough.
+When wake-affine return true, the only thing guaranteed is the balance,
+but what about the factors like:
 
-RP
+1. wakee has no hot data cached on curr_cpu
+2. hot data cached on curr_cpu for wakee is less than those on prev_cpu
+3. wakee has no relationship with waker at all
+...
+
+Those factors was unconsidered when wake_affine() return true, but they
+could be a reason for regression too, isn't it?
+
+Anyway, according to the test results, the benefit of wake-affine
+reserved by 'throttle on failed' is impressive, those factors failed to
+defend them self...
+
+> 
+> Also, why not place this inside wake_affine() like you did the throttled
+> test.
+
+That's right, will correct it :)
+
+Regards,
+Michael Wang
+
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
