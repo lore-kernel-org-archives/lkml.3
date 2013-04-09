@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936596Ab3DIJWe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 05:22:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34023 "EHLO mx1.redhat.com"
+	id S936652Ab3DIJXD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 05:23:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7164 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965053Ab3DIJPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 05:15:04 -0400
+	id S965023Ab3DIJO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 05:14:57 -0400
 From: Lukas Czerner <lczerner@redhat.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>
-Subject: [PATCH v3 12/18] Revert "ext4: fix fsx truncate failure"
-Date: Tue,  9 Apr 2013 11:14:21 +0200
-Message-Id: <1365498867-27782-13-git-send-email-lczerner@redhat.com>
+        linux-ext4@vger.kernel.org, Lukas Czerner <lczerner@redhat.com>,
+        reiserfs-devel@vger.kernel.org
+Subject: [PATCH v3 09/18] reiserfs: use ->invalidatepage() length argument
+Date: Tue,  9 Apr 2013 11:14:18 +0200
+Message-Id: <1365498867-27782-10-git-send-email-lczerner@redhat.com>
 In-Reply-To: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
 References: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 189e868fa8fdca702eb9db9d8afc46b5cb9144c9.
-
-This commit reintroduces the use of ext4_block_truncate_page() in ext4
-truncate operation instead of ext4_discard_partial_page_buffers().
-
-The statement in the commit description that the truncate operation only
-zero block unaligned portion of the last page is not exactly right,
-since truncate_pagecache_range() also zeroes and invalidate the unaligned
-portion of the page. Then there is no need to zero and unmap it once more
-and ext4_block_truncate_page() was doing the right job, although we
-still need to update the buffer head containing the last block, which is
-exactly what ext4_block_truncate_page() is doing.
-
-Moreover the problem described in the commit is fixed more properly with
-commit
-
-15291164b22a357cb211b618adfef4fa82fc0de3
-	jbd2: clear BH_Delay & BH_Unwritten in journal_unmap_buffer
-
-This was tested on ppc64 machine with block size of 1024 bytes without
-any problems.
+->invalidatepage() aop now accepts range to invalidate so we can make
+use of it in reiserfs_invalidatepage()
 
 Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Cc: reiserfs-devel@vger.kernel.org
 ---
- fs/ext4/inode.c |   11 ++---------
- 1 files changed, 2 insertions(+), 9 deletions(-)
+ fs/reiserfs/inode.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 5729d21..d58e13c 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -3920,7 +3920,6 @@ void ext4_truncate(struct inode *inode)
- 	unsigned int credits;
- 	handle_t *handle;
- 	struct address_space *mapping = inode->i_mapping;
--	loff_t page_len;
+diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
+index 808e02e..e963164 100644
+--- a/fs/reiserfs/inode.c
++++ b/fs/reiserfs/inode.c
+@@ -2975,11 +2975,13 @@ static void reiserfs_invalidatepage(struct page *page, unsigned int offset,
+ 	struct buffer_head *head, *bh, *next;
+ 	struct inode *inode = page->mapping->host;
+ 	unsigned int curr_off = 0;
++	unsigned int stop = offset + length;
++	int partial_page = (offset || length < PAGE_CACHE_SIZE);
+ 	int ret = 1;
  
- 	/*
- 	 * There is a possibility that we're either freeing the inode
-@@ -3964,14 +3963,8 @@ void ext4_truncate(struct inode *inode)
- 		return;
+ 	BUG_ON(!PageLocked(page));
+ 
+-	if (offset == 0)
++	if (!partial_page)
+ 		ClearPageChecked(page);
+ 
+ 	if (!page_has_buffers(page))
+@@ -2991,6 +2993,9 @@ static void reiserfs_invalidatepage(struct page *page, unsigned int offset,
+ 		unsigned int next_off = curr_off + bh->b_size;
+ 		next = bh->b_this_page;
+ 
++		if (next_off > stop)
++			goto out;
++
+ 		/*
+ 		 * is this block fully invalidated?
+ 		 */
+@@ -3009,7 +3014,7 @@ static void reiserfs_invalidatepage(struct page *page, unsigned int offset,
+ 	 * The get_block cached value has been unconditionally invalidated,
+ 	 * so real IO is not possible anymore.
+ 	 */
+-	if (!offset && ret) {
++	if (!partial_page && ret) {
+ 		ret = try_to_release_page(page, 0);
+ 		/* maybe should BUG_ON(!ret); - neilb */
  	}
- 
--	if (inode->i_size % PAGE_CACHE_SIZE != 0) {
--		page_len = PAGE_CACHE_SIZE -
--			(inode->i_size & (PAGE_CACHE_SIZE - 1));
--
--		if (ext4_discard_partial_page_buffers(handle,
--				mapping, inode->i_size, page_len, 0))
--			goto out_stop;
--	}
-+	if (inode->i_size & (inode->i_sb->s_blocksize - 1))
-+		ext4_block_truncate_page(handle, mapping, inode->i_size);
- 
- 	/*
- 	 * We add the inode to the orphan list, so that if this
 -- 
 1.7.7.6
 
