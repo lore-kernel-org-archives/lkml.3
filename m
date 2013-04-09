@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935736Ab3DINBA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 09:01:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:59466 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759207Ab3DINA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 09:00:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,438,1363158000"; 
-   d="scan'208";a="316572092"
-Date: Tue, 9 Apr 2013 15:00:52 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [PATCH 2/2] mfd: db8500-prcmu: Support platform dependant device
- selection
-Message-ID: <20130409130052.GA9172@zurbaran>
-References: <1365071941-23475-1-git-send-email-lee.jones@linaro.org>
- <1365071941-23475-2-git-send-email-lee.jones@linaro.org>
- <20130409100609.GQ24058@zurbaran>
+	id S935618Ab3DINCa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 09:02:30 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:48125 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759206Ab3DINC3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 09:02:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130409100609.GQ24058@zurbaran>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51640A16.1060002@cogentembedded.com>
+References: <1365499312-14232-1-git-send-email-gautam.vivek@samsung.com>
+	<51640A16.1060002@cogentembedded.com>
+Date: Tue, 9 Apr 2013 18:32:27 +0530
+Message-ID: <CAFp+6iE1Ei=B7+XfZghVivwQ5zdbCnuG+F=qdLX3P19Xo9QdYg@mail.gmail.com>
+Subject: Re: [PATCH] usb: ehci-s5p: fix: Fix null pointer dereferencing
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
+        kgene.kim@samsung.com, Manjunath Goudar <manjunath.goudar@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Jingoo Han <jg1.han@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case you did not get this one...
+Hi,
 
-On Tue, Apr 09, 2013 at 12:06:09PM +0200, Samuel Ortiz wrote:
-> Hi Lee,
-> 
-> On Thu, Apr 04, 2013 at 11:39:01AM +0100, Lee Jones wrote:
-> > The main aim for this cycle is to have the u8540 booting to a
-> > console. However, the u8540 doesn't support all of the u8500
-> > platform devices yet. After this stage is complete we can then
-> > fill in the inadequacies, such as specific clock support at a
-> > later date. To achieve this we're placing devices supported by
-> > all platforms into a common device structure and the remaining
-> > ones into a platform specific one.
-> > 
-> > Cc: Samuel Ortiz <sameo@linux.intel.com>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  drivers/mfd/db8500-prcmu.c |   52 ++++++++++++++++++++++++++++----------------
-> >  1 file changed, 33 insertions(+), 19 deletions(-)
-> This one does not apply (not even manually) on top of mfd-next. Would you mind
-> rebasing it (And adding Linus' ACK) ?
-> 
-> Cheers,
-> Samuel.
-> 
-> -- 
-> Intel Open Source Technology Centre
-> http://oss.intel.com/
+
+On Tue, Apr 9, 2013 at 6:01 PM, Sergei Shtylyov
+<sergei.shtylyov@cogentembedded.com> wrote:
+> Hello.
+>
+>
+> On 09-04-2013 13:21, Vivek Gautam wrote:
+>
+>> 7edb3da makes ehci-s5p as a separate driver. But,
+>
+>
+>    Please also provide the summary line of that commit in parens.
+
+Sure, will add the commit line of that patch.
+
+>
+>
+>> it raised an issue with its driver data.
+>> Now that 's5p_ehci_hcd' doesn't maintain pointer to 'usb_hcd'
+>> and s5p_ehci is nothing but a pointer to hcd->priv;
+>> add hcd to the driver data rather than s5p_ehci.
+>
+>
+>> This fixes issues with null pointer dereferencing in
+>> s5p_ehci_shutdown(), s5p_ehci_suspend(), s5p_ehci_resume().
+>
+>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> CC: Manjunath Goudar <manjunath.goudar@linaro.org>
+>> CC: Arnd Bergmann <arnd@arndb.de>
+>> CC: Jingoo Han <jg1.han@samsung.com>
+>
+>
+> WBR, Sergei
+
+
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Thanks & Regards
+Vivek
