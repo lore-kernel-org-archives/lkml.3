@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935572Ab3DIW0b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 18:26:31 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:52106 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943Ab3DIW0a (ORCPT
+	id S936473Ab3DIW1L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 18:27:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28312 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760498Ab3DIW1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 18:26:30 -0400
-Date: Tue, 9 Apr 2013 15:25:37 -0700
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: mingo@kernel.org
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-Subject: perf --version inconsistency
-Message-ID: <20130409222537.GA26160@us.ibm.com>
+	Tue, 9 Apr 2013 18:27:09 -0400
+X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wom5GMh1gUkA:10 a=k2A8Ma-yc6IA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=YQ5KiaJzOPkA:10 a=5-z772p_QBcblL870okA:9 a=CjuIK1q_8ugA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Date: Tue, 9 Apr 2013 18:27:07 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Daniel Vetter <daniel@ffwll.ch>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        linux-arch@vger.kernel.org, daniel.vetter@ffwll.ch, x86@kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, robclark@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu, linux-media@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] mutex: add support for reservation style locks, v2
+Message-ID: <20130409222707.GB20739@home.goodmis.org>
+References: <20130228102452.15191.22673.stgit@patser>
+ <20130228102502.15191.14146.stgit@patser>
+ <1364900432.18374.24.camel@laptop>
+ <515AF1C1.7080508@canonical.com>
+ <1364921954.20640.22.camel@laptop>
+ <1365076908.2609.94.camel@laptop>
+ <20130404133123.GW2228@phenom.ffwll.local>
+ <1365093516.2609.109.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Operating-System: Linux 2.0.32 on an i486
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040922-3620-0000-0000-000001F66341
+In-Reply-To: <1365093516.2609.109.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 04, 2013 at 06:38:36PM +0200, Peter Zijlstra wrote:
+> On Thu, 2013-04-04 at 15:31 +0200, Daniel Vetter wrote:
+> > Hm, I guess your aim with the TASK_DEADLOCK wakeup is to bound the
+> > wait
+> > times of older task.
+> 
+> No, imagine the following:
+> 
+> struct ww_mutex A, B;
+> struct mutex C;
+> 
+> 	task-O	task-Y	task-X
+> 	  	A
+> 		B
+> 			C
+> 		C
+> 	B
+> 
+> At this point O finds that Y owns B and thus we want to make Y 'yield'
+> B to make allow B progress. Since Y is blocked, we'll send a wakeup.
+> However Y is blocked on a different locking primitive; one that doesn't
+> collaborate in the -EDEADLK scheme therefore we don't want the wakeup to
+> succeed.
 
-Following commit replaced 'git describe' with 'git tag -l | tail -1'
-to speed up the build:
+I'm confused to why the above is a problem. Task-X will eventually
+release C, and then Y will release B and O will get to continue. Do we
+have to drop them once the owner is blocked? Can't we follow the chain
+like the PI code does?
 
-	commit acddedfba0df1e47fa99035a04661082b679ee9c
-	Author: Ingo Molnar <mingo@kernel.org>
-	Date:   Tue Oct 30 09:46:00 2012 +0100
-
-	perf tools: Speed up the perf build time by simplifying the perf
-	--version string generation
-
-If we checkout an older commit and build perf, the version reported by 'perf'
-ends up being inconsistent:
-
-	$ git describe
-	v3.8-rc7
-
-	$ git show --pretty=short 
-	commit 836dc9e3fbbab0c30aa6e664417225f5c1fb1c39
-	Author: Linus Torvalds <torvalds@linux-foundation.org>
-
-	    Linux 3.8-rc7
-
-	$ git tag -l | tail -1
-	v3.9-rc4
-
-	$ cd tools/perf; make perf
-
-	$ ./perf --version
-	perf version 3.9.rc4.g836dc9e
-
-where commit id '836dc9e' corresponds to 'v3.8-rc7' rather than '3.9.rc4'.
-
-Is the tag reported by 'perf --version' meant to be approximate ?
-
-Wonder if we can do anything on the 'git' side to cache the tag associated
-with HEAD and update the cache at each 'git checkout'. That could slow
-down 'git checkout' though.
-
-Sukadev
+-- Steve
 
