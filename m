@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935928Ab3DILGV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 07:06:21 -0400
-Received: from mga11.intel.com ([192.55.52.93]:59142 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935780Ab3DILGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S935705Ab3DILGS (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 9 Apr 2013 07:06:18 -0400
+Received: from mga01.intel.com ([192.55.52.88]:36390 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758447Ab3DILGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 07:06:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,438,1363158000"; 
-   d="scan'208";a="319637097"
+   d="scan'208";a="316520601"
 From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
         spear-devel <spear-devel@list.st.com>,
         Vinod Koul <vinod.koul@intel.com>, linux-acpi@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2 3/5] dma: acpi-dma: parse CSRT to extract additional resources
-Date: Tue,  9 Apr 2013 14:05:45 +0300
-Message-Id: <1365505547-10552-4-git-send-email-andriy.shevchenko@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [PATCH v2 5/5] ACPI / LPSS: add support of shared clock
+Date: Tue,  9 Apr 2013 14:05:47 +0300
+Message-Id: <1365505547-10552-6-git-send-email-andriy.shevchenko@linux.intel.com>
 X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
 In-Reply-To: <1365505547-10552-1-git-send-email-andriy.shevchenko@linux.intel.com>
 References: <1365505547-10552-1-git-send-email-andriy.shevchenko@linux.intel.com>
@@ -26,472 +26,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we have CSRT only to get additional DMA controller resources, let's get
-rid of drivers/acpi/csrt.c and move its logic inside ACPI DMA helpers code.
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+The DMA controller in Lynxpoint is using the LPSS root clock as a functional
+clock to work properly. Proposed patch adds support of the shared clock. It
+also avoids hardcoding the name of the DMA device in clk-lpt.c and the name of
+the root clock in acpi_lpss.c.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/acpi/Makefile    |   1 -
- drivers/acpi/csrt.c      | 159 -------------------------------------------
- drivers/acpi/internal.h  |   1 -
- drivers/acpi/scan.c      |   1 -
- drivers/dma/acpi-dma.c   | 172 ++++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/acpi_dma.h |   4 ++
- 6 files changed, 173 insertions(+), 165 deletions(-)
- delete mode 100644 drivers/acpi/csrt.c
+ drivers/acpi/acpi_lpss.c               | 26 ++++++++++++++++++++++----
+ drivers/clk/x86/clk-lpt.c              | 15 +++++++++++----
+ include/linux/platform_data/clk-lpss.h |  5 +++++
+ 3 files changed, 38 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-index ecb743b..6050c80 100644
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -38,7 +38,6 @@ acpi-y				+= processor_core.o
- acpi-y				+= ec.o
- acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
- acpi-y				+= pci_root.o pci_link.o pci_irq.o
--acpi-y				+= csrt.o
- acpi-$(CONFIG_X86_INTEL_LPSS)	+= acpi_lpss.o
- acpi-y				+= acpi_platform.o
- acpi-y				+= power.o
-diff --git a/drivers/acpi/csrt.c b/drivers/acpi/csrt.c
-deleted file mode 100644
-index 5c15a91..0000000
---- a/drivers/acpi/csrt.c
-+++ /dev/null
-@@ -1,159 +0,0 @@
--/*
-- * Support for Core System Resources Table (CSRT)
-- *
-- * Copyright (C) 2013, Intel Corporation
-- * Authors: Mika Westerberg <mika.westerberg@linux.intel.com>
-- *	    Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#define pr_fmt(fmt) "ACPI: CSRT: " fmt
--
--#include <linux/acpi.h>
--#include <linux/device.h>
--#include <linux/kernel.h>
--#include <linux/module.h>
--#include <linux/platform_device.h>
--#include <linux/sizes.h>
--
--ACPI_MODULE_NAME("CSRT");
--
--static int __init acpi_csrt_parse_shared_info(struct platform_device *pdev,
--					      const struct acpi_csrt_group *grp)
--{
--	const struct acpi_csrt_shared_info *si;
--	struct resource res[3];
--	size_t nres;
--	int ret;
--
--	memset(res, 0, sizeof(res));
--	nres = 0;
--
--	si = (const struct acpi_csrt_shared_info *)&grp[1];
--	/*
--	 * The peripherals that are listed on CSRT typically support only
--	 * 32-bit addresses so we only use the low part of MMIO base for
--	 * now.
--	 */
--	if (!si->mmio_base_high && si->mmio_base_low) {
--		/*
--		 * There is no size of the memory resource in shared_info
--		 * so we assume that it is 4k here.
--		 */
--		res[nres].start = si->mmio_base_low;
--		res[nres].end = res[0].start + SZ_4K - 1;
--		res[nres++].flags = IORESOURCE_MEM;
--	}
--
--	if (si->gsi_interrupt) {
--		int irq = acpi_register_gsi(NULL, si->gsi_interrupt,
--					    si->interrupt_mode,
--					    si->interrupt_polarity);
--		res[nres].start = irq;
--		res[nres].end = irq;
--		res[nres++].flags = IORESOURCE_IRQ;
--	}
--
--	if (si->base_request_line || si->num_handshake_signals) {
--		/*
--		 * We pass the driver a DMA resource describing the range
--		 * of request lines the device supports.
--		 */
--		res[nres].start = si->base_request_line;
--		res[nres].end = res[nres].start + si->num_handshake_signals - 1;
--		res[nres++].flags = IORESOURCE_DMA;
--	}
--
--	ret = platform_device_add_resources(pdev, res, nres);
--	if (ret) {
--		if (si->gsi_interrupt)
--			acpi_unregister_gsi(si->gsi_interrupt);
--		return ret;
--	}
--
--	return 0;
--}
--
--static int __init
--acpi_csrt_parse_resource_group(const struct acpi_csrt_group *grp)
--{
--	struct platform_device *pdev;
--	char vendor[5], name[16];
--	int ret, i;
--
--	vendor[0] = grp->vendor_id;
--	vendor[1] = grp->vendor_id >> 8;
--	vendor[2] = grp->vendor_id >> 16;
--	vendor[3] = grp->vendor_id >> 24;
--	vendor[4] = '\0';
--
--	if (grp->shared_info_length != sizeof(struct acpi_csrt_shared_info))
--		return -ENODEV;
--
--	snprintf(name, sizeof(name), "%s%04X", vendor, grp->device_id);
--	pdev = platform_device_alloc(name, PLATFORM_DEVID_AUTO);
--	if (!pdev)
--		return -ENOMEM;
--
--	/* Add resources based on the shared info */
--	ret = acpi_csrt_parse_shared_info(pdev, grp);
--	if (ret)
--		goto fail;
--
--	ret = platform_device_add(pdev);
--	if (ret)
--		goto fail;
--
--	for (i = 0; i < pdev->num_resources; i++)
--		dev_dbg(&pdev->dev, "%pR\n", &pdev->resource[i]);
--
--	return 0;
--
--fail:
--	platform_device_put(pdev);
--	return ret;
--}
--
--/*
-- * CSRT or Core System Resources Table is a proprietary ACPI table
-- * introduced by Microsoft. This table can contain devices that are not in
-- * the system DSDT table. In particular DMA controllers might be described
-- * here.
-- *
-- * We present these devices as normal platform devices that don't have ACPI
-- * IDs or handle. The platform device name will be something like
-- * <VENDOR><DEVID>.<n>.auto for example: INTL9C06.0.auto.
-- */
--void __init acpi_csrt_init(void)
--{
--	struct acpi_csrt_group *grp, *end;
--	struct acpi_table_csrt *csrt;
--	acpi_status status;
--	int ret;
--
--	status = acpi_get_table(ACPI_SIG_CSRT, 0,
--				(struct acpi_table_header **)&csrt);
--	if (ACPI_FAILURE(status)) {
--		if (status != AE_NOT_FOUND)
--			pr_warn("failed to get the CSRT table\n");
--		return;
--	}
--
--	pr_debug("parsing CSRT table for devices\n");
--
--	grp = (struct acpi_csrt_group *)(csrt + 1);
--	end = (struct acpi_csrt_group *)((void *)csrt + csrt->header.length);
--
--	while (grp < end) {
--		ret = acpi_csrt_parse_resource_group(grp);
--		if (ret) {
--			pr_warn("error in parsing resource group: %d\n", ret);
--			return;
--		}
--
--		grp = (struct acpi_csrt_group *)((void *)grp + grp->length);
--	}
--}
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index 6f1afd9..297cbf4 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -35,7 +35,6 @@ void acpi_pci_link_init(void);
- void acpi_pci_root_hp_init(void);
- void acpi_platform_init(void);
- int acpi_sysfs_init(void);
--void acpi_csrt_init(void);
- #ifdef CONFIG_ACPI_CONTAINER
- void acpi_container_init(void);
- #else
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index d7f3c8b..6742aa1 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -2042,7 +2042,6 @@ int __init acpi_scan_init(void)
- 	acpi_pci_link_init();
- 	acpi_platform_init();
- 	acpi_lpss_init();
--	acpi_csrt_init();
- 	acpi_container_init();
- 	acpi_pci_slot_init();
- 	acpi_memory_hotplug_init();
-diff --git a/drivers/dma/acpi-dma.c b/drivers/dma/acpi-dma.c
-index ba6fc62..5a18f82 100644
---- a/drivers/dma/acpi-dma.c
-+++ b/drivers/dma/acpi-dma.c
-@@ -4,7 +4,8 @@
-  * Based on of-dma.c
-  *
-  * Copyright (C) 2013, Intel Corporation
-- * Author: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-+ * Authors: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-+ *	    Mika Westerberg <mika.westerberg@linux.intel.com>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -16,6 +17,7 @@
- #include <linux/list.h>
- #include <linux/mutex.h>
- #include <linux/slab.h>
-+#include <linux/ioport.h>
- #include <linux/acpi.h>
- #include <linux/acpi_dma.h>
+diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+index b1c9542..652fd5c 100644
+--- a/drivers/acpi/acpi_lpss.c
++++ b/drivers/acpi/acpi_lpss.c
+@@ -35,11 +35,16 @@ ACPI_MODULE_NAME("acpi_lpss");
  
-@@ -23,6 +25,117 @@ static LIST_HEAD(acpi_dma_list);
- static DEFINE_MUTEX(acpi_dma_lock);
- 
- /**
-+ * acpi_dma_parse_resource_group - match device and parse resource group
-+ * @grp:	CSRT resource group
-+ * @adev:	ACPI device to match with
-+ * @adma:	struct acpi_dma of the given DMA controller
-+ *
-+ * Returns 1 on success, 0 when no information is available, or appropriate
-+ * errno value on error.
-+ *
-+ * In order to match a device from DSDT table to the corresponding CSRT device
-+ * we use MMIO address and IRQ.
-+ */
-+static int acpi_dma_parse_resource_group(const struct acpi_csrt_group *grp,
-+		struct acpi_device *adev, struct acpi_dma *adma)
-+{
-+	const struct acpi_csrt_shared_info *si;
-+	struct list_head resource_list;
-+	struct resource_list_entry *rentry;
-+	resource_size_t mem = 0, irq = 0;
-+	u32 vendor_id;
-+	int ret;
-+
-+	if (grp->shared_info_length != sizeof(struct acpi_csrt_shared_info))
-+		return -ENODEV;
-+
-+	INIT_LIST_HEAD(&resource_list);
-+	ret = acpi_dev_get_resources(adev, &resource_list, NULL, NULL);
-+	if (ret <= 0)
-+		return 0;
-+
-+	list_for_each_entry(rentry, &resource_list, node) {
-+		if (resource_type(&rentry->res) == IORESOURCE_MEM)
-+			mem = rentry->res.start;
-+		else if (resource_type(&rentry->res) == IORESOURCE_IRQ)
-+			irq = rentry->res.start;
-+	}
-+
-+	acpi_dev_free_resource_list(&resource_list);
-+
-+	/* Consider initial zero values as resource not found */
-+	if (mem == 0 && irq == 0)
-+		return 0;
-+
-+	si = (const struct acpi_csrt_shared_info *)&grp[1];
-+
-+	/* Match device by MMIO and IRQ */
-+	if (si->mmio_base_low != mem || si->gsi_interrupt != irq)
-+		return 0;
-+
-+	vendor_id = le32_to_cpu(grp->vendor_id);
-+	dev_dbg(&adev->dev, "matches with %.4s%04X (rev %u)\n",
-+		(char *)&vendor_id, grp->device_id, grp->revision);
-+
-+	/* Check if the request line range is available */
-+	if (si->base_request_line == 0 && si->num_handshake_signals == 0)
-+		return 0;
-+
-+	adma->base_request_line = si->base_request_line;
-+	adma->end_request_line = si->base_request_line +
-+				 si->num_handshake_signals - 1;
-+
-+	dev_dbg(&adev->dev, "request line base: 0x%04x end: 0x%04x\n",
-+		adma->base_request_line, adma->end_request_line);
-+
-+	return 1;
-+}
-+
-+/**
-+ * acpi_dma_parse_csrt - parse CSRT to exctract additional DMA resources
-+ * @adev:	ACPI device to match with
-+ * @adma:	struct acpi_dma of the given DMA controller
-+ *
-+ * CSRT or Core System Resources Table is a proprietary ACPI table
-+ * introduced by Microsoft. This table can contain devices that are not in
-+ * the system DSDT table. In particular DMA controllers might be described
-+ * here.
-+ *
-+ * We are using this table to get the request line range of the specific DMA
-+ * controller to be used later.
-+ *
-+ */
-+static void acpi_dma_parse_csrt(struct acpi_device *adev, struct acpi_dma *adma)
-+{
-+	struct acpi_csrt_group *grp, *end;
-+	struct acpi_table_csrt *csrt;
-+	acpi_status status;
-+	int ret;
-+
-+	status = acpi_get_table(ACPI_SIG_CSRT, 0,
-+				(struct acpi_table_header **)&csrt);
-+	if (ACPI_FAILURE(status)) {
-+		if (status != AE_NOT_FOUND)
-+			dev_warn(&adev->dev, "failed to get the CSRT table\n");
-+		return;
-+	}
-+
-+	grp = (struct acpi_csrt_group *)(csrt + 1);
-+	end = (struct acpi_csrt_group *)((void *)csrt + csrt->header.length);
-+
-+	while (grp < end) {
-+		ret = acpi_dma_parse_resource_group(grp, adev, adma);
-+		if (ret < 0) {
-+			dev_warn(&adev->dev,
-+				 "error in parsing resource group\n");
-+			return;
-+		}
-+
-+		grp = (struct acpi_csrt_group *)((void *)grp + grp->length);
-+	}
-+}
-+
-+/**
-  * acpi_dma_controller_register - Register a DMA controller to ACPI DMA helpers
-  * @dev:		struct device of DMA controller
-  * @acpi_dma_xlate:	translation function which converts a dma specifier
-@@ -61,6 +174,8 @@ int acpi_dma_controller_register(struct device *dev,
- 	adma->acpi_dma_xlate = acpi_dma_xlate;
- 	adma->data = data;
- 
-+	acpi_dma_parse_csrt(adev, adma);
-+
- 	/* Now queue acpi_dma controller structure in list */
- 	mutex_lock(&acpi_dma_lock);
- 	list_add_tail(&adma->dma_controllers, &acpi_dma_list);
-@@ -149,6 +264,45 @@ void devm_acpi_dma_controller_free(struct device *dev)
- }
- EXPORT_SYMBOL_GPL(devm_acpi_dma_controller_free);
- 
-+/**
-+ * acpi_dma_update_dma_spec - prepare dma specifier to pass to translation function
-+ * @adma:	struct acpi_dma of DMA controller
-+ * @dma_spec:	dma specifier to update
-+ *
-+ * Returns 0, if no information is avaiable, -1 on mismatch, and 1 otherwise.
-+ *
-+ * Accordingly to ACPI 5.0 Specification Table 6-170 "Fixed DMA Resource
-+ * Descriptor":
-+ *	DMA Request Line bits is a platform-relative number uniquely
-+ *	identifying the request line assigned. Request line-to-Controller
-+ *	mapping is done in a controller-specific OS driver.
-+ * That's why we can safely adjust slave_id when the appropriate controller is
-+ * found.
-+ */
-+static int acpi_dma_update_dma_spec(struct acpi_dma *adma,
-+		struct acpi_dma_spec *dma_spec)
-+{
-+	/* Set link to the DMA controller device */
-+	dma_spec->dev = adma->dev;
-+
-+	/* Check if the request line range is available */
-+	if (adma->base_request_line == 0 && adma->end_request_line == 0)
-+		return 0;
-+
-+	/* Check if slave_id falls to the range */
-+	if (dma_spec->slave_id < adma->base_request_line ||
-+	    dma_spec->slave_id > adma->end_request_line)
-+		return -1;
-+
-+	/*
-+	 * Here we adjust slave_id. It should be a relative number to the base
-+	 * request line.
-+	 */
-+	dma_spec->slave_id -= adma->base_request_line;
-+
-+	return 1;
-+}
-+
- struct acpi_dma_parser_data {
- 	struct acpi_dma_spec dma_spec;
- 	size_t index;
-@@ -193,6 +347,7 @@ struct dma_chan *acpi_dma_request_slave_chan_by_index(struct device *dev,
- 	struct acpi_device *adev;
- 	struct acpi_dma *adma;
- 	struct dma_chan *chan = NULL;
-+	int found;
- 
- 	/* Check if the device was enumerated by ACPI */
- 	if (!dev || !ACPI_HANDLE(dev))
-@@ -219,9 +374,20 @@ struct dma_chan *acpi_dma_request_slave_chan_by_index(struct device *dev,
- 	mutex_lock(&acpi_dma_lock);
- 
- 	list_for_each_entry(adma, &acpi_dma_list, dma_controllers) {
--		dma_spec->dev = adma->dev;
-+		/*
-+		 * We are not going to call translation function if slave_id
-+		 * doesn't fall to the request range.
-+		 */
-+		found = acpi_dma_update_dma_spec(adma, dma_spec);
-+		if (found < 0)
-+			continue;
- 		chan = adma->acpi_dma_xlate(dma_spec, adma);
--		if (chan)
-+		/*
-+		 * Try to get a channel only from the DMA controller that
-+		 * matches the slave_id. See acpi_dma_update_dma_spec()
-+		 * description for the details.
-+		 */
-+		if (found > 0 || chan)
- 			break;
- 	}
- 
-diff --git a/include/linux/acpi_dma.h b/include/linux/acpi_dma.h
-index d09deab..fb02980 100644
---- a/include/linux/acpi_dma.h
-+++ b/include/linux/acpi_dma.h
-@@ -37,6 +37,8 @@ struct acpi_dma_spec {
-  * @dev:		struct device of this controller
-  * @acpi_dma_xlate:	callback function to find a suitable channel
-  * @data:		private data used by a callback function
-+ * @base_request_line:	first supported request line (CSRT)
-+ * @end_request_line:	last supported request line (CSRT)
-  */
- struct acpi_dma {
- 	struct list_head	dma_controllers;
-@@ -44,6 +46,8 @@ struct acpi_dma {
- 	struct dma_chan		*(*acpi_dma_xlate)
- 				(struct acpi_dma_spec *, struct acpi_dma *);
- 	void			*data;
-+	unsigned short		base_request_line;
-+	unsigned short		end_request_line;
+ struct lpss_device_desc {
+ 	bool clk_required;
+-	const char *clk_parent;
++	const char *clkdev_name;
+ 	bool ltr_required;
+ 	unsigned int prv_offset;
  };
  
- /* Used with acpi_dma_simple_xlate() */
++static struct lpss_device_desc lpss_dma_desc = {
++	.clk_required = true,
++	.clkdev_name = "hclk",
++};
++
+ struct lpss_private_data {
+ 	void __iomem *mmio_base;
+ 	resource_size_t mmio_size;
+@@ -49,7 +54,6 @@ struct lpss_private_data {
+ 
+ static struct lpss_device_desc lpt_dev_desc = {
+ 	.clk_required = true,
+-	.clk_parent = "lpss_clk",
+ 	.prv_offset = 0x800,
+ 	.ltr_required = true,
+ };
+@@ -60,6 +64,9 @@ static struct lpss_device_desc lpt_sdio_dev_desc = {
+ };
+ 
+ static const struct acpi_device_id acpi_lpss_device_ids[] = {
++	/* Generic LPSS devices */
++	{ "INTL9C60", (unsigned long)&lpss_dma_desc },
++
+ 	/* Lynxpoint LPSS devices */
+ 	{ "INT33C0", (unsigned long)&lpt_dev_desc },
+ 	{ "INT33C1", (unsigned long)&lpt_dev_desc },
+@@ -91,16 +98,27 @@ static int register_device_clock(struct acpi_device *adev,
+ 				 struct lpss_private_data *pdata)
+ {
+ 	const struct lpss_device_desc *dev_desc = pdata->dev_desc;
++	struct lpss_clk_data *clk_data;
+ 
+ 	if (!lpss_clk_dev)
+ 		lpt_register_clock_device();
+ 
+-	if (!dev_desc->clk_parent || !pdata->mmio_base
++	clk_data = platform_get_drvdata(lpss_clk_dev);
++	if (!clk_data)
++		return -ENODEV;
++
++	if (dev_desc->clkdev_name) {
++		clk_register_clkdev(clk_data->clk, dev_desc->clkdev_name,
++				    dev_name(&adev->dev));
++		return 0;
++	}
++
++	if (!pdata->mmio_base
+ 	    || pdata->mmio_size < dev_desc->prv_offset + LPSS_CLK_SIZE)
+ 		return -ENODATA;
+ 
+ 	pdata->clk = clk_register_gate(NULL, dev_name(&adev->dev),
+-				       dev_desc->clk_parent, 0,
++				       clk_data->name, 0,
+ 				       pdata->mmio_base + dev_desc->prv_offset,
+ 				       0, 0, NULL);
+ 	if (IS_ERR(pdata->clk))
+diff --git a/drivers/clk/x86/clk-lpt.c b/drivers/clk/x86/clk-lpt.c
+index 5cf4f46..e70fae3f 100644
+--- a/drivers/clk/x86/clk-lpt.c
++++ b/drivers/clk/x86/clk-lpt.c
+@@ -15,22 +15,29 @@
+ #include <linux/clk-provider.h>
+ #include <linux/err.h>
+ #include <linux/module.h>
++#include <linux/platform_data/clk-lpss.h>
+ #include <linux/platform_device.h>
+ 
+ #define PRV_CLOCK_PARAMS 0x800
+ 
+ static int lpt_clk_probe(struct platform_device *pdev)
+ {
++	struct lpss_clk_data *drvdata;
+ 	struct clk *clk;
+ 
++	drvdata = devm_kmalloc(&pdev->dev, sizeof(*drvdata), GFP_KERNEL);
++	if (!drvdata)
++		return -ENOMEM;
++
+ 	/* LPSS free running clock */
+-	clk = clk_register_fixed_rate(&pdev->dev, "lpss_clk", NULL, CLK_IS_ROOT,
+-				      100000000);
++	drvdata->name = "lpss_clk";
++	clk = clk_register_fixed_rate(&pdev->dev, drvdata->name, NULL,
++				      CLK_IS_ROOT, 100000000);
+ 	if (IS_ERR(clk))
+ 		return PTR_ERR(clk);
+ 
+-	/* Shared DMA clock */
+-	clk_register_clkdev(clk, "hclk", "INTL9C60.0.auto");
++	drvdata->clk = clk;
++	platform_set_drvdata(pdev, drvdata);
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/platform_data/clk-lpss.h b/include/linux/platform_data/clk-lpss.h
+index 528e73c..2390199 100644
+--- a/include/linux/platform_data/clk-lpss.h
++++ b/include/linux/platform_data/clk-lpss.h
+@@ -13,6 +13,11 @@
+ #ifndef __CLK_LPSS_H
+ #define __CLK_LPSS_H
+ 
++struct lpss_clk_data {
++	const char *name;
++	struct clk *clk;
++};
++
+ extern int lpt_clk_init(void);
+ 
+ #endif /* __CLK_LPSS_H */
 -- 
 1.8.2.rc0.22.gb3600c3
 
