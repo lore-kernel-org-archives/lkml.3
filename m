@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936242Ab3DIOMz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 10:12:55 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:48508 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932875Ab3DIOMw (ORCPT
+	id S933469Ab3DIOPM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 10:15:12 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:33697 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760703Ab3DIOPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 10:12:52 -0400
+	Tue, 9 Apr 2013 10:15:10 -0400
+Message-ID: <51642262.10902@windriver.com>
+Date: Tue, 9 Apr 2013 09:14:58 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <20130409125509.GH15412@verge.net.au>
-References: <cover.1365079581.git.viresh.kumar@linaro.org>
-	<3167220d1e262ff22078993a5beec55e82dfd951.1365079581.git.viresh.kumar@linaro.org>
-	<20130409125509.GH15412@verge.net.au>
-Date: Tue, 9 Apr 2013 19:42:51 +0530
-Message-ID: <CAKohpomqfVqiw1PJxBRRA8=A6hV_63AW4nRpM8TfZPA5bypcKQ@mail.gmail.com>
-Subject: Re: [PATCH 14/18] cpufreq: sh: move cpufreq driver to drivers/cpufreq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Simon Horman <horms@verge.net.au>
-Cc: rjw@sisk.pl, robin.randhawa@arm.com, Steve.Bannister@arm.com,
-        Liviu.Dudau@arm.com, charles.garcia-tobin@arm.com,
-        arvind.chauhan@arm.com, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: <sedat.dilek@gmail.com>
+CC: <kgdb-bugreport@lists.sourceforge.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: kdb: kgdb: CONFIG_DEBUG_RODATA setting?
+References: <CA+icZUUkEgv+e1q3v1kW5WhJdT1egZKc5o96zF2omcT0YtVE3w@mail.gmail.com>
+In-Reply-To: <CA+icZUUkEgv+e1q3v1kW5WhJdT1egZKc5o96zF2omcT0YtVE3w@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 April 2013 18:25, Simon Horman <horms@verge.net.au> wrote:
-> On Thu, Apr 04, 2013 at 06:24:22PM +0530, Viresh Kumar wrote:
->> This patch moves cpufreq driver of SUPERH architecture to drivers/cpufreq.
->
-> Why?
->
-> I am missing the cover email where I assume the explanation lies.
+On 04/09/2013 08:06 AM, Sedat Dilek wrote:
 
-Hi Simon,
+>  config DEBUG_RODATA
+>  	bool "Write protect kernel read-only data structures"
+> -	default y
+>  	depends on DEBUG_KERNEL
+> +	default n if KGDB
+> +	default y
+>  	---help---
+>  	  Mark the kernel read-only data as write-protected in the pagetables,
+>  	  in order to catch accidental (and incorrect) writes to such const
 
-The idea was to keep all cpufreq drivers at a common and most suitable
-place, so that future consolidation work can be done easily and efficiently.
 
-So, functionally this patch shouldn't change anything.
+This is wrong and should not be merged.
+
+A) You should not change these defaults in this manner
+
+B) You have pointed out that the documentation is currently
+   incorrect. The CONFIG_DEBUG_RODATA constraints were removed some time
+   ago, per commit 3751d3e85cf693e10e2c47c03c8caa65e171099b (x86,kgdb:
+   Fix DEBUG_RODATA limitation using text_poke())
+
+Jason.
+
