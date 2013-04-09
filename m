@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936714Ab3DIBgL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 21:36:11 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56602 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936538Ab3DIBgK (ORCPT
+	id S936697Ab3DIBiq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 21:38:46 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:50155 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936538Ab3DIBip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 21:36:10 -0400
-X-AuditID: 9c930197-b7b50ae00000018c-77-51637087c3e3
-Date: Tue, 9 Apr 2013 10:36:06 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Shaohua Li <shli@kernel.org>, Bob Liu <bob.liu@oracle.com>,
-        Shuah Khan <shuah@gonehiking.org>
-Subject: Re: zsmalloc defrag (Was: [PATCH] mm: remove compressed copy from
- zram in-memory)
-Message-ID: <20130409013606.GC3467@blaptop>
-References: <1365400862-9041-1-git-send-email-minchan@kernel.org>
- <f3c8ef05-a880-47db-86dd-156038fc7d0f@default>
- <20130409012719.GB3467@blaptop>
+	Mon, 8 Apr 2013 21:38:45 -0400
+X-Spam-Score: -106.8
+Message-ID: <51637105.9020506@asianux.com>
+Date: Tue, 09 Apr 2013 09:38:13 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130409012719.GB3467@blaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, gang.chen@asianux.com, tglx@linutronix.de
+CC: tip-bot for Chen Gang <tipbot@zytor.com>,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/urgent] ftrace: Fix strncpy() use, use strlcpy() instead
+ of strncpy()
+References: <516243B7.9020405@asianux.com> <tip-75761cc15877c155b3849b4e0e0cb3f897faf471@git.kernel.org>
+In-Reply-To: <tip-75761cc15877c155b3849b4e0e0cb3f897faf471@git.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 10:27:19AM +0900, Minchan Kim wrote:
-> Hi Dan,
+On 2013年04月08日 23:31, tip-bot for Chen Gang wrote:
+> Commit-ID:  75761cc15877c155b3849b4e0e0cb3f897faf471
+> Gitweb:     http://git.kernel.org/tip/75761cc15877c155b3849b4e0e0cb3f897faf471
+> Author:     Chen Gang <gang.chen@asianux.com>
+> AuthorDate: Mon, 8 Apr 2013 12:12:39 +0800
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Mon, 8 Apr 2013 13:26:56 +0200
 > 
-> On Mon, Apr 08, 2013 at 09:32:38AM -0700, Dan Magenheimer wrote:
-> > > From: Minchan Kim [mailto:minchan@kernel.org]
-> > > Sent: Monday, April 08, 2013 12:01 AM
-> > > Subject: [PATCH] mm: remove compressed copy from zram in-memory
-> > 
-> > (patch removed)
-> > 
-> > > Fragment ratio is almost same but memory consumption and compile time
-> > > is better. I am working to add defragment function of zsmalloc.
-> > 
-> > Hi Minchan --
-> > 
-> > I would be very interested in your design thoughts on
-> > how you plan to add defragmentation for zsmalloc.  In
+> ftrace: Fix strncpy() use, use strlcpy() instead of strncpy()
 > 
-> What I can say now about is only just a word "Compaction".
-> As you know, zsmalloc has a transparent handle so we can do whatever
-> under user. Of course, there is a tradeoff between performance 
-> and memory efficiency. I'm biased to latter for embedded usecase.
+> For NUL terminated string we always need to set '\0' at the end.
 > 
-> And I might post it because as you know well, zsmalloc
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> Cc: rostedt@goodmis.org
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Link: http://lkml.kernel.org/r/516243B7.9020405@asianux.com
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
 
-Incomplete sentense,
 
-I might not post it until promoting zsmalloc because as you know well,
-zsmalloc/zram's all new stuffs are blocked into staging tree.
-Even if we could add it into staging, as you know well, staging is where
-every mm guys ignore so we end up needing another round to promote it. sigh.
+  thank you very much for applying the 3 related patches.
 
-I hope it gets better after LSF/MM.
+
 
 -- 
-Kind regards,
-Minchan Kim
+Chen Gang
+
+Asianux Corporation
