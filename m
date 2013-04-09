@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760023Ab3DINL6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 09:11:58 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:44042 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759009Ab3DINL5 (ORCPT
+	id S1761152Ab3DINOP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 09:14:15 -0400
+Received: from mga14.intel.com ([143.182.124.37]:12540 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759676Ab3DINON convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 09:11:57 -0400
+	Tue, 9 Apr 2013 09:14:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,439,1363158000"; 
+   d="scan'208";a="283664035"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>,
+        "Samuel Ortiz (sameo@linux.intel.com)" <sameo@linux.intel.com>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [char-misc-next 0/3 V6] Support NFC Device on MEI CL Bus
+Thread-Topic: [char-misc-next 0/3 V6] Support NFC Device on MEI CL Bus
+Thread-Index: AQHONLLD744sF7MD70qzazUufiLKxZjM0PmAgAENUZA=
+Date: Tue, 9 Apr 2013 13:12:48 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B01EFB6B8@HASMSX106.ger.corp.intel.com>
+References: <1365464495-17642-1-git-send-email-tomas.winkler@intel.com>
+ <20130409000815.GA30420@kroah.com>
+In-Reply-To: <20130409000815.GA30420@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1365498784.2609.165.camel@laptop>
-References: <1365266760-24725-1-git-send-email-fweisbec@gmail.com>
-	<1365266760-24725-2-git-send-email-fweisbec@gmail.com>
-	<1365498784.2609.165.camel@laptop>
-Date: Tue, 9 Apr 2013 15:11:56 +0200
-Message-ID: <CAFTL4hzEM2cSX=Y5Z5AnsK3ZdrvFEWt4WwvHxx5vt4dOoWkJkQ@mail.gmail.com>
-Subject: Re: [PATCH 1/7] sched: Update rq clock on nohz CPU before migrating tasks
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/9 Peter Zijlstra <peterz@infradead.org>:
-> On Sat, 2013-04-06 at 18:45 +0200, Frederic Weisbecker wrote:
->> Because the sched_class::put_prev_task() callback of rt and fair
->> classes are referring to the rq clock to update their runtime
->> statistics. A CPU running in tickless mode may carry a stale value.
->> We need to update it there.
->
-> I'm failing to see how tickless makes a difference here.. we should
-> never rely on a ->clock set at the last tick, that's wrong.
+> 
+> On Tue, Apr 09, 2013 at 02:41:32AM +0300, Tomas Winkler wrote:
+> > v5 -> v6
+> >  1. include/linux/uapi/mei/nfc.h - provides API also for pure
+> >     user space implementation as found under Android.
+> >  2. Removed INTEL_MEI_BUS_NFC Kconfig option.
+> >     The NFC info client is disconnected as soon as we
+> >     get the FW info and the regular client is connected only when
+> >     mei_cl_enable_device() is explicitly called from an nfc driver.
+> >     The mei cl bus now doesn't connect NFC  exclusively.
+> >  3. Added pn544 to the possibly detected NFC chipsets.
+> >
+> > Depends on:
+> > 	mei: bus: Add device enabling and disabling API
+> 
+> If this is a nfc device, why isn't it using the nfc_register_device() and
+> nfc_unregister_device() calls?  Shouldn't you be using the in-kernel nfc api
+> we already have?
+> 
 
-Ah I made that big mis-assumption then ;)
+Adding Samuel.
 
->
-> So either explain which/how clock update gets lost by tickless or make
-> it unconditional.
-
-So most of those fixup need to be made unconditional I think.
+Thanks
+Tomas
