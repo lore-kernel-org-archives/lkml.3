@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935768Ab3DIGET (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 02:04:19 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:5006 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935641Ab3DIGEQ (ORCPT
+	id S935796Ab3DIGGT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 02:06:19 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:65411 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762735Ab3DIGGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 02:04:16 -0400
-Message-ID: <5163AF37.8010605@huawei.com>
-Date: Tue, 9 Apr 2013 14:03:35 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Tue, 9 Apr 2013 02:06:18 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Neil Horman <nhorman@tuxdriver.com>
-Subject: [PATCH 1/2] cls_cgroup: remove task_struct parameter from sock_update_classid()
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <CAOtvUMcUZsfXT1km89mm4Hng=K8hbkhgsJW6tgxufNH4Kwb7sg@mail.gmail.com>
+References: <1365194030-28939-1-git-send-email-cody@linux.vnet.ibm.com>
+	<1365194030-28939-4-git-send-email-cody@linux.vnet.ibm.com>
+	<CAOtvUMdT0-oQMTsHAjFqL6K8vrLeCcXG2hX-sShxu6GGRBPxJw@mail.gmail.com>
+	<5162FE4D.7020308@linux.vnet.ibm.com>
+	<CAOtvUMcUZsfXT1km89mm4Hng=K8hbkhgsJW6tgxufNH4Kwb7sg@mail.gmail.com>
+Date: Tue, 9 Apr 2013 09:06:16 +0300
+Message-ID: <CAOtvUMc0Wzhr__U5P70Rf5yhp4zvK+vMgsAD3g0ew3a8R46Z6A@mail.gmail.com>
+Subject: Re: [PATCH 3/3] mm: when handling percpu_pagelist_fraction, use
+ on_each_cpu() to set percpu pageset fields.
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The callers always pass current to sock_update_classid().
+On Tue, Apr 9, 2013 at 9:03 AM, Gilad Ben-Yossef <gilad@benyossef.com> wrote:
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- include/net/cls_cgroup.h | 4 ++--
- net/core/scm.c           | 2 +-
- net/core/sock.c          | 6 +++---
- 3 files changed, 6 insertions(+), 6 deletions(-)
+>
+>> I also wonder whether there could be unexpected interactions between ->high
+>> and ->batch not changing together atomically. For example, could adjusting
+>> this knob cause ->batch to rise enough that it is greater than the previous
+>> ->high? If the code above then runs with the previous ->high, ->count
+>> wouldn't be correct (checking this inside free_pcppages_bulk() might help on
+>> this one issue).
+>
+> You are right, but that can be treated in  setup_pagelist_highmark()  e.g.:
+>
+> 3993 static void setup_pagelist_highmark(struct per_cpu_pageset *p,
+> 3994                                 unsigned long high)
+> 3995 {
+> 3996         struct per_cpu_pages *pcp;
+>                 unsigned int batch;
+> 3997
+> 3998         pcp = &p->pcp;
+>                 /* We're about to mess with PCP in an non atomic fashion.
+>                    Put an intermediate safe value of batch and make sure it
+>                    is visible before any other change */
+>                 pcp->batch = 1UL;
+>                 smb_mb();
+>
+> 3999         pcp->high = high;
 
-diff --git a/include/net/cls_cgroup.h b/include/net/cls_cgroup.h
-index 2581638..0fee061 100644
---- a/include/net/cls_cgroup.h
-+++ b/include/net/cls_cgroup.h
-@@ -24,7 +24,7 @@ struct cgroup_cls_state
- 	u32 classid;
- };
- 
--extern void sock_update_classid(struct sock *sk, struct task_struct *task);
-+extern void sock_update_classid(struct sock *sk);
- 
- #if IS_BUILTIN(CONFIG_NET_CLS_CGROUP)
- static inline u32 task_cls_classid(struct task_struct *p)
-@@ -61,7 +61,7 @@ static inline u32 task_cls_classid(struct task_struct *p)
- }
- #endif
- #else /* !CGROUP_NET_CLS_CGROUP */
--static inline void sock_update_classid(struct sock *sk, struct task_struct *task)
-+static inline void sock_update_classid(struct sock *sk)
- {
- }
- 
-diff --git a/net/core/scm.c b/net/core/scm.c
-index 2dc6cda..cb8d98c 100644
---- a/net/core/scm.c
-+++ b/net/core/scm.c
-@@ -307,7 +307,7 @@ void scm_detach_fds(struct msghdr *msg, struct scm_cookie *scm)
- 		sock = sock_from_file(fp[i], &err);
- 		if (sock) {
- 			sock_update_netprioidx(sock->sk, current);
--			sock_update_classid(sock->sk, current);
-+			sock_update_classid(sock->sk);
- 		}
- 		fd_install(new_fd, get_file(fp[i]));
- 	}
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 2ff5f36..0e1d2fe 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -1307,11 +1307,11 @@ static void sk_prot_free(struct proto *prot, struct sock *sk)
- }
- 
- #if IS_ENABLED(CONFIG_NET_CLS_CGROUP)
--void sock_update_classid(struct sock *sk, struct task_struct *task)
-+void sock_update_classid(struct sock *sk)
- {
- 	u32 classid;
- 
--	classid = task_cls_classid(task);
-+	classid = task_cls_classid(current);
- 	if (classid != sk->sk_classid)
- 		sk->sk_classid = classid;
- }
-@@ -1353,7 +1353,7 @@ struct sock *sk_alloc(struct net *net, int family, gfp_t priority,
- 		sock_net_set(sk, get_net(net));
- 		atomic_set(&sk->sk_wmem_alloc, 1);
- 
--		sock_update_classid(sk, current);
-+		sock_update_classid(sk);
- 		sock_update_netprioidx(sk, current);
- 	}
- 
+and i think I missed another needed barrier here:
+                  smp_mb();
+
+>
+> 4000         batch = max(1UL, high/4);
+> 4001         if ((high/4) > (PAGE_SHIFT * 8))
+> 4002                 batch = PAGE_SHIFT * 8;
+>
+>                pcp->batch = batch;
+> 4003 }
+>
+
 -- 
-1.8.0.2
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"If you take a class in large-scale robotics, can you end up in a
+situation where the homework eats your dog?"
+ -- Jean-Baptiste Queru
