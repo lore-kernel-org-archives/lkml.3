@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935959Ab3DIGWm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 02:22:42 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:35071 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935239Ab3DIGWl (ORCPT
+	id S935980Ab3DIG3N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 02:29:13 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:36793 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755205Ab3DIG3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 02:22:41 -0400
-Date: Tue, 9 Apr 2013 09:22:24 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: Jiri Slaby <jirislaby@gmail.com>, kbuild@01.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] tty: mxser: forever loops on error
-Message-ID: <20130409062224.GB9245@mwanda>
-References: <20130409051838.GB1516@longonot.mountain>
- <5163AC2B.7060804@ispras.ru>
+	Tue, 9 Apr 2013 02:29:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5163AC2B.7060804@ispras.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Date: Tue, 9 Apr 2013 14:29:11 +0800
+Message-ID: <CAPgLHd_MMO5pCMzQnfomBKkK+waYqQzpzDpX9AAP4FV7Cp0xEw@mail.gmail.com>
+Subject: [PATCH -next] workqueue: use kmem_cache_free() instead of kfree()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: tj@kernel.org
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 09:50:35AM +0400, Alexey Khoroshilov wrote:
-> Hi Dan,
-> 
-> Thank you for the patch.
-> 
-> We are also trying to fix the issue:
-> https://lkml.org/lkml/2013/2/19/29
-> https://lkml.org/lkml/2013/4/8/55
-> 
-> and the fix is finally in Greg's tty git tree since yesterday:
->     git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git
-> (tty-linus branch).
-> 
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Good deal.
+memory allocated by kmem_cache_alloc() should be freed using
+kmem_cache_free(), not kfree().
 
-Btw, by the time that Fenguang's kbuild scripts emailed you, it was
-already too late to send a v2 patch.
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ kernel/workqueue.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-regards,
-dan carpenter
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index c273376..154aa12 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3750,7 +3750,7 @@ static void free_unbound_pwq(struct pool_workqueue *pwq)
+ 
+ 	if (pwq) {
+ 		put_unbound_pool(pwq->pool);
+-		kfree(pwq);
++		kmem_cache_free(pwq_cache, pwq);
+ 	}
+ }
+ 
+
