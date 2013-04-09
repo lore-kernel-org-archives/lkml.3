@@ -1,80 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935533Ab3DILSx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 07:18:53 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53915 "EHLO arroyo.ext.ti.com"
+	id S935094Ab3DILSK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 07:18:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50276 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935471Ab3DILSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 07:18:50 -0400
-Message-ID: <5163F909.4030109@ti.com>
-Date: Tue, 9 Apr 2013 16:48:33 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: Prabhakar lad <prabhakar.csengg@gmail.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v8 0/2] ARM: davinci: dm355: add support for vpbe display
-References: <1365413215-3632-1-git-send-email-prabhakar.csengg@gmail.com> <51629DA8.3040806@ti.com> <20130408075606.5a59d32c@redhat.com> <5162AE56.5090203@ti.com> <20130408095652.33dcb0be@redhat.com>
-In-Reply-To: <20130408095652.33dcb0be@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S934578Ab3DILSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 07:18:06 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 04/10] mm: vmscan: Decide whether to compact the pgdat based on reclaim progress
+Date: Tue,  9 Apr 2013 12:06:59 +0100
+Message-Id: <1365505625-9460-5-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1365505625-9460-1-git-send-email-mgorman@suse.de>
+References: <1365505625-9460-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/8/2013 6:26 PM, Mauro Carvalho Chehab wrote:
-> Em Mon, 8 Apr 2013 17:17:34 +0530
-> Sekhar Nori <nsekhar@ti.com> escreveu:
-> 
->> Hi Maruo,
->>
->> On 4/8/2013 4:26 PM, Mauro Carvalho Chehab wrote:
->>> Hi Sekhar,
->>>
->>> Em Mon, 8 Apr 2013 16:06:24 +0530
->>> Sekhar Nori <nsekhar@ti.com> escreveu:
->>>
->>>> On 4/8/2013 2:56 PM, Prabhakar lad wrote:
->>>>> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->>>>>
->>>>> This patch series enables VPBE display driver on DM355.
->>>>
->>>> These (this and the DM365 one) patches look good to me. I need to get an
->>>> immutable branch from Mauro where dependencies are queued and then I can
->>>> generate a pull request for these for ARM SoC.
->>>
->>> Are you mean a branch at the media development tree for you to sent
->>> pull requests for me? If so, just use the "master" branch at the media
->>
->> The pull request will be sent to my upstreams (ie the ARM SoC folks -
->> Arnd and Olof). Since the platform data patches need driver patches to
->> be applied first, I need a non-rebasing branch containing the driver
->> stuff which I can use a dependency and apply platform patches on top.
-> 
-> Hmm... I generally wait for arch patches to be applied first, before
-> sending driver patches. If you're willing to do that, I suggest that
-> Arnd/Olof should put those patches on a separate topic branch, and
-> sending an upstream pull request for them after mine.
+In the past, kswapd makes a decision on whether to compact memory after the
+pgdat was considered balanced. This more or less worked but it is late to
+make such a decision and does not fit well now that kswapd makes a decision
+whether to exit the zone scanning loop depending on reclaim progress.
 
-The patches can be put on a separate branch, but the branch wont build
-without the driver changes (eg need defintion of VPBE_ENC_DV_TIMINGS
-from include/media/davinci/vpbe_types.h).
+This patch will compact a pgdat if at least the requested number of pages
+were reclaimed from unbalanced zones for a given priority. If any zone is
+currently balanced, kswapd will not call compaction as it is expected the
+necessary pages are already available.
 
-So this will need a immutable branch from you to depend on so Linus's
-tree won't have duplicate commits when Arnd/Olof send their pull request.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/vmscan.c | 60 ++++++++++++++++++++++++++++++------------------------------
+ 1 file changed, 30 insertions(+), 30 deletions(-)
 
-> 
-> If the patches are trivial, maybe the better would be to put both
-> media and arm patches at the same tree, with the other maintainers'
-> ack.
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 78268ca..a9e68b4 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2640,7 +2640,8 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+  */
+ static bool kswapd_shrink_zone(struct zone *zone,
+ 			       struct scan_control *sc,
+-			       unsigned long lru_pages)
++			       unsigned long lru_pages,
++			       unsigned long *nr_attempted)
+ {
+ 	unsigned long nr_slab;
+ 	struct reclaim_state *reclaim_state = current->reclaim_state;
+@@ -2656,6 +2657,9 @@ static bool kswapd_shrink_zone(struct zone *zone,
+ 	nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
+ 	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+ 
++	/* Account for the number of pages attempted to reclaim */
++	*nr_attempted += sc->nr_to_reclaim;
++
+ 	if (nr_slab == 0 && !zone_reclaimable(zone))
+ 		zone->all_unreclaimable = 1;
+ 
+@@ -2703,8 +2707,11 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 
+ 	do {
+ 		unsigned long lru_pages = 0;
++		unsigned long nr_attempted = 0;
+ 		unsigned long nr_reclaimed = sc.nr_reclaimed = 0;
++		unsigned long this_reclaimed;
+ 		bool raise_priority = true;
++		bool pgdat_needs_compaction = (order > 0);
+ 
+ 		/*
+ 		 * Scan in the highmem->dma direction for the highest
+@@ -2752,7 +2759,21 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 		for (i = 0; i <= end_zone; i++) {
+ 			struct zone *zone = pgdat->node_zones + i;
+ 
++			if (!populated_zone(zone))
++				continue;
++
+ 			lru_pages += zone_reclaimable_pages(zone);
++
++			/*
++			 * If any zone is currently balanced then kswapd will
++			 * not call compaction as it is expected that the
++			 * necessary pages are already available.
++			 */
++			if (pgdat_needs_compaction &&
++					zone_watermark_ok(zone, order,
++						low_wmark_pages(zone),
++						*classzone_idx, 0))
++				pgdat_needs_compaction = false;
+ 		}
+ 
+ 		/*
+@@ -2821,7 +2842,8 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 				 * already being scanned that high
+ 				 * watermark would be met at 100% efficiency.
+ 				 */
+-				if (kswapd_shrink_zone(zone, &sc, lru_pages))
++				if (kswapd_shrink_zone(zone, &sc, lru_pages,
++						       &nr_attempted))
+ 					raise_priority = false;
+ 			}
+ 
+@@ -2873,42 +2895,20 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 		if (try_to_freeze() || kthread_should_stop())
+ 			break;
+ 
++		/* Compact if necessary and kswapd is reclaiming efficiently */
++		this_reclaimed = sc.nr_reclaimed - nr_reclaimed;
++		if (pgdat_needs_compaction && this_reclaimed > nr_attempted)
++			compact_pgdat(pgdat, order);
++
+ 		/*
+ 		 * Raise priority if scanning rate is too low or there was no
+ 		 * progress in reclaiming pages
+ 		 */
+-		if (raise_priority || sc.nr_reclaimed - nr_reclaimed == 0)
++		if (raise_priority || !this_reclaimed)
+ 			sc.priority--;
+ 	} while (sc.priority >= 0 &&
+ 		 !pgdat_balanced(pgdat, order, *classzone_idx));
+ 
+-	/*
+-	 * If kswapd was reclaiming at a higher order, it has the option of
+-	 * sleeping without all zones being balanced. Before it does, it must
+-	 * ensure that the watermarks for order-0 on *all* zones are met and
+-	 * that the congestion flags are cleared. The congestion flag must
+-	 * be cleared as kswapd is the only mechanism that clears the flag
+-	 * and it is potentially going to sleep here.
+-	 */
+-	if (order) {
+-		int zones_need_compaction = 1;
+-
+-		for (i = 0; i <= end_zone; i++) {
+-			struct zone *zone = pgdat->node_zones + i;
+-
+-			if (!populated_zone(zone))
+-				continue;
+-
+-			/* Check if the memory needs to be defragmented. */
+-			if (zone_watermark_ok(zone, order,
+-				    low_wmark_pages(zone), *classzone_idx, 0))
+-				zones_need_compaction = 0;
+-		}
+-
+-		if (zones_need_compaction)
+-			compact_pgdat(pgdat, order);
+-	}
+-
+ out:
+ 	/*
+ 	 * Return the order we were reclaiming at so prepare_kswapd_sleep()
+-- 
+1.8.1.4
 
-This seems to be the easiest path at the moment. I will ack the platform
-parts and Prabhakar can issue a pull request for you. I have just
-checked that these patches won't cause a merge conflict with anything
-already queued through my tree.
-
-Thanks,
-Sekhar
