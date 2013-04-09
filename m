@@ -1,80 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964871Ab3DIQk5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 12:40:57 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54822 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936277Ab3DIQkz (ORCPT
+	id S937140Ab3DIQml (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 12:42:41 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:22626 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936277Ab3DIQmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 12:40:55 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 9 Apr 2013 09:41:01 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Kevin Strasser <kevin.strasser@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Brunner <michael.brunner@kontron.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Ben Dooks <ben-linux@fluff.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        Darren Hart <dvhart@linux.intel.com>, Michael Brunner <mibru@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 3/4] gpio: Kontron PLD gpio driver
-Message-ID: <20130409164101.GA20001@roeck-us.net>
-References: <1365441321-21952-1-git-send-email-kevin.strasser@linux.intel.com>
- <1365441321-21952-3-git-send-email-kevin.strasser@linux.intel.com>
- <CACRpkdYrGK_SPbiRssFUrg2vMvWbYO_iXsy+aZr99tyFtk88Uw@mail.gmail.com>
+	Tue, 9 Apr 2013 12:42:39 -0400
+X-IronPort-AV: E=Sophos;i="4.87,439,1363158000"; 
+   d="scan'208";a="36925542"
+Message-ID: <516444FE.2080200@codeaurora.org>
+Date: Tue, 09 Apr 2013 09:42:38 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdYrGK_SPbiRssFUrg2vMvWbYO_iXsy+aZr99tyFtk88Uw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>
+Subject: Re: [PATCH 1/4] Documentation: Add memory mapped ARM architected
+ timer binding
+References: <1365474623-29181-1-git-send-email-sboyd@codeaurora.org> <1365474623-29181-2-git-send-email-sboyd@codeaurora.org> <20130409090843.GS23725@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20130409090843.GS23725@e106331-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 10:46:15AM +0200, Linus Walleij wrote:
-> On Mon, Apr 8, 2013 at 7:15 PM, Kevin Strasser
-> <kevin.strasser@linux.intel.com> wrote:
-> 
-> > From: Michael Brunner <michael.brunner@kontron.com>
-> >
-> > Add gpio support for the on-board PLD found on some Kontron embedded
-> > modules.
-> >
-> > Signed-off-by: Michael Brunner <michael.brunner@kontron.com>
-> > Signed-off-by: Kevin Strasser <kevin.strasser@linux.intel.com>
-> 
-> This looks very generic, setting and clearing bits in bytesized
-> registers.
-> 
-> Can you please attempt to use generic GPIO for this?
-> 
-Linus,
+On 04/09/13 02:08, Mark Rutland wrote:
+> On Tue, Apr 09, 2013 at 03:30:20AM +0100, Stephen Boyd wrote:
+>>  
+>> -** Timer node properties:
+>> +** CP15 Timer node properties:
+>>  
+>>  - compatible : Should at least contain one of
+>>  	"arm,armv7-timer"
+>> @@ -26,3 +30,55 @@ Example:
+>>  			     <1 10 0xf08>;
+>>  		clock-frequency = <100000000>;
+>>  	};
+>> +
+>> +** Memory mapped timer node properties
+>> +
+>> +- compatible : Should at least contain "arm,armv7-timer-mem".
+>> +
+>> +- #address-cells : Must be 1.
+> What about LPAE systems?
+>
+> How about something like the following:
+>
+> #address-cells : If the ranges property is empty, the same value as the
+>                  parent node's #address-cells property. Otherwise, a
+> 		 value such that the ranges property specifies a
+> 		 mapping to the parent node's address space.            
 
-I looked into it, but for my part I seem to be missing how the generic GPIO code
-permits locking access to the hardware (PLD) and setting the PLD's page register.
-In other words, I don't immediately see how to call kempld_get_mutex_set_index()
-from the generic GPIO code. The other drivers using generic GPIO code don't
-seem to have that requirement.
+Yes that is much better. I wasn't trying to preclude LPAE or 64 bit systems.
 
-Thanks,
-Guenter
+>> +
+>> +- #size-cells : Must be 1.
+>> +
+>> +- ranges : Indicates parent and child bus address space are the same.
+>> +
+> Similarly, what if someone wants to write a more complex mapping for some
+> reason?
+>
+> We should be able to handle it if we use the standard accessors.
 
-> drivers/gpio/gpio-generic.c
-> <linux/basic_mmio_gpio.h>
-> 
-> See for example:
-> gpio-ep93xx.c, gpio-sodaville.c ...
-> 
-> Since you don't even have IRQ support in this it will be even simpler.
-> 
-> Yours,
-> Linus Walleij
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Maybe I should just leave this part out? They are standard DT properties
+so I could assume DT writers know what to do.
+
+>> +- clock-frequency : The frequency of the main counter, in Hz. Optional.
+>> +
+>> +- reg : The control frame base address.
+>> +
+>> +Frame:
+>> +
+>> +- frame-id: Encoded as follows:
+>> +		bits[3:0]  frame number: 0 to 7.
+>> +		bits[10:8] frame usage:
+>> +			0 - user/kernel
+>> +			1 - hyp
+>> +			2 - secure
+>> +
+> Could we not just have a disabled status property for those frames claimed by a
+> higher level (either secure firmware or hypervisor)? Or have I missed something
+> here?
+
+Using disabled status would work. I was also thinking maybe we should
+use a compatible string in each frame's node. Then we could match
+against compatible children like "frame-user", "frame-kernel",
+"frame-hyp", "frame-secure", "frame-user-kernel", etc. It allows us
+flexibility if we should need to add something else in the future.
+
+Also to get the frame number, I was thinking maybe we should expand the
+reg property to have two address cells. Then we could have reg = <0
+0xf0001000 0x1000>.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
