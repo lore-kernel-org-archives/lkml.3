@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964891Ab3DIVLd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 17:11:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48226 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934864Ab3DIVLc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 17:11:32 -0400
-Date: Tue, 9 Apr 2013 23:11:28 +0200
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Darrick J. Wong" <darrick.wong@oracle.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Shuge <shugelinux@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-ext4@vger.kernel.org, Kevin <kevin@allwinnertech.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jens Axboe <axboe@kernel.dk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3] [RESEND] mm: Make snapshotting pages for stable
- writes a per-bio operation
-Message-ID: <20130409211128.GD15214@quack.suse.cz>
-References: <20130409180617.GB8907@blackbox.djwong.org>
- <20130409140432.cd69f999302a02caf73788fc@linux-foundation.org>
+	id S964919Ab3DIVMA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 17:12:00 -0400
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:39068 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934864Ab3DIVL6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 17:11:58 -0400
+Date: Tue, 9 Apr 2013 14:11:52 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: "Daniel P. Berrange" <berrange@redhat.com>, jpoimboe@redhat.com,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        Kay Sievers <kay.sievers@vrfy.org>, lpoetter@redhat.com,
+        workman-devel@redhat.com, dhaval.giani@gmail.com,
+        cgroups@vger.kernel.org
+Subject: Re: cgroup: status-quo and userland efforts
+Message-ID: <20130409211152.GO6186@mtj.dyndns.org>
+References: <20130406012159.GA17159@mtj.dyndns.org>
+ <20130409095024.GI25576@redhat.com>
+ <20130409193851.GJ6186@mtj.dyndns.org>
+ <20130409194640.GK6186@mtj.dyndns.org>
+ <20130409210422.GA31120@sergelap>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130409140432.cd69f999302a02caf73788fc@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130409210422.GA31120@sergelap>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-04-13 14:04:32, Andrew Morton wrote:
-> On Tue, 9 Apr 2013 11:06:17 -0700 "Darrick J. Wong" <darrick.wong@oracle.com> wrote:
-> 
-> > +		 * Here we write back pagecache data that may be mmaped. Since
-> > +		 * we cannot afford to clean the page and set PageWriteback
-> > +		 * here due to lock ordering (page lock ranks above transaction
-> > +		 * start), the data can change while IO is in flight. Tell the
-> > +		 * block layer it should bounce the bio pages if stable data
-> > +		 * during write is required.
-> 
-> I think there are already ab/ba deadlocks between lock_page() and
-> journal_start().  iirc one path was write(), I forget which was the
-> other path.  This was 10+ years ago and nobody else noticed and I
-> didn't know how to fix it so I didn't tell anyone ;)
-  Hum, I don't think they are there anymore ;)
+Hey, Serge.
 
-> It would be neat to be able to hook things like journal_start() into
-> lockdep but I don't think that lockdep has easy provision for wiring
-> oddball things into its mechanisms.
-  Actually if you look at fs/jbd/transaction.c:start_this_handle(), you
-will notice that it is wired into lockdep (the lock_map_acquire() call
-there). And it works since I've seen quite some reports from it ;)
+On Tue, Apr 09, 2013 at 04:04:22PM -0500, Serge Hallyn wrote:
+> So for instance if there is a dbus call saying "please create cgroup
+> /x with (some constraints) and put $$ into it", "something" in the
+> container can convert that into "please create cgroup /lxc/c1/x
+> and put (host_uid($$)) into it" and pass that to the host's (or
+> parent container's) "something".
 
-								Honza
+Yeap, definitely.  It shouldn't be difficult to make it transparent to
+individual consumers.  It would actually be far easier to achieve that
+with userland agent which knows what's going on in the middle.
+
+> So perhaps it is best if the container monitor, living in the parent
+> namespaces, opens a socket '@cgroup_monitor' in the container
+> namespace (through setns), listens for container-userpsace requests
+> there, and passes them on to the host's monitor (which hopefully
+> also listens on '@cgroup_monitor', @ being '\0').  Note that my
+> mentino of converting pids requires a new kernel feature which we
+> don't currently have (but have wanted for a long time).
+
+Yeah, details may change but in principle something like that.
+
+Thanks.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+tejun
