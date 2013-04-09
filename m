@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935459Ab3DISnP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 14:43:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41406 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761380Ab3DISnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 14:43:14 -0400
-Date: Tue, 9 Apr 2013 14:42:48 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Mike Snitzer <snitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
-        dm-devel@redhat.com, Andi Kleen <andi@firstfloor.org>,
-        dm-crypt@saout.de, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Christian Schmidt <schmidt@digadd.de>
-Subject: Re: dm-crypt parallelization patches
-Message-ID: <20130409184248.GO6320@redhat.com>
-References: <20130326202837.GA5599@redhat.com>
- <20130328185327.GF14088@htj.dyndns.org>
- <20130328193343.GA15969@redhat.com>
- <20130328194443.GG14088@htj.dyndns.org>
- <20130328203808.GC15969@redhat.com>
- <20130328204522.GA25501@mtj.dyndns.org>
- <Pine.LNX.4.64.1304091242350.10025@file.rdu.redhat.com>
- <20130409175753.GA6186@mtj.dyndns.org>
- <Pine.LNX.4.64.1304091402150.10025@file.rdu.redhat.com>
- <20130409181031.GC6186@mtj.dyndns.org>
+	id S935500Ab3DISnp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 14:43:45 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48942 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761628Ab3DISno (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 14:43:44 -0400
+Date: Tue, 9 Apr 2013 20:43:34 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dave Hansen <dave@sr71.net>
+cc: Borislav Petkov <bp@alien8.de>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        dhillf@gmail.com, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] kthread: Prevent unpark race which puts threads on the
+ wrong cpu
+In-Reply-To: <516439DF.3050901@sr71.net>
+Message-ID: <alpine.LFD.2.02.1304092036431.21884@ionos>
+References: <515F457E.5050505@sr71.net> <515FCAC6.8090806@linux.vnet.ibm.com> <alpine.LFD.2.02.1304061019000.21884@ionos> <alpine.LFD.2.02.1304071119100.21884@ionos> <20130407095025.GA31307@pd.tnic> <alpine.LFD.2.02.1304081122040.21884@ionos>
+ <20130408115553.GA4395@pd.tnic> <alpine.LFD.2.02.1304081415570.21884@ionos> <alpine.LFD.2.02.1304091635430.21884@ionos> <516439DF.3050901@sr71.net>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130409181031.GC6186@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 11:10:31AM -0700, Tejun Heo wrote:
-> Hey,
+Dave,
+
+On Tue, 9 Apr 2013, Dave Hansen wrote:
+
+> Hey Thomas,
 > 
-> On Tue, Apr 09, 2013 at 02:08:06PM -0400, Mikulas Patocka wrote:
-> > > Hmmm? Why not just keep the issuing order along with plugging
-> > > boundaries?
-> > 
-> > What do you mean?
-> > 
-> > I used to have a patch that keeps order of requests as they were 
-> > introduced, but sorting the requests according to sector number is a bit 
-> > simpler.
+> I don't think the patch helped my case.  Looks like the same BUG_ON().
 > 
-> You're still destroying the context information.  Please just keep the
-> issuing order along with plugging boundaries.
+> I accidentally booted with possible_cpus=10 instead of 160.  I wasn't
+> able to trigger this in that case, even repeatedly on/offlining them.
+> But, once I booted with possible_cpus=160, it triggered in a jiffy.
 
-I guess plugging boundary is more important than issuing order as 
-block layer should take care of mering the bio and put in right
-order (attempt_plug_merge()).
+Darn. We should have merged Paul McKenneys NR_CPUS=0 patch last year
+and we would have avoided the whole shebang.
+ 
+> > [  161.551788] smpboot_thread_fn():
+> > [  161.551807] td->cpu: 132
+> > [  161.551808] smp_processor_id(): 121
+> > [  161.551811] comm: migration/%u
+> > [  161.551840] ------------[ cut here ]------------
+> > [  161.551939] kernel BUG at kernel/smpboot.c:149!
 
-But to make use of plugging boundary, one would probably still need
-submission using single thread.
+Any chance, that you get a trace for that?
 
-And if one is using single thread for submission, one will still get
-good performance (even if you are not using bio_associate_current()), as
-by default all bio will go to submitting thread's context.
+Thanks,
 
-Thanks
-Vivek
+	tglx
+
