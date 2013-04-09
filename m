@@ -1,114 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499Ab3DIEJA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 00:09:00 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56020 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753704Ab3DIEI6 (ORCPT
+	id S1760610Ab3DIELh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 00:11:37 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:34904 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab3DIELg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 00:08:58 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <51639446.6000205@jp.fujitsu.com>
-Date: Tue, 09 Apr 2013 13:08:38 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Tue, 9 Apr 2013 00:11:36 -0400
 MIME-Version: 1.0
-To: Li Zefan <lizefan@huawei.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 2/8] cgroup: implement cgroup_from_id()
-References: <51627DA9.7020507@huawei.com> <51627DEB.4090104@huawei.com>
-In-Reply-To: <51627DEB.4090104@huawei.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1365440381.25498.22.camel@gandalf.local.home>
+References: <cover.1364740180.git.viresh.kumar@linaro.org>
+	<147bfb5aa81790f94df75858bf20570cbacc9dca.1364740180.git.viresh.kumar@linaro.org>
+	<CAP245DV-4d4hRGCnKUtyVV1ycHuYF4dKwh568kvHfKHdJR3xpw@mail.gmail.com>
+	<CAKohponXTYSdmk71DNYsYtwU9GEYwnGcj-_wjLEZfxvEhzPWWQ@mail.gmail.com>
+	<1365440381.25498.22.camel@gandalf.local.home>
+Date: Tue, 9 Apr 2013 09:41:35 +0530
+Message-ID: <CAKohpok7cmTkByG5Ki6bGUxJ-zbFCwT=M3ac=gT2jSktza79RQ@mail.gmail.com>
+Subject: Re: [PATCH V4 1/4] workqueue: Add system wide system_freezable_unbound_wq
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>, Tejun Heo <tj@kernel.org>,
+        axboe@kernel.dk, Robin Randhawa <robin.randhawa@arm.com>,
+        linux-rt-users@vger.kernel.org, Patch Tracking <patches@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, linux-kernel@vger.kernel.org,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Steve Bannister <Steve.Bannister@arm.com>, airlied@redhat.com,
+        Arvind Chauhan <arvind.chauhan@arm.com>, mingo@redhat.com,
+        davem@davemloft.net,
+        Charles Garcia-Tobin <charles.garcia-tobin@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/04/08 17:20), Li Zefan wrote:
-> This will be used as a replacement for css_lookup().
-> 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
-> ---
->   include/linux/cgroup.h |  1 +
->   kernel/cgroup.c        | 31 +++++++++++++++++++++++++------
->   2 files changed, 26 insertions(+), 6 deletions(-)
-> 
-> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-> index 96072e4..6ae8ae1 100644
-> --- a/include/linux/cgroup.h
-> +++ b/include/linux/cgroup.h
-> @@ -732,6 +732,7 @@ unsigned short css_depth(struct cgroup_subsys_state *css);
->   struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id);
->   
->   bool cgroup_is_ancestor(struct cgroup *child, struct cgroup *root);
-> +struct cgroup *cgroup_from_id(struct cgroup_subsys *ss, int id);
->   
->   #else /* !CONFIG_CGROUPS */
->   
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index e87872c..5ae1e87 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -139,7 +139,7 @@ struct cgroupfs_root {
->   	unsigned long flags;
->   
->   	/* IDs for cgroups in this hierarchy */
-> -	struct ida cgroup_ida;
-> +	struct idr cgroup_idr;
->   
->   	/* The path to use for release notifications. */
->   	char release_agent_path[PATH_MAX];
-> @@ -908,7 +908,7 @@ static void cgroup_free_fn(struct work_struct *work)
->   
->   	simple_xattrs_free(&cgrp->xattrs);
->   
-> -	ida_simple_remove(&cgrp->root->cgroup_ida, cgrp->id);
-> +	idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
->   	kfree(rcu_dereference_raw(cgrp->name));
->   	kfree(cgrp);
->   }
-> @@ -1512,7 +1512,8 @@ static struct cgroupfs_root *cgroup_root_from_opts(struct cgroup_sb_opts *opts)
->   
->   	root->subsys_mask = opts->subsys_mask;
->   	root->flags = opts->flags;
-> -	ida_init(&root->cgroup_ida);
-> +	idr_init(&root->cgroup_idr);
-> +
->   	if (opts->release_agent)
->   		strcpy(root->release_agent_path, opts->release_agent);
->   	if (opts->name)
-> @@ -1531,7 +1532,7 @@ static void cgroup_drop_root(struct cgroupfs_root *root)
->   	spin_lock(&hierarchy_id_lock);
->   	ida_remove(&hierarchy_ida, root->hierarchy_id);
->   	spin_unlock(&hierarchy_id_lock);
-> -	ida_destroy(&root->cgroup_ida);
-> +	idr_destroy(&root->cgroup_idr);
->   	kfree(root);
->   }
->   
-> @@ -1645,6 +1646,11 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
->   		mutex_lock(&cgroup_mutex);
->   		mutex_lock(&cgroup_root_mutex);
->   
-> +		root_cgrp->id = idr_alloc(&root->cgroup_idr, root_cgrp,
-> +					  0, 0, GFP_KERNEL);
-> +		if (root_cgrp->id < 0)
-> +			goto unlock_drop;
+On 8 April 2013 22:29, Steven Rostedt <rostedt@goodmis.org> wrote:
+> Looks like Amit was left off the patch 0, and missed the power savings
+> explanation that you did there. Perhaps you should have included that in
+> each patch change log.
 
-Ah. hmm, I'm sorry but css ID is allocated from "1" and 0 was an invalid number.
-With this change, root cgroup will have 0.
-If this change is intentional, please add comments in Changelog.
-IIRC, swap_cgroup treats 0 as "unused" (root_memcg doesn't account anything...
-so, I guess we'll not see troubles.) we need double check.
+He isn't supposed to miss any of my emails, he is my manager :)
 
-Thanks,
--Kame
-
-
-
-
-
+Don't know if change log of all patches require those details..
