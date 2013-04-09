@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936835Ab3DIMd7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 08:33:59 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:15765 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935438Ab3DIMd6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 08:33:58 -0400
-X-IronPort-AV: E=Sophos;i="4.87,438,1363158000"; 
-   d="scan'208";a="37011008"
-From: Christopher Covington <cov@codeaurora.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Christopher Covington <cov@codeaurora.org>
-Subject: [PATCH v2] arm64: Fix task tracing
-Date: Tue,  9 Apr 2013 08:33:34 -0400
-Message-Id: <1365510814-21343-1-git-send-email-cov@codeaurora.org>
-X-Mailer: git-send-email 1.8.2
-In-Reply-To: <20130408153132.GQ17476@mudshark.cambridge.arm.com>
-References: <20130408153132.GQ17476@mudshark.cambridge.arm.com>
+	id S936848Ab3DIMfe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 08:35:34 -0400
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:20768
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759178Ab3DIMfc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 08:35:32 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dIc89bh1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh87h2a8h668h839h947hd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Tue, 9 Apr 2013 20:35:44 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Eric =?iso-8859-1?Q?B=E9nard?= <eric@eukrea.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <kernel@pengutronix.de>
+Subject: Re: [PATCH 1/3] ARM: mx28: add auart2 2 pins pinmux to imx28.dtsi
+Message-ID: <20130409123542.GG5044@S2101-09.ap.freescale.net>
+References: <1365425853-12457-1-git-send-email-eric@eukrea.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <1365425853-12457-1-git-send-email-eric@eukrea.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For accurate accounting pass contextidr_thread_switch the prev
-task pointer, since cpu_switch_to has at that point changed the
-the stack pointer.
+On Mon, Apr 08, 2013 at 02:57:31PM +0200, Eric Bénard wrote:
+> Add auart2 2 pins configuration on its main pads
+> 
+> Signed-off-by: Eric Bénard <eric@eukrea.com>
 
-Signed-off-by: Christopher Covington <cov@codeaurora.org>
----
- arch/arm64/kernel/process.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+All 3 patches applied, thanks.
 
-diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
-index 0337cdb..a49b25a 100644
---- a/arch/arm64/kernel/process.c
-+++ b/arch/arm64/kernel/process.c
-@@ -315,7 +315,7 @@ struct task_struct *__switch_to(struct task_struct *prev,
- 	/* the actual thread switch */
- 	last = cpu_switch_to(prev, next);
- 
--	contextidr_thread_switch(next);
-+	contextidr_thread_switch(prev);
- 	return last;
- }
- 
--- 
-Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by the Linux Foundation.
+> ---
+>  arch/arm/boot/dts/imx28.dtsi | 11 +++++++++++
+>  1 file changed, 11 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/imx28.dtsi b/arch/arm/boot/dts/imx28.dtsi
+> index 7ba4966..13799cf 100644
+> --- a/arch/arm/boot/dts/imx28.dtsi
+> +++ b/arch/arm/boot/dts/imx28.dtsi
+> @@ -308,6 +308,17 @@
+>  					fsl,pull-up = <0>;
+>  				};
+>  
+> +				auart2_2pins_b: auart2-2pins@1 {
+> +					reg = <1>;
+> +					fsl,pinmux-ids = <
+> +						0x3080 /* MX28_PAD_AUART2_RX__AUART2_RX */
+> +						0x3090 /* MX28_PAD_AUART2_TX__AUART2_TX */
+> +					>;
+> +					fsl,drive-strength = <0>;
+> +					fsl,voltage = <1>;
+> +					fsl,pull-up = <0>;
+> +				};
+> +
+>  				auart3_pins_a: auart3@0 {
+>  					reg = <0>;
+>  					fsl,pinmux-ids = <
+> -- 
+> 1.7.11.7
+> 
 
