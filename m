@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936979Ab3DIJey (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 05:34:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49070 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932892Ab3DIJew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 05:34:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,438,1363158000"; 
-   d="scan'208";a="315226631"
-Date: Tue, 9 Apr 2013 12:39:03 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        ben-linux@fluff.org, Jean Delvare <khali@linux-fr.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Christian Ruppert <christian.ruppert@abilis.com>
-Subject: Re: [5/7] i2c-designware: enable/disable the controller properly
-Message-ID: <20130409093903.GI21818@intel.com>
-References: <1363867800-23861-5-git-send-email-mika.westerberg@linux.intel.com>
- <20130409090914.GD28509@the-dreams.de>
- <20130409092836.GG21818@intel.com>
- <20130409092857.GE3624@the-dreams.de>
+	id S937013Ab3DIJfT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 05:35:19 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:55257 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932892Ab3DIJfR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 05:35:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130409092857.GE3624@the-dreams.de>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAP245DUTV2v2XZe-z0SVx_PW15ob65qoX8zbP7DX=9vjS_Mu4Q@mail.gmail.com>
+References: <cover.1364740180.git.viresh.kumar@linaro.org>
+	<91239cde99aaba2715f63db1f88241d9f4a36e13.1364740180.git.viresh.kumar@linaro.org>
+	<20130331181931.GA7533@htj.dyndns.org>
+	<CAKohpomGSkz6_YqDzaTYEsJfVmcg2=TvdgquWqTvd-nmtOmoaQ@mail.gmail.com>
+	<CAP245DUTV2v2XZe-z0SVx_PW15ob65qoX8zbP7DX=9vjS_Mu4Q@mail.gmail.com>
+Date: Tue, 9 Apr 2013 15:05:16 +0530
+Message-ID: <CAKohpomZFK77w-9fE_Z7WArpJspk3kp15tJ+e-5BER_oZjo9ag@mail.gmail.com>
+Subject: Re: [PATCH V4 3/4] block: queue work on unbound wq
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Amit Kucheria <amit.kucheria@linaro.org>
+Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Robin Randhawa <robin.randhawa@arm.com>,
+        linux-rt-users@vger.kernel.org, Patch Tracking <patches@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, linux-kernel@vger.kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Steve Bannister <Steve.Bannister@arm.com>, airlied@redhat.com,
+        Arvind Chauhan <arvind.chauhan@arm.com>, mingo@redhat.com,
+        davem@davemloft.net,
+        Charles Garcia-Tobin <charles.garcia-tobin@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 11:28:57AM +0200, Wolfram Sang wrote:
-> On Tue, Apr 09, 2013 at 12:28:36PM +0300, Mika Westerberg wrote:
-> > On Tue, Apr 09, 2013 at 11:09:14AM +0200, Wolfram Sang wrote:
-> > > 
-> > > > +static void __i2c_dw_enable(struct dw_i2c_dev *dev, bool enable)
-> > > > +{
-> > > > +	int timeout = 100;
-> > > > +
-> > > > +	do {
-> > > > +		dw_writel(dev, enable, DW_IC_ENABLE);
-> > > > +		if ((dw_readl(dev, DW_IC_ENABLE_STATUS) & 1) == enable)
-> > > > +			return;
-> > > > +
-> > > > +		usleep_range(25, 250);
-> > > 
-> > > This would wait 25ms max. Is there a timeout value specified in the docs?
-> > 
-> > The datasheet says something like:
-> > 
-> > 	1. Define a timer interval (t_i2c_poll) equal 10 times the highest
-> > 	signaling period. For 400kHz this is 25us.
-> > 
-> > 	2. Define max timeout parameter, MAX_T_POLL_COUNT, such that if any
-> > 	repeated operation exeeds this maximum, an error is reported.
-> > 
-> > In this case I have:
-> > 
-> > 	t_i2c_poll = 25 (to 250 us)
-> > 	MAX_T_POLL_COUNT = 100
-> 
-> Maybe worth a comment?
+On 9 April 2013 14:48, Amit Kucheria <amit.kucheria@linaro.org> wrote:
+> On Tue, Apr 9, 2013 at 1:00 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
 
-I'll add it in the next revision.
+>> diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
+>> +config WQ_POWER_EFFICIENT
+>> +       bool "Workqueue allocated as UNBOUND for power efficiency"
+>> +       depends on PM
+>
+> Should default to N so that existing configs don't get prompted for a choice.
 
-> Other than that, the series looks fine to me.
+I thought defaults default is N if not present. I can add default n if
+it is required.
 
-Thanks!
+>> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+>> +static bool wq_power_efficient = 0;
+>
+> 1?
+
+It should be disabled by default even if CONFIG_WQ_POWER_EFFICIENT is
+selected and so initialized it with zero.. Though i don't need to
+initialize it as
+default is 0.
