@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936203Ab3DIUPe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 16:15:34 -0400
-Received: from 8bytes.org ([85.214.48.195]:36418 "EHLO mail.8bytes.org"
+	id S936197Ab3DIURq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 16:17:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9155 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936045Ab3DIUNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 16:13:33 -0400
-From: Joerg Roedel <joro@8bytes.org>
-To: iommu@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-Subject: [PATCH 4/9] iommu/amd: Move add_special_device() to __init
-Date: Tue,  9 Apr 2013 22:12:59 +0200
-Message-Id: <1365538384-12426-5-git-send-email-joro@8bytes.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1365538384-12426-1-git-send-email-joro@8bytes.org>
-References: <1365538384-12426-1-git-send-email-joro@8bytes.org>
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Apr  9 22:13:32 2013
-X-DSPAM-Confidence: 0.9995
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5164766c23671079213024
+	id S936020Ab3DIURo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 16:17:44 -0400
+Date: Tue, 9 Apr 2013 22:12:18 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Roland Dreier <roland@kernel.org>
+Cc: "Michael R. Hines" <mrhines@linux.vnet.ibm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
+Subject: Re: [PATCHv2] rdma: add a new IB_ACCESS_GIFT flag
+Message-ID: <20130409191218.GD8212@redhat.com>
+References: <20130324155153.GA8597@redhat.com>
+ <515F3160.4020007@linux.vnet.ibm.com>
+ <CAL1RGDU2jtrRrxi6srsH_ADiYGvJbCpCT3UvoLGTX3cvQ=s0kQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL1RGDU2jtrRrxi6srsH_ADiYGvJbCpCT3UvoLGTX3cvQ=s0kQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function is only called by other __init functions, so it
-can be moved to __init too.
+On Fri, Apr 05, 2013 at 01:43:49PM -0700, Roland Dreier wrote:
+> On Fri, Apr 5, 2013 at 1:17 PM, Michael R. Hines
+> <mrhines@linux.vnet.ibm.com> wrote:
+> > I also removed the IBV_*_WRITE flags on the sender-side and activated
+> > cgroups with the "memory.memsw.limit_in_bytes" activated and the migration
+> > with RDMA also succeeded without any problems (both with *and* without GIFT
+> > also worked).
+> 
+> Not sure I'm interpreting this correctly.  Are you saying that things
+> worked without actually setting the GIFT flag?   In which case why are
+> we adding this flag?
+> 
+>  - R.
 
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
----
- drivers/iommu/amd_iommu_init.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+We are adding the flag to reduce memory when there's lots of COW pages.
+There's no guarantee there will be COW pages so I expect things to work
+both with and without breaking COW, just using much more memory when we
+break COW.
 
-diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index e3c2d74..6dc8d8d 100644
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -703,7 +703,7 @@ static void __init set_dev_entry_from_acpi(struct amd_iommu *iommu,
- 	set_iommu_for_device(iommu, devid);
- }
- 
--static int add_special_device(u8 type, u8 id, u16 devid)
-+static int __init add_special_device(u8 type, u8 id, u16 devid, bool cmd_line)
- {
- 	struct devid_map *entry;
- 	struct list_head *list;
 -- 
-1.7.9.5
-
-
+MST
