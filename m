@@ -1,210 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965204Ab3DIJjW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 05:39:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28129 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934556Ab3DIJjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 05:39:17 -0400
-From: Nikola Pajkovsky <npajkovs@redhat.com>
+	id S937186Ab3DIJj6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 05:39:58 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:54061 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934556Ab3DIJjw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 05:39:52 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipc: use list_for_each_entry for list traversing
-References: <63a5135b37c9a45abad27eed9f78d69dd4deba76.1365168828.git.npajkovs@redhat.com>
-	<20130408153824.974e9307f83616f90c63e00b@linux-foundation.org>
-Date: Tue, 09 Apr 2013 11:39:07 +0200
-In-Reply-To: <20130408153824.974e9307f83616f90c63e00b@linux-foundation.org>
-	(Andrew Morton's message of "Mon, 8 Apr 2013 15:38:24 -0700")
-Message-ID: <m3wqsc3ux0.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (x86_64-unknown-linux-gnu)
+Cc: Richard Guy Briggs <rgb@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-audit@redhat.com, Eric Paris <eparis@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+References: <1363807097-13073-1-git-send-email-rgb@redhat.com>
+	<20130408164622.284f48c65341396aa8dbd220@linux-foundation.org>
+Date: Tue, 09 Apr 2013 02:39:32 -0700
+In-Reply-To: <20130408164622.284f48c65341396aa8dbd220@linux-foundation.org>
+	(Andrew Morton's message of "Mon, 8 Apr 2013 16:46:22 -0700")
+Message-ID: <87ip3w59gr.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/ydixqQLQ1Uja+gnrt1udeDo1b1sXNGZ4=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.0 XMSubMetaSx_00 1+ Sexy Words
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Andrew Morton <akpm@linux-foundation.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] [BZ905179] audit: omit check for uid and gid validity in audit rules and data
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Andrew Morton <akpm@linux-foundation.org> writes:
 
-> On Fri,  5 Apr 2013 15:42:11 +0200 Nikola Pajkovsky <npajkovs@redhat.com> wrote:
+> On Wed, 20 Mar 2013 15:18:17 -0400 Richard Guy Briggs <rgb@redhat.com> wrote:
 >
->> the ipc/msg.c code does all list operations by hand and it open-codes
->> the accesses, instead of using for_each_entry.
+>> audit rule additions containing "-F auid!=4294967295" were failing with EINVAL.
 >> 
->> ...
->>
->> --- a/ipc/msg.c
->> +++ b/ipc/msg.c
->> @@ -237,14 +237,9 @@ static inline void ss_del(struct msg_sender *mss)
->>  
->>  static void ss_wakeup(struct list_head *h, int kill)
->>  {
->> -	struct list_head *tmp;
->> +	struct msg_sender *mss, *t;
->>  
->> -	tmp = h->next;
->> -	while (tmp != h) {
->> -		struct msg_sender *mss;
->> -
->> -		mss = list_entry(tmp, struct msg_sender, list);
->> -		tmp = tmp->next;
->> +	list_for_each_entry_safe(mss, t, h, list) {
->>  		if (kill)
->>  			mss->list.next = NULL;
->>  		wake_up_process(mss->tsk);
+>> UID_INVALID (and GID_INVALID) is actually a valid uid (gid) for setting and
+>> testing against audit rules.  Remove the check for invalid uid and gid when
+>> parsing rules and data for logging.
+
+In general testing against invalid uid appears completely bogus, and
+should always return true.  As it is and essentially always has been
+incorrect to explicitly set any kernel uid to that value.
+
+The only case where this appears to make the least little bit of sense
+is if the goal of the test is to test to see if an audit logloginuid
+has been set at all.  In which case depending on a test against
+4294967295 is bogus because you are depending on an intimate internal
+kernel implementation detail.
+
+Certainly removing the gid_valid tests is completely gratitious in this
+case.
+
+>> Revert part of ca57ec0f00c3f139c41bf6b0a5b9bcc95bbb2ad7 (2012-09-11) to fix
+>> this.
 >
-> urgh, that code is sick.  What's it doing poking around in the
-> list_head internals?
-
-No idea, it there from beginning of first kernel importation into
-git. Where is history before git?
-
->> @@ -253,14 +248,9 @@ static void ss_wakeup(struct list_head *h, int kill)
->>  
->>  static void expunge_all(struct msg_queue *msq, int res)
->>  {
->> -	struct list_head *tmp;
->> -
->> -	tmp = msq->q_receivers.next;
->> -	while (tmp != &msq->q_receivers) {
->> -		struct msg_receiver *msr;
->> +	struct msg_receiver *msr, *t;
->>  
->> -		msr = list_entry(tmp, struct msg_receiver, r_list);
->> -		tmp = tmp->next;
->> +	list_for_each_entry_safe(msr, t, &msq->q_receivers, r_list) {
->>  		msr->r_msg = NULL;
->>  		wake_up_process(msr->r_tsk);
->>  		smp_mb();
+> Eric, can you please take a look?
 >
-> I think list_for_each_entry() would suffice here.
-
-I don't know, I found wake_up_sem_queue_do in sem.c and it looks almost same
-except preempt stuff. I'll be dancing around ipc/
-
->> @@ -278,7 +268,7 @@ static void expunge_all(struct msg_queue *msq, int res)
->>   */
->>  static void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
->>  {
->> -	struct list_head *tmp;
->> +	struct msg_msg *msg;
->>  	struct msg_queue *msq = container_of(ipcp, struct msg_queue, q_perm);
->>  
->>  	expunge_all(msq, -EIDRM);
->> @@ -286,11 +276,7 @@ static void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
->>  	msg_rmid(ns, msq);
->>  	msg_unlock(msq);
->>  
->> -	tmp = msq->q_messages.next;
->> -	while (tmp != &msq->q_messages) {
->> -		struct msg_msg *msg = list_entry(tmp, struct msg_msg, m_list);
+>> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+>> ---
+>>  kernel/auditfilter.c |   12 ------------
+>>  1 files changed, 0 insertions(+), 12 deletions(-)
+>> 
+>> diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+>> index f9fc54b..457ee39 100644
+>> --- a/kernel/auditfilter.c
+>> +++ b/kernel/auditfilter.c
+>> @@ -360,10 +360,7 @@ static struct audit_entry *audit_rule_to_entry(struct audit_rule *rule)
+>>  			/* bit ops not implemented for uid comparisons */
+>>  			if (f->op == Audit_bitmask || f->op == Audit_bittest)
+>>  				goto exit_free;
 >> -
->> -		tmp = tmp->next;
->> +	list_for_each_entry(msg, &msq->q_messages, m_list) {
->>  		atomic_dec(&ns->msg_hdrs);
->>  		free_msg(msg);
->>  	}
+>>  			f->uid = make_kuid(current_user_ns(), f->val);
+>> -			if (!uid_valid(f->uid))
+>> -				goto exit_free;
 >
-> This is buggy isn't it?  list_for_each_entry() will use the
-> recently-freed `msg'.
+> It concerns me that map_id_down() can return -1 on error and that this
+> change causes the kernel to no longer notice that error?
 
-yes, it is.
+Me too.  Where we only communicate with audit in the initial user
+namespace right now it isn't absolutely broken but it certainly isn't a
+habit I want to get into.
 
---8<-----8<-----8<-----8<-----8<-----8<---
-From: Nikola Pajkovsky <npajkovs@redhat.com>
-Date: Thu, 4 Apr 2013 19:23:55 +0200
-Subject: [PATCH v2] ipc: use list_for_each_entry_[safe] for list traversing
+How about something like my untested patch below that add an explicit
+operation to test if loginuid has been set?
 
-the ipc/msg.c code does all list operations by hand and it open-codes
-the accesses, instead of using for_each_entry_[safe].
+Eric
 
-v2: in freeque there has to be used safe version of list_for_each_entry
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Tue, 9 Apr 2013 02:22:10 -0700
+Subject: [PATCH] audit: Make testing for a valid loginuid explicit.
 
-Signed-off-by: Nikola Pajkovsky <npajkovs@redhat.com>
+audit rule additions containing "-F auid!=4294967295" were failing
+with EINVAL.
+
+Apparently some userland audit rule sets want to know if loginuid uid
+has been set and are using a test for auid != 4294967295 to determine
+that.
+
+In practice that is a horrible way to ask if a value has been set,
+because it relies on subtle implementation details and will break
+every time the uid implementation in the kernel changes.
+
+So add a clean way to test if the audit loginuid has been set, and
+silently convert the old idiom to the cleaner and more comprehensible
+new idiom.
+
+Reported-By: Richard Guy Briggs <rgb@redhat.com> wrote:
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- ipc/msg.c |   35 ++++++++---------------------------
- 1 files changed, 8 insertions(+), 27 deletions(-)
+ include/linux/audit.h      |    5 +++++
+ include/uapi/linux/audit.h |    1 +
+ kernel/auditfilter.c       |   29 +++++++++++++++++++++++++++++
+ kernel/auditsc.c           |    5 ++++-
+ 4 files changed, 39 insertions(+), 1 deletions(-)
 
-diff --git a/ipc/msg.c b/ipc/msg.c
-index fede1d0..f45ef14 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -237,14 +237,9 @@ static inline void ss_del(struct msg_sender *mss)
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index a9fefe2..8a1ddde 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -390,6 +390,11 @@ static inline void audit_ptrace(struct task_struct *t)
+ #define audit_signals 0
+ #endif /* CONFIG_AUDITSYSCALL */
  
- static void ss_wakeup(struct list_head *h, int kill)
- {
--	struct list_head *tmp;
-+	struct msg_sender *mss, *t;
++static inline bool audit_loginuid_set(struct task_struct *tsk)
++{
++	return uid_valid(audit_get_loginuid(tsk));
++}
++
+ #ifdef CONFIG_AUDIT
+ /* These are defined in audit.c */
+ 				/* Public API */
+diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+index 9f096f1..9554a19 100644
+--- a/include/uapi/linux/audit.h
++++ b/include/uapi/linux/audit.h
+@@ -246,6 +246,7 @@
+ #define AUDIT_OBJ_TYPE	21
+ #define AUDIT_OBJ_LEV_LOW	22
+ #define AUDIT_OBJ_LEV_HIGH	23
++#define AUDIT_LOGINUID_SET	24
  
--	tmp = h->next;
--	while (tmp != h) {
--		struct msg_sender *mss;
--
--		mss = list_entry(tmp, struct msg_sender, list);
--		tmp = tmp->next;
-+	list_for_each_entry_safe(mss, t, h, list) {
- 		if (kill)
- 			mss->list.next = NULL;
- 		wake_up_process(mss->tsk);
-@@ -253,14 +248,9 @@ static void ss_wakeup(struct list_head *h, int kill)
+ 				/* These are ONLY useful when checking
+ 				 * at syscall exit time (AUDIT_AT_EXIT). */
+diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+index 540f986..6381d17 100644
+--- a/kernel/auditfilter.c
++++ b/kernel/auditfilter.c
+@@ -349,6 +349,12 @@ static struct audit_entry *audit_rule_to_entry(struct audit_rule *rule)
+ 		if (f->op == Audit_bad)
+ 			goto exit_free;
  
- static void expunge_all(struct msg_queue *msq, int res)
- {
--	struct list_head *tmp;
--
--	tmp = msq->q_receivers.next;
--	while (tmp != &msq->q_receivers) {
--		struct msg_receiver *msr;
-+	struct msg_receiver *msr, *t;
++		/* Support legacy tests for a valid loginuid */
++		if ((f->type == AUDIT_LOGINUID) && (f->val == 4294967295)) {
++			f->type = AUDIT_LOGINUID_SET;
++			f->val = 0;
++		}
++
+ 		switch(f->type) {
+ 		default:
+ 			goto exit_free;
+@@ -377,6 +383,12 @@ static struct audit_entry *audit_rule_to_entry(struct audit_rule *rule)
+ 			if (!gid_valid(f->gid))
+ 				goto exit_free;
+ 			break;
++		case AUDIT_LOGINUID_SET:
++			if ((f->op != Audit_not_equal) && (f->op != Audit_equal))
++				goto exit_free;
++			if ((f->val != 0) && (f->val != 1))
++				goto exit_free;
++			break;
+ 		case AUDIT_PID:
+ 		case AUDIT_PERS:
+ 		case AUDIT_MSGTYPE:
+@@ -459,6 +471,13 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
+ 		f->gid = INVALID_GID;
+ 		f->lsm_str = NULL;
+ 		f->lsm_rule = NULL;
++
++		/* Support legacy tests for a valid loginuid */
++		if ((f->type == AUDIT_LOGINUID) && (f->val == 4294967295)) {
++			f->type = AUDIT_LOGINUID_SET;
++			f->val = 0;
++		}
++
+ 		switch(f->type) {
+ 		case AUDIT_UID:
+ 		case AUDIT_EUID:
+@@ -487,6 +506,12 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
+ 			if (!gid_valid(f->gid))
+ 				goto exit_free;
+ 			break;
++		case AUDIT_LOGINUID_SET:
++			if ((f->op != Audit_not_equal) && (f->op != Audit_equal))
++				goto exit_free;
++			if ((f->val != 0) && (f->val != 1))
++				goto exit_free;
++			break;
+ 		case AUDIT_PID:
+ 		case AUDIT_PERS:
+ 		case AUDIT_MSGTYPE:
+@@ -1380,6 +1405,10 @@ static int audit_filter_user_rules(struct audit_krule *rule,
+ 			result = audit_uid_comparator(audit_get_loginuid(current),
+ 						  f->op, f->uid);
+ 			break;
++		case AUDIT_LOGINUID_SET:
++			result = audit_comparator(audit_loginuid_set(current),
++						  f->op, f->val);
++			break;
+ 		case AUDIT_SUBJ_USER:
+ 		case AUDIT_SUBJ_ROLE:
+ 		case AUDIT_SUBJ_TYPE:
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 3a11d34..27d0a50 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -750,6 +750,9 @@ static int audit_filter_rules(struct task_struct *tsk,
+ 			if (ctx)
+ 				result = audit_uid_comparator(tsk->loginuid, f->op, f->uid);
+ 			break;
++		case AUDIT_LOGINUID_SET:
++			result = audit_comparator(audit_loginuid_set(tsk), f->op, f->val);
++			break;
+ 		case AUDIT_SUBJ_USER:
+ 		case AUDIT_SUBJ_ROLE:
+ 		case AUDIT_SUBJ_TYPE:
+@@ -2317,7 +2320,7 @@ int audit_set_loginuid(kuid_t loginuid)
+ 	unsigned int sessionid;
  
--		msr = list_entry(tmp, struct msg_receiver, r_list);
--		tmp = tmp->next;
-+	list_for_each_entry_safe(msr, t, &msq->q_receivers, r_list) {
- 		msr->r_msg = NULL;
- 		wake_up_process(msr->r_tsk);
- 		smp_mb();
-@@ -278,7 +268,7 @@ static void expunge_all(struct msg_queue *msq, int res)
-  */
- static void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
- {
--	struct list_head *tmp;
-+	struct msg_msg *msg, *t;
- 	struct msg_queue *msq = container_of(ipcp, struct msg_queue, q_perm);
- 
- 	expunge_all(msq, -EIDRM);
-@@ -286,11 +276,7 @@ static void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
- 	msg_rmid(ns, msq);
- 	msg_unlock(msq);
- 
--	tmp = msq->q_messages.next;
--	while (tmp != &msq->q_messages) {
--		struct msg_msg *msg = list_entry(tmp, struct msg_msg, m_list);
--
--		tmp = tmp->next;
-+	list_for_each_entry_safe(msg, t, &msq->q_messages, m_list) {
- 		atomic_dec(&ns->msg_hdrs);
- 		free_msg(msg);
- 	}
-@@ -602,14 +588,9 @@ static int testmsg(struct msg_msg *msg, long type, int mode)
- 
- static inline int pipelined_send(struct msg_queue *msq, struct msg_msg *msg)
- {
--	struct list_head *tmp;
--
--	tmp = msq->q_receivers.next;
--	while (tmp != &msq->q_receivers) {
--		struct msg_receiver *msr;
-+	struct msg_receiver *msr, *t;
- 
--		msr = list_entry(tmp, struct msg_receiver, r_list);
--		tmp = tmp->next;
-+	list_for_each_entry_safe(msr, t, &msq->q_receivers, r_list) {
- 		if (testmsg(msg, msr->r_msgtype, msr->r_mode) &&
- 		    !security_msg_queue_msgrcv(msq, msg, msr->r_tsk,
- 					       msr->r_msgtype, msr->r_mode)) {
+ #ifdef CONFIG_AUDIT_LOGINUID_IMMUTABLE
+-	if (uid_valid(task->loginuid))
++	if (audit_loginuid_set(task))
+ 		return -EPERM;
+ #else /* CONFIG_AUDIT_LOGINUID_IMMUTABLE */
+ 	if (!capable(CAP_AUDIT_CONTROL))
 -- 
-1.7.1
+1.7.5.4
 
--- 
-Nikola
