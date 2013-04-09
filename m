@@ -1,158 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935921Ab3DITOu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 15:14:50 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:14282 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935459Ab3DITOt (ORCPT
+	id S935423Ab3DITVD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 15:21:03 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:40772 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759304Ab3DITVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 15:14:49 -0400
-Message-ID: <1365534150.32127.55.camel@misato.fc.hp.com>
-Subject: Re: [UPDATE][PATCH v2 2/3] resource: Add
- release_mem_region_adjustable()
-From: Toshi Kani <toshi.kani@hp.com>
-To: Ram Pai <linuxram@us.ibm.com>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+	Tue, 9 Apr 2013 15:21:01 -0400
+Date: Tue, 9 Apr 2013 15:20:54 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Cc: xen-devel@lists.xensource.com,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>,
-        "Makphaibulchoke, Thavatchai" <thavatchai.makpahibulchoke@hp.com>,
-        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
-        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
-        "tangchen@cn.fujitsu.com" <tangchen@cn.fujitsu.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>
-Date: Tue, 09 Apr 2013 13:02:30 -0600
-In-Reply-To: <20130409054825.GB7251@ram.oc3035372033.ibm.com>
-References: <1365457655-7453-1-git-send-email-toshi.kani@hp.com>
-	 <20130409054825.GB7251@ram.oc3035372033.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        Feng Jin <joe.jin@oracle.com>, ben@guthro.net
+Subject: Re: [PATCH] xen: minor fix in apic ipi interface func
+Message-ID: <20130409192054.GA1768@phenom.dumpdata.com>
+References: <5163F29D.6080605@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5163F29D.6080605@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-09 at 05:48 +0000, Ram Pai wrote:
-> On Mon, Apr 08, 2013 at 03:47:35PM -0600, Toshi Kani wrote:
-> > Added release_mem_region_adjustable(), which releases a requested
-> > region from a currently busy memory resource.  This interface
-> > adjusts the matched memory resource accordingly even if the
-> > requested region does not match exactly but still fits into.
-> > 
-> > This new interface is intended for memory hot-delete.  During
-> > bootup, memory resources are inserted from the boot descriptor
-> > table, such as EFI Memory Table and e820.  Each memory resource
-> > entry usually covers the whole contigous memory range.  Memory
-> > hot-delete request, on the other hand, may target to a particular
-> > range of memory resource, and its size can be much smaller than
-> > the whole contiguous memory.  Since the existing release interfaces
-> > like __release_region() require a requested region to be exactly
-> > matched to a resource entry, they do not allow a partial resource
-> > to be released.
-> > 
-> > There is no change to the existing interfaces since their restriction
-> > is valid for I/O resources.
-> > 
-> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > Reviewed-by : Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> > ---
-> > 
-> > Added #ifdef CONFIG_MEMORY_HOTPLUG as suggested by Andrew Morton.
-> > 
-> > ---
-> >  include/linux/ioport.h |    4 ++
-> >  kernel/resource.c      |   96 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >  2 files changed, 100 insertions(+)
-> > 
-> > diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-> > index 85ac9b9b..961d4dc 100644
-> > --- a/include/linux/ioport.h
-> > +++ b/include/linux/ioport.h
-> > @@ -192,6 +192,10 @@ extern struct resource * __request_region(struct resource *,
-> >  extern int __check_region(struct resource *, resource_size_t, resource_size_t);
-> >  extern void __release_region(struct resource *, resource_size_t,
-> >  				resource_size_t);
-> > +#ifdef CONFIG_MEMORY_HOTPLUG
-> > +extern int release_mem_region_adjustable(struct resource *, resource_size_t,
-> > +				resource_size_t);
-> > +#endif
-> > 
-> >  static inline int __deprecated check_region(resource_size_t s,
-> >  						resource_size_t n)
-> > diff --git a/kernel/resource.c b/kernel/resource.c
-> > index ae246f9..25b945c 100644
-> > --- a/kernel/resource.c
-> > +++ b/kernel/resource.c
-> > @@ -1021,6 +1021,102 @@ void __release_region(struct resource *parent, resource_size_t start,
-> >  }
-> >  EXPORT_SYMBOL(__release_region);
-> > 
-> > +#ifdef CONFIG_MEMORY_HOTPLUG
-> > +/**
-> > + * release_mem_region_adjustable - release a previously reserved memory region
-> > + * @parent: parent resource descriptor
-> > + * @start: resource start address
-> > + * @size: resource region size
-> > + *
-> > + * This interface is intended for memory hot-delete.  The requested region is
-> > + * released from a currently busy memory resource.  It adjusts the matched
-> > + * busy memory resource accordingly even if the requested region does not
-> > + * match exactly but still fits into.  Existing children of the busy memory
-> > + * resource must be immutable in this request.
-> > + *
-> > + * Note, when the busy memory resource gets split into two entries, the code
-> > + * assumes that all children remain in the lower address entry for simplicity.
-> > + * Enhance this logic when necessary.
-> > + */
-> > +int release_mem_region_adjustable(struct resource *parent,
-> > +			resource_size_t start, resource_size_t size)
-> > +{
-> > +	struct resource **p;
-> > +	struct resource *res, *new;
-> > +	resource_size_t end;
-> > +	int ret = -EINVAL;
-> > +
-> > +	end = start + size - 1;
-> > +	if ((start < parent->start) || (end > parent->end))
-> > +		return ret;
-> > +
-> > +	p = &parent->child;
-> > +	write_lock(&resource_lock);
-> > +
-> > +	while ((res = *p)) {
-> > +		if (res->start >= end)
-> > +			break;
-> > +
-> > +		/* look for the next resource if it does not fit into */
-> > +		if (res->start > start || res->end < end) {
-> > +			p = &res->sibling;
-> > +			continue;
-> > +		}
+On Tue, Apr 09, 2013 at 06:51:09PM +0800, Zhenzhong Duan wrote:
+> xen_send_IPI_mask_allbutself uses native vector as input other than xen_vector.
+
+Ouch. But it looks as the only user of the .send_IPI_mask_allbutself
+is just xen_send_IPI_allbutself? Or is there another user of this?
+
+
+Is there a particular bug that was found with this?
 > 
-> What if the resource overlaps. In other words, the res->start > start 
-> but res->end > end  ? 
+> xen_send_IPI_one need to be called to pass xen_vector in xen_send_IPI_mask_allbutself.
+
+Right, as we are using now 'xen_vector'.
+
 > 
-> Also do you handle the case where the range <start,end> spans
-> across multiple adjacent resources?
-
-Good questions!  The two cases above are handled as error cases
-(-EINVAL) by design.  A requested region must either match exactly or
-fit into a single resource entry.  There are basically two design
-choices in release -- restrictive or non-restrictive.  Restrictive only
-releases under certain conditions, and non-restrictive releases under
-any conditions.  Since the existing release interfaces,
-__release_region() and __release_resource(), are restrictive, I intend
-to follow the same policy and made this new interface restrictive as
-well.  This new interface handles the common scenarios of memory
-hot-plug operations well.  I think your example cases are non-typical
-scenarios for memory hot-plug, and I am not sure if they happen under
-normal cases at this point.  Hence, they are handled as error cases for
-now.  We can always enhance this interface when we find them necessary
-to support as this interface is dedicated for memory hot-plug.  In other
-words, we should make such enhancement after we understand their
-scenarios well.  Does it make sense?
-
-Thanks,
--Toshi
-
+> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+> ---
+>  arch/x86/xen/smp.c |   11 ++++++-----
+>  1 files changed, 6 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+> index 09ea61d..bf27868 100644
+> --- a/arch/x86/xen/smp.c
+> +++ b/arch/x86/xen/smp.c
+> @@ -565,6 +565,10 @@ void xen_send_IPI_mask_allbutself(const struct cpumask *mask,
+>  {
+>  	unsigned cpu;
+>  	unsigned int this_cpu = smp_processor_id();
+> +	int xen_vector = xen_map_vector(vector);
+> +
+> +	if (xen_vector < 0)
+> +		return;
+>  
+>  	if (!(num_online_cpus() > 1))
+>  		return;
+> @@ -573,16 +577,13 @@ void xen_send_IPI_mask_allbutself(const struct cpumask *mask,
+>  		if (this_cpu == cpu)
+>  			continue;
+>  
+> -		xen_smp_send_call_function_single_ipi(cpu);
+> +		xen_send_IPI_one(cpu, xen_vector);
+>  	}
+>  }
+>  
+>  void xen_send_IPI_allbutself(int vector)
+>  {
+> -	int xen_vector = xen_map_vector(vector);
+> -
+> -	if (xen_vector >= 0)
+> -		xen_send_IPI_mask_allbutself(cpu_online_mask, xen_vector);
+> +	xen_send_IPI_mask_allbutself(cpu_online_mask, vector);
+>  }
+>  
+>  static irqreturn_t xen_call_function_interrupt(int irq, void *dev_id)
+> -- 
+> 1.7.3
+> 
