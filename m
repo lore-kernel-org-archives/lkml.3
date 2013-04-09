@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936943Ab3DIOwe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 10:52:34 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:3471 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934327Ab3DIOwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 10:52:32 -0400
-Message-ID: <51642B1A.9000203@parallels.com>
-Date: Tue, 09 Apr 2013 18:52:10 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S964849Ab3DIOwt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 10:52:49 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:48945 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936814Ab3DIOwq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 10:52:46 -0400
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Linux MM <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Matthew Wilcox <willy@linux.intel.com>
-Subject: Re: [RFC PATCH 1/1] mm: Another attempt to monitor task's memory
- changes
-References: <515F0484.1010703@parallels.com> <51634E58.4080104@gmail.com>
-In-Reply-To: <51634E58.4080104@gmail.com>
+In-Reply-To: <CAKohponv-AKZzM98Ujeek4oXQx+8ba+sMgMbM9eV8PgQR38kZw@mail.gmail.com>
+References: <cover.1352196505.git.viresh.kumar@linaro.org>
+	<d12b25130db5a8b645929eb93d1cf4ddc2d68826.1352196505.git.viresh.kumar@linaro.org>
+	<1354024039.6276.72.camel@gandalf.local.home>
+	<CAKohponv-AKZzM98Ujeek4oXQx+8ba+sMgMbM9eV8PgQR38kZw@mail.gmail.com>
+Date: Tue, 9 Apr 2013 20:22:45 +0530
+Message-ID: <CAKohpo=St0z0L9ei248s3KL_DqZtewQ50o7d=BTdwLFcpM+x3w@mail.gmail.com>
+Subject: Re: [PATCH V2 Resend 4/4] timer: Migrate running timer
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: tglx@linutronix.de, Steven Rostedt <rostedt@goodmis.org>
+Cc: pjt@google.com, paul.mckenney@linaro.org, tj@kernel.org, mingo@redhat.com,
+        peterz@infradead.org, Arvind.Chauhan@arm.com,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
+        linux-rt-users@vger.kernel.org, john stultz <johnstul@us.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2013 03:10 AM, KOSAKI Motohiro wrote:
->> This approach works on any task via it's proc, and can be used on different
->> tasks in parallel.
+[Steven replied to a personal Ping!!, including everybody again]
+
+On 9 April 2013 19:25, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Tue, 2013-04-09 at 14:05 +0530, Viresh Kumar wrote:
+>> Ping!!
 >>
->> Also, Andrew was asking for some performance numbers related to the change.
->> Now I can say, that as long as soft dirty bits are not cleared, no performance
->> penalty occur, since the soft dirty bit and the regular dirty bit are set at 
->> the same time within the same instruction. When soft dirty is cleared via 
->> clear_refs, the task in question might slow down, but it will depend on how
->> actively it uses the memory.
->>
->>
->> What do you think, does it make sense to develop this approach further?
-> 
-> When touching mmaped page, cpu turns on dirty bit but doesn't turn on soft dirty.
+>
+> Remind me again. What problem are you trying to solve?
 
-Yes. BTW, I've just thought that "soft" in soft dirty should be read as softWARE,
-i.e. this bit is managed by kernel, rather than CPU.
+I was trying to migrate a running timer which arms itself, so that we don't
+keep a cpu busy just for servicing this timer.
 
-> So, I'm not convinced how to use this flag. Please show us your userland algorithm
-> how to detect diff.
+>> On 20 March 2013 20:43, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> >
+>> > Hi Steven/Thomas,
+>> >
+>> > I came back to this patch after completing some other stuff and posting
+>> > wq part of this patchset separately.
+>> >
+>> > I got your point and understand how this would fail.
+>> >
+>> > @Thomas: I need your opinion first. Do you like this concept of migrating
+>> > running timer or not? Or you see some basic problem with this concept?
+>
+> I'll let Thomas answer this, but to me, this sounds really racy.
 
-It's like this:
+Sure.
 
-1. First do "echo 4 > /proc/$pid/clear_refs".
-   At that point kernel clears the soft dirty _and_ the writable bits from all ptes
-   of process $pid. From now on every write to any page will result in #pf and the
-   subsequent call to pte_mkdirty/pmd_mkdirty, which in turn will set the soft dirty
-   flag.
+>> > If no (i.e. i can go ahead with another version), then i have some solution to
+>> > fix earlier problems reported by Steven:
+>> >
+>> > The problem lies with del_timer_sync() which just checks
+>> > base->running_timer != timer to check if timer is currently running or not.
+>> >
+>> > What if we add another variable in struct timer_list, that will store if we are
+>> > running timer callback or not. And so, before we call callback in timer core,
+>> > we will set this variable and will reset it after finishing callback.
+>> >
+>> > del_timer_sync() will have something like:
+>> >
+>> > if (base->running_timer != timer)
+>> >     remove timer and return;
+>
+> For example, this didn't fix the issue. You removed the timer when it
+> was still running, because base->running_timer did not equal timer.
 
-2. Then read the /proc/$pid/pagemap (well, /proc/$pid/pagemap2 when it will appear)
-   and check the soft-dirty bit reported there (in this RFC patch it's the
-   PM_SOFT_DIRTY one). If set, the respective pte was written to since last call
-   to clear refs. 
+You are correct and i was stupid. I wanted to write this instead:
 
-Thanks,
-Pavel
+del_timer_sync() will have something like:
+
+if (base->running_timer != timer)
+    if (timer->running_callback)
+        go back to its loop...
+    else
+        remove timer and return;
+
+i.e. if we aren't running on our base cpu, just check if our callback is
+executing somewhere else due to migration.
