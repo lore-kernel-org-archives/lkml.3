@@ -1,109 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932077Ab3DIREL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 13:04:11 -0400
-Received: from canardo.mork.no ([148.122.252.1]:35943 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759228Ab3DIREJ convert rfc822-to-8bit (ORCPT
+	id S1761186Ab3DIRGF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 13:06:05 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:62257 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759228Ab3DIRGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 13:04:09 -0400
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Phillip Susi <psusi@ubuntu.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: [regression] v3.8 -> v3.9-rc6, caused by commit 8761a3d ("loop: cleanup partitions when detaching loop device")
-Organization: m
-Date: Tue, 09 Apr 2013 19:03:02 +0200
-Message-ID: <87r4ijfxh5.fsf@nemi.mork.no>
-User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
+	Tue, 9 Apr 2013 13:06:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Reply-To: sedat.dilek@gmail.com
+Date: Tue, 9 Apr 2013 19:06:01 +0200
+Message-ID: <CA+icZUU82LMNjvJg6W2RKuo1VoC21VsFPJ4qg9Meou_oSKCGyA@mail.gmail.com>
+Subject: Re: linux-next: Tree for Apr 9 [ BROKEN vfs-next: fs/pipe.c ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: multipart/mixed; boundary=047d7bfd0c2e6f7a7004d9f09160
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--047d7bfd0c2e6f7a7004d9f09160
+Content-Type: text/plain; charset=UTF-8
 
-the following simple test causes a deadlock between the loop driver,
-umount and blkid i v3.9-rc6 (tested on a standard Debian wheezy
-installating, i.e. with udev 175):
+On Tue, Apr 9, 2013 at 11:30 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Changes since 20130408:
+>
+> The vfs tree still had its build failure so I used the version from
+> next-20130405.
+>
 
-qmitest:~# file cd-image-cfg1.iso 
-cd-image-cfg1.iso: # ISO 9660 CD-ROM filesystem data 'D-LINK MODEM'
-qmitest:~# mount cd-image-cfg1.iso /mnt/ -oloop,ro -t iso9660
-qmitest:~# umount /mnt 
+With the attached patch including a follow-up I was able to boot
+today's Linux-Next.
 
-
-where umount will hang forever.
-
-
-[  241.456242] INFO: task umount:2579 blocked for more than 120 seconds.
-[  241.467141] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  241.481152] umount          D 0000000000000000     0  2579   2526 0x00000000
-[  241.494602]  ffff88000ef37c58 0000000000000046 ffff88000d8af040 ffff88000ef36010
-[  241.509897]  ffff88000ef36000 ffff88000ef36000 ffff88000ef36000 ffff88000ef37fd8
-[  241.525433]  0000000000013180 ffff88000ef36000 ffffffff81811400 ffff88000d8af040
-[  241.540846] Call Trace:
-[  241.545642]  [<ffffffff813ba434>] schedule+0x5f/0x61
-[  241.554326]  [<ffffffff813ba6b5>] schedule_preempt_disabled+0x21/0x29
-[  241.568270]  [<ffffffff813b8ff7>] __mutex_lock_common+0x26a/0x3b9
-[  241.580711]  [<ffffffffa02bbd37>] ? loop_clr_fd+0x20d/0x279 [loop]
-[  241.593127]  [<ffffffff8107f71d>] ? mark_held_locks+0x73/0x97
-[  241.604733]  [<ffffffffa02bbd37>] ? loop_clr_fd+0x20d/0x279 [loop]
-[  241.617167]  [<ffffffff813b9241>] mutex_lock_nested+0x3b/0x40
-[  241.628775]  [<ffffffffa02bbd37>] loop_clr_fd+0x20d/0x279 [loop]
-[  241.640876]  [<ffffffffa02bc4b5>] lo_release+0x40/0x6a [loop]
-[  241.652573]  [<ffffffff811476a3>] __blkdev_put+0xb5/0x168
-[  241.664783]  [<ffffffff8114787d>] blkdev_put+0x127/0x130
-[  241.676804]  [<ffffffff8111b48d>] kill_block_super+0x5f/0x64
-[  241.689433]  [<ffffffff8111b6b5>] deactivate_locked_super+0x21/0x4d
-[  241.703484]  [<ffffffff8111c26c>] deactivate_super+0x40/0x48
-[  241.721619]  [<ffffffff811325fd>] mntput_no_expire+0x12d/0x136
-[  241.734652]  [<ffffffff811334e0>] sys_umount+0x33e/0x369
-[  241.746746]  [<ffffffff81046f28>] ? __set_current_blocked+0x26/0x49
-[  241.760553]  [<ffffffff813bc2e9>] system_call_fastpath+0x16/0x1b
-[  241.773833] 2 locks held by umount/2579:
-[  241.783138]  #0:  (&bdev->bd_mutex){+.+.+.}, at: [<ffffffff81147621>] __blkdev_put+0x33/0x168
-[  241.805858]  #1:  (&bdev->bd_mutex/1){+.+...}, at: [<ffffffffa02bbd37>] loop_clr_fd+0x20d/0x279 [loop]
-[  241.830869] INFO: task blkid:2580 blocked for more than 120 seconds.
-[  241.844648] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[  241.862451] blkid           D 0000000000000001     0  2580    442 0x00000004
-[  241.879441]  ffff88000db55a48 0000000000000046 ffffffff818548e0 ffff88000db54010
-[  241.900248]  ffff88000db54000 ffff88000db54000 ffff88000db54000 ffff88000db55fd8
-[  241.920555]  0000000000013180 ffff88000db54000 ffff88000ecae040 ffff88000db69040
-[  241.940945] Call Trace:
-[  241.947643]  [<ffffffff813ba434>] schedule+0x5f/0x61
-[  241.958943]  [<ffffffff813ba6b5>] schedule_preempt_disabled+0x21/0x29
-[  241.973093]  [<ffffffff813b8ff7>] __mutex_lock_common+0x26a/0x3b9
-[  241.986524]  [<ffffffff81147956>] ? __blkdev_get+0xaf/0x3f7
-[  241.999026]  [<ffffffff81147956>] ? __blkdev_get+0xaf/0x3f7
-[  242.011487]  [<ffffffff813b9241>] mutex_lock_nested+0x3b/0x40
-[  242.030079]  [<ffffffff81147956>] __blkdev_get+0xaf/0x3f7
-[  242.042256]  [<ffffffff81147fec>] ? blkdev_get+0x34e/0x34e
-[  242.054748]  [<ffffffff81147eac>] blkdev_get+0x20e/0x34e
-[  242.067038]  [<ffffffff81147fec>] ? blkdev_get+0x34e/0x34e
-[  242.079440]  [<ffffffff813bb66e>] ? _raw_spin_unlock+0x26/0x3a
-[  242.093235]  [<ffffffff81147fec>] ? blkdev_get+0x34e/0x34e
-[  242.105630]  [<ffffffff81148055>] blkdev_open+0x69/0x6d
-[  242.117541]  [<ffffffff811178f8>] do_dentry_open+0x16c/0x21e
-[  242.130485]  [<ffffffff81117a8a>] finish_open+0x34/0x40
-[  242.142334]  [<ffffffff81123f77>] do_last+0x898/0xa46
-[  242.153893]  [<ffffffff81124180>] ? link_path_walk+0x5b/0x432
-[  242.166726]  [<ffffffff8112318c>] ? path_init+0xcd/0x2b6
-[  242.178852]  [<ffffffff811246a5>] path_openat+0xc6/0x374
-[  242.190816]  [<ffffffff81124a58>] do_filp_open+0x38/0x84
-[  242.202779]  [<ffffffff813bb66e>] ? _raw_spin_unlock+0x26/0x3a
-[  242.215780]  [<ffffffff81130182>] ? __alloc_fd+0x106/0x11a
-[  242.228092]  [<ffffffff81117640>] do_sys_open+0x6d/0xff
-[  242.239965]  [<ffffffff811176ff>] sys_open+0x1c/0x1e
-[  242.251195]  [<ffffffff813bc2e9>] system_call_fastpath+0x16/0x1b
-[  242.264583] 1 lock held by blkid/2580:
-[  242.273704]  #0:  (&bdev->bd_mutex){+.+.+.}, at: [<ffffffff81147956>] __blkdev_get+0xaf/0x3f7
+I have reverted "Revert "pipe: fold file_operations instances in one"
+from linux-next and applied the fixed correct one from vfs-next.
 
 
-Reverting commit 8761a3d ("loop: cleanup partitions when detaching loop
-device") on top of v3.9-rc9 fixes this problem for me.
+- Sedat -
 
+--047d7bfd0c2e6f7a7004d9f09160
+Content-Type: application/octet-stream; 
+	name="3.9.0-rc6-next20130409-2-iniza-small.patch"
+Content-Disposition: attachment; 
+	filename="3.9.0-rc6-next20130409-2-iniza-small.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hfbbiufc1
 
-
-Bjørn
+QWwgVmlybyAoMSk6CiAgICAgIHBpcGU6IGZvbGQgZmlsZV9vcGVyYXRpb25zIGluc3RhbmNlcyBp
+biBvbmUKClNlZGF0IERpbGVrICg4KToKICAgICAga2J1aWxkOiBkZWItcGtnOiBUcnkgdG8gZGV0
+ZXJtaW5lIGRpc3RyaWJ1dGlvbgogICAgICBrYnVpbGQ6IGRlYi1wa2c6IEJ1bXAgeWVhciBpbiBk
+ZWJpYW4vY29weXJpZ2h0IGZpbGUKICAgICAga2J1aWxkOiBkZWItcGtnOiBVcGRhdGUgZ2l0IHJl
+cG9zaXRvcnkgVVJMIGluIGRlYmlhbi9jb3B5cmlnaHQgZmlsZQogICAgICBNZXJnZSB0YWcgJ25l
+eHQtMjAxMzA0MDknIG9mIGdpdDovL2dpdC5rZXJuZWwub3JnLy4uLi9uZXh0L2xpbnV4LW5leHQg
+aW50byBMaW51eC1OZXh0LXYyMDEzMDQwOQogICAgICBNZXJnZSBicmFuY2ggJ2RlYi1wa2ctZml4
+ZXMnIGludG8gMy45LjAtcmM2LW5leHQyMDEzMDQwOS0xLWluaXphLXNtYWxsCiAgICAgIFJldmVy
+dCAicGlwZTogZm9sZCBmaWxlX29wZXJhdGlvbnMgaW5zdGFuY2VzIGluIG9uZSIKICAgICAgTWVy
+Z2UgYnJhbmNoICd2ZnMtVEVNUCcgaW50byB2ZnMtbmV4dC1maXhlcwogICAgICBNZXJnZSBicmFu
+Y2ggJ3Zmcy1uZXh0LWZpeGVzJyBpbnRvIDMuOS4wLXJjNi1uZXh0MjAxMzA0MDktMi1pbml6YS1z
+bWFsbAoKIGZzL3BpcGUuYyAgICAgICAgICAgICAgICB8ICA3ICsrKystLS0KIGxvY2FsdmVyc2lv
+bi1uZXh0ICAgICAgICB8ICAxIC0KIHNjcmlwdHMvcGFja2FnZS9idWlsZGRlYiB8IDE5ICsrKysr
+KysrKysrKysrKystLS0KIDMgZmlsZXMgY2hhbmdlZCwgMjAgaW5zZXJ0aW9ucygrKSwgNyBkZWxl
+dGlvbnMoLSkKCmRpZmYgLS1naXQgYS9mcy9waXBlLmMgYi9mcy9waXBlLmMKaW5kZXggYjQ5OWYz
+Yi4uZDJjNDVlMSAxMDA2NDQKLS0tIGEvZnMvcGlwZS5jCisrKyBiL2ZzL3BpcGUuYwpAQCAtMTAx
+Myw2ICsxMDEzLDcgQEAgc3RhdGljIHZvaWQgd2FrZV91cF9wYXJ0bmVyKHN0cnVjdCBwaXBlX2lu
+b2RlX2luZm8gKnBpcGUpCiBzdGF0aWMgaW50IGZpZm9fb3BlbihzdHJ1Y3QgaW5vZGUgKmlub2Rl
+LCBzdHJ1Y3QgZmlsZSAqZmlscCkKIHsKIAlzdHJ1Y3QgcGlwZV9pbm9kZV9pbmZvICpwaXBlOwor
+CWJvb2wgaXNfcGlwZSA9IGlub2RlLT5pX3NiLT5zX21hZ2ljID09IFBJUEVGU19NQUdJQzsKIAlp
+bnQga2lsbCA9IDA7CiAJaW50IHJldDsKIApAQCAtMTA1OSw3ICsxMDYwLDcgQEAgc3RhdGljIGlu
+dCBmaWZvX29wZW4oc3RydWN0IGlub2RlICppbm9kZSwgc3RydWN0IGZpbGUgKmZpbHApCiAJCWlm
+IChwaXBlLT5yZWFkZXJzKysgPT0gMCkKIAkJCXdha2VfdXBfcGFydG5lcihwaXBlKTsKIAotCQlp
+ZiAoIXBpcGUtPndyaXRlcnMpIHsKKwkJaWYgKCFpc19waXBlICYmICFwaXBlLT53cml0ZXJzKSB7
+CiAJCQlpZiAoKGZpbHAtPmZfZmxhZ3MgJiBPX05PTkJMT0NLKSkgewogCQkJCS8qIHN1cHByZXNz
+IFBPTExIVVAgdW50aWwgd2UgaGF2ZQogCQkJCSAqIHNlZW4gYSB3cml0ZXIgKi8KQEAgLTEwNzgs
+MTQgKzEwNzksMTQgQEAgc3RhdGljIGludCBmaWZvX29wZW4oc3RydWN0IGlub2RlICppbm9kZSwg
+c3RydWN0IGZpbGUgKmZpbHApCiAJICogIGVycm5vPUVOWElPIHdoZW4gdGhlcmUgaXMgbm8gcHJv
+Y2VzcyByZWFkaW5nIHRoZSBGSUZPLgogCSAqLwogCQlyZXQgPSAtRU5YSU87Ci0JCWlmICgoZmls
+cC0+Zl9mbGFncyAmIE9fTk9OQkxPQ0spICYmICFwaXBlLT5yZWFkZXJzKQorCQlpZiAoIWlzX3Bp
+cGUgJiYgKGZpbHAtPmZfZmxhZ3MgJiBPX05PTkJMT0NLKSAmJiAhcGlwZS0+cmVhZGVycykKIAkJ
+CWdvdG8gZXJyOwogCiAJCXBpcGUtPndfY291bnRlcisrOwogCQlpZiAoIXBpcGUtPndyaXRlcnMr
+KykKIAkJCXdha2VfdXBfcGFydG5lcihwaXBlKTsKIAotCQlpZiAoIXBpcGUtPnJlYWRlcnMpIHsK
+KwkJaWYgKCFpc19waXBlICYmICFwaXBlLT5yZWFkZXJzKSB7CiAJCQlpZiAod2FpdF9mb3JfcGFy
+dG5lcihwaXBlLCAmcGlwZS0+cl9jb3VudGVyKSkKIAkJCQlnb3RvIGVycl93cjsKIAkJfQpkaWZm
+IC0tZ2l0IGEvbG9jYWx2ZXJzaW9uLW5leHQgYi9sb2NhbHZlcnNpb24tbmV4dApkZWxldGVkIGZp
+bGUgbW9kZSAxMDA2NDQKaW5kZXggMDI0YzExNS4uMDAwMDAwMAotLS0gYS9sb2NhbHZlcnNpb24t
+bmV4dAorKysgL2Rldi9udWxsCkBAIC0xICswLDAgQEAKLS1uZXh0LTIwMTMwNDA5CmRpZmYgLS1n
+aXQgYS9zY3JpcHRzL3BhY2thZ2UvYnVpbGRkZWIgYi9zY3JpcHRzL3BhY2thZ2UvYnVpbGRkZWIK
+aW5kZXggYWNiODY1MC4uN2Q3YzlkOCAxMDA2NDQKLS0tIGEvc2NyaXB0cy9wYWNrYWdlL2J1aWxk
+ZGViCisrKyBiL3NjcmlwdHMvcGFja2FnZS9idWlsZGRlYgpAQCAtMTcyLDkgKzE3MiwyMiBAQCBl
+bHNlCiBmaQogbWFpbnRhaW5lcj0iJG5hbWUgPCRlbWFpbD4iCiAKKyMgVHJ5IHRvIGRldGVybWlu
+ZSBkaXN0cmlidXRpb24KK2lmIFsgLWUgJCh3aGljaCBsc2JfcmVsZWFzZSkgXTsgdGhlbgorICAg
+ICAgIGNvZGVuYW1lPSQobHNiX3JlbGVhc2UgLS1jb2RlbmFtZSAtLXNob3J0KQorICAgICAgIGlm
+IFsgIiRjb2RlbmFtZSIgIT0gIiIgXTsgdGhlbgorCQlkaXN0cmlidXRpb249JGNvZGVuYW1lCisg
+ICAgICAgZWxzZQorCQlkaXN0cmlidXRpb249IlVOUkVMRUFTRUQiCisJCWVjaG8gIldBUk5JTkc6
+IFRoZSBkaXN0cmlidXRpb24gY291bGQgTk9UIGJlIGRldGVybWluZWQhIgorICAgICAgIGZpCitl
+bHNlCisgICAgICAgZWNobyAiSElOVDogSW5zdGFsbCBsc2JfcmVsZWFzZSBiaW5hcnksIHRoaXMg
+aGVscHMgdG8gaWRlbnRpZnkgeW91ciBkaXN0cmlidXRpb24hIgorZmkKKwogIyBHZW5lcmF0ZSBh
+IHNpbXBsZSBjaGFuZ2Vsb2cgdGVtcGxhdGUKIGNhdCA8PEVPRiA+IGRlYmlhbi9jaGFuZ2Vsb2cK
+LWxpbnV4LXVwc3RyZWFtICgkcGFja2FnZXZlcnNpb24pIHVuc3RhYmxlOyB1cmdlbmN5PWxvdwor
+bGludXgtdXBzdHJlYW0gKCRwYWNrYWdldmVyc2lvbikgJGRpc3RyaWJ1dGlvbjsgdXJnZW5jeT1s
+b3cKIAogICAqIEN1c3RvbSBidWlsdCBMaW51eCBrZXJuZWwuCiAKQEAgLTE4OCwxMCArMjAxLDEw
+IEBAIFRoaXMgaXMgYSBwYWNrYWNrZWQgdXBzdHJlYW0gdmVyc2lvbiBvZiB0aGUgTGludXgga2Vy
+bmVsLgogVGhlIHNvdXJjZXMgbWF5IGJlIGZvdW5kIGF0IG1vc3QgTGludXggZnRwIHNpdGVzLCBp
+bmNsdWRpbmc6CiBmdHA6Ly9mdHAua2VybmVsLm9yZy9wdWIvbGludXgva2VybmVsCiAKLUNvcHly
+aWdodDogMTk5MSAtIDIwMDkgTGludXMgVG9ydmFsZHMgYW5kIG90aGVycy4KK0NvcHlyaWdodDog
+MTk5MSAtIDIwMTMgTGludXMgVG9ydmFsZHMgYW5kIG90aGVycy4KIAogVGhlIGdpdCByZXBvc2l0
+b3J5IGZvciBtYWlubGluZSBrZXJuZWwgZGV2ZWxvcG1lbnQgaXMgYXQ6Ci1naXQ6Ly9naXQua2Vy
+bmVsLm9yZy9wdWIvc2NtL2xpbnV4L2tlcm5lbC9naXQvdG9ydmFsZHMvbGludXgtMi42LmdpdAor
+Z2l0Oi8vZ2l0Lmtlcm5lbC5vcmcvcHViL3NjbS9saW51eC9rZXJuZWwvZ2l0L3RvcnZhbGRzL2xp
+bnV4LmdpdAogCiAgICAgVGhpcyBwcm9ncmFtIGlzIGZyZWUgc29mdHdhcmU7IHlvdSBjYW4gcmVk
+aXN0cmlidXRlIGl0IGFuZC9vciBtb2RpZnkKICAgICBpdCB1bmRlciB0aGUgdGVybXMgb2YgdGhl
+IEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlIGFzIHB1Ymxpc2hlZCBieQo=
+--047d7bfd0c2e6f7a7004d9f09160--
