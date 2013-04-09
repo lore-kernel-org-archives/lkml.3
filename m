@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935001Ab3DIXxQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 19:53:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63619 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759219Ab3DIXxP (ORCPT
+	id S935423Ab3DIXzg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 19:55:36 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:43522 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935092Ab3DIXzf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 19:53:15 -0400
+	Tue, 9 Apr 2013 19:55:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <1365501657-4213-5-git-send-email-serban.constantinescu@arm.com>
+In-Reply-To: <1365501657-4213-6-git-send-email-serban.constantinescu@arm.com>
 References: <1365501657-4213-1-git-send-email-serban.constantinescu@arm.com>
-	<1365501657-4213-5-git-send-email-serban.constantinescu@arm.com>
-Date: Tue, 9 Apr 2013 16:53:14 -0700
-Message-ID: <CAMP5Xgfb2NYN8j16XKx3hrvk1gnRCX+yx2Uk_fxSE=OM74y5fQ@mail.gmail.com>
-Subject: Re: [PATCH v2 4/7] staging: android: binder: fix BINDER_SET_MAX_THREADS
- declaration
+	<1365501657-4213-6-git-send-email-serban.constantinescu@arm.com>
+Date: Tue, 9 Apr 2013 16:55:35 -0700
+Message-ID: <CAMP5Xgf9fcm0WchtSHWQMeS4upguZRuCyt4-=UK1Gpc28+8vDQ@mail.gmail.com>
+Subject: Re: [PATCH v2 5/7] staging: android: binder: fix BC_FREE_BUFFER ioctl declaration
 From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
 To: Serban Constantinescu <serban.constantinescu@arm.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
@@ -22,19 +21,35 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
         John Stultz <john.stultz@linaro.org>,
         Dave Butcher <Dave.Butcher@arm.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, Apr 9, 2013 at 3:00 AM, Serban Constantinescu
 <serban.constantinescu@arm.com> wrote:
-> This change will fix the BINDER_SET_MAX_THREADS ioctl to use __s32
-> instead of size_t for setting the max threads. Thus using the same
-> handler for 32 and 64bit kernels.
+> BinderDriverCommands mirror the ioctl usage. Thus the size of the
+> structure passed through the interface should be used to generate the
+> ioctl No.
 >
-> This value is stored internally in struct binder_proc as an int and
-> is set to 15 on open_binder() in the libbinder API (thus no need for
-> a 64bit size_t on 64bit platforms).
+> The change reflects the type being passed from the user space-a pointer
+> to a binder_buffer. This change should not affect the existing 32bit
+> user space since BC_FREE_BUFFER is computed as:
 >
+>    #define _IOW(type,nr,size)         \
+>       ((type) << _IOC_TYPESHIFT) |    \
+>       ((nr)   << _IOC_NRSHIFT) |      \
+>       ((size) << _IOC_SIZESHIFT))
+>
+> and for a 32bit compiler BC_FREE_BUFFER will have the same computed
+> value. This change will also ease our work in differentiating
+> BC_FREE_BUFFER from COMPAT_BC_FREE_BUFFER.
+>
+> The change does not affect existing 32bit ABI.
+>
+> Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
 
-Why switch to a signed type?
+Acked-by:  Arve Hjønnevåg <arve@android.com>
+
+--
+Arve Hjønnevåg
