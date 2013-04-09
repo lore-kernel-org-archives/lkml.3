@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964934Ab3DIPBc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 11:01:32 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:42195 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933250Ab3DIPB2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 11:01:28 -0400
-Message-ID: <1365519681.3946.4.camel@phoenix>
-Subject: regulator: ab8500-ext: Strange set_mode behavior when
- info->cfg->hwreq is set
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Tue, 09 Apr 2013 23:01:21 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S934913Ab3DIPCc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 11:02:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54954 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761304Ab3DIPCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 11:02:30 -0400
+Date: Tue, 9 Apr 2013 16:58:51 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] uprobes/tracing: Kill the pointless
+	local_save_flags/preempt_count calls
+Message-ID: <20130409145851.GB22913@redhat.com>
+References: <20130329181545.GA20697@redhat.com> <1365436722.25498.14.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365436722.25498.14.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04/08, Steven Rostedt wrote:
+>
+> On Fri, 2013-03-29 at 19:15 +0100, Oleg Nesterov wrote:
+> > --- a/kernel/trace/trace_uprobe.c
+> > +++ b/kernel/trace/trace_uprobe.c
+> > @@ -492,17 +492,13 @@ static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
+> >  	struct ring_buffer_event *event;
+> >  	struct ring_buffer *buffer;
+> >  	u8 *data;
+> > -	int size, i, pc;
+> > -	unsigned long irq_flags;
+> > +	int size, i;
+> >  	struct ftrace_event_call *call = &tu->call;
+> >
+> > -	local_save_flags(irq_flags);
+> > -	pc = preempt_count();
+>
+> How about instead, just change the above two and have:
+>
+> 	/* uprobes are never called with preemption disabled */
+> 	pc = 0;
+> 	irq_flags = 0;
+>
+> and leave the rest the same. This will help in future reviewers of the
+> code to not have to look up what that "0, 0" is for, and then wonder if
+> it should be that way. gcc should optimize it to be exactly the same as
+> this patch.
 
-I see below code && comments in enable() function:
+Hmm, just to remind which arguments trace_current_buffer_*() has?
 
-        /*
-         * To satisfy both HW high power request and SW request, the regulator
-         * must be on in high power.
-         */
-        if (info->cfg && info->cfg->hwreq)
-                *regval = info->update_val_hp;
+Personally I disagree. And, for example, ftrace_syscall_enter/exit just
+use 0,0 for the same reason.
 
+So please tell me if you really want the dummy variables/arguments, in
+this case I'll change this code even if I do not like it.
 
-I'm not very clear about the comment and the code.
-
-1) Does that mean the device does not allow set REGULATOR_MODE_IDLE when
-info->cfg->hwreq is set?
-
-current code looks strange because when info->cfg->hwreq is set:
-set_mode() allows set REGULATOR_MODE_IDLE and get_mode() returns the status
-is REGULATOR_MODE_IDLE. However, current code actually write info->update_val_hp
-to the register (which means it is in REGULATOR_MODE_NORMAL mode).
-
-If the device does not allow set REGULATOR_MODE_IDLE when info->cfg->hwreq is 
-set, we probably needs to return error in set REGULATOR_MODE_IDLE case.
-
-Or 2) Does above comment mean the device needs set to REGULATOR_MODE_NORMAL
-when the regulator is switching from off to on? Which means it allows setting
-the regulator to REGULATOR_MODE_IDLE if the regulator is already on.
-
-If this is the case, we cannot call enable() in set_mode() because current code
-in set_mode() will write to register only when the regulator is already on.
-Calling enable() always write info->update_val_hp to the register.
-Thus it should just call abx500_mask_and_set_register_interruptible() directly
-to update the register.
-
-comments?
-
-Regards,
-Axel
+Oleg.
 
