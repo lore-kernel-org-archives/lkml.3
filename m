@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934621Ab3DIGgS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 02:36:18 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:60184 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932221Ab3DIGgR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 02:36:17 -0400
-Date: Tue, 9 Apr 2013 14:35:00 +0800 (CST)
-From: Xiong Zhou <jencce.kernel@gmail.com>
-X-X-Sender: zx@M2420
-To: airlied@redhat.com, alan@linux.intel.com, dri-devel@lists.freedesktop.org
-cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/gpu/drm/gma500:fix build failure for 3.9-rc5
-Message-ID: <alpine.DEB.2.02.1304091428270.24675@M2420>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S934997Ab3DIGmx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 02:42:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39078 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753086Ab3DIGmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 02:42:52 -0400
+Date: Tue, 9 Apr 2013 08:42:49 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 1/8] cgroup: implement cgroup_is_ancestor()
+Message-ID: <20130409064239.GA29860@dhcp22.suse.cz>
+References: <51627DA9.7020507@huawei.com>
+ <51627DBB.5050005@huawei.com>
+ <20130408144750.GK17178@dhcp22.suse.cz>
+ <20130408180335.GA22512@dhcp22.suse.cz>
+ <20130408213646.GB17159@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130408213646.GB17159@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiong Zhou <jencce.kernel@gmail.com>
+On Mon 08-04-13 14:36:46, Tejun Heo wrote:
+> On Mon, Apr 08, 2013 at 08:03:44PM +0200, Michal Hocko wrote:
+> > __mem_cgroup_same_or_subtree relies on css_is_ancestor if hierarchy is
+> > enabled for ages. This, however, is not correct because use_hierarchy
+> > doesn't need to be true all the way up the cgroup hierarchy. Consider
+> > the following example:
+> > root (use_hierarchy=0)
+> >  \
+> >   A (use_hierarchy=0)
+> >    \
+> >     B (use_hierarchy=1)
+> >      \
+> >       C (use_hierarchy=1)
+> > 
+> > __mem_cgroup_same_or_subtree(A, C) would return true even though C is
+> > not from the same hierarchy subtree. The bug shouldn't be critical but
+> > at least dump_tasks might print unrelated tasks (via
+> > task_in_mem_cgroup).
+> 
+> Huh?  Isn't that avoided by the !root_memcg->use_hierarchy test?
 
-This patch fixes build failure of v3.9-rc5.
-When config ACPI_VIDEO as m, DRM_GMA500 as y, here comes the failure.
-gma5/600 needs acpi_video just like nouveau.
+Yes, it is. My selective blindness strikes again :/ I was convinced that
+it was memcg we tested use_hierarchy for...
+Sorry about all the churn.
 
-Failure message:
-drivers/built-in.o: In function `psb_driver_load':
-kernel-3.9-rc5/drivers/gpu/drm/gma500/psb_drv.c:340: \
-	undefined reference to `acpi_video_register'
-make: *** [vmlinux] Error 1
-
-Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
----
-drivers/gpu/drm/gma500/Kconfig |    1 +
-1 file changed, 1 insertion(+)
-
-diff --git a/drivers/gpu/drm/gma500/Kconfig b/drivers/gpu/drm/gma500/Kconfig
-index 1188f0f..d64fc45 100644
---- a/drivers/gpu/drm/gma500/Kconfig
-+++ b/drivers/gpu/drm/gma500/Kconfig
-@@ -6,6 +6,7 @@ config DRM_GMA500
-         select FB_CFB_IMAGEBLIT
-         select DRM_KMS_HELPER
-         select DRM_TTM
-+        select ACPI_VIDEO if ACPI && X86 && BACKLIGHT_CLASS_DEVICE && VIDEO_OUTPUT_CONTROL && INPUT
- 	help
- 	  Say yes for an experimental 2D KMS framebuffer driver for the
- 	  Intel GMA500 ('Poulsbo') and other Intel IMG based graphics
+> > @@ -1470,9 +1470,12 @@ bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> >  {
+> >  	if (root_memcg == memcg)
+> >  		return true;
+> > -	if (!root_memcg->use_hierarchy || !memcg)
+>             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> > +	if (!memcg)
+> >  		return false;
+> > -	return css_is_ancestor(&memcg->css, &root_memcg->css);
+> > +	while ((memcg = parent_mem_cgroup(memcg)))
+> > +		if (memcg == root_memcg)
+> > +			return true;
+> > +	return false;
+> >  }
+> >  
+-- 
+Michal Hocko
+SUSE Labs
