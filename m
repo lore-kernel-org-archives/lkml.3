@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936695Ab3DIVvR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 17:51:17 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:46173 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936632Ab3DIVvP (ORCPT
+	id S936686Ab3DIVvq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 17:51:46 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:43178 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936606Ab3DIVvo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 17:51:15 -0400
+	Tue, 9 Apr 2013 17:51:44 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v2 12/15] mm: Add infrastructure to evacuate memory
- regions using compaction
+Subject: [RFC PATCH v2 14/15] mm: Add alloc-free handshake to trigger memory
+ region compaction
 To: akpm@linux-foundation.org, mgorman@suse.de, matthew.garrett@nebula.com,
         dave@sr71.net, rientjes@google.com, riel@redhat.com,
         arjan@linux.intel.com, srinivas.pandruvada@linux.intel.com,
@@ -21,209 +21,164 @@ Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com, amit.kachhap@linaro.org,
         santosh.shilimkar@ti.com, srivatsa.bhat@linux.vnet.ibm.com,
         linux-pm@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Date: Wed, 10 Apr 2013 03:18:35 +0530
-Message-ID: <20130409214832.4500.17236.stgit@srivatsabhat.in.ibm.com>
+Date: Wed, 10 Apr 2013 03:18:56 +0530
+Message-ID: <20130409214853.4500.63619.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130409214443.4500.44168.stgit@srivatsabhat.in.ibm.com>
 References: <20130409214443.4500.44168.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040921-2674-0000-0000-00000888B2F5
+x-cbid: 13040921-3568-0000-0000-00000366DC10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To enhance memory power-savings, we need to be able to completely evacuate
-lightly allocated regions, and move those used pages to lower regions,
-which would help consolidate all the allocations to a minimum no. of regions.
-This can be done using some of the memory compaction and reclaim algorithms.
-Develop such an infrastructure to evacuate memory regions completely.
+We need a way to decide when to trigger the worker threads to perform
+region evacuation/compaction. So the strategy used is as follows:
 
-The traditional compaction algorithm uses a pfn walker to get free pages
-for compaction. But this would be way too costly for us. We do a pfn walk
-only to isolate the used pages, but to get free pages, we just depend on the
-fast buddy allocator itself. But we are careful to abort when the buddy
-allocator starts giving free pages in this region itself or higher regions
-(because in that case, if we proceed, it would be defeating the purpose of
-the entire effort).
+Alloc path of page allocator:
+----------------------------
+
+This accurately tracks the allocations and detects the first allocation
+in a new region and notes down that region number. Performing compaction
+rightaway is not going to be helpful because we need free pages in the
+lower regions to be able to do that. And the page allocator allocated in
+this region precisely because there was no memory available in lower regions.
+So the alloc path just notes down the freshly used region's id.
+
+Free path of page allocator:
+---------------------------
+
+When we enter this path, we know that some memory is being freed. Here we
+check if the alloc path had noted down any region for compaction. If so,
+we trigger the worker function that tries to compact that memory.
+
+Also, we avoid any locking/synchronization overhead over this worker
+function in the alloc/free path, by attaching appropriate semantics to the
+available status flags etc, such that we won't need any special locking
+around them.
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- include/linux/compaction.h     |    7 ++++
- include/linux/gfp.h            |    2 +
- include/linux/migrate.h        |    3 +-
- include/trace/events/migrate.h |    3 +-
- mm/compaction.c                |   72 ++++++++++++++++++++++++++++++++++++++++
- mm/page_alloc.c                |    5 +--
- 6 files changed, 87 insertions(+), 5 deletions(-)
+ mm/page_alloc.c |   61 +++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 57 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-index 091d72e..6be2b08 100644
---- a/include/linux/compaction.h
-+++ b/include/linux/compaction.h
-@@ -26,6 +26,7 @@ extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
- extern void compact_pgdat(pg_data_t *pgdat, int order);
- extern void reset_isolation_suitable(pg_data_t *pgdat);
- extern unsigned long compaction_suitable(struct zone *zone, int order);
-+extern int evacuate_mem_region(struct zone *z, struct zone_mem_region *zmr);
- 
- /* Do not skip compaction more than 64 times */
- #define COMPACT_MAX_DEFER_SHIFT 6
-@@ -102,6 +103,12 @@ static inline bool compaction_deferred(struct zone *zone, int order)
- 	return true;
- }
- 
-+static inline int evacuate_mem_region(struct zone *z,
-+				      struct zone_mem_region *zmr)
-+{
-+	return 0;
-+}
-+
- #endif /* CONFIG_COMPACTION */
- 
- #if defined(CONFIG_COMPACTION) && defined(CONFIG_SYSFS) && defined(CONFIG_NUMA)
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 0f615eb..dd5430f 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -351,6 +351,8 @@ extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
- extern unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order);
- extern unsigned long get_zeroed_page(gfp_t gfp_mask);
- 
-+int rmqueue_bulk(struct zone *zone, unsigned int order, unsigned long count,
-+		 struct list_head *list, int migratetype, int cold);
- void *alloc_pages_exact(size_t size, gfp_t gfp_mask);
- void free_pages_exact(void *virt, size_t size);
- /* This is different from alloc_pages_exact_node !!! */
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index a405d3dc..e006be9 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -30,7 +30,8 @@ enum migrate_reason {
- 	MR_SYSCALL,		/* also applies to cpusets */
- 	MR_MEMPOLICY_MBIND,
- 	MR_NUMA_MISPLACED,
--	MR_CMA
-+	MR_CMA,
-+	MR_PWR_MGMT
- };
- 
- #ifdef CONFIG_MIGRATION
-diff --git a/include/trace/events/migrate.h b/include/trace/events/migrate.h
-index ec2a6cc..e6892c0 100644
---- a/include/trace/events/migrate.h
-+++ b/include/trace/events/migrate.h
-@@ -15,7 +15,8 @@
- 	{MR_MEMORY_HOTPLUG,	"memory_hotplug"},		\
- 	{MR_SYSCALL,		"syscall_or_cpuset"},		\
- 	{MR_MEMPOLICY_MBIND,	"mempolicy_mbind"},		\
--	{MR_CMA,		"cma"}
-+	{MR_CMA,		"cma"},				\
-+	{MR_PWR_MGMT,		"power_management"}
- 
- TRACE_EVENT(mm_migrate_pages,
- 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index ff9cf23..a76ad90 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -1162,6 +1162,78 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 	return rc;
- }
- 
-+static struct page *power_mgmt_alloc(struct page *migratepage,
-+				     unsigned long data, int **result)
-+{
-+	struct compact_control *cc = (struct compact_control *)data;
-+	struct page *freepage;
-+
-+	/*
-+	 * Try to allocate pages from lower memory regions. If it fails,
-+	 * abort.
-+	 */
-+	if (list_empty(&cc->freepages)) {
-+		struct zone *z = page_zone(migratepage);
-+
-+		rmqueue_bulk(z, 0, cc->nr_migratepages, &cc->freepages,
-+			     MIGRATE_MOVABLE, 1);
-+
-+		if (list_empty(&cc->freepages))
-+			return NULL;
-+	}
-+
-+	freepage = list_entry(cc->freepages.next, struct page, lru);
-+
-+	if (page_zone_region_id(freepage) >= page_zone_region_id(migratepage))
-+		return NULL; /* Freepage is not from lower region, so abort */
-+
-+	list_del(&freepage->lru);
-+	cc->nr_freepages--;
-+
-+	return freepage;
-+}
-+
-+static unsigned long power_mgmt_release_freepages(unsigned long info)
-+{
-+	struct compact_control *cc = (struct compact_control *)info;
-+
-+	return release_freepages(&cc->freepages);
-+}
-+
-+int evacuate_mem_region(struct zone *z, struct zone_mem_region *zmr)
-+{
-+	unsigned long start_pfn = zmr->start_pfn;
-+	unsigned long end_pfn = zmr->end_pfn;
-+
-+	struct compact_control cc = {
-+		.nr_migratepages = 0,
-+		.order = -1,
-+		.zone = page_zone(pfn_to_page(start_pfn)),
-+		.sync = false,  /* Async migration */
-+		.ignore_skip_hint = true,
-+	};
-+
-+	struct aggression_control ac = {
-+		.isolate_unevictable = false,
-+		.prep_all = false,
-+		.reclaim_clean = true,
-+		.max_tries = 1,
-+		.reason = MR_PWR_MGMT,
-+	};
-+
-+	struct free_page_control fc = {
-+		.free_page_alloc = power_mgmt_alloc,
-+		.alloc_data = (unsigned long)&cc,
-+		.release_freepages = power_mgmt_release_freepages,
-+		.free_data = (unsigned long)&cc,
-+	};
-+
-+	INIT_LIST_HEAD(&cc.migratepages);
-+	INIT_LIST_HEAD(&cc.freepages);
-+
-+	return compact_range(&cc, &ac, &fc, start_pfn, end_pfn);
-+}
-+
- 
- /* Compact all zones within a node */
- static void __compact_pgdat(pg_data_t *pgdat, struct compact_control *cc)
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index f31ca94..40a3aa6 100644
+index db7b892..675a435 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1445,9 +1445,8 @@ retry_reserve:
-  * a single hold of the lock, for efficiency.  Add them to the supplied list.
-  * Returns the number of new pages which were placed at *list.
-  */
--static int rmqueue_bulk(struct zone *zone, unsigned int order,
--			unsigned long count, struct list_head *list,
--			int migratetype, int cold)
-+int rmqueue_bulk(struct zone *zone, unsigned int order, unsigned long count,
-+		 struct list_head *list, int migratetype, int cold)
+@@ -631,6 +631,7 @@ static void add_to_freelist(struct page *page, struct free_list *free_list,
+ 	struct list_head *prev_region_list, *lru;
+ 	struct mem_region_list *region;
+ 	int region_id, prev_region_id;
++	struct mem_power_ctrl *mpc;
+ 
+ 	lru = &page->lru;
+ 	region_id = page_zone_region_id(page);
+@@ -639,6 +640,17 @@ static void add_to_freelist(struct page *page, struct free_list *free_list,
+ 	region->nr_free++;
+ 	region->zone_region->nr_free += 1 << order;
+ 
++	/*
++	 * If the alloc path detected the usage of a new region, now is
++	 * the time to complete the handshake and queue a worker
++	 * to try compaction on that region.
++	 */
++	mpc = &page_zone(page)->mem_power_ctrl;
++	if (!is_mem_pwr_work_in_progress(mpc) && mpc->region) {
++		set_mem_pwr_work_in_progress(mpc);
++		queue_work(system_unbound_wq, &mpc->work);
++	}
++
+ 	if (region->page_block) {
+ 		list_add_tail(lru, region->page_block);
+ 		return;
+@@ -696,7 +708,9 @@ static void rmqueue_del_from_freelist(struct page *page,
  {
- 	int mt = migratetype, i;
+ 	struct list_head *lru = &page->lru;
+ 	struct mem_region_list *mr_list;
+-	int region_id;
++	struct zone_mem_region *zmr;
++	struct mem_power_ctrl *mpc;
++	int region_id, mt;
+ 
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+ 	WARN((free_list->list.next != lru),
+@@ -706,8 +720,27 @@ static void rmqueue_del_from_freelist(struct page *page,
+ 	list_del(lru);
+ 
+ 	/* Fastpath */
++	region_id = free_list->next_region - free_list->mr_list;
+ 	mr_list = free_list->next_region;
+-	mr_list->zone_region->nr_free -= 1 << order;
++	zmr = mr_list->zone_region;
++	if (region_id != 0 && (zmr->nr_free == zmr->present_pages)) {
++		/*
++		 * This is the first alloc in this memory region. So try
++		 * compacting this region in the near future. Don't bother
++		 * if this is an unmovable/non-reclaimable allocation.
++		 * Also don't try compacting region 0 because its pointless.
++		 */
++		mt = get_freepage_migratetype(page);
++		if (is_migrate_cma(mt) || mt == MIGRATE_MOVABLE ||
++						mt == MIGRATE_RECLAIMABLE) {
++
++			mpc = &page_zone(page)->mem_power_ctrl;
++			if (!is_mem_pwr_work_in_progress(mpc))
++				mpc->region = zmr;
++		}
++	}
++
++	zmr->nr_free -= 1 << order;
+ 
+ 	if (--(mr_list->nr_free)) {
+ 
+@@ -723,7 +756,6 @@ static void rmqueue_del_from_freelist(struct page *page,
+ 	 * in this freelist.
+ 	 */
+ 	free_list->next_region->page_block = NULL;
+-	region_id = free_list->next_region - free_list->mr_list;
+ 	clear_region_bit(region_id, free_list);
+ 
+ 	/* Set 'next_region' to the new first region in the freelist. */
+@@ -736,7 +768,9 @@ static void del_from_freelist(struct page *page, struct free_list *free_list,
+ {
+ 	struct list_head *prev_page_lru, *lru, *p;
+ 	struct mem_region_list *region;
+-	int region_id;
++	struct zone_mem_region *zmr;
++	struct mem_power_ctrl *mpc;
++	int region_id, mt;
+ 
+ 	lru = &page->lru;
+ 
+@@ -746,6 +780,25 @@ static void del_from_freelist(struct page *page, struct free_list *free_list,
+ 
+ 	region_id = page_zone_region_id(page);
+ 	region = &free_list->mr_list[region_id];
++
++	zmr = region->zone_region;
++	if (region_id != 0 && (zmr->nr_free == zmr->present_pages)) {
++		/*
++		 * This is the first alloc in this memory region. So try
++		 * compacting this region in the near future. Don't bother
++		 * if this is an unmovable/non-reclaimable allocation.
++		 * Also don't try compacting region 0 because its pointless.
++		 */
++		mt = get_freepage_migratetype(page);
++		if (is_migrate_cma(mt) || mt == MIGRATE_MOVABLE ||
++						mt == MIGRATE_RECLAIMABLE) {
++
++			mpc = &page_zone(page)->mem_power_ctrl;
++			if (!is_mem_pwr_work_in_progress(mpc))
++				mpc->region = zmr;
++		}
++	}
++
+ 	region->nr_free--;
+ 	region->zone_region->nr_free -= 1 << order;
  
 
