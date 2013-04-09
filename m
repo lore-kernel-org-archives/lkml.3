@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934733Ab3DISqK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 14:46:10 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:59506 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809Ab3DISqI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 14:46:08 -0400
+	id S935039Ab3DISrU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 14:47:20 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:56885 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751809Ab3DISrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 14:47:18 -0400
+Message-ID: <516461FE.4020007@iki.fi>
+Date: Tue, 09 Apr 2013 21:46:22 +0300
+From: Antti Palosaari <crope@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <51646054.3090509@zytor.com>
-References: <20130408224328.GA17641@www.outflux.net>
-	<51634935.9010905@zytor.com>
-	<alpine.LFD.2.02.1304091122490.21884@ionos>
-	<CAGXu5jKo=11RrsvctcZjP6dusAj659O_GsaA2J2qFq-6mOeRwQ@mail.gmail.com>
-	<51645D6F.7070705@zytor.com>
-	<CAGXu5jKkHKw8efdPOmt-Zi99m+uMKVGKpc_DC72_ztwxnRbRRQ@mail.gmail.com>
-	<51646054.3090509@zytor.com>
-Date: Tue, 9 Apr 2013 11:46:08 -0700
-X-Google-Sender-Auth: qnsqrjx5_AWY_L3B6A-OJ-k_phY
-Message-ID: <CAGXu5jJNG4o+_-kk=A2AfSRwyQE0pgaQh7YpSjnD_fB-s7U+wA@mail.gmail.com>
-Subject: Re: [kernel-hardening] Re: [PATCH] x86: make IDT read-only
-From: Kees Cook <keescook@chromium.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Alex Shi <alex.shi@intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
-        Eric Northup <digitaleric@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        linux-media <linux-media@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>
+Subject: Re: [PATCH -next] media:
+References: <20130408174343.cc13eb1972470d20d38ecff1@canb.auug.org.au> <51630297.2040803@infradead.org>
+In-Reply-To: <51630297.2040803@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 82.128.187.254
+X-SA-Exim-Mail-From: crope@iki.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 9, 2013 at 11:39 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 04/09/2013 11:31 AM, Kees Cook wrote:
->>>> ...
->>>> 0xffff880001e00000-0xffff88001fe00000         480M     RW         PSE GLB NX pmd
->>>>
->>>
->>> That is the 1:1 memory map area...
->>
->> Meaning what?
->>
->> -Kees
->>
+On 04/08/2013 08:47 PM, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@infradead.org>
 >
-> That's the area in which we just map 1:1 to memory.  Anything allocated
-> with e.g. kmalloc() ends up with those addresses.
+> Fix randconfig error when USB is not enabled:
+>
+> ERROR: "usb_control_msg" [drivers/media/common/cypress_firmware.ko] undefined!
+>
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> Cc: Antti Palosaari <crope@iki.fi>
 
-Ah-ha! Yes, I see now when comparing the debug/kernel_page_tables
-reports. It's just the High Kernel Mapping that we care about.
-Addresses outside that range are less of a leak. Excellent, then GDT
-may not be a problem. Whew.
+Reviewed-by: Antti Palosaari <crope@iki.fi>
 
-Does the v2 IDT patch look okay, BTW?
 
--Kees
+> ---
+>   drivers/media/common/Kconfig |    1 +
+>   1 file changed, 1 insertion(+)
+>
+> --- linux-next-20130408.orig/drivers/media/common/Kconfig
+> +++ linux-next-20130408/drivers/media/common/Kconfig
+> @@ -18,6 +18,7 @@ config VIDEO_TVEEPROM
+>
+>   config CYPRESS_FIRMWARE
+>   	tristate "Cypress firmware helper routines"
+> +	depends on USB
+>
+>   source "drivers/media/common/b2c2/Kconfig"
+>   source "drivers/media/common/saa7146/Kconfig"
+>
 
---
-Kees Cook
-Chrome OS Security
+
+-- 
+http://palosaari.fi/
