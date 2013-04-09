@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936412Ab3DILgh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 07:36:37 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:61912 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934856Ab3DILgf (ORCPT
+	id S936444Ab3DILhH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 07:37:07 -0400
+Received: from drsnuggles.stderr.nl ([94.142.244.14]:33046 "EHLO
+	drsnuggles.stderr.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935190Ab3DILhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 07:36:35 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 9 Apr 2013 04:36:39 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>
-Subject: Re: mfd: Core driver for Winbond chips
-Message-ID: <20130409113639.GA8731@roeck-us.net>
-References: <1362957300-18223-1-git-send-email-linux@roeck-us.net>
- <20130322205258.GE7867@spo001.leaseweb.com>
- <20130323002810.GA26245@roeck-us.net>
- <20130323174914.GA21563@roeck-us.net>
- <20130409093700.GM24058@zurbaran>
+	Tue, 9 Apr 2013 07:37:05 -0400
+Date: Tue, 9 Apr 2013 13:37:02 +0200
+From: Matthijs Kooijman <matthijs@stdin.nl>
+To: Joe Perches <joe@perches.com>
+Cc: Andy Whitcroft <apw@canonical.com>,
+        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] checkpatch: Check block comments outside of net
+Message-ID: <20130409113701.GI13691@login.drsnuggles.stderr.nl>
+Mail-Followup-To: Matthijs Kooijman <matthijs@stdin.nl>,
+	Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
+	Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+	linux-kernel@vger.kernel.org
+References: <20130409111958.GG13691@login.drsnuggles.stderr.nl>
+ <1365507174.6865.31.camel@joe-AO722>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130409093700.GM24058@zurbaran>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1365507174.6865.31.camel@joe-AO722>
+X-PGP-Fingerprint: 7F6A 9F44 2820 18E2 18DE  24AA CF49 D0E6 8A2F AFBC
+X-PGP-Key: http://www.stderr.nl/static/files/gpg_pubkey.asc
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-Score: -2.6 (--)
+X-Spam-Report: Spamchecked on "mail.drsnuggles.stderr.nl"
+	pts  rule name              description
+	---- ---------------------- -------------------------------------------
+	-2.6 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 11:37:01AM +0200, Samuel Ortiz wrote:
-> Hi Guenter,
+Hi Joe,
+
+On Tue, Apr 09, 2013 at 04:32:54AM -0700, Joe Perches wrote:
+> > Note that this patch rejects /** comments, since those are not mentioned
+> > in Codingstyle. They are used in practice though (around 1000 occurences
+> > in kernel/ alone), so perhaps they should be allowed and documented?
 > 
-> On Sat, Mar 23, 2013 at 10:49:14AM -0700, Guenter Roeck wrote:
-> > MFD core driver for various variants of Winbond/Nuvoton SuperIO chips.
-> > 
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> > ---
-> >  drivers/mfd/Kconfig          |   22 +++
-> >  drivers/mfd/Makefile         |    1 +
-> >  drivers/mfd/w83627hf-core.c  |  324 ++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/mfd/w83627hf.h |  131 +++++++++++++++++
-> >  4 files changed, 478 insertions(+)
-> >  create mode 100644 drivers/mfd/w83627hf-core.c
-> >  create mode 100644 include/linux/mfd/w83627hf.h
-> This driver looks overall good to me. Is this your final version, or should I
-> expect any follow up patch ?
+> Those are kernel-doc comments and must be allowed.
+> see Documentation/kernel-doc-nano-HOWTO.txt
+I just realized that as well, I'll send an updated patch.
+
+> > Also, the new check only fires when the previous line is empty, just
+> > like the start of block comment check for net/. However, I couldn't find
+> > any documentation on why this restriction is needed?
 > 
-Hi Samuel,
+> I'm not that concerned about block comment style.
+> Maybe others are.
+I'm not entirely sure if this is a answer to my question? Or are you
+saying you don't really care about this and thus don't know the answer?
+:-)
 
-I was waiting for feedback from Wim, who submitted a similar driver, about his
-thoughts. Key question is how to reserve access to the shared resource - either
-through an exported function in the mfd driver requesting a mutex, or through
-request_muxed_region(). I am going back and forth myself on which one is better.
+> Please make it a --strict (CHK) only test for now.
+Ok.
 
-Maybe it does not really matter, but using a function has the slight advantage
-that it auto-loads and locks the mfd module while one of its client modules
-is loaded. If we use request_muxed_region, that is not the case and the client
-module must use another means to request and lock the mfd module.
+Gr.
 
-Maybe you have an opinion ?
-
-Thanks,
-Guenter
+Matthijs
