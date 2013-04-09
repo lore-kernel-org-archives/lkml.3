@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964833Ab3DITnL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 15:43:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14678 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934655Ab3DITnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 15:43:09 -0400
-Message-ID: <1365536585.16420.166.camel@bling.home>
-Subject: Re: [GIT PULL] vfio fix for 3.9-rc7
-From: Alex Williamson <alex.williamson@redhat.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Date: Tue, 09 Apr 2013 13:43:05 -0600
-In-Reply-To: <CAFLxGvzqFUHDnCimZg1BLfSPxAP=TQcvMfHHyU185k4K+J32KA@mail.gmail.com>
-References: <1365534355.16420.160.camel@bling.home>
-	 <CAFLxGvzqFUHDnCimZg1BLfSPxAP=TQcvMfHHyU185k4K+J32KA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S935899Ab3DITqs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 15:46:48 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:37442 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761961Ab3DITqq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 15:46:46 -0400
+Date: Tue, 9 Apr 2013 12:46:40 -0700
+From: Tejun Heo <tj@kernel.org>
+To: "Daniel P. Berrange" <berrange@redhat.com>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, bsingharora@gmail.com, dhaval.giani@gmail.com,
+        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe@redhat.com,
+        lpoetter@redhat.com, workman-devel@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: cgroup: status-quo and userland efforts
+Message-ID: <20130409194640.GK6186@mtj.dyndns.org>
+References: <20130406012159.GA17159@mtj.dyndns.org>
+ <20130409095024.GI25576@redhat.com>
+ <20130409193851.GJ6186@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130409193851.GJ6186@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-09 at 21:40 +0200, richard -rw- weinberger wrote:
-> On Tue, Apr 9, 2013 at 9:05 PM, Alex Williamson
-> <alex.williamson@redhat.com> wrote:
-> > Hi Linus,
-> >
-> > Here's one small fix for vfio that I'd like to get in for 3.9;
-> > tightening the range checking around a vfio ioctl.  Thanks!
-> >
-> > Alex
-> >
-> > The following changes since commit 25e9789ddd9d14a8971f4a421d04f282719ab733:
-> >
-> >   vfio: include <linux/slab.h> for kmalloc (2013-03-15 12:58:20 -0600)
-> >
-> > are available in the git repository at:
-> >
-> >   git://github.com/awilliam/linux-vfio.git tags/vfio-v3.9-rc7
-> >
-> > for you to fetch changes up to 904c680c7bf016a8619a045850937427f8d7368c:
-> >
-> >   vfio-pci: Fix possible integer overflow (2013-03-26 11:33:16 -0600)
-> 
-> Is this commit queued for -stable?
-> I don't see a stable tag in the commit message.
+A bit of addition.
 
-No, I forgot to add it.  I'll take the long way around and send it to
-stable once it's applied.  Thanks,
+On Tue, Apr 09, 2013 at 12:38:51PM -0700, Tejun Heo wrote:
+> > We need to make the distribute approach work in order to support
+> > containers, which requiring them to have a back-channel open to
+> > the host userspace. If we can do that, then we've solved the problem
 
-Alex
+Why is back-channel such a bad thing?  Even fully virtualized
+environments do special things to communicate with the host (the whole
+stack of virt drivers).  It is sub-optimal and pointless to make
+everything completely transparent.  There's nothing wrong with the
+basesystem knowing that they're inside a container or a virtualized
+environment, so I don't understand why a back-channel is such a big
+problem.
 
+Thanks.
+
+-- 
+tejun
