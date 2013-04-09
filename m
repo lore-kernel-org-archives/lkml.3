@@ -1,126 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935762Ab3DINh2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 09:37:28 -0400
-Received: from us01smtp2.synopsys.com ([198.182.44.80]:46074 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760402Ab3DINh0 (ORCPT
+	id S935813Ab3DINia (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 09:38:30 -0400
+Received: from mail-da0-f48.google.com ([209.85.210.48]:58764 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759223Ab3DINi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 09:37:26 -0400
-Message-ID: <51641986.4070904@synopsys.com>
-Date: Tue, 9 Apr 2013 19:07:10 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 9 Apr 2013 09:38:28 -0400
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: James Hogan <james.hogan@imgtec.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        <linux-kbuild@vger.kernel.org>
-Subject: Re: [PATCH] Kbuild: Avoid DTB rebuilds if source files are untouched
-References: <1364973141-16354-1-git-send-email-vgupta@synopsys.com> <515BD6B8.1020607@synopsys.com> <515C5652.8070705@wwwdotorg.org> <515D0FFB.4030803@synopsys.com> <515DBA0E.6000604@wwwdotorg.org>
-In-Reply-To: <515DBA0E.6000604@wwwdotorg.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.39]
+In-Reply-To: <1365227072-15321-1-git-send-email-linkinjeon@gmail.com>
+References: <1365227072-15321-1-git-send-email-linkinjeon@gmail.com>
+Date: Tue, 9 Apr 2013 22:38:27 +0900
+Message-ID: <CAKYAXd8fSOQqScQ39a2YRkL7iFf44zCrhhuwMVGtLLOoSY7=Qw@mail.gmail.com>
+Subject: Re: [PATCH] f2fs: fix typo mistakes
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/2013 11:06 PM, Stephen Warren wrote:
->
->> Technically .SECONDARY is better - however it doesn't seem to work.
-> Hmmm. It does for me.
->
-> $ make --version
-> GNU Make 3.81
+ping ?
 
-Same tools here !
-
-$ make -v
-GNU Make 3.81
-
-
-> I hacked the ARM makefiles as follows:
+2013/4/6 Namjae Jeon <linkinjeon@gmail.com>:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
 >
-> diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-> index 4737408..70247c6 100644
-> --- a/arch/arm/Makefile
-> +++ b/arch/arm/Makefile
-> @@ -256,6 +256,7 @@ core-y                              +=
-> arch/arm/kernel/ arch/arm/mm/ arch/arm/common/
->  core-y                         += arch/arm/net/
->  core-y                         += arch/arm/crypto/
->  core-y                         += $(machdirs) $(platdirs)
-> +core-y                         += arch/arm/boot/dts/
+> Fix typo mistakes.
+> 1. I think that it should be 'L' instead of 'V'.
+> 2. and try to fix 'Front' instead of 'Frone'
 >
->  drivers-$(CONFIG_OPROFILE)      += arch/arm/oprofile/
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+> ---
+>  fs/f2fs/data.c    |    2 +-
+>  fs/f2fs/segment.h |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 >
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index dedca49..af2202e 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -197,3 +197,5 @@ dtbs: $(addprefix $(obj)/, $(dtb-y))
->         $(Q)rm -f $(obj)/../*.dtb
+> diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+> index 9ed6500..76ff48b 100644
+> --- a/fs/f2fs/data.c
+> +++ b/fs/f2fs/data.c
+> @@ -136,7 +136,7 @@ void update_extent_cache(block_t blk_addr, struct dnode_of_data *dn)
+>                 goto end_update;
+>         }
 >
->  clean-files := *.dtb
-> +
-> +obj-y += tegra20-test.dtb.o
+> -       /* Frone merge */
+> +       /* Front merge */
+>         if (fofs == start_fofs - 1 && blk_addr == start_blkaddr - 1) {
+>                 fi->ext.fofs--;
+>                 fi->ext.blk_addr--;
+> diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
+> index 4c2cd9e..aac74cd 100644
+> --- a/fs/f2fs/segment.h
+> +++ b/fs/f2fs/segment.h
+> @@ -11,7 +11,7 @@
+>  /* constant macro */
+>  #define NULL_SEGNO                     ((unsigned int)(~0))
 >
-> and manually created a tegra20-test.dts. For reasons I didn't bother
-> investigating, the .dtb.S -> .dtb.o conversion failed with syntax
-> errors, and because the .dtb.S file was an intermediate file, make rm's
-> it in this case. That's exactly the issue you're seeing.
+> -/* V: Logical segment # in volume, R: Relative segment # in main area */
+> +/* L: Logical segment # in volume, R: Relative segment # in main area */
+>  #define GET_L2R_SEGNO(free_i, segno)   (segno - free_i->start_segno)
+>  #define GET_R2L_SEGNO(free_i, segno)   (segno + free_i->start_segno)
 >
-> I then added the following to Makefile.lib:
+> --
+> 1.7.9.5
 >
-> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-> index a0ab6d7..fc11a67 100644
-> --- a/scripts/Makefile.lib
-> +++ b/scripts/Makefile.lib
-> @@ -258,6 +258,8 @@ cmd_dt_S_dtb=
->         \
->         echo '.balign STRUCT_ALIGNMENT';                \
->  ) > $@
->
-> +.SECONDARY: $(obj)/%.dtb.S
-> +
->  $(obj)/%.dtb.S: $(obj)/%.dtb
->         $(call cmd,dt_S_dtb)
->
-> and no longer see make rm'ing the .dtb.S file. So, the .SECONDARY is
-> behaving as expected, and should fix your problem.
-
-Nope, doesn't work for me. The slight difference in build system could be that ARC
-as of now only supports vmlinux embedded dtbs (so that likely changes what is
-intermediate from make's perspective and what is not).
-
-James, I remeber u once mentioned the rm of *.dtb.S file for metag as well - can
-you please try adding the .secondary/.precious to makefile.lib to confirm what
-fixes deletion of intermediate .S files for you.
-
-> One other problem this highlighted: Unless you also mark the generated
-> .dtb file as PRECIOUS/SECONDARY (or unless that DTB is included in
-> targets for some reason) then make also rm's that, since it considers it
-> intermediate:
->
->   DTC     arch/arm/boot/dts/tegra20-test.dtb
->   DTB    arch/arm/boot/dts/tegra20-test.dtb.S
->   AS      arch/arm/boot/dts/tegra20-test.dtb.o
-> [error]
-> rm arch/arm/boot/dts/tegra20-test.dtb
->
-> So, your patch would probably need modification to apply the fix to
-> *.dtb too, since they might also be intermediate?
->
-> Perhaps add something like the following to arch/arc/boot/dts/Makefile?
->
-> .SECONDARY: $(obj)/$(builtindtb-y).dtb
-
-angel4.dtb is not deleted in my case.
-If you add tegra20-test.dtb to targets (just as I do in dts/Makefile) what do u see !
-
--Vineet
