@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761256Ab3DIRae (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 13:30:34 -0400
-Received: from 8bytes.org ([85.214.48.195]:36161 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759207Ab3DIRad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 13:30:33 -0400
-Date: Tue, 9 Apr 2013 19:30:30 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iommu/amd: Add workaround to propery clearing IOMMU
- status register
-Message-ID: <20130409173030.GH6858@8bytes.org>
-References: <1365031144-2543-1-git-send-email-suravee.suthikulpanit@amd.com>
- <20130409094929.GE6858@8bytes.org>
- <51642442.7090908@amd.com>
-MIME-Version: 1.0
+	id S1763208Ab3DIRbU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 13:31:20 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:42232 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759912Ab3DIRbT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 13:31:19 -0400
+Date: Tue, 9 Apr 2013 19:31:15 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>
+Subject: Re: mfd: Core driver for Winbond chips
+Message-ID: <20130409173115.GF7867@spo001.leaseweb.com>
+References: <1362957300-18223-1-git-send-email-linux@roeck-us.net> <20130322205258.GE7867@spo001.leaseweb.com> <20130323002810.GA26245@roeck-us.net> <20130323174914.GA21563@roeck-us.net> <20130409093700.GM24058@zurbaran> <20130409113639.GA8731@roeck-us.net> <20130409114544.GD7867@spo001.leaseweb.com> <20130409161838.GB27050@roeck-us.net>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51642442.7090908@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Apr  9 19:30:31 2013
-X-DSPAM-Confidence: 0.9985
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5164503723672001218969
+In-Reply-To: <20130409161838.GB27050@roeck-us.net>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 09:22:58AM -0500, Suthikulpanit, Suravee wrote:
-> The reason I implemented the "per-thread IOMMU handling" and the
-> "workaround" together in one patch
-> is because it simplifies the synchronization of clearing and
-> checking the interrupt enabling bits.
-> In the previous implementation, we could end up having multiple
-> threads trying to access the status register
-> at the same time.
+Hi Guenter,
 
-This is the reason for the iommu->lock spinlock in this code at the
-moment.
+> > > I was waiting for feedback from Wim, who submitted a similar driver, about his
+> > > thoughts. Key question is how to reserve access to the shared resource - either
+> > > through an exported function in the mfd driver requesting a mutex, or through
+> > > request_muxed_region(). I am going back and forth myself on which one is better.
+> > > 
+> > > Maybe it does not really matter, but using a function has the slight advantage
+> > > that it auto-loads and locks the mfd module while one of its client modules
+> > > is loaded. If we use request_muxed_region, that is not the case and the client
+> > > module must use another means to request and lock the mfd module.
+> > > 
+> > > Maybe you have an opinion ?
+> > 
+> > This is indeed the main issue that has to be solved. Both options will work.
+> > I like the auto-load and lock, but I need to look at the request_muxed_region
+> > code again first before I can see what the possible drawbacks are :-).
+> > 
+> One drawback of using request_muxed_region is that it needs a return value
+> from superio_enter. Also, it needs some code in the client driver init function
+> to ensure that the mfd driver gets loaded, and possibly a call to __module_get()
+> in the client driver probe function to keep the mfd driver loaded.
+> 
+> winbond_superio_enter() would not need a return value and could use
+> devm_request_region. We could also consider allocating the hwmon memory space in
+> the mfd driver and pass it as resource to the client drivers, which would remove
+> a few more lines of code from those.
+> 
+> Overall I am slightly in favor of using an exported function.
 
+I looked at commit 8b6d043b7ee2d1b819dc833d677ea2aead71a0c0 (which implements
+request_muxed_region). You indeed need some extra code for loading the lowl-level
+mfd driver. So I am also in favour of the exported function.
 
-	Joerg
-
+Kind regards,
+Wim.
 
