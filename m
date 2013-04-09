@@ -1,84 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934630Ab3DIRA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 13:00:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49526 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760264Ab3DIRAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 13:00:55 -0400
-Date: Tue, 9 Apr 2013 13:00:17 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, WANG Chao <chaowang@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 3/4] x86, kdump: Change crashkernel_high/low= to
- crashkernel=;high/low
-Message-ID: <20130409170017.GK6320@redhat.com>
-References: <1365113821-22749-1-git-send-email-yinghai@kernel.org>
- <1365113821-22749-5-git-send-email-yinghai@kernel.org>
- <20130409134544.GA6320@redhat.com>
- <b591d6e4-5468-48f1-8b7e-c6a3943214cd@email.android.com>
- <20130409164720.GJ6320@redhat.com>
- <51644698.2010203@zytor.com>
+	id S934726Ab3DIRCS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 13:02:18 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46900 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754997Ab3DIRCQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 13:02:16 -0400
+Date: Tue, 9 Apr 2013 18:02:14 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Andreas Larsson <andreas@gaisler.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net,
+        Mingkai Hu <Mingkai.hu@freescale.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>, linux-kernel@vger.kernel.org,
+        software@gaisler.com
+Subject: Re: [PATCH v3 5/7] spi: spi-fsl-spi: Add support for setting a
+ maximum number of bits per word
+Message-ID: <20130409170213.GV9243@opensource.wolfsonmicro.com>
+References: <1360943547-2186-1-git-send-email-andreas@gaisler.com>
+ <1360943547-2186-6-git-send-email-andreas@gaisler.com>
+ <20130409165738.GU9243@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UEYxRAcbr7cS1UOX"
 Content-Disposition: inline
-In-Reply-To: <51644698.2010203@zytor.com>
+In-Reply-To: <20130409165738.GU9243@opensource.wolfsonmicro.com>
+X-Cookie: Your love life will be... interesting.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 09:49:28AM -0700, H. Peter Anvin wrote:
-> On 04/09/2013 09:47 AM, Vivek Goyal wrote:
-> > On Tue, Apr 09, 2013 at 08:00:57AM -0700, H. Peter Anvin wrote:
-> >> Please, no semicolons. We already have established syntax for suboptions (option=suboption,suboption,...) and suboptions with parameters (option=suboption:value,...)
-> > 
-> > Ok, to understand it better, so crashkernel= will look as follows?
-> > 
-> > crashkernel=suboption[,suboption[,....]][@offset]
-> > 
-> > A suboption can be.
-> > 
-> > - A memory value (128[KMG])
-> > - A range with value (range:size)
-> > - Or a property influencing memory allocation behavior (e.g high or low)
-> > 
-> > If yes, sounds good.
-> > 
-> 
-> Sorry, I don't quite grok @offset and range:size here.
-> 
-> What exactly does those bits do?
 
-We have following crashkernel= syntax defined in kernel-parameters.txt.
+--UEYxRAcbr7cS1UOX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-        crashkernel=range1:size1[,range2:size2,...][@offset]
-                        [KNL] Same as above, but depends on the memory
-                        in the running system. The syntax of range is
-                        start-[end] where start and end are both
-                        a memory unit (amount[KMG]). See also
-                        Documentation/kdump/kdump.txt for an example.
+On Tue, Apr 09, 2013 at 05:57:38PM +0100, Mark Brown wrote:
+> On Fri, Feb 15, 2013 at 04:52:25PM +0100, Andreas Larsson wrote:
+> > Acked-by: Anton Vorontsov <anton@enomsg.org>
+> > Signed-off-by: Andreas Larsson <andreas@gaisler.com>
 
+> I'll apply this on account of it being part of the series and review
+> having been very slow but...
 
-Because memory required for filtering depended on existing RAM in the
-box, somebody came with this syntax. "range" specifies the range of
-memory present in the system and "value" represents how much RAM
-to reserve if system RAM falls in the range.
+...actually it turns out Grant already applied this anyway and I missed
+it somehow - sorry for the noise!
 
-For example (From kdump.txt)
+--UEYxRAcbr7cS1UOX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-crashkernel=512M-2G:64M,2G-:128M
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-This would mean:
+iQIcBAEBAgAGBQJRZEmIAAoJELSic+t+oim9rWYP/i8V+6tgC3Sw8ekPPhf9eKmU
+C1K/2kFQtaI0GSLBONAx+FrOZxiapeUUxow5CHxZF/noccUQZmvafcOOKygqVs6j
+sCZWRHeK5aIv6ZJjraIdiYc5pmhsoGwMQVxXZEuMFhKljhOHw7lSGk413QsKetBc
+QQBzfHMIOjetXD0YMvRuGjYxkKTm60eigYcp401GLtnNkZ2Uf1q5k40ash0WBH8R
++U6Nv1lYTci7iXsR59SAuIDjx/bFTtBiWiONEVz6ri82BkR25b+cgqHCVYCyCBsS
+HyQQqaX0oCEKkm66dGmPoKH/nXm3P/OLa7jg5KCbse0eWkUMkOe6L2753H6MIi27
+RMwPZqTgfGn31vSXjvg8oKyWfPEBqsbcC+cXIQCe2Rl6esSiKHSKP0uBmVV66Hyt
+42XyARaTnJ0bVETRKBTy+epMFuLXIwUNKc1rT2Ln7du6O3agIv9qKq8TLPWLdHfo
+AY7NqD3KLzrbWJLkha2An8TtcnnLrwPlwPEzG13nC/SqvSmvsJM/n72F9vtayBOA
+j1Pbb6/6Jdu0j5WDP7E/OdNwdxzvT8PKuyx1xFvZyOgUhZqThk6iwst5hW4knwJ/
+uFqASPdAZ5vSFsftFSIDHxquyBNeuVl8H1/1ftsn+gWeXz/wgXSwyoEnBGyZZit7
+lpfz3hz4ALfIPZ6BoK+z
+=Z+O9
+-----END PGP SIGNATURE-----
 
-    1) if the RAM is smaller than 512M, then don't reserve anything
-       (this is the "rescue" case)
-    2) if the RAM size is between 512M and 2G (exclusive), then reserve 64M
-    3) if the RAM size is larger than 2G, then reserve 128M
- 
-
-Thanks
-Vivek
+--UEYxRAcbr7cS1UOX--
