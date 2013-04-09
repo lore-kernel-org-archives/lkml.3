@@ -1,145 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935070Ab3DIRwM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 13:52:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55196 "EHLO mx1.redhat.com"
+	id S935134Ab3DIR40 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 13:56:26 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:37826 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759308Ab3DIRwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 13:52:10 -0400
-Date: Tue, 9 Apr 2013 13:51:43 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Jens Axboe <axboe@kernel.dk>
-cc: Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Mike Snitzer <snitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
-        dm-devel@redhat.com, Andi Kleen <andi@firstfloor.org>,
-        dm-crypt@saout.de, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Christian Schmidt <schmidt@digadd.de>
-Subject: dm-crypt parallelization patches
-In-Reply-To: <20130328204522.GA25501@mtj.dyndns.org>
-Message-ID: <Pine.LNX.4.64.1304091242350.10025@file.rdu.redhat.com>
-References: <Pine.LNX.4.64.1303252051520.9745@file.rdu.redhat.com>
- <20130326122713.GC27610@agk-dp.fab.redhat.com> <5151FF82.6090405@gmail.com>
- <20130326202837.GA5599@redhat.com> <20130328185327.GF14088@htj.dyndns.org>
- <20130328193343.GA15969@redhat.com> <20130328194443.GG14088@htj.dyndns.org>
- <20130328203808.GC15969@redhat.com> <20130328204522.GA25501@mtj.dyndns.org>
+	id S1751315Ab3DIR4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 13:56:24 -0400
+Message-ID: <51645630.3030608@linux.vnet.ibm.com>
+Date: Tue, 09 Apr 2013 13:56:00 -0400
+From: "Michael R. Hines" <mrhines@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Roland Dreier <roland@kernel.org>, qemu-devel@nongnu.org,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        Yishai Hadas <yishaih@mellanox.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Sean Hefty <sean.hefty@intel.com>, Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCHv2] rdma: add a new IB_ACCESS_GIFT flag
+References: <20130324155153.GA8597@redhat.com> <515F3160.4020007@linux.vnet.ibm.com> <CAL1RGDU2jtrRrxi6srsH_ADiYGvJbCpCT3UvoLGTX3cvQ=s0kQ@mail.gmail.com> <515F3A0F.5030507@linux.vnet.ibm.com> <20130409163929.GA7661@redhat.com>
+In-Reply-To: <20130409163929.GA7661@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040917-9360-0000-0000-000011AA0797
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On 04/09/2013 12:39 PM, Michael S. Tsirkin wrote:
+> On Fri, Apr 05, 2013 at 04:54:39PM -0400, Michael R. Hines wrote:
+>> To be more specific, here's what I did:
+>>
+>> 1. apply kernel module patch - re-insert module
+>> 1. QEMU does: ibv_reg_mr(........IBV_ACCESS_GIFT | IBV_ACCESS_REMOTE_READ)
+>> 2. Start the RDMA migration
+>> 3. Migration completes without any errors
+>>
+>> This test does *not* work with a cgroup swap limit, however. The
+>> process gets killed. (Both with and without GIFT)
+>>
+>> - Michael
+> Try to attach a debugger and see where it is when it gets killed?
+>
 
-I placed the dm-crypt parallization patches at: 
-http://people.redhat.com/~mpatocka/patches/kernel/dm-crypt-paralelizace/current/
+It's killed by cgroups - not a CPU exception.
 
-The patches paralellize dm-crypt and make it possible to use all processor 
-cores.
+The same test works fine using TCP migration with cgroups - everything 
+is fine there.
 
+The memory that RDMA attempted to register hits some kind of cgroups policy
+which results in a kernel message saying that the cgroup swap limit was hit
+and then it goes ahead and kills the process altogether.
 
-The patch dm-crypt-remove-percpu.patch removes some percpu variables and 
-replaces them with per-request variables.
+It's not a QEMU problem - it seems to be a kernel bug.
 
-The patch dm-crypt-unbound-workqueue.patch sets WQ_UNBOUND on the 
-encryption workqueue, allowing the encryption to be distributed to all 
-CPUs in the system.
-
-The patch dm-crypt-offload-writes-to-thread.patch moves submission of all 
-write requests to a single thread.
-
-The patch dm-crypt-sort-requests.patch sorts write requests submitted by a 
-single thread. The requests are sorted according to the sector number, 
-rb-tree is used for efficient sorting.
-
-Some usage notes:
-
-* turn off automatic cpu frequency scaling (or set it to "performance"
-  governor) - cpufreq doesn't recognize encryption workload correctly, 
-  sometimes it underclocks all the CPU cores when there is some encryption 
-  work to do, resulting in bad performance
-
-* when using filesystem on encrypted dm-crypt device, reduce maximum 
-  request size with "/sys/block/dm-2/queue/max_sectors_kb" (substitute 
-  "dm-2" with the real name of your dm-crypt device). Note that having too 
-  big requests means that there is a small number of requests and they 
-  cannot be distributed to all available processors in parallel - it 
-  results in worse performance. Having too small requests results in high 
-  request overhead and also reduced performance. So you must find the 
-  optimal request size for your system and workload. For me, when testing 
-  this on ramdisk, the optimal is 8KiB. 
-
----
-
-Now, the problem with I/O scheduler: when doing performance testing, it 
-turns out that the parallel version is sometimes worse than the previous 
-implementation.
-
-When I create a 4.3GiB dm-crypt device on the top of dm-loop on the top of 
-ext2 filesystem on 15k SCSI disk and run this command
-
-time fio --rw=randrw --size=64M --bs=256k --filename=/dev/mapper/crypt 
---direct=1 --name=job1 --name=job2 --name=job3 --name=job4 --name=job5 
---name=job6 --name=job7 --name=job8 --name=job9 --name=job10 --name=job11 
---name=job12
-
-the results are this:
-CFQ scheduler:
---------------
-no patches:
-21.9s
-patch 1:
-21.7s
-patches 1,2:
-2:33s
-patches 1,2 (+ nr_requests = 1280000)
-2:18s
-patches 1,2,3:
-20.7s
-patches 1,2,3,4:
-20.7s
-
-deadline scheduler:
--------------------
-no patches:
-27.4s
-patch 1:
-27.4s
-patches 1,2:
-27.8s
-patches 1,2,3:
-29.6s
-patches 1,2,3,4:
-29.6s
-
-
-We can see that CFQ performs badly with the patch 2, but improves with the 
-patch 3. All that patch 3 does is that it moves write requests from 
-encryption threads to a separate thread.
-
-So it seems that CFQ has some deficiency that it cannot merge adjacent 
-requests done by different processes.
-
-The problem is this:
-- we have 256k write direct-i/o request
-- it is broken to 4k bios (because we run on dm-loop on a filesystem with 
-  4k block size)
-- encryption of these 4k bios is distributed to 12 processes on a 12-core 
-  machine
-- encryption finishes out of order and in different processes, 4k bios 
-  with encrypted data are submitted to CFQ
-- CFQ doesn't merge them
-- the disk is flooded with random 4k write requests, and performs much 
-  worse than with 256k requests
-
-Increasing nr_requests to 1280000 helps a little, but not much - it is 
-still order of magnitute slower.
-
-I'd like to ask if someone who knows the CFQ scheduler (Jens?) could look 
-at it and find out why it doesn't merge requests from different processes. 
-
-Why do I have to do a seemingly senseless operation (hand over write 
-requests to a separate thread) in patch 3 to improve performance?
-
-Mikulas
