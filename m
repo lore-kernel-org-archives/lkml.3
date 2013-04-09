@@ -1,56 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936952Ab3DIHgu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 03:36:50 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:47416 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186Ab3DIHgs (ORCPT
+	id S936965Ab3DIHlD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 03:41:03 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49472 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186Ab3DIHlB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 03:36:48 -0400
-Message-ID: <5163C53C.3050106@parallels.com>
-Date: Tue, 9 Apr 2013 11:37:32 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Lennart Poettering <lpoetter@redhat.com>
-CC: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, <linux-kernel@vger.kernel.org>,
-        <jpoimboe@redhat.com>, <dhaval.giani@gmail.com>,
-        <workman-devel@redhat.com>
-Subject: Re: cgroup: status-quo and userland efforts
-References: <20130406012159.GA17159@mtj.dyndns.org> <5162CA21.4060108@parallels.com> <51635371.7070104@redhat.com>
-In-Reply-To: <51635371.7070104@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Apr 2013 03:41:01 -0400
+Date: Tue, 9 Apr 2013 17:40:47 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Archit Taneja <archit@ti.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: linux-next: manual merge of the arm-soc tree with the omap_dss2
+ tree
+Message-Id: <20130409174047.c506479e08e9688c0a4ced9a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__9_Apr_2013_17_40_47_+1000_x7QlJ2ZkP+gjyzVo"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2013 03:32 AM, Lennart Poettering wrote:
-> The other big thing we want from the systemd side is saner notifications
-> when cgroups run empty. i.e. currently we don't get these at all in
-> containers (since the agent can be only installed once, for the host).
-> And the way we get this is awful, via kernel-spawned processes. I am
-> looking for a way how I can establish a watch on a certain subtree (not
-> just one directory) and get simple notifications in a race-free whenever
-> a cgroup runs empty.
-> 
+--Signature=_Tue__9_Apr_2013_17_40_47_+1000_x7QlJ2ZkP+gjyzVo
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Well, as I am trying to port our tools for Upstream Linux (aka cgroups),
-I also got a pet peeve on this one as well. The notification system is
-global and done at the root level. IOW, notify_on_release is local, but
-release_agent is global.
+Hi all,
 
-We use our management tool to enter containers and call something like
-init 0, that will shut the container down. But if the admin does it
-itself, the cgroup directory will stay there. We would like them to
-automatically disappear.
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/mach-omap2/board-2430sdp.c between commit 3b4ece75b9e9 ("arm:
+omap: board-2430: use generic dpi panel's gpio handling") from the
+omap_dss2 tree and commit 5b6513d27775 ("ARM: OMAP: fix typo
+"CONFIG_SMC91x_MODULE"") from the arm-soc tree.
 
-Maybe that is not something that needs to be done in the kernel. If
-systemd had some very easy and well documented way for a 3rd party
-software to register a notification to be called upon a certain cgroup
-release (if it exists already, sorry Lennart, but I haven't found
-anything in the likes. Just enlighten me)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc arch/arm/mach-omap2/board-2430sdp.c
+index e551aae,cb0596b..0000000
+--- a/arch/arm/mach-omap2/board-2430sdp.c
++++ b/arch/arm/mach-omap2/board-2430sdp.c
+@@@ -135,7 -146,27 +135,7 @@@ static struct omap_dss_board_info sdp24
+  	.default_device	=3D &sdp2430_lcd_device,
+  };
+ =20
+- #if defined(CONFIG_SMC91X) || defined(CONFIG_SMC91x_MODULE)
+ -static void __init sdp2430_display_init(void)
+ -{
+ -	int r;
+ -
+ -	static struct gpio gpios[] __initdata =3D {
+ -		{ SDP2430_LCD_PANEL_ENABLE_GPIO, GPIOF_OUT_INIT_LOW,
+ -			"LCD reset" },
+ -		{ SDP2430_LCD_PANEL_BACKLIGHT_GPIO, GPIOF_OUT_INIT_LOW,
+ -			"LCD Backlight" },
+ -	};
+ -
+ -	r =3D gpio_request_array(gpios, ARRAY_SIZE(gpios));
+ -	if (r) {
+ -		pr_err("Cannot request LCD GPIOs, error %d\n", r);
+ -		return;
+ -	}
+ -
+ -	omap_display_init(&sdp2430_dss_data);
+ -}
+ -
++ #if IS_ENABLED(CONFIG_SMC91X)
+ =20
+  static struct omap_smc91x_platform_data board_smc91x_data =3D {
+  	.cs		=3D 5,
+
+--Signature=_Tue__9_Apr_2013_17_40_47_+1000_x7QlJ2ZkP+gjyzVo
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRY8X/AAoJEECxmPOUX5FEOlwP/0LkrImgJYl7Y5dgtlNW5b7W
+44I/ZzeRtpWzz56EXgungZUHw71HTYiH4asovBqSwW52qxVItBqekq+qGb2nf1v2
+zShRvFdLPfkuDCep6sc+sePmqsDVMzvD/pPFaFu+OpEnVj3YmFLhDFZcIWE1QQRf
+EzYARMfFD6Q0UaIa4B/TuCnQcgES+KcqzzU+nY0b4LLBOHvppotq10crcPWXFB4L
+BPZh4pc/1Ui4+/UawW5cLWdToQZThmp5zEURmtY5AIZvbzzmopXQRsct2M+U5rhJ
+/oEXFuxOoNByuGTDStqJTP1T6LCxCmrOBDFkBhsDHZLRB17ACWCr+K88bxuDdTYN
+942awfbz+LeHjDTWBNZ+HH1cEl3CJ/pqzohu2+xPbh6DfE+80bJxzxwCXEiirTBW
+H+tPNXVuJoYuZr5rq0c3+aVCbRoFCnXWqW/Nn1y8Lj+JGHHjYHPNE7JA9REv2PEf
+fS+rprt+dUGxE4xIBgoxFY/7bCn0WdQQe5HCcePGIuFn44Nm4hNX8r+1T+59uGeZ
+Xvno4DA15Tl0WFkEo9dRt1gNMCbbgjVgt4u4PxnI8ZThsSkvTRNTcup1tnEJ4In2
+0D/udKsou48VUpI7l7vvmSGrPwBuNV8nXnsQDp23MhvTLQV2zzUl16fl48LMbZrN
+3lNMMi0hyrGePODR0EEX
+=BvpW
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__9_Apr_2013_17_40_47_+1000_x7QlJ2ZkP+gjyzVo--
