@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936097Ab3DITfd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 15:35:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23125 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935868Ab3DITfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 15:35:31 -0400
-Date: Tue, 9 Apr 2013 21:32:38 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 5/7] uprobes/tracing: Make register_uprobe_event() paths
-	uretprobe-friendly
-Message-ID: <20130409193238.GA27247@redhat.com>
+	id S936117Ab3DITfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 15:35:46 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:57155 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765118Ab3DITfo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 15:35:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCHv2] ARM: Push selects for TWD/SCU into machine entries
+Date: Tue, 9 Apr 2013 21:35:36 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>, linux-arm-msm@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Barry Song <baohua.song@csr.com>,
+        Olof Johansson <olof@lixom.net>
+References: <1362007694-3419-1-git-send-email-sboyd@codeaurora.org> <5164462E.4010706@codeaurora.org> <201304092032.18885.arnd@arndb.de>
+In-Reply-To: <201304092032.18885.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130409193200.GA26731@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304092135.36616.arnd@arndb.de>
+X-Provags-ID: V02:K0:FiRm3nsFQY0qQAZlBWabOjP1V5IwnCirUGTvKXfKkev
+ 6SewHhRbkFK6AAIO6rGBe1uZiEEm4ilXSo1wGNGlQnzs9oBS79
+ XuumpDKLNiPUZ6lZRfsLu88+5GdFjDqHeCk7+YyAVKpVDSdGmt
+ XL283uFgTCmNHJ2aTQFl2Ly7cdrDdoGMgNxF+mV3svicfqTR5L
+ V256dF+QN9jAormMYKPP1+9FK9+siWe1hcpl6koc3b87r1XeQO
+ TwttqhUTSy5HgScronpLQqEPk6O+SuLxq1GDbQNVbQe+FGfuQx
+ yJuG/dnKY1x/Y92zajU3I+/qD9mnw9noXnN2JEuAeNcUdyGPmh
+ KjkOS/8adGpbtkYiDLmw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change uprobe_event_define_fields(), and __set_print_fmt() to check
-is_ret_probe() and use the appropriate format/fields.
+On Tuesday 09 April 2013, Arnd Bergmann wrote:
+> I've applied it to the next/soc branch now.
+> 
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Tested-by: Anton Arapov <anton@redhat.com>
----
- kernel/trace/trace_uprobe.c |   19 +++++++++++++++----
- 1 files changed, 15 insertions(+), 4 deletions(-)
+I just made up my mind again after I got a few merge conflicts. I have
+added it to the next/multiplatform branch now instead of next/soc, since
+a few of the Kconfig entries changed in this patch are moved to other
+files in that branch.
 
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 0ed99a2..4575762 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -628,8 +628,14 @@ static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
- 	struct uprobe_trace_entry_head field;
- 	struct trace_uprobe *tu = event_call->data;
- 
--	DEFINE_FIELD(unsigned long, vaddr[0], FIELD_STRING_IP, 0);
--	size = SIZEOF_TRACE_ENTRY(false);
-+	if (is_ret_probe(tu)) {
-+		DEFINE_FIELD(unsigned long, vaddr[0], FIELD_STRING_FUNC, 0);
-+		DEFINE_FIELD(unsigned long, vaddr[1], FIELD_STRING_RETIP, 0);
-+		size = SIZEOF_TRACE_ENTRY(true);
-+	} else {
-+		DEFINE_FIELD(unsigned long, vaddr[0], FIELD_STRING_IP, 0);
-+		size = SIZEOF_TRACE_ENTRY(false);
-+	}
- 	/* Set argument names as fields */
- 	for (i = 0; i < tu->nr_args; i++) {
- 		ret = trace_define_field(event_call, tu->args[i].type->fmttype,
-@@ -652,8 +658,13 @@ static int __set_print_fmt(struct trace_uprobe *tu, char *buf, int len)
- 	int i;
- 	int pos = 0;
- 
--	fmt = "(%lx)";
--	arg = "REC->" FIELD_STRING_IP;
-+	if (is_ret_probe(tu)) {
-+		fmt = "(%lx <- %lx)";
-+		arg = "REC->" FIELD_STRING_FUNC ", REC->" FIELD_STRING_RETIP;
-+	} else {
-+		fmt = "(%lx)";
-+		arg = "REC->" FIELD_STRING_IP;
-+	}
- 
- 	/* When len=0, we just calculate the needed length */
- 
--- 
-1.5.5.1
+I've also added an entry for mach-zynq, which has gained SMP support
+in the meantime. I assume it uses TWD/SCU as it is otherwise rather close
+to the ARM reference platforms.
 
+	Arnd
