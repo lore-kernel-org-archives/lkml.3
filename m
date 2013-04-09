@@ -1,52 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935868Ab3DITGA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 15:06:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37505 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935760Ab3DITF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 15:05:58 -0400
-Message-ID: <1365534355.16420.160.camel@bling.home>
-Subject: [GIT PULL] vfio fix for 3.9-rc7
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Date: Tue, 09 Apr 2013 13:05:55 -0600
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S935798Ab3DITHL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 15:07:11 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:47065 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934538Ab3DITHJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 15:07:09 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Sourav Poddar <sourav.poddar@ti.com>
+Cc: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: Re: [PATCHv3] driver: serial: prevent UART console idle on suspend while using "no_console_suspend"
+References: <1365167733-28083-1-git-send-email-sourav.poddar@ti.com>
+	<87mwtclvua.fsf@linaro.org> <516463D2.2070008@ti.com>
+Date: Tue, 09 Apr 2013 12:07:05 -0700
+In-Reply-To: <516463D2.2070008@ti.com> (Sourav Poddar's message of "Wed, 10
+	Apr 2013 00:24:10 +0530")
+Message-ID: <87obdnh6au.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Sourav Poddar <sourav.poddar@ti.com> writes:
 
-Here's one small fix for vfio that I'd like to get in for 3.9;
-tightening the range checking around a vfio ioctl.  Thanks!
+> Hi Kevin,
+> On Friday 05 April 2013 11:10 PM, Kevin Hilman wrote:
+>> Sourav Poddar<sourav.poddar@ti.com>  writes:
+>>
+>>> With dt boot, uart wakeup after suspend is non functional while using
+>>> "no_console_suspend" in the bootargs. With "no_console_suspend" used, we
+>>> should prevent the runtime suspend of the uart port which is getting used
+>>> as an console.
+>>>
+>>> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
+>>> Cc: Felipe Balbi<balbi@ti.com>
+>>> Cc: Rajendra nayak<rnayak@ti.com>
+>>> Tested on omap5430evm, omap4430sdp.
+>>>
+>>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
+>> Rather than make these special checks inside the driver's runtime PM
+>> callbacks, you should just disable runtime PM (pm_runtime_disable())
+>>
+>> Then, this should be broken into 2 patches.
+>>
+>> 1) serial core: add the '->is_console' flag.  (nit on naming: don't call
+>>     it port_is_console, since the struct is already a uart_port)
+>>
+>> 2) In the OMAP UART driver's ->prepare callback, check the is_console flag
+>>     and pm_runtime_disable() accordingly  (then pm_runtime_enable() in
+>>     the drivers's ->complete callback.
+>>
+>> Kevin
+>
+> I was working on your above suggestions, but realised there is not
+> only console
+> uart which has the requirement of keeping the clocks enabled while going on
+> suspend.
+>
+> If you see arch/arm/boot/dts/am33xx.dtsi, there is a ocmcram which has
+> "no_idle_on_suspend" property used.
 
-Alex
+Can you please ask the AM33xx folks how (and why) this is being used?
 
-The following changes since commit 25e9789ddd9d14a8971f4a421d04f282719ab733:
+I don't see/find a driver for this device in mainline, so without a
+driver this flag will not be used.
 
-  vfio: include <linux/slab.h> for kmalloc (2013-03-15 12:58:20 -0600)
+>     ocmcram: ocmcram@40300000 {
+>                         compatible = "ti,am3352-ocmcram";
+>                         reg = <0x40300000 0x10000>;
+>                         ti,hwmods = "ocmcram";
+>                         ti,no_idle_on_suspend;
+>         };
+> This property gets checked in omap_device file and correspondingly
+> od->flags is set.
+>
+> Based on your above inputs, the patches which I cooked up is
+> inlined[1]. Though, the below
+> patches works fine for uart case. The patches will effect ocmcram case
+> and I am inling them
+> "just for discussion".
 
-are available in the git repository at:
+Could you also have a look at Russell's suggestion for getting rid of
+the 'is_console' flag.
 
-  git://github.com/awilliam/linux-vfio.git tags/vfio-v3.9-rc7
+Thanks,
 
-for you to fetch changes up to 904c680c7bf016a8619a045850937427f8d7368c:
-
-  vfio-pci: Fix possible integer overflow (2013-03-26 11:33:16 -0600)
-
-----------------------------------------------------------------
-vfio overflow fix for v3.9-rc7
-
-----------------------------------------------------------------
-Alex Williamson (1):
-      vfio-pci: Fix possible integer overflow
-
- drivers/vfio/pci/vfio_pci.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-
+Kevin
