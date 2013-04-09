@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935186Ab3DIRWK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 13:22:10 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:21801 "EHLO
+	id S934804Ab3DIRWI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 13:22:08 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:5600 "EHLO
 	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933489Ab3DIRWD (ORCPT
+	by vger.kernel.org with ESMTP id S933213Ab3DIRWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 13:22:03 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+	Tue, 9 Apr 2013 13:22:04 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-SpamScore: 0
-X-BigFish: VPS0(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzzz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-X-WSS-ID: 0ML008N-01-1U9-02
+X-BigFish: VPS0(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-WSS-ID: 0ML008N-02-EE9-02
 X-M-MSG: 
 From: Jacob Shin <jacob.shin@amd.com>
 To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -19,10 +19,12 @@ CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
         <x86@kernel.org>, Stephane Eranian <eranian@google.com>,
         Jiri Olsa <jolsa@redhat.com>, <linux-kernel@vger.kernel.org>,
         Jacob Shin <jacob.shin@amd.com>
-Subject: [PATCH 0/5] perf: Add support for hardware breakpoint address masks
-Date: Tue, 9 Apr 2013 12:21:48 -0500
-Message-ID: <1365528113-5458-1-git-send-email-jacob.shin@amd.com>
+Subject: [PATCH 1/5] perf: Add hardware breakpoint address mask
+Date: Tue, 9 Apr 2013 12:21:49 -0500
+Message-ID: <1365528113-5458-2-git-send-email-jacob.shin@amd.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1365528113-5458-1-git-send-email-jacob.shin@amd.com>
+References: <1365528113-5458-1-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: amd.com
@@ -30,48 +32,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patchset adds address masks to existing perf hardware
-breakpoint mechanism to allow trapping on an address range (currently
-only single address) on supported architectures.
+Some architectures (for us, AMD Family 16h) allow for "don't care" bit
+mask to further qualify a hardware breakpoint address, in order to
+trap on range of addresses. Update perf uapi to add bp_addr_mask field
+and define HAVE_HW_BREAKPOINT_ADDR_MASK.
 
-perf uapi is updated, x86 AMD implementation (for AMD Family 16h and
-beyond) is provided, and perf tool has been extended to do:
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+---
+ arch/Kconfig                    |    4 ++++
+ include/linux/hw_breakpoint.h   |    6 ++++++
+ include/uapi/linux/perf_event.h |    5 ++++-
+ kernel/events/hw_breakpoint.c   |    3 +++
+ 4 files changed, 17 insertions(+), 1 deletion(-)
 
-  $ perf stat -e mem:0x1000:w:0xf a.out
-                              ^^^
-                              "don't care" bit mask
-
-  which will count writes to [0x1000 ~ 0x1010)
-
-Jacob Shin (2):
-  perf: Add hardware breakpoint address mask
-  perf, x86: AMD implementation for hardware breakpoint address mask
-
-Suravee Suthikulpanit (3):
-  perf tools: Add breakpoint address mask to the mem event parser
-  perf tools: Add breakpoint address mask syntax to perf list and
-    documentation
-  perf tools: Add breakpoint address mask test case to
-    tests/parse-events
-
- arch/Kconfig                             |    4 ++++
- arch/x86/Kconfig                         |    1 +
- arch/x86/include/asm/cpufeature.h        |    2 ++
- arch/x86/include/asm/debugreg.h          |    7 ++++++
- arch/x86/include/asm/hw_breakpoint.h     |    6 ++++++
- arch/x86/include/uapi/asm/msr-index.h    |    6 ++++++
- arch/x86/kernel/cpu/amd.c                |   19 +++++++++++++++++
- arch/x86/kernel/hw_breakpoint.c          |    5 +++++
- include/linux/hw_breakpoint.h            |    6 ++++++
- include/uapi/linux/perf_event.h          |    5 ++++-
- kernel/events/hw_breakpoint.c            |    3 +++
- tools/perf/Documentation/perf-record.txt |   14 ++++++++----
- tools/perf/tests/parse-events.c          |   34 ++++++++++++++++++++++++++++++
- tools/perf/util/parse-events.c           |    5 +++--
- tools/perf/util/parse-events.h           |    2 +-
- tools/perf/util/parse-events.y           |   14 ++++++++++--
- 16 files changed, 123 insertions(+), 10 deletions(-)
-
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 1455579..8423e9c 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -249,6 +249,10 @@ config HAVE_HW_BREAKPOINT
+ 	bool
+ 	depends on PERF_EVENTS
+ 
++config HAVE_HW_BREAKPOINT_ADDR_MASK
++       bool
++       depends on HAVE_HW_BREAKPOINT
++
+ config HAVE_MIXED_BREAKPOINTS_REGS
+ 	bool
+ 	depends on HAVE_HW_BREAKPOINT
+diff --git a/include/linux/hw_breakpoint.h b/include/linux/hw_breakpoint.h
+index 0464c85..9384201 100644
+--- a/include/linux/hw_breakpoint.h
++++ b/include/linux/hw_breakpoint.h
+@@ -84,6 +84,12 @@ static inline struct arch_hw_breakpoint *counter_arch_bp(struct perf_event *bp)
+ 	return &bp->hw.info;
+ }
+ 
++#ifdef CONFIG_HAVE_HW_BREAKPOINT_ADDR_MASK
++extern int arch_has_hw_breakpoint_addr_mask(void);
++#else
++static inline int arch_has_hw_breakpoint_addr_mask(void) { return 0; }
++#endif /* CONFIG_HAVE_HW_BREAKPOINT_ADDR_MASK */
++
+ #else /* !CONFIG_HAVE_HW_BREAKPOINT */
+ 
+ static inline int __init init_hw_breakpoint(void) { return 0; }
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index fb104e5..e22e1d1 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -286,7 +286,10 @@ struct perf_event_attr {
+ 		__u64		config1; /* extension of config */
+ 	};
+ 	union {
+-		__u64		bp_len;
++		struct {
++			__u32		bp_len;
++			__u32		bp_addr_mask;
++		};
+ 		__u64		config2; /* extension of config1 */
+ 	};
+ 	__u64	branch_sample_type; /* enum perf_branch_sample_type */
+diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+index a64f8ae..e186a46 100644
+--- a/kernel/events/hw_breakpoint.c
++++ b/kernel/events/hw_breakpoint.c
+@@ -612,6 +612,9 @@ static int hw_breakpoint_add(struct perf_event *bp, int flags)
+ 	if (!(flags & PERF_EF_START))
+ 		bp->hw.state = PERF_HES_STOPPED;
+ 
++	if (bp->attr.bp_addr_mask && !arch_has_hw_breakpoint_addr_mask())
++		return -EOPNOTSUPP;
++
+ 	return arch_install_hw_breakpoint(bp);
+ }
+ 
 -- 
 1.7.9.5
 
