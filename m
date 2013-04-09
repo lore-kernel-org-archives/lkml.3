@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964878Ab3DIHKv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 03:10:51 -0400
-Received: from mga02.intel.com ([134.134.136.20]:7636 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934744Ab3DIHKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 03:10:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,436,1363158000"; 
-   d="scan'208";a="315161145"
-Date: Tue, 9 Apr 2013 09:10:35 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: drop "select PMIC_DA9055"
-Message-ID: <20130409071035.GE24058@zurbaran>
-References: <1362846754.3137.9.camel@x61.thuisdomein>
+	id S936536Ab3DIHMA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 03:12:00 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:61448 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934744Ab3DIHL7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 03:11:59 -0400
+Date: Tue, 9 Apr 2013 08:11:54 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Per Forlin <per.forlin@stericsson.com>
+Subject: [PATCH 4/5] dmaengine: ste_dma40: Do not configure channels during
+ an channel allocation
+Message-ID: <20130409071154.GH3084@gmail.com>
+References: <1365434591-21569-1-git-send-email-lee.jones@linaro.org>
+ <1365434591-21569-4-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1362846754.3137.9.camel@x61.thuisdomein>
+In-Reply-To: <1365434591-21569-4-git-send-email-lee.jones@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+According to the DMA documentation allocating a channel and configuring
+it are two separate actions. By removing the configuration code from the
+channel allocation path we lighten the burden on the information required to
+successfully allocate a channel.
 
-On Sat, Mar 09, 2013 at 05:32:34PM +0100, Paul Bolle wrote:
-> The Kconfig entry for DA9055 PMIC Support selects PMIC_DA9055. That was
-> probably inspired by the similar select statement in the entry for
-> DA9052/53 PMIC with I2C. But the DA9055 PMIC only comes in an I2C
-> variant and its driver doesn't need a separate Kconfig symbol for shared
-> code. In any case, this select can be dropped as PMIC_DA9055 doesn't
-> exist.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> 0) Tested with "git grep" only.
-> 
-> 1) Note that the DA9052 and DA9055 drivers all have code for module
-> support, but their Kconfig entries only allow them to be builtin. Can't
-> these entries be made tristate? If not, shouldn't the code for module
-> support be removed?
-> 
->  drivers/mfd/Kconfig | 1 -
->  1 file changed, 1 deletion(-)
-Patch applied to mfd-next, thanks.
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <djbw@fb.com>
+Cc: Per Forlin <per.forlin@stericsson.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/dma/ste_dma40.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
-Cheers,
-Samuel.
-
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index ecca492..3543ea4 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -2471,16 +2471,10 @@ static int d40_alloc_chan_resources(struct dma_chan *chan)
+ 	}
+ 
+ 	pm_runtime_get_sync(d40c->base->dev);
+-	/* Fill in basic CFG register values */
+-	d40_phy_cfg(&d40c->dma_cfg, &d40c->src_def_cfg,
+-		    &d40c->dst_def_cfg, chan_is_logical(d40c));
+ 
+ 	d40_set_prio_realtime(d40c);
+ 
+ 	if (chan_is_logical(d40c)) {
+-		d40_log_cfg(&d40c->dma_cfg,
+-			    &d40c->log_def.lcsp1, &d40c->log_def.lcsp3);
+-
+ 		if (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_MEM)
+ 			d40c->lcpa = d40c->base->lcpa_base +
+ 				d40c->dma_cfg.src_dev_type * D40_LCPA_CHAN_SIZE;
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.10.4
