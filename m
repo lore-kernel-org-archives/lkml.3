@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937590Ab3DIKXV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 06:23:21 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:41547 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935573Ab3DIKXT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 06:23:19 -0400
+	id S937606Ab3DIK0Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 06:26:24 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36306 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758702Ab3DIK0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 06:26:22 -0400
+Date: Tue, 9 Apr 2013 12:24:09 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Steffen Persvold <sp@numascale.com>
+Cc: Daniel J Blueman <daniel@numascale-asia.com>,
+        Tony Luck <tony.luck@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, amd, mce: Prevent potential cpu-online oops
+Message-ID: <20130409102409.GF10243@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Steffen Persvold <sp@numascale.com>,
+	Daniel J Blueman <daniel@numascale-asia.com>,
+	Tony Luck <tony.luck@intel.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	x86@kernel.org, linux-edac@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1365090720-12652-1-git-send-email-daniel@numascale-asia.com>
+ <20130404161340.GF32271@pd.tnic>
+ <515DC0FA.1040408@numascale.com>
+ <20130404190731.GG32271@pd.tnic>
+ <5163DE7C.7060700@numascale.com>
+ <20130409093854.GC10243@pd.tnic>
+ <5163E348.7060206@numascale.com>
 MIME-Version: 1.0
-In-Reply-To: <20130409101343.GT24058@zurbaran>
-References: <1365068715-15868-1-git-send-email-sachin.kamat@linaro.org>
-	<20130409101343.GT24058@zurbaran>
-Date: Tue, 9 Apr 2013 15:53:19 +0530
-Message-ID: <CAK9yfHz+Hg8M0VDErf9umLmE0eemQ114at67wfh9NQVSeCpCYQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mfd: omap-usb-host: Convert to devm_ioremap_resource()
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Roger Quadros <rogerq@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5163E348.7060206@numascale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+On Tue, Apr 09, 2013 at 11:45:44AM +0200, Steffen Persvold wrote:
+> Hmm, yes of course. This of course breaks on our slave servers when
+> the shared mechanism doesn't work properly (i.e NB not visible). Then
+> all cores gets individual kobjects and there can be discrepancies
+> between what the hardware is programmed to and what is reflected in
+> /sys on some cores..
 
-On 9 April 2013 15:43, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> Hi Sachin,
->
-> On Thu, Apr 04, 2013 at 03:15:14PM +0530, Sachin Kamat wrote:
->> Use the newly introduced devm_ioremap_resource() instead of
->> devm_request_and_ioremap() which provides more consistent error handling.
->>
->> devm_ioremap_resource() provides its own error messages; so all explicit
->> error messages can be removed from the failure code paths.
->>
->> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
->> Cc: Roger Quadros <rogerq@ti.com>
->> ---
->>  drivers/mfd/omap-usb-host.c |    9 ++++-----
->>  1 file changed, 4 insertions(+), 5 deletions(-)
-> The 2 patches make sense to me, but they don't apply cleanly on top of
-> mfd-next. Would you mind sending me a rebased version ?
+Hold on, are you saying you have cores with an invisible NB? How does
+that even work? Or is it only invisible to sw?
 
-Sure, I will.
+Which would explain why you want the bank4 thing to be per-core.
+However, the ugliness with this approach is that you need to note which
+cores share the bank and do the proper updates on all sharing cores upon
+modifications from sysfs.
 
+Oh well, if you can come up with a clean patchset doing that and without
+introducing too much bloat, we can talk about it... :-)
+
+> Ok, we go with our first approach to not create MC4 at all if NB isn't
+> visible.
+
+... but this would be the simpler fix. Unless it is still not fixing
+everything for you guys.
+
+> We'll redo the patch against the tip:x86/ras branch.
+
+Thanks.
 
 -- 
-With warm regards,
-Sachin
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+-- 
