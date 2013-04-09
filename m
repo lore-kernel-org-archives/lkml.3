@@ -1,170 +1,924 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937710Ab3DIKhb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 06:37:31 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:16138 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935514Ab3DIKh2 (ORCPT
+	id S937732Ab3DIKiS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 06:38:18 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:25830 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936809Ab3DIKiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 06:37:28 -0400
-X-AuditID: cbfee61b-b7f076d0000034b6-83-5163ef66c07b
-Date: Tue, 09 Apr 2013 12:37:19 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, sw0312.kim@samsung.com,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [RFC PATCH 0/2] cpufreq: Introduce LAB cpufreq governor.
-Message-id: <20130409123719.7399d5ad@amdc308.digital.local>
-In-reply-to: <CAOh2x=nPJa0GReiN=OHLG=m4Gq51F=4VppdaQL20xi-aUa8x2Q@mail.gmail.com>
-References: <1364804657-16590-1-git-send-email-jonghwa3.lee@samsung.com>
- <CAOh2x=nPJa0GReiN=OHLG=m4Gq51F=4VppdaQL20xi-aUa8x2Q@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGLMWRmVeSWpSXmKPExsVy+t9jQd2098mBBtc2WVk8bfrBbnH9y3NW
-	i86zT5gtzja9Ybe4vGsOm8Xn3iOMFmuP3GW3uN24gs2if2Evk8WMyS/ZLDZ+9XDg9rhzbQ+b
-	R9+WVYwejxa3MHp83iQXwBLFZZOSmpNZllqkb5fAlXHg5xOmgn71itsTvzM3MDbIdzFyckgI
-	mEj8mNnIDmGLSVy4t54NxBYSmM4o8WuVUxcjF5DdziSx5u5MVpAEi4CqxPJDl8GK2AT0JD7f
-	fcrUxcjBISKgJfHyZipIPbPADmaJzoX3wGqEBVwl+vZfYQSxeQWsJW6e+wQ2h1MgWGL+mSXs
-	EAv6GSWezDnJApLgF5CUaP/3gxniIjuJc582sEM0C0r8mHwPrIYZaNnmbU2sELa8xOY1b5kn
-	MArOQlI2C0nZLCRlCxiZVzGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEx8Yz6R2MqxosDjEK
-	cDAq8fBeeJIUKMSaWFZcmXuIUYKDWUmEt+VOcqAQb0piZVVqUX58UWlOavEhRmkOFiVx3oOt
-	1oFCAumJJanZqakFqUUwWSYOTqkGRusGn+8xa9/Ebrv7WkNFJNxDL4Dt3Xrj62nFk06byO6O
-	3MFx2O+11WuWQycUgxxlun56HJw245xLeylDrfjOF5IXGi9fSmb7Jrluq7c2j8mxe3/2HVnX
-	8yhnw8bOTcXqRntjH5j8Os+pzy3LNV/M4nbwtiWiN3keK0k3u4QlPd6s1aq683GjphJLcUai
-	oRZzUXEiAIIGnfSJAgAA
+	Tue, 9 Apr 2013 06:38:15 -0400
+X-IronPort-AV: E=Sophos;i="4.87,438,1363158000"; 
+   d="scan'208";a="36815738"
+From: Dolev Raviv <draviv@codeaurora.org>
+To: linux-ufs@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, Dolev Raviv <draviv@codeaurora.org>,
+        linux-kernel@vger.kernel.org (open list),
+        linux-scsi@vger.kernel.org (open list:UNIVERSAL FLASH S...)
+Subject: [PATCH] scsi: ufs: add support for query requests
+Date: Tue,  9 Apr 2013 13:37:16 +0300
+Message-Id: <1365503840-5749-1-git-send-email-draviv@codeaurora.org>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
+Add support for sending UFS query requests through tagged command
+queuing. This design allows queuing query requests in any open slot
+along with other SCSI commands. In this way there is no need to
+save a slot in the requests queue and decrease its size.
 
-First of all I'd like to apologize for a late response.
-Please find my comments below. 
+A query request is posing to a SCSI command to use native flow. But
+unlike normal SCSI command flow, the data and response fields are
+filled in UFS host data structure instead of passing as arguments
+while queuing into SCSI mlqueue (mid-layer SCSI queue, the requests
+from this queue are submitted to the device queue). As per specification
+only one query request is allowed to be processed by device. Hence a
+mutex lock for protecting data and response fields (hba->query.request and
+hba->query.response) needs to be held while query request is in
+progress.
 
-> On Mon, Apr 1, 2013 at 1:54 PM, Jonghwa Lee
-> <jonghwa3.lee@samsung.com> wrote:
-> > <<Purpose>>
-> >  One of the problem of ondemand is that it considers the most busy
-> > cpu only while doesn't care how many cpu is in busy state at the
-> > moment. This may results in unnecessary power consumption, and it'll
-> > be critical for the system having limited power source.
-> >
-> >  To get the best energy efficiency, LAB governor considers not only
-> > idle time but also the number of idle cpus. It primarily focuses on
-> > supplying adequate performance to users within the limited resource.
-> > It checks the number of idle cpus then controls the maximum
-> > frequency dynamically. And it also applies different frequency
-> > increasing level depends on that information. In simple terms the
-> > less the number of busy cpus, the better performance will be given.
-> >  In addition, stable system's power consumption in the busy state
-> > can be achieved also with using LAB governor. This will help to
-> > manage and estimate power consumption in certain system.
-> 
-> Hi Jonghwa,
-> 
-> First of all, i should accept that i haven't got to the minute details
-> about your
-> patch until now but have done a broad review of it.
-> 
-> There are many things that i am concerned about:
-> - I don't want an additional governor to be added to cpufreq unless
-> there is a very very strong reason for it. See what happened to
-> earlier attempts:
-> 
-> https://lkml.org/lkml/2012/2/7/504
-> 
-> But it doesn't mean you can't get it in. :)
-> 
-> - What the real logic behind your patchset: I haven't got it
-> completely with your
-> mails. So what you said is:
-> 
->   - The lesser the number of busy cpus: you want to run at higher
-> freqs
->   - The more the number of busy cpus: you want to run at lower freqs
-> 
-> But the basic idea i had about this stuff was: The more the number of
-> busy cpus, the more loaded the system is, otherwise scheduler wouldn't
-> have used so many cpus and so there is need to run at higher frequency
-> rather than a lower one. Which would save power in a sense.. Finish
-> work early and let most of the cpus enter idle state as early as
-> possible. But with your solution we would run at lower frequencies
-> and so these cpus will take longer to get into idle state again. This
-> will really kill lot of power.
+The API for submitting a query request is ufs_query_request() in
+ufs_core.c. This function is responsible for:
+1. Obtaining the SCSI device from the host
+2. Keeping the query mutex to prevent multiple queries
+3. Storing the required data for sending a query request in ufs_hba
+4. Queuing a SCSI vendor specific command to trigger a query request
+   in the UFS driver.
 
-Our approach is a bit different than cpufreq_ondemand one. Ondemand
-takes the per CPU idle time, then on that basis calculates per cpu load.
-The next step is to choose the highest load and then use this value to
-properly scale frequency.
+The callers of ufs_query_request() are expected to fill the query
+command data fields and are to provide an allocated response field
+for the driver to fill response fields after request completion.
 
-On the other hand LAB tries to model different behavior:
+The request and response upiu is extended in a union to enable using the
+same data structure, both for command upiu and query request upiu.
 
-As a first step we applied Vincent Guittot's "pack small tasks" [*]
-patch to improve "race to idle" behavior:
-http://article.gmane.org/gmane.linux.kernel/1371435/match=sched+pack+small+tasks	
+The query request flow is separated from the scsi command flow in:
+1. Preparing the request
+2. Validating response (error) codes
+3. Copying data (only used for descriptor read/write query requests)
+4. Copying response/sense
 
-Afterwards, we decided to investigate different approach for power
-governing:
+Data error can't be handled in the scsi command native flow. Hence,
+we pass the code as without a change back to the submitting layer.
 
-Use the number of sleeping CPUs (not the maximal per-CPU load) to
-change frequency. We thereof depend on [*] to "pack" as many tasks to
-CPU as possible and allow other to sleep. 
-On this basis we can increase (even overclock) frequency (when other
-CPUs sleep) to improve performance of the only running CPU. 
+UPIU (UFS Protocol Information Unit) size is increased to 512 bytes
+from 128. The UPIU header and the transaction specific fields (SCSI
+command or Query Request OSF - Op-code Specific Fields) are 32 bytes
+together, the rest is used to transfer extra request data (such as
+descriptor in query requests). In order to accommodate the largest
+descriptor in the UFS spec (256 bytes) we need to increase the UPIU
+size.
 
-Contrary, when all cores are heavily loaded, we decided to reduce
-frequency by around 30%. With this approach user experience recution is
-still acceptable (with much less power consumption).
-When system is "idle" - only small background tasks are running, the
-frequency is reduced to minimum. 
+Signed-off-by: Dolev Raviv <draviv@codeaurora.org>
 
-To sum up:
-
-Different approach (number of idle CPUs) is used by us to control
-ondemand governor. We also heavily depend on [*] patch set.
-
-> 
-> Think about it.
-> 
-> - In case you need some sort of support on this use case, why
-> replicate ondemand governor again by creating another governor. I
-> have had some hard time removing the amount of redundancy inside
-> governors and you are again going towards that direction. Modifying
-> ondemand governor for this response would be a better option.
-
-We have only posted the "RFC" so, we are open for suggestions. 
-
-At cpufreq_governor.c file the dbs_check_cpu function is responsible
-for calculating the maximal load (among CPUs). I think that we could
-also count the number of sleeping CPUs (as the average of time
-accumulated data). Then we could pass this data to newly written
-function (e.g. lab_check_cpu) defined at cpufreq_ondemand.c (and
-pointed to by gov_check_cpu).
-
-This would require change to dbs_check_cpu function and extending
-ONDEMAND governor by lab_check_cpu() function.
-
-> 
-> - You haven't rebased of latest code from linux-next :)
-> 
-
-We have posted this "RFC" patch mainly for discussion, and I think it
-fits its purpose :-).
-
-
-
+diff --git a/drivers/scsi/ufs/Makefile b/drivers/scsi/ufs/Makefile
+index 1e5bd48..1ca46ca 100644
+--- a/drivers/scsi/ufs/Makefile
++++ b/drivers/scsi/ufs/Makefile
+@@ -1,4 +1,5 @@
+ # UFSHCD makefile
+ obj-$(CONFIG_SCSI_UFSHCD) += ufshcd.o
++obj-$(CONFIG_SCSI_UFSHCD) += ufs_core.o
+ obj-$(CONFIG_SCSI_UFSHCD_PCI) += ufshcd-pci.o
+ obj-$(CONFIG_SCSI_UFSHCD_PLATFORM) += ufshcd-pltfrm.o
+diff --git a/drivers/scsi/ufs/ufs.h b/drivers/scsi/ufs/ufs.h
+index 139bc06..6b75014 100644
+--- a/drivers/scsi/ufs/ufs.h
++++ b/drivers/scsi/ufs/ufs.h
+@@ -36,10 +36,19 @@
+ #ifndef _UFS_H
+ #define _UFS_H
+ 
++#include <linux/mutex.h>
++#include <linux/types.h>
++
+ #define MAX_CDB_SIZE	16
++#define GENERAL_UPIU_REQUEST_SIZE 32
++#define UPIU_HEADER_DATA_SEGMENT_MAX_SIZE	((ALIGNED_UPIU_SIZE) - \
++					(GENERAL_UPIU_REQUEST_SIZE))
++#define QUERY_OSF_SIZE			((GENERAL_UPIU_REQUEST_SIZE) - \
++					(sizeof(struct utp_upiu_header)))
++#define UFS_QUERY_RESERVED_SCSI_CMD 0xCC
+ 
+ #define UPIU_HEADER_DWORD(byte3, byte2, byte1, byte0)\
+-			((byte3 << 24) | (byte2 << 16) |\
++			cpu_to_be32((byte3 << 24) | (byte2 << 16) |\
+ 			 (byte1 << 8) | (byte0))
+ 
+ /*
+@@ -62,7 +71,7 @@ enum {
+ 	UPIU_TRANSACTION_COMMAND	= 0x01,
+ 	UPIU_TRANSACTION_DATA_OUT	= 0x02,
+ 	UPIU_TRANSACTION_TASK_REQ	= 0x04,
+-	UPIU_TRANSACTION_QUERY_REQ	= 0x26,
++	UPIU_TRANSACTION_QUERY_REQ	= 0x16,
+ };
+ 
+ /* UTP UPIU Transaction Codes Target to Initiator */
+@@ -90,6 +99,12 @@ enum {
+ 	UPIU_TASK_ATTR_ACA	= 0x03,
+ };
+ 
++/* UPIU Query request function */
++enum {
++	UPIU_QUERY_FUNC_STANDARD_READ_REQUEST = 0x01,
++	UPIU_QUERY_FUNC_STANDARD_WRITE_REQUEST = 0x81,
++};
++
+ /* UTP QUERY Transaction Specific Fields OpCode */
+ enum {
+ 	UPIU_QUERY_OPCODE_NOP		= 0x0,
+@@ -110,10 +125,17 @@ enum {
+ 	UPIU_COMMAND_SET_TYPE_QUERY	= 0x2,
+ };
+ 
++/* UTP Transfer Request Command Offset */
++#define UPIU_COMMAND_TYPE_OFFSET	28
++
++/* Offset of the response code in the UPIU header */
++#define UPIU_RSP_CODE_OFFSET		8
++
+ enum {
+ 	MASK_SCSI_STATUS	= 0xFF,
+ 	MASK_TASK_RESPONSE	= 0xFF00,
+ 	MASK_RSP_UPIU_RESULT	= 0xFFFF,
++	MASK_QUERY_DATA_SEG_LEN	= 0xFFFF,
+ };
+ 
+ /* Task management service response */
+@@ -138,26 +160,59 @@ struct utp_upiu_header {
+ 
+ /**
+  * struct utp_upiu_cmd - Command UPIU structure
+- * @header: UPIU header structure DW-0 to DW-2
+  * @data_transfer_len: Data Transfer Length DW-3
+  * @cdb: Command Descriptor Block CDB DW-4 to DW-7
+  */
+ struct utp_upiu_cmd {
+-	struct utp_upiu_header header;
+ 	u32 exp_data_transfer_len;
+ 	u8 cdb[MAX_CDB_SIZE];
+ };
+ 
+ /**
+- * struct utp_upiu_rsp - Response UPIU structure
+- * @header: UPIU header DW-0 to DW-2
++ * struct utp_upiu_query - upiu request buffer structure for
++ * query request.
++ * @opcode: command to perform B-0
++ * @idn: a value that indicates the particular type of data B-1
++ * @index: Index to further identify data B-2
++ * @selector: Index to further identify data B-3
++ * @reserved_osf: spec reserved field B-4,5
++ * @length: number of descriptor bytes to read/write B-6,7
++ * @value: Attribute value to be written DW-6
++ * @reserved: spec reserved DW-7,8
++ */
++struct utp_upiu_query {
++	u8 opcode;
++	u8 idn;
++	u8 index;
++	u8 selector;
++	u16 reserved_osf;
++	u16 length;
++	u32 value;
++	u32 reserved[2];
++};
++
++/**
++ * struct utp_upiu_req - general upiu request structure
++ * @header:UPIU header structure DW-0 to DW-2
++ * @sc: fields structure for scsi command
++ * @qr: fields structure for query request
++ */
++struct utp_upiu_req {
++	struct utp_upiu_header header;
++	union {
++		struct utp_upiu_cmd sc;
++		struct utp_upiu_query qr;
++	};
++};
++
++/**
++ * struct utp_cmd_rsp - Response UPIU structure
+  * @residual_transfer_count: Residual transfer count DW-3
+  * @reserved: Reserved double words DW-4 to DW-7
+  * @sense_data_len: Sense data length DW-8 U16
+  * @sense_data: Sense data field DW-8 to DW-12
+  */
+-struct utp_upiu_rsp {
+-	struct utp_upiu_header header;
++struct utp_cmd_rsp {
+ 	u32 residual_transfer_count;
+ 	u32 reserved[4];
+ 	u16 sense_data_len;
+@@ -165,6 +220,20 @@ struct utp_upiu_rsp {
+ };
+ 
+ /**
++ * struct utp_upiu_rsp - general upiu response structure
++ * @header: UPIU header structure DW-0 to DW-2
++ * @sc: fields structure for scsi command
++ * @qr: fields structure for query request
++ */
++struct utp_upiu_rsp {
++	struct utp_upiu_header header;
++	union {
++		struct utp_cmd_rsp sc;
++		struct utp_upiu_query qr;
++	};
++};
++
++/**
+  * struct utp_upiu_task_req - Task request UPIU structure
+  * @header - UPIU header structure DW0 to DW-2
+  * @input_param1: Input parameter 1 DW-3
+@@ -194,4 +263,24 @@ struct utp_upiu_task_rsp {
+ 	u32 reserved[3];
+ };
+ 
++/**
++ * struct ufs_query_req - parameters for building a query request
++ * @query_func: UPIU header query function
++ * @upiu_req: the query request data
++ */
++struct ufs_query_req {
++	u8 query_func;
++	struct utp_upiu_query upiu_req;
++};
++
++/**
++ * struct ufs_query_resp - UPIU QUERY
++ * @response: device response code
++ * @upiu_res: query response data
++ */
++struct ufs_query_res {
++	u8 response;
++	struct utp_upiu_query upiu_res;
++};
++
+ #endif /* End of Header */
+diff --git a/drivers/scsi/ufs/ufs_core.c b/drivers/scsi/ufs/ufs_core.c
+new file mode 100644
+index 0000000..4e48f1c
+--- /dev/null
++++ b/drivers/scsi/ufs/ufs_core.c
+@@ -0,0 +1,123 @@
++/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <asm/byteorder.h>
++#include <scsi/scsi_cmnd.h>
++#include <scsi/scsi_host.h>
++#include <scsi/scsi_device.h>
++#include "ufs.h"
++#include "ufshcd.h"
++
++#define UFS_QUERY_RESERVED_SCSI_CMD_SIZE 10
++
++/**
++ *  ufs_query_request() - Entry point for issuing query request to a
++ *  ufs device.
++ *  @hba: ufs driver context
++ *  @query: params for query request
++ *  @descriptor: buffer for sending/receiving descriptor
++ *  @response: pointer to a buffer that will contain the response code and
++ *           response upiu
++ *  @timeout: time limit for the command in seconds
++ *  @retries: number of times to try executing the command
++ *
++ *  The query request is submitted to the same request queue as the rest of
++ *  the scsi commands passed to the UFS controller. In order to use this
++ *  queue, we need to receive a tag, same as all other commands. The tags
++ *  are issued from the block layer. To simulate a request from the block
++ *  layer, we use the same interface as the SCSI layer does when it issues
++ *  commands not generated by users. To distinguish a query request from
++ *  the SCSI commands, we use a vendor specific unused SCSI command
++ *  op-code. This op-code is not part of the SCSI command subset used in
++ *  UFS. In such way it is easy to check the command in the driver and
++ *  handle it appropriately.
++ *
++ *  All necessary fields for issuing a query and receiving its response are
++ *  stored in the UFS hba struct. We can use this method since we know
++ *  there is only one active query request at all times.
++ *
++ *  The request that will pass to the device is stored in "query" argument
++ *  passed to this function, while the "response" argument (which is output
++ *  field) will hold the query response from the device along with the
++ *  response code.
++ */
++int ufs_query_request(struct ufs_hba *hba,
++			struct ufs_query_req *query,
++			u8 *descriptor,
++			struct ufs_query_res *response,
++			int timeout,
++			int retries)
++{
++	struct scsi_device *sdev;
++	u8 cmd[UFS_QUERY_RESERVED_SCSI_CMD_SIZE];
++	int result;
++	bool sdev_lookup = true;
++
++	if (!hba || !query || !response) {
++		pr_err("%s: NULL pointer hba = %p, query = %p response = %p",
++			__func__, hba, query, response);
++		return -EINVAL;
++	}
++
++	/*
++	 * A SCSI command structure is composed from opcode at the
++	 * begining and 0 at the end.
++	 */
++	memset(cmd, 0, UFS_QUERY_RESERVED_SCSI_CMD_SIZE);
++	cmd[0] = UFS_QUERY_RESERVED_SCSI_CMD;
++
++	/* extracting the SCSI Device */
++	sdev = scsi_device_lookup(hba->host, 0, 0, 0);
++	if (!sdev) {
++		/**
++		 * There are some Query Requests that are sent during device
++		 * initialization, this happens before the scsi device was
++		 * initialized. If there is no scsi device, we generate a
++		 * temporary device to allow the Query Request flow.
++		 */
++		sdev_lookup = false;
++		sdev = scsi_get_host_dev(hba->host);
++	}
++
++	if (!sdev) {
++		pr_err("%s: Could not fetch scsi device", __func__);
++		return -ENODEV;
++	}
++
++	mutex_lock(&hba->query.mutex);
++	hba->query.request = query;
++	hba->query.descriptor = descriptor;
++	hba->query.response = response;
++
++	/* wait until request is completed */
++	result = scsi_execute(sdev, cmd, DMA_NONE, NULL, 0, NULL,
++				timeout, retries, 0, NULL);
++	if (result) {
++		pr_err("%s: Query with opcode 0x%x, failed with result %d",
++			__func__, query->upiu_req.opcode, result);
++		result = -EIO;
++	}
++
++	hba->query.request = NULL;
++	hba->query.descriptor = NULL;
++	hba->query.response = NULL;
++	mutex_unlock(&hba->query.mutex);
++
++	/* Releasing scsi device resource */
++	if (sdev_lookup)
++		scsi_device_put(sdev);
++	else
++		scsi_free_host_dev(sdev);
++
++	return result;
++}
++
+diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index c32a478..926f6ba 100644
+--- a/drivers/scsi/ufs/ufshcd.c
++++ b/drivers/scsi/ufs/ufshcd.c
+@@ -217,6 +217,21 @@ ufshcd_is_valid_req_rsp(struct utp_upiu_rsp *ucd_rsp_ptr)
+ }
+ 
+ /**
++ * ufshcd_is_valid_query_rsp - checks if controller TR response is valid
++ * @ucd_rsp_ptr: pointer to response UPIU
++ *
++ * This function checks the response UPIU for valid transaction type in
++ * response field
++ * Returns 0 on success, non-zero on failure
++ */
++static inline int
++ufshcd_is_valid_query_rsp(struct utp_upiu_rsp *ucd_rsp_ptr)
++{
++	return ((be32_to_cpu(ucd_rsp_ptr->header.dword_0) >> 24) ==
++		 UPIU_TRANSACTION_QUERY_RSP) ? 0 : DID_ERROR << 16;
++}
++
++/**
+  * ufshcd_get_rsp_upiu_result - Get the result from response UPIU
+  * @ucd_rsp_ptr: pointer to response UPIU
+  *
+@@ -316,14 +331,69 @@ static inline void ufshcd_copy_sense_data(struct ufshcd_lrb *lrbp)
+ {
+ 	int len;
+ 	if (lrbp->sense_buffer) {
+-		len = be16_to_cpu(lrbp->ucd_rsp_ptr->sense_data_len);
++		len = be16_to_cpu(lrbp->ucd_rsp_ptr->sc.sense_data_len);
+ 		memcpy(lrbp->sense_buffer,
+-			lrbp->ucd_rsp_ptr->sense_data,
++			lrbp->ucd_rsp_ptr->sc.sense_data,
+ 			min_t(int, len, SCSI_SENSE_BUFFERSIZE));
+ 	}
+ }
+ 
+ /**
++ * ufshcd_query_to_cpu() - formats the received buffer in to the native cpu
++ * endian
++ * @response: upiu query response to convert
++ */
++static inline void ufshcd_query_to_cpu(struct utp_upiu_query *response)
++{
++	response->length = be16_to_cpu(response->length);
++	response->value = be32_to_cpu(response->value);
++}
++
++/**
++ * ufshcd_query_to_be() - formats the buffer before sending in to big endian
++ * @response: upiu query request to convert
++ */
++static inline void ufshcd_query_to_be(struct utp_upiu_query *request)
++{
++	request->length = cpu_to_be16(request->length);
++	request->value = cpu_to_be32(request->value);
++}
++
++/**
++ * ufshcd_copy_query_response() - Copy Query Response and descriptor
++ * @lrb - pointer to local reference block
++ * @query_res - pointer to the query result
++ */
++static inline void ufshcd_copy_query_response(struct ufs_hba *hba,
++						struct ufshcd_lrb *lrbp)
++{
++	struct ufs_query_res *query_res = hba->query.response;
++	u8 *descp = (u8 *)&lrbp->ucd_rsp_ptr + GENERAL_UPIU_REQUEST_SIZE;
++	u16 len;
++
++	/* Get the UPIU response */
++	if (query_res) {
++		query_res->response = ufshcd_get_rsp_upiu_result(
++			lrbp->ucd_rsp_ptr) >> UPIU_RSP_CODE_OFFSET;
++
++		memcpy(&query_res->upiu_res, &lrbp->ucd_rsp_ptr->qr,
++			QUERY_OSF_SIZE);
++		ufshcd_query_to_cpu(&query_res->upiu_res);
++	}
++
++	/* Get the descriptor */
++	if (hba->query.descriptor != NULL && lrbp->ucd_rsp_ptr->qr.opcode ==
++			UPIU_QUERY_OPCODE_READ_DESC) {
++		/* data segment length */
++		len = be32_to_cpu(lrbp->ucd_rsp_ptr->header.dword_2) &
++						MASK_QUERY_DATA_SEG_LEN;
++
++		memcpy(hba->query.descriptor, descp,
++			min_t(u16, len, UPIU_HEADER_DATA_SEGMENT_MAX_SIZE));
++	}
++}
++
++/**
+  * ufshcd_hba_capabilities - Read controller capabilities
+  * @hba: per adapter instance
+  */
+@@ -423,76 +493,169 @@ static void ufshcd_int_config(struct ufs_hba *hba, u32 option)
+ }
+ 
+ /**
+- * ufshcd_compose_upiu - form UFS Protocol Information Unit(UPIU)
+- * @lrb - pointer to local reference block
++ * ufshcd_prepare_req_desc - Fills the requests header
++ * descriptor according to request
++ * lrbp: pointer to local reference block
++ * upiu_flags: flags required in the header
+  */
+-static void ufshcd_compose_upiu(struct ufshcd_lrb *lrbp)
++static void ufshcd_prepare_req_desc(struct ufshcd_lrb *lrbp, u32 *upiu_flags)
+ {
+-	struct utp_transfer_req_desc *req_desc;
+-	struct utp_upiu_cmd *ucd_cmd_ptr;
++	struct utp_transfer_req_desc *req_desc = lrbp->utr_descriptor_ptr;
++	enum dma_data_direction cmd_dir =
++		lrbp->cmd->sc_data_direction;
+ 	u32 data_direction;
+-	u32 upiu_flags;
++	u32 dword_0;
++
++	if (cmd_dir == DMA_FROM_DEVICE) {
++		data_direction = UTP_DEVICE_TO_HOST;
++		*upiu_flags = UPIU_CMD_FLAGS_READ;
++	} else if (cmd_dir == DMA_TO_DEVICE) {
++		data_direction = UTP_HOST_TO_DEVICE;
++		*upiu_flags = UPIU_CMD_FLAGS_WRITE;
++	} else {
++		data_direction = UTP_NO_DATA_TRANSFER;
++		*upiu_flags = UPIU_CMD_FLAGS_NONE;
++	}
+ 
+-	ucd_cmd_ptr = lrbp->ucd_cmd_ptr;
+-	req_desc = lrbp->utr_descriptor_ptr;
++	dword_0 = data_direction | (lrbp->command_type
++				<< UPIU_COMMAND_TYPE_OFFSET);
+ 
+-	switch (lrbp->command_type) {
+-	case UTP_CMD_TYPE_SCSI:
+-		if (lrbp->cmd->sc_data_direction == DMA_FROM_DEVICE) {
+-			data_direction = UTP_DEVICE_TO_HOST;
+-			upiu_flags = UPIU_CMD_FLAGS_READ;
+-		} else if (lrbp->cmd->sc_data_direction == DMA_TO_DEVICE) {
+-			data_direction = UTP_HOST_TO_DEVICE;
+-			upiu_flags = UPIU_CMD_FLAGS_WRITE;
+-		} else {
+-			data_direction = UTP_NO_DATA_TRANSFER;
+-			upiu_flags = UPIU_CMD_FLAGS_NONE;
+-		}
++	/* Transfer request descriptor header fields */
++	req_desc->header.dword_0 = cpu_to_le32(dword_0);
+ 
+-		/* Transfer request descriptor header fields */
+-		req_desc->header.dword_0 =
+-			cpu_to_le32(data_direction | UTP_SCSI_COMMAND);
++	/*
++	 * assigning invalid value for command status. Controller
++	 * updates OCS on command completion, with the command
++	 * status
++	 */
++	req_desc->header.dword_2 =
++		cpu_to_le32(OCS_INVALID_COMMAND_STATUS);
++}
+ 
+-		/*
+-		 * assigning invalid value for command status. Controller
+-		 * updates OCS on command completion, with the command
+-		 * status
+-		 */
+-		req_desc->header.dword_2 =
+-			cpu_to_le32(OCS_INVALID_COMMAND_STATUS);
++static inline bool ufshcd_is_query_req(struct ufshcd_lrb *lrbp)
++{
++	return lrbp->cmd->cmnd[0] == UFS_QUERY_RESERVED_SCSI_CMD;
++}
+ 
+-		/* command descriptor fields */
+-		ucd_cmd_ptr->header.dword_0 =
+-			cpu_to_be32(UPIU_HEADER_DWORD(UPIU_TRANSACTION_COMMAND,
+-						      upiu_flags,
+-						      lrbp->lun,
+-						      lrbp->task_tag));
+-		ucd_cmd_ptr->header.dword_1 =
+-			cpu_to_be32(
+-				UPIU_HEADER_DWORD(UPIU_COMMAND_SET_TYPE_SCSI,
+-						  0,
+-						  0,
+-						  0));
+-
+-		/* Total EHS length and Data segment length will be zero */
+-		ucd_cmd_ptr->header.dword_2 = 0;
+-
+-		ucd_cmd_ptr->exp_data_transfer_len =
+-			cpu_to_be32(lrbp->cmd->sdb.length);
+-
+-		memcpy(ucd_cmd_ptr->cdb,
+-		       lrbp->cmd->cmnd,
+-		       (min_t(unsigned short,
+-			      lrbp->cmd->cmd_len,
+-			      MAX_CDB_SIZE)));
+-		break;
++/**
++ * ufshcd_prepare_utp_scsi_cmd_upiu() - fills the utp_transfer_req_desc,
++ * for scsi commands
++ * @lrbp - local reference block pointer
++ * @upiu_flags - flags
++ */
++static inline
++void ufshcd_prepare_utp_scsi_cmd_upiu(struct ufshcd_lrb *lrbp, u32 upiu_flags)
++{
++	struct utp_upiu_req *ucd_req_ptr = lrbp->ucd_req_ptr;
++
++	/* command descriptor fields */
++	ucd_req_ptr->header.dword_0 = UPIU_HEADER_DWORD(
++				UPIU_TRANSACTION_COMMAND, upiu_flags,
++				lrbp->lun, lrbp->task_tag);
++	ucd_req_ptr->header.dword_1 = UPIU_HEADER_DWORD(
++				UPIU_COMMAND_SET_TYPE_SCSI, 0, 0, 0);
++
++	/* Total EHS length and Data segment length will be zero */
++	ucd_req_ptr->header.dword_2 = 0;
++
++	ucd_req_ptr->sc.exp_data_transfer_len =
++		cpu_to_be32(lrbp->cmd->sdb.length);
++
++	memcpy(ucd_req_ptr->sc.cdb, lrbp->cmd->cmnd,
++		(min_t(unsigned short, lrbp->cmd->cmd_len, MAX_CDB_SIZE)));
++}
++
++/**
++ * ufshcd_prepare_utp_query_req_upiu() - fills the utp_transfer_req_desc,
++ * for query requsts
++ * @hba: UFS hba
++ * @lrbp: local reference block pointer
++ * @upiu_flags: flags
++ */
++static inline void ufshcd_prepare_utp_query_req_upiu(struct ufs_hba *hba,
++					struct ufshcd_lrb *lrbp,
++					u32 upiu_flags)
++{
++	struct utp_upiu_req *ucd_req_ptr = lrbp->ucd_req_ptr;
++	u16 len = hba->query.request->upiu_req.length;
++	u8 *descp = (u8 *)lrbp->ucd_req_ptr + GENERAL_UPIU_REQUEST_SIZE;
++
++	/* Query request header */
++	ucd_req_ptr->header.dword_0 = UPIU_HEADER_DWORD(
++			UPIU_TRANSACTION_QUERY_REQ, upiu_flags,
++			lrbp->lun, lrbp->task_tag);
++	ucd_req_ptr->header.dword_1 = UPIU_HEADER_DWORD(
++			0, hba->query.request->query_func, 0, 0);
++
++	/* Data segment length */
++	ucd_req_ptr->header.dword_2 = UPIU_HEADER_DWORD(
++			0, 0, len >> 8, (u8)len);
++
++	/* Copy the Query Request buffer as is */
++	memcpy(&lrbp->ucd_req_ptr->qr, &hba->query.request->upiu_req,
++			QUERY_OSF_SIZE);
++	ufshcd_query_to_be(&lrbp->ucd_req_ptr->qr);
++
++	/* Copy the Descriptor */
++	if (hba->query.descriptor != NULL && len > 0 &&
++		(hba->query.request->upiu_req.opcode ==
++					UPIU_QUERY_OPCODE_WRITE_DESC)) {
++		memcpy(descp, hba->query.descriptor,
++			min_t(u16, len, UPIU_HEADER_DATA_SEGMENT_MAX_SIZE));
++	}
++
++}
++
++/**
++ * ufshcd_compose_upiu - form UFS Protocol Information Unit(UPIU)
++ * @hba - UFS hba
++ * @lrb - pointer to local reference block
++ */
++static int ufshcd_compose_upiu(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
++{
++	struct utp_upiu_req *ucd_req_ptr;
++	u32 upiu_flags;
++	int ret = 0;
++
++	if (!lrbp || !lrbp->cmd || !lrbp->ucd_req_ptr ||
++					!lrbp->utr_descriptor_ptr) {
++		if (!lrbp)
++			pr_err("%s: lrbp can not be NULL", __func__);
++		if (!lrbp->cmd)
++			pr_err("%s: lrbp->cmd can not be NULL", __func__);
++		if (!lrbp->ucd_req_ptr)
++			pr_err("%s: ucd_req_ptr can not be NULL", __func__);
++		if (!lrbp->utr_descriptor_ptr)
++			pr_err("%s: utr_descriptor_ptr can not be NULL",
++						__func__);
++		ret = -EINVAL;
++		goto exit;
++	}
++	ucd_req_ptr = lrbp->ucd_req_ptr;
++
++	switch (lrbp->command_type) {
++	case UTP_CMD_TYPE_SCSI:
+ 	case UTP_CMD_TYPE_DEV_MANAGE:
+-		/* For query function implementation */
++		ufshcd_prepare_req_desc(lrbp, &upiu_flags);
++		if (lrbp->command_type == UTP_CMD_TYPE_SCSI)
++			ufshcd_prepare_utp_scsi_cmd_upiu(lrbp, upiu_flags);
++		else
++			ufshcd_prepare_utp_query_req_upiu(hba, lrbp,
++								upiu_flags);
+ 		break;
+ 	case UTP_CMD_TYPE_UFS:
+ 		/* For UFS native command implementation */
++		pr_err("%s: UFS native command are not supported", __func__);
++		ret = -EINVAL;
++		break;
++	default:
++		ret = -EINVAL;
++		pr_err("%s: unknown command type: 0x%x",
++				__func__, lrbp->command_type);
+ 		break;
+ 	} /* end of switch */
++exit:
++	return ret;
+ }
+ 
+ /**
+@@ -527,10 +690,13 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
+ 	lrbp->task_tag = tag;
+ 	lrbp->lun = cmd->device->lun;
+ 
+-	lrbp->command_type = UTP_CMD_TYPE_SCSI;
++	if (ufshcd_is_query_req(lrbp))
++		lrbp->command_type = UTP_CMD_TYPE_DEV_MANAGE;
++	else
++		lrbp->command_type = UTP_CMD_TYPE_SCSI;
+ 
+ 	/* form UPIU before issuing the command */
+-	ufshcd_compose_upiu(lrbp);
++	ufshcd_compose_upiu(hba, lrbp);
+ 	err = ufshcd_map_sg(lrbp);
+ 	if (err)
+ 		goto out;
+@@ -677,8 +843,8 @@ static void ufshcd_host_memory_configure(struct ufs_hba *hba)
+ 				cpu_to_le16(ALIGNED_UPIU_SIZE);
+ 
+ 		hba->lrb[i].utr_descriptor_ptr = (utrdlp + i);
+-		hba->lrb[i].ucd_cmd_ptr =
+-			(struct utp_upiu_cmd *)(cmd_descp + i);
++		hba->lrb[i].ucd_req_ptr =
++			(struct utp_upiu_req *)(cmd_descp + i);
+ 		hba->lrb[i].ucd_rsp_ptr =
+ 			(struct utp_upiu_rsp *)cmd_descp[i].response_upiu;
+ 		hba->lrb[i].ucd_prdt_ptr =
+@@ -1101,7 +1267,9 @@ ufshcd_scsi_cmd_status(struct ufshcd_lrb *lrbp, int scsi_status)
+  * @hba: per adapter instance
+  * @lrb: pointer to local reference block of completed command
+  *
+- * Returns result of the command to notify SCSI midlayer
++ * Returns result of the command to notify SCSI midlayer. In
++ * case of query request specific result, returns DID_OK, and
++ * the error will be handled by the dispatcher.
+  */
+ static inline int
+ ufshcd_transfer_rsp_status(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
+@@ -1115,27 +1283,41 @@ ufshcd_transfer_rsp_status(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
+ 
+ 	switch (ocs) {
+ 	case OCS_SUCCESS:
+-
+ 		/* check if the returned transfer response is valid */
+-		result = ufshcd_is_valid_req_rsp(lrbp->ucd_rsp_ptr);
++		if (ufshcd_is_query_req(lrbp))
++			result = ufshcd_is_valid_query_rsp(lrbp->ucd_rsp_ptr);
++		else
++			result = ufshcd_is_valid_req_rsp(lrbp->ucd_rsp_ptr);
++
+ 		if (result) {
+ 			dev_err(hba->dev,
+ 				"Invalid response = %x\n", result);
+ 			break;
+ 		}
+ 
+-		/*
+-		 * get the response UPIU result to extract
+-		 * the SCSI command status
+-		 */
+-		result = ufshcd_get_rsp_upiu_result(lrbp->ucd_rsp_ptr);
++		if (ufshcd_is_query_req(lrbp)) {
++			/*
++			 *  Return result = ok, since SCSI layer wouldn't
++			 *  know how to handle errors from query requests.
++			 *  The result is saved with the response so that
++			 *  the ufs_core layer will handle it.
++			 */
++			result |= DID_OK << 16;
++			ufshcd_copy_query_response(hba, lrbp);
++		} else {
++			/*
++			 * get the response UPIU result to extract
++			 * the SCSI command status
++			 */
++			result = ufshcd_get_rsp_upiu_result(lrbp->ucd_rsp_ptr);
+ 
+-		/*
+-		 * get the result based on SCSI status response
+-		 * to notify the SCSI midlayer of the command status
+-		 */
+-		scsi_status = result & MASK_SCSI_STATUS;
+-		result = ufshcd_scsi_cmd_status(lrbp, scsi_status);
++			/*
++			 * get the result based on SCSI status response
++			 * to notify the SCSI midlayer of the command status
++			 */
++			scsi_status = result & MASK_SCSI_STATUS;
++			result = ufshcd_scsi_cmd_status(lrbp, scsi_status);
++		}
+ 		break;
+ 	case OCS_ABORTED:
+ 		result |= DID_ABORT << 16;
+@@ -1364,10 +1546,10 @@ ufshcd_issue_tm_cmd(struct ufs_hba *hba,
+ 	task_req_upiup =
+ 		(struct utp_upiu_task_req *) task_req_descp->task_req_upiu;
+ 	task_req_upiup->header.dword_0 =
+-		cpu_to_be32(UPIU_HEADER_DWORD(UPIU_TRANSACTION_TASK_REQ, 0,
+-					      lrbp->lun, lrbp->task_tag));
++		UPIU_HEADER_DWORD(UPIU_TRANSACTION_TASK_REQ, 0,
++					      lrbp->lun, lrbp->task_tag);
+ 	task_req_upiup->header.dword_1 =
+-	cpu_to_be32(UPIU_HEADER_DWORD(0, tm_function, 0, 0));
++		UPIU_HEADER_DWORD(0, tm_function, 0, 0);
+ 
+ 	task_req_upiup->input_param1 = lrbp->lun;
+ 	task_req_upiup->input_param1 =
+@@ -1670,6 +1852,9 @@ int ufshcd_init(struct device *dev, struct ufs_hba **hba_handle,
+ 	INIT_WORK(&hba->uic_workq, ufshcd_uic_cc_handler);
+ 	INIT_WORK(&hba->feh_workq, ufshcd_fatal_err_handler);
+ 
++	/* Initialize mutex for query requests */
++	mutex_init(&hba->query.mutex);
++
+ 	/* IRQ registration */
+ 	err = request_irq(irq, ufshcd_intr, IRQF_SHARED, UFSHCD, hba);
+ 	if (err) {
+diff --git a/drivers/scsi/ufs/ufshcd.h b/drivers/scsi/ufs/ufshcd.h
+index 6b99a42..54be260 100644
+--- a/drivers/scsi/ufs/ufshcd.h
++++ b/drivers/scsi/ufs/ufshcd.h
+@@ -88,7 +88,7 @@ struct uic_command {
+ /**
+  * struct ufshcd_lrb - local reference block
+  * @utr_descriptor_ptr: UTRD address of the command
+- * @ucd_cmd_ptr: UCD address of the command
++ * @ucd_req_ptr: UCD address of the command
+  * @ucd_rsp_ptr: Response UPIU address for this command
+  * @ucd_prdt_ptr: PRDT address of the command
+  * @cmd: pointer to SCSI command
+@@ -101,7 +101,7 @@ struct uic_command {
+  */
+ struct ufshcd_lrb {
+ 	struct utp_transfer_req_desc *utr_descriptor_ptr;
+-	struct utp_upiu_cmd *ucd_cmd_ptr;
++	struct utp_upiu_req *ucd_req_ptr;
+ 	struct utp_upiu_rsp *ucd_rsp_ptr;
+ 	struct ufshcd_sg_entry *ucd_prdt_ptr;
+ 
+@@ -115,6 +115,19 @@ struct ufshcd_lrb {
+ 	unsigned int lun;
+ };
+ 
++/**
++ * struct ufs_query - keeps the query request information
++ * @request: request upiu and function
++ * @descriptor: buffer for sending/receiving descriptor
++ * @response: response upiu and response
++ * @mutex: lock to allow one query at a time
++ */
++struct ufs_query {
++	struct ufs_query_req *request;
++	u8 *descriptor;
++	struct ufs_query_res *response;
++	struct mutex mutex;
++};
+ 
+ /**
+  * struct ufs_hba - per adapter private structure
+@@ -184,6 +197,9 @@ struct ufs_hba {
+ 
+ 	/* HBA Errors */
+ 	u32 errors;
++
++	/* Query Request */
++	struct ufs_query query;
+ };
+ 
+ int ufshcd_init(struct device *, struct ufs_hba ** , void __iomem * ,
+diff --git a/drivers/scsi/ufs/ufshci.h b/drivers/scsi/ufs/ufshci.h
+index 0c16484..cb53a79 100644
+--- a/drivers/scsi/ufs/ufshci.h
++++ b/drivers/scsi/ufs/ufshci.h
+@@ -39,7 +39,7 @@
+ enum {
+ 	TASK_REQ_UPIU_SIZE_DWORDS	= 8,
+ 	TASK_RSP_UPIU_SIZE_DWORDS	= 8,
+-	ALIGNED_UPIU_SIZE		= 128,
++	ALIGNED_UPIU_SIZE		= 512,
+ };
+ 
+ /* UFSHCI Registers */
+@@ -224,6 +224,21 @@ enum {
+ 	UIC_CMD_RESULT_DME_FAILURE		= 0x0A,
+ };
+ 
++/* Query response result code */
++enum {
++	QUERY_RESULT_SUCCESS			= 0x00,
++	QUERY_RESULT_NOT_READABLE		= 0xF6,
++	QUERY_RESULT_NOT_WRITEABLE		= 0xF7,
++	QUERY_RESULT_ALREADY_WRITTEN		= 0xF8,
++	QUERY_RESULT_INVALID_LENGTH		= 0xF9,
++	QUERY_RESULT_INVALID_VALUE		= 0xFA,
++	QUERY_RESULT_INVALID_SELECTOR		= 0xFB,
++	QUERY_RESULT_INVALID_INDEX		= 0xFC,
++	QUERY_RESULT_INVALID_IDN		= 0xFD,
++	QUERY_RESULT_INVALID_OPCODE		= 0xFE,
++	QUERY_RESULT_GENERAL_FAILURE		= 0xFF,
++};
++
+ #define MASK_UIC_COMMAND_RESULT			0xFF
+ 
+ #define INT_AGGR_COUNTER_THRESHOLD_VALUE	(0x1F << 8)
 -- 
-Best regards,
+1.7.6
+-- 
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
 
-Lukasz Majewski
 
-Samsung R&D Poland (SRPOL) | Linux Platform Group
