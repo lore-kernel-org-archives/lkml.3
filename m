@@ -1,126 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937175Ab3DIQov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 12:44:51 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:13577 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763192Ab3DIQot (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 12:44:49 -0400
-X-AuditID: cbfee61a-b7fa86d0000045ae-0b-5164457f5653
-Date: Tue, 09 Apr 2013 18:44:40 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, sw0312.kim@samsung.com,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [RFC PATCH 0/2] cpufreq: Introduce LAB cpufreq governor.
-Message-id: <20130409184440.4cd87c1b@amdc308.digital.local>
-In-reply-to: <CAKohpomL-mdx6DdFiGwJzDSeWr6Gw-_F4T-D-Jz9TNH5MSgjbw@mail.gmail.com>
-References: <1364804657-16590-1-git-send-email-jonghwa3.lee@samsung.com>
- <CAOh2x=nPJa0GReiN=OHLG=m4Gq51F=4VppdaQL20xi-aUa8x2Q@mail.gmail.com>
- <20130409123719.7399d5ad@amdc308.digital.local>
- <CAKohpomL-mdx6DdFiGwJzDSeWr6Gw-_F4T-D-Jz9TNH5MSgjbw@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDLMWRmVeSWpSXmKPExsVy+t9jAd1615RAg62b1CyeNv1gt7j+5Tmr
-	RefZJ8wWZ5vesFtc3jWHzeJz7xFGi7VH7rJb3G5cwWbRv7CXyWLG5JdsFh1HvjFbbPzq4cDj
-	cefaHjaPvi2rGD0eLW5h9Pi8SS6AJYrLJiU1J7MstUjfLoEr4/H0c+wFH0Uqrja+Z2xg3CzQ
-	xcjJISFgInF5TzsbhC0mceHeeiCbi0NIYBGjxKGeE+wgCSGBdiaJrRf5QGwWAVWJnv0XWEBs
-	NgE9ic93nzKB2CICURJTLzcxgzQzC+xgluhceA9sqrCAq0Tf/iuMIDavgLVE79b7zCA2p0Cw
-	RMePT4wQ2zqYJG79eAo2lV9AUqL93w9miJPsJM592sAO0Swo8WPyPbAaZgEtic3bmlghbHmJ
-	zWveMk9gFJyFpGwWkrJZSMoWMDKvYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiOk2dSOxhX
-	NlgcYhTgYFTi4fXQTwkUYk0sK67MPcQowcGsJMKrZAkU4k1JrKxKLcqPLyrNSS0+xCjNwaIk
-	znug1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwGh9fHv/pYzgotNmdhbTHi4tYPiZEXvRiGteaZXX
-	+idPHGYtWf+yI/Bdg/zRpUwTrnueZqsPXe/090ydbLWnhFbTgvy6/ce225mqBp/RmPRX9W7D
-	wRPMXV+WntW609w0pdaoX2z9GvWnBy8eOuYVK2VWeH7xZkdm2+yFp3zZbd4HiYp29tTqKCmx
-	FGckGmoxFxUnAgB/WRnMjwIAAA==
+	id S937177Ab3DIQrf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 12:47:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53012 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935855Ab3DIQre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 12:47:34 -0400
+Date: Tue, 9 Apr 2013 12:47:20 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 3/4] x86, kdump: Change crashkernel_high/low= to
+ crashkernel=;high/low
+Message-ID: <20130409164720.GJ6320@redhat.com>
+References: <1365113821-22749-1-git-send-email-yinghai@kernel.org>
+ <1365113821-22749-5-git-send-email-yinghai@kernel.org>
+ <20130409134544.GA6320@redhat.com>
+ <b591d6e4-5468-48f1-8b7e-c6a3943214cd@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <b591d6e4-5468-48f1-8b7e-c6a3943214cd@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh and Vincent,
+On Tue, Apr 09, 2013 at 08:00:57AM -0700, H. Peter Anvin wrote:
+> Please, no semicolons. We already have established syntax for suboptions (option=suboption,suboption,...) and suboptions with parameters (option=suboption:value,...)
 
-> On 9 April 2013 16:07, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> >> On Mon, Apr 1, 2013 at 1:54 PM, Jonghwa Lee
-> > Our approach is a bit different than cpufreq_ondemand one. Ondemand
-> > takes the per CPU idle time, then on that basis calculates per cpu
-> > load. The next step is to choose the highest load and then use this
-> > value to properly scale frequency.
+Ok, to understand it better, so crashkernel= will look as follows?
+
+crashkernel=suboption[,suboption[,....]][@offset]
+
+A suboption can be.
+
+- A memory value (128[KMG])
+- A range with value (range:size)
+- Or a property influencing memory allocation behavior (e.g high or low)
+
+If yes, sounds good.
+
+Thanks
+Vivek
+ 
+
+> 
+> Vivek Goyal <vgoyal@redhat.com> wrote:
+> 
+> >On Thu, Apr 04, 2013 at 03:17:01PM -0700, Yinghai Lu wrote:
 > >
-> > On the other hand LAB tries to model different behavior:
+> >[..]
+> >> @@ -1360,37 +1369,80 @@ static int __init parse_crashkernel_simp
+> >>  
+> >>  	if (*cur == '@')
+> >>  		*crash_base = memparse(cur+1, &cur);
+> >> -	else if (*cur != ' ' && *cur != '\0') {
+> >> -		pr_warning("crashkernel: unrecognized char\n");
+> >> -		return -EINVAL;
+> >> +	else {
+> >> +		int i;
+> >> +
+> >> +		/* check with known suffix */
+> >> +		for (i = 0; suffix_tbl[i]; i++)
+> >> +			if (!strncmp(cur, suffix_tbl[i], strlen(suffix_tbl[i])))
+> >> +				return 0;
+> >> +
 > >
-> > As a first step we applied Vincent Guittot's "pack small tasks" [*]
-> > patch to improve "race to idle" behavior:
-> > http://article.gmane.org/gmane.linux.kernel/1371435/match=sched+pack+small+tasks
-> 
-> Luckily he is part of my team :)
-> 
-> http://www.linaro.org/linux-on-arm/meet-the-team/power-management
-> 
-> BTW, he is using ondemand governor for all his work.
-> 
-> > Afterwards, we decided to investigate different approach for power
-> > governing:
+> >So crashkernel=X@Y;high is a valid syntax? Looks like we will reserve
+> >X amount of RAM at base Y and ignore "high" or "low".
 > >
-> > Use the number of sleeping CPUs (not the maximal per-CPU load) to
-> > change frequency. We thereof depend on [*] to "pack" as many tasks
-> > to CPU as possible and allow other to sleep.
+> >[..]
+> >>  static int __init __parse_crashkernel(char *cmdline,
+> >>  			     unsigned long long system_ram,
+> >>  			     unsigned long long *crash_size,
+> >>  			     unsigned long long *crash_base,
+> >> -				const char *name)
+> >> +			     const char *name,
+> >> +			     const char *suffix,
+> >> +			     bool simple_only)
+> >>  {
+> >> -	char 	*p = cmdline, *ck_cmdline = NULL;
+> >>  	char	*first_colon, *first_space;
+> >> +	char	*ck_cmdline;
+> >>  
+> >>  	BUG_ON(!crash_size || !crash_base);
+> >>  	*crash_size = 0;
+> >>  	*crash_base = 0;
+> >>  
+> >> -	/* find crashkernel and use the last one if there are more */
+> >> -	p = strstr(p, name);
+> >> -	while (p) {
+> >> -		ck_cmdline = p;
+> >> -		p = strstr(p+1, name);
+> >> -	}
+> >> +	ck_cmdline = get_last_crashkernel(cmdline, name, suffix);
+> >>  
+> >>  	if (!ck_cmdline)
+> >>  		return -EINVAL;
+> >> @@ -1403,23 +1455,30 @@ static int __init __parse_crashkernel(ch
+> >>  	 */
+> >>  	first_colon = strchr(ck_cmdline, ':');
+> >>  	first_space = strchr(ck_cmdline, ' ');
+> >> -	if (first_colon && (!first_space || first_colon < first_space))
+> >> -		return parse_crashkernel_mem(ck_cmdline, system_ram,
+> >> -				crash_size, crash_base);
+> >> -	else
+> >> +	if (first_colon && (!first_space || first_colon < first_space)) {
+> >> +		if (simple_only)
+> >> +			return -EINVAL;
+> >> +		else
+> >> +			return parse_crashkernel_mem(ck_cmdline, system_ram,
+> >> +					crash_size, crash_base);
+> >> +	} else
+> >>  		return parse_crashkernel_simple(ck_cmdline, crash_size,
+> >>  				crash_base);
+> >
+> >Why don't we structure it little differently. Now we seem to have 3 
+> >categories of crashkernel= parameters.
+> >
+> >- crashkernel_simple (crashkernel=X or crashkernel=X@Y)
+> >- crashkernel_mem (crashkernel=range:size,.....)
+> >- crashkerenl_high_low_suffix (crashkernel=X;high or crashkernel=Y;low)
+> >
+> >if (suffix) {
+> >	parse_crashkernel_high_low_suffix()
+> >} else {
+> >	if (first_colon.....)
+> >		parse_crashkernel_mem()
+> >	else
+> >		parse_crashkernel_simple();
+> >}
+> >
+> >And now you should not require "simple_only" function parameter and you
+> >can also do strict syntax checking for each type of crashkernel=
+> >parameter.
+> >
+> >Thanks
+> >Vivek
 > 
-> He packs only small tasks. 
-
-What's about packing not only small tasks? I will investigate the
-possibility to aggressively pack (even with a cost of performance
-degradation) as many tasks as possible to a single CPU. 
-
-It seems a good idea for a power consumption reduction. 
-
-> And if there are many small tasks we are
-> packing, then load must be high and so ondemand gov will increase
-> freq.
-
-This is of course true for "packing" all tasks to a single CPU. If we
-stay at the power consumption envelope, we can even overclock the
-frequency.
-
-But what if other - lets say 3 CPUs - are under heavy workload? 
-Ondemand will switch frequency to maximum, and as Jonghwa pointed out
-this can cause dangerous temperature increase.
-
-> 
-> > Contrary, when all cores are heavily loaded, we decided to reduce
-> > frequency by around 30%. With this approach user experience
-> > recution is still acceptable (with much less power consumption).
-> 
-> Don't know.. running many cpus at lower freq for long duration will
-> probably take more power than running them at high freq for short
-> duration and making system idle again.
-> 
-> > We have posted this "RFC" patch mainly for discussion, and I think
-> > it fits its purpose :-).
-> 
-> Yes, no issues with your RFC idea.. its perfect..
-> 
-> @Vincent: Can you please follow this thread a bit and tell us what
-> your views are?
-> 
-> --
-> viresh
-
-
-
--- 
-Best regards,
-
-Lukasz Majewski
-
-Samsung R&D Poland (SRPOL) | Linux Platform Group
+> -- 
+> Sent from my mobile phone. Please excuse brevity and lack of formatting.
