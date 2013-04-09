@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936796Ab3DIMih (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 08:38:37 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:56695 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935852Ab3DIMgk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 08:36:40 -0400
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: linux-kernel@vger.kernel.org
-Cc: linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, wine-devel@winehq.org
-Subject: [PATCH v5 4/7] CIFS: Use NT_CREATE_ANDX command for forcemand mounts
-Date: Tue,  9 Apr 2013 16:40:24 +0400
-Message-Id: <1365511227-17626-5-git-send-email-piastry@etersoft.ru>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1365511227-17626-1-git-send-email-piastry@etersoft.ru>
-References: <1365511227-17626-1-git-send-email-piastry@etersoft.ru>
+	id S937003Ab3DIMio (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 08:38:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41407 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935852Ab3DIMik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 08:38:40 -0400
+Date: Tue, 9 Apr 2013 08:38:34 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: gregkh@linuxfoundation.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@intel.com>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3.8.y] drm/i915: add quirk to invert brightness on eMachines
+ e725
+Message-ID: <20130409123833.GC32476@hansolo.jdub.homelinux.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-forcemand mount option now lets us use Windows mandatory style of
-byte-range locks even if server supports posix ones - switches on
-Windows locking mechanism. Share flags is another locking mehanism
-provided by Windows semantic that can be used by NT_CREATE_ANDX
-command. This patch combines all Windows locking mechanism in one
-mount option by using NT_CREATE_ANDX to open files if forcemand is on.
+Upstream commit 01e3a8feb40e54b962a20fa7eb595c5efef5e109
 
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=31522#c35
+[Note: There are more than one broken setups in the bug. This fixes one.]
+Reported-by: Martins <andrissr@inbox.lv>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 ---
- fs/cifs/dir.c  | 1 +
- fs/cifs/file.c | 6 ++++--
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
-index d4331de..8587021 100644
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -217,6 +217,7 @@ cifs_do_create(struct inode *inode, struct dentry *direntry, unsigned int xid,
- 	}
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index e6e4df7..6292677 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -8899,6 +8899,12 @@ static struct intel_quirk intel_quirks[] = {
+ 	/* Acer Aspire 5734Z must invert backlight brightness */
+ 	{ 0x2a42, 0x1025, 0x0459, quirk_invert_brightness },
  
- 	if (tcon->unix_ext && cap_unix(tcon->ses) && !tcon->broken_posix_open &&
-+	    ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
- 	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
- 			le64_to_cpu(tcon->fsUnixInfo.Capability))) {
- 		rc = cifs_posix_open(full_path, &newinode, inode->i_sb, mode,
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index 9394b2b..19038a4 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -455,8 +455,9 @@ int cifs_open(struct inode *inode, struct file *file)
- 	else
- 		oplock = 0;
- 
--	if (!tcon->broken_posix_open && tcon->unix_ext &&
--	    cap_unix(tcon->ses) && (CIFS_UNIX_POSIX_PATH_OPS_CAP &
-+	if (!tcon->broken_posix_open && tcon->unix_ext && cap_unix(tcon->ses)
-+	    && ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
-+	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
- 				le64_to_cpu(tcon->fsUnixInfo.Capability))) {
- 		/* can not refresh inode info since size could be stale */
- 		rc = cifs_posix_open(full_path, &inode, inode->i_sb,
-@@ -624,6 +625,7 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
- 		oplock = 0;
- 
- 	if (tcon->unix_ext && cap_unix(tcon->ses) &&
-+	    ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
- 	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
- 				le64_to_cpu(tcon->fsUnixInfo.Capability))) {
- 		/*
++	/* Acer/eMachines G725 */
++	{ 0x2a42, 0x1025, 0x0210, quirk_invert_brightness },
++
++	/* Acer/eMachines e725 */
++	{ 0x2a42, 0x1025, 0x0212, quirk_invert_brightness },
++
+ 	/* Acer Aspire 4736Z */
+ 	{ 0x2a42, 0x1025, 0x0260, quirk_invert_brightness },
+ };
 -- 
-1.8.1.5
+1.8.1.4
 
