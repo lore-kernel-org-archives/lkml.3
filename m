@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934960Ab3DIXwL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 19:52:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47622 "EHLO
+	id S935001Ab3DIXxQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 19:53:16 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63619 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759219Ab3DIXwJ (ORCPT
+	with ESMTP id S1759219Ab3DIXxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 19:52:09 -0400
-Date: Tue, 9 Apr 2013 16:52:06 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Platform Driver <platform-driver-x86@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Joe Perches <joe@perches.com>, Zhang Rui <rui.zhang@intel.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH v4 1/1] Introduce Intel RAPL cooling device driver
-Message-ID: <20130409235206.GA6649@kroah.com>
-References: <1365551209-14392-1-git-send-email-jacob.jun.pan@linux.intel.com>
- <1365551209-14392-2-git-send-email-jacob.jun.pan@linux.intel.com>
+	Tue, 9 Apr 2013 19:53:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365551209-14392-2-git-send-email-jacob.jun.pan@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1365501657-4213-5-git-send-email-serban.constantinescu@arm.com>
+References: <1365501657-4213-1-git-send-email-serban.constantinescu@arm.com>
+	<1365501657-4213-5-git-send-email-serban.constantinescu@arm.com>
+Date: Tue, 9 Apr 2013 16:53:14 -0700
+Message-ID: <CAMP5Xgfb2NYN8j16XKx3hrvk1gnRCX+yx2Uk_fxSE=OM74y5fQ@mail.gmail.com>
+Subject: Re: [PATCH v2 4/7] staging: android: binder: fix BINDER_SET_MAX_THREADS
+ declaration
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Serban Constantinescu <serban.constantinescu@arm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Dave Butcher <Dave.Butcher@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 04:46:49PM -0700, Jacob Pan wrote:
-> + *
-> + *  You should have received a copy of the GNU General Public License
-> + *  along with this program; if not, write to the Free Software
-> + *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110,
-> + *  USA
+On Tue, Apr 9, 2013 at 3:00 AM, Serban Constantinescu
+<serban.constantinescu@arm.com> wrote:
+> This change will fix the BINDER_SET_MAX_THREADS ioctl to use __s32
+> instead of size_t for setting the max threads. Thus using the same
+> handler for 32 and 64bit kernels.
+>
+> This value is stored internally in struct binder_proc as an int and
+> is set to 15 on open_binder() in the libbinder API (thus no need for
+> a 64bit size_t on 64bit platforms).
+>
 
-I'm getting real tired of reminding Intel developers that they don't
-want to be responsible for tracking the office movements of the FSF for
-the next 40+ years.
-
-Arjan, can you please get the "default" Intel GPL header that you all
-use changed so I don't have to make this request for every single new
-file that is submitted by Intel developers?
-
-thanks,
-
-greg k-h
+Why switch to a signed type?
