@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934997Ab3DIGmx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 02:42:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39078 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753086Ab3DIGmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 02:42:52 -0400
-Date: Tue, 9 Apr 2013 08:42:49 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 1/8] cgroup: implement cgroup_is_ancestor()
-Message-ID: <20130409064239.GA29860@dhcp22.suse.cz>
-References: <51627DA9.7020507@huawei.com>
- <51627DBB.5050005@huawei.com>
- <20130408144750.GK17178@dhcp22.suse.cz>
- <20130408180335.GA22512@dhcp22.suse.cz>
- <20130408213646.GB17159@mtj.dyndns.org>
+	id S935041Ab3DIGqE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 02:46:04 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:40863 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186Ab3DIGqD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 02:46:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130408213646.GB17159@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51636BFC.6040607@gmail.com>
+References: <51636BFC.6040607@gmail.com>
+Date: Tue, 9 Apr 2013 15:46:02 +0900
+Message-ID: <CAKYAXd_TUmZ4TM_v3bYyD7gyAnZ9hAoZ5sMmV3kGJe0BLqu84Q@mail.gmail.com>
+Subject: Re: [PATCH] f2fs: move f2fs_balance_fs from truncate to punch_hole
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Jason Hrycay <jhrycay@gmail.com>
+Cc: jaegeuk.kim@samsung.com, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net, C.Fries@motorola.com,
+        jason.hrycay@motorola.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 08-04-13 14:36:46, Tejun Heo wrote:
-> On Mon, Apr 08, 2013 at 08:03:44PM +0200, Michal Hocko wrote:
-> > __mem_cgroup_same_or_subtree relies on css_is_ancestor if hierarchy is
-> > enabled for ages. This, however, is not correct because use_hierarchy
-> > doesn't need to be true all the way up the cgroup hierarchy. Consider
-> > the following example:
-> > root (use_hierarchy=0)
-> >  \
-> >   A (use_hierarchy=0)
-> >    \
-> >     B (use_hierarchy=1)
-> >      \
-> >       C (use_hierarchy=1)
-> > 
-> > __mem_cgroup_same_or_subtree(A, C) would return true even though C is
-> > not from the same hierarchy subtree. The bug shouldn't be critical but
-> > at least dump_tasks might print unrelated tasks (via
-> > task_in_mem_cgroup).
-> 
-> Huh?  Isn't that avoided by the !root_memcg->use_hierarchy test?
+2013/4/9, Jason Hrycay <jhrycay@gmail.com>:
+> From: Jason Hrycay <jason.hrycay@motorola.com>
+>
+> Move the f2fs_balance_fs out of the truncate_hole function and only
+> perform that in punch_hole use case.  The commit:
+>
+>   ed60b1644e7f7e5dd67d21caf7e4425dff05dad0
+>
+> intended to do this but moved it into truncate_hole to cover more
+> cases.  However, a deadlock scenario is possible when deleting an inode
+> entry under specific conditions:
+>
+>  f2fs_delete_entry()
+>      mutex_lock_op(sbi, DENTRY_OPS);
+>      truncate_hole()
+>          f2fs_balance_fs()
+>              mutex_lock(&sbi->gc_mutex);
+>              f2fs_gc()
+>                  write_checkpoint()
+>                      block_operations()
+>                          mutex_lock_op(sbi, DENTRY_OPS);
+>
+> Lets move it into the punch_hole case to cover the original intent of
+> avoiding it during fallocate's expand_inode_data case.
+>
+> Change-Id: I29f8ea1056b0b88b70ba8652d901b6e8431bb27e
+> Signed-off-by: Jason Hrycay <jason.hrycay@motorola.com>
+Hi,
+With the latest commit 9995bf953a83749abd9fa22f72ab2b0be341025a
+About introducing the global locking method in ‘f2fs’,
+I think we no longer will have a case of deadlock happening in this path.
 
-Yes, it is. My selective blindness strikes again :/ I was convinced that
-it was memcg we tested use_hierarchy for...
-Sorry about all the churn.
-
-> > @@ -1470,9 +1470,12 @@ bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-> >  {
-> >  	if (root_memcg == memcg)
-> >  		return true;
-> > -	if (!root_memcg->use_hierarchy || !memcg)
->             ^^^^^^^^^^^^^^^^^^^^^^^^^^
-> > +	if (!memcg)
-> >  		return false;
-> > -	return css_is_ancestor(&memcg->css, &root_memcg->css);
-> > +	while ((memcg = parent_mem_cgroup(memcg)))
-> > +		if (memcg == root_memcg)
-> > +			return true;
-> > +	return false;
-> >  }
-> >  
--- 
-Michal Hocko
-SUSE Labs
+Thanks.
