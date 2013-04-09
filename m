@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934913Ab3DIPCc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 11:02:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54954 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761304Ab3DIPCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 11:02:30 -0400
-Date: Tue, 9 Apr 2013 16:58:51 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
+	id S936044Ab3DIPH2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 11:07:28 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20904 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934973Ab3DIPH1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 11:07:27 -0400
+X-Authority-Analysis: v=2.0 cv=Pu4Rnnw3 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=6YC5YRaTPZoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=7doBReAiqyEA:10 a=dFVzn5v-dOgFv5HfUkgA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1365520045.25498.62.camel@gandalf.local.home>
+Subject: Re: [PATCH 4/4] uprobes/tracing: generalize struct
+ uprobe_trace_entry_head
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Anton Arapov <anton@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] uprobes/tracing: Kill the pointless
-	local_save_flags/preempt_count calls
-Message-ID: <20130409145851.GB22913@redhat.com>
-References: <20130329181545.GA20697@redhat.com> <1365436722.25498.14.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365436722.25498.14.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Tue, 09 Apr 2013 11:07:25 -0400
+In-Reply-To: <20130409145054.GA22913@redhat.com>
+References: <20130329181548.GA20700@redhat.com>
+	 <1365436535.25498.12.camel@gandalf.local.home>
+	 <20130409145054.GA22913@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08, Steven Rostedt wrote:
->
-> On Fri, 2013-03-29 at 19:15 +0100, Oleg Nesterov wrote:
-> > --- a/kernel/trace/trace_uprobe.c
-> > +++ b/kernel/trace/trace_uprobe.c
-> > @@ -492,17 +492,13 @@ static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
-> >  	struct ring_buffer_event *event;
-> >  	struct ring_buffer *buffer;
-> >  	u8 *data;
-> > -	int size, i, pc;
-> > -	unsigned long irq_flags;
-> > +	int size, i;
-> >  	struct ftrace_event_call *call = &tu->call;
-> >
-> > -	local_save_flags(irq_flags);
-> > -	pc = preempt_count();
->
-> How about instead, just change the above two and have:
->
-> 	/* uprobes are never called with preemption disabled */
-> 	pc = 0;
-> 	irq_flags = 0;
->
-> and leave the rest the same. This will help in future reviewers of the
-> code to not have to look up what that "0, 0" is for, and then wonder if
-> it should be that way. gcc should optimize it to be exactly the same as
-> this patch.
+On Tue, 2013-04-09 at 16:50 +0200, Oleg Nesterov wrote:
+> On 04/08, Steven Rostedt wrote:
 
-Hmm, just to remind which arguments trace_current_buffer_*() has?
+> OK, will do.
+> 
+> Or. Instead of enum we can use "bool is_return". So, instead of
+> 
+> 	if (is_ret_probe(tu))
+> 		size = SIZEOF_TRACE_ENTRY(UPROBE_ENTRY_RETPROBE);
+> 	else
+> 		size = SIZEOF_TRACE_ENTRY(UPROBE_ENTRY_NORMAL);
+> 
+> we can do
+> 
+> 	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
+> 
+> What do you like more?
 
-Personally I disagree. And, for example, ftrace_syscall_enter/exit just
-use 0,0 for the same reason.
+Which ever is easier ;-)
 
-So please tell me if you really want the dummy variables/arguments, in
-this case I'll change this code even if I do not like it.
+I just hated the magic "1" and "2". As long as I (or any reviewer) does
+not need to go searching for numbers, and can easily figure out what is
+going on by looking at the code at hand, I'm happy.
 
-Oleg.
+Both the above satisfy that requirement.
+
+Your "is_ret_probe(tu)" may have the added bonus of being less error
+prone.
+
+Thanks,
+
+-- Steve
+
 
