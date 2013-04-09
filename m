@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935519Ab3DISvS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 14:51:18 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:63717 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761645Ab3DISvR (ORCPT
+	id S935564Ab3DISxG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 14:53:06 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:41603 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932780Ab3DISxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 14:51:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 8/8] ARM: ux500: Amalgamate DMA source and destination channel numbers
-Date: Tue, 9 Apr 2013 20:51:12 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com
-References: <1365532783-27425-1-git-send-email-lee.jones@linaro.org> <1365532783-27425-8-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1365532783-27425-8-git-send-email-lee.jones@linaro.org>
+	Tue, 9 Apr 2013 14:53:03 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304092051.13138.arnd@arndb.de>
-X-Provags-ID: V02:K0:0ew4WNnegBjYpndpFJWxcxy+HA2rrsRwKiUPS7goimi
- JSCiO3k7F6DsLd7LG2lpnnpyhyvcgbZPEW8vjDnSS0udc33QEI
- AMD0AbKWWQiULcvFCrOiAoGazJwgKEe3e3ZT8K37PQyjIMyT95
- SA+8LdasnI8BjpxRuU11EclhsJX/S3JE+aFunjVKIyPuH1acy/
- cQbVhoKX1aCF1xF6oAvavBZKMlytyXrv7irEpGK0gvKmM35E93
- QrnZgx4DOhCaxFr52M3CZYwLI68SMtVPXBVAsyMse9l+1Y8Dru
- bE3Fi7VFSh/lGdfIcQf7FUQSy+XbKK7OHCcf9d5mMGrv2mBDm4
- 33mbHV2X6XtHLAdY6FUU=
+In-Reply-To: <51646302.2030608@zytor.com>
+References: <20130408224328.GA17641@www.outflux.net>
+	<51634935.9010905@zytor.com>
+	<alpine.LFD.2.02.1304091122490.21884@ionos>
+	<CAGXu5jKo=11RrsvctcZjP6dusAj659O_GsaA2J2qFq-6mOeRwQ@mail.gmail.com>
+	<51645D6F.7070705@zytor.com>
+	<CAGXu5jKkHKw8efdPOmt-Zi99m+uMKVGKpc_DC72_ztwxnRbRRQ@mail.gmail.com>
+	<51646054.3090509@zytor.com>
+	<CAGXu5jJNG4o+_-kk=A2AfSRwyQE0pgaQh7YpSjnD_fB-s7U+wA@mail.gmail.com>
+	<51646302.2030608@zytor.com>
+Date: Tue, 9 Apr 2013 11:53:02 -0700
+X-Google-Sender-Auth: WRaRLk-kMvJXhf082CuJ2li06cM
+Message-ID: <CAGXu5j+_sSVsB-D+zYyzBkj0HKzyVfJOBRAxMRmge2t=sSrTAg@mail.gmail.com>
+Subject: Re: [kernel-hardening] Re: [PATCH] x86: make IDT read-only
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Alex Shi <alex.shi@intel.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
+        Eric Northup <digitaleric@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 April 2013, Lee Jones wrote:
-> Devices which utilise DMA tend to use the same channel numbers for
-> transmitting and receiving. For this reason and the fact that it'll
-> decrease the burden of platform data passed to each device, we're
-> amalgamating source and destination device types.
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+On Tue, Apr 9, 2013 at 11:50 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/09/2013 11:46 AM, Kees Cook wrote:
+>>
+>> Ah-ha! Yes, I see now when comparing the debug/kernel_page_tables
+>> reports. It's just the High Kernel Mapping that we care about.
+>> Addresses outside that range are less of a leak. Excellent, then GDT
+>> may not be a problem. Whew.
+>>
+>
+> It does beg the question if we need to randomize kmalloc... which could
+> have issues by itself.
 
-Very nice cleanup!
+Agreed, but this should be a separate issue. As is the fact that GDT
+is writable and a discoverable target.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+-Kees
+
+--
+Kees Cook
+Chrome OS Security
