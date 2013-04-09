@@ -1,141 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935760Ab3DILWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 07:22:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25608 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933562Ab3DILV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 07:21:58 -0400
-From: Veaceslav Falico <vfalico@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: vfalico@redhat.com, linux-pci@vger.kernel.org, rusty@rustcorp.com.au,
-        gregkh@linuxfoundation.org, bhelgaas@google.com
-Subject: [PATCH] module: add kset_obj_exists() and use it
-Date: Tue,  9 Apr 2013 13:22:09 +0200
-Message-Id: <1365506529-8396-1-git-send-email-vfalico@redhat.com>
+	id S935868Ab3DILXb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 07:23:31 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:38939 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935341Ab3DILXa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 07:23:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <201304072323.42173.arnd@arndb.de>
+References: <6FE4B33E-A503-4A75-AEED-831CB2C06D83@gmail.com>
+	<4B3FD561-84FC-40CD-B747-13851692D673@gmail.com>
+	<521DFDFC-7E9E-47EA-ACDA-C91BBDC8454E@gmail.com>
+	<201304072323.42173.arnd@arndb.de>
+Date: Tue, 9 Apr 2013 13:23:27 +0200
+Message-ID: <CACRpkda9Nue-8Esp3cJ6u2-MJ2ZL8hH-2BnrhHwWv4GZP2VR5w@mail.gmail.com>
+Subject: Re: [RFC PATCH arm: initial TI-Nspire support]
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>
+Cc: Daniel Tang <dt.tangr@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        fabian@ritter-vogt.de, Lionel Debroux <lionel_debroux@yahoo.fr>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new function, kset_obj_exists(), which is identical to
-kset_find_obj() but doesn't take a reference to the kobject
-found and only returns bool if found/not found.
+On Sun, Apr 7, 2013 at 11:23 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Sunday 07 April 2013, Daniel Tang wrote:
+>> Here's an updated patch that enables support for the LCD.
+>>
+>> I looked into drivers/video/of_display_timing.c but it doesn't have the fields to describe the
+>> PL11x specific options needed in struct clcd_panel. At the moment, it is implemented by
+>> hardcoding the values in the kernel and using the device tree to select the correct
+>> configuration.
+>>
+>> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
+>
+> I think you should for now keep the clcd stuff in a separate file,
+> since it will be replaced with DT logic eventually. For now, the
+> auxdata method is ok, but Linus Walleij might already have thought
+> about how pl111 should get all its data from the device tree.
 
-The main purpose would be to avoid the possible race scenario,
-when we could get the reference in between the kref_put() and
-kobject_release() functions (i.e. kref_put() already ran,
-refcount became 0, but the kobject_release() function still
-didn't run, and we try to get via kobject_get() and thus ending
-up with a released kobject). It can be triggered, for example,
-by running insmod/rmmod bonding in parallel, which ends up in
-a race between kset_obj_find() in mod_sysfs_init() and rmmod's
-mod_sysfs_fini()/kobject_put().
+So last thing I heard there was *someone* at ARM working on
+device tree support for the PL110/PL111, so I just don't know who
+this was.
 
-It also saves us some CPU time in several places where we don't
-need the kobject itself and only need to verify if it actually
-exists, by not taking the kref (and thus we don't need to
-kobject_put() afterwards).
+But I bet Pawel knows, because it will be needed for all
+ARM reference designs.
 
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
----
- drivers/pci/slot.c      |    5 +----
- include/linux/kobject.h |    1 +
- kernel/module.c         |    5 +----
- lib/kobject.c           |   28 ++++++++++++++++++++++++++++
- 4 files changed, 31 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/pci/slot.c b/drivers/pci/slot.c
-index ac6412f..3988d75 100644
---- a/drivers/pci/slot.c
-+++ b/drivers/pci/slot.c
-@@ -154,11 +154,8 @@ static char *make_slot_name(const char *name)
- 	dup = 1;
- 
- 	for (;;) {
--		struct kobject *dup_slot;
--		dup_slot = kset_find_obj(pci_slots_kset, new_name);
--		if (!dup_slot)
-+		if (!kset_obj_exists(pci_slots_kset, new_name))
- 			break;
--		kobject_put(dup_slot);
- 		if (dup == max) {
- 			len++;
- 			max *= 10;
-diff --git a/include/linux/kobject.h b/include/linux/kobject.h
-index 939b112..7cde72c 100644
---- a/include/linux/kobject.h
-+++ b/include/linux/kobject.h
-@@ -191,6 +191,7 @@ static inline struct kobj_type *get_ktype(struct kobject *kobj)
- }
- 
- extern struct kobject *kset_find_obj(struct kset *, const char *);
-+extern bool kset_obj_exists(struct kset *, const char *);
- 
- /* The global /sys/kernel/ kobject for people to chain off of */
- extern struct kobject *kernel_kobj;
-diff --git a/kernel/module.c b/kernel/module.c
-index 0925c9a..1df13a3 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -1606,7 +1606,6 @@ static void module_remove_modinfo_attrs(struct module *mod)
- static int mod_sysfs_init(struct module *mod)
- {
- 	int err;
--	struct kobject *kobj;
- 
- 	if (!module_sysfs_initialized) {
- 		printk(KERN_ERR "%s: module sysfs not initialized\n",
-@@ -1615,10 +1614,8 @@ static int mod_sysfs_init(struct module *mod)
- 		goto out;
- 	}
- 
--	kobj = kset_find_obj(module_kset, mod->name);
--	if (kobj) {
-+	if (kset_obj_exists(module_kset, mod->name)) {
- 		printk(KERN_ERR "%s: module is already loaded\n", mod->name);
--		kobject_put(kobj);
- 		err = -EINVAL;
- 		goto out;
- 	}
-diff --git a/lib/kobject.c b/lib/kobject.c
-index e07ee1f..b82633f 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -760,6 +760,34 @@ struct kobject *kset_find_obj(struct kset *kset, const char *name)
- 	return ret;
- }
- 
-+/**
-+ * kset_obj_exists - verify if an object exists in kset
-+ * @kset: kset we're looking in.
-+ * @name: object's name.
-+ *
-+ * Lock kset via @kset->subsys, and iterate over @kset->list,
-+ * looking for a matching kobject. Returns bool, found/not found.
-+ * This function does not take a reference and thus doesn't
-+ * guarantee that the object won't go away any time after.
-+ */
-+
-+bool kset_obj_exists(struct kset *kset, const char *name)
-+{
-+	struct kobject *k;
-+
-+	spin_lock(&kset->list_lock);
-+
-+	list_for_each_entry(k, &kset->list, entry) {
-+		if (kobject_name(k) && !strcmp(kobject_name(k), name)) {
-+			spin_unlock(&kset->list_lock);
-+			return true;
-+		}
-+	}
-+
-+	spin_unlock(&kset->list_lock);
-+	return false;
-+}
-+
- static void kset_release(struct kobject *kobj)
- {
- 	struct kset *kset = container_of(kobj, struct kset, kobj);
--- 
-1.7.1
-
+Yours,
+Linus Walleij
