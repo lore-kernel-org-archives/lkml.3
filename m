@@ -1,80 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937080Ab3DIQed (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 12:34:33 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41968 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937046Ab3DIQeb (ORCPT
+	id S937134Ab3DIQek (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 12:34:40 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:44471 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937046Ab3DIQeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 12:34:31 -0400
-Message-ID: <51644302.6000109@pengutronix.de>
-Date: Tue, 09 Apr 2013 18:34:10 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Tue, 9 Apr 2013 12:34:37 -0400
+Date: Tue, 9 Apr 2013 09:34:34 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Platform Driver <platform-driver-x86@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Joe Perches <joe@perches.com>, Zhang Rui <rui.zhang@intel.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH v3 1/1] Introduce Intel RAPL cooling device driver
+Message-ID: <20130409163434.GB30705@kroah.com>
+References: <1365511578-30453-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1365511578-30453-2-git-send-email-jacob.jun.pan@linux.intel.com>
+ <20130409152638.GA3033@kroah.com>
+ <20130409091517.3b73a583@chromoly>
 MIME-Version: 1.0
-To: Hector Palacios <hector.palacios@digi.com>
-CC: linux-mmc@vger.kernel.org, kernel@pengutronix.de, cjb@laptop.org,
-        aletes.xgr@gmail.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marek Vasut <marex@denx.de>, Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH v2 2/2] mmc: mxs-mmc: add non-removable property
-References: <1365166070-9370-1-git-send-email-mkl@pengutronix.de> <1365166070-9370-3-git-send-email-mkl@pengutronix.de> <51643053.7030302@digi.com> <516431F9.8010302@digi.com>
-In-Reply-To: <516431F9.8010302@digi.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2VKTVBJXGHRJIFDEKIGHU"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130409091517.3b73a583@chromoly>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2VKTVBJXGHRJIFDEKIGHU
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 09, 2013 at 09:15:17AM -0700, Jacob Pan wrote:
+> On Tue, 9 Apr 2013 08:26:38 -0700
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> > > +	if (NULL == rp->name || rp->flag & RAPL_PRIMITIVE_DUMMY)
+> > 
+> > In Linux we do (rp->name == NULL), or even better yet (!rp->name),
+> > please fix that up here and elsewhere in the driver.
+> > 
+> I can fix that. I did that because checkpatch does not complain about
+> it.
 
-On 04/09/2013 05:21 PM, Hector Palacios wrote:
-> On 04/09/2013 05:14 PM, Hector Palacios wrote:
->> @@ -95,7 +97,8 @@ static int mxs_mmc_get_cd(struct mmc_host *mmc)
->>          struct mxs_mmc_host *host =3D mmc_priv(mmc);
->>          struct mxs_ssp *ssp =3D &host->ssp;
->>
->> -       return !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
->> +       return host->non_removable || host->broken_cd ||
->> +              !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
->>                   BM_SSP_STATUS_CARD_DETECT);
->>   }
->=20
-> Sorry, I missed your original XOR here, when merging my changes:
+checkpatch doesn't catch everything.
 
-Can you send an incremental patch against my 2/2 with your
-Signed-off-by, I'll squash your patch into mine and repost the series.
+> also it avoids common mistake as: rp->name = NULL
 
-Marc
+The compiler catches mistakes like that, and has for many years.
 
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+> > > +#define PRIMITIVE_INFO_INIT(p, m, s, i, u, f) {#p, m, s, i, u, p,
+> > > f}
+> > 
+> > C has named initializers, use them please.
+> > 
+> this macro can save lots of repeated text.
 
-
-------enig2VKTVBJXGHRJIFDEKIGHU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlFkQwsACgkQjTAFq1RaXHN5IACfdObCBUhProlxzuc3aC+XqXK3
-6eoAnjJ3ZOa5VXc9N/QmCQj9X3e9Arl5
-=YGNk
------END PGP SIGNATURE-----
-
-------enig2VKTVBJXGHRJIFDEKIGHU--
+text is free.
