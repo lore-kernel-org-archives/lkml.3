@@ -1,75 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937181Ab3DIJjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 05:39:12 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38136 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S937166Ab3DIJjG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 05:39:06 -0400
-Date: Tue, 9 Apr 2013 10:38:56 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: Re: [PATCH 3/4] clocksource: arch_timer: Push the read/write
- wrappers deeper
-Message-ID: <20130409093855.GU23725@e106331-lin.cambridge.arm.com>
-References: <1365474623-29181-1-git-send-email-sboyd@codeaurora.org>
- <1365474623-29181-4-git-send-email-sboyd@codeaurora.org>
+	id S965204Ab3DIJjW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 05:39:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28129 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934556Ab3DIJjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 05:39:17 -0400
+From: Nikola Pajkovsky <npajkovs@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Peter Hurley <peter@hurleysoftware.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipc: use list_for_each_entry for list traversing
+References: <63a5135b37c9a45abad27eed9f78d69dd4deba76.1365168828.git.npajkovs@redhat.com>
+	<20130408153824.974e9307f83616f90c63e00b@linux-foundation.org>
+Date: Tue, 09 Apr 2013 11:39:07 +0200
+In-Reply-To: <20130408153824.974e9307f83616f90c63e00b@linux-foundation.org>
+	(Andrew Morton's message of "Mon, 8 Apr 2013 15:38:24 -0700")
+Message-ID: <m3wqsc3ux0.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (x86_64-unknown-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365474623-29181-4-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Andrew Morton <akpm@linux-foundation.org> writes:
 
-On Tue, Apr 09, 2013 at 03:30:22AM +0100, Stephen Boyd wrote:
-> We're going to introduce support to read and write the memory
-> mapped timer registers in the next patch, so push the cp15
-> read/write functions one level deeper. This simplifies the next
-> patch and makes it clearer what's going on.
-> 
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Marc Zyngier <Marc.Zyngier@arm.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  arch/arm/include/asm/arch_timer.h    |  5 ++--
->  arch/arm64/include/asm/arch_timer.h  |  4 ++--
->  drivers/clocksource/arm_arch_timer.c | 44 ++++++++++++++++++++++++------------
->  3 files changed, 34 insertions(+), 19 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
-> index 35fea17..560f8a0 100644
-> --- a/arch/arm/include/asm/arch_timer.h
-> +++ b/arch/arm/include/asm/arch_timer.h
-> @@ -18,7 +18,8 @@ int arch_timer_sched_clock_init(void);
->   * nicely work out which register we want, and chuck away the rest of
->   * the code. At least it does so with a recent GCC (4.6.3).
->   */
-> -static inline void arch_timer_reg_write(const int access, const int reg, u32 val)
-> +static inline void __arch_timer_reg_write(const int access, const int reg,
-> +					  u32 val)
->  {
->  	if (access == ARCH_TIMER_PHYS_ACCESS) {
->  		switch (reg) {
-> @@ -45,7 +46,7 @@ static inline void arch_timer_reg_write(const int access, const int reg, u32 val
->  	isb();
->  }
->  
-> -static inline u32 arch_timer_reg_read(const int access, const int reg)
-> +static inline u32 __arch_timer_reg_read(const int access, const int reg)
+> On Fri,  5 Apr 2013 15:42:11 +0200 Nikola Pajkovsky <npajkovs@redhat.com> wrote:
+>
+>> the ipc/msg.c code does all list operations by hand and it open-codes
+>> the accesses, instead of using for_each_entry.
+>> 
+>> ...
+>>
+>> --- a/ipc/msg.c
+>> +++ b/ipc/msg.c
+>> @@ -237,14 +237,9 @@ static inline void ss_del(struct msg_sender *mss)
+>>  
+>>  static void ss_wakeup(struct list_head *h, int kill)
+>>  {
+>> -	struct list_head *tmp;
+>> +	struct msg_sender *mss, *t;
+>>  
+>> -	tmp = h->next;
+>> -	while (tmp != h) {
+>> -		struct msg_sender *mss;
+>> -
+>> -		mss = list_entry(tmp, struct msg_sender, list);
+>> -		tmp = tmp->next;
+>> +	list_for_each_entry_safe(mss, t, h, list) {
+>>  		if (kill)
+>>  			mss->list.next = NULL;
+>>  		wake_up_process(mss->tsk);
+>
+> urgh, that code is sick.  What's it doing poking around in the
+> list_head internals?
 
-Rather than prefixing all of these with "__", why not add "cp15" to the names?
+No idea, it there from beginning of first kernel importation into
+git. Where is history before git?
 
-I think that'd make the end result more consistent and clearer, as we'd have a
-_mem version and a _cp15 version of each function.
+>> @@ -253,14 +248,9 @@ static void ss_wakeup(struct list_head *h, int kill)
+>>  
+>>  static void expunge_all(struct msg_queue *msq, int res)
+>>  {
+>> -	struct list_head *tmp;
+>> -
+>> -	tmp = msq->q_receivers.next;
+>> -	while (tmp != &msq->q_receivers) {
+>> -		struct msg_receiver *msr;
+>> +	struct msg_receiver *msr, *t;
+>>  
+>> -		msr = list_entry(tmp, struct msg_receiver, r_list);
+>> -		tmp = tmp->next;
+>> +	list_for_each_entry_safe(msr, t, &msq->q_receivers, r_list) {
+>>  		msr->r_msg = NULL;
+>>  		wake_up_process(msr->r_tsk);
+>>  		smp_mb();
+>
+> I think list_for_each_entry() would suffice here.
 
-Mark.
+I don't know, I found wake_up_sem_queue_do in sem.c and it looks almost same
+except preempt stuff. I'll be dancing around ipc/
+
+>> @@ -278,7 +268,7 @@ static void expunge_all(struct msg_queue *msq, int res)
+>>   */
+>>  static void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
+>>  {
+>> -	struct list_head *tmp;
+>> +	struct msg_msg *msg;
+>>  	struct msg_queue *msq = container_of(ipcp, struct msg_queue, q_perm);
+>>  
+>>  	expunge_all(msq, -EIDRM);
+>> @@ -286,11 +276,7 @@ static void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
+>>  	msg_rmid(ns, msq);
+>>  	msg_unlock(msq);
+>>  
+>> -	tmp = msq->q_messages.next;
+>> -	while (tmp != &msq->q_messages) {
+>> -		struct msg_msg *msg = list_entry(tmp, struct msg_msg, m_list);
+>> -
+>> -		tmp = tmp->next;
+>> +	list_for_each_entry(msg, &msq->q_messages, m_list) {
+>>  		atomic_dec(&ns->msg_hdrs);
+>>  		free_msg(msg);
+>>  	}
+>
+> This is buggy isn't it?  list_for_each_entry() will use the
+> recently-freed `msg'.
+
+yes, it is.
+
+--8<-----8<-----8<-----8<-----8<-----8<---
+From: Nikola Pajkovsky <npajkovs@redhat.com>
+Date: Thu, 4 Apr 2013 19:23:55 +0200
+Subject: [PATCH v2] ipc: use list_for_each_entry_[safe] for list traversing
+
+the ipc/msg.c code does all list operations by hand and it open-codes
+the accesses, instead of using for_each_entry_[safe].
+
+v2: in freeque there has to be used safe version of list_for_each_entry
+
+Signed-off-by: Nikola Pajkovsky <npajkovs@redhat.com>
+---
+ ipc/msg.c |   35 ++++++++---------------------------
+ 1 files changed, 8 insertions(+), 27 deletions(-)
+
+diff --git a/ipc/msg.c b/ipc/msg.c
+index fede1d0..f45ef14 100644
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -237,14 +237,9 @@ static inline void ss_del(struct msg_sender *mss)
+ 
+ static void ss_wakeup(struct list_head *h, int kill)
+ {
+-	struct list_head *tmp;
++	struct msg_sender *mss, *t;
+ 
+-	tmp = h->next;
+-	while (tmp != h) {
+-		struct msg_sender *mss;
+-
+-		mss = list_entry(tmp, struct msg_sender, list);
+-		tmp = tmp->next;
++	list_for_each_entry_safe(mss, t, h, list) {
+ 		if (kill)
+ 			mss->list.next = NULL;
+ 		wake_up_process(mss->tsk);
+@@ -253,14 +248,9 @@ static void ss_wakeup(struct list_head *h, int kill)
+ 
+ static void expunge_all(struct msg_queue *msq, int res)
+ {
+-	struct list_head *tmp;
+-
+-	tmp = msq->q_receivers.next;
+-	while (tmp != &msq->q_receivers) {
+-		struct msg_receiver *msr;
++	struct msg_receiver *msr, *t;
+ 
+-		msr = list_entry(tmp, struct msg_receiver, r_list);
+-		tmp = tmp->next;
++	list_for_each_entry_safe(msr, t, &msq->q_receivers, r_list) {
+ 		msr->r_msg = NULL;
+ 		wake_up_process(msr->r_tsk);
+ 		smp_mb();
+@@ -278,7 +268,7 @@ static void expunge_all(struct msg_queue *msq, int res)
+  */
+ static void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
+ {
+-	struct list_head *tmp;
++	struct msg_msg *msg, *t;
+ 	struct msg_queue *msq = container_of(ipcp, struct msg_queue, q_perm);
+ 
+ 	expunge_all(msq, -EIDRM);
+@@ -286,11 +276,7 @@ static void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
+ 	msg_rmid(ns, msq);
+ 	msg_unlock(msq);
+ 
+-	tmp = msq->q_messages.next;
+-	while (tmp != &msq->q_messages) {
+-		struct msg_msg *msg = list_entry(tmp, struct msg_msg, m_list);
+-
+-		tmp = tmp->next;
++	list_for_each_entry_safe(msg, t, &msq->q_messages, m_list) {
+ 		atomic_dec(&ns->msg_hdrs);
+ 		free_msg(msg);
+ 	}
+@@ -602,14 +588,9 @@ static int testmsg(struct msg_msg *msg, long type, int mode)
+ 
+ static inline int pipelined_send(struct msg_queue *msq, struct msg_msg *msg)
+ {
+-	struct list_head *tmp;
+-
+-	tmp = msq->q_receivers.next;
+-	while (tmp != &msq->q_receivers) {
+-		struct msg_receiver *msr;
++	struct msg_receiver *msr, *t;
+ 
+-		msr = list_entry(tmp, struct msg_receiver, r_list);
+-		tmp = tmp->next;
++	list_for_each_entry_safe(msr, t, &msq->q_receivers, r_list) {
+ 		if (testmsg(msg, msr->r_msgtype, msr->r_mode) &&
+ 		    !security_msg_queue_msgrcv(msq, msg, msr->r_tsk,
+ 					       msr->r_msgtype, msr->r_mode)) {
+-- 
+1.7.1
+
+-- 
+Nikola
