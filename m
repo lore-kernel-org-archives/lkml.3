@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936057Ab3DILGW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 07:06:22 -0400
-Received: from mga14.intel.com ([143.182.124.37]:8656 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935721Ab3DILGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 07:06:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,438,1363158000"; 
-   d="scan'208";a="224988751"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-acpi@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2 0/5] dmaengine: add ACPI DMA helpers and use them in dw_dmac
-Date: Tue,  9 Apr 2013 14:05:42 +0300
-Message-Id: <1365505547-10552-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.2.rc0.22.gb3600c3
+	id S936140Ab3DILG3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 07:06:29 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:48181 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S935212Ab3DILGY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 07:06:24 -0400
+Message-ID: <1365505580.2482.35.camel@slavad-ubuntu>
+Subject: Re: [PATCH 0/2] hfs/hfsplus: Modernize logging styles
+From: Vyacheslav Dubeyko <slava@dubeyko.com>
+Reply-To: slava@dubeyko.com
+To: Joe Perches <joe@perches.com>
+Cc: Hin-Tak Leung <htl10@users.sourceforge.net>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 09 Apr 2013 15:06:20 +0400
+In-Reply-To: <1365503985.6865.25.camel@joe-AO722>
+References: <1365401315.2673.11.camel@slavad-ubuntu>
+	 <cover.1365438493.git.joe@perches.com>
+	 <1365491284.2482.19.camel@slavad-ubuntu>
+	 <1365503985.6865.25.camel@joe-AO722>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 109.188.127.125 authed with slava@dubeyko.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a patch series which introduces ACPI DMA helpers in similar way like
-we have for DeviceTree.
+On Tue, 2013-04-09 at 03:39 -0700, Joe Perches wrote:
+> On Tue, 2013-04-09 at 11:08 +0400, Vyacheslav Dubeyko wrote:
+> > On Mon, 2013-04-08 at 09:37 -0700, Joe Perches wrote:
+> > > Joe Perches (2):
+> > >   hfs/hfsplus: Convert dprint to hfs_dbg
+> > >   hfs/hfsplus: Convert printks to pr_<level>
+> []
+> > But I have some additional suggestions:
+> > (1) I think that it makes sense to use no_printk() for the case when we
+> > don't need in debug output.
+> 
+> I don't.
+> 
+> no_printk is used simply to get gcc to verify
+> format and args with __printf().
+> 
+> The equivalent is already done by the
+> 	if (DBG_##FLAG & DBG_MASK)
+> 		printk(...)
+> when DBG_MASK is 0
+> 
 
-In addition it applies this to the first user, namely dw_dmac driver.
+Ok. I agree.
 
-Since v1:
- - address one Vinod's comment
- - replace 5/6 & 6/6 by 5/5 from Rafael
- - tested on Intel Lynxpoint system
+> > (2) I think that it is really necessary to add info about file and line
+> > number for the case of debug output.
+> 
+> I don't.  I think file/line is pretty useless.
+> 
 
-Andy Shevchenko (4):
-  dma: acpi-dma: introduce ACPI DMA helpers
-  dmaengine: call acpi_dma_request_slave_channel as well
-  dma: acpi-dma: parse CSRT to extract additional resources
-  dw_dmac: add ACPI support
+I don't think so. Namely during debugging the file/line info is very
+useful, from my point of view. So, I think that this adding makes sense.
 
-Rafael J. Wysocki (1):
-  ACPI / LPSS: add support of shared clock
+> Adding dynamic_debug could be useful, but that's
+> another patch.
+> 
+> Also, checkpatch can be a useful tool, but all
+> its warnings aren't necessary to always be fixed.
+> 
 
- Documentation/acpi/enumeration.txt     |  77 ++++++
- drivers/acpi/Makefile                  |   1 -
- drivers/acpi/acpi_lpss.c               |  26 +-
- drivers/acpi/csrt.c                    | 159 ------------
- drivers/acpi/internal.h                |   1 -
- drivers/acpi/scan.c                    |   1 -
- drivers/clk/x86/clk-lpt.c              |  15 +-
- drivers/dma/Kconfig                    |   4 +
- drivers/dma/Makefile                   |   1 +
- drivers/dma/acpi-dma.c                 | 445 +++++++++++++++++++++++++++++++++
- drivers/dma/dmaengine.c                |   6 +
- drivers/dma/dw_dmac.c                  |  68 +++--
- drivers/dma/dw_dmac_regs.h             |   1 -
- include/linux/acpi_dma.h               | 120 +++++++++
- include/linux/platform_data/clk-lpss.h |   5 +
- 15 files changed, 741 insertions(+), 189 deletions(-)
- delete mode 100644 drivers/acpi/csrt.c
- create mode 100644 drivers/dma/acpi-dma.c
- create mode 100644 include/linux/acpi_dma.h
+As I see, the goal of this patch set is overcome of checkpatch warnings.
+I'd prefer not change the style of error messages in HFS/HFS+ drivers.
+But this patch set makes sense because it fixes warnings of checkpatch
+related to error messages.
 
--- 
-1.8.2.rc0.22.gb3600c3
+Moreover, as I see the most of rest checkpatch's warnings makes sense
+and it needs to be fixed, from my point of view.
+
+> Also, please remember to trim your replies.
+> It's not necessary to quote the entire email.
+> Just quote the useful contextual bits.
+> _Lots_ of people read this list and you can
+> cause a lot to waste time looking for additional
+> comments you don't make.
+
+Sorry. It's my mistake.
+
+With the best regards,
+Vyacheslav Dubeyko.
+
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 
