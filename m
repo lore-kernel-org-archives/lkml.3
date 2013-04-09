@@ -1,99 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935709Ab3DIMPP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 08:15:15 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:63640 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759009Ab3DIMPN (ORCPT
+	id S935899Ab3DIMPZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 08:15:25 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:57885 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935726Ab3DIMPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 08:15:13 -0400
-Message-ID: <1365509706.3801.1.camel@phoenix>
-Subject: [PATCH 1/2] regulator: ab8500: Don't update info->update_val if
- write to register fails
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Tue, 09 Apr 2013 20:15:06 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Apr 2013 08:15:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <m2ip48d62f.fsf@igel.home>
+References: <CA+V-a8vYsBLVH-3Bm35Sv9K9ZMTcMB4_P_V3kBjyuEKDozPi5w@mail.gmail.com>
+ <1363949290.3528.37.camel@linaro1.home> <m2ip48d62f.fsf@igel.home>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Tue, 9 Apr 2013 17:44:47 +0530
+Message-ID: <CA+V-a8srtwdf1H2JQwbkyMFhXopPEA90RM8Hy+UunM6Mm7-d1w@mail.gmail.com>
+Subject: Re: [BUG] mod/file2alias: build error in devicetable-offsets.c [was:
+ asm/types.h Header file wont get generated while building uImage ?]
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch ensures info->update_val is consistent with current register value.
+Hi Andreas
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/ab8500.c |   20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
+On Sun, Mar 31, 2013 at 1:16 AM, Andreas Schwab <schwab@linux-m68k.org> wrote:
+> "Jon Medhurst (Tixy)" <tixy@linaro.org> writes:
+>
+>> For builds which succeed I see this order:
+>>
+>>   WRAP    arch/arm/include/generated/asm/types.h
+>>   [...]
+>>   GEN     include/generated/asm-offsets.h
+>>
+>> and for those which fail:
+>>
+>>   CC      scripts/mod/devicetable-offsets.s
+>>   In file included from include/linux/types.h:5:0,
+>>                    from include/linux/mod_devicetable.h:11,
+>>                    from scripts/mod/devicetable-offsets.c:2:
+>>   include/uapi/linux/types.h:4:23: fatal error: asm/types.h: No such file or directory
+>>   [...]
+>>   WRAP    arch/arm/include/generated/asm/types.h
+>
+> Does that help?
+>
+> diff --git a/Makefile b/Makefile
+> index a5f3203..2a484db 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -512,7 +512,8 @@ ifeq ($(KBUILD_EXTMOD),)
+>  # Carefully list dependencies so we do not try to build scripts twice
+>  # in parallel
+>  PHONY += scripts
+> -scripts: scripts_basic include/config/auto.conf include/config/tristate.conf
+> +scripts: scripts_basic include/config/auto.conf include/config/tristate.conf \
+> +        asm-generic
+>         $(Q)$(MAKE) $(build)=$(@)
+>
+>  # Objects we will link into vmlinux / subdirs we need to visit
+>
+Whats the status of it ?
 
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index acdffc5..1866dbf 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -392,9 +392,8 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
- 			val = info->mode_val_idle;
- 			break;
- 		default:
--			if (info->shared_mode)
--				mutex_unlock(&shared_mode_mutex);
--			return -EINVAL;
-+			ret = -EINVAL;
-+			goto out_unlock;
- 		}
- 
- 		bank = info->mode_bank;
-@@ -405,17 +404,14 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
- 
- 		switch (mode) {
- 		case REGULATOR_MODE_NORMAL:
--			info->update_val = info->update_val_normal;
- 			val = info->update_val_normal;
- 			break;
- 		case REGULATOR_MODE_IDLE:
--			info->update_val = info->update_val_idle;
- 			val = info->update_val_idle;
- 			break;
- 		default:
--			if (info->shared_mode)
--				mutex_unlock(&shared_mode_mutex);
--			return -EINVAL;
-+			ret = -EINVAL;
-+			goto out_unlock;
- 		}
- 
- 		bank = info->update_bank;
-@@ -426,9 +422,11 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
- 	if (dmr || ab8500_regulator_is_enabled(rdev)) {
- 		ret = abx500_mask_and_set_register_interruptible(info->dev,
- 			bank, reg, mask, val);
--		if (ret < 0)
-+		if (ret < 0) {
- 			dev_err(rdev_get_dev(rdev),
- 				"couldn't set regulator mode\n");
-+			goto out_unlock;
-+		}
- 
- 		dev_vdbg(rdev_get_dev(rdev),
- 			"%s-set_mode (bank, reg, mask, value): "
-@@ -437,6 +435,10 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
- 			mask, val);
- 	}
- 
-+	if (!dmr)
-+		info->update_val = val;
-+
-+out_unlock:
- 	if (info->shared_mode)
- 		mutex_unlock(&shared_mode_mutex);
- 
--- 
-1.7.10.4
+Regards,
+--Prabhakar
 
-
-
+> Andreas.
+>
+> --
+> Andreas Schwab, schwab@linux-m68k.org
+> GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+> "And now for something completely different."
