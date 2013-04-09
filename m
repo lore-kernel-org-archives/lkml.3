@@ -1,69 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936117Ab3DIOFM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 10:05:12 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:54849 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762362Ab3DIOFI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 10:05:08 -0400
+	id S935862Ab3DIOIY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 10:08:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64940 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760658Ab3DIOIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 10:08:22 -0400
+Date: Tue, 9 Apr 2013 16:05:30 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Anton Arapov <anton@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Josh Stone <jistone@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
+Subject: Re: [PATCH v1 6/9] uretprobes: Return probe exit, invoke handlers
+Message-ID: <20130409140530.GA20577@redhat.com>
+References: <1365004839-21982-1-git-send-email-anton@redhat.com> <1365004839-21982-7-git-send-email-anton@redhat.com> <20130407105308.GA2899@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1365513368.25498.47.camel@gandalf.local.home>
-References: <1365084959-28374-1-git-send-email-vincent.guittot@linaro.org>
-	<1365497753.2609.163.camel@laptop>
-	<CAKfTPtDKSkhi+nNsFV9Z6hsLxhbHd-Na9YxvNzr9iXG8SdQvhQ@mail.gmail.com>
-	<1365513368.25498.47.camel@gandalf.local.home>
-Date: Tue, 9 Apr 2013 16:05:07 +0200
-Message-ID: <CAKfTPtCmARJS=VW52r43P_P+Dt5=dg_+5ochPcGZGH1b8bXGSw@mail.gmail.com>
-Subject: Re: [PATCH v4] sched: fix wrong rq's runnable_avg update with rt tasks
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130407105308.GA2899@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 April 2013 15:16, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Tue, 2013-04-09 at 14:18 +0200, Vincent Guittot wrote:
->> On 9 April 2013 10:55, Peter Zijlstra <peterz@infradead.org> wrote:
->> > On Thu, 2013-04-04 at 16:15 +0200, Vincent Guittot wrote:
->> >> Changes since V2:
->> >> - remove useless definition for UP platform
->> >> - rebased on top of Steven Rostedt's patches :
->> >> https://lkml.org/lkml/2013/2/12/558
->> >
->> > So what's the status of those patches? I still worry about the extra
->> > context switch overhead for the high-frequency idle scenario.
->>
->> I don't know. I have seen a pulled answer from Ingo but can't find the
->> commits in the tip tree.
->>
->> Steve, have you got more info about the status of your patches ?
->>
+On 04/07, Srikar Dronamraju wrote:
 >
-> Yeah, I asked Ingo to revert it due to Peter's concerns. I was able to
-> get the latencies I needed without that patch set. That made it not so
-> urgent.
+> > +static void
+> > +handler_uretprobe_chain(struct return_instance *ri, struct pt_regs *regs)
 >
-> Can you rebase your patches doing something similar? That is, still use
-> the pre/post_schedule_idle() calls, but don't base it off of my patch
-> set.
+> > +{
+> > +	struct uprobe *uprobe = ri->uprobe;
+> > +	struct uprobe_consumer *uc;
+> > +
+> > +	down_read(&uprobe->register_rwsem);
+> > +	for (uc = uprobe->consumers; uc; uc = uc->next) {
+> > +		if (uc->ret_handler)
+> > +			uc->ret_handler(uc, ri->func, regs);
+> > +	}
+> > +	up_read(&uprobe->register_rwsem);
+> > +}
+> > +
+> > +static bool handler_uretprobe(struct pt_regs *regs)
+>
+> Nit: can this be renamed to handle_trampoline
 
-Yes. I'm going to rebase my patches and add the declaration of
-post_schedule_idle in my patch instead of using your patch
+Agreed.
 
-Thanks,
-Vincent
+And probably handler_uretprobe_chain() should be ret_handler_chain()
+to match handler_chain().
 
+> > +{
+> > +	struct uprobe_task *utask;
+> > +	struct return_instance *ri, *tmp;
+> > +	bool chained;
+> > +
+> > +	utask = current->utask;
+> > +	if (!utask)
+> > +		return false;
+> > +
+> > +	ri = utask->return_instances;
+> > +	if (!ri)
+> > +		return false;
+> > +
+> > +	instruction_pointer_set(regs, ri->orig_ret_vaddr);
 >
-> Thanks,
+> Should we a check here before using top most ri.
+> What if the application had done a longjmp and the trampoline he hit
+> corresponds to something thats below in the stack?
 >
-> -- Steve
->
->
+> Not sure if this what you meant by leaking return instances in your next
+> patch.
+
+Oh yes, this should be documented more explicitly in the changelog of
+this patch or 7/9 (which tries to document the limitations but should
+be more clear).
+
+Currently we do not support longjmp() and we assume that the probed
+function should do the regular return. We should certainly try to improve
+this, but I really think that this should go into the next series.
+
+Because this is nontrivial, needs more discussion, and I'm afraid should
+be per-arch. Even on x86 (which can check the stack) this is not simple,
+in general we can't know how to check that (to simplify) the first frame
+is already invalid. Just for example, we could check regs->sp and detect
+that longjmp() was called but sigaltstack() can easily fool this logic.
+
+Or we can change prepare_uretprobe() to alloc the new slot for the
+trampoline every time (and mark it as "trampoline" for handle_swbp() of
+course), this way we can easily discard the invalid ret_instance's in
+handler_uretprobe(). But this doesn't solve all problems and this is
+not really nice/simple.
+
+In short. I think we should document the limitations more clearly, push
+this functionality, then try to improve things. Do you agree?
+
+Oleg.
+
