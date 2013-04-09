@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936933Ab3DIJbv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 05:31:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7551 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935122Ab3DIJbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 05:31:49 -0400
-Subject: Re: [Cluster-devel] [PATCH v3 08/18] gfs2: use ->invalidatepage()
- length argument
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cluster-devel@redhat.com
-In-Reply-To: <1365498867-27782-9-git-send-email-lczerner@redhat.com>
-References: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
-	 <1365498867-27782-9-git-send-email-lczerner@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Tue, 09 Apr 2013 10:29:33 +0100
-Message-ID: <1365499773.2708.5.camel@menhir>
-Mime-Version: 1.0
+	id S936960Ab3DIJcR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 05:32:17 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:64015 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932892Ab3DIJcN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 05:32:13 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the omap_dss2 tree
+Date: Tue, 9 Apr 2013 11:32:01 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Archit Taneja <archit@ti.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Paul Bolle <pebolle@tiscali.nl>
+References: <20130409174047.c506479e08e9688c0a4ced9a@canb.auug.org.au>
+In-Reply-To: <20130409174047.c506479e08e9688c0a4ced9a@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201304091132.01771.arnd@arndb.de>
+X-Provags-ID: V02:K0:Ad7oVeOjTWWg0tZK/nOKEktiWyhSSzzs7wGIaC7SKS8
+ QbesXBnZKk3RndgsO01P1gTmJhZF9j4iVBVjqkM6lr/fYRVomx
+ b1P1Xu1iDNxHcpnJPtdQw/B3dsKV9knhgdgUh2wEHs4QfgDAKz
+ at5jDVa0OXkMG1/jjo2lBXC2H0DNUnCPpUbtx4D8Q408pGFRvS
+ KYLmPqPXa9Y/ixT+I3w8FTiSOaQTsQAqrBEAihp0T3+GbcNMVg
+ RciMAkNJzdA6V2JFXF3KRSFUbIzW3YwMlVwCu5R025QKttrM9J
+ bQMJHFmmzF5zjediXcN/jg7KnqFpTrJHkYD+jDdGJoxgX0KYH9
+ mtqoO1NoFXV4dQMTe0Io=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, 2013-04-09 at 11:14 +0200, Lukas Czerner wrote:
-> ->invalidatepage() aop now accepts range to invalidate so we can make
-> use of it in gfs2_invalidatepage().
+On Tuesday 09 April 2013, Stephen Rothwell wrote:
 > 
-> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-> Cc: cluster-devel@redhat.com
-Acked-by: Steven Whitehouse <swhiteho@redhat.com>
+> - #if defined(CONFIG_SMC91X) || defined(CONFIG_SMC91x_MODULE)
+>  -static void __init sdp2430_display_init(void)
+>  -{
+>  -      int r;
+>  -
+>  -      static struct gpio gpios[] __initdata = {
+>  -              { SDP2430_LCD_PANEL_ENABLE_GPIO, GPIOF_OUT_INIT_LOW,
+>  -                      "LCD reset" },
+>  -              { SDP2430_LCD_PANEL_BACKLIGHT_GPIO, GPIOF_OUT_INIT_LOW,
+>  -                      "LCD Backlight" },
+>  -      };
+>  -
+>  -      r = gpio_request_array(gpios, ARRAY_SIZE(gpios));
+>  -      if (r) {
+>  -              pr_err("Cannot request LCD GPIOs, error %d\n", r);
+>  -              return;
+>  -      }
+>  -
+>  -      omap_display_init(&sdp2430_dss_data);
+>  -}
+>  -
+> + #if IS_ENABLED(CONFIG_SMC91X)
 
-Steve.
+Looks good, thanks!
 
-> ---
->  fs/gfs2/aops.c |    9 +++++++--
->  1 files changed, 7 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
-> index 37093ba..ea920bf 100644
-> --- a/fs/gfs2/aops.c
-> +++ b/fs/gfs2/aops.c
-> @@ -947,24 +947,29 @@ static void gfs2_invalidatepage(struct page *page, unsigned int offset,
->  				unsigned int length)
->  {
->  	struct gfs2_sbd *sdp = GFS2_SB(page->mapping->host);
-> +	unsigned int stop = offset + length;
-> +	int partial_page = (offset || length < PAGE_CACHE_SIZE);
->  	struct buffer_head *bh, *head;
->  	unsigned long pos = 0;
->  
->  	BUG_ON(!PageLocked(page));
-> -	if (offset == 0)
-> +	if (!partial_page)
->  		ClearPageChecked(page);
->  	if (!page_has_buffers(page))
->  		goto out;
->  
->  	bh = head = page_buffers(page);
->  	do {
-> +		if (pos + bh->b_size > stop)
-> +			return;
-> +
->  		if (offset <= pos)
->  			gfs2_discard(sdp, bh);
->  		pos += bh->b_size;
->  		bh = bh->b_this_page;
->  	} while (bh != head);
->  out:
-> -	if (offset == 0)
-> +	if (!partial_page)
->  		try_to_release_page(page, 0);
->  }
->  
-
-
+	Arnd
