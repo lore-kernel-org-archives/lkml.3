@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964898Ab3DIUWZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 16:22:25 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:39221 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935949Ab3DIUWX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 16:22:23 -0400
+	id S936140Ab3DIUZJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 16:25:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51727 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935899Ab3DIUZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 16:25:08 -0400
+Message-ID: <5164790E.7@zytor.com>
+Date: Tue, 09 Apr 2013 13:24:46 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1304091428270.24675@M2420>
-References: <alpine.DEB.2.02.1304091428270.24675@M2420>
-Date: Tue, 9 Apr 2013 22:22:21 +0200
-Message-ID: <CAMeQTsaZmM-AT3abcWhVRQAFOJfYFjeCMC22r5YXU0w0NZ-g9A@mail.gmail.com>
-Subject: Re: [PATCH] drivers/gpu/drm/gma500:fix build failure for 3.9-rc5
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: Xiong Zhou <jencce.kernel@gmail.com>
-Cc: airlied@redhat.com, alan@linux.intel.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Vivek Goyal <vgoyal@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 3/4] x86, kdump: Change crashkernel_high/low= to crashkernel=;high/low
+References: <1365113821-22749-1-git-send-email-yinghai@kernel.org> <1365113821-22749-5-git-send-email-yinghai@kernel.org> <20130409134544.GA6320@redhat.com> <CAE9FiQUETs0AGjd+72GOz=Pm=9QicM7L46OaiMwhtUFa65TTvA@mail.gmail.com>
+In-Reply-To: <CAE9FiQUETs0AGjd+72GOz=Pm=9QicM7L46OaiMwhtUFa65TTvA@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 9, 2013 at 8:35 AM, Xiong Zhou <jencce.kernel@gmail.com> wrote:
-> From: Xiong Zhou <jencce.kernel@gmail.com>
->
-> This patch fixes build failure of v3.9-rc5.
-> When config ACPI_VIDEO as m, DRM_GMA500 as y, here comes the failure.
-> gma5/600 needs acpi_video just like nouveau.
->
-> Failure message:
-> drivers/built-in.o: In function `psb_driver_load':
-> kernel-3.9-rc5/drivers/gpu/drm/gma500/psb_drv.c:340: \
->         undefined reference to `acpi_video_register'
-> make: *** [vmlinux] Error 1
->
-> Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
-> ---
-> drivers/gpu/drm/gma500/Kconfig |    1 +
-> 1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/gpu/drm/gma500/Kconfig b/drivers/gpu/drm/gma500/Kconfig
-> index 1188f0f..d64fc45 100644
-> --- a/drivers/gpu/drm/gma500/Kconfig
-> +++ b/drivers/gpu/drm/gma500/Kconfig
-> @@ -6,6 +6,7 @@ config DRM_GMA500
->          select FB_CFB_IMAGEBLIT
->          select DRM_KMS_HELPER
->          select DRM_TTM
-> +        select ACPI_VIDEO if ACPI && X86 && BACKLIGHT_CLASS_DEVICE && VIDEO_OUTPUT_CONTROL && INPUT
->         help
->           Say yes for an experimental 2D KMS framebuffer driver for the
->           Intel GMA500 ('Poulsbo') and other Intel IMG based graphics
-> --
+On 04/09/2013 01:05 PM, Yinghai Lu wrote:
+>>
+>> So crashkernel=X@Y;high is a valid syntax? Looks like we will reserve
+>> X amount of RAM at base Y and ignore "high" or "low".
+> 
+> yes, we should reject them.
+> 
 
-Hi
+What if there isn't X amount of RAM available at base Y?
 
-Thanks for catching this, but if I can be picky, I'd prefer if you wrote it
-like i915 does. E.g.
+	-hpa
 
-	select ACPI_VIDEO if ACPI
-	select BACKLIGHT_CLASS_DEVICE if ACPI
-	...
 
-And you can skip X86 since we already 'depend' on it.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Thanks
-Patrik
