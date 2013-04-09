@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937606Ab3DIK0Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 06:26:24 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36306 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758702Ab3DIK0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 06:26:22 -0400
-Date: Tue, 9 Apr 2013 12:24:09 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Steffen Persvold <sp@numascale.com>
-Cc: Daniel J Blueman <daniel@numascale-asia.com>,
-        Tony Luck <tony.luck@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, amd, mce: Prevent potential cpu-online oops
-Message-ID: <20130409102409.GF10243@pd.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Steffen Persvold <sp@numascale.com>,
-	Daniel J Blueman <daniel@numascale-asia.com>,
-	Tony Luck <tony.luck@intel.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-	x86@kernel.org, linux-edac@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1365090720-12652-1-git-send-email-daniel@numascale-asia.com>
- <20130404161340.GF32271@pd.tnic>
- <515DC0FA.1040408@numascale.com>
- <20130404190731.GG32271@pd.tnic>
- <5163DE7C.7060700@numascale.com>
- <20130409093854.GC10243@pd.tnic>
- <5163E348.7060206@numascale.com>
+	id S937625Ab3DIK1U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 06:27:20 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:64289 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935762Ab3DIK1S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 06:27:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Subject: Re: [PATCH] usb: ehci-s5p: fix: Fix null pointer dereferencing
+Date: Tue, 9 Apr 2013 12:26:58 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        stern@rowland.harvard.edu, kgene.kim@samsung.com,
+        Manjunath Goudar <manjunath.goudar@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>
+References: <1365499312-14232-1-git-send-email-gautam.vivek@samsung.com>
+In-Reply-To: <1365499312-14232-1-git-send-email-gautam.vivek@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5163E348.7060206@numascale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304091226.58822.arnd@arndb.de>
+X-Provags-ID: V02:K0:cBbSYg4JZxrxZeN3LzMzVK/UJKqC1ZKMvRvrcSLblaB
+ 3ilku85vv8vdKvKqbQtP4cYu1MqL8GL9bJWn8pcQuIwJQqNkpy
+ Yd0qD0/ulPNLqL/CXhmU9x0Mx4Uujz+rShDD4g8eLnG4fn5YRZ
+ dnnXAjTMSBVO8hMBg1heldxrKEJ3GcfXDhxhqVC/Pm07+I3hxr
+ YUrRbj6QBNSludlVFqeh44jmR7OR5/Uz7zys5Tz+HHLVGsO0N7
+ PFyBupB6mtgGP9vwKFi5LtSTCiyeFwzj/6e8k9bQd2fuVj38oL
+ MpOJSTKuG9VyGggIS2wqJQWU90ZX2e1qtmNSpNDv8IUti1/QHf
+ kwHkhYSbA1z4OQdFkuZw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 11:45:44AM +0200, Steffen Persvold wrote:
-> Hmm, yes of course. This of course breaks on our slave servers when
-> the shared mechanism doesn't work properly (i.e NB not visible). Then
-> all cores gets individual kobjects and there can be discrepancies
-> between what the hardware is programmed to and what is reflected in
-> /sys on some cores..
+On Tuesday 09 April 2013, Vivek Gautam wrote:
+> 
+> 7edb3da makes ehci-s5p as a separate driver. But,
+> it raised an issue with its driver data.
+> Now that 's5p_ehci_hcd' doesn't maintain pointer to 'usb_hcd'
+> and s5p_ehci is nothing but a pointer to hcd->priv;
+> add hcd to the driver data rather than s5p_ehci.
+> 
+> This fixes issues with null pointer dereferencing in
+> s5p_ehci_shutdown(), s5p_ehci_suspend(), s5p_ehci_resume().
 
-Hold on, are you saying you have cores with an invisible NB? How does
-that even work? Or is it only invisible to sw?
+Right, sorry for not spotting this during review.
 
-Which would explain why you want the bank4 thing to be per-core.
-However, the ugliness with this approach is that you need to note which
-cores share the bank and do the proper updates on all sharing cores upon
-modifications from sysfs.
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> CC: Manjunath Goudar <manjunath.goudar@linaro.org>
+> CC: Arnd Bergmann <arnd@arndb.de>
+> CC: Jingoo Han <jg1.han@samsung.com>
 
-Oh well, if you can come up with a clean patchset doing that and without
-introducing too much bloat, we can talk about it... :-)
-
-> Ok, we go with our first approach to not create MC4 at all if NB isn't
-> visible.
-
-... but this would be the simpler fix. Unless it is still not fixing
-everything for you guys.
-
-> We'll redo the patch against the tip:x86/ras branch.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
--- 
+Acked-by: Arnd Bergmann <arnd@arndb.de>
