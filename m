@@ -1,204 +1,377 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936600Ab3DIVuL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 17:50:11 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:38719 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936462Ab3DIVuI (ORCPT
+	id S936637Ab3DIVxL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 17:53:11 -0400
+Received: from mail-oa0-f74.google.com ([209.85.219.74]:38196 "EHLO
+	mail-oa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936356Ab3DIVxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 17:50:08 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v2 07/15] mm: Add an optimized version of
- del_from_freelist to keep page allocation fast
-To: akpm@linux-foundation.org, mgorman@suse.de, matthew.garrett@nebula.com,
-        dave@sr71.net, rientjes@google.com, riel@redhat.com,
-        arjan@linux.intel.com, srinivas.pandruvada@linux.intel.com,
-        maxime.coquelin@stericsson.com, loic.pallardy@stericsson.com,
-        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl
-Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com, amit.kachhap@linaro.org,
-        svaidy@linux.vnet.ibm.com, andi@firstfloor.org, wujianguo@huawei.com,
-        kmpark@infradead.org, thomas.abraham@linaro.org,
-        santosh.shilimkar@ti.com, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 10 Apr 2013 03:17:19 +0530
-Message-ID: <20130409214717.4500.34638.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130409214443.4500.44168.stgit@srivatsabhat.in.ibm.com>
-References: <20130409214443.4500.44168.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13040921-2674-0000-0000-00000888B271
+	Tue, 9 Apr 2013 17:53:07 -0400
+From: Shawn Nematbakhsh <shawnn@google.com>
+To: dmitry.torokhov@gmail.com
+Cc: shawnn@chromium.org, dgdunix@gmail.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cywang@chromium.org
+Subject: [PATCH v2] Input: trackpoint - Optimize trackpoint init to use power-on reset
+Date: Tue,  9 Apr 2013 14:52:42 -0700
+Message-Id: <1365544362-13923-1-git-send-email-shawnn@google.com>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One of the main advantages of this design of memory regions is that page
-allocations can potentially be extremely fast - almost with no extra
-overhead from memory regions.
+From: Shawn Nematbakhsh <shawnn@chromium.org>
 
-To exploit that, introduce an optimized version of del_from_freelist(), which
-utilizes the fact that we always delete items from the head of the list
-during page allocation.
+The trackpoint driver sets various parameter default values, all of
+which happen to be power-on defaults (Source: IBM TrackPoint Engineering
+Specification, Version 4.0. Also confirmed by empirical data).
 
-Basically, we want to keep a note of the region from which we are allocating
-in a given freelist, to avoid having to compute the page-to-zone-region for
-every page allocation. So introduce a 'next_region' pointer in every freelist
-to achieve that, and use it to keep the fastpath of page allocation almost as
-fast as it would have been without memory regions.
+By sending the power-on reset command to reset all parameters to
+power-on state, we can skip the lengthy process of programming all
+parameters. In testing, ~2.5 secs of time writing parameters was reduced
+to .35 seconds waiting for power-on reset to complete.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Shawn Nematbakhsh <shawnn@chromium.org>
 ---
+Changes since v1:
+- Changed handling of 0xfc00 reply to POR.
+---
+ drivers/input/mouse/trackpoint.c | 224 +++++++++++++++++++++++++--------------
+ drivers/input/mouse/trackpoint.h |   7 +-
+ 2 files changed, 150 insertions(+), 81 deletions(-)
 
- include/linux/mm.h     |   14 +++++++++++
- include/linux/mmzone.h |    6 +++++
- mm/page_alloc.c        |   62 +++++++++++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 81 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index dff478b..cb0d898 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -741,6 +741,20 @@ static inline int page_zone_region_id(const struct page *page)
- 	return pgdat->node_regions[node_region_idx].zone_region_idx[z_num];
- }
+diff --git a/drivers/input/mouse/trackpoint.c b/drivers/input/mouse/trackpoint.c
+index f310249..42964d4 100644
+--- a/drivers/input/mouse/trackpoint.c
++++ b/drivers/input/mouse/trackpoint.c
+@@ -20,6 +20,30 @@
+ #include "trackpoint.h"
  
-+static inline void set_next_region_in_freelist(struct free_list *free_list)
-+{
-+	struct page *page;
-+	int region_id;
-+
-+	if (unlikely(list_empty(&free_list->list))) {
-+		free_list->next_region = NULL;
-+	} else {
-+		page = list_entry(free_list->list.next, struct page, lru);
-+		region_id = page_zone_region_id(page);
-+		free_list->next_region = &free_list->mr_list[region_id];
-+	}
-+}
-+
- #ifdef SECTION_IN_PAGE_FLAGS
- static inline void set_page_section(struct page *page, unsigned long section)
- {
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 76667bf..d8d67fc 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -92,6 +92,12 @@ struct free_list {
- 	struct list_head	list;
- 
- 	/*
-+	 * Pointer to the region from which the next allocation will be
-+	 * satisfied. (Same as the freelist's first pageblock's region.)
-+	 */
-+	struct mem_region_list	*next_region; /* for fast page allocation */
-+
-+	/*
- 	 * Demarcates pageblocks belonging to different regions within
- 	 * this freelist.
- 	 */
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 7fb4254..a68174c 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -539,6 +539,15 @@ static void add_to_freelist(struct page *page, struct free_list *free_list)
- 	/* This is the first region, so add to the head of the list */
- 	prev_region_list = &free_list->list;
- 
-+#ifdef CONFIG_DEBUG_PAGEALLOC
-+	WARN((list_empty(&free_list->list) && free_list->next_region != NULL),
-+					"%s: next_region not NULL\n", __func__);
-+#endif
-+	/*
-+	 * Set 'next_region' to this region, since this is the first region now
-+	 */
-+	free_list->next_region = region;
-+
- out:
- 	list_add(lru, prev_region_list);
- 
-@@ -546,6 +555,47 @@ out:
- 	region->page_block = lru;
- }
- 
-+/**
-+ * __rmqueue_smallest() *always* deletes elements from the head of the
-+ * list. Use this knowledge to keep page allocation fast, despite being
-+ * region-aware.
-+ *
-+ * Do *NOT* call this function if you are deleting from somewhere deep
-+ * inside the freelist.
+ /*
++ * Power-on Reset: Resets all trackpoint parameters, including RAM values,
++ * to defaults.
++ * Returns zero on success, non-zero on failure.
 + */
-+static void rmqueue_del_from_freelist(struct page *page,
-+				      struct free_list *free_list)
++static int trackpoint_power_on_reset(struct ps2dev *ps2dev)
 +{
-+	struct list_head *lru = &page->lru;
++	unsigned char results[2];
++	int tries = 0;
 +
-+#ifdef CONFIG_DEBUG_PAGEALLOC
-+	WARN((free_list->list.next != lru),
-+				"%s: page not at head of list", __func__);
-+#endif
++	/* Issue POR command, and repeat up to once if 0xFC00 received */
++	do {
++		if (ps2_command(ps2dev, NULL, MAKE_PS2_CMD(0, 0, TP_COMMAND)) ||
++		    ps2_command(ps2dev, results, MAKE_PS2_CMD(0, 2, TP_POR)))
++			return -1;
++	} while (results[0] == 0xFC && results[1] == 0x00 && ++tries < 2);
 +
-+	list_del(lru);
++	/* Check for success response -- 0xAA00 */
++	if (results[0] != 0xAA || results[1] != 0x00)
++		return -1;
 +
-+	/* Fastpath */
-+	if (--(free_list->next_region->nr_free)) {
-+
-+#ifdef CONFIG_DEBUG_PAGEALLOC
-+		WARN(free_list->next_region->nr_free < 0,
-+				"%s: nr_free is negative\n", __func__);
-+#endif
-+		return;
-+	}
-+
-+	/*
-+	 * Slowpath, when this is the last pageblock of this region
-+	 * in this freelist.
-+	 */
-+	free_list->next_region->page_block = NULL;
-+
-+	/* Set 'next_region' to the new first region in the freelist. */
-+	set_next_region_in_freelist(free_list);
++	return 0;
 +}
 +
-+/* Generic delete function for region-aware buddy allocator. */
- static void del_from_freelist(struct page *page, struct free_list *free_list)
++/*
+  * Device IO: read, write and toggle bit
+  */
+ static int trackpoint_read(struct ps2dev *ps2dev, unsigned char loc, unsigned char *results)
+@@ -69,6 +93,7 @@ struct trackpoint_attr_data {
+ 	unsigned char command;
+ 	unsigned char mask;
+ 	unsigned char inverted;
++	unsigned char power_on_default;
+ };
+ 
+ static ssize_t trackpoint_show_int_attr(struct psmouse *psmouse, void *data, char *buf)
+@@ -102,10 +127,11 @@ static ssize_t trackpoint_set_int_attr(struct psmouse *psmouse, void *data,
+ 	return count;
+ }
+ 
+-#define TRACKPOINT_INT_ATTR(_name, _command)					\
++#define TRACKPOINT_INT_ATTR(_name, _command, _default)				\
+ 	static struct trackpoint_attr_data trackpoint_attr_##_name = {		\
+ 		.field_offset = offsetof(struct trackpoint_data, _name),	\
+ 		.command = _command,						\
++		.power_on_default = _default,					\
+ 	};									\
+ 	PSMOUSE_DEFINE_ATTR(_name, S_IWUSR | S_IRUGO,				\
+ 			    &trackpoint_attr_##_name,				\
+@@ -139,31 +165,68 @@ static ssize_t trackpoint_set_bit_attr(struct psmouse *psmouse, void *data,
+ }
+ 
+ 
+-#define TRACKPOINT_BIT_ATTR(_name, _command, _mask, _inv)				\
++#define TRACKPOINT_BIT_ATTR(_name, _command, _mask, _inv, _default)		\
+ 	static struct trackpoint_attr_data trackpoint_attr_##_name = {		\
+-		.field_offset	= offsetof(struct trackpoint_data, _name),	\
+-		.command	= _command,					\
+-		.mask		= _mask,					\
+-		.inverted	= _inv,						\
++		.field_offset		= offsetof(struct trackpoint_data,	\
++						   _name),			\
++		.command		= _command,				\
++		.mask			= _mask,				\
++		.inverted		= _inv,					\
++		.power_on_default	= _default,				\
+ 	};									\
+ 	PSMOUSE_DEFINE_ATTR(_name, S_IWUSR | S_IRUGO,				\
+ 			    &trackpoint_attr_##_name,				\
+ 			    trackpoint_show_int_attr, trackpoint_set_bit_attr)
+ 
+-TRACKPOINT_INT_ATTR(sensitivity, TP_SENS);
+-TRACKPOINT_INT_ATTR(speed, TP_SPEED);
+-TRACKPOINT_INT_ATTR(inertia, TP_INERTIA);
+-TRACKPOINT_INT_ATTR(reach, TP_REACH);
+-TRACKPOINT_INT_ATTR(draghys, TP_DRAGHYS);
+-TRACKPOINT_INT_ATTR(mindrag, TP_MINDRAG);
+-TRACKPOINT_INT_ATTR(thresh, TP_THRESH);
+-TRACKPOINT_INT_ATTR(upthresh, TP_UP_THRESH);
+-TRACKPOINT_INT_ATTR(ztime, TP_Z_TIME);
+-TRACKPOINT_INT_ATTR(jenks, TP_JENKS_CURV);
+-
+-TRACKPOINT_BIT_ATTR(press_to_select, TP_TOGGLE_PTSON, TP_MASK_PTSON, 0);
+-TRACKPOINT_BIT_ATTR(skipback, TP_TOGGLE_SKIPBACK, TP_MASK_SKIPBACK, 0);
+-TRACKPOINT_BIT_ATTR(ext_dev, TP_TOGGLE_EXT_DEV, TP_MASK_EXT_DEV, 1);
++#define TRACKPOINT_UPDATE_BIT(_psmouse, _tp, _name)				\
++	{									\
++		unsigned char _toggle;						\
++		struct trackpoint_attr_data *_attr = &trackpoint_attr_##_name;	\
++		trackpoint_read(&_psmouse->ps2dev, _attr->command, &_toggle);	\
++		if (((_toggle & _attr->mask) == _attr->mask) !=			\
++		      _tp->_name)						\
++			trackpoint_toggle_bit(&_psmouse->ps2dev,		\
++					      _attr->command,			\
++					      _attr->mask);			\
++	}
++
++#define TRACKPOINT_UPDATE(_power_on, _psmouse, _tp, _name)			\
++	if (!_power_on ||							\
++	    _tp->_name != trackpoint_attr_##_name.power_on_default) {		\
++		if (!trackpoint_attr_##_name.mask)				\
++			trackpoint_write(&_psmouse->ps2dev,			\
++					 trackpoint_attr_##_name.command,	\
++					 _tp->_name);				\
++		else								\
++			TRACKPOINT_UPDATE_BIT(_psmouse, _tp, _name);		\
++	}
++
++#define TRACKPOINT_SET_POWER_ON_DEFAULT(_tp, _name)				\
++	(_tp->_name = trackpoint_attr_##_name.power_on_default)
++
++TRACKPOINT_INT_ATTR(sensitivity, TP_SENS, TP_DEF_SENS);
++TRACKPOINT_INT_ATTR(speed, TP_SPEED, TP_DEF_SPEED);
++TRACKPOINT_INT_ATTR(inertia, TP_INERTIA, TP_DEF_INERTIA);
++TRACKPOINT_INT_ATTR(reach, TP_REACH, TP_DEF_REACH);
++TRACKPOINT_INT_ATTR(draghys, TP_DRAGHYS, TP_DEF_DRAGHYS);
++TRACKPOINT_INT_ATTR(mindrag, TP_MINDRAG, TP_DEF_MINDRAG);
++TRACKPOINT_INT_ATTR(thresh, TP_THRESH, TP_DEF_THRESH);
++TRACKPOINT_INT_ATTR(upthresh, TP_UP_THRESH, TP_DEF_UP_THRESH);
++TRACKPOINT_INT_ATTR(ztime, TP_Z_TIME, TP_DEF_Z_TIME);
++TRACKPOINT_INT_ATTR(jenks, TP_JENKS_CURV, TP_DEF_JENKS_CURV);
++
++TRACKPOINT_BIT_ATTR(press_to_select, TP_TOGGLE_PTSON, TP_MASK_PTSON, 0,
++		    TP_DEF_PTSON);
++TRACKPOINT_BIT_ATTR(skipback, TP_TOGGLE_SKIPBACK, TP_MASK_SKIPBACK, 0,
++		    TP_DEF_SKIPBACK);
++TRACKPOINT_BIT_ATTR(ext_dev, TP_TOGGLE_EXT_DEV, TP_MASK_EXT_DEV, 1,
++		    TP_DEF_EXT_DEV);
++TRACKPOINT_BIT_ATTR(twohand, TP_TOGGLE_TWOHAND, TP_MASK_TWOHAND, 0,
++		    TP_DEF_TWOHAND);
++TRACKPOINT_BIT_ATTR(source_tag, TP_TOGGLE_SOURCE_TAG, TP_MASK_SOURCE_TAG, 0,
++		    TP_DEF_SOURCE_TAG);
++TRACKPOINT_BIT_ATTR(mb, TP_TOGGLE_MB, TP_MASK_MB, 0,
++		    TP_DEF_MB);
+ 
+ static struct attribute *trackpoint_attrs[] = {
+ 	&psmouse_attr_sensitivity.dattr.attr,
+@@ -179,6 +242,9 @@ static struct attribute *trackpoint_attrs[] = {
+ 	&psmouse_attr_press_to_select.dattr.attr,
+ 	&psmouse_attr_skipback.dattr.attr,
+ 	&psmouse_attr_ext_dev.dattr.attr,
++	&psmouse_attr_twohand.dattr.attr,
++	&psmouse_attr_source_tag.dattr.attr,
++	&psmouse_attr_mb.dattr.attr,
+ 	NULL
+ };
+ 
+@@ -202,73 +268,63 @@ static int trackpoint_start_protocol(struct psmouse *psmouse, unsigned char *fir
+ 	return 0;
+ }
+ 
+-static int trackpoint_sync(struct psmouse *psmouse)
++/*
++ * Write parameters to trackpad.
++ * in_power_on_state: Set to true if TP is in default / power-on state (ex. if
++ *		      power-on reset was run). If so, values will only be
++ *		      written to TP if they differ from power-on default.
++ */
++static int trackpoint_sync(struct psmouse *psmouse, bool in_power_on_state)
  {
- 	struct list_head *prev_page_lru, *lru, *p;
-@@ -553,6 +603,11 @@ static void del_from_freelist(struct page *page, struct free_list *free_list)
- 	int region_id;
+ 	struct trackpoint_data *tp = psmouse->private;
+-	unsigned char toggle;
+-
+-	/* Disable features that may make device unusable with this driver */
+-	trackpoint_read(&psmouse->ps2dev, TP_TOGGLE_TWOHAND, &toggle);
+-	if (toggle & TP_MASK_TWOHAND)
+-		trackpoint_toggle_bit(&psmouse->ps2dev, TP_TOGGLE_TWOHAND, TP_MASK_TWOHAND);
  
- 	lru = &page->lru;
-+
-+	/* Try to fastpath, if deleting from the head of the list */
-+	if (lru == free_list->list.next)
-+		return rmqueue_del_from_freelist(page, free_list);
-+
- 	region_id = page_zone_region_id(page);
- 	region = &free_list->mr_list[region_id];
- 	region->nr_free--;
-@@ -588,6 +643,11 @@ page_found:
- 	prev_page_lru = lru->prev;
- 	list_del(lru);
- 
+-	trackpoint_read(&psmouse->ps2dev, TP_TOGGLE_SOURCE_TAG, &toggle);
+-	if (toggle & TP_MASK_SOURCE_TAG)
+-		trackpoint_toggle_bit(&psmouse->ps2dev, TP_TOGGLE_SOURCE_TAG, TP_MASK_SOURCE_TAG);
+-
+-	trackpoint_read(&psmouse->ps2dev, TP_TOGGLE_MB, &toggle);
+-	if (toggle & TP_MASK_MB)
+-		trackpoint_toggle_bit(&psmouse->ps2dev, TP_TOGGLE_MB, TP_MASK_MB);
+-
+-	/* Push the config to the device */
+-	trackpoint_write(&psmouse->ps2dev, TP_SENS, tp->sensitivity);
+-	trackpoint_write(&psmouse->ps2dev, TP_INERTIA, tp->inertia);
+-	trackpoint_write(&psmouse->ps2dev, TP_SPEED, tp->speed);
+-
+-	trackpoint_write(&psmouse->ps2dev, TP_REACH, tp->reach);
+-	trackpoint_write(&psmouse->ps2dev, TP_DRAGHYS, tp->draghys);
+-	trackpoint_write(&psmouse->ps2dev, TP_MINDRAG, tp->mindrag);
+-
+-	trackpoint_write(&psmouse->ps2dev, TP_THRESH, tp->thresh);
+-	trackpoint_write(&psmouse->ps2dev, TP_UP_THRESH, tp->upthresh);
+-
+-	trackpoint_write(&psmouse->ps2dev, TP_Z_TIME, tp->ztime);
+-	trackpoint_write(&psmouse->ps2dev, TP_JENKS_CURV, tp->jenks);
+-
+-	trackpoint_read(&psmouse->ps2dev, TP_TOGGLE_PTSON, &toggle);
+-	if (((toggle & TP_MASK_PTSON) == TP_MASK_PTSON) != tp->press_to_select)
+-		 trackpoint_toggle_bit(&psmouse->ps2dev, TP_TOGGLE_PTSON, TP_MASK_PTSON);
+-
+-	trackpoint_read(&psmouse->ps2dev, TP_TOGGLE_SKIPBACK, &toggle);
+-	if (((toggle & TP_MASK_SKIPBACK) == TP_MASK_SKIPBACK) != tp->skipback)
+-		trackpoint_toggle_bit(&psmouse->ps2dev, TP_TOGGLE_SKIPBACK, TP_MASK_SKIPBACK);
+-
+-	trackpoint_read(&psmouse->ps2dev, TP_TOGGLE_EXT_DEV, &toggle);
+-	if (((toggle & TP_MASK_EXT_DEV) == TP_MASK_EXT_DEV) != tp->ext_dev)
+-		trackpoint_toggle_bit(&psmouse->ps2dev, TP_TOGGLE_EXT_DEV, TP_MASK_EXT_DEV);
 +	/*
-+	 * Since we are not deleting from the head of the freelist, the
-+	 * 'next_region' pointer doesn't have to change.
-+	 */
++	* These properties can be changed in this driver. Only
++	* configure them if the values are non-default or if the TP is in
++	* an unknown state.
++	*/
++	TRACKPOINT_UPDATE(in_power_on_state, psmouse, tp, sensitivity);
++	TRACKPOINT_UPDATE(in_power_on_state, psmouse, tp, inertia);
++	TRACKPOINT_UPDATE(in_power_on_state, psmouse, tp, speed);
++	TRACKPOINT_UPDATE(in_power_on_state, psmouse, tp, reach);
++	TRACKPOINT_UPDATE(in_power_on_state, psmouse, tp, draghys);
++	TRACKPOINT_UPDATE(in_power_on_state, psmouse, tp, mindrag);
++	TRACKPOINT_UPDATE(in_power_on_state, psmouse, tp, thresh);
++	TRACKPOINT_UPDATE(in_power_on_state, psmouse, tp, upthresh);
++	TRACKPOINT_UPDATE(in_power_on_state, psmouse, tp, ztime);
++	TRACKPOINT_UPDATE(in_power_on_state, psmouse, tp, jenks);
 +
- 	if (region->nr_free == 0) {
- 		region->page_block = NULL;
- 	} else {
-@@ -1013,7 +1073,7 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
++	/* toggles */
++	TRACKPOINT_UPDATE(in_power_on_state, psmouse, tp, press_to_select);
++	TRACKPOINT_UPDATE(in_power_on_state, psmouse, tp, skipback);
++	TRACKPOINT_UPDATE(in_power_on_state, psmouse, tp, ext_dev);
++	TRACKPOINT_UPDATE(in_power_on_state, psmouse, tp, twohand);
++	TRACKPOINT_UPDATE(in_power_on_state, psmouse, tp, source_tag);
++	TRACKPOINT_UPDATE(in_power_on_state, psmouse, tp, mb);
  
- 		page = list_entry(area->free_list[migratetype].list.next,
- 							struct page, lru);
--		del_from_freelist(page, &area->free_list[migratetype]);
-+		rmqueue_del_from_freelist(page, &area->free_list[migratetype]);
- 		rmv_page_order(page);
- 		area->nr_free--;
- 		expand(zone, page, order, current_order, area, migratetype);
+ 	return 0;
+ }
+ 
+ static void trackpoint_defaults(struct trackpoint_data *tp)
+ {
+-	tp->press_to_select = TP_DEF_PTSON;
+-	tp->sensitivity = TP_DEF_SENS;
+-	tp->speed = TP_DEF_SPEED;
+-	tp->reach = TP_DEF_REACH;
+-
+-	tp->draghys = TP_DEF_DRAGHYS;
+-	tp->mindrag = TP_DEF_MINDRAG;
+-
+-	tp->thresh = TP_DEF_THRESH;
+-	tp->upthresh = TP_DEF_UP_THRESH;
+-
+-	tp->ztime = TP_DEF_Z_TIME;
+-	tp->jenks = TP_DEF_JENKS_CURV;
+-
+-	tp->inertia = TP_DEF_INERTIA;
+-	tp->skipback = TP_DEF_SKIPBACK;
+-	tp->ext_dev = TP_DEF_EXT_DEV;
++	TRACKPOINT_SET_POWER_ON_DEFAULT(tp, sensitivity);
++	TRACKPOINT_SET_POWER_ON_DEFAULT(tp, speed);
++	TRACKPOINT_SET_POWER_ON_DEFAULT(tp, reach);
++	TRACKPOINT_SET_POWER_ON_DEFAULT(tp, draghys);
++	TRACKPOINT_SET_POWER_ON_DEFAULT(tp, mindrag);
++	TRACKPOINT_SET_POWER_ON_DEFAULT(tp, thresh);
++	TRACKPOINT_SET_POWER_ON_DEFAULT(tp, upthresh);
++	TRACKPOINT_SET_POWER_ON_DEFAULT(tp, ztime);
++	TRACKPOINT_SET_POWER_ON_DEFAULT(tp, jenks);
++	TRACKPOINT_SET_POWER_ON_DEFAULT(tp, inertia);
++
++	/* toggles */
++	TRACKPOINT_SET_POWER_ON_DEFAULT(tp, press_to_select);
++	TRACKPOINT_SET_POWER_ON_DEFAULT(tp, skipback);
++	TRACKPOINT_SET_POWER_ON_DEFAULT(tp, ext_dev);
++	TRACKPOINT_SET_POWER_ON_DEFAULT(tp, twohand);
++	TRACKPOINT_SET_POWER_ON_DEFAULT(tp, source_tag);
++	TRACKPOINT_SET_POWER_ON_DEFAULT(tp, mb);
+ }
+ 
+ static void trackpoint_disconnect(struct psmouse *psmouse)
+@@ -281,10 +337,13 @@ static void trackpoint_disconnect(struct psmouse *psmouse)
+ 
+ static int trackpoint_reconnect(struct psmouse *psmouse)
+ {
++	int reset_fail;
++
+ 	if (trackpoint_start_protocol(psmouse, NULL))
+ 		return -1;
+ 
+-	if (trackpoint_sync(psmouse))
++	reset_fail = trackpoint_power_on_reset(&psmouse->ps2dev);
++	if (trackpoint_sync(psmouse, !reset_fail))
+ 		return -1;
+ 
+ 	return 0;
+@@ -322,7 +381,12 @@ int trackpoint_detect(struct psmouse *psmouse, bool set_properties)
+ 		__set_bit(BTN_MIDDLE, psmouse->dev->keybit);
+ 
+ 	trackpoint_defaults(psmouse->private);
+-	trackpoint_sync(psmouse);
++
++	error = trackpoint_power_on_reset(&psmouse->ps2dev);
++
++	/* Write defaults to TP only if reset fails. */
++	if (error)
++		trackpoint_sync(psmouse, false);
+ 
+ 	error = sysfs_create_group(&ps2dev->serio->dev.kobj, &trackpoint_attr_group);
+ 	if (error) {
+diff --git a/drivers/input/mouse/trackpoint.h b/drivers/input/mouse/trackpoint.h
+index e558a70..e0bc03b 100644
+--- a/drivers/input/mouse/trackpoint.h
++++ b/drivers/input/mouse/trackpoint.h
+@@ -126,6 +126,8 @@
+ #define TP_DEF_PTSON		0x00
+ #define TP_DEF_SKIPBACK		0x00
+ #define TP_DEF_EXT_DEV		0x00	/* 0 means enabled */
++#define TP_DEF_TWOHAND		0x00
++#define TP_DEF_SOURCE_TAG	0x00
+ 
+ #define MAKE_PS2_CMD(params, results, cmd) ((params<<12) | (results<<8) | (cmd))
+ 
+@@ -136,10 +138,13 @@ struct trackpoint_data
+ 	unsigned char thresh, upthresh;
+ 	unsigned char ztime, jenks;
+ 
++	/* toggles */
+ 	unsigned char press_to_select;
+ 	unsigned char skipback;
+-
+ 	unsigned char ext_dev;
++	unsigned char twohand;
++	unsigned char source_tag;
++	unsigned char mb;
+ };
+ 
+ #ifdef CONFIG_MOUSE_PS2_TRACKPOINT
+-- 
+1.7.12.4
 
