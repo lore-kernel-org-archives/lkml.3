@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761628Ab3DIS7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 14:59:33 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:49978 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761262Ab3DIS7c (ORCPT
+	id S935832Ab3DIS7p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 14:59:45 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:63116 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935472Ab3DIS7n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 14:59:32 -0400
-Message-ID: <5164650F.50405@gmail.com>
-Date: Tue, 09 Apr 2013 20:59:27 +0200
-From: Milan Broz <gmazyland@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Tue, 9 Apr 2013 14:59:43 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 3/8] dmaengine: ste_dma40: Actually write the runtime configuration to registers
+Date: Tue, 9 Apr 2013 20:59:37 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com
+References: <1365532783-27425-1-git-send-email-lee.jones@linaro.org> <1365532783-27425-3-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1365532783-27425-3-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-To: Mikulas Patocka <mpatocka@redhat.com>
-CC: Milan Broz <gmazyland@gmail.com>, Mike Snitzer <msnitzer@redhat.com>,
-        dm-crypt@saout.de, Christian Schmidt <schmidt@digadd.de>,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        dm-devel@redhat.com, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [dm-crypt] [dm-devel] dm-crypt performance
-References: <Pine.LNX.4.64.1303252051520.9745@file.rdu.redhat.com> <20130326122713.GC27610@agk-dp.fab.redhat.com> <5151FF82.6090405@gmail.com> <Pine.LNX.4.64.1304091352320.10025@file.rdu.redhat.com>
-In-Reply-To: <Pine.LNX.4.64.1304091352320.10025@file.rdu.redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201304092059.37739.arnd@arndb.de>
+X-Provags-ID: V02:K0:t4K2mBRkaiXkq9S5tfYCwtQ7J6aCxZkYTEULyk4qB4M
+ sg57iaOKP/Wyo6+fosdvXqnDm3C0LtcAI8NAw2iVT2C4hHnMoA
+ k5IwPVD/EZ5m2GHQnGapKa2yAVf1z9YU9JyVBB9sV5kxfO1zam
+ QrDjAPl4WNi1YvrtvvaESX9cX8lcpo91TU9zN2LUUCHZQjpWOs
+ cS5ewQ3dkPCYIfaaQw8aKBSLBqwdB/czoW4b+stQN87Ht7Sy+Z
+ Yq52h3Tz6mvu+66K/R99ryh7i8KOPRzhWOM827puhJmpDVD1iA
+ Xkc66Ou7VA+VRl9ZUh1EtFW2BTIBq0yGB7ogutn6LFUoZG6M/n
+ bMgwG9j7X2xjl88kqnJI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9.4.2013 20:08, Mikulas Patocka wrote:
+On Tuesday 09 April 2013, Lee Jones wrote:
+> Someone has spent a fair amount of effort writing a runtime configuration
+> changing algorithm for DMA clients. However, the config appears to never
+> actually make it to hardware. In order for the configuration to take hold
+> we need to issue a d40_config_write(), as this is the routine which writes
+> it into the hardware's registers.
 > 
-> 
-> On Tue, 26 Mar 2013, Milan Broz wrote:
-> 
->> - Are we sure we are not inroducing some another side channel in disc
->> encryption? (Unprivileged user can measure timing here).
->> (Perhaps stupid reason but please do not prefer performance to security
->> in encryption. Enough we have timing attacks for AES implementations...)
-> 
-> So use serpent - it is implemented without any data-dependent lookup 
-> tables, so it has no timing attacks.
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-I wish using something different than AES is just such simple technical issue
-for many people. But e.g. just try it in FIPS mode where AES is the only option:-)
+So this makes the runtime_addr selection work I suppose, but the
+runtime_direction still isn't used anywhere, correct?
 
-Anyway, using bio_associate_current() seems to be the right way to try now...
-
-Milan
+	Arnd
