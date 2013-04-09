@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965093Ab3DII2w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 04:28:52 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52899 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935241Ab3DII2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 04:28:50 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <rnayak@ti.com>, <b-cousson@ti.com>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>
-CC: <kishon@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Keerthy <j-keerthy@ti.com>, Paul Walmsley <paul@pwsan.com>
-Subject: =?UTF-8?q?=5BPATCH=5D=20ARM=3A=20OMAP4=3A=20HWMOD=3A=20make=20=27ocp2scp=5Fusb=5Fphy=5Fphy=5F48m=22=20as=20the=20main=20clock?=
-Date: Tue, 9 Apr 2013 13:58:21 +0530
-Message-ID: <1365496101-7829-1-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S965141Ab3DIIbU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 04:31:20 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1584 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934794Ab3DIIbR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 04:31:17 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 09 Apr 2013 01:30:53 -0700
+Date: Tue, 9 Apr 2013 11:30:50 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Jay Agarwal <jagarwal@nvidia.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "olof@lixom.net" <olof@lixom.net>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Juha Tukkinen <jtukkinen@nvidia.com>,
+        Krishna Thota <kthota@nvidia.com>
+Subject: Re: [PATCH 2/3] ARM: dts: tegra: Correct PCIe entry
+Message-ID: <20130409083050.GQ3572@tbergstrom-lnx.Nvidia.com>
+References: <1365435688-4179-1-git-send-email-jagarwal@nvidia.com>
+ <1365435688-4179-2-git-send-email-jagarwal@nvidia.com>
+ <51630BF4.6000605@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <51630BF4.6000605@wwwdotorg.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 92702d (ARM: OMAP4: PM: fix PM regression introduced by recent
-clock cleanup) makes the 'ocp2scp_usb_phy_phy_48m' as optional
-functional clock causing regression in MUSB. But this 48MHz clock is a
-mandatory clock for usb phy attached to ocp2scp and hence made as the main
-clock for ocp2scp.
+On Mon, Apr 08, 2013 at 08:27:00PM +0200, Stephen Warren wrote:
+> On 04/08/2013 09:41 AM, Jay Agarwal wrote:
+> > Signed-off-by: Jay Agarwal <jagarwal@nvidia.com>
+> 
+> Your s-o-b line should be below the patch description, not above it.
+> Please see Documentation/SubmittingPatches.
+> 
+> I also don't see a --- line between the patch description and diffstat.
+> How are you generating these patch emails? Please see our internal wiki,
+> or other git documentation.
+> 
+> > diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+> 
+> > -		clock-names = "pex", "afi", "pcie_xclk", "pll_e", "cml";
+> > +		clock-names = "pex", "afi", "pcie_xclk", "pll_e", "cml0";
+> 
+> Can you please explain more about this change?
+> 
+> I see the Tegra clock driver provides both a "cml0" and a "cml1" clock.
+> Are both of those used for PCIe?
+> 
 
-Cc: Keerthy <j-keerthy@ti.com>
-Cc: Benoît Cousson <b-cousson@ti.com>
-Cc: Paul Walmsley <paul@pwsan.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+cml0 is used for pcie and cml1 is used for sata.
 
-diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-index 9e05765..c1fb090 100644
---- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
-@@ -2714,16 +2714,12 @@ static struct omap_ocp2scp_dev ocp2scp_dev_attr[] = {
- 	{ }
- };
- 
--static struct omap_hwmod_opt_clk ocp2scp_usb_phy_opt_clks[] = {
--	{ .role = "48mhz", .clk = "ocp2scp_usb_phy_phy_48m" },
--};
--
- /* ocp2scp_usb_phy */
- static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwmod = {
- 	.name		= "ocp2scp_usb_phy",
- 	.class		= &omap44xx_ocp2scp_hwmod_class,
- 	.clkdm_name	= "l3_init_clkdm",
--	.main_clk	= "func_48m_fclk",
-+	.main_clk	= "ocp2scp_usb_phy_phy_48m",
- 	.prcm = {
- 		.omap4 = {
- 			.clkctrl_offs = OMAP4_CM_L3INIT_USBPHYOCP2SCP_CLKCTRL_OFFSET,
-@@ -2732,8 +2728,6 @@ static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwmod = {
- 		},
- 	},
- 	.dev_attr	= ocp2scp_dev_attr,
--	.opt_clks	= ocp2scp_usb_phy_opt_clks,
--	.opt_clks_cnt	= ARRAY_SIZE(ocp2scp_usb_phy_opt_clks),
- };
- 
- /*
--- 
-1.7.10.4
+Cheers,
 
+Peter.
