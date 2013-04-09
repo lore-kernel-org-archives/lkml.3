@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935474Ab3DINAw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 09:00:52 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:53442 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759207Ab3DINAv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 09:00:51 -0400
-From: Andrei Epure <epure.andrei@gmail.com>
-To: mingo@redhat.com, peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
-        Andrei Epure <epure.andrei@gmail.com>
-Subject: [PATCH] include:linux: task_struct personality comment
-Date: Tue,  9 Apr 2013 16:02:12 +0300
-Message-Id: <1365512532-18730-1-git-send-email-epure.andrei@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S935736Ab3DINBA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 09:01:00 -0400
+Received: from mga01.intel.com ([192.55.52.88]:59466 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759207Ab3DINA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 09:00:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,438,1363158000"; 
+   d="scan'208";a="316572092"
+Date: Tue, 9 Apr 2013 15:00:52 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com
+Subject: Re: [PATCH 2/2] mfd: db8500-prcmu: Support platform dependant device
+ selection
+Message-ID: <20130409130052.GA9172@zurbaran>
+References: <1365071941-23475-1-git-send-email-lee.jones@linaro.org>
+ <1365071941-23475-2-git-send-email-lee.jones@linaro.org>
+ <20130409100609.GQ24058@zurbaran>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130409100609.GQ24058@zurbaran>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
----
- include/linux/sched.h |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+In case you did not get this one...
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index d35d2b6..8621bb0 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1274,8 +1274,10 @@ struct task_struct {
- 	int exit_code, exit_signal;
- 	int pdeath_signal;  /*  The signal sent when the parent dies  */
- 	unsigned int jobctl;	/* JOBCTL_*, siglock protected */
--	/* ??? */
-+
-+	/* used with exec_domain for compatibility with other UNIX-like OSs */
- 	unsigned int personality;
-+
- 	unsigned did_exec:1;
- 	unsigned in_execve:1;	/* Tell the LSMs that the process is doing an
- 				 * execve */
+On Tue, Apr 09, 2013 at 12:06:09PM +0200, Samuel Ortiz wrote:
+> Hi Lee,
+> 
+> On Thu, Apr 04, 2013 at 11:39:01AM +0100, Lee Jones wrote:
+> > The main aim for this cycle is to have the u8540 booting to a
+> > console. However, the u8540 doesn't support all of the u8500
+> > platform devices yet. After this stage is complete we can then
+> > fill in the inadequacies, such as specific clock support at a
+> > later date. To achieve this we're placing devices supported by
+> > all platforms into a common device structure and the remaining
+> > ones into a platform specific one.
+> > 
+> > Cc: Samuel Ortiz <sameo@linux.intel.com>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  drivers/mfd/db8500-prcmu.c |   52 ++++++++++++++++++++++++++++----------------
+> >  1 file changed, 33 insertions(+), 19 deletions(-)
+> This one does not apply (not even manually) on top of mfd-next. Would you mind
+> rebasing it (And adding Linus' ACK) ?
+> 
+> Cheers,
+> Samuel.
+> 
+> -- 
+> Intel Open Source Technology Centre
+> http://oss.intel.com/
+
 -- 
-1.7.9.5
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
