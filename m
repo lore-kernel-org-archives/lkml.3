@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935658Ab3DIS4i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 14:56:38 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:55740 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761262Ab3DIS4h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 14:56:37 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 6/8] dmaengine: ste_dma40: Move LCPA allocation and real-time config
-Date: Tue, 9 Apr 2013 20:56:30 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>
-References: <1365532783-27425-1-git-send-email-lee.jones@linaro.org> <1365532783-27425-6-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1365532783-27425-6-git-send-email-lee.jones@linaro.org>
+	id S935754Ab3DIS5F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 14:57:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51053 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935256Ab3DIS5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 14:57:03 -0400
+Message-ID: <51646302.2030608@zytor.com>
+Date: Tue, 09 Apr 2013 11:50:42 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Kees Cook <keescook@chromium.org>
+CC: "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Alex Shi <alex.shi@intel.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
+        Eric Northup <digitaleric@google.com>
+Subject: Re: [kernel-hardening] Re: [PATCH] x86: make IDT read-only
+References: <20130408224328.GA17641@www.outflux.net> <51634935.9010905@zytor.com> <alpine.LFD.2.02.1304091122490.21884@ionos> <CAGXu5jKo=11RrsvctcZjP6dusAj659O_GsaA2J2qFq-6mOeRwQ@mail.gmail.com> <51645D6F.7070705@zytor.com> <CAGXu5jKkHKw8efdPOmt-Zi99m+uMKVGKpc_DC72_ztwxnRbRRQ@mail.gmail.com> <51646054.3090509@zytor.com> <CAGXu5jJNG4o+_-kk=A2AfSRwyQE0pgaQh7YpSjnD_fB-s7U+wA@mail.gmail.com>
+In-Reply-To: <CAGXu5jJNG4o+_-kk=A2AfSRwyQE0pgaQh7YpSjnD_fB-s7U+wA@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304092056.31101.arnd@arndb.de>
-X-Provags-ID: V02:K0:u8qEn2Ft6HJpzwEUQIgSYmMnmB6UExbDuPxzk3LEcEB
- wSMQt+YPRrmQLfptLObn3Bzon7cvXNeuBK5TCirM/QcsrANALL
- NPxrfZImGCwS20fZ7GgHGizSIlvUD8W2xzokblq7UoWcXLdGON
- p7a/RazjO8h6XWqNo/Qm9u1g7kYy7L7BxfYWCS10MSNqgzeDbm
- htnAWG6dA5FU7PEYGe0Au/eT9UOFj/w9wfNH03TkbBa72IulAY
- Scxq93Zs0uYo12j2PJYqd113D8lrQQma3qakOXEs/LHR9vct+t
- YyPRJx2dSdUKokGHDy8SmPKJ8P5WJ0xNRVK75ER4TqYLG8HwCe
- oJ96ysHRYV5H3OHCyKog=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 April 2013, Lee Jones wrote:
-> There are various pieces of configuration which do not need to happen
-> until after a channel is allocated. Here we move some of these so they're
-> dealt with when it's time to configure the channel, rather than allocate
-> it.
+On 04/09/2013 11:46 AM, Kees Cook wrote:
 > 
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <djbw@fb.com>
-> Cc: Per Forlin <per.forlin@stericsson.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> Ah-ha! Yes, I see now when comparing the debug/kernel_page_tables
+> reports. It's just the High Kernel Mapping that we care about.
+> Addresses outside that range are less of a leak. Excellent, then GDT
+> may not be a problem. Whew.
+> 
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+It does beg the question if we need to randomize kmalloc... which could
+have issues by itself.
+
+	-hpa
+
+
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
