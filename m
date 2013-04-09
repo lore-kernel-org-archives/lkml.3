@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936666Ab3DIVwb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 17:52:31 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:41146 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936652Ab3DIVvz (ORCPT
+	id S936600Ab3DIVuL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 17:50:11 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:38719 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936462Ab3DIVuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 17:51:55 -0400
+	Tue, 9 Apr 2013 17:50:08 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v2 11/15] mm: Restructure the compaction part of CMA for
- wider use
+Subject: [RFC PATCH v2 07/15] mm: Add an optimized version of
+ del_from_freelist to keep page allocation fast
 To: akpm@linux-foundation.org, mgorman@suse.de, matthew.garrett@nebula.com,
         dave@sr71.net, rientjes@google.com, riel@redhat.com,
         arjan@linux.intel.com, srinivas.pandruvada@linux.intel.com,
@@ -21,239 +21,184 @@ Cc: gargankita@gmail.com, paulmck@linux.vnet.ibm.com, amit.kachhap@linaro.org,
         santosh.shilimkar@ti.com, srivatsa.bhat@linux.vnet.ibm.com,
         linux-pm@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Date: Wed, 10 Apr 2013 03:18:17 +0530
-Message-ID: <20130409214814.4500.19572.stgit@srivatsabhat.in.ibm.com>
+Date: Wed, 10 Apr 2013 03:17:19 +0530
+Message-ID: <20130409214717.4500.34638.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20130409214443.4500.44168.stgit@srivatsabhat.in.ibm.com>
 References: <20130409214443.4500.44168.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 13040921-7014-0000-0000-000002D42EE6
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040921-2674-0000-0000-00000888B271
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CMA uses bits and pieces of the memory compaction algorithms to perform
-large contiguous allocations. Those algorithms would be useful for
-memory power management too, to evacuate entire regions of memory.
-So rewrite the code in a way that helps us to easily reuse the code for
-both use-cases.
+One of the main advantages of this design of memory regions is that page
+allocations can potentially be extremely fast - almost with no extra
+overhead from memory regions.
+
+To exploit that, introduce an optimized version of del_from_freelist(), which
+utilizes the fact that we always delete items from the head of the list
+during page allocation.
+
+Basically, we want to keep a note of the region from which we are allocating
+in a given freelist, to avoid having to compute the page-to-zone-region for
+every page allocation. So introduce a 'next_region' pointer in every freelist
+to achieve that, and use it to keep the fastpath of page allocation almost as
+fast as it would have been without memory regions.
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- mm/compaction.c |   75 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- mm/internal.h   |   40 +++++++++++++++++++++++++++++
- mm/page_alloc.c |   51 ++++++++++---------------------------
- 3 files changed, 128 insertions(+), 38 deletions(-)
+ include/linux/mm.h     |   14 +++++++++++
+ include/linux/mmzone.h |    6 +++++
+ mm/page_alloc.c        |   62 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 81 insertions(+), 1 deletion(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 13912f5..ff9cf23 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -816,6 +816,81 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 	return ISOLATE_SUCCESS;
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index dff478b..cb0d898 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -741,6 +741,20 @@ static inline int page_zone_region_id(const struct page *page)
+ 	return pgdat->node_regions[node_region_idx].zone_region_idx[z_num];
  }
  
-+/*
-+ * Make free pages available within the given range, using compaction to
-+ * migrate used pages elsewhere.
-+ *
-+ * [start, end) must belong to a single zone.
-+ *
-+ * This function is roughly based on the logic inside compact_zone().
-+ */
-+int compact_range(struct compact_control *cc, struct aggression_control *ac,
-+		  struct free_page_control *fc, unsigned long start,
-+		  unsigned long end)
++static inline void set_next_region_in_freelist(struct free_list *free_list)
 +{
-+	unsigned long pfn = start;
-+	int ret = 0, tries, migrate_mode;
++	struct page *page;
++	int region_id;
 +
-+	if (ac->prep_all)
-+		migrate_prep();
-+	else
-+		migrate_prep_local();
-+
-+	while (pfn < end || !list_empty(&cc->migratepages)) {
-+		if (list_empty(&cc->migratepages)) {
-+			cc->nr_migratepages = 0;
-+			pfn = isolate_migratepages_range(cc->zone, cc,
-+					pfn, end, ac->isolate_unevictable);
-+
-+			if (!pfn) {
-+				ret = -EINTR;
-+				break;
-+			}
-+		}
-+
-+		for (tries = 0; tries < ac->max_tries; tries++) {
-+			if (fatal_signal_pending(current)){
-+				ret = -EINTR;
-+				goto out;
-+			}
-+
-+			if (ac->reclaim_clean) {
-+				int nr_reclaimed;
-+
-+				nr_reclaimed =
-+					reclaim_clean_pages_from_list(cc->zone,
-+							&cc->migratepages);
-+
-+				cc->nr_migratepages -= nr_reclaimed;
-+			}
-+
-+			migrate_mode = cc->sync ? MIGRATE_SYNC : MIGRATE_ASYNC;
-+			ret = migrate_pages(&cc->migratepages,
-+					    fc->free_page_alloc, fc->alloc_data,
-+					    migrate_mode, ac->reason);
-+
-+			update_nr_listpages(cc);
-+		}
-+
-+		if (tries == ac->max_tries) {
-+			ret = ret < 0 ? ret : -EBUSY;
-+			break;
-+		}
++	if (unlikely(list_empty(&free_list->list))) {
++		free_list->next_region = NULL;
++	} else {
++		page = list_entry(free_list->list.next, struct page, lru);
++		region_id = page_zone_region_id(page);
++		free_list->next_region = &free_list->mr_list[region_id];
 +	}
-+
-+out:
-+	if (ret < 0)
-+		putback_movable_pages(&cc->migratepages);
-+
-+	/* Release free pages and check accounting */
-+	if (fc->release_freepages)
-+		cc->nr_freepages -= fc->release_freepages(fc->free_data);
-+
-+	VM_BUG_ON(cc->nr_freepages != 0);
-+
-+	return ret;
 +}
 +
- static int compact_finished(struct zone *zone,
- 			    struct compact_control *cc)
+ #ifdef SECTION_IN_PAGE_FLAGS
+ static inline void set_page_section(struct page *page, unsigned long section)
  {
-diff --git a/mm/internal.h b/mm/internal.h
-index 8562de0..398fe73 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -110,6 +110,42 @@ extern bool is_free_buddy_page(struct page *page);
- /*
-  * in mm/compaction.c
-  */
-+
-+struct free_page_control {
-+
-+	/* Function used to allocate free pages as target of migration. */
-+	struct page * (*free_page_alloc)(struct page *migratepage,
-+					 unsigned long data,
-+					 int **result);
-+
-+	unsigned long alloc_data;	/* Private data for free_page_alloc() */
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 76667bf..d8d67fc 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -92,6 +92,12 @@ struct free_list {
+ 	struct list_head	list;
+ 
+ 	/*
++	 * Pointer to the region from which the next allocation will be
++	 * satisfied. (Same as the freelist's first pageblock's region.)
++	 */
++	struct mem_region_list	*next_region; /* for fast page allocation */
 +
 +	/*
-+	 * Function to release the accumulated free pages after the compaction
-+	 * run.
-+	 */
-+	unsigned long (*release_freepages)(unsigned long info);
-+	unsigned long free_data;	/* Private data for release_freepages() */
-+};
-+
-+/*
-+ * aggression_control gives us fine-grained control to specify how aggressively
-+ * we want to compact memory.
-+ */
-+struct aggression_control {
-+	bool isolate_unevictable;	/* Isolate unevictable pages too */
-+	bool prep_all;			/* Use migrate_prep() instead of
-+					 * migrate_prep_local().
-+					 */
-+	bool reclaim_clean;		/* Reclaim clean page cache pages */
-+	int max_tries;			/* No. of tries to migrate the
-+					 * isolated pages before giving up.
-+					 */
-+	int reason;			/* Reason for compaction, passed on
-+					 * as reason for migrate_pages().
-+					 */
-+};
-+
- /*
-  * compact_control is used to track pages being migrated and the free pages
-  * they are being migrated to during memory compaction. The free_pfn starts
-@@ -144,6 +180,10 @@ unsigned long
- isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
- 	unsigned long low_pfn, unsigned long end_pfn, bool unevictable);
- 
-+int compact_range(struct compact_control *cc, struct aggression_control *ac,
-+		  struct free_page_control *fc, unsigned long start,
-+		  unsigned long end);
-+
- #endif
- 
- /*
+ 	 * Demarcates pageblocks belonging to different regions within
+ 	 * this freelist.
+ 	 */
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 541e4ab..f31ca94 100644
+index 7fb4254..a68174c 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -6226,46 +6226,21 @@ static unsigned long pfn_max_align_up(unsigned long pfn)
- static int __alloc_contig_migrate_range(struct compact_control *cc,
- 					unsigned long start, unsigned long end)
- {
--	/* This function is based on compact_zone() from compaction.c. */
--	unsigned long nr_reclaimed;
--	unsigned long pfn = start;
--	unsigned int tries = 0;
--	int ret = 0;
--
--	migrate_prep();
--
--	while (pfn < end || !list_empty(&cc->migratepages)) {
--		if (fatal_signal_pending(current)) {
--			ret = -EINTR;
--			break;
--		}
--
--		if (list_empty(&cc->migratepages)) {
--			cc->nr_migratepages = 0;
--			pfn = isolate_migratepages_range(cc->zone, cc,
--							 pfn, end, true);
--			if (!pfn) {
--				ret = -EINTR;
--				break;
--			}
--			tries = 0;
--		} else if (++tries == 5) {
--			ret = ret < 0 ? ret : -EBUSY;
--			break;
--		}
-+	struct aggression_control ac = {
-+		.isolate_unevictable = true,
-+		.prep_all = true,
-+		.reclaim_clean = true,
-+		.max_tries = 5,
-+		.reason = MR_CMA,
-+	};
+@@ -539,6 +539,15 @@ static void add_to_freelist(struct page *page, struct free_list *free_list)
+ 	/* This is the first region, so add to the head of the list */
+ 	prev_region_list = &free_list->list;
  
--		nr_reclaimed = reclaim_clean_pages_from_list(cc->zone,
--							&cc->migratepages);
--		cc->nr_migratepages -= nr_reclaimed;
-+	struct free_page_control fc = {
-+		.free_page_alloc = alloc_migrate_target,
-+		.alloc_data = 0,
-+		.release_freepages = NULL,
-+	};
++#ifdef CONFIG_DEBUG_PAGEALLOC
++	WARN((list_empty(&free_list->list) && free_list->next_region != NULL),
++					"%s: next_region not NULL\n", __func__);
++#endif
++	/*
++	 * Set 'next_region' to this region, since this is the first region now
++	 */
++	free_list->next_region = region;
++
+ out:
+ 	list_add(lru, prev_region_list);
  
--		ret = migrate_pages(&cc->migratepages, alloc_migrate_target,
--				    0, MIGRATE_SYNC, MR_CMA);
--	}
--	if (ret < 0) {
--		putback_movable_pages(&cc->migratepages);
--		return ret;
--	}
--	return 0;
-+	return compact_range(cc, &ac, &fc, start, end);
+@@ -546,6 +555,47 @@ out:
+ 	region->page_block = lru;
  }
  
- /**
++/**
++ * __rmqueue_smallest() *always* deletes elements from the head of the
++ * list. Use this knowledge to keep page allocation fast, despite being
++ * region-aware.
++ *
++ * Do *NOT* call this function if you are deleting from somewhere deep
++ * inside the freelist.
++ */
++static void rmqueue_del_from_freelist(struct page *page,
++				      struct free_list *free_list)
++{
++	struct list_head *lru = &page->lru;
++
++#ifdef CONFIG_DEBUG_PAGEALLOC
++	WARN((free_list->list.next != lru),
++				"%s: page not at head of list", __func__);
++#endif
++
++	list_del(lru);
++
++	/* Fastpath */
++	if (--(free_list->next_region->nr_free)) {
++
++#ifdef CONFIG_DEBUG_PAGEALLOC
++		WARN(free_list->next_region->nr_free < 0,
++				"%s: nr_free is negative\n", __func__);
++#endif
++		return;
++	}
++
++	/*
++	 * Slowpath, when this is the last pageblock of this region
++	 * in this freelist.
++	 */
++	free_list->next_region->page_block = NULL;
++
++	/* Set 'next_region' to the new first region in the freelist. */
++	set_next_region_in_freelist(free_list);
++}
++
++/* Generic delete function for region-aware buddy allocator. */
+ static void del_from_freelist(struct page *page, struct free_list *free_list)
+ {
+ 	struct list_head *prev_page_lru, *lru, *p;
+@@ -553,6 +603,11 @@ static void del_from_freelist(struct page *page, struct free_list *free_list)
+ 	int region_id;
+ 
+ 	lru = &page->lru;
++
++	/* Try to fastpath, if deleting from the head of the list */
++	if (lru == free_list->list.next)
++		return rmqueue_del_from_freelist(page, free_list);
++
+ 	region_id = page_zone_region_id(page);
+ 	region = &free_list->mr_list[region_id];
+ 	region->nr_free--;
+@@ -588,6 +643,11 @@ page_found:
+ 	prev_page_lru = lru->prev;
+ 	list_del(lru);
+ 
++	/*
++	 * Since we are not deleting from the head of the freelist, the
++	 * 'next_region' pointer doesn't have to change.
++	 */
++
+ 	if (region->nr_free == 0) {
+ 		region->page_block = NULL;
+ 	} else {
+@@ -1013,7 +1073,7 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
+ 
+ 		page = list_entry(area->free_list[migratetype].list.next,
+ 							struct page, lru);
+-		del_from_freelist(page, &area->free_list[migratetype]);
++		rmqueue_del_from_freelist(page, &area->free_list[migratetype]);
+ 		rmv_page_order(page);
+ 		area->nr_free--;
+ 		expand(zone, page, order, current_order, area, migratetype);
 
