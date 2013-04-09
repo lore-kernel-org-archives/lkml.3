@@ -1,84 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935066Ab3DIOXV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 10:23:21 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:33752 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934945Ab3DIOXT (ORCPT
+	id S1765143Ab3DIO0m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 10:26:42 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:57889 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761106Ab3DIO0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 10:23:19 -0400
-Date: Wed, 10 Apr 2013 00:23:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: sedat.dilek@gmail.com
-Cc: linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Apr 9
-Message-Id: <20130410002311.8a0b0503bcbda151b9de9469@canb.auug.org.au>
-In-Reply-To: <CA+icZUVk-iLtodZi_46qmk410Ei+tW6RR5kV2fx0N8v6neKTPQ@mail.gmail.com>
-References: <CA+icZUX-RMW=pHzhOumB2_R99BRAf2qGC4n5bzyLqU6pOCMDFw@mail.gmail.com>
-	<20130409235941.11eef57a42cb97efec72f037@canb.auug.org.au>
-	<CA+icZUVk-iLtodZi_46qmk410Ei+tW6RR5kV2fx0N8v6neKTPQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__10_Apr_2013_00_23_11_+1000_ChWrRazAFdl59UPm"
+	Tue, 9 Apr 2013 10:26:41 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <51642262.10902@windriver.com>
+References: <CA+icZUUkEgv+e1q3v1kW5WhJdT1egZKc5o96zF2omcT0YtVE3w@mail.gmail.com>
+	<51642262.10902@windriver.com>
+Date: Tue, 9 Apr 2013 16:26:40 +0200
+Message-ID: <CA+icZUWECpybkd8AxhvzboE0c54PkoLEZGBSXU-hbOVmEChaug@mail.gmail.com>
+Subject: Re: kdb: kgdb: CONFIG_DEBUG_RODATA setting?
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: kgdb-bugreport@lists.sourceforge.net, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__10_Apr_2013_00_23_11_+1000_ChWrRazAFdl59UPm
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Sedat,
-
-On Tue, 9 Apr 2013 16:11:50 +0200 Sedat Dilek <sedat.dilek@gmail.com> wrote:
+On Tue, Apr 9, 2013 at 4:14 PM, Jason Wessel <jason.wessel@windriver.com> wrote:
+> On 04/09/2013 08:06 AM, Sedat Dilek wrote:
 >
-> [ CC Al Viro ]
+>>  config DEBUG_RODATA
+>>       bool "Write protect kernel read-only data structures"
+>> -     default y
+>>       depends on DEBUG_KERNEL
+>> +     default n if KGDB
+>> +     default y
+>>       ---help---
+>>         Mark the kernel read-only data as write-protected in the pagetables,
+>>         in order to catch accidental (and incorrect) writes to such const
+>
+>
+> This is wrong and should not be merged.
+>
+> A) You should not change these defaults in this manner
+>
+> B) You have pointed out that the documentation is currently
+>    incorrect. The CONFIG_DEBUG_RODATA constraints were removed some time
+>    ago, per commit 3751d3e85cf693e10e2c47c03c8caa65e171099b (x86,kgdb:
+>    Fix DEBUG_RODATA limitation using text_poke())
+>
 
-You forgot to do that ...
+OK (B) has to be changed then.
+I had a look at the new WIKI [1] and FAQ [2].
 
-> Is there a "magic" git-command to revert all commits coming from your
-> latest vfs-merge (commit c1c04d3667608a630ae0821995b465a523e83fb1)?
->=20
-> 2013-04-09 11:36 Stephen Rothwell   =E2=94=82 M=E2=94=80=E2=94=90 =E2=94=
-=82 =E2=94=82 =E2=94=82 =E2=94=82 =E2=94=82 =E2=94=82         =E2=94=82 201=
-30405/vfs
+The new FAQ does not list any recommended kconfig-settings.
+This is what I have:
 
-You would normally do "git revert -m 1 c1c04d366760". However, that does
-not revert cleanly in today's linux-next (due to more patches modifying
-the files involved).
+$ egrep -i 'kdb|kgdb|debug_rodata|early_printk|frame_pointer' .config
+CONFIG_SCHED_OMIT_FRAME_POINTER=y
+CONFIG_SERIAL_KGDB_NMI=y
+CONFIG_ARCH_WANT_FRAME_POINTERS=y
+CONFIG_FRAME_POINTER=y
+CONFIG_HAVE_ARCH_KGDB=y
+CONFIG_KGDB=y
+CONFIG_KGDB_SERIAL_CONSOLE=y
+# CONFIG_KGDB_TESTS is not set
+CONFIG_KGDB_LOW_LEVEL_TRAP=y
+CONFIG_KGDB_KDB=y
+CONFIG_KDB_KEYBOARD=y
+CONFIG_KDB_CONTINUE_CATASTROPHIC=0
+CONFIG_EARLY_PRINTK=y
+CONFIG_EARLY_PRINTK_DBGP=y
+CONFIG_DEBUG_RODATA=y
+# CONFIG_DEBUG_RODATA_TEST is not set
 
-> After reverting all these commits I would like to pull-in latest
-> vfs.git#for-next.
+OK? Sth. missing?
 
-It would probably be easier to wait for tomorrow's linux-next.  Or just
-test Al's tree in its own.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Booting with...
 
---Signature=_Wed__10_Apr_2013_00_23_11_+1000_ChWrRazAFdl59UPm
-Content-Type: application/pgp-signature
+*** Configure kdb for early debugging: earlyprintk=vga ekgdboc=kbd ***
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+...shows me nothing here.
 
-iQIcBAEBCAAGBQJRZCRPAAoJEECxmPOUX5FEZGQP/A27dgaV3NT7b9+QeMZ1eDAa
-1FDLj9VfiKM0j1mt4hlINnIowWRxLJkJpLirDJVKOz+lyMOP6+d3uBRdA6T0tBc9
-Pg0oY+RH5tRVVsqXp81wzA+pxgibW0TC502CbgPVsSvWlm/3YxPzcSFhom6Y3s7p
-TmUWSFXh9ut6JaW01JnKGaEmrx6YV/zufFnqZ/Kt6/ET2BLAjNcixRgP59zc/OrZ
-X/qU0DJ/d6ek9rLHGpp9hvl0wQFy47YTddXGocnLJXp3m3c95W215B9oXhVG3okK
-Vl80jfU2uJ9nxKNOKLhu9K+nE7DDlwUJ+xXq8h1b0Q3EijDPiKC5veTN6gXBrd/D
-LLc54oj79ashte4tKW3B8KyKNFIdf6+ggAFo2YUipgjZqM6SnWnVJDXObrTfROaG
-C0yak0VVxEYhZeCzt3Ln4Yu+oofqiWQJyC1LeLo03GFyRWHw2WR3Q1Dc3KkCvs2u
-2nkAxU5QLAZs29PAWAc6eq1sD4gfC4TRgw/uOTnmYs5/I2hJt8IriokUHgEiBBZZ
-AfByGlLw5AR4rI4tfpb5IbDJL/QOw6QHCUMPLuqDxb6GR0k8G5PT9SA18GoOjNFO
-UG2RN8wnCMpEK2VQaIFOShR10uAgMjr541fimiA7WPyln9A9ce/tVrkHNVTMIugl
-2U7/GMHG+MLvIH3GKHYf
-=9If+
------END PGP SIGNATURE-----
+Might be the problem in Linux-Next [3,4] is not triggable with kdb/kgdb.
 
---Signature=_Wed__10_Apr_2013_00_23_11_+1000_ChWrRazAFdl59UPm--
+Thanks for your help in advance.
+
+Regards,
+- Sedat -
+
+[1] https://kgdb.wiki.kernel.org/index.php/Main_Page
+[2] https://kgdb.wiki.kernel.org/index.php/KDB_FAQ
+[3] http://marc.info/?t=136545603700003&r=1&w=2
+[4] http://marc.info/?t=136545773000008&r=1&w=2
+
+
+> Jason.
+>
