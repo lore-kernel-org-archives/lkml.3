@@ -1,101 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936140Ab3DIUDu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 16:03:50 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:41038 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932780Ab3DIUDs (ORCPT
+	id S936093Ab3DIUF4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 16:05:56 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:34177 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934655Ab3DIUFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 16:03:48 -0400
-Date: Tue, 9 Apr 2013 16:03:45 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        rob.herring@calxeda.com, Jon Medhurst <tixy@linaro.org>
-Subject: Re: [PATCH v6 3/4] ARM: Enable selection of SMP operations at boot
- time
-In-Reply-To: <1365167495-18508-3-git-send-email-stefano.stabellini@eu.citrix.com>
-Message-ID: <alpine.LFD.2.03.1304091600330.17375@syhkavp.arg>
-References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-3-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Tue, 9 Apr 2013 16:05:55 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130409134544.GA6320@redhat.com>
+References: <1365113821-22749-1-git-send-email-yinghai@kernel.org>
+	<1365113821-22749-5-git-send-email-yinghai@kernel.org>
+	<20130409134544.GA6320@redhat.com>
+Date: Tue, 9 Apr 2013 13:05:54 -0700
+X-Google-Sender-Auth: fjPeXuCAIYpQoNDhNpCcc35VSN0
+Message-ID: <CAE9FiQUETs0AGjd+72GOz=Pm=9QicM7L46OaiMwhtUFa65TTvA@mail.gmail.com>
+Subject: Re: [PATCH v3 3/4] x86, kdump: Change crashkernel_high/low= to crashkernel=;high/low
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Apr 2013, Stefano Stabellini wrote:
+On Tue, Apr 9, 2013 at 6:45 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Thu, Apr 04, 2013 at 03:17:01PM -0700, Yinghai Lu wrote:
+>
+> [..]
+>> @@ -1360,37 +1369,80 @@ static int __init parse_crashkernel_simp
+>>
+>>       if (*cur == '@')
+>>               *crash_base = memparse(cur+1, &cur);
+>> -     else if (*cur != ' ' && *cur != '\0') {
+>> -             pr_warning("crashkernel: unrecognized char\n");
+>> -             return -EINVAL;
+>> +     else {
+>> +             int i;
+>> +
+>> +             /* check with known suffix */
+>> +             for (i = 0; suffix_tbl[i]; i++)
+>> +                     if (!strncmp(cur, suffix_tbl[i], strlen(suffix_tbl[i])))
+>> +                             return 0;
+>> +
+>
+> So crashkernel=X@Y;high is a valid syntax? Looks like we will reserve
+> X amount of RAM at base Y and ignore "high" or "low".
 
-> From: Jon Medhurst <tixy@linaro.org>
-> 
-> Add a new 'smp_init' hook to machine_desc so platforms can specify a
-> function to be used to setup smp ops instead of having a statically
-> defined value.
-> 
-> If smp_init is set, use it instead of psci_smp_ops or mdesc->smp.
-> 
-> Signed-off-by: Jon Medhurst <tixy@linaro.org>
-> Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> ---
->  arch/arm/include/asm/mach/arch.h |    3 +++
->  arch/arm/kernel/setup.c          |    4 +++-
->  2 files changed, 6 insertions(+), 1 deletions(-)
+yes, we should reject them.
 
-Please use this version instead.  The runtime hook may now indicate if 
-it did initialize smp_ops or not.
+>
+> [..]
+...
+>
+> Why don't we structure it little differently. Now we seem to have 3
+> categories of crashkernel= parameters.
+>
+> - crashkernel_simple (crashkernel=X or crashkernel=X@Y)
+> - crashkernel_mem (crashkernel=range:size,.....)
+> - crashkerenl_high_low_suffix (crashkernel=X;high or crashkernel=Y;low)
+>
+> if (suffix) {
+>         parse_crashkernel_high_low_suffix()
+> } else {
+>         if (first_colon.....)
+>                 parse_crashkernel_mem()
+>         else
+>                 parse_crashkernel_simple();
+> }
+>
+> And now you should not require "simple_only" function parameter and you
+> can also do strict syntax checking for each type of crashkernel=
+> parameter.
 
------ >8
-From: Jon Medhurst <tixy@linaro.org>
-Date: Thu, 13 Dec 2012 13:23:13 +0000
-Subject: [PATCH] ARM: Enable selection of SMP operations at boot time
+yes, that will the code more readable.
 
-Add a new 'smp_init' hook to machine_desc so platforms can specify a
-function to be used to setup smp ops instead of having a statically
-defined value.  The hook must return true when smp_ops are initialized.
-If false the static mdesc->smp_ops will be used by default.
+Just send -v4 of this patch that will not reuse parse_crashkernel_simple.
 
-Signed-off-by: Jon Medhurst <tixy@linaro.org>
-Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
-Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Thanks
 
-diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
-index 308ad7d6f9..af8c54c6c6 100644
---- a/arch/arm/include/asm/mach/arch.h
-+++ b/arch/arm/include/asm/mach/arch.h
-@@ -16,8 +16,10 @@ struct pt_regs;
- struct smp_operations;
- #ifdef CONFIG_SMP
- #define smp_ops(ops) (&(ops))
-+#define smp_init_ops(ops) (&(ops))
- #else
- #define smp_ops(ops) (struct smp_operations *)NULL
-+#define smp_init_ops(ops) (bool (*)(void))NULL
- #endif
- 
- struct machine_desc {
-@@ -41,6 +43,7 @@ struct machine_desc {
- 	unsigned char		reserve_lp2 :1;	/* never has lp2	*/
- 	char			restart_mode;	/* default restart mode	*/
- 	struct smp_operations	*smp;		/* SMP operations	*/
-+	bool			(*smp_init)(void);
- 	void			(*fixup)(struct tag *, char **,
- 					 struct meminfo *);
- 	void			(*reserve)(void);/* reserve mem blocks	*/
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 3f6cbb2e3e..cf4b08c0f9 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -768,7 +768,8 @@ void __init setup_arch(char **cmdline_p)
- 	arm_dt_init_cpu_maps();
- #ifdef CONFIG_SMP
- 	if (is_smp()) {
--		smp_set_ops(mdesc->smp);
-+		if (!mdesc->smp_init || !mdesc->smp_init())
-+			smp_set_ops(mdesc->smp);
- 		smp_init_cpus();
- 	}
- #endif
+Yinghai
