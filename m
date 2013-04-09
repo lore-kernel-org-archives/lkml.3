@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab3DIETB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 00:19:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58022 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767Ab3DIETA (ORCPT
+	id S933002Ab3DIEZo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 00:25:44 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:42674 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761958Ab3DIEZn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 00:19:00 -0400
-Date: Mon, 8 Apr 2013 21:18:59 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Chanho Min <chanho.min@lge.com>,
-        Nadia Yvette Chambers <nyc@holomorphy.com>,
-        Jiri Kosina <jkosina@suse.cz>, Guennadi Liakhovetski <lg@denx.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] bitmap: speedup in bitmap_find_free_region when
- order is 0
-Message-Id: <20130408211859.b5549325.akpm@linux-foundation.org>
-In-Reply-To: <1365477500.2012.5.camel@joe-AO722>
-References: <1365475486-14371-1-git-send-email-chanho.min@lge.com>
-	<20130408201001.f4c74887.akpm@linux-foundation.org>
-	<1365477500.2012.5.camel@joe-AO722>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Apr 2013 00:25:43 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <515DBE24.3090501@wwwdotorg.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>, Simon Glass <sjg@chromium.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1365097717-11874-1-git-send-email-pdeschrijver@nvidia.com>
+ <515DBE24.3090501@wwwdotorg.org>
+Message-ID: <20130409042537.14359.94241@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH v9b 10/14] ARM: tegra: Define Tegra114 CAR binding
+Date: Mon, 08 Apr 2013 21:25:37 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 08 Apr 2013 20:18:20 -0700 Joe Perches <joe@perches.com> wrote:
-
-> On Mon, 2013-04-08 at 20:10 -0700, Andrew Morton wrote:
-> > > --- a/lib/bitmap.c
-> []
-> > > +	for (i = 0 ; i < nlongs_reg ; i++) {
+Quoting Stephen Warren (2013-04-04 10:53:40)
+> On 04/04/2013 11:48 AM, Peter De Schrijver wrote:
+> > The device tree binding models Tegra114 CAR (Clock And Reset) as a single
+> > monolithic clock provider.
 > > 
-> > No space before the semicolon, please.  checkpatch should warn about
-> > this but it seems to be broken.
+> > --
+> > 
+> > Mike,
+> > 
+> > This is a small binding doc update only. Hence I didn't make an entire new
+> > patch series, but just an updated version of this patch. Please apply this
+> > instead of '[PATCH v9 10/14] ARM: tegra: Define Tegra114 CAR binding'
+> > (http://www.spinics.net/lists/linux-tegra/msg10910.html).
+> > The rest of the series is not affected. 
 > 
-> There's no specific CodingStyle violation here
-
-Let's fix CodingStyle then?  Nobody puts spaces before semis - perish
-the thought!  (I count 4,254,057 versus 8,416 in .c)
-
-> Adding --strict does bleat though.
-
-And let's make it default please.
-
-> # check for whitespace before a non-naked semicolon
-> 		if ($line =~ /^\+.*\S\s+;/) {
-> 			CHK("SPACING",
-> 			    "space prohibited before semicolon\n" . $herecurr);
-> 		}
+> I believe I was planning to take this series through the Tegra tree, so
+> I'm more looking for Mikes ack than for him to apply this.
 > 
+> If that's changed, there are some other Tegra clock bug-fixes that'd
+> benefit from moving to the clock tree.
+
+I forgot to reply to this one last week with the rest of the v9 series.
+This patch update also has my ack.
+
+Regards,
+Mike
