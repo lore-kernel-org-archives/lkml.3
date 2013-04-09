@@ -1,101 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964983Ab3DIQt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 12:49:29 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:31629 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964938Ab3DIQt2 (ORCPT
+	id S965028Ab3DIQtl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 12:49:41 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:49051 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S964938Ab3DIQti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 12:49:28 -0400
-X-IronPort-AV: E=Sophos;i="4.87,439,1363158000"; 
-   d="scan'208";a="36927681"
-Message-ID: <51644697.2010707@codeaurora.org>
-Date: Tue, 09 Apr 2013 09:49:27 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Tue, 9 Apr 2013 12:49:38 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19u+mBtUJX8j9dHjoNL2VP2
+Date: Tue, 9 Apr 2013 09:49:29 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: b-cousson@ti.com, linux@arm.linux.org.uk, rnayak@ti.com, balbi@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Paul Walmsley <paul@pwsan.com>,
+        "Menon, Nishanth" <nm@ti.com>, grygorii.strashko@ti.com
+Subject: Re: [RFC][PATCH 1/2] ARM: OMAP4: clock: Add device tree support
+ for AUXCLKs
+Message-ID: <20130409164928.GL10155@atomide.com>
+References: <1363703220-4777-1-git-send-email-rogerq@ti.com>
+ <1363703220-4777-2-git-send-email-rogerq@ti.com>
+ <20130403234242.GE10155@atomide.com>
+ <515D2D30.3000306@ti.com>
+ <20130404164137.GH10155@atomide.com>
+ <515EA9E3.1010409@ti.com>
+ <20130405155851.GA10155@atomide.com>
+ <5163E589.1040809@ti.com>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCHv4 01/11] clockevents: Prefer CPU local devices over global
- devices
-References: <1365456453-16297-1-git-send-email-sboyd@codeaurora.org> <1365456453-16297-2-git-send-email-sboyd@codeaurora.org> <20130409103303.GV23725@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20130409103303.GV23725@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5163E589.1040809@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/13 03:33, Mark Rutland wrote:
-> On Mon, Apr 08, 2013 at 10:27:23PM +0100, Stephen Boyd wrote:
->> On an SMP system with only one global clockevent and a dummy
->> clockevent per CPU we run into problems. We want the dummy
->> clockevents to be registered as the per CPU tick devices, but
->> we can only achieve that if we register the dummy clockevents
->> before the global clockevent or if we artificially inflate the
->> rating of the dummy clockevents to be higher than the rating
->> of the global clockevent. Failure to do so leads to boot
->> hangs when the dummy timers are registered on all other CPUs
->> besides the CPU that accepted the global clockevent as its tick
->> device and there is no broadcast timer to poke the dummy
->> devices.
->>
->> If we're registering multiple clockevents and one clockevent is
->> global and the other is local to a particular CPU we should
->> choose to use the local clockevent regardless of the rating of
->> the device. This way, if the clockevent is a dummy it will take
->> the tick device duty as long as there isn't a higher rated tick
->> device and any global clockevent will be bumped out into
->> broadcast mode, fixing the problem described above.
-> It might be worth pointing out that if dummy timers are only registered
-> when there's more than one CPU, UP behaviour won't degrade from the
-> current state of affairs.
+* Roger Quadros <rogerq@ti.com> [130409 03:00]:
+> On 04/05/2013 06:58 PM, Tony Lindgren wrote:
+> > 
+> > Well your approach is fine as a first step moving all the clock
+> > code, but it needs to be a real driver under drivers/clock/omap.
+> > And the DT binding needs to stay the same for the driver(s) in the
+> > long term as we start moving clocks to DT + /lib/firmware.
+> 
+> The code needs to be there were the clock structs are defined.
+> Currently they are in arch/arm/mach-omap2/cclock44xx_data.c for OMAP4.
 
-Sure, I'll try to come up with something if I have to repost (looks like
-I might have to rework the mct change).
+But if you do just a passthrough driver then that should not
+be needed. 
+ 
+> > If this all is too late for v3.10, I suggest you just set up the
+> > right clock alias for panda with machine_is_compatible flag in
+> > board-generic.c so we get EHCI working with DT for v3.10. Then
+> > it's easy to to deal with it properly for v3.11.
+> 
+> OK, let's do it this way for Panda for 3.10.
 
->
->> Reported-by: Mark Rutland <mark.rutland@arm.com>
->> Cc: John Stultz <john.stultz@linaro.org>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->> ---
->>  kernel/time/tick-common.c | 5 +++--
->>  1 file changed, 3 insertions(+), 2 deletions(-)
->>
->> diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
->> index b1600a6..9ea59b9 100644
->> --- a/kernel/time/tick-common.c
->> +++ b/kernel/time/tick-common.c
->> @@ -251,9 +251,10 @@ static int tick_check_new_device(struct clock_event_device *newdev)
->>  		    !(newdev->features & CLOCK_EVT_FEAT_ONESHOT))
->>  			goto out_bc;
->>  		/*
->> -		 * Check the rating
->> +		 * Check the rating, but prefer CPU local devices
->>  		 */
->> -		if (curdev->rating >= newdev->rating)
->> +		if (curdev->rating >= newdev->rating &&
->> +		    cpumask_equal(curdev->cpumask, newdev->cpumask))
->>  			goto out_bc;
->>  	}
-> This looks good to me. I tested this on a TC2 with a v3.9-rc6 kernel
-> without architected timer support. The patch restores the ability to use
-> the sp804 as a broadcast source.
->
-> Tested-by: Mark Rutland <mark.rutland@arm.com>
->
-> If possible I think this should sit in -next for a bit to make sure it
-> doesn't have any unexpected side effects.
+Yes otherwise we'll be delaying omap4 DT conversion again. 
+ 
+> >> How can that driver do clk_get() from cclock44xx_data.c?
+> >> from where does it get the clk_id to pass into clk_get()?
+> > 
+> > Can't you just use the clock name there to get it?
+> 
+> In device tree we don't pass around clock names. You can either get
+> a phandle or an index to the clock.
+> 
+> e.g. Documentation/devicetree/bindings/clock/imx31-clock.txt
 
-Thanks for testing.
+Yes I understand that. But the driver/clock/omap driver can just
+remap the DT device initially so the board specific clock is
+found from the clock alias table. Basically initially a passthrough
+driver that can be enhanced to parse DT clock bindings and load
+data from /lib/firmware.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+> > As long as the binding stays the same in the long run too, this
+> > clock remapping approach is just fine as a starting point. And
+> > the driver needs to go to drivers/clock/omap. But in the long run
+> > we just want to get the huge amounts static data out of the kernel
+> > for clocks and hwmod data to fix things for good.
+> 
+> In that case we need to identify what clocks need to be supported.
+> If it is all (~200) of them, is this method good enough?
 
+We should support any clock we need for booting the device with
+just DT bindings to get timers, console and rootfs working. Then
+we just need to load the complete set from /lib/firmware.
+
+It seems that the binding can be the same for all the clocks.
+For now, we can just use the standard clock binding and do the
+remapping in the clock driver.
+
+Regards,
+
+Tony
