@@ -1,170 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935463Ab3DINbd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 09:31:33 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:46837 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759206Ab3DINbb (ORCPT
+	id S935647Ab3DINeE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 09:34:04 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:33215 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760658Ab3DINeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 09:31:31 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: <linux-kernel@vger.kernel.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] ARM: at91: change "Unknown" qualifier SoC subtype handling
-Date: Tue, 9 Apr 2013 15:31:24 +0200
-Message-ID: <1365514284-21624-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
+	Tue, 9 Apr 2013 09:34:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUU2dHLz_iWCiJkgnU8HpkWeWbGL0niAoBzoE55CLuvRiQ@mail.gmail.com>
+References: <CA+icZUX-RMW=pHzhOumB2_R99BRAf2qGC4n5bzyLqU6pOCMDFw@mail.gmail.com>
+	<CA+icZUU2dHLz_iWCiJkgnU8HpkWeWbGL0niAoBzoE55CLuvRiQ@mail.gmail.com>
+Date: Tue, 9 Apr 2013 15:34:01 +0200
+Message-ID: <CA+icZUVpJcBCOOd7zC=mi_2U+aC8u+WCBfDBZNnut7XVX3Ps7Q@mail.gmail.com>
+Subject: Re: linux-next: Tree for Apr 9
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=047d7bfd0c2e335e6c04d9ed9b40
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An AT91 SoC that doesn't have a subtype is shown as "Unknown"
-in the Linux log message which is not correct.
-This was leading to confusion so, add a "none" qualifier to
-the subtype property and set this one in the appropriate cases.
+--047d7bfd0c2e335e6c04d9ed9b40
+Content-Type: text/plain; charset=UTF-8
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/mach-at91/include/mach/cpu.h |  9 ++++++---
- arch/arm/mach-at91/setup.c            | 22 +++++++++++++++-------
- 2 files changed, 21 insertions(+), 10 deletions(-)
+On Tue, Apr 9, 2013 at 2:37 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Tue, Apr 9, 2013 at 12:56 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> Hi,
+>>
+>> I still did not get the original posting...
+>>
+>> This version hangs... I started in rescue-mode and see that udev,
+>> premount and init scripts are run.
+>
+> ... udevd ....
+> /scripts/init-premount ... done
+> /scripts/pre-premount ... done
+> /scripts/local-bottom ... done
+> /scripts/init-bottom ... <--- hanging here!
+>
 
-diff --git a/arch/arm/mach-at91/include/mach/cpu.h b/arch/arm/mach-at91/include/mach/cpu.h
-index 0f3379f..d3d7b99 100644
---- a/arch/arm/mach-at91/include/mach/cpu.h
-+++ b/arch/arm/mach-at91/include/mach/cpu.h
-@@ -86,7 +86,7 @@ enum at91_soc_type {
- 	AT91_SOC_SAMA5D3,
- 
- 	/* Unknown type */
--	AT91_SOC_NONE
-+	AT91_SOC_UNKNOWN,
- };
- 
- enum at91_soc_subtype {
-@@ -107,8 +107,11 @@ enum at91_soc_subtype {
- 	AT91_SOC_SAMA5D31, AT91_SOC_SAMA5D33, AT91_SOC_SAMA5D34,
- 	AT91_SOC_SAMA5D35,
- 
-+	/* No subtype for this SoC */
-+	AT91_SOC_SUBTYPE_NONE,
-+
- 	/* Unknown subtype */
--	AT91_SOC_SUBTYPE_NONE
-+	AT91_SOC_SUBTYPE_UNKNOWN,
- };
- 
- struct at91_socinfo {
-@@ -122,7 +125,7 @@ const char *at91_get_soc_subtype(struct at91_socinfo *c);
- 
- static inline int at91_soc_is_detected(void)
- {
--	return at91_soc_initdata.type != AT91_SOC_NONE;
-+	return at91_soc_initdata.type != AT91_SOC_UNKNOWN;
- }
- 
- #ifdef CONFIG_SOC_AT91RM9200
-diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-index 2ecd169..fd00a09 100644
---- a/arch/arm/mach-at91/setup.c
-+++ b/arch/arm/mach-at91/setup.c
-@@ -105,28 +105,32 @@ static void __init soc_detect(u32 dbgu_base)
- 	switch (socid) {
- 	case ARCH_ID_AT91RM9200:
- 		at91_soc_initdata.type = AT91_SOC_RM9200;
--		if (at91_soc_initdata.subtype == AT91_SOC_SUBTYPE_NONE)
-+		if (at91_soc_initdata.subtype == AT91_SOC_SUBTYPE_UNKNOWN)
- 			at91_soc_initdata.subtype = AT91_SOC_RM9200_BGA;
- 		at91_boot_soc = at91rm9200_soc;
- 		break;
- 
- 	case ARCH_ID_AT91SAM9260:
- 		at91_soc_initdata.type = AT91_SOC_SAM9260;
-+		at91_soc_initdata.subtype = AT91_SOC_SUBTYPE_NONE;
- 		at91_boot_soc = at91sam9260_soc;
- 		break;
- 
- 	case ARCH_ID_AT91SAM9261:
- 		at91_soc_initdata.type = AT91_SOC_SAM9261;
-+		at91_soc_initdata.subtype = AT91_SOC_SUBTYPE_NONE;
- 		at91_boot_soc = at91sam9261_soc;
- 		break;
- 
- 	case ARCH_ID_AT91SAM9263:
- 		at91_soc_initdata.type = AT91_SOC_SAM9263;
-+		at91_soc_initdata.subtype = AT91_SOC_SUBTYPE_NONE;
- 		at91_boot_soc = at91sam9263_soc;
- 		break;
- 
- 	case ARCH_ID_AT91SAM9G20:
- 		at91_soc_initdata.type = AT91_SOC_SAM9G20;
-+		at91_soc_initdata.subtype = AT91_SOC_SUBTYPE_NONE;
- 		at91_boot_soc = at91sam9260_soc;
- 		break;
- 
-@@ -139,6 +143,7 @@ static void __init soc_detect(u32 dbgu_base)
- 
- 	case ARCH_ID_AT91SAM9RL64:
- 		at91_soc_initdata.type = AT91_SOC_SAM9RL;
-+		at91_soc_initdata.subtype = AT91_SOC_SUBTYPE_NONE;
- 		at91_boot_soc = at91sam9rl_soc;
- 		break;
- 
-@@ -161,6 +166,7 @@ static void __init soc_detect(u32 dbgu_base)
- 	/* at91sam9g10 */
- 	if ((socid & ~AT91_CIDR_EXT) == ARCH_ID_AT91SAM9G10) {
- 		at91_soc_initdata.type = AT91_SOC_SAM9G10;
-+		at91_soc_initdata.subtype = AT91_SOC_SUBTYPE_NONE;
- 		at91_boot_soc = at91sam9261_soc;
- 	}
- 	/* at91sam9xe */
-@@ -242,7 +248,7 @@ static const char *soc_name[] = {
- 	[AT91_SOC_SAM9X5]	= "at91sam9x5",
- 	[AT91_SOC_SAM9N12]	= "at91sam9n12",
- 	[AT91_SOC_SAMA5D3]	= "sama5d3",
--	[AT91_SOC_NONE]		= "Unknown"
-+	[AT91_SOC_UNKNOWN]	= "Unknown",
- };
- 
- const char *at91_get_soc_type(struct at91_socinfo *c)
-@@ -268,7 +274,8 @@ static const char *soc_subtype_name[] = {
- 	[AT91_SOC_SAMA5D33]	= "sama5d33",
- 	[AT91_SOC_SAMA5D34]	= "sama5d34",
- 	[AT91_SOC_SAMA5D35]	= "sama5d35",
--	[AT91_SOC_SUBTYPE_NONE]	= "Unknown"
-+	[AT91_SOC_SUBTYPE_NONE]	= "None",
-+	[AT91_SOC_SUBTYPE_UNKNOWN] = "Unknown",
- };
- 
- const char *at91_get_soc_subtype(struct at91_socinfo *c)
-@@ -282,8 +289,8 @@ void __init at91_map_io(void)
- 	/* Map peripherals */
- 	iotable_init(&at91_io_desc, 1);
- 
--	at91_soc_initdata.type = AT91_SOC_NONE;
--	at91_soc_initdata.subtype = AT91_SOC_SUBTYPE_NONE;
-+	at91_soc_initdata.type = AT91_SOC_UNKNOWN;
-+	at91_soc_initdata.subtype = AT91_SOC_SUBTYPE_UNKNOWN;
- 
- 	soc_detect(AT91_BASE_DBGU0);
- 	if (!at91_soc_is_detected())
-@@ -294,8 +301,9 @@ void __init at91_map_io(void)
- 
- 	pr_info("AT91: Detected soc type: %s\n",
- 		at91_get_soc_type(&at91_soc_initdata));
--	pr_info("AT91: Detected soc subtype: %s\n",
--		at91_get_soc_subtype(&at91_soc_initdata));
-+	if (at91_soc_initdata.subtype != AT91_SOC_SUBTYPE_NONE)
-+		pr_info("AT91: Detected soc subtype: %s\n",
-+			at91_get_soc_subtype(&at91_soc_initdata));
- 
- 	if (!at91_soc_is_enabled())
- 		panic("AT91: Soc not enabled");
--- 
-1.8.0
+Looks like a problem with udev.
 
+# ll
+insgesamt 16
+drwxr-xr-x  4 root root 4096 Apr  9 15:31 ./
+drwxr-xr-x  4 root root 4096 Apr  9 15:31 ../
+drwxr-xr-x 10 root root 4096 Apr  9 15:31 initrd-unpacked/
+drwxr-xr-x  2 root root 4096 Apr  9 15:31 original/
+
+# ll original/
+insgesamt 3216
+drwxr-xr-x 2 root root    4096 Apr  9 15:31 ./
+drwxr-xr-x 4 root root    4096 Apr  9 15:31 ../
+-rw-r--r-- 1 root root 3277802 Apr  9 12:36
+initrd.img-3.9.0-rc6-next20130409-1-iniza-small
+
+# cd initrd-unpacked/
+
+# ll scripts/init-bottom/
+insgesamt 16
+drwxr-xr-x 2 root root 4096 Apr  9 15:30 ./
+drwxr-xr-x 8 root root 4096 Apr  9 15:27 ../
+-rw-r--r-- 1 root root   72 Apr  9 15:27 ORDER
+-rwxr-xr-x 1 root root  396 Apr  9 15:27 udev*
+
+Both files attached.
+
+> - Sedat -
+>
+>> Currently, I have no glue why when what...
+>> Lemme see if I get k(g)bd started.
+>>
+>> Unfortunately, there was a "quiet" boot-param for grub2 here but it's gone.
+>> With "text" I don't see more.
+>>
+>> Maybe, someone has a hint.
+>>
+>> Regards,
+>> - Sedat -
+>>
+>>
+>>
+>> [1] http://marc.info/?l=linux-next&m=136549987718448&w=2
+
+--047d7bfd0c2e335e6c04d9ed9b40
+Content-Type: application/octet-stream; name=ORDER
+Content-Disposition: attachment; filename=ORDER
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hfb40xxz0
+
+L3NjcmlwdHMvaW5pdC1ib3R0b20vdWRldgpbIC1lIC9jb25mL3BhcmFtLmNvbmYgXSAmJiAuIC9j
+b25mL3BhcmFtLmNvbmYK
+--047d7bfd0c2e335e6c04d9ed9b40
+Content-Type: application/octet-stream; name=udev
+Content-Disposition: attachment; filename=udev
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hfb411rp1
+
+IyEvYmluL3NoIC1lCiMgaW5pdHJhbWZzIGluaXQtYm90dG9tIHNjcmlwdCBmb3IgdWRldgoKUFJF
+UkVRPSIiCgojIE91dHB1dCBwcmUtcmVxdWlzaXRlcwpwcmVyZXFzKCkKewoJZWNobyAiJFBSRVJF
+USIKfQoKY2FzZSAiJDEiIGluCiAgICBwcmVyZXFzKQoJcHJlcmVxcwoJZXhpdCAwCgk7Owplc2Fj
+CgoKIyBTdG9wIHVkZXZkLCB3ZSdsbCBtaXNzIGEgZmV3IGV2ZW50cyB3aGlsZSB3ZSBydW4gaW5p
+dCwgYnV0IHdlIGNhdGNoIHVwCnVkZXZhZG0gY29udHJvbCAtLXRpbWVvdXQ9MTIxIC0tZXhpdCB8
+fCBcCgllY2hvICJ1ZGV2IGV4aXQgZmFpbGVkIC0tIHJjPSQ/IgoKIyBNb3ZlIC9kZXYgdG8gdGhl
+IHJlYWwgZmlsZXN5c3RlbQptb3VudCAtbiAtbyBtb3ZlIC9kZXYgJHtyb290bW50fS9kZXYK
+--047d7bfd0c2e335e6c04d9ed9b40--
