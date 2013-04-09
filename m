@@ -1,72 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936783Ab3DILv3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 07:51:29 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:60376 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932892Ab3DILv2 (ORCPT
+	id S935779Ab3DILyh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 07:54:37 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:64951 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933969Ab3DILyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 07:51:28 -0400
+	Tue, 9 Apr 2013 07:54:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <51640004.6020604@ti.com>
-References: <1365412636-3468-1-git-send-email-prabhakar.csengg@gmail.com>
- <1365412636-3468-2-git-send-email-prabhakar.csengg@gmail.com> <51640004.6020604@ti.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Tue, 9 Apr 2013 17:21:07 +0530
-Message-ID: <CA+V-a8tRuMdauvpjj0ekUsGZgvJhgJbnA-tjgOYgR1Eg09zRLg@mail.gmail.com>
-Subject: Re: [PATCH v9 1/2] ARM: davinci: dm365: add support for v4l2 video display
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 9 Apr 2013 14:54:34 +0300
+X-Google-Sender-Auth: YXCSGRNpUdq5zfA3l2FX4TqnMvA
+Message-ID: <CACraW2rBMfXL_M13DD-qLvmZj55XPykEW-5qcVwViWg9XM00fA@mail.gmail.com>
+Subject: Re: Re: drm/i915: new warning (regression) in 3.7.10 and 3.8.3
+From: Tomas Melin <tomas.melin@iki.fi>
+To: daniel.vetter@ffwll.ch
+Cc: richardcochran@gmail.com, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sekhar,
-
-On Tue, Apr 9, 2013 at 5:18 PM, Sekhar Nori <nsekhar@ti.com> wrote:
-> On 4/8/2013 2:47 PM, Prabhakar lad wrote:
->> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On Mon, 18 Mar 2013 09:32:51 +0100, Daniel Vetter wrote:
+>
+> On Sat, Mar 16, 2013 at 01:28:50PM +0100, Richard Cochran wrote:
 >>
->> Create platform devices for various video modules like venc,osd,
->> vpbe and v4l2 driver for dm365.
+>> I have an Acer Aspire One netbook, and on it I get the following
+>> warning when closing and opening the lid. I think this warning first
+>> appeared in 3.7.
 >>
->> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> Acked-by: Sekhar Nori <nsekhar@ti.com>
->> ---
+>> Does this need fixing? If so, who can do it?
 >
->> diff --git a/arch/arm/mach-davinci/davinci.h b/arch/arm/mach-davinci/davinci.h
->> index 12d544b..a9de512 100644
->> --- a/arch/arm/mach-davinci/davinci.h
->> +++ b/arch/arm/mach-davinci/davinci.h
->> @@ -36,8 +36,13 @@
->>  #include <media/davinci/vpbe_osd.h>
->>
->>  #define DAVINCI_SYSTEM_MODULE_BASE   0x01c40000
->> +#define SYSMOD_VDAC_CONFIG           0x2c
->>  #define SYSMOD_VIDCLKCTL             0x38
->>  #define SYSMOD_VPSS_CLKCTL           0x44
->> +#define VPSS_VENCCLKEN_ENABLE                BIT(3)
->> +#define VPSS_DACCLKEN_ENABLE         BIT(4)
->> +#define VPSS_PLLC2SYSCLK5_ENABLE     BIT(5)
->> +
+> Another pesky BIOS which changes the display state behind our back on lid
+> closing! Should be duct-tapped over with
 >
-> Prabhakar, I noticed it only after I applied these patches, but these
-> bit definitions in between list of register offsets is distracting. Can
-> you please move them down after the register offsets when you send the
-> pull request? You can add a comment /* VPSS CLKCTL bit definitions */
-> before you start the bit definitions.
+> commit 45e2b5f640b3766da3eda48f6c35f088155c06f3
+> Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Date:   Fri Nov 23 18:16:34 2012 +0100
 >
-OK, I'll fix it while issuing the pull request.
+>     drm/i915: force restore on lid open
+>
+> which is in 3.8.
 
-Regards,
---Prabhakar
+I'm seeing the same problems on my eeepc using 3.8. Happens (most) of
+the time when opening and closing the lid. Any ideas on how to fix
+this?
 
->>  #define SYSMOD_VDD3P3VPWDN           0x48
->>  #define SYSMOD_VSCLKDIS                      0x6c
->>  #define SYSMOD_PUPDCTL1                      0x7c
->
-> Thanks,
-> Sekhar
+-Tomas
+
+[20314.679749] [drm:i9xx_crtc_mode_set] *ERROR* Couldn't find PLL
+settings for mode!
+
+[20314.679787] ------------[ cut here ]------------
+[20314.679819] WARNING: at drivers/gpu/drm/i915/intel_display.c:7864
+intel_modeset_check_state+0x4ad/0x620()
+[20314.679831] Hardware name: 901
+[20314.679843] encoder's hw state doesn't match sw tracking (expected
+1, found 0)
+[20314.679853] Modules linked in: bridge ipv6 rfcomm fuse btusb
+rt2800pci rt2800lib rt2x00pci rt2x00lib atl1e
+[20314.679917] Pid: 10069, comm: kworker/0:0 Tainted: G        W    3.8.0 #8
+[20314.679930] Call Trace:
+[20314.679958]  [<c1033d6d>] warn_slowpath_common+0x6d/0xa0
+[20314.679983]  [<c136645d>] ? intel_modeset_check_state+0x4ad/0x620
+[20314.680006]  [<c136645d>] ? intel_modeset_check_state+0x4ad/0x620
+[20314.680017]  [<c1033e1e>] warn_slowpath_fmt+0x2e/0x30
+[20314.680017]  [<c136645d>] intel_modeset_check_state+0x4ad/0x620
+[20314.680103]  [<c1366d31>] intel_set_mode+0x701/0x990
+[20314.680170]  [<c13695c5>] intel_modeset_setup_hw_state+0x5d5/0x8e0
+[20314.680215]  [<c12e3798>] ? acpi_lid_open+0x28/0x40
+[20314.680236]  [<c136b6db>] intel_lid_notify+0x9b/0xc0
+[20314.680258]  [<c1731ad5>] notifier_call_chain+0x45/0x60
+[20314.680283]  [<c1057f4e>] __blocking_notifier_call_chain+0x3e/0x60
+[20314.680306]  [<c1057f8a>] blocking_notifier_call_chain+0x1a/0x20
+[20314.680329]  [<c12e3839>] acpi_lid_send_state+0x78/0x9d
+[20314.680351]  [<c12e38aa>] acpi_button_notify+0x30/0xa4
+[20314.680376]  [<c12c435e>] acpi_device_notify+0x12/0x15
+[20314.680402]  [<c12cf786>] acpi_ev_notify_dispatch+0x2e/0x45
+[20314.680424]  [<c12c14cb>] acpi_os_execute_deferred+0x1b/0x26
+[20314.680449]  [<c104c800>] process_one_work+0x110/0x380
+[20314.680475]  [<c172ede9>] ? apic_timer_interrupt+0x2d/0x34
+[20314.680498]  [<c12c14b0>] ? acpi_os_wait_events_complete+0x19/0x19
+[20314.680522]  [<c104df89>] worker_thread+0x119/0x340
+[20314.680545]  [<c104de70>] ? manage_workers+0x260/0x260
+[20314.680572]  [<c10522af>] kthread+0x8f/0xa0
+[20314.680598]  [<c1734fb7>] ret_from_kernel_thread+0x1b/0x28
+[20314.680622]  [<c1052220>] ? flush_kthread_work+0xc0/0xc0
+[20314.680640] ---[ end trace 037b36714b28cbdf ]---
+[20314.680661] ------------[ cut here ]------------
+[20314.680684] WARNING: at drivers/gpu/drm/i915/intel_display.c:7898
+intel_modeset_check_state+0x47b/0x620()
+[20314.680697] Hardware name: 901
+[20314.680709] crtc's computed active state doesn't match tracked
+active state (expected 1, found 0)
+[20314.680719] Modules linked in: bridge ipv6 rfcomm fuse btusb
+rt2800pci rt2800lib rt2x00pci rt2x00lib atl1e
+[20314.680898] Pid: 10069, comm: kworker/0:0 Tainted: G        W    3.8.0 #8
+[20314.680910] Call Trace:
+[20314.680934]  [<c1033d6d>] warn_slowpath_common+0x6d/0xa0
+[20314.680960]  [<c136642b>] ? intel_modeset_check_state+0x47b/0x620
+[20314.680983]  [<c136642b>] ? intel_modeset_check_state+0x47b/0x620
+[20314.681006]  [<c1033e1e>] warn_slowpath_fmt+0x2e/0x30
+[20314.681041]  [<c136642b>] intel_modeset_check_state+0x47b/0x620
+[20314.681052]  [<c1366d31>] intel_set_mode+0x701/0x990
+[20314.681095]  [<c13695c5>] intel_modeset_setup_hw_state+0x5d5/0x8e0
+[20314.681122]  [<c12e3798>] ? acpi_lid_open+0x28/0x40
+[20314.681147]  [<c136b6db>] intel_lid_notify+0x9b/0xc0
+[20314.681170]  [<c1731ad5>] notifier_call_chain+0x45/0x60
+[20314.681196]  [<c1057f4e>] __blocking_notifier_call_chain+0x3e/0x60
+[20314.681221]  [<c1057f8a>] blocking_notifier_call_chain+0x1a/0x20
+[20314.681246]  [<c12e3839>] acpi_lid_send_state+0x78/0x9d
+[20314.681270]  [<c12e38aa>] acpi_button_notify+0x30/0xa4
+[20314.681295]  [<c12c435e>] acpi_device_notify+0x12/0x15
+[20314.681320]  [<c12cf786>] acpi_ev_notify_dispatch+0x2e/0x45
+[20314.681344]  [<c12c14cb>] acpi_os_execute_deferred+0x1b/0x26
+[20314.681366]  [<c104c800>] process_one_work+0x110/0x380
+[20314.681392]  [<c172ede9>] ? apic_timer_interrupt+0x2d/0x34
+[20314.681416]  [<c12c14b0>] ? acpi_os_wait_events_complete+0x19/0x19
+[20314.681465]  [<c104df89>] worker_thread+0x119/0x340
+[20314.681516]  [<c104de70>] ? manage_workers+0x260/0x260
+[20314.681568]  [<c10522af>] kthread+0x8f/0xa0
+[20314.681614]  [<c1734fb7>] ret_from_kernel_thread+0x1b/0x28
+[20314.681660]  [<c1052220>] ? flush_kthread_work+0xc0/0xc0
+[20314.681681] ---[ end trace 037b36714b28cbe0 ]---
