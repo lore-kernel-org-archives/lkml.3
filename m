@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964919Ab3DIVMA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 17:12:00 -0400
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:39068 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934864Ab3DIVL6 (ORCPT
+	id S935976Ab3DIVPQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 17:15:16 -0400
+Received: from mail-da0-f41.google.com ([209.85.210.41]:47919 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762666Ab3DIVPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 17:11:58 -0400
-Date: Tue, 9 Apr 2013 14:11:52 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: "Daniel P. Berrange" <berrange@redhat.com>, jpoimboe@redhat.com,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        Kay Sievers <kay.sievers@vrfy.org>, lpoetter@redhat.com,
-        workman-devel@redhat.com, dhaval.giani@gmail.com,
-        cgroups@vger.kernel.org
-Subject: Re: cgroup: status-quo and userland efforts
-Message-ID: <20130409211152.GO6186@mtj.dyndns.org>
-References: <20130406012159.GA17159@mtj.dyndns.org>
- <20130409095024.GI25576@redhat.com>
- <20130409193851.GJ6186@mtj.dyndns.org>
- <20130409194640.GK6186@mtj.dyndns.org>
- <20130409210422.GA31120@sergelap>
+	Tue, 9 Apr 2013 17:15:14 -0400
+Date: Tue, 9 Apr 2013 14:15:10 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        linux-aio@kvack.org, akpm@linux-foundation.org,
+        Benjamin LaHaise <bcrl@kvack.org>, Josh Boyer <jwboyer@redhat.com>,
+        Zach Brown <zab@redhat.com>
+Subject: Re: [PATCH 33/33] aio: fix kioctx not being freed after cancellation
+ at exit time
+Message-ID: <20130409211510.GL15749@google.com>
+References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
+ <1363883754-27966-34-git-send-email-koverstreet@google.com>
+ <20130402213550.GE5703@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130409210422.GA31120@sergelap>
+In-Reply-To: <20130402213550.GE5703@thunk.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Serge.
+On Tue, Apr 02, 2013 at 05:35:50PM -0400, Theodore Ts'o wrote:
+> On Thu, Mar 21, 2013 at 09:35:54AM -0700, Kent Overstreet wrote:
+> > From: Benjamin LaHaise <bcrl@kvack.org>
+> > 
+> > The recent changes overhauling fs/aio.c introduced a bug that results in the
+> > kioctx not being freed when outstanding kiocbs are cancelled at exit_aio()
+> > time.  Specifically, a kiocb that is cancelled has its completion events
+> > discarded by batch_complete_aio(), which then fails to wake up the process
+> > stuck in free_ioctx().  Fix this by removing the event suppression in
+> > batch_complete_aio() and modify the wait_event() condition in free_ioctx()
+> > appropriately.
+> 
+> Once you remove the event suppression, then it means that every single
+> cancelled AIO will result in ki_ctx->reqs_available getting double
+> incremented, right? 
 
-On Tue, Apr 09, 2013 at 04:04:22PM -0500, Serge Hallyn wrote:
-> So for instance if there is a dbus call saying "please create cgroup
-> /x with (some constraints) and put $$ into it", "something" in the
-> container can convert that into "please create cgroup /lxc/c1/x
-> and put (host_uid($$)) into it" and pass that to the host's (or
-> parent container's) "something".
+I'm not sure where you're seeing the double increment...
 
-Yeap, definitely.  It shouldn't be difficult to make it transparent to
-individual consumers.  It would actually be far easier to achieve that
-with userland agent which knows what's going on in the middle.
+Previously, when we were supressing the events we needed to increment
+reqs_available to account for the fact that we wouldn't be doing a
+put_reqs_available() when reaping the io_event.
 
-> So perhaps it is best if the container monitor, living in the parent
-> namespaces, opens a socket '@cgroup_monitor' in the container
-> namespace (through setns), listens for container-userpsace requests
-> there, and passes them on to the host's monitor (which hopefully
-> also listens on '@cgroup_monitor', @ being '\0').  Note that my
-> mentino of converting pids requires a new kernel feature which we
-> don't currently have (but have wanted for a long time).
+I think the commit description could've been a bit better - this patch
+is changing the behaviour of cancellation, and it makes more sense in
+context with some of the other cancellation patches - instead of
+returning the io_event via io_cancel(), we're returning it via
+io_getevents() as it would be normally.
 
-Yeah, details may change but in principle something like that.
+So all removing the event supression is doing is causing the io_events
+from cancelled kiocbs to be handled just like any other io_event.
 
-Thanks.
+> But reqs_available gets used in more places than
+> just free_ioctx().  It also gets used (for example) by
+> get_reqs_available(), which in turn gets used by aio_get_req() to
+> decide whether or not it's safe to allocate another aio_request.
+> Since reqs_available is getting double allocated, won't we end up
+> allowing more AIO requests to be issued --- more than we would have
+> room in the ring?
+> 
+> Am I missing something?
 
--- 
-tejun
+You're right about how reqs_available is used, but unless I'm missing
+something the accounting is correct. Maybe we should go over it
+together?
