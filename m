@@ -1,45 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934666Ab3DISYP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 14:24:15 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35877 "EHLO
+	id S934955Ab3DISYq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 14:24:46 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35878 "EHLO
 	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759682Ab3DISYO (ORCPT
+	with ESMTP id S1761262Ab3DISYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 14:24:14 -0400
-Date: Tue, 9 Apr 2013 19:24:13 +0100
+	Tue, 9 Apr 2013 14:24:45 -0400
+Date: Tue, 9 Apr 2013 19:24:43 +0100
 From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andrey Vagin <avagin@openvz.org>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [git pull] assorted fixes (vfs.git)
-Message-ID: <20130409182412.GA4068@ZenIV.linux.org.uk>
+Subject: Re: [PATCH] mnt: release locks on error path in do_loopback
+Message-ID: <20130409182443.GB4068@ZenIV.linux.org.uk>
+References: <1365514409-12448-1-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1365514409-12448-1-git-send-email-avagin@openvz.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	A nasty bug in fs/namespace.c caught by Andrey + a couple of
-less serious unpleasantness - ecryptfs misc device playing hopeless
-games with try_module_get() and palinfo procfs support being... not
-quite correctly done, to be polite.  Please, pull from
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
+On Tue, Apr 09, 2013 at 05:33:29PM +0400, Andrey Vagin wrote:
+> do_loopback calls lock_mount(path) and forget to unlock_mount
+> if clone_mnt or copy_mnt fails.
 
-Shortlog:
-Al Viro (3):
-      ecryptfs: close rmmod race
-      procfs: add proc_remove_subtree()
-      palinfo fixes
-
-Andrey Vagin (1):
-      mnt: release locks on error path in do_loopback
-
-Diffstat:
- arch/ia64/kernel/palinfo.c |   77 +++++-----------------------
- fs/ecryptfs/miscdev.c      |   14 +-----
- fs/namespace.c             |    2 +-
- fs/proc/generic.c          |  119 +++++++++++++++++++++++++++++++++-----------
- include/linux/proc_fs.h    |    2 +
- 5 files changed, 107 insertions(+), 107 deletions(-)
+Applied.
