@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936789Ab3DIDDX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 23:03:23 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:23191 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934408Ab3DIDDV (ORCPT
+	id S936799Ab3DIDEA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 23:04:00 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:47792 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934190Ab3DIDD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 23:03:21 -0400
-Message-ID: <516384BC.7040302@huawei.com>
-Date: Tue, 9 Apr 2013 11:02:20 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Mon, 8 Apr 2013 23:03:59 -0400
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [PATCH 5/8] memcg: convert to use cgroup->id
-References: <51627DA9.7020507@huawei.com> <51627E33.4090107@huawei.com> <20130408145702.GM17178@dhcp22.suse.cz>
-In-Reply-To: <20130408145702.GM17178@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <1363165944-7480-1-git-send-email-sachin.kamat@linaro.org>
+References: <1363165944-7480-1-git-send-email-sachin.kamat@linaro.org>
+Date: Tue, 9 Apr 2013 08:33:59 +0530
+Message-ID: <CAK9yfHzvJ+5voHuJLCNb55yB0x5R8LS=FqoCu9tn5bSXZ_BNsQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] irqchip: exynos-combiner: Fix checkpatch warnings
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, sachin.kamat@linaro.org, patches@linaro.org,
+        chanho61.park@samsung.com, kgene.kim@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/4/8 22:57, Michal Hocko wrote:
-> On Mon 08-04-13 16:22:11, Li Zefan wrote:
->> This is a preparation to kill css_id.
->>
->> Signed-off-by: Li Zefan <lizefan@huawei.com>
-> 
-> This patch depends on the following patch, doesn't it? There is no
-> guarantee that id fits into short right now. Not such a big deal but
-> would be nicer to have that guarantee for bisectability.
-> 
+Hi Kukjin,
 
-Not necessary, because css_id still prevents us from creating too
-many cgroups.
+On 13 March 2013 14:42, Sachin Kamat <sachin.kamat@linaro.org> wrote:
+> Fixes the following warnings:
+> WARNING: line over 80 characters
+> WARNING: Prefer pr_warn(... to pr_warning(...
+>
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> ---
+>  drivers/irqchip/exynos-combiner.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/irqchip/exynos-combiner.c b/drivers/irqchip/exynos-combiner.c
+> index e8501db..66b1bf5 100644
+> --- a/drivers/irqchip/exynos-combiner.c
+> +++ b/drivers/irqchip/exynos-combiner.c
+> @@ -229,13 +229,15 @@ void __init combiner_init(void __iomem *combiner_base,
+>         irq_base = irq_alloc_descs(COMBINER_IRQ(0, 0), 1, nr_irq, 0);
+>         if (IS_ERR_VALUE(irq_base)) {
+>                 irq_base = COMBINER_IRQ(0, 0);
+> -               pr_warning("%s: irq desc alloc failed. Continuing with %d as linux irq base\n", __func__, irq_base);
+> +               pr_warn("%s: irq desc alloc failed. "
+> +                       "Continuing with %d as linux irq base\n",
+> +                       __func__, irq_base);
+>         }
+>
+>         combiner_irq_domain = irq_domain_add_legacy(np, nr_irq, irq_base, 0,
+>                                 &combiner_irq_domain_ops, &combiner_data);
+>         if (WARN_ON(!combiner_irq_domain)) {
+> -               pr_warning("%s: irq domain init failed\n", __func__);
+> +               pr_warn("%s: irq domain init failed\n", __func__);
+>                 return;
+>         }
+>
+> --
+> 1.7.4.1
+>
 
-> The patch on its own looks good.
-> 
-> Acked-by: Michal Hocko <mhocko@suse.cz>
+ChanHo said you would be picking this patch. Please check.
 
-
+-- 
+With warm regards,
+Sachin
