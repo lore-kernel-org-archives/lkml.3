@@ -1,193 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964949Ab3DIMgq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 08:36:46 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:64591 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936962Ab3DIMgm (ORCPT
+	id S965073Ab3DIMhX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 08:37:23 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:39409 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763878Ab3DIMhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 08:36:42 -0400
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: linux-kernel@vger.kernel.org
-Cc: linux-cifs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, wine-devel@winehq.org
-Subject: [PATCH v5 5/7] NFSv4: Add O_DENY* open flags support
-Date: Tue,  9 Apr 2013 16:40:25 +0400
-Message-Id: <1365511227-17626-6-git-send-email-piastry@etersoft.ru>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1365511227-17626-1-git-send-email-piastry@etersoft.ru>
-References: <1365511227-17626-1-git-send-email-piastry@etersoft.ru>
+	Tue, 9 Apr 2013 08:37:19 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUX-RMW=pHzhOumB2_R99BRAf2qGC4n5bzyLqU6pOCMDFw@mail.gmail.com>
+References: <CA+icZUX-RMW=pHzhOumB2_R99BRAf2qGC4n5bzyLqU6pOCMDFw@mail.gmail.com>
+Date: Tue, 9 Apr 2013 14:37:18 +0200
+Message-ID: <CA+icZUU2dHLz_iWCiJkgnU8HpkWeWbGL0niAoBzoE55CLuvRiQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for Apr 9
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-by passing these flags to NFSv4 open request. Also make it return
--EBUSY on share conflicts with other opens.
+On Tue, Apr 9, 2013 at 12:56 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> Hi,
+>
+> I still did not get the original posting...
+>
+> This version hangs... I started in rescue-mode and see that udev,
+> premount and init scripts are run.
 
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
----
- fs/nfs/internal.h  |  3 ++-
- fs/nfs/nfs4proc.c  |  4 +++-
- fs/nfs/nfs4super.c |  9 ++++++---
- fs/nfs/nfs4xdr.c   | 21 +++++++++++++++++----
- fs/nfs/super.c     |  7 +++++--
- 5 files changed, 33 insertions(+), 11 deletions(-)
+... udevd ....
+/scripts/init-premount ... done
+/scripts/pre-premount ... done
+/scripts/local-bottom ... done
+/scripts/init-bottom ... <--- hanging here!
 
-diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
-index f0e6c7d..c770830 100644
---- a/fs/nfs/internal.h
-+++ b/fs/nfs/internal.h
-@@ -6,7 +6,8 @@
- #include <linux/mount.h>
- #include <linux/security.h>
- 
--#define NFS_MS_MASK (MS_RDONLY|MS_NOSUID|MS_NODEV|MS_NOEXEC|MS_SYNCHRONOUS)
-+#define NFS_MS_MASK (MS_RDONLY | MS_NOSUID | MS_NODEV | MS_NOEXEC | \
-+		     MS_SYNCHRONOUS | MS_SHARELOCK)
- 
- struct nfs_string;
- 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 3cb5e77..5d44763 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -100,7 +100,7 @@ static int nfs4_map_errors(int err)
- 	case -NFS4ERR_BADNAME:
- 		return -EINVAL;
- 	case -NFS4ERR_SHARE_DENIED:
--		return -EACCES;
-+		return -EBUSY;
- 	case -NFS4ERR_MINOR_VERS_MISMATCH:
- 		return -EPROTONOSUPPORT;
- 	case -NFS4ERR_ACCESS:
-@@ -793,6 +793,8 @@ static struct nfs4_opendata *nfs4_opendata_alloc(struct dentry *dentry,
- 	atomic_inc(&sp->so_count);
- 	p->o_arg.fh = NFS_FH(dir);
- 	p->o_arg.open_flags = flags;
-+	if (!IS_SHARELOCK(dir))
-+		p->o_arg.open_flags &= ~(O_DENYREAD | O_DENYWRITE);
- 	p->o_arg.fmode = fmode & (FMODE_READ|FMODE_WRITE);
- 	/* don't put an ACCESS op in OPEN compound if O_EXCL, because ACCESS
- 	 * will return permission denied for all bits until close */
-diff --git a/fs/nfs/nfs4super.c b/fs/nfs/nfs4super.c
-index 84d2e9e..ca791cd 100644
---- a/fs/nfs/nfs4super.c
-+++ b/fs/nfs/nfs4super.c
-@@ -28,7 +28,8 @@ static struct file_system_type nfs4_remote_fs_type = {
- 	.name		= "nfs4",
- 	.mount		= nfs4_remote_mount,
- 	.kill_sb	= nfs_kill_super,
--	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA,
-+	.fs_flags	= FS_RENAME_DOES_D_MOVE | FS_REVAL_DOT |
-+			  FS_BINARY_MOUNTDATA | FS_DOES_SHARELOCK,
- };
- 
- static struct file_system_type nfs4_remote_referral_fs_type = {
-@@ -36,7 +37,8 @@ static struct file_system_type nfs4_remote_referral_fs_type = {
- 	.name		= "nfs4",
- 	.mount		= nfs4_remote_referral_mount,
- 	.kill_sb	= nfs_kill_super,
--	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA,
-+	.fs_flags	= FS_RENAME_DOES_D_MOVE | FS_REVAL_DOT |
-+			  FS_BINARY_MOUNTDATA | FS_DOES_SHARELOCK,
- };
- 
- struct file_system_type nfs4_referral_fs_type = {
-@@ -44,7 +46,8 @@ struct file_system_type nfs4_referral_fs_type = {
- 	.name		= "nfs4",
- 	.mount		= nfs4_referral_mount,
- 	.kill_sb	= nfs_kill_super,
--	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA,
-+	.fs_flags	= FS_RENAME_DOES_D_MOVE | FS_REVAL_DOT |
-+			  FS_BINARY_MOUNTDATA | FS_DOES_SHARELOCK,
- };
- 
- static const struct super_operations nfs4_sops = {
-diff --git a/fs/nfs/nfs4xdr.c b/fs/nfs/nfs4xdr.c
-index 26b1439..8fe0221 100644
---- a/fs/nfs/nfs4xdr.c
-+++ b/fs/nfs/nfs4xdr.c
-@@ -1325,7 +1325,8 @@ static void encode_lookup(struct xdr_stream *xdr, const struct qstr *name, struc
- 	encode_string(xdr, name->len, name->name);
- }
- 
--static void encode_share_access(struct xdr_stream *xdr, fmode_t fmode)
-+static void encode_share_access(struct xdr_stream *xdr, fmode_t fmode,
-+				int open_flags)
- {
- 	__be32 *p;
- 
-@@ -1343,7 +1344,19 @@ static void encode_share_access(struct xdr_stream *xdr, fmode_t fmode)
- 	default:
- 		*p++ = cpu_to_be32(0);
- 	}
--	*p = cpu_to_be32(0);		/* for linux, share_deny = 0 always */
-+	switch (open_flags & (O_DENYREAD|O_DENYWRITE)) {
-+	case O_DENYREAD:
-+		*p = cpu_to_be32(NFS4_SHARE_DENY_READ);
-+		break;
-+	case O_DENYWRITE:
-+		*p = cpu_to_be32(NFS4_SHARE_DENY_WRITE);
-+		break;
-+	case O_DENYREAD|O_DENYWRITE:
-+		*p = cpu_to_be32(NFS4_SHARE_DENY_BOTH);
-+		break;
-+	default:
-+		*p = cpu_to_be32(0);
-+	}
- }
- 
- static inline void encode_openhdr(struct xdr_stream *xdr, const struct nfs_openargs *arg)
-@@ -1354,7 +1367,7 @@ static inline void encode_openhdr(struct xdr_stream *xdr, const struct nfs_opena
-  * owner 4 = 32
-  */
- 	encode_nfs4_seqid(xdr, arg->seqid);
--	encode_share_access(xdr, arg->fmode);
-+	encode_share_access(xdr, arg->fmode, arg->open_flags);
- 	p = reserve_space(xdr, 36);
- 	p = xdr_encode_hyper(p, arg->clientid);
- 	*p++ = cpu_to_be32(24);
-@@ -1491,7 +1504,7 @@ static void encode_open_downgrade(struct xdr_stream *xdr, const struct nfs_close
- 	encode_op_hdr(xdr, OP_OPEN_DOWNGRADE, decode_open_downgrade_maxsz, hdr);
- 	encode_nfs4_stateid(xdr, arg->stateid);
- 	encode_nfs4_seqid(xdr, arg->seqid);
--	encode_share_access(xdr, arg->fmode);
-+	encode_share_access(xdr, arg->fmode, 0);
- }
- 
- static void
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index b056b16..cf9db61 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -331,7 +331,8 @@ struct file_system_type nfs4_fs_type = {
- 	.name		= "nfs4",
- 	.mount		= nfs_fs_mount,
- 	.kill_sb	= nfs_kill_super,
--	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA,
-+	.fs_flags	= FS_RENAME_DOES_D_MOVE | FS_REVAL_DOT |
-+			  FS_BINARY_MOUNTDATA | FS_DOES_SHARELOCK,
- };
- EXPORT_SYMBOL_GPL(nfs4_fs_type);
- 
-@@ -2589,6 +2590,8 @@ nfs_xdev_mount(struct file_system_type *fs_type, int flags,
- 	struct nfs_server *server;
- 	struct dentry *mntroot = ERR_PTR(-ENOMEM);
- 	struct nfs_subversion *nfs_mod = NFS_SB(data->sb)->nfs_client->cl_nfs_mod;
-+	/* save sharelock option */
-+	int sharelock = data->sb->s_flags & MS_SHARELOCK;
- 
- 	dprintk("--> nfs_xdev_mount()\n");
- 
-@@ -2600,7 +2603,7 @@ nfs_xdev_mount(struct file_system_type *fs_type, int flags,
- 	if (IS_ERR(server))
- 		mntroot = ERR_CAST(server);
- 	else
--		mntroot = nfs_fs_mount_common(server, flags,
-+		mntroot = nfs_fs_mount_common(server, flags | sharelock,
- 				dev_name, &mount_info, nfs_mod);
- 
- 	dprintk("<-- nfs_xdev_mount() = %ld\n",
--- 
-1.8.1.5
+- Sedat -
 
+> Currently, I have no glue why when what...
+> Lemme see if I get k(g)bd started.
+>
+> Unfortunately, there was a "quiet" boot-param for grub2 here but it's gone.
+> With "text" I don't see more.
+>
+> Maybe, someone has a hint.
+>
+> Regards,
+> - Sedat -
+>
+>
+>
+> [1] http://marc.info/?l=linux-next&m=136549987718448&w=2
