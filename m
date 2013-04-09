@@ -1,105 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934945Ab3DIOaE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 10:30:04 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:36579 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761106Ab3DIOaB (ORCPT
+	id S935900Ab3DIOcR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 10:32:17 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:50019 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761650Ab3DIOcP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 10:30:01 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-8b-516425e7c617
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-Cc: linux-samsung-soc@vger.kernel.org, a.zummo@towertech.it,
-        kgene.kim@samsung.com, s.nawrocki@samsung.com, thomas.ab@samsung.com,
-        dianders@chromium.org, Thomas Abraham <thomas.abraham@linaro.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH] rtc: rtc-s3c: use clk_prepare_enable and clk_disable_unprepare
-Date: Tue, 09 Apr 2013 19:57:40 +0530
-Message-id: <1365517660-9322-1-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.6.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsWyRsSkSve5akqgwavHKhZLLl5ltzi77CCb
-	RduVg+wWvQuusllc3jWHzWLG+X1MFvs7OxgtDr9pZ7XoWMZocWzGEkYHLo/ZDRdZPPZMPMnm
-	cefaHjaPvi2rGD2mz/vJ5PF5k1wAWxSXTUpqTmZZapG+XQJXxonnS5kL2ngqHm1xaWB8ydnF
-	yMkhIWAisePnFRYIW0ziwr31bF2MXBxCAksZJSb++8cGU3Tz52EmiMR0RonL6x6yQDhTmCSa
-	ds9mAqliE9CVaHq7ixHEFhGwkVg5q58VxGYW+MwoMf1nEIgtLOAv0T//MVg9i4CqRP+becxd
-	jBwcvALuEj9/B0AsU5B4c/sZM8h8CYFF7BLTZ/5khKgXkPg2+RALSL2EgKzEpgPMEPWSEgdX
-	3GCZwCi4gJFhFaNoakFyQXFSepGxXnFibnFpXrpecn7uJkZgaJ/+96x/B+PdA9aHGJOBxk1k
-	lhJNzgfGRl5JvKGxmZGFqYmpsZG5pRlpwkrivGot1oFCAumJJanZqakFqUXxRaU5qcWHGJk4
-	OKUaGA1TTBrYdz67YfgrhMvJ5H53m+v2Wt/S+EbZs2XmmfpLwzn+bL6/Mn0Fw5+OSK1TySlc
-	8T93JCQ17/6ptOLGFS2XlkQZNWW5/a/YpJ7OUVi94ovLBiWZL7eX5/F91+4T0hW0NmxKW35B
-	+bXw19yzSp3K0qmH2R7+uNvvWnR4dslJtRct8ptOK7EUZyQaajEXFScCAHKGoKiDAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t9jQd3nqimBBgtuSFgsuXiV3eLssoNs
-	Fm1XDrJb9C64ymZxedccNosZ5/cxWezv7GC0OPymndWiYxmjxbEZSxgduDxmN1xk8dgz8SSb
-	x51re9g8+rasYvSYPu8nk8fnTXIBbFENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqG
-	lhbmSgp5ibmptkouPgG6bpk5QKcpKZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJA
-	AwlrGDNOPF/KXNDGU/Foi0sD40vOLkZODgkBE4mbPw8zQdhiEhfurWfrYuTiEBKYzihxed1D
-	FghnCpNE0+7ZYFVsAroSTW93MYLYIgI2Eitn9bOC2MwCnxklpv8MArGFBfwl+uc/BqtnEVCV
-	6H8zj7mLkYODV8Bd4ufvAIhlChJvbj9jnsDIvYCRYRWjaGpBckFxUnqukV5xYm5xaV66XnJ+
-	7iZGcOQ8k97BuKrB4hCjAAejEg/vhSdJgUKsiWXFlbmHGCU4mJVEeA9JpQQK8aYkVlalFuXH
-	F5XmpBYfYkwGWj6RWUo0OR8Y1Xkl8YbGJuamxqaWJhYmZpakCSuJ8x5stQ4UEkhPLEnNTk0t
-	SC2C2cLEwSnVwCiiqS10mu+6FSeHRphubef0d3Kyc+VkG7LeSxp/q1l9vbnlqsLr3kPs9hbf
-	u+KFVviWv1qvNjOlVbDgx8HpBmtmRnKET8jXsSo5kl1gat185x/nkscKSnfC5387+nTHjoTP
-	rpul1B6I696fWv7G/kfyL5bva5LmHP25UPdS5pWS3b5qsvxbXymxFGckGmoxFxUnAgD0ceLj
-	4AIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 9 Apr 2013 10:32:15 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130410002311.8a0b0503bcbda151b9de9469@canb.auug.org.au>
+References: <CA+icZUX-RMW=pHzhOumB2_R99BRAf2qGC4n5bzyLqU6pOCMDFw@mail.gmail.com>
+	<20130409235941.11eef57a42cb97efec72f037@canb.auug.org.au>
+	<CA+icZUVk-iLtodZi_46qmk410Ei+tW6RR5kV2fx0N8v6neKTPQ@mail.gmail.com>
+	<20130410002311.8a0b0503bcbda151b9de9469@canb.auug.org.au>
+Date: Tue, 9 Apr 2013 16:32:13 +0200
+Message-ID: <CA+icZUUboWkL8vHvN6+xk=9kz8SXexxgMN-g+xuPB24T1wTSRw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Apr 9
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Abraham <thomas.abraham@linaro.org>
+On Tue, Apr 9, 2013 at 4:23 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Sedat,
+>
+> On Tue, 9 Apr 2013 16:11:50 +0200 Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>
+>> [ CC Al Viro ]
+>
+> You forgot to do that ...
+>
+>> Is there a "magic" git-command to revert all commits coming from your
+>> latest vfs-merge (commit c1c04d3667608a630ae0821995b465a523e83fb1)?
+>>
+>> 2013-04-09 11:36 Stephen Rothwell   │ M─┐ │ │ │ │ │ │         │ 20130405/vfs
+>
+> You would normally do "git revert -m 1 c1c04d366760". However, that does
+> not revert cleanly in today's linux-next (due to more patches modifying
+> the files involved).
+>
 
-Convert clk_enable/clk_disable to clk_prepare_enable/clk_disable_unprepare
-calls as required by common clock framework.
+Just wanted to improve my git Know-How.
 
-Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
----
+>> After reverting all these commits I would like to pull-in latest
+>> vfs.git#for-next.
+>
+> It would probably be easier to wait for tomorrow's linux-next.  Or just
+> test Al's tree in its own.
 
-The v1 of this patch is pretty old, but the change needs to be merged to
-avoid getting those needless WARN_ON() dumps on console.
+Doug reported problems on his way "reverting the current vfs stuff"
+and Al's new tree was reported as OK.
+A lot of merge-conflicts... that's what I see when trying to pull in
+Al's tree in today's Linux-Next.
+So, I better wait for tommorrow.
 
-Changes from v1:
- - Not using clk_disable_unprepare() at the end of s3c_rtc_probe(), since
-   this will unprepare the rtc clock which is again getting used in other
-   funtions later.
- - Using clk_unprepare() at the remove() instead to fix things up.
+Anyway, a warning in your CHANGELOG is very much appreciated on such
+KNOWN ISSUES.
 
- drivers/rtc/rtc-s3c.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+Regards,
+- Sedat -
 
-diff --git a/drivers/rtc/rtc-s3c.c b/drivers/rtc/rtc-s3c.c
-index fb994e9..e3528c9 100644
---- a/drivers/rtc/rtc-s3c.c
-+++ b/drivers/rtc/rtc-s3c.c
-@@ -430,6 +430,7 @@ static int s3c_rtc_remove(struct platform_device *dev)
- 
- 	s3c_rtc_setaie(&dev->dev, 0);
- 
-+	clk_unprepare(rtc_clk);
- 	rtc_clk = NULL;
- 
- 	return 0;
-@@ -498,7 +499,7 @@ static int s3c_rtc_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
--	clk_enable(rtc_clk);
-+	clk_prepare_enable(rtc_clk);
- 
- 	/* check to see if everything is setup correctly */
- 
-@@ -578,7 +579,7 @@ static int s3c_rtc_probe(struct platform_device *pdev)
- 
-  err_nortc:
- 	s3c_rtc_enable(pdev, 0);
--	clk_disable(rtc_clk);
-+	clk_disable_unprepare(rtc_clk);
- 
- 	return ret;
- }
--- 
-1.7.6.5
-
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
