@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934728Ab3DIRnZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 13:43:25 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:30492 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1763999Ab3DIRnX (ORCPT
+	id S934781Ab3DIRrA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 13:47:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26168 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753721Ab3DIRq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 13:43:23 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+UbSiHRHecfsrEdqPJvDuA
-Date: Tue, 9 Apr 2013 10:43:20 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: "Menon, Nishanth" <nm@ti.com>, linux-usb@vger.kernel.org,
-        linux@arm.linux.org.uk, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, grygorii.strashko@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC][PATCH 1/2] ARM: OMAP4: clock: Add device tree support
- for AUXCLKs
-Message-ID: <20130409174319.GP10155@atomide.com>
-References: <1363703220-4777-1-git-send-email-rogerq@ti.com>
- <1363703220-4777-2-git-send-email-rogerq@ti.com>
- <20130403234242.GE10155@atomide.com>
- <515D2D30.3000306@ti.com>
- <20130404164137.GH10155@atomide.com>
- <515EA9E3.1010409@ti.com>
- <20130405155851.GA10155@atomide.com>
- <5163E589.1040809@ti.com>
- <20130409164928.GL10155@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130409164928.GL10155@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 9 Apr 2013 13:46:59 -0400
+X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=eIhxMilvRf8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=F0my4ousGMIA:10 a=D19gQVrFAAAA:8 a=Rd9FibQqYsvWXNX05YgA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1365529616.25498.75.camel@gandalf.local.home>
+Subject: Re: [ANNOUNCE] 3.6.11.1-rt32
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Carsten Emde <C.Emde@osadl.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Date: Tue, 09 Apr 2013 13:46:56 -0400
+In-Reply-To: <515A4CE4.9050607@osadl.org>
+References: <1364527527.10629.10.camel@gandalf.local.home>
+	 <515A4CE4.9050607@osadl.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [130409 09:54]:
-> * Roger Quadros <rogerq@ti.com> [130409 03:00]:
-> > On 04/05/2013 06:58 PM, Tony Lindgren wrote:
-> > > 
-> > > Can't you just use the clock name there to get it?
-> > 
-> > In device tree we don't pass around clock names. You can either get
-> > a phandle or an index to the clock.
-> > 
-> > e.g. Documentation/devicetree/bindings/clock/imx31-clock.txt
+On Tue, 2013-04-02 at 05:13 +0200, Carsten Emde wrote:
+> Steven,
+
+> > I'm pleased to announce the 3.6.11.1-rt32 stable release.
+> Unfortunately, there is another compile error:
+> drivers/gpu/drm/i915/i915_gem.c: In function ‘i915_gem_wait_for_error’:
+> drivers/gpu/drm/i915/i915_gem.c:118:3: warning: passing argument 1 of 
+> ‘rt_spin_lock’ from incompatible pointer type [enabled by default]
+> In file included from include/linux/spinlock.h:273:0,
+>                   from include/linux/wait.h:24,
+>                   from include/linux/fs.h:396,
+>                   from include/drm/drmP.h:47,
+>                   from drivers/gpu/drm/i915/i915_gem.c:28:
+> include/linux/spinlock_rt.h:21:24: note: expected ‘struct spinlock_t *’ 
+> but argument is of type ‘struct raw_spinlock_t *’
+> drivers/gpu/drm/i915/i915_gem.c:120:3: warning: passing argument 1 of 
+> ‘rt_spin_unlock’ from incompatible pointer type [enabled by default]
+> In file included from include/linux/spinlock.h:273:0,
+>                   from include/linux/wait.h:24,
+>                   from include/linux/fs.h:396,
+>                   from include/drm/drmP.h:47,
+>                   from drivers/gpu/drm/i915/i915_gem.c:28:
+> include/linux/spinlock_rt.h:24:24: note: expected ‘struct spinlock_t *’ 
+> but argument is of type ‘struct raw_spinlock_t *’
+> drivers/gpu/drm/i915/i915_gem.c: In function ‘i915_gem_check_wedge’:
+> drivers/gpu/drm/i915/i915_gem.c:1890:3: warning: passing argument 1 of 
+> ‘rt_spin_lock’ from incompatible pointer type [enabled by default]
+> In file included from include/linux/spinlock.h:273:0,
+>                   from include/linux/wait.h:24,
+>                   from include/linux/fs.h:396,
+>                   from include/drm/drmP.h:47,
+>                   from drivers/gpu/drm/i915/i915_gem.c:28:
+> include/linux/spinlock_rt.h:21:24: note: expected ‘struct spinlock_t *’ 
+> but argument is of type ‘struct raw_spinlock_t *’
+> drivers/gpu/drm/i915/i915_gem.c:1892:3: warning: passing argument 1 of 
+> ‘rt_spin_unlock’ from incompatible pointer type [enabled by default]
+> In file included from include/linux/spinlock.h:273:0,
+>                   from include/linux/wait.h:24,
+>                   from include/linux/fs.h:396,
+>                   from include/drm/drmP.h:47,
+>                   from drivers/gpu/drm/i915/i915_gem.c:28:
+> include/linux/spinlock_rt.h:24:24: note: expected ‘struct spinlock_t *’ 
+> but argument is of type ‘struct raw_spinlock_t *’
 > 
-> Yes I understand that. But the driver/clock/omap driver can just
-> remap the DT device initially so the board specific clock is
-> found from the clock alias table. Basically initially a passthrough
-> driver that can be enhanced to parse DT clock bindings and load
-> data from /lib/firmware.
+> I would propose to adopt the mechanism that Sebastian introduced in
+> 3.8.4-rt2 (https://lkml.org/lkml/2013/3/26/600). The kernel compiles
+> and runs without any problem with the below patch on a system that
+> requires the i915 driver module.
+> 
 
-Actually probably the driver/clock/omap can even do even less
-initially. There probably even no need to remap clocks there.
+Thanks Carsten, I'll be updating this later today. BTW, did you get any
+core dumps from the work queue race that we've been seeing?
 
-As long as the DT clock driver understands that a board specific
-auxclk is specified in the DT it can just call clk_add_alias() so
-the driver will get the right auxclk from cclock44xx_data.c.
+Thanks,
 
-Then other features can be added later on like to allocate a
-clock entirely based on the binding etc.
+-- Steve
 
-Regards,
 
-Tony 
