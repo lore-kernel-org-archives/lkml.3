@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935903Ab3DITNJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 15:13:09 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:56447 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935459Ab3DITNH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 15:13:07 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Harvey Harrison <harvey.harrison@gmail.com>
-Subject: Re: [PATCH 7/8] dmaengine: ste_dma40: Use the BIT macro to replace ugly '(1 << x)'s
-Date: Tue, 9 Apr 2013 21:12:55 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, linus.walleij@stericsson.com
-References: <1365532783-27425-1-git-send-email-lee.jones@linaro.org> <1365532783-27425-7-git-send-email-lee.jones@linaro.org> <CAHLZz133b6kydVwh0_Cn2yg-Q_MeUF+Z-7+CMY7TkB7KK2ssAQ@mail.gmail.com>
-In-Reply-To: <CAHLZz133b6kydVwh0_Cn2yg-Q_MeUF+Z-7+CMY7TkB7KK2ssAQ@mail.gmail.com>
+	id S935893Ab3DITOL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 15:14:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32952 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935459Ab3DITOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 15:14:10 -0400
+Date: Tue, 9 Apr 2013 15:13:39 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Mike Snitzer <snitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
+        dm-devel@redhat.com, Andi Kleen <andi@firstfloor.org>,
+        dm-crypt@saout.de, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Christian Schmidt <schmidt@digadd.de>
+Subject: Re: dm-crypt parallelization patches
+Message-ID: <20130409191339.GP6320@redhat.com>
+References: <20130328193343.GA15969@redhat.com>
+ <20130328194443.GG14088@htj.dyndns.org>
+ <20130328203808.GC15969@redhat.com>
+ <20130328204522.GA25501@mtj.dyndns.org>
+ <Pine.LNX.4.64.1304091242350.10025@file.rdu.redhat.com>
+ <20130409175753.GA6186@mtj.dyndns.org>
+ <Pine.LNX.4.64.1304091402150.10025@file.rdu.redhat.com>
+ <20130409181031.GC6186@mtj.dyndns.org>
+ <20130409184248.GO6320@redhat.com>
+ <20130409185721.GF6186@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304092112.56039.arnd@arndb.de>
-X-Provags-ID: V02:K0:0N1zWpL/uz6vYTb4qfDgpkLh23UI+e+xV4JHGqDS/Bt
- yb0T9gZo1HDKpyxtjOWB9I6c4bSolGrRIWZqCs/9EVK8xTNjoi
- yS6nqczU5Q7Syl9Vu2XnrzsONvYzHWYxTLKDgv+EF4n+/hFdSM
- 7sB89NQfwAZarHPO8ozgycQAKKDaJTOpSw7mjSq/pP5gXGSDsN
- IhZAioiNllCeG37DGk3H6M0Ju2vqmyNdVyQSQ31ApBQ4Uemrqk
- s/7O9i0ibIZfxd4i/7EXwstbbS93IyRYzf21pjnl5qeUNKuwpT
- HV9/8buy9I6Av+8AATZO7AO8WkTWQiO//KaWAitbW2F+Jw3uAm
- XD47GCyswEZ3d/+jg8Ak=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130409185721.GF6186@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 April 2013, Harvey Harrison wrote:
-> 
-> On Tue, Apr 9, 2013 at 11:39 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> >
-> > The aim is to make the code that little more readable.
-> >
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> 
-> >
-> >  #define MAX(a, b) (((a) < (b)) ? (b) : (a))
-> 
-> Not part of your patch, but probably a good idea to switch to the
-> generic MAX macro, this
-> one is evaluating its args twice.
+On Tue, Apr 09, 2013 at 11:57:21AM -0700, Tejun Heo wrote:
 
-Yes, good point. The macro is only used in one place, to compare
-two compile-time constant values, but we should define macros in
-drivers that are already provided by the kernel.
+[..]
+> And destroy all per-ioc and cgroup logics in block layer in the
+> process.
 
-	Arnd
+Oh, I am in no-way suggesting don't use bio_associate_current(). I am 
+just trying to analyze the performance issue right now and saying that
+as far as performance is concenred, one will get it back even if one
+does not use bio_associate_current().
+
+Yes but one needs to use bio_associate_current() to make sure bio's
+are attributed to right cgroup and associate bio to right task. This
+should help solving the long standing issue of task losing its ioprio
+if dm-crypt target is in the stack.
+
+Thanks
+Vivek
