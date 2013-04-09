@@ -1,32 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936965Ab3DIHlD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 03:41:03 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:49472 "EHLO
+	id S936989Ab3DIHrv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 03:47:51 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47675 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186Ab3DIHlB (ORCPT
+	with ESMTP id S935420Ab3DIHrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 03:41:01 -0400
-Date: Tue, 9 Apr 2013 17:40:47 +1000
+	Tue, 9 Apr 2013 03:47:49 -0400
+Date: Tue, 9 Apr 2013 17:47:47 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
         <linux-arm-kernel@lists.infradead.org>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Archit Taneja <archit@ti.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Paul Bolle <pebolle@tiscali.nl>
-Subject: linux-next: manual merge of the arm-soc tree with the omap_dss2
- tree
-Message-Id: <20130409174047.c506479e08e9688c0a4ced9a@canb.auug.org.au>
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: linux-next: manual merge of the arm-soc tree with the gpio-lw tree
+Message-Id: <20130409174747.873a9c9cad1cd6a4dbe4014f@canb.auug.org.au>
 X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Tue__9_Apr_2013_17_40_47_+1000_x7QlJ2ZkP+gjyzVo"
+ boundary="Signature=_Tue__9_Apr_2013_17_47_47_+1000_+hGXl1Dk1xb7.JKv"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__9_Apr_2013_17_40_47_+1000_x7QlJ2ZkP+gjyzVo
+--Signature=_Tue__9_Apr_2013_17_47_47_+1000_+hGXl1Dk1xb7.JKv
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
@@ -34,71 +34,37 @@ Content-Transfer-Encoding: quoted-printable
 Hi all,
 
 Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-omap2/board-2430sdp.c between commit 3b4ece75b9e9 ("arm:
-omap: board-2430: use generic dpi panel's gpio handling") from the
-omap_dss2 tree and commit 5b6513d27775 ("ARM: OMAP: fix typo
-"CONFIG_SMC91x_MODULE"") from the arm-soc tree.
+drivers/gpio/gpio-vt8500.c between commit 808c513ee64b ("gpio/vt8500:
+Convert to devm_ioremap_resource()") from the gpio-lw tree and commit
+dc1010860b03 ("gpio: vt8500: Remove arch-vt8500 gpio driver") from the
+arm-soc tree.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+The latter removed the file, so I did that and can carry the fix as
+necessary (no action is required).
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/arm/mach-omap2/board-2430sdp.c
-index e551aae,cb0596b..0000000
---- a/arch/arm/mach-omap2/board-2430sdp.c
-+++ b/arch/arm/mach-omap2/board-2430sdp.c
-@@@ -135,7 -146,27 +135,7 @@@ static struct omap_dss_board_info sdp24
-  	.default_device	=3D &sdp2430_lcd_device,
-  };
- =20
-- #if defined(CONFIG_SMC91X) || defined(CONFIG_SMC91x_MODULE)
- -static void __init sdp2430_display_init(void)
- -{
- -	int r;
- -
- -	static struct gpio gpios[] __initdata =3D {
- -		{ SDP2430_LCD_PANEL_ENABLE_GPIO, GPIOF_OUT_INIT_LOW,
- -			"LCD reset" },
- -		{ SDP2430_LCD_PANEL_BACKLIGHT_GPIO, GPIOF_OUT_INIT_LOW,
- -			"LCD Backlight" },
- -	};
- -
- -	r =3D gpio_request_array(gpios, ARRAY_SIZE(gpios));
- -	if (r) {
- -		pr_err("Cannot request LCD GPIOs, error %d\n", r);
- -		return;
- -	}
- -
- -	omap_display_init(&sdp2430_dss_data);
- -}
- -
-+ #if IS_ENABLED(CONFIG_SMC91X)
- =20
-  static struct omap_smc91x_platform_data board_smc91x_data =3D {
-  	.cs		=3D 5,
-
---Signature=_Tue__9_Apr_2013_17_40_47_+1000_x7QlJ2ZkP+gjyzVo
+--Signature=_Tue__9_Apr_2013_17_47_47_+1000_+hGXl1Dk1xb7.JKv
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJRY8X/AAoJEECxmPOUX5FEOlwP/0LkrImgJYl7Y5dgtlNW5b7W
-44I/ZzeRtpWzz56EXgungZUHw71HTYiH4asovBqSwW52qxVItBqekq+qGb2nf1v2
-zShRvFdLPfkuDCep6sc+sePmqsDVMzvD/pPFaFu+OpEnVj3YmFLhDFZcIWE1QQRf
-EzYARMfFD6Q0UaIa4B/TuCnQcgES+KcqzzU+nY0b4LLBOHvppotq10crcPWXFB4L
-BPZh4pc/1Ui4+/UawW5cLWdToQZThmp5zEURmtY5AIZvbzzmopXQRsct2M+U5rhJ
-/oEXFuxOoNByuGTDStqJTP1T6LCxCmrOBDFkBhsDHZLRB17ACWCr+K88bxuDdTYN
-942awfbz+LeHjDTWBNZ+HH1cEl3CJ/pqzohu2+xPbh6DfE+80bJxzxwCXEiirTBW
-H+tPNXVuJoYuZr5rq0c3+aVCbRoFCnXWqW/Nn1y8Lj+JGHHjYHPNE7JA9REv2PEf
-fS+rprt+dUGxE4xIBgoxFY/7bCn0WdQQe5HCcePGIuFn44Nm4hNX8r+1T+59uGeZ
-Xvno4DA15Tl0WFkEo9dRt1gNMCbbgjVgt4u4PxnI8ZThsSkvTRNTcup1tnEJ4In2
-0D/udKsou48VUpI7l7vvmSGrPwBuNV8nXnsQDp23MhvTLQV2zzUl16fl48LMbZrN
-3lNMMi0hyrGePODR0EEX
-=BvpW
+iQIcBAEBCAAGBQJRY8ejAAoJEECxmPOUX5FETQsP/0yCMz3aX41hnjlJlzYT+Yl+
+5D6+qvHKN/BWh8rRkMg+4AeTUQTes0Kgt6nkN4zl0WQGgxe4Iix25fZIcadq/QRl
+nKMYidWYbSrpKOlu09N0NUUD8GWUjCqSJj6ACqLLfSZpmH6IE6AjONPtR19bXtlA
++iT84G53ufQi4zTTInjPfn4VDfKwjICoo3SKYL0m4H/VvlBMUj5w5AhzRY1CGS7l
+Z9a30HkINzCe2zQ9tvL5fh2XleQMJQb9h2Ozq+J+XZSXlwHCSBEE61lPzy89ZKqp
+rFHIyx64NBfxtAvR11YYcAwyaJR1I9Dvyp6ohNdC/HKo4XnhDe+99KIL9O7iEaX+
+6Cbs/8KH52HLaKQ4DaMMYSZvTKteG8SJzcjurKo9tDbDcL7EasFPef2X/ywaxzz+
+tvQUkj/KZlM3mOyUzpNFMWTuV4lv2xHJ6BhYlfwHcBUtAxdgM2wQNKa3WITPbnWp
+Ip+KDo2JbRtSM+JtbQbZ0kwoSb/pBF/XY/rVSQqUFsR/4gziYCjKak6Fam0mCLMt
+s2Ktyqaj4AY9QR/ChgWk5nCe8aNcJBvefoT5ubCN+lLwAv7Xa7+IWWo2l+y5FFwQ
+dkDOrK6CWm45bIDBWdzc2j6pxKMabkdYoHoa++eHUQ71I4RP9Zo1zlCs3LeusxJN
+IbFTQGhK02dXJyVX+/uk
+=m3YC
 -----END PGP SIGNATURE-----
 
---Signature=_Tue__9_Apr_2013_17_40_47_+1000_x7QlJ2ZkP+gjyzVo--
+--Signature=_Tue__9_Apr_2013_17_47_47_+1000_+hGXl1Dk1xb7.JKv--
