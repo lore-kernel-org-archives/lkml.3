@@ -1,47 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937131Ab3DIQHs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 12:07:48 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:58114 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937046Ab3DIQHq (ORCPT
+	id S937154Ab3DIQHy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 12:07:54 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:61568 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937046Ab3DIQHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 12:07:46 -0400
-Date: Tue, 9 Apr 2013 09:07:41 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Joe Perches <joe@perches.com>
-Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Platform Driver <platform-driver-x86@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH v3 1/1] Introduce Intel RAPL cooling device driver
-Message-ID: <20130409160741.GA8080@kroah.com>
-References: <1365511578-30453-1-git-send-email-jacob.jun.pan@linux.intel.com>
- <1365511578-30453-2-git-send-email-jacob.jun.pan@linux.intel.com>
- <20130409152638.GA3033@kroah.com>
- <1365522817.6865.33.camel@joe-AO722>
+	Tue, 9 Apr 2013 12:07:52 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 9 Apr 2013 09:07:58 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Dave Young <dyoung@redhat.com>, linux-watchdog@vger.kernel.org,
+        kexec@lists.infradead.org, wim@iguana.be,
+        LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com
+Subject: Re: [RFC PATCH] watchdog: Add hook for kicking in kdump path
+Message-ID: <20130409160757.GA27050@roeck-us.net>
+References: <1365192994-94850-1-git-send-email-dzickus@redhat.com>
+ <516259D2.7000805@redhat.com>
+ <20130408124858.GC79013@redhat.com>
+ <20130408151509.GA20919@roeck-us.net>
+ <20130409144431.GL79013@redhat.com>
+ <20130409145228.GA1111@roeck-us.net>
+ <20130409151423.GM79013@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365522817.6865.33.camel@joe-AO722>
+In-Reply-To: <20130409151423.GM79013@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 08:53:37AM -0700, Joe Perches wrote:
-> On Tue, 2013-04-09 at 08:26 -0700, Greg Kroah-Hartman wrote:
-> > On Tue, Apr 09, 2013 at 05:46:18AM -0700, Jacob Pan wrote:
-> > > +#define DEBUG
-> > Why?  I think you need to remove this line :)
+On Tue, Apr 09, 2013 at 11:14:23AM -0400, Don Zickus wrote:
+> On Tue, Apr 09, 2013 at 07:52:28AM -0700, Guenter Roeck wrote:
+> > On Tue, Apr 09, 2013 at 10:44:31AM -0400, Don Zickus wrote:
+> > > On Mon, Apr 08, 2013 at 08:15:09AM -0700, Guenter Roeck wrote:
+> > > > On Mon, Apr 08, 2013 at 08:48:58AM -0400, Don Zickus wrote:
+> > > > > On Mon, Apr 08, 2013 at 01:46:58PM +0800, Dave Young wrote:
+> > > > > > On 04/06/2013 04:16 AM, Don Zickus wrote:
+> > > > > > > A common problem with kdump is that during the boot up of the
+> > > > > > > second kernel, the hardware watchdog times out and reboots the
+> > > > > > > machine before a vmcore can be captured.
+> > > > > > > 
+> > > > > > > Instead of tellling customers to disable their hardware watchdog
+> > > > > > > timers, I hacked up a hook to put in the kdump path that provides
+> > > > > > > one last kick before jumping into the second kernel.
+> > > > > > > 
+> > > > > > > The assumption is the watchdog timeout is at least 10-30 seconds
+> > > > > > > long, enough to get the second kernel to userspace to kick the watchdog
+> > > > > > > again, if needed.
+> > > > > > 
+> > > > > > For kdump kernel some devices need to reset, this might increase the
+> > > > > > boot time, it's not so reliable for the 10-30s for us to kicking the
+> > > > > > watchdog.
+> > > > > > 
+> > > > > > Could we have another option to disable/stop the watchdog while panic
+> > > > > > happens? Ie. add a kernel cmdline panic_stop_wd=<0|1> for 1st kernel, if
+> > > > > > it's set to 1, then just stop the watchdog or we can kick the watchdog
+> > > > > > like what you do in this patch. Of course stopping watchdog should be
+> > > > > > lockless as well..
+> > > > > 
+> > > > > Hmm, I can look into that.  But I am not sure all watchdogs have the
+> > > > > ability to stop once started.  I was also worried about the case where
+> > > > 
+> > > > Correct.
+> > > > 
+> > > > > kdump hangs for some reason.  Having the watchdog there to 'reboot' would
+> > > > > be a nice safety net.
+> > > > > 
+> > > > Absolutely agree. After all, the reason for the kdump is most likely that
+> > > > something went really wrong, meaning there is some likelyhood for the hang
+> > > > to occur. Turning off the watchdog in this condition does not seem to be
+> > > > a good idea.
+> > > > 
+> > > > > Perhaps adjusting the watchdog 'timeout' to something like 3 minutes would
+> > > > > be easier?
+> > > > > 
+> > > > Not all watchdogs support such large timeouts, unfortunately. Maybe it would
+> > > > make sense to implement infrastructure support for a softdog on top of the
+> > > > hardware watchdog. Several drivers implement that outside the infrastructure
+> > > > already.
+> > > 
+> > > Hi Guenter,
+> > > 
+> > > I am not familar with a softdog.  Can you give me an example of how it
+> > > works?
+> > > 
+> > Just look for the use of mod_timer in the watchdog directory.
 > 
-> Some people like their dev_dbg statements to
-> be emitted all the time.
+> So looking at the mod_timer logic in various drivers, it seems regardless
+> if the /dev/watchdog device is opened or not, if it is running, it will
+> automagically kick the watchdog.
+> 
+yes
 
-Those people should not be submitting new drivers for inclusion in the
-kernel tree.
+> This seems that we can avoid pulling in userspace pieces for this.  Just
+> load the driver and the hardware starts getting kicked.
+> 
+Only if it is already running. Also, you don't want to rely on it, because you
+lose protection against user space issues.
+
+A second use is if the hw watchdog needs to be pinged more often than user
+space can provide. Some of the HW watchdogs need a ping in one-second intervals
+or even faster.
+
+> Is that true?  And if so, do all drivers detect if the hardware is already
+> running during their init?  Or is it based on the first device open?
+> 
+It is usually done in the probe function.
+
+Guenter
