@@ -1,59 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934560Ab3DIFm6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 01:42:58 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:36641 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab3DIFm4 (ORCPT
+	id S934733Ab3DIFsh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 01:48:37 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:48172 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab3DIFsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 01:42:56 -0400
-Message-ID: <5163AA5A.9010205@gmail.com>
-Date: Tue, 09 Apr 2013 13:42:50 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 9 Apr 2013 01:48:36 -0400
+Date: Tue, 9 Apr 2013 13:48:25 +0800
+From: Ram Pai <linuxram@us.ibm.com>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, guz.fnst@cn.fujitsu.com, tmac@hp.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        tangchen@cn.fujitsu.com, jiang.liu@huawei.com
+Subject: Re: [UPDATE][PATCH v2 2/3] resource: Add
+ release_mem_region_adjustable()
+Message-ID: <20130409054825.GB7251@ram.oc3035372033.ibm.com>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <1365457655-7453-1-git-send-email-toshi.kani@hp.com>
 MIME-Version: 1.0
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mm/page_alloc: factor out setting of pcp->high and
- pcp->batch.
-References: <1365194030-28939-1-git-send-email-cody@linux.vnet.ibm.com> <1365194030-28939-2-git-send-email-cody@linux.vnet.ibm.com> <5160CDD8.3050908@gmail.com> <516300C7.7000008@linux.vnet.ibm.com>
-In-Reply-To: <516300C7.7000008@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365457655-7453-1-git-send-email-toshi.kani@hp.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13040905-2876-0000-0000-000007431719
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Cody,
-On 04/09/2013 01:39 AM, Cody P Schafer wrote:
-> On 04/06/2013 06:37 PM, Simon Jeons wrote:
->> Hi Cody,
->> On 04/06/2013 04:33 AM, Cody P Schafer wrote:
->>> Creates pageset_set_batch() for use in setup_pageset().
->>> pageset_set_batch() imitates the functionality of
->>> setup_pagelist_highmark(), but uses the boot time
->>> (percpu_pagelist_fraction == 0) calculations for determining ->high
->>
->> Why need adjust pcp->high, pcp->batch during system running? What's the
->> requirement?
->>
->
-> There is currently a sysctl (which I patch later in this series) which 
-> allows adjusting the ->high mark (and, indirectly, ->batch). 
-> Additionally, memory hotplug changes ->high and ->batch due to the 
-> zone size changing (essentially, zone->managed_pages and 
-> zone->present_pages have changed) , meaning that zone_batchsize(), 
-> which is used at boot to set ->batch and (indirectly) ->high has a 
-> different output.
+On Mon, Apr 08, 2013 at 03:47:35PM -0600, Toshi Kani wrote:
+> Added release_mem_region_adjustable(), which releases a requested
+> region from a currently busy memory resource.  This interface
+> adjusts the matched memory resource accordingly even if the
+> requested region does not match exactly but still fits into.
+> 
+> This new interface is intended for memory hot-delete.  During
+> bootup, memory resources are inserted from the boot descriptor
+> table, such as EFI Memory Table and e820.  Each memory resource
+> entry usually covers the whole contigous memory range.  Memory
+> hot-delete request, on the other hand, may target to a particular
+> range of memory resource, and its size can be much smaller than
+> the whole contiguous memory.  Since the existing release interfaces
+> like __release_region() require a requested region to be exactly
+> matched to a resource entry, they do not allow a partial resource
+> to be released.
+> 
+> There is no change to the existing interfaces since their restriction
+> is valid for I/O resources.
+> 
+> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> Reviewed-by : Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> ---
+> 
+> Added #ifdef CONFIG_MEMORY_HOTPLUG as suggested by Andrew Morton.
+> 
+> ---
+>  include/linux/ioport.h |    4 ++
+>  kernel/resource.c      |   96 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 100 insertions(+)
+> 
+> diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+> index 85ac9b9b..961d4dc 100644
+> --- a/include/linux/ioport.h
+> +++ b/include/linux/ioport.h
+> @@ -192,6 +192,10 @@ extern struct resource * __request_region(struct resource *,
+>  extern int __check_region(struct resource *, resource_size_t, resource_size_t);
+>  extern void __release_region(struct resource *, resource_size_t,
+>  				resource_size_t);
+> +#ifdef CONFIG_MEMORY_HOTPLUG
+> +extern int release_mem_region_adjustable(struct resource *, resource_size_t,
+> +				resource_size_t);
+> +#endif
+> 
+>  static inline int __deprecated check_region(resource_size_t s,
+>  						resource_size_t n)
+> diff --git a/kernel/resource.c b/kernel/resource.c
+> index ae246f9..25b945c 100644
+> --- a/kernel/resource.c
+> +++ b/kernel/resource.c
+> @@ -1021,6 +1021,102 @@ void __release_region(struct resource *parent, resource_size_t start,
+>  }
+>  EXPORT_SYMBOL(__release_region);
+> 
+> +#ifdef CONFIG_MEMORY_HOTPLUG
+> +/**
+> + * release_mem_region_adjustable - release a previously reserved memory region
+> + * @parent: parent resource descriptor
+> + * @start: resource start address
+> + * @size: resource region size
+> + *
+> + * This interface is intended for memory hot-delete.  The requested region is
+> + * released from a currently busy memory resource.  It adjusts the matched
+> + * busy memory resource accordingly even if the requested region does not
+> + * match exactly but still fits into.  Existing children of the busy memory
+> + * resource must be immutable in this request.
+> + *
+> + * Note, when the busy memory resource gets split into two entries, the code
+> + * assumes that all children remain in the lower address entry for simplicity.
+> + * Enhance this logic when necessary.
+> + */
+> +int release_mem_region_adjustable(struct resource *parent,
+> +			resource_size_t start, resource_size_t size)
+> +{
+> +	struct resource **p;
+> +	struct resource *res, *new;
+> +	resource_size_t end;
+> +	int ret = -EINVAL;
+> +
+> +	end = start + size - 1;
+> +	if ((start < parent->start) || (end > parent->end))
+> +		return ret;
+> +
+> +	p = &parent->child;
+> +	write_lock(&resource_lock);
+> +
+> +	while ((res = *p)) {
+> +		if (res->start >= end)
+> +			break;
+> +
+> +		/* look for the next resource if it does not fit into */
+> +		if (res->start > start || res->end < end) {
+> +			p = &res->sibling;
+> +			continue;
+> +		}
 
-Thanks for your explain. I'm curious about this sysctl, when need adjust 
-the ->high, ->batch during system running except memory hotplug which 
-will change zone size?
+What if the resource overlaps. In other words, the res->start > start 
+but res->end > end  ? 
 
->
-> Note that in addition to the 2 users of this functionality mentioned 
-> here, I'm currently working on anther resizer of zones (runtime NUMA 
-> reconfiguration).
->
+Also do you handle the case where the range <start,end> spans
+across multiple adjacent resources?
+
+-- 
+Ram Pai
 
