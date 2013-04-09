@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934655Ab3DINQM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 09:16:12 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11473 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759532Ab3DINQL (ORCPT
+	id S934351Ab3DINSj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 09:18:39 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:48400
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759169Ab3DINSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 09:16:11 -0400
-X-Authority-Analysis: v=2.0 cv=Pu4Rnnw3 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=DRErq4JoInYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=7MGjZ8EY_YsA:10 a=JfrnYn6hAAAA:8 a=D19gQVrFAAAA:8 a=v5fiLApgLk14Jc-GrVQA:9 a=QEXdDO2ut3YA:10 a=3Rfx1nUSh_UA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1365513368.25498.47.camel@gandalf.local.home>
-Subject: Re: [PATCH v4] sched: fix wrong rq's runnable_avg update with rt
- tasks
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+	Tue, 9 Apr 2013 09:18:38 -0400
+Message-ID: <1365513508.30071.4.camel@laptop>
+Subject: Re: [PATCH 3/7] sched: Update rq clock on tickless CPUs before
+ calling check_preempt_curr()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
         Mike Galbraith <efault@gmx.de>
-Date: Tue, 09 Apr 2013 09:16:08 -0400
-In-Reply-To: <CAKfTPtDKSkhi+nNsFV9Z6hsLxhbHd-Na9YxvNzr9iXG8SdQvhQ@mail.gmail.com>
-References: <1365084959-28374-1-git-send-email-vincent.guittot@linaro.org>
-	 <1365497753.2609.163.camel@laptop>
-	 <CAKfTPtDKSkhi+nNsFV9Z6hsLxhbHd-Na9YxvNzr9iXG8SdQvhQ@mail.gmail.com>
+Date: Tue, 09 Apr 2013 15:18:28 +0200
+In-Reply-To: <1365266760-24725-4-git-send-email-fweisbec@gmail.com>
+References: <1365266760-24725-1-git-send-email-fweisbec@gmail.com>
+	 <1365266760-24725-4-git-send-email-fweisbec@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-09 at 14:18 +0200, Vincent Guittot wrote:
-> On 9 April 2013 10:55, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Thu, 2013-04-04 at 16:15 +0200, Vincent Guittot wrote:
-> >> Changes since V2:
-> >> - remove useless definition for UP platform
-> >> - rebased on top of Steven Rostedt's patches :
-> >> https://lkml.org/lkml/2013/2/12/558
-> >
-> > So what's the status of those patches? I still worry about the extra
-> > context switch overhead for the high-frequency idle scenario.
+On Sat, 2013-04-06 at 18:45 +0200, Frederic Weisbecker wrote:
+> check_preempt_wakeup() of fair class needs an uptodate sched clock
+> value to update runtime stats of the current task.
 > 
-> I don't know. I have seen a pulled answer from Ingo but can't find the
-> commits in the tip tree.
-> 
-> Steve, have you got more info about the status of your patches ?
-> 
+> When a task is woken up, activate_task() is usually called right
+> before
+> ttwu_do_wakeup() unless the task is still in the runqueue. In this
+> case we need to update the rq clock manually in case the CPU runs
+> tickless because ttwu_do_wakeup() calls check_preempt_wakeup().
 
-Yeah, I asked Ingo to revert it due to Peter's concerns. I was able to
-get the latencies I needed without that patch set. That made it not so
-urgent.
-
-Can you rebase your patches doing something similar? That is, still use
-the pre/post_schedule_idle() calls, but don't base it off of my patch
-set.
-
-Thanks,
-
--- Steve
-
+again, same story.. I think the entire nohz specific clock update stuff
+is completely broken and you're finding sites that are simply missing
+clock updates.
 
