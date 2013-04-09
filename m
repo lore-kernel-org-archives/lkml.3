@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161040Ab3DIKCk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 06:02:40 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38644 "EHLO
+	id S1161510Ab3DIKDC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 06:03:02 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38639 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S936186Ab3DIKCZ (ORCPT
+	by vger.kernel.org with ESMTP id S934845Ab3DIKCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 06:02:25 -0400
+	Tue, 9 Apr 2013 06:02:22 -0400
 From: Serban Constantinescu <serban.constantinescu@arm.com>
 To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
         kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
         Dave.Butcher@arm.com
 Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH v2 7/7] staging: android: binder: replace types with portable ones
-Date: Tue,  9 Apr 2013 11:00:57 +0100
-Message-Id: <1365501657-4213-8-git-send-email-serban.constantinescu@arm.com>
+Subject: [PATCH v2 5/7] staging: android: binder: fix BC_FREE_BUFFER ioctl declaration
+Date: Tue,  9 Apr 2013 11:00:55 +0100
+Message-Id: <1365501657-4213-6-git-send-email-serban.constantinescu@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365501657-4213-1-git-send-email-serban.constantinescu@arm.com>
 References: <1365501657-4213-1-git-send-email-serban.constantinescu@arm.com>
@@ -22,101 +22,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since this driver is meant to be used on different types of processors
-and a portable driver should specify the size a variable expects to be
-this patch changes the types used throughout the binder interface.
+BinderDriverCommands mirror the ioctl usage. Thus the size of the
+structure passed through the interface should be used to generate the
+ioctl No.
 
-We use "userspace" types since this header will be exported and used by
-the Android filesystem.
+The change reflects the type being passed from the user space-a pointer
+to a binder_buffer. This change should not affect the existing 32bit
+user space since BC_FREE_BUFFER is computed as:
 
-The patch does not change in any way the functionality of the binder driver.
+   #define _IOW(type,nr,size)         \
+      ((type) << _IOC_TYPESHIFT) |    \
+      ((nr)   << _IOC_NRSHIFT) |      \
+      ((size) << _IOC_SIZESHIFT))
+
+and for a 32bit compiler BC_FREE_BUFFER will have the same computed
+value. This change will also ease our work in differentiating
+BC_FREE_BUFFER from COMPAT_BC_FREE_BUFFER.
+
+The change does not affect existing 32bit ABI.
 
 Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
 ---
- drivers/staging/android/binder.h |   26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ drivers/staging/android/binder.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
-index 8789baa..f3ffacd 100644
+index 5b9909f..8789baa 100644
 --- a/drivers/staging/android/binder.h
 +++ b/drivers/staging/android/binder.h
-@@ -123,10 +123,10 @@ struct binder_transaction_data {
- 		void	*ptr;	/* target descriptor of return transaction */
- 	} target;
- 	void		*cookie;	/* target object cookie */
--	unsigned int	code;		/* transaction command */
-+	__u32		code;		/* transaction command */
- 
- 	/* General information about the transaction. */
--	unsigned int	flags;
-+	__u32	        flags;
- 	pid_t		sender_pid;
- 	uid_t		sender_euid;
- 	size_t		data_size;	/* number of bytes of data */
-@@ -143,7 +143,7 @@ struct binder_transaction_data {
- 			/* offsets from buffer to flat_binder_object structs */
- 			const void __user	*offsets;
- 		} ptr;
--		uint8_t	buf[8];
-+		__u8	buf[8];
- 	} data;
- };
- 
-@@ -153,18 +153,18 @@ struct binder_ptr_cookie {
- };
- 
- struct binder_pri_desc {
--	int priority;
--	int desc;
-+	__s32 priority;
-+	__s32 desc;
- };
- 
- struct binder_pri_ptr_cookie {
--	int priority;
-+	__s32 priority;
- 	void *ptr;
- 	void *cookie;
- };
- 
- enum binder_driver_return_protocol {
--	BR_ERROR = _IOR('r', 0, int),
-+	BR_ERROR = _IOR('r', 0, __s32),
- 	/*
- 	 * int: error code
- 	 */
-@@ -178,7 +178,7 @@ enum binder_driver_return_protocol {
- 	 * binder_transaction_data: the received command.
+@@ -265,7 +265,7 @@ enum binder_driver_command_protocol {
+ 	 * Else you have acquired a primary reference on the object.
  	 */
  
--	BR_ACQUIRE_RESULT = _IOR('r', 4, int),
-+	BR_ACQUIRE_RESULT = _IOR('r', 4, __s32),
+-	BC_FREE_BUFFER = _IOW('c', 3, int),
++	BC_FREE_BUFFER = _IOW('c', 3, void *),
  	/*
- 	 * not currently supported
- 	 * int: 0 if the last bcATTEMPT_ACQUIRE was not successful.
-@@ -258,7 +258,7 @@ enum binder_driver_command_protocol {
- 	 * binder_transaction_data: the sent command.
- 	 */
- 
--	BC_ACQUIRE_RESULT = _IOW('c', 2, int),
-+	BC_ACQUIRE_RESULT = _IOW('c', 2, __s32),
- 	/*
- 	 * not currently supported
- 	 * int:  0 if the last BR_ATTEMPT_ACQUIRE was not successful.
-@@ -270,10 +270,10 @@ enum binder_driver_command_protocol {
  	 * void *: ptr to transaction data received on a read
- 	 */
- 
--	BC_INCREFS = _IOW('c', 4, int),
--	BC_ACQUIRE = _IOW('c', 5, int),
--	BC_RELEASE = _IOW('c', 6, int),
--	BC_DECREFS = _IOW('c', 7, int),
-+	BC_INCREFS = _IOW('c', 4, __s32),
-+	BC_ACQUIRE = _IOW('c', 5, __s32),
-+	BC_RELEASE = _IOW('c', 6, __s32),
-+	BC_DECREFS = _IOW('c', 7, __s32),
- 	/*
- 	 * int:	descriptor
  	 */
 -- 
 1.7.9.5
