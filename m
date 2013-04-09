@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936750Ab3DIHex (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 03:34:53 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:35728
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S936486Ab3DIHew (ORCPT
+	id S936952Ab3DIHgu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 03:36:50 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:47416 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186Ab3DIHgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 03:34:52 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: <Yuantian.Tang@freescale.com>
-To: <grant.likely@secretlab.ca>
-CC: <rob.herring@calxeda.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        Tang Yuantian <yuantian.tang@freescale.com>,
-        Tang Yuantian <Yuantian.Tang@freescale.com>
-Subject: [PATCH] of: remove the unnecessary of_node_put for of_parse_phandle_with_args()
-Date: Tue, 9 Apr 2013 14:56:09 +0800
-Message-ID: <1365490569-32455-1-git-send-email-Yuantian.Tang@freescale.com>
-X-Mailer: git-send-email 1.8.0
+	Tue, 9 Apr 2013 03:36:48 -0400
+Message-ID: <5163C53C.3050106@parallels.com>
+Date: Tue, 9 Apr 2013 11:37:32 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+To: Lennart Poettering <lpoetter@redhat.com>
+CC: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, <linux-kernel@vger.kernel.org>,
+        <jpoimboe@redhat.com>, <dhaval.giani@gmail.com>,
+        <workman-devel@redhat.com>
+Subject: Re: cgroup: status-quo and userland efforts
+References: <20130406012159.GA17159@mtj.dyndns.org> <5162CA21.4060108@parallels.com> <51635371.7070104@redhat.com>
+In-Reply-To: <51635371.7070104@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tang Yuantian <yuantian.tang@freescale.com>
+On 04/09/2013 03:32 AM, Lennart Poettering wrote:
+> The other big thing we want from the systemd side is saner notifications
+> when cgroups run empty. i.e. currently we don't get these at all in
+> containers (since the agent can be only installed once, for the host).
+> And the way we get this is awful, via kernel-spawned processes. I am
+> looking for a way how I can establish a watch on a certain subtree (not
+> just one directory) and get simple notifications in a race-free whenever
+> a cgroup runs empty.
+> 
 
-As the function itself says it is caller's responsibility to call the
-of_node_put().  So, remove it on success to keep the reference count
-correct.
+Well, as I am trying to port our tools for Upstream Linux (aka cgroups),
+I also got a pet peeve on this one as well. The notification system is
+global and done at the root level. IOW, notify_on_release is local, but
+release_agent is global.
 
-Signed-off-by: Tang Yuantian <Yuantian.Tang@freescale.com>
----
- drivers/of/base.c | 3 ---
- 1 file changed, 3 deletions(-)
+We use our management tool to enter containers and call something like
+init 0, that will shut the container down. But if the admin does it
+itself, the cgroup directory will stay there. We would like them to
+automatically disappear.
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 321d3ef..e8b4c28 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -1168,9 +1168,6 @@ static int __of_parse_phandle_with_args(const struct device_node *np,
- 					out_args->args[i] = be32_to_cpup(list++);
- 			}
- 
--			/* Found it! return success */
--			if (node)
--				of_node_put(node);
- 			return 0;
- 		}
- 
--- 
-1.8.0
+Maybe that is not something that needs to be done in the kernel. If
+systemd had some very easy and well documented way for a 3rd party
+software to register a notification to be called upon a certain cgroup
+release (if it exists already, sorry Lennart, but I haven't found
+anything in the likes. Just enlighten me)
 
 
