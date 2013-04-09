@@ -1,60 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937045Ab3DJQX7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 12:23:59 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60240 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933445Ab3DJQX6 convert rfc822-to-8bit (ORCPT
+	id S964961Ab3DJQZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 12:25:57 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:61221 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935053Ab3DJQZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 12:23:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,447,1363158000"; 
-   d="scan'208";a="317253572"
-From: "Gross, Mark" <mark.gross@intel.com>
-To: Rusty Russell <rusty@rustcorp.com.au>,
-        "Cohen, David A" <david.a.cohen@intel.com>,
-        "dhowells@redhat.com" <dhowells@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] MODSIGN: do not send garbage to stderr when enabling
- modules signature
-Thread-Topic: [PATCH v2] MODSIGN: do not send garbage to stderr when
- enabling modules signature
-Thread-Index: AQHONWpm8yljXCMlhUqsStjUmzwEFJjOazzggAEZbwCAAA7x0A==
-Date: Wed, 10 Apr 2013 16:23:26 +0000
-Message-ID: <BD75D217E5BAC84080F8EFB2582976377175DEED@ORSMSX101.amr.corp.intel.com>
-References: <1365543543-17522-1-git-send-email-david.a.cohen@intel.com>
- <BD75D217E5BAC84080F8EFB2582976377175D258@ORSMSX101.amr.corp.intel.com>
- <87mwt66dz3.fsf@rustcorp.com.au>
-In-Reply-To: <87mwt66dz3.fsf@rustcorp.com.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 10 Apr 2013 12:25:56 -0400
+Date: Mon, 8 Apr 2013 20:42:41 -0400
+From: Andrew Shewmaker <agshew@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        simon.jeons@gmail.com, ric.masonn@gmail.com
+Subject: Re: [PATCH v8 3/3] mm: reinititalise user and admin reserves if
+ memory is added or removed
+Message-ID: <20130409004241.GA4277@localhost.localdomain>
+References: <20130408190738.GC2321@localhost.localdomain>
+ <20130408133712.bd327017dec19a2c14e22662@linux-foundation.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130408133712.bd327017dec19a2c14e22662@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry.  I don't use my outlook email on LMKL stuff hardly ever because of this sort of thing.
+On Mon, Apr 08, 2013 at 01:37:12PM -0700, Andrew Morton wrote:
+> On Mon, 8 Apr 2013 15:07:38 -0400 Andrew Shewmaker <agshew@gmail.com> wrote:
+> 
+> > This patch alters the admin and user reserves of the previous patches 
+> > in this series when memory is added or removed.
+> > 
+> > If memory is added and the reserves have been eliminated or increased above
+> > the default max, then we'll trust the admin.
+> > 
+> > If memory is removed and there isn't enough free memory, then we
+> > need to reset the reserves.
+> > 
+> > Otherwise keep the reserve set by the admin.
+> > 
+> > The reserve reset code is the same as the reserve initialization code.
+> > 
+> > Does this sound reasonable to other people? I figured that hot removal
+> > with too large of memory in the reserves was the most important case 
+> > to get right.
+> 
+> Seems reasonable to me.
+> 
+> I don't understand the magic numbers 1<<13 and 1<<17.  How could I? 
+> Please add comments explaining how and why these were chosen.
 
---mgross
-http://umgwiki.intel.com/wiki/?title=Kernel
+The v9 patch I posted has this too, but here is a patch against 
+yesterday's mmotm.
 
-> -----Original Message-----
-> From: Rusty Russell [mailto:rusty@rustcorp.com.au]
-> Sent: Wednesday, April 10, 2013 12:29 AM
-> To: Gross, Mark; Cohen, David A; dhowells@redhat.com
-> Cc: linux-kernel@vger.kernel.org
-> Subject: RE: [PATCH v2] MODSIGN: do not send garbage to stderr when enabling
-> modules signature
-> 
-> "Gross, Mark" <mark.gross@intel.com> writes:
-> > Reviewed-by: mark gross<mark.gross@intel.com>
-> 
-> Not sure that's a valid email address, so I added a space.
-> 
-> Cheers,
-> Rusty.
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 099a16d..cee7e74 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -3119,6 +3119,13 @@ module_init(init_admin_reserve)
+ /*
+  * Reinititalise user and admin reserves if memory is added or removed.
+  *
++ * The default user reserve max is 128MB, and the default max for the
++ * admin reserve is 8MB. These are usually, but not always, enough to
++ * enable recovery from a memory hogging process using login/sshd, a shell,
++ * and tools like top. It may make sense to increase or even disable the
++ * reserve depending on the existence of swap or variations in the recovery
++ * tools. So, the admin may have changed them.
++ *
+  * If memory is added and the reserves have been eliminated or increased above
+  * the default max, then we'll trust the admin.
+  *
+@@ -3134,10 +3141,16 @@ static int reserve_mem_notifier(struct notifier_block *nb,
+ 
+ 	switch (action) {
+ 	case MEM_ONLINE:
++		/*
++		 * Default max is 128MB. Leave alone if modified by operator.
++ 		 */
+ 		tmp = sysctl_user_reserve_kbytes;
+ 		if (0 < tmp && tmp < (1UL << 17))
+ 			init_user_reserve();
+ 
++		/*
++		 * Default max is 8MB. Leave alone if modified by operator.
++ 		 */
+ 		tmp = sysctl_admin_reserve_kbytes;
+ 		if (0 < tmp && tmp < (1UL << 13))
+ 			init_admin_reserve();
