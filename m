@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935726Ab3DITFt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 15:05:49 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37981 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762470Ab3DITFr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 15:05:47 -0400
-Date: Tue, 09 Apr 2013 15:05:43 -0400 (EDT)
-Message-Id: <20130409.150543.466468818028967750.davem@davemloft.net>
-To: keescook@chromium.org
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        minipli@googlemail.com, spender@grsecurity.net
-Subject: Re: [PATCH] net: pre-clear the returned sockaddr_storage variable
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130409175024.GA19308@www.outflux.net>
-References: <20130409175024.GA19308@www.outflux.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	id S935868Ab3DITGA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 15:06:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37505 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935760Ab3DITF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 15:05:58 -0400
+Message-ID: <1365534355.16420.160.camel@bling.home>
+Subject: [GIT PULL] vfio fix for 3.9-rc7
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Date: Tue, 09 Apr 2013 13:05:55 -0600
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Tue, 09 Apr 2013 12:05:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kees Cook <keescook@chromium.org>
-Date: Tue, 9 Apr 2013 10:50:24 -0700
+Hi Linus,
 
-> To avoid future stack content leaks in the various protocols, pre-clear
-> the returned memory.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Suggested-by: Brad Spengler <spender@grsecurity.net>
+Here's one small fix for vfio that I'd like to get in for 3.9;
+tightening the range checking around a vfio ioctl.  Thanks!
 
-No thanks, clearing 2 full cache lines unnecessarily on every socket
-call has real cost.
+Alex
+
+The following changes since commit 25e9789ddd9d14a8971f4a421d04f282719ab733:
+
+  vfio: include <linux/slab.h> for kmalloc (2013-03-15 12:58:20 -0600)
+
+are available in the git repository at:
+
+  git://github.com/awilliam/linux-vfio.git tags/vfio-v3.9-rc7
+
+for you to fetch changes up to 904c680c7bf016a8619a045850937427f8d7368c:
+
+  vfio-pci: Fix possible integer overflow (2013-03-26 11:33:16 -0600)
+
+----------------------------------------------------------------
+vfio overflow fix for v3.9-rc7
+
+----------------------------------------------------------------
+Alex Williamson (1):
+      vfio-pci: Fix possible integer overflow
+
+ drivers/vfio/pci/vfio_pci.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+
