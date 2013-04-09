@@ -1,193 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935359Ab3DINUa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 09:20:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55585 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761180Ab3DINU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 09:20:28 -0400
-Date: Tue, 9 Apr 2013 15:20:26 +0200
-From: Jan Kara <jack@suse.cz>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH v3 04/18] jbd: change journal_invalidatepage() to
- accept length
-Message-ID: <20130409132026.GA13672@quack.suse.cz>
-References: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
- <1365498867-27782-5-git-send-email-lczerner@redhat.com>
+	id S935301Ab3DINVp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 09:21:45 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:37240 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760900Ab3DINVo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 09:21:44 -0400
+Date: Tue, 9 Apr 2013 15:21:35 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Tomas Melin <tomas.melin@iki.fi>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>
+Subject: Re: Re: drm/i915: new warning (regression) in 3.7.10 and 3.8.3
+Message-ID: <20130409132135.GC5132@netboy>
+References: <CACraW2rBMfXL_M13DD-qLvmZj55XPykEW-5qcVwViWg9XM00fA@mail.gmail.com>
+ <20130409125003.GW2228@phenom.ffwll.local>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365498867-27782-5-git-send-email-lczerner@redhat.com>
+In-Reply-To: <20130409125003.GW2228@phenom.ffwll.local>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-04-13 11:14:13, Lukas Czerner wrote:
-> ->invalidatepage() aop now accepts range to invalidate so we can make
-> use of it in journal_invalidatepage() and all the users in ext3 file
-> system. Also update ext3 trace point to print out length argument.
+On Tue, Apr 09, 2013 at 02:50:03PM +0200, Daniel Vetter wrote:
 > 
-> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-  Looks good. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+> This should be fixed with the above mentioned patch. The issue is that the
+> bios fumbles around with the output configuration behind our backs, so the
+> new paranoid modeset code in 3.7+ freaks out about the state mismatch
+> between sw and hw.
+> 
+> The patch above should detect this situation and undo any bios-induced
+> damage.
 
-								Honza
+Even with the patch, I still am seeing the issue (in 3.8).
 
-> ---
->  fs/ext3/inode.c             |    6 +++---
->  fs/jbd/transaction.c        |   19 ++++++++++++++-----
->  include/linux/jbd.h         |    2 +-
->  include/trace/events/ext3.h |   12 +++++++-----
->  4 files changed, 25 insertions(+), 14 deletions(-)
-> 
-> diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
-> index 349d4ce..b12936b 100644
-> --- a/fs/ext3/inode.c
-> +++ b/fs/ext3/inode.c
-> @@ -1828,15 +1828,15 @@ static void ext3_invalidatepage(struct page *page, unsigned int offset,
->  {
->  	journal_t *journal = EXT3_JOURNAL(page->mapping->host);
->  
-> -	trace_ext3_invalidatepage(page, offset);
-> +	trace_ext3_invalidatepage(page, offset, length);
->  
->  	/*
->  	 * If it's a full truncate we just forget about the pending dirtying
->  	 */
-> -	if (offset == 0)
-> +	if (offset == 0 && length == PAGE_CACHE_SIZE)
->  		ClearPageChecked(page);
->  
-> -	journal_invalidatepage(journal, page, offset);
-> +	journal_invalidatepage(journal, page, offset, length);
->  }
->  
->  static int ext3_releasepage(struct page *page, gfp_t wait)
-> diff --git a/fs/jbd/transaction.c b/fs/jbd/transaction.c
-> index 071d690..a1fef89 100644
-> --- a/fs/jbd/transaction.c
-> +++ b/fs/jbd/transaction.c
-> @@ -2020,16 +2020,20 @@ zap_buffer_unlocked:
->   * void journal_invalidatepage() - invalidate a journal page
->   * @journal: journal to use for flush
->   * @page:    page to flush
-> - * @offset:  length of page to invalidate.
-> + * @offset:  offset of the range to invalidate
-> + * @length:  length of the range to invalidate
->   *
-> - * Reap page buffers containing data after offset in page.
-> + * Reap page buffers containing data in specified range in page.
->   */
->  void journal_invalidatepage(journal_t *journal,
->  		      struct page *page,
-> -		      unsigned long offset)
-> +		      unsigned int offset,
-> +		      unsigned int length)
->  {
->  	struct buffer_head *head, *bh, *next;
-> +	unsigned int stop = offset + length;
->  	unsigned int curr_off = 0;
-> +	int partial_page = (offset || length < PAGE_CACHE_SIZE);
->  	int may_free = 1;
->  
->  	if (!PageLocked(page))
-> @@ -2037,6 +2041,8 @@ void journal_invalidatepage(journal_t *journal,
->  	if (!page_has_buffers(page))
->  		return;
->  
-> +	BUG_ON(stop > PAGE_CACHE_SIZE || stop < length);
-> +
->  	/* We will potentially be playing with lists other than just the
->  	 * data lists (especially for journaled data mode), so be
->  	 * cautious in our locking. */
-> @@ -2046,11 +2052,14 @@ void journal_invalidatepage(journal_t *journal,
->  		unsigned int next_off = curr_off + bh->b_size;
->  		next = bh->b_this_page;
->  
-> +		if (next_off > stop)
-> +			return;
-> +
->  		if (offset <= curr_off) {
->  			/* This block is wholly outside the truncation point */
->  			lock_buffer(bh);
->  			may_free &= journal_unmap_buffer(journal, bh,
-> -							 offset > 0);
-> +							 partial_page);
->  			unlock_buffer(bh);
->  		}
->  		curr_off = next_off;
-> @@ -2058,7 +2067,7 @@ void journal_invalidatepage(journal_t *journal,
->  
->  	} while (bh != head);
->  
-> -	if (!offset) {
-> +	if (!partial_page) {
->  		if (may_free && try_to_free_buffers(page))
->  			J_ASSERT(!page_has_buffers(page));
->  	}
-> diff --git a/include/linux/jbd.h b/include/linux/jbd.h
-> index c8f3297..d02e16c 100644
-> --- a/include/linux/jbd.h
-> +++ b/include/linux/jbd.h
-> @@ -840,7 +840,7 @@ extern void	 journal_release_buffer (handle_t *, struct buffer_head *);
->  extern int	 journal_forget (handle_t *, struct buffer_head *);
->  extern void	 journal_sync_buffer (struct buffer_head *);
->  extern void	 journal_invalidatepage(journal_t *,
-> -				struct page *, unsigned long);
-> +				struct page *, unsigned int, unsigned int);
->  extern int	 journal_try_to_free_buffers(journal_t *, struct page *, gfp_t);
->  extern int	 journal_stop(handle_t *);
->  extern int	 journal_flush (journal_t *);
-> diff --git a/include/trace/events/ext3.h b/include/trace/events/ext3.h
-> index 15d11a3..6797b9d 100644
-> --- a/include/trace/events/ext3.h
-> +++ b/include/trace/events/ext3.h
-> @@ -290,13 +290,14 @@ DEFINE_EVENT(ext3__page_op, ext3_releasepage,
->  );
->  
->  TRACE_EVENT(ext3_invalidatepage,
-> -	TP_PROTO(struct page *page, unsigned long offset),
-> +	TP_PROTO(struct page *page, unsigned int offset, unsigned int length),
->  
-> -	TP_ARGS(page, offset),
-> +	TP_ARGS(page, offset, length),
->  
->  	TP_STRUCT__entry(
->  		__field(	pgoff_t, index			)
-> -		__field(	unsigned long, offset		)
-> +		__field(	unsigned int, offset		)
-> +		__field(	unsigned int, length		)
->  		__field(	ino_t,	ino			)
->  		__field(	dev_t,	dev			)
->  
-> @@ -305,14 +306,15 @@ TRACE_EVENT(ext3_invalidatepage,
->  	TP_fast_assign(
->  		__entry->index	= page->index;
->  		__entry->offset	= offset;
-> +		__entry->length	= length;
->  		__entry->ino	= page->mapping->host->i_ino;
->  		__entry->dev	= page->mapping->host->i_sb->s_dev;
->  	),
->  
-> -	TP_printk("dev %d,%d ino %lu page_index %lu offset %lu",
-> +	TP_printk("dev %d,%d ino %lu page_index %lu offset %u length %u",
->  		  MAJOR(__entry->dev), MINOR(__entry->dev),
->  		  (unsigned long) __entry->ino,
-> -		  __entry->index, __entry->offset)
-> +		  __entry->index, __entry->offset, __entry->length)
->  );
->  
->  TRACE_EVENT(ext3_discard_blocks,
-> -- 
-> 1.7.7.6
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Thanks,
+Richard
