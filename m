@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936585Ab3DIW2N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 18:28:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20883 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754795Ab3DIW2K (ORCPT
+	id S936220Ab3DIWfg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 18:35:36 -0400
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:52816
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751808Ab3DIWfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 18:28:10 -0400
-X-Authority-Analysis: v=2.0 cv=Pu4Rnnw3 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wom5GMh1gUkA:10 a=k2A8Ma-yc6IA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=YQ5KiaJzOPkA:10 a=aKiHphdtgGwR0gcChJoA:9 a=CjuIK1q_8ugA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Date: Tue, 9 Apr 2013 18:28:08 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Daniel Vetter <daniel@ffwll.ch>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-arch@vger.kernel.org, daniel.vetter@ffwll.ch, x86@kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, robclark@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu, linux-media@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] mutex: add support for reservation style locks, v2
-Message-ID: <20130409222808.GC20739@home.goodmis.org>
-References: <20130228102452.15191.22673.stgit@patser>
- <20130228102502.15191.14146.stgit@patser>
- <1364900432.18374.24.camel@laptop>
- <515AF1C1.7080508@canonical.com>
- <1364921954.20640.22.camel@laptop>
- <1365076908.2609.94.camel@laptop>
- <20130404133123.GW2228@phenom.ffwll.local>
- <1365093662.2609.111.camel@laptop>
+	Tue, 9 Apr 2013 18:35:34 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h944hd24he5bhf0ah1220h1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+Date: Tue, 9 Apr 2013 17:31:58 -0500
+From: Kim Phillips <kim.phillips@freescale.com>
+To: Vakul Garg <vakul@freescale.com>
+CC: <linuxppc-dev@lists.ozlabs.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Andy Fleming <afleming@freescale.com>,
+        Shaveta Leekha <shaveta@freescale.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] powerpc/crypto: Add property for 'era' in SEC dts
+ crypto node
+Message-ID: <20130409173158.5eb44856b3304a34b6060dbf@freescale.com>
+In-Reply-To: <1365508233-26292-1-git-send-email-vakul@freescale.com>
+References: <1365508233-26292-1-git-send-email-vakul@freescale.com>
+Organization: Freescale Semiconductor, Inc.
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365093662.2609.111.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 04, 2013 at 06:41:02PM +0200, Peter Zijlstra wrote:
-> On Thu, 2013-04-04 at 15:31 +0200, Daniel Vetter wrote:
-> > The thing is now that you're not expected to hold these locks for a
-> > long
-> > time - if you need to synchronously stall while holding a lock
-> > performance
-> > will go down the gutters anyway. And since most current
-> > gpus/co-processors
-> > still can't really preempt fairness isn't that high a priority,
-> > either.
-> > So we didn't think too much about that.
+On Tue, 9 Apr 2013 17:20:33 +0530
+Vakul Garg <vakul@freescale.com> wrote:
+
+> The crypto node now contains a new property 'fsl,sec-era'.
+> This is required so that applications can retrieve era info without
+> having to be able to read SEC's register space.
 > 
-> Yeah but you're proposing a new synchronization primitive for the core
-> kernel.. all such 'fun' details need to be considered, not only those
-> few that bear on the one usecase.
+> Signed-off-by: Vakul Garg <vakul@freescale.com>
+> ---
+>  arch/powerpc/boot/dts/fsl/pq3-sec4.4-0.dtsi   |    1 +
+>  arch/powerpc/boot/dts/fsl/qoriq-sec4.0-0.dtsi |    1 +
+>  arch/powerpc/boot/dts/fsl/qoriq-sec4.2-0.dtsi |    1 +
+>  arch/powerpc/boot/dts/fsl/qoriq-sec5.0-0.dtsi |    1 +
+>  arch/powerpc/boot/dts/fsl/qoriq-sec5.2-0.dtsi |    1 +
+>  arch/powerpc/boot/dts/fsl/qoriq-sec5.3-0.dtsi |    1 +
+>  6 files changed, 6 insertions(+), 0 deletions(-)
 
-Which bares the question, what other use cases are there?
+missing p1023si-post.dtsi and qoriq-sec4.1-0.dtsi files.
 
--- Steve
+Kim
 
