@@ -1,135 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936205Ab3DIPOl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 11:14:41 -0400
-Received: from mail1.bemta12.messagelabs.com ([216.82.251.15]:20542 "EHLO
-	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935378Ab3DIPOi (ORCPT
+	id S933361Ab3DIPQb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 11:16:31 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:52767 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761532Ab3DIPQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 11:14:38 -0400
-X-Env-Sender: Hector.Palacios@digi.com
-X-Msg-Ref: server-7.tower-29.messagelabs.com!1365520475!22790711!1
-X-Originating-IP: [66.77.174.14]
-X-StarScan-Received: 
-X-StarScan-Version: 6.8.6.1; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <51643053.7030302@digi.com>
-Date: Tue, 9 Apr 2013 17:14:27 +0200
-From: Hector Palacios <hector.palacios@digi.com>
-Organization: Digi International
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 9 Apr 2013 11:16:30 -0400
 MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: <linux-mmc@vger.kernel.org>, <kernel@pengutronix.de>, <cjb@laptop.org>,
-        <aletes.xgr@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marek Vasut <marex@denx.de>, Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH v2 2/2] mmc: mxs-mmc: add non-removable property
-References: <1365166070-9370-1-git-send-email-mkl@pengutronix.de> <1365166070-9370-3-git-send-email-mkl@pengutronix.de>
-In-Reply-To: <1365166070-9370-3-git-send-email-mkl@pengutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <51642A47.9060602@intel.com>
+References: <1364873008-3169-1-git-send-email-alex.shi@intel.com>
+	<1364873008-3169-7-git-send-email-alex.shi@intel.com>
+	<CAKfTPtBoV3KoSHuTnZVrvPdCM+5ckFGXfM11oCB1Le_Zmy1hYQ@mail.gmail.com>
+	<5163CBE6.4070209@intel.com>
+	<CAKfTPtDbiv2ACgem7k7YxcxgwGA4-JY1LcAg0B_XOVaOeE8aeQ@mail.gmail.com>
+	<5163EF9E.4030005@intel.com>
+	<CAKfTPtAY3HpFhWiW=-P0_oBss2XhKJYRQJvFHqqapcZ7O0P6kQ@mail.gmail.com>
+	<51642A47.9060602@intel.com>
+Date: Tue, 9 Apr 2013 17:16:28 +0200
+Message-ID: <CAKfTPtA9heicJvotYevr8Ua-tqObvAGTQHHZvkB8SCnSgoFr+Q@mail.gmail.com>
+Subject: Re: [patch v3 6/8] sched: consider runnable load average in move_tasks
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, Paul Turner <pjt@google.com>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        gregkh@linuxfoundation.org,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, rafael.j.wysocki@intel.com,
+        jkosina@suse.cz, Clark Williams <clark.williams@gmail.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>, keescook@chromium.org,
+        Mel Gorman <mgorman@suse.de>, riel@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Marc Kleine-Budde,
-
-On 04/05/2013 02:47 PM, Marc Kleine-Budde wrote:
-> Some boards have non removable cards like eMMC. Handle such case.
+On 9 April 2013 16:48, Alex Shi <alex.shi@intel.com> wrote:
+> On 04/09/2013 07:56 PM, Vincent Guittot wrote:
+>> On 9 April 2013 12:38, Alex Shi <alex.shi@intel.com> wrote:
+>>> On 04/09/2013 04:58 PM, Vincent Guittot wrote:
+>>>>>>>> How do you ensure that runnable_avg_period and runnable_avg_sum are
+>>>>>>>> coherent ? an update of the statistic can occur in the middle of your
+>>>>>>>> sequence.
+>>>>>>
+>>>>>> Thanks for your question, Vincent!
+>>>>>> the runnable_avg_period and runnable_avg_sum, only updated in
+>>>>>> __update_entity_runnable_avg().
+>>>>>> Yes, I didn't see some locks to ensure the coherent of them. but they
+>>>>>> are updated closely, and it is not big deal even a little incorrect to
+>>>>>> their value. These data are collected periodically, don't need very very
+>>>>>> precise at every time.
+>>>>>> Am I right? :)
+>>>> The problem mainly appears during starting phase (the 1st 345ms) when
+>>>> runnable_avg_period has not reached the max value yet so you can have
+>>>> avg.runnable_avg_sum greater than avg.runnable_avg_period. In a worst
+>>>> case, runnable_avg_sum could be twice runnable_avg_period
+>>>
+>>> Oh, That's a serious problem. Do you catch it in real word or in code?
+>>
+>> I haven't trace that shows this issue but nothing prevent an update to
+>> occur while you get values so you can have a mix of old and new
+>> values.
+>>
+>>> Could you explain more for details?
+>>
+>> Both fields of a new task increase simultaneously but if you get the
+>> old value for runnable_avg_period and the new one for
+>> runnable_avg_sum, runnable_avg_sum will be greater than
+>> runnable_avg_period during this starting phase.
+>>
+>> The worst case appears 2ms after the creation of the task,
+>> runnable_avg_period and runnable_avg_sum should go from 1024 to 2046.
+>> So the  task_h_load_avg will be 199% of task_h_load If you have
+>> runnable_avg_period with 1024 and runnable_avg_sum with 2046.
 >
-> Acked-by: Shawn Guo <shawn.guo@linaro.org>
-> Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-> ---
-> changes since v1:
-> - fix removeable typo
+> Thanks a lot for info sharing! Vincent.
 >
->   drivers/mmc/host/mxs-mmc.c | 10 +++++++---
->   1 file changed, 7 insertions(+), 3 deletions(-)
+> But I checked the rq->avg and task->se.avg, seems none of them are
+> possible be updated on different CPU at the same time. So my printk
+> didn't catch this with benchmark kbuild and aim7 on my SNB EP box.
+
+The problem can happen because reader and writer are accessing the
+variable asynchronously and on different CPUs
+
+CPUA write runnable_avg_sum
+CPUB read runnable_avg_sum
+CPUB read runnable_avg_period
+CPUA write runnable_avg_period
+
+I agree that the time window, during which this can occur, is short
+but not impossible
+
+Vincent
 >
-> diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-> index 0cdf1f6..c231881 100644
-> --- a/drivers/mmc/host/mxs-mmc.c
-> +++ b/drivers/mmc/host/mxs-mmc.c
-> @@ -73,6 +73,7 @@ struct mxs_mmc_host {
->   	int				wp_gpio;
->   	bool				wp_inverted;
->   	bool				cd_inverted;
-> +	bool				non_removable;
->   };
->
->   static int mxs_mmc_get_ro(struct mmc_host *mmc)
-> @@ -96,8 +97,9 @@ static int mxs_mmc_get_cd(struct mmc_host *mmc)
->   	struct mxs_mmc_host *host = mmc_priv(mmc);
->   	struct mxs_ssp *ssp = &host->ssp;
->
-> -	return !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
-> -		 BM_SSP_STATUS_CARD_DETECT)) ^ host->cd_inverted;
-> +	return host->non_removable ||
-> +		!(readl(ssp->base + HW_SSP_STATUS(ssp)) &
-> +		  BM_SSP_STATUS_CARD_DETECT) ^ host->cd_inverted;
->   }
->
->   static void mxs_mmc_reset(struct mxs_mmc_host *host)
-> @@ -687,8 +689,10 @@ static int mxs_mmc_probe(struct platform_device *pdev)
->   		mmc->caps |= MMC_CAP_4_BIT_DATA;
->   	else if (bus_width == 8)
->   		mmc->caps |= MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA;
-> +	host->non_removable = of_property_read_bool(np, "non-removable");
-> +	if (host->non_removable)
-> +		mmc->caps |= MMC_CAP_NONREMOVABLE;
->   	host->wp_gpio = of_get_named_gpio_flags(np, "wp-gpios", 0, &flags);
-> -
->   	if (flags & OF_GPIO_ACTIVE_LOW)
->   		host->wp_inverted = 1;
+> Then I find some words in your commit log:
+> "If a CPU accesses the runnable_avg_sum and runnable_avg_period fields
+> of its buddy CPU while the latter updates it, it can get the new version
+> of a field and the old version of the other one."
+> So is it possible caused by the buddy cpu's accessing?
+> Could you like to recheck this without your patch?
 >
 >
-
-It looks like Alexander and I were looking at the same in different threads:
-   http://comments.gmane.org/gmane.linux.kernel.mmc/19964
-   http://comments.gmane.org/gmane.linux.kernel/1471409
-
-The following completes your 2/2 patch with broken-cd support as well (in both cases 
-system must assume card is always present):
-
-diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-index 206fe49..7a60097 100644
---- a/drivers/mmc/host/mxs-mmc.c
-+++ b/drivers/mmc/host/mxs-mmc.c
-@@ -72,6 +72,8 @@ struct mxs_mmc_host {
-         int                             sdio_irq_en;
-         int                             wp_gpio;
-         bool                            wp_inverted;
-+       bool                            broken_cd;
-+       bool                            non_removable;
-  };
-
-  static int mxs_mmc_get_ro(struct mmc_host *mmc)
-@@ -95,7 +97,8 @@ static int mxs_mmc_get_cd(struct mmc_host *mmc)
-         struct mxs_mmc_host *host = mmc_priv(mmc);
-         struct mxs_ssp *ssp = &host->ssp;
-
--       return !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
-+       return host->non_removable || host->broken_cd ||
-+              !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
-                  BM_SSP_STATUS_CARD_DETECT);
-  }
-
-@@ -686,8 +689,11 @@ static int mxs_mmc_probe(struct platform_device *pdev)
-                 mmc->caps |= MMC_CAP_4_BIT_DATA;
-         else if (bus_width == 8)
-                 mmc->caps |= MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA;
-+       host->broken_cd = of_property_read_bool(np, "broken-cd");
-+       host->non_removable = of_property_read_bool(np, "non-removable");
-+       if (host->non_removable)
-+               mmc->caps |= MMC_CAP_NONREMOVABLE;
-         host->wp_gpio = of_get_named_gpio_flags(np, "wp-gpios", 0, &flags);
--
-         if (flags & OF_GPIO_ACTIVE_LOW)
-                 host->wp_inverted = 1;
-
-
-Regards,
--- 
-Héctor Palacios
-
+> --
+> Thanks
+>     Alex
