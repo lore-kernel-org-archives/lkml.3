@@ -1,57 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935571Ab3DINWo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 09:22:44 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:65362 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759375Ab3DINWn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 09:22:43 -0400
-Message-ID: <5164160D.7080201@windriver.com>
-Date: Tue, 9 Apr 2013 09:22:21 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S935549Ab3DINYh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 09:24:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55791 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758447Ab3DINYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 09:24:35 -0400
+Date: Tue, 9 Apr 2013 15:24:33 +0200
+From: Jan Kara <jack@suse.cz>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH v3 03/18] ext4: use ->invalidatepage() length argument
+Message-ID: <20130409132433.GC13672@quack.suse.cz>
+References: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
+ <1365498867-27782-4-git-send-email-lczerner@redhat.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 4/4] nohz: New option to force all CPUs in full dynticks
- range
-References: <1364398359-21990-1-git-send-email-fweisbec@gmail.com> <1364398359-21990-5-git-send-email-fweisbec@gmail.com> <20130328074507.GC24433@gmail.com> <CAFTL4hzQfodVP4O+nir1XwQ2QkUUqrfr_dBpWL0635f0u4oRBA@mail.gmail.com> <20130330091037.GA31743@gmail.com> <0000013dea26b171-8095c339-dc81-4459-a3ad-a8d69c803448-000000@email.amazonses.com>
-In-Reply-To: <0000013dea26b171-8095c339-dc81-4459-a3ad-a8d69c803448-000000@email.amazonses.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365498867-27782-4-git-send-email-lczerner@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-04-08 10:57 AM, Christoph Lameter wrote:
-> I think we could simplify things quite a bit if we either
-> 
-> 1. Add any cpus specified with nohz_full/extended=xxx to
-> rcu_nocb. No check is then necessary anymore.
-> 
-> or
-> 
-> 2. Avoid the setting of cpus entirely? If full nohz mode is desired
-> then pick one cpu (f.e. the first one or the one that is used for xtime
-> updates) and then make all other cpus nohz. Set the affinity mask for the
-> rcuoXXX threads to that cpu.
+On Tue 09-04-13 11:14:12, Lukas Czerner wrote:
+> ->invalidatepage() aop now accepts range to invalidate so we can make
+> use of it in all ext4 invalidatepage routines.
+  Looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-I can imagine people with multi socket systems wanting to have
-a system partitioned with one "normal" core per physical socket,
-for timekeeping, RCU threads, etc, but #2 would prevent that.
+								Honza
 
-Paul.
+> 
+> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+> ---
+>  fs/ext4/inode.c             |   30 +++++++++++++++++++-----------
+>  include/trace/events/ext4.h |   22 ++++++++++++----------
+>  2 files changed, 31 insertions(+), 21 deletions(-)
+> 
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index 69595f5..f80e0c3 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -1411,21 +1411,28 @@ static void ext4_da_release_space(struct inode *inode, int to_free)
+>  }
+>  
+>  static void ext4_da_page_release_reservation(struct page *page,
+> -					     unsigned long offset)
+> +					     unsigned int offset,
+> +					     unsigned int length)
+>  {
+>  	int to_release = 0;
+>  	struct buffer_head *head, *bh;
+>  	unsigned int curr_off = 0;
+>  	struct inode *inode = page->mapping->host;
+>  	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+> +	unsigned int stop = offset + length;
+>  	int num_clusters;
+>  	ext4_fsblk_t lblk;
+>  
+> +	BUG_ON(stop > PAGE_CACHE_SIZE || stop < length);
+> +
+>  	head = page_buffers(page);
+>  	bh = head;
+>  	do {
+>  		unsigned int next_off = curr_off + bh->b_size;
+>  
+> +		if (next_off > stop)
+> +			break;
+> +
+>  		if ((offset <= curr_off) && (buffer_delay(bh))) {
+>  			to_release++;
+>  			clear_buffer_delay(bh);
+> @@ -2825,7 +2832,7 @@ static void ext4_da_invalidatepage(struct page *page, unsigned int offset,
+>  	if (!page_has_buffers(page))
+>  		goto out;
+>  
+> -	ext4_da_page_release_reservation(page, offset);
+> +	ext4_da_page_release_reservation(page, offset, length);
+>  
+>  out:
+>  	ext4_invalidatepage(page, offset, length);
+> @@ -2979,29 +2986,29 @@ ext4_readpages(struct file *file, struct address_space *mapping,
+>  static void ext4_invalidatepage(struct page *page, unsigned int offset,
+>  				unsigned int length)
+>  {
+> -	trace_ext4_invalidatepage(page, offset);
+> +	trace_ext4_invalidatepage(page, offset, length);
+>  
+>  	/* No journalling happens on data buffers when this function is used */
+>  	WARN_ON(page_has_buffers(page) && buffer_jbd(page_buffers(page)));
+>  
+> -	block_invalidatepage(page, offset, PAGE_CACHE_SIZE - offset);
+> +	block_invalidatepage(page, offset, length);
+>  }
+>  
+>  static int __ext4_journalled_invalidatepage(struct page *page,
+> -					    unsigned long offset)
+> +					    unsigned int offset,
+> +					    unsigned int length)
+>  {
+>  	journal_t *journal = EXT4_JOURNAL(page->mapping->host);
+>  
+> -	trace_ext4_journalled_invalidatepage(page, offset);
+> +	trace_ext4_journalled_invalidatepage(page, offset, length);
+>  
+>  	/*
+>  	 * If it's a full truncate we just forget about the pending dirtying
+>  	 */
+> -	if (offset == 0)
+> +	if (offset == 0 && length == PAGE_CACHE_SIZE)
+>  		ClearPageChecked(page);
+>  
+> -	return jbd2_journal_invalidatepage(journal, page, offset,
+> -					   PAGE_CACHE_SIZE - offset);
+> +	return jbd2_journal_invalidatepage(journal, page, offset, length);
+>  }
+>  
+>  /* Wrapper for aops... */
+> @@ -3009,7 +3016,7 @@ static void ext4_journalled_invalidatepage(struct page *page,
+>  					   unsigned int offset,
+>  					   unsigned int length)
+>  {
+> -	WARN_ON(__ext4_journalled_invalidatepage(page, offset) < 0);
+> +	WARN_ON(__ext4_journalled_invalidatepage(page, offset, length) < 0);
+>  }
+>  
+>  static int ext4_releasepage(struct page *page, gfp_t wait)
+> @@ -4607,7 +4614,8 @@ static void ext4_wait_for_tail_page_commit(struct inode *inode)
+>  				      inode->i_size >> PAGE_CACHE_SHIFT);
+>  		if (!page)
+>  			return;
+> -		ret = __ext4_journalled_invalidatepage(page, offset);
+> +		ret = __ext4_journalled_invalidatepage(page, offset,
+> +						PAGE_CACHE_SIZE - offset);
+>  		unlock_page(page);
+>  		page_cache_release(page);
+>  		if (ret != -EBUSY)
+> diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
+> index 58459b7..60b329a 100644
+> --- a/include/trace/events/ext4.h
+> +++ b/include/trace/events/ext4.h
+> @@ -444,16 +444,16 @@ DEFINE_EVENT(ext4__page_op, ext4_releasepage,
+>  );
+>  
+>  DECLARE_EVENT_CLASS(ext4_invalidatepage_op,
+> -	TP_PROTO(struct page *page, unsigned long offset),
+> +	TP_PROTO(struct page *page, unsigned int offset, unsigned int length),
+>  
+> -	TP_ARGS(page, offset),
+> +	TP_ARGS(page, offset, length),
+>  
+>  	TP_STRUCT__entry(
+>  		__field(	dev_t,	dev			)
+>  		__field(	ino_t,	ino			)
+>  		__field(	pgoff_t, index			)
+> -		__field(	unsigned long, offset		)
+> -
+> +		__field(	unsigned int, offset		)
+> +		__field(	unsigned int, length		)
+>  	),
+>  
+>  	TP_fast_assign(
+> @@ -461,24 +461,26 @@ DECLARE_EVENT_CLASS(ext4_invalidatepage_op,
+>  		__entry->ino	= page->mapping->host->i_ino;
+>  		__entry->index	= page->index;
+>  		__entry->offset	= offset;
+> +		__entry->length	= length;
+>  	),
+>  
+> -	TP_printk("dev %d,%d ino %lu page_index %lu offset %lu",
+> +	TP_printk("dev %d,%d ino %lu page_index %lu offset %u length %u",
+>  		  MAJOR(__entry->dev), MINOR(__entry->dev),
+>  		  (unsigned long) __entry->ino,
+> -		  (unsigned long) __entry->index, __entry->offset)
+> +		  (unsigned long) __entry->index,
+> +		  __entry->offset, __entry->length)
+>  );
+>  
+>  DEFINE_EVENT(ext4_invalidatepage_op, ext4_invalidatepage,
+> -	TP_PROTO(struct page *page, unsigned long offset),
+> +	TP_PROTO(struct page *page, unsigned int offset, unsigned int length),
+>  
+> -	TP_ARGS(page, offset)
+> +	TP_ARGS(page, offset, length)
+>  );
+>  
+>  DEFINE_EVENT(ext4_invalidatepage_op, ext4_journalled_invalidatepage,
+> -	TP_PROTO(struct page *page, unsigned long offset),
+> +	TP_PROTO(struct page *page, unsigned int offset, unsigned int length),
+>  
+> -	TP_ARGS(page, offset)
+> +	TP_ARGS(page, offset, length)
+>  );
+>  
+>  TRACE_EVENT(ext4_discard_blocks,
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
