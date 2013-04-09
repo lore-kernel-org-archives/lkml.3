@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934789Ab3DIDpg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Apr 2013 23:45:36 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:55702 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1761958Ab3DIDpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Apr 2013 23:45:35 -0400
-Message-ID: <1365479133.6865.1.camel@joe-AO722>
-Subject: Re: [PATCH 1/1] irqchip: exynos-combiner: Fix checkpatch warnings
-From: Joe Perches <joe@perches.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, patches@linaro.org,
-        chanho61.park@samsung.com, kgene.kim@samsung.com
-Date: Mon, 08 Apr 2013 20:45:33 -0700
-In-Reply-To: <CAK9yfHwY5Ey28mveHtYcCvcEyiM=W2Gwpw_ybx44JT=cSm2NOw@mail.gmail.com>
-References: <1363165944-7480-1-git-send-email-sachin.kamat@linaro.org>
-	 <CAK9yfHzvJ+5voHuJLCNb55yB0x5R8LS=FqoCu9tn5bSXZ_BNsQ@mail.gmail.com>
-	 <1365476945.2012.2.camel@joe-AO722>
-	 <CAK9yfHwY5Ey28mveHtYcCvcEyiM=W2Gwpw_ybx44JT=cSm2NOw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S935460Ab3DIDrO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Apr 2013 23:47:14 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34863 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757254Ab3DIDrN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Apr 2013 23:47:13 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <51638F2B.3000800@jp.fujitsu.com>
+Date: Tue, 09 Apr 2013 12:46:51 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Li Zefan <lizefan@huawei.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 13/12] memcg: don't need memcg->memcg_name
+References: <5162648B.9070802@huawei.com> <51626584.7050405@huawei.com> <5163868B.3020905@jp.fujitsu.com> <5163887D.1040809@huawei.com>
+In-Reply-To: <5163887D.1040809@huawei.com>
+Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-09 at 09:06 +0530, Sachin Kamat wrote:
-> On 9 April 2013 08:39, Joe Perches <joe@perches.com> wrote:
-> > On Tue, 2013-04-09 at 08:33 +0530, Sachin Kamat wrote:
-> >> On 13 March 2013 14:42, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> >> > Fixes the following warnings:
-> >> > WARNING: line over 80 characters
-> >> > WARNING: Prefer pr_warn(... to pr_warning(...
-> >> > diff --git a/drivers/irqchip/exynos-combiner.c b/drivers/irqchip/exynos-combiner.c
-> > []
-> >> > @@ -229,13 +229,15 @@ void __init combiner_init(void __iomem *combiner_base,
-> > []
-> >> > -               pr_warning("%s: irq desc alloc failed. Continuing with %d as linux irq base\n", __func__, irq_base);
-> >> > +               pr_warn("%s: irq desc alloc failed. "
-> >> > +                       "Continuing with %d as linux irq base\n",
-> >> > +                       __func__, irq_base);
-> >
-> > Please don't split formats.
-> > See Documentation/CodingStyle Chapter 2
-> >
-> >                 pr_warn("%s: irq desc alloc failed. Continuing with %d as linux irq base\n",
-> >                         __func__, irq_base);
-> >
-> >
+(2013/04/09 12:18), Li Zefan wrote:
+>>> @@ -5188,12 +5154,28 @@ static int mem_cgroup_dangling_read(struct cgroup *cont, struct cftype *cft,
+>>>    					struct seq_file *m)
+>>>    {
+>>>    	struct mem_cgroup *memcg;
+>>> +	char *memcg_name;
+>>> +	int ret;
+>>> +
+>>> +	/*
+>>> +	 * cgroup.c will do page-sized allocations most of the time,
+>>> +	 * so we'll just follow the pattern. Also, __get_free_pages
+>>> +	 * is a better interface than kmalloc for us here, because
+>>> +	 * we'd like this memory to be always billed to the root cgroup,
+>>> +	 * not to the process removing the memcg. While kmalloc would
+>>> +	 * require us to wrap it into memcg_stop/resume_kmem_account,
+>>> +	 * with __get_free_pages we just don't pass the memcg flag.
+>>> +	 */
+>>> +	memcg_name = (char *)__get_free_pages(GFP_KERNEL, 0);
+>>> +	if (!memcg_name)
+>>> +		return -ENOMEM;
+>>>    
+>>>    	mutex_lock(&dangling_memcgs_mutex);
+>>>    
+>>>    	list_for_each_entry(memcg, &dangling_memcgs, dead) {
+>>> -		if (memcg->memcg_name)
+>>> -			seq_printf(m, "%s:\n", memcg->memcg_name);
+>>> +		ret = cgroup_path(memcg->css.cgroup, memcg_name, PAGE_SIZE);
+>>> +		if (!ret)
+>>> +			seq_printf(m, "%s:\n", memcg_name);
+>>>    		else
+>>>    			seq_printf(m, "%p (name lost):\n", memcg);
+>>>    
+>>
+>> I'm sorry for dawm question ...when this error happens ?
+>> We may get ENAMETOOLONG even with PAGE_SIZE(>=4096bytes) buffer ?
+>>
 > 
-> Thanks for pointing out. If I didn't split it, it would have exceeded
-> the 80 column limit.
+> It does no harm to check the return value, and we don't have to
+> worry about if cgroup_path() will be changed to return some other
+> errno like ENOMEM in the future.
+> 
+Hmm. but the name is not lost, right ?
+How about returning error rather than making a mixture of lines in different formats ?
 
-So?
-
-> Since there were 2 different sentences, I thought
-> grepping should not be a problem if split at sentence boundaries.
-
-I think it's OK to split at \n but not necessarily
-at a sentence boundary/period.
-
+Thanks,
+-Kame
 
