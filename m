@@ -1,50 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935347Ab3DJByR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 21:54:17 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:54875 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765173Ab3DJByQ (ORCPT
+	id S935724Ab3DJBzn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 21:55:43 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55764 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765536Ab3DJBzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 21:54:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <1365544834-c6v2jpoo-mutt-n-horiguchi@ah.jp.nec.com>
-References: <1365014138-19589-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1365014138-19589-4-git-send-email-n-horiguchi@ah.jp.nec.com>
- <515F1F1F.6060900@gmail.com> <1365449252-9pc7knd5-mutt-n-horiguchi@ah.jp.nec.com>
- <CAHGf_=ruv9itn7fhcL=Ar7z_6wQ5Ga_4kj7Ui3EfDUe_cV7D0w@mail.gmail.com> <1365544834-c6v2jpoo-mutt-n-horiguchi@ah.jp.nec.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Tue, 9 Apr 2013 21:53:55 -0400
-Message-ID: <CAHGf_=pDuFb4s3hg4M+AKphthgkCgFWMPKb9od7opcvDop4haQ@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] hugetlbfs: add swap entry check in follow_hugetlb_page()
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 9 Apr 2013 21:55:42 -0400
+X-AuditID: 9c930197-b7b50ae00000018c-97-5164c69648b4
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH] tracing: Check result of ring_buffer_read_prepare()
+Date: Wed, 10 Apr 2013 10:55:29 +0900
+Message-Id: <1365558929-11211-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1365558422.25498.93.camel@gandalf.local.home>
+References: <1365558422.25498.93.camel@gandalf.local.home>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I rewrite the comment here, how about this?
->
-> -               if (absent ||
-> +               /*
-> +                * We need call hugetlb_fault for both hugepages under migration
-> +                * (in which case hugetlb_fault waits for the migration,) and
-> +                * hwpoisoned hugepages (in which case we need to prevent the
-> +                * caller from accessing to them.) In order to do this, we use
-> +                * here is_swap_pte instead of is_hugetlb_entry_migration and
-> +                * is_hugetlb_entry_hwpoisoned. This is because it simply covers
-> +                * both cases, and because we can't follow correct pages directly
-> +                * from any kind of swap entries.
-> +                */
-> +               if (absent || is_swap_pte(huge_ptep_get(pte)) ||
->                     ((flags & FOLL_WRITE) && !pte_write(huge_ptep_get(pte)))) {
->                         int ret;
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Looks ok to me.
+The ring_buffer_read_prepare() can return NULL if memory allocation
+fails.  Fail out in this case instead of succedding and then having
+no output.
+
+Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ kernel/trace/trace.c | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 7270460cfe3c..13200de31f0b 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2826,6 +2826,8 @@ __tracing_open(struct inode *inode, struct file *file, bool snapshot)
+ 		for_each_tracing_cpu(cpu) {
+ 			iter->buffer_iter[cpu] =
+ 				ring_buffer_read_prepare(iter->trace_buffer->buffer, cpu);
++			if (!iter->buffer_iter[cpu])
++				goto free;
+ 		}
+ 		ring_buffer_read_prepare_sync();
+ 		for_each_tracing_cpu(cpu) {
+@@ -2836,6 +2838,9 @@ __tracing_open(struct inode *inode, struct file *file, bool snapshot)
+ 		cpu = iter->cpu_file;
+ 		iter->buffer_iter[cpu] =
+ 			ring_buffer_read_prepare(iter->trace_buffer->buffer, cpu);
++		if (!iter->buffer_iter[cpu])
++			goto free;
++
+ 		ring_buffer_read_prepare_sync();
+ 		ring_buffer_read_start(iter->buffer_iter[cpu]);
+ 		tracing_iter_reset(iter, cpu);
+@@ -2847,6 +2852,23 @@ __tracing_open(struct inode *inode, struct file *file, bool snapshot)
+ 
+ 	return iter;
+ 
++free:
++	/*
++	 * For simplicity, just keep single loop without comparing cpu_file.
++	 */
++	for_each_tracing_cpu(cpu) {
++		if (iter->buffer_iter[cpu])
++			ring_buffer_read_finish(iter->buffer_iter[cpu]);
++	}
++
++	if (iter->trace && iter->trace->close)
++		iter->trace->close(iter);
++
++	if (!iter->snapshot)
++		tracing_start_tr(tr);
++
++	mutex_destroy(&iter->mutex);
++	free_cpumask_var(iter->started);
+  fail:
+ 	mutex_unlock(&trace_types_lock);
+ 	kfree(iter->trace);
+-- 
+1.7.11.7
+
