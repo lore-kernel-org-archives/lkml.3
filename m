@@ -1,125 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab3DJFlY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 01:41:24 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:64655 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750730Ab3DJFlU (ORCPT
+	id S1752108Ab3DJFrn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 01:47:43 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49648 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725Ab3DJFrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 01:41:20 -0400
+	Wed, 10 Apr 2013 01:47:41 -0400
+X-AuditID: 9c93016f-b7b3fae0000004d3-3f-5164fcf9591d
+Date: Wed, 10 Apr 2013 14:48:22 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/3] mm, vmscan: count accidental reclaimed pages failed
+ to put into lru
+Message-ID: <20130410054822.GE5872@lge.com>
+References: <1365470478-645-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <20130409055514.GC6836@blaptop>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CAKohponzmLzPN8ua3p4TCt2waZCQCd+4Znh+tSQ4MBjcy+Ss6A@mail.gmail.com>
-References: <CA+icZUU_K9PiFMqMsOEk1+c2DX8LrUojZptPiRVarv4dcB2qFA@mail.gmail.com>
-	<31778276.CDMUtaAAnc@vostro.rjw.lan>
-	<CA+icZUXXHb9vmcNuFmYha34SV7xch2S8OcgZ+cLVVnNebs5pNQ@mail.gmail.com>
-	<CAKohpok+9dRaENjBfnN9gZF3zvFU9v19xV_eFfcM3Pj6Cv=S2w@mail.gmail.com>
-	<CA+icZUWH5Ni9koj4V8Ws8jJ7smwmU7JuUWBFh=aiCqkrCpqB5A@mail.gmail.com>
-	<CAKohponzmLzPN8ua3p4TCt2waZCQCd+4Znh+tSQ4MBjcy+Ss6A@mail.gmail.com>
-Date: Wed, 10 Apr 2013 07:41:18 +0200
-Message-ID: <CA+icZUW12caZHDfgCV6E-1T4ExBPmu5bBNSqCzDwjUeidfRUPA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 9 [cpufreq: NULL pointer deref]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=089e01419d7c88a34504d9fb1ef9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130409055514.GC6836@blaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---089e01419d7c88a34504d9fb1ef9
-Content-Type: text/plain; charset=UTF-8
+Hello, Minchan.
 
-On Tue, Apr 9, 2013 at 6:51 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 9 April 2013 21:38, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> With x=3 the system gets in an unuseable state.
->>
->>      root# echo 0 > /sys/devices/system/cpu/cpu3/online
->>
->> I could not write my reply and had to do a hard/cold reboot.
->> The dmesg log I saw looked similiar to my digicam-shot.
->
-> Few things i need from you. First is output of cpufreq-info. Then
-> all the steps you did to reproduce above? Removed any other cpus?
->
+On Tue, Apr 09, 2013 at 02:55:14PM +0900, Minchan Kim wrote:
+> Hello Joonsoo,
+> 
+> On Tue, Apr 09, 2013 at 10:21:16AM +0900, Joonsoo Kim wrote:
+> > In shrink_(in)active_list(), we can fail to put into lru, and these pages
+> > are reclaimed accidentally. Currently, these pages are not counted
+> > for sc->nr_reclaimed, but with this information, we can stop to reclaim
+> > earlier, so can reduce overhead of reclaim.
+> > 
+> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> 
+> Nice catch!
+> 
+> But this patch handles very corner case and makes reclaim function's name
+> rather stupid so I'd like to see text size change after we apply this patch.
+> Other nipicks below.
 
-Here is the output of cpufreq-info of the stable distro-kernel I am using.
-If you need the one from the "BROKEN" kernel, please let me know.
+Ah... Yes.
+I can re-work it to add number to sc->nr_reclaimed directly for both cases,
+shrink_active_list() and age_active_anon().
 
-- Sedat -
+> 
+> > 
+> > diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+> > index 0f615eb..5d60ae0 100644
+> > --- a/include/linux/gfp.h
+> > +++ b/include/linux/gfp.h
+> > @@ -365,7 +365,7 @@ void *alloc_pages_exact_nid(int nid, size_t size, gfp_t gfp_mask);
+> >  extern void __free_pages(struct page *page, unsigned int order);
+> >  extern void free_pages(unsigned long addr, unsigned int order);
+> >  extern void free_hot_cold_page(struct page *page, int cold);
+> > -extern void free_hot_cold_page_list(struct list_head *list, int cold);
+> > +extern unsigned long free_hot_cold_page_list(struct list_head *list, int cold);
+> >  
+> >  extern void __free_memcg_kmem_pages(struct page *page, unsigned int order);
+> >  extern void free_memcg_kmem_pages(unsigned long addr, unsigned int order);
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 8fcced7..a5f3952 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -1360,14 +1360,18 @@ out:
+> >  /*
+> >   * Free a list of 0-order pages
+> >   */
+> > -void free_hot_cold_page_list(struct list_head *list, int cold)
+> > +unsigned long free_hot_cold_page_list(struct list_head *list, int cold)
+> >  {
+> > +	unsigned long nr_reclaimed = 0;
+> 
+> How about nr_free or nr_freed for consistent with function title?
 
---089e01419d7c88a34504d9fb1ef9
-Content-Type: text/plain; charset=US-ASCII; name="cpufreq-info_3.2.0-40-generic.txt"
-Content-Disposition: attachment; 
-	filename="cpufreq-info_3.2.0-40-generic.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hfc2l20b0
+Okay.
 
-Y3B1ZnJlcXV0aWxzIDAwNzogY3B1ZnJlcS1pbmZvIChDKSBEb21pbmlrIEJyb2Rvd3NraSAyMDA0
-LTIwMDkKUmVwb3J0IGVycm9ycyBhbmQgYnVncyB0byBjcHVmcmVxQHZnZXIua2VybmVsLm9yZywg
-cGxlYXNlLgphbmFseXppbmcgQ1BVIDA6CiAgZHJpdmVyOiBhY3BpLWNwdWZyZXEKICBDUFVzIHdo
-aWNoIHJ1biBhdCB0aGUgc2FtZSBoYXJkd2FyZSBmcmVxdWVuY3k6IDAgMSAyIDMKICBDUFVzIHdo
-aWNoIG5lZWQgdG8gaGF2ZSB0aGVpciBmcmVxdWVuY3kgY29vcmRpbmF0ZWQgYnkgc29mdHdhcmU6
-IDAKICBtYXhpbXVtIHRyYW5zaXRpb24gbGF0ZW5jeTogMTAuMCB1cy4KICBoYXJkd2FyZSBsaW1p
-dHM6IDgwMCBNSHogLSAxLjYwIEdIegogIGF2YWlsYWJsZSBmcmVxdWVuY3kgc3RlcHM6IDEuNjAg
-R0h6LCAxLjYwIEdIeiwgMS41MCBHSHosIDEuNDAgR0h6LCAxLjMwIEdIeiwgMS4yMCBHSHosIDEu
-MTAgR0h6LCAxMDAwIE1IeiwgOTAwIE1IeiwgODAwIE1IegogIGF2YWlsYWJsZSBjcHVmcmVxIGdv
-dmVybm9yczogY29uc2VydmF0aXZlLCBvbmRlbWFuZCwgdXNlcnNwYWNlLCBwb3dlcnNhdmUsIHBl
-cmZvcm1hbmNlCiAgY3VycmVudCBwb2xpY3k6IGZyZXF1ZW5jeSBzaG91bGQgYmUgd2l0aGluIDgw
-MCBNSHogYW5kIDEuNjAgR0h6LgogICAgICAgICAgICAgICAgICBUaGUgZ292ZXJub3IgIm9uZGVt
-YW5kIiBtYXkgZGVjaWRlIHdoaWNoIHNwZWVkIHRvIHVzZQogICAgICAgICAgICAgICAgICB3aXRo
-aW4gdGhpcyByYW5nZS4KICBjdXJyZW50IENQVSBmcmVxdWVuY3kgaXMgMS42MCBHSHogKGFzc2Vy
-dGVkIGJ5IGNhbGwgdG8gaGFyZHdhcmUpLgogIGNwdWZyZXEgc3RhdHM6IDEuNjAgR0h6OjE4Ljg3
-JSwgMS42MCBHSHo6MC44OSUsIDEuNTAgR0h6OjAuNDUlLCAxLjQwIEdIejowLjg5JSwgMS4zMCBH
-SHo6MS4xNSUsIDEuMjAgR0h6OjEuNzUlLCAxLjEwIEdIejoxLjgzJSwgMTAwMCBNSHo6MS45MSUs
-IDkwMCBNSHo6MC45MiUsIDgwMCBNSHo6NzEuMzQlICAoNjM1NSkKYW5hbHl6aW5nIENQVSAxOgog
-IGRyaXZlcjogYWNwaS1jcHVmcmVxCiAgQ1BVcyB3aGljaCBydW4gYXQgdGhlIHNhbWUgaGFyZHdh
-cmUgZnJlcXVlbmN5OiAwIDEgMiAzCiAgQ1BVcyB3aGljaCBuZWVkIHRvIGhhdmUgdGhlaXIgZnJl
-cXVlbmN5IGNvb3JkaW5hdGVkIGJ5IHNvZnR3YXJlOiAxCiAgbWF4aW11bSB0cmFuc2l0aW9uIGxh
-dGVuY3k6IDEwLjAgdXMuCiAgaGFyZHdhcmUgbGltaXRzOiA4MDAgTUh6IC0gMS42MCBHSHoKICBh
-dmFpbGFibGUgZnJlcXVlbmN5IHN0ZXBzOiAxLjYwIEdIeiwgMS42MCBHSHosIDEuNTAgR0h6LCAx
-LjQwIEdIeiwgMS4zMCBHSHosIDEuMjAgR0h6LCAxLjEwIEdIeiwgMTAwMCBNSHosIDkwMCBNSHos
-IDgwMCBNSHoKICBhdmFpbGFibGUgY3B1ZnJlcSBnb3Zlcm5vcnM6IGNvbnNlcnZhdGl2ZSwgb25k
-ZW1hbmQsIHVzZXJzcGFjZSwgcG93ZXJzYXZlLCBwZXJmb3JtYW5jZQogIGN1cnJlbnQgcG9saWN5
-OiBmcmVxdWVuY3kgc2hvdWxkIGJlIHdpdGhpbiA4MDAgTUh6IGFuZCAxLjYwIEdIei4KICAgICAg
-ICAgICAgICAgICAgVGhlIGdvdmVybm9yICJvbmRlbWFuZCIgbWF5IGRlY2lkZSB3aGljaCBzcGVl
-ZCB0byB1c2UKICAgICAgICAgICAgICAgICAgd2l0aGluIHRoaXMgcmFuZ2UuCiAgY3VycmVudCBD
-UFUgZnJlcXVlbmN5IGlzIDEuNjAgR0h6IChhc3NlcnRlZCBieSBjYWxsIHRvIGhhcmR3YXJlKS4K
-ICBjcHVmcmVxIHN0YXRzOiAxLjYwIEdIejoxOC42OCUsIDEuNjAgR0h6OjMuODUlLCAxLjUwIEdI
-ejowLjM1JSwgMS40MCBHSHo6MC41MiUsIDEuMzAgR0h6OjAuNzQlLCAxLjIwIEdIejowLjcyJSwg
-MS4xMCBHSHo6MC43NyUsIDEwMDAgTUh6OjEuMDIlLCA5MDAgTUh6OjAuNDQlLCA4MDAgTUh6Ojcy
-LjkxJSAgKDM4MTUpCmFuYWx5emluZyBDUFUgMjoKICBkcml2ZXI6IGFjcGktY3B1ZnJlcQogIENQ
-VXMgd2hpY2ggcnVuIGF0IHRoZSBzYW1lIGhhcmR3YXJlIGZyZXF1ZW5jeTogMCAxIDIgMwogIENQ
-VXMgd2hpY2ggbmVlZCB0byBoYXZlIHRoZWlyIGZyZXF1ZW5jeSBjb29yZGluYXRlZCBieSBzb2Z0
-d2FyZTogMgogIG1heGltdW0gdHJhbnNpdGlvbiBsYXRlbmN5OiAxMC4wIHVzLgogIGhhcmR3YXJl
-IGxpbWl0czogODAwIE1IeiAtIDEuNjAgR0h6CiAgYXZhaWxhYmxlIGZyZXF1ZW5jeSBzdGVwczog
-MS42MCBHSHosIDEuNjAgR0h6LCAxLjUwIEdIeiwgMS40MCBHSHosIDEuMzAgR0h6LCAxLjIwIEdI
-eiwgMS4xMCBHSHosIDEwMDAgTUh6LCA5MDAgTUh6LCA4MDAgTUh6CiAgYXZhaWxhYmxlIGNwdWZy
-ZXEgZ292ZXJub3JzOiBjb25zZXJ2YXRpdmUsIG9uZGVtYW5kLCB1c2Vyc3BhY2UsIHBvd2Vyc2F2
-ZSwgcGVyZm9ybWFuY2UKICBjdXJyZW50IHBvbGljeTogZnJlcXVlbmN5IHNob3VsZCBiZSB3aXRo
-aW4gODAwIE1IeiBhbmQgMS42MCBHSHouCiAgICAgICAgICAgICAgICAgIFRoZSBnb3Zlcm5vciAi
-b25kZW1hbmQiIG1heSBkZWNpZGUgd2hpY2ggc3BlZWQgdG8gdXNlCiAgICAgICAgICAgICAgICAg
-IHdpdGhpbiB0aGlzIHJhbmdlLgogIGN1cnJlbnQgQ1BVIGZyZXF1ZW5jeSBpcyAxLjYwIEdIeiAo
-YXNzZXJ0ZWQgYnkgY2FsbCB0byBoYXJkd2FyZSkuCiAgY3B1ZnJlcSBzdGF0czogMS42MCBHSHo6
-MjEuMjElLCAxLjYwIEdIejowLjI2JSwgMS41MCBHSHo6MC4zNCUsIDEuNDAgR0h6OjAuNDglLCAx
-LjMwIEdIejowLjU5JSwgMS4yMCBHSHo6MC43MyUsIDEuMTAgR0h6OjAuNzUlLCAxMDAwIE1Iejox
-LjE2JSwgOTAwIE1IejowLjU2JSwgODAwIE1Iejo3My45MSUgICg0MTA4KQphbmFseXppbmcgQ1BV
-IDM6CiAgZHJpdmVyOiBhY3BpLWNwdWZyZXEKICBDUFVzIHdoaWNoIHJ1biBhdCB0aGUgc2FtZSBo
-YXJkd2FyZSBmcmVxdWVuY3k6IDAgMSAyIDMKICBDUFVzIHdoaWNoIG5lZWQgdG8gaGF2ZSB0aGVp
-ciBmcmVxdWVuY3kgY29vcmRpbmF0ZWQgYnkgc29mdHdhcmU6IDMKICBtYXhpbXVtIHRyYW5zaXRp
-b24gbGF0ZW5jeTogMTAuMCB1cy4KICBoYXJkd2FyZSBsaW1pdHM6IDgwMCBNSHogLSAxLjYwIEdI
-egogIGF2YWlsYWJsZSBmcmVxdWVuY3kgc3RlcHM6IDEuNjAgR0h6LCAxLjYwIEdIeiwgMS41MCBH
-SHosIDEuNDAgR0h6LCAxLjMwIEdIeiwgMS4yMCBHSHosIDEuMTAgR0h6LCAxMDAwIE1IeiwgOTAw
-IE1IeiwgODAwIE1IegogIGF2YWlsYWJsZSBjcHVmcmVxIGdvdmVybm9yczogY29uc2VydmF0aXZl
-LCBvbmRlbWFuZCwgdXNlcnNwYWNlLCBwb3dlcnNhdmUsIHBlcmZvcm1hbmNlCiAgY3VycmVudCBw
-b2xpY3k6IGZyZXF1ZW5jeSBzaG91bGQgYmUgd2l0aGluIDgwMCBNSHogYW5kIDEuNjAgR0h6Lgog
-ICAgICAgICAgICAgICAgICBUaGUgZ292ZXJub3IgIm9uZGVtYW5kIiBtYXkgZGVjaWRlIHdoaWNo
-IHNwZWVkIHRvIHVzZQogICAgICAgICAgICAgICAgICB3aXRoaW4gdGhpcyByYW5nZS4KICBjdXJy
-ZW50IENQVSBmcmVxdWVuY3kgaXMgODAwIE1IeiAoYXNzZXJ0ZWQgYnkgY2FsbCB0byBoYXJkd2Fy
-ZSkuCiAgY3B1ZnJlcSBzdGF0czogMS42MCBHSHo6MTYuMjglLCAxLjYwIEdIejowLjI4JSwgMS41
-MCBHSHo6MC4yMiUsIDEuNDAgR0h6OjAuMzAlLCAxLjMwIEdIejowLjQzJSwgMS4yMCBHSHo6MC42
-OSUsIDEuMTAgR0h6OjAuNzklLCAxMDAwIE1IejoxLjE3JSwgOTAwIE1IejowLjYyJSwgODAwIE1I
-ejo3OS4yMiUgICgyOTk1KQo=
---089e01419d7c88a34504d9fb1ef9--
+> 
+> >  	struct page *page, *next;
+> >  
+> >  	list_for_each_entry_safe(page, next, list, lru) {
+> >  		trace_mm_page_free_batched(page, cold);
+> >  		free_hot_cold_page(page, cold);
+> > +		nr_reclaimed++;
+> >  	}
+> > +
+> > +	return nr_reclaimed;
+> >  }
+> >  
+> >  /*
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 88c5fed..eff2927 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -915,7 +915,6 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+> >  		 */
+> >  		__clear_page_locked(page);
+> >  free_it:
+> > -		nr_reclaimed++;
+> >  
+> >  		/*
+> >  		 * Is there need to periodically free_page_list? It would
+> > @@ -954,7 +953,7 @@ keep:
+> >  	if (nr_dirty && nr_dirty == nr_congested && global_reclaim(sc))
+> >  		zone_set_flag(zone, ZONE_CONGESTED);
+> >  
+> > -	free_hot_cold_page_list(&free_pages, 1);
+> > +	nr_reclaimed += free_hot_cold_page_list(&free_pages, 1);
+> 
+> Nice cleanup.
+> 
+> >  
+> >  	list_splice(&ret_pages, page_list);
+> >  	count_vm_events(PGACTIVATE, pgactivate);
+> > @@ -1321,7 +1320,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+> >  	if (nr_taken == 0)
+> >  		return 0;
+> >  
+> > -	nr_reclaimed = shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
+> > +	nr_reclaimed += shrink_page_list(&page_list, zone, sc, TTU_UNMAP,
+> >  					&nr_dirty, &nr_writeback, false);
+> 
+> Do you have any reason to change?
+> To me, '=' is more clear to initialize the variable.
+> When I see above, I have to look through above lines to catch where code
+> used the nr_reclaimed.
+> 
+
+There is no reason, I will change it.
+
+> >  
+> >  	spin_lock_irq(&zone->lru_lock);
+> > @@ -1343,7 +1342,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
+> >  
+> >  	spin_unlock_irq(&zone->lru_lock);
+> >  
+> > -	free_hot_cold_page_list(&page_list, 1);
+> > +	nr_reclaimed += free_hot_cold_page_list(&page_list, 1);
+> 
+> How about considering vmstat, too?
+> It could be minor but you are considering freed page as
+> reclaim context. (ie, sc->nr_reclaimed) so it would be more appropriate.
+
+I don't understand what you mean.
+Please explain more what you have in mind :)
+
+> 
+> >  
+> >  	/*
+> >  	 * If reclaim is isolating dirty pages under writeback, it implies
+> > @@ -1438,7 +1437,7 @@ static void move_active_pages_to_lru(struct lruvec *lruvec,
+> >  		__count_vm_events(PGDEACTIVATE, pgmoved);
+> >  }
+> >  
+> > -static void shrink_active_list(unsigned long nr_to_scan,
+> > +static unsigned long shrink_active_list(unsigned long nr_to_scan,
+> >  			       struct lruvec *lruvec,
+> >  			       struct scan_control *sc,
+> >  			       enum lru_list lru)
+> > @@ -1534,7 +1533,7 @@ static void shrink_active_list(unsigned long nr_to_scan,
+> >  	__mod_zone_page_state(zone, NR_ISOLATED_ANON + file, -nr_taken);
+> >  	spin_unlock_irq(&zone->lru_lock);
+> >  
+> > -	free_hot_cold_page_list(&l_hold, 1);
+> > +	return free_hot_cold_page_list(&l_hold, 1);
+> 
+> It would be better to add comment about return value.
+> Otherwise, people could confuse with the number of pages moved from
+> active to inactive.
+> 
+
+In next spin, I will not change return type.
+So above problem will be disappreared.
+
+> >  }
+> >  
+> >  #ifdef CONFIG_SWAP
+> > @@ -1617,7 +1616,8 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
+> >  {
+> >  	if (is_active_lru(lru)) {
+> >  		if (inactive_list_is_low(lruvec, lru))
+> > -			shrink_active_list(nr_to_scan, lruvec, sc, lru);
+> > +			return shrink_active_list(nr_to_scan, lruvec, sc, lru);
+> > +
+> 
+> Unnecessary change.
+> 
+
+Why?
+
+> >  		return 0;
+> >  	}
+> >  
+> > @@ -1861,8 +1861,8 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+> >  	 * rebalance the anon lru active/inactive ratio.
+> >  	 */
+> >  	if (inactive_anon_is_low(lruvec))
+> > -		shrink_active_list(SWAP_CLUSTER_MAX, lruvec,
+> > -				   sc, LRU_ACTIVE_ANON);
+> > +		sc->nr_reclaimed += shrink_active_list(SWAP_CLUSTER_MAX,
+> > +					lruvec, sc, LRU_ACTIVE_ANON);
+> >  
+> >  	throttle_vm_writeout(sc->gfp_mask);
+> >  }
+> > @@ -2470,23 +2470,27 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *memcg,
+> >  }
+> >  #endif
+> >  
+> > -static void age_active_anon(struct zone *zone, struct scan_control *sc)
+> 
+> Comment about return value.
+> or rename but I have no idea. Sorry.
+
+This will be disappreared in next spin.
+
+Thanks for detailed review.
+
+> 
+> > +static unsigned long age_active_anon(struct zone *zone,
+> > +					struct scan_control *sc)
+> >  {
+> > +	unsigned long nr_reclaimed = 0;
+> >  	struct mem_cgroup *memcg;
+> >  
+> >  	if (!total_swap_pages)
+> > -		return;
+> > +		return 0;
+> >  
+> >  	memcg = mem_cgroup_iter(NULL, NULL, NULL);
+> >  	do {
+> >  		struct lruvec *lruvec = mem_cgroup_zone_lruvec(zone, memcg);
+> >  
+> >  		if (inactive_anon_is_low(lruvec))
+> > -			shrink_active_list(SWAP_CLUSTER_MAX, lruvec,
+> > -					   sc, LRU_ACTIVE_ANON);
+> > +			nr_reclaimed += shrink_active_list(SWAP_CLUSTER_MAX,
+> > +					lruvec, sc, LRU_ACTIVE_ANON);
+> >  
+> >  		memcg = mem_cgroup_iter(NULL, memcg, NULL);
+> >  	} while (memcg);
+> > +
+> > +	return nr_reclaimed;
+> >  }
+> >  
+> >  static bool zone_balanced(struct zone *zone, int order,
+> > @@ -2666,7 +2670,7 @@ loop_again:
+> >  			 * Do some background aging of the anon list, to give
+> >  			 * pages a chance to be referenced before reclaiming.
+> >  			 */
+> > -			age_active_anon(zone, &sc);
+> > +			sc.nr_reclaimed += age_active_anon(zone, &sc);
+> >  
+> >  			/*
+> >  			 * If the number of buffer_heads in the machine
+> > -- 
+> > 1.7.9.5
+> > 
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
