@@ -1,40 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937625Ab3DJWyt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:54:49 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:44479 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937317Ab3DJWyp (ORCPT
+	id S937597Ab3DJWzN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:55:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56654 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937587Ab3DJWut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:54:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130410224342.778004071@linuxfoundation.org>
-References: <20130410224333.114387235@linuxfoundation.org>
-	<20130410224342.778004071@linuxfoundation.org>
-Date: Wed, 10 Apr 2013 15:54:44 -0700
-X-Google-Sender-Auth: KZblAK9pdvzChjTiPTYuCX1pRyk
-Message-ID: <CA+55aFzVuENsvQM1huNkJRcvcWow1xcVeaGkbYEd-JonJ9HqEw@mail.gmail.com>
-Subject: Re: [ 41/64] spinlocks and preemption points need to be at least
- compiler barriers
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, Steven Rostedt <srostedt@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 10 Apr 2013 18:50:49 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Pawel Zawora <pzawora@gmail.com>, Jan Kara <jack@suse.cz>
+Subject: [ 03/19] reiserfs: Fix warning and inode leak when deleting inode with xattrs
+Date: Wed, 10 Apr 2013 15:50:26 -0700
+Message-Id: <20130410225027.171506481@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130410225026.833809117@linuxfoundation.org>
+References: <20130410225026.833809117@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 3:46 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
->
-> Note for stable: use discretion when/if applying this.  As mentioned,
-> this bug may never have actually bitten anybody, and gcc may never have
-> done the required code motion for it to possibly ever trigger in
-> practice.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-No objections, I just wanted to make sure the stable people had
-noticed this message to them...
+------------------
 
-             Linus
+From: Jan Kara <jack@suse.cz>
+
+commit 35e5cbc0af240778e61113286c019837e06aeec6 upstream.
+
+After commit 21d8a15a (lookup_one_len: don't accept . and ..) reiserfs
+started failing to delete xattrs from inode. This was due to a buggy
+test for '.' and '..' in fill_with_dentries() which resulted in passing
+'.' and '..' entries to lookup_one_len() in some cases. That returned
+error and so we failed to iterate over all xattrs of and inode.
+
+Fix the test in fill_with_dentries() along the lines of the one in
+lookup_one_len().
+
+Reported-by: Pawel Zawora <pzawora@gmail.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/reiserfs/xattr.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/fs/reiserfs/xattr.c
++++ b/fs/reiserfs/xattr.c
+@@ -187,8 +187,8 @@ fill_with_dentries(void *buf, const char
+ 	if (dbuf->count == ARRAY_SIZE(dbuf->dentries))
+ 		return -ENOSPC;
+ 
+-	if (name[0] == '.' && (name[1] == '\0' ||
+-			       (name[1] == '.' && name[2] == '\0')))
++	if (name[0] == '.' && (namelen < 2 ||
++			       (namelen == 2 && name[1] == '.')))
+ 		return 0;
+ 
+ 	dentry = lookup_one_len(name, dbuf->xadir, namelen);
+
+
