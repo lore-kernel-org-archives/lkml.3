@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936078Ab3DJLTo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 07:19:44 -0400
-Received: from mail-ye0-f182.google.com ([209.85.213.182]:37362 "EHLO
-	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934789Ab3DJLTn (ORCPT
+	id S936156Ab3DJLZE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 07:25:04 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35583 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935845Ab3DJLZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 07:19:43 -0400
-Date: Wed, 10 Apr 2013 07:11:44 -0400
-From: Jeff Layton <jlayton@samba.org>
-To: Pavel Shilovsky <piastry@etersoft.ru>
-Cc: linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        wine-devel@winehq.org
-Subject: Re: [PATCH v5 4/7] CIFS: Use NT_CREATE_ANDX command for forcemand
- mounts
-Message-ID: <20130410071144.08ef2983@corrin.poochiereds.net>
-In-Reply-To: <1365511227-17626-5-git-send-email-piastry@etersoft.ru>
-References: <1365511227-17626-1-git-send-email-piastry@etersoft.ru>
-	<1365511227-17626-5-git-send-email-piastry@etersoft.ru>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.16; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Apr 2013 07:25:01 -0400
+Date: Wed, 10 Apr 2013 13:24:56 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        SystemTap <systemtap@sourceware.org>
+Subject: Re: systemtap broken by removal of register_timer_hook
+Message-ID: <20130410112456.GA29886@gmail.com>
+References: <20130403075017.GA2534@suse.de>
+ <CAFTL4hyYezB2ZxM-GJ70VoxOeRSG64V6u+nX2hTuhF30R-GdPg__32168.962484184$1364986928$gmane$org@mail.gmail.com>
+ <y0mvc83u79f.fsf@fche.csb>
+ <CAFTL4hxx_GHoa4uguSAtY0A=cC43qJPKvpqaoguS-WAjFj+HSw@mail.gmail.com>
+ <20130403144428.GA15432@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130403144428.GA15432@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  9 Apr 2013 16:40:24 +0400
-Pavel Shilovsky <piastry@etersoft.ru> wrote:
 
-> forcemand mount option now lets us use Windows mandatory style of
-> byte-range locks even if server supports posix ones - switches on
-> Windows locking mechanism. Share flags is another locking mehanism
-> provided by Windows semantic that can be used by NT_CREATE_ANDX
-> command. This patch combines all Windows locking mechanism in one
-> mount option by using NT_CREATE_ANDX to open files if forcemand is on.
+* Frank Ch. Eigler <fche@redhat.com> wrote:
+
+> Hi -
 > 
-> Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-> ---
->  fs/cifs/dir.c  | 1 +
->  fs/cifs/file.c | 6 ++++--
->  2 files changed, 5 insertions(+), 2 deletions(-)
+> On Wed, Apr 03, 2013 at 02:49:53PM +0200, Frederic Weisbecker wrote:
 > 
-> diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
-> index d4331de..8587021 100644
-> --- a/fs/cifs/dir.c
-> +++ b/fs/cifs/dir.c
-> @@ -217,6 +217,7 @@ cifs_do_create(struct inode *inode, struct dentry *direntry, unsigned int xid,
->  	}
->  
->  	if (tcon->unix_ext && cap_unix(tcon->ses) && !tcon->broken_posix_open &&
-> +	    ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
->  	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
->  			le64_to_cpu(tcon->fsUnixInfo.Capability))) {
->  		rc = cifs_posix_open(full_path, &newinode, inode->i_sb, mode,
-> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-> index 9394b2b..19038a4 100644
-> --- a/fs/cifs/file.c
-> +++ b/fs/cifs/file.c
-> @@ -455,8 +455,9 @@ int cifs_open(struct inode *inode, struct file *file)
->  	else
->  		oplock = 0;
->  
-> -	if (!tcon->broken_posix_open && tcon->unix_ext &&
-> -	    cap_unix(tcon->ses) && (CIFS_UNIX_POSIX_PATH_OPS_CAP &
-> +	if (!tcon->broken_posix_open && tcon->unix_ext && cap_unix(tcon->ses)
-> +	    && ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
-> +	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
->  				le64_to_cpu(tcon->fsUnixInfo.Capability))) {
->  		/* can not refresh inode info since size could be stale */
->  		rc = cifs_posix_open(full_path, &inode, inode->i_sb,
-> @@ -624,6 +625,7 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
->  		oplock = 0;
->  
->  	if (tcon->unix_ext && cap_unix(tcon->ses) &&
-> +	    ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
->  	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
->  				le64_to_cpu(tcon->fsUnixInfo.Capability))) {
->  		/*
+> > Sounds good, would you like to propose a version? We are also
+> > interested in a timer tick event tracepoint for dynticks debugging.
+> 
+> How about this?
+> 
+> Author: Frank Ch. Eigler <fche@redhat.com>
+> Date:   Wed Apr 3 10:35:21 2013 -0400
+> 
+>     profiling: add profile_tick tracepoint
+>     
+>     Commit ba6fdda4 removed the timer_hook mechanism for modules to listen
+>     to profiling timer ticks (without having to set up more complicated
+>     perf mechanisms).  To reduce the impact on out-of-tree users, a
+>     TRACE_EVENT-flavoured tracepoint is added in its place.  Tested with
+>     perf and systemtap.
 
-I'm trying to understand why "forcemand" would matter here. Wouldn't
-you just want to switch to using NT_CREATE_ANDX if O_DENY* is set
-instead? What happens if I didn't mount with forcemand and then try to
-use O_DENY*?
+I'd suggest mentioning SystemTap here as the driving motivation. SystemTap 
+triggered a generic kernel improvement here, no need to hide its identity!
 
--- 
-Jeff Layton <jlayton@samba.org>
+Thanks,
+
+	Ingo
