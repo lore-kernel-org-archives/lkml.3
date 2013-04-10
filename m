@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083Ab3DJFZh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 01:25:37 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42253 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713Ab3DJFZg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 01:25:36 -0400
-X-AuditID: 9c93016f-b7b3fae0000004d3-2c-5164f7ce2eaf
-Date: Wed, 10 Apr 2013 14:26:19 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>
-Subject: Re: [PATCH 2/3] mm, slub: count freed pages via rcu as this task's
- reclaimed_slab
-Message-ID: <20130410052619.GD5872@lge.com>
-References: <1365470478-645-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1365470478-645-2-git-send-email-iamjoonsoo.kim@lge.com>
- <0000013def3255c0-87577820-0ad9-46ac-8498-0589db4e7180-000000@email.amazonses.com>
+	id S1752269Ab3DJF1b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 01:27:31 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43748 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752102Ab3DJF13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 01:27:29 -0400
+Message-ID: <5164F82D.3090501@ti.com>
+Date: Wed, 10 Apr 2013 10:57:09 +0530
+From: Sourav Poddar <sourav.poddar@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0000013def3255c0-87577820-0ad9-46ac-8498-0589db4e7180-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>, <khilman@linaro.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-serial@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: Re: [PATCHv3] driver: serial: prevent UART console idle on suspend
+ while using "no_console_suspend"
+References: <1365167733-28083-1-git-send-email-sourav.poddar@ti.com> <20130408171432.GY30923@n2100.arm.linux.org.uk>
+In-Reply-To: <20130408171432.GY30923@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Christoph.
+Hi Russell,
+On Monday 08 April 2013 10:44 PM, Russell King - ARM Linux wrote:
+> On Fri, Apr 05, 2013 at 06:45:33PM +0530, Sourav Poddar wrote:
+>> With dt boot, uart wakeup after suspend is non functional while using
+>> "no_console_suspend" in the bootargs. With "no_console_suspend" used, we
+>> should prevent the runtime suspend of the uart port which is getting used
+>> as an console.
+>>
+>> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
+>> Cc: Felipe Balbi<balbi@ti.com>
+>> Cc: Rajendra nayak<rnayak@ti.com>
+>> Tested on omap5430evm, omap4430sdp.
+>>
+>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
+>> ---
+>> v2->v3
+>> Based on Kevin Hilman and Santosh Shilimkar comments, modified
+>> serial core/driver layer to bypass runtime suspend
+>> for console uart while using "no_console_suspend".
+>>
+>> This patch is based on Santosh Shilimkar serial patch[1]
+> Rather than introducing this "port_is_console" thing, please move
+> uart_console() into the serial_core.h header file, making it an inline
+> function, and use that in omap-serial.c.
+>
+> Remember to fix drivers/tty/serial/mpc52xx_uart.c as well for that change.
+Thanks for the pointer. Will take care of your suggestions
+in the next version.
 
-On Tue, Apr 09, 2013 at 02:28:06PM +0000, Christoph Lameter wrote:
-> On Tue, 9 Apr 2013, Joonsoo Kim wrote:
-> 
-> > Currently, freed pages via rcu is not counted for reclaimed_slab, because
-> > it is freed in rcu context, not current task context. But, this free is
-> > initiated by this task, so counting this into this task's reclaimed_slab
-> > is meaningful to decide whether we continue reclaim, or not.
-> > So change code to count these pages for this task's reclaimed_slab.
-> 
-> slab->reclaim_state guides the reclaim actions in vmscan.c. With this
-> patch slab->reclaim_state could get quite a high value without new pages being
-> available for allocation. slab->reclaim_state will only be updated
-> when the RCU period ends.
-
-Okay.
-
-In addition, there is a little place who use SLAB_DESTROY_BY_RCU.
-I will drop this patch[2/3] and [3/3] for next spin.
-
-Thanks.
-
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+~Sourav
